@@ -1,0 +1,8 @@
+{
+  "vertex": "cobblemon_better_battle_presentation:dynamax_world_grade",
+  "fragment": "cobblemon_better_battle_presentation:dynamax_world_grade",
+  "samplers": [],
+  "uniforms": [
+    { "name": "EffectStrength", "type": "float", "count": 1, "values": [0] }
+  ]
+}

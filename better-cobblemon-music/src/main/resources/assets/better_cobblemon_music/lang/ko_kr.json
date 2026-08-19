@@ -1,0 +1,4 @@
+{
+  "better_cobblemon_music.command.reload.success": "Better Cobblemon Music 설정을 다시 불러왔습니다.",
+  "better_cobblemon_music.command.reload.failure": "Better Cobblemon Music 설정 재로드 실패: %s"
+}

@@ -1,0 +1,7595 @@
+{
+  "schema_version": 3,
+  "catalog_id": "mbc_factory_core",
+  "concepts": [
+    {
+      "concept_id": "arcanine_voltage",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.arcanine_voltage.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.arcanine_voltage.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 2,
+      "ai_summary": "Whimsicott and Raichu control speed and Electric pressure while Gastrodon absorbs Water and Ground attacks for Arcanine.",
+      "objectives": [
+        "speed_control",
+        "pivoting"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:arcanine for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:extremespeed"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "s1_arcanine"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:whimsicott for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:tailwind"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "s1_whimsicott"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:gastrodon for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:recover"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "s1_gastrodon"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:raichu for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:fakeout"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "s1_raichu"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "feraligatr_screen",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.feraligatr_screen.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.feraligatr_screen.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 2,
+      "ai_summary": "Klefki creates a Dragon Dance turn for Feraligatr while Roserade and Noivern cover its checks with special pressure.",
+      "objectives": [
+        "setup_sweep",
+        "preserve_core"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:feraligatr for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:dragondance"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "s1_feraligatr"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:klefki for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:reflect"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "s1_klefki"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:roserade for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:sleeppowder"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "s1_roserade"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:noivern for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:dracometeor"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "s1_noivern"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "heracross_rotation",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.heracross_rotation.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.heracross_rotation.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 2,
+      "ai_summary": "Rotom-W creates safe entries, Mismagius adds special pressure, and Donphan supplies cleanup for Heracross.",
+      "objectives": [
+        "pivoting",
+        "balanced_pressure"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:heracross for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:facade"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "s1_heracross"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:rotom for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:voltswitch"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "s1_rotom_wash"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:mismagius for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:nastyplot"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "s1_mismagius"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:donphan for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:iceshard"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "s1_donphan"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "porygon_balance",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.porygon_balance.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.porygon_balance.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 2,
+      "ai_summary": "Eviolite Porygon2 stabilizes the field with Thunder Wave while Staraptor, Chandelure, and Tsareena attack from distinct angles.",
+      "objectives": [
+        "balanced_pressure",
+        "preserve_core"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:porygon2 for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:recover"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "s1_porygon2"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:staraptor for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:bravebird"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "s1_staraptor"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:chandelure for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:heatwave"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "s1_chandelure"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:tsareena for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:powerwhip"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "s1_tsareena"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "gyarados_screen",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.gyarados_screen.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.gyarados_screen.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 3,
+      "ai_summary": "Grimmsnarl sets screens, Magnezone handles Flying and Fairy pressure, and Mamoswine supplies priority for Gyarados.",
+      "objectives": [
+        "setup_sweep",
+        "preserve_core"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:gyarados for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:dragondance"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "i1_gyarados"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:grimmsnarl for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:reflect"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "i1_grimmsnarl"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:magnezone for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:voltswitch"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "i1_magnezone"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:mamoswine for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:iceshard"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "i1_mamoswine"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "volcarona_tailwind",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.volcarona_tailwind.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.volcarona_tailwind.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 3,
+      "ai_summary": "Talonflame supplies Tailwind for Volcarona while Azumarill and Hydreigon divide Rock, Water, and Dragon matchups.",
+      "objectives": [
+        "speed_control",
+        "setup_sweep"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:volcarona for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:quiverdance"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "i1_volcarona"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:talonflame for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:tailwind"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "i1_talonflame"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:azumarill for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:bellydrum"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "i1_azumarill"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:hydreigon for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:dracometeor"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "i1_hydreigon"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "lucario_web",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.lucario_web.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.lucario_web.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 3,
+      "ai_summary": "Ribombee lays Sticky Web for Lucario while Milotic and Krookodile cover Fire, Ghost, and Ground pressure.",
+      "objectives": [
+        "speed_control",
+        "setup_sweep"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:lucario for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:swordsdance"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "i1_lucario"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:ribombee for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:stickyweb"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "i1_ribombee"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:milotic for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:recover"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "i1_milotic"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:krookodile for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:earthquake"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "i1_krookodile"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "dragonite_snow",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.dragonite_snow.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.dragonite_snow.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 3,
+      "ai_summary": "Alolan Ninetales protects Dragonite with Aurora Veil while Metagross and Rotom-H cover Ice and Fairy attacks.",
+      "objectives": [
+        "field_control",
+        "preserve_core"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:dragonite for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:dragondance"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "i1_dragonite"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:ninetales for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:auroraveil"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "i1_ninetales_alola"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:metagross for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:bulletpunch"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "i1_metagross"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:rotom for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:voltswitch"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "i1_rotom_heat"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "garchomp_followme",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.garchomp_followme.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.garchomp_followme.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 3,
+      "ai_summary": "Togekiss redirects attacks for Garchomp while Corviknight and Primarina cover Ice and Fairy pressure.",
+      "objectives": [
+        "setup_sweep",
+        "preserve_core"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:garchomp for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:swordsdance"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "i2_garchomp"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:togekiss for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:followme"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "i2_togekiss"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:corviknight for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:uturn"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "i2_corviknight"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:primarina for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:sparklingaria"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "i2_primarina"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "excadrill_sand",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.excadrill_sand.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.excadrill_sand.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 3,
+      "ai_summary": "Tyranitar activates Sand Rush for Excadrill while Amoonguss and Dragapult provide disruption and fast special pressure.",
+      "objectives": [
+        "field_control",
+        "speed_control"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:excadrill for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:highhorsepower"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "i2_excadrill"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:tyranitar for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:rockslide"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "i2_tyranitar"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:amoonguss for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:spore"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "i2_amoonguss"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:dragapult for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:dracometeor"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "i2_dragapult"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "ceruledge_pivot",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.ceruledge_pivot.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.ceruledge_pivot.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 3,
+      "ai_summary": "Rotom-W pivots Ceruledge into play while Meowscarada and Sylveon pressure Water, Dark, and Dragon checks.",
+      "objectives": [
+        "pivoting",
+        "setup_sweep"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:ceruledge for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:swordsdance"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "i2_ceruledge"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:rotom for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:voltswitch"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "i2_rotom_wash"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:meowscarada for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:flowertrick"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "i2_meowscarada"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:sylveon for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:hypervoice"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "i2_sylveon"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "samurott_rain",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.samurott_rain.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.samurott_rain.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 3,
+      "ai_summary": "Pelipper opens rain and Tailwind for Barraskewda while Rillaboom creates setup and priority-cleanup windows for Samurott.",
+      "objectives": [
+        "field_control",
+        "focus_fire"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:samurott for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:aquajet"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "i2_samurott"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:pelipper for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:tailwind"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "i2_pelipper"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:barraskewda for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:liquidation"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "i2_barraskewda"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:rillaboom for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:grassyglide"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "i2_rillaboom"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "salamence_pressure",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.salamence_pressure.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.salamence_pressure.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 4,
+      "ai_summary": "Blaziken applies immediate physical pressure while Dondozo and Gholdengo cover opposite matchups and Salamence controls tempo with Tailwind.",
+      "objectives": [
+        "balanced_pressure",
+        "speed_control"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:salamence for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:tailwind"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a1_salamence"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:blaziken for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:protect"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a1_blaziken"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:gholdengo for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:makeitrain"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a1_gholdengo"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:dondozo for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:rest"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a1_dondozo"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "empoleon_poison",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.empoleon_poison.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.empoleon_poison.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 4,
+      "ai_summary": "Gliscor and Toxapex create durable poison pressure while Incineroar secures attack windows for Empoleon with Intimidate and Fake Out.",
+      "objectives": [
+        "pivoting",
+        "preserve_core"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:empoleon for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:hydropump"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a1_empoleon"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:gliscor for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:protect"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a1_gliscor"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:toxapex for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:haze"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a1_toxapex"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:incineroar for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:fakeout"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a1_incineroar"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "reuniclus_room",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.reuniclus_room.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.reuniclus_room.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 4,
+      "ai_summary": "Reuniclus establishes Trick Room with Jellicent as a secondary setter while Haxorus and Mienshao divide slow and fast physical pressure.",
+      "objectives": [
+        "field_control",
+        "balanced_pressure"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:reuniclus for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:trickroom"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a1_reuniclus"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:jellicent for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:trickroom"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a1_jellicent"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:haxorus for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:outrage"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a1_haxorus"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:mienshao for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:fakeout"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a1_mienshao"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "kommoo_room",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.kommoo_room.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.kommoo_room.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 4,
+      "ai_summary": "Hatterene opens Trick Room for Kommo-o while Crobat and Scizor provide fast disruption, pivots, and priority cleanup.",
+      "objectives": [
+        "field_control",
+        "setup_sweep"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:kommoo for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:clangoroussoul"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a1_kommoo"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:hatterene for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:trickroom"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a1_hatterene"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:crobat for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:uturn"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a1_crobat"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:scizor for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:bulletpunch"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a1_scizor"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "metagross_disruption",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.metagross_disruption.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.metagross_disruption.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 4,
+      "ai_summary": "Sableye creates an Agility window for Metagross with Taunt and Encore while Rotom-H and Hydreigon add special pressure.",
+      "objectives": [
+        "setup_sweep",
+        "status_pressure"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:metagross for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:agility"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a2_metagross"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:sableye for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:encore"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a2_sableye"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:rotom for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:voltswitch"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a2_rotom_heat"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:hydreigon for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:dracometeor"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a2_hydreigon"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "tyranitar_veil",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.tyranitar_veil.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.tyranitar_veil.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 4,
+      "ai_summary": "Bronzong chooses screens or Trick Room for Tyranitar while Weavile and Venusaur provide fast cleanup and sleep pressure.",
+      "objectives": [
+        "field_control",
+        "balanced_pressure"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:tyranitar for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:rockslide"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a2_tyranitar"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:bronzong for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:trickroom"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a2_bronzong"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:weavile for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:iceshard"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a2_weavile"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:venusaur for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:sleeppowder"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a2_venusaur"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "cloyster_control",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.cloyster_control.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.cloyster_control.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 4,
+      "ai_summary": "Gardevoir controls speed while Slowking pivots and heals; Hawlucha adds immediate physical pressure to open Shell Smash for Cloyster.",
+      "objectives": [
+        "speed_control",
+        "setup_sweep"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:cloyster for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:shellsmash"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a2_cloyster"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:gardevoir for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:moonblast"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a2_gardevoir"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:slowking for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:chillyreception"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a2_slowking"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:hawlucha for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:closecombat"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a2_hawlucha"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "serperior_special",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.serperior_special.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.serperior_special.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 4,
+      "ai_summary": "Serperior snowballs with Leaf Storm while Armarouge uses Power Herb for immediate pressure; Quaquaval and Goodra cover both damage axes.",
+      "objectives": [
+        "balanced_pressure",
+        "focus_fire"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:serperior for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:leafstorm"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a2_serperior"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:armarouge for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:meteorbeam"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a2_armarouge"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:quaquaval for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:aquastep"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a2_quaquaval"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:goodra for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:dracometeor"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a2_goodra"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "garchomp_redirection",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.garchomp_redirection.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.garchomp_redirection.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 5,
+      "ai_summary": "Togekiss redirects attacks, Aegislash creates defensive turns, and Rillaboom supplies Fake Out and priority for Garchomp.",
+      "objectives": [
+        "focus_fire",
+        "preserve_core"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:garchomp for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:earthquake"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a3_garchomp"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:togekiss for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:followme"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a3_togekiss"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:aegislash for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:kingsshield"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a3_aegislash"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:rillaboom for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:fakeout"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a3_rillaboom"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "volcarona_rain",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.volcarona_rain.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.volcarona_rain.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 5,
+      "ai_summary": "Pelipper and Barraskewda force rain answers while Ferrothorn absorbs their checks and creates a Quiver Dance window for Volcarona.",
+      "objectives": [
+        "field_control",
+        "setup_sweep"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:volcarona for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:quiverdance"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a3_volcarona"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:pelipper for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:tailwind"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a3_pelipper"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:barraskewda for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:liquidation"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a3_barraskewda"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:ferrothorn for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:leechseed"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a3_ferrothorn"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "samurott_mixed",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.samurott_mixed.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.samurott_mixed.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 5,
+      "ai_summary": "Clefable redirects attacks, Conkeldurr turns status into power, and Porygon-Z breaks special walls to enable Samurott.",
+      "objectives": [
+        "balanced_pressure",
+        "focus_fire"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:samurott for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:aquajet"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a3_samurott"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:clefable for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:followme"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a3_clefable"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:conkeldurr for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:facade"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a3_conkeldurr"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:porygonz for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:triattack"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a3_porygonz"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "glimmora_hazard",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.glimmora_hazard.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.glimmora_hazard.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 5,
+      "ai_summary": "Glimmora and Hippowdon establish hazards and forced switches while Greninja and Mimikyu provide fast breaking and priority cleanup.",
+      "objectives": [
+        "field_control",
+        "balanced_pressure"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:glimmora for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:stealthrock"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a3_glimmora"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:hippowdon for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:stealthrock"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a3_hippowdon"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:greninja for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:hydropump"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a3_greninja"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:mimikyu for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:swordsdance"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a3_mimikyu"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "latios_offense",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.latios_offense.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.latios_offense.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 5,
+      "ai_summary": "Aegislash creates defensive turns while Weavile and Volcarona pressure Latios checks from both damage axes.",
+      "objectives": [
+        "balanced_pressure",
+        "preserve_core"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:latios for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:dracometeor"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a4_latios"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:aegislash for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:kingsshield"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a4_aegislash"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:weavile for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:iceshard"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a4_weavile"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:volcarona for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:quiverdance"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a4_volcarona"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "zapdos_pivot",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.zapdos_pivot.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.zapdos_pivot.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 5,
+      "ai_summary": "Garchomp supplies an Electric immunity, Scizor provides U-turn and priority, and Gastrodon completes the defensive pivot core for Zapdos.",
+      "objectives": [
+        "pivoting",
+        "balanced_pressure"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:zapdos for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:roost"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a4_zapdos"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:garchomp for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:earthquake"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a4_garchomp"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:scizor for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:bulletpunch"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a4_scizor"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:gastrodon for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:recover"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a4_gastrodon"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "articuno_balance",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.articuno_balance.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.articuno_balance.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 5,
+      "ai_summary": "Articuno stabilizes the field with Tailwind and Roost while Dragonite, Metagross, and Meowscarada divide setup and fast cleanup duties.",
+      "objectives": [
+        "speed_control",
+        "preserve_core"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:articuno for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:tailwind"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a4_articuno"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:dragonite for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:dragondance"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a4_dragonite"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:metagross for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:bulletpunch"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a4_metagross"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:meowscarada for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:flowertrick"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a4_meowscarada"
+          ]
+        }
+      ]
+    },
+    {
+      "concept_id": "regigigas_control",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.regigigas_control.name",
+      "description_key": "factory.cobblemon_more_battle_content.concept.regigigas_control.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 5,
+      "ai_summary": "Registeel uses paralysis and Stealth Rock to cover Slow Start while Samurott and Rillaboom bridge into late-game Regigigas pressure.",
+      "objectives": [
+        "field_control",
+        "preserve_core"
+      ],
+      "members": [
+        {
+          "plan_id": "ace",
+          "required": true,
+          "roles": [
+            "ace",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:regigigas for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:rest"
+          ],
+          "lead_priority": 25,
+          "preservation_priority": 100,
+          "set_pool": [
+            "a4_regigigas"
+          ]
+        },
+        {
+          "plan_id": "enabler",
+          "required": true,
+          "roles": [
+            "setup_enabler",
+            "field_support"
+          ],
+          "tactical_summary": "Use cobblemon:registeel for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:thunderwave"
+          ],
+          "lead_priority": 100,
+          "preservation_priority": 45,
+          "set_pool": [
+            "a4_registeel"
+          ]
+        },
+        {
+          "plan_id": "cover",
+          "required": false,
+          "roles": [
+            "weakness_cover",
+            "pivot"
+          ],
+          "tactical_summary": "Use cobblemon:samurott for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:aquajet"
+          ],
+          "lead_priority": 45,
+          "preservation_priority": 65,
+          "set_pool": [
+            "a4_samurott"
+          ]
+        },
+        {
+          "plan_id": "closer",
+          "required": false,
+          "roles": [
+            "cleaner",
+            "wallbreaker"
+          ],
+          "tactical_summary": "Use cobblemon:rillaboom for its assigned role without exposing hidden opponent information.",
+          "preferred_move_ids": [
+            "cobblemon:fakeout"
+          ],
+          "lead_priority": 55,
+          "preservation_priority": 60,
+          "set_pool": [
+            "a4_rillaboom"
+          ]
+        }
+      ]
+    }
+  ],
+  "sets": [
+    {
+      "set_id": "s1_arcanine",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:arcanine",
+      "ability_id": "cobblemon:intimidate",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:flareblitz",
+          "cobblemon:ragingfury",
+          "cobblemon:temperflare"
+        ],
+        [
+          "cobblemon:extremespeed"
+        ],
+        [
+          "cobblemon:closecombat",
+          "cobblemon:superpower"
+        ],
+        [
+          "cobblemon:wildcharge"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_band",
+        "cobblemon:life_orb",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "s1_gastrodon",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:gastrodon",
+      "ability_id": "cobblemon:stormdrain",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 252,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthpower"
+        ],
+        [
+          "cobblemon:icebeam",
+          "cobblemon:blizzard"
+        ],
+        [
+          "cobblemon:recover"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry",
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "s1_whimsicott",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:whimsicott",
+      "ability_id": "cobblemon:prankster",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:tailwind"
+        ],
+        [
+          "cobblemon:moonblast",
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:taunt",
+          "cobblemon:encore",
+          "cobblemon:switcheroo"
+        ],
+        [
+          "cobblemon:helpinghand"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash",
+        "cobblemon:mental_herb",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "s1_raichu",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:raichu",
+      "ability_id": "cobblemon:lightningrod",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:thunderbolt",
+          "cobblemon:discharge",
+          "cobblemon:voltswitch"
+        ],
+        [
+          "cobblemon:nuzzle"
+        ],
+        [
+          "cobblemon:grassknot"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:magnet",
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "s1_feraligatr",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:feraligatr",
+      "ability_id": "cobblemon:sheerforce",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:liquidation",
+          "cobblemon:aquatail",
+          "cobblemon:waterfall"
+        ],
+        [
+          "cobblemon:icepunch"
+        ],
+        [
+          "cobblemon:crunch",
+          "cobblemon:lashout"
+        ],
+        [
+          "cobblemon:dragondance",
+          "cobblemon:swordsdance",
+          "cobblemon:curse"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "s1_klefki",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:klefki",
+      "ability_id": "cobblemon:prankster",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 252,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:reflect",
+          "cobblemon:safeguard"
+        ],
+        [
+          "cobblemon:lightscreen"
+        ],
+        [
+          "cobblemon:thunderwave",
+          "cobblemon:toxic"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:light_clay",
+        "cobblemon:mental_herb",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "s1_roserade",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:roserade",
+      "ability_id": "cobblemon:naturalcure",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:leafstorm",
+          "cobblemon:petaldance",
+          "cobblemon:energyball"
+        ],
+        [
+          "cobblemon:sludgebomb"
+        ],
+        [
+          "cobblemon:sleeppowder",
+          "cobblemon:toxic"
+        ],
+        [
+          "cobblemon:toxicspikes",
+          "cobblemon:spikes"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:black_sludge",
+        "cobblemon:leftovers",
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "s1_noivern",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:noivern",
+      "ability_id": "cobblemon:infiltrator",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:dracometeor",
+          "cobblemon:dragonpulse"
+        ],
+        [
+          "cobblemon:hurricane",
+          "cobblemon:airslash"
+        ],
+        [
+          "cobblemon:flamethrower",
+          "cobblemon:heatwave"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs",
+        "cobblemon:life_orb",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "s1_heracross",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:heracross",
+      "ability_id": "cobblemon:guts",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:closecombat",
+          "cobblemon:brickbreak"
+        ],
+        [
+          "cobblemon:megahorn",
+          "cobblemon:lunge",
+          "cobblemon:skittersmack"
+        ],
+        [
+          "cobblemon:facade",
+          "cobblemon:doubleedge",
+          "cobblemon:bodyslam"
+        ],
+        [
+          "cobblemon:knockoff",
+          "cobblemon:nightslash",
+          "cobblemon:throatchop"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:flame_orb",
+        "cobblemon:choice_band",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "s1_rotom_wash",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:rotom",
+      "ability_id": "cobblemon:levitate",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "form_id": "wash",
+      "move_slots": [
+        [
+          "cobblemon:hydropump"
+        ],
+        [
+          "cobblemon:thunderbolt",
+          "cobblemon:discharge",
+          "cobblemon:thunder"
+        ],
+        [
+          "cobblemon:voltswitch"
+        ],
+        [
+          "cobblemon:willowisp",
+          "cobblemon:thunderwave",
+          "cobblemon:toxic"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sitrus_berry",
+        "cobblemon:leftovers",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "s1_mismagius",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:mismagius",
+      "ability_id": "cobblemon:levitate",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:mysticalfire",
+          "cobblemon:burningjealousy"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:nastyplot",
+          "cobblemon:calmmind"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:spell_tag",
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "s1_donphan",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:donphan",
+      "ability_id": "cobblemon:sturdy",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake",
+          "cobblemon:highhorsepower",
+          "cobblemon:stompingtantrum"
+        ],
+        [
+          "cobblemon:knockoff",
+          "cobblemon:throatchop"
+        ],
+        [
+          "cobblemon:iceshard"
+        ],
+        [
+          "cobblemon:rapidspin"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest",
+        "cobblemon:expert_belt",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "s1_porygon2",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:porygon2",
+      "ability_id": "cobblemon:trace",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 252,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:triattack",
+          "cobblemon:terablast"
+        ],
+        [
+          "cobblemon:icebeam",
+          "cobblemon:blizzard"
+        ],
+        [
+          "cobblemon:recover"
+        ],
+        [
+          "cobblemon:thunderwave",
+          "cobblemon:toxic"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:eviolite"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "s1_staraptor",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:staraptor",
+      "ability_id": "cobblemon:intimidate",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:bravebird",
+          "cobblemon:dualwingbeat"
+        ],
+        [
+          "cobblemon:closecombat"
+        ],
+        [
+          "cobblemon:doubleedge",
+          "cobblemon:takedown",
+          "cobblemon:facade"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_scarf",
+        "cobblemon:focus_sash",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "s1_chandelure",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:chandelure",
+      "ability_id": "cobblemon:flashfire",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:heatwave",
+          "cobblemon:flamethrower",
+          "cobblemon:mysticalfire"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:energyball"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "minecraft:charcoal",
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "s1_tsareena",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:tsareena",
+      "ability_id": "cobblemon:queenlymajesty",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:powerwhip",
+          "cobblemon:petalblizzard",
+          "cobblemon:seedbomb"
+        ],
+        [
+          "cobblemon:highjumpkick"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:rapidspin"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:wide_lens",
+        "cobblemon:focus_sash",
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_gyarados",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:gyarados",
+      "ability_id": "cobblemon:intimidate",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:waterfall",
+          "cobblemon:aquatail"
+        ],
+        [
+          "cobblemon:powerwhip"
+        ],
+        [
+          "cobblemon:protect"
+        ],
+        [
+          "cobblemon:dragondance",
+          "cobblemon:curse"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:lum_berry",
+        "cobblemon:life_orb",
+        "cobblemon:clear_amulet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_grimmsnarl",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:grimmsnarl",
+      "ability_id": "cobblemon:prankster",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 252,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:reflect"
+        ],
+        [
+          "cobblemon:lightscreen"
+        ],
+        [
+          "cobblemon:spiritbreak",
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:thunderwave"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:light_clay",
+        "cobblemon:mental_herb",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_magnezone",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:magnezone",
+      "ability_id": "cobblemon:sturdy",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:thunderbolt",
+          "cobblemon:discharge",
+          "cobblemon:thunder"
+        ],
+        [
+          "cobblemon:flashcannon"
+        ],
+        [
+          "cobblemon:voltswitch"
+        ],
+        [
+          "cobblemon:bodypress"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:air_balloon",
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_mamoswine",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:mamoswine",
+      "ability_id": "cobblemon:thickfat",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:iciclecrash"
+        ],
+        [
+          "cobblemon:highhorsepower",
+          "cobblemon:earthquake",
+          "cobblemon:stompingtantrum"
+        ],
+        [
+          "cobblemon:iceshard"
+        ],
+        [
+          "cobblemon:rockslide",
+          "cobblemon:stoneedge"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash",
+        "cobblemon:life_orb",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_volcarona",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:volcarona",
+      "ability_id": "cobblemon:flamebody",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:fierydance",
+          "cobblemon:mysticalfire",
+          "cobblemon:flamethrower"
+        ],
+        [
+          "cobblemon:bugbuzz",
+          "cobblemon:signalbeam"
+        ],
+        [
+          "cobblemon:gigadrain"
+        ],
+        [
+          "cobblemon:quiverdance",
+          "cobblemon:calmmind"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:heavy_duty_boots",
+        "cobblemon:leftovers",
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_talonflame",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:talonflame",
+      "ability_id": "cobblemon:galewings",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:bravebird",
+          "cobblemon:dualwingbeat"
+        ],
+        [
+          "cobblemon:flareblitz",
+          "cobblemon:temperflare"
+        ],
+        [
+          "cobblemon:tailwind"
+        ],
+        [
+          "cobblemon:quickguard"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sharp_beak",
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_azumarill",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:azumarill",
+      "ability_id": "cobblemon:hugepower",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:liquidation",
+          "cobblemon:aquatail",
+          "cobblemon:waterfall"
+        ],
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:aquajet"
+        ],
+        [
+          "cobblemon:bellydrum",
+          "cobblemon:curse"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sitrus_berry",
+        "cobblemon:leftovers",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_hydreigon",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:hydreigon",
+      "ability_id": "cobblemon:levitate",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:dracometeor",
+          "cobblemon:dragonpulse"
+        ],
+        [
+          "cobblemon:darkpulse"
+        ],
+        [
+          "cobblemon:flamethrower",
+          "cobblemon:heatwave",
+          "cobblemon:fireblast"
+        ],
+        [
+          "cobblemon:flashcannon"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs",
+        "cobblemon:life_orb",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_lucario",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:lucario",
+      "ability_id": "cobblemon:innerfocus",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:closecombat",
+          "cobblemon:highjumpkick",
+          "cobblemon:crosschop"
+        ],
+        [
+          "cobblemon:meteormash",
+          "cobblemon:irontail"
+        ],
+        [
+          "cobblemon:extremespeed"
+        ],
+        [
+          "cobblemon:swordsdance",
+          "cobblemon:bulkup",
+          "cobblemon:honeclaws"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_ribombee",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:ribombee",
+      "ability_id": "cobblemon:shielddust",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:stickyweb"
+        ],
+        [
+          "cobblemon:moonblast",
+          "cobblemon:alluringvoice",
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:pollenpuff",
+          "cobblemon:bugbuzz",
+          "cobblemon:signalbeam"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:mental_herb",
+        "cobblemon:focus_sash",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_milotic",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:milotic",
+      "ability_id": "cobblemon:competitive",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:muddywater",
+          "cobblemon:surf",
+          "cobblemon:scald"
+        ],
+        [
+          "cobblemon:icebeam",
+          "cobblemon:blizzard"
+        ],
+        [
+          "cobblemon:recover"
+        ],
+        [
+          "cobblemon:haze"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry",
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_krookodile",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:krookodile",
+      "ability_id": "cobblemon:moxie",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake",
+          "cobblemon:highhorsepower",
+          "cobblemon:stompingtantrum"
+        ],
+        [
+          "cobblemon:crunch",
+          "cobblemon:throatchop",
+          "cobblemon:darkestlariat"
+        ],
+        [
+          "cobblemon:rockslide",
+          "cobblemon:stoneedge"
+        ],
+        [
+          "cobblemon:brickbreak",
+          "cobblemon:closecombat",
+          "cobblemon:superpower"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_scarf",
+        "cobblemon:focus_sash",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_dragonite",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:dragonite",
+      "ability_id": "cobblemon:multiscale",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:dragonclaw",
+          "cobblemon:dragonrush",
+          "cobblemon:outrage"
+        ],
+        [
+          "cobblemon:extremespeed"
+        ],
+        [
+          "cobblemon:firepunch"
+        ],
+        [
+          "cobblemon:dragondance",
+          "cobblemon:curse",
+          "cobblemon:honeclaws"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:weakness_policy",
+        "cobblemon:lum_berry",
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_ninetales_alola",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:ninetales",
+      "ability_id": "cobblemon:snowwarning",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "form_id": "alola",
+      "move_slots": [
+        [
+          "cobblemon:auroraveil",
+          "cobblemon:reflect",
+          "cobblemon:safeguard"
+        ],
+        [
+          "cobblemon:freezedry",
+          "cobblemon:icebeam",
+          "cobblemon:blizzard"
+        ],
+        [
+          "cobblemon:moonblast",
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:icywind"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:icy_rock",
+        "cobblemon:focus_sash",
+        "cobblemon:light_clay"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_metagross",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:metagross",
+      "ability_id": "cobblemon:clearbody",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:meteormash",
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:zenheadbutt",
+          "cobblemon:psychicfangs",
+          "cobblemon:psychocut"
+        ],
+        [
+          "cobblemon:stompingtantrum",
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:bulletpunch"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest",
+        "cobblemon:expert_belt",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i1_rotom_heat",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:rotom",
+      "ability_id": "cobblemon:levitate",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "form_id": "heat",
+      "move_slots": [
+        [
+          "cobblemon:overheat"
+        ],
+        [
+          "cobblemon:thunderbolt",
+          "cobblemon:discharge",
+          "cobblemon:thunder"
+        ],
+        [
+          "cobblemon:voltswitch"
+        ],
+        [
+          "cobblemon:willowisp",
+          "cobblemon:thunderwave",
+          "cobblemon:toxic"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:safety_goggles",
+        "cobblemon:heavy_duty_boots",
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_garchomp",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:garchomp",
+      "ability_id": "cobblemon:roughskin",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake",
+          "cobblemon:stompingtantrum"
+        ],
+        [
+          "cobblemon:dragonclaw",
+          "cobblemon:dragonrush",
+          "cobblemon:outrage"
+        ],
+        [
+          "cobblemon:rockslide",
+          "cobblemon:stoneedge"
+        ],
+        [
+          "cobblemon:swordsdance",
+          "cobblemon:honeclaws"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:clear_amulet",
+        "cobblemon:lum_berry",
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_togekiss",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:togekiss",
+      "ability_id": "cobblemon:serenegrace",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:airslash"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:followme",
+          "cobblemon:helpinghand"
+        ],
+        [
+          "cobblemon:tailwind"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:babiri_berry",
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_corviknight",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:corviknight",
+      "ability_id": "cobblemon:mirrorarmor",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:bravebird",
+          "cobblemon:dualwingbeat",
+          "cobblemon:drillpeck"
+        ],
+        [
+          "cobblemon:bodypress"
+        ],
+        [
+          "cobblemon:uturn"
+        ],
+        [
+          "cobblemon:roost"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:rocky_helmet",
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_primarina",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:primarina",
+      "ability_id": "cobblemon:liquidvoice",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:sparklingaria",
+          "cobblemon:surf",
+          "cobblemon:scald"
+        ],
+        [
+          "cobblemon:moonblast",
+          "cobblemon:alluringvoice",
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:icebeam",
+          "cobblemon:blizzard"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:throat_spray",
+        "cobblemon:life_orb",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_excadrill",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:excadrill",
+      "ability_id": "cobblemon:sandrush",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:highhorsepower",
+          "cobblemon:earthquake",
+          "cobblemon:drillrun"
+        ],
+        [
+          "cobblemon:ironhead",
+          "cobblemon:smartstrike"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_tyranitar",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:tyranitar",
+      "ability_id": "cobblemon:sandstream",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:rockslide",
+          "cobblemon:stoneedge"
+        ],
+        [
+          "cobblemon:knockoff",
+          "cobblemon:lashout",
+          "cobblemon:crunch"
+        ],
+        [
+          "cobblemon:lowkick",
+          "cobblemon:brickbreak",
+          "cobblemon:bodypress"
+        ],
+        [
+          "cobblemon:protect",
+          "cobblemon:detect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:smooth_rock",
+        "cobblemon:leftovers",
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_amoonguss",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:amoonguss",
+      "ability_id": "cobblemon:regenerator",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 0
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 252,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:spore",
+          "cobblemon:toxic"
+        ],
+        [
+          "cobblemon:ragepowder"
+        ],
+        [
+          "cobblemon:pollenpuff"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:black_sludge",
+        "cobblemon:leftovers",
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_dragapult",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:dragapult",
+      "ability_id": "cobblemon:infiltrator",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:dracometeor",
+          "cobblemon:dragonpulse"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:flamethrower",
+          "cobblemon:fireblast"
+        ],
+        [
+          "cobblemon:thunderbolt",
+          "cobblemon:thunder"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs",
+        "cobblemon:life_orb",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_ceruledge",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:ceruledge",
+      "ability_id": "cobblemon:flashfire",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:bitterblade",
+          "cobblemon:flareblitz"
+        ],
+        [
+          "cobblemon:shadowclaw",
+          "cobblemon:poltergeist"
+        ],
+        [
+          "cobblemon:closecombat",
+          "cobblemon:brickbreak"
+        ],
+        [
+          "cobblemon:swordsdance",
+          "cobblemon:bulkup",
+          "cobblemon:curse"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash",
+        "cobblemon:life_orb",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_rotom_wash",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:rotom",
+      "ability_id": "cobblemon:levitate",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "form_id": "wash",
+      "move_slots": [
+        [
+          "cobblemon:hydropump"
+        ],
+        [
+          "cobblemon:thunderbolt",
+          "cobblemon:discharge",
+          "cobblemon:thunder"
+        ],
+        [
+          "cobblemon:voltswitch"
+        ],
+        [
+          "cobblemon:willowisp",
+          "cobblemon:thunderwave",
+          "cobblemon:toxic"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sitrus_berry",
+        "cobblemon:leftovers",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_meowscarada",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:meowscarada",
+      "ability_id": "cobblemon:protean",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:flowertrick",
+          "cobblemon:seedbomb",
+          "cobblemon:petalblizzard"
+        ],
+        [
+          "cobblemon:knockoff",
+          "cobblemon:nightslash",
+          "cobblemon:lashout"
+        ],
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_band",
+        "cobblemon:life_orb",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_sylveon",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:sylveon",
+      "ability_id": "cobblemon:pixilate",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:hypervoice",
+          "cobblemon:terablast"
+        ],
+        [
+          "cobblemon:moonblast",
+          "cobblemon:alluringvoice",
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:mysticalfire"
+        ],
+        [
+          "cobblemon:protect",
+          "cobblemon:detect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry",
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_samurott",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:samurott",
+      "ability_id": "cobblemon:torrent",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:razorshell",
+          "cobblemon:aquacutter",
+          "cobblemon:waterfall"
+        ],
+        [
+          "cobblemon:knockoff",
+          "cobblemon:nightslash"
+        ],
+        [
+          "cobblemon:aquajet"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:black_glasses",
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_pelipper",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:pelipper",
+      "ability_id": "cobblemon:drizzle",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:hurricane",
+          "cobblemon:airslash"
+        ],
+        [
+          "cobblemon:weatherball"
+        ],
+        [
+          "cobblemon:tailwind"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:damp_rock",
+        "cobblemon:focus_sash",
+        "cobblemon:safety_goggles"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_barraskewda",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:barraskewda",
+      "ability_id": "cobblemon:swiftswim",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:liquidation",
+          "cobblemon:waterfall"
+        ],
+        [
+          "cobblemon:closecombat",
+          "cobblemon:brickbreak"
+        ],
+        [
+          "cobblemon:psychicfangs"
+        ],
+        [
+          "cobblemon:flipturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:mystic_water",
+        "cobblemon:life_orb",
+        "cobblemon:choice_band"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "i2_rillaboom",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:rillaboom",
+      "ability_id": "cobblemon:grassysurge",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:grassyglide"
+        ],
+        [
+          "cobblemon:woodhammer",
+          "cobblemon:drumbeating",
+          "cobblemon:seedbomb"
+        ],
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:miracle_seed",
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_salamence",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:salamence",
+      "ability_id": "cobblemon:intimidate",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:dracometeor",
+          "cobblemon:dragonpulse"
+        ],
+        [
+          "cobblemon:hurricane",
+          "cobblemon:airslash"
+        ],
+        [
+          "cobblemon:flamethrower",
+          "cobblemon:heatwave",
+          "cobblemon:fireblast"
+        ],
+        [
+          "cobblemon:tailwind"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:lum_berry",
+        "cobblemon:life_orb",
+        "cobblemon:clear_amulet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_blaziken",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:blaziken",
+      "ability_id": "cobblemon:speedboost",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:closecombat",
+          "cobblemon:superpower",
+          "cobblemon:highjumpkick"
+        ],
+        [
+          "cobblemon:flareblitz",
+          "cobblemon:blazekick",
+          "cobblemon:firepunch"
+        ],
+        [
+          "cobblemon:thunderpunch"
+        ],
+        [
+          "cobblemon:protect",
+          "cobblemon:detect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_gholdengo",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:gholdengo",
+      "ability_id": "cobblemon:goodasgold",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:makeitrain",
+          "cobblemon:flashcannon"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:focusblast"
+        ],
+        [
+          "cobblemon:trick"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs",
+        "cobblemon:life_orb",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_incineroar",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:incineroar",
+      "ability_id": "cobblemon:intimidate",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:flareblitz",
+          "cobblemon:blazekick",
+          "cobblemon:firepunch"
+        ],
+        [
+          "cobblemon:knockoff",
+          "cobblemon:lashout",
+          "cobblemon:crunch"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest",
+        "cobblemon:expert_belt",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_empoleon",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:empoleon",
+      "ability_id": "cobblemon:competitive",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:hydropump",
+          "cobblemon:surf",
+          "cobblemon:scald"
+        ],
+        [
+          "cobblemon:flashcannon"
+        ],
+        [
+          "cobblemon:icebeam",
+          "cobblemon:blizzard"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry",
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_gliscor",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:gliscor",
+      "ability_id": "cobblemon:poisonheal",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake",
+          "cobblemon:highhorsepower"
+        ],
+        [
+          "cobblemon:knockoff",
+          "cobblemon:nightslash",
+          "cobblemon:crunch"
+        ],
+        [
+          "cobblemon:roost"
+        ],
+        [
+          "cobblemon:protect",
+          "cobblemon:detect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:toxic_orb",
+        "cobblemon:leftovers",
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_reuniclus",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:reuniclus",
+      "ability_id": "cobblemon:magicguard",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 0
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:psychic",
+          "cobblemon:psyshock",
+          "cobblemon:psychicnoise"
+        ],
+        [
+          "cobblemon:focusblast"
+        ],
+        [
+          "cobblemon:trickroom"
+        ],
+        [
+          "cobblemon:recover"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:colbur_berry",
+        "cobblemon:leftovers",
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_mienshao",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:mienshao",
+      "ability_id": "cobblemon:regenerator",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:closecombat",
+          "cobblemon:highjumpkick",
+          "cobblemon:jumpkick"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash",
+        "cobblemon:life_orb",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_haxorus",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:haxorus",
+      "ability_id": "cobblemon:moldbreaker",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:outrage",
+          "cobblemon:dragonclaw"
+        ],
+        [
+          "cobblemon:earthquake",
+          "cobblemon:stompingtantrum"
+        ],
+        [
+          "cobblemon:poisonjab"
+        ],
+        [
+          "cobblemon:rockslide"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_band",
+        "cobblemon:life_orb",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_crobat",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:crobat",
+      "ability_id": "cobblemon:innerfocus",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:bravebird",
+          "cobblemon:dualwingbeat"
+        ],
+        [
+          "cobblemon:crosspoison",
+          "cobblemon:poisonfang"
+        ],
+        [
+          "cobblemon:roost"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:rocky_helmet",
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_toxapex",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:toxapex",
+      "ability_id": "cobblemon:regenerator",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:scald",
+          "cobblemon:surf",
+          "cobblemon:muddywater"
+        ],
+        [
+          "cobblemon:recover"
+        ],
+        [
+          "cobblemon:haze"
+        ],
+        [
+          "cobblemon:toxicspikes"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:black_sludge",
+        "cobblemon:leftovers",
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_jellicent",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:jellicent",
+      "ability_id": "cobblemon:waterabsorb",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 0
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:waterspout",
+          "cobblemon:hydropump",
+          "cobblemon:surf"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:strengthsap",
+          "cobblemon:recover"
+        ],
+        [
+          "cobblemon:trickroom"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:mental_herb",
+        "cobblemon:focus_sash",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_kommoo",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:kommoo",
+      "ability_id": "cobblemon:soundproof",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:clangingscales",
+          "cobblemon:dracometeor",
+          "cobblemon:dragonpulse"
+        ],
+        [
+          "cobblemon:flamethrower"
+        ],
+        [
+          "cobblemon:flashcannon"
+        ],
+        [
+          "cobblemon:clangoroussoul"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:throat_spray",
+        "cobblemon:life_orb",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_hatterene",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:hatterene",
+      "ability_id": "cobblemon:magicbounce",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 0
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:psychic",
+          "cobblemon:psyshock",
+          "cobblemon:psychicnoise"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:mysticalfire"
+        ],
+        [
+          "cobblemon:trickroom"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:babiri_berry",
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_dondozo",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:dondozo",
+      "ability_id": "cobblemon:unaware",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 0
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:wavecrash",
+          "cobblemon:aquatail",
+          "cobblemon:liquidation"
+        ],
+        [
+          "cobblemon:orderup",
+          "cobblemon:outrage"
+        ],
+        [
+          "cobblemon:rest"
+        ],
+        [
+          "cobblemon:sleeptalk"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:chesto_berry",
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a1_scizor",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:scizor",
+      "ability_id": "cobblemon:technician",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:bulletpunch"
+        ],
+        [
+          "cobblemon:uturn"
+        ],
+        [
+          "cobblemon:closecombat",
+          "cobblemon:superpower",
+          "cobblemon:brickbreak"
+        ],
+        [
+          "cobblemon:swordsdance",
+          "cobblemon:curse"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:metal_coat",
+        "cobblemon:life_orb",
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_metagross",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:metagross",
+      "ability_id": "cobblemon:clearbody",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:agility",
+          "cobblemon:rockpolish"
+        ],
+        [
+          "cobblemon:meteormash",
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:zenheadbutt",
+          "cobblemon:psychicfangs",
+          "cobblemon:psychocut"
+        ],
+        [
+          "cobblemon:earthquake",
+          "cobblemon:stompingtantrum"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:weakness_policy",
+        "cobblemon:lum_berry",
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_sableye",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:sableye",
+      "ability_id": "cobblemon:prankster",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 252,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:encore",
+          "cobblemon:disable",
+          "cobblemon:trick"
+        ],
+        [
+          "cobblemon:willowisp",
+          "cobblemon:thunderwave",
+          "cobblemon:toxic"
+        ],
+        [
+          "cobblemon:taunt"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash",
+        "cobblemon:mental_herb",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_rotom_heat",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:rotom",
+      "ability_id": "cobblemon:levitate",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "form_id": "heat",
+      "move_slots": [
+        [
+          "cobblemon:overheat"
+        ],
+        [
+          "cobblemon:thunderbolt",
+          "cobblemon:discharge",
+          "cobblemon:thunder"
+        ],
+        [
+          "cobblemon:voltswitch"
+        ],
+        [
+          "cobblemon:willowisp",
+          "cobblemon:thunderwave",
+          "cobblemon:toxic"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:heavy_duty_boots",
+        "cobblemon:leftovers",
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_hydreigon",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:hydreigon",
+      "ability_id": "cobblemon:levitate",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:dracometeor",
+          "cobblemon:dragonpulse"
+        ],
+        [
+          "cobblemon:darkpulse"
+        ],
+        [
+          "cobblemon:flamethrower",
+          "cobblemon:heatwave",
+          "cobblemon:fireblast"
+        ],
+        [
+          "cobblemon:flashcannon"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs",
+        "cobblemon:life_orb",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_tyranitar",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:tyranitar",
+      "ability_id": "cobblemon:sandstream",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:rockslide",
+          "cobblemon:stoneedge"
+        ],
+        [
+          "cobblemon:crunch",
+          "cobblemon:lashout",
+          "cobblemon:foulplay"
+        ],
+        [
+          "cobblemon:heavyslam",
+          "cobblemon:ironhead",
+          "cobblemon:irontail"
+        ],
+        [
+          "cobblemon:icepunch"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest",
+        "cobblemon:expert_belt",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_weavile",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:weavile",
+      "ability_id": "cobblemon:pressure",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:tripleaxel",
+          "cobblemon:icepunch",
+          "cobblemon:icespinner"
+        ],
+        [
+          "cobblemon:knockoff",
+          "cobblemon:nightslash",
+          "cobblemon:lashout"
+        ],
+        [
+          "cobblemon:iceshard"
+        ],
+        [
+          "cobblemon:lowkick",
+          "cobblemon:brickbreak"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_bronzong",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:bronzong",
+      "ability_id": "cobblemon:levitate",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 0
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:reflect",
+          "cobblemon:safeguard"
+        ],
+        [
+          "cobblemon:lightscreen"
+        ],
+        [
+          "cobblemon:trickroom"
+        ],
+        [
+          "cobblemon:bodypress"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:light_clay",
+        "cobblemon:mental_herb",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_venusaur",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:venusaur",
+      "ability_id": "cobblemon:chlorophyll",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:sleeppowder",
+          "cobblemon:toxic"
+        ],
+        [
+          "cobblemon:gigadrain",
+          "cobblemon:grasspledge",
+          "cobblemon:energyball"
+        ],
+        [
+          "cobblemon:sludgebomb"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:wide_lens",
+        "cobblemon:focus_sash",
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_cloyster",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:cloyster",
+      "ability_id": "cobblemon:skilllink",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:iciclespear",
+          "cobblemon:icespinner",
+          "cobblemon:iciclecrash"
+        ],
+        [
+          "cobblemon:rockblast"
+        ],
+        [
+          "cobblemon:shellsmash"
+        ],
+        [
+          "cobblemon:liquidation",
+          "cobblemon:waterfall",
+          "cobblemon:razorshell"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:loaded_dice",
+        "cobblemon:focus_sash",
+        "cobblemon:white_herb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_gardevoir",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:gardevoir",
+      "ability_id": "cobblemon:trace",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:moonblast",
+          "cobblemon:alluringvoice",
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:psychic",
+          "cobblemon:psyshock",
+          "cobblemon:psychicnoise"
+        ],
+        [
+          "cobblemon:mysticalfire"
+        ],
+        [
+          "cobblemon:trick",
+          "cobblemon:taunt",
+          "cobblemon:encore"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_scarf",
+        "cobblemon:focus_sash",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_slowking",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:slowking",
+      "ability_id": "cobblemon:regenerator",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 0
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 252,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:scald",
+          "cobblemon:surf",
+          "cobblemon:muddywater"
+        ],
+        [
+          "cobblemon:psychic",
+          "cobblemon:psyshock",
+          "cobblemon:psychicnoise"
+        ],
+        [
+          "cobblemon:slackoff"
+        ],
+        [
+          "cobblemon:chillyreception"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry",
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_hawlucha",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:hawlucha",
+      "ability_id": "cobblemon:unburden",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:closecombat",
+          "cobblemon:superpower",
+          "cobblemon:highjumpkick"
+        ],
+        [
+          "cobblemon:acrobatics",
+          "cobblemon:bounce",
+          "cobblemon:bravebird"
+        ],
+        [
+          "cobblemon:swordsdance",
+          "cobblemon:bulkup",
+          "cobblemon:honeclaws"
+        ],
+        [
+          "cobblemon:protect",
+          "cobblemon:detect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:white_herb",
+        "cobblemon:focus_sash",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_serperior",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:serperior",
+      "ability_id": "cobblemon:contrary",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:leafstorm",
+          "cobblemon:energyball",
+          "cobblemon:grasspledge"
+        ],
+        [
+          "cobblemon:dragonpulse"
+        ],
+        [
+          "cobblemon:glare",
+          "cobblemon:toxic"
+        ],
+        [
+          "cobblemon:substitute",
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:miracle_seed",
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_armarouge",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:armarouge",
+      "ability_id": "cobblemon:flashfire",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:armorcannon",
+          "cobblemon:overheat",
+          "cobblemon:fireblast"
+        ],
+        [
+          "cobblemon:psychic",
+          "cobblemon:psyshock"
+        ],
+        [
+          "cobblemon:energyball"
+        ],
+        [
+          "cobblemon:meteorbeam"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:power_herb",
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_quaquaval",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:quaquaval",
+      "ability_id": "cobblemon:moxie",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:aquastep",
+          "cobblemon:liquidation",
+          "cobblemon:aquacutter"
+        ],
+        [
+          "cobblemon:closecombat",
+          "cobblemon:brickbreak"
+        ],
+        [
+          "cobblemon:icespinner"
+        ],
+        [
+          "cobblemon:protect",
+          "cobblemon:detect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:clear_amulet",
+        "cobblemon:lum_berry",
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a2_goodra",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:goodra",
+      "ability_id": "cobblemon:sapsipper",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dracometeor",
+          "cobblemon:dragonpulse"
+        ],
+        [
+          "cobblemon:flamethrower",
+          "cobblemon:fireblast"
+        ],
+        [
+          "cobblemon:thunderbolt",
+          "cobblemon:thunder"
+        ],
+        [
+          "cobblemon:sludgebomb",
+          "cobblemon:sludgewave"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:rocky_helmet",
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_garchomp",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:garchomp",
+      "ability_id": "cobblemon:roughskin",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake",
+          "cobblemon:stompingtantrum"
+        ],
+        [
+          "cobblemon:dragonclaw",
+          "cobblemon:dragonrush",
+          "cobblemon:outrage"
+        ],
+        [
+          "cobblemon:rockslide",
+          "cobblemon:stoneedge"
+        ],
+        [
+          "cobblemon:poisonjab"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_scarf",
+        "cobblemon:focus_sash",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_togekiss",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:togekiss",
+      "ability_id": "cobblemon:serenegrace",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:airslash"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:followme",
+          "cobblemon:helpinghand"
+        ],
+        [
+          "cobblemon:protect",
+          "cobblemon:detect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:babiri_berry",
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_aegislash",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:aegislash",
+      "ability_id": "cobblemon:stancechange",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 0
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:kingsshield",
+          "cobblemon:protect"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:flashcannon"
+        ],
+        [
+          "cobblemon:shadowsneak"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:weakness_policy",
+        "cobblemon:lum_berry",
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_rillaboom",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:rillaboom",
+      "ability_id": "cobblemon:grassysurge",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:grassyglide"
+        ],
+        [
+          "cobblemon:woodhammer",
+          "cobblemon:drumbeating",
+          "cobblemon:seedbomb"
+        ],
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest",
+        "cobblemon:expert_belt",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_volcarona",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:volcarona",
+      "ability_id": "cobblemon:flamebody",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:fierydance",
+          "cobblemon:mysticalfire",
+          "cobblemon:flamethrower"
+        ],
+        [
+          "cobblemon:bugbuzz",
+          "cobblemon:signalbeam"
+        ],
+        [
+          "cobblemon:gigadrain"
+        ],
+        [
+          "cobblemon:quiverdance",
+          "cobblemon:calmmind"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:heavy_duty_boots",
+        "cobblemon:leftovers",
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_pelipper",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:pelipper",
+      "ability_id": "cobblemon:drizzle",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:hurricane",
+          "cobblemon:airslash"
+        ],
+        [
+          "cobblemon:weatherball"
+        ],
+        [
+          "cobblemon:tailwind"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:damp_rock",
+        "cobblemon:focus_sash",
+        "cobblemon:safety_goggles"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_barraskewda",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:barraskewda",
+      "ability_id": "cobblemon:swiftswim",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:liquidation",
+          "cobblemon:waterfall"
+        ],
+        [
+          "cobblemon:closecombat",
+          "cobblemon:brickbreak"
+        ],
+        [
+          "cobblemon:psychicfangs"
+        ],
+        [
+          "cobblemon:flipturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_band",
+        "cobblemon:life_orb",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_ferrothorn",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:ferrothorn",
+      "ability_id": "cobblemon:ironbarbs",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 0
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:powerwhip",
+          "cobblemon:seedbomb"
+        ],
+        [
+          "cobblemon:gyroball",
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:leechseed"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:rocky_helmet",
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_samurott",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:samurott",
+      "ability_id": "cobblemon:torrent",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:razorshell",
+          "cobblemon:aquacutter",
+          "cobblemon:waterfall"
+        ],
+        [
+          "cobblemon:knockoff",
+          "cobblemon:nightslash"
+        ],
+        [
+          "cobblemon:aquajet"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:black_glasses",
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_clefable",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:clefable",
+      "ability_id": "cobblemon:magicguard",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:moonblast",
+          "cobblemon:alluringvoice",
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:followme"
+        ],
+        [
+          "cobblemon:helpinghand"
+        ],
+        [
+          "cobblemon:protect",
+          "cobblemon:detect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry",
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_conkeldurr",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:conkeldurr",
+      "ability_id": "cobblemon:guts",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 0
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:drainpunch",
+          "cobblemon:brickbreak",
+          "cobblemon:hammerarm"
+        ],
+        [
+          "cobblemon:facade",
+          "cobblemon:doubleedge",
+          "cobblemon:bodyslam"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:machpunch"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:flame_orb",
+        "cobblemon:choice_band",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_porygonz",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:porygonz",
+      "ability_id": "cobblemon:adaptability",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:triattack",
+          "cobblemon:terablast"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:icebeam",
+          "cobblemon:blizzard"
+        ],
+        [
+          "cobblemon:thunderbolt",
+          "cobblemon:discharge",
+          "cobblemon:thunder"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs",
+        "cobblemon:life_orb",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_glimmora",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:glimmora",
+      "ability_id": "cobblemon:toxicdebris",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:stealthrock",
+          "cobblemon:spikes",
+          "cobblemon:toxicspikes"
+        ],
+        [
+          "cobblemon:mortalspin"
+        ],
+        [
+          "cobblemon:powergem"
+        ],
+        [
+          "cobblemon:sludgewave",
+          "cobblemon:sludgebomb"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash",
+        "cobblemon:life_orb",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_greninja",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:greninja",
+      "ability_id": "cobblemon:protean",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:hydropump",
+          "cobblemon:surf",
+          "cobblemon:scald"
+        ],
+        [
+          "cobblemon:darkpulse"
+        ],
+        [
+          "cobblemon:icebeam",
+          "cobblemon:blizzard"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_mimikyu",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:mimikyu",
+      "ability_id": "cobblemon:disguise",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:shadowclaw"
+        ],
+        [
+          "cobblemon:shadowsneak"
+        ],
+        [
+          "cobblemon:swordsdance",
+          "cobblemon:bulkup",
+          "cobblemon:curse"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:red_card",
+        "cobblemon:leftovers",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a3_hippowdon",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:hippowdon",
+      "ability_id": "cobblemon:sandstream",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake",
+          "cobblemon:highhorsepower",
+          "cobblemon:stompingtantrum"
+        ],
+        [
+          "cobblemon:stealthrock"
+        ],
+        [
+          "cobblemon:slackoff"
+        ],
+        [
+          "cobblemon:whirlwind",
+          "cobblemon:roar"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:smooth_rock",
+        "cobblemon:leftovers",
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_latios",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:latios",
+      "ability_id": "cobblemon:levitate",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:dracometeor",
+          "cobblemon:dragonpulse"
+        ],
+        [
+          "cobblemon:psychic",
+          "cobblemon:lusterpurge",
+          "cobblemon:psyshock"
+        ],
+        [
+          "cobblemon:aurasphere"
+        ],
+        [
+          "cobblemon:tailwind"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:expert_belt",
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_aegislash",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:aegislash",
+      "ability_id": "cobblemon:stancechange",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 0
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:kingsshield",
+          "cobblemon:protect"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:flashcannon"
+        ],
+        [
+          "cobblemon:shadowsneak"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:weakness_policy",
+        "cobblemon:lum_berry",
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_weavile",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:weavile",
+      "ability_id": "cobblemon:pressure",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:tripleaxel",
+          "cobblemon:icepunch",
+          "cobblemon:icespinner"
+        ],
+        [
+          "cobblemon:knockoff",
+          "cobblemon:nightslash",
+          "cobblemon:lashout"
+        ],
+        [
+          "cobblemon:iceshard"
+        ],
+        [
+          "cobblemon:protect",
+          "cobblemon:detect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash",
+        "cobblemon:life_orb",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_volcarona",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:volcarona",
+      "ability_id": "cobblemon:flamebody",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:fierydance",
+          "cobblemon:mysticalfire",
+          "cobblemon:flamethrower"
+        ],
+        [
+          "cobblemon:bugbuzz",
+          "cobblemon:signalbeam"
+        ],
+        [
+          "cobblemon:gigadrain"
+        ],
+        [
+          "cobblemon:quiverdance",
+          "cobblemon:calmmind"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:heavy_duty_boots",
+        "cobblemon:leftovers",
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_zapdos",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:zapdos",
+      "ability_id": "cobblemon:static",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:thunderbolt",
+          "cobblemon:discharge",
+          "cobblemon:voltswitch"
+        ],
+        [
+          "cobblemon:hurricane"
+        ],
+        [
+          "cobblemon:heatwave"
+        ],
+        [
+          "cobblemon:roost"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:rocky_helmet",
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_garchomp",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:garchomp",
+      "ability_id": "cobblemon:roughskin",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake",
+          "cobblemon:stompingtantrum"
+        ],
+        [
+          "cobblemon:dragonclaw",
+          "cobblemon:dragonrush",
+          "cobblemon:outrage"
+        ],
+        [
+          "cobblemon:rockslide",
+          "cobblemon:stoneedge"
+        ],
+        [
+          "cobblemon:poisonjab"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_scarf",
+        "cobblemon:focus_sash",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_scizor",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:scizor",
+      "ability_id": "cobblemon:technician",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:bulletpunch"
+        ],
+        [
+          "cobblemon:uturn"
+        ],
+        [
+          "cobblemon:closecombat",
+          "cobblemon:superpower",
+          "cobblemon:brickbreak"
+        ],
+        [
+          "cobblemon:knockoff",
+          "cobblemon:nightslash"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_band",
+        "cobblemon:life_orb",
+        "cobblemon:expert_belt"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_gastrodon",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:gastrodon",
+      "ability_id": "cobblemon:stormdrain",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 4,
+        "special_attack": 0,
+        "special_defense": 252,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthpower"
+        ],
+        [
+          "cobblemon:icebeam",
+          "cobblemon:blizzard"
+        ],
+        [
+          "cobblemon:recover"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry",
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_articuno",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:articuno",
+      "ability_id": "cobblemon:pressure",
+      "ivs": {
+        "hp": 31,
+        "attack": 0,
+        "defense": 31,
+        "special_attack": 31,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:freezedry",
+          "cobblemon:icebeam",
+          "cobblemon:blizzard"
+        ],
+        [
+          "cobblemon:hurricane",
+          "cobblemon:airslash"
+        ],
+        [
+          "cobblemon:roost"
+        ],
+        [
+          "cobblemon:tailwind"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:never_melt_ice",
+        "cobblemon:leftovers",
+        "cobblemon:heavy_duty_boots"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_dragonite",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:dragonite",
+      "ability_id": "cobblemon:multiscale",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:dragonclaw",
+          "cobblemon:dragonrush",
+          "cobblemon:outrage"
+        ],
+        [
+          "cobblemon:extremespeed"
+        ],
+        [
+          "cobblemon:firepunch"
+        ],
+        [
+          "cobblemon:dragondance",
+          "cobblemon:curse",
+          "cobblemon:honeclaws"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:lum_berry",
+        "cobblemon:life_orb",
+        "cobblemon:clear_amulet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_metagross",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:metagross",
+      "ability_id": "cobblemon:clearbody",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:meteormash",
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:zenheadbutt",
+          "cobblemon:psychicfangs",
+          "cobblemon:psychocut"
+        ],
+        [
+          "cobblemon:earthquake",
+          "cobblemon:stompingtantrum"
+        ],
+        [
+          "cobblemon:bulletpunch"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest",
+        "cobblemon:expert_belt",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_meowscarada",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:meowscarada",
+      "ability_id": "cobblemon:protean",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:flowertrick",
+          "cobblemon:seedbomb",
+          "cobblemon:petalblizzard"
+        ],
+        [
+          "cobblemon:knockoff",
+          "cobblemon:nightslash",
+          "cobblemon:lashout"
+        ],
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash",
+        "cobblemon:lum_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_regigigas",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:regigigas",
+      "ability_id": "cobblemon:slowstart",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:bodyslam",
+          "cobblemon:doubleedge",
+          "cobblemon:facade"
+        ],
+        [
+          "cobblemon:knockoff",
+          "cobblemon:darkestlariat"
+        ],
+        [
+          "cobblemon:drainpunch",
+          "cobblemon:brickbreak",
+          "cobblemon:bodypress"
+        ],
+        [
+          "cobblemon:rest"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:chesto_berry",
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_registeel",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:registeel",
+      "ability_id": "cobblemon:clearbody",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:bodypress",
+          "cobblemon:brickbreak",
+          "cobblemon:hammerarm"
+        ],
+        [
+          "cobblemon:thunderwave",
+          "cobblemon:toxic"
+        ],
+        [
+          "cobblemon:stealthrock"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:air_balloon",
+        "cobblemon:leftovers",
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_samurott",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:samurott",
+      "ability_id": "cobblemon:torrent",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:razorshell",
+          "cobblemon:aquacutter",
+          "cobblemon:waterfall"
+        ],
+        [
+          "cobblemon:knockoff",
+          "cobblemon:nightslash"
+        ],
+        [
+          "cobblemon:aquajet"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:black_glasses",
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "a4_rillaboom",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:rillaboom",
+      "ability_id": "cobblemon:grassysurge",
+      "ivs": {
+        "hp": 31,
+        "attack": 31,
+        "defense": 31,
+        "special_attack": 0,
+        "special_defense": 31,
+        "speed": 31
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 4,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:grassyglide"
+        ],
+        [
+          "cobblemon:woodhammer",
+          "cobblemon:drumbeating",
+          "cobblemon:seedbomb"
+        ],
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:miracle_seed",
+        "cobblemon:life_orb",
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    }
+  ]
+}

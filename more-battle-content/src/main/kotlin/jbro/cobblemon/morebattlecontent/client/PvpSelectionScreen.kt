@@ -1,0 +1,221 @@
+package jbro.cobblemon.morebattlecontent.client
+
+import java.util.UUID
+import jbro.cobblemon.morebattlecontent.MoreBattleContent
+import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpSelectionIntentPayload
+import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionPartySlot
+import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionScreenController
+import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionViewState
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.PlayerFaceRenderer
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.network.chat.Component
+
+internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
+    MbcScreen(Component.translatable(key("title"))) {
+    private val controller = PvpSelectionScreenController(
+        initialState,
+        send = { intent -> PvpPlayClientNetworking.send(PvpSelectionIntentPayload(intent)) },
+    )
+
+    val matchId: UUID
+        get() = controller.state.matchId
+
+    override fun init() = buildWidgets()
+
+    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+        MbcGuiSurface.drawBackdrop(graphics, width, height)
+        MbcGuiSurface.drawShell(graphics, shell())
+        MbcGuiSurface.drawPanel(graphics, header(), MbcGuiPalette.ACCENT_SECONDARY, alternate = true)
+        MbcGuiSurface.drawPanel(graphics, leftPanel(), MbcGuiPalette.ACCENT_PRIMARY)
+        MbcGuiSurface.drawPanel(graphics, centerPanel(), MbcGuiPalette.BORDER_BRIGHT, alternate = true)
+        MbcGuiSurface.drawPanel(graphics, rightPanel(), MbcGuiPalette.ACCENT_SECONDARY)
+        MbcGuiSurface.drawPanel(graphics, footer(), MbcGuiPalette.BORDER_BRIGHT, alternate = true)
+        drawHeader(graphics)
+        drawTeam(graphics, leftPanel(), leftOwn(), controller.state.leftPlayerName)
+        drawTeam(graphics, rightPanel(), !leftOwn(), controller.state.rightPlayerName)
+        drawCenter(graphics)
+        drawStatus(graphics)
+        super.render(graphics, mouseX, mouseY, partialTick)
+    }
+
+    override fun onClose() = confirmCancel()
+
+    fun applyAccepted(requestId: UUID, state: PvpSelectionViewState) {
+        controller.applyAccepted(requestId, state)
+        rebuild()
+    }
+
+    fun applyRejected(requestId: UUID, rejectedMatchId: UUID, messageKey: String) {
+        if (rejectedMatchId != matchId) return
+        controller.applyRejected(requestId, messageKey)
+        rebuild()
+    }
+
+    private fun drawHeader(graphics: GuiGraphics) {
+        val state = controller.state
+        graphics.drawString(font, title, header().left + 8, header().top + 8, MbcGuiPalette.ACCENT_PRIMARY, false)
+        val remainingSeconds = ((state.selectionDeadlineEpochMillis - System.currentTimeMillis()).coerceAtLeast(0) + 999) / 1_000
+        val timer = Component.translatable(key("time_remaining"), remainingSeconds)
+        graphics.drawCenteredString(font, timer, width / 2, header().top + 8, MbcGuiPalette.ACCENT_BP)
+        val format = Component.translatable(key("format.${state.format.recordId}"))
+        graphics.drawString(font, format, header().right - 8 - font.width(format), header().top + 8, MbcGuiPalette.TEXT_SECONDARY, false)
+    }
+
+    private fun drawTeam(graphics: GuiGraphics, panel: TowerPlayRect, own: Boolean, playerName: String) {
+        val name = if (playerName.isBlank()) {
+            if (own) minecraft?.player?.scoreboardName.orEmpty() else controller.state.opponentName
+        } else {
+            playerName
+        }
+        val clipped = font.plainSubstrByWidth(name, panel.width - 12)
+        graphics.drawCenteredString(font, Component.literal(clipped), panel.left + panel.width / 2, panel.top + 7, MbcGuiPalette.TEXT_PRIMARY)
+        if (own) return
+        controller.state.opponentSpeciesIds.take(6).forEachIndexed { index, speciesId ->
+            val row = teamRow(panel, index)
+            MbcGuiSurface.drawButton(graphics, row, active = false, hovered = false, selected = false, MbcGuiPalette.ACCENT_SECONDARY)
+            graphics.drawCenteredString(font, speciesName(speciesId), row.left + row.width / 2, row.top + 6, MbcGuiPalette.TEXT_SECONDARY)
+        }
+    }
+
+    private fun drawCenter(graphics: GuiGraphics) {
+        val state = controller.state
+        val center = centerPanel()
+        graphics.drawCenteredString(font, Component.translatable(key("spectators"), state.spectators.size), width / 2, center.top + 8, MbcGuiPalette.TEXT_SECONDARY)
+        val bounds = TowerPlayRect(center.left + 4, center.top + 22, center.width - 8, center.height - 26)
+        val grid = PvpSpectatorGridLayout.calculate(bounds, state.spectators.map { font.width(it.name) })
+        grid.slots.forEach { slot ->
+            val spectator = state.spectators[slot.index]
+            val skin = minecraft?.connection?.getPlayerInfo(spectator.playerId)?.skin
+            if (skin != null) PlayerFaceRenderer.draw(graphics, skin, slot.face.left, slot.face.top, slot.face.width)
+            graphics.drawString(
+                font,
+                font.plainSubstrByWidth(spectator.name, slot.nameWidth),
+                slot.nameLeft,
+                slot.bounds.top + 2,
+                MbcGuiPalette.TEXT_PRIMARY,
+                false,
+            )
+        }
+    }
+
+    private fun drawStatus(graphics: GuiGraphics) {
+        val state = controller.state
+        val status = when {
+            controller.isPending -> Component.translatable(key("processing"))
+            controller.feedbackKey != null -> Component.translatable(controller.feedbackKey!!)
+            state.battleStartRetryAvailable -> Component.translatable(key("error.battle_unavailable"))
+            state.waitingForOpponent -> Component.translatable(key("waiting"))
+            else -> Component.translatable(
+                key("selection_summary"),
+                controller.selectedPokemonIds.size,
+                state.format.selectionSize,
+                ((state.selectionDeadlineEpochMillis - System.currentTimeMillis()).coerceAtLeast(0) + 999) / 1_000,
+            )
+        }
+        graphics.drawCenteredString(
+            font,
+            status,
+            width / 2,
+            footer().top - 12,
+            if (controller.feedbackKey == null) MbcGuiPalette.TEXT_SECONDARY else MbcGuiPalette.ACCENT_DANGER,
+        )
+    }
+
+    private fun buildWidgets() {
+        val ownPanel = if (leftOwn()) leftPanel() else rightPanel()
+        controller.state.ownParty.take(6).forEachIndexed { index, slot ->
+            val selected = slot.pokemonId in controller.selectedPokemonIds
+            val button = MbcStyledButton(
+                teamRow(ownPanel, index),
+                Component.translatable(
+                    if (selected) key("party_entry.selected") else key("party_entry.available"),
+                    speciesName(slot.speciesId),
+                ),
+                MbcButtonTone.PRIMARY,
+                selected,
+            ) { if (controller.toggle(slot.pokemonId)) rebuild() }
+            button.active = !controller.isPending && !controller.state.waitingForOpponent
+            button.setTooltip(Tooltip.create(partyTooltip(slot)))
+            addRenderableWidget(button)
+        }
+
+        val actions = split(footer(), 2)
+        val state = controller.state
+        val primary = when {
+            state.waitingForOpponent -> MbcStyledButton(actions[0], Component.translatable(key("unready")), MbcButtonTone.SECONDARY) {
+                if (controller.unready()) rebuild()
+            }
+            state.battleStartRetryAvailable -> MbcStyledButton(actions[0], Component.translatable(key("retry")), MbcButtonTone.PRIMARY) {
+                if (controller.retry()) rebuild()
+            }
+            else -> MbcStyledButton(actions[0], Component.translatable(key("confirm_selection")), MbcButtonTone.PRIMARY) {
+                if (controller.submit()) rebuild()
+            }.also { it.active = !controller.isPending && controller.selectedPokemonIds.size == state.format.selectionSize }
+        }
+        addRenderableWidget(primary)
+        addRenderableWidget(
+            MbcStyledButton(actions[1], Component.translatable(key("cancel")), MbcButtonTone.DANGER) { confirmCancel() }
+                .also { it.active = !controller.isPending },
+        )
+    }
+
+    private fun confirmCancel() {
+        minecraft?.setScreen(
+            MbcConfirmScreen(
+                this,
+                Component.translatable(key("cancel.confirm.title")),
+                Component.translatable(key("cancel.confirm.message")),
+            ) { if (controller.cancel()) rebuild() },
+        )
+    }
+
+    private fun rebuild() {
+        clearWidgets()
+        buildWidgets()
+    }
+
+    private fun leftOwn() = controller.state.playerOnLeft
+
+    private fun teamRow(panel: TowerPlayRect, index: Int): TowerPlayRect {
+        val available = panel.height - 30
+        val height = ((available - 5 * 3) / 6).coerceIn(17, 22)
+        return TowerPlayRect(panel.left + 6, panel.top + 22 + index * (height + 3), panel.width - 12, height)
+    }
+
+    private fun partyTooltip(slot: PvpSelectionPartySlot): Component = Component.translatable(
+        key("party_entry.preview_tooltip"),
+        speciesName(slot.speciesId),
+        slot.originalLevel,
+        slot.battleLevel,
+    )
+
+    private fun speciesName(speciesId: String): Component =
+        Component.translatable("cobblemon.species.${speciesId.substringAfter(':')}.name")
+
+    private fun shell(): TowerPlayRect {
+        val w = (width - 16).coerceAtMost(540)
+        val h = (height - 16).coerceAtMost(320)
+        return TowerPlayRect((width - w) / 2, (height - h) / 2, w, h)
+    }
+
+    private fun header() = TowerPlayRect(shell().left + 6, shell().top + 6, shell().width - 12, 27)
+    private fun contentTop() = header().bottom + 5
+    private fun contentHeight() = shell().height - 77
+    private fun centerWidth() = (shell().width * 19 / 100).coerceIn(58, 104)
+    private fun sideWidth() = (shell().width - 27 - centerWidth()) / 2
+    private fun leftPanel() = TowerPlayRect(shell().left + 6, contentTop(), sideWidth(), contentHeight())
+    private fun centerPanel() = TowerPlayRect(leftPanel().right + 5, contentTop(), centerWidth(), contentHeight())
+    private fun rightPanel() = TowerPlayRect(centerPanel().right + 5, contentTop(), sideWidth(), contentHeight())
+    private fun footer() = TowerPlayRect(shell().left + 6, shell().bottom - 32, shell().width - 12, 20)
+
+    private fun split(bounds: TowerPlayRect, count: Int): List<TowerPlayRect> {
+        val gap = 4
+        val itemWidth = (bounds.width - gap * (count - 1)) / count
+        return List(count) { index -> TowerPlayRect(bounds.left + index * (itemWidth + gap), bounds.top, itemWidth, bounds.height) }
+    }
+
+    private companion object {
+        fun key(path: String) = "screen.${MoreBattleContent.MOD_ID}.pvp.$path"
+    }
+}

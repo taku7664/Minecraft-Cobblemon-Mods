@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "cobblemon_better_battle_presentation",
+  "version": "${version}",
+  "name": "Cobblemon: Better Battle Presentation",
+  "description": "Expandable battle presentation effects for Cobblemon, beginning with Dynamax skies for Mega Showdown.",
+  "authors": ["jbro"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "jbro.cobblemon.betterbattlepresentation.BetterBattlePresentation"
+    ],
+    "client": [
+      "jbro.cobblemon.betterbattlepresentation.client.BetterBattlePresentationClient"
+    ]
+  },
+  "mixins": [
+    "cobblemon_better_battle_presentation.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "fabric-api": "*",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "cobblemon": "1.7.3",
+    "mega_showdown": "1.9.3+1.7.3+1.21.1"
+  }
+}

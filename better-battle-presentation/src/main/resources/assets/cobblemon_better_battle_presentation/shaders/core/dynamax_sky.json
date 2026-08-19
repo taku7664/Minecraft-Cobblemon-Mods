@@ -1,0 +1,11 @@
+{
+  "vertex": "cobblemon_better_battle_presentation:dynamax_sky",
+  "fragment": "cobblemon_better_battle_presentation:dynamax_sky",
+  "samplers": [],
+  "uniforms": [
+    { "name": "EffectTimeSeconds", "type": "float", "count": 1, "values": [0] },
+    { "name": "EffectStrength", "type": "float", "count": 1, "values": [0] },
+    { "name": "InverseViewProjection", "type": "matrix4x4", "count": 16, "values": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] },
+    { "name": "WorldUp", "type": "float", "count": 3, "values": [0, 1, 0] }
+  ]
+}

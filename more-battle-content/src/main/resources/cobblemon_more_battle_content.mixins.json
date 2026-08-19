@@ -1,0 +1,22 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "jbro.cobblemon.morebattlecontent.internal.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BattleActorMixin",
+    "PlayerBattleActorMixin",
+    "PokemonBattleMixin",
+    "PokemonMixin"
+  ],
+  "client": [
+    "client.BattleMoveSelectionMixin",
+    "client.ScreenPvpInviteClickMixin",
+    "client.RenderTypeCompositeAccessor",
+    "client.RenderTypeCompositeStateAccessor",
+    "client.RenderTextureStateAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "scanIntervalSeconds": 1.0,
+  "fieldChangeDelaySeconds": 4.0,
+  "betweenTracksSeconds": 0.0,
+  "fadeInSeconds": 1.0,
+  "fadeOutSeconds": 1.0,
+  "selection": "shuffle",
+  "volume": 1.0,
+  "field": {
+    "default": "field/plains/sinnoh_route_201_day.ogg",
+    "dimensions": {
+      "cobblemon_policy:plaza": [
+        "field/plaza/sinnoh_oreburgh_city_midday.ogg",
+        "field/plaza/goldenrod_city.ogg",
+        "field/plaza/jubilife_city.ogg"
+      ],
+      "minecraft:the_nether": "field/nether/sinnoh_stark_mountain.ogg",
+      "minecraft:the_end": "field/end/distortion_world.ogg"
+    },
+    "biomes": {
+      "minecraft:deep_dark": "field/deep_dark/johto_ilex_forest.ogg",
+      "minecraft:lush_caves": "field/cave/johto_dark_cave.ogg",
+      "minecraft:dripstone_caves": "field/cave/johto_dark_cave.ogg",
+      "minecraft:stony_shore": "field/beach/pmd_beach_at_dusk.ogg",
+      "minecraft:ice_spikes": "field/snow/sinnoh_route_216_day.ogg",
+      "minecraft:grove": "field/snow/sinnoh_route_216_day.ogg",
+      "minecraft:cherry_grove": "field/forest/viridian_forest.ogg"
+    },
+    "biomePathContains": {
+      "river": "field/river/sinnoh_lake_theme.ogg",
+      "beach": "field/beach/pmd_beach_at_dusk.ogg",
+      "ocean": "field/ocean/dive.ogg",
+      "badlands": "field/desert/route_111.ogg",
+      "desert": "field/desert/route_111.ogg",
+      "swamp": "field/swamp/route_120.ogg",
+      "jungle": "field/jungle_swamp/alola_lush_jungle.ogg",
+      "snow": "field/snow/sinnoh_route_216_day.ogg",
+      "frozen": "field/snow/sinnoh_route_216_day.ogg",
+      "peak": "field/mountain/unova_route_4.ogg",
+      "slope": "field/mountain/unova_route_4.ogg",
+      "windswept": "field/mountain/unova_route_4.ogg",
+      "forest": "field/forest/viridian_forest.ogg",
+      "birch": "field/forest/viridian_forest.ogg",
+      "taiga": "field/forest/viridian_forest.ogg"
+    },
+    "underground": "field/cave/johto_dark_cave.ogg"
+  },
+  "battle": {
+    "wild": "battle/wild/johto_wild_pokemon_battle.ogg",
+    "trainer": "battle/trainer/sinnoh_trainer_battle.ogg",
+    "pvp": [
+      "battle/pvp/pokemon_champions_arena_battle.ogg",
+      "battle/pvp/swsh_elite_leader_battle.ogg",
+      "battle/pvp/swsh_gym_leader_battle.ogg",
+      "battle/pvp/xy_elite_four_battle.ogg"
+    ],
+    "content": {
+      "cobblemon_more_battle_content:battle_tower": "battle/trainer/sinnoh_trainer_battle.ogg",
+      "cobblemon_more_battle_content:battle_factory": "battle/trainer/sinnoh_trainer_battle.ogg",
+      "cobblemon_more_battle_content:pvp": [
+        "battle/pvp/pokemon_champions_arena_battle.ogg",
+        "battle/pvp/swsh_elite_leader_battle.ogg",
+        "battle/pvp/swsh_gym_leader_battle.ogg",
+        "battle/pvp/xy_elite_four_battle.ogg"
+      ]
+    },
+    "roles": {
+      "champion": "battle/champion/oras_champion_battle.ogg",
+      "elite": "battle/elite/unova_elite_four_battle.ogg",
+      "gym": [
+        "battle/gym/galar_gym_leader_battle.ogg",
+        "battle/gym/oras_gym_leader_battle.ogg",
+        "battle/gym/unova_gym_leader_battle.ogg"
+      ],
+      "rival": "battle/rival/unova_rival_battle.ogg"
+    },
+    "legendary": [
+      "battle/legendary/oras_dialga_palkia_battle.ogg",
+      "battle/legendary/oras_reshiram_zekrom_battle.ogg",
+      "battle/legendary/za_darkrai_battle.ogg"
+    ],
+    "ultraBeast": "battle/ultra_beast/alola_ultra_beast_battle.ogg",
+    "pokemon": [
+      {
+        "species": ["arceus"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/dppt_arceus_battle.ogg"]
+      },
+      {
+        "species": ["uxie", "mesprit", "azelf"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/dppt_azelf_mesprit_uxie_battle.ogg"]
+      },
+      {
+        "species": ["giratina"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/dppt_giratina_battle.ogg"]
+      },
+      {
+        "species": ["deoxys"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/frlg_deoxys_battle_music.ogg"]
+      },
+      {
+        "species": ["entei"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/hgss_entei_battle.ogg"]
+      },
+      {
+        "species": ["hooh"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/hgss_ho-oh_battle.ogg"]
+      },
+      {
+        "species": ["lugia"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/hgss_lugia_battle.ogg"]
+      },
+      {
+        "species": ["suicune"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/hgss_suicune_battle.ogg"]
+      },
+      {
+        "species": ["dialga", "palkia"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/oras_dialga_palkia_battle.ogg"]
+      },
+      {
+        "species": ["groudon", "kyogre"],
+        "only": ["wild"],
+        "tracks": [
+          "battle/legendary/oras_groudon_kyogre_battle.ogg",
+          "battle/legendary/rse_groudon_kyogre_battle.ogg"
+        ]
+      },
+      {
+        "species": ["regirock", "regice", "registeel"],
+        "only": ["wild"],
+        "tracks": [
+          "battle/legendary/oras_regirock_regice_registeel_battle.ogg",
+          "battle/legendary/rse_regirock_regice_registeel_battle.ogg"
+        ]
+      },
+      {
+        "species": ["reshiram", "zekrom"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/oras_reshiram_zekrom_battle.ogg"]
+      },
+      {
+        "species": ["darkrai"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/za_darkrai_battle.ogg"]
+      }
+    ]
+  }
+}
