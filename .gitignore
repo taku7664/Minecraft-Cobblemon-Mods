@@ -60,6 +60,10 @@ publish.properties
 modrinth.token
 curseforge.token
 
+# Temporary working notes. Scratch documents for in-progress work, never published.
+WIP-*.md
+**/WIP-*.md
+
 # Temporary agent and editor files
 .codex-tmp/
 .codex/
