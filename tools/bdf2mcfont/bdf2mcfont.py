@@ -30,6 +30,13 @@ from PIL import Image
 
 PUA = range(0xE000, 0xF900)  # left to vanilla / mod icon fonts
 CONTROL = set(range(0x00, 0x20)) | set(range(0x7F, 0xA0))
+
+# Minecraft rejects a resource location containing anything else, and one bad
+# location makes it discard the entire font definition. The pack then loads
+# without any visible error and silently falls back to vanilla, which looks
+# like "the pack did nothing" rather than a failure. Catch it here instead.
+RESOURCE_PATH = re.compile(r"^[a-z0-9/._-]+$")
+RESOURCE_NAMESPACE = re.compile(r"^[a-z0-9._-]+$")
 PAD = "\u0000"  # vanilla pads unused atlas cells with NUL too
 
 
@@ -86,6 +93,12 @@ def main():
     ap.add_argument("--cols", type=int, default=16)
     ap.add_argument("--rows", type=int, default=16)
     a = ap.parse_args()
+
+    if not RESOURCE_NAMESPACE.match(a.namespace):
+        raise SystemExit(f"--namespace {a.namespace!r} must match [a-z0-9._-]")
+    for label, value in (("--font-name", a.font_name), ("--prefix", a.prefix)):
+        if not RESOURCE_PATH.match(value):
+            raise SystemExit(f"{label} {value!r} must match [a-z0-9/._-]")
 
     glyphs = parse_bdf(Path(a.bdf))
     glyphs = {cp: g for cp, g in glyphs.items() if cp not in PUA and cp not in CONTROL}

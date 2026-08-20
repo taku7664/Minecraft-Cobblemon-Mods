@@ -121,6 +121,25 @@ advance = round(actual_width * scale) + 1
 커스텀 폰트에 없는 글자는 바닐라 → unifont 순으로 폴백됩니다. 바닐라를 갈아엎으면서도 누락이 안 생깁니다.
 `filter: {"uniform": false}`는 바닐라의 "Force Unicode Font" 옵션 동작이라 그대로 보존합니다.
 
+### 리소스 로케이션은 소문자만
+
+파일명과 네임스페이스는 `[a-z0-9/._-]`만 쓸 수 있습니다. 대문자가 하나라도 섞이면 마크가 **폰트 정의 전체를 버립니다.**
+
+무서운 건 이게 조용히 실패한다는 점입니다. 리소스팩은 정상적으로 로드되고 에러 창도 안 뜨는데 글꼴만 바닐라로 폴백돼서, "팩이 적용은 됐는데 아무 일도 안 일어나는" 것처럼 보입니다. 폰트가 바뀐 것 같기도 하고 아닌 것 같기도 한 상태가 되면 이걸 의심하세요.
+
+```
+JsonParseException: Not a valid resource location: galmuri:Galmuri11.ttf
+Non [a-z0-9/._-] character in path of location
+```
+
+변환기가 `--namespace` / `--font-name` / `--prefix`를 미리 검사해서 막습니다. 직접 JSON을 쓸 때는 주의하세요.
+
+**적용됐는지 확인하는 확실한 방법은 로그입니다.** 눈으로 판단하지 마세요.
+
+```bash
+grep -iE "font|glyph" logs/latest.log | grep -iE "error|warn|fail|unable|invalid"
+```
+
 ### PUA는 건드리지 않는다
 
 **사용자 정의 영역(U+E000–U+F8FF)은 의도적으로 제외합니다.** Cobblemon, JourneyMap 같은 모드가 이 영역에 아이콘 글리프를 넣기 때문에, 폰트가 여길 덮으면 모드 아이콘이 글자로 바뀝니다. 제외해두면 자연스럽게 모드 폰트로 폴백됩니다.
