@@ -1,9 +1,21 @@
-# bdf2mcfont
+# mcfont
 
-BDF 비트맵 폰트를 마인크래프트 자바 에디션 리소스팩으로 굽는 변환기입니다.
-픽셀 폰트를 원본 픽셀 그대로, 안티에일리어싱 없이 넣는 것이 목적입니다.
+마인크래프트 자바 에디션 폰트 리소스팩 제작 도구입니다.
 
-## 왜 TTF를 안 쓰나
+| 스크립트 | 하는 일 |
+|---|---|
+| `bdf2mcfont.py` | BDF를 PNG 글리프 아틀라스로 구움. **어떤 GUI 배율에서도 픽셀 퍼펙트** |
+| `ttfpack.py` | TTF/OTF를 그대로 임베드. 마크가 래스터라이즈 |
+| `preview.py` | 마크와 같은 방식으로 렌더링해서 확인 + `pack.png` 생성 |
+| `mcpack.py` | 공용 모듈 (경로 검증, `default.json`/`pack.mcmeta` 생성) |
+
+## 어느 쪽을 쓸까
+
+**폰트의 네이티브 크기가 마크 UI에 맞으면 `bdf2mcfont.py`.** 항상 선명하고 배율에 안 흔들립니다.
+
+**네이티브 크기가 너무 커서 줄여야 하면 `ttfpack.py`.** 픽셀 폰트를 네이티브가 아닌 크기로 줄이면 굽든 안 굽든 어차피 뭉개지는데, 이때는 마크 래스터라이저에 맡기는 편이 낫습니다. 아래 "선명도 규칙" 참고.
+
+## 왜 비트맵으로 굽나
 
 마크의 `ttf` provider는 stb_truetype으로 폰트를 래스터라이즈하면서 자체 안티에일리어싱을 넣습니다.
 본문용 폰트라면 상관없지만 픽셀 폰트는 가장자리가 뭉개지고, baseline이 반픽셀에 걸리면 `shift`를 손으로 맞춰야 합니다.
@@ -21,7 +33,7 @@ BDF는 애초에 픽셀이 확정된 비트맵 포맷이라, PNG 아틀라스 + 
 ### 1. 굽기
 
 ```bash
-python tools/bdf2mcfont/bdf2mcfont.py Galmuri9.bdf out/galmuri9-pack --font-name galmuri9 --prefix g9 --pack-format 34
+python tools/mcfont/bdf2mcfont.py Galmuri9.bdf out/galmuri9-pack --font-name galmuri9 --prefix g9 --pack-format 34
 ```
 
 | 옵션 | 기본값 | 설명 |
@@ -47,7 +59,7 @@ assets/<ns>/textures/font/<prefix>_NN.png
 게임을 켜기 전에 마크와 같은 방식으로 렌더링해서 눈으로 봅니다.
 
 ```bash
-python tools/bdf2mcfont/preview.py out/galmuri9-pack preview.png --font-name galmuri9 --jar <client.jar>
+python tools/mcfont/preview.py out/galmuri9-pack preview.png --font-name galmuri9 --jar <client.jar>
 ```
 
 `--jar`에 마크 클라이언트 jar를 주면 **바닐라 폰트를 같은 baseline에 한 줄 같이 그려줍니다.**
@@ -56,7 +68,7 @@ python tools/bdf2mcfont/preview.py out/galmuri9-pack preview.png --font-name gal
 `--icon`을 주면 미리보기 대신 128x128 `pack.png`를 만듭니다.
 
 ```bash
-python tools/bdf2mcfont/preview.py out/galmuri9-pack out/galmuri9-pack/pack.png --font-name galmuri9 --icon "갈무리" "  9"
+python tools/mcfont/preview.py out/galmuri9-pack out/galmuri9-pack/pack.png --font-name galmuri9 --icon "갈무리" "  9"
 ```
 
 ### 3. 압축
@@ -66,6 +78,35 @@ python tools/bdf2mcfont/preview.py out/galmuri9-pack out/galmuri9-pack/pack.png 
 ```bash
 cd out/galmuri9-pack && zip -r ../galmuri9.zip .
 ```
+
+## ttfpack.py — TTF 그대로 쓰기
+
+```bash
+python tools/mcfont/ttfpack.py Galmuri11.ttf out/galmuri11-8px   --size 8 --oversample 1.5   --skip-from-bdf Galmuri11.bdf --license LICENSE.txt
+```
+
+| 옵션 | 설명 |
+|---|---|
+| `--size` | 화면에 표시될 크기 (GUI 픽셀) |
+| `--oversample` | `size × oversample` 크기로 래스터라이즈 |
+| `--skip-from-bdf` | 같은 폰트의 BDF를 주면 PUA 글리프를 `skip`에 넣어 모드 아이콘 보호 |
+| `--shift` / `--namespace` / `--name` / `--pack-format` / `--license` | |
+
+### 선명도 규칙
+
+**픽셀 폰트는 래스터 크기가 디자인 격자의 정수배일 때만 선명합니다.** 마크는 `size × oversample`로 래스터라이즈한 뒤 `size` 칸에 그리므로, 선명하게 만드는 건 `--size`가 아니라 **`--oversample`을 조절해 래스터를 네이티브 격자에 맞추는 것**입니다.
+
+갈무리11은 12px 격자라 `--size 8 --oversample 1.5` = 래스터 12px(네이티브)를 8px 칸에 표시합니다. 실측 비교:
+
+| oversample | 래스터 | 결과 |
+|---|---|---|
+| 1.0 | 8px | 획이 0.667px → 전부 회색. 완전히 검은 픽셀 0% |
+| **1.5** | **12px** | **네이티브. 실사용 최적** |
+| 3.0 / 4.5 | 24 / 36px | 1.5와 육안 차이 없음 |
+
+24px·36px이 나아지지 않는 이유는 **갈무리11에 12px보다 세밀한 정보가 없기 때문**입니다. 디자인 픽셀이 2×2, 3×3 블록으로 커질 뿐이라 같은 정보를 더 큰 텍스처에 담는 낭비입니다.
+
+최종 선명도는 **GUI 배율**에도 달려 있습니다. 논리 `size` 칸이 실제 몇 픽셀을 덮는지가 배율로 정해지기 때문입니다. 결과를 고정하고 싶으면 GUI 크기를 Auto가 아닌 고정값으로 두세요.
 
 ## 폰트 크기 고르기
 

@@ -28,15 +28,10 @@ from pathlib import Path
 
 from PIL import Image
 
-PUA = range(0xE000, 0xF900)  # left to vanilla / mod icon fonts
-CONTROL = set(range(0x00, 0x20)) | set(range(0x7F, 0xA0))
+import mcpack
 
-# Minecraft rejects a resource location containing anything else, and one bad
-# location makes it discard the entire font definition. The pack then loads
-# without any visible error and silently falls back to vanilla, which looks
-# like "the pack did nothing" rather than a failure. Catch it here instead.
-RESOURCE_PATH = re.compile(r"^[a-z0-9/._-]+$")
-RESOURCE_NAMESPACE = re.compile(r"^[a-z0-9._-]+$")
+PUA = mcpack.PUA
+CONTROL = mcpack.CONTROL
 PAD = "\u0000"  # vanilla pads unused atlas cells with NUL too
 
 
@@ -94,11 +89,9 @@ def main():
     ap.add_argument("--rows", type=int, default=16)
     a = ap.parse_args()
 
-    if not RESOURCE_NAMESPACE.match(a.namespace):
-        raise SystemExit(f"--namespace {a.namespace!r} must match [a-z0-9._-]")
-    for label, value in (("--font-name", a.font_name), ("--prefix", a.prefix)):
-        if not RESOURCE_PATH.match(value):
-            raise SystemExit(f"{label} {value!r} must match [a-z0-9/._-]")
+    mcpack.check_namespace(a.namespace)
+    mcpack.check_path(a.font_name, "--font-name")
+    mcpack.check_path(a.prefix, "--prefix")
 
     glyphs = parse_bdf(Path(a.bdf))
     glyphs = {cp: g for cp, g in glyphs.items() if cp not in PUA and cp not in CONTROL}
@@ -182,35 +175,10 @@ def main():
         json.dumps({"providers": providers}, ensure_ascii=True, indent=2), encoding="utf-8"
     )
 
-    mc_font = out / "assets" / "minecraft" / "font"
-    mc_font.mkdir(parents=True)
-    (mc_font / "default.json").write_text(
-        json.dumps(
-            {
-                "providers": [
-                    {"type": "reference", "id": "minecraft:include/space"},
-                    {"type": "reference", "id": f"{a.namespace}:{a.font_name}"},
-                    {
-                        "type": "reference",
-                        "id": "minecraft:include/default",
-                        "filter": {"uniform": False},
-                    },
-                    {"type": "reference", "id": "minecraft:include/unifont"},
-                ]
-            },
-            indent=2,
-        ),
-        encoding="utf-8",
+    mcpack.write_default_font(
+        out, [{"type": "reference", "id": f"{a.namespace}:{a.font_name}"}]
     )
-
-    (out / "pack.mcmeta").write_text(
-        json.dumps(
-            {"pack": {"pack_format": a.pack_format, "description": a.description}},
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
+    mcpack.write_mcmeta(out, a.pack_format, a.description)
 
     print(f"cell {cell_w}x{cell_h}  ascent {ascent}  descent {-bot}  (ink x {ink_left}..{ink_right})")
     print(f"glyphs {len(drawn)} drawn + {len(spaces)} space-only   sheets {sheets}")
