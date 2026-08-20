@@ -277,6 +277,7 @@ internal class PvpSessionService<P>(
         activeBattleIds.remove(match.matchId)
         timers.remove(match.matchId)
         matches.remove(match.matchId)
+        challenges.discard(match.matchId)
     }
 
     private fun cleanup(request: PvpChallengeRequest) {
@@ -285,5 +286,6 @@ internal class PvpSessionService<P>(
         activeBattleIds.remove(request.challengeId)
         timers.remove(request.challengeId)
         matches.remove(request.challengeId)
+        challenges.discard(request.challengeId)
     }
 }

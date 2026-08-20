@@ -4,6 +4,7 @@ import io.netty.buffer.Unpooled
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionIntent
+import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionOpponentSlot
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionPartySlot
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionSpectator
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionViewState
@@ -31,7 +32,11 @@ class PvpPlayPayloadsTest {
                     battleLevel = 50,
                 )
             },
-            opponentSpeciesIds = listOf("cobblemon:species_7", "cobblemon:species_8", "cobblemon:species_9"),
+            opponentParty = listOf(
+                PvpSelectionOpponentSlot("cobblemon:species_7", "galar"),
+                PvpSelectionOpponentSlot("cobblemon:species_8", null),
+                PvpSelectionOpponentSlot("cobblemon:species_9", "Normal"),
+            ),
             selectedPokemonIds = setOf(UUID(0, 1), UUID(0, 2)),
             selectionDeadlineEpochMillis = 123_456L,
             waitingForOpponent = false,

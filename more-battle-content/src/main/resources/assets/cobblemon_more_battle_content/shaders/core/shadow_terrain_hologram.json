@@ -13,6 +13,7 @@
     { "name": "InverseViewProjection", "type": "matrix4x4", "count": 16, "values": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] },
     { "name": "ArenaCenterRelative", "type": "float", "count": 3, "values": [0, 0, 0] },
     { "name": "ArenaOpponentDirection", "type": "float", "count": 2, "values": [0, 1] },
-    { "name": "CameraWorldPosition", "type": "float", "count": 3, "values": [0, 0, 0] }
+    { "name": "CameraWorldPosition", "type": "float", "count": 3, "values": [0, 0, 0] },
+    { "name": "LedFloorRadius", "type": "float", "count": 1, "values": [0] }
   ]
 }

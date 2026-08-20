@@ -88,6 +88,50 @@ class ShadowTerrainHologramShaderResourcesTest {
         assertFalse(fragment.contains("verticalPixel"), "scanlines must not remain anchored to screen pixels")
     }
 
+    @Test
+    fun `arena led floor is a separate branch that leaves the terrain hologram untouched`() {
+        val root = "/assets/cobblemon_more_battle_content/shaders/core/shadow_terrain_hologram"
+        val fragment = resource("$root.fsh")
+        val uniforms = JsonParser.parseString(resource("$root.json")).asJsonObject
+            .getAsJsonArray("uniforms")
+            .map { it.asJsonObject["name"].asString }
+            .toSet()
+
+        assertTrue(uniforms.contains("LedFloorRadius"), "the arena floor radius must reach the shader")
+        assertTrue(fragment.contains("uniform float LedFloorRadius"))
+        assertTrue(
+            fragment.contains("if (LedFloorRadius > 0.001) {"),
+            "the arena must take its own branch so the overworld hologram path is never re-entered",
+        )
+        assertTrue(fragment.contains("vec3 arenaLedFloor(vec3 sceneColor, vec3 worldDelta)"))
+
+        // The hologram path must remain exactly what the Battle Tower and Battle Factory already use.
+        assertTrue(fragment.contains("float arenaHeightMask = 1.0 - smoothstep(1.35, 2.40, abs(worldDelta.y));"))
+        assertTrue(fragment.contains("vec3 hologramTerrain = mix(scene.rgb, projectedTerrain, clamp(EffectStrength, 0.0, 1.0));"))
+
+        // Straight fronts travelling inward along the player-to-opponent axis, not expanding rings.
+        assertTrue(fragment.contains("dot(worldDelta.xz, ArenaOpponentDirection)"))
+        assertTrue(fragment.contains("LedFloorRadius * (1.0 - travel)"))
+        assertFalse(
+            fragment.contains("arenaLedFloor") && fragment.contains("ARENA_LED_SWEEP_SECONDS = 0"),
+            "the sweep period must be a real duration",
+        )
+
+        // The fronts must dim away where they meet instead of the cycle clipping the soft band,
+        // and a rest gap must separate one wave from the next.
+        assertTrue(fragment.contains("ARENA_LED_FADE_SECONDS"))
+        assertTrue(fragment.contains("ARENA_LED_REST_SECONDS = 1.0"))
+        assertTrue(fragment.contains("mod(max(EffectAgeSeconds, 0.0), ARENA_LED_CYCLE_SECONDS)"))
+        assertTrue(
+            fragment.contains("clamp(cycle / ARENA_LED_SWEEP_SECONDS, 0.0, 1.0)"),
+            "the fronts must hold at the centre rather than wrapping straight back to the rim",
+        )
+        assertFalse(
+            fragment.contains("mod(max(EffectAgeSeconds, 0.0), ARENA_LED_SWEEP_SECONDS)"),
+            "cycling on the sweep alone is what clipped the band at the meeting point",
+        )
+    }
+
     private fun resource(path: String): String {
         val stream = javaClass.getResourceAsStream(path)
         assertNotNull(stream, "$path must be packaged")

@@ -57,7 +57,7 @@ class PvpSelectionScreenControllerTest {
         ownParty = ids.mapIndexed { index, id ->
             PvpSelectionPartySlot(id, "cobblemon:species_$index", null, 50, 50)
         },
-        opponentSpeciesIds = (1..3).map { "cobblemon:opponent_$it" },
+        opponentParty = (1..3).map { PvpSelectionOpponentSlot("cobblemon:opponent_$it") },
         selectedPokemonIds = emptySet(),
         selectionDeadlineEpochMillis = 100_000L,
         waitingForOpponent = false,

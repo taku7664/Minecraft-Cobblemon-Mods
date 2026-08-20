@@ -8,4 +8,13 @@ internal object PvpRoomNavigationContract {
 
     fun shouldOpenFromRoomList(requestId: UUID?, pendingRequestIds: MutableSet<UUID>): Boolean =
         requestId != null && pendingRequestIds.remove(requestId)
+
+    /**
+     * A server-driven reopen (a match ended and the room returned to its lobby) has no pending client
+     * request behind it, so it opens the room screen on its own.
+     */
+    fun shouldOpen(requestId: UUID?, pendingRequestIds: MutableSet<UUID>, reopen: Boolean): Boolean {
+        val requested = shouldOpenFromRoomList(requestId, pendingRequestIds)
+        return reopen || requested
+    }
 }

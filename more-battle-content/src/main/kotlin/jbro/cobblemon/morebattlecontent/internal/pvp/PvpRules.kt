@@ -55,11 +55,17 @@ internal data class PvpPokemonRegistration(
     val speciesId: String,
     val heldItemId: String?,
     val level: Int,
+    /**
+     * Cobblemon form name. Forms and regional variants are public information in competitive play,
+     * so team preview renders them rather than falling back to the base model.
+     */
+    val formId: String? = null,
 ) {
     init {
         require(IdentifierSyntax.isResourceId(speciesId)) { "Invalid PvP species ID: $speciesId" }
         require(heldItemId == null || IdentifierSyntax.isResourceId(heldItemId)) { "Invalid PvP held item ID" }
         require(level in 1..100) { "PvP Pokemon level must be between 1 and 100" }
+        require(formId == null || formId.isNotBlank()) { "PvP form ID cannot be blank" }
     }
 
     val battleLevel: Int

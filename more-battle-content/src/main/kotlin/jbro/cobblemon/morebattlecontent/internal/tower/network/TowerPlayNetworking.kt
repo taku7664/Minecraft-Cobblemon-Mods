@@ -19,6 +19,7 @@ import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgressRecordCodec
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerPveBattleLauncher
 import jbro.cobblemon.morebattlecontent.internal.tower.application.BattleTowerApplicationBackend
 import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerOpponentRandom
+import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayBattleCompletionResult
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayMutationResult
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayEntryContext
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayBattleCompletionSink
@@ -39,16 +40,18 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         Cobblemon173TowerPveBattleRuntime(
             playerResolver = onlinePlayers::get,
             sessionCompletion = { server, playerId, battleId, outcome ->
-                sessions.completeBattle(
+                val completion = sessions.completeBattle(
                     playerId,
                     battleId,
                     outcome,
                     completionSink(server, battleId),
                 )
                 onlinePlayers[playerId]?.let(BattleHubNetworking::sendHeader)
+                reopenScreen(playerId, completion)
             },
             sessionCancellation = { server, playerId, battleId ->
-                sessions.cancelBattle(playerId, battleId, completionSink(server, battleId))
+                val completion = sessions.cancelBattle(playerId, battleId, completionSink(server, battleId))
+                reopenScreen(playerId, completion)
             },
         )
     }
@@ -154,6 +157,19 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         sessions.abandonSession(playerId) { battleId ->
             Cobblemon173BattleForfeit.request(playerId, battleId)
         }
+
+    /**
+     * The Cobblemon battle screen replaces the Battle Tower screen while a battle runs and leaves the
+     * client on an empty screen once it ends, so the settled session state is pushed back to reopen it.
+     * Abandoned or already-detached sessions intentionally stay closed.
+     */
+    private fun reopenScreen(playerId: java.util.UUID, completion: TowerPlayBattleCompletionResult) {
+        if (completion !is TowerPlayBattleCompletionResult.Completed) return
+        val player = onlinePlayers[playerId] ?: return
+        if (!ServerPlayNetworking.canSend(player, TowerPlayStatePayload.TYPE)) return
+        val settled = completion.state.copy(bpBalance = BattlePointService.balance(player.server, playerId))
+        ServerPlayNetworking.send(player, TowerPlayStatePayload(null, settled))
+    }
 
     private fun completionSink(server: net.minecraft.server.MinecraftServer, battleId: java.util.UUID) =
         TowerPlayBattleCompletionSink { recordedPlayerId, update ->

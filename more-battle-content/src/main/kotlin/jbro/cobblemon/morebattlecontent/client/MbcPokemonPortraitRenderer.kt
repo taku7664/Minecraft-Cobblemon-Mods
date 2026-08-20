@@ -28,6 +28,17 @@ internal data class MbcPokemonPortraitIdentity(
             speciesId = speciesId,
             formId = formId,
         )
+
+        /**
+         * Opponent preview entries have no Pokemon UUID to look up, so they are keyed by their slot.
+         * Species and form are the only public details, which keeps shininess out of the preview.
+         */
+        fun pvpOpponent(matchId: String, index: Int, speciesId: String, formId: String?) =
+            MbcPokemonPortraitIdentity(
+                stateKey = "pvp-opponent:$matchId:$index",
+                speciesId = speciesId,
+                formId = formId,
+            )
     }
 }
 
@@ -48,6 +59,29 @@ internal class MbcPokemonPortraitRenderer {
             ?: renderablePokemon(pokemon.speciesId, null)
             ?: return
         render(graphics, pokemon.pokemonId.toString(), renderable, bounds, partialTick, animate)
+    }
+
+    /**
+     * Renders one of the viewer's own Pokemon. The live party entry is preferred so the real form,
+     * shininess and cosmetics show; the registered species and form are the fallback if the party
+     * changed after registration.
+     */
+    fun render(
+        graphics: GuiGraphics,
+        pokemonId: java.util.UUID,
+        speciesId: String,
+        formId: String?,
+        bounds: TowerPlayRect,
+        partialTick: Float,
+        animate: Boolean,
+    ) {
+        val currentPartyPokemon = runCatching {
+            CobblemonClient.storage.party.findByUUID(pokemonId)
+        }.getOrNull()
+        val renderable = currentPartyPokemon?.asRenderablePokemon()
+            ?: renderablePokemon(speciesId, formId)
+            ?: return
+        render(graphics, pokemonId.toString(), renderable, bounds, partialTick, animate)
     }
 
     fun render(
@@ -98,7 +132,9 @@ internal class MbcPokemonPortraitRenderer {
         val species = runCatching {
             PokemonSpecies.getByIdentifier(ResourceLocation.parse(speciesId))
         }.getOrNull() ?: return null
-        val aspects = if (formId == null || formId == "normal") {
+        // Live Pokemon report their form as Cobblemon names it ("Normal"), while catalog data uses
+        // lower case, so the base form is matched without regard to case.
+        val aspects = if (formId.isNullOrBlank() || formId.equals("normal", ignoreCase = true)) {
             emptySet()
         } else {
             runCatching { species.getFormByName(formId).aspects.toSet() }.getOrNull().orEmpty()

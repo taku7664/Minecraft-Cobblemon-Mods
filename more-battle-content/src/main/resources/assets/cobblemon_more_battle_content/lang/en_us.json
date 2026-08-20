@@ -1,4 +1,5 @@
 {
+  "biome.cobblemon_more_battle_content.battle_lounge": "Battle Lounge",
   "command.cobblemon_more_battle_content.open": "Available battle content: %s",
   "command.cobblemon_more_battle_content.pvp.invited": "%s challenged you to a %s PvP battle. Open /mbc to review it.",
   "command.cobblemon_more_battle_content.error.content_failure": "The battle content request failed. Check the server log.",
@@ -224,6 +225,10 @@
   "screen.cobblemon_more_battle_content.pvp.waiting": "Selection submitted · waiting for opponent",
   "screen.cobblemon_more_battle_content.pvp.party_entry.selected": "✓ %s",
   "screen.cobblemon_more_battle_content.pvp.party_entry.available": "%s",
+  "screen.cobblemon_more_battle_content.pvp.party_entry.order_name": "(%s) %s",
+  "screen.cobblemon_more_battle_content.pvp.party_entry.details": "Lv. %s → %s",
+  "screen.cobblemon_more_battle_content.pvp.party_entry.narration.available": "Not selected, %s, battle level %s",
+  "screen.cobblemon_more_battle_content.pvp.party_entry.narration.selected": "Entry position %s, %s, battle level %s",
   "screen.cobblemon_more_battle_content.pvp.party_entry.tooltip": "%s\nOriginal level %s · battle level %s\nHeld item: %s",
   "screen.cobblemon_more_battle_content.pvp.held_item.none": "None",
   "screen.cobblemon_more_battle_content.pvp.confirm_selection": "Confirm Selection",
@@ -360,5 +365,6 @@
   "factory.cobblemon_more_battle_content.concept.articuno_balance.name": "Dylan",
   "factory.cobblemon_more_battle_content.concept.articuno_balance.description": "Articuno stabilizes the field with Tailwind and Roost while Dragonite, Metagross, and Meowscarada divide setup and fast cleanup duties.",
   "factory.cobblemon_more_battle_content.concept.regigigas_control.name": "Emily",
-  "factory.cobblemon_more_battle_content.concept.regigigas_control.description": "Registeel uses paralysis and Stealth Rock to cover Slow Start while Samurott and Rillaboom bridge into late-game Regigigas pressure."
+  "factory.cobblemon_more_battle_content.concept.regigigas_control.description": "Registeel uses paralysis and Stealth Rock to cover Slow Start while Samurott and Rillaboom bridge into late-game Regigigas pressure.",
+  "screen.cobblemon_more_battle_content.pvp.lounge.rescued": "Returned you to the overworld spawn: the battle lounge had no record of where you came from."
 }

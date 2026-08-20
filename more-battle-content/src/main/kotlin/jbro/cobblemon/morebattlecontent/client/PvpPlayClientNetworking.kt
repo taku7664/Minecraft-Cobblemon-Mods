@@ -65,10 +65,10 @@ internal object PvpPlayClientNetworking {
                 PvpRoomClientState.lastRoom = payload.room
                 when (val current = context.client().screen) {
                     is PvpRoomScreen -> current.applyState(payload.room)
-                    is PvpRoomListScreen -> if (PvpRoomNavigationContract.shouldOpenFromRoomList(payload.requestId, PvpRoomClientState.pendingOpenRequests)) {
+                    is PvpRoomListScreen -> if (PvpRoomNavigationContract.shouldOpen(payload.requestId, PvpRoomClientState.pendingOpenRequests, payload.reopen)) {
                         context.client().setScreen(PvpRoomScreen(payload.room, current))
                     }
-                    else -> if (PvpRoomNavigationContract.shouldOpenFromRoomList(payload.requestId, PvpRoomClientState.pendingOpenRequests)) {
+                    else -> if (PvpRoomNavigationContract.shouldOpen(payload.requestId, PvpRoomClientState.pendingOpenRequests, payload.reopen)) {
                         context.client().setScreen(PvpRoomScreen(payload.room, PvpRoomListScreen(PvpRoomClientState.lastRooms)))
                     }
                 }

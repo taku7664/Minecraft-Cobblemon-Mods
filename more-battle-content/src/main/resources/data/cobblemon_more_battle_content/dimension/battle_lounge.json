@@ -3,7 +3,7 @@
   "generator": {
     "type": "minecraft:flat",
     "settings": {
-      "biome": "minecraft:the_void",
+      "biome": "cobblemon_more_battle_content:battle_lounge",
       "features": false,
       "lakes": false,
       "layers": [

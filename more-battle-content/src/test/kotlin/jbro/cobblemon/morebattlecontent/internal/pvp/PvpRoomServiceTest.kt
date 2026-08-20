@@ -130,6 +130,53 @@ class PvpRoomServiceTest {
         assertEquals(host, rooms.create(host, settings(PvpRoomVisibility.PRIVATE)).room.hostId)
     }
 
+    @Test
+    fun `finishing a match returns the room to its lobby with seats and members intact`() {
+        val rooms = PvpRoomService { roomId }
+        rooms.create(host, settings(PvpRoomVisibility.PUBLIC))
+        rooms.join(roomId, guest)
+        rooms.join(roomId, spectator)
+        rooms.claimSeat(roomId, host, PvpRoomSide.LEFT)
+        rooms.claimSeat(roomId, guest, PvpRoomSide.RIGHT)
+        rooms.startPreview(roomId, host)
+        rooms.markActive(roomId)
+
+        val settled = requireNotNull(rooms.finishMatch(roomId))
+
+        assertEquals(PvpRoomPhase.LOBBY, settled.phase)
+        assertEquals(host, settled.leftPlayerId)
+        assertEquals(guest, settled.rightPlayerId)
+        assertEquals(listOf(spectator), settled.spectatorIds)
+        assertEquals(roomId, rooms.roomFor(host)?.roomId)
+        assertEquals(roomId, rooms.roomFor(spectator)?.roomId)
+    }
+
+    @Test
+    fun `a finished room can immediately host a rematch`() {
+        val rooms = PvpRoomService { roomId }
+        rooms.create(host, settings(PvpRoomVisibility.PUBLIC))
+        rooms.join(roomId, guest)
+        rooms.claimSeat(roomId, host, PvpRoomSide.LEFT)
+        rooms.claimSeat(roomId, guest, PvpRoomSide.RIGHT)
+        rooms.startPreview(roomId, host)
+        rooms.markActive(roomId)
+        rooms.finishMatch(roomId)
+
+        assertTrue(rooms.updateSettings(roomId, host, settings(PvpRoomVisibility.PRIVATE)) is PvpRoomMutation.Applied)
+        assertTrue(rooms.startPreview(roomId, host) is PvpRoomMutation.Applied)
+        assertEquals(PvpRoomPhase.TEAM_PREVIEW, rooms.get(roomId)?.phase)
+    }
+
+    @Test
+    fun `finishing an unknown or closed room reports nothing to restore`() {
+        val rooms = PvpRoomService { roomId }
+        assertNull(rooms.finishMatch(roomId))
+
+        rooms.create(host, settings(PvpRoomVisibility.PUBLIC))
+        rooms.close(roomId)
+        assertNull(rooms.finishMatch(roomId))
+    }
+
     private fun settings(visibility: PvpRoomVisibility) = PvpRoomSettings(
         visibility = visibility,
         format = PvpBattleFormat.SINGLE,

@@ -50,6 +50,10 @@ class PvpRoomPayloadsTest {
             PvpRoomStatePayload(requestId, room),
             roundTrip(PvpRoomStatePayload.CODEC, PvpRoomStatePayload(requestId, room)),
         )
+        assertEquals(
+            PvpRoomStatePayload(null, room, reopen = true),
+            roundTrip(PvpRoomStatePayload.CODEC, PvpRoomStatePayload(null, room, reopen = true)),
+        )
     }
 
     @Test

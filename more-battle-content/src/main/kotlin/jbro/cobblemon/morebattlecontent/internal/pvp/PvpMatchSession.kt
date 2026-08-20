@@ -11,8 +11,13 @@ internal enum class PvpMatchPhase {
     COMPLETE,
 }
 
-internal class PvpTeamPreview internal constructor(speciesIds: List<String>) {
-    val speciesIds: List<String> = Collections.unmodifiableList(ArrayList(speciesIds))
+internal data class PvpTeamPreviewMember(val speciesId: String, val formId: String?)
+
+internal class PvpTeamPreview internal constructor(members: List<PvpTeamPreviewMember>) {
+    val members: List<PvpTeamPreviewMember> = Collections.unmodifiableList(ArrayList(members))
+
+    val speciesIds: List<String>
+        get() = members.map(PvpTeamPreviewMember::speciesId)
 }
 
 internal class PvpMatchSession(
@@ -51,7 +56,11 @@ internal class PvpMatchSession(
             "PvP team preview is unavailable"
         }
         val otherPlayer = if (playerId == challengerId) opponentId else challengerId
-        return PvpTeamPreview(requireNotNull(registeredTeams[otherPlayer]).members.map(PvpPokemonRegistration::speciesId))
+        return PvpTeamPreview(
+            requireNotNull(registeredTeams[otherPlayer]).members.map { member ->
+                PvpTeamPreviewMember(member.speciesId, member.formId)
+            },
+        )
     }
 
     @Synchronized

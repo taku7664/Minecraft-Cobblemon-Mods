@@ -13,6 +13,7 @@ import net.minecraft.network.chat.Component
 
 internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
     MbcScreen(Component.translatable(key("title"))) {
+    private val portraits = MbcPokemonPortraitRenderer()
     private val controller = PvpSelectionScreenController(
         initialState,
         send = { intent -> PvpPlayClientNetworking.send(PvpSelectionIntentPayload(intent)) },
@@ -32,8 +33,8 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
         MbcGuiSurface.drawPanel(graphics, rightPanel(), MbcGuiPalette.ACCENT_SECONDARY)
         MbcGuiSurface.drawPanel(graphics, footer(), MbcGuiPalette.BORDER_BRIGHT, alternate = true)
         drawHeader(graphics)
-        drawTeam(graphics, leftPanel(), leftOwn(), controller.state.leftPlayerName)
-        drawTeam(graphics, rightPanel(), !leftOwn(), controller.state.rightPlayerName)
+        drawTeam(graphics, leftPanel(), leftOwn(), controller.state.leftPlayerName, partialTick)
+        drawTeam(graphics, rightPanel(), !leftOwn(), controller.state.rightPlayerName, partialTick)
         drawCenter(graphics)
         drawStatus(graphics)
         super.render(graphics, mouseX, mouseY, partialTick)
@@ -62,7 +63,13 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
         graphics.drawString(font, format, header().right - 8 - font.width(format), header().top + 8, MbcGuiPalette.TEXT_SECONDARY, false)
     }
 
-    private fun drawTeam(graphics: GuiGraphics, panel: TowerPlayRect, own: Boolean, playerName: String) {
+    private fun drawTeam(
+        graphics: GuiGraphics,
+        panel: TowerPlayRect,
+        own: Boolean,
+        playerName: String,
+        partialTick: Float,
+    ) {
         val name = if (playerName.isBlank()) {
             if (own) minecraft?.player?.scoreboardName.orEmpty() else controller.state.opponentName
         } else {
@@ -71,10 +78,32 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
         val clipped = font.plainSubstrByWidth(name, panel.width - 12)
         graphics.drawCenteredString(font, Component.literal(clipped), panel.left + panel.width / 2, panel.top + 7, MbcGuiPalette.TEXT_PRIMARY)
         if (own) return
-        controller.state.opponentSpeciesIds.take(6).forEachIndexed { index, speciesId ->
-            val row = teamRow(panel, index)
-            MbcGuiSurface.drawButton(graphics, row, active = false, hovered = false, selected = false, MbcGuiPalette.ACCENT_SECONDARY)
-            graphics.drawCenteredString(font, speciesName(speciesId), row.left + row.width / 2, row.top + 6, MbcGuiPalette.TEXT_SECONDARY)
+        controller.state.opponentParty.take(PvpSelectionLayout.PARTY_SIZE).forEachIndexed { index, slot ->
+            val card = PvpSelectionLayout.partyCard(panel, index)
+            val content = PvpSelectionLayout.partyCardContent(panel, index)
+            MbcGuiSurface.drawButton(graphics, card, active = false, hovered = false, selected = false, MbcGuiPalette.ACCENT_SECONDARY)
+            graphics.fill(
+                content.portrait.left,
+                content.portrait.top,
+                content.portrait.right,
+                content.portrait.bottom,
+                MbcGuiPalette.PANEL_ALT,
+            )
+            portraits.render(
+                graphics,
+                MbcPokemonPortraitIdentity.pvpOpponent(
+                    controller.state.matchId.toString(),
+                    index,
+                    slot.speciesId,
+                    slot.formId,
+                ),
+                content.portrait,
+                partialTick,
+                animate = false,
+            )
+            val label = font.split(speciesName(slot.speciesId), (content.textRight - content.textLeft).coerceAtLeast(1))
+                .firstOrNull() ?: return@forEachIndexed
+            graphics.drawString(font, label, content.textLeft, content.nameTop, MbcGuiPalette.TEXT_SECONDARY, false)
         }
     }
 
@@ -124,16 +153,16 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
 
     private fun buildWidgets() {
         val ownPanel = if (leftOwn()) leftPanel() else rightPanel()
-        controller.state.ownParty.take(6).forEachIndexed { index, slot ->
-            val selected = slot.pokemonId in controller.selectedPokemonIds
-            val button = MbcStyledButton(
-                teamRow(ownPanel, index),
-                Component.translatable(
-                    if (selected) key("party_entry.selected") else key("party_entry.available"),
-                    speciesName(slot.speciesId),
-                ),
-                MbcButtonTone.PRIMARY,
-                selected,
+        val selectionOrder = controller.selectedPokemonIds.toList()
+        controller.state.ownParty.take(PvpSelectionLayout.PARTY_SIZE).forEachIndexed { index, slot ->
+            val position = selectionOrder.indexOf(slot.pokemonId).takeIf { it >= 0 }?.plus(1)
+            val button = PvpEntryCardButton(
+                PvpSelectionLayout.partyCard(ownPanel, index),
+                PvpSelectionLayout.partyCardContent(ownPanel, index),
+                slot,
+                position,
+                speciesName(slot.speciesId),
+                portraits,
             ) { if (controller.toggle(slot.pokemonId)) rebuild() }
             button.active = !controller.isPending && !controller.state.waitingForOpponent
             button.setTooltip(Tooltip.create(partyTooltip(slot)))
@@ -176,12 +205,6 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
     }
 
     private fun leftOwn() = controller.state.playerOnLeft
-
-    private fun teamRow(panel: TowerPlayRect, index: Int): TowerPlayRect {
-        val available = panel.height - 30
-        val height = ((available - 5 * 3) / 6).coerceIn(17, 22)
-        return TowerPlayRect(panel.left + 6, panel.top + 22 + index * (height + 3), panel.width - 12, height)
-    }
 
     private fun partyTooltip(slot: PvpSelectionPartySlot): Component = Component.translatable(
         key("party_entry.preview_tooltip"),

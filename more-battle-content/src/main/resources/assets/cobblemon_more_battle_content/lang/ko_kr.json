@@ -1,4 +1,5 @@
 {
+  "biome.cobblemon_more_battle_content.battle_lounge": "배틀 라운지",
   "command.cobblemon_more_battle_content.open": "사용 가능한 배틀 콘텐츠: %s",
   "command.cobblemon_more_battle_content.pvp.invited": "%s님이 %s PvP 대전을 신청했습니다. /mbc를 열어 확인하세요.",
   "command.cobblemon_more_battle_content.error.content_failure": "배틀 콘텐츠 요청 처리에 실패했습니다. 서버 로그를 확인해 주세요.",
@@ -224,6 +225,10 @@
   "screen.cobblemon_more_battle_content.pvp.waiting": "선출 완료 · 상대를 기다리는 중",
   "screen.cobblemon_more_battle_content.pvp.party_entry.selected": "✓ %s",
   "screen.cobblemon_more_battle_content.pvp.party_entry.available": "%s",
+  "screen.cobblemon_more_battle_content.pvp.party_entry.order_name": "(%s) %s",
+  "screen.cobblemon_more_battle_content.pvp.party_entry.details": "Lv. %s → %s",
+  "screen.cobblemon_more_battle_content.pvp.party_entry.narration.available": "미선택, %s, 배틀 레벨 %s",
+  "screen.cobblemon_more_battle_content.pvp.party_entry.narration.selected": "엔트리 %s번, %s, 배틀 레벨 %s",
   "screen.cobblemon_more_battle_content.pvp.party_entry.tooltip": "%s\n원래 레벨 %s · 배틀 레벨 %s\n지닌도구: %s",
   "screen.cobblemon_more_battle_content.pvp.held_item.none": "없음",
   "screen.cobblemon_more_battle_content.pvp.confirm_selection": "선출 확정",
@@ -360,5 +365,6 @@
   "factory.cobblemon_more_battle_content.concept.articuno_balance.name": "도현",
   "factory.cobblemon_more_battle_content.concept.articuno_balance.description": "프리져가 순풍과 회복으로 전장을 안정시키고, 망나뇽·메타그로스·마스카나가 물리 전개와 빠른 마무리를 나눠 맡습니다.",
   "factory.cobblemon_more_battle_content.concept.regigigas_control.name": "채영",
-  "factory.cobblemon_more_battle_content.concept.regigigas_control.description": "레지스틸이 마비와 스텔스록으로 슬로스타트 시간을 벌고, 대검귀와 고릴타가 선공기와 교대로 레지기가스의 후반 돌파를 연결합니다."
+  "factory.cobblemon_more_battle_content.concept.regigigas_control.description": "레지스틸이 마비와 스텔스록으로 슬로스타트 시간을 벌고, 대검귀와 고릴타가 선공기와 교대로 레지기가스의 후반 돌파를 연결합니다.",
+  "screen.cobblemon_more_battle_content.pvp.lounge.rescued": "배틀 라운지에 돌아갈 위치 기록이 없어 오버월드 스폰으로 이동했습니다."
 }

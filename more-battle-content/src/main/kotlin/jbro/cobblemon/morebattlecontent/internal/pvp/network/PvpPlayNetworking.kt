@@ -22,6 +22,7 @@ import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengePhase
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengeRequest
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpMatchPhase
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpLoungeCoordinator
+import jbro.cobblemon.morebattlecontent.internal.pvp.PvpLoungeRescuePolicy
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomError
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomBattlePlacement
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomMutation
@@ -32,6 +33,7 @@ import jbro.cobblemon.morebattlecontent.internal.pvp.PvpSessionService
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpTeamRegistrationMutation
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpTeamRegistrationResult
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionIntent
+import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionOpponentSlot
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionPartySlot
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionSpectator
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionViewState
@@ -53,7 +55,8 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     private val rooms = PvpRoomService()
     private var currentServer: MinecraftServer? = null
     private val loungeGateway by lazy { Cobblemon173PvpLoungeGateway({ currentServer }, onlinePlayers::get) }
-    private val lounge by lazy { PvpLoungeCoordinator(PvpArenaPool(), loungeGateway) }
+    private val arenas = PvpArenaPool()
+    private val lounge by lazy { PvpLoungeCoordinator(arenas, loungeGateway) }
     private val snapshots = Cobblemon173PvpRegisteredTeamSnapshotStore(onlinePlayers::get)
     private val runtime: Cobblemon173PvpBattleRuntime by lazy {
         Cobblemon173PvpBattleRuntime(
@@ -129,6 +132,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         }
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
             onlinePlayers[handler.player.uuid] = handler.player
+            rescueStrandedLoungePlayer(handler.player)
         }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
             val playerId = handler.player.uuid
@@ -162,6 +166,23 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             lounge.restoreAvailable(onlinePlayers::containsKey)
             loungeGateway.enforceSpectatorAnchors()
         }
+    }
+
+    /**
+     * Pulls somebody out of the battle lounge when nothing is left to send them home. Without this a
+     * restart, or a regenerated lounge, leaves them standing in empty air with no way back.
+     */
+    private fun rescueStrandedLoungePlayer(player: ServerPlayer) {
+        val stranded = PvpLoungeRescuePolicy.rescues(
+            inLoungeDimension = player.serverLevel().dimension() == Cobblemon173PvpLoungeGateway.LEVEL_KEY,
+            hasPendingReturn = player.uuid in lounge.pendingReturnPlayerIds(),
+        )
+        if (!stranded) return
+        if (!loungeGateway.restoreToOverworldSpawn(player.uuid)) return
+        player.sendSystemMessage(
+            Component.translatable("screen.${MoreBattleContent.MOD_ID}.pvp.lounge.rescued"),
+        )
+        MoreBattleContent.LOGGER.info("Moved {} out of the battle lounge; no return point was recorded", player.uuid)
     }
 
     override fun open(player: ServerPlayer): PvpCommandOutcome {
@@ -440,22 +461,32 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         ServerPlayNetworking.send(player, PvpRoomListStatePayload(requestId, summaries))
     }
 
-    private fun sendRoom(player: ServerPlayer, room: PvpRoomView, requestId: UUID?) {
-        ServerPlayNetworking.send(player, PvpRoomStatePayload(requestId, clientView(room)))
+    private fun sendRoom(player: ServerPlayer, room: PvpRoomView, requestId: UUID?, reopen: Boolean = false) {
+        ServerPlayNetworking.send(player, PvpRoomStatePayload(requestId, clientView(room), reopen))
     }
 
-    private fun pushRoomToMembers(room: PvpRoomView, requestId: UUID?) {
-        room.memberIds.forEach { memberId -> onlinePlayers[memberId]?.let { sendRoom(it, room, requestId) } }
+    private fun pushRoomToMembers(room: PvpRoomView, requestId: UUID?, reopen: Boolean = false) {
+        room.memberIds.forEach { memberId -> onlinePlayers[memberId]?.let { sendRoom(it, room, requestId, reopen) } }
     }
 
     private fun pushRoomToSpectators(room: PvpRoomView, requestId: UUID?) {
         room.spectatorIds.forEach { memberId -> onlinePlayers[memberId]?.let { sendRoom(it, room, requestId) } }
     }
 
+    /**
+     * Tears down the arena a match used and returns its room to the lobby, keeping the group together
+     * for a rematch. Only a room that no longer exists falls back to the room list.
+     */
     private fun finishRoom(roomId: UUID) {
         lounge.finish(roomId)
-        val room = rooms.close(roomId) ?: return
-        room.memberIds.forEach { memberId -> onlinePlayers[memberId]?.let { sendRoomList(it, null) } }
+        val room = rooms.finishMatch(roomId)
+        if (room == null) {
+            rooms.close(roomId)?.memberIds?.forEach { memberId ->
+                onlinePlayers[memberId]?.let { sendRoomList(it, null) }
+            }
+            return
+        }
+        pushRoomToMembers(room, null, reopen = true)
     }
 
     private fun summaryView(room: PvpRoomView) = PvpRoomSummaryView(
@@ -593,9 +624,12 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                     heldItemId = member.heldItemId,
                     originalLevel = member.level,
                     battleLevel = member.battleLevel,
+                    formId = member.formId,
                 )
             },
-            opponentSpeciesIds = view.opponentPreview.speciesIds,
+            opponentParty = view.opponentPreview.members.map { member ->
+                PvpSelectionOpponentSlot(member.speciesId, member.formId)
+            },
             selectedPokemonIds = selected,
             selectionDeadlineEpochMillis = sessions.entryDeadlineFor(view.matchId) ?: System.currentTimeMillis(),
             waitingForOpponent = view.ready,

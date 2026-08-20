@@ -10,6 +10,9 @@ uniform mat4 InverseViewProjection;
 uniform vec3 ArenaCenterRelative;
 uniform vec2 ArenaOpponentDirection;
 uniform vec3 CameraWorldPosition;
+// Positive only for the PvP arena. The Battle Tower and Battle Factory leave this at zero and keep
+// the terrain hologram below completely untouched.
+uniform float LedFloorRadius;
 
 in vec2 TexCoord;
 out vec4 fragColor;
@@ -31,6 +34,16 @@ const vec3 ARENA_LED_SILVER = vec3(0.68, 0.75, 0.82);
 const vec3 ARENA_LED_BLUE = vec3(0.22, 0.54, 0.92);
 const vec3 POKEBALL_RED = vec3(1.0, 0.10, 0.055);
 const vec3 POKEBALL_CHARCOAL = vec3(0.035, 0.042, 0.050);
+const float ARENA_LED_SWEEP_SECONDS = 2.4;
+const float ARENA_LED_FRONT_WIDTH = 1.15;
+const float ARENA_LED_MEETING_FLASH_SECONDS = 0.45;
+// After the two fronts meet they stay at the centre and dim away over this long, so the soft edge
+// of the band fades instead of being clipped by the cycle restarting.
+const float ARENA_LED_FADE_SECONDS = 0.85;
+// Quiet gap before the next wave sets off.
+const float ARENA_LED_REST_SECONDS = 1.0;
+const float ARENA_LED_CYCLE_SECONDS = 4.25;
+const float ARENA_LED_IDLE_GLOW = 0.05;
 
 float orderedDither(vec2 pixel) {
     vec2 cell = mod(floor(pixel), 4.0);
@@ -69,11 +82,69 @@ float softScan(float distanceToLine, float width) {
     return exp(-normalizedDistance * normalizedDistance);
 }
 
+// Two straight fronts start at opposite ends of the player-to-opponent axis and travel inward until
+// they meet at the centre, then the cycle restarts. Distance from the axis is ignored on purpose so
+// the fronts stay straight lines rather than expanding rings.
+vec3 arenaLedFloor(vec3 sceneColor, vec3 worldDelta) {
+    float axis = dot(worldDelta.xz, ArenaOpponentDirection);
+    float cycle = mod(max(EffectAgeSeconds, 0.0), ARENA_LED_CYCLE_SECONDS);
+    // The fronts travel inward, then hold at the centre while the whole band dims out, then rest.
+    float travel = clamp(cycle / ARENA_LED_SWEEP_SECONDS, 0.0, 1.0);
+    float frontPosition = LedFloorRadius * (1.0 - travel);
+    float fade = 1.0 - smoothstep(
+        ARENA_LED_SWEEP_SECONDS,
+        ARENA_LED_SWEEP_SECONDS + ARENA_LED_FADE_SECONDS,
+        cycle
+    );
+    float distanceToFront = abs(abs(axis) - frontPosition);
+    float front = softScan(distanceToFront, ARENA_LED_FRONT_WIDTH);
+
+    // The lit cells are a staggered grid so the fronts read as panels rather than a smooth band.
+    float ledRow = floor(worldDelta.z / LED_CELL_SPACING + 0.5);
+    float ledRowOffset = mod(abs(ledRow), 2.0) * LED_CELL_SPACING * 0.5;
+    float ledColumn = floor((worldDelta.x - ledRowOffset) / LED_CELL_SPACING + 0.5);
+    vec2 ledCellCenter = vec2(ledColumn * LED_CELL_SPACING + ledRowOffset, ledRow * LED_CELL_SPACING);
+    float ledCellDistance = length(worldDelta.xz - ledCellCenter);
+    float ledCore = 1.0 - smoothstep(LED_CORE_INNER_RADIUS, LED_CORE_OUTER_RADIUS, ledCellDistance);
+    float ledHalo = softScan(ledCellDistance, LED_HALO_RADIUS);
+    float cellFlicker = 0.82 + 0.18 * cellHash(vec2(ledColumn, ledRow));
+
+    // A short flash as the two fronts meet in the middle, dimmed by the same fade.
+    float meeting = smoothstep(
+        ARENA_LED_SWEEP_SECONDS - ARENA_LED_MEETING_FLASH_SECONDS,
+        ARENA_LED_SWEEP_SECONDS,
+        cycle
+    );
+    float centreBand = 1.0 - smoothstep(0.0, ARENA_LED_FRONT_WIDTH, abs(axis));
+    float intensity = clamp(front * cellFlicker + meeting * centreBand, 0.0, 1.0) * fade;
+
+    // Each front carries the colour of the side it came from.
+    float fromOpponent = step(0.0, axis);
+    vec3 ledColor = mix(ARENA_LED_SILVER, POKEBALL_RED, fromOpponent);
+    ledColor = mix(ledColor, CENTER_HOLOGRAM_WHITE, meeting * centreBand * fade * 0.6);
+
+    // The faint idle glow keeps the panel grid readable during the rest gap.
+    vec3 lighting = ledColor * ledCore * (ARENA_LED_IDLE_GLOW + intensity * 0.95);
+    lighting += ledColor * ledHalo * intensity * 0.22;
+    return sceneColor + lighting * clamp(EffectStrength, 0.0, 1.0);
+}
+
 void main() {
     vec4 scene = texture(SceneSampler, TexCoord);
     float depth = texture(DepthSampler, TexCoord).r;
     if (depth >= SKY_DEPTH_THRESHOLD || EffectStrength <= 0.001) {
         fragColor = scene;
+        return;
+    }
+
+    if (LedFloorRadius > 0.001) {
+        // The lounge is a void dimension whose only opaque geometry is the slab under the glass
+        // floor, so whatever the depth buffer holds here is the arena floor. No radius test is
+        // needed and a resized arena is followed automatically.
+        vec4 ledClip = vec4(TexCoord * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+        vec4 ledReconstructed = InverseViewProjection * ledClip;
+        vec3 ledRelative = ledReconstructed.xyz / max(abs(ledReconstructed.w), 0.00001);
+        fragColor = vec4(clamp(arenaLedFloor(scene.rgb, ledRelative - ArenaCenterRelative), 0.0, 1.0), scene.a);
         return;
     }
 

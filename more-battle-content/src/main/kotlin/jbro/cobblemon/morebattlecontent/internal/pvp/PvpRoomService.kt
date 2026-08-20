@@ -211,6 +211,19 @@ internal class PvpRoomService(
         return applied(room)
     }
 
+    /**
+     * Returns a room to its lobby once the match it hosted is over. Seats, members, invites and the
+     * player-to-room index all survive so the same group can immediately rematch, which is what
+     * separates this from [close].
+     */
+    @Synchronized
+    fun finishMatch(roomId: UUID): PvpRoomView? {
+        val room = rooms[roomId] ?: return null
+        if (room.phase == PvpRoomPhase.CLOSED) return null
+        room.phase = PvpRoomPhase.LOBBY
+        return room.view()
+    }
+
     @Synchronized
     fun close(roomId: UUID): PvpRoomView? {
         val room = rooms[roomId] ?: return null

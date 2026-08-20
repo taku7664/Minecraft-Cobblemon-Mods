@@ -10,6 +10,16 @@ internal data class PvpSelectionPartySlot(
     val heldItemId: String?,
     val originalLevel: Int,
     val battleLevel: Int,
+    val formId: String? = null,
+)
+
+/**
+ * Opponent entries carry no Pokemon UUID because the client cannot look the opponent's Pokemon up
+ * locally. Species and form are the public competitive information the preview is allowed to show.
+ */
+internal data class PvpSelectionOpponentSlot(
+    val speciesId: String,
+    val formId: String? = null,
 )
 
 internal data class PvpSelectionSpectator(val playerId: UUID, val name: String)
@@ -19,7 +29,7 @@ internal data class PvpSelectionViewState(
     val format: PvpBattleFormat,
     val opponentName: String,
     val ownParty: List<PvpSelectionPartySlot>,
-    val opponentSpeciesIds: List<String>,
+    val opponentParty: List<PvpSelectionOpponentSlot>,
     val selectedPokemonIds: Set<UUID>,
     val selectionDeadlineEpochMillis: Long,
     val waitingForOpponent: Boolean,
@@ -31,7 +41,7 @@ internal data class PvpSelectionViewState(
 ) {
     init {
         require(ownParty.size in format.registrationRange) { "PvP view has an invalid registered party size" }
-        require(opponentSpeciesIds.size in format.registrationRange) { "PvP view has an invalid opponent party size" }
+        require(opponentParty.size in format.registrationRange) { "PvP view has an invalid opponent party size" }
         require(selectedPokemonIds.size <= format.selectionSize) { "PvP view has too many selected Pokemon" }
         require(ownParty.map(PvpSelectionPartySlot::pokemonId).containsAll(selectedPokemonIds)) {
             "PvP view selection contains an unregistered Pokemon"
@@ -40,7 +50,8 @@ internal data class PvpSelectionViewState(
     }
 
     val immutableOwnParty: List<PvpSelectionPartySlot> = Collections.unmodifiableList(ArrayList(ownParty))
-    val immutableOpponentSpeciesIds: List<String> = Collections.unmodifiableList(ArrayList(opponentSpeciesIds))
+    val immutableOpponentParty: List<PvpSelectionOpponentSlot> =
+        Collections.unmodifiableList(ArrayList(opponentParty))
     val immutableSelectedPokemonIds: Set<UUID> = Collections.unmodifiableSet(LinkedHashSet(selectedPokemonIds))
     val immutableSpectators: List<PvpSelectionSpectator> = Collections.unmodifiableList(ArrayList(spectators))
 }

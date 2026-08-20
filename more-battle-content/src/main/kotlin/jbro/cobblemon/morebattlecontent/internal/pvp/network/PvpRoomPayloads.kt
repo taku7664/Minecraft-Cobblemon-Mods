@@ -84,6 +84,8 @@ internal data class PvpRoomListStatePayload(
 internal data class PvpRoomStatePayload(
     val requestId: UUID?,
     val room: PvpRoomClientView,
+    /** Reopens the room screen regardless of what the client is currently showing. */
+    val reopen: Boolean = false,
 ) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<PvpRoomStatePayload> = TYPE
 
@@ -93,8 +95,9 @@ internal data class PvpRoomStatePayload(
             { buffer, payload ->
                 buffer.writeNullableUuid(payload.requestId)
                 buffer.writeRoom(payload.room)
+                buffer.writeBoolean(payload.reopen)
             },
-            { buffer -> PvpRoomStatePayload(buffer.readNullableUuid(), buffer.readRoom()) },
+            { buffer -> PvpRoomStatePayload(buffer.readNullableUuid(), buffer.readRoom(), buffer.readBoolean()) },
         )
     }
 }

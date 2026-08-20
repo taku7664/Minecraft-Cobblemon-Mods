@@ -106,6 +106,7 @@ internal object ShadowTerrainHologramRenderer {
                 snapshot.arenaDirection.x.toFloat(),
                 snapshot.arenaDirection.z.toFloat(),
             )
+            shader.getUniform("LedFloorRadius")?.set(snapshot.projection.ledFloorRadius.toFloat())
             shader.getUniform("CameraWorldPosition")?.set(
                 camera.x.toFloat(),
                 camera.y.toFloat(),

@@ -19,6 +19,11 @@ internal data class BattleArenaHologramProjection(
     val centerZ: Double,
     val opponentDirectionX: Double,
     val opponentDirectionZ: Double,
+    /**
+     * Radius of the arena floor in blocks. A positive value selects the PvP arena floor lighting;
+     * zero keeps the terrain hologram used by the Battle Tower and Battle Factory in the overworld.
+     */
+    val ledFloorRadius: Double = 0.0,
 ) {
     init {
         require(
@@ -26,6 +31,7 @@ internal data class BattleArenaHologramProjection(
                 opponentDirectionX.isFinite() && opponentDirectionZ.isFinite(),
         )
         require(hypot(opponentDirectionX, opponentDirectionZ) >= MIN_DIRECTION_LENGTH)
+        require(ledFloorRadius.isFinite() && ledFloorRadius >= 0.0)
     }
 
     companion object {
@@ -42,6 +48,7 @@ internal data class BattleArenaHologramProjection(
             center: Vec3,
             opponentDirectionX: Double,
             opponentDirectionZ: Double,
+            ledFloorRadius: Double = 0.0,
         ): BattleArenaHologramProjection {
             val length = hypot(opponentDirectionX, opponentDirectionZ)
             val directionX = if (length.isFinite() && length >= MIN_DIRECTION_LENGTH) opponentDirectionX / length else 0.0
@@ -53,6 +60,7 @@ internal data class BattleArenaHologramProjection(
                 centerZ = center.z,
                 opponentDirectionX = directionX,
                 opponentDirectionZ = directionZ,
+                ledFloorRadius = ledFloorRadius,
             )
         }
     }
@@ -74,6 +82,7 @@ internal data class ShowBattleArenaHologramPayload(
                 buffer.writeDouble(projection.centerZ)
                 buffer.writeDouble(projection.opponentDirectionX)
                 buffer.writeDouble(projection.opponentDirectionZ)
+                buffer.writeDouble(projection.ledFloorRadius)
             },
             { buffer ->
                 ShowBattleArenaHologramPayload(
@@ -84,6 +93,7 @@ internal data class ShowBattleArenaHologramPayload(
                         centerZ = buffer.readDouble(),
                         opponentDirectionX = buffer.readDouble(),
                         opponentDirectionZ = buffer.readDouble(),
+                        ledFloorRadius = buffer.readDouble(),
                     ),
                 )
             },

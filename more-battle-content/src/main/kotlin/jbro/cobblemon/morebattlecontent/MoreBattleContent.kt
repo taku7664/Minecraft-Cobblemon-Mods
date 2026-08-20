@@ -8,6 +8,7 @@ import jbro.cobblemon.morebattlecontent.internal.command.BattleContentCommands
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.HoloBattleTerminalContent
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.FactoryCatalogResources
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.FactoryCommandRuntime
+import jbro.cobblemon.morebattlecontent.internal.compat.fabric.PvpLoungeProtection
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.TowerOpponentCatalogResources
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.BattlePointShopCatalogResources
 import jbro.cobblemon.morebattlecontent.internal.tower.application.BattleTowerContentApplication
@@ -48,6 +49,7 @@ object MoreBattleContent : ModInitializer {
         TowerPlayNetworking.registerServer()
         FactoryCommandRuntime.registerServer()
         PvpPlayNetworking.registerServer()
+        PvpLoungeProtection.registerServer()
         ShopPlayNetworking.registerServer()
         BattleHubNetworking.registerServer()
         ShadowTrainerProjectionNetworking.registerServer()

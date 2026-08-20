@@ -4,6 +4,7 @@ import java.util.UUID
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionIntent
+import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionOpponentSlot
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionPartySlot
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionSpectator
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionViewState
@@ -102,9 +103,15 @@ private fun RegistryFriendlyByteBuf.writeState(state: PvpSelectionViewState) {
         slot.heldItemId?.let(::writeBoundedString)
         writeVarInt(slot.originalLevel)
         writeVarInt(slot.battleLevel)
+        writeBoolean(slot.formId != null)
+        slot.formId?.let(::writeBoundedString)
     }
-    writeVarInt(state.immutableOpponentSpeciesIds.size)
-    state.immutableOpponentSpeciesIds.forEach(::writeBoundedString)
+    writeVarInt(state.immutableOpponentParty.size)
+    state.immutableOpponentParty.forEach { slot ->
+        writeBoundedString(slot.speciesId)
+        writeBoolean(slot.formId != null)
+        slot.formId?.let(::writeBoundedString)
+    }
     writeVarInt(state.immutableSelectedPokemonIds.size)
     state.immutableSelectedPokemonIds.forEach(::writeUUID)
     writeLong(state.selectionDeadlineEpochMillis)
@@ -134,10 +141,16 @@ private fun RegistryFriendlyByteBuf.readState(): PvpSelectionViewState {
             heldItemId = if (readBoolean()) readBoundedString() else null,
             originalLevel = readVarInt(),
             battleLevel = readVarInt(),
+            formId = if (readBoolean()) readBoundedString() else null,
         )
     }
-    val opponentSpecies = ArrayList<String>()
-    repeat(readBoundedSize(MAX_PARTY_SIZE, "opponent party")) { opponentSpecies += readBoundedString() }
+    val opponentParty = ArrayList<PvpSelectionOpponentSlot>()
+    repeat(readBoundedSize(MAX_PARTY_SIZE, "opponent party")) {
+        opponentParty += PvpSelectionOpponentSlot(
+            speciesId = readBoundedString(),
+            formId = if (readBoolean()) readBoundedString() else null,
+        )
+    }
     val selected = LinkedHashSet<UUID>()
     repeat(readBoundedSize(MAX_SELECTION_SIZE, "selection")) { selected += readUUID() }
     val base = PvpSelectionViewState(
@@ -145,7 +158,7 @@ private fun RegistryFriendlyByteBuf.readState(): PvpSelectionViewState {
         format = format,
         opponentName = opponentName,
         ownParty = ownParty,
-        opponentSpeciesIds = opponentSpecies,
+        opponentParty = opponentParty,
         selectedPokemonIds = selected,
         selectionDeadlineEpochMillis = readLong(),
         waitingForOpponent = readBoolean(),

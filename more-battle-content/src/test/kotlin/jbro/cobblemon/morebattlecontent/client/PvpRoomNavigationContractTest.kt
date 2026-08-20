@@ -23,4 +23,21 @@ class PvpRoomNavigationContractTest {
         assertTrue(PvpRoomNavigationContract.shouldOpenFromRoomList(ownRequest, pending))
         assertFalse(ownRequest in pending)
     }
+
+    @Test
+    fun `a server driven reopen restores the room screen without a pending request`() {
+        val pending = hashSetOf<UUID>()
+
+        assertFalse(PvpRoomNavigationContract.shouldOpen(null, pending, reopen = false))
+        assertTrue(PvpRoomNavigationContract.shouldOpen(null, pending, reopen = true))
+    }
+
+    @Test
+    fun `a reopen still consumes a matching pending request`() {
+        val ownRequest = UUID.randomUUID()
+        val pending = hashSetOf(ownRequest)
+
+        assertTrue(PvpRoomNavigationContract.shouldOpen(ownRequest, pending, reopen = true))
+        assertFalse(ownRequest in pending)
+    }
 }

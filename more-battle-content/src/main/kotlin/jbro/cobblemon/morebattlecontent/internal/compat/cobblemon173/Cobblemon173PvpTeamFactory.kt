@@ -23,6 +23,7 @@ internal object Cobblemon173PvpTeamFactory {
             speciesId = pokemon.species.resourceIdentifier.toString(),
             heldItemId = if (heldItem.isEmpty) null else BuiltInRegistries.ITEM.getKey(heldItem.item).toString(),
             level = pokemon.level,
+            formId = pokemon.form.name,
         )
     }
 }

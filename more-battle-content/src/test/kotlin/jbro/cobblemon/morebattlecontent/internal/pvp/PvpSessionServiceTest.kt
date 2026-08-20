@@ -4,6 +4,7 @@ import java.util.UUID
 import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordStore
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -149,6 +150,39 @@ class PvpSessionServiceTest {
         assertTrue(service.unready(matchId, first))
         assertFalse(requireNotNull(service.viewFor(first)).ready)
         assertEquals(PvpSelectionMutation.SELECTION_STORED, service.select(matchId, first, ids(first, 1).reversed()))
+    }
+
+    @Test
+    fun `a completed match frees its id so the same room can host a rematch`() {
+        val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.ready(matchId, second))
+        assertTrue(
+            service.completeBattle(matchId, battleId, first, second, PvpBattleCompletionSink { _, _, _ -> }),
+        )
+
+        assertNull(service.challenge(matchId))
+        assertTrue(
+            service.invite(PvpChallengeRequest(matchId, second, first, PvpBattleFormat.SINGLE)) is
+                PvpChallengeMutationResult.Applied,
+        )
+        assertTrue(service.accept(matchId, first) is PvpChallengeMutationResult.Applied)
+    }
+
+    @Test
+    fun `a cancelled match frees its id so the same room can start again`() {
+        val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        service.ready(matchId, second)
+        assertTrue(service.cancelBattle(matchId, battleId))
+
+        assertNull(service.challenge(matchId))
+        assertTrue(
+            service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.DOUBLE)) is
+                PvpChallengeMutationResult.Applied,
+        )
     }
 
     private fun ready(service: PvpSessionService<String>) {

@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.battles.BattleRegistry
 import com.cobblemon.mod.common.net.messages.client.battle.BattleEndPacket
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
+import jbro.cobblemon.morebattlecontent.internal.pvp.PvpArenaGeometry
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpArenaLease
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpLoungeGateway
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpReturnPoint
@@ -106,6 +107,7 @@ internal class Cobblemon173PvpLoungeGateway(
                 center = Vec3(lease.centerX.toDouble(), lease.centerY.toDouble(), lease.centerZ.toDouble()),
                 opponentDirectionX = opponentDirectionX,
                 opponentDirectionZ = 0.0,
+                ledFloorRadius = PvpArenaGeometry.FLOOR_RADIUS_BLOCKS.toDouble(),
             ),
         )
     }
@@ -122,6 +124,24 @@ internal class Cobblemon173PvpLoungeGateway(
         spectatorAnchors.remove(playerId)
         player.setGameMode(GameType.byName(point.gameModeId, GameType.SURVIVAL) ?: GameType.SURVIVAL)
         player.teleportTo(level, point.x, point.y, point.z, point.yaw, point.pitch)
+        player.deltaMovement = Vec3.ZERO
+        if (ServerPlayNetworking.canSend(player, PvpLoungeSpectatorStatePayload.TYPE)) {
+            ServerPlayNetworking.send(player, PvpLoungeSpectatorStatePayload(false))
+        }
+        return true
+    }
+
+    /**
+     * Last-resort exit used when a recorded return point is gone, for example because the server
+     * restarted while somebody was standing in an arena. The game mode is left alone because nothing
+     * here changes it on the way in.
+     */
+    fun restoreToOverworldSpawn(playerId: UUID): Boolean {
+        val player = playerResolver(playerId) ?: return false
+        val overworld = player.server.overworld()
+        val spawn = overworld.sharedSpawnPos
+        spectatorAnchors.remove(playerId)
+        player.teleportTo(overworld, spawn.x + 0.5, spawn.y.toDouble(), spawn.z + 0.5, 0F, 0F)
         player.deltaMovement = Vec3.ZERO
         if (ServerPlayNetworking.canSend(player, PvpLoungeSpectatorStatePayload.TYPE)) {
             ServerPlayNetworking.send(player, PvpLoungeSpectatorStatePayload(false))
@@ -156,12 +176,16 @@ internal class Cobblemon173PvpLoungeGateway(
 }
 
 private object PvpLoungeArenaBuilder {
-    private const val RADIUS = 22
-    private const val HEIGHT = 12
+    private const val RADIUS = PvpArenaGeometry.FLOOR_RADIUS_BLOCKS
+    private const val HEIGHT = PvpArenaGeometry.WALL_HEIGHT_BLOCKS
+
+    /** Single block at the exact centre of the floor. Also marks the arena as already built. */
+    private val CENTER_BLOCK = Blocks.PEARLESCENT_FROGLIGHT
 
     fun ensureBuilt(level: ServerLevel, lease: PvpArenaLease) {
+        // The centre block doubles as the "already built" marker.
         val marker = BlockPos(lease.centerX, lease.centerY - 1, lease.centerZ)
-        if (level.getBlockState(marker).`is`(Blocks.SEA_LANTERN)) return
+        if (level.getBlockState(marker).`is`(CENTER_BLOCK)) return
         val radiusSquared = RADIUS * RADIUS
         val innerWallSquared = (RADIUS - 1) * (RADIUS - 1)
         for (dx in -RADIUS..RADIUS) {
@@ -190,6 +214,6 @@ private object PvpLoungeArenaBuilder {
                 }
             }
         }
-        level.setBlock(marker, Blocks.SEA_LANTERN.defaultBlockState(), 2)
+        level.setBlock(marker, CENTER_BLOCK.defaultBlockState(), 2)
     }
 }
