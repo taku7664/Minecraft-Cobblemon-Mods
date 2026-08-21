@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.internal.factory
 
 import java.util.Collections
 import java.util.UUID
+import jbro.cobblemon.morebattlecontent.internal.selection.RecentSelectionHistory
 
 internal enum class FactoryPlayPhase {
     AVAILABLE,
@@ -52,6 +53,7 @@ internal class FactoryPlayService(
 ) {
     private val pendingStarts = HashMap<UUID, PendingStart>()
     private val previousDraftIds = HashMap<UUID, Set<String>>()
+    private val recentOpponentConcepts = RecentSelectionHistory<UUID, String>(RECENT_CONCEPT_LIMIT)
 
     @Synchronized
     fun status(playerId: UUID): FactoryPlayView = current(playerId)
@@ -126,7 +128,12 @@ internal class FactoryPlayService(
         val catalog = catalogSource() ?: return FactoryPlayResult.Rejected(FactoryPlayError.CATALOG_UNAVAILABLE)
         val round = FactoryProgression.roundForBattle(snapshot.wins + 1)
         val opponent = FactoryOpponentSelector(catalog, random)
-            .select(snapshot.format, snapshot.levelMode, round)
+            .select(
+                snapshot.format,
+                snapshot.levelMode,
+                round,
+                recentOpponentConcepts.recent(playerId),
+            )
         if (opponent !is FactoryOpponentSelectionResult.Selected) {
             return FactoryPlayResult.Rejected(FactoryPlayError.CATALOG_UNAVAILABLE)
         }
@@ -138,6 +145,9 @@ internal class FactoryPlayService(
             aiSkill = opponent.concept.aiSkill,
             strategyBrief = opponent.strategy,
         )
+        if (launched is FactoryBattleLaunchResult.Started) {
+            recentOpponentConcepts.record(playerId, opponent.concept.conceptId)
+        }
         return if (launched is FactoryBattleLaunchResult.Started) {
             FactoryPlayResult.Accepted(current(playerId))
         } else {
@@ -186,6 +196,7 @@ internal class FactoryPlayService(
     fun disconnect(playerId: UUID) {
         pendingStarts.remove(playerId)
         previousDraftIds.remove(playerId)
+        recentOpponentConcepts.forget(playerId)
         sessions.close(playerId)
     }
 
@@ -253,4 +264,8 @@ internal class FactoryPlayService(
         val levelMode: FactoryLevelMode,
         val draft: FactoryRentalDraft,
     )
+
+    private companion object {
+        const val RECENT_CONCEPT_LIMIT = 3
+    }
 }

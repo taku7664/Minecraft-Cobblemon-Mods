@@ -161,13 +161,19 @@ internal class FactoryOpponentSelector(
     private val catalog: FactoryCatalog,
     private val random: FactoryCatalogRandom = DefaultFactoryCatalogRandom,
 ) {
-    fun select(format: FactoryBattleFormat, levelMode: FactoryLevelMode, round: Int): FactoryOpponentSelectionResult {
+    fun select(
+        format: FactoryBattleFormat,
+        levelMode: FactoryLevelMode,
+        round: Int,
+        excludedConceptIds: Set<String> = emptySet(),
+    ): FactoryOpponentSelectionResult {
         val window = FactoryProgression.poolWindow(levelMode, round)
         val eligible = catalog.conceptsFor(format).mapNotNull { concept ->
             FactoryConceptTeamSearch.select(catalog, concept, format, window, random)?.let { concept to it }
         }
         if (eligible.isEmpty()) return FactoryOpponentSelectionResult.NoEligibleConcept
-        val selected = selectWeighted(eligible)
+        val fresh = eligible.filterNot { it.first.conceptId in excludedConceptIds }
+        val selected = selectWeighted(fresh.ifEmpty { eligible })
         val iv = FactoryProgression.uniformIvForRound(round)
         val team = selected.second.map { it.template.materialize(iv, it.heldItemId, random) }
         val strategyMembers = selected.second.zip(team).map { (selectedMember, rentalSet) ->

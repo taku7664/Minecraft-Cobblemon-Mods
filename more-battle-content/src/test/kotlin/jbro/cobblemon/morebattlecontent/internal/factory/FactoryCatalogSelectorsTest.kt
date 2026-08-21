@@ -13,6 +13,46 @@ class FactoryCatalogSelectorsTest {
     }
 
     @Test
+    fun `opponent selection avoids recent concepts and falls back when all are recent`() {
+        val sets = (1..8).map { template("set_$it", FactoryPoolGroup.STARTER, 1, it) }
+        fun concept(id: String, offset: Int) = FactoryTrainerConcept(
+            conceptId = id,
+            displayNameKey = "factory.concept.$id.name",
+            descriptionKey = "factory.concept.$id.description",
+            formats = setOf(FactoryBattleFormat.SINGLE),
+            weight = 1,
+            aiSkill = 2,
+            aiSummary = "$id strategy",
+            objectives = setOf(BattleStrategyObjective.PIVOTING),
+            members = listOf(
+                plan("ace", true, setOf(BattleTeamRole.ACE), sets[offset], sets[offset].moveIds.first(), 20, 100),
+                plan("enabler", true, setOf(BattleTeamRole.SETUP_ENABLER), sets[offset + 1], sets[offset + 1].moveIds.first(), 100, 40),
+                plan("cover", false, setOf(BattleTeamRole.WEAKNESS_COVER), sets[offset + 2], sets[offset + 2].moveIds.first(), 40, 60),
+            ),
+        )
+        val selector = FactoryOpponentSelector(
+            FactoryCatalog("test", listOf(concept("first", 0), concept("second", 4)), sets),
+            firstChoiceRandom,
+        )
+
+        val fresh = selector.select(
+            FactoryBattleFormat.SINGLE,
+            FactoryLevelMode.LEVEL_50,
+            round = 1,
+            excludedConceptIds = setOf("first"),
+        ) as FactoryOpponentSelectionResult.Selected
+        val fallback = selector.select(
+            FactoryBattleFormat.SINGLE,
+            FactoryLevelMode.LEVEL_50,
+            round = 1,
+            excludedConceptIds = setOf("first", "second"),
+        ) as FactoryOpponentSelectionResult.Selected
+
+        assertEquals("second", fresh.concept.conceptId)
+        assertEquals("first", fallback.concept.conceptId)
+    }
+
+    @Test
     fun `draft contains exactly the original trade elevation count from the next pool`() {
         val starter = (1..6).map { template("starter_$it", FactoryPoolGroup.STARTER, 1, it) }
         val intermediate = (7..12).map { template("intermediate_$it", FactoryPoolGroup.INTERMEDIATE, 1, it) }

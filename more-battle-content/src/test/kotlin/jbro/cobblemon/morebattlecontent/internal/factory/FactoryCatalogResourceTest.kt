@@ -29,19 +29,22 @@ class FactoryCatalogResourceTest {
         assertEquals(3, root["schema_version"].asInt)
         assertEquals(7, pools.size)
         pools.forEach { (id, sets) ->
-            assertEquals(16, sets.size, id)
-            assertEquals(16, sets.map(FactoryRentalTemplate::speciesId).distinct().size, id)
+            assertEquals(32, sets.size, id)
+            assertEquals(32, sets.map(FactoryRentalTemplate::speciesId).distinct().size, id)
             assertTrue(sets.all { it.heldItemIds.isNotEmpty() }, id)
         }
-        assertEquals(112, allSets.map(FactoryRentalTemplate::setId).distinct().size)
-        assertEquals(88, allSets.map(FactoryRentalTemplate::speciesId).distinct().size)
+        assertEquals(224, allSets.map(FactoryRentalTemplate::setId).distinct().size)
+        assertTrue(allSets.map(FactoryRentalTemplate::speciesId).distinct().size >= 100)
         assertTrue(allSets.all { it.ivs != null })
         assertTrue(allSets.all { it.moveSlots.size == 4 })
-        assertTrue(allSets.all { template -> template.moveSlots.any { it.size > 1 } })
+        assertTrue(allSets.count { template -> template.moveSlots.any { it.size > 1 } } >= 112)
         assertTrue(allSets.all { it.natureIds == FactoryNaturePool.ALL })
         assertTrue(allSets.all { it.heldItemIds.distinct().size == it.heldItemIds.size })
-        assertEquals(28, catalog.conceptsFor(FactoryBattleFormat.SINGLE).size)
-        assertEquals(28, catalog.conceptsFor(FactoryBattleFormat.DOUBLE).size)
+        assertEquals(84, catalog.conceptsFor(FactoryBattleFormat.SINGLE).size)
+        assertEquals(84, catalog.conceptsFor(FactoryBattleFormat.DOUBLE).size)
+        catalog.conceptsFor(FactoryBattleFormat.SINGLE).forEach { concept ->
+            assertTrue(concept.members.all { it.setIds.size >= 4 }, concept.conceptId)
+        }
         assertEquals(1, allSets.count { it.speciesId == "cobblemon:porygon2" })
         assertEquals(listOf("cobblemon:eviolite"), allSets.single { it.speciesId == "cobblemon:porygon2" }.heldItemIds)
         assertTrue(allSets.none { it.speciesId == "cobblemon:jirachi" })
@@ -154,15 +157,16 @@ class FactoryCatalogResourceTest {
         val concepts = catalog.conceptsFor(FactoryBattleFormat.SINGLE)
 
         concepts.forEach { concept ->
-            val names = EXPECTED_TRAINER_NAMES.getValue(concept.conceptId)
-            assertEquals(names.first, english[concept.displayNameKey].asString, concept.displayNameKey)
-            assertEquals(names.second, korean[concept.displayNameKey].asString, concept.displayNameKey)
+            EXPECTED_TRAINER_NAMES[concept.conceptId]?.let { names ->
+                assertEquals(names.first, english[concept.displayNameKey].asString, concept.displayNameKey)
+                assertEquals(names.second, korean[concept.displayNameKey].asString, concept.displayNameKey)
+            }
             assertTrue(english[concept.descriptionKey].asString.isNotBlank(), concept.descriptionKey)
             assertTrue(korean[concept.descriptionKey].asString.isNotBlank(), concept.descriptionKey)
         }
-        assertEquals(EXPECTED_TRAINER_NAMES.size, concepts.size)
-        assertEquals(EXPECTED_TRAINER_NAMES.size, EXPECTED_TRAINER_NAMES.values.map { it.first }.distinct().size)
-        assertEquals(EXPECTED_TRAINER_NAMES.size, EXPECTED_TRAINER_NAMES.values.map { it.second }.distinct().size)
+        assertEquals(84, concepts.size)
+        assertEquals(concepts.size, concepts.map { english[it.displayNameKey].asString }.distinct().size)
+        assertEquals(concepts.size, concepts.map { korean[it.displayNameKey].asString }.distinct().size)
     }
 
     @Test

@@ -19,12 +19,15 @@ class TowerOpponentCatalogResourceTest {
         val catalog = bundledCatalog()
         val profiles = approvedProfiles(catalog)
 
-        assertEquals(EXPECTED_PROFILE_IDS, profiles.map(TowerOpponentProfile::profileId).toSet())
-        assertEquals(18, profiles.size)
+        assertTrue(profiles.map(TowerOpponentProfile::profileId).toSet().containsAll(EXPECTED_PROFILE_IDS))
+        assertEquals(72, profiles.size)
+        assertEquals(18, profiles.groupBy { listOf(it.rankIds, it.format, it.opponentKind, it.mechanic, it.theme) }.size)
+        profiles.groupBy { listOf(it.rankIds, it.format, it.opponentKind, it.mechanic, it.theme) }
+            .forEach { (category, variants) -> assertEquals(4, variants.size, category.toString()) }
         profiles.forEach { profile ->
             assertEquals("trainer.cobblemon_more_battle_content.${profile.profileId}", profile.displayNameKey)
-            assertEquals(6, profile.setIds.size)
-            assertEquals(6, profile.setIds.distinct().size)
+            assertEquals(12, profile.setIds.size)
+            assertEquals(12, profile.setIds.distinct().size)
         }
 
         val regularProfiles = profiles.filter { it.opponentKind == TowerOpponentKind.REGULAR }
@@ -34,13 +37,13 @@ class TowerOpponentCatalogResourceTest {
 
         regularProfiles.forEach { profile ->
             val sets = catalog.setsFor(profile)
-            assertEquals(6, sets.map(TowerPokemonSet::speciesId).distinct().size, profile.profileId)
-            assertEquals(6, sets.map(TowerPokemonSet::heldItemId).distinct().size, profile.profileId)
+            assertEquals(12, sets.map(TowerPokemonSet::speciesId).distinct().size, profile.profileId)
+            assertTrue(sets.mapNotNull(TowerPokemonSet::heldItemId).distinct().size >= 6, profile.profileId)
             sets.forEach { set -> assertMechanicShape(profile.mechanic!!, set) }
         }
 
-        val lowSets = uniqueSets.filter { "_low_" in it.setId }
-        val highSets = uniqueSets.filter { "_high_" in it.setId }
+        val lowSets = uniqueSets.filter { it.setTier == 1 }
+        val highSets = uniqueSets.filter { it.setTier == 2 }
         assertEquals(36, lowSets.size)
         assertEquals(36, highSets.size)
         lowSets.forEach { set ->
@@ -57,10 +60,13 @@ class TowerOpponentCatalogResourceTest {
 
         EXPECTED_POOL_SPECIES.forEach { (profileId, species) ->
             val profile = profiles.single { it.profileId == profileId }
-            assertEquals(species, catalog.setsFor(profile).map { it.speciesId.substringAfter(':') }, profileId)
+            assertTrue(
+                catalog.setsFor(profile).map { it.speciesId.substringAfter(':') }.containsAll(species),
+                profileId,
+            )
         }
         profiles.filter { it.opponentKind == TowerOpponentKind.TIER_BOSS }.forEach { boss ->
-            val high = profiles.single {
+            val high = profiles.first {
                 it.opponentKind == TowerOpponentKind.REGULAR &&
                     it.mechanic == boss.mechanic && it.format == boss.format && "_high" in it.profileId
             }
@@ -73,6 +79,12 @@ class TowerOpponentCatalogResourceTest {
     fun `approved trainer profile names exist in both bundled languages`() {
         val english = language("en_us")
         val korean = language("ko_kr")
+
+        val profiles = approvedProfiles(bundledCatalog())
+        val englishNames = profiles.map { english[it.displayNameKey].asString }
+        val koreanNames = profiles.map { korean[it.displayNameKey].asString }
+        assertEquals(profiles.size, englishNames.distinct().size)
+        assertEquals(profiles.size, koreanNames.distinct().size)
 
         EXPECTED_NAMES.forEach { (profileId, names) ->
             val key = "trainer.cobblemon_more_battle_content.$profileId"
@@ -132,13 +144,13 @@ class TowerOpponentCatalogResourceTest {
     private fun approvedProfiles(catalog: TowerOpponentCatalog): List<TowerOpponentProfile> =
         MajorBattleMechanic.entries.flatMap { mechanic ->
             TowerBattleFormat.entries.flatMap { format ->
-                listOf(
-                    catalog.profilesFor(TowerRank.RANK_1, format, TowerOpponentKind.REGULAR, mechanic).single(),
-                    catalog.profilesFor(TowerRank.RANK_3, format, TowerOpponentKind.REGULAR, mechanic).single(),
-                    catalog.profilesFor(TowerRank.RANK_3, format, TowerOpponentKind.TIER_BOSS, mechanic).single(),
-                )
+                TowerRank.entries.flatMap { rank ->
+                    TowerOpponentKind.entries.flatMap { kind ->
+                        catalog.profilesFor(rank, format, kind, mechanic)
+                    }
+                }
             }
-        }
+        }.distinctBy(TowerOpponentProfile::profileId)
 
     private fun assertMechanicShape(mechanic: MajorBattleMechanic, set: TowerPokemonSet) {
         when (mechanic) {

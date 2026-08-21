@@ -50,6 +50,28 @@ class FactoryPlayServiceTest {
     }
 
     @Test
+    fun `successful battles avoid the players recent trainer concept`() {
+        val launchedTrainerKeys = ArrayList<String>()
+        val service = playService(catalog(listOf("first", "second"))) { request ->
+            launchedTrainerKeys += request.trainerNameKey
+            FactoryBattleLaunchResult.Started(UUID.randomUUID())
+        }
+
+        repeat(2) {
+            val draft = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+                as FactoryPlayResult.Accepted
+            service.selectDraft(playerId, draft.view.draftSets.take(3).map(FactoryRentalSet::setId))
+            service.beginBattle(playerId)
+            service.abandon(playerId)
+        }
+
+        assertEquals(
+            listOf("factory.concept.first.name", "factory.concept.second.name"),
+            launchedTrainerKeys,
+        )
+    }
+
+    @Test
     fun `battle start applies the exact server validated player order`() {
         var launched: FactoryBattleLaunchRequest? = null
         val service = playService(catalog()) { request ->
@@ -204,25 +226,28 @@ class FactoryPlayServiceTest {
         return FactoryPlayService({ catalog }, sessions, catalogRandom)
     }
 
-    private fun catalog(): FactoryCatalog {
+    private fun catalog(conceptIds: List<String> = listOf("ordinary_ace")): FactoryCatalog {
         val sets = (1..16).map(::template)
-        val members = listOf(
-            member("ace", true, setOf(BattleTeamRole.ACE), sets[0]),
-            member("enabler", true, setOf(BattleTeamRole.SETUP_ENABLER), sets[1]),
-            member("cover", false, setOf(BattleTeamRole.WEAKNESS_COVER), sets[2]),
-        )
-        val concept = FactoryTrainerConcept(
-            conceptId = "ordinary_ace",
-            displayNameKey = "factory.concept.ordinary_ace.name",
-            descriptionKey = "factory.concept.ordinary_ace.description",
-            formats = setOf(FactoryBattleFormat.SINGLE),
-            weight = 1,
-            aiSkill = 3,
-            aiSummary = "Create a safe turn for the ace and cover its main weakness.",
-            objectives = setOf(BattleStrategyObjective.SETUP_SWEEP),
-            members = members,
-        )
-        return FactoryCatalog("test", listOf(concept), sets)
+        val concepts = conceptIds.mapIndexed { index, conceptId ->
+            val offset = index * 4
+            val members = listOf(
+                member("ace", true, setOf(BattleTeamRole.ACE), sets[offset]),
+                member("enabler", true, setOf(BattleTeamRole.SETUP_ENABLER), sets[offset + 1]),
+                member("cover", false, setOf(BattleTeamRole.WEAKNESS_COVER), sets[offset + 2]),
+            )
+            FactoryTrainerConcept(
+                conceptId = conceptId,
+                displayNameKey = "factory.concept.$conceptId.name",
+                descriptionKey = "factory.concept.$conceptId.description",
+                formats = setOf(FactoryBattleFormat.SINGLE),
+                weight = 1,
+                aiSkill = 3,
+                aiSummary = "Create a safe turn for the ace and cover its main weakness.",
+                objectives = setOf(BattleStrategyObjective.SETUP_SWEEP),
+                members = members,
+            )
+        }
+        return FactoryCatalog("test", concepts, sets)
     }
 
     private fun member(

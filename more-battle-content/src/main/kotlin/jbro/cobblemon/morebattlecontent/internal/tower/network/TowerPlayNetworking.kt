@@ -114,6 +114,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
             sessions.close(handler.player.uuid)
+            launcher.forget(handler.player.uuid)
             onlinePlayers.remove(handler.player.uuid)
         }
     }

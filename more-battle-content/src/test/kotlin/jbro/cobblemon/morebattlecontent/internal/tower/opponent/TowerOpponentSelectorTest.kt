@@ -30,6 +30,31 @@ class TowerOpponentSelectorTest {
     }
 
     @Test
+    fun `avoids recent profiles while alternatives exist and falls back when all are recent`() {
+        val first = profile("first", 1, TowerBattleFormat.SINGLE, (1..6).map { "set_$it" })
+        val second = profile("second", 1, TowerBattleFormat.SINGLE, (1..6).map { "set_$it" })
+        val selector = TowerOpponentSelector(catalog(listOf(first, second), validSets()), FixedRandom())
+
+        val fresh = selector.select(
+            TowerRank.RANK_1,
+            TowerBattleFormat.SINGLE,
+            TowerOpponentKind.REGULAR,
+            MajorBattleMechanic.MEGA,
+            excludedProfileIds = setOf("first"),
+        ) as TowerOpponentSelectionResult.Selected
+        val fallback = selector.select(
+            TowerRank.RANK_1,
+            TowerBattleFormat.SINGLE,
+            TowerOpponentKind.REGULAR,
+            MajorBattleMechanic.MEGA,
+            excludedProfileIds = setOf("first", "second"),
+        ) as TowerOpponentSelectionResult.Selected
+
+        assertEquals("second", fresh.profile.profileId)
+        assertEquals("first", fallback.profile.profileId)
+    }
+
+    @Test
     fun `double selection skips alternate species and duplicate held items`() {
         val sets = validSets().toMutableList()
         sets[1] = pokemonSet(2, speciesId = sets[0].speciesId)

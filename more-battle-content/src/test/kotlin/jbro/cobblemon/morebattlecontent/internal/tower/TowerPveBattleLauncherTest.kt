@@ -52,6 +52,43 @@ class TowerPveBattleLauncherTest {
     }
 
     @Test
+    fun `successful launches avoid the players recent trainer profile`() {
+        val starts = ArrayList<TowerPreparedPveBattle<String, String>>()
+        val sets = (1..6).map(::set)
+        val profiles = listOf("first", "second").map { id ->
+            TowerOpponentProfile(
+                profileId = id,
+                displayNameKey = "trainer.test.$id",
+                rankIds = listOf(TowerRank.RANK_1),
+                format = TowerBattleFormat.SINGLE,
+                opponentKind = TowerOpponentKind.REGULAR,
+                mechanic = MajorBattleMechanic.MEGA,
+                weight = 1,
+                aiSkill = 1,
+                theme = "balanced",
+                setIds = sets.map(TowerPokemonSet::setId),
+            )
+        }
+        val launcher = TowerPveBattleLauncher(
+            registeredTeamMaterializer = { _, _ ->
+                TowerRegisteredBattleTeamResult.Created(listOf("player_1", "player_2", "player_3"))
+            },
+            catalogSource = { TowerOpponentCatalog("test", profiles, sets) },
+            opponentMemberFactory = { it.setId },
+            runtime = TowerPveBattleRuntime { prepared ->
+                starts += prepared
+                TowerBattleLaunchResult.Started(UUID.randomUUID())
+            },
+            random = FixedRandom,
+        )
+
+        launcher.launch(request(MajorBattleMechanic.MEGA))
+        launcher.launch(request(MajorBattleMechanic.MEGA))
+
+        assertEquals(listOf("first", "second"), starts.map { it.profile.profileId })
+    }
+
+    @Test
     fun `promotion battle is exposed to brain selection as an actual boss encounter`() {
         val starts = ArrayList<TowerPreparedPveBattle<String, String>>()
         val progress = TowerProgress(TowerBattleFormat.SINGLE, TowerRank.RANK_3, rankPoints = 1)

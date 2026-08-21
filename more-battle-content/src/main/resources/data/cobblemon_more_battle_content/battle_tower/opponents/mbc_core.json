@@ -21,7 +21,97 @@
         "mega_single_low_banette",
         "mega_single_low_abomasnow",
         "mega_single_low_audino",
-        "mega_single_low_pidgeot"
+        "mega_single_low_pidgeot",
+        "mega_double_low_manectric",
+        "mega_double_low_altaria",
+        "mega_double_low_camerupt",
+        "mega_double_low_gallade",
+        "mega_double_low_slowbro",
+        "mega_double_low_kangaskhan"
+      ]
+    },
+    {
+      "profile_id": "mega_single_regular_low_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_single_regular_low_roster_2",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "mega",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "mega_single_low",
+      "set_pool": [
+        "mega_single_low_absol",
+        "mega_single_low_ampharos",
+        "mega_single_low_banette",
+        "mega_single_low_abomasnow",
+        "mega_single_low_audino",
+        "mega_single_low_pidgeot",
+        "mega_double_low_manectric",
+        "mega_double_low_altaria",
+        "mega_double_low_camerupt",
+        "mega_double_low_gallade",
+        "mega_double_low_slowbro",
+        "mega_double_low_kangaskhan"
+      ]
+    },
+    {
+      "profile_id": "mega_single_regular_low_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_single_regular_low_roster_3",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "mega",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "mega_single_low",
+      "set_pool": [
+        "mega_single_low_absol",
+        "mega_single_low_ampharos",
+        "mega_single_low_banette",
+        "mega_single_low_abomasnow",
+        "mega_single_low_audino",
+        "mega_single_low_pidgeot",
+        "mega_double_low_manectric",
+        "mega_double_low_altaria",
+        "mega_double_low_camerupt",
+        "mega_double_low_gallade",
+        "mega_double_low_slowbro",
+        "mega_double_low_kangaskhan"
+      ]
+    },
+    {
+      "profile_id": "mega_single_regular_low_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_single_regular_low_roster_4",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "mega",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "mega_single_low",
+      "set_pool": [
+        "mega_single_low_absol",
+        "mega_single_low_ampharos",
+        "mega_single_low_banette",
+        "mega_single_low_abomasnow",
+        "mega_single_low_audino",
+        "mega_single_low_pidgeot",
+        "mega_double_low_manectric",
+        "mega_double_low_altaria",
+        "mega_double_low_camerupt",
+        "mega_double_low_gallade",
+        "mega_double_low_slowbro",
+        "mega_double_low_kangaskhan"
       ]
     },
     {
@@ -43,7 +133,97 @@
         "mega_single_high_metagross",
         "mega_single_high_salamence",
         "mega_single_high_tyranitar",
-        "mega_single_high_scizor"
+        "mega_single_high_scizor",
+        "mega_double_high_charizard",
+        "mega_double_high_venusaur",
+        "mega_double_high_blastoise",
+        "mega_double_high_mawile",
+        "mega_double_high_lucario",
+        "mega_double_high_aerodactyl"
+      ]
+    },
+    {
+      "profile_id": "mega_single_regular_high_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_single_regular_high_roster_2",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "mega",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "mega_single_high",
+      "set_pool": [
+        "mega_single_high_garchomp",
+        "mega_single_high_gengar",
+        "mega_single_high_metagross",
+        "mega_single_high_salamence",
+        "mega_single_high_tyranitar",
+        "mega_single_high_scizor",
+        "mega_double_high_charizard",
+        "mega_double_high_venusaur",
+        "mega_double_high_blastoise",
+        "mega_double_high_mawile",
+        "mega_double_high_lucario",
+        "mega_double_high_aerodactyl"
+      ]
+    },
+    {
+      "profile_id": "mega_single_regular_high_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_single_regular_high_roster_3",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "mega",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "mega_single_high",
+      "set_pool": [
+        "mega_single_high_garchomp",
+        "mega_single_high_gengar",
+        "mega_single_high_metagross",
+        "mega_single_high_salamence",
+        "mega_single_high_tyranitar",
+        "mega_single_high_scizor",
+        "mega_double_high_charizard",
+        "mega_double_high_venusaur",
+        "mega_double_high_blastoise",
+        "mega_double_high_mawile",
+        "mega_double_high_lucario",
+        "mega_double_high_aerodactyl"
+      ]
+    },
+    {
+      "profile_id": "mega_single_regular_high_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_single_regular_high_roster_4",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "mega",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "mega_single_high",
+      "set_pool": [
+        "mega_single_high_garchomp",
+        "mega_single_high_gengar",
+        "mega_single_high_metagross",
+        "mega_single_high_salamence",
+        "mega_single_high_tyranitar",
+        "mega_single_high_scizor",
+        "mega_double_high_charizard",
+        "mega_double_high_venusaur",
+        "mega_double_high_blastoise",
+        "mega_double_high_mawile",
+        "mega_double_high_lucario",
+        "mega_double_high_aerodactyl"
       ]
     },
     {
@@ -64,7 +244,94 @@
         "mega_single_high_metagross",
         "mega_single_high_salamence",
         "mega_single_high_tyranitar",
-        "mega_single_high_scizor"
+        "mega_single_high_scizor",
+        "mega_double_high_charizard",
+        "mega_double_high_venusaur",
+        "mega_double_high_blastoise",
+        "mega_double_high_mawile",
+        "mega_double_high_lucario",
+        "mega_double_high_aerodactyl"
+      ]
+    },
+    {
+      "profile_id": "mega_single_tier_boss_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_single_tier_boss_roster_2",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "mega",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "mega_single_boss",
+      "set_pool": [
+        "mega_single_high_garchomp",
+        "mega_single_high_gengar",
+        "mega_single_high_metagross",
+        "mega_single_high_salamence",
+        "mega_single_high_tyranitar",
+        "mega_single_high_scizor",
+        "mega_double_high_charizard",
+        "mega_double_high_venusaur",
+        "mega_double_high_blastoise",
+        "mega_double_high_mawile",
+        "mega_double_high_lucario",
+        "mega_double_high_aerodactyl"
+      ]
+    },
+    {
+      "profile_id": "mega_single_tier_boss_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_single_tier_boss_roster_3",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "mega",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "mega_single_boss",
+      "set_pool": [
+        "mega_single_high_garchomp",
+        "mega_single_high_gengar",
+        "mega_single_high_metagross",
+        "mega_single_high_salamence",
+        "mega_single_high_tyranitar",
+        "mega_single_high_scizor",
+        "mega_double_high_charizard",
+        "mega_double_high_venusaur",
+        "mega_double_high_blastoise",
+        "mega_double_high_mawile",
+        "mega_double_high_lucario",
+        "mega_double_high_aerodactyl"
+      ]
+    },
+    {
+      "profile_id": "mega_single_tier_boss_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_single_tier_boss_roster_4",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "mega",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "mega_single_boss",
+      "set_pool": [
+        "mega_single_high_garchomp",
+        "mega_single_high_gengar",
+        "mega_single_high_metagross",
+        "mega_single_high_salamence",
+        "mega_single_high_tyranitar",
+        "mega_single_high_scizor",
+        "mega_double_high_charizard",
+        "mega_double_high_venusaur",
+        "mega_double_high_blastoise",
+        "mega_double_high_mawile",
+        "mega_double_high_lucario",
+        "mega_double_high_aerodactyl"
       ]
     },
     {
@@ -81,6 +348,96 @@
       "ai_skill": 1,
       "theme": "mega_double_low",
       "set_pool": [
+        "mega_single_low_absol",
+        "mega_single_low_ampharos",
+        "mega_single_low_banette",
+        "mega_single_low_abomasnow",
+        "mega_single_low_audino",
+        "mega_single_low_pidgeot",
+        "mega_double_low_manectric",
+        "mega_double_low_altaria",
+        "mega_double_low_camerupt",
+        "mega_double_low_gallade",
+        "mega_double_low_slowbro",
+        "mega_double_low_kangaskhan"
+      ]
+    },
+    {
+      "profile_id": "mega_double_regular_low_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_double_regular_low_roster_2",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "mega",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "mega_double_low",
+      "set_pool": [
+        "mega_single_low_absol",
+        "mega_single_low_ampharos",
+        "mega_single_low_banette",
+        "mega_single_low_abomasnow",
+        "mega_single_low_audino",
+        "mega_single_low_pidgeot",
+        "mega_double_low_manectric",
+        "mega_double_low_altaria",
+        "mega_double_low_camerupt",
+        "mega_double_low_gallade",
+        "mega_double_low_slowbro",
+        "mega_double_low_kangaskhan"
+      ]
+    },
+    {
+      "profile_id": "mega_double_regular_low_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_double_regular_low_roster_3",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "mega",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "mega_double_low",
+      "set_pool": [
+        "mega_single_low_absol",
+        "mega_single_low_ampharos",
+        "mega_single_low_banette",
+        "mega_single_low_abomasnow",
+        "mega_single_low_audino",
+        "mega_single_low_pidgeot",
+        "mega_double_low_manectric",
+        "mega_double_low_altaria",
+        "mega_double_low_camerupt",
+        "mega_double_low_gallade",
+        "mega_double_low_slowbro",
+        "mega_double_low_kangaskhan"
+      ]
+    },
+    {
+      "profile_id": "mega_double_regular_low_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_double_regular_low_roster_4",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "mega",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "mega_double_low",
+      "set_pool": [
+        "mega_single_low_absol",
+        "mega_single_low_ampharos",
+        "mega_single_low_banette",
+        "mega_single_low_abomasnow",
+        "mega_single_low_audino",
+        "mega_single_low_pidgeot",
         "mega_double_low_manectric",
         "mega_double_low_altaria",
         "mega_double_low_camerupt",
@@ -103,6 +460,96 @@
       "ai_skill": 2,
       "theme": "mega_double_high",
       "set_pool": [
+        "mega_single_high_garchomp",
+        "mega_single_high_gengar",
+        "mega_single_high_metagross",
+        "mega_single_high_salamence",
+        "mega_single_high_tyranitar",
+        "mega_single_high_scizor",
+        "mega_double_high_charizard",
+        "mega_double_high_venusaur",
+        "mega_double_high_blastoise",
+        "mega_double_high_mawile",
+        "mega_double_high_lucario",
+        "mega_double_high_aerodactyl"
+      ]
+    },
+    {
+      "profile_id": "mega_double_regular_high_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_double_regular_high_roster_2",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "mega",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "mega_double_high",
+      "set_pool": [
+        "mega_single_high_garchomp",
+        "mega_single_high_gengar",
+        "mega_single_high_metagross",
+        "mega_single_high_salamence",
+        "mega_single_high_tyranitar",
+        "mega_single_high_scizor",
+        "mega_double_high_charizard",
+        "mega_double_high_venusaur",
+        "mega_double_high_blastoise",
+        "mega_double_high_mawile",
+        "mega_double_high_lucario",
+        "mega_double_high_aerodactyl"
+      ]
+    },
+    {
+      "profile_id": "mega_double_regular_high_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_double_regular_high_roster_3",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "mega",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "mega_double_high",
+      "set_pool": [
+        "mega_single_high_garchomp",
+        "mega_single_high_gengar",
+        "mega_single_high_metagross",
+        "mega_single_high_salamence",
+        "mega_single_high_tyranitar",
+        "mega_single_high_scizor",
+        "mega_double_high_charizard",
+        "mega_double_high_venusaur",
+        "mega_double_high_blastoise",
+        "mega_double_high_mawile",
+        "mega_double_high_lucario",
+        "mega_double_high_aerodactyl"
+      ]
+    },
+    {
+      "profile_id": "mega_double_regular_high_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_double_regular_high_roster_4",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "mega",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "mega_double_high",
+      "set_pool": [
+        "mega_single_high_garchomp",
+        "mega_single_high_gengar",
+        "mega_single_high_metagross",
+        "mega_single_high_salamence",
+        "mega_single_high_tyranitar",
+        "mega_single_high_scizor",
         "mega_double_high_charizard",
         "mega_double_high_venusaur",
         "mega_double_high_blastoise",
@@ -124,6 +571,93 @@
       "ai_skill": 4,
       "theme": "mega_double_boss",
       "set_pool": [
+        "mega_single_high_garchomp",
+        "mega_single_high_gengar",
+        "mega_single_high_metagross",
+        "mega_single_high_salamence",
+        "mega_single_high_tyranitar",
+        "mega_single_high_scizor",
+        "mega_double_high_charizard",
+        "mega_double_high_venusaur",
+        "mega_double_high_blastoise",
+        "mega_double_high_mawile",
+        "mega_double_high_lucario",
+        "mega_double_high_aerodactyl"
+      ]
+    },
+    {
+      "profile_id": "mega_double_tier_boss_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_double_tier_boss_roster_2",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "mega",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "mega_double_boss",
+      "set_pool": [
+        "mega_single_high_garchomp",
+        "mega_single_high_gengar",
+        "mega_single_high_metagross",
+        "mega_single_high_salamence",
+        "mega_single_high_tyranitar",
+        "mega_single_high_scizor",
+        "mega_double_high_charizard",
+        "mega_double_high_venusaur",
+        "mega_double_high_blastoise",
+        "mega_double_high_mawile",
+        "mega_double_high_lucario",
+        "mega_double_high_aerodactyl"
+      ]
+    },
+    {
+      "profile_id": "mega_double_tier_boss_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_double_tier_boss_roster_3",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "mega",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "mega_double_boss",
+      "set_pool": [
+        "mega_single_high_garchomp",
+        "mega_single_high_gengar",
+        "mega_single_high_metagross",
+        "mega_single_high_salamence",
+        "mega_single_high_tyranitar",
+        "mega_single_high_scizor",
+        "mega_double_high_charizard",
+        "mega_double_high_venusaur",
+        "mega_double_high_blastoise",
+        "mega_double_high_mawile",
+        "mega_double_high_lucario",
+        "mega_double_high_aerodactyl"
+      ]
+    },
+    {
+      "profile_id": "mega_double_tier_boss_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_double_tier_boss_roster_4",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "mega",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "mega_double_boss",
+      "set_pool": [
+        "mega_single_high_garchomp",
+        "mega_single_high_gengar",
+        "mega_single_high_metagross",
+        "mega_single_high_salamence",
+        "mega_single_high_tyranitar",
+        "mega_single_high_scizor",
         "mega_double_high_charizard",
         "mega_double_high_venusaur",
         "mega_double_high_blastoise",
@@ -151,7 +685,97 @@
         "dynamax_single_low_orbeetle",
         "dynamax_single_low_sandaconda",
         "dynamax_single_low_toxtricity",
-        "dynamax_single_low_alcremie"
+        "dynamax_single_low_alcremie",
+        "dynamax_double_low_pelipper",
+        "dynamax_double_low_ludicolo",
+        "dynamax_double_low_arcanine",
+        "dynamax_double_low_gastrodon",
+        "dynamax_double_low_raichu",
+        "dynamax_double_low_ferrothorn"
+      ]
+    },
+    {
+      "profile_id": "dynamax_single_regular_low_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_single_regular_low_roster_2",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "dynamax",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "dynamax_single_low",
+      "set_pool": [
+        "dynamax_single_low_corviknight",
+        "dynamax_single_low_drednaw",
+        "dynamax_single_low_orbeetle",
+        "dynamax_single_low_sandaconda",
+        "dynamax_single_low_toxtricity",
+        "dynamax_single_low_alcremie",
+        "dynamax_double_low_pelipper",
+        "dynamax_double_low_ludicolo",
+        "dynamax_double_low_arcanine",
+        "dynamax_double_low_gastrodon",
+        "dynamax_double_low_raichu",
+        "dynamax_double_low_ferrothorn"
+      ]
+    },
+    {
+      "profile_id": "dynamax_single_regular_low_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_single_regular_low_roster_3",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "dynamax",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "dynamax_single_low",
+      "set_pool": [
+        "dynamax_single_low_corviknight",
+        "dynamax_single_low_drednaw",
+        "dynamax_single_low_orbeetle",
+        "dynamax_single_low_sandaconda",
+        "dynamax_single_low_toxtricity",
+        "dynamax_single_low_alcremie",
+        "dynamax_double_low_pelipper",
+        "dynamax_double_low_ludicolo",
+        "dynamax_double_low_arcanine",
+        "dynamax_double_low_gastrodon",
+        "dynamax_double_low_raichu",
+        "dynamax_double_low_ferrothorn"
+      ]
+    },
+    {
+      "profile_id": "dynamax_single_regular_low_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_single_regular_low_roster_4",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "dynamax",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "dynamax_single_low",
+      "set_pool": [
+        "dynamax_single_low_corviknight",
+        "dynamax_single_low_drednaw",
+        "dynamax_single_low_orbeetle",
+        "dynamax_single_low_sandaconda",
+        "dynamax_single_low_toxtricity",
+        "dynamax_single_low_alcremie",
+        "dynamax_double_low_pelipper",
+        "dynamax_double_low_ludicolo",
+        "dynamax_double_low_arcanine",
+        "dynamax_double_low_gastrodon",
+        "dynamax_double_low_raichu",
+        "dynamax_double_low_ferrothorn"
       ]
     },
     {
@@ -173,7 +797,97 @@
         "dynamax_single_high_mimikyu",
         "dynamax_single_high_hydreigon",
         "dynamax_single_high_togekiss",
-        "dynamax_single_high_conkeldurr"
+        "dynamax_single_high_conkeldurr",
+        "dynamax_double_high_coalossal",
+        "dynamax_double_high_rillaboom",
+        "dynamax_double_high_indeedee",
+        "dynamax_double_high_duraludon",
+        "dynamax_double_high_copperajah",
+        "dynamax_double_high_snorlax"
+      ]
+    },
+    {
+      "profile_id": "dynamax_single_regular_high_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_single_regular_high_roster_2",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "dynamax",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "dynamax_single_high",
+      "set_pool": [
+        "dynamax_single_high_dragapult",
+        "dynamax_single_high_excadrill",
+        "dynamax_single_high_mimikyu",
+        "dynamax_single_high_hydreigon",
+        "dynamax_single_high_togekiss",
+        "dynamax_single_high_conkeldurr",
+        "dynamax_double_high_coalossal",
+        "dynamax_double_high_rillaboom",
+        "dynamax_double_high_indeedee",
+        "dynamax_double_high_duraludon",
+        "dynamax_double_high_copperajah",
+        "dynamax_double_high_snorlax"
+      ]
+    },
+    {
+      "profile_id": "dynamax_single_regular_high_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_single_regular_high_roster_3",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "dynamax",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "dynamax_single_high",
+      "set_pool": [
+        "dynamax_single_high_dragapult",
+        "dynamax_single_high_excadrill",
+        "dynamax_single_high_mimikyu",
+        "dynamax_single_high_hydreigon",
+        "dynamax_single_high_togekiss",
+        "dynamax_single_high_conkeldurr",
+        "dynamax_double_high_coalossal",
+        "dynamax_double_high_rillaboom",
+        "dynamax_double_high_indeedee",
+        "dynamax_double_high_duraludon",
+        "dynamax_double_high_copperajah",
+        "dynamax_double_high_snorlax"
+      ]
+    },
+    {
+      "profile_id": "dynamax_single_regular_high_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_single_regular_high_roster_4",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "dynamax",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "dynamax_single_high",
+      "set_pool": [
+        "dynamax_single_high_dragapult",
+        "dynamax_single_high_excadrill",
+        "dynamax_single_high_mimikyu",
+        "dynamax_single_high_hydreigon",
+        "dynamax_single_high_togekiss",
+        "dynamax_single_high_conkeldurr",
+        "dynamax_double_high_coalossal",
+        "dynamax_double_high_rillaboom",
+        "dynamax_double_high_indeedee",
+        "dynamax_double_high_duraludon",
+        "dynamax_double_high_copperajah",
+        "dynamax_double_high_snorlax"
       ]
     },
     {
@@ -194,7 +908,94 @@
         "dynamax_single_high_mimikyu",
         "dynamax_single_high_hydreigon",
         "dynamax_single_high_togekiss",
-        "dynamax_single_high_conkeldurr"
+        "dynamax_single_high_conkeldurr",
+        "dynamax_double_high_coalossal",
+        "dynamax_double_high_rillaboom",
+        "dynamax_double_high_indeedee",
+        "dynamax_double_high_duraludon",
+        "dynamax_double_high_copperajah",
+        "dynamax_double_high_snorlax"
+      ]
+    },
+    {
+      "profile_id": "dynamax_single_tier_boss_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_single_tier_boss_roster_2",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "dynamax",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "dynamax_single_boss",
+      "set_pool": [
+        "dynamax_single_high_dragapult",
+        "dynamax_single_high_excadrill",
+        "dynamax_single_high_mimikyu",
+        "dynamax_single_high_hydreigon",
+        "dynamax_single_high_togekiss",
+        "dynamax_single_high_conkeldurr",
+        "dynamax_double_high_coalossal",
+        "dynamax_double_high_rillaboom",
+        "dynamax_double_high_indeedee",
+        "dynamax_double_high_duraludon",
+        "dynamax_double_high_copperajah",
+        "dynamax_double_high_snorlax"
+      ]
+    },
+    {
+      "profile_id": "dynamax_single_tier_boss_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_single_tier_boss_roster_3",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "dynamax",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "dynamax_single_boss",
+      "set_pool": [
+        "dynamax_single_high_dragapult",
+        "dynamax_single_high_excadrill",
+        "dynamax_single_high_mimikyu",
+        "dynamax_single_high_hydreigon",
+        "dynamax_single_high_togekiss",
+        "dynamax_single_high_conkeldurr",
+        "dynamax_double_high_coalossal",
+        "dynamax_double_high_rillaboom",
+        "dynamax_double_high_indeedee",
+        "dynamax_double_high_duraludon",
+        "dynamax_double_high_copperajah",
+        "dynamax_double_high_snorlax"
+      ]
+    },
+    {
+      "profile_id": "dynamax_single_tier_boss_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_single_tier_boss_roster_4",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "dynamax",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "dynamax_single_boss",
+      "set_pool": [
+        "dynamax_single_high_dragapult",
+        "dynamax_single_high_excadrill",
+        "dynamax_single_high_mimikyu",
+        "dynamax_single_high_hydreigon",
+        "dynamax_single_high_togekiss",
+        "dynamax_single_high_conkeldurr",
+        "dynamax_double_high_coalossal",
+        "dynamax_double_high_rillaboom",
+        "dynamax_double_high_indeedee",
+        "dynamax_double_high_duraludon",
+        "dynamax_double_high_copperajah",
+        "dynamax_double_high_snorlax"
       ]
     },
     {
@@ -211,6 +1012,96 @@
       "ai_skill": 1,
       "theme": "dynamax_double_low",
       "set_pool": [
+        "dynamax_single_low_corviknight",
+        "dynamax_single_low_drednaw",
+        "dynamax_single_low_orbeetle",
+        "dynamax_single_low_sandaconda",
+        "dynamax_single_low_toxtricity",
+        "dynamax_single_low_alcremie",
+        "dynamax_double_low_pelipper",
+        "dynamax_double_low_ludicolo",
+        "dynamax_double_low_arcanine",
+        "dynamax_double_low_gastrodon",
+        "dynamax_double_low_raichu",
+        "dynamax_double_low_ferrothorn"
+      ]
+    },
+    {
+      "profile_id": "dynamax_double_regular_low_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_double_regular_low_roster_2",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "dynamax",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "dynamax_double_low",
+      "set_pool": [
+        "dynamax_single_low_corviknight",
+        "dynamax_single_low_drednaw",
+        "dynamax_single_low_orbeetle",
+        "dynamax_single_low_sandaconda",
+        "dynamax_single_low_toxtricity",
+        "dynamax_single_low_alcremie",
+        "dynamax_double_low_pelipper",
+        "dynamax_double_low_ludicolo",
+        "dynamax_double_low_arcanine",
+        "dynamax_double_low_gastrodon",
+        "dynamax_double_low_raichu",
+        "dynamax_double_low_ferrothorn"
+      ]
+    },
+    {
+      "profile_id": "dynamax_double_regular_low_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_double_regular_low_roster_3",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "dynamax",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "dynamax_double_low",
+      "set_pool": [
+        "dynamax_single_low_corviknight",
+        "dynamax_single_low_drednaw",
+        "dynamax_single_low_orbeetle",
+        "dynamax_single_low_sandaconda",
+        "dynamax_single_low_toxtricity",
+        "dynamax_single_low_alcremie",
+        "dynamax_double_low_pelipper",
+        "dynamax_double_low_ludicolo",
+        "dynamax_double_low_arcanine",
+        "dynamax_double_low_gastrodon",
+        "dynamax_double_low_raichu",
+        "dynamax_double_low_ferrothorn"
+      ]
+    },
+    {
+      "profile_id": "dynamax_double_regular_low_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_double_regular_low_roster_4",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "dynamax",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "dynamax_double_low",
+      "set_pool": [
+        "dynamax_single_low_corviknight",
+        "dynamax_single_low_drednaw",
+        "dynamax_single_low_orbeetle",
+        "dynamax_single_low_sandaconda",
+        "dynamax_single_low_toxtricity",
+        "dynamax_single_low_alcremie",
         "dynamax_double_low_pelipper",
         "dynamax_double_low_ludicolo",
         "dynamax_double_low_arcanine",
@@ -233,6 +1124,96 @@
       "ai_skill": 2,
       "theme": "dynamax_double_high",
       "set_pool": [
+        "dynamax_single_high_dragapult",
+        "dynamax_single_high_excadrill",
+        "dynamax_single_high_mimikyu",
+        "dynamax_single_high_hydreigon",
+        "dynamax_single_high_togekiss",
+        "dynamax_single_high_conkeldurr",
+        "dynamax_double_high_coalossal",
+        "dynamax_double_high_rillaboom",
+        "dynamax_double_high_indeedee",
+        "dynamax_double_high_duraludon",
+        "dynamax_double_high_copperajah",
+        "dynamax_double_high_snorlax"
+      ]
+    },
+    {
+      "profile_id": "dynamax_double_regular_high_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_double_regular_high_roster_2",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "dynamax",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "dynamax_double_high",
+      "set_pool": [
+        "dynamax_single_high_dragapult",
+        "dynamax_single_high_excadrill",
+        "dynamax_single_high_mimikyu",
+        "dynamax_single_high_hydreigon",
+        "dynamax_single_high_togekiss",
+        "dynamax_single_high_conkeldurr",
+        "dynamax_double_high_coalossal",
+        "dynamax_double_high_rillaboom",
+        "dynamax_double_high_indeedee",
+        "dynamax_double_high_duraludon",
+        "dynamax_double_high_copperajah",
+        "dynamax_double_high_snorlax"
+      ]
+    },
+    {
+      "profile_id": "dynamax_double_regular_high_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_double_regular_high_roster_3",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "dynamax",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "dynamax_double_high",
+      "set_pool": [
+        "dynamax_single_high_dragapult",
+        "dynamax_single_high_excadrill",
+        "dynamax_single_high_mimikyu",
+        "dynamax_single_high_hydreigon",
+        "dynamax_single_high_togekiss",
+        "dynamax_single_high_conkeldurr",
+        "dynamax_double_high_coalossal",
+        "dynamax_double_high_rillaboom",
+        "dynamax_double_high_indeedee",
+        "dynamax_double_high_duraludon",
+        "dynamax_double_high_copperajah",
+        "dynamax_double_high_snorlax"
+      ]
+    },
+    {
+      "profile_id": "dynamax_double_regular_high_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_double_regular_high_roster_4",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "dynamax",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "dynamax_double_high",
+      "set_pool": [
+        "dynamax_single_high_dragapult",
+        "dynamax_single_high_excadrill",
+        "dynamax_single_high_mimikyu",
+        "dynamax_single_high_hydreigon",
+        "dynamax_single_high_togekiss",
+        "dynamax_single_high_conkeldurr",
         "dynamax_double_high_coalossal",
         "dynamax_double_high_rillaboom",
         "dynamax_double_high_indeedee",
@@ -254,6 +1235,93 @@
       "ai_skill": 4,
       "theme": "dynamax_double_boss",
       "set_pool": [
+        "dynamax_single_high_dragapult",
+        "dynamax_single_high_excadrill",
+        "dynamax_single_high_mimikyu",
+        "dynamax_single_high_hydreigon",
+        "dynamax_single_high_togekiss",
+        "dynamax_single_high_conkeldurr",
+        "dynamax_double_high_coalossal",
+        "dynamax_double_high_rillaboom",
+        "dynamax_double_high_indeedee",
+        "dynamax_double_high_duraludon",
+        "dynamax_double_high_copperajah",
+        "dynamax_double_high_snorlax"
+      ]
+    },
+    {
+      "profile_id": "dynamax_double_tier_boss_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_double_tier_boss_roster_2",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "dynamax",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "dynamax_double_boss",
+      "set_pool": [
+        "dynamax_single_high_dragapult",
+        "dynamax_single_high_excadrill",
+        "dynamax_single_high_mimikyu",
+        "dynamax_single_high_hydreigon",
+        "dynamax_single_high_togekiss",
+        "dynamax_single_high_conkeldurr",
+        "dynamax_double_high_coalossal",
+        "dynamax_double_high_rillaboom",
+        "dynamax_double_high_indeedee",
+        "dynamax_double_high_duraludon",
+        "dynamax_double_high_copperajah",
+        "dynamax_double_high_snorlax"
+      ]
+    },
+    {
+      "profile_id": "dynamax_double_tier_boss_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_double_tier_boss_roster_3",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "dynamax",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "dynamax_double_boss",
+      "set_pool": [
+        "dynamax_single_high_dragapult",
+        "dynamax_single_high_excadrill",
+        "dynamax_single_high_mimikyu",
+        "dynamax_single_high_hydreigon",
+        "dynamax_single_high_togekiss",
+        "dynamax_single_high_conkeldurr",
+        "dynamax_double_high_coalossal",
+        "dynamax_double_high_rillaboom",
+        "dynamax_double_high_indeedee",
+        "dynamax_double_high_duraludon",
+        "dynamax_double_high_copperajah",
+        "dynamax_double_high_snorlax"
+      ]
+    },
+    {
+      "profile_id": "dynamax_double_tier_boss_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_double_tier_boss_roster_4",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "dynamax",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "dynamax_double_boss",
+      "set_pool": [
+        "dynamax_single_high_dragapult",
+        "dynamax_single_high_excadrill",
+        "dynamax_single_high_mimikyu",
+        "dynamax_single_high_hydreigon",
+        "dynamax_single_high_togekiss",
+        "dynamax_single_high_conkeldurr",
         "dynamax_double_high_coalossal",
         "dynamax_double_high_rillaboom",
         "dynamax_double_high_indeedee",
@@ -281,7 +1349,97 @@
         "tera_single_low_clodsire",
         "tera_single_low_kilowattrel",
         "tera_single_low_baxcalibur",
-        "tera_single_low_tinkaton"
+        "tera_single_low_tinkaton",
+        "tera_double_low_murkrow",
+        "tera_double_low_garchomp",
+        "tera_double_low_armarouge",
+        "tera_double_low_farigiraf",
+        "tera_double_low_amoonguss",
+        "tera_double_low_sylveon"
+      ]
+    },
+    {
+      "profile_id": "tera_single_regular_low_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_single_regular_low_roster_2",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "tera",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "tera_single_low",
+      "set_pool": [
+        "tera_single_low_meowscarada",
+        "tera_single_low_ceruledge",
+        "tera_single_low_clodsire",
+        "tera_single_low_kilowattrel",
+        "tera_single_low_baxcalibur",
+        "tera_single_low_tinkaton",
+        "tera_double_low_murkrow",
+        "tera_double_low_garchomp",
+        "tera_double_low_armarouge",
+        "tera_double_low_farigiraf",
+        "tera_double_low_amoonguss",
+        "tera_double_low_sylveon"
+      ]
+    },
+    {
+      "profile_id": "tera_single_regular_low_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_single_regular_low_roster_3",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "tera",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "tera_single_low",
+      "set_pool": [
+        "tera_single_low_meowscarada",
+        "tera_single_low_ceruledge",
+        "tera_single_low_clodsire",
+        "tera_single_low_kilowattrel",
+        "tera_single_low_baxcalibur",
+        "tera_single_low_tinkaton",
+        "tera_double_low_murkrow",
+        "tera_double_low_garchomp",
+        "tera_double_low_armarouge",
+        "tera_double_low_farigiraf",
+        "tera_double_low_amoonguss",
+        "tera_double_low_sylveon"
+      ]
+    },
+    {
+      "profile_id": "tera_single_regular_low_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_single_regular_low_roster_4",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "tera",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "tera_single_low",
+      "set_pool": [
+        "tera_single_low_meowscarada",
+        "tera_single_low_ceruledge",
+        "tera_single_low_clodsire",
+        "tera_single_low_kilowattrel",
+        "tera_single_low_baxcalibur",
+        "tera_single_low_tinkaton",
+        "tera_double_low_murkrow",
+        "tera_double_low_garchomp",
+        "tera_double_low_armarouge",
+        "tera_double_low_farigiraf",
+        "tera_double_low_amoonguss",
+        "tera_double_low_sylveon"
       ]
     },
     {
@@ -303,7 +1461,97 @@
         "tera_single_high_dragonite",
         "tera_single_high_volcarona",
         "tera_single_high_garganacl",
-        "tera_single_high_azumarill"
+        "tera_single_high_azumarill",
+        "tera_double_high_fluttermane",
+        "tera_double_high_ironhands",
+        "tera_double_high_incineroar",
+        "tera_double_high_rillaboom",
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
+      ]
+    },
+    {
+      "profile_id": "tera_single_regular_high_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_single_regular_high_roster_2",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "tera",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "tera_single_high",
+      "set_pool": [
+        "tera_single_high_kingambit",
+        "tera_single_high_gholdengo",
+        "tera_single_high_dragonite",
+        "tera_single_high_volcarona",
+        "tera_single_high_garganacl",
+        "tera_single_high_azumarill",
+        "tera_double_high_fluttermane",
+        "tera_double_high_ironhands",
+        "tera_double_high_incineroar",
+        "tera_double_high_rillaboom",
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
+      ]
+    },
+    {
+      "profile_id": "tera_single_regular_high_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_single_regular_high_roster_3",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "tera",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "tera_single_high",
+      "set_pool": [
+        "tera_single_high_kingambit",
+        "tera_single_high_gholdengo",
+        "tera_single_high_dragonite",
+        "tera_single_high_volcarona",
+        "tera_single_high_garganacl",
+        "tera_single_high_azumarill",
+        "tera_double_high_fluttermane",
+        "tera_double_high_ironhands",
+        "tera_double_high_incineroar",
+        "tera_double_high_rillaboom",
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
+      ]
+    },
+    {
+      "profile_id": "tera_single_regular_high_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_single_regular_high_roster_4",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "regular",
+      "mechanic_id": "tera",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "tera_single_high",
+      "set_pool": [
+        "tera_single_high_kingambit",
+        "tera_single_high_gholdengo",
+        "tera_single_high_dragonite",
+        "tera_single_high_volcarona",
+        "tera_single_high_garganacl",
+        "tera_single_high_azumarill",
+        "tera_double_high_fluttermane",
+        "tera_double_high_ironhands",
+        "tera_double_high_incineroar",
+        "tera_double_high_rillaboom",
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
       ]
     },
     {
@@ -324,7 +1572,94 @@
         "tera_single_high_dragonite",
         "tera_single_high_volcarona",
         "tera_single_high_garganacl",
-        "tera_single_high_azumarill"
+        "tera_single_high_azumarill",
+        "tera_double_high_fluttermane",
+        "tera_double_high_ironhands",
+        "tera_double_high_incineroar",
+        "tera_double_high_rillaboom",
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
+      ]
+    },
+    {
+      "profile_id": "tera_single_tier_boss_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_single_tier_boss_roster_2",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "tera",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "tera_single_boss",
+      "set_pool": [
+        "tera_single_high_kingambit",
+        "tera_single_high_gholdengo",
+        "tera_single_high_dragonite",
+        "tera_single_high_volcarona",
+        "tera_single_high_garganacl",
+        "tera_single_high_azumarill",
+        "tera_double_high_fluttermane",
+        "tera_double_high_ironhands",
+        "tera_double_high_incineroar",
+        "tera_double_high_rillaboom",
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
+      ]
+    },
+    {
+      "profile_id": "tera_single_tier_boss_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_single_tier_boss_roster_3",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "tera",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "tera_single_boss",
+      "set_pool": [
+        "tera_single_high_kingambit",
+        "tera_single_high_gholdengo",
+        "tera_single_high_dragonite",
+        "tera_single_high_volcarona",
+        "tera_single_high_garganacl",
+        "tera_single_high_azumarill",
+        "tera_double_high_fluttermane",
+        "tera_double_high_ironhands",
+        "tera_double_high_incineroar",
+        "tera_double_high_rillaboom",
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
+      ]
+    },
+    {
+      "profile_id": "tera_single_tier_boss_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_single_tier_boss_roster_4",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "single",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "tera",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "tera_single_boss",
+      "set_pool": [
+        "tera_single_high_kingambit",
+        "tera_single_high_gholdengo",
+        "tera_single_high_dragonite",
+        "tera_single_high_volcarona",
+        "tera_single_high_garganacl",
+        "tera_single_high_azumarill",
+        "tera_double_high_fluttermane",
+        "tera_double_high_ironhands",
+        "tera_double_high_incineroar",
+        "tera_double_high_rillaboom",
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
       ]
     },
     {
@@ -341,6 +1676,96 @@
       "ai_skill": 1,
       "theme": "tera_double_low",
       "set_pool": [
+        "tera_single_low_meowscarada",
+        "tera_single_low_ceruledge",
+        "tera_single_low_clodsire",
+        "tera_single_low_kilowattrel",
+        "tera_single_low_baxcalibur",
+        "tera_single_low_tinkaton",
+        "tera_double_low_murkrow",
+        "tera_double_low_garchomp",
+        "tera_double_low_armarouge",
+        "tera_double_low_farigiraf",
+        "tera_double_low_amoonguss",
+        "tera_double_low_sylveon"
+      ]
+    },
+    {
+      "profile_id": "tera_double_regular_low_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_double_regular_low_roster_2",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "tera",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "tera_double_low",
+      "set_pool": [
+        "tera_single_low_meowscarada",
+        "tera_single_low_ceruledge",
+        "tera_single_low_clodsire",
+        "tera_single_low_kilowattrel",
+        "tera_single_low_baxcalibur",
+        "tera_single_low_tinkaton",
+        "tera_double_low_murkrow",
+        "tera_double_low_garchomp",
+        "tera_double_low_armarouge",
+        "tera_double_low_farigiraf",
+        "tera_double_low_amoonguss",
+        "tera_double_low_sylveon"
+      ]
+    },
+    {
+      "profile_id": "tera_double_regular_low_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_double_regular_low_roster_3",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "tera",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "tera_double_low",
+      "set_pool": [
+        "tera_single_low_meowscarada",
+        "tera_single_low_ceruledge",
+        "tera_single_low_clodsire",
+        "tera_single_low_kilowattrel",
+        "tera_single_low_baxcalibur",
+        "tera_single_low_tinkaton",
+        "tera_double_low_murkrow",
+        "tera_double_low_garchomp",
+        "tera_double_low_armarouge",
+        "tera_double_low_farigiraf",
+        "tera_double_low_amoonguss",
+        "tera_double_low_sylveon"
+      ]
+    },
+    {
+      "profile_id": "tera_double_regular_low_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_double_regular_low_roster_4",
+      "rank_ids": [
+        "1",
+        "2"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "tera",
+      "weight": 40,
+      "ai_skill": 1,
+      "theme": "tera_double_low",
+      "set_pool": [
+        "tera_single_low_meowscarada",
+        "tera_single_low_ceruledge",
+        "tera_single_low_clodsire",
+        "tera_single_low_kilowattrel",
+        "tera_single_low_baxcalibur",
+        "tera_single_low_tinkaton",
         "tera_double_low_murkrow",
         "tera_double_low_garchomp",
         "tera_double_low_armarouge",
@@ -363,12 +1788,102 @@
       "ai_skill": 2,
       "theme": "tera_double_high",
       "set_pool": [
+        "tera_single_high_kingambit",
+        "tera_single_high_gholdengo",
+        "tera_single_high_dragonite",
+        "tera_single_high_volcarona",
+        "tera_single_high_garganacl",
+        "tera_single_high_azumarill",
         "tera_double_high_fluttermane",
         "tera_double_high_ironhands",
         "tera_double_high_incineroar",
         "tera_double_high_rillaboom",
-        "tera_double_high_gholdengo",
-        "tera_double_high_dragonite"
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
+      ]
+    },
+    {
+      "profile_id": "tera_double_regular_high_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_double_regular_high_roster_2",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "tera",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "tera_double_high",
+      "set_pool": [
+        "tera_single_high_kingambit",
+        "tera_single_high_gholdengo",
+        "tera_single_high_dragonite",
+        "tera_single_high_volcarona",
+        "tera_single_high_garganacl",
+        "tera_single_high_azumarill",
+        "tera_double_high_fluttermane",
+        "tera_double_high_ironhands",
+        "tera_double_high_incineroar",
+        "tera_double_high_rillaboom",
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
+      ]
+    },
+    {
+      "profile_id": "tera_double_regular_high_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_double_regular_high_roster_3",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "tera",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "tera_double_high",
+      "set_pool": [
+        "tera_single_high_kingambit",
+        "tera_single_high_gholdengo",
+        "tera_single_high_dragonite",
+        "tera_single_high_volcarona",
+        "tera_single_high_garganacl",
+        "tera_single_high_azumarill",
+        "tera_double_high_fluttermane",
+        "tera_double_high_ironhands",
+        "tera_double_high_incineroar",
+        "tera_double_high_rillaboom",
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
+      ]
+    },
+    {
+      "profile_id": "tera_double_regular_high_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_double_regular_high_roster_4",
+      "rank_ids": [
+        "2",
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "regular",
+      "mechanic_id": "tera",
+      "weight": 100,
+      "ai_skill": 2,
+      "theme": "tera_double_high",
+      "set_pool": [
+        "tera_single_high_kingambit",
+        "tera_single_high_gholdengo",
+        "tera_single_high_dragonite",
+        "tera_single_high_volcarona",
+        "tera_single_high_garganacl",
+        "tera_single_high_azumarill",
+        "tera_double_high_fluttermane",
+        "tera_double_high_ironhands",
+        "tera_double_high_incineroar",
+        "tera_double_high_rillaboom",
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
       ]
     },
     {
@@ -384,12 +1899,99 @@
       "ai_skill": 4,
       "theme": "tera_double_boss",
       "set_pool": [
+        "tera_single_high_kingambit",
+        "tera_single_high_gholdengo",
+        "tera_single_high_dragonite",
+        "tera_single_high_volcarona",
+        "tera_single_high_garganacl",
+        "tera_single_high_azumarill",
         "tera_double_high_fluttermane",
         "tera_double_high_ironhands",
         "tera_double_high_incineroar",
         "tera_double_high_rillaboom",
-        "tera_double_high_gholdengo",
-        "tera_double_high_dragonite"
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
+      ]
+    },
+    {
+      "profile_id": "tera_double_tier_boss_roster_2",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_double_tier_boss_roster_2",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "tera",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "tera_double_boss",
+      "set_pool": [
+        "tera_single_high_kingambit",
+        "tera_single_high_gholdengo",
+        "tera_single_high_dragonite",
+        "tera_single_high_volcarona",
+        "tera_single_high_garganacl",
+        "tera_single_high_azumarill",
+        "tera_double_high_fluttermane",
+        "tera_double_high_ironhands",
+        "tera_double_high_incineroar",
+        "tera_double_high_rillaboom",
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
+      ]
+    },
+    {
+      "profile_id": "tera_double_tier_boss_roster_3",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_double_tier_boss_roster_3",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "tera",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "tera_double_boss",
+      "set_pool": [
+        "tera_single_high_kingambit",
+        "tera_single_high_gholdengo",
+        "tera_single_high_dragonite",
+        "tera_single_high_volcarona",
+        "tera_single_high_garganacl",
+        "tera_single_high_azumarill",
+        "tera_double_high_fluttermane",
+        "tera_double_high_ironhands",
+        "tera_double_high_incineroar",
+        "tera_double_high_rillaboom",
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
+      ]
+    },
+    {
+      "profile_id": "tera_double_tier_boss_roster_4",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_double_tier_boss_roster_4",
+      "rank_ids": [
+        "3"
+      ],
+      "format": "double",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "tera",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "tera_double_boss",
+      "set_pool": [
+        "tera_single_high_kingambit",
+        "tera_single_high_gholdengo",
+        "tera_single_high_dragonite",
+        "tera_single_high_volcarona",
+        "tera_single_high_garganacl",
+        "tera_single_high_azumarill",
+        "tera_double_high_fluttermane",
+        "tera_double_high_ironhands",
+        "tera_double_high_incineroar",
+        "tera_double_high_rillaboom",
+        "roster_tera_tier2_meowscarada",
+        "roster_tera_tier2_ceruledge"
       ]
     }
   ],
@@ -562,6 +2164,192 @@
         "cobblemon:heatwave",
         "cobblemon:roost",
         "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "mega_double_low_manectric",
+      "set_tier": 1,
+      "species_id": "cobblemon:manectric",
+      "form_id": null,
+      "ability_id": "cobblemon:lightningrod",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "mega_showdown:manectite",
+      "moves": [
+        "cobblemon:thunderbolt",
+        "cobblemon:voltswitch",
+        "cobblemon:snarl",
+        "cobblemon:protect"
+      ],
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "mega_double_low_altaria",
+      "set_tier": 1,
+      "species_id": "cobblemon:altaria",
+      "form_id": null,
+      "ability_id": "cobblemon:naturalcure",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "mega_showdown:altarianite",
+      "moves": [
+        "cobblemon:hypervoice",
+        "cobblemon:moonblast",
+        "cobblemon:tailwind",
+        "cobblemon:protect"
+      ],
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "mega_double_low_camerupt",
+      "set_tier": 1,
+      "species_id": "cobblemon:camerupt",
+      "form_id": null,
+      "ability_id": "cobblemon:solidrock",
+      "nature_id": "cobblemon:quiet",
+      "held_item_id": "mega_showdown:cameruptite",
+      "moves": [
+        "cobblemon:heatwave",
+        "cobblemon:earthpower",
+        "cobblemon:rockslide",
+        "cobblemon:protect"
+      ],
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "mega_double_low_gallade",
+      "set_tier": 1,
+      "species_id": "cobblemon:gallade",
+      "form_id": null,
+      "ability_id": "cobblemon:justified",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "mega_showdown:galladite",
+      "moves": [
+        "cobblemon:closecombat",
+        "cobblemon:psychocut",
+        "cobblemon:wideguard",
+        "cobblemon:protect"
+      ],
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "mega_double_low_slowbro",
+      "set_tier": 1,
+      "species_id": "cobblemon:slowbro",
+      "form_id": null,
+      "ability_id": "cobblemon:oblivious",
+      "nature_id": "cobblemon:quiet",
+      "held_item_id": "mega_showdown:slowbronite",
+      "moves": [
+        "cobblemon:scald",
+        "cobblemon:psychic",
+        "cobblemon:trickroom",
+        "cobblemon:protect"
+      ],
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "mega_double_low_kangaskhan",
+      "set_tier": 1,
+      "species_id": "cobblemon:kangaskhan",
+      "form_id": null,
+      "ability_id": "cobblemon:scrappy",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "mega_showdown:kangaskhanite",
+      "moves": [
+        "cobblemon:fakeout",
+        "cobblemon:doubleedge",
+        "cobblemon:suckerpunch",
+        "cobblemon:protect"
       ],
       "ivs": {
         "hp": 15,
@@ -760,192 +2548,6 @@
       "evs": {
         "hp": 0,
         "attack": 252,
-        "defense": 0,
-        "special_attack": 0,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "mega_double_low_manectric",
-      "set_tier": 1,
-      "species_id": "cobblemon:manectric",
-      "form_id": null,
-      "ability_id": "cobblemon:lightningrod",
-      "nature_id": "cobblemon:timid",
-      "held_item_id": "mega_showdown:manectite",
-      "moves": [
-        "cobblemon:thunderbolt",
-        "cobblemon:voltswitch",
-        "cobblemon:snarl",
-        "cobblemon:protect"
-      ],
-      "ivs": {
-        "hp": 15,
-        "attack": 15,
-        "defense": 15,
-        "special_attack": 15,
-        "special_defense": 15,
-        "speed": 15
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 0,
-        "defense": 0,
-        "special_attack": 0,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "mega_double_low_altaria",
-      "set_tier": 1,
-      "species_id": "cobblemon:altaria",
-      "form_id": null,
-      "ability_id": "cobblemon:naturalcure",
-      "nature_id": "cobblemon:modest",
-      "held_item_id": "mega_showdown:altarianite",
-      "moves": [
-        "cobblemon:hypervoice",
-        "cobblemon:moonblast",
-        "cobblemon:tailwind",
-        "cobblemon:protect"
-      ],
-      "ivs": {
-        "hp": 15,
-        "attack": 15,
-        "defense": 15,
-        "special_attack": 15,
-        "special_defense": 15,
-        "speed": 15
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 0,
-        "defense": 0,
-        "special_attack": 0,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "mega_double_low_camerupt",
-      "set_tier": 1,
-      "species_id": "cobblemon:camerupt",
-      "form_id": null,
-      "ability_id": "cobblemon:solidrock",
-      "nature_id": "cobblemon:quiet",
-      "held_item_id": "mega_showdown:cameruptite",
-      "moves": [
-        "cobblemon:heatwave",
-        "cobblemon:earthpower",
-        "cobblemon:rockslide",
-        "cobblemon:protect"
-      ],
-      "ivs": {
-        "hp": 15,
-        "attack": 15,
-        "defense": 15,
-        "special_attack": 15,
-        "special_defense": 15,
-        "speed": 15
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 0,
-        "defense": 0,
-        "special_attack": 0,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "mega_double_low_gallade",
-      "set_tier": 1,
-      "species_id": "cobblemon:gallade",
-      "form_id": null,
-      "ability_id": "cobblemon:justified",
-      "nature_id": "cobblemon:jolly",
-      "held_item_id": "mega_showdown:galladite",
-      "moves": [
-        "cobblemon:closecombat",
-        "cobblemon:psychocut",
-        "cobblemon:wideguard",
-        "cobblemon:protect"
-      ],
-      "ivs": {
-        "hp": 15,
-        "attack": 15,
-        "defense": 15,
-        "special_attack": 15,
-        "special_defense": 15,
-        "speed": 15
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 0,
-        "defense": 0,
-        "special_attack": 0,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "mega_double_low_slowbro",
-      "set_tier": 1,
-      "species_id": "cobblemon:slowbro",
-      "form_id": null,
-      "ability_id": "cobblemon:oblivious",
-      "nature_id": "cobblemon:quiet",
-      "held_item_id": "mega_showdown:slowbronite",
-      "moves": [
-        "cobblemon:scald",
-        "cobblemon:psychic",
-        "cobblemon:trickroom",
-        "cobblemon:protect"
-      ],
-      "ivs": {
-        "hp": 15,
-        "attack": 15,
-        "defense": 15,
-        "special_attack": 15,
-        "special_defense": 15,
-        "speed": 15
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 0,
-        "defense": 0,
-        "special_attack": 0,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "mega_double_low_kangaskhan",
-      "set_tier": 1,
-      "species_id": "cobblemon:kangaskhan",
-      "form_id": null,
-      "ability_id": "cobblemon:scrappy",
-      "nature_id": "cobblemon:jolly",
-      "held_item_id": "mega_showdown:kangaskhanite",
-      "moves": [
-        "cobblemon:fakeout",
-        "cobblemon:doubleedge",
-        "cobblemon:suckerpunch",
-        "cobblemon:protect"
-      ],
-      "ivs": {
-        "hp": 15,
-        "attack": 15,
-        "defense": 15,
-        "special_attack": 15,
-        "special_defense": 15,
-        "speed": 15
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 0,
         "defense": 0,
         "special_attack": 0,
         "special_defense": 0,
@@ -1337,204 +2939,6 @@
       }
     },
     {
-      "set_id": "dynamax_single_high_dragapult",
-      "set_tier": 2,
-      "species_id": "cobblemon:dragapult",
-      "form_id": null,
-      "ability_id": "cobblemon:infiltrator",
-      "nature_id": "cobblemon:timid",
-      "held_item_id": "cobblemon:life_orb",
-      "dmax_level": 10,
-      "gmax_factor": false,
-      "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:shadowball",
-        "cobblemon:flamethrower",
-        "cobblemon:uturn"
-      ],
-      "ivs": {
-        "hp": 20,
-        "attack": 20,
-        "defense": 20,
-        "special_attack": 20,
-        "special_defense": 20,
-        "speed": 20
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 0,
-        "defense": 0,
-        "special_attack": 252,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "dynamax_single_high_excadrill",
-      "set_tier": 2,
-      "species_id": "cobblemon:excadrill",
-      "form_id": null,
-      "ability_id": "cobblemon:moldbreaker",
-      "nature_id": "cobblemon:jolly",
-      "held_item_id": "cobblemon:focus_sash",
-      "dmax_level": 10,
-      "gmax_factor": false,
-      "moves": [
-        "cobblemon:earthquake",
-        "cobblemon:ironhead",
-        "cobblemon:rockslide",
-        "cobblemon:swordsdance"
-      ],
-      "ivs": {
-        "hp": 20,
-        "attack": 20,
-        "defense": 20,
-        "special_attack": 20,
-        "special_defense": 20,
-        "speed": 20
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 252,
-        "defense": 0,
-        "special_attack": 0,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "dynamax_single_high_mimikyu",
-      "set_tier": 2,
-      "species_id": "cobblemon:mimikyu",
-      "form_id": null,
-      "ability_id": "cobblemon:disguise",
-      "nature_id": "cobblemon:adamant",
-      "held_item_id": "cobblemon:spell_tag",
-      "dmax_level": 10,
-      "gmax_factor": false,
-      "moves": [
-        "cobblemon:playrough",
-        "cobblemon:shadowclaw",
-        "cobblemon:shadowsneak",
-        "cobblemon:swordsdance"
-      ],
-      "ivs": {
-        "hp": 20,
-        "attack": 20,
-        "defense": 20,
-        "special_attack": 20,
-        "special_defense": 20,
-        "speed": 20
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 252,
-        "defense": 0,
-        "special_attack": 0,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "dynamax_single_high_hydreigon",
-      "set_tier": 2,
-      "species_id": "cobblemon:hydreigon",
-      "form_id": null,
-      "ability_id": "cobblemon:levitate",
-      "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:choice_specs",
-      "dmax_level": 10,
-      "gmax_factor": false,
-      "moves": [
-        "cobblemon:dracometeor",
-        "cobblemon:darkpulse",
-        "cobblemon:flashcannon",
-        "cobblemon:flamethrower"
-      ],
-      "ivs": {
-        "hp": 20,
-        "attack": 20,
-        "defense": 20,
-        "special_attack": 20,
-        "special_defense": 20,
-        "speed": 20
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 0,
-        "defense": 0,
-        "special_attack": 252,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "dynamax_single_high_togekiss",
-      "set_tier": 2,
-      "species_id": "cobblemon:togekiss",
-      "form_id": null,
-      "ability_id": "cobblemon:serenegrace",
-      "nature_id": "cobblemon:timid",
-      "held_item_id": "cobblemon:leftovers",
-      "dmax_level": 10,
-      "gmax_factor": false,
-      "moves": [
-        "cobblemon:airslash",
-        "cobblemon:dazzlinggleam",
-        "cobblemon:thunderwave",
-        "cobblemon:roost"
-      ],
-      "ivs": {
-        "hp": 20,
-        "attack": 20,
-        "defense": 20,
-        "special_attack": 20,
-        "special_defense": 20,
-        "speed": 20
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 0,
-        "defense": 0,
-        "special_attack": 252,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "dynamax_single_high_conkeldurr",
-      "set_tier": 2,
-      "species_id": "cobblemon:conkeldurr",
-      "form_id": null,
-      "ability_id": "cobblemon:guts",
-      "nature_id": "cobblemon:adamant",
-      "held_item_id": "cobblemon:assault_vest",
-      "dmax_level": 10,
-      "gmax_factor": false,
-      "moves": [
-        "cobblemon:drainpunch",
-        "cobblemon:machpunch",
-        "cobblemon:knockoff",
-        "cobblemon:icepunch"
-      ],
-      "ivs": {
-        "hp": 20,
-        "attack": 20,
-        "defense": 20,
-        "special_attack": 20,
-        "special_defense": 20,
-        "speed": 20
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 252,
-        "defense": 0,
-        "special_attack": 0,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
       "set_id": "dynamax_double_low_pelipper",
       "set_tier": 1,
       "species_id": "cobblemon:pelipper",
@@ -1726,6 +3130,204 @@
       "evs": {
         "hp": 0,
         "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "dynamax_single_high_dragapult",
+      "set_tier": 2,
+      "species_id": "cobblemon:dragapult",
+      "form_id": null,
+      "ability_id": "cobblemon:infiltrator",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:life_orb",
+      "dmax_level": 10,
+      "gmax_factor": false,
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:shadowball",
+        "cobblemon:flamethrower",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "dynamax_single_high_excadrill",
+      "set_tier": 2,
+      "species_id": "cobblemon:excadrill",
+      "form_id": null,
+      "ability_id": "cobblemon:moldbreaker",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:focus_sash",
+      "dmax_level": 10,
+      "gmax_factor": false,
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:ironhead",
+        "cobblemon:rockslide",
+        "cobblemon:swordsdance"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "dynamax_single_high_mimikyu",
+      "set_tier": 2,
+      "species_id": "cobblemon:mimikyu",
+      "form_id": null,
+      "ability_id": "cobblemon:disguise",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:spell_tag",
+      "dmax_level": 10,
+      "gmax_factor": false,
+      "moves": [
+        "cobblemon:playrough",
+        "cobblemon:shadowclaw",
+        "cobblemon:shadowsneak",
+        "cobblemon:swordsdance"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "dynamax_single_high_hydreigon",
+      "set_tier": 2,
+      "species_id": "cobblemon:hydreigon",
+      "form_id": null,
+      "ability_id": "cobblemon:levitate",
+      "nature_id": "cobblemon:modest",
+      "held_item_id": "cobblemon:choice_specs",
+      "dmax_level": 10,
+      "gmax_factor": false,
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:darkpulse",
+        "cobblemon:flashcannon",
+        "cobblemon:flamethrower"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "dynamax_single_high_togekiss",
+      "set_tier": 2,
+      "species_id": "cobblemon:togekiss",
+      "form_id": null,
+      "ability_id": "cobblemon:serenegrace",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:leftovers",
+      "dmax_level": 10,
+      "gmax_factor": false,
+      "moves": [
+        "cobblemon:airslash",
+        "cobblemon:dazzlinggleam",
+        "cobblemon:thunderwave",
+        "cobblemon:roost"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "dynamax_single_high_conkeldurr",
+      "set_tier": 2,
+      "species_id": "cobblemon:conkeldurr",
+      "form_id": null,
+      "ability_id": "cobblemon:guts",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:assault_vest",
+      "dmax_level": 10,
+      "gmax_factor": false,
+      "moves": [
+        "cobblemon:drainpunch",
+        "cobblemon:machpunch",
+        "cobblemon:knockoff",
+        "cobblemon:icepunch"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
         "defense": 0,
         "special_attack": 0,
         "special_defense": 0,
@@ -2123,198 +3725,6 @@
       }
     },
     {
-      "set_id": "tera_single_high_kingambit",
-      "set_tier": 2,
-      "species_id": "cobblemon:kingambit",
-      "form_id": null,
-      "ability_id": "cobblemon:supremeoverlord",
-      "nature_id": "cobblemon:adamant",
-      "held_item_id": "cobblemon:black_glasses",
-      "tera_type": "dark",
-      "moves": [
-        "cobblemon:kowtowcleave",
-        "cobblemon:ironhead",
-        "cobblemon:suckerpunch",
-        "cobblemon:swordsdance"
-      ],
-      "ivs": {
-        "hp": 20,
-        "attack": 20,
-        "defense": 20,
-        "special_attack": 20,
-        "special_defense": 20,
-        "speed": 20
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 252,
-        "defense": 0,
-        "special_attack": 0,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "tera_single_high_gholdengo",
-      "set_tier": 2,
-      "species_id": "cobblemon:gholdengo",
-      "form_id": null,
-      "ability_id": "cobblemon:goodasgold",
-      "nature_id": "cobblemon:timid",
-      "held_item_id": "cobblemon:air_balloon",
-      "tera_type": "steel",
-      "moves": [
-        "cobblemon:makeitrain",
-        "cobblemon:shadowball",
-        "cobblemon:focusblast",
-        "cobblemon:nastyplot"
-      ],
-      "ivs": {
-        "hp": 20,
-        "attack": 20,
-        "defense": 20,
-        "special_attack": 20,
-        "special_defense": 20,
-        "speed": 20
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 0,
-        "defense": 0,
-        "special_attack": 252,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "tera_single_high_dragonite",
-      "set_tier": 2,
-      "species_id": "cobblemon:dragonite",
-      "form_id": null,
-      "ability_id": "cobblemon:multiscale",
-      "nature_id": "cobblemon:adamant",
-      "held_item_id": "cobblemon:weakness_policy",
-      "tera_type": "normal",
-      "moves": [
-        "cobblemon:extremespeed",
-        "cobblemon:dragonclaw",
-        "cobblemon:firepunch",
-        "cobblemon:dragondance"
-      ],
-      "ivs": {
-        "hp": 20,
-        "attack": 20,
-        "defense": 20,
-        "special_attack": 20,
-        "special_defense": 20,
-        "speed": 20
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 252,
-        "defense": 0,
-        "special_attack": 0,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "tera_single_high_volcarona",
-      "set_tier": 2,
-      "species_id": "cobblemon:volcarona",
-      "form_id": null,
-      "ability_id": "cobblemon:flamebody",
-      "nature_id": "cobblemon:timid",
-      "held_item_id": "cobblemon:heavy_duty_boots",
-      "tera_type": "grass",
-      "moves": [
-        "cobblemon:fierydance",
-        "cobblemon:bugbuzz",
-        "cobblemon:gigadrain",
-        "cobblemon:quiverdance"
-      ],
-      "ivs": {
-        "hp": 20,
-        "attack": 20,
-        "defense": 20,
-        "special_attack": 20,
-        "special_defense": 20,
-        "speed": 20
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 0,
-        "defense": 0,
-        "special_attack": 252,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "tera_single_high_garganacl",
-      "set_tier": 2,
-      "species_id": "cobblemon:garganacl",
-      "form_id": null,
-      "ability_id": "cobblemon:purifyingsalt",
-      "nature_id": "cobblemon:careful",
-      "held_item_id": "cobblemon:leftovers",
-      "tera_type": "ghost",
-      "moves": [
-        "cobblemon:saltcure",
-        "cobblemon:bodypress",
-        "cobblemon:recover",
-        "cobblemon:irondefense"
-      ],
-      "ivs": {
-        "hp": 20,
-        "attack": 20,
-        "defense": 20,
-        "special_attack": 20,
-        "special_defense": 20,
-        "speed": 20
-      },
-      "evs": {
-        "hp": 252,
-        "attack": 0,
-        "defense": 0,
-        "special_attack": 0,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
-      "set_id": "tera_single_high_azumarill",
-      "set_tier": 2,
-      "species_id": "cobblemon:azumarill",
-      "form_id": null,
-      "ability_id": "cobblemon:hugepower",
-      "nature_id": "cobblemon:adamant",
-      "held_item_id": "cobblemon:sitrus_berry",
-      "tera_type": "water",
-      "moves": [
-        "cobblemon:aquajet",
-        "cobblemon:playrough",
-        "cobblemon:liquidation",
-        "cobblemon:bellydrum"
-      ],
-      "ivs": {
-        "hp": 20,
-        "attack": 20,
-        "defense": 20,
-        "special_attack": 20,
-        "special_defense": 20,
-        "speed": 20
-      },
-      "evs": {
-        "hp": 0,
-        "attack": 252,
-        "defense": 0,
-        "special_attack": 0,
-        "special_defense": 0,
-        "speed": 0
-      }
-    },
-    {
       "set_id": "tera_double_low_murkrow",
       "set_tier": 1,
       "species_id": "cobblemon:murkrow",
@@ -2507,6 +3917,198 @@
       }
     },
     {
+      "set_id": "tera_single_high_kingambit",
+      "set_tier": 2,
+      "species_id": "cobblemon:kingambit",
+      "form_id": null,
+      "ability_id": "cobblemon:supremeoverlord",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:black_glasses",
+      "tera_type": "dark",
+      "moves": [
+        "cobblemon:kowtowcleave",
+        "cobblemon:ironhead",
+        "cobblemon:suckerpunch",
+        "cobblemon:swordsdance"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "tera_single_high_gholdengo",
+      "set_tier": 2,
+      "species_id": "cobblemon:gholdengo",
+      "form_id": null,
+      "ability_id": "cobblemon:goodasgold",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:air_balloon",
+      "tera_type": "steel",
+      "moves": [
+        "cobblemon:makeitrain",
+        "cobblemon:shadowball",
+        "cobblemon:focusblast",
+        "cobblemon:nastyplot"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "tera_single_high_dragonite",
+      "set_tier": 2,
+      "species_id": "cobblemon:dragonite",
+      "form_id": null,
+      "ability_id": "cobblemon:multiscale",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:weakness_policy",
+      "tera_type": "normal",
+      "moves": [
+        "cobblemon:extremespeed",
+        "cobblemon:dragonclaw",
+        "cobblemon:firepunch",
+        "cobblemon:dragondance"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "tera_single_high_volcarona",
+      "set_tier": 2,
+      "species_id": "cobblemon:volcarona",
+      "form_id": null,
+      "ability_id": "cobblemon:flamebody",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "tera_type": "grass",
+      "moves": [
+        "cobblemon:fierydance",
+        "cobblemon:bugbuzz",
+        "cobblemon:gigadrain",
+        "cobblemon:quiverdance"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "tera_single_high_garganacl",
+      "set_tier": 2,
+      "species_id": "cobblemon:garganacl",
+      "form_id": null,
+      "ability_id": "cobblemon:purifyingsalt",
+      "nature_id": "cobblemon:careful",
+      "held_item_id": "cobblemon:leftovers",
+      "tera_type": "ghost",
+      "moves": [
+        "cobblemon:saltcure",
+        "cobblemon:bodypress",
+        "cobblemon:recover",
+        "cobblemon:irondefense"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "tera_single_high_azumarill",
+      "set_tier": 2,
+      "species_id": "cobblemon:azumarill",
+      "form_id": null,
+      "ability_id": "cobblemon:hugepower",
+      "nature_id": "cobblemon:adamant",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "tera_type": "water",
+      "moves": [
+        "cobblemon:aquajet",
+        "cobblemon:playrough",
+        "cobblemon:liquidation",
+        "cobblemon:bellydrum"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
       "set_id": "tera_double_high_fluttermane",
       "set_tier": 2,
       "species_id": "cobblemon:fluttermane",
@@ -2635,19 +4237,19 @@
       }
     },
     {
-      "set_id": "tera_double_high_gholdengo",
+      "set_id": "roster_tera_tier2_meowscarada",
       "set_tier": 2,
-      "species_id": "cobblemon:gholdengo",
+      "species_id": "cobblemon:meowscarada",
       "form_id": null,
-      "ability_id": "cobblemon:goodasgold",
-      "nature_id": "cobblemon:modest",
-      "held_item_id": "cobblemon:metal_coat",
-      "tera_type": "steel",
+      "ability_id": "cobblemon:protean",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:choice_band",
+      "tera_type": "grass",
       "moves": [
-        "cobblemon:makeitrain",
-        "cobblemon:shadowball",
-        "cobblemon:nastyplot",
-        "cobblemon:protect"
+        "cobblemon:flowertrick",
+        "cobblemon:knockoff",
+        "cobblemon:playrough",
+        "cobblemon:uturn"
       ],
       "ivs": {
         "hp": 20,
@@ -2661,25 +4263,25 @@
         "hp": 0,
         "attack": 0,
         "defense": 0,
-        "special_attack": 252,
+        "special_attack": 0,
         "special_defense": 0,
-        "speed": 0
+        "speed": 252
       }
     },
     {
-      "set_id": "tera_double_high_dragonite",
+      "set_id": "roster_tera_tier2_ceruledge",
       "set_tier": 2,
-      "species_id": "cobblemon:dragonite",
+      "species_id": "cobblemon:ceruledge",
       "form_id": null,
-      "ability_id": "cobblemon:innerfocus",
+      "ability_id": "cobblemon:flashfire",
       "nature_id": "cobblemon:adamant",
-      "held_item_id": "cobblemon:lum_berry",
-      "tera_type": "normal",
+      "held_item_id": "cobblemon:focus_sash",
+      "tera_type": "fire",
       "moves": [
-        "cobblemon:extremespeed",
-        "cobblemon:icespinner",
-        "cobblemon:stompingtantrum",
-        "cobblemon:protect"
+        "cobblemon:bitterblade",
+        "cobblemon:shadowclaw",
+        "cobblemon:closecombat",
+        "cobblemon:swordsdance"
       ],
       "ivs": {
         "hp": 20,
@@ -2691,11 +4293,11 @@
       },
       "evs": {
         "hp": 0,
-        "attack": 252,
+        "attack": 0,
         "defense": 0,
         "special_attack": 0,
         "special_defense": 0,
-        "speed": 0
+        "speed": 252
       }
     }
   ]

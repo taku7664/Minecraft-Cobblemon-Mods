@@ -9,6 +9,7 @@ import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerOpponentRan
 import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerOpponentSelectionResult
 import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerOpponentSelector
 import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerPokemonSet
+import jbro.cobblemon.morebattlecontent.internal.selection.RecentSelectionHistory
 import java.util.Collections
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainContentIds
@@ -52,6 +53,7 @@ internal class TowerPveBattleLauncher<P, O>(
     private val random: TowerOpponentRandom,
 ) : TowerBattleLauncher {
     private val opponentMaterializer = TowerOpponentBattleTeamMaterializer(opponentMemberFactory)
+    private val recentProfiles = RecentSelectionHistory<UUID, String>(RECENT_PROFILE_LIMIT)
 
     override fun launch(request: TowerBattleLaunchRequest): TowerBattleLaunchResult {
         val playerTeam = registeredTeamMaterializer(request.playerId, request.selection)
@@ -65,6 +67,7 @@ internal class TowerPveBattleLauncher<P, O>(
             request.progress.format,
             opponentKind,
             request.mechanic,
+            recentProfiles.recent(request.playerId),
         )
         if (opponent !is TowerOpponentSelectionResult.Selected) {
             return TowerBattleLaunchResult.Unavailable
@@ -73,7 +76,7 @@ internal class TowerPveBattleLauncher<P, O>(
         if (opponentTeam !is TowerOpponentBattleTeamMaterialization.Created) {
             return TowerBattleLaunchResult.Unavailable
         }
-        return runtime.start(
+        val result = runtime.start(
             TowerPreparedPveBattle(
                 request = request,
                 playerTeam = playerTeam.members,
@@ -87,5 +90,17 @@ internal class TowerPveBattleLauncher<P, O>(
                 opponentKind = opponentKind,
             ),
         )
+        if (result is TowerBattleLaunchResult.Started) {
+            recentProfiles.record(request.playerId, opponent.profile.profileId)
+        }
+        return result
+    }
+
+    fun forget(playerId: UUID) {
+        recentProfiles.forget(playerId)
+    }
+
+    private companion object {
+        const val RECENT_PROFILE_LIMIT = 3
     }
 }

@@ -36,9 +36,12 @@ internal class TowerOpponentSelector(
         format: TowerBattleFormat,
         opponentKind: TowerOpponentKind,
         mechanic: MajorBattleMechanic,
+        excludedProfileIds: Set<String> = emptySet(),
     ): TowerOpponentSelectionResult {
-        val profiles = catalog.profilesFor(rank, format, opponentKind, mechanic)
-        if (profiles.isEmpty()) return TowerOpponentSelectionResult.NoEligibleProfile
+        val eligible = catalog.profilesFor(rank, format, opponentKind, mechanic)
+        if (eligible.isEmpty()) return TowerOpponentSelectionResult.NoEligibleProfile
+        val fresh = eligible.filterNot { it.profileId in excludedProfileIds }
+        val profiles = fresh.ifEmpty { eligible }
 
         val profile = selectWeighted(profiles)
         val randomizedPool = catalog.setsFor(profile).toMutableList()
