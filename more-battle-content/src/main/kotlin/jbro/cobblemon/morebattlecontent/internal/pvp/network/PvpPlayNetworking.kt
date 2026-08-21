@@ -110,6 +110,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         PayloadTypeRegistry.playS2C().register(PvpLoungeSpectatorStatePayload.TYPE, PvpLoungeSpectatorStatePayload.CODEC)
         PayloadTypeRegistry.playC2S().register(PvpSelectionIntentPayload.TYPE, PvpSelectionIntentPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(PvpRoomIntentPayload.TYPE, PvpRoomIntentPayload.CODEC)
+        PayloadTypeRegistry.playC2S().register(PvpLoungeExitPayload.TYPE, PvpLoungeExitPayload.CODEC)
         ServerPlayNetworking.registerGlobalReceiver(PvpSelectionIntentPayload.TYPE) { payload, context ->
             val player = context.player()
             onlinePlayers[player.uuid] = player
@@ -130,12 +131,18 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                 rejectRoom(player, payload.intent.requestId, PvpRoomError.INVALID_PHASE)
             }
         }
+        ServerPlayNetworking.registerGlobalReceiver(PvpLoungeExitPayload.TYPE) { _, context ->
+            val player = context.player()
+            onlinePlayers[player.uuid] = player
+            exitSpectator(player)
+        }
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
             onlinePlayers[handler.player.uuid] = handler.player
             rescueStrandedLoungePlayer(handler.player)
         }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
             val playerId = handler.player.uuid
+            onlinePlayers.remove(playerId)
             val room = rooms.roomFor(playerId)
             val challenge = sessions.challengeFor(playerId)
             if (challenge?.phase in setOf(PvpChallengePhase.PENDING, PvpChallengePhase.TEAM_REGISTRATION)) {
@@ -144,16 +151,20 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                 notifyClosed(challenge.request, "screen.${MoreBattleContent.MOD_ID}.pvp.closed.disconnected")
                 finishRoom(challenge.request.challengeId)
             }
-            if (room != null && rooms.get(room.roomId) != null) {
+            if (room != null) {
                 if (room.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.ACTIVE &&
                     playerId in room.spectatorIds
                 ) {
                     lounge.disconnectSpectator(room.roomId, playerId)
                 }
-                val remaining = rooms.leave(room.roomId, playerId)
-                if (remaining != null) pushRoomToMembers(remaining, null)
             }
-            onlinePlayers.remove(playerId)
+            val remaining = rooms.disconnect(playerId)
+            if (remaining != null) {
+                pushRoomToMembers(remaining, null)
+                if (remaining.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.TEAM_PREVIEW) {
+                    pushSpectatorPreview(remaining)
+                }
+            }
         }
         ServerLifecycleEvents.SERVER_STARTING.register { server -> currentServer = server }
         ServerLifecycleEvents.SERVER_STOPPING.register { server ->
@@ -375,6 +386,11 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             }
         }
         pushRoomToMembers(joined.room, intent.requestId)
+        if (joined.room.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.TEAM_PREVIEW &&
+            player.uuid in joined.room.spectatorIds
+        ) {
+            sendSpectatorPreview(player, joined.room)
+        }
     }
 
     private fun startRoom(player: ServerPlayer, intent: PvpRoomIntent.Start) {
@@ -440,6 +456,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         pushRoomToMembers(started.room, intent.requestId)
         sendState(left, null)
         sendState(right, null)
+        pushSpectatorPreview(started.room)
     }
 
     private fun applyRoomMutation(
@@ -471,6 +488,57 @@ internal object PvpPlayNetworking : PvpCommandBackend {
 
     private fun pushRoomToSpectators(room: PvpRoomView, requestId: UUID?) {
         room.spectatorIds.forEach { memberId -> onlinePlayers[memberId]?.let { sendRoom(it, room, requestId) } }
+    }
+
+    private fun pushSpectatorPreview(room: PvpRoomView) {
+        room.spectatorIds.forEach { spectatorId ->
+            onlinePlayers[spectatorId]?.let { sendSpectatorPreview(it, room) }
+        }
+    }
+
+    private fun sendSpectatorPreview(player: ServerPlayer, room: PvpRoomView) {
+        val preview = sessions.spectatorPreview(room.roomId) ?: return
+        val state = PvpSelectionViewState(
+            matchId = preview.matchId,
+            format = preview.format,
+            opponentName = onlinePlayers[preview.rightPlayerId]?.scoreboardName ?: preview.rightPlayerId.toString(),
+            ownParty = emptyList(),
+            opponentParty = emptyList(),
+            selectedPokemonIds = emptySet(),
+            selectionDeadlineEpochMillis = sessions.entryDeadlineFor(preview.matchId) ?: System.currentTimeMillis(),
+            waitingForOpponent = true,
+            playerOnLeft = true,
+            leftPlayerName = onlinePlayers[preview.leftPlayerId]?.scoreboardName ?: preview.leftPlayerId.toString(),
+            rightPlayerName = onlinePlayers[preview.rightPlayerId]?.scoreboardName ?: preview.rightPlayerId.toString(),
+            spectators = room.spectatorIds.map { spectatorId ->
+                PvpSelectionSpectator(spectatorId, onlinePlayers[spectatorId]?.scoreboardName ?: spectatorId.toString())
+            },
+            spectatorMode = true,
+            spectatorLeftParty = preview.leftTeam.members.map { member ->
+                PvpSelectionOpponentSlot(member.speciesId, member.formId)
+            },
+            spectatorRightParty = preview.rightTeam.members.map { member ->
+                PvpSelectionOpponentSlot(member.speciesId, member.formId)
+            },
+        )
+        ServerPlayNetworking.send(player, PvpSelectionStatePayload(null, state))
+    }
+
+    private fun exitSpectator(player: ServerPlayer) {
+        val room = rooms.roomFor(player.uuid) ?: return
+        if (player.uuid !in room.spectatorIds) return
+        if (room.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.ACTIVE &&
+            !lounge.removeSpectator(room.roomId, player.uuid)
+        ) {
+            return
+        }
+        val remaining = rooms.leave(room.roomId, player.uuid)
+        if (remaining != null) {
+            pushRoomToMembers(remaining, null)
+            if (remaining.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.TEAM_PREVIEW) {
+                pushSpectatorPreview(remaining)
+            }
+        }
     }
 
     /**

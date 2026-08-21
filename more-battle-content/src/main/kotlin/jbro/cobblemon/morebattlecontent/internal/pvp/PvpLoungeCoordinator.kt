@@ -19,6 +19,7 @@ internal interface PvpLoungeGateway {
     fun moveSpectator(playerId: UUID, lease: PvpArenaLease): Boolean
     fun spectate(viewerId: UUID, targetId: UUID): Boolean
     fun stopSpectating(viewerId: UUID, battleId: UUID) = Unit
+    fun disconnectSpectating(viewerId: UUID, battleId: UUID) = Unit
     fun showArenaHologram(playerId: UUID, battleId: UUID, lease: PvpArenaLease, perspective: PvpRoomSide) = Unit
     fun hideArenaHologram(playerId: UUID, battleId: UUID) = Unit
     fun restore(playerId: UUID, point: PvpReturnPoint): Boolean
@@ -139,8 +140,7 @@ internal class PvpLoungeCoordinator(
     fun disconnectSpectator(roomId: UUID, playerId: UUID): Boolean {
         val session = sessions[roomId] ?: return false
         if (!session.spectators.remove(playerId)) return false
-        gateway.hideArenaHologram(playerId, session.battleId)
-        gateway.stopSpectating(playerId, session.battleId)
+        gateway.disconnectSpectating(playerId, session.battleId)
         return true
     }
 

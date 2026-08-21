@@ -5,6 +5,7 @@ import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpRoomClientView
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpRoomIntent
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpSelectionClosedPayload
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpLoungeSpectatorStatePayload
+import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpLoungeExitPayload
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpSelectionIntentPayload
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpSelectionRejectedPayload
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpSelectionStatePayload
@@ -20,7 +21,10 @@ import net.minecraft.network.chat.Component
 internal object PvpPlayClientNetworking {
     fun register() {
         ClientPlayNetworking.registerGlobalReceiver(PvpLoungeSpectatorStatePayload.TYPE) { payload, context ->
-            context.client().execute { PvpLoungeSpectatorControls.setActive(payload.active) }
+            context.client().execute {
+                if (payload.active) PvpRoomClientState.pendingOpenRequests.clear()
+                PvpLoungeSpectatorControls.setActive(payload.active)
+            }
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpRoomInvitePayload.TYPE) { payload, context ->
             context.client().execute {
@@ -113,6 +117,11 @@ internal object PvpPlayClientNetworking {
     }
 
     fun send(payload: PvpSelectionIntentPayload) = ClientPlayNetworking.send(payload)
+
+    fun exitLoungeSpectator() {
+        ClientPlayNetworking.send(PvpLoungeExitPayload)
+        net.minecraft.client.Minecraft.getInstance().setScreen(null)
+    }
 
     fun send(payload: PvpRoomIntentPayload) {
         if (payload.intent is PvpRoomIntent.Create || payload.intent is PvpRoomIntent.Join) {

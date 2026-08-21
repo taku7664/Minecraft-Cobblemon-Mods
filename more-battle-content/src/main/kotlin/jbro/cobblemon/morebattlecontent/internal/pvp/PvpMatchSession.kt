@@ -64,6 +64,19 @@ internal class PvpMatchSession(
     }
 
     @Synchronized
+    fun publicPreviewOf(playerId: UUID): PvpTeamPreview {
+        requireParticipant(playerId)
+        check(phase in setOf(PvpMatchPhase.TEAM_PREVIEW, PvpMatchPhase.READY, PvpMatchPhase.ACTIVE)) {
+            "PvP team preview is unavailable"
+        }
+        return PvpTeamPreview(
+            requireNotNull(registeredTeams[playerId]).members.map { member ->
+                PvpTeamPreviewMember(member.speciesId, member.formId)
+            },
+        )
+    }
+
+    @Synchronized
     fun select(playerId: UUID, pokemonIds: List<UUID>) {
         requireParticipant(playerId)
         check(phase == PvpMatchPhase.TEAM_PREVIEW) { "PvP match is not accepting private selections" }

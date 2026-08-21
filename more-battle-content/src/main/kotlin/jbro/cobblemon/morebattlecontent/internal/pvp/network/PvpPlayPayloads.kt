@@ -51,6 +51,16 @@ internal data class PvpSelectionIntentPayload(
     }
 }
 
+internal data object PvpLoungeExitPayload : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<PvpLoungeExitPayload> = TYPE
+
+    val TYPE = CustomPacketPayload.Type<PvpLoungeExitPayload>(id("pvp_lounge_exit"))
+    val CODEC: StreamCodec<RegistryFriendlyByteBuf, PvpLoungeExitPayload> = StreamCodec.of(
+        { _, _ -> },
+        { PvpLoungeExitPayload },
+    )
+}
+
 internal data class PvpSelectionRejectedPayload(
     val requestId: UUID,
     val matchId: UUID,
@@ -125,6 +135,9 @@ private fun RegistryFriendlyByteBuf.writeState(state: PvpSelectionViewState) {
         writeUUID(spectator.playerId)
         writeBoundedString(spectator.name)
     }
+    writeBoolean(state.spectatorMode)
+    writePreviewParty(state.immutableSpectatorLeftParty)
+    writePreviewParty(state.immutableSpectatorRightParty)
 }
 
 private fun RegistryFriendlyByteBuf.readState(): PvpSelectionViewState {
@@ -171,8 +184,26 @@ private fun RegistryFriendlyByteBuf.readState(): PvpSelectionViewState {
                 add(PvpSelectionSpectator(readUUID(), readBoundedString()))
             }
         },
+        spectatorMode = readBoolean(),
+        spectatorLeftParty = readPreviewParty("spectator left party"),
+        spectatorRightParty = readPreviewParty("spectator right party"),
     )
     return base
+}
+
+private fun RegistryFriendlyByteBuf.writePreviewParty(party: List<PvpSelectionOpponentSlot>) {
+    writeVarInt(party.size)
+    party.forEach { slot ->
+        writeBoundedString(slot.speciesId)
+        writeBoolean(slot.formId != null)
+        slot.formId?.let(::writeBoundedString)
+    }
+}
+
+private fun RegistryFriendlyByteBuf.readPreviewParty(label: String): List<PvpSelectionOpponentSlot> = buildList {
+    repeat(readBoundedSize(MAX_PARTY_SIZE, label)) {
+        add(PvpSelectionOpponentSlot(readBoundedString(), if (readBoolean()) readBoundedString() else null))
+    }
 }
 
 private fun RegistryFriendlyByteBuf.writeIntent(intent: PvpSelectionIntent) {

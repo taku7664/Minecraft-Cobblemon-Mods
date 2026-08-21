@@ -50,6 +50,29 @@ class PvpSelectionScreenControllerTest {
         assertTrue(controller.isPending)
     }
 
+    @Test
+    fun `spectator preview cannot submit participant actions`() {
+        val sent = ArrayList<PvpSelectionIntent>()
+        val controller = PvpSelectionScreenController(
+            state().copy(
+                spectatorMode = true,
+                ownParty = emptyList(),
+                opponentParty = emptyList(),
+                selectedPokemonIds = emptySet(),
+                spectatorLeftParty = (1..3).map { PvpSelectionOpponentSlot("cobblemon:left_$it") },
+                spectatorRightParty = (1..3).map { PvpSelectionOpponentSlot("cobblemon:right_$it") },
+            ),
+            sent::add,
+        )
+
+        assertFalse(controller.toggle(ids.first()))
+        assertFalse(controller.submit())
+        assertFalse(controller.retry())
+        assertFalse(controller.unready())
+        assertFalse(controller.cancel())
+        assertTrue(sent.isEmpty())
+    }
+
     private fun state() = PvpSelectionViewState(
         matchId = matchId,
         format = PvpBattleFormat.SINGLE,

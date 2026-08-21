@@ -22,7 +22,7 @@ internal class PvpSelectionScreenController(
         get() = pendingRequestId != null
 
     fun toggle(pokemonId: UUID): Boolean {
-        if (isPending || state.waitingForOpponent || state.ownParty.none { it.pokemonId == pokemonId }) return false
+        if (state.spectatorMode || isPending || state.waitingForOpponent || state.ownParty.none { it.pokemonId == pokemonId }) return false
         feedbackKey = null
         if (pokemonId in selected) {
             selected -= pokemonId
@@ -34,22 +34,22 @@ internal class PvpSelectionScreenController(
     }
 
     fun submit(): Boolean {
-        if (isPending || state.waitingForOpponent || selected.size != state.format.selectionSize) return false
+        if (state.spectatorMode || isPending || state.waitingForOpponent || selected.size != state.format.selectionSize) return false
         return send(PvpSelectionIntent.Submit(nextRequestId(), state.matchId, selected.toList()))
     }
 
     fun retry(): Boolean {
-        if (isPending || selected.size != state.format.selectionSize) return false
+        if (state.spectatorMode || isPending || selected.size != state.format.selectionSize) return false
         return send(PvpSelectionIntent.Retry(nextRequestId(), state.matchId))
     }
 
     fun unready(): Boolean {
-        if (isPending || !state.waitingForOpponent) return false
+        if (state.spectatorMode || isPending || !state.waitingForOpponent) return false
         return send(PvpSelectionIntent.Unready(nextRequestId(), state.matchId))
     }
 
     fun cancel(): Boolean {
-        if (isPending) return false
+        if (state.spectatorMode || isPending) return false
         return send(PvpSelectionIntent.Cancel(nextRequestId(), state.matchId))
     }
 

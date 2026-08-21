@@ -77,6 +77,29 @@ class PvpPlayPayloadsTest {
         assertEquals(closed, roundTrip(PvpSelectionClosedPayload.CODEC, closed))
     }
 
+    @Test
+    fun `spectator preview and lounge exit request round trip`() {
+        val state = PvpSelectionViewState(
+            matchId = matchId,
+            format = PvpBattleFormat.SINGLE,
+            opponentName = "Right",
+            ownParty = emptyList(),
+            opponentParty = emptyList(),
+            selectedPokemonIds = emptySet(),
+            selectionDeadlineEpochMillis = 123_456L,
+            waitingForOpponent = true,
+            spectatorMode = true,
+            leftPlayerName = "Left",
+            rightPlayerName = "Right",
+            spectatorLeftParty = (1..3).map { PvpSelectionOpponentSlot("cobblemon:left_$it") },
+            spectatorRightParty = (1..3).map { PvpSelectionOpponentSlot("cobblemon:right_$it") },
+        )
+
+        val preview = PvpSelectionStatePayload(null, state)
+        assertEquals(preview, roundTrip(PvpSelectionStatePayload.CODEC, preview))
+        assertEquals(PvpLoungeExitPayload, roundTrip(PvpLoungeExitPayload.CODEC, PvpLoungeExitPayload))
+    }
+
     private fun <T : Any> roundTrip(
         codec: net.minecraft.network.codec.StreamCodec<RegistryFriendlyByteBuf, T>,
         value: T,

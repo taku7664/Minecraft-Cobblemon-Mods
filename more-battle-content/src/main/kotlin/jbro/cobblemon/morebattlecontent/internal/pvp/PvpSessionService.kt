@@ -46,6 +46,15 @@ internal data class PvpSessionView(
     val ready: Boolean,
 )
 
+internal data class PvpSpectatorPreview(
+    val matchId: UUID,
+    val format: PvpBattleFormat,
+    val leftPlayerId: UUID,
+    val rightPlayerId: UUID,
+    val leftTeam: PvpTeamPreview,
+    val rightTeam: PvpTeamPreview,
+)
+
 internal fun interface PvpBattleCompletionSink {
     fun record(winnerId: UUID, loserId: UUID, format: PvpBattleFormat)
 }
@@ -190,6 +199,20 @@ internal class PvpSessionService<P>(
             opponentPreview = match.previewFor(playerId),
             selection = match.selectionFor(playerId),
             ready = match.isReady(playerId),
+        )
+    }
+
+    @Synchronized
+    fun spectatorPreview(matchId: UUID): PvpSpectatorPreview? {
+        val match = matches[matchId] ?: return null
+        if (match.phase !in setOf(PvpMatchPhase.TEAM_PREVIEW, PvpMatchPhase.READY)) return null
+        return PvpSpectatorPreview(
+            matchId = match.matchId,
+            format = match.format,
+            leftPlayerId = match.challengerId,
+            rightPlayerId = match.opponentId,
+            leftTeam = match.publicPreviewOf(match.challengerId),
+            rightTeam = match.publicPreviewOf(match.opponentId),
         )
     }
 

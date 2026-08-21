@@ -38,10 +38,21 @@ internal data class PvpSelectionViewState(
     val leftPlayerName: String = "",
     val rightPlayerName: String = opponentName,
     val spectators: List<PvpSelectionSpectator> = emptyList(),
+    val spectatorMode: Boolean = false,
+    val spectatorLeftParty: List<PvpSelectionOpponentSlot> = emptyList(),
+    val spectatorRightParty: List<PvpSelectionOpponentSlot> = emptyList(),
 ) {
     init {
-        require(ownParty.size in format.registrationRange) { "PvP view has an invalid registered party size" }
-        require(opponentParty.size in format.registrationRange) { "PvP view has an invalid opponent party size" }
+        if (spectatorMode) {
+            require(ownParty.isEmpty() && opponentParty.isEmpty() && selectedPokemonIds.isEmpty()) {
+                "PvP spectator view cannot contain participant-private state"
+            }
+            require(spectatorLeftParty.size in format.registrationRange) { "PvP spectator view has an invalid left party size" }
+            require(spectatorRightParty.size in format.registrationRange) { "PvP spectator view has an invalid right party size" }
+        } else {
+            require(ownParty.size in format.registrationRange) { "PvP view has an invalid registered party size" }
+            require(opponentParty.size in format.registrationRange) { "PvP view has an invalid opponent party size" }
+        }
         require(selectedPokemonIds.size <= format.selectionSize) { "PvP view has too many selected Pokemon" }
         require(ownParty.map(PvpSelectionPartySlot::pokemonId).containsAll(selectedPokemonIds)) {
             "PvP view selection contains an unregistered Pokemon"
@@ -54,6 +65,10 @@ internal data class PvpSelectionViewState(
         Collections.unmodifiableList(ArrayList(opponentParty))
     val immutableSelectedPokemonIds: Set<UUID> = Collections.unmodifiableSet(LinkedHashSet(selectedPokemonIds))
     val immutableSpectators: List<PvpSelectionSpectator> = Collections.unmodifiableList(ArrayList(spectators))
+    val immutableSpectatorLeftParty: List<PvpSelectionOpponentSlot> =
+        Collections.unmodifiableList(ArrayList(spectatorLeftParty))
+    val immutableSpectatorRightParty: List<PvpSelectionOpponentSlot> =
+        Collections.unmodifiableList(ArrayList(spectatorRightParty))
 }
 
 internal sealed interface PvpSelectionIntent {

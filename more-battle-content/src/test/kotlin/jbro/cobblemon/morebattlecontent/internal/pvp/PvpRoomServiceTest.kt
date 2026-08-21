@@ -77,6 +77,22 @@ class PvpRoomServiceTest {
     }
 
     @Test
+    fun `disconnect releases an active spectator room index so they can rejoin`() {
+        val rooms = PvpRoomService { roomId }
+        rooms.create(host, settings(PvpRoomVisibility.PUBLIC))
+        rooms.join(roomId, guest)
+        rooms.join(roomId, spectator)
+        rooms.claimSeat(roomId, host, PvpRoomSide.LEFT)
+        rooms.claimSeat(roomId, guest, PvpRoomSide.RIGHT)
+        rooms.startPreview(roomId, host)
+        rooms.markActive(roomId)
+
+        assertEquals(roomId, rooms.disconnect(spectator)?.roomId)
+        assertNull(rooms.roomFor(spectator))
+        assertTrue(rooms.join(roomId, spectator) is PvpRoomMutation.Applied)
+    }
+
+    @Test
     fun `host can transfer ownership and unexpected departure elects the oldest remaining member`() {
         val rooms = PvpRoomService { roomId }
         rooms.create(host, settings(PvpRoomVisibility.PUBLIC))

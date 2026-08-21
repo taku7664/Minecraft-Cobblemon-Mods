@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.client
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpSelectionIntentPayload
+import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionOpponentSlot
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionPartySlot
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionScreenController
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionViewState
@@ -33,14 +34,35 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
         MbcGuiSurface.drawPanel(graphics, rightPanel(), MbcGuiPalette.ACCENT_SECONDARY)
         MbcGuiSurface.drawPanel(graphics, footer(), MbcGuiPalette.BORDER_BRIGHT, alternate = true)
         drawHeader(graphics)
-        drawTeam(graphics, leftPanel(), leftOwn(), controller.state.leftPlayerName, partialTick)
-        drawTeam(graphics, rightPanel(), !leftOwn(), controller.state.rightPlayerName, partialTick)
+        if (controller.state.spectatorMode) {
+            drawPublicTeam(
+                graphics,
+                leftPanel(),
+                controller.state.spectatorLeftParty,
+                controller.state.leftPlayerName,
+                0,
+                partialTick,
+            )
+            drawPublicTeam(
+                graphics,
+                rightPanel(),
+                controller.state.spectatorRightParty,
+                controller.state.rightPlayerName,
+                PvpSelectionLayout.PARTY_SIZE,
+                partialTick,
+            )
+        } else {
+            drawTeam(graphics, leftPanel(), leftOwn(), controller.state.leftPlayerName, partialTick)
+            drawTeam(graphics, rightPanel(), !leftOwn(), controller.state.rightPlayerName, partialTick)
+        }
         drawCenter(graphics)
         drawStatus(graphics)
         super.render(graphics, mouseX, mouseY, partialTick)
     }
 
-    override fun onClose() = confirmCancel()
+    override fun onClose() {
+        if (controller.state.spectatorMode) leaveSpectating() else confirmCancel()
+    }
 
     fun applyAccepted(requestId: UUID, state: PvpSelectionViewState) {
         controller.applyAccepted(requestId, state)
@@ -79,32 +101,58 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
         graphics.drawCenteredString(font, Component.literal(clipped), panel.left + panel.width / 2, panel.top + 7, MbcGuiPalette.TEXT_PRIMARY)
         if (own) return
         controller.state.opponentParty.take(PvpSelectionLayout.PARTY_SIZE).forEachIndexed { index, slot ->
-            val card = PvpSelectionLayout.partyCard(panel, index)
-            val content = PvpSelectionLayout.partyCardContent(panel, index)
-            MbcGuiSurface.drawButton(graphics, card, active = false, hovered = false, selected = false, MbcGuiPalette.ACCENT_SECONDARY)
-            graphics.fill(
-                content.portrait.left,
-                content.portrait.top,
-                content.portrait.right,
-                content.portrait.bottom,
-                MbcGuiPalette.PANEL_ALT,
-            )
-            portraits.render(
-                graphics,
-                MbcPokemonPortraitIdentity.pvpOpponent(
-                    controller.state.matchId.toString(),
-                    index,
-                    slot.speciesId,
-                    slot.formId,
-                ),
-                content.portrait,
-                partialTick,
-                animate = false,
-            )
-            val label = font.split(speciesName(slot.speciesId), (content.textRight - content.textLeft).coerceAtLeast(1))
-                .firstOrNull() ?: return@forEachIndexed
-            graphics.drawString(font, label, content.textLeft, content.nameTop, MbcGuiPalette.TEXT_SECONDARY, false)
+            drawPublicSlot(graphics, panel, slot, index, index, partialTick)
         }
+    }
+
+    private fun drawPublicTeam(
+        graphics: GuiGraphics,
+        panel: TowerPlayRect,
+        party: List<PvpSelectionOpponentSlot>,
+        playerName: String,
+        portraitOffset: Int,
+        partialTick: Float,
+    ) {
+        val clipped = font.plainSubstrByWidth(playerName, panel.width - 12)
+        graphics.drawCenteredString(font, Component.literal(clipped), panel.left + panel.width / 2, panel.top + 7, MbcGuiPalette.TEXT_PRIMARY)
+        party.take(PvpSelectionLayout.PARTY_SIZE).forEachIndexed { index, slot ->
+            drawPublicSlot(graphics, panel, slot, index, portraitOffset + index, partialTick)
+        }
+    }
+
+    private fun drawPublicSlot(
+        graphics: GuiGraphics,
+        panel: TowerPlayRect,
+        slot: PvpSelectionOpponentSlot,
+        cardIndex: Int,
+        portraitIndex: Int,
+        partialTick: Float,
+    ) {
+        val card = PvpSelectionLayout.partyCard(panel, cardIndex)
+        val content = PvpSelectionLayout.partyCardContent(panel, cardIndex)
+        MbcGuiSurface.drawButton(graphics, card, active = false, hovered = false, selected = false, MbcGuiPalette.ACCENT_SECONDARY)
+        graphics.fill(
+            content.portrait.left,
+            content.portrait.top,
+            content.portrait.right,
+            content.portrait.bottom,
+            MbcGuiPalette.PANEL_ALT,
+        )
+        portraits.render(
+            graphics,
+            MbcPokemonPortraitIdentity.pvpOpponent(
+                controller.state.matchId.toString(),
+                portraitIndex,
+                slot.speciesId,
+                slot.formId,
+            ),
+            content.portrait,
+            partialTick,
+            animate = false,
+        )
+        val label = font.split(speciesName(slot.speciesId), (content.textRight - content.textLeft).coerceAtLeast(1))
+            .firstOrNull() ?: return
+        graphics.drawString(font, label, content.textLeft, content.nameTop, MbcGuiPalette.TEXT_SECONDARY, false)
     }
 
     private fun drawCenter(graphics: GuiGraphics) {
@@ -131,6 +179,7 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
     private fun drawStatus(graphics: GuiGraphics) {
         val state = controller.state
         val status = when {
+            state.spectatorMode -> Component.translatable(key("spectator_waiting"))
             controller.isPending -> Component.translatable(key("processing"))
             controller.feedbackKey != null -> Component.translatable(controller.feedbackKey!!)
             state.battleStartRetryAvailable -> Component.translatable(key("error.battle_unavailable"))
@@ -152,6 +201,14 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
     }
 
     private fun buildWidgets() {
+        if (controller.state.spectatorMode) {
+            addRenderableWidget(
+                MbcStyledButton(footer(), Component.translatable(key("return")), MbcButtonTone.SECONDARY) {
+                    leaveSpectating()
+                },
+            )
+            return
+        }
         val ownPanel = if (leftOwn()) leftPanel() else rightPanel()
         val selectionOrder = controller.selectedPokemonIds.toList()
         controller.state.ownParty.take(PvpSelectionLayout.PARTY_SIZE).forEachIndexed { index, slot ->
@@ -198,6 +255,8 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
             ) { if (controller.cancel()) rebuild() },
         )
     }
+
+    private fun leaveSpectating() = PvpPlayClientNetworking.exitLoungeSpectator()
 
     private fun rebuild() {
         clearWidgets()

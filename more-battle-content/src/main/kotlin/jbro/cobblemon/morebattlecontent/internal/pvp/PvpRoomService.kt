@@ -144,7 +144,10 @@ internal class PvpRoomService(
     fun join(roomId: UUID, playerId: UUID): PvpRoomMutation {
         val room = rooms[roomId] ?: return rejected(PvpRoomError.UNKNOWN_ROOM)
         if (playerId in room.members) return applied(room)
-        if (playerId in roomByPlayer) return rejected(PvpRoomError.PLAYER_BUSY)
+        roomByPlayer[playerId]?.let { indexedRoomId ->
+            if (indexedRoomId in rooms) return rejected(PvpRoomError.PLAYER_BUSY)
+            roomByPlayer.remove(playerId, indexedRoomId)
+        }
         if (room.phase == PvpRoomPhase.CLOSED) return rejected(PvpRoomError.INVALID_PHASE)
         if (room.settings.visibility == PvpRoomVisibility.PRIVATE && playerId !in room.invited) {
             return rejected(PvpRoomError.INVITE_REQUIRED)
@@ -252,6 +255,16 @@ internal class PvpRoomService(
             room.phase = PvpRoomPhase.CLOSED
         }
         return room.view()
+    }
+
+    @Synchronized
+    fun disconnect(playerId: UUID): PvpRoomView? {
+        val roomId = roomByPlayer[playerId] ?: return null
+        if (roomId !in rooms) {
+            roomByPlayer.remove(playerId, roomId)
+            return null
+        }
+        return leave(roomId, playerId)
     }
 
     private fun applied(room: MutableRoom) = PvpRoomMutation.Applied(room.view())

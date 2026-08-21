@@ -16,7 +16,7 @@ class PvpSpectatorInputPolicyTest {
         )
         blocked.forEach { key -> assertTrue(PvpSpectatorInputPolicy.blocks(key), key) }
 
-        assertFalse(PvpSpectatorInputPolicy.blocks("key.battlecam.free_camera"))
+        assertFalse(PvpSpectatorInputPolicy.blocks("key.battlecam.cycle_mode"))
         assertFalse(PvpSpectatorInputPolicy.blocks("key.screenshot"))
         assertFalse(PvpSpectatorInputPolicy.blocks("key.chat"))
     }

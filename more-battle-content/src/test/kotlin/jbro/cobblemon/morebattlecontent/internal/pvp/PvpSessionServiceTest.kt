@@ -153,6 +153,21 @@ class PvpSessionServiceTest {
     }
 
     @Test
+    fun `spectator preview exposes both public rosters without either private selection`() {
+        val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
+        service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
+        service.accept(matchId, second)
+        service.registerTeam(matchId, first, team(first, 1))
+        service.registerTeam(matchId, second, team(second, 4))
+        service.select(matchId, first, ids(first, 1).reversed())
+
+        val preview = requireNotNull(service.spectatorPreview(matchId))
+
+        assertEquals(listOf("cobblemon:species1", "cobblemon:species2", "cobblemon:species3"), preview.leftTeam.speciesIds)
+        assertEquals(listOf("cobblemon:species4", "cobblemon:species5", "cobblemon:species6"), preview.rightTeam.speciesIds)
+    }
+
+    @Test
     fun `a completed match frees its id so the same room can host a rematch`() {
         val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
         ready(service)

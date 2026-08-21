@@ -92,6 +92,11 @@ internal class Cobblemon173PvpLoungeGateway(
         }
     }
 
+    override fun disconnectSpectating(viewerId: UUID, battleId: UUID) {
+        BattleRegistry.getBattle(battleId)?.spectators?.remove(viewerId)
+        spectatorAnchors.remove(viewerId)
+    }
+
     override fun showArenaHologram(
         playerId: UUID,
         battleId: UUID,

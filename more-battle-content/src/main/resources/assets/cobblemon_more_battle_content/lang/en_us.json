@@ -223,6 +223,8 @@
   "screen.cobblemon_more_battle_content.pvp.selection_summary": "%s/%s selected · %s seconds remaining",
   "screen.cobblemon_more_battle_content.pvp.processing": "Checking with server…",
   "screen.cobblemon_more_battle_content.pvp.waiting": "Selection submitted · waiting for opponent",
+  "screen.cobblemon_more_battle_content.pvp.spectator_waiting": "Waiting for both players to choose their entries",
+  "screen.cobblemon_more_battle_content.pvp.return": "Return",
   "screen.cobblemon_more_battle_content.pvp.party_entry.selected": "✓ %s",
   "screen.cobblemon_more_battle_content.pvp.party_entry.available": "%s",
   "screen.cobblemon_more_battle_content.pvp.party_entry.order_name": "(%s) %s",

@@ -70,6 +70,22 @@ class PvpLoungeCoordinatorTest {
     }
 
     @Test
+    fun `disconnecting spectator performs packet free cleanup and keeps return pending`() {
+        val gateway = RecordingGateway()
+        val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
+        val battleId = UUID(0, 900)
+        coordinator.start(room(), battleId)
+        gateway.hiddenArenaHolograms.clear()
+
+        assertTrue(coordinator.disconnectSpectator(roomId, viewer))
+
+        assertEquals(listOf(viewer to battleId), gateway.disconnectedSpectators)
+        assertTrue(gateway.hiddenArenaHolograms.isEmpty())
+        assertTrue(gateway.stoppedSpectating.isEmpty())
+        assertEquals(setOf(viewer), coordinator.pendingReturnPlayerIds().intersect(setOf(viewer)))
+    }
+
+    @Test
     fun `prepare moves competitors before battle start and activate moves spectators afterward`() {
         val gateway = RecordingGateway()
         val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
@@ -152,6 +168,8 @@ class PvpLoungeCoordinatorTest {
         val spectating = ArrayList<Pair<UUID, UUID>>()
         val shownArenaHolograms = ArrayList<ArenaHologramEvent>()
         val hiddenArenaHolograms = ArrayList<Pair<UUID, UUID>>()
+        val stoppedSpectating = ArrayList<Pair<UUID, UUID>>()
+        val disconnectedSpectators = ArrayList<Pair<UUID, UUID>>()
         val restored = ArrayList<UUID>()
         val unavailableForRestore = LinkedHashSet<UUID>()
 
@@ -173,6 +191,14 @@ class PvpLoungeCoordinatorTest {
 
         override fun hideArenaHologram(playerId: UUID, battleId: UUID) {
             hiddenArenaHolograms += playerId to battleId
+        }
+
+        override fun stopSpectating(viewerId: UUID, battleId: UUID) {
+            stoppedSpectating += viewerId to battleId
+        }
+
+        override fun disconnectSpectating(viewerId: UUID, battleId: UUID) {
+            disconnectedSpectators += viewerId to battleId
         }
 
         override fun restore(playerId: UUID, point: PvpReturnPoint): Boolean {

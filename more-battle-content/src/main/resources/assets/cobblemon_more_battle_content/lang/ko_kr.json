@@ -223,6 +223,8 @@
   "screen.cobblemon_more_battle_content.pvp.selection_summary": "선출 %s/%s · 남은 시간 %s초",
   "screen.cobblemon_more_battle_content.pvp.processing": "서버 확인 중…",
   "screen.cobblemon_more_battle_content.pvp.waiting": "선출 완료 · 상대를 기다리는 중",
+  "screen.cobblemon_more_battle_content.pvp.spectator_waiting": "양쪽 선수의 엔트리 선택을 기다리는 중",
+  "screen.cobblemon_more_battle_content.pvp.return": "돌아가기",
   "screen.cobblemon_more_battle_content.pvp.party_entry.selected": "✓ %s",
   "screen.cobblemon_more_battle_content.pvp.party_entry.available": "%s",
   "screen.cobblemon_more_battle_content.pvp.party_entry.order_name": "(%s) %s",
