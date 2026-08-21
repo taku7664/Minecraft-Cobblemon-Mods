@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "porygon_balance",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.porygon_balance.name",
+      "description_key": "factory.cobblemon_more_battle_content.trainer.shared.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 2,
+      "ai_summary": "Build a legal team from the current round's complete rental presets and adapt only to public battle information.",
+      "objectives": [
+        "balanced_pressure",
+        "preserve_core"
+      ]
+    }
+  ]
+}

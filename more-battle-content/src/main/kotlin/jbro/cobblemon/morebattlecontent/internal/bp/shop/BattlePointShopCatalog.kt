@@ -68,4 +68,12 @@ internal class BattlePointShopCatalogStore(
         BattlePointShopCatalogLoader.load(reader, itemExists).also { result ->
             if (result is BattlePointShopCatalogLoadResult.Loaded) current = result.catalog
         }
+
+    fun reloadSeparated(
+        ruleFragments: List<Pair<String, Reader>>,
+        entryFragments: List<Pair<String, Reader>>,
+    ): BattlePointShopCatalogLoadResult =
+        BattlePointShopCatalogLoader.loadSeparated(ruleFragments, entryFragments, itemExists).also { result ->
+            if (result is BattlePointShopCatalogLoadResult.Loaded) current = result.catalog
+        }
 }

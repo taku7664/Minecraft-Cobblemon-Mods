@@ -54,6 +54,7 @@ internal class TowerPveBattleLauncher<P, O>(
 ) : TowerBattleLauncher {
     private val opponentMaterializer = TowerOpponentBattleTeamMaterializer(opponentMemberFactory)
     private val recentProfiles = RecentSelectionHistory<UUID, String>(RECENT_PROFILE_LIMIT)
+    private val recentSpecies = RecentSelectionHistory<UUID, String>(RECENT_SPECIES_LIMIT)
 
     override fun launch(request: TowerBattleLaunchRequest): TowerBattleLaunchResult {
         val playerTeam = registeredTeamMaterializer(request.playerId, request.selection)
@@ -68,6 +69,7 @@ internal class TowerPveBattleLauncher<P, O>(
             opponentKind,
             request.mechanic,
             recentProfiles.recent(request.playerId),
+            recentSpecies.recent(request.playerId),
         )
         if (opponent !is TowerOpponentSelectionResult.Selected) {
             return TowerBattleLaunchResult.Unavailable
@@ -92,15 +94,18 @@ internal class TowerPveBattleLauncher<P, O>(
         )
         if (result is TowerBattleLaunchResult.Started) {
             recentProfiles.record(request.playerId, opponent.profile.profileId)
+            opponent.team.forEach { pokemon -> recentSpecies.record(request.playerId, pokemon.speciesId) }
         }
         return result
     }
 
     fun forget(playerId: UUID) {
         recentProfiles.forget(playerId)
+        recentSpecies.forget(playerId)
     }
 
     private companion object {
         const val RECENT_PROFILE_LIMIT = 3
+        const val RECENT_SPECIES_LIMIT = 24
     }
 }

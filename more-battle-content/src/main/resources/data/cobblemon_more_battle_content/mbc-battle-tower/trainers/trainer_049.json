@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "trainer_049",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tera_single_regular_low"
+    }
+  ]
+}

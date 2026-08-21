@@ -1,0 +1,268 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "hoopa_preset_1",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:hoopa",
+      "ability_id": "cobblemon:magician",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:focusblast",
+        "cobblemon:nastyplot",
+        "cobblemon:psyshock",
+        "cobblemon:shadowball"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:focusblast",
+        "cobblemon:nastyplot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "hoopa_preset_2",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:hoopa",
+      "ability_id": "cobblemon:magician",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:nastyplot",
+        "cobblemon:psyshock",
+        "cobblemon:shadowball",
+        "cobblemon:trick"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:nastyplot",
+        "cobblemon:psyshock"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "hoopa_preset_3",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:hoopa",
+      "ability_id": "cobblemon:magician",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:focusblast",
+        "cobblemon:psyshock",
+        "cobblemon:shadowball",
+        "cobblemon:trick"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:focusblast",
+        "cobblemon:psyshock"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "hoopa_preset_4",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:hoopa",
+      "ability_id": "cobblemon:magician",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:focusblast",
+        "cobblemon:nastyplot",
+        "cobblemon:psyshock",
+        "cobblemon:trick"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:focusblast",
+        "cobblemon:nastyplot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "hoopaunbound_preset_1",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:hoopa",
+      "form_id": "unbound",
+      "ability_id": "cobblemon:magician",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:drainpunch",
+        "cobblemon:gunkshot",
+        "cobblemon:hyperspacefury",
+        "cobblemon:zenheadbutt"
+      ],
+      "roles": [
+        "weakness_cover"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:drainpunch",
+        "cobblemon:gunkshot"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "hoopaunbound_preset_2",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:hoopa",
+      "form_id": "unbound",
+      "ability_id": "cobblemon:magician",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:focusblast",
+        "cobblemon:gunkshot",
+        "cobblemon:hyperspacefury",
+        "cobblemon:psychic"
+      ],
+      "roles": [
+        "weakness_cover"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:focusblast",
+        "cobblemon:gunkshot"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "hoopaunbound_preset_3",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:hoopa",
+      "form_id": "unbound",
+      "ability_id": "cobblemon:magician",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:drainpunch",
+        "cobblemon:hyperspacefury",
+        "cobblemon:trick",
+        "cobblemon:zenheadbutt"
+      ],
+      "roles": [
+        "weakness_cover"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:drainpunch",
+        "cobblemon:hyperspacefury"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "hoopaunbound_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:hoopa",
+      "form_id": "unbound",
+      "ability_id": "cobblemon:magician",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:focusblast",
+        "cobblemon:hyperspacefury",
+        "cobblemon:psychic",
+        "cobblemon:trick"
+      ],
+      "roles": [
+        "weakness_cover"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:focusblast",
+        "cobblemon:hyperspacefury"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

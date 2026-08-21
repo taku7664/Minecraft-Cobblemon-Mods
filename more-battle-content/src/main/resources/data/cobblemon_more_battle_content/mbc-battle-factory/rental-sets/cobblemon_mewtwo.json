@@ -1,0 +1,139 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "mewtwo_preset_1",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:mewtwo",
+      "ability_id": "cobblemon:unnerve",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:aurasphere",
+        "cobblemon:darkpulse",
+        "cobblemon:nastyplot",
+        "cobblemon:psystrike"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:aurasphere",
+        "cobblemon:darkpulse"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "mewtwo_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:mewtwo",
+      "ability_id": "cobblemon:pressure",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:aurasphere",
+        "cobblemon:fireblast",
+        "cobblemon:nastyplot",
+        "cobblemon:psystrike"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:aurasphere",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "mewtwo_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:mewtwo",
+      "ability_id": "cobblemon:pressure",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:darkpulse",
+        "cobblemon:fireblast",
+        "cobblemon:nastyplot",
+        "cobblemon:psystrike"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:darkpulse",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "mewtwo_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:mewtwo",
+      "ability_id": "cobblemon:pressure",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:aurasphere",
+        "cobblemon:nastyplot",
+        "cobblemon:psystrike",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:aurasphere",
+        "cobblemon:nastyplot"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

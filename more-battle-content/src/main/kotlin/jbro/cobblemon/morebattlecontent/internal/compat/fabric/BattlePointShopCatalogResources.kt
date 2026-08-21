@@ -11,10 +11,8 @@ import net.minecraft.server.packs.PackType
 import net.minecraft.server.packs.resources.ResourceManager
 
 internal object BattlePointShopCatalogResources {
-    val catalogResourceId: ResourceLocation = ResourceLocation.fromNamespaceAndPath(
-        MoreBattleContent.MOD_ID,
-        "bp_shop/catalog/mbc_core.json",
-    )
+    const val ruleDirectory = "mbc-bp-shop/rules"
+    const val entryDirectory = "mbc-bp-shop/entries"
     private val listenerId = ResourceLocation.fromNamespaceAndPath(MoreBattleContent.MOD_ID, "bp_shop_catalog")
     val store = BattlePointShopCatalogStore(::itemExists)
 
@@ -24,35 +22,48 @@ internal object BattlePointShopCatalogResources {
                 override fun getFabricId(): ResourceLocation = listenerId
 
                 override fun onResourceManagerReload(resourceManager: ResourceManager) {
-                    val resource = resourceManager.getResource(catalogResourceId).orElse(null)
-                    if (resource == null) {
+                    fun resources(directory: String) = resourceManager.listResources(directory) { location ->
+                        location.path.endsWith(".json")
+                    }.entries.sortedBy { it.key.toString() }
+                    val rules = resources(ruleDirectory)
+                    val entries = resources(entryDirectory)
+                    if (rules.isEmpty() || entries.isEmpty()) {
                         MoreBattleContent.LOGGER.error(
-                            "BP shop catalog is missing: {}. Keeping the previous catalog.",
-                            catalogResourceId,
+                            "BP shop rules or entries are missing under {} and {}. Keeping the previous catalog.",
+                            ruleDirectory,
+                            entryDirectory,
                         )
                         return
                     }
+                    val readers = ArrayList<java.io.Reader>(rules.size + entries.size)
                     val result = try {
-                        resource.openAsReader().use(store::reload)
+                        fun open(resources: List<Map.Entry<ResourceLocation, net.minecraft.server.packs.resources.Resource>>) =
+                            resources.map { (id, resource) ->
+                                val reader = resource.openAsReader()
+                                readers += reader
+                                id.toString() to reader
+                            }
+                        store.reloadSeparated(open(rules), open(entries))
                     } catch (exception: RuntimeException) {
                         MoreBattleContent.LOGGER.error(
-                            "Failed to read BP shop catalog {}. Keeping the previous catalog.",
-                            catalogResourceId,
+                            "Failed to read BP shop rules or entries. Keeping the previous catalog.",
                             exception,
                         )
                         return
+                    } finally {
+                        readers.forEach { reader -> runCatching(reader::close) }
                     }
                     when (result) {
                         is BattlePointShopCatalogLoadResult.Loaded -> MoreBattleContent.LOGGER.info(
-                            "Loaded BP shop catalog {} with {} entries from {}",
+                            "Loaded BP shop catalog {} with {} entries from {} rules and {} entry JSON files",
                             result.catalog.catalogId,
                             result.catalog.entries().size,
-                            catalogResourceId,
+                            rules.size,
+                            entries.size,
                         )
                         is BattlePointShopCatalogLoadResult.Rejected -> result.issues.forEach { issue ->
                             MoreBattleContent.LOGGER.error(
-                                "Rejected BP shop catalog {} at {}: {} ({})",
-                                catalogResourceId,
+                                "Rejected BP shop catalogs at {}: {} ({})",
                                 issue.path,
                                 issue.message,
                                 issue.code,

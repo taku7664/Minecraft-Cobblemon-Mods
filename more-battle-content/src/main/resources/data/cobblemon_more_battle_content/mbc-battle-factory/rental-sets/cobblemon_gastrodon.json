@@ -1,0 +1,136 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "gastrodon_preset_1",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:gastrodon",
+      "ability_id": "cobblemon:sandforce",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:clearsmog",
+        "cobblemon:earthquake",
+        "cobblemon:icebeam",
+        "cobblemon:surf"
+      ],
+      "roles": [
+        "weakness_cover"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:icebeam"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "gastrodon_preset_2",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:gastrodon",
+      "ability_id": "cobblemon:stormdrain",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:clearsmog",
+        "cobblemon:earthquake",
+        "cobblemon:recover",
+        "cobblemon:surf"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:surf"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "gastrodon_preset_3",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:gastrodon",
+      "ability_id": "cobblemon:stormdrain",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:icebeam",
+        "cobblemon:recover",
+        "cobblemon:surf"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:icebeam"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "gastrodon_preset_4",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:gastrodon",
+      "ability_id": "cobblemon:stormdrain",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:clearsmog",
+        "cobblemon:earthquake",
+        "cobblemon:stealthrock",
+        "cobblemon:surf"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:surf"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

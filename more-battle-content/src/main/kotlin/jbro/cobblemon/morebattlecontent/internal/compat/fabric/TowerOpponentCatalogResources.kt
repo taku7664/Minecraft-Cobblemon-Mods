@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.internal.compat.fabric
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
 import jbro.cobblemon.morebattlecontent.internal.catalog.CatalogResourceInput
 import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerOpponentCatalogReloadOutcome
+import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerOpponentCatalogResourceBundle
 import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerOpponentCatalogResourceReloader
 import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerOpponentCatalogStore
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper
@@ -12,7 +13,10 @@ import net.minecraft.server.packs.PackType
 import net.minecraft.server.packs.resources.ResourceManager
 
 internal object TowerOpponentCatalogResources {
-    const val catalogDirectory = "battle_tower/opponents"
+    const val trainerDirectory = "mbc-battle-tower/trainers"
+    const val poolDirectory = "mbc-battle-tower/pools"
+    const val encounterDirectory = "mbc-battle-tower/encounters"
+    const val pokemonSetDirectory = "mbc-battle-tower/pokemon-sets"
     val listenerId: ResourceLocation = ResourceLocation.fromNamespaceAndPath(
         MoreBattleContent.MOD_ID,
         "tower_opponent_catalog",
@@ -21,7 +25,6 @@ internal object TowerOpponentCatalogResources {
 
     private val listener = FabricTowerOpponentCatalogReloadListener(
         listenerId,
-        catalogDirectory,
         TowerOpponentCatalogResourceReloader(store),
     )
 
@@ -32,37 +35,43 @@ internal object TowerOpponentCatalogResources {
 
 private class FabricTowerOpponentCatalogReloadListener(
     private val id: ResourceLocation,
-    private val catalogDirectory: String,
     private val reloader: TowerOpponentCatalogResourceReloader,
 ) : SimpleSynchronousResourceReloadListener {
     override fun getFabricId(): ResourceLocation = id
 
     override fun onResourceManagerReload(resourceManager: ResourceManager) {
-        val resources = resourceManager.listResources(catalogDirectory) { location ->
+        fun resources(directory: String) = resourceManager.listResources(directory) { location ->
             location.path.endsWith(".json")
         }.entries.sortedBy { it.key.toString() }
-        val inputs = resources.map { (resourceId, resource) ->
-            CatalogResourceInput(resourceId.toString(), resource::openAsReader)
-        }
-        when (val outcome = reloader.reload(inputs)) {
+        fun inputs(resources: List<Map.Entry<ResourceLocation, net.minecraft.server.packs.resources.Resource>>) =
+            resources.map { (resourceId, resource) -> CatalogResourceInput(resourceId.toString(), resource::openAsReader) }
+        val trainers = resources(TowerOpponentCatalogResources.trainerDirectory)
+        val pools = resources(TowerOpponentCatalogResources.poolDirectory)
+        val encounters = resources(TowerOpponentCatalogResources.encounterDirectory)
+        val pokemonSets = resources(TowerOpponentCatalogResources.pokemonSetDirectory)
+        when (
+            val outcome = reloader.reload(
+                TowerOpponentCatalogResourceBundle(inputs(trainers), inputs(pools), inputs(encounters), inputs(pokemonSets)),
+            )
+        ) {
             is TowerOpponentCatalogReloadOutcome.Applied ->
                 MoreBattleContent.LOGGER.info(
-                    "Loaded Battle Tower opponent catalog {} from {} JSON files under {}",
+                    "Loaded Battle Tower catalog {} from {}/{}/{}/{} trainer/pool/encounter/set JSON files",
                     outcome.catalog.catalogId,
-                    resources.size,
-                    catalogDirectory,
+                    trainers.size,
+                    pools.size,
+                    encounters.size,
+                    pokemonSets.size,
                 )
 
             TowerOpponentCatalogReloadOutcome.MissingResource ->
                 MoreBattleContent.LOGGER.error(
-                    "Battle Tower opponent directory has no JSON files: {}. Keeping the previous catalog.",
-                    catalogDirectory,
+                    "Battle Tower trainers, pools, encounters, or Pokemon sets are missing. Keeping the previous catalog.",
                 )
 
             is TowerOpponentCatalogReloadOutcome.Rejected -> outcome.issues.forEach { issue ->
                 MoreBattleContent.LOGGER.error(
-                    "Rejected Battle Tower opponent catalogs under {} at {}: {} ({})",
-                    catalogDirectory,
+                    "Rejected Battle Tower catalogs at {}: {} ({})",
                     issue.path,
                     issue.message,
                     issue.code,
@@ -71,8 +80,7 @@ private class FabricTowerOpponentCatalogReloadListener(
 
             is TowerOpponentCatalogReloadOutcome.ReadFailed ->
                 MoreBattleContent.LOGGER.error(
-                    "Failed to read Battle Tower opponent catalogs under {}. Keeping the previous catalog.",
-                    catalogDirectory,
+                    "Failed to read Battle Tower catalogs. Keeping the previous catalog.",
                     outcome.cause,
                 )
         }

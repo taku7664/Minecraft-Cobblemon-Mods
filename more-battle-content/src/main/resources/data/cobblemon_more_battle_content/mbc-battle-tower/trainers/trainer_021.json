@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "trainer_021",
+      "display_name_key": "trainer.cobblemon_more_battle_content.mega_double_tier_boss"
+    }
+  ]
+}

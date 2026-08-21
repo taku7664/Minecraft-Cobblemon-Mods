@@ -14,6 +14,78 @@ import org.junit.jupiter.api.Test
 
 class TowerOpponentCatalogLoaderTest {
     @Test
+    fun `separated tower resources assemble trainers encounters pools and sets`() {
+        val root = JsonParser.parseString(validCatalogJson()).asJsonObject
+        val sets = root.getAsJsonArray("sets")
+        sets.forEach { it.asJsonObject.addProperty("mechanic_id", "mega") }
+        val loaded = TowerOpponentCatalogLoader.loadSeparated(
+            trainerFragments = listOf(
+                "example:mbc-battle-tower/trainers/core.json" to StringReader(
+                    """{"schema_version":1,"trainers":[{"trainer_id":"ace","display_name_key":"trainer.example.ace"}]}""",
+                ),
+            ),
+            poolFragments = listOf(
+                "example:mbc-battle-tower/pools/core.json" to StringReader(
+                    """{"schema_version":1,"pools":[{"pool_id":"mega_low","mechanic_id":"mega","set_tiers":[1]}]}""",
+                ),
+            ),
+            encounterFragments = listOf(
+                "example:mbc-battle-tower/encounters/core.json" to StringReader(
+                    """{"schema_version":1,"encounters":[{"encounter_id":"mega_single_regular_low","trainer_ids":["ace"],"rank_ids":["1"],"format":"single","opponent_kind":"regular","mechanic_id":"mega","weight":1,"ai_skill":1,"theme":"mega_low","pool_id":"mega_low"}]}""",
+                ),
+            ),
+            pokemonSetFragments = listOf(
+                "example:mbc-battle-tower/pokemon-sets/core.json" to StringReader(
+                    """{"schema_version":4,"pokemon_sets":$sets}""",
+                ),
+            ),
+        ) as TowerOpponentCatalogLoadResult.Loaded
+
+        val profile = loaded.catalog.profilesFor(
+            TowerRank.RANK_1,
+            TowerBattleFormat.SINGLE,
+            TowerOpponentKind.REGULAR,
+            MajorBattleMechanic.MEGA,
+        ).single()
+        assertEquals("ace", profile.profileId)
+        assertEquals("trainer.example.ace", profile.displayNameKey)
+        assertTrue(loaded.catalog.setsFor(profile).isNotEmpty())
+        assertTrue(loaded.catalog.setsFor(profile).all { it.mechanic == MajorBattleMechanic.MEGA })
+    }
+
+    @Test
+    fun `separated Pokemon sets require an explicit matching mechanic`() {
+        val root = JsonParser.parseString(validCatalogJson()).asJsonObject
+        val sets = root.getAsJsonArray("sets")
+        sets.forEach { it.asJsonObject.addProperty("mechanic_id", "tera") }
+
+        val result = TowerOpponentCatalogLoader.loadSeparated(
+            trainerFragments = listOf(
+                "example:mbc-battle-tower/trainers/core.json" to StringReader(
+                    """{"schema_version":1,"trainers":[{"trainer_id":"ace","display_name_key":"trainer.example.ace"}]}""",
+                ),
+            ),
+            poolFragments = listOf(
+                "example:mbc-battle-tower/pools/core.json" to StringReader(
+                    """{"schema_version":1,"pools":[{"pool_id":"mega_low","mechanic_id":"mega","set_tiers":[1]}]}""",
+                ),
+            ),
+            encounterFragments = listOf(
+                "example:mbc-battle-tower/encounters/core.json" to StringReader(
+                    """{"schema_version":1,"encounters":[{"encounter_id":"mega_single_regular_low","trainer_ids":["ace"],"rank_ids":["1"],"format":"single","opponent_kind":"regular","mechanic_id":"mega","weight":1,"ai_skill":1,"theme":"mega_low","pool_id":"mega_low"}]}""",
+                ),
+            ),
+            pokemonSetFragments = listOf(
+                "example:mbc-battle-tower/pokemon-sets/core.json" to StringReader(
+                    """{"schema_version":4,"pokemon_sets":$sets}""",
+                ),
+            ),
+        )
+
+        assertTrue(result is TowerOpponentCatalogLoadResult.Rejected)
+    }
+
+    @Test
     fun `merges tower profiles and sets from independent files before validating references`() {
         val root = JsonParser.parseString(validCatalogJson()).asJsonObject
         val profiles = root.deepCopy().apply {
@@ -27,8 +99,8 @@ class TowerOpponentCatalogLoaderTest {
 
         val loaded = TowerOpponentCatalogLoader.loadFragments(
             listOf(
-                "example:battle_tower/opponents/trainers.json" to StringReader(profiles.toString()),
-                "example:battle_tower/opponents/sets.json" to StringReader(sets.toString()),
+                "example:mbc-battle-tower/legacy/trainers.json" to StringReader(profiles.toString()),
+                "example:mbc-battle-tower/legacy/sets.json" to StringReader(sets.toString()),
             ),
         ) as TowerOpponentCatalogLoadResult.Loaded
         val profile = loaded.catalog.profilesFor(
@@ -50,9 +122,9 @@ class TowerOpponentCatalogLoaderTest {
 
         val rejected = TowerOpponentCatalogLoader.loadFragments(
             listOf(
-                "example:battle_tower/opponents/trainers.json" to StringReader(profiles.toString()),
-                "example:battle_tower/opponents/sets-a.json" to StringReader(sets.toString()),
-                "example:battle_tower/opponents/sets-b.json" to StringReader(sets.toString()),
+                "example:mbc-battle-tower/legacy/trainers.json" to StringReader(profiles.toString()),
+                "example:mbc-battle-tower/legacy/sets-a.json" to StringReader(sets.toString()),
+                "example:mbc-battle-tower/legacy/sets-b.json" to StringReader(sets.toString()),
             ),
         ) as TowerOpponentCatalogLoadResult.Rejected
 

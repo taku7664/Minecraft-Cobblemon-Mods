@@ -42,6 +42,74 @@ internal object BattlePointShopCatalogLoader {
         malformed(error)
     }
 
+    fun loadSeparated(
+        ruleFragments: List<Pair<String, Reader>>,
+        entryFragments: List<Pair<String, Reader>>,
+        itemExists: (String) -> Boolean,
+    ): BattlePointShopCatalogLoadResult = try {
+        if (ruleFragments.size != 1) {
+            reject(
+                BattlePointShopCatalogIssueCode.INVALID_VALUE,
+                "$.rules",
+                "Exactly one BP shop rules JSON file must be active, found ${ruleFragments.size}",
+            )
+        }
+        if (entryFragments.isEmpty()) {
+            reject(BattlePointShopCatalogIssueCode.MISSING_FIELD, "$.entries", "No BP shop entry JSON files were found")
+        }
+
+        val (ruleResourceId, ruleReader) = ruleFragments.single()
+        val rulePath = "resource[$ruleResourceId]"
+        val rules = ruleReader.use { JsonParser.parseReader(it).requireObject(rulePath) }
+        rules.rejectUnknownFields(rulePath, RULE_ROOT_FIELDS)
+        val ruleSchema = rules.requiredInt(rulePath, "schema_version")
+        if (ruleSchema != RULE_SCHEMA_VERSION) {
+            reject(
+                BattlePointShopCatalogIssueCode.UNSUPPORTED_SCHEMA,
+                "$rulePath.schema_version",
+                "Unsupported BP shop rules schema: $ruleSchema",
+            )
+        }
+        val catalogId = rules.requiredStableId(rulePath, "catalog_id")
+        val limitsObject = rules.requiredObject(rulePath, "limits").also {
+            it.rejectUnknownFields("$rulePath.limits", LIMIT_FIELDS)
+        }
+        val limits = BattlePointShopLimits(
+            maxCartLines = limitsObject.requiredPositiveInt("$rulePath.limits", "max_cart_lines"),
+            maxQuantityPerLine = limitsObject.requiredPositiveInt("$rulePath.limits", "max_quantity_per_line"),
+            maxTotalItems = limitsObject.requiredPositiveInt("$rulePath.limits", "max_total_items"),
+        )
+        val entries = entryFragments.flatMap { (resourceId, reader) ->
+            val path = "resource[$resourceId]"
+            val root = reader.use { JsonParser.parseReader(it).requireObject(path) }
+            root.rejectUnknownFields(path, ENTRY_ROOT_FIELDS)
+            val schema = root.requiredInt(path, "schema_version")
+            if (schema != ENTRY_SCHEMA_VERSION) {
+                reject(
+                    BattlePointShopCatalogIssueCode.UNSUPPORTED_SCHEMA,
+                    "$path.schema_version",
+                    "Unsupported BP shop entry schema: $schema",
+                )
+            }
+            root.requiredArray(path, "entries").mapIndexed { index, element ->
+                parseEntry(element.requireObject("$path.entries[$index]"), "$path.entries[$index]", itemExists)
+            }
+        }
+        if (entries.isEmpty()) reject(BattlePointShopCatalogIssueCode.INVALID_VALUE, "$.entries", "entries must not be empty")
+        rejectDuplicates(entries.map(BattlePointShopEntry::entryId), "$.entries", "entry ID")
+        rejectDuplicates(entries.map { it.sortOrder.toString() }, "$.entries", "sort order")
+
+        BattlePointShopCatalogLoadResult.Loaded(
+            BattlePointShopCatalog(catalogId, revision(catalogId, limits, entries), limits, entries),
+        )
+    } catch (error: ShopCatalogDecodeException) {
+        BattlePointShopCatalogLoadResult.Rejected(listOf(error.issue))
+    } catch (error: JsonParseException) {
+        malformed(error)
+    } catch (error: IllegalStateException) {
+        malformed(error)
+    }
+
     private fun parseEntry(
         value: JsonObject,
         path: String,
@@ -164,5 +232,9 @@ private fun rejectDuplicates(values: List<String>, path: String, label: String) 
 }
 
 private val ROOT_FIELDS = setOf("schema_version", "catalog_id", "limits", "entries")
+private val RULE_ROOT_FIELDS = setOf("schema_version", "catalog_id", "limits")
+private val ENTRY_ROOT_FIELDS = setOf("schema_version", "entries")
 private val LIMIT_FIELDS = setOf("max_cart_lines", "max_quantity_per_line", "max_total_items")
 private val ENTRY_FIELDS = setOf("entry_id", "item_id", "item_count", "price_bp", "sort_order")
+private const val RULE_SCHEMA_VERSION = 1
+private const val ENTRY_SCHEMA_VERSION = 1

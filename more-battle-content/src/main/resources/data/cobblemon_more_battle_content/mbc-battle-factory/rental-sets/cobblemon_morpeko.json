@@ -1,0 +1,137 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "morpeko_preset_1",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:morpeko",
+      "ability_id": "cobblemon:hungerswitch",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:aurawheel",
+        "cobblemon:partingshot",
+        "cobblemon:protect",
+        "cobblemon:rapidspin"
+      ],
+      "roles": [
+        "pivot",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:aurawheel",
+        "cobblemon:partingshot"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "morpeko_preset_2",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:morpeko",
+      "ability_id": "cobblemon:hungerswitch",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:aurawheel",
+        "cobblemon:knockoff",
+        "cobblemon:protect",
+        "cobblemon:rapidspin"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:aurawheel"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "morpeko_preset_3",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:morpeko",
+      "ability_id": "cobblemon:hungerswitch",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:aurawheel",
+        "cobblemon:partingshot",
+        "cobblemon:protect",
+        "cobblemon:rapidspin"
+      ],
+      "roles": [
+        "pivot",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:aurawheel",
+        "cobblemon:partingshot"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "morpeko_preset_4",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:morpeko",
+      "ability_id": "cobblemon:hungerswitch",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:aurawheel",
+        "cobblemon:knockoff",
+        "cobblemon:protect",
+        "cobblemon:rapidspin"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:aurawheel"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

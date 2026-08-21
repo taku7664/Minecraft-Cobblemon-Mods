@@ -3,6 +3,9 @@ package jbro.cobblemon.morebattlecontent.internal.factory
 import com.cobblemon.mod.common.api.pokemon.Natures
 import com.google.gson.JsonParser
 import java.io.InputStreamReader
+import java.io.Reader
+import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.jar.JarFile
 import kotlin.random.Random
@@ -22,10 +25,8 @@ class FactoryCatalogResourceTest {
         val catalog = bundledCatalog()
         val pools = approvedPools(catalog)
         val allSets = pools.values.flatten()
-        val root = javaClass.getResourceAsStream(CATALOG_PATH)!!.reader().use(JsonParser::parseReader).asJsonObject
 
-        assertEquals("mbc_factory_core", catalog.catalogId)
-        assertEquals(4, root["schema_version"].asInt)
+        assertEquals("merged_factory_catalog", catalog.catalogId)
         assertEquals(EXPECTED_POOL_SIZES, pools.mapValues { it.value.size })
         assertEquals(2_004, allSets.map(FactoryRentalTemplate::setId).distinct().size)
         assertEquals(501, allSets.groupBy { it.speciesId to it.formId }.size)
@@ -37,12 +38,16 @@ class FactoryCatalogResourceTest {
         assertEquals(84, catalog.trainersFor(FactoryBattleFormat.SINGLE).size)
         assertEquals(84, catalog.trainersFor(FactoryBattleFormat.DOUBLE).size)
 
-        root.getAsJsonArray("sets").forEach { element ->
-            val set = element.asJsonObject
-            assertTrue(!set.has("move_slots"))
-            assertTrue(!set.has("held_items"))
-            assertTrue(!set.has("nature_pool"))
-            assertTrue(set.has("moves") && set.has("held_item_id") && set.has("nature_id"))
+        resourceFiles(RENTAL_SET_DIRECTORY).forEach { path ->
+            val root = Files.newBufferedReader(path).use(JsonParser::parseReader).asJsonObject
+            assertEquals(4, root["schema_version"].asInt)
+            root.getAsJsonArray("rental_sets").forEach { element ->
+                val set = element.asJsonObject
+                assertTrue(!set.has("move_slots"))
+                assertTrue(!set.has("held_items"))
+                assertTrue(!set.has("nature_pool"))
+                assertTrue(set.has("moves") && set.has("held_item_id") && set.has("nature_id"))
+            }
         }
     }
 
@@ -187,11 +192,23 @@ class FactoryCatalogResourceTest {
     }
 
     private fun bundledCatalog(): FactoryCatalog {
-        val stream = javaClass.getResourceAsStream(CATALOG_PATH)
-        assertNotNull(stream, "Missing bundled Battle Factory catalog")
-        val result = stream!!.reader().use(FactoryCatalogLoader::load)
+        val result = FactoryCatalogLoader.loadSeparated(
+            fragmentReaders(TRAINER_DIRECTORY),
+            fragmentReaders(RENTAL_SET_DIRECTORY),
+        )
         assertTrue(result is FactoryCatalogLoadResult.Loaded, "Bundled Battle Factory catalog was rejected: $result")
         return (result as FactoryCatalogLoadResult.Loaded).catalog
+    }
+
+    private fun fragmentReaders(directory: String): List<Pair<String, Reader>> =
+        resourceFiles(directory).map { path -> path.fileName.toString() to Files.newBufferedReader(path) }
+
+    private fun resourceFiles(directory: String): List<Path> {
+        val url = javaClass.getResource(directory)
+        assertNotNull(url, "Missing bundled resource directory: $directory")
+        return Files.list(Paths.get(url!!.toURI())).use { paths ->
+            paths.filter { it.fileName.toString().endsWith(".json") }.sorted().toList()
+        }
     }
 
     private fun approvedPools(catalog: FactoryCatalog): Map<String, List<FactoryRentalTemplate>> = linkedMapOf(
@@ -222,7 +239,8 @@ class FactoryCatalogResourceTest {
     private fun String.normalizedId(): String = lowercase().filter(Char::isLetterOrDigit)
 
     private companion object {
-        const val CATALOG_PATH = "/data/cobblemon_more_battle_content/battle_factory/catalog/mbc_core.json"
+        const val TRAINER_DIRECTORY = "/data/cobblemon_more_battle_content/mbc-battle-factory/trainers"
+        const val RENTAL_SET_DIRECTORY = "/data/cobblemon_more_battle_content/mbc-battle-factory/rental-sets"
         val RENT_AND_TRADE_COUNTS = listOf(1, 7, 14, 21, 28, 35)
         val EXPECTED_POOL_SIZES = mapOf(
             "starter-1" to 120,

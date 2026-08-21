@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "entry_id": "cell_battery",
+      "item_id": "cobblemon:cell_battery",
+      "item_count": 1,
+      "price_bp": 10,
+      "sort_order": 440
+    }
+  ]
+}

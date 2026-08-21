@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "ceruledge_pivot_roster_2",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.ceruledge_pivot_roster_2.name",
+      "description_key": "factory.cobblemon_more_battle_content.trainer.shared.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 3,
+      "ai_summary": "Build a legal team from the current round's complete rental presets and adapt only to public battle information.",
+      "objectives": [
+        "pivoting",
+        "setup_sweep"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "schema_version": 4,
+  "pokemon_sets": [
+    {
+      "set_id": "generated_dynamax_tier1_rampardos",
+      "set_tier": 1,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:rampardos",
+      "form_id": null,
+      "ability_id": "cobblemon:moldbreaker",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:expert_belt",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:firepunch",
+        "cobblemon:headsmash",
+        "cobblemon:rockslide"
+      ],
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "generated_tera_tier1_rampardos",
+      "set_tier": 1,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:rampardos",
+      "form_id": null,
+      "ability_id": "cobblemon:moldbreaker",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:expert_belt",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:firepunch",
+        "cobblemon:headsmash",
+        "cobblemon:rockslide"
+      ],
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "tera_type": "ghost"
+    }
+  ]
+}

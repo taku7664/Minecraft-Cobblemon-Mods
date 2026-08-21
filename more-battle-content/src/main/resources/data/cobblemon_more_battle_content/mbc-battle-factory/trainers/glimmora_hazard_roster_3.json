@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "glimmora_hazard_roster_3",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.glimmora_hazard_roster_3.name",
+      "description_key": "factory.cobblemon_more_battle_content.trainer.shared.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 5,
+      "ai_summary": "Build a legal team from the current round's complete rental presets and adapt only to public battle information.",
+      "objectives": [
+        "field_control",
+        "balanced_pressure"
+      ]
+    }
+  ]
+}

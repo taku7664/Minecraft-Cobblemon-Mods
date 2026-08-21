@@ -1,0 +1,265 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "giratina_preset_1",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:giratina",
+      "ability_id": "cobblemon:telepathy",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:dragontail",
+        "cobblemon:rest",
+        "cobblemon:shadowball",
+        "cobblemon:sleeptalk"
+      ],
+      "roles": [
+        "weakness_cover"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:shadowball"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "giratina_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:giratina",
+      "ability_id": "cobblemon:pressure",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:dragonpulse",
+        "cobblemon:rest",
+        "cobblemon:sleeptalk"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:dragonpulse"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "giratina_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:giratina",
+      "ability_id": "cobblemon:pressure",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:defog",
+        "cobblemon:dragontail",
+        "cobblemon:rest",
+        "cobblemon:shadowball"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:shadowball"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "giratina_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:giratina",
+      "ability_id": "cobblemon:pressure",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:dragontail",
+        "cobblemon:rest",
+        "cobblemon:shadowball",
+        "cobblemon:willowisp"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:shadowball"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "giratinaorigin_preset_1",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:giratina",
+      "form_id": "origin",
+      "ability_id": "cobblemon:levitate",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:dragontail",
+        "cobblemon:poltergeist",
+        "cobblemon:shadowsneak"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dracometeor",
+        "cobblemon:poltergeist"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "giratinaorigin_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:giratina",
+      "form_id": "origin",
+      "ability_id": "cobblemon:levitate",
+      "held_item_id": "cobblemon:weakness_policy",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:dragontail",
+        "cobblemon:earthquake",
+        "cobblemon:poltergeist"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "giratinaorigin_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:giratina",
+      "form_id": "origin",
+      "ability_id": "cobblemon:levitate",
+      "held_item_id": "cobblemon:choice_scarf",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:dragontail",
+        "cobblemon:earthquake",
+        "cobblemon:shadowsneak"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "giratinaorigin_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:giratina",
+      "form_id": "origin",
+      "ability_id": "cobblemon:levitate",
+      "held_item_id": "cobblemon:life_orb",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake",
+        "cobblemon:poltergeist",
+        "cobblemon:shadowsneak"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

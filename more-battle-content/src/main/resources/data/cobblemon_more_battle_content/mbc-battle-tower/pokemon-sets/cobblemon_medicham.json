@@ -1,0 +1,69 @@
+{
+  "schema_version": 4,
+  "pokemon_sets": [
+    {
+      "set_id": "generated_mega_tier1_medicham",
+      "set_tier": 1,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:medicham",
+      "form_id": null,
+      "ability_id": "cobblemon:telepathy",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "mega_showdown:medichamite",
+      "moves": [
+        "cobblemon:bulletpunch",
+        "cobblemon:closecombat",
+        "cobblemon:icepunch",
+        "cobblemon:zenheadbutt"
+      ],
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "generated_mega_tier2_medicham",
+      "set_tier": 2,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:medicham",
+      "form_id": null,
+      "ability_id": "cobblemon:purepower",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "mega_showdown:medichamite",
+      "moves": [
+        "cobblemon:closecombat",
+        "cobblemon:icepunch",
+        "cobblemon:poisonjab",
+        "cobblemon:zenheadbutt"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    }
+  ]
+}

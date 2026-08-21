@@ -37,14 +37,28 @@ internal class TowerOpponentSelector(
         opponentKind: TowerOpponentKind,
         mechanic: MajorBattleMechanic,
         excludedProfileIds: Set<String> = emptySet(),
+        excludedSpeciesIds: Set<String> = emptySet(),
     ): TowerOpponentSelectionResult {
         val eligible = catalog.profilesFor(rank, format, opponentKind, mechanic)
         if (eligible.isEmpty()) return TowerOpponentSelectionResult.NoEligibleProfile
         val fresh = eligible.filterNot { it.profileId in excludedProfileIds }
         val profiles = fresh.ifEmpty { eligible }
 
-        val profile = selectWeighted(profiles)
-        val randomizedPool = catalog.setsFor(profile).toMutableList()
+        val profilesWithFreshTeams = profiles.filter { profile ->
+            TowerLegalTeamSearch.exists(
+                catalog.setsFor(profile).filterNot { it.speciesId in excludedSpeciesIds },
+                format.selectionSize,
+            )
+        }
+        val selectableProfiles = profilesWithFreshTeams.ifEmpty { profiles }
+
+        val profile = selectWeighted(selectableProfiles)
+        val completePool = catalog.setsFor(profile)
+        val freshPool = completePool.filterNot { it.speciesId in excludedSpeciesIds }
+        val selectedPool = freshPool.takeIf {
+            TowerLegalTeamSearch.exists(it, format.selectionSize)
+        } ?: completePool
+        val randomizedPool = selectedPool.toMutableList()
         shuffle(randomizedPool)
         val team = TowerLegalTeamSearch.select(randomizedPool, format.selectionSize)
             ?: return TowerOpponentSelectionResult.NoLegalTeam(profile.profileId)

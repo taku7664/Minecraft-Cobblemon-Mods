@@ -1,0 +1,141 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "maushold_preset_1",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:maushold",
+      "ability_id": "cobblemon:cheekpouch",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:bite",
+        "cobblemon:encore",
+        "cobblemon:populationbomb",
+        "cobblemon:tidyup"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:tidyup"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "maushold_preset_2",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:maushold",
+      "ability_id": "cobblemon:technician",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:bite",
+        "cobblemon:encore",
+        "cobblemon:populationbomb",
+        "cobblemon:tidyup"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:tidyup"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "maushold_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:maushold",
+      "ability_id": "cobblemon:technician",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:bite",
+        "cobblemon:encore",
+        "cobblemon:populationbomb",
+        "cobblemon:tidyup"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:tidyup"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "maushold_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:maushold",
+      "ability_id": "cobblemon:technician",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:bite",
+        "cobblemon:encore",
+        "cobblemon:populationbomb",
+        "cobblemon:tidyup"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:tidyup"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

@@ -1,6 +1,8 @@
 package jbro.cobblemon.morebattlecontent.internal.factory
 
-import com.google.gson.JsonParser
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.io.StringReader
 import jbro.cobblemon.morebattlecontent.internal.catalog.CatalogResourceInput
 import org.junit.jupiter.api.Assertions.assertSame
@@ -10,17 +12,9 @@ import org.junit.jupiter.api.Test
 class FactoryCatalogResourceReloaderTest {
     @Test
     fun `applies independent trainer and rental files atomically`() {
-        val root = bundledCatalogJson()
-        val trainers = root.deepCopy().apply { remove("sets") }
-        val sets = root.deepCopy().apply { remove("trainers") }
         val store = FactoryCatalogStore()
 
-        val outcome = FactoryCatalogResourceReloader(store).reload(
-            listOf(
-                CatalogResourceInput("example:battle_factory/catalog/trainers.json") { StringReader(trainers.toString()) },
-                CatalogResourceInput("example:battle_factory/catalog/rentals.json") { StringReader(sets.toString()) },
-            ),
-        )
+        val outcome = FactoryCatalogResourceReloader(store).reload(bundledResources())
 
         assertTrue(outcome is FactoryCatalogReloadOutcome.Applied)
         assertSame((outcome as FactoryCatalogReloadOutcome.Applied).catalog, store.snapshot())
@@ -29,14 +23,19 @@ class FactoryCatalogResourceReloaderTest {
     @Test
     fun `open failure closes earlier readers and preserves the previous snapshot`() {
         val store = FactoryCatalogStore()
-        FactoryCatalogResourceReloader(store).reload { bundledCatalogJson().toString().reader() }
+        val reloader = FactoryCatalogResourceReloader(store)
+        reloader.reload(bundledResources())
         val before = store.snapshot()
-        val first = TrackingReader(bundledCatalogJson().toString())
+        val trainerFile = resourceFiles(TRAINER_DIRECTORY).first()
+        val first = TrackingReader(Files.readString(trainerFile))
 
-        val outcome = FactoryCatalogResourceReloader(store).reload(
-            listOf(
-                CatalogResourceInput("example:battle_factory/catalog/first.json") { first },
-                CatalogResourceInput("example:battle_factory/catalog/broken.json") { error("open failed") },
+        val outcome = reloader.reload(
+            FactoryCatalogResourceBundle(
+                trainers = listOf(
+                    CatalogResourceInput("example:mbc-battle-factory/trainers/first.json") { first },
+                    CatalogResourceInput("example:mbc-battle-factory/trainers/broken.json") { error("open failed") },
+                ),
+                rentalSets = resourceInputs(RENTAL_SET_DIRECTORY),
             ),
         )
 
@@ -45,7 +44,21 @@ class FactoryCatalogResourceReloaderTest {
         assertSame(before, store.snapshot())
     }
 
-    private fun bundledCatalogJson() = checkNotNull(javaClass.getResourceAsStream(CATALOG_PATH)).reader().use(JsonParser::parseReader).asJsonObject
+    private fun bundledResources() = FactoryCatalogResourceBundle(
+        trainers = resourceInputs(TRAINER_DIRECTORY),
+        rentalSets = resourceInputs(RENTAL_SET_DIRECTORY),
+    )
+
+    private fun resourceInputs(directory: String): List<CatalogResourceInput> = resourceFiles(directory).map { path ->
+        CatalogResourceInput(path.fileName.toString()) { Files.newBufferedReader(path) }
+    }
+
+    private fun resourceFiles(directory: String): List<Path> {
+        val url = checkNotNull(javaClass.getResource(directory))
+        return Files.list(Paths.get(url.toURI())).use { paths ->
+            paths.filter { it.fileName.toString().endsWith(".json") }.sorted().toList()
+        }
+    }
 
     private class TrackingReader(value: String) : StringReader(value) {
         var closed = false
@@ -57,6 +70,7 @@ class FactoryCatalogResourceReloaderTest {
     }
 
     private companion object {
-        const val CATALOG_PATH = "/data/cobblemon_more_battle_content/battle_factory/catalog/mbc_core.json"
+        const val TRAINER_DIRECTORY = "/data/cobblemon_more_battle_content/mbc-battle-factory/trainers"
+        const val RENTAL_SET_DIRECTORY = "/data/cobblemon_more_battle_content/mbc-battle-factory/rental-sets"
     }
 }

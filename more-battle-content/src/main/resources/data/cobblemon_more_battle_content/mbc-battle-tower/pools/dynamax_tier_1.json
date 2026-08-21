@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "pools": [
+    {
+      "pool_id": "dynamax_tier_1",
+      "mechanic_id": "dynamax",
+      "set_tiers": [
+        1
+      ]
+    }
+  ]
+}

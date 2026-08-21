@@ -11,12 +11,12 @@ Minecraft 1.21.1과 Cobblemon 1.7.3을 기준으로 만들고 있으며, 각 모
 배틀타워, 배틀팩토리, PvP 같은 배틀 콘텐츠를 한곳에서 즐길 수 있게 하는 본체 모드입니다.
 BP 보상과 상점, 홀로그램 배틀 터미널도 이 모드에 들어 있습니다.
 
-트레이너와 포켓몬 목록은 데이터팩으로 따로 늘릴 수 있습니다. 배틀타워 JSON은
-`data/<네임스페이스>/battle_tower/opponents/`에, 배틀팩토리 JSON은
-`data/<네임스페이스>/battle_factory/catalog/`에 넣으면 됩니다. 파일 이름은 자유이며,
-두 시설의 파일은 서로 섞이지 않습니다. 같은 폴더에 JSON을 여러 개 두면 `/reload` 때
-하나의 목록으로 합쳐집니다. 합쳐진 목록에서 ID가 겹치거나 파일 하나라도 잘못되면
-일부만 적용하지 않고 이전에 정상적으로 읽은 목록을 그대로 사용합니다.
+트레이너와 포켓몬 목록은 데이터팩으로 따로 늘릴 수 있습니다. 배틀타워는
+`mbc-battle-tower`, 배틀팩토리는 `mbc-battle-factory`, BP 상점은 `mbc-bp-shop` 아래에서
+종류별 폴더로 다시 나뉩니다. 예를 들어 타워 트레이너와 포켓몬 세트는 서로 다른 JSON을
+쓰므로 한쪽만 손봐도 됩니다. 파일 하나라도 잘못됐거나 ID가 겹치면 일부만 적용하지 않고,
+이전에 정상적으로 읽은 전체 목록을 그대로 사용합니다. 자세한 경로와 JSON 형식은
+[`more-battle-content/README.md`](more-battle-content/README.md)에 적어 두었습니다.
 
 <img width="1288" height="683" alt="image" src="https://github.com/user-attachments/assets/cdd6a5d1-ba3f-4ae1-83d2-e776ef52e5f2" />
 <img width="1252" height="671" alt="image" src="https://github.com/user-attachments/assets/3eed25c9-88f1-4fae-bd02-f49c2c3100ec" />

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "entry_id": "eject_button",
+      "item_id": "cobblemon:eject_button",
+      "item_count": 1,
+      "price_bp": 20,
+      "sort_order": 290
+    }
+  ]
+}

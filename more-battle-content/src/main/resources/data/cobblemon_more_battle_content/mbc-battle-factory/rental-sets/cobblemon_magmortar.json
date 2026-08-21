@@ -1,0 +1,133 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "magmortar_preset_1",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:magmortar",
+      "ability_id": "cobblemon:vitalspirit",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:fireblast",
+        "cobblemon:focusblast",
+        "cobblemon:knockoff",
+        "cobblemon:scorchingsands"
+      ],
+      "roles": [
+        "weakness_cover"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:fireblast",
+        "cobblemon:focusblast"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "magmortar_preset_2",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:magmortar",
+      "ability_id": "cobblemon:flamebody",
+      "held_item_id": "cobblemon:weakness_policy",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:fireblast",
+        "cobblemon:focusblast",
+        "cobblemon:knockoff"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "magmortar_preset_3",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:magmortar",
+      "ability_id": "cobblemon:flamebody",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:fireblast",
+        "cobblemon:focusblast",
+        "cobblemon:knockoff",
+        "cobblemon:thunderbolt"
+      ],
+      "roles": [
+        "weakness_cover"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:fireblast",
+        "cobblemon:focusblast"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "magmortar_preset_4",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:magmortar",
+      "ability_id": "cobblemon:flamebody",
+      "held_item_id": "cobblemon:life_orb",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:fireblast",
+        "cobblemon:focusblast",
+        "cobblemon:thunderbolt"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

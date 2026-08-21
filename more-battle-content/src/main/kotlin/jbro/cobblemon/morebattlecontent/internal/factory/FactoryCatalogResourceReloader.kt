@@ -10,9 +10,34 @@ internal sealed interface FactoryCatalogReloadOutcome {
     data class ReadFailed(val cause: Exception) : FactoryCatalogReloadOutcome
 }
 
+internal data class FactoryCatalogResourceBundle(
+    val trainers: List<CatalogResourceInput>,
+    val rentalSets: List<CatalogResourceInput>,
+)
+
 internal class FactoryCatalogResourceReloader(
     private val store: FactoryCatalogStore,
 ) {
+    fun reload(bundle: FactoryCatalogResourceBundle): FactoryCatalogReloadOutcome {
+        if (bundle.trainers.isEmpty() || bundle.rentalSets.isEmpty()) return FactoryCatalogReloadOutcome.MissingResource
+        val readers = ArrayList<Reader>(bundle.trainers.size + bundle.rentalSets.size)
+        return try {
+            fun open(resources: List<CatalogResourceInput>): List<Pair<String, Reader>> = resources.map { resource ->
+                val reader = resource.openReader()
+                readers += reader
+                resource.resourceId to reader
+            }
+            when (val result = store.reloadSeparated(open(bundle.trainers), open(bundle.rentalSets))) {
+                is FactoryCatalogLoadResult.Loaded -> FactoryCatalogReloadOutcome.Applied(result.catalog)
+                is FactoryCatalogLoadResult.Rejected -> FactoryCatalogReloadOutcome.Rejected(result.issues)
+            }
+        } catch (exception: Exception) {
+            FactoryCatalogReloadOutcome.ReadFailed(exception)
+        } finally {
+            readers.forEach { reader -> runCatching(reader::close) }
+        }
+    }
+
     fun reload(resources: List<CatalogResourceInput>): FactoryCatalogReloadOutcome {
         if (resources.isEmpty()) return FactoryCatalogReloadOutcome.MissingResource
         val readers = ArrayList<Pair<String, Reader>>(resources.size)

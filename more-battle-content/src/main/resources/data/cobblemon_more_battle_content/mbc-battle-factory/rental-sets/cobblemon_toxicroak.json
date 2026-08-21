@@ -1,0 +1,136 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "toxicroak_preset_1",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:toxicroak",
+      "ability_id": "cobblemon:poisontouch",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:closecombat",
+        "cobblemon:gunkshot",
+        "cobblemon:icepunch",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:gunkshot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "toxicroak_preset_2",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:toxicroak",
+      "ability_id": "cobblemon:dryskin",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:closecombat",
+        "cobblemon:gunkshot",
+        "cobblemon:knockoff",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:gunkshot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "toxicroak_preset_3",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:toxicroak",
+      "ability_id": "cobblemon:dryskin",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:closecombat",
+        "cobblemon:gunkshot",
+        "cobblemon:suckerpunch",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:gunkshot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "toxicroak_preset_4",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:toxicroak",
+      "ability_id": "cobblemon:dryskin",
+      "held_item_id": "cobblemon:choice_band",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:closecombat",
+        "cobblemon:gunkshot",
+        "cobblemon:icepunch",
+        "cobblemon:suckerpunch"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:gunkshot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

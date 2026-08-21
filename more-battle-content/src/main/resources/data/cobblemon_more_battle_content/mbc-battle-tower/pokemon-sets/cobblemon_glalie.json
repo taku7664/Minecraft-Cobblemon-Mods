@@ -1,0 +1,203 @@
+{
+  "schema_version": 4,
+  "pokemon_sets": [
+    {
+      "set_id": "generated_dynamax_tier1_glalie",
+      "set_tier": 1,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:glalie",
+      "form_id": null,
+      "ability_id": "cobblemon:icebody",
+      "nature_id": "cobblemon:impish",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:disable",
+        "cobblemon:earthquake",
+        "cobblemon:freezedry",
+        "cobblemon:spikes"
+      ],
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "generated_tera_tier1_glalie",
+      "set_tier": 1,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:glalie",
+      "form_id": null,
+      "ability_id": "cobblemon:icebody",
+      "nature_id": "cobblemon:impish",
+      "held_item_id": "cobblemon:leftovers",
+      "moves": [
+        "cobblemon:disable",
+        "cobblemon:earthquake",
+        "cobblemon:freezedry",
+        "cobblemon:spikes"
+      ],
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "tera_type": "fairy"
+    },
+    {
+      "set_id": "generated_mega_tier1_glalie",
+      "set_tier": 1,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:glalie",
+      "form_id": null,
+      "ability_id": "cobblemon:icebody",
+      "nature_id": "cobblemon:impish",
+      "held_item_id": "mega_showdown:glalitite",
+      "moves": [
+        "cobblemon:disable",
+        "cobblemon:earthquake",
+        "cobblemon:freezedry",
+        "cobblemon:spikes"
+      ],
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "generated_dynamax_tier2_glalie",
+      "set_tier": 2,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:glalie",
+      "form_id": null,
+      "ability_id": "cobblemon:moody",
+      "nature_id": "cobblemon:bold",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "moves": [
+        "cobblemon:disable",
+        "cobblemon:freezedry",
+        "cobblemon:spikes",
+        "cobblemon:taunt"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "generated_tera_tier2_glalie",
+      "set_tier": 2,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:glalie",
+      "form_id": null,
+      "ability_id": "cobblemon:moody",
+      "nature_id": "cobblemon:bold",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "moves": [
+        "cobblemon:disable",
+        "cobblemon:freezedry",
+        "cobblemon:spikes",
+        "cobblemon:taunt"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "tera_type": "ground"
+    },
+    {
+      "set_id": "generated_mega_tier2_glalie",
+      "set_tier": 2,
+      "mechanic_id": "mega",
+      "species_id": "cobblemon:glalie",
+      "form_id": null,
+      "ability_id": "cobblemon:moody",
+      "nature_id": "cobblemon:bold",
+      "held_item_id": "mega_showdown:glalitite",
+      "moves": [
+        "cobblemon:disable",
+        "cobblemon:freezedry",
+        "cobblemon:spikes",
+        "cobblemon:taunt"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    }
+  ]
+}

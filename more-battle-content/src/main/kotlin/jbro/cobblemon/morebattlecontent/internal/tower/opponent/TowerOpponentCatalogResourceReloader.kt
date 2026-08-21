@@ -10,9 +10,45 @@ internal sealed interface TowerOpponentCatalogReloadOutcome {
     data class ReadFailed(val cause: Exception) : TowerOpponentCatalogReloadOutcome
 }
 
+internal data class TowerOpponentCatalogResourceBundle(
+    val trainers: List<CatalogResourceInput>,
+    val pools: List<CatalogResourceInput>,
+    val encounters: List<CatalogResourceInput>,
+    val pokemonSets: List<CatalogResourceInput>,
+)
+
 internal class TowerOpponentCatalogResourceReloader(
     private val store: TowerOpponentCatalogStore,
 ) {
+    fun reload(bundle: TowerOpponentCatalogResourceBundle): TowerOpponentCatalogReloadOutcome {
+        if (bundle.trainers.isEmpty() || bundle.pools.isEmpty() || bundle.encounters.isEmpty() || bundle.pokemonSets.isEmpty()) {
+            return TowerOpponentCatalogReloadOutcome.MissingResource
+        }
+        val readers = ArrayList<Reader>(bundle.trainers.size + bundle.pools.size + bundle.encounters.size + bundle.pokemonSets.size)
+        return try {
+            fun open(resources: List<CatalogResourceInput>): List<Pair<String, Reader>> = resources.map { resource ->
+                val reader = resource.openReader()
+                readers += reader
+                resource.resourceId to reader
+            }
+            when (
+                val result = store.reloadSeparated(
+                    open(bundle.trainers),
+                    open(bundle.pools),
+                    open(bundle.encounters),
+                    open(bundle.pokemonSets),
+                )
+            ) {
+                is TowerOpponentCatalogLoadResult.Loaded -> TowerOpponentCatalogReloadOutcome.Applied(result.catalog)
+                is TowerOpponentCatalogLoadResult.Rejected -> TowerOpponentCatalogReloadOutcome.Rejected(result.issues)
+            }
+        } catch (error: Exception) {
+            TowerOpponentCatalogReloadOutcome.ReadFailed(error)
+        } finally {
+            readers.forEach { reader -> runCatching(reader::close) }
+        }
+    }
+
     fun reload(resources: List<CatalogResourceInput>): TowerOpponentCatalogReloadOutcome {
         if (resources.isEmpty()) return TowerOpponentCatalogReloadOutcome.MissingResource
         val readers = ArrayList<Pair<String, Reader>>(resources.size)

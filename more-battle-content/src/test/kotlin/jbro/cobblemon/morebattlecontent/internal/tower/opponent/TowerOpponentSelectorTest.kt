@@ -55,6 +55,31 @@ class TowerOpponentSelectorTest {
     }
 
     @Test
+    fun `avoids recently seen species before allowing a repeated team`() {
+        val sets = validSets()
+        val profile = profile("rotating", 1, TowerBattleFormat.SINGLE, sets.map(TowerPokemonSet::setId))
+        val selector = TowerOpponentSelector(catalog(listOf(profile), sets), FixedRandom())
+
+        val fresh = selector.select(
+            TowerRank.RANK_1,
+            TowerBattleFormat.SINGLE,
+            TowerOpponentKind.REGULAR,
+            MajorBattleMechanic.MEGA,
+            excludedSpeciesIds = sets.take(3).mapTo(LinkedHashSet(), TowerPokemonSet::speciesId),
+        ) as TowerOpponentSelectionResult.Selected
+        val exhausted = selector.select(
+            TowerRank.RANK_1,
+            TowerBattleFormat.SINGLE,
+            TowerOpponentKind.REGULAR,
+            MajorBattleMechanic.MEGA,
+            excludedSpeciesIds = sets.mapTo(LinkedHashSet(), TowerPokemonSet::speciesId),
+        ) as TowerOpponentSelectionResult.Selected
+
+        assertTrue(fresh.team.none { it.speciesId in sets.take(3).map(TowerPokemonSet::speciesId) })
+        assertEquals(3, exhausted.team.size)
+    }
+
+    @Test
     fun `double selection skips alternate species and duplicate held items`() {
         val sets = validSets().toMutableList()
         sets[1] = pokemonSet(2, speciesId = sets[0].speciesId)

@@ -16,9 +16,11 @@ import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const outputPath = resolve(
-  process.argv[2] ?? join(projectRoot, "src/main/resources/data/cobblemon_more_battle_content/battle_factory/catalog/mbc_core.json"),
+const outputRoot = resolve(
+  process.argv[2] ?? join(projectRoot, "src/main/resources/data/cobblemon_more_battle_content/mbc-battle-factory"),
 );
+const trainerDirectory = join(outputRoot, "trainers");
+const rentalSetDirectory = join(outputRoot, "rental-sets");
 const cobblemonJar = resolve(process.argv[3] ?? findCobblemonJar());
 const work = mkdtempSync(join(tmpdir(), "mbc-factory-catalog-"));
 
@@ -37,8 +39,7 @@ try {
   const abilities = require(join(showdownRoot, "data/abilities.js")).Abilities;
   const moves = require(join(showdownRoot, "data/moves.js")).Moves;
   const speciesIndex = indexCobblemonSpecies(join(work, "data/cobblemon/species"));
-  const existing = JSON.parse(readFileSync(outputPath, "utf8"));
-  const trainers = convertTrainers(existing);
+  const trainers = readTrainerFragments(trainerDirectory);
   const sets = [];
   const skipped = [];
 
@@ -87,14 +88,9 @@ try {
     }
   }
 
-  const catalog = {
-    schema_version: 4,
-    catalog_id: "mbc_factory_core",
-    trainers,
-    sets,
-  };
+  const catalog = { trainers, sets };
   validateGeneratedCatalog(catalog);
-  writeFileSync(outputPath, `${JSON.stringify(catalog, null, 2)}\n`, "utf8");
+  writeRentalSetFragments(rentalSetDirectory, sets);
   process.stdout.write(
     JSON.stringify(
       {
@@ -178,18 +174,38 @@ function addSpecies(index, key, speciesId, formId, base, form) {
   });
 }
 
-function convertTrainers(existing) {
-  const sources = existing.trainers ?? existing.concepts ?? [];
-  return sources.map((source) => ({
-    trainer_id: source.trainer_id ?? source.concept_id,
-    display_name_key: source.display_name_key,
-    description_key: "factory.cobblemon_more_battle_content.trainer.shared.description",
-    formats: source.formats,
-    weight: Number(source.weight),
-    ai_skill: Number(source.ai_skill),
-    ai_summary: "Build a legal team from the current round's complete rental presets and adapt only to public battle information.",
-    objectives: unique(source.objectives?.length ? source.objectives : ["preserve_core", "pivoting"]),
-  }));
+function readTrainerFragments(directory) {
+  const trainers = readdirSync(directory)
+    .filter((name) => name.endsWith(".json"))
+    .sort()
+    .flatMap((name) => {
+      const root = JSON.parse(readFileSync(join(directory, name), "utf8"));
+      if (root.schema_version !== 1 || !Array.isArray(root.trainers)) {
+        throw new Error(`Invalid Factory trainer fragment: ${name}`);
+      }
+      return root.trainers;
+    });
+  if (new Set(trainers.map((trainer) => trainer.trainer_id)).size !== trainers.length) {
+    throw new Error("Factory trainer fragments contain duplicate trainer IDs");
+  }
+  return trainers;
+}
+
+function writeRentalSetFragments(directory, sets) {
+  rmSync(directory, { recursive: true, force: true });
+  mkdirSync(directory, { recursive: true });
+  const groups = new Map();
+  for (const set of sets) {
+    const group = groups.get(set.species_id) ?? [];
+    group.push(set);
+    groups.set(set.species_id, group);
+  }
+  for (const [speciesId, speciesSets] of [...groups].sort(([left], [right]) => left.localeCompare(right))) {
+    const fileName = speciesId.toLowerCase().replace(/[^a-z0-9._-]+/g, "_");
+    const path = join(directory, `${fileName}.json`);
+    writeFileSync(path, `${JSON.stringify({ schema_version: 4, rental_sets: speciesSets }, null, 2)}\n`, "utf8");
+    JSON.parse(readFileSync(path, "utf8"));
+  }
 }
 
 function moveCombinations(roles, species, moveData) {

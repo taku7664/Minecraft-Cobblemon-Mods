@@ -22,6 +22,7 @@ internal data class TowerStatSpread(
 internal class TowerPokemonSet internal constructor(
     val setId: String,
     val setTier: Int,
+    val mechanic: MajorBattleMechanic? = null,
     val speciesId: String,
     val formId: String?,
     val abilityId: String?,
@@ -170,6 +171,22 @@ internal class TowerOpponentCatalogStore {
         if (result is TowerOpponentCatalogLoadResult.Loaded) {
             current = result.catalog
         }
+        return result
+    }
+
+    fun reloadSeparated(
+        trainerFragments: List<Pair<String, Reader>>,
+        poolFragments: List<Pair<String, Reader>>,
+        encounterFragments: List<Pair<String, Reader>>,
+        pokemonSetFragments: List<Pair<String, Reader>>,
+    ): TowerOpponentCatalogLoadResult {
+        val result = TowerOpponentCatalogLoader.loadSeparated(
+            trainerFragments,
+            poolFragments,
+            encounterFragments,
+            pokemonSetFragments,
+        )
+        if (result is TowerOpponentCatalogLoadResult.Loaded) current = result.catalog
         return result
     }
 }

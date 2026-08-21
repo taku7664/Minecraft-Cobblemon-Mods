@@ -1,0 +1,269 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "urshifu_preset_1",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:urshifu",
+      "ability_id": "cobblemon:unseenfist",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:closecombat",
+        "cobblemon:suckerpunch",
+        "cobblemon:swordsdance",
+        "cobblemon:wickedblow"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:suckerpunch"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "urshifu_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:urshifu",
+      "ability_id": "cobblemon:unseenfist",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:closecombat",
+        "cobblemon:poisonjab",
+        "cobblemon:suckerpunch",
+        "cobblemon:wickedblow"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:poisonjab"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "urshifu_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:urshifu",
+      "ability_id": "cobblemon:unseenfist",
+      "held_item_id": "cobblemon:life_orb",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:closecombat",
+        "cobblemon:suckerpunch",
+        "cobblemon:uturn",
+        "cobblemon:wickedblow"
+      ],
+      "roles": [
+        "pivot"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:suckerpunch"
+      ],
+      "lead_priority": 70,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "urshifu_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:urshifu",
+      "ability_id": "cobblemon:unseenfist",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:closecombat",
+        "cobblemon:poisonjab",
+        "cobblemon:suckerpunch",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:poisonjab"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "urshifurapidstrike_preset_1",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:urshifu",
+      "form_id": "rapid-strike",
+      "ability_id": "cobblemon:unseenfist",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:aquajet",
+        "cobblemon:closecombat",
+        "cobblemon:surgingstrikes",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:swordsdance"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "urshifurapidstrike_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:urshifu",
+      "form_id": "rapid-strike",
+      "ability_id": "cobblemon:unseenfist",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:closecombat",
+        "cobblemon:icespinner",
+        "cobblemon:surgingstrikes",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:icespinner"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "urshifurapidstrike_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:urshifu",
+      "form_id": "rapid-strike",
+      "ability_id": "cobblemon:unseenfist",
+      "held_item_id": "cobblemon:expert_belt",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:aquajet",
+        "cobblemon:closecombat",
+        "cobblemon:icespinner",
+        "cobblemon:surgingstrikes"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:icespinner"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "urshifurapidstrike_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:urshifu",
+      "form_id": "rapid-strike",
+      "ability_id": "cobblemon:unseenfist",
+      "held_item_id": "cobblemon:choice_band",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:aquajet",
+        "cobblemon:closecombat",
+        "cobblemon:surgingstrikes",
+        "cobblemon:uturn"
+      ],
+      "roles": [
+        "pivot"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:uturn"
+      ],
+      "lead_priority": 70,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

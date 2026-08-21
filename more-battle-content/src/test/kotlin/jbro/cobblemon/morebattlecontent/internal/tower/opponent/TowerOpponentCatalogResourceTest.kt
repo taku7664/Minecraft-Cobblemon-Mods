@@ -2,6 +2,9 @@ package jbro.cobblemon.morebattlecontent.internal.tower.opponent
 
 import com.google.gson.JsonParser
 import java.io.InputStreamReader
+import java.io.Reader
+import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.jar.JarFile
 import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
@@ -15,37 +18,71 @@ import org.junit.jupiter.api.Test
 
 class TowerOpponentCatalogResourceTest {
     @Test
-    fun `bundled catalog contains the approved schema three profiles and sets`() {
+    fun `every reachable tower battle has at least fifty eligible trainers`() {
+        val catalog = bundledCatalog()
+
+        TowerRank.entries.forEach { rank ->
+            val reachableKinds = buildList {
+                add(TowerOpponentKind.REGULAR)
+                if (rank.completionChangesTier) add(TowerOpponentKind.TIER_BOSS)
+                if (rank == TowerRank.MAX) add(TowerOpponentKind.MASTER_BALL_BOSS)
+            }
+            TowerBattleFormat.entries.forEach { format ->
+                MajorBattleMechanic.entries.forEach { mechanic ->
+                    reachableKinds.forEach { kind ->
+                        val profiles = catalog.profilesFor(rank, format, kind, mechanic)
+                        assertTrue(
+                            profiles.size >= MINIMUM_TRAINERS_PER_CATEGORY,
+                            "$rank $format $kind $mechanic has only ${profiles.size} eligible trainers",
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `bundled catalog provides fifty real trainers and broad species pools per category`() {
         val catalog = bundledCatalog()
         val profiles = approvedProfiles(catalog)
 
-        assertTrue(profiles.map(TowerOpponentProfile::profileId).toSet().containsAll(EXPECTED_PROFILE_IDS))
-        assertEquals(72, profiles.size)
-        assertEquals(18, profiles.groupBy { listOf(it.rankIds, it.format, it.opponentKind, it.mechanic, it.theme) }.size)
-        profiles.groupBy { listOf(it.rankIds, it.format, it.opponentKind, it.mechanic, it.theme) }
-            .forEach { (category, variants) -> assertEquals(4, variants.size, category.toString()) }
+        assertTrue(profiles.map(TowerOpponentProfile::profileId).toSet().containsAll(setOf("trainer_001", "trainer_050")))
+        val categories = profiles.groupBy {
+            listOf(it.rankIds, it.format, it.opponentKind, it.mechanic, it.theme)
+        }
+        assertEquals(EXPECTED_PROFILE_CATEGORY_COUNT, categories.size)
+        categories.forEach { (category, trainers) ->
+            assertEquals(MINIMUM_TRAINERS_PER_CATEGORY, trainers.size, category.toString())
+            assertEquals(1, trainers.map { it.setIds.sorted() }.distinct().size, "Trainers in $category must share its rule-driven pool")
+        }
         profiles.forEach { profile ->
-            assertEquals("trainer.cobblemon_more_battle_content.${profile.profileId}", profile.displayNameKey)
-            assertEquals(12, profile.setIds.size)
-            assertEquals(12, profile.setIds.distinct().size)
+            assertTrue(profile.setIds.size >= MINIMUM_SPECIES_PER_MECHANIC_TIER)
+            assertEquals(profile.setIds.size, profile.setIds.distinct().size)
         }
 
         val regularProfiles = profiles.filter { it.opponentKind == TowerOpponentKind.REGULAR }
         val uniqueSets = regularProfiles.flatMap(catalog::setsFor).distinctBy(TowerPokemonSet::setId)
-        assertEquals(72, uniqueSets.size)
-        assertEquals(72, uniqueSets.map(TowerPokemonSet::setId).distinct().size)
+        val speciesByMechanicAndTier = regularProfiles
+            .flatMap { profile -> catalog.setsFor(profile).map { set -> Triple(profile.mechanic, set.setTier, set.speciesId) } }
+            .groupBy({ it.first to it.second }, { it.third })
+        speciesByMechanicAndTier.forEach { (category, species) ->
+            assertTrue(
+                species.distinct().size >= MINIMUM_SPECIES_PER_MECHANIC_TIER,
+                "$category has only ${species.distinct().size} species",
+            )
+        }
 
         regularProfiles.forEach { profile ->
             val sets = catalog.setsFor(profile)
-            assertEquals(12, sets.map(TowerPokemonSet::speciesId).distinct().size, profile.profileId)
+            assertTrue(sets.map(TowerPokemonSet::speciesId).distinct().size >= MINIMUM_SPECIES_PER_MECHANIC_TIER, profile.profileId)
             assertTrue(sets.mapNotNull(TowerPokemonSet::heldItemId).distinct().size >= 6, profile.profileId)
             sets.forEach { set -> assertMechanicShape(profile.mechanic!!, set) }
         }
 
         val lowSets = uniqueSets.filter { it.setTier == 1 }
         val highSets = uniqueSets.filter { it.setTier == 2 }
-        assertEquals(36, lowSets.size)
-        assertEquals(36, highSets.size)
+        assertTrue(lowSets.size >= MINIMUM_SPECIES_PER_MECHANIC_TIER * MajorBattleMechanic.entries.size)
+        assertTrue(highSets.size >= MINIMUM_SPECIES_PER_MECHANIC_TIER * MajorBattleMechanic.entries.size)
         lowSets.forEach { set ->
             assertEquals(1, set.setTier)
             assertEquals(TowerStatSpread(15, 15, 15, 15, 15, 15), set.ivs)
@@ -58,19 +95,7 @@ class TowerOpponentCatalogResourceTest {
             assertEquals(1, set.evs.nonZeroStatCount())
         }
 
-        EXPECTED_POOL_SPECIES.forEach { (profileId, species) ->
-            val profile = profiles.single { it.profileId == profileId }
-            assertTrue(
-                catalog.setsFor(profile).map { it.speciesId.substringAfter(':') }.containsAll(species),
-                profileId,
-            )
-        }
-        profiles.filter { it.opponentKind == TowerOpponentKind.TIER_BOSS }.forEach { boss ->
-            val high = profiles.first {
-                it.opponentKind == TowerOpponentKind.REGULAR &&
-                    it.mechanic == boss.mechanic && it.format == boss.format && "_high" in it.profileId
-            }
-            assertEquals(high.setIds, boss.setIds, boss.profileId)
+        profiles.filter { it.opponentKind != TowerOpponentKind.REGULAR }.forEach { boss ->
             assertEquals(4, boss.aiSkill)
         }
     }
@@ -83,8 +108,8 @@ class TowerOpponentCatalogResourceTest {
         val profiles = approvedProfiles(bundledCatalog())
         val englishNames = profiles.map { english[it.displayNameKey].asString }
         val koreanNames = profiles.map { korean[it.displayNameKey].asString }
-        assertEquals(profiles.size, englishNames.distinct().size)
-        assertEquals(profiles.size, koreanNames.distinct().size)
+        assertTrue(englishNames.distinct().size >= MINIMUM_TRAINERS_PER_CATEGORY)
+        assertTrue(koreanNames.distinct().size >= MINIMUM_TRAINERS_PER_CATEGORY)
 
         EXPECTED_NAMES.forEach { (profileId, names) ->
             val key = "trainer.cobblemon_more_battle_content.$profileId"
@@ -135,10 +160,24 @@ class TowerOpponentCatalogResourceTest {
     }
 
     private fun bundledCatalog(): TowerOpponentCatalog {
-        val stream = javaClass.getResourceAsStream(CATALOG_PATH)
-        assertNotNull(stream, "Missing bundled opponent catalog")
-        val loaded = stream!!.reader().use(TowerOpponentCatalogLoader::load)
+        val loaded = TowerOpponentCatalogLoader.loadSeparated(
+            trainerFragments = fragmentReaders(TRAINER_DIRECTORY),
+            poolFragments = fragmentReaders(POOL_DIRECTORY),
+            encounterFragments = fragmentReaders(ENCOUNTER_DIRECTORY),
+            pokemonSetFragments = fragmentReaders(POKEMON_SET_DIRECTORY),
+        )
         return (loaded as TowerOpponentCatalogLoadResult.Loaded).catalog
+    }
+
+    private fun fragmentReaders(directory: String): List<Pair<String, Reader>> =
+        resourceFiles(directory).map { path -> path.fileName.toString() to Files.newBufferedReader(path) }
+
+    private fun resourceFiles(directory: String): List<Path> {
+        val url = javaClass.getResource(directory)
+        assertNotNull(url, "Missing bundled resource directory: $directory")
+        return Files.list(Paths.get(url!!.toURI())).use { paths ->
+            paths.filter { it.fileName.toString().endsWith(".json") }.sorted().toList()
+        }
     }
 
     private fun approvedProfiles(catalog: TowerOpponentCatalog): List<TowerOpponentProfile> =
@@ -150,7 +189,9 @@ class TowerOpponentCatalogResourceTest {
                     }
                 }
             }
-        }.distinctBy(TowerOpponentProfile::profileId)
+        }.distinctBy { profile ->
+            listOf(profile.profileId, profile.rankIds, profile.format, profile.opponentKind, profile.mechanic, profile.theme)
+        }
 
     private fun assertMechanicShape(mechanic: MajorBattleMechanic, set: TowerPokemonSet) {
         when (mechanic) {
@@ -196,32 +237,13 @@ class TowerOpponentCatalogResourceTest {
     }
 
     private companion object {
-        const val CATALOG_PATH =
-            "/data/cobblemon_more_battle_content/battle_tower/opponents/mbc_core.json"
-
-        val EXPECTED_PROFILE_IDS = setOf(
-            "mega_single_regular_low", "mega_single_regular_high", "mega_single_tier_boss",
-            "mega_double_regular_low", "mega_double_regular_high", "mega_double_tier_boss",
-            "dynamax_single_regular_low", "dynamax_single_regular_high", "dynamax_single_tier_boss",
-            "dynamax_double_regular_low", "dynamax_double_regular_high", "dynamax_double_tier_boss",
-            "tera_single_regular_low", "tera_single_regular_high", "tera_single_tier_boss",
-            "tera_double_regular_low", "tera_double_regular_high", "tera_double_tier_boss",
-        )
-
-        val EXPECTED_POOL_SPECIES = mapOf(
-            "mega_single_regular_low" to listOf("absol", "ampharos", "banette", "abomasnow", "audino", "pidgeot"),
-            "mega_single_regular_high" to listOf("garchomp", "gengar", "metagross", "salamence", "tyranitar", "scizor"),
-            "mega_double_regular_low" to listOf("manectric", "altaria", "camerupt", "gallade", "slowbro", "kangaskhan"),
-            "mega_double_regular_high" to listOf("charizard", "venusaur", "blastoise", "mawile", "lucario", "aerodactyl"),
-            "dynamax_single_regular_low" to listOf("corviknight", "drednaw", "orbeetle", "sandaconda", "toxtricity", "alcremie"),
-            "dynamax_single_regular_high" to listOf("dragapult", "excadrill", "mimikyu", "hydreigon", "togekiss", "conkeldurr"),
-            "dynamax_double_regular_low" to listOf("pelipper", "ludicolo", "arcanine", "gastrodon", "raichu", "ferrothorn"),
-            "dynamax_double_regular_high" to listOf("coalossal", "rillaboom", "indeedee", "duraludon", "copperajah", "snorlax"),
-            "tera_single_regular_low" to listOf("meowscarada", "ceruledge", "clodsire", "kilowattrel", "baxcalibur", "tinkaton"),
-            "tera_single_regular_high" to listOf("kingambit", "gholdengo", "dragonite", "volcarona", "garganacl", "azumarill"),
-            "tera_double_regular_low" to listOf("murkrow", "garchomp", "armarouge", "farigiraf", "amoonguss", "sylveon"),
-            "tera_double_regular_high" to listOf("fluttermane", "ironhands", "incineroar", "rillaboom", "gholdengo", "dragonite"),
-        )
+        const val MINIMUM_TRAINERS_PER_CATEGORY = 50
+        const val MINIMUM_SPECIES_PER_MECHANIC_TIER = 50
+        const val EXPECTED_PROFILE_CATEGORY_COUNT = 24
+        const val TRAINER_DIRECTORY = "/data/cobblemon_more_battle_content/mbc-battle-tower/trainers"
+        const val POOL_DIRECTORY = "/data/cobblemon_more_battle_content/mbc-battle-tower/pools"
+        const val ENCOUNTER_DIRECTORY = "/data/cobblemon_more_battle_content/mbc-battle-tower/encounters"
+        const val POKEMON_SET_DIRECTORY = "/data/cobblemon_more_battle_content/mbc-battle-tower/pokemon-sets"
 
         val EXPECTED_NAMES = mapOf(
             "mega_single_regular_low" to ("Liam" to "민준"),

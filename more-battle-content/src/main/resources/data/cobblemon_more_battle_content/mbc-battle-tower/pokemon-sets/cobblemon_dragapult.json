@@ -1,0 +1,72 @@
+{
+  "schema_version": 4,
+  "pokemon_sets": [
+    {
+      "set_id": "generated_dynamax_tier2_dragapult",
+      "set_tier": 2,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:dragapult",
+      "form_id": null,
+      "ability_id": "cobblemon:clearbody",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:assault_vest",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:fireblast",
+        "cobblemon:shadowball",
+        "cobblemon:thunderbolt"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "generated_tera_tier2_dragapult",
+      "set_tier": 2,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:dragapult",
+      "form_id": null,
+      "ability_id": "cobblemon:clearbody",
+      "nature_id": "cobblemon:timid",
+      "held_item_id": "cobblemon:assault_vest",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:fireblast",
+        "cobblemon:shadowball",
+        "cobblemon:thunderbolt"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "tera_type": "dragon"
+    }
+  ]
+}

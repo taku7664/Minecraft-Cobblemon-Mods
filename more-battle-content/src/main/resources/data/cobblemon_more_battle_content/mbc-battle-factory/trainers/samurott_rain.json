@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "samurott_rain",
+      "display_name_key": "factory.cobblemon_more_battle_content.concept.samurott_rain.name",
+      "description_key": "factory.cobblemon_more_battle_content.trainer.shared.description",
+      "formats": [
+        "single",
+        "double"
+      ],
+      "weight": 10,
+      "ai_skill": 3,
+      "ai_summary": "Build a legal team from the current round's complete rental presets and adapt only to public battle information.",
+      "objectives": [
+        "field_control",
+        "focus_fire"
+      ]
+    }
+  ]
+}

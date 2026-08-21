@@ -58,6 +58,58 @@ internal object FactoryCatalogLoader {
         )
     }
 
+    fun loadSeparated(
+        trainerFragments: List<Pair<String, Reader>>,
+        rentalSetFragments: List<Pair<String, Reader>>,
+    ): FactoryCatalogLoadResult = decode {
+        if (trainerFragments.isEmpty()) {
+            reject(FactoryCatalogIssueCode.MISSING_FIELD, "$", "No Battle Factory trainer JSON files were found")
+        }
+        if (rentalSetFragments.isEmpty()) {
+            reject(FactoryCatalogIssueCode.MISSING_FIELD, "$", "No Battle Factory rental set JSON files were found")
+        }
+
+        val trainers = trainerFragments.flatMap { (resourceId, reader) ->
+            val path = "resource[$resourceId]"
+            val root = reader.use { JsonParser.parseReader(it).requireObject(path) }
+            root.rejectUnknown(path, TRAINER_FRAGMENT_FIELDS)
+            val schema = root.requiredInt(path, "schema_version")
+            if (schema != TRAINER_SCHEMA_VERSION) {
+                reject(
+                    FactoryCatalogIssueCode.UNSUPPORTED_SCHEMA,
+                    "$path.schema_version",
+                    "Unsupported Factory trainer schema: $schema",
+                )
+            }
+            root.requiredArray(path, "trainers").mapIndexed { index, element ->
+                parseTrainer(element.requireObject("$path.trainers[$index]"), "$path.trainers[$index]")
+            }
+        }
+        val sets = rentalSetFragments.flatMap { (resourceId, reader) ->
+            val path = "resource[$resourceId]"
+            val root = reader.use { JsonParser.parseReader(it).requireObject(path) }
+            root.rejectUnknown(path, RENTAL_SET_FRAGMENT_FIELDS)
+            val schema = root.requiredInt(path, "schema_version")
+            if (schema != RENTAL_SET_SCHEMA_VERSION) {
+                reject(
+                    FactoryCatalogIssueCode.UNSUPPORTED_SCHEMA,
+                    "$path.schema_version",
+                    "Unsupported Factory rental set schema: $schema",
+                )
+            }
+            root.requiredArray(path, "rental_sets").mapIndexed { index, element ->
+                parseSet(element.requireObject("$path.rental_sets[$index]"), "$path.rental_sets[$index]")
+            }
+        }
+
+        requireNotEmpty(sets, "$.rental_sets", "rental_sets")
+        requireNotEmpty(trainers, "$.trainers", "trainers")
+        rejectDuplicates(sets.map(FactoryRentalTemplate::setId), "$.rental_sets")
+        rejectDuplicates(trainers.map(FactoryTrainerProfile::trainerId), "$.trainers")
+        validateLegalTeams(sets)
+        FactoryCatalog(MERGED_CATALOG_ID, trainers, sets)
+    }
+
     private fun parseCatalog(root: JsonObject): FactoryCatalog {
         root.rejectUnknown("$", ROOT_FIELDS)
         val schema = root.requiredInt("$", "schema_version")
@@ -338,11 +390,15 @@ private fun rejectDuplicates(values: List<String>, path: String) {
 
 private val SUPPORTED_SCHEMA_VERSIONS = setOf(4)
 private const val MERGED_CATALOG_ID = "merged_factory_catalog"
+private const val TRAINER_SCHEMA_VERSION = 1
+private const val RENTAL_SET_SCHEMA_VERSION = 4
 private const val MAX_AI_SUMMARY = 512
 private const val DRAFT_SIZE = 6
 private val PRIORITY_RANGE = 0..100
 private val TRANSLATION_KEY = Regex("[a-z0-9][a-z0-9_.-]*")
 private val ROOT_FIELDS = setOf("schema_version", "catalog_id", "trainers", "sets")
+private val TRAINER_FRAGMENT_FIELDS = setOf("schema_version", "trainers")
+private val RENTAL_SET_FRAGMENT_FIELDS = setOf("schema_version", "rental_sets")
 private val SET_FIELDS = setOf(
     "set_id", "pool_group", "variant", "species_id", "form_id", "ability_id", "held_item_id", "nature_id", "moves", "evs", "ivs",
     "roles", "preferred_move_ids", "lead_priority", "preservation_priority",

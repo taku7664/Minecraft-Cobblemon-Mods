@@ -59,6 +59,41 @@ class BattlePointShopCatalogLoaderTest {
         assertSame(snapshot, store.snapshot())
     }
 
+    @Test
+    fun `loads independent rules and entry fragments`() {
+        val loaded = BattlePointShopCatalogLoader.loadSeparated(
+            ruleFragments = listOf("example:mbc-bp-shop/rules/mbc-core.json" to StringReader(validRulesJson())),
+            entryFragments = listOf(
+                "example:mbc-bp-shop/entries/choice-band.json" to StringReader(validEntryJson("choice_band", 10)),
+                "example:mbc-bp-shop/entries/life-orb.json" to StringReader(validEntryJson("life_orb", 20)),
+            ),
+            itemExists = existingItems::contains,
+        )
+
+        val catalog = (loaded as BattlePointShopCatalogLoadResult.Loaded).catalog
+        assertEquals("mbc_core", catalog.catalogId)
+        assertEquals(64, catalog.limits.maxTotalItems)
+        assertEquals(listOf("choice_band", "life_orb"), catalog.entries().map { it.entryId })
+    }
+
+    @Test
+    fun `separated reload rejects duplicate entries and preserves the previous snapshot`() {
+        val store = BattlePointShopCatalogStore(existingItems::contains)
+        store.reload(StringReader(validJson()))
+        val snapshot = store.snapshot()
+
+        val result = store.reloadSeparated(
+            ruleFragments = listOf("example:mbc-bp-shop/rules/mbc-core.json" to StringReader(validRulesJson())),
+            entryFragments = listOf(
+                "example:mbc-bp-shop/entries/first.json" to StringReader(validEntryJson("choice_band", 10)),
+                "example:mbc-bp-shop/entries/duplicate.json" to StringReader(validEntryJson("choice_band", 20)),
+            ),
+        )
+
+        assertTrue(result is BattlePointShopCatalogLoadResult.Rejected)
+        assertSame(snapshot, store.snapshot())
+    }
+
     private fun loaded(json: String): BattlePointShopCatalog =
         (BattlePointShopCatalogLoader.load(StringReader(json), existingItems::contains) as
             BattlePointShopCatalogLoadResult.Loaded).catalog
@@ -94,6 +129,35 @@ class BattlePointShopCatalogLoaderTest {
               "item_count": 1,
               "price_bp": 25,
               "sort_order": 20
+            }
+          ]
+        }
+        """.trimIndent()
+
+    private fun validRulesJson() =
+        """
+        {
+          "schema_version": 1,
+          "catalog_id": "mbc_core",
+          "limits": {
+            "max_cart_lines": 16,
+            "max_quantity_per_line": 64,
+            "max_total_items": 64
+          }
+        }
+        """.trimIndent()
+
+    private fun validEntryJson(entryId: String, sortOrder: Int) =
+        """
+        {
+          "schema_version": 1,
+          "entries": [
+            {
+              "entry_id": "$entryId",
+              "item_id": "cobblemon:$entryId",
+              "item_count": 1,
+              "price_bp": 25,
+              "sort_order": $sortOrder
             }
           ]
         }

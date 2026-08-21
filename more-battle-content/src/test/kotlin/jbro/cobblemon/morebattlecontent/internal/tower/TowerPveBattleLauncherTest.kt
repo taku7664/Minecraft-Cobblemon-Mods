@@ -52,7 +52,7 @@ class TowerPveBattleLauncherTest {
     }
 
     @Test
-    fun `successful launches avoid the players recent trainer profile`() {
+    fun `successful launches avoid recent trainers and opponent species`() {
         val starts = ArrayList<TowerPreparedPveBattle<String, String>>()
         val sets = (1..6).map(::set)
         val profiles = listOf("first", "second").map { id ->
@@ -74,7 +74,7 @@ class TowerPveBattleLauncherTest {
                 TowerRegisteredBattleTeamResult.Created(listOf("player_1", "player_2", "player_3"))
             },
             catalogSource = { TowerOpponentCatalog("test", profiles, sets) },
-            opponentMemberFactory = { it.setId },
+            opponentMemberFactory = { it.speciesId },
             runtime = TowerPveBattleRuntime { prepared ->
                 starts += prepared
                 TowerBattleLaunchResult.Started(UUID.randomUUID())
@@ -86,6 +86,10 @@ class TowerPveBattleLauncherTest {
         launcher.launch(request(MajorBattleMechanic.MEGA))
 
         assertEquals(listOf("first", "second"), starts.map { it.profile.profileId })
+        assertTrue(
+            starts[0].opponentTeam.toSet().intersect(starts[1].opponentTeam.toSet()).isEmpty(),
+            "Consecutive Tower teams must not repeat a species while a fresh legal team exists",
+        )
     }
 
     @Test

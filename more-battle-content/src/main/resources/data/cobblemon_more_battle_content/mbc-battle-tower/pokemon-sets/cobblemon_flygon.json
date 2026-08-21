@@ -1,0 +1,72 @@
+{
+  "schema_version": 4,
+  "pokemon_sets": [
+    {
+      "set_id": "generated_dynamax_tier2_flygon",
+      "set_tier": 2,
+      "mechanic_id": "dynamax",
+      "species_id": "cobblemon:flygon",
+      "form_id": null,
+      "ability_id": "cobblemon:levitate",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake",
+        "cobblemon:outrage",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "dmax_level": 10,
+      "gmax_factor": false
+    },
+    {
+      "set_id": "generated_tera_tier2_flygon",
+      "set_tier": 2,
+      "mechanic_id": "tera",
+      "species_id": "cobblemon:flygon",
+      "form_id": null,
+      "ability_id": "cobblemon:levitate",
+      "nature_id": "cobblemon:jolly",
+      "held_item_id": "cobblemon:focus_sash",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake",
+        "cobblemon:outrage",
+        "cobblemon:uturn"
+      ],
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "tera_type": "psychic"
+    }
+  ]
+}

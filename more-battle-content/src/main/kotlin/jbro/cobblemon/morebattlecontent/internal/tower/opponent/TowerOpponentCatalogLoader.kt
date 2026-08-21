@@ -60,6 +60,153 @@ internal object TowerOpponentCatalogLoader {
         )
     }
 
+    fun loadSeparated(
+        trainerFragments: List<Pair<String, Reader>>,
+        poolFragments: List<Pair<String, Reader>>,
+        encounterFragments: List<Pair<String, Reader>>,
+        pokemonSetFragments: List<Pair<String, Reader>>,
+    ): TowerOpponentCatalogLoadResult = decode {
+        if (trainerFragments.isEmpty() || poolFragments.isEmpty() || encounterFragments.isEmpty() || pokemonSetFragments.isEmpty()) {
+            reject(
+                TowerOpponentCatalogIssueCode.MISSING_FIELD,
+                "$",
+                "Battle Tower trainers, pools, encounters, and Pokemon sets must all be present",
+            )
+        }
+
+        val trainers = trainerFragments.flatMap { (resourceId, reader) ->
+            parseTypedFragment(resourceId, reader, "trainers", TOWER_DEFINITION_SCHEMA, TRAINER_FRAGMENT_FIELDS) { value, path ->
+                value.rejectUnknownFields(path, TRAINER_FIELDS)
+                TowerTrainerDefinition(
+                    value.requiredStableId(path, "trainer_id"),
+                    value.requiredTranslationKey(path, "display_name_key"),
+                )
+            }
+        }
+        val pools = poolFragments.flatMap { (resourceId, reader) ->
+            parseTypedFragment(resourceId, reader, "pools", TOWER_DEFINITION_SCHEMA, POOL_FRAGMENT_FIELDS) { value, path ->
+                value.rejectUnknownFields(path, POOL_FIELDS)
+                val mechanic = parseMechanic(value.requiredString(path, "mechanic_id"), "$path.mechanic_id")
+                val tiers = value.requiredArray(path, "set_tiers").mapIndexed { index, element ->
+                    if (!element.isJsonPrimitive || !element.asJsonPrimitive.isNumber) {
+                        reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.set_tiers[$index]", "Expected an integer")
+                    }
+                    element.asInt.also { tier ->
+                        if (tier <= 0) reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.set_tiers[$index]", "Set tier must be positive")
+                    }
+                }
+                requireNotEmpty(tiers, "$path.set_tiers", "set_tiers")
+                rejectDuplicateIds(tiers.map(Int::toString), "$path.set_tiers")
+                TowerPoolDefinition(value.requiredStableId(path, "pool_id"), mechanic, tiers.toSet())
+            }
+        }
+        val encounters = encounterFragments.flatMap { (resourceId, reader) ->
+            parseTypedFragment(resourceId, reader, "encounters", TOWER_DEFINITION_SCHEMA, ENCOUNTER_FRAGMENT_FIELDS) { value, path ->
+                value.rejectUnknownFields(path, ENCOUNTER_FIELDS)
+                val ranks = value.requiredStringList(path, "rank_ids").mapIndexed { index, rankId ->
+                    TowerRank.entries.singleOrNull { it.serializedId == rankId }
+                        ?: reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.rank_ids[$index]", "Unknown tower rank ID: $rankId")
+                }
+                val formatId = value.requiredString(path, "format")
+                val format = TowerBattleFormat.entries.singleOrNull { it.recordId == formatId }
+                    ?: reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.format", "Unknown format: $formatId")
+                val kindId = value.requiredString(path, "opponent_kind")
+                val kind = TowerOpponentKind.entries.singleOrNull { it.name.lowercase() == kindId }
+                    ?: reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.opponent_kind", "Unknown opponent kind: $kindId")
+                val weight = value.requiredInt(path, "weight")
+                if (weight <= 0) reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.weight", "Weight must be positive")
+                val aiSkill = value.requiredInt(path, "ai_skill")
+                if (aiSkill !in BattleAiSkillRange.supported) {
+                    reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.ai_skill", "Unsupported AI skill: $aiSkill")
+                }
+                val trainerIds = value.requiredStringList(path, "trainer_ids")
+                requireNotEmpty(trainerIds, "$path.trainer_ids", "trainer_ids")
+                rejectDuplicateIds(trainerIds, "$path.trainer_ids")
+                TowerEncounterDefinition(
+                    encounterId = value.requiredStableId(path, "encounter_id"),
+                    trainerIds = trainerIds,
+                    rankIds = ranks,
+                    format = format,
+                    opponentKind = kind,
+                    mechanic = parseMechanic(value.requiredString(path, "mechanic_id"), "$path.mechanic_id"),
+                    weight = weight,
+                    aiSkill = aiSkill,
+                    theme = value.requiredStableId(path, "theme"),
+                    poolId = value.requiredStableId(path, "pool_id"),
+                )
+            }
+        }
+        val sets = pokemonSetFragments.flatMap { (resourceId, reader) ->
+            parseTypedFragment(resourceId, reader, "pokemon_sets", TOWER_SET_SCHEMA, POKEMON_SET_FRAGMENT_FIELDS) { value, path ->
+                parseSet(value, path, TOWER_SET_SCHEMA)
+            }
+        }
+
+        requireNotEmpty(trainers, "$.trainers", "trainers")
+        requireNotEmpty(pools, "$.pools", "pools")
+        requireNotEmpty(encounters, "$.encounters", "encounters")
+        requireNotEmpty(sets, "$.pokemon_sets", "pokemon_sets")
+        rejectDuplicateIds(trainers.map(TowerTrainerDefinition::trainerId), "$.trainers")
+        rejectDuplicateIds(pools.map(TowerPoolDefinition::poolId), "$.pools")
+        rejectDuplicateIds(encounters.map(TowerEncounterDefinition::encounterId), "$.encounters")
+        rejectDuplicateIds(sets.map(TowerPokemonSet::setId), "$.pokemon_sets")
+
+        val trainersById = trainers.associateBy(TowerTrainerDefinition::trainerId)
+        val poolsById = pools.associateBy(TowerPoolDefinition::poolId)
+        val profiles = encounters.flatMap { encounter ->
+            val pool = poolsById[encounter.poolId]
+                ?: reject(TowerOpponentCatalogIssueCode.UNKNOWN_REFERENCE, "$.encounters.${encounter.encounterId}.pool_id", "Unknown pool: ${encounter.poolId}")
+            if (pool.mechanic != encounter.mechanic) {
+                reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$.encounters.${encounter.encounterId}.pool_id", "Encounter and pool mechanics must match")
+            }
+            val setIds = sets.filter { set -> set.setTier in pool.setTiers && set.mechanic == pool.mechanic }.map(TowerPokemonSet::setId)
+            if (setIds.size < MINIMUM_PROFILE_POOL_SIZE) {
+                reject(TowerOpponentCatalogIssueCode.INSUFFICIENT_POOL, "$.pools.${pool.poolId}", "Pool must resolve at least $MINIMUM_PROFILE_POOL_SIZE sets")
+            }
+            encounter.trainerIds.map { trainerId ->
+                val trainer = trainersById[trainerId]
+                    ?: reject(TowerOpponentCatalogIssueCode.UNKNOWN_REFERENCE, "$.encounters.${encounter.encounterId}.trainer_ids", "Unknown trainer: $trainerId")
+                TowerOpponentProfile(
+                    profileId = trainer.trainerId,
+                    displayNameKey = trainer.displayNameKey,
+                    rankIds = encounter.rankIds,
+                    format = encounter.format,
+                    opponentKind = encounter.opponentKind,
+                    mechanic = encounter.mechanic,
+                    weight = encounter.weight,
+                    aiSkill = encounter.aiSkill,
+                    theme = encounter.theme,
+                    setIds = setIds,
+                )
+            }
+        }
+        TowerOpponentCatalog(MERGED_CATALOG_ID, profiles, sets)
+    }
+
+    private fun <T> parseTypedFragment(
+        resourceId: String,
+        reader: Reader,
+        field: String,
+        expectedSchema: Int,
+        rootFields: Set<String>,
+        parseEntry: (JsonObject, String) -> T,
+    ): List<T> {
+        val path = "resource[$resourceId]"
+        val root = reader.use { JsonParser.parseReader(it).requireObject(path) }
+        root.rejectUnknownFields(path, rootFields)
+        val schema = root.requiredInt(path, "schema_version")
+        if (schema != expectedSchema) {
+            reject(TowerOpponentCatalogIssueCode.UNSUPPORTED_SCHEMA, "$path.schema_version", "Expected schema $expectedSchema, found $schema")
+        }
+        return root.requiredArray(path, field).mapIndexed { index, element ->
+            parseEntry(element.requireObject("$path.$field[$index]"), "$path.$field[$index]")
+        }
+    }
+
+    private fun parseMechanic(id: String, path: String): MajorBattleMechanic =
+        MajorBattleMechanic.entries.singleOrNull { it.id == id }
+            ?: reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, path, "Unknown tower mechanic: $id")
+
     private fun parseCatalog(root: JsonObject): TowerOpponentCatalog {
         root.rejectUnknownFields("$", ROOT_FIELDS)
 
@@ -182,7 +329,14 @@ internal object TowerOpponentCatalogLoader {
         path: String,
         schemaVersion: Int,
     ): TowerPokemonSet {
-        objectValue.rejectUnknownFields(path, if (schemaVersion >= 3) SET_FIELDS_V3 else SET_FIELDS_V1_V2)
+        objectValue.rejectUnknownFields(
+            path,
+            when {
+                schemaVersion >= 4 -> SET_FIELDS_V4
+                schemaVersion >= 3 -> SET_FIELDS_V3
+                else -> SET_FIELDS_V1_V2
+            },
+        )
         val setTier = objectValue.requiredInt(path, "set_tier")
         if (setTier <= 0) {
             reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.set_tier", "Set tier must be positive")
@@ -224,9 +378,16 @@ internal object TowerOpponentCatalogLoader {
         val gmaxFactor = if (schemaVersion >= 3) objectValue.optionalBoolean(path, "gmax_factor") else null
         validateMechanicPropertyShape(path, teraType, dmaxLevel, gmaxFactor)
 
+        val mechanic = if (schemaVersion >= 4) {
+            parseMechanic(objectValue.requiredString(path, "mechanic_id"), "$path.mechanic_id")
+        } else {
+            null
+        }
+
         return TowerPokemonSet(
             setId = objectValue.requiredStableId(path, "set_id"),
             setTier = setTier,
+            mechanic = mechanic,
             speciesId = objectValue.requiredResourceId(path, "species_id"),
             formId = objectValue.optionalStableId(path, "form_id"),
             abilityId = objectValue.optionalResourceId(path, "ability_id"),
@@ -238,7 +399,9 @@ internal object TowerOpponentCatalogLoader {
             teraType = teraType,
             dmaxLevel = dmaxLevel,
             gmaxFactor = gmaxFactor,
-        )
+        ).also { set ->
+            if (mechanic != null) validateMechanicProperties(mechanic, set, path)
+        }
     }
 
     private fun validateMechanicPropertyShape(
@@ -325,9 +488,13 @@ internal object TowerOpponentCatalogLoader {
     private fun validateMechanicProperties(
         mechanic: MajorBattleMechanic,
         indexedSet: IndexedValue<TowerPokemonSet>,
+    ) = validateMechanicProperties(mechanic, indexedSet.value, "$.sets[${indexedSet.index}]")
+
+    private fun validateMechanicProperties(
+        mechanic: MajorBattleMechanic,
+        set: TowerPokemonSet,
+        setPath: String,
     ) {
-        val set = indexedSet.value
-        val setPath = "$.sets[${indexedSet.index}]"
         when (mechanic) {
             MajorBattleMechanic.MEGA -> {
                 rejectPresent(set.teraType, "$setPath.tera_type", mechanic)
@@ -528,6 +695,8 @@ private fun rejectDuplicateIds(values: List<String>, path: String) {
 
 private val SUPPORTED_SCHEMA_VERSIONS = 1..3
 private const val MERGED_CATALOG_ID = "merged_tower_catalog"
+private const val TOWER_DEFINITION_SCHEMA = 1
+private const val TOWER_SET_SCHEMA = 4
 private const val MINIMUM_PROFILE_POOL_SIZE = 6
 private const val MAX_TOTAL_EVS = 510
 private val IV_RANGE = 0..31
@@ -535,6 +704,15 @@ private val EV_RANGE = 0..252
 private val TRANSLATION_KEY = Regex("[a-z0-9][a-z0-9_.-]*")
 
 private val ROOT_FIELDS = setOf("schema_version", "catalog_id", "profiles", "sets")
+private val TRAINER_FRAGMENT_FIELDS = setOf("schema_version", "trainers")
+private val POOL_FRAGMENT_FIELDS = setOf("schema_version", "pools")
+private val ENCOUNTER_FRAGMENT_FIELDS = setOf("schema_version", "encounters")
+private val POKEMON_SET_FRAGMENT_FIELDS = setOf("schema_version", "pokemon_sets")
+private val TRAINER_FIELDS = setOf("trainer_id", "display_name_key")
+private val POOL_FIELDS = setOf("pool_id", "mechanic_id", "set_tiers")
+private val ENCOUNTER_FIELDS = setOf(
+    "encounter_id", "trainer_ids", "rank_ids", "format", "opponent_kind", "mechanic_id", "weight", "ai_skill", "theme", "pool_id",
+)
 private val PROFILE_FIELDS_V1 = setOf(
     "profile_id",
     "display_name_key",
@@ -560,4 +738,24 @@ private val SET_FIELDS_V1_V2 = setOf(
     "evs",
 )
 private val SET_FIELDS_V3 = SET_FIELDS_V1_V2 + setOf("tera_type", "dmax_level", "gmax_factor")
+private val SET_FIELDS_V4 = SET_FIELDS_V3 + "mechanic_id"
 private val STAT_FIELDS = setOf("hp", "attack", "defense", "special_attack", "special_defense", "speed")
+
+private data class TowerTrainerDefinition(val trainerId: String, val displayNameKey: String)
+private data class TowerPoolDefinition(
+    val poolId: String,
+    val mechanic: MajorBattleMechanic,
+    val setTiers: Set<Int>,
+)
+private data class TowerEncounterDefinition(
+    val encounterId: String,
+    val trainerIds: List<String>,
+    val rankIds: List<TowerRank>,
+    val format: TowerBattleFormat,
+    val opponentKind: TowerOpponentKind,
+    val mechanic: MajorBattleMechanic,
+    val weight: Int,
+    val aiSkill: Int,
+    val theme: String,
+    val poolId: String,
+)

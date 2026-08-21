@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "trainer_031",
+      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_single_regular_high_roster_3"
+    }
+  ]
+}

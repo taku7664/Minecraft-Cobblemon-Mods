@@ -1,0 +1,136 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "venomoth_preset_1",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:venomoth",
+      "ability_id": "cobblemon:shielddust",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:bugbuzz",
+        "cobblemon:morningsun",
+        "cobblemon:quiverdance",
+        "cobblemon:sludgewave"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bugbuzz",
+        "cobblemon:quiverdance"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "venomoth_preset_2",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:venomoth",
+      "ability_id": "cobblemon:tintedlens",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:bugbuzz",
+        "cobblemon:quiverdance",
+        "cobblemon:sleeppowder",
+        "cobblemon:sludgewave"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bugbuzz",
+        "cobblemon:quiverdance"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "venomoth_preset_3",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:venomoth",
+      "ability_id": "cobblemon:tintedlens",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:bugbuzz",
+        "cobblemon:quiverdance",
+        "cobblemon:sludgewave",
+        "cobblemon:substitute"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bugbuzz",
+        "cobblemon:quiverdance"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "venomoth_preset_4",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:venomoth",
+      "ability_id": "cobblemon:tintedlens",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:bugbuzz",
+        "cobblemon:morningsun",
+        "cobblemon:sleeppowder",
+        "cobblemon:sludgewave"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bugbuzz",
+        "cobblemon:sludgewave"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

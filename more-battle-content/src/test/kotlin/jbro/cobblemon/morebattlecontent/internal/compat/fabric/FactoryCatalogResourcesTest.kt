@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 class FactoryCatalogResourcesTest {
     @Test
     fun `uses an independent factory server data directory`() {
-        assertEquals("battle_factory/catalog", FactoryCatalogResources.catalogDirectory)
+        assertEquals("mbc-battle-factory/trainers", FactoryCatalogResources.trainerDirectory)
+        assertEquals("mbc-battle-factory/rental-sets", FactoryCatalogResources.rentalSetDirectory)
     }
 }

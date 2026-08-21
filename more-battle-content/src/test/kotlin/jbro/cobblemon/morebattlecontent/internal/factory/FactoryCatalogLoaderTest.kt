@@ -10,6 +10,21 @@ import org.junit.jupiter.api.Test
 
 class FactoryCatalogLoaderTest {
     @Test
+    fun `separated trainer and rental resources assemble one factory snapshot`() {
+        val root = JsonParser.parseString(validJson()).asJsonObject
+        val trainers = """{"schema_version":1,"trainers":${root.getAsJsonArray("trainers")}}"""
+        val rentalSets = """{"schema_version":4,"rental_sets":${root.getAsJsonArray("sets")}}"""
+
+        val loaded = FactoryCatalogLoader.loadSeparated(
+            trainerFragments = listOf("example:mbc-battle-factory/trainers/core.json" to StringReader(trainers)),
+            rentalSetFragments = listOf("example:mbc-battle-factory/rental-sets/core.json" to StringReader(rentalSets)),
+        ) as FactoryCatalogLoadResult.Loaded
+
+        assertEquals(1, loaded.catalog.trainersFor(FactoryBattleFormat.SINGLE).size)
+        assertEquals(6, loaded.catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(1))).size)
+    }
+
+    @Test
     fun `schema four merges independent trainer and rental set files`() {
         val root = JsonParser.parseString(validJson()).asJsonObject
         val trainers = root.deepCopy().apply {
@@ -23,8 +38,8 @@ class FactoryCatalogLoaderTest {
 
         val loaded = FactoryCatalogLoader.loadFragments(
             listOf(
-                "example:battle_factory/catalog/trainers.json" to StringReader(trainers.toString()),
-                "example:battle_factory/catalog/rentals.json" to StringReader(sets.toString()),
+                "example:mbc-battle-factory/legacy/trainers.json" to StringReader(trainers.toString()),
+                "example:mbc-battle-factory/legacy/rentals.json" to StringReader(sets.toString()),
             ),
         ) as FactoryCatalogLoadResult.Loaded
 
@@ -41,9 +56,9 @@ class FactoryCatalogLoaderTest {
 
         val rejected = FactoryCatalogLoader.loadFragments(
             listOf(
-                "example:battle_factory/catalog/trainers.json" to StringReader(trainers.toString()),
-                "example:battle_factory/catalog/rentals-a.json" to StringReader(sets.toString()),
-                "example:battle_factory/catalog/rentals-b.json" to StringReader(sets.toString()),
+                "example:mbc-battle-factory/legacy/trainers.json" to StringReader(trainers.toString()),
+                "example:mbc-battle-factory/legacy/rentals-a.json" to StringReader(sets.toString()),
+                "example:mbc-battle-factory/legacy/rentals-b.json" to StringReader(sets.toString()),
             ),
         ) as FactoryCatalogLoadResult.Rejected
 

@@ -1,0 +1,271 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "raichu_preset_1",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:raichu",
+      "ability_id": "cobblemon:static",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:nastyplot",
+        "cobblemon:nuzzle",
+        "cobblemon:thunderbolt",
+        "cobblemon:voltswitch"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "pivot"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:nastyplot",
+        "cobblemon:thunderbolt"
+      ],
+      "lead_priority": 70,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "raichu_preset_2",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:raichu",
+      "ability_id": "cobblemon:lightningrod",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:focusblast",
+        "cobblemon:nastyplot",
+        "cobblemon:surf",
+        "cobblemon:thunderbolt"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:focusblast",
+        "cobblemon:nastyplot"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "raichu_preset_3",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:raichu",
+      "ability_id": "cobblemon:lightningrod",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:alluringvoice",
+        "cobblemon:nuzzle",
+        "cobblemon:thunderbolt",
+        "cobblemon:voltswitch"
+      ],
+      "roles": [
+        "pivot"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:alluringvoice",
+        "cobblemon:thunderbolt"
+      ],
+      "lead_priority": 70,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "raichu_preset_4",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:raichu",
+      "ability_id": "cobblemon:lightningrod",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:focusblast",
+        "cobblemon:nastyplot",
+        "cobblemon:terablast",
+        "cobblemon:thunderbolt"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:focusblast",
+        "cobblemon:nastyplot"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "raichualola_preset_1",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:raichu",
+      "form_id": "alola",
+      "ability_id": "cobblemon:surgesurfer",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:psychic",
+        "cobblemon:psyshock",
+        "cobblemon:thunderbolt",
+        "cobblemon:voltswitch"
+      ],
+      "roles": [
+        "pivot"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:psychic",
+        "cobblemon:psyshock"
+      ],
+      "lead_priority": 70,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "raichualola_preset_2",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:raichu",
+      "form_id": "alola",
+      "ability_id": "cobblemon:surgesurfer",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:alluringvoice",
+        "cobblemon:nastyplot",
+        "cobblemon:psyshock",
+        "cobblemon:thunderbolt"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:alluringvoice",
+        "cobblemon:nastyplot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "raichualola_preset_3",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:raichu",
+      "form_id": "alola",
+      "ability_id": "cobblemon:surgesurfer",
+      "held_item_id": "cobblemon:life_orb",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:alluringvoice",
+        "cobblemon:psychic",
+        "cobblemon:psyshock",
+        "cobblemon:thunderbolt"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:alluringvoice",
+        "cobblemon:psychic"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "raichualola_preset_4",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:raichu",
+      "form_id": "alola",
+      "ability_id": "cobblemon:surgesurfer",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:focusblast",
+        "cobblemon:nastyplot",
+        "cobblemon:psyshock",
+        "cobblemon:thunderbolt"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:focusblast",
+        "cobblemon:nastyplot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

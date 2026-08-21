@@ -1,0 +1,407 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "necrozma_preset_1",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:necrozma",
+      "ability_id": "cobblemon:prismarmor",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake",
+        "cobblemon:knockoff",
+        "cobblemon:photongeyser"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "necrozma_preset_2",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:necrozma",
+      "ability_id": "cobblemon:prismarmor",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:heatwave",
+        "cobblemon:photongeyser"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "necrozma_preset_3",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:necrozma",
+      "ability_id": "cobblemon:prismarmor",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:knockoff",
+        "cobblemon:photongeyser",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:photongeyser"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "necrozma_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:necrozma",
+      "ability_id": "cobblemon:prismarmor",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:calm",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:moonlight",
+        "cobblemon:photongeyser"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 4,
+        "special_defense": 252,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "necrozmadawnwings_preset_1",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:necrozma",
+      "form_id": "dawn-wings",
+      "ability_id": "cobblemon:prismarmor",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:moongeistbeam",
+        "cobblemon:photongeyser",
+        "cobblemon:terablast",
+        "cobblemon:trickroom"
+      ],
+      "roles": [
+        "speed_control"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:moongeistbeam",
+        "cobblemon:photongeyser"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "necrozmadawnwings_preset_2",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:necrozma",
+      "form_id": "dawn-wings",
+      "ability_id": "cobblemon:prismarmor",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:moongeistbeam",
+        "cobblemon:moonlight",
+        "cobblemon:photongeyser"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:moongeistbeam"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "necrozmadawnwings_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:necrozma",
+      "form_id": "dawn-wings",
+      "ability_id": "cobblemon:prismarmor",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:brickbreak",
+        "cobblemon:dragondance",
+        "cobblemon:moongeistbeam",
+        "cobblemon:photongeyser"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:brickbreak",
+        "cobblemon:dragondance"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "necrozmadawnwings_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:necrozma",
+      "form_id": "dawn-wings",
+      "ability_id": "cobblemon:prismarmor",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:moongeistbeam",
+        "cobblemon:photongeyser",
+        "cobblemon:terablast",
+        "cobblemon:trickroom"
+      ],
+      "roles": [
+        "speed_control"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:moongeistbeam",
+        "cobblemon:photongeyser"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "necrozmaduskmane_preset_1",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:necrozma",
+      "form_id": "dusk-mane",
+      "ability_id": "cobblemon:prismarmor",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:careful",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake",
+        "cobblemon:moonlight",
+        "cobblemon:sunsteelstrike"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 252,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "necrozmaduskmane_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:necrozma",
+      "form_id": "dusk-mane",
+      "ability_id": "cobblemon:prismarmor",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake",
+        "cobblemon:photongeyser",
+        "cobblemon:sunsteelstrike"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "necrozmaduskmane_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:necrozma",
+      "form_id": "dusk-mane",
+      "ability_id": "cobblemon:prismarmor",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:careful",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake",
+        "cobblemon:moonlight",
+        "cobblemon:sunsteelstrike"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 252,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "necrozmaduskmane_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:necrozma",
+      "form_id": "dusk-mane",
+      "ability_id": "cobblemon:prismarmor",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake",
+        "cobblemon:photongeyser",
+        "cobblemon:sunsteelstrike"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

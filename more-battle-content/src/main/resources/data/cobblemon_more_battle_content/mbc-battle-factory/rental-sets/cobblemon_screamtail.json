@@ -1,0 +1,136 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "screamtail_preset_1",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:screamtail",
+      "ability_id": "cobblemon:protosynthesis",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:encore",
+        "cobblemon:playrough",
+        "cobblemon:protect",
+        "cobblemon:wish"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:playrough"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "screamtail_preset_2",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:screamtail",
+      "ability_id": "cobblemon:protosynthesis",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:encore",
+        "cobblemon:playrough",
+        "cobblemon:thunderwave",
+        "cobblemon:wish"
+      ],
+      "roles": [
+        "speed_control",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:playrough"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "screamtail_preset_3",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:screamtail",
+      "ability_id": "cobblemon:protosynthesis",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:playrough",
+        "cobblemon:protect",
+        "cobblemon:thunderwave",
+        "cobblemon:wish"
+      ],
+      "roles": [
+        "speed_control",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:playrough"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "screamtail_preset_4",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:screamtail",
+      "ability_id": "cobblemon:protosynthesis",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:encore",
+        "cobblemon:playrough",
+        "cobblemon:protect",
+        "cobblemon:thunderwave"
+      ],
+      "roles": [
+        "speed_control",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:playrough"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    }
+  ]
+}
