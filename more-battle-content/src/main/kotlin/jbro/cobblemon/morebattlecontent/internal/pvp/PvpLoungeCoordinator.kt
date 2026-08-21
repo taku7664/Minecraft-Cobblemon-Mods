@@ -133,7 +133,8 @@ internal class PvpLoungeCoordinator(
         if (!session.spectators.remove(playerId)) return false
         gateway.hideArenaHologram(playerId, session.battleId)
         gateway.stopSpectating(playerId, session.battleId)
-        return restorePending(playerId)
+        restorePending(playerId)
+        return true
     }
 
     @Synchronized

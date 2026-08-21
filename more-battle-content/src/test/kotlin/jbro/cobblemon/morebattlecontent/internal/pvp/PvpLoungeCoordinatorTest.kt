@@ -70,6 +70,20 @@ class PvpLoungeCoordinatorTest {
     }
 
     @Test
+    fun `spectator exit succeeds while a failed return remains queued for retry`() {
+        val gateway = RecordingGateway().apply { unavailableForRestore += viewer }
+        val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
+        coordinator.start(room(), UUID(0, 900))
+
+        assertTrue(coordinator.removeSpectator(roomId, viewer))
+        assertEquals(setOf(viewer), coordinator.pendingReturnPlayerIds().intersect(setOf(viewer)))
+
+        gateway.unavailableForRestore.clear()
+        assertTrue(coordinator.restorePending(viewer))
+        assertFalse(viewer in coordinator.pendingReturnPlayerIds())
+    }
+
+    @Test
     fun `disconnecting spectator performs packet free cleanup and keeps return pending`() {
         val gateway = RecordingGateway()
         val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
