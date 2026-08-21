@@ -5,6 +5,7 @@ import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.client.gui.drawProfilePokemon
 import com.cobblemon.mod.common.client.render.models.blockbench.FloatingState
 import com.cobblemon.mod.common.pokemon.RenderablePokemon
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.findMbcForm
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayPartySlot
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.resources.ResourceLocation
@@ -137,7 +138,7 @@ internal class MbcPokemonPortraitRenderer {
         val aspects = if (formId.isNullOrBlank() || formId.equals("normal", ignoreCase = true)) {
             emptySet()
         } else {
-            runCatching { species.getFormByName(formId).aspects.toSet() }.getOrNull().orEmpty()
+            species.findMbcForm(formId)?.aspects?.toSet().orEmpty()
         }
         return RenderablePokemon(species, aspects, ItemStack.EMPTY)
     }

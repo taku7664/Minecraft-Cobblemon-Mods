@@ -26,7 +26,9 @@ internal object Cobblemon173OpponentPokemonPropertiesFactory {
     }
 
     fun toBattlePokemon(set: TowerPokemonSet): BattlePokemon =
-        BattlePokemon.Companion.safeCopyOf(toProperties(set).create()).also { battlePokemon ->
+        BattlePokemon.Companion.safeCopyOf(
+            Cobblemon173CatalogPokemonCreator.create(toProperties(set), set.formId),
+        ).also { battlePokemon ->
             Cobblemon173OpponentPokemonSafety.apply(battlePokemon.originalPokemon)
             Cobblemon173OpponentPokemonSafety.apply(battlePokemon.effectedPokemon)
             battlePokemon.effectedPokemon.heal()

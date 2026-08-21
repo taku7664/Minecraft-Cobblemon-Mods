@@ -14,7 +14,7 @@ internal object Cobblemon173PublicSpeciesInferenceKnowledge : PublicSpeciesInfer
         val directSpecies = ResourceLocation.tryParse(speciesId)?.let(PokemonSpecies::getByIdentifier)
             ?: PokemonSpecies.getByName(speciesId.substringAfter(':'))
         val form = directSpecies?.let { species ->
-            formId?.let(species::getFormByName) ?: species.standardForm
+            formId?.let(species::findMbcForm) ?: species.standardForm
         } ?: formByPublicShowdownId(speciesId) ?: return null
         form.abilities.mapNotNull { potential ->
             val abilityId = potential.template.name.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)

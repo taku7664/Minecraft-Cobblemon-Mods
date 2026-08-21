@@ -34,7 +34,9 @@ internal object Cobblemon173FactoryPokemonFactory {
         }
 
     private fun createBattlePokemon(set: FactoryRentalSet, levelMode: FactoryLevelMode): BattlePokemon =
-        BattlePokemon.safeCopyOf(toProperties(set, levelMode).create()).also { battlePokemon ->
+        BattlePokemon.safeCopyOf(
+            Cobblemon173CatalogPokemonCreator.create(toProperties(set, levelMode), set.formId),
+        ).also { battlePokemon ->
             battlePokemon.effectedPokemon.heal()
         }
 
