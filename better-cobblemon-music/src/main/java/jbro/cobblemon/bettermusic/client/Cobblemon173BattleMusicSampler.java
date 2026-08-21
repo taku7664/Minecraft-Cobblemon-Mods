@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.api.battles.model.actor.ActorType;
 import com.cobblemon.mod.common.client.CobblemonClient;
 import com.cobblemon.mod.common.client.battle.ClientBattle;
 import com.cobblemon.mod.common.client.battle.ClientBattleActor;
+import com.cobblemon.mod.common.client.battle.ClientBattlePokemon;
 import com.cobblemon.mod.common.client.battle.ClientBattleSide;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,17 +77,7 @@ public final class Cobblemon173BattleMusicSampler {
             : npc ? BattleMusicConfig.BattleType.TRAINER : BattleMusicConfig.BattleType.PVP;
         for (ClientBattleSide side : opponentSides) {
             for (var active : side.getActiveClientBattlePokemon()) {
-                var pokemonSpecies = active.getBattlePokemon().getSpecies();
-                species.add(pokemonSpecies.getResourceIdentifier().toString());
-                if (type == BattleMusicConfig.BattleType.WILD) {
-                    Set<String> speciesLabels = pokemonSpecies.getLabels();
-                    if (speciesLabels.contains("ultra_beast")) {
-                        labels.add(BattleMusicContext.Label.ULTRA_BEAST);
-                    }
-                    if (speciesLabels.contains("legendary") || speciesLabels.contains("mythical")) {
-                        labels.add(BattleMusicContext.Label.LEGENDARY);
-                    }
-                }
+                collectBattlePokemon(active.getBattlePokemon(), type, species, labels);
             }
         }
 
@@ -97,6 +88,32 @@ public final class Cobblemon173BattleMusicSampler {
             labels,
             BattleMusicContentProviders.global().resolve(battle.getBattleId())
         ));
+    }
+
+    static void collectBattlePokemon(
+        ClientBattlePokemon battlePokemon,
+        BattleMusicConfig.BattleType type,
+        Set<String> species,
+        Set<BattleMusicContext.Label> labels
+    ) {
+        if (battlePokemon == null) {
+            return;
+        }
+        var pokemonSpecies = battlePokemon.getSpecies();
+        if (pokemonSpecies == null) {
+            return;
+        }
+        species.add(pokemonSpecies.getResourceIdentifier().toString());
+        if (type != BattleMusicConfig.BattleType.WILD) {
+            return;
+        }
+        Set<String> speciesLabels = pokemonSpecies.getLabels();
+        if (speciesLabels.contains("ultra_beast")) {
+            labels.add(BattleMusicContext.Label.ULTRA_BEAST);
+        }
+        if (speciesLabels.contains("legendary") || speciesLabels.contains("mythical")) {
+            labels.add(BattleMusicContext.Label.LEGENDARY);
+        }
     }
 
     private static BattleOpponentSideSelector.ActorKind actorKind(ClientBattleActor actor) {

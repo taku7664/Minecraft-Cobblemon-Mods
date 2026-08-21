@@ -2,11 +2,13 @@ package jbro.cobblemon.bettermusic.mbc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 final class BetterCobblemonMusicMbcIntegrationContractTest {
@@ -24,5 +26,10 @@ final class BetterCobblemonMusicMbcIntegrationContractTest {
         assertEquals(">=1.2.1 <2.0.0", dependencies.get("better_cobblemon_music").getAsString());
         assertEquals(">=1.2.1 <2.0.0", dependencies.get("cobblemon_more_battle_content").getAsString());
         assertNotNull(Class.forName("jbro.cobblemon.bettermusic.mbc.BetterCobblemonMusicMbcIntegrationClient"));
+    }
+
+    @Test
+    void missingManagedBattleContentResolvesAsEmpty() {
+        assertTrue(BetterCobblemonMusicMbcIntegrationClient.resolveContentId(UUID.randomUUID()).isEmpty());
     }
 }
