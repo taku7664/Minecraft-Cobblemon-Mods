@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.internal.compat.fabric
 
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
+import jbro.cobblemon.morebattlecontent.internal.catalog.CatalogResourceInput
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryCatalogReloadOutcome
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryCatalogResourceReloader
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryCatalogStore
@@ -11,10 +12,7 @@ import net.minecraft.server.packs.PackType
 import net.minecraft.server.packs.resources.ResourceManager
 
 internal object FactoryCatalogResources {
-    val catalogResourceId: ResourceLocation = ResourceLocation.fromNamespaceAndPath(
-        MoreBattleContent.MOD_ID,
-        "battle_factory/catalog/mbc_core.json",
-    )
+    const val catalogDirectory = "battle_factory/catalog"
     private val listenerId = ResourceLocation.fromNamespaceAndPath(MoreBattleContent.MOD_ID, "factory_catalog")
     val store = FactoryCatalogStore()
     private val reloader = FactoryCatalogResourceReloader(store)
@@ -25,30 +23,35 @@ internal object FactoryCatalogResources {
                 override fun getFabricId(): ResourceLocation = listenerId
 
                 override fun onResourceManagerReload(resourceManager: ResourceManager) {
-                    when (val outcome = reloader.reload {
-                        resourceManager.getResource(catalogResourceId).orElse(null)?.openAsReader()
-                    }) {
+                    val resources = resourceManager.listResources(catalogDirectory) { location ->
+                        location.path.endsWith(".json")
+                    }.entries.sortedBy { it.key.toString() }
+                    val inputs = resources.map { (id, resource) ->
+                        CatalogResourceInput(id.toString(), resource::openAsReader)
+                    }
+                    when (val outcome = reloader.reload(inputs)) {
                         is FactoryCatalogReloadOutcome.Applied -> MoreBattleContent.LOGGER.info(
-                            "Loaded Battle Factory catalog {} from {}",
+                            "Loaded Battle Factory catalog {} from {} JSON files under {}",
                             outcome.catalog.catalogId,
-                            catalogResourceId,
+                            resources.size,
+                            catalogDirectory,
                         )
                         FactoryCatalogReloadOutcome.MissingResource -> MoreBattleContent.LOGGER.error(
-                            "Battle Factory catalog is missing: {}. Keeping the previous catalog.",
-                            catalogResourceId,
+                            "Battle Factory catalog directory has no JSON files: {}. Keeping the previous catalog.",
+                            catalogDirectory,
                         )
                         is FactoryCatalogReloadOutcome.Rejected -> outcome.issues.forEach { issue ->
                             MoreBattleContent.LOGGER.error(
-                                "Rejected Battle Factory catalog {} at {}: {} ({})",
-                                catalogResourceId,
+                                "Rejected Battle Factory catalogs under {} at {}: {} ({})",
+                                catalogDirectory,
                                 issue.path,
                                 issue.message,
                                 issue.code,
                             )
                         }
                         is FactoryCatalogReloadOutcome.ReadFailed -> MoreBattleContent.LOGGER.error(
-                            "Failed to read Battle Factory catalog {}. Keeping the previous catalog.",
-                            catalogResourceId,
+                            "Failed to read Battle Factory catalogs under {}. Keeping the previous catalog.",
+                            catalogDirectory,
                             outcome.cause,
                         )
                     }

@@ -14,8 +14,53 @@ import jbro.cobblemon.morebattlecontent.internal.tower.TowerRank
 import jbro.cobblemon.morebattlecontent.internal.validation.IdentifierSyntax
 
 internal object TowerOpponentCatalogLoader {
-    fun load(reader: Reader): TowerOpponentCatalogLoadResult = try {
+    fun load(reader: Reader): TowerOpponentCatalogLoadResult = decode {
         val root = JsonParser.parseReader(reader).requireObject("$")
+        parseCatalog(root)
+    }
+
+    fun loadFragments(fragments: List<Pair<String, Reader>>): TowerOpponentCatalogLoadResult = decode {
+        if (fragments.isEmpty()) {
+            reject(TowerOpponentCatalogIssueCode.MISSING_FIELD, "$", "No Battle Tower opponent JSON files were found")
+        }
+        val profiles = JsonArray()
+        val sets = JsonArray()
+        var schemaVersion: Int? = null
+        var singleCatalogId: String? = null
+        fragments.forEach { (resourceId, reader) ->
+            val path = "resource[$resourceId]"
+            val root = reader.use { JsonParser.parseReader(it).requireObject(path) }
+            root.rejectUnknownFields(path, ROOT_FIELDS)
+            val schema = root.requiredInt(path, "schema_version")
+            if (schemaVersion != null && schemaVersion != schema) {
+                reject(
+                    TowerOpponentCatalogIssueCode.UNSUPPORTED_SCHEMA,
+                    "$path.schema_version",
+                    "All Battle Tower catalog fragments must use schema $schemaVersion, found $schema",
+                )
+            }
+            schemaVersion = schema
+            val catalogId = if (root.has("catalog_id")) root.requiredStableId(path, "catalog_id") else null
+            if (fragments.size == 1) singleCatalogId = catalogId
+            val fragmentProfiles = root.optionalArray(path, "profiles")
+            val fragmentSets = root.optionalArray(path, "sets")
+            if ((fragmentProfiles == null || fragmentProfiles.isEmpty) && (fragmentSets == null || fragmentSets.isEmpty)) {
+                reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, path, "A Tower fragment must define profiles or sets")
+            }
+            fragmentProfiles?.forEach { profiles.add(it.deepCopy()) }
+            fragmentSets?.forEach { sets.add(it.deepCopy()) }
+        }
+        parseCatalog(
+            JsonObject().apply {
+                addProperty("schema_version", requireNotNull(schemaVersion))
+                addProperty("catalog_id", singleCatalogId ?: MERGED_CATALOG_ID)
+                add("profiles", profiles)
+                add("sets", sets)
+            },
+        )
+    }
+
+    private fun parseCatalog(root: JsonObject): TowerOpponentCatalog {
         root.rejectUnknownFields("$", ROOT_FIELDS)
 
         val schemaVersion = root.requiredInt("$", "schema_version")
@@ -41,7 +86,11 @@ internal object TowerOpponentCatalogLoader {
         rejectDuplicateIds(sets.map(TowerPokemonSet::setId), "$.sets")
         validateProfileReferences(schemaVersion, profiles, sets)
 
-        TowerOpponentCatalogLoadResult.Loaded(TowerOpponentCatalog(catalogId, profiles, sets))
+        return TowerOpponentCatalog(catalogId, profiles, sets)
+    }
+
+    private fun decode(load: () -> TowerOpponentCatalog): TowerOpponentCatalogLoadResult = try {
+        TowerOpponentCatalogLoadResult.Loaded(load())
     } catch (error: CatalogDecodeException) {
         TowerOpponentCatalogLoadResult.Rejected(listOf(error.issue))
     } catch (error: JsonParseException) {
@@ -360,6 +409,14 @@ private fun JsonObject.requiredArray(path: String, field: String): JsonArray {
     return element.asJsonArray
 }
 
+private fun JsonObject.optionalArray(path: String, field: String): JsonArray? {
+    val element = get(field) ?: return null
+    if (!element.isJsonArray) {
+        reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.$field", "Expected an array")
+    }
+    return element.asJsonArray
+}
+
 private fun JsonObject.requiredString(path: String, field: String): String {
     val element = requiredElement(path, field)
     if (!element.isJsonPrimitive || !element.asJsonPrimitive.isString) {
@@ -470,6 +527,7 @@ private fun rejectDuplicateIds(values: List<String>, path: String) {
 }
 
 private val SUPPORTED_SCHEMA_VERSIONS = 1..3
+private const val MERGED_CATALOG_ID = "merged_tower_catalog"
 private const val MINIMUM_PROFILE_POOL_SIZE = 6
 private const val MAX_TOTAL_EVS = 510
 private val IV_RANGE = 0..31

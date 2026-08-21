@@ -5,10 +5,10 @@ import org.junit.jupiter.api.Test
 
 class TowerOpponentCatalogResourcesTest {
     @Test
-    fun `uses stable server data resource and listener identifiers`() {
+    fun `uses an independent tower server data directory and listener identifier`() {
         assertEquals(
-            "cobblemon_more_battle_content:battle_tower/opponents/mbc_core.json",
-            TowerOpponentCatalogResources.catalogResourceId.toString(),
+            "battle_tower/opponents",
+            TowerOpponentCatalogResources.catalogDirectory,
         )
         assertEquals(
             "cobblemon_more_battle_content:tower_opponent_catalog",

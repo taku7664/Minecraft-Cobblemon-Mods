@@ -17,3 +17,12 @@ Run from the repository root:
 The JAR is written to `more-battle-content/build/libs`.
 
 Module-specific maintenance utilities are kept in [`tools`](tools/).
+
+## Data pack catalogs
+
+Battle Tower and Battle Factory data are loaded independently from every JSON file in these server-data directories:
+
+- `data/<namespace>/battle_tower/opponents/*.json`
+- `data/<namespace>/battle_factory/catalog/*.json`
+
+Files in one directory never affect the other facility. Fragments may contain only profiles/trainers or only sets, but all fragments for one facility must use the same schema version. IDs must be unique after merging. A missing, malformed, or conflicting fragment rejects the whole reload and preserves the last valid catalog.

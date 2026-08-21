@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.internal.factory
 
+import com.google.gson.JsonParser
 import java.io.StringReader
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTeamRole
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -8,6 +9,47 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class FactoryCatalogLoaderTest {
+    @Test
+    fun `schema four merges independent trainer and rental set files`() {
+        val root = JsonParser.parseString(validJson()).asJsonObject
+        val trainers = root.deepCopy().apply {
+            addProperty("catalog_id", "custom_trainers")
+            remove("sets")
+        }
+        val sets = root.deepCopy().apply {
+            addProperty("catalog_id", "custom_sets")
+            remove("trainers")
+        }
+
+        val loaded = FactoryCatalogLoader.loadFragments(
+            listOf(
+                "example:battle_factory/catalog/trainers.json" to StringReader(trainers.toString()),
+                "example:battle_factory/catalog/rentals.json" to StringReader(sets.toString()),
+            ),
+        ) as FactoryCatalogLoadResult.Loaded
+
+        assertEquals("merged_factory_catalog", loaded.catalog.catalogId)
+        assertEquals(1, loaded.catalog.trainersFor(FactoryBattleFormat.SINGLE).size)
+        assertEquals(6, loaded.catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(1))).size)
+    }
+
+    @Test
+    fun `fragment merge rejects duplicate ids instead of depending on file order`() {
+        val root = JsonParser.parseString(validJson()).asJsonObject
+        val trainers = root.deepCopy().apply { remove("sets") }
+        val sets = root.deepCopy().apply { remove("trainers") }
+
+        val rejected = FactoryCatalogLoader.loadFragments(
+            listOf(
+                "example:battle_factory/catalog/trainers.json" to StringReader(trainers.toString()),
+                "example:battle_factory/catalog/rentals-a.json" to StringReader(sets.toString()),
+                "example:battle_factory/catalog/rentals-b.json" to StringReader(sets.toString()),
+            ),
+        ) as FactoryCatalogLoadResult.Rejected
+
+        assertEquals(FactoryCatalogIssueCode.DUPLICATE_ID, rejected.issues.single().code)
+    }
+
     @Test
     fun `schema four loads complete fixed rental sets and independent trainers`() {
         val loaded = FactoryCatalogLoader.load(StringReader(validJson())) as FactoryCatalogLoadResult.Loaded

@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.internal.compat.fabric
 
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
+import jbro.cobblemon.morebattlecontent.internal.catalog.CatalogResourceInput
 import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerOpponentCatalogReloadOutcome
 import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerOpponentCatalogResourceReloader
 import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerOpponentCatalogStore
@@ -11,10 +12,7 @@ import net.minecraft.server.packs.PackType
 import net.minecraft.server.packs.resources.ResourceManager
 
 internal object TowerOpponentCatalogResources {
-    val catalogResourceId: ResourceLocation = ResourceLocation.fromNamespaceAndPath(
-        MoreBattleContent.MOD_ID,
-        "battle_tower/opponents/mbc_core.json",
-    )
+    const val catalogDirectory = "battle_tower/opponents"
     val listenerId: ResourceLocation = ResourceLocation.fromNamespaceAndPath(
         MoreBattleContent.MOD_ID,
         "tower_opponent_catalog",
@@ -23,7 +21,7 @@ internal object TowerOpponentCatalogResources {
 
     private val listener = FabricTowerOpponentCatalogReloadListener(
         listenerId,
-        catalogResourceId,
+        catalogDirectory,
         TowerOpponentCatalogResourceReloader(store),
     )
 
@@ -34,32 +32,37 @@ internal object TowerOpponentCatalogResources {
 
 private class FabricTowerOpponentCatalogReloadListener(
     private val id: ResourceLocation,
-    private val resourceId: ResourceLocation,
+    private val catalogDirectory: String,
     private val reloader: TowerOpponentCatalogResourceReloader,
 ) : SimpleSynchronousResourceReloadListener {
     override fun getFabricId(): ResourceLocation = id
 
     override fun onResourceManagerReload(resourceManager: ResourceManager) {
-        when (val outcome = reloader.reload {
-            resourceManager.getResource(resourceId).orElse(null)?.openAsReader()
-        }) {
+        val resources = resourceManager.listResources(catalogDirectory) { location ->
+            location.path.endsWith(".json")
+        }.entries.sortedBy { it.key.toString() }
+        val inputs = resources.map { (resourceId, resource) ->
+            CatalogResourceInput(resourceId.toString(), resource::openAsReader)
+        }
+        when (val outcome = reloader.reload(inputs)) {
             is TowerOpponentCatalogReloadOutcome.Applied ->
                 MoreBattleContent.LOGGER.info(
-                    "Loaded Battle Tower opponent catalog {} from {}",
+                    "Loaded Battle Tower opponent catalog {} from {} JSON files under {}",
                     outcome.catalog.catalogId,
-                    resourceId,
+                    resources.size,
+                    catalogDirectory,
                 )
 
             TowerOpponentCatalogReloadOutcome.MissingResource ->
                 MoreBattleContent.LOGGER.error(
-                    "Battle Tower opponent catalog resource is missing: {}. Keeping the previous catalog.",
-                    resourceId,
+                    "Battle Tower opponent directory has no JSON files: {}. Keeping the previous catalog.",
+                    catalogDirectory,
                 )
 
             is TowerOpponentCatalogReloadOutcome.Rejected -> outcome.issues.forEach { issue ->
                 MoreBattleContent.LOGGER.error(
-                    "Rejected Battle Tower opponent catalog {} at {}: {} ({})",
-                    resourceId,
+                    "Rejected Battle Tower opponent catalogs under {} at {}: {} ({})",
+                    catalogDirectory,
                     issue.path,
                     issue.message,
                     issue.code,
@@ -68,8 +71,8 @@ private class FabricTowerOpponentCatalogReloadListener(
 
             is TowerOpponentCatalogReloadOutcome.ReadFailed ->
                 MoreBattleContent.LOGGER.error(
-                    "Failed to read Battle Tower opponent catalog {}. Keeping the previous catalog.",
-                    resourceId,
+                    "Failed to read Battle Tower opponent catalogs under {}. Keeping the previous catalog.",
+                    catalogDirectory,
                     outcome.cause,
                 )
         }

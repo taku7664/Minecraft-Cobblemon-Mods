@@ -164,6 +164,14 @@ internal class TowerOpponentCatalogStore {
         }
         return result
     }
+
+    fun reloadFragments(fragments: List<Pair<String, Reader>>): TowerOpponentCatalogLoadResult {
+        val result = TowerOpponentCatalogLoader.loadFragments(fragments)
+        if (result is TowerOpponentCatalogLoadResult.Loaded) {
+            current = result.catalog
+        }
+        return result
+    }
 }
 
 private fun <T> List<T>.immutableCopy(): List<T> = Collections.unmodifiableList(ArrayList(this))

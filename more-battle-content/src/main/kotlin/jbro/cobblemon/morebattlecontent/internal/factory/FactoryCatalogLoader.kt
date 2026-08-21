@@ -12,8 +12,53 @@ import jbro.cobblemon.morebattlecontent.internal.ai.BattleAiSkillRange
 import jbro.cobblemon.morebattlecontent.internal.validation.IdentifierSyntax
 
 internal object FactoryCatalogLoader {
-    fun load(reader: Reader): FactoryCatalogLoadResult = try {
+    fun load(reader: Reader): FactoryCatalogLoadResult = decode {
         val root = JsonParser.parseReader(reader).requireObject("$")
+        parseCatalog(root)
+    }
+
+    fun loadFragments(fragments: List<Pair<String, Reader>>): FactoryCatalogLoadResult = decode {
+        if (fragments.isEmpty()) {
+            reject(FactoryCatalogIssueCode.MISSING_FIELD, "$", "No Battle Factory catalog JSON files were found")
+        }
+        val trainers = JsonArray()
+        val sets = JsonArray()
+        var schemaVersion: Int? = null
+        var singleCatalogId: String? = null
+        fragments.forEach { (resourceId, reader) ->
+            val path = "resource[$resourceId]"
+            val root = reader.use { JsonParser.parseReader(it).requireObject(path) }
+            root.rejectUnknown(path, ROOT_FIELDS)
+            val schema = root.requiredInt(path, "schema_version")
+            if (schemaVersion != null && schemaVersion != schema) {
+                reject(
+                    FactoryCatalogIssueCode.UNSUPPORTED_SCHEMA,
+                    "$path.schema_version",
+                    "All Battle Factory catalog fragments must use schema $schemaVersion, found $schema",
+                )
+            }
+            schemaVersion = schema
+            val catalogId = if (root.has("catalog_id")) root.requiredStableId(path, "catalog_id") else null
+            if (fragments.size == 1) singleCatalogId = catalogId
+            val fragmentTrainers = root.optionalArray(path, "trainers")
+            val fragmentSets = root.optionalArray(path, "sets")
+            if ((fragmentTrainers == null || fragmentTrainers.isEmpty) && (fragmentSets == null || fragmentSets.isEmpty)) {
+                reject(FactoryCatalogIssueCode.INVALID_VALUE, path, "A Factory fragment must define trainers or sets")
+            }
+            fragmentTrainers?.forEach { trainers.add(it.deepCopy()) }
+            fragmentSets?.forEach { sets.add(it.deepCopy()) }
+        }
+        parseCatalog(
+            JsonObject().apply {
+                addProperty("schema_version", requireNotNull(schemaVersion))
+                addProperty("catalog_id", singleCatalogId ?: MERGED_CATALOG_ID)
+                add("trainers", trainers)
+                add("sets", sets)
+            },
+        )
+    }
+
+    private fun parseCatalog(root: JsonObject): FactoryCatalog {
         root.rejectUnknown("$", ROOT_FIELDS)
         val schema = root.requiredInt("$", "schema_version")
         if (schema !in SUPPORTED_SCHEMA_VERSIONS) {
@@ -31,7 +76,11 @@ internal object FactoryCatalogLoader {
         rejectDuplicates(sets.map(FactoryRentalTemplate::setId), "$.sets")
         rejectDuplicates(trainers.map(FactoryTrainerProfile::trainerId), "$.trainers")
         validateLegalTeams(sets)
-        FactoryCatalogLoadResult.Loaded(FactoryCatalog(catalogId, trainers, sets))
+        return FactoryCatalog(catalogId, trainers, sets)
+    }
+
+    private fun decode(load: () -> FactoryCatalog): FactoryCatalogLoadResult = try {
+        FactoryCatalogLoadResult.Loaded(load())
     } catch (error: FactoryDecodeException) {
         FactoryCatalogLoadResult.Rejected(listOf(error.issue))
     } catch (error: JsonParseException) {
@@ -216,6 +265,12 @@ private fun JsonObject.requiredArray(path: String, field: String): JsonArray {
     return value.asJsonArray
 }
 
+private fun JsonObject.optionalArray(path: String, field: String): JsonArray? {
+    val value = get(field) ?: return null
+    if (!value.isJsonArray) reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.$field", "Expected an array")
+    return value.asJsonArray
+}
+
 private fun JsonObject.requiredString(path: String, field: String): String {
     val value = requiredElement(path, field)
     if (!value.isJsonPrimitive || !value.asJsonPrimitive.isString) {
@@ -282,6 +337,7 @@ private fun rejectDuplicates(values: List<String>, path: String) {
 }
 
 private val SUPPORTED_SCHEMA_VERSIONS = setOf(4)
+private const val MERGED_CATALOG_ID = "merged_factory_catalog"
 private const val MAX_AI_SUMMARY = 512
 private const val DRAFT_SIZE = 6
 private val PRIORITY_RANGE = 0..100

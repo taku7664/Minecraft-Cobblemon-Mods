@@ -119,6 +119,11 @@ internal class FactoryCatalogStore {
     fun reload(reader: Reader): FactoryCatalogLoadResult = FactoryCatalogLoader.load(reader).also { result ->
         if (result is FactoryCatalogLoadResult.Loaded) current = result.catalog
     }
+
+    fun reloadFragments(fragments: List<Pair<String, Reader>>): FactoryCatalogLoadResult =
+        FactoryCatalogLoader.loadFragments(fragments).also { result ->
+            if (result is FactoryCatalogLoadResult.Loaded) current = result.catalog
+        }
 }
 
 private fun <T> immutableList(values: Collection<T>): List<T> =

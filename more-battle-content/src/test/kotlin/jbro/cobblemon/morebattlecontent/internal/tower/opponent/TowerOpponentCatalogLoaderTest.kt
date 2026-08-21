@@ -14,6 +14,52 @@ import org.junit.jupiter.api.Test
 
 class TowerOpponentCatalogLoaderTest {
     @Test
+    fun `merges tower profiles and sets from independent files before validating references`() {
+        val root = JsonParser.parseString(validCatalogJson()).asJsonObject
+        val profiles = root.deepCopy().apply {
+            addProperty("catalog_id", "custom_profiles")
+            remove("sets")
+        }
+        val sets = root.deepCopy().apply {
+            addProperty("catalog_id", "custom_sets")
+            remove("profiles")
+        }
+
+        val loaded = TowerOpponentCatalogLoader.loadFragments(
+            listOf(
+                "example:battle_tower/opponents/trainers.json" to StringReader(profiles.toString()),
+                "example:battle_tower/opponents/sets.json" to StringReader(sets.toString()),
+            ),
+        ) as TowerOpponentCatalogLoadResult.Loaded
+        val profile = loaded.catalog.profilesFor(
+            TowerRank.RANK_1,
+            TowerBattleFormat.SINGLE,
+            TowerOpponentKind.REGULAR,
+            MajorBattleMechanic.MEGA,
+        ).single()
+
+        assertEquals("merged_tower_catalog", loaded.catalog.catalogId)
+        assertEquals((1..6).map { "set_$it" }, loaded.catalog.setsFor(profile).map(TowerPokemonSet::setId))
+    }
+
+    @Test
+    fun `tower fragment merge rejects duplicate ids instead of depending on file order`() {
+        val root = JsonParser.parseString(validCatalogJson()).asJsonObject
+        val profiles = root.deepCopy().apply { remove("sets") }
+        val sets = root.deepCopy().apply { remove("profiles") }
+
+        val rejected = TowerOpponentCatalogLoader.loadFragments(
+            listOf(
+                "example:battle_tower/opponents/trainers.json" to StringReader(profiles.toString()),
+                "example:battle_tower/opponents/sets-a.json" to StringReader(sets.toString()),
+                "example:battle_tower/opponents/sets-b.json" to StringReader(sets.toString()),
+            ),
+        ) as TowerOpponentCatalogLoadResult.Rejected
+
+        assertTrue(rejected.issues.any { it.code == TowerOpponentCatalogIssueCode.DUPLICATE_ID })
+    }
+
+    @Test
     fun `loads schema two and indexes profiles by mechanic and existing tower contracts`() {
         val result = TowerOpponentCatalogLoader.load(StringReader(validCatalogJson()))
 
