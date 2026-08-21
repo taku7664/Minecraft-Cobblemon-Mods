@@ -23,20 +23,21 @@ internal class FactoryDraftSelector(
         levelMode: FactoryLevelMode,
         round: Int,
         rentAndTradeCount: Int,
-        previousSetIds: Set<String> = emptySet(),
+        recentSpeciesIds: Set<String> = emptySet(),
     ): FactoryRentalDraft? {
         val currentWindow = FactoryProgression.poolWindow(levelMode, round)
         val strongerCount = FactoryProgression.strongerOfferCount(rentAndTradeCount)
         val nextWindow = FactoryProgression.poolWindow(levelMode, round + 1)
-        val current = orderedCandidates(catalog.rentalPool(currentWindow), previousSetIds).map {
+        val current = orderedCandidates(catalog.rentalPool(currentWindow), recentSpeciesIds).map {
             DraftCandidate(it, FactoryProgression.uniformIvForRound(round))
         }
-        val stronger = orderedCandidates(catalog.rentalPool(nextWindow), previousSetIds).map {
+        val stronger = orderedCandidates(catalog.rentalPool(nextWindow), recentSpeciesIds).map {
             DraftCandidate(it, FactoryProgression.uniformIvForRound(round + 1))
         }
         val groups = listOf(stronger to strongerCount, current to DRAFT_SIZE - strongerCount)
-        val selected = selectWithOverlapLimit(groups, previousSetIds, MAX_PREVIOUS_OVERLAP)
-            ?: selectWithOverlapLimit(groups, previousSetIds, DRAFT_SIZE)
+        val selected = selectWithOverlapLimit(groups, recentSpeciesIds, NO_PREVIOUS_OVERLAP)
+            ?: selectWithOverlapLimit(groups, recentSpeciesIds, MAX_FALLBACK_PREVIOUS_OVERLAP)
+            ?: selectWithOverlapLimit(groups, recentSpeciesIds, DRAFT_SIZE)
             ?: return null
         return FactoryRentalDraft(
             selected.map { selection ->
@@ -47,7 +48,7 @@ internal class FactoryDraftSelector(
 
     private fun selectWithOverlapLimit(
         groups: List<Pair<List<DraftCandidate>, Int>>,
-        previousSetIds: Set<String>,
+        recentSpeciesIds: Set<String>,
         maxPreviousOverlap: Int,
     ): List<DraftSelection>? {
         val selected = ArrayList<DraftSelection>(DRAFT_SIZE)
@@ -59,7 +60,7 @@ internal class FactoryDraftSelector(
             selected = selected,
             species = HashSet(),
             heldItems = HashSet(),
-            previousSetIds = previousSetIds,
+            recentSpeciesIds = recentSpeciesIds,
             previousOverlap = 0,
             maxPreviousOverlap = maxPreviousOverlap,
         )
@@ -74,7 +75,7 @@ internal class FactoryDraftSelector(
         selected: MutableList<DraftSelection>,
         species: MutableSet<String>,
         heldItems: MutableSet<String>,
-        previousSetIds: Set<String>,
+        recentSpeciesIds: Set<String>,
         previousOverlap: Int,
         maxPreviousOverlap: Int,
     ): Boolean {
@@ -89,7 +90,7 @@ internal class FactoryDraftSelector(
                 selected,
                 species,
                 heldItems,
-                previousSetIds,
+                recentSpeciesIds,
                 previousOverlap,
                 maxPreviousOverlap,
             )
@@ -97,7 +98,7 @@ internal class FactoryDraftSelector(
         if (pool.size - candidateIndex < required - selectedInGroup) return false
         for (index in candidateIndex until pool.size) {
             val candidate = pool[index]
-            val repeated = candidate.template.setId in previousSetIds
+            val repeated = candidate.template.speciesId in recentSpeciesIds
             if (candidate.template.speciesId in species) continue
             if (repeated && previousOverlap >= maxPreviousOverlap) continue
             for (item in shuffled(candidate.template.heldItemIds)) {
@@ -114,7 +115,7 @@ internal class FactoryDraftSelector(
                         selected,
                         species,
                         heldItems,
-                        previousSetIds,
+                        recentSpeciesIds,
                         previousOverlap + if (repeated) 1 else 0,
                         maxPreviousOverlap,
                     )
@@ -131,8 +132,8 @@ internal class FactoryDraftSelector(
 
     private fun orderedCandidates(
         values: List<FactoryRentalTemplate>,
-        previousSetIds: Set<String>,
-    ): List<FactoryRentalTemplate> = shuffled(values).sortedBy { if (it.setId in previousSetIds) 1 else 0 }
+        recentSpeciesIds: Set<String>,
+    ): List<FactoryRentalTemplate> = shuffled(values).sortedBy { if (it.speciesId in recentSpeciesIds) 1 else 0 }
 
     private fun <T> shuffle(values: MutableList<T>) {
         for (index in values.lastIndex downTo 1) Collections.swap(values, index, random.nextInt(index + 1))
@@ -143,7 +144,8 @@ internal class FactoryDraftSelector(
 
     private companion object {
         const val DRAFT_SIZE = 6
-        const val MAX_PREVIOUS_OVERLAP = 3
+        const val NO_PREVIOUS_OVERLAP = 0
+        const val MAX_FALLBACK_PREVIOUS_OVERLAP = 3
     }
 }
 

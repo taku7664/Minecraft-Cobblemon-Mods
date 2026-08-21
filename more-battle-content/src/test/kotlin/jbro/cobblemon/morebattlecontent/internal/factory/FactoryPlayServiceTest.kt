@@ -160,18 +160,16 @@ class FactoryPlayServiceTest {
     }
 
     @Test
-    fun `abandoning an unconfirmed draft limits overlap with the next challenge`() {
+    fun `four abandoned drafts expose twenty four different rentals while the pool allows it`() {
         val service = playService(catalog()) { FactoryBattleLaunchResult.Started(battleId) }
-        val first = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
-            as FactoryPlayResult.Accepted
+        val offeredIds = (1..4).flatMap {
+            val draft = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+                as FactoryPlayResult.Accepted
+            service.abandon(playerId)
+            draft.view.draftSets.map(FactoryRentalSet::setId)
+        }
 
-        service.abandon(playerId)
-        val second = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
-            as FactoryPlayResult.Accepted
-
-        val firstIds = first.view.draftSets.map(FactoryRentalSet::setId).toSet()
-        val secondIds = second.view.draftSets.map(FactoryRentalSet::setId).toSet()
-        assertTrue(firstIds.intersect(secondIds).size <= 3)
+        assertEquals(24, offeredIds.distinct().size)
     }
 
     @Test
@@ -214,20 +212,19 @@ class FactoryPlayServiceTest {
         catalogRandom: FactoryCatalogRandom = random,
         launcher: FactoryBattleLauncher,
     ): FactoryPlayService {
-        lateinit var selector: FactoryDraftSelector
-        if (catalog != null) selector = FactoryDraftSelector(catalog, catalogRandom)
+        val draftOffers = FactoryDraftOfferService({ catalog }, catalogRandom)
         val sessions = FactorySessionService(
             runBattles = FactoryRunBattleService(launcher),
             completions = FactoryBattleCompletionService(
                 FactoryBattleRecordService { BattleRecordStats(it.key) },
             ),
-            draftProvider = { mode, round, trades -> if (catalog == null) null else selector.select(mode, round, trades) },
+            draftProvider = draftOffers::select,
         )
-        return FactoryPlayService({ catalog }, sessions, catalogRandom)
+        return FactoryPlayService({ catalog }, sessions, catalogRandom, draftOffers)
     }
 
     private fun catalog(conceptIds: List<String> = listOf("ordinary_ace")): FactoryCatalog {
-        val sets = (1..16).map(::template)
+        val sets = (1..24).map(::template)
         val concepts = conceptIds.mapIndexed { index, conceptId ->
             val offset = index * 4
             val members = listOf(

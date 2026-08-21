@@ -14,7 +14,7 @@ import jbro.cobblemon.morebattlecontent.internal.factory.FactoryBattleCompletion
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryBattleRecordService
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryCatalogRandom
-import jbro.cobblemon.morebattlecontent.internal.factory.FactoryDraftSelector
+import jbro.cobblemon.morebattlecontent.internal.factory.FactoryDraftOfferService
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryLevelMode
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryPlayError
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryPlayResult
@@ -59,6 +59,9 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
             runtime = runtime,
         )
     }
+    private val draftOffers by lazy {
+        FactoryDraftOfferService(FactoryCatalogResources.store::snapshot, random)
+    }
     private val sessions: FactorySessionService by lazy {
         FactorySessionService(
             runBattles = FactoryRunBattleService(launcher),
@@ -78,15 +81,11 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
                     }.settleVictory(battleId, playerId, FACTORY_CONTENT_ID).requireAcceptedReward()
                 },
             ),
-            draftProvider = { mode, round, trades ->
-                FactoryCatalogResources.store.snapshot()?.let { catalog ->
-                    FactoryDraftSelector(catalog, random).select(mode, round, trades)
-                }
-            },
+            draftProvider = draftOffers::select,
         )
     }
     private val play: FactoryPlayService by lazy {
-        FactoryPlayService(FactoryCatalogResources.store::snapshot, sessions, random)
+        FactoryPlayService(FactoryCatalogResources.store::snapshot, sessions, random, draftOffers)
     }
 
     fun registerServer() {

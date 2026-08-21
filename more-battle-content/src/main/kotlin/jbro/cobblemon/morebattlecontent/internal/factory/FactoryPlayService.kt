@@ -50,9 +50,9 @@ internal class FactoryPlayService(
     private val catalogSource: () -> FactoryCatalog?,
     private val sessions: FactorySessionService,
     private val random: FactoryCatalogRandom,
+    private val draftOffers: FactoryDraftOfferService,
 ) {
     private val pendingStarts = HashMap<UUID, PendingStart>()
-    private val previousDraftIds = HashMap<UUID, Set<String>>()
     private val recentOpponentConcepts = RecentSelectionHistory<UUID, String>(RECENT_CONCEPT_LIMIT)
 
     @Synchronized
@@ -67,15 +67,13 @@ internal class FactoryPlayService(
         if (playerId in pendingStarts || sessions.snapshot(playerId) != null) {
             return FactoryPlayResult.Rejected(FactoryPlayError.ALREADY_ACTIVE)
         }
-        val catalog = catalogSource() ?: return FactoryPlayResult.Rejected(FactoryPlayError.CATALOG_UNAVAILABLE)
-        val draft = FactoryDraftSelector(catalog, random).select(
+        val draft = draftOffers.select(
+            playerId,
             levelMode,
             round = 1,
             rentAndTradeCount = 1,
-            previousSetIds = previousDraftIds[playerId].orEmpty(),
         )
             ?: return FactoryPlayResult.Rejected(FactoryPlayError.CATALOG_UNAVAILABLE)
-        previousDraftIds[playerId] = draft.sets.mapTo(linkedSetOf(), FactoryRentalSet::setId)
         pendingStarts[playerId] = PendingStart(format, levelMode, draft)
         return FactoryPlayResult.Accepted(current(playerId))
     }
@@ -195,7 +193,7 @@ internal class FactoryPlayService(
     @Synchronized
     fun disconnect(playerId: UUID) {
         pendingStarts.remove(playerId)
-        previousDraftIds.remove(playerId)
+        draftOffers.forget(playerId)
         recentOpponentConcepts.forget(playerId)
         sessions.close(playerId)
     }

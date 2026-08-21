@@ -819,7 +819,7 @@
             "s1_heracross",
             "x_s1_dynamax_double_low_pelipper",
             "x_s1_dynamax_single_high_hydreigon",
-            "s1_arcanine"
+            "x_s1_dynamax_single_low_corviknight"
           ]
         },
         {
@@ -839,7 +839,7 @@
             "s1_rotom_wash",
             "x_s1_dynamax_single_high_conkeldurr",
             "x_s1_dynamax_single_high_mimikyu",
-            "s1_whimsicott"
+            "x_s1_dynamax_single_low_drednaw"
           ]
         },
         {
@@ -859,7 +859,7 @@
             "s1_mismagius",
             "x_s1_dynamax_single_high_dragapult",
             "x_s1_dynamax_single_high_togekiss",
-            "s1_gastrodon"
+            "x_s1_dynamax_single_low_orbeetle"
           ]
         },
         {
@@ -879,7 +879,7 @@
             "s1_donphan",
             "x_s1_dynamax_single_high_excadrill",
             "x_s1_dynamax_single_low_alcremie",
-            "s1_raichu"
+            "x_s1_dynamax_single_low_sandaconda"
           ]
         }
       ]
@@ -1112,8 +1112,8 @@
           "set_pool": [
             "s1_porygon2",
             "x_s1_dynamax_single_high_hydreigon",
-            "s1_arcanine",
-            "s1_feraligatr"
+            "x_s1_dynamax_single_low_corviknight",
+            "x_s1_dynamax_single_low_toxtricity"
           ]
         },
         {
@@ -1132,8 +1132,8 @@
           "set_pool": [
             "s1_staraptor",
             "x_s1_dynamax_single_high_mimikyu",
-            "s1_whimsicott",
-            "s1_klefki"
+            "x_s1_dynamax_single_low_drednaw",
+            "x_s1_roster_tera_tier2_ceruledge"
           ]
         },
         {
@@ -1152,8 +1152,8 @@
           "set_pool": [
             "s1_chandelure",
             "x_s1_dynamax_single_high_togekiss",
-            "s1_gastrodon",
-            "s1_roserade"
+            "x_s1_dynamax_single_low_orbeetle",
+            "x_s1_roster_tera_tier2_meowscarada"
           ]
         },
         {
@@ -1172,8 +1172,8 @@
           "set_pool": [
             "s1_tsareena",
             "x_s1_dynamax_single_low_alcremie",
-            "s1_raichu",
-            "s1_noivern"
+            "x_s1_dynamax_single_low_sandaconda",
+            "x_s1_tera_double_high_fluttermane"
           ]
         }
       ]
@@ -1995,7 +1995,7 @@
             "i1_lucario",
             "x_i1_dynamax_single_high_mimikyu",
             "x_i1_dynamax_single_low_drednaw",
-            "i1_gyarados"
+            "x_i1_roster_tera_tier2_ceruledge"
           ]
         },
         {
@@ -2015,7 +2015,7 @@
             "i1_ribombee",
             "x_i1_dynamax_single_high_togekiss",
             "x_i1_dynamax_single_low_orbeetle",
-            "i1_grimmsnarl"
+            "x_i1_roster_tera_tier2_meowscarada"
           ]
         },
         {
@@ -2035,7 +2035,7 @@
             "i1_milotic",
             "x_i1_dynamax_single_low_alcremie",
             "x_i1_dynamax_single_low_sandaconda",
-            "i1_magnezone"
+            "x_i1_tera_double_high_fluttermane"
           ]
         },
         {
@@ -2055,7 +2055,7 @@
             "i1_krookodile",
             "x_i1_dynamax_single_low_corviknight",
             "x_i1_dynamax_single_low_toxtricity",
-            "i1_mamoswine"
+            "x_i1_tera_double_high_incineroar"
           ]
         }
       ]
@@ -2288,8 +2288,8 @@
           "set_pool": [
             "i1_dragonite",
             "x_i1_dynamax_single_low_drednaw",
-            "i1_gyarados",
-            "i1_volcarona"
+            "x_i1_roster_tera_tier2_ceruledge",
+            "x_i1_tera_double_high_ironhands"
           ]
         },
         {
@@ -2308,8 +2308,8 @@
           "set_pool": [
             "i1_ninetales_alola",
             "x_i1_dynamax_single_low_orbeetle",
-            "i1_grimmsnarl",
-            "i1_talonflame"
+            "x_i1_roster_tera_tier2_meowscarada",
+            "x_i1_tera_double_high_rillaboom"
           ]
         },
         {
@@ -2328,8 +2328,8 @@
           "set_pool": [
             "i1_metagross",
             "x_i1_dynamax_single_low_sandaconda",
-            "i1_magnezone",
-            "i1_azumarill"
+            "x_i1_tera_double_high_fluttermane",
+            "x_i1_tera_double_low_amoonguss"
           ]
         },
         {
@@ -2348,8 +2348,8 @@
           "set_pool": [
             "i1_rotom_heat",
             "x_i1_dynamax_single_low_toxtricity",
-            "i1_mamoswine",
-            "i1_hydreigon"
+            "x_i1_tera_double_high_incineroar",
+            "x_i1_tera_double_low_armarouge"
           ]
         }
       ]
@@ -3171,7 +3171,7 @@
             "i2_ceruledge",
             "x_i2_tera_double_high_incineroar",
             "x_i2_tera_double_low_murkrow",
-            "i2_garchomp"
+            "x_i2_tera_single_high_gholdengo"
           ]
         },
         {
@@ -3191,7 +3191,7 @@
             "i2_rotom_wash",
             "x_i2_tera_double_high_ironhands",
             "x_i2_tera_single_high_azumarill",
-            "i2_togekiss"
+            "x_i2_tera_single_high_kingambit"
           ]
         },
         {
@@ -3211,7 +3211,7 @@
             "i2_meowscarada",
             "x_i2_tera_double_low_armarouge",
             "x_i2_tera_single_high_dragonite",
-            "i2_corviknight"
+            "x_i2_tera_single_high_volcarona"
           ]
         },
         {
@@ -3231,7 +3231,7 @@
             "i2_sylveon",
             "x_i2_tera_double_low_farigiraf",
             "x_i2_tera_single_high_garganacl",
-            "i2_primarina"
+            "x_i2_tera_single_low_baxcalibur"
           ]
         }
       ]
@@ -3464,8 +3464,8 @@
           "set_pool": [
             "i2_samurott",
             "x_i2_tera_double_low_murkrow",
-            "i2_garchomp",
-            "i2_excadrill"
+            "x_i2_tera_single_high_gholdengo",
+            "x_i2_tera_single_low_clodsire"
           ]
         },
         {
@@ -3484,8 +3484,8 @@
           "set_pool": [
             "i2_pelipper",
             "x_i2_tera_single_high_azumarill",
-            "i2_togekiss",
-            "i2_tyranitar"
+            "x_i2_tera_single_high_kingambit",
+            "x_i2_tera_single_low_kilowattrel"
           ]
         },
         {
@@ -3504,8 +3504,8 @@
           "set_pool": [
             "i2_barraskewda",
             "x_i2_tera_single_high_dragonite",
-            "i2_corviknight",
-            "i2_amoonguss"
+            "x_i2_tera_single_high_volcarona",
+            "x_i2_tera_single_low_tinkaton"
           ]
         },
         {
@@ -3524,8 +3524,8 @@
           "set_pool": [
             "i2_rillaboom",
             "x_i2_tera_single_high_garganacl",
-            "i2_primarina",
-            "i2_dragapult"
+            "x_i2_tera_single_low_baxcalibur",
+            "x_i2_dynamax_double_high_coalossal"
           ]
         }
       ]
@@ -4347,7 +4347,7 @@
             "a1_reuniclus",
             "x_a1_tera_double_low_amoonguss",
             "x_a1_tera_double_low_murkrow",
-            "a1_salamence"
+            "x_a1_tera_single_high_garganacl"
           ]
         },
         {
@@ -4367,7 +4367,7 @@
             "a1_jellicent",
             "x_a1_tera_double_low_armarouge",
             "x_a1_tera_double_low_sylveon",
-            "a1_blaziken"
+            "x_a1_tera_single_high_kingambit"
           ]
         },
         {
@@ -4387,7 +4387,7 @@
             "a1_haxorus",
             "x_a1_tera_double_low_farigiraf",
             "x_a1_tera_single_high_azumarill",
-            "a1_gholdengo"
+            "x_a1_tera_single_high_volcarona"
           ]
         },
         {
@@ -4407,7 +4407,7 @@
             "a1_mienshao",
             "x_a1_tera_double_low_garchomp",
             "x_a1_tera_single_high_dragonite",
-            "a1_dondozo"
+            "x_a1_tera_single_low_baxcalibur"
           ]
         }
       ]
@@ -4640,8 +4640,8 @@
           "set_pool": [
             "a1_kommoo",
             "x_a1_tera_double_low_murkrow",
-            "a1_salamence",
-            "a1_empoleon"
+            "x_a1_tera_single_high_garganacl",
+            "x_a1_tera_single_low_clodsire"
           ]
         },
         {
@@ -4660,8 +4660,8 @@
           "set_pool": [
             "a1_hatterene",
             "x_a1_tera_double_low_sylveon",
-            "a1_blaziken",
-            "a1_gliscor"
+            "x_a1_tera_single_high_kingambit",
+            "x_a1_tera_single_low_kilowattrel"
           ]
         },
         {
@@ -4680,8 +4680,8 @@
           "set_pool": [
             "a1_crobat",
             "x_a1_tera_single_high_azumarill",
-            "a1_gholdengo",
-            "a1_toxapex"
+            "x_a1_tera_single_high_volcarona",
+            "x_a1_tera_single_low_tinkaton"
           ]
         },
         {
@@ -4700,8 +4700,8 @@
           "set_pool": [
             "a1_scizor",
             "x_a1_tera_single_high_dragonite",
-            "a1_dondozo",
-            "a1_incineroar"
+            "x_a1_tera_single_low_baxcalibur",
+            "x_a1_dynamax_double_high_coalossal"
           ]
         }
       ]
@@ -5523,7 +5523,7 @@
             "a2_cloyster",
             "x_a2_tera_single_high_dragonite",
             "x_a2_tera_single_high_volcarona",
-            "a2_metagross"
+            "x_a2_tera_single_low_kilowattrel"
           ]
         },
         {
@@ -5543,7 +5543,7 @@
             "a2_gardevoir",
             "x_a2_tera_single_high_garganacl",
             "x_a2_tera_single_low_baxcalibur",
-            "a2_sableye"
+            "x_a2_tera_single_low_meowscarada"
           ]
         },
         {
@@ -5563,7 +5563,7 @@
             "a2_slowking",
             "x_a2_tera_single_high_gholdengo",
             "x_a2_tera_single_low_ceruledge",
-            "a2_rotom_heat"
+            "x_a2_tera_single_low_tinkaton"
           ]
         },
         {
@@ -5583,7 +5583,7 @@
             "a2_hawlucha",
             "x_a2_tera_single_high_kingambit",
             "x_a2_tera_single_low_clodsire",
-            "a2_hydreigon"
+            "x_a2_dynamax_double_high_coalossal"
           ]
         }
       ]
@@ -5816,8 +5816,8 @@
           "set_pool": [
             "a2_serperior",
             "x_a2_tera_single_high_volcarona",
-            "a2_metagross",
-            "a2_tyranitar"
+            "x_a2_tera_single_low_kilowattrel",
+            "x_a2_dynamax_double_high_copperajah"
           ]
         },
         {
@@ -5836,8 +5836,8 @@
           "set_pool": [
             "a2_armarouge",
             "x_a2_tera_single_low_baxcalibur",
-            "a2_sableye",
-            "a2_bronzong"
+            "x_a2_tera_single_low_meowscarada",
+            "x_a2_dynamax_double_high_duraludon"
           ]
         },
         {
@@ -5856,8 +5856,8 @@
           "set_pool": [
             "a2_quaquaval",
             "x_a2_tera_single_low_ceruledge",
-            "a2_rotom_heat",
-            "a2_weavile"
+            "x_a2_tera_single_low_tinkaton",
+            "x_a2_dynamax_double_high_indeedee"
           ]
         },
         {
@@ -5876,8 +5876,8 @@
           "set_pool": [
             "a2_goodra",
             "x_a2_tera_single_low_clodsire",
-            "a2_hydreigon",
-            "a2_venusaur"
+            "x_a2_dynamax_double_high_coalossal",
+            "x_a2_dynamax_double_high_snorlax"
           ]
         }
       ]
@@ -6699,7 +6699,7 @@
             "a3_samurott",
             "x_a3_tera_single_low_clodsire",
             "x_a3_dynamax_double_high_coalossal",
-            "a3_garchomp"
+            "x_a3_dynamax_double_high_snorlax"
           ]
         },
         {
@@ -6719,7 +6719,7 @@
             "a3_clefable",
             "x_a3_tera_single_low_kilowattrel",
             "x_a3_dynamax_double_high_copperajah",
-            "a3_togekiss"
+            "x_a3_dynamax_double_low_arcanine"
           ]
         },
         {
@@ -6739,7 +6739,7 @@
             "a3_conkeldurr",
             "x_a3_tera_single_low_meowscarada",
             "x_a3_dynamax_double_high_duraludon",
-            "a3_aegislash"
+            "x_a3_dynamax_double_low_gastrodon"
           ]
         },
         {
@@ -6759,7 +6759,7 @@
             "a3_porygonz",
             "x_a3_tera_single_low_tinkaton",
             "x_a3_dynamax_double_high_indeedee",
-            "a3_rillaboom"
+            "x_a3_dynamax_double_low_ludicolo"
           ]
         }
       ]
@@ -6992,8 +6992,8 @@
           "set_pool": [
             "a3_glimmora",
             "x_a3_dynamax_double_high_coalossal",
-            "a3_garchomp",
-            "a3_volcarona"
+            "x_a3_dynamax_double_high_snorlax",
+            "x_a3_dynamax_double_low_raichu"
           ]
         },
         {
@@ -7012,8 +7012,8 @@
           "set_pool": [
             "a3_hippowdon",
             "x_a3_dynamax_double_high_copperajah",
-            "a3_togekiss",
-            "a3_pelipper"
+            "x_a3_dynamax_double_low_arcanine",
+            "x_a3_dynamax_single_high_dragapult"
           ]
         },
         {
@@ -7032,8 +7032,8 @@
           "set_pool": [
             "a3_greninja",
             "x_a3_dynamax_double_high_duraludon",
-            "a3_aegislash",
-            "a3_barraskewda"
+            "x_a3_dynamax_double_low_gastrodon",
+            "x_a3_dynamax_single_high_excadrill"
           ]
         },
         {
@@ -7052,8 +7052,8 @@
           "set_pool": [
             "a3_mimikyu",
             "x_a3_dynamax_double_high_indeedee",
-            "a3_rillaboom",
-            "a3_ferrothorn"
+            "x_a3_dynamax_double_low_ludicolo",
+            "x_a3_dynamax_single_high_hydreigon"
           ]
         }
       ]
@@ -7875,7 +7875,7 @@
             "a4_articuno",
             "x_a4_dynamax_double_high_indeedee",
             "x_a4_dynamax_double_low_ludicolo",
-            "a4_latios"
+            "x_a4_dynamax_single_high_dragapult"
           ]
         },
         {
@@ -7895,7 +7895,7 @@
             "a4_dragonite",
             "x_a4_dynamax_double_high_snorlax",
             "x_a4_dynamax_double_low_pelipper",
-            "a4_aegislash"
+            "x_a4_dynamax_single_high_excadrill"
           ]
         },
         {
@@ -7915,7 +7915,7 @@
             "a4_metagross",
             "x_a4_dynamax_double_low_arcanine",
             "x_a4_dynamax_double_low_raichu",
-            "a4_weavile"
+            "x_a4_dynamax_single_high_hydreigon"
           ]
         },
         {
@@ -7935,7 +7935,7 @@
             "a4_meowscarada",
             "x_a4_dynamax_double_low_ferrothorn",
             "x_a4_dynamax_single_high_conkeldurr",
-            "a4_volcarona"
+            "x_a4_dynamax_single_high_mimikyu"
           ]
         }
       ]
@@ -8168,8 +8168,8 @@
           "set_pool": [
             "a4_regigigas",
             "x_a4_dynamax_double_low_ludicolo",
-            "a4_latios",
-            "a4_zapdos"
+            "x_a4_dynamax_single_high_dragapult",
+            "x_a4_dynamax_single_high_togekiss"
           ]
         },
         {
@@ -8188,8 +8188,8 @@
           "set_pool": [
             "a4_registeel",
             "x_a4_dynamax_double_low_pelipper",
-            "a4_aegislash",
-            "a4_garchomp"
+            "x_a4_dynamax_single_high_excadrill",
+            "x_a4_dynamax_single_low_alcremie"
           ]
         },
         {
@@ -8208,8 +8208,8 @@
           "set_pool": [
             "a4_samurott",
             "x_a4_dynamax_double_low_raichu",
-            "a4_weavile",
-            "a4_scizor"
+            "x_a4_dynamax_single_high_hydreigon",
+            "x_a4_dynamax_single_low_corviknight"
           ]
         },
         {
@@ -8228,8 +8228,8 @@
           "set_pool": [
             "a4_rillaboom",
             "x_a4_dynamax_single_high_conkeldurr",
-            "a4_volcarona",
-            "a4_gastrodon"
+            "x_a4_dynamax_single_high_mimikyu",
+            "x_a4_dynamax_single_low_drednaw"
           ]
         }
       ]
@@ -14072,6 +14072,1072 @@
       "nature_pool": "all"
     },
     {
+      "set_id": "x_s1_dynamax_single_low_corviknight",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:corviknight",
+      "ability_id": "cobblemon:mirrorarmor",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:bravebird"
+        ],
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:bodypress"
+        ],
+        [
+          "cobblemon:roost"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sharp_beak"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_dynamax_single_low_drednaw",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:drednaw",
+      "ability_id": "cobblemon:strongjaw",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:liquidation"
+        ],
+        [
+          "cobblemon:crunch"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:mystic_water"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_dynamax_single_low_orbeetle",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:orbeetle",
+      "ability_id": "cobblemon:frisk",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:psychic"
+        ],
+        [
+          "cobblemon:bugbuzz"
+        ],
+        [
+          "cobblemon:energyball"
+        ],
+        [
+          "cobblemon:calmmind"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:wise_glasses"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_dynamax_single_low_sandaconda",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:sandaconda",
+      "ability_id": "cobblemon:shedskin",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:glare"
+        ],
+        [
+          "cobblemon:coil"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:soft_sand"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_dynamax_single_low_toxtricity",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:toxtricity",
+      "ability_id": "cobblemon:punkrock",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:overdrive"
+        ],
+        [
+          "cobblemon:sludgebomb"
+        ],
+        [
+          "cobblemon:boomburst"
+        ],
+        [
+          "cobblemon:voltswitch"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:throat_spray"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_roster_tera_tier2_ceruledge",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:ceruledge",
+      "ability_id": "cobblemon:flashfire",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:bitterblade"
+        ],
+        [
+          "cobblemon:shadowclaw"
+        ],
+        [
+          "cobblemon:closecombat"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_roster_tera_tier2_meowscarada",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:meowscarada",
+      "ability_id": "cobblemon:protean",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:flowertrick"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_band"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_double_high_fluttermane",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:fluttermane",
+      "ability_id": "cobblemon:protosynthesis",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:moonblast"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:powergem"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_double_high_incineroar",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:incineroar",
+      "ability_id": "cobblemon:intimidate",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:flareblitz"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:partingshot"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_double_high_ironhands",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:ironhands",
+      "ability_id": "cobblemon:quarkdrive",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:wildcharge"
+        ],
+        [
+          "cobblemon:drainpunch"
+        ],
+        [
+          "cobblemon:heavyslam"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_double_low_amoonguss",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:amoonguss",
+      "ability_id": "cobblemon:regenerator",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:ragepowder"
+        ],
+        [
+          "cobblemon:spore"
+        ],
+        [
+          "cobblemon:pollenpuff"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_double_low_armarouge",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:armarouge",
+      "ability_id": "cobblemon:flashfire",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:armorcannon"
+        ],
+        [
+          "cobblemon:expandingforce"
+        ],
+        [
+          "cobblemon:wideguard"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:weakness_policy"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_double_low_farigiraf",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:farigiraf",
+      "ability_id": "cobblemon:armortail",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:psychic"
+        ],
+        [
+          "cobblemon:hypervoice"
+        ],
+        [
+          "cobblemon:trickroom"
+        ],
+        [
+          "cobblemon:helpinghand"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:safety_goggles"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_double_low_garchomp",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:garchomp",
+      "ability_id": "cobblemon:roughskin",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:dragonclaw"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:clear_amulet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_double_low_murkrow",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:murkrow",
+      "ability_id": "cobblemon:prankster",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:foulplay"
+        ],
+        [
+          "cobblemon:tailwind"
+        ],
+        [
+          "cobblemon:taunt"
+        ],
+        [
+          "cobblemon:quash"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:eviolite"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_double_low_sylveon",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:sylveon",
+      "ability_id": "cobblemon:pixilate",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:hypervoice"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:helpinghand"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:throat_spray"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_single_high_azumarill",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:azumarill",
+      "ability_id": "cobblemon:hugepower",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:aquajet"
+        ],
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:liquidation"
+        ],
+        [
+          "cobblemon:bellydrum"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_single_high_dragonite",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:dragonite",
+      "ability_id": "cobblemon:multiscale",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:extremespeed"
+        ],
+        [
+          "cobblemon:dragonclaw"
+        ],
+        [
+          "cobblemon:firepunch"
+        ],
+        [
+          "cobblemon:dragondance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:weakness_policy"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_single_high_garganacl",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:garganacl",
+      "ability_id": "cobblemon:purifyingsalt",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:saltcure"
+        ],
+        [
+          "cobblemon:bodypress"
+        ],
+        [
+          "cobblemon:recover"
+        ],
+        [
+          "cobblemon:irondefense"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_single_high_gholdengo",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:gholdengo",
+      "ability_id": "cobblemon:goodasgold",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:makeitrain"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:focusblast"
+        ],
+        [
+          "cobblemon:nastyplot"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:air_balloon"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_single_high_kingambit",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:kingambit",
+      "ability_id": "cobblemon:supremeoverlord",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:kowtowcleave"
+        ],
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:suckerpunch"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:black_glasses"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_single_high_volcarona",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:volcarona",
+      "ability_id": "cobblemon:flamebody",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:fierydance"
+        ],
+        [
+          "cobblemon:bugbuzz"
+        ],
+        [
+          "cobblemon:gigadrain"
+        ],
+        [
+          "cobblemon:quiverdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:heavy_duty_boots"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_single_low_baxcalibur",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:baxcalibur",
+      "ability_id": "cobblemon:thermalexchange",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:iciclespear"
+        ],
+        [
+          "cobblemon:glaiverush"
+        ],
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:dragondance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:loaded_dice"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_single_low_clodsire",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:clodsire",
+      "ability_id": "cobblemon:unaware",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:poisonjab"
+        ],
+        [
+          "cobblemon:recover"
+        ],
+        [
+          "cobblemon:toxic"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_single_low_kilowattrel",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:kilowattrel",
+      "ability_id": "cobblemon:competitive",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:thunderbolt"
+        ],
+        [
+          "cobblemon:hurricane"
+        ],
+        [
+          "cobblemon:voltswitch"
+        ],
+        [
+          "cobblemon:airslash"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_s1_tera_single_low_tinkaton",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:tinkaton",
+      "ability_id": "cobblemon:moldbreaker",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:gigatonhammer"
+        ],
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:fakeout"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
       "set_id": "x_i1_dynamax_double_low_ferrothorn",
       "pool_group": "intermediate",
       "variant": 1,
@@ -14724,6 +15790,1031 @@
       ],
       "held_items": [
         "cobblemon:throat_spray"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_roster_tera_tier2_ceruledge",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:ceruledge",
+      "ability_id": "cobblemon:flashfire",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:bitterblade"
+        ],
+        [
+          "cobblemon:shadowclaw"
+        ],
+        [
+          "cobblemon:closecombat"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_roster_tera_tier2_meowscarada",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:meowscarada",
+      "ability_id": "cobblemon:protean",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      },
+      "move_slots": [
+        [
+          "cobblemon:flowertrick"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_band"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_double_high_fluttermane",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:fluttermane",
+      "ability_id": "cobblemon:protosynthesis",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:moonblast"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:powergem"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_double_high_incineroar",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:incineroar",
+      "ability_id": "cobblemon:intimidate",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:flareblitz"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:partingshot"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_double_high_ironhands",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:ironhands",
+      "ability_id": "cobblemon:quarkdrive",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:wildcharge"
+        ],
+        [
+          "cobblemon:drainpunch"
+        ],
+        [
+          "cobblemon:heavyslam"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_double_high_rillaboom",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:rillaboom",
+      "ability_id": "cobblemon:grassysurge",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:grassyglide"
+        ],
+        [
+          "cobblemon:woodhammer"
+        ],
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:miracle_seed"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_double_low_amoonguss",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:amoonguss",
+      "ability_id": "cobblemon:regenerator",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:ragepowder"
+        ],
+        [
+          "cobblemon:spore"
+        ],
+        [
+          "cobblemon:pollenpuff"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_double_low_armarouge",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:armarouge",
+      "ability_id": "cobblemon:flashfire",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:armorcannon"
+        ],
+        [
+          "cobblemon:expandingforce"
+        ],
+        [
+          "cobblemon:wideguard"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:weakness_policy"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_double_low_farigiraf",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:farigiraf",
+      "ability_id": "cobblemon:armortail",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:psychic"
+        ],
+        [
+          "cobblemon:hypervoice"
+        ],
+        [
+          "cobblemon:trickroom"
+        ],
+        [
+          "cobblemon:helpinghand"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:safety_goggles"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_double_low_garchomp",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:garchomp",
+      "ability_id": "cobblemon:roughskin",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:dragonclaw"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:clear_amulet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_double_low_murkrow",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:murkrow",
+      "ability_id": "cobblemon:prankster",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:foulplay"
+        ],
+        [
+          "cobblemon:tailwind"
+        ],
+        [
+          "cobblemon:taunt"
+        ],
+        [
+          "cobblemon:quash"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:eviolite"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_double_low_sylveon",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:sylveon",
+      "ability_id": "cobblemon:pixilate",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:hypervoice"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:helpinghand"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:throat_spray"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_single_high_garganacl",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:garganacl",
+      "ability_id": "cobblemon:purifyingsalt",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:saltcure"
+        ],
+        [
+          "cobblemon:bodypress"
+        ],
+        [
+          "cobblemon:recover"
+        ],
+        [
+          "cobblemon:irondefense"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_single_high_gholdengo",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:gholdengo",
+      "ability_id": "cobblemon:goodasgold",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:makeitrain"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:focusblast"
+        ],
+        [
+          "cobblemon:nastyplot"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:air_balloon"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_single_high_kingambit",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:kingambit",
+      "ability_id": "cobblemon:supremeoverlord",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:kowtowcleave"
+        ],
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:suckerpunch"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:black_glasses"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_single_low_baxcalibur",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:baxcalibur",
+      "ability_id": "cobblemon:thermalexchange",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:iciclespear"
+        ],
+        [
+          "cobblemon:glaiverush"
+        ],
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:dragondance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:loaded_dice"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_single_low_clodsire",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:clodsire",
+      "ability_id": "cobblemon:unaware",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:poisonjab"
+        ],
+        [
+          "cobblemon:recover"
+        ],
+        [
+          "cobblemon:toxic"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_single_low_kilowattrel",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:kilowattrel",
+      "ability_id": "cobblemon:competitive",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:thunderbolt"
+        ],
+        [
+          "cobblemon:hurricane"
+        ],
+        [
+          "cobblemon:voltswitch"
+        ],
+        [
+          "cobblemon:airslash"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_tera_single_low_tinkaton",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:tinkaton",
+      "ability_id": "cobblemon:moldbreaker",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:gigatonhammer"
+        ],
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:fakeout"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_dynamax_double_high_coalossal",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:coalossal",
+      "ability_id": "cobblemon:steamengine",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:heatwave"
+        ],
+        [
+          "cobblemon:powergem"
+        ],
+        [
+          "cobblemon:solarbeam"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:weakness_policy"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_dynamax_double_high_copperajah",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:copperajah",
+      "ability_id": "cobblemon:sheerforce",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:highhorsepower"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:powerwhip"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_dynamax_double_high_duraludon",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:duraludon",
+      "ability_id": "cobblemon:stalwart",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dragonpulse"
+        ],
+        [
+          "cobblemon:flashcannon"
+        ],
+        [
+          "cobblemon:thunderbolt"
+        ],
+        [
+          "cobblemon:snarl"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_dynamax_double_high_indeedee",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:indeedee",
+      "ability_id": "cobblemon:psychicsurge",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:psychic"
+        ],
+        [
+          "cobblemon:allyswitch"
+        ],
+        [
+          "cobblemon:helpinghand"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:terrain_extender"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_dynamax_double_high_snorlax",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:snorlax",
+      "ability_id": "cobblemon:gluttony",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:facade"
+        ],
+        [
+          "cobblemon:darkestlariat"
+        ],
+        [
+          "cobblemon:highhorsepower"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:figy_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i1_dynamax_double_low_arcanine",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:arcanine",
+      "ability_id": "cobblemon:intimidate",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:heatwave"
+        ],
+        [
+          "cobblemon:snarl"
+        ],
+        [
+          "cobblemon:willowisp"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sitrus_berry"
       ],
       "nature_pool": "all"
     },
@@ -15384,6 +17475,744 @@
       "nature_pool": "all"
     },
     {
+      "set_id": "x_i2_tera_single_high_gholdengo",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:gholdengo",
+      "ability_id": "cobblemon:goodasgold",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:makeitrain"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:focusblast"
+        ],
+        [
+          "cobblemon:nastyplot"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:air_balloon"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_tera_single_high_kingambit",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:kingambit",
+      "ability_id": "cobblemon:supremeoverlord",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:kowtowcleave"
+        ],
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:suckerpunch"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:black_glasses"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_tera_single_high_volcarona",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:volcarona",
+      "ability_id": "cobblemon:flamebody",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:fierydance"
+        ],
+        [
+          "cobblemon:bugbuzz"
+        ],
+        [
+          "cobblemon:gigadrain"
+        ],
+        [
+          "cobblemon:quiverdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:heavy_duty_boots"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_tera_single_low_baxcalibur",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:baxcalibur",
+      "ability_id": "cobblemon:thermalexchange",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:iciclespear"
+        ],
+        [
+          "cobblemon:glaiverush"
+        ],
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:dragondance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:loaded_dice"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_tera_single_low_clodsire",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:clodsire",
+      "ability_id": "cobblemon:unaware",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:poisonjab"
+        ],
+        [
+          "cobblemon:recover"
+        ],
+        [
+          "cobblemon:toxic"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_tera_single_low_kilowattrel",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:kilowattrel",
+      "ability_id": "cobblemon:competitive",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:thunderbolt"
+        ],
+        [
+          "cobblemon:hurricane"
+        ],
+        [
+          "cobblemon:voltswitch"
+        ],
+        [
+          "cobblemon:airslash"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_tera_single_low_tinkaton",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:tinkaton",
+      "ability_id": "cobblemon:moldbreaker",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:gigatonhammer"
+        ],
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:fakeout"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_dynamax_double_high_coalossal",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:coalossal",
+      "ability_id": "cobblemon:steamengine",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:heatwave"
+        ],
+        [
+          "cobblemon:powergem"
+        ],
+        [
+          "cobblemon:solarbeam"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:weakness_policy"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_dynamax_double_high_copperajah",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:copperajah",
+      "ability_id": "cobblemon:sheerforce",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:highhorsepower"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:powerwhip"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_dynamax_double_high_duraludon",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:duraludon",
+      "ability_id": "cobblemon:stalwart",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dragonpulse"
+        ],
+        [
+          "cobblemon:flashcannon"
+        ],
+        [
+          "cobblemon:thunderbolt"
+        ],
+        [
+          "cobblemon:snarl"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_dynamax_double_high_indeedee",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:indeedee",
+      "ability_id": "cobblemon:psychicsurge",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:psychic"
+        ],
+        [
+          "cobblemon:allyswitch"
+        ],
+        [
+          "cobblemon:helpinghand"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:terrain_extender"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_dynamax_double_high_snorlax",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:snorlax",
+      "ability_id": "cobblemon:gluttony",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:facade"
+        ],
+        [
+          "cobblemon:darkestlariat"
+        ],
+        [
+          "cobblemon:highhorsepower"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:figy_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_dynamax_double_low_arcanine",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:arcanine",
+      "ability_id": "cobblemon:intimidate",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:heatwave"
+        ],
+        [
+          "cobblemon:snarl"
+        ],
+        [
+          "cobblemon:willowisp"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_dynamax_double_low_ferrothorn",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:ferrothorn",
+      "ability_id": "cobblemon:ironbarbs",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:powerwhip"
+        ],
+        [
+          "cobblemon:gyroball"
+        ],
+        [
+          "cobblemon:leechseed"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_dynamax_double_low_gastrodon",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:gastrodon",
+      "ability_id": "cobblemon:stormdrain",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:muddywater"
+        ],
+        [
+          "cobblemon:earthpower"
+        ],
+        [
+          "cobblemon:icebeam"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_dynamax_double_low_ludicolo",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:ludicolo",
+      "ability_id": "cobblemon:swiftswim",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:muddywater"
+        ],
+        [
+          "cobblemon:gigadrain"
+        ],
+        [
+          "cobblemon:icebeam"
+        ],
+        [
+          "cobblemon:fakeout"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_dynamax_double_low_raichu",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:raichu",
+      "ability_id": "cobblemon:lightningrod",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:thunderbolt"
+        ],
+        [
+          "cobblemon:nuzzle"
+        ],
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_i2_dynamax_single_high_conkeldurr",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:conkeldurr",
+      "ability_id": "cobblemon:guts",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:drainpunch"
+        ],
+        [
+          "cobblemon:machpunch"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:icepunch"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
       "set_id": "x_a1_dynamax_single_low_orbeetle",
       "pool_group": "advanced",
       "variant": 1,
@@ -16036,6 +18865,1113 @@
       ],
       "held_items": [
         "cobblemon:weakness_policy"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_tera_single_high_garganacl",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:garganacl",
+      "ability_id": "cobblemon:purifyingsalt",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:saltcure"
+        ],
+        [
+          "cobblemon:bodypress"
+        ],
+        [
+          "cobblemon:recover"
+        ],
+        [
+          "cobblemon:irondefense"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_tera_single_high_kingambit",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:kingambit",
+      "ability_id": "cobblemon:supremeoverlord",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:kowtowcleave"
+        ],
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:suckerpunch"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:black_glasses"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_tera_single_high_volcarona",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:volcarona",
+      "ability_id": "cobblemon:flamebody",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:fierydance"
+        ],
+        [
+          "cobblemon:bugbuzz"
+        ],
+        [
+          "cobblemon:gigadrain"
+        ],
+        [
+          "cobblemon:quiverdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:heavy_duty_boots"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_tera_single_low_baxcalibur",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:baxcalibur",
+      "ability_id": "cobblemon:thermalexchange",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:iciclespear"
+        ],
+        [
+          "cobblemon:glaiverush"
+        ],
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:dragondance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:loaded_dice"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_tera_single_low_clodsire",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:clodsire",
+      "ability_id": "cobblemon:unaware",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:poisonjab"
+        ],
+        [
+          "cobblemon:recover"
+        ],
+        [
+          "cobblemon:toxic"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_tera_single_low_kilowattrel",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:kilowattrel",
+      "ability_id": "cobblemon:competitive",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:thunderbolt"
+        ],
+        [
+          "cobblemon:hurricane"
+        ],
+        [
+          "cobblemon:voltswitch"
+        ],
+        [
+          "cobblemon:airslash"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_tera_single_low_tinkaton",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:tinkaton",
+      "ability_id": "cobblemon:moldbreaker",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:gigatonhammer"
+        ],
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:fakeout"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_double_high_coalossal",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:coalossal",
+      "ability_id": "cobblemon:steamengine",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:heatwave"
+        ],
+        [
+          "cobblemon:powergem"
+        ],
+        [
+          "cobblemon:solarbeam"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:weakness_policy"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_double_high_copperajah",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:copperajah",
+      "ability_id": "cobblemon:sheerforce",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:highhorsepower"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:powerwhip"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_double_high_duraludon",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:duraludon",
+      "ability_id": "cobblemon:stalwart",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dragonpulse"
+        ],
+        [
+          "cobblemon:flashcannon"
+        ],
+        [
+          "cobblemon:thunderbolt"
+        ],
+        [
+          "cobblemon:snarl"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_double_high_indeedee",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:indeedee",
+      "ability_id": "cobblemon:psychicsurge",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:psychic"
+        ],
+        [
+          "cobblemon:allyswitch"
+        ],
+        [
+          "cobblemon:helpinghand"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:terrain_extender"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_double_high_snorlax",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:snorlax",
+      "ability_id": "cobblemon:gluttony",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:facade"
+        ],
+        [
+          "cobblemon:darkestlariat"
+        ],
+        [
+          "cobblemon:highhorsepower"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:figy_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_double_low_arcanine",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:arcanine",
+      "ability_id": "cobblemon:intimidate",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:heatwave"
+        ],
+        [
+          "cobblemon:snarl"
+        ],
+        [
+          "cobblemon:willowisp"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_double_low_ferrothorn",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:ferrothorn",
+      "ability_id": "cobblemon:ironbarbs",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:powerwhip"
+        ],
+        [
+          "cobblemon:gyroball"
+        ],
+        [
+          "cobblemon:leechseed"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_double_low_gastrodon",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:gastrodon",
+      "ability_id": "cobblemon:stormdrain",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:muddywater"
+        ],
+        [
+          "cobblemon:earthpower"
+        ],
+        [
+          "cobblemon:icebeam"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_double_low_ludicolo",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:ludicolo",
+      "ability_id": "cobblemon:swiftswim",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:muddywater"
+        ],
+        [
+          "cobblemon:gigadrain"
+        ],
+        [
+          "cobblemon:icebeam"
+        ],
+        [
+          "cobblemon:fakeout"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_double_low_pelipper",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:pelipper",
+      "ability_id": "cobblemon:drizzle",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:scald"
+        ],
+        [
+          "cobblemon:hurricane"
+        ],
+        [
+          "cobblemon:tailwind"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:damp_rock"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_double_low_raichu",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:raichu",
+      "ability_id": "cobblemon:lightningrod",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:thunderbolt"
+        ],
+        [
+          "cobblemon:nuzzle"
+        ],
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_single_high_conkeldurr",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:conkeldurr",
+      "ability_id": "cobblemon:guts",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:drainpunch"
+        ],
+        [
+          "cobblemon:machpunch"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:icepunch"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_single_high_dragapult",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:dragapult",
+      "ability_id": "cobblemon:infiltrator",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dracometeor"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:flamethrower"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_single_high_excadrill",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:excadrill",
+      "ability_id": "cobblemon:moldbreaker",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_single_high_hydreigon",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:hydreigon",
+      "ability_id": "cobblemon:levitate",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dracometeor"
+        ],
+        [
+          "cobblemon:darkpulse"
+        ],
+        [
+          "cobblemon:flashcannon"
+        ],
+        [
+          "cobblemon:flamethrower"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_single_high_mimikyu",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:mimikyu",
+      "ability_id": "cobblemon:disguise",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:shadowclaw"
+        ],
+        [
+          "cobblemon:shadowsneak"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:spell_tag"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_single_high_togekiss",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:togekiss",
+      "ability_id": "cobblemon:serenegrace",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:airslash"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:thunderwave"
+        ],
+        [
+          "cobblemon:roost"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_single_low_alcremie",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:alcremie",
+      "ability_id": "cobblemon:sweetveil",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:mysticalfire"
+        ],
+        [
+          "cobblemon:energyball"
+        ],
+        [
+          "cobblemon:recover"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_single_low_corviknight",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:corviknight",
+      "ability_id": "cobblemon:mirrorarmor",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:bravebird"
+        ],
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:bodypress"
+        ],
+        [
+          "cobblemon:roost"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sharp_beak"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a1_dynamax_single_low_drednaw",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:drednaw",
+      "ability_id": "cobblemon:strongjaw",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:liquidation"
+        ],
+        [
+          "cobblemon:crunch"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:mystic_water"
       ],
       "nature_pool": "all"
     },
@@ -16696,6 +20632,1113 @@
       "nature_pool": "all"
     },
     {
+      "set_id": "x_a2_tera_single_low_kilowattrel",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:kilowattrel",
+      "ability_id": "cobblemon:competitive",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:thunderbolt"
+        ],
+        [
+          "cobblemon:hurricane"
+        ],
+        [
+          "cobblemon:voltswitch"
+        ],
+        [
+          "cobblemon:airslash"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_tera_single_low_meowscarada",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:meowscarada",
+      "ability_id": "cobblemon:protean",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:flowertrick"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_band"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_tera_single_low_tinkaton",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:tinkaton",
+      "ability_id": "cobblemon:moldbreaker",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:gigatonhammer"
+        ],
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:fakeout"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_double_high_coalossal",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:coalossal",
+      "ability_id": "cobblemon:steamengine",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:heatwave"
+        ],
+        [
+          "cobblemon:powergem"
+        ],
+        [
+          "cobblemon:solarbeam"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:weakness_policy"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_double_high_copperajah",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:copperajah",
+      "ability_id": "cobblemon:sheerforce",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:highhorsepower"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:powerwhip"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_double_high_duraludon",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:duraludon",
+      "ability_id": "cobblemon:stalwart",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dragonpulse"
+        ],
+        [
+          "cobblemon:flashcannon"
+        ],
+        [
+          "cobblemon:thunderbolt"
+        ],
+        [
+          "cobblemon:snarl"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_double_high_indeedee",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:indeedee",
+      "ability_id": "cobblemon:psychicsurge",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:psychic"
+        ],
+        [
+          "cobblemon:allyswitch"
+        ],
+        [
+          "cobblemon:helpinghand"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:terrain_extender"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_double_high_snorlax",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:snorlax",
+      "ability_id": "cobblemon:gluttony",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:facade"
+        ],
+        [
+          "cobblemon:darkestlariat"
+        ],
+        [
+          "cobblemon:highhorsepower"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:figy_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_double_low_arcanine",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:arcanine",
+      "ability_id": "cobblemon:intimidate",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:heatwave"
+        ],
+        [
+          "cobblemon:snarl"
+        ],
+        [
+          "cobblemon:willowisp"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_double_low_ferrothorn",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:ferrothorn",
+      "ability_id": "cobblemon:ironbarbs",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:powerwhip"
+        ],
+        [
+          "cobblemon:gyroball"
+        ],
+        [
+          "cobblemon:leechseed"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_double_low_gastrodon",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:gastrodon",
+      "ability_id": "cobblemon:stormdrain",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:muddywater"
+        ],
+        [
+          "cobblemon:earthpower"
+        ],
+        [
+          "cobblemon:icebeam"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_double_low_ludicolo",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:ludicolo",
+      "ability_id": "cobblemon:swiftswim",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:muddywater"
+        ],
+        [
+          "cobblemon:gigadrain"
+        ],
+        [
+          "cobblemon:icebeam"
+        ],
+        [
+          "cobblemon:fakeout"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_double_low_pelipper",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:pelipper",
+      "ability_id": "cobblemon:drizzle",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:scald"
+        ],
+        [
+          "cobblemon:hurricane"
+        ],
+        [
+          "cobblemon:tailwind"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:damp_rock"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_double_low_raichu",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:raichu",
+      "ability_id": "cobblemon:lightningrod",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:thunderbolt"
+        ],
+        [
+          "cobblemon:nuzzle"
+        ],
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_single_high_conkeldurr",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:conkeldurr",
+      "ability_id": "cobblemon:guts",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:drainpunch"
+        ],
+        [
+          "cobblemon:machpunch"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:icepunch"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_single_high_dragapult",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:dragapult",
+      "ability_id": "cobblemon:infiltrator",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dracometeor"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:flamethrower"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_single_high_excadrill",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:excadrill",
+      "ability_id": "cobblemon:moldbreaker",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_single_high_mimikyu",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:mimikyu",
+      "ability_id": "cobblemon:disguise",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:shadowclaw"
+        ],
+        [
+          "cobblemon:shadowsneak"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:spell_tag"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_single_high_togekiss",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:togekiss",
+      "ability_id": "cobblemon:serenegrace",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:airslash"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:thunderwave"
+        ],
+        [
+          "cobblemon:roost"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_single_low_alcremie",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:alcremie",
+      "ability_id": "cobblemon:sweetveil",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:mysticalfire"
+        ],
+        [
+          "cobblemon:energyball"
+        ],
+        [
+          "cobblemon:recover"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_single_low_corviknight",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:corviknight",
+      "ability_id": "cobblemon:mirrorarmor",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:bravebird"
+        ],
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:bodypress"
+        ],
+        [
+          "cobblemon:roost"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sharp_beak"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_single_low_drednaw",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:drednaw",
+      "ability_id": "cobblemon:strongjaw",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:liquidation"
+        ],
+        [
+          "cobblemon:crunch"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:mystic_water"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_single_low_orbeetle",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:orbeetle",
+      "ability_id": "cobblemon:frisk",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:psychic"
+        ],
+        [
+          "cobblemon:bugbuzz"
+        ],
+        [
+          "cobblemon:energyball"
+        ],
+        [
+          "cobblemon:calmmind"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:wise_glasses"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_single_low_sandaconda",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:sandaconda",
+      "ability_id": "cobblemon:shedskin",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:glare"
+        ],
+        [
+          "cobblemon:coil"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:soft_sand"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_dynamax_single_low_toxtricity",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:toxtricity",
+      "ability_id": "cobblemon:punkrock",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:overdrive"
+        ],
+        [
+          "cobblemon:sludgebomb"
+        ],
+        [
+          "cobblemon:boomburst"
+        ],
+        [
+          "cobblemon:voltswitch"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:throat_spray"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_tera_double_high_fluttermane",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:fluttermane",
+      "ability_id": "cobblemon:protosynthesis",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:moonblast"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:powergem"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a2_tera_double_high_incineroar",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:incineroar",
+      "ability_id": "cobblemon:intimidate",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:flareblitz"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:partingshot"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
       "set_id": "x_a3_tera_double_low_sylveon",
       "pool_group": "advanced",
       "variant": 3,
@@ -17352,6 +22395,867 @@
       "nature_pool": "all"
     },
     {
+      "set_id": "x_a3_dynamax_double_high_snorlax",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:snorlax",
+      "ability_id": "cobblemon:gluttony",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:facade"
+        ],
+        [
+          "cobblemon:darkestlariat"
+        ],
+        [
+          "cobblemon:highhorsepower"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:figy_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_dynamax_double_low_arcanine",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:arcanine",
+      "ability_id": "cobblemon:intimidate",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:heatwave"
+        ],
+        [
+          "cobblemon:snarl"
+        ],
+        [
+          "cobblemon:willowisp"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_dynamax_double_low_gastrodon",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:gastrodon",
+      "ability_id": "cobblemon:stormdrain",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:muddywater"
+        ],
+        [
+          "cobblemon:earthpower"
+        ],
+        [
+          "cobblemon:icebeam"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_dynamax_double_low_ludicolo",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:ludicolo",
+      "ability_id": "cobblemon:swiftswim",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:muddywater"
+        ],
+        [
+          "cobblemon:gigadrain"
+        ],
+        [
+          "cobblemon:icebeam"
+        ],
+        [
+          "cobblemon:fakeout"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_dynamax_double_low_raichu",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:raichu",
+      "ability_id": "cobblemon:lightningrod",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:thunderbolt"
+        ],
+        [
+          "cobblemon:nuzzle"
+        ],
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_dynamax_single_high_dragapult",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:dragapult",
+      "ability_id": "cobblemon:infiltrator",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dracometeor"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:flamethrower"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_dynamax_single_high_excadrill",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:excadrill",
+      "ability_id": "cobblemon:moldbreaker",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_dynamax_single_high_hydreigon",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:hydreigon",
+      "ability_id": "cobblemon:levitate",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dracometeor"
+        ],
+        [
+          "cobblemon:darkpulse"
+        ],
+        [
+          "cobblemon:flashcannon"
+        ],
+        [
+          "cobblemon:flamethrower"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_dynamax_single_low_alcremie",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:alcremie",
+      "ability_id": "cobblemon:sweetveil",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:mysticalfire"
+        ],
+        [
+          "cobblemon:energyball"
+        ],
+        [
+          "cobblemon:recover"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_dynamax_single_low_corviknight",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:corviknight",
+      "ability_id": "cobblemon:mirrorarmor",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:bravebird"
+        ],
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:bodypress"
+        ],
+        [
+          "cobblemon:roost"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sharp_beak"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_dynamax_single_low_drednaw",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:drednaw",
+      "ability_id": "cobblemon:strongjaw",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:liquidation"
+        ],
+        [
+          "cobblemon:crunch"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:mystic_water"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_dynamax_single_low_orbeetle",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:orbeetle",
+      "ability_id": "cobblemon:frisk",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:psychic"
+        ],
+        [
+          "cobblemon:bugbuzz"
+        ],
+        [
+          "cobblemon:energyball"
+        ],
+        [
+          "cobblemon:calmmind"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:wise_glasses"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_dynamax_single_low_sandaconda",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:sandaconda",
+      "ability_id": "cobblemon:shedskin",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:glare"
+        ],
+        [
+          "cobblemon:coil"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:soft_sand"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_dynamax_single_low_toxtricity",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:toxtricity",
+      "ability_id": "cobblemon:punkrock",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:overdrive"
+        ],
+        [
+          "cobblemon:sludgebomb"
+        ],
+        [
+          "cobblemon:boomburst"
+        ],
+        [
+          "cobblemon:voltswitch"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:throat_spray"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_tera_double_high_fluttermane",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:fluttermane",
+      "ability_id": "cobblemon:protosynthesis",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:moonblast"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:powergem"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_tera_double_high_incineroar",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:incineroar",
+      "ability_id": "cobblemon:intimidate",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:flareblitz"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:partingshot"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_tera_double_high_ironhands",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:ironhands",
+      "ability_id": "cobblemon:quarkdrive",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:wildcharge"
+        ],
+        [
+          "cobblemon:drainpunch"
+        ],
+        [
+          "cobblemon:heavyslam"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_tera_double_low_amoonguss",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:amoonguss",
+      "ability_id": "cobblemon:regenerator",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:ragepowder"
+        ],
+        [
+          "cobblemon:spore"
+        ],
+        [
+          "cobblemon:pollenpuff"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_tera_double_low_armarouge",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:armarouge",
+      "ability_id": "cobblemon:flashfire",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:armorcannon"
+        ],
+        [
+          "cobblemon:expandingforce"
+        ],
+        [
+          "cobblemon:wideguard"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:weakness_policy"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_tera_double_low_farigiraf",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:farigiraf",
+      "ability_id": "cobblemon:armortail",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:psychic"
+        ],
+        [
+          "cobblemon:hypervoice"
+        ],
+        [
+          "cobblemon:trickroom"
+        ],
+        [
+          "cobblemon:helpinghand"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:safety_goggles"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a3_tera_double_low_murkrow",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:murkrow",
+      "ability_id": "cobblemon:prankster",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:foulplay"
+        ],
+        [
+          "cobblemon:tailwind"
+        ],
+        [
+          "cobblemon:taunt"
+        ],
+        [
+          "cobblemon:quash"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:eviolite"
+      ],
+      "nature_pool": "all"
+    },
+    {
       "set_id": "x_a4_tera_single_low_baxcalibur",
       "pool_group": "advanced",
       "variant": 4,
@@ -18004,6 +23908,949 @@
       ],
       "held_items": [
         "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_dynamax_single_high_dragapult",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:dragapult",
+      "ability_id": "cobblemon:infiltrator",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dracometeor"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:flamethrower"
+        ],
+        [
+          "cobblemon:uturn"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:life_orb"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_dynamax_single_high_excadrill",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:excadrill",
+      "ability_id": "cobblemon:moldbreaker",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:focus_sash"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_dynamax_single_high_hydreigon",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:hydreigon",
+      "ability_id": "cobblemon:levitate",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dracometeor"
+        ],
+        [
+          "cobblemon:darkpulse"
+        ],
+        [
+          "cobblemon:flashcannon"
+        ],
+        [
+          "cobblemon:flamethrower"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_dynamax_single_high_mimikyu",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:mimikyu",
+      "ability_id": "cobblemon:disguise",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:shadowclaw"
+        ],
+        [
+          "cobblemon:shadowsneak"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:spell_tag"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_dynamax_single_high_togekiss",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:togekiss",
+      "ability_id": "cobblemon:serenegrace",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:airslash"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:thunderwave"
+        ],
+        [
+          "cobblemon:roost"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_dynamax_single_low_alcremie",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:alcremie",
+      "ability_id": "cobblemon:sweetveil",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:mysticalfire"
+        ],
+        [
+          "cobblemon:energyball"
+        ],
+        [
+          "cobblemon:recover"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_dynamax_single_low_corviknight",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:corviknight",
+      "ability_id": "cobblemon:mirrorarmor",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:bravebird"
+        ],
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:bodypress"
+        ],
+        [
+          "cobblemon:roost"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sharp_beak"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_dynamax_single_low_drednaw",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:drednaw",
+      "ability_id": "cobblemon:strongjaw",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:liquidation"
+        ],
+        [
+          "cobblemon:crunch"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:mystic_water"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_dynamax_single_low_orbeetle",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:orbeetle",
+      "ability_id": "cobblemon:frisk",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:psychic"
+        ],
+        [
+          "cobblemon:bugbuzz"
+        ],
+        [
+          "cobblemon:energyball"
+        ],
+        [
+          "cobblemon:calmmind"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:wise_glasses"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_dynamax_single_low_sandaconda",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:sandaconda",
+      "ability_id": "cobblemon:shedskin",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:earthquake"
+        ],
+        [
+          "cobblemon:rockslide"
+        ],
+        [
+          "cobblemon:glare"
+        ],
+        [
+          "cobblemon:coil"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:soft_sand"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_dynamax_single_low_toxtricity",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:toxtricity",
+      "ability_id": "cobblemon:punkrock",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:overdrive"
+        ],
+        [
+          "cobblemon:sludgebomb"
+        ],
+        [
+          "cobblemon:boomburst"
+        ],
+        [
+          "cobblemon:voltswitch"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:throat_spray"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_tera_double_high_fluttermane",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:fluttermane",
+      "ability_id": "cobblemon:protosynthesis",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:moonblast"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:powergem"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:choice_specs"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_tera_double_high_incineroar",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:incineroar",
+      "ability_id": "cobblemon:intimidate",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:flareblitz"
+        ],
+        [
+          "cobblemon:knockoff"
+        ],
+        [
+          "cobblemon:partingshot"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_tera_double_high_ironhands",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:ironhands",
+      "ability_id": "cobblemon:quarkdrive",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:fakeout"
+        ],
+        [
+          "cobblemon:wildcharge"
+        ],
+        [
+          "cobblemon:drainpunch"
+        ],
+        [
+          "cobblemon:heavyslam"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:assault_vest"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_tera_double_low_amoonguss",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:amoonguss",
+      "ability_id": "cobblemon:regenerator",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:ragepowder"
+        ],
+        [
+          "cobblemon:spore"
+        ],
+        [
+          "cobblemon:pollenpuff"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:rocky_helmet"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_tera_double_low_armarouge",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:armarouge",
+      "ability_id": "cobblemon:flashfire",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:armorcannon"
+        ],
+        [
+          "cobblemon:expandingforce"
+        ],
+        [
+          "cobblemon:wideguard"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:weakness_policy"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_tera_double_low_farigiraf",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:farigiraf",
+      "ability_id": "cobblemon:armortail",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:psychic"
+        ],
+        [
+          "cobblemon:hypervoice"
+        ],
+        [
+          "cobblemon:trickroom"
+        ],
+        [
+          "cobblemon:helpinghand"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:safety_goggles"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_tera_double_low_murkrow",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:murkrow",
+      "ability_id": "cobblemon:prankster",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:foulplay"
+        ],
+        [
+          "cobblemon:tailwind"
+        ],
+        [
+          "cobblemon:taunt"
+        ],
+        [
+          "cobblemon:quash"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:eviolite"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_tera_double_low_sylveon",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:sylveon",
+      "ability_id": "cobblemon:pixilate",
+      "ivs": {
+        "hp": 15,
+        "attack": 15,
+        "defense": 15,
+        "special_attack": 15,
+        "special_defense": 15,
+        "speed": 15
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:hypervoice"
+        ],
+        [
+          "cobblemon:dazzlinggleam"
+        ],
+        [
+          "cobblemon:helpinghand"
+        ],
+        [
+          "cobblemon:protect"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:throat_spray"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_tera_single_high_azumarill",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:azumarill",
+      "ability_id": "cobblemon:hugepower",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:aquajet"
+        ],
+        [
+          "cobblemon:playrough"
+        ],
+        [
+          "cobblemon:liquidation"
+        ],
+        [
+          "cobblemon:bellydrum"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:sitrus_berry"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_tera_single_high_garganacl",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:garganacl",
+      "ability_id": "cobblemon:purifyingsalt",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:saltcure"
+        ],
+        [
+          "cobblemon:bodypress"
+        ],
+        [
+          "cobblemon:recover"
+        ],
+        [
+          "cobblemon:irondefense"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:leftovers"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_tera_single_high_gholdengo",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:gholdengo",
+      "ability_id": "cobblemon:goodasgold",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:makeitrain"
+        ],
+        [
+          "cobblemon:shadowball"
+        ],
+        [
+          "cobblemon:focusblast"
+        ],
+        [
+          "cobblemon:nastyplot"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:air_balloon"
+      ],
+      "nature_pool": "all"
+    },
+    {
+      "set_id": "x_a4_tera_single_high_kingambit",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:kingambit",
+      "ability_id": "cobblemon:supremeoverlord",
+      "ivs": {
+        "hp": 20,
+        "attack": 20,
+        "defense": 20,
+        "special_attack": 20,
+        "special_defense": 20,
+        "speed": 20
+      },
+      "evs": {
+        "hp": 0,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      },
+      "move_slots": [
+        [
+          "cobblemon:kowtowcleave"
+        ],
+        [
+          "cobblemon:ironhead"
+        ],
+        [
+          "cobblemon:suckerpunch"
+        ],
+        [
+          "cobblemon:swordsdance"
+        ]
+      ],
+      "held_items": [
+        "cobblemon:black_glasses"
       ],
       "nature_pool": "all"
     }

@@ -29,11 +29,11 @@ class FactoryCatalogResourceTest {
         assertEquals(3, root["schema_version"].asInt)
         assertEquals(7, pools.size)
         pools.forEach { (id, sets) ->
-            assertEquals(32, sets.size, id)
-            assertEquals(32, sets.map(FactoryRentalTemplate::speciesId).distinct().size, id)
+            assertEquals(EXPECTED_POOL_SIZES.getValue(id), sets.size, id)
+            assertEquals(sets.size, sets.map(FactoryRentalTemplate::speciesId).distinct().size, id)
             assertTrue(sets.all { it.heldItemIds.isNotEmpty() }, id)
         }
-        assertEquals(224, allSets.map(FactoryRentalTemplate::setId).distinct().size)
+        assertEquals(391, allSets.map(FactoryRentalTemplate::setId).distinct().size)
         assertTrue(allSets.map(FactoryRentalTemplate::speciesId).distinct().size >= 100)
         assertTrue(allSets.all { it.ivs != null })
         assertTrue(allSets.all { it.moveSlots.size == 4 })
@@ -248,6 +248,15 @@ class FactoryCatalogResourceTest {
             "cobblemon:articuno",
             "cobblemon:registeel",
             "cobblemon:regigigas",
+        )
+        val EXPECTED_POOL_SIZES = mapOf(
+            "starter-1" to 58,
+            "intermediate-1" to 57,
+            "intermediate-2" to 50,
+            "advanced-1" to 59,
+            "advanced-2" to 59,
+            "advanced-3" to 53,
+            "advanced-4" to 55,
         )
         val EXPECTED_TRAINER_NAMES = linkedMapOf(
             "arcanine_voltage" to ("Alex" to "준서"),

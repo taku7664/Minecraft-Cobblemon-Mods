@@ -36,7 +36,8 @@ internal sealed interface FactorySessionCompletionResult {
 internal class FactorySessionService(
     private val runBattles: FactoryRunBattleService,
     private val completions: FactoryBattleCompletionService,
-    private val draftProvider: (FactoryLevelMode, round: Int, rentAndTradeCount: Int) -> FactoryRentalDraft? = { _, _, _ -> null },
+    private val draftProvider: (UUID, FactoryLevelMode, round: Int, rentAndTradeCount: Int) -> FactoryRentalDraft? =
+        { _, _, _, _ -> null },
 ) {
     private val sessions = HashMap<UUID, FactoryRunSession>()
 
@@ -56,7 +57,7 @@ internal class FactorySessionService(
             levelMode,
             healRentals,
             initialDraft,
-            draftProvider,
+            { mode, round, trades -> draftProvider(playerId, mode, round, trades) },
         )
         return FactorySessionStartResult.Started(runId)
     }

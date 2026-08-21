@@ -69,7 +69,7 @@ class FactoryCatalogSelectorsTest {
     }
 
     @Test
-    fun `fresh draft overlaps the previous offer by at most three sets when the pool allows it`() {
+    fun `fresh draft avoids every recently offered species when the pool allows it`() {
         val sets = (1..16).map { template("starter_$it", FactoryPoolGroup.STARTER, 1, it) }
         val catalog = FactoryCatalog("test", emptyList(), sets)
         val selector = FactoryDraftSelector(catalog, firstChoiceRandom)
@@ -79,10 +79,10 @@ class FactoryCatalogSelectorsTest {
             FactoryLevelMode.LEVEL_50,
             round = 1,
             rentAndTradeCount = 1,
-            previousSetIds = first.sets.mapTo(linkedSetOf(), FactoryRentalSet::setId),
+            recentSpeciesIds = first.sets.mapTo(linkedSetOf(), FactoryRentalSet::speciesId),
         )!!
 
-        assertTrue(first.sets.map(FactoryRentalSet::setId).toSet().intersect(second.sets.map(FactoryRentalSet::setId).toSet()).size <= 3)
+        assertTrue(first.sets.map(FactoryRentalSet::speciesId).toSet().intersect(second.sets.map(FactoryRentalSet::speciesId).toSet()).isEmpty())
     }
 
     @Test

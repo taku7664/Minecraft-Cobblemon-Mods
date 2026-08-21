@@ -187,7 +187,6 @@ for ($windowIndex = 0; $windowIndex -lt $windows.Count; $windowIndex++) {
     )
     $imports = [System.Collections.Generic.List[object]]::new()
     foreach ($source in $rotatedCandidates) {
-        if ($imports.Count -eq 16) { break }
         if (-not $usedSpecies.Add($source.species_id)) { continue }
         $moveSlots = [System.Collections.Generic.List[object]]::new()
         foreach ($move in @($source.moves)) { $moveSlots.Add(@($move)) }
@@ -206,8 +205,8 @@ for ($windowIndex = 0; $windowIndex -lt $windows.Count; $windowIndex++) {
         $imports.Add($generated)
         $expandedFactorySets.Add($generated)
     }
-    if ($imports.Count -ne 16) {
-        throw "Factory window $($window.Key) could only import $($imports.Count) distinct species"
+    if ($imports.Count -lt 34) {
+        throw "Factory window $($window.Key) expected at least 34 distinct imports, found $($imports.Count)"
     }
     $windowSets[$window.Key] = @($existing) + @($imports)
 }
