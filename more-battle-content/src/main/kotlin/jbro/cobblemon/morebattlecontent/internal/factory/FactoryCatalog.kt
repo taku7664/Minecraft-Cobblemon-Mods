@@ -5,85 +5,48 @@ import java.util.Collections
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyObjective
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTeamRole
 
+/** A complete, immutable rental preset. Randomness chooses this preset, never its contents. */
 internal class FactoryRentalTemplate(
     val setId: String,
     val poolGroup: FactoryPoolGroup,
     val variant: Int,
     val speciesId: String,
-    moveSlots: List<List<String>>,
+    moveIds: List<String>,
     val abilityId: String,
-    heldItemIds: List<String?>,
-    natureIds: List<String>,
+    val heldItemId: String,
+    val natureId: String,
     val evs: FactoryStatSpread,
     val ivs: FactoryStatSpread? = null,
     val formId: String? = null,
+    roles: Set<BattleTeamRole>,
+    preferredMoveIds: Set<String>,
+    val leadPriority: Int,
+    val preservationPriority: Int,
 ) {
-    val moveSlots: List<List<String>> = immutableList(moveSlots.map(::immutableList))
-    val moveIds: List<String> = immutableList(this.moveSlots.flatten())
-    val heldItemIds: List<String?> = immutableList(heldItemIds)
-    val natureIds: List<String> = immutableList(natureIds)
+    val moveIds: List<String> = immutableList(moveIds)
+    val roles: Set<BattleTeamRole> = immutableSet(roles)
+    val preferredMoveIds: Set<String> = immutableSet(preferredMoveIds)
 
     init {
         require(variant in 1..4) { "Factory set variant must be between 1 and 4" }
-        require(this.moveSlots.size in 1..4) { "Factory move slots must contain 1 to 4 slots" }
-        require(this.moveSlots.none(List<String>::isEmpty)) { "Factory move slots must not be empty" }
-        require(moveIds.distinct().size == moveIds.size) { "Factory move candidates must be unique across slots" }
-        require(this.heldItemIds.isNotEmpty()) { "Factory held item candidates must not be empty" }
-        require(this.heldItemIds.distinct().size == this.heldItemIds.size) { "Factory held item candidates must be unique" }
-        require(this.natureIds.isNotEmpty()) { "Factory nature candidates must not be empty" }
-        require(this.natureIds.distinct().size == this.natureIds.size) { "Factory nature candidates must be unique" }
-        FactoryRentalSet(
-            setId = setId,
-            speciesId = speciesId,
-            moveIds = this.moveSlots.map(List<String>::first),
-            abilityId = abilityId,
-            heldItemId = this.heldItemIds.first(),
-            natureId = this.natureIds.first(),
-            ivs = ivs ?: FactoryStatSpread(0, 0, 0, 0, 0, 0),
-            evs = evs,
-            formId = formId,
-        )
+        require(this.moveIds.size == 4) { "Factory complete rental set must contain exactly 4 moves" }
+        require(this.moveIds.distinct().size == this.moveIds.size) { "Factory rental moves must be unique" }
+        require(this.roles.isNotEmpty()) { "Factory rental roles must not be empty" }
+        require(this.preferredMoveIds.all(this.moveIds::contains)) { "Factory preferred moves must belong to the fixed move set" }
+        require(leadPriority in 0..100) { "Factory lead priority must be between 0 and 100" }
+        require(preservationPriority in 0..100) { "Factory preservation priority must be between 0 and 100" }
     }
 
-    constructor(
-        setId: String,
-        poolGroup: FactoryPoolGroup,
-        variant: Int,
-        speciesId: String,
-        moveIds: List<String>,
-        abilityId: String,
-        heldItemId: String?,
-        natureId: String,
-        evs: FactoryStatSpread,
-        ivs: FactoryStatSpread? = null,
-        formId: String? = null,
-    ) : this(
-        setId = setId,
-        poolGroup = poolGroup,
-        variant = variant,
-        speciesId = speciesId,
-        moveSlots = moveIds.map(::listOf),
-        abilityId = abilityId,
-        heldItemIds = listOf(heldItemId),
-        natureIds = listOf(natureId),
-        evs = evs,
-        ivs = ivs,
-        formId = formId,
-    )
-
-    fun materialize(uniformIv: Int, heldItemId: String?, random: FactoryCatalogRandom): FactoryRentalSet {
+    fun materialize(uniformIv: Int): FactoryRentalSet {
         require(uniformIv in 0..31) { "Factory uniform IV must be between 0 and 31" }
-        require(heldItemId in heldItemIds) { "Factory held item must come from the template candidate pool" }
-        val materializedIvs = ivs
-            ?: FactoryStatSpread(uniformIv, uniformIv, uniformIv, uniformIv, uniformIv, uniformIv)
         return FactoryRentalSet(
             setId = setId,
             speciesId = speciesId,
-            moveIds = moveSlots.map { it[random.nextInt(it.size)] },
+            moveIds = moveIds,
             abilityId = abilityId,
             heldItemId = heldItemId,
-            natureId = natureIds[random.nextInt(natureIds.size)],
-            ivs = materializedIvs,
+            natureId = natureId,
+            ivs = ivs ?: FactoryStatSpread(uniformIv, uniformIv, uniformIv, uniformIv, uniformIv, uniformIv),
             evs = evs,
             formId = formId,
         )
@@ -92,55 +55,9 @@ internal class FactoryRentalTemplate(
     fun belongsTo(window: FactoryPoolWindow): Boolean = poolGroup == window.group && variant in window.variants
 }
 
-internal object FactoryNaturePool {
-    val ALL: List<String> = immutableList(
-        listOf(
-            "cobblemon:hardy",
-            "cobblemon:lonely",
-            "cobblemon:brave",
-            "cobblemon:adamant",
-            "cobblemon:naughty",
-            "cobblemon:bold",
-            "cobblemon:docile",
-            "cobblemon:relaxed",
-            "cobblemon:impish",
-            "cobblemon:lax",
-            "cobblemon:timid",
-            "cobblemon:hasty",
-            "cobblemon:serious",
-            "cobblemon:jolly",
-            "cobblemon:naive",
-            "cobblemon:modest",
-            "cobblemon:mild",
-            "cobblemon:quiet",
-            "cobblemon:bashful",
-            "cobblemon:rash",
-            "cobblemon:calm",
-            "cobblemon:gentle",
-            "cobblemon:sassy",
-            "cobblemon:careful",
-            "cobblemon:quirky",
-        ),
-    )
-}
-
-internal class FactoryConceptMemberPlan(
-    val planId: String,
-    val required: Boolean,
-    roles: Set<BattleTeamRole>,
-    val tacticalSummary: String,
-    preferredMoveIds: Set<String>,
-    val leadPriority: Int,
-    val preservationPriority: Int,
-    setIds: List<String>,
-) {
-    val roles: Set<BattleTeamRole> = immutableSet(roles)
-    val preferredMoveIds: Set<String> = immutableSet(preferredMoveIds)
-    val setIds: List<String> = immutableList(setIds)
-}
-
-internal class FactoryTrainerConcept(
-    val conceptId: String,
+/** Trainer identity and AI framing are independent from the randomly drawn rental team. */
+internal class FactoryTrainerProfile(
+    val trainerId: String,
     val displayNameKey: String,
     val descriptionKey: String,
     formats: Set<FactoryBattleFormat>,
@@ -148,31 +65,24 @@ internal class FactoryTrainerConcept(
     val aiSkill: Int,
     val aiSummary: String,
     objectives: Set<BattleStrategyObjective>,
-    members: List<FactoryConceptMemberPlan>,
 ) {
     val formats: Set<FactoryBattleFormat> = immutableSet(formats)
     val objectives: Set<BattleStrategyObjective> = immutableSet(objectives)
-    val members: List<FactoryConceptMemberPlan> = immutableList(members)
 }
 
 internal class FactoryCatalog(
     val catalogId: String,
-    concepts: List<FactoryTrainerConcept>,
+    trainers: List<FactoryTrainerProfile>,
     sets: List<FactoryRentalTemplate>,
 ) {
-    private val concepts: List<FactoryTrainerConcept> = immutableList(concepts)
-    private val setsById: Map<String, FactoryRentalTemplate> = Collections.unmodifiableMap(
-        LinkedHashMap(sets.associateBy(FactoryRentalTemplate::setId)),
-    )
+    private val trainers: List<FactoryTrainerProfile> = immutableList(trainers)
+    private val sets: List<FactoryRentalTemplate> = immutableList(sets)
 
-    fun conceptsFor(format: FactoryBattleFormat): List<FactoryTrainerConcept> =
-        immutableList(concepts.filter { format in it.formats })
-
-    fun setsFor(member: FactoryConceptMemberPlan): List<FactoryRentalTemplate> =
-        immutableList(member.setIds.map(setsById::getValue))
+    fun trainersFor(format: FactoryBattleFormat): List<FactoryTrainerProfile> =
+        immutableList(trainers.filter { format in it.formats })
 
     fun rentalPool(window: FactoryPoolWindow): List<FactoryRentalTemplate> =
-        immutableList(setsById.values.filter { it.belongsTo(window) })
+        immutableList(sets.filter { it.belongsTo(window) })
 }
 
 internal enum class FactoryCatalogIssueCode {
@@ -182,8 +92,6 @@ internal enum class FactoryCatalogIssueCode {
     MISSING_FIELD,
     INVALID_VALUE,
     DUPLICATE_ID,
-    UNKNOWN_REFERENCE,
-    INVALID_CONCEPT,
     NO_LEGAL_TEAM,
 }
 

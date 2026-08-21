@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.internal.factory
 import java.util.Collections
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyBrief
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTeamMemberPlan
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTeamRole
 import kotlin.random.Random
 
 internal interface FactoryCatalogRandom {
@@ -40,8 +41,8 @@ internal class FactoryDraftSelector(
             ?: selectWithOverlapLimit(groups, recentSpeciesIds, DRAFT_SIZE)
             ?: return null
         return FactoryRentalDraft(
-            selected.map { selection ->
-                selection.candidate.template.materialize(selection.candidate.uniformIv, selection.heldItemId, random)
+            selected.map { candidate ->
+                candidate.template.materialize(candidate.uniformIv)
             },
         )
     }
@@ -50,8 +51,8 @@ internal class FactoryDraftSelector(
         groups: List<Pair<List<DraftCandidate>, Int>>,
         recentSpeciesIds: Set<String>,
         maxPreviousOverlap: Int,
-    ): List<DraftSelection>? {
-        val selected = ArrayList<DraftSelection>(DRAFT_SIZE)
+    ): List<DraftCandidate>? {
+        val selected = ArrayList<DraftCandidate>(DRAFT_SIZE)
         val found = selectGroup(
             groups = groups,
             groupIndex = 0,
@@ -72,7 +73,7 @@ internal class FactoryDraftSelector(
         groupIndex: Int,
         candidateIndex: Int,
         selectedInGroup: Int,
-        selected: MutableList<DraftSelection>,
+        selected: MutableList<DraftCandidate>,
         species: MutableSet<String>,
         heldItems: MutableSet<String>,
         recentSpeciesIds: Set<String>,
@@ -101,29 +102,28 @@ internal class FactoryDraftSelector(
             val repeated = candidate.template.speciesId in recentSpeciesIds
             if (candidate.template.speciesId in species) continue
             if (repeated && previousOverlap >= maxPreviousOverlap) continue
-            for (item in shuffled(candidate.template.heldItemIds)) {
-                if (item != null && item in heldItems) continue
-                selected += DraftSelection(candidate, item)
-                species += candidate.template.speciesId
-                if (item != null) heldItems += item
-                if (
-                    selectGroup(
-                        groups,
-                        groupIndex,
-                        index + 1,
-                        selectedInGroup + 1,
-                        selected,
-                        species,
-                        heldItems,
-                        recentSpeciesIds,
-                        previousOverlap + if (repeated) 1 else 0,
-                        maxPreviousOverlap,
-                    )
-                ) return true
-                selected.removeAt(selected.lastIndex)
-                species -= candidate.template.speciesId
-                if (item != null) heldItems -= item
-            }
+            val item = candidate.template.heldItemId
+            if (item in heldItems) continue
+            selected += candidate
+            species += candidate.template.speciesId
+            heldItems += item
+            if (
+                selectGroup(
+                    groups,
+                    groupIndex,
+                    index + 1,
+                    selectedInGroup + 1,
+                    selected,
+                    species,
+                    heldItems,
+                    recentSpeciesIds,
+                    previousOverlap + if (repeated) 1 else 0,
+                    maxPreviousOverlap,
+                )
+            ) return true
+            selected.removeAt(selected.lastIndex)
+            species -= candidate.template.speciesId
+            heldItems -= item
         }
         return false
     }
@@ -140,8 +140,6 @@ internal class FactoryDraftSelector(
     }
 
     private data class DraftCandidate(val template: FactoryRentalTemplate, val uniformIv: Int)
-    private data class DraftSelection(val candidate: DraftCandidate, val heldItemId: String?)
-
     private companion object {
         const val DRAFT_SIZE = 6
         const val NO_PREVIOUS_OVERLAP = 0
@@ -151,12 +149,12 @@ internal class FactoryDraftSelector(
 
 internal sealed interface FactoryOpponentSelectionResult {
     data class Selected(
-        val concept: FactoryTrainerConcept,
+        val trainer: FactoryTrainerProfile,
         val team: List<FactoryRentalSet>,
         val strategy: BattleStrategyBrief,
     ) : FactoryOpponentSelectionResult
 
-    data object NoEligibleConcept : FactoryOpponentSelectionResult
+    data object NoEligibleTrainer : FactoryOpponentSelectionResult
 }
 
 internal class FactoryOpponentSelector(
@@ -167,51 +165,84 @@ internal class FactoryOpponentSelector(
         format: FactoryBattleFormat,
         levelMode: FactoryLevelMode,
         round: Int,
-        excludedConceptIds: Set<String> = emptySet(),
+        excludedTrainerIds: Set<String> = emptySet(),
     ): FactoryOpponentSelectionResult {
         val window = FactoryProgression.poolWindow(levelMode, round)
-        val eligible = catalog.conceptsFor(format).mapNotNull { concept ->
-            FactoryConceptTeamSearch.select(catalog, concept, format, window, random)?.let { concept to it }
-        }
-        if (eligible.isEmpty()) return FactoryOpponentSelectionResult.NoEligibleConcept
-        val fresh = eligible.filterNot { it.first.conceptId in excludedConceptIds }
-        val selected = selectWeighted(fresh.ifEmpty { eligible })
+        val templates = selectTeam(catalog.rentalPool(window), format.selectionSize)
+            ?: return FactoryOpponentSelectionResult.NoEligibleTrainer
+        val eligible = catalog.trainersFor(format)
+        if (eligible.isEmpty()) return FactoryOpponentSelectionResult.NoEligibleTrainer
+        val fresh = eligible.filterNot { it.trainerId in excludedTrainerIds }
+        val trainer = selectWeighted(fresh.ifEmpty { eligible })
         val iv = FactoryProgression.uniformIvForRound(round)
-        val team = selected.second.map { it.template.materialize(iv, it.heldItemId, random) }
-        val strategyMembers = selected.second.zip(team).map { (selectedMember, rentalSet) ->
+        val team = templates.map { it.materialize(iv) }
+        val strategyMembers = templates.zip(team).mapIndexed { index, (template, rentalSet) ->
+            val roles = if (index == 0) template.roles + BattleTeamRole.ACE else template.roles - BattleTeamRole.ACE
             BattleTeamMemberPlan(
-                speciesId = selectedMember.template.speciesId,
-                roles = selectedMember.plan.roles,
-                tacticalSummary = selectedMember.plan.tacticalSummary,
-                preferredMoveIds = selectedMember.plan.preferredMoveIds.intersect(rentalSet.moveIds.toSet()),
-                leadPriority = selectedMember.plan.leadPriority,
-                preservationPriority = selectedMember.plan.preservationPriority,
+                speciesId = template.speciesId,
+                roles = roles.ifEmpty { setOf(BattleTeamRole.WEAKNESS_COVER) },
+                tacticalSummary = "Use this fixed rental preset according to its public moves and team role.",
+                preferredMoveIds = template.preferredMoveIds.intersect(rentalSet.moveIds.toSet()),
+                leadPriority = template.leadPriority,
+                preservationPriority = template.preservationPriority,
             )
         }
         return FactoryOpponentSelectionResult.Selected(
-            concept = selected.first,
+            trainer = trainer,
             team = Collections.unmodifiableList(ArrayList(team)),
             strategy = BattleStrategyBrief(
-                strategyId = "cobblemon_more_battle_content:factory/${selected.first.conceptId}",
-                displayNameKey = selected.first.displayNameKey,
-                descriptionKey = selected.first.descriptionKey,
-                aiSummary = selected.first.aiSummary,
-                objectives = selected.first.objectives,
+                strategyId = "cobblemon_more_battle_content:factory/${trainer.trainerId}",
+                displayNameKey = trainer.displayNameKey,
+                descriptionKey = trainer.descriptionKey,
+                aiSummary = trainer.aiSummary,
+                objectives = trainer.objectives,
                 members = strategyMembers,
             ),
         )
     }
 
-    private fun selectWeighted(
-        eligible: List<Pair<FactoryTrainerConcept, List<FactoryConceptTeamMember>>>,
-    ): Pair<FactoryTrainerConcept, List<FactoryConceptTeamMember>> {
-        val total = eligible.sumOf { it.first.weight.toLong() }
+    private fun selectTeam(candidates: List<FactoryRentalTemplate>, size: Int): List<FactoryRentalTemplate>? {
+        val ordered = candidates.toMutableList().also(::shuffle)
+        val selected = ArrayList<FactoryRentalTemplate>(size)
+        return selected.takeIf { selectTeam(ordered, size, 0, selected, HashSet(), HashSet()) }
+    }
+
+    private fun selectTeam(
+        candidates: List<FactoryRentalTemplate>,
+        required: Int,
+        startIndex: Int,
+        selected: MutableList<FactoryRentalTemplate>,
+        species: MutableSet<String>,
+        heldItems: MutableSet<String>,
+    ): Boolean {
+        if (selected.size == required) return true
+        if (candidates.size - startIndex < required - selected.size) return false
+        for (index in startIndex until candidates.size) {
+            val candidate = candidates[index]
+            if (candidate.speciesId in species || candidate.heldItemId in heldItems) continue
+            selected += candidate
+            species += candidate.speciesId
+            heldItems += candidate.heldItemId
+            if (selectTeam(candidates, required, index + 1, selected, species, heldItems)) return true
+            selected.removeAt(selected.lastIndex)
+            species -= candidate.speciesId
+            heldItems -= candidate.heldItemId
+        }
+        return false
+    }
+
+    private fun selectWeighted(eligible: List<FactoryTrainerProfile>): FactoryTrainerProfile {
+        val total = eligible.sumOf { it.weight.toLong() }
         val ticket = random.nextLong(total)
         var upperBound = 0L
         for (candidate in eligible) {
-            upperBound += candidate.first.weight
+            upperBound += candidate.weight
             if (ticket < upperBound) return candidate
         }
-        error("Factory concept selection exceeded its validated total")
+        error("Factory trainer selection exceeded its validated total")
+    }
+
+    private fun <T> shuffle(values: MutableList<T>) {
+        for (index in values.lastIndex downTo 1) Collections.swap(values, index, random.nextInt(index + 1))
     }
 }

@@ -50,7 +50,7 @@ class FactoryPlayServiceTest {
     }
 
     @Test
-    fun `successful battles avoid the players recent trainer concept`() {
+    fun `successful battles avoid the players recent trainer`() {
         val launchedTrainerKeys = ArrayList<String>()
         val service = playService(catalog(listOf("first", "second"))) { request ->
             launchedTrainerKeys += request.trainerNameKey
@@ -66,7 +66,7 @@ class FactoryPlayServiceTest {
         }
 
         assertEquals(
-            listOf("factory.concept.first.name", "factory.concept.second.name"),
+            listOf("factory.trainer.first.name", "factory.trainer.second.name"),
             launchedTrainerKeys,
         )
     }
@@ -223,55 +223,36 @@ class FactoryPlayServiceTest {
         return FactoryPlayService({ catalog }, sessions, catalogRandom, draftOffers)
     }
 
-    private fun catalog(conceptIds: List<String> = listOf("ordinary_ace")): FactoryCatalog {
+    private fun catalog(trainerIds: List<String> = listOf("ordinary_ace")): FactoryCatalog {
         val sets = (1..24).map(::template)
-        val concepts = conceptIds.mapIndexed { index, conceptId ->
-            val offset = index * 4
-            val members = listOf(
-                member("ace", true, setOf(BattleTeamRole.ACE), sets[offset]),
-                member("enabler", true, setOf(BattleTeamRole.SETUP_ENABLER), sets[offset + 1]),
-                member("cover", false, setOf(BattleTeamRole.WEAKNESS_COVER), sets[offset + 2]),
-            )
-            FactoryTrainerConcept(
-                conceptId = conceptId,
-                displayNameKey = "factory.concept.$conceptId.name",
-                descriptionKey = "factory.concept.$conceptId.description",
+        val trainers = trainerIds.map { trainerId ->
+            FactoryTrainerProfile(
+                trainerId = trainerId,
+                displayNameKey = "factory.trainer.$trainerId.name",
+                descriptionKey = "factory.trainer.shared.description",
                 formats = setOf(FactoryBattleFormat.SINGLE),
                 weight = 1,
                 aiSkill = 3,
-                aiSummary = "Create a safe turn for the ace and cover its main weakness.",
+                aiSummary = "Choose a legal team from complete rental presets.",
                 objectives = setOf(BattleStrategyObjective.SETUP_SWEEP),
-                members = members,
             )
         }
-        return FactoryCatalog("test", concepts, sets)
+        return FactoryCatalog("test", trainers, sets)
     }
-
-    private fun member(
-        id: String,
-        required: Boolean,
-        roles: Set<BattleTeamRole>,
-        set: FactoryRentalTemplate,
-    ) = FactoryConceptMemberPlan(
-        planId = id,
-        required = required,
-        roles = roles,
-        tacticalSummary = "$id supports the team plan",
-        preferredMoveIds = setOf(set.moveIds.first()),
-        leadPriority = if (BattleTeamRole.SETUP_ENABLER in roles) 100 else 20,
-        preservationPriority = if (BattleTeamRole.ACE in roles) 100 else 40,
-        setIds = listOf(set.setId),
-    )
 
     private fun template(index: Int) = FactoryRentalTemplate(
         setId = "starter_$index",
         poolGroup = FactoryPoolGroup.STARTER,
         variant = 1,
         speciesId = "cobblemon:species$index",
-        moveIds = listOf("cobblemon:move$index"),
+        moveIds = (1..4).map { "cobblemon:move${index}_$it" },
         abilityId = "cobblemon:ability$index",
         heldItemId = "cobblemon:item$index",
         natureId = "cobblemon:hardy",
         evs = FactoryStatSpread(0, 0, 0, 0, 0, 0),
+        roles = setOf(BattleTeamRole.WEAKNESS_COVER),
+        preferredMoveIds = setOf("cobblemon:move${index}_1"),
+        leadPriority = 50,
+        preservationPriority = 50,
     )
 }

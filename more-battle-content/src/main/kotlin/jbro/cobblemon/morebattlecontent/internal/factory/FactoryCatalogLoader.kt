@@ -21,17 +21,17 @@ internal object FactoryCatalogLoader {
         }
         val catalogId = root.requiredStableId("$", "catalog_id")
         val sets = root.requiredArray("$", "sets").mapIndexed { index, element ->
-            parseSet(element.requireObject("$.sets[$index]"), "$.sets[$index]", schema)
+            parseSet(element.requireObject("$.sets[$index]"), "$.sets[$index]")
         }
-        val concepts = root.requiredArray("$", "concepts").mapIndexed { index, element ->
-            parseConcept(element.requireObject("$.concepts[$index]"), "$.concepts[$index]")
+        val trainers = root.requiredArray("$", "trainers").mapIndexed { index, element ->
+            parseTrainer(element.requireObject("$.trainers[$index]"), "$.trainers[$index]")
         }
         requireNotEmpty(sets, "$.sets", "sets")
-        requireNotEmpty(concepts, "$.concepts", "concepts")
+        requireNotEmpty(trainers, "$.trainers", "trainers")
         rejectDuplicates(sets.map(FactoryRentalTemplate::setId), "$.sets")
-        rejectDuplicates(concepts.map(FactoryTrainerConcept::conceptId), "$.concepts")
-        validateReferences(concepts, sets)
-        FactoryCatalogLoadResult.Loaded(FactoryCatalog(catalogId, concepts, sets))
+        rejectDuplicates(trainers.map(FactoryTrainerProfile::trainerId), "$.trainers")
+        validateLegalTeams(sets)
+        FactoryCatalogLoadResult.Loaded(FactoryCatalog(catalogId, trainers, sets))
     } catch (error: FactoryDecodeException) {
         FactoryCatalogLoadResult.Rejected(listOf(error.issue))
     } catch (error: JsonParseException) {
@@ -44,90 +44,53 @@ internal object FactoryCatalogLoader {
         )
     }
 
-    private fun parseSet(value: JsonObject, path: String, schema: Int): FactoryRentalTemplate {
-        value.rejectUnknown(
-            path,
-            when (schema) {
-                1 -> SET_FIELDS_SCHEMA_1
-                2 -> SET_FIELDS_SCHEMA_2
-                else -> SET_FIELDS_SCHEMA_3
-            },
-        )
+    private fun parseSet(value: JsonObject, path: String): FactoryRentalTemplate {
+        value.rejectUnknown(path, SET_FIELDS)
         val poolGroupId = value.requiredString(path, "pool_group")
         val poolGroup = enumValue<FactoryPoolGroup>(poolGroupId, "$path.pool_group", "pool group")
         val variant = value.requiredInt(path, "variant")
         if (variant !in 1..4) reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.variant", "Variant must be between 1 and 4")
-        val moveSlots = if (schema >= 3) parseMoveSlots(value, path) else parseLegacyMoveSlots(value, path)
-        val heldItemIds = if (schema >= 3) parseHeldItemCandidates(value, path) else {
-            listOf(value.optionalResourceId(path, "held_item_id"))
+        val moves = value.requiredStringList(path, "moves")
+        if (moves.size != 4) reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.moves", "A complete rental set requires exactly 4 moves")
+        moves.forEachIndexed { index, id -> requireResourceId(id, "$path.moves[$index]") }
+        rejectDuplicates(moves, "$path.moves")
+        val roles = value.requiredStringList(path, "roles").mapIndexed { index, id ->
+            enumValue<BattleTeamRole>(id, "$path.roles[$index]", "team role")
+        }.toSet()
+        if (roles.isEmpty()) reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.roles", "Roles must not be empty")
+        val preferredMoves = value.requiredStringList(path, "preferred_move_ids")
+        preferredMoves.forEachIndexed { index, id -> requireResourceId(id, "$path.preferred_move_ids[$index]") }
+        rejectDuplicates(preferredMoves, "$path.preferred_move_ids")
+        if (preferredMoves.any { it !in moves }) {
+            reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.preferred_move_ids", "Preferred moves must belong to the fixed move set")
         }
-        val natureIds = if (schema >= 3) {
-            val naturePool = value.requiredString(path, "nature_pool")
-            if (naturePool != "all") {
-                reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.nature_pool", "Nature pool must be 'all'")
-            }
-            FactoryNaturePool.ALL
-        } else {
-            listOf(value.requiredResourceId(path, "nature_id"))
+        val leadPriority = value.requiredInt(path, "lead_priority")
+        val preservationPriority = value.requiredInt(path, "preservation_priority")
+        if (leadPriority !in PRIORITY_RANGE) reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.lead_priority", "Lead priority must be between 0 and 100")
+        if (preservationPriority !in PRIORITY_RANGE) {
+            reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.preservation_priority", "Preservation priority must be between 0 and 100")
         }
         return FactoryRentalTemplate(
             setId = value.requiredStableId(path, "set_id"),
             poolGroup = poolGroup,
             variant = variant,
             speciesId = value.requiredResourceId(path, "species_id"),
-            moveSlots = moveSlots,
+            moveIds = moves,
             abilityId = value.requiredResourceId(path, "ability_id"),
-            heldItemIds = heldItemIds,
-            natureIds = natureIds,
+            heldItemId = value.requiredResourceId(path, "held_item_id"),
+            natureId = value.requiredResourceId(path, "nature_id"),
             evs = parseEvs(value.requiredObject(path, "evs"), "$path.evs"),
-            ivs = if (schema >= 2) parseIvs(value.requiredObject(path, "ivs"), "$path.ivs") else null,
+            ivs = value.get("ivs")?.let { parseIvs(it.requireObject("$path.ivs"), "$path.ivs") },
             formId = value.optionalStableId(path, "form_id"),
+            roles = roles,
+            preferredMoveIds = preferredMoves.toSet(),
+            leadPriority = leadPriority,
+            preservationPriority = preservationPriority,
         )
     }
 
-    private fun parseLegacyMoveSlots(value: JsonObject, path: String): List<List<String>> {
-        val moves = value.requiredStringList(path, "moves")
-        if (moves.size !in 1..4) reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.moves", "Moves must contain 1 to 4 IDs")
-        rejectDuplicates(moves, "$path.moves")
-        moves.forEachIndexed { index, id -> requireResourceId(id, "$path.moves[$index]") }
-        return moves.map(::listOf)
-    }
-
-    private fun parseMoveSlots(value: JsonObject, path: String): List<List<String>> {
-        val slots = value.requiredArray(path, "move_slots").mapIndexed { slotIndex, element ->
-            if (!element.isJsonArray) {
-                reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.move_slots[$slotIndex]", "Expected an array")
-            }
-            element.asJsonArray.mapIndexed { candidateIndex, candidate ->
-                if (!candidate.isJsonPrimitive || !candidate.asJsonPrimitive.isString) {
-                    reject(
-                        FactoryCatalogIssueCode.INVALID_VALUE,
-                        "$path.move_slots[$slotIndex][$candidateIndex]",
-                        "Expected a string",
-                    )
-                }
-                candidate.asString.also { requireResourceId(it, "$path.move_slots[$slotIndex][$candidateIndex]") }
-            }.also { candidates ->
-                requireNotEmpty(candidates, "$path.move_slots[$slotIndex]", "move slot")
-                rejectDuplicates(candidates, "$path.move_slots[$slotIndex]")
-            }
-        }
-        if (slots.size != 4) {
-            reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.move_slots", "Schema 3 requires exactly 4 move slots")
-        }
-        rejectDuplicates(slots.flatten(), "$path.move_slots")
-        return slots
-    }
-
-    private fun parseHeldItemCandidates(value: JsonObject, path: String): List<String> =
-        value.requiredStringList(path, "held_items").also { items ->
-            requireNotEmpty(items, "$path.held_items", "held_items")
-            items.forEachIndexed { index, id -> requireResourceId(id, "$path.held_items[$index]") }
-            rejectDuplicates(items, "$path.held_items")
-        }
-
-    private fun parseConcept(value: JsonObject, path: String): FactoryTrainerConcept {
-        value.rejectUnknown(path, CONCEPT_FIELDS)
+    private fun parseTrainer(value: JsonObject, path: String): FactoryTrainerProfile {
+        value.rejectUnknown(path, TRAINER_FIELDS)
         val formats = value.requiredStringList(path, "formats").mapIndexed { index, id ->
             enumValue<FactoryBattleFormat>(id, "$path.formats[$index]", "format")
         }.toSet()
@@ -146,22 +109,8 @@ internal object FactoryCatalogLoader {
         if (aiSummary.isBlank() || aiSummary.length > MAX_AI_SUMMARY) {
             reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.ai_summary", "AI summary must contain 1 to $MAX_AI_SUMMARY characters")
         }
-        val members = value.requiredArray(path, "members").mapIndexed { index, element ->
-            parseMember(element.requireObject("$path.members[$index]"), "$path.members[$index]")
-        }
-        if (members.size < formats.maxOf(FactoryBattleFormat::selectionSize)) {
-            reject(FactoryCatalogIssueCode.INVALID_CONCEPT, "$path.members", "Concept does not define enough team member plans")
-        }
-        rejectDuplicates(members.map(FactoryConceptMemberPlan::planId), "$path.members")
-        val aceMembers = members.filter { BattleTeamRole.ACE in it.roles }
-        if (aceMembers.size != 1 || !aceMembers.single().required) {
-            reject(FactoryCatalogIssueCode.INVALID_CONCEPT, "$path.members", "Concept requires exactly one required ace")
-        }
-        if (members.none { member -> member.roles.any { it in ENABLING_ROLES } }) {
-            reject(FactoryCatalogIssueCode.INVALID_CONCEPT, "$path.members", "Concept requires an ace enabler or weakness complement")
-        }
-        return FactoryTrainerConcept(
-            conceptId = value.requiredStableId(path, "concept_id"),
+        return FactoryTrainerProfile(
+            trainerId = value.requiredStableId(path, "trainer_id"),
             displayNameKey = value.requiredTranslationKey(path, "display_name_key"),
             descriptionKey = value.requiredTranslationKey(path, "description_key"),
             formats = formats,
@@ -169,45 +118,6 @@ internal object FactoryCatalogLoader {
             aiSkill = aiSkill,
             aiSummary = aiSummary,
             objectives = objectives,
-            members = members,
-        )
-    }
-
-    private fun parseMember(value: JsonObject, path: String): FactoryConceptMemberPlan {
-        value.rejectUnknown(path, MEMBER_FIELDS)
-        val roles = value.requiredStringList(path, "roles").mapIndexed { index, id ->
-            enumValue<BattleTeamRole>(id, "$path.roles[$index]", "team role")
-        }.toSet()
-        if (roles.isEmpty()) reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.roles", "Roles must not be empty")
-        val summary = value.requiredString(path, "tactical_summary")
-        if (summary.isBlank() || summary.length > MAX_TACTICAL_SUMMARY) {
-            reject(
-                FactoryCatalogIssueCode.INVALID_VALUE,
-                "$path.tactical_summary",
-                "Tactical summary must contain 1 to $MAX_TACTICAL_SUMMARY characters",
-            )
-        }
-        val preferredMoves = value.requiredStringList(path, "preferred_move_ids")
-        preferredMoves.forEachIndexed { index, id -> requireResourceId(id, "$path.preferred_move_ids[$index]") }
-        rejectDuplicates(preferredMoves, "$path.preferred_move_ids")
-        val setIds = value.requiredStringList(path, "set_pool")
-        requireNotEmpty(setIds, "$path.set_pool", "set_pool")
-        rejectDuplicates(setIds, "$path.set_pool")
-        val leadPriority = value.requiredInt(path, "lead_priority")
-        val preservationPriority = value.requiredInt(path, "preservation_priority")
-        if (leadPriority !in PRIORITY_RANGE) reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.lead_priority", "Lead priority must be between 0 and 100")
-        if (preservationPriority !in PRIORITY_RANGE) {
-            reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.preservation_priority", "Preservation priority must be between 0 and 100")
-        }
-        return FactoryConceptMemberPlan(
-            planId = value.requiredStableId(path, "plan_id"),
-            required = value.requiredBoolean(path, "required"),
-            roles = roles,
-            tacticalSummary = summary,
-            preferredMoveIds = preferredMoves.toSet(),
-            leadPriority = leadPriority,
-            preservationPriority = preservationPriority,
-            setIds = setIds,
         )
     }
 
@@ -240,48 +150,37 @@ internal object FactoryCatalogLoader {
         )
     }
 
-    private fun validateReferences(concepts: List<FactoryTrainerConcept>, sets: List<FactoryRentalTemplate>) {
-        val byId = sets.associateBy(FactoryRentalTemplate::setId)
-        concepts.forEachIndexed { conceptIndex, concept ->
-            val usedSetIds = HashSet<String>()
-            concept.members.forEachIndexed { memberIndex, member ->
-                val memberSets = member.setIds.mapIndexed { setIndex, id ->
-                    byId[id] ?: reject(
-                        FactoryCatalogIssueCode.UNKNOWN_REFERENCE,
-                        "$.concepts[$conceptIndex].members[$memberIndex].set_pool[$setIndex]",
-                        "Unknown Factory set ID: $id",
-                    )
-                }
-                member.setIds.forEach { id ->
-                    if (!usedSetIds.add(id)) {
-                        reject(
-                            FactoryCatalogIssueCode.INVALID_CONCEPT,
-                            "$.concepts[$conceptIndex].members[$memberIndex].set_pool",
-                            "A set cannot fill two roles in one concept: $id",
-                        )
-                    }
-                }
-                member.preferredMoveIds.forEach { moveId ->
-                    if (memberSets.none { moveId in it.moveIds }) {
-                        reject(
-                            FactoryCatalogIssueCode.INVALID_CONCEPT,
-                            "$.concepts[$conceptIndex].members[$memberIndex].preferred_move_ids",
-                            "Preferred move is unavailable to this member: $moveId",
-                        )
-                    }
-                }
-            }
-            val catalog = FactoryCatalog("validation", listOf(concept), sets)
-            concept.formats.forEach { format ->
-                if (FactoryConceptTeamSearch.select(catalog, concept, format) == null) {
-                    reject(
-                        FactoryCatalogIssueCode.NO_LEGAL_TEAM,
-                        "$.concepts[$conceptIndex].members",
-                        "Concept cannot produce a legal ${format.name.lowercase()} team",
-                    )
-                }
+    private fun validateLegalTeams(sets: List<FactoryRentalTemplate>) {
+        sets.groupBy { it.poolGroup to it.variant }.forEach { (window, candidates) ->
+            if (!hasLegalTeam(candidates, DRAFT_SIZE, 0, HashSet(), HashSet())) {
+                reject(
+                    FactoryCatalogIssueCode.NO_LEGAL_TEAM,
+                    "$.sets",
+                    "Factory pool ${window.first.name.lowercase()}-${window.second} cannot produce six unique species and held items",
+                )
             }
         }
+    }
+
+    private fun hasLegalTeam(
+        candidates: List<FactoryRentalTemplate>,
+        remaining: Int,
+        startIndex: Int,
+        species: MutableSet<String>,
+        heldItems: MutableSet<String>,
+    ): Boolean {
+        if (remaining == 0) return true
+        if (candidates.size - startIndex < remaining) return false
+        for (index in startIndex until candidates.size) {
+            val candidate = candidates[index]
+            if (candidate.speciesId in species || candidate.heldItemId in heldItems) continue
+            species += candidate.speciesId
+            heldItems += candidate.heldItemId
+            if (hasLegalTeam(candidates, remaining - 1, index + 1, species, heldItems)) return true
+            species -= candidate.speciesId
+            heldItems -= candidate.heldItemId
+        }
+        return false
     }
 
     private fun malformed(error: Exception) = FactoryCatalogLoadResult.Rejected(
@@ -325,14 +224,6 @@ private fun JsonObject.requiredString(path: String, field: String): String {
     return value.asString
 }
 
-private fun JsonObject.requiredBoolean(path: String, field: String): Boolean {
-    val value = requiredElement(path, field)
-    if (!value.isJsonPrimitive || !value.asJsonPrimitive.isBoolean) {
-        reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.$field", "Expected a boolean")
-    }
-    return value.asBoolean
-}
-
 private fun JsonObject.requiredInt(path: String, field: String): Int {
     val value = requiredElement(path, field)
     if (!value.isJsonPrimitive || !value.asJsonPrimitive.isNumber) {
@@ -364,15 +255,6 @@ private fun JsonObject.requiredTranslationKey(path: String, field: String): Stri
 private fun JsonObject.requiredResourceId(path: String, field: String): String =
     requiredString(path, field).also { requireResourceId(it, "$path.$field") }
 
-private fun JsonObject.optionalResourceId(path: String, field: String): String? {
-    val value = get(field) ?: return null
-    if (value.isJsonNull) return null
-    if (!value.isJsonPrimitive || !value.asJsonPrimitive.isString) {
-        reject(FactoryCatalogIssueCode.INVALID_VALUE, "$path.$field", "Expected a string or null")
-    }
-    return value.asString.also { requireResourceId(it, "$path.$field") }
-}
-
 private fun JsonObject.optionalStableId(path: String, field: String): String? {
     val value = get(field) ?: return null
     if (value.isJsonNull) return null
@@ -399,31 +281,17 @@ private fun rejectDuplicates(values: List<String>, path: String) {
     }
 }
 
-private val SUPPORTED_SCHEMA_VERSIONS = setOf(1, 2, 3)
+private val SUPPORTED_SCHEMA_VERSIONS = setOf(4)
 private const val MAX_AI_SUMMARY = 512
-private const val MAX_TACTICAL_SUMMARY = 256
+private const val DRAFT_SIZE = 6
 private val PRIORITY_RANGE = 0..100
 private val TRANSLATION_KEY = Regex("[a-z0-9][a-z0-9_.-]*")
-private val ENABLING_ROLES = setOf(
-    BattleTeamRole.SETUP_ENABLER,
-    BattleTeamRole.WEAKNESS_COVER,
-    BattleTeamRole.PIVOT,
-    BattleTeamRole.SPEED_CONTROL,
-    BattleTeamRole.FIELD_SUPPORT,
-    BattleTeamRole.DISRUPTOR,
+private val ROOT_FIELDS = setOf("schema_version", "catalog_id", "trainers", "sets")
+private val SET_FIELDS = setOf(
+    "set_id", "pool_group", "variant", "species_id", "form_id", "ability_id", "held_item_id", "nature_id", "moves", "evs", "ivs",
+    "roles", "preferred_move_ids", "lead_priority", "preservation_priority",
 )
-private val ROOT_FIELDS = setOf("schema_version", "catalog_id", "concepts", "sets")
-private val SET_FIELDS_SCHEMA_1 = setOf(
-    "set_id", "pool_group", "variant", "species_id", "form_id", "ability_id", "held_item_id", "nature_id", "moves", "evs",
-)
-private val SET_FIELDS_SCHEMA_2 = SET_FIELDS_SCHEMA_1 + "ivs"
-private val SET_FIELDS_SCHEMA_3 = setOf(
-    "set_id", "pool_group", "variant", "species_id", "form_id", "ability_id", "held_items", "nature_pool", "move_slots", "evs", "ivs",
-)
-private val CONCEPT_FIELDS = setOf(
-    "concept_id", "display_name_key", "description_key", "formats", "weight", "ai_skill", "ai_summary", "objectives", "members",
-)
-private val MEMBER_FIELDS = setOf(
-    "plan_id", "required", "roles", "tactical_summary", "preferred_move_ids", "lead_priority", "preservation_priority", "set_pool",
+private val TRAINER_FIELDS = setOf(
+    "trainer_id", "display_name_key", "description_key", "formats", "weight", "ai_skill", "ai_summary", "objectives",
 )
 private val STAT_FIELDS = setOf("hp", "attack", "defense", "special_attack", "special_defense", "speed")

@@ -53,7 +53,7 @@ internal class FactoryPlayService(
     private val draftOffers: FactoryDraftOfferService,
 ) {
     private val pendingStarts = HashMap<UUID, PendingStart>()
-    private val recentOpponentConcepts = RecentSelectionHistory<UUID, String>(RECENT_CONCEPT_LIMIT)
+    private val recentOpponentTrainers = RecentSelectionHistory<UUID, String>(RECENT_TRAINER_LIMIT)
 
     @Synchronized
     fun status(playerId: UUID): FactoryPlayView = current(playerId)
@@ -130,7 +130,7 @@ internal class FactoryPlayService(
                 snapshot.format,
                 snapshot.levelMode,
                 round,
-                recentOpponentConcepts.recent(playerId),
+                recentOpponentTrainers.recent(playerId),
             )
         if (opponent !is FactoryOpponentSelectionResult.Selected) {
             return FactoryPlayResult.Rejected(FactoryPlayError.CATALOG_UNAVAILABLE)
@@ -139,12 +139,12 @@ internal class FactoryPlayService(
         val launched = sessions.beginBattle(
             playerId = playerId,
             opponentTeam = opponentByToken,
-            trainerNameKey = opponent.concept.displayNameKey,
-            aiSkill = opponent.concept.aiSkill,
+            trainerNameKey = opponent.trainer.displayNameKey,
+            aiSkill = opponent.trainer.aiSkill,
             strategyBrief = opponent.strategy,
         )
         if (launched is FactoryBattleLaunchResult.Started) {
-            recentOpponentConcepts.record(playerId, opponent.concept.conceptId)
+            recentOpponentTrainers.record(playerId, opponent.trainer.trainerId)
         }
         return if (launched is FactoryBattleLaunchResult.Started) {
             FactoryPlayResult.Accepted(current(playerId))
@@ -194,7 +194,7 @@ internal class FactoryPlayService(
     fun disconnect(playerId: UUID) {
         pendingStarts.remove(playerId)
         draftOffers.forget(playerId)
-        recentOpponentConcepts.forget(playerId)
+        recentOpponentTrainers.forget(playerId)
         sessions.close(playerId)
     }
 
@@ -264,6 +264,6 @@ internal class FactoryPlayService(
     )
 
     private companion object {
-        const val RECENT_CONCEPT_LIMIT = 3
+        const val RECENT_TRAINER_LIMIT = 3
     }
 }

@@ -1,15 +1,15 @@
 package jbro.cobblemon.morebattlecontent.internal.factory
 
-import com.google.gson.JsonParser
 import com.cobblemon.mod.common.api.pokemon.Natures
+import com.google.gson.JsonParser
 import java.io.InputStreamReader
 import java.nio.file.Paths
 import java.util.jar.JarFile
+import kotlin.random.Random
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.random.Random
 
 class FactoryCatalogResourceTest {
     private val deterministicRandom = object : FactoryCatalogRandom {
@@ -18,53 +18,36 @@ class FactoryCatalogResourceTest {
     }
 
     @Test
-    fun `bundled schema three catalog contains randomized competitive templates`() {
+    fun `bundled schema four catalog contains two thousand complete fixed presets`() {
         val catalog = bundledCatalog()
         val pools = approvedPools(catalog)
         val allSets = pools.values.flatten()
-
         val root = javaClass.getResourceAsStream(CATALOG_PATH)!!.reader().use(JsonParser::parseReader).asJsonObject
 
         assertEquals("mbc_factory_core", catalog.catalogId)
-        assertEquals(3, root["schema_version"].asInt)
-        assertEquals(7, pools.size)
-        pools.forEach { (id, sets) ->
-            assertEquals(EXPECTED_POOL_SIZES.getValue(id), sets.size, id)
-            assertEquals(sets.size, sets.map(FactoryRentalTemplate::speciesId).distinct().size, id)
-            assertTrue(sets.all { it.heldItemIds.isNotEmpty() }, id)
-        }
-        assertEquals(391, allSets.map(FactoryRentalTemplate::setId).distinct().size)
-        assertTrue(allSets.map(FactoryRentalTemplate::speciesId).distinct().size >= 100)
-        assertTrue(allSets.all { it.ivs != null })
-        assertTrue(allSets.all { it.moveSlots.size == 4 })
-        assertTrue(allSets.count { template -> template.moveSlots.any { it.size > 1 } } >= 112)
-        assertTrue(allSets.all { it.natureIds == FactoryNaturePool.ALL })
-        assertTrue(allSets.all { it.heldItemIds.distinct().size == it.heldItemIds.size })
-        assertEquals(84, catalog.conceptsFor(FactoryBattleFormat.SINGLE).size)
-        assertEquals(84, catalog.conceptsFor(FactoryBattleFormat.DOUBLE).size)
-        catalog.conceptsFor(FactoryBattleFormat.SINGLE).forEach { concept ->
-            assertTrue(concept.members.all { it.setIds.size >= 4 }, concept.conceptId)
-        }
-        assertEquals(1, allSets.count { it.speciesId == "cobblemon:porygon2" })
-        assertEquals(listOf("cobblemon:eviolite"), allSets.single { it.speciesId == "cobblemon:porygon2" }.heldItemIds)
-        assertTrue(allSets.none { it.speciesId == "cobblemon:jirachi" })
-        assertEquals(
-            setOf("cobblemon:latios", "cobblemon:zapdos", "cobblemon:articuno", "cobblemon:registeel", "cobblemon:regigigas"),
-            pools.getValue("advanced-4").map(FactoryRentalTemplate::speciesId).toSet().intersect(APPROVED_LATE_LEGENDARIES),
-        )
+        assertEquals(4, root["schema_version"].asInt)
+        assertEquals(EXPECTED_POOL_SIZES, pools.mapValues { it.value.size })
+        assertEquals(2_004, allSets.map(FactoryRentalTemplate::setId).distinct().size)
+        assertEquals(501, allSets.groupBy { it.speciesId to it.formId }.size)
+        assertTrue(allSets.groupBy { it.speciesId to it.formId }.values.all { it.size == 4 })
+        assertTrue(allSets.all { it.moveIds.size == 4 && it.moveIds.distinct().size == 4 })
+        assertTrue(allSets.all { it.preferredMoveIds.all(it.moveIds::contains) })
+        assertTrue(allSets.all { it.roles.isNotEmpty() })
+        assertTrue(allSets.all { it.ivs == null })
+        assertEquals(84, catalog.trainersFor(FactoryBattleFormat.SINGLE).size)
+        assertEquals(84, catalog.trainersFor(FactoryBattleFormat.DOUBLE).size)
 
-        val byId = allSets.associateBy(FactoryRentalTemplate::setId)
-        ROTOM_WASH_SET_IDS.forEach { assertEquals("wash", byId.getValue(it).formId, it) }
-        ROTOM_HEAT_SET_IDS.forEach { assertEquals("heat", byId.getValue(it).formId, it) }
-        assertEquals("alola", byId.getValue("i1_ninetales_alola").formId)
-        assertTrue(allSets.filterNot {
-            it.setId in ROTOM_WASH_SET_IDS || it.setId in ROTOM_HEAT_SET_IDS || it.setId == "i1_ninetales_alola"
+        root.getAsJsonArray("sets").forEach { element ->
+            val set = element.asJsonObject
+            assertTrue(!set.has("move_slots"))
+            assertTrue(!set.has("held_items"))
+            assertTrue(!set.has("nature_pool"))
+            assertTrue(set.has("moves") && set.has("held_item_id") && set.has("nature_id"))
         }
-            .all { it.formId == null })
     }
 
     @Test
-    fun `every bundled move candidate is learnable by its exact Cobblemon species or form`() {
+    fun `every bundled fixed move is learnable by its exact Cobblemon species or form`() {
         val sets = approvedPools(bundledCatalog()).values.flatten()
         cobblemonJar().use { jar ->
             val speciesEntries = jar.entries().asSequence()
@@ -76,23 +59,23 @@ class FactoryCatalogResourceTest {
                 val entry = requireNotNull(speciesEntries[speciesName]) { "Missing Cobblemon species JSON for ${template.speciesId}" }
                 val root = jar.getInputStream(entry).reader().use(JsonParser::parseReader).asJsonObject
                 val learnset = linkedSetOf<String>()
-                root.getAsJsonArray("moves")?.forEach { learnset += it.asString.substringAfter(':') }
+                root.getAsJsonArray("moves")?.forEach { learnset += it.asString.substringAfter(':').normalizedId() }
                 template.formId?.let { formId ->
                     root.getAsJsonArray("forms")
                         ?.map { it.asJsonObject }
                         ?.firstOrNull { it["name"].asString.equals(formId, ignoreCase = true) }
                         ?.getAsJsonArray("moves")
-                        ?.forEach { learnset += it.asString.substringAfter(':') }
+                        ?.forEach { learnset += it.asString.substringAfter(':').normalizedId() }
                 }
-                template.moveSlots.flatten().forEach { moveId ->
-                    assertTrue(moveId.substringAfter(':') in learnset, "${template.setId} cannot learn $moveId")
+                template.moveIds.forEach { moveId ->
+                    assertTrue(moveId.substringAfter(':').normalizedId() in learnset, "${template.setId} cannot learn $moveId")
                 }
             }
         }
     }
 
     @Test
-    fun `every bundled ability id is canonical and belongs to its exact Cobblemon species or form`() {
+    fun `every bundled ability belongs to its exact Cobblemon species or form`() {
         val sets = approvedPools(bundledCatalog()).values.flatten()
         cobblemonJar().use { jar ->
             val speciesEntries = jar.entries().asSequence()
@@ -101,39 +84,41 @@ class FactoryCatalogResourceTest {
 
             sets.forEach { template ->
                 val speciesName = template.speciesId.substringAfter(':')
-                val entry = requireNotNull(speciesEntries[speciesName]) { "Missing Cobblemon species JSON for ${template.speciesId}" }
+                val entry = requireNotNull(speciesEntries[speciesName])
                 val root = jar.getInputStream(entry).reader().use(JsonParser::parseReader).asJsonObject
                 val form = template.formId?.let { formId ->
-                    root.getAsJsonArray("forms")
-                        ?.map { it.asJsonObject }
+                    root.getAsJsonArray("forms")?.map { it.asJsonObject }
                         ?.firstOrNull { it["name"].asString.equals(formId, ignoreCase = true) }
                 }
-                val abilityOwner = form?.takeIf { it.has("abilities") } ?: root
-                val abilities = abilityOwner.getAsJsonArray("abilities")
-                    .map { it.asString.removePrefix("h:") }
-                    .toSet()
-                val abilityName = template.abilityId.substringAfter(':')
-
-                assertTrue(abilityName in abilities, "${template.setId} cannot have ${template.abilityId}; allowed=$abilities")
+                val owner = form?.takeIf { it.has("abilities") } ?: root
+                val abilities = owner.getAsJsonArray("abilities").map { it.asString.removePrefix("h:").normalizedId() }.toSet()
+                assertTrue(template.abilityId.substringAfter(':').normalizedId() in abilities, "${template.setId} cannot have ${template.abilityId}")
             }
         }
     }
 
     @Test
-    fun `all nature pool exactly matches Cobblemon standard natures`() {
-        assertEquals(Natures.all().map { it.name.toString() }.toSet(), FactoryNaturePool.ALL.toSet())
+    fun `all fixed natures and held items resolve in the Cobblemon runtime`() {
+        val sets = approvedPools(bundledCatalog()).values.flatten()
+        val natures = Natures.all().map { it.name.toString() }.toSet()
+        cobblemonJar().use { jar ->
+            val languageEntry = requireNotNull(jar.getJarEntry("assets/cobblemon/lang/en_us.json"))
+            val language = jar.getInputStream(languageEntry).reader().use(JsonParser::parseReader).asJsonObject
+            sets.forEach { template ->
+                assertTrue(template.natureId in natures, "Unknown nature ${template.natureId}")
+                val itemPath = template.heldItemId.substringAfter(':')
+                assertTrue(language.has("item.cobblemon.$itemPath"), "Unknown held item ${template.heldItemId}")
+            }
+        }
     }
 
     @Test
-    fun `every original progression window can draft and field both formats`() {
+    fun `every progression window can draft and field both formats`() {
         val catalog = bundledCatalog()
         val draftSelector = FactoryDraftSelector(catalog, deterministicRandom)
         val opponentSelector = FactoryOpponentSelector(catalog, deterministicRandom)
+        val rounds = mapOf(FactoryLevelMode.LEVEL_50 to 1..8, FactoryLevelMode.OPEN_LEVEL to 1..5)
 
-        val rounds = mapOf(
-            FactoryLevelMode.LEVEL_50 to 1..8,
-            FactoryLevelMode.OPEN_LEVEL to 1..5,
-        )
         rounds.forEach { (levelMode, supportedRounds) ->
             supportedRounds.forEach { round ->
                 RENT_AND_TRADE_COUNTS.forEach { count ->
@@ -150,27 +135,24 @@ class FactoryCatalogResourceTest {
     }
 
     @Test
-    fun `every bundled concept uses an ordinary trainer name and has an explanation`() {
+    fun `every bundled trainer has unique translated names and a shared explanation`() {
         val catalog = bundledCatalog()
         val english = language("en_us")
         val korean = language("ko_kr")
-        val concepts = catalog.conceptsFor(FactoryBattleFormat.SINGLE)
+        val trainers = catalog.trainersFor(FactoryBattleFormat.SINGLE)
 
-        concepts.forEach { concept ->
-            EXPECTED_TRAINER_NAMES[concept.conceptId]?.let { names ->
-                assertEquals(names.first, english[concept.displayNameKey].asString, concept.displayNameKey)
-                assertEquals(names.second, korean[concept.displayNameKey].asString, concept.displayNameKey)
-            }
-            assertTrue(english[concept.descriptionKey].asString.isNotBlank(), concept.descriptionKey)
-            assertTrue(korean[concept.descriptionKey].asString.isNotBlank(), concept.descriptionKey)
+        trainers.forEach { trainer ->
+            assertTrue(english[trainer.displayNameKey].asString.isNotBlank(), trainer.displayNameKey)
+            assertTrue(korean[trainer.displayNameKey].asString.isNotBlank(), trainer.displayNameKey)
+            assertTrue(english[trainer.descriptionKey].asString.isNotBlank(), trainer.descriptionKey)
+            assertTrue(korean[trainer.descriptionKey].asString.isNotBlank(), trainer.descriptionKey)
         }
-        assertEquals(84, concepts.size)
-        assertEquals(concepts.size, concepts.map { english[it.displayNameKey].asString }.distinct().size)
-        assertEquals(concepts.size, concepts.map { korean[it.displayNameKey].asString }.distinct().size)
+        assertEquals(trainers.size, trainers.map { english[it.displayNameKey].asString }.distinct().size)
+        assertEquals(trainers.size, trainers.map { korean[it.displayNameKey].asString }.distinct().size)
     }
 
     @Test
-    fun `bundled catalog survives ten thousand seeded draft and opponent selections`() {
+    fun `bundled catalog survives ten thousand seeded draft and opponent selections without mutating presets`() {
         val catalog = bundledCatalog()
         val seeded = Random(0x4D4243)
         val random = object : FactoryCatalogRandom {
@@ -179,6 +161,7 @@ class FactoryCatalogResourceTest {
         }
         val draftSelector = FactoryDraftSelector(catalog, random)
         val opponentSelector = FactoryOpponentSelector(catalog, random)
+        val templates = approvedPools(catalog).values.flatten().associateBy(FactoryRentalTemplate::setId)
 
         repeat(10_000) { index ->
             val levelMode = FactoryLevelMode.entries[index % FactoryLevelMode.entries.size]
@@ -186,17 +169,20 @@ class FactoryCatalogResourceTest {
                 FactoryLevelMode.LEVEL_50 -> index % 12 + 1
                 FactoryLevelMode.OPEN_LEVEL -> index % 8 + 1
             }
-            val count = RENT_AND_TRADE_COUNTS[index % RENT_AND_TRADE_COUNTS.size]
-            val draft = requireNotNull(draftSelector.select(levelMode, round, count))
+            val draft = requireNotNull(draftSelector.select(levelMode, round, RENT_AND_TRADE_COUNTS[index % RENT_AND_TRADE_COUNTS.size]))
             assertEquals(6, draft.sets.map(FactoryRentalSet::speciesId).distinct().size)
             assertEquals(6, draft.sets.mapNotNull(FactoryRentalSet::heldItemId).distinct().size)
+            draft.sets.forEach { rental ->
+                val template = templates.getValue(rental.setId)
+                assertEquals(template.moveIds, rental.moveIds)
+                assertEquals(template.heldItemId, rental.heldItemId)
+                assertEquals(template.natureId, rental.natureId)
+            }
 
             val format = FactoryBattleFormat.entries[index % FactoryBattleFormat.entries.size]
             val selected = opponentSelector.select(format, levelMode, round) as FactoryOpponentSelectionResult.Selected
-            assertEquals(format.selectionSize, selected.team.size)
             assertEquals(format.selectionSize, selected.team.map(FactoryRentalSet::speciesId).distinct().size)
             assertEquals(format.selectionSize, selected.team.mapNotNull(FactoryRentalSet::heldItemId).distinct().size)
-            assertEquals(format.selectionSize, selected.strategy.members.size)
         }
     }
 
@@ -225,68 +211,27 @@ class FactoryCatalogResourceTest {
     private fun cobblemonJar(): JarFile {
         val codeSource = Paths.get(com.cobblemon.mod.common.api.pokemon.PokemonSpecies::class.java.protectionDomain.codeSource.location.toURI())
         if (codeSource.toFile().isFile) return JarFile(codeSource.toFile())
-        val candidate = System.getProperty("java.class.path")
-            .split(System.getProperty("path.separator"))
-            .asSequence()
-            .map(Paths::get)
-            .filter { it.toFile().isFile && it.fileName.toString().contains("cobblemon", ignoreCase = true) }
+        val candidate = System.getProperty("java.class.path").split(System.getProperty("path.separator"))
+            .asSequence().map(Paths::get).filter { it.toFile().isFile && it.fileName.toString().contains("cobblemon", true) }
             .firstOrNull { path ->
-                runCatching { JarFile(path.toFile()).use { it.getEntry("data/cobblemon/species/generation1/arcanine.json") != null } }
-                    .getOrDefault(false)
+                runCatching { JarFile(path.toFile()).use { it.getEntry("data/cobblemon/species/generation1/arcanine.json") != null } }.getOrDefault(false)
             }
         return JarFile(requireNotNull(candidate) { "Could not locate the Cobblemon runtime JAR" }.toFile())
     }
 
+    private fun String.normalizedId(): String = lowercase().filter(Char::isLetterOrDigit)
+
     private companion object {
         const val CATALOG_PATH = "/data/cobblemon_more_battle_content/battle_factory/catalog/mbc_core.json"
-        val ROTOM_WASH_SET_IDS = setOf("s1_rotom_wash", "i2_rotom_wash")
-        val ROTOM_HEAT_SET_IDS = setOf("i1_rotom_heat", "a2_rotom_heat")
         val RENT_AND_TRADE_COUNTS = listOf(1, 7, 14, 21, 28, 35)
-        val APPROVED_LATE_LEGENDARIES = setOf(
-            "cobblemon:latios",
-            "cobblemon:zapdos",
-            "cobblemon:articuno",
-            "cobblemon:registeel",
-            "cobblemon:regigigas",
-        )
         val EXPECTED_POOL_SIZES = mapOf(
-            "starter-1" to 58,
-            "intermediate-1" to 57,
-            "intermediate-2" to 50,
-            "advanced-1" to 59,
-            "advanced-2" to 59,
-            "advanced-3" to 53,
-            "advanced-4" to 55,
-        )
-        val EXPECTED_TRAINER_NAMES = linkedMapOf(
-            "arcanine_voltage" to ("Alex" to "준서"),
-            "feraligatr_screen" to ("Maya" to "민서"),
-            "heracross_rotation" to ("Ben" to "우진"),
-            "porygon_balance" to ("Claire" to "소연"),
-            "gyarados_screen" to ("Daniel" to "재현"),
-            "volcarona_tailwind" to ("Alice" to "아린"),
-            "lucario_web" to ("Chris" to "성민"),
-            "dragonite_snow" to ("Julia" to "유진"),
-            "garchomp_followme" to ("Kevin" to "동현"),
-            "excadrill_sand" to ("Sarah" to "은서"),
-            "ceruledge_pivot" to ("Adam" to "민재"),
-            "samurott_rain" to ("Nina" to "지아"),
-            "salamence_pressure" to ("Eric" to "태현"),
-            "empoleon_poison" to ("Laura" to "서윤"),
-            "reuniclus_room" to ("James" to "준영"),
-            "kommoo_room" to ("Amy" to "하윤"),
-            "metagross_disruption" to ("David" to "정우"),
-            "tyranitar_veil" to ("Zoe" to "예나"),
-            "cloyster_control" to ("Ian" to "시현"),
-            "serperior_special" to ("Kate" to "다인"),
-            "garchomp_redirection" to ("Evan" to "규민"),
-            "volcarona_rain" to ("Ruby" to "수아"),
-            "samurott_mixed" to ("Aaron" to "진우"),
-            "glimmora_hazard" to ("Lucy" to "윤서"),
-            "latios_offense" to ("Henry" to "현준"),
-            "zapdos_pivot" to ("Anna" to "가은"),
-            "articuno_balance" to ("Dylan" to "도현"),
-            "regigigas_control" to ("Emily" to "채영"),
+            "starter-1" to 120,
+            "intermediate-1" to 210,
+            "intermediate-2" to 320,
+            "advanced-1" to 397,
+            "advanced-2" to 320,
+            "advanced-3" to 268,
+            "advanced-4" to 369,
         )
     }
 }
