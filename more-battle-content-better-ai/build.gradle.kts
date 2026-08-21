@@ -3,6 +3,8 @@ plugins {
     id("fabric-loom")
 }
 
+version = property("more_battle_content_better_ai_version")!!
+
 base { archivesName.set("cobblemon-more-battle-content-better-ai") }
 
 dependencies {

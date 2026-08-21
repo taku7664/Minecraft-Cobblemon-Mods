@@ -3,6 +3,8 @@ plugins {
     id("fabric-loom")
 }
 
+version = property("better_cobblemon_music_mbc_version")!!
+
 group = "jbro.cobblemon"
 
 base { archivesName.set("better-cobblemon-music-more-battle-content") }

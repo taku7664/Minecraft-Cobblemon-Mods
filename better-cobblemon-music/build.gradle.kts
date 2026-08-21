@@ -2,6 +2,8 @@ plugins {
     id("fabric-loom")
 }
 
+version = property("better_cobblemon_music_version")!!
+
 group = "jbro.cobblemon"
 
 base { archivesName.set("better-cobblemon-music") }

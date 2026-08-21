@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test
 
 class BetterAiModuleContractTest {
     @Test
-    fun `addon metadata requires the core and stays server only`() {
+    fun `addon metadata requires a compatible core and stays server only`() {
         val stream = javaClass.classLoader.getResourceAsStream("fabric.mod.json")
         assertNotNull(stream, "fabric.mod.json must be packaged")
 
@@ -31,7 +31,7 @@ class BetterAiModuleContractTest {
         assertEquals("jbro.cobblemon.morebattlecontent.betterai.MoreBattleContentBetterAi", main["value"].asString)
 
         val depends = root.getAsJsonObject("depends")
-        assertTrue(depends.has("cobblemon_more_battle_content"))
+        assertEquals(">=1.2.1 <2.0.0", depends["cobblemon_more_battle_content"].asString)
         assertTrue(depends.has("fabric-language-kotlin"))
 
         assertDoesNotThrow { Class.forName(main["value"].asString) }

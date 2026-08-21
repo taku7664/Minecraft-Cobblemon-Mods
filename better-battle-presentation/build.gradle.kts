@@ -2,6 +2,8 @@ plugins {
     id("fabric-loom")
 }
 
+version = property("better_battle_presentation_version")!!
+
 group = "jbro.cobblemon"
 
 base { archivesName.set("cobblemon-better-battle-presentation") }

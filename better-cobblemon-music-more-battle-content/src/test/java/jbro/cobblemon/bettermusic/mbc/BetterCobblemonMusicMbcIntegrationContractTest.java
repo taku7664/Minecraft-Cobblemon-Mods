@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 final class BetterCobblemonMusicMbcIntegrationContractTest {
     @Test
-    void metadataDefinesAClientOnlyBridgeDependingOnBothMods() throws Exception {
+    void metadataDefinesAClientOnlyBridgeWithCompatibleDependencies() throws Exception {
         JsonObject metadata;
         try (var stream = getClass().getClassLoader().getResourceAsStream("fabric.mod.json")) {
             assertNotNull(stream);
@@ -21,8 +21,8 @@ final class BetterCobblemonMusicMbcIntegrationContractTest {
         assertEquals("better_cobblemon_music_mbc", metadata.get("id").getAsString());
         assertEquals("client", metadata.get("environment").getAsString());
         var dependencies = metadata.getAsJsonObject("depends");
-        assertEquals(metadata.get("version").getAsString(), dependencies.get("better_cobblemon_music").getAsString());
-        assertEquals(metadata.get("version").getAsString(), dependencies.get("cobblemon_more_battle_content").getAsString());
+        assertEquals(">=1.2.1 <2.0.0", dependencies.get("better_cobblemon_music").getAsString());
+        assertEquals(">=1.2.1 <2.0.0", dependencies.get("cobblemon_more_battle_content").getAsString());
         assertNotNull(Class.forName("jbro.cobblemon.bettermusic.mbc.BetterCobblemonMusicMbcIntegrationClient"));
     }
 }

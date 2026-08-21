@@ -5,7 +5,6 @@ plugins {
 
 allprojects {
     group = property("maven_group")!!
-    version = property("mod_version")!!
 
     repositories {
         mavenCentral()
