@@ -165,8 +165,22 @@ internal object MbcGuiSurface {
     }
 
     private fun drawFrame(graphics: GuiGraphics, bounds: TowerPlayRect, fill: Int, border: Int) {
-        graphics.fill(bounds.left, bounds.top, bounds.right, bounds.bottom, border)
-        graphics.fill(bounds.left + 1, bounds.top + 1, bounds.right - 1, bounds.bottom - 1, fill)
+        // Keep the interior free of an opaque backing layer. Otherwise a translucent fill blends
+        // against the border color instead of the game world and only looks like a different solid color.
+        if (bounds.width <= 0 || bounds.height <= 0) return
+        graphics.fill(bounds.left, bounds.top, bounds.right, bounds.top + 1, border)
+        if (bounds.height > 1) {
+            graphics.fill(bounds.left, bounds.bottom - 1, bounds.right, bounds.bottom, border)
+        }
+        if (bounds.height > 2) {
+            graphics.fill(bounds.left, bounds.top + 1, bounds.left + 1, bounds.bottom - 1, border)
+            if (bounds.width > 1) {
+                graphics.fill(bounds.right - 1, bounds.top + 1, bounds.right, bounds.bottom - 1, border)
+            }
+            if (bounds.width > 2) {
+                graphics.fill(bounds.left + 1, bounds.top + 1, bounds.right - 1, bounds.bottom - 1, fill)
+            }
+        }
     }
 
     private fun withAlpha(color: Int, alpha: Int): Int {
