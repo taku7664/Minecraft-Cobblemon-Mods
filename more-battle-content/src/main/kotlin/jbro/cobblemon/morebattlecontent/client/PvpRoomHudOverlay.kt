@@ -21,6 +21,7 @@ import net.minecraft.network.chat.Component
 import org.lwjgl.glfw.GLFW
 
 internal object PvpRoomHudOverlay {
+    private const val BACKGROUND_ALPHA_50_PERCENT = 0x80
     private const val KEY_PREFIX = "key.${MoreBattleContent.MOD_ID}.pvp.room_hud"
     private const val CATEGORY = "key.categories.${MoreBattleContent.MOD_ID}"
     private var expanded = true
@@ -64,9 +65,25 @@ internal object PvpRoomHudOverlay {
         layout: PvpRoomHudLayout,
         interactive: Boolean,
     ) {
-        MbcGuiSurface.drawShell(graphics, layout.panel)
-        MbcGuiSurface.drawButton(graphics, layout.openButton, true, false, false, MbcGuiPalette.ACCENT_PRIMARY)
-        MbcGuiSurface.drawButton(graphics, layout.toggleButton, true, false, false, MbcGuiPalette.ACCENT_SECONDARY)
+        MbcGuiSurface.drawShell(graphics, layout.panel, BACKGROUND_ALPHA_50_PERCENT)
+        MbcGuiSurface.drawButton(
+            graphics,
+            layout.openButton,
+            true,
+            false,
+            false,
+            MbcGuiPalette.ACCENT_PRIMARY,
+            BACKGROUND_ALPHA_50_PERCENT,
+        )
+        MbcGuiSurface.drawButton(
+            graphics,
+            layout.toggleButton,
+            true,
+            false,
+            false,
+            MbcGuiPalette.ACCENT_SECONDARY,
+            BACKGROUND_ALPHA_50_PERCENT,
+        )
         val title = client.font.plainSubstrByWidth(
             Component.translatable(key("hud.title")).string,
             (layout.title.width - 2).coerceAtLeast(1),
@@ -103,7 +120,13 @@ internal object PvpRoomHudOverlay {
     }
 
     private fun drawSide(graphics: GuiGraphics, client: Minecraft, bounds: TowerPlayRect, label: Component, name: String?) {
-        MbcGuiSurface.drawPanel(graphics, bounds, MbcGuiPalette.BORDER_BRIGHT, alternate = true)
+        MbcGuiSurface.drawPanel(
+            graphics,
+            bounds,
+            MbcGuiPalette.BORDER_BRIGHT,
+            alternate = true,
+            backgroundAlpha = BACKGROUND_ALPHA_50_PERCENT,
+        )
         graphics.drawString(client.font, label, bounds.left + 4, bounds.top + 3, MbcGuiPalette.TEXT_DIM, false)
         val display = name ?: Component.translatable(key("hud.empty")).string
         val clipped = client.font.plainSubstrByWidth(display, (bounds.width - 8).coerceAtLeast(1))
@@ -127,11 +150,11 @@ internal object PvpRoomHudOverlay {
         val layout = PvpRoomHudLayout.calculate(screen.width, screen.height, expanded, room.spectators.size)
         val open = MbcStyledButton(layout.openButton, openLabel(), MbcButtonTone.PRIMARY) {
             openRoom(Minecraft.getInstance())
-        }
+        }.withBackgroundAlpha(BACKGROUND_ALPHA_50_PERCENT)
         val toggle = MbcStyledButton(layout.toggleButton, toggleButtonLabel(layout), MbcButtonTone.SECONDARY) {
             expanded = !expanded
             installChatControls(screen)
-        }
+        }.withBackgroundAlpha(BACKGROUND_ALPHA_50_PERCENT)
         Screens.getButtons(screen).add(open)
         Screens.getButtons(screen).add(toggle)
         installedButtons[screen] = listOf(open, toggle)

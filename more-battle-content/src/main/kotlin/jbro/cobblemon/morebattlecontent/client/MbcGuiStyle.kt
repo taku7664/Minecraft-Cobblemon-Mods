@@ -102,16 +102,22 @@ internal object MbcGuiSurface {
         }
     }
 
-    fun drawShell(graphics: GuiGraphics, bounds: TowerPlayRect) {
-        drawFrame(graphics, bounds, MbcGuiPalette.SHELL, MbcGuiPalette.ACCENT_PRIMARY)
+    fun drawShell(graphics: GuiGraphics, bounds: TowerPlayRect, backgroundAlpha: Int = 0xFF) {
+        drawFrame(graphics, bounds, withAlpha(MbcGuiPalette.SHELL, backgroundAlpha), MbcGuiPalette.ACCENT_PRIMARY)
         graphics.fill(bounds.left + 2, bounds.top + 3, bounds.right - 2, bounds.top + 4, MbcGuiPalette.ACCENT_SECONDARY)
     }
 
-    fun drawPanel(graphics: GuiGraphics, bounds: TowerPlayRect, accent: Int, alternate: Boolean = false) {
+    fun drawPanel(
+        graphics: GuiGraphics,
+        bounds: TowerPlayRect,
+        accent: Int,
+        alternate: Boolean = false,
+        backgroundAlpha: Int = 0xFF,
+    ) {
         drawFrame(
             graphics,
             bounds,
-            if (alternate) MbcGuiPalette.PANEL_ALT else MbcGuiPalette.PANEL,
+            withAlpha(if (alternate) MbcGuiPalette.PANEL_ALT else MbcGuiPalette.PANEL, backgroundAlpha),
             accent,
         )
     }
@@ -127,6 +133,7 @@ internal object MbcGuiSurface {
         hovered: Boolean,
         selected: Boolean,
         accent: Int,
+        backgroundAlpha: Int = 0xFF,
     ) {
         val background = when {
             !active -> MbcGuiPalette.BUTTON_DISABLED
@@ -139,7 +146,7 @@ internal object MbcGuiSurface {
             selected || hovered -> accent
             else -> MbcGuiPalette.BORDER_BRIGHT
         }
-        drawFrame(graphics, bounds, background, border)
+        drawFrame(graphics, bounds, withAlpha(background, backgroundAlpha), border)
         if (selected) {
             graphics.fill(bounds.left + 1, bounds.top + 1, bounds.left + 3, bounds.bottom - 1, accent)
         }
@@ -161,6 +168,11 @@ internal object MbcGuiSurface {
         graphics.fill(bounds.left, bounds.top, bounds.right, bounds.bottom, border)
         graphics.fill(bounds.left + 1, bounds.top + 1, bounds.right - 1, bounds.bottom - 1, fill)
     }
+
+    private fun withAlpha(color: Int, alpha: Int): Int {
+        require(alpha in 0x00..0xFF) { "alpha must be between 0 and 255" }
+        return (color and 0x00FFFFFF) or (alpha shl 24)
+    }
 }
 
 internal class MbcStyledButton(
@@ -170,7 +182,14 @@ internal class MbcStyledButton(
     private val selected: Boolean = false,
     private val press: () -> Unit,
 ) : AbstractButton(bounds.left, bounds.top, bounds.width, bounds.height, message) {
+    private var backgroundAlpha = 0xFF
+
     override fun onPress() = press()
+
+    fun withBackgroundAlpha(alpha: Int): MbcStyledButton = apply {
+        require(alpha in 0x00..0xFF) { "alpha must be between 0 and 255" }
+        backgroundAlpha = alpha
+    }
 
     override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         MbcGuiSurface.drawButton(
@@ -180,6 +199,7 @@ internal class MbcStyledButton(
             isHoveredOrFocused,
             selected,
             accentColor(),
+            backgroundAlpha,
         )
         val font = Minecraft.getInstance().font
         val clipped = font.plainSubstrByWidth(message.string, (width - 8).coerceAtLeast(1))
