@@ -15,9 +15,13 @@ internal object PvpSpectatorInputPolicy {
         "key.drop",
         "key.swapOffhand",
         "key.inventory",
-        "key.cobblemon.throwpartypokemon",
         "key.cobblemon.send_out_pokemon",
     )
 
-    fun blocks(keyName: String): Boolean = keyName in blockedNames || keyName.startsWith("key.hotbar.")
+    fun blocks(keyName: String, allowSpectatorBattleToggle: Boolean = false): Boolean {
+        if (keyName == PARTY_SEND_KEY) return !allowSpectatorBattleToggle
+        return keyName in blockedNames || keyName.startsWith("key.hotbar.")
+    }
+
+    private const val PARTY_SEND_KEY = "key.cobblemon.throwpartypokemon"
 }

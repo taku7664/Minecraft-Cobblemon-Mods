@@ -6,6 +6,7 @@ import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpRoomIntent
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpSelectionClosedPayload
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpLoungeSpectatorStatePayload
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpLoungeExitPayload
+import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpLoungeExitResultPayload
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpSelectionIntentPayload
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpSelectionRejectedPayload
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpSelectionStatePayload
@@ -19,11 +20,31 @@ import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 
 internal object PvpPlayClientNetworking {
+    private val loungeExitRequest = PvpLoungeExitRequestState()
+
     fun register() {
         ClientPlayNetworking.registerGlobalReceiver(PvpLoungeSpectatorStatePayload.TYPE) { payload, context ->
             context.client().execute {
-                if (payload.active) PvpRoomClientState.pendingOpenRequests.clear()
+                val closeForConfirmedExit = !payload.active && loungeExitRequest.complete(accepted = true)
+                if (payload.active) {
+                    PvpRoomClientState.pendingOpenRequests.clear()
+                    loungeExitRequest.reset()
+                }
                 PvpLoungeSpectatorControls.setActive(payload.active)
+                if (closeForConfirmedExit) context.client().setScreen(null)
+            }
+        }
+        ClientPlayNetworking.registerGlobalReceiver(PvpLoungeExitResultPayload.TYPE) { payload, context ->
+            context.client().execute {
+                val closeScreen = loungeExitRequest.complete(payload.accepted)
+                PvpLoungeSpectatorControls.setExitPending(false)
+                if (closeScreen) {
+                    context.client().setScreen(null)
+                } else if (!payload.accepted) {
+                    payload.messageKey?.let { messageKey ->
+                        context.client().player?.displayClientMessage(Component.translatable(messageKey), false)
+                    }
+                }
             }
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpRoomInvitePayload.TYPE) { payload, context ->
@@ -119,9 +140,12 @@ internal object PvpPlayClientNetworking {
     fun send(payload: PvpSelectionIntentPayload) = ClientPlayNetworking.send(payload)
 
     fun exitLoungeSpectator() {
+        if (!loungeExitRequest.begin()) return
+        PvpLoungeSpectatorControls.setExitPending(true)
         ClientPlayNetworking.send(PvpLoungeExitPayload)
-        net.minecraft.client.Minecraft.getInstance().setScreen(null)
     }
+
+    fun resetLoungeExitRequest() = loungeExitRequest.reset()
 
     fun send(payload: PvpRoomIntentPayload) {
         if (payload.intent is PvpRoomIntent.Create || payload.intent is PvpRoomIntent.Join) {

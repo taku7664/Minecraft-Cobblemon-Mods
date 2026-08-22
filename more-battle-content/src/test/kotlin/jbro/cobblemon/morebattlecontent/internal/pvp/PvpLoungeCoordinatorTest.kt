@@ -100,6 +100,17 @@ class PvpLoungeCoordinatorTest {
     }
 
     @Test
+    fun `disconnect cleanup failure cannot keep the spectator registered`() {
+        val gateway = RecordingGateway().apply { failDisconnect = true }
+        val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
+        coordinator.start(room(), UUID(0, 900))
+
+        assertTrue(coordinator.disconnectSpectator(roomId, viewer))
+        assertFalse(coordinator.disconnectSpectator(roomId, viewer))
+        assertTrue(viewer in coordinator.pendingReturnPlayerIds())
+    }
+
+    @Test
     fun `prepare moves competitors before battle start and activate moves spectators afterward`() {
         val gateway = RecordingGateway()
         val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
@@ -186,6 +197,7 @@ class PvpLoungeCoordinatorTest {
         val disconnectedSpectators = ArrayList<Pair<UUID, UUID>>()
         val restored = ArrayList<UUID>()
         val unavailableForRestore = LinkedHashSet<UUID>()
+        var failDisconnect = false
 
         override fun ensureArena(lease: PvpArenaLease): Boolean = true.also { ensured += lease }
 
@@ -212,6 +224,7 @@ class PvpLoungeCoordinatorTest {
         }
 
         override fun disconnectSpectating(viewerId: UUID, battleId: UUID) {
+            if (failDisconnect) error("forced disconnect cleanup failure")
             disconnectedSpectators += viewerId to battleId
         }
 

@@ -108,6 +108,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         PayloadTypeRegistry.playS2C().register(PvpRoomRejectedPayload.TYPE, PvpRoomRejectedPayload.CODEC)
         PayloadTypeRegistry.playS2C().register(PvpRoomInvitePayload.TYPE, PvpRoomInvitePayload.CODEC)
         PayloadTypeRegistry.playS2C().register(PvpLoungeSpectatorStatePayload.TYPE, PvpLoungeSpectatorStatePayload.CODEC)
+        PayloadTypeRegistry.playS2C().register(PvpLoungeExitResultPayload.TYPE, PvpLoungeExitResultPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(PvpSelectionIntentPayload.TYPE, PvpSelectionIntentPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(PvpRoomIntentPayload.TYPE, PvpRoomIntentPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(PvpLoungeExitPayload.TYPE, PvpLoungeExitPayload.CODEC)
@@ -134,7 +135,22 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         ServerPlayNetworking.registerGlobalReceiver(PvpLoungeExitPayload.TYPE) { _, context ->
             val player = context.player()
             onlinePlayers[player.uuid] = player
-            exitSpectator(player)
+            val result = try {
+                val accepted = exitSpectator(player)
+                PvpLoungeExitResultPayload(
+                    accepted = accepted,
+                    messageKey = if (accepted) null else "screen.${MoreBattleContent.MOD_ID}.pvp.error.invalid_state",
+                )
+            } catch (exception: RuntimeException) {
+                MoreBattleContent.LOGGER.error("PvP spectator exit failed for ${player.uuid}", exception)
+                PvpLoungeExitResultPayload(
+                    accepted = false,
+                    messageKey = "screen.${MoreBattleContent.MOD_ID}.pvp.error.internal_failure",
+                )
+            }
+            if (ServerPlayNetworking.canSend(player, PvpLoungeExitResultPayload.TYPE)) {
+                ServerPlayNetworking.send(player, result)
+            }
         }
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
             onlinePlayers[handler.player.uuid] = handler.player
@@ -144,25 +160,33 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             val playerId = handler.player.uuid
             onlinePlayers.remove(playerId)
             val room = rooms.roomFor(playerId)
-            val challenge = sessions.challengeFor(playerId)
-            if (challenge?.phase in setOf(PvpChallengePhase.PENDING, PvpChallengePhase.TEAM_REGISTRATION)) {
-                sessions.cancel(challenge!!.request.challengeId, playerId)
-                retryableMatches.remove(challenge.request.challengeId)
-                notifyClosed(challenge.request, "screen.${MoreBattleContent.MOD_ID}.pvp.closed.disconnected")
-                finishRoom(challenge.request.challengeId)
-            }
-            if (room != null) {
-                if (room.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.ACTIVE &&
+            var remaining: PvpRoomView? = null
+            try {
+                val challenge = sessions.challengeFor(playerId)
+                if (challenge?.phase in setOf(PvpChallengePhase.PENDING, PvpChallengePhase.TEAM_REGISTRATION)) {
+                    sessions.cancel(challenge!!.request.challengeId, playerId)
+                    retryableMatches.remove(challenge.request.challengeId)
+                    notifyClosed(challenge.request, "screen.${MoreBattleContent.MOD_ID}.pvp.closed.disconnected")
+                    finishRoom(challenge.request.challengeId)
+                }
+                if (room?.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.ACTIVE &&
                     playerId in room.spectatorIds
                 ) {
                     lounge.disconnectSpectator(room.roomId, playerId)
                 }
+            } catch (exception: RuntimeException) {
+                MoreBattleContent.LOGGER.error("PvP disconnect cleanup failed for $playerId", exception)
+            } finally {
+                remaining = rooms.disconnect(playerId)
             }
-            val remaining = rooms.disconnect(playerId)
-            if (remaining != null) {
-                pushRoomToMembers(remaining, null)
-                if (remaining.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.TEAM_PREVIEW) {
-                    pushSpectatorPreview(remaining)
+            remaining?.let { updatedRoom ->
+                try {
+                    pushRoomToMembers(updatedRoom, null)
+                    if (updatedRoom.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.TEAM_PREVIEW) {
+                        pushSpectatorPreview(updatedRoom)
+                    }
+                } catch (exception: RuntimeException) {
+                    MoreBattleContent.LOGGER.error("PvP disconnect room update failed for $playerId", exception)
                 }
             }
         }
@@ -183,17 +207,18 @@ internal object PvpPlayNetworking : PvpCommandBackend {
      * Pulls somebody out of the battle lounge when nothing is left to send them home. Without this a
      * restart, or a regenerated lounge, leaves them standing in empty air with no way back.
      */
-    private fun rescueStrandedLoungePlayer(player: ServerPlayer) {
+    private fun rescueStrandedLoungePlayer(player: ServerPlayer): Boolean {
         val stranded = PvpLoungeRescuePolicy.rescues(
             inLoungeDimension = player.serverLevel().dimension() == Cobblemon173PvpLoungeGateway.LEVEL_KEY,
             hasPendingReturn = player.uuid in lounge.pendingReturnPlayerIds(),
         )
-        if (!stranded) return
-        if (!loungeGateway.restoreToOverworldSpawn(player.uuid)) return
+        if (!stranded) return false
+        if (!loungeGateway.restoreToOverworldSpawn(player.uuid)) return false
         player.sendSystemMessage(
             Component.translatable("screen.${MoreBattleContent.MOD_ID}.pvp.lounge.rescued"),
         )
         MoreBattleContent.LOGGER.info("Moved {} out of the battle lounge; no return point was recorded", player.uuid)
+        return true
     }
 
     override fun open(player: ServerPlayer): PvpCommandOutcome {
@@ -524,20 +549,47 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         ServerPlayNetworking.send(player, PvpSelectionStatePayload(null, state))
     }
 
-    private fun exitSpectator(player: ServerPlayer) {
-        val room = rooms.roomFor(player.uuid) ?: return
-        if (player.uuid !in room.spectatorIds) return
-        if (room.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.ACTIVE &&
-            !lounge.removeSpectator(room.roomId, player.uuid)
-        ) {
+    private fun exitSpectator(player: ServerPlayer): Boolean {
+        val room = rooms.roomFor(player.uuid)
+        if (room == null) {
+            recoverUntrackedSpectator(player)
+            return true
+        }
+        if (player.uuid !in room.spectatorIds) return false
+
+        var remaining: PvpRoomView? = null
+        try {
+            if (room.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.ACTIVE &&
+                !lounge.removeSpectator(room.roomId, player.uuid)
+            ) {
+                recoverUntrackedSpectator(player)
+            }
+        } catch (exception: RuntimeException) {
+            MoreBattleContent.LOGGER.error("PvP lounge cleanup failed for ${player.uuid}", exception)
+        } finally {
+            remaining = rooms.leave(room.roomId, player.uuid)
+        }
+        remaining?.let { updatedRoom ->
+            try {
+                pushRoomToMembers(updatedRoom, null)
+                if (updatedRoom.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.TEAM_PREVIEW) {
+                    pushSpectatorPreview(updatedRoom)
+                }
+            } catch (exception: RuntimeException) {
+                MoreBattleContent.LOGGER.error("PvP spectator exit room update failed for ${player.uuid}", exception)
+            }
+        }
+        return true
+    }
+
+    private fun recoverUntrackedSpectator(player: ServerPlayer) {
+        if (player.uuid in lounge.pendingReturnPlayerIds()) {
+            lounge.restorePending(player.uuid)
             return
         }
-        val remaining = rooms.leave(room.roomId, player.uuid)
-        if (remaining != null) {
-            pushRoomToMembers(remaining, null)
-            if (remaining.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.TEAM_PREVIEW) {
-                pushSpectatorPreview(remaining)
-            }
+        if (rescueStrandedLoungePlayer(player)) return
+        if (ServerPlayNetworking.canSend(player, PvpLoungeSpectatorStatePayload.TYPE)) {
+            ServerPlayNetworking.send(player, PvpLoungeSpectatorStatePayload(false))
         }
     }
 

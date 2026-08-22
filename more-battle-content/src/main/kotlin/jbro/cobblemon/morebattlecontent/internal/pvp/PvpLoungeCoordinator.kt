@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.internal.pvp
 
 import java.util.UUID
+import jbro.cobblemon.morebattlecontent.MoreBattleContent
 
 internal data class PvpReturnPoint(
     val dimensionId: String,
@@ -118,7 +119,7 @@ internal class PvpLoungeCoordinator(
         val point = gateway.capture(playerId) ?: return false
         returns[playerId] = point
         if (!gateway.moveSpectator(playerId, session.lease) || !gateway.spectate(playerId, targetId)) {
-            if (gateway.restore(playerId, point)) returns.remove(playerId)
+            if (restorePoint(playerId, point)) returns.remove(playerId)
             return false
         }
         session.spectators += playerId
@@ -131,8 +132,12 @@ internal class PvpLoungeCoordinator(
     fun removeSpectator(roomId: UUID, playerId: UUID): Boolean {
         val session = sessions[roomId] ?: return false
         if (!session.spectators.remove(playerId)) return false
-        gateway.hideArenaHologram(playerId, session.battleId)
-        gateway.stopSpectating(playerId, session.battleId)
+        runGatewayCleanup("hide spectator arena hologram", playerId) {
+            gateway.hideArenaHologram(playerId, session.battleId)
+        }
+        runGatewayCleanup("stop battle spectating", playerId) {
+            gateway.stopSpectating(playerId, session.battleId)
+        }
         restorePending(playerId)
         return true
     }
@@ -141,7 +146,9 @@ internal class PvpLoungeCoordinator(
     fun disconnectSpectator(roomId: UUID, playerId: UUID): Boolean {
         val session = sessions[roomId] ?: return false
         if (!session.spectators.remove(playerId)) return false
-        gateway.disconnectSpectating(playerId, session.battleId)
+        runGatewayCleanup("disconnect battle spectator", playerId) {
+            gateway.disconnectSpectating(playerId, session.battleId)
+        }
         return true
     }
 
@@ -149,8 +156,16 @@ internal class PvpLoungeCoordinator(
     fun finish(roomId: UUID): Boolean {
         val session = sessions.remove(roomId) ?: return rollbackPreparation(roomId)
         val players = linkedSetOf(session.leftPlayerId, session.rightPlayerId).apply { addAll(session.spectators) }
-        players.forEach { gateway.hideArenaHologram(it, session.battleId) }
-        session.spectators.forEach { gateway.stopSpectating(it, session.battleId) }
+        players.forEach { playerId ->
+            runGatewayCleanup("hide arena hologram", playerId) {
+                gateway.hideArenaHologram(playerId, session.battleId)
+            }
+        }
+        session.spectators.forEach { playerId ->
+            runGatewayCleanup("stop battle spectating", playerId) {
+                gateway.stopSpectating(playerId, session.battleId)
+            }
+        }
         players.forEach(::restorePending)
         arenas.release(roomId)
         return true
@@ -159,7 +174,7 @@ internal class PvpLoungeCoordinator(
     @Synchronized
     fun restorePending(playerId: UUID): Boolean {
         val point = returns[playerId] ?: return false
-        if (!gateway.restore(playerId, point)) return false
+        if (!restorePoint(playerId, point)) return false
         returns.remove(playerId)
         return true
     }
@@ -194,10 +209,25 @@ internal class PvpLoungeCoordinator(
 
     private fun rollbackCaptured(roomId: UUID, captured: Map<UUID, PvpReturnPoint>): Boolean {
         captured.forEach { (playerId, point) ->
-            if (gateway.restore(playerId, point)) returns.remove(playerId)
+            if (restorePoint(playerId, point)) returns.remove(playerId)
         }
         arenas.release(roomId)
         return false
+    }
+
+    private fun restorePoint(playerId: UUID, point: PvpReturnPoint): Boolean = try {
+        gateway.restore(playerId, point)
+    } catch (exception: RuntimeException) {
+        MoreBattleContent.LOGGER.error("PvP lounge restore failed for $playerId", exception)
+        false
+    }
+
+    private fun runGatewayCleanup(action: String, playerId: UUID, cleanup: () -> Unit) {
+        try {
+            cleanup()
+        } catch (exception: RuntimeException) {
+            MoreBattleContent.LOGGER.error("Could not $action for $playerId", exception)
+        }
     }
 
     private data class Preparation(

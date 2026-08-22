@@ -98,6 +98,10 @@ class PvpPlayPayloadsTest {
         val preview = PvpSelectionStatePayload(null, state)
         assertEquals(preview, roundTrip(PvpSelectionStatePayload.CODEC, preview))
         assertEquals(PvpLoungeExitPayload, roundTrip(PvpLoungeExitPayload.CODEC, PvpLoungeExitPayload))
+        val accepted = PvpLoungeExitResultPayload(true, null)
+        val rejected = PvpLoungeExitResultPayload(false, "pvp.lounge.exit_failed")
+        assertEquals(accepted, roundTrip(PvpLoungeExitResultPayload.CODEC, accepted))
+        assertEquals(rejected, roundTrip(PvpLoungeExitResultPayload.CODEC, rejected))
     }
 
     private fun <T : Any> roundTrip(

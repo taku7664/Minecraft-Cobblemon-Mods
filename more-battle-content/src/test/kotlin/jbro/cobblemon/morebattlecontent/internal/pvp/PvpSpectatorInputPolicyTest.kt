@@ -20,4 +20,16 @@ class PvpSpectatorInputPolicyTest {
         assertFalse(PvpSpectatorInputPolicy.blocks("key.screenshot"))
         assertFalse(PvpSpectatorInputPolicy.blocks("key.chat"))
     }
+
+    @Test
+    fun `party send key is released only for the built in spectator battle toggle`() {
+        assertTrue(PvpSpectatorInputPolicy.blocks("key.cobblemon.throwpartypokemon"))
+        assertFalse(
+            PvpSpectatorInputPolicy.blocks(
+                "key.cobblemon.throwpartypokemon",
+                allowSpectatorBattleToggle = true,
+            ),
+        )
+        assertTrue(PvpSpectatorInputPolicy.blocks("key.cobblemon.send_out_pokemon", allowSpectatorBattleToggle = true))
+    }
 }

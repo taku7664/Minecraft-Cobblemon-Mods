@@ -93,6 +93,19 @@ class PvpRoomServiceTest {
     }
 
     @Test
+    fun `stale index pointing at a live room self heals instead of keeping the player busy`() {
+        val rooms = PvpRoomService { roomId }
+        rooms.create(host, settings(PvpRoomVisibility.PUBLIC))
+        staleIndex(rooms)[spectator] = roomId
+
+        assertNull(rooms.roomFor(spectator))
+
+        staleIndex(rooms)[spectator] = roomId
+        assertTrue(rooms.join(roomId, spectator) is PvpRoomMutation.Applied)
+        assertEquals(roomId, rooms.roomFor(spectator)?.roomId)
+    }
+
+    @Test
     fun `host can transfer ownership and unexpected departure elects the oldest remaining member`() {
         val rooms = PvpRoomService { roomId }
         rooms.create(host, settings(PvpRoomVisibility.PUBLIC))
@@ -200,4 +213,11 @@ class PvpRoomServiceTest {
     )
 
     private fun id(value: Long) = UUID(0, value)
+
+    @Suppress("UNCHECKED_CAST")
+    private fun staleIndex(rooms: PvpRoomService): MutableMap<UUID, UUID> {
+        val field = PvpRoomService::class.java.getDeclaredField("roomByPlayer")
+        field.isAccessible = true
+        return field.get(rooms) as MutableMap<UUID, UUID>
+    }
 }

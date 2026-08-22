@@ -61,6 +61,30 @@ internal data object PvpLoungeExitPayload : CustomPacketPayload {
     )
 }
 
+internal data class PvpLoungeExitResultPayload(
+    val accepted: Boolean,
+    val messageKey: String?,
+) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<PvpLoungeExitResultPayload> = TYPE
+
+    companion object {
+        val TYPE = CustomPacketPayload.Type<PvpLoungeExitResultPayload>(id("pvp_lounge_exit_result"))
+        val CODEC: StreamCodec<RegistryFriendlyByteBuf, PvpLoungeExitResultPayload> = StreamCodec.of(
+            { buffer, payload ->
+                buffer.writeBoolean(payload.accepted)
+                buffer.writeBoolean(payload.messageKey != null)
+                payload.messageKey?.let(buffer::writeBoundedString)
+            },
+            { buffer ->
+                PvpLoungeExitResultPayload(
+                    accepted = buffer.readBoolean(),
+                    messageKey = if (buffer.readBoolean()) buffer.readBoundedString() else null,
+                )
+            },
+        )
+    }
+}
+
 internal data class PvpSelectionRejectedPayload(
     val requestId: UUID,
     val matchId: UUID,

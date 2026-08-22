@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.client
 
+import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.client.gui.battle.BattleGUI
 import java.util.WeakHashMap
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpSpectatorInputPolicy
@@ -14,24 +15,22 @@ import net.minecraft.network.chat.Component
 internal object PvpLoungeSpectatorControls {
     private var active = false
     private val exitButtons = WeakHashMap<Screen, MbcStyledButton>()
-    private var previousCycleKeyDown = false
-    private var previousBattleCamMode: String? = null
+    private var exitPending = false
 
     fun register() {
         ClientTickEvents.START_CLIENT_TICK.register(::enforce)
-        ClientTickEvents.END_CLIENT_TICK.register { client ->
-            enforce(client)
-            recoverBattleCameraCycle(client)
-        }
+        ClientTickEvents.END_CLIENT_TICK.register(::enforce)
         ScreenEvents.AFTER_INIT.register { _, screen, _, _ -> installExitButton(screen) }
-        ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> setActive(false) }
+        ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
+            setActive(false)
+            PvpPlayClientNetworking.resetLoungeExitRequest()
+        }
     }
 
     fun setActive(value: Boolean) {
         active = value
         if (value) {
             val client = Minecraft.getInstance()
-            previousBattleCamMode = OptionalBattleCamAccess.modeName()
             enforce(client)
             client.screen?.let(::installExitButton)
         } else {
@@ -40,16 +39,21 @@ internal object PvpLoungeSpectatorControls {
                 button.visible = false
             }
             exitButtons.clear()
-            previousCycleKeyDown = false
-            previousBattleCamMode = null
+            exitPending = false
         }
+    }
+
+    fun setExitPending(value: Boolean) {
+        exitPending = value
+        exitButtons.values.forEach { button -> button.active = active && !value }
     }
 
     private fun enforce(client: Minecraft) {
         if (!active) return
+        val allowBattleToggle = CobblemonClient.battle?.spectating == true
         client.options.keyMappings
             .asSequence()
-            .filter { PvpSpectatorInputPolicy.blocks(it.name) }
+            .filter { PvpSpectatorInputPolicy.blocks(it.name, allowBattleToggle) }
             .forEach { mapping ->
                 mapping.isDown = false
                 while (mapping.consumeClick()) Unit
@@ -63,30 +67,21 @@ internal object PvpLoungeSpectatorControls {
             previous.visible = false
         }
         val button = MbcStyledButton(
-            TowerPlayRect(8, (screen.height - 28).coerceAtLeast(8), 104, 20),
+            PvpLoungeExitButtonLayout.bounds(screen.height),
             Component.translatable("screen.cobblemon_more_battle_content.pvp.return"),
             MbcButtonTone.SECONDARY,
         ) { PvpPlayClientNetworking.exitLoungeSpectator() }
+        button.active = !exitPending
         Screens.getButtons(screen).add(button)
         exitButtons[screen] = button
     }
+}
 
-    private fun recoverBattleCameraCycle(client: Minecraft) {
-        if (!active) return
-        val mapping = client.options.keyMappings.firstOrNull { it.name == BATTLE_CAM_CYCLE_KEY } ?: return
-        val currentMode = OptionalBattleCamAccess.modeName()
-        if (PvpBattleCamCycleRecovery.shouldRecover(
-                mapping.isDown,
-                previousCycleKeyDown,
-                previousBattleCamMode,
-                currentMode,
-            ) && OptionalBattleCamAccess.cycleMode()
-        ) {
-            while (mapping.consumeClick()) Unit
-        }
-        previousCycleKeyDown = mapping.isDown
-        previousBattleCamMode = OptionalBattleCamAccess.modeName()
-    }
-
-    private const val BATTLE_CAM_CYCLE_KEY = "key.battlecam.cycle_mode"
+internal object PvpLoungeExitButtonLayout {
+    fun bounds(screenHeight: Int) = TowerPlayRect(
+        left = 8,
+        top = (screenHeight - 56).coerceAtLeast(8),
+        width = 104,
+        height = 20,
+    )
 }

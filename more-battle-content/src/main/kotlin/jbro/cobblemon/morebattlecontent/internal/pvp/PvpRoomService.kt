@@ -88,10 +88,7 @@ internal class PvpRoomService(
 
     @Synchronized
     fun create(hostId: UUID, settings: PvpRoomSettings): PvpRoomMutation.Applied {
-        roomByPlayer[hostId]?.let { existingId ->
-            rooms[existingId]?.let { return PvpRoomMutation.Applied(it.view()) }
-            roomByPlayer.remove(hostId)
-        }
+        indexedRoomFor(hostId)?.let { return PvpRoomMutation.Applied(it.view()) }
         var roomId = roomIdFactory()
         while (roomId in rooms) roomId = roomIdFactory()
         val room = MutableRoom(roomId, hostId, settings.copy(enabledMechanics = settings.immutableEnabledMechanics))
@@ -105,7 +102,7 @@ internal class PvpRoomService(
     fun get(roomId: UUID): PvpRoomView? = rooms[roomId]?.view()
 
     @Synchronized
-    fun roomFor(playerId: UUID): PvpRoomView? = roomByPlayer[playerId]?.let(rooms::get)?.view()
+    fun roomFor(playerId: UUID): PvpRoomView? = indexedRoomFor(playerId)?.view()
 
     @Synchronized
     fun publicRooms(): List<PvpRoomView> = rooms.values
@@ -143,11 +140,11 @@ internal class PvpRoomService(
     @Synchronized
     fun join(roomId: UUID, playerId: UUID): PvpRoomMutation {
         val room = rooms[roomId] ?: return rejected(PvpRoomError.UNKNOWN_ROOM)
-        if (playerId in room.members) return applied(room)
-        roomByPlayer[playerId]?.let { indexedRoomId ->
-            if (indexedRoomId in rooms) return rejected(PvpRoomError.PLAYER_BUSY)
-            roomByPlayer.remove(playerId, indexedRoomId)
+        if (playerId in room.members) {
+            roomByPlayer[playerId] = roomId
+            return applied(room)
         }
+        if (indexedRoomFor(playerId) != null) return rejected(PvpRoomError.PLAYER_BUSY)
         if (room.phase == PvpRoomPhase.CLOSED) return rejected(PvpRoomError.INVALID_PHASE)
         if (room.settings.visibility == PvpRoomVisibility.PRIVATE && playerId !in room.invited) {
             return rejected(PvpRoomError.INVITE_REQUIRED)
@@ -240,7 +237,10 @@ internal class PvpRoomService(
     @Synchronized
     fun leave(roomId: UUID, playerId: UUID): PvpRoomView? {
         val room = rooms[roomId] ?: return null
-        if (room.members.remove(playerId) == null) return room.view()
+        if (room.members.remove(playerId) == null) {
+            roomByPlayer.remove(playerId, roomId)
+            return room.view()
+        }
         roomByPlayer.remove(playerId, roomId)
         room.invited -= playerId
         room.clearSeat(playerId)
@@ -259,12 +259,19 @@ internal class PvpRoomService(
 
     @Synchronized
     fun disconnect(playerId: UUID): PvpRoomView? {
-        val roomId = roomByPlayer[playerId] ?: return null
-        if (roomId !in rooms) {
-            roomByPlayer.remove(playerId, roomId)
-            return null
+        val room = indexedRoomFor(playerId) ?: return null
+        return leave(room.roomId, playerId)
+    }
+
+    private fun indexedRoomFor(playerId: UUID): MutableRoom? {
+        roomByPlayer[playerId]?.let { indexedRoomId ->
+            val indexedRoom = rooms[indexedRoomId]
+            if (indexedRoom != null && playerId in indexedRoom.members) return indexedRoom
+            roomByPlayer.remove(playerId, indexedRoomId)
         }
-        return leave(roomId, playerId)
+        return rooms.values.firstOrNull { playerId in it.members }?.also { actualRoom ->
+            roomByPlayer[playerId] = actualRoom.roomId
+        }
     }
 
     private fun applied(room: MutableRoom) = PvpRoomMutation.Applied(room.view())
