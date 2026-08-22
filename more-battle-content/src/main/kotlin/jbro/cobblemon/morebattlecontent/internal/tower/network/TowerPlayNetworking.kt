@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.internal.tower.network
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
 import jbro.cobblemon.morebattlecontent.internal.application.BattleContentId
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointRewardSettlementService
+import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointRewardSettlement
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointService
 import jbro.cobblemon.morebattlecontent.internal.bp.requireAcceptedReward
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173TowerPlayOpenRequestFactory
@@ -113,9 +114,22 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
             onlinePlayers[handler.player.uuid] = handler.player
         }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
-            sessions.close(handler.player.uuid)
-            launcher.forget(handler.player.uuid)
-            onlinePlayers.remove(handler.player.uuid)
+            val player = handler.player
+            val playerId = player.uuid
+            try {
+                val battleId = sessions.activeBattleId(playerId)
+                if (battleId == null) {
+                    sessions.disconnect(playerId)
+                } else {
+                    sessions.disconnect(playerId, completionSink(player.server, battleId))
+                }
+            } catch (exception: RuntimeException) {
+                MoreBattleContent.LOGGER.error("Battle Tower disconnect settlement failed for $playerId", exception)
+            } finally {
+                sessions.close(playerId)
+                launcher.forget(playerId)
+                onlinePlayers.remove(playerId)
+            }
         }
     }
 
@@ -168,7 +182,8 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         if (completion !is TowerPlayBattleCompletionResult.Completed) return
         val player = onlinePlayers[playerId] ?: return
         if (!ServerPlayNetworking.canSend(player, TowerPlayStatePayload.TYPE)) return
-        val settled = completion.state.copy(bpBalance = BattlePointService.balance(player.server, playerId))
+        val balance = BattlePointService.balance(player.server, playerId)
+        val settled = sessions.refreshBpBalance(playerId, balance) ?: completion.state.copy(bpBalance = balance)
         ServerPlayNetworking.send(player, TowerPlayStatePayload(null, settled))
     }
 
@@ -177,7 +192,15 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
             if (update.outcome == jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleOutcome.WIN) {
                 BattlePointRewardSettlementService { request ->
                     BattlePointService.apply(server, request)
-                }.settleVictory(battleId, recordedPlayerId, TOWER_CONTENT_ID).requireAcceptedReward()
+                }.settle(
+                    BattlePointRewardSettlement(
+                        settlementId = battleId,
+                        playerId = recordedPlayerId,
+                        contentId = TOWER_CONTENT_ID,
+                        amount = update.rewardBp.toLong(),
+                        reason = "${TOWER_CONTENT_ID.value}_${update.after.currentWinStreak}_streak_win",
+                    ),
+                ).requireAcceptedReward()
             }
             val recorded = TowerBattleRecordService { completion ->
                 BattleRecordService.recordCompletedBattle(server, completion)

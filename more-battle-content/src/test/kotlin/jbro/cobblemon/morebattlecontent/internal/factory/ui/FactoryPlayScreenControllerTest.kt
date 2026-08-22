@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.internal.factory.ui
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryLevelMode
+import jbro.cobblemon.morebattlecontent.internal.factory.FactoryPlayError
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryPlayPhase
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryPlayView
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryRentalSet
@@ -15,6 +16,13 @@ import org.junit.jupiter.api.Test
 
 class FactoryPlayScreenControllerTest {
     private val playerId = UUID.randomUUID()
+
+    @Test
+    fun `invalid selection feedback is trade specific only during the swap decision`() {
+        assertEquals("invalid_swap", FactoryPlayError.INVALID_SELECTION.feedbackId(FactoryPlayPhase.SWAP_DECISION))
+        assertEquals("invalid_selection", FactoryPlayError.INVALID_SELECTION.feedbackId(FactoryPlayPhase.INITIAL_DRAFT))
+        assertEquals("wrong_phase", FactoryPlayError.WRONG_PHASE.feedbackId(FactoryPlayPhase.SWAP_DECISION))
+    }
 
     @Test
     fun `rental cards toggle and submit exact visible pokemon without exposing set ids`() {

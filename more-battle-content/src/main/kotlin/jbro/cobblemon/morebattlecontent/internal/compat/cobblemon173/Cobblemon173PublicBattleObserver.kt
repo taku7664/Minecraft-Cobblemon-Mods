@@ -10,6 +10,8 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveOutcomeView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonFormStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonActionConstraintView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTimedEffectView
@@ -98,6 +100,20 @@ internal class Cobblemon173PublicBattleObserver(
             }
 
             is Cobblemon173PublicObservation.MoveOutcome -> appendMoveOutcome(observation)
+
+            is Cobblemon173PublicObservation.ActionConstraintChanged -> {
+                val actor = knownOrUpsert(observation.pokemon)
+                val previous = actor.actionConstraints
+                val updated = when (observation.kind) {
+                    BattleActionConstraintKind.TAUNT -> previous.copy(taunted = observation.active)
+                    BattleActionConstraintKind.ENCORE -> previous.copy(
+                        encoreMoveId = observation.lockedMoveId.takeIf { observation.active },
+                    )
+                    BattleActionConstraintKind.TRAPPED -> previous.copy(trapped = observation.active)
+                    BattleActionConstraintKind.RECHARGE -> previous.copy(mustRecharge = observation.active)
+                }
+                pokemon[actor.battlePokemonId] = actor.copyView(actionConstraints = updated)
+            }
 
             is Cobblemon173PublicObservation.AbilityRevealed -> {
                 val actor = knownOrUpsert(observation.pokemon)
@@ -273,7 +289,10 @@ internal class Cobblemon173PublicBattleObserver(
                     current.side == snapshot.side &&
                     current.activeSlot == snapshot.activeSlot
                 ) {
-                    current.withActiveSlot(null)
+                    current.copyView(
+                        activeSlot = null,
+                        actionConstraints = BattlePokemonActionConstraintView.empty(),
+                    )
                 } else {
                     current
                 }
@@ -439,6 +458,7 @@ internal data class Cobblemon173PublicPokemonSnapshot(
     val fainted: Boolean,
     val knownTypeIds: Set<String> = emptySet(),
     val combatStats: BattleCombatStatRangesView? = null,
+    val knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
 ) {
     init {
         require(activeSlot == null || activeSlot >= 0)
@@ -466,6 +486,12 @@ internal data class Cobblemon173PublicPokemonSnapshot(
         fainted = fainted,
         knownTypeIds = if (previous != null && !refreshPublicIdentity) previous.knownTypeIds else knownTypeIds,
         combatStats = if (previous != null && !refreshPublicIdentity) previous.combatStats else combatStats,
+        knownFormStates = if (previous != null && !refreshPublicIdentity) previous.knownFormStates else knownFormStates,
+        actionConstraints = if (refreshPublicIdentity && activeSlot != null) {
+            BattlePokemonActionConstraintView.empty()
+        } else {
+            previous?.actionConstraints ?: BattlePokemonActionConstraintView.empty()
+        },
     )
 }
 
@@ -496,6 +522,22 @@ internal sealed interface Cobblemon173PublicObservation {
     ) : Cobblemon173PublicObservation {
         init {
             require(targets.map { it.battlePokemonId }.distinct().size == targets.size)
+        }
+    }
+
+    data class ActionConstraintChanged(
+        override val turn: Int,
+        val pokemon: Cobblemon173PublicPokemonSnapshot,
+        val kind: BattleActionConstraintKind,
+        val active: Boolean,
+        val lockedMoveId: String? = null,
+    ) : Cobblemon173PublicObservation {
+        init {
+            require(lockedMoveId == null || lockedMoveId.isNotBlank())
+            require(kind != BattleActionConstraintKind.ENCORE || !active || lockedMoveId != null) {
+                "An active public Encore requires its publicly observed locked move"
+            }
+            require(kind == BattleActionConstraintKind.ENCORE || lockedMoveId == null)
         }
     }
 
@@ -575,6 +617,8 @@ internal sealed interface Cobblemon173PublicObservation {
 
 internal enum class FieldEffectScope { TERRAIN, ROOM, GLOBAL }
 
+internal enum class BattleActionConstraintKind { TAUNT, ENCORE, TRAPPED, RECHARGE }
+
 internal class Cobblemon173PublicBattleSnapshot(
     pokemon: List<BattlePokemonStateView>,
     val field: BattleFieldStateView,
@@ -599,8 +643,12 @@ internal object Cobblemon173BattleStateAssembler {
         inferenceKnowledge: PublicSpeciesInferenceKnowledge = Cobblemon173PublicSpeciesInferenceKnowledge,
     ): BattleStateView {
         require(ownPokemon.all { it.side == BattleSide.ALLY })
+        val publicById = publicSnapshot.pokemon.associateBy(BattlePokemonStateView::battlePokemonId)
+        val allies = ownPokemon.map { own ->
+            own.copyView(actionConstraints = publicById[own.battlePokemonId]?.actionConstraints ?: own.actionConstraints)
+        }
         val opponents = publicSnapshot.pokemon.filter { it.side == BattleSide.OPPONENT }
-        val pokemon = ownPokemon + opponents
+        val pokemon = allies + opponents
         return BattleStateView(
             battleId = battleId,
             format = format,
@@ -630,6 +678,7 @@ private fun BattlePokemonStateView.copyView(
     knownMoveIds: Set<String> = this.knownMoveIds,
     knownAbilityId: String? = this.knownAbilityId,
     knownHeldItemId: String? = this.knownHeldItemId,
+    actionConstraints: BattlePokemonActionConstraintView = this.actionConstraints,
 ) = BattlePokemonStateView(
     battlePokemonId = battlePokemonId,
     side = side,
@@ -646,4 +695,6 @@ private fun BattlePokemonStateView.copyView(
     fainted = fainted,
     knownTypeIds = knownTypeIds,
     combatStats = combatStats,
+    knownFormStates = knownFormStates,
+    actionConstraints = actionConstraints,
 )

@@ -135,16 +135,52 @@ class BattlePokemonStateView(
     val fainted: Boolean,
     knownTypeIds: Set<String> = emptySet(),
     val combatStats: BattleCombatStatRangesView? = null,
+    knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
+    val actionConstraints: BattlePokemonActionConstraintView = BattlePokemonActionConstraintView.empty(),
 ) {
     val statStages: Map<String, Int> = statStages.toMap()
     val knownMoveIds: Set<String> = knownMoveIds.toSet()
     val knownTypeIds: Set<String> = knownTypeIds.toSet()
+    val knownFormStates: Map<String, BattlePokemonFormStateView> = knownFormStates.toMap()
 
     init {
         require(activeSlot == null || activeSlot >= 0)
         require(level == null || level > 0)
         require(hpFraction in 0.0..1.0)
         require(speciesId.isNotBlank())
+        require(this.knownTypeIds.all { it.isNotBlank() })
+        require(this.knownFormStates.keys.all { it.isNotBlank() })
+    }
+}
+
+/** Public volatile effects that constrain which action the active Pokemon may take. */
+data class BattlePokemonActionConstraintView @JvmOverloads constructor(
+    val taunted: Boolean = false,
+    val encoreMoveId: String? = null,
+    val trapped: Boolean = false,
+    val mustRecharge: Boolean = false,
+) {
+    init {
+        require(encoreMoveId == null || encoreMoveId.isNotBlank())
+    }
+
+    companion object {
+        private val EMPTY = BattlePokemonActionConstraintView()
+
+        @JvmStatic
+        fun empty(): BattlePokemonActionConstraintView = EMPTY
+    }
+}
+
+class BattlePokemonFormStateView(
+    val formId: String,
+    knownTypeIds: Set<String>,
+    val combatStats: BattleCombatStatRangesView,
+) {
+    val knownTypeIds: Set<String> = knownTypeIds.toSet()
+
+    init {
+        require(formId.isNotBlank())
         require(this.knownTypeIds.all { it.isNotBlank() })
     }
 }
@@ -189,7 +225,10 @@ class BattleStateView(
         }
         require(pokemon.none {
             it.side == BattleSide.OPPONENT &&
-                it.combatStats?.knowledge == BattleCombatStatKnowledge.EXACT_OWN
+                (it.combatStats?.knowledge == BattleCombatStatKnowledge.EXACT_OWN ||
+                    it.knownFormStates.values.any { form ->
+                        form.combatStats.knowledge == BattleCombatStatKnowledge.EXACT_OWN
+                    })
         }) { "Opponent combat stats cannot cross the public boundary as exact own knowledge" }
         BattleSide.entries.forEach { side ->
             val activeSlots = pokemon.filter { it.side == side }.mapNotNull { it.activeSlot }
@@ -377,6 +416,55 @@ data class BattleMoveCandidateView @JvmOverloads constructor(
     }
 }
 
+enum class BattlePublicMoveKnowledge { EXACT_OWN, PUBLICLY_REVEALED }
+
+data class BattlePublicMoveOptionView(
+    val moveId: String,
+    val details: BattleMoveCandidateView,
+    val knowledge: BattlePublicMoveKnowledge,
+) {
+    init {
+        require(moveId.isNotBlank())
+    }
+}
+
+class BattlePokemonActionCatalogView(
+    val battlePokemonId: UUID,
+    moves: List<BattlePublicMoveOptionView>,
+    val moveSetComplete: Boolean = false,
+) {
+    val moves: List<BattlePublicMoveOptionView> = Collections.unmodifiableList(ArrayList(moves))
+
+    init {
+        require(this.moves.map { it.moveId }.distinct().size == this.moves.size) {
+            "Future action catalog cannot contain duplicate move IDs for one Pokemon"
+        }
+    }
+}
+
+class BattlePublicActionCatalogView(entries: List<BattlePokemonActionCatalogView>) {
+    val entries: List<BattlePokemonActionCatalogView> = Collections.unmodifiableList(ArrayList(entries))
+    private val byPokemon: Map<UUID, List<BattlePublicMoveOptionView>> = this.entries.associate {
+        it.battlePokemonId to it.moves
+    }
+
+    init {
+        require(byPokemon.size == this.entries.size) {
+            "Future action catalog cannot contain duplicate Pokemon identities"
+        }
+    }
+
+    fun forPokemon(battlePokemonId: UUID): List<BattlePublicMoveOptionView> = byPokemon[battlePokemonId].orEmpty()
+
+    fun isMoveSetComplete(battlePokemonId: UUID): Boolean = entries.firstOrNull {
+        it.battlePokemonId == battlePokemonId
+    }?.moveSetComplete == true
+
+    companion object {
+        @JvmStatic fun empty() = BattlePublicActionCatalogView(emptyList())
+    }
+}
+
 class BattleActionCandidate(
     val actionId: String,
     val kind: BattleActionKind,
@@ -443,7 +531,12 @@ data class BattleBrainOpenContext(
     val strategy: BattleStrategyBrief? = null,
     val trainerProfile: BattleTrainerProfile = BattleTrainerProfile.balanced(),
     val learningScopeId: UUID? = null,
-)
+    val trainerPersonaId: String? = null,
+) {
+    init {
+        require(trainerPersonaId == null || trainerPersonaId.isNotBlank())
+    }
+}
 
 class BattleDecisionContext(
     val requestId: UUID,
@@ -451,6 +544,7 @@ class BattleDecisionContext(
     candidates: List<BattleActionCandidate>,
     val deadlineEpochMillis: Long,
     val memory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
+    val publicActionCatalog: BattlePublicActionCatalogView = BattlePublicActionCatalogView.empty(),
 ) {
     val candidates: List<BattleActionCandidate> = candidates.toList()
 

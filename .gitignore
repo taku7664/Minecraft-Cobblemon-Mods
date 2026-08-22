@@ -17,6 +17,10 @@ saves/
 world/
 mods/
 config/
+!cobblemon-custom-species/src/main/kotlin/jbro/cobblemon/customspecies/config/
+!cobblemon-custom-species/src/main/kotlin/jbro/cobblemon/customspecies/config/**
+!cobblemon-custom-species/src/test/kotlin/jbro/cobblemon/customspecies/config/
+!cobblemon-custom-species/src/test/kotlin/jbro/cobblemon/customspecies/config/**
 !better-cobblemon-music/src/main/java/jbro/cobblemon/bettermusic/config/
 !better-cobblemon-music/src/main/java/jbro/cobblemon/bettermusic/config/**
 !better-cobblemon-music/src/test/java/jbro/cobblemon/bettermusic/config/

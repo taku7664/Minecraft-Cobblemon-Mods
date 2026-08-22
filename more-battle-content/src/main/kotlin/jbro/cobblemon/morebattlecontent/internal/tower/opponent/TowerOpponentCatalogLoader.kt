@@ -10,7 +10,7 @@ import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleAiSkillRange
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerOpponentKind
-import jbro.cobblemon.morebattlecontent.internal.tower.TowerRank
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerStreakStage
 import jbro.cobblemon.morebattlecontent.internal.validation.IdentifierSyntax
 
 internal object TowerOpponentCatalogLoader {
@@ -103,9 +103,9 @@ internal object TowerOpponentCatalogLoader {
         val encounters = encounterFragments.flatMap { (resourceId, reader) ->
             parseTypedFragment(resourceId, reader, "encounters", TOWER_DEFINITION_SCHEMA, ENCOUNTER_FRAGMENT_FIELDS) { value, path ->
                 value.rejectUnknownFields(path, ENCOUNTER_FIELDS)
-                val ranks = value.requiredStringList(path, "rank_ids").mapIndexed { index, rankId ->
-                    TowerRank.entries.singleOrNull { it.serializedId == rankId }
-                        ?: reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.rank_ids[$index]", "Unknown tower rank ID: $rankId")
+                val stages = value.requiredStringList(path, "stage_ids").mapIndexed { index, stageId ->
+                    TowerStreakStage.entries.singleOrNull { it.serializedId == stageId }
+                        ?: reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.stage_ids[$index]", "Unknown tower stage ID: $stageId")
                 }
                 val formatId = value.requiredString(path, "format")
                 val format = TowerBattleFormat.entries.singleOrNull { it.recordId == formatId }
@@ -125,7 +125,7 @@ internal object TowerOpponentCatalogLoader {
                 TowerEncounterDefinition(
                     encounterId = value.requiredStableId(path, "encounter_id"),
                     trainerIds = trainerIds,
-                    rankIds = ranks,
+                    stageIds = stages,
                     format = format,
                     opponentKind = kind,
                     mechanic = parseMechanic(value.requiredString(path, "mechanic_id"), "$path.mechanic_id"),
@@ -169,7 +169,7 @@ internal object TowerOpponentCatalogLoader {
                 TowerOpponentProfile(
                     profileId = trainer.trainerId,
                     displayNameKey = trainer.displayNameKey,
-                    rankIds = encounter.rankIds,
+                    stageIds = encounter.stageIds,
                     format = encounter.format,
                     opponentKind = encounter.opponentKind,
                     mechanic = encounter.mechanic,
@@ -255,16 +255,16 @@ internal object TowerOpponentCatalogLoader {
             path,
             if (schemaVersion == 1) PROFILE_FIELDS_V1 else PROFILE_FIELDS_V2,
         )
-        val rankIds = objectValue.requiredStringList(path, "rank_ids").mapIndexed { index, rankId ->
-            TowerRank.entries.singleOrNull { it.serializedId == rankId }
+        val stageIds = objectValue.requiredStringList(path, "stage_ids").mapIndexed { index, stageId ->
+            TowerStreakStage.entries.singleOrNull { it.serializedId == stageId }
                 ?: reject(
                     TowerOpponentCatalogIssueCode.INVALID_VALUE,
-                    "$path.rank_ids[$index]",
-                    "Unknown tower rank ID: $rankId",
+                    "$path.stage_ids[$index]",
+                    "Unknown tower stage ID: $stageId",
                 )
         }
-        requireNotEmpty(rankIds, "$path.rank_ids", "rank_ids")
-        rejectDuplicateIds(rankIds.map(TowerRank::serializedId), "$path.rank_ids")
+        requireNotEmpty(stageIds, "$path.stage_ids", "stage_ids")
+        rejectDuplicateIds(stageIds.map(TowerStreakStage::serializedId), "$path.stage_ids")
 
         val formatId = objectValue.requiredString(path, "format")
         val format = TowerBattleFormat.entries.singleOrNull { it.recordId == formatId }
@@ -313,7 +313,7 @@ internal object TowerOpponentCatalogLoader {
         return TowerOpponentProfile(
             profileId = objectValue.requiredStableId(path, "profile_id"),
             displayNameKey = objectValue.requiredTranslationKey(path, "display_name_key"),
-            rankIds = rankIds,
+            stageIds = stageIds,
             format = format,
             opponentKind = opponentKind,
             mechanic = mechanic,
@@ -711,12 +711,12 @@ private val POKEMON_SET_FRAGMENT_FIELDS = setOf("schema_version", "pokemon_sets"
 private val TRAINER_FIELDS = setOf("trainer_id", "display_name_key")
 private val POOL_FIELDS = setOf("pool_id", "mechanic_id", "set_tiers")
 private val ENCOUNTER_FIELDS = setOf(
-    "encounter_id", "trainer_ids", "rank_ids", "format", "opponent_kind", "mechanic_id", "weight", "ai_skill", "theme", "pool_id",
+    "encounter_id", "trainer_ids", "stage_ids", "format", "opponent_kind", "mechanic_id", "weight", "ai_skill", "theme", "pool_id",
 )
 private val PROFILE_FIELDS_V1 = setOf(
     "profile_id",
     "display_name_key",
-    "rank_ids",
+    "stage_ids",
     "format",
     "opponent_kind",
     "weight",
@@ -750,7 +750,7 @@ private data class TowerPoolDefinition(
 private data class TowerEncounterDefinition(
     val encounterId: String,
     val trainerIds: List<String>,
-    val rankIds: List<TowerRank>,
+    val stageIds: List<TowerStreakStage>,
     val format: TowerBattleFormat,
     val opponentKind: TowerOpponentKind,
     val mechanic: MajorBattleMechanic,

@@ -4,7 +4,6 @@ import java.util.UUID
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
 import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
-import jbro.cobblemon.morebattlecontent.internal.tower.TowerRank
 import jbro.cobblemon.morebattlecontent.internal.tower.TOWER_REGISTERED_TEAM_SIZE
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayIntent
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayMutationResult
@@ -97,14 +96,14 @@ private fun RegistryFriendlyByteBuf.writeState(state: TowerPlayViewState) {
     writeBoolean(state.selectedMechanic != null)
     state.selectedMechanic?.let { writeBoundedString(it.id) }
     writeBoolean(state.mechanicLocked)
+    writeBoolean(state.legendaryClassAllowed)
+    writeBoolean(state.legendaryClassLocked)
     writeVarInt(state.party.size)
     state.party.forEach(::writePartySlot)
     writeVarInt(state.selectedPokemonOrder.size)
     state.selectedPokemonOrder.forEach(::writeUUID)
-    writeBoundedString(state.rank.serializedId)
-    writeVarInt(state.rankPoints)
-    writeVarInt(state.winsRequired)
-    writeVarInt(state.masterCycleWins)
+    writeVarInt(state.currentWinStreak)
+    writeVarInt(state.bestWinStreak)
     writeVarLong(state.bpBalance)
     writeVarInt(state.errorKeys.size)
     state.errorKeys.forEach(::writeBoundedString)
@@ -127,34 +126,32 @@ private fun RegistryFriendlyByteBuf.readState(): TowerPlayViewState {
         null
     }
     val mechanicLocked = readBoolean()
+    val legendaryClassAllowed = readBoolean()
+    val legendaryClassLocked = readBoolean()
     val party = ArrayList<TowerPlayPartySlot>()
     repeat(readBoundedSize(TOWER_REGISTERED_TEAM_SIZE, "party")) { party += readPartySlot() }
     val selected = LinkedHashSet<UUID>()
     repeat(readBoundedSize(MAX_TOWER_SELECTION_SIZE, "selection")) { selected += readUUID() }
-    val rankId = readBoundedString()
-    val rank = TowerRank.entries.singleOrNull { it.serializedId == rankId }
-        ?: throw IllegalArgumentException("Unsupported tower rank: $rankId")
-    val rankPoints = readVarInt()
-    val winsRequired = readVarInt()
-    val masterCycleWins = readVarInt()
+    val currentWinStreak = readVarInt()
+    val bestWinStreak = readVarInt()
     val bpBalance = readVarLong()
     val errors = ArrayList<String>()
     repeat(readBoundedSize(MAX_ERROR_KEYS, "error key")) { errors += readBoundedString() }
     return TowerPlayViewState(
-        contextId,
-        revision,
-        format,
-        phase,
-        party,
-        selected,
-        rank,
-        rankPoints,
-        winsRequired,
-        masterCycleWins,
-        bpBalance,
-        errors,
-        mechanic,
-        mechanicLocked,
+        entryContextId = contextId,
+        revision = revision,
+        format = format,
+        phase = phase,
+        party = party,
+        selectedPokemonIds = selected,
+        currentWinStreak = currentWinStreak,
+        bestWinStreak = bestWinStreak,
+        bpBalance = bpBalance,
+        errorKeys = errors,
+        selectedMechanic = mechanic,
+        mechanicLocked = mechanicLocked,
+        legendaryClassAllowed = legendaryClassAllowed,
+        legendaryClassLocked = legendaryClassLocked,
     )
 }
 
@@ -166,6 +163,7 @@ private fun RegistryFriendlyByteBuf.writePartySlot(slot: TowerPlayPartySlot) {
     slot.heldItemId?.let(::writeBoundedString)
     writeVarInt(slot.level)
     writeVarInt(slot.battleLevel)
+    writeBoolean(slot.legendaryClass)
 }
 
 private fun RegistryFriendlyByteBuf.readPartySlot(): TowerPlayPartySlot = TowerPlayPartySlot(
@@ -175,6 +173,7 @@ private fun RegistryFriendlyByteBuf.readPartySlot(): TowerPlayPartySlot = TowerP
     heldItemId = if (readBoolean()) readBoundedString() else null,
     level = readVarInt(),
     battleLevel = readVarInt(),
+    legendaryClass = readBoolean(),
 )
 
 private fun RegistryFriendlyByteBuf.writeIntent(intent: TowerPlayIntent) {
@@ -182,6 +181,7 @@ private fun RegistryFriendlyByteBuf.writeIntent(intent: TowerPlayIntent) {
         is TowerPlayIntent.ToggleSelection -> "toggle_selection"
         is TowerPlayIntent.ChangeFormat -> "change_format"
         is TowerPlayIntent.ChangeMechanic -> "change_mechanic"
+        is TowerPlayIntent.ChangeLegendaryClassAllowed -> "change_legendary_class_allowed"
         is TowerPlayIntent.LockTeam -> "lock_team"
         is TowerPlayIntent.Start -> "start"
         is TowerPlayIntent.Resume -> "resume"
@@ -195,6 +195,7 @@ private fun RegistryFriendlyByteBuf.writeIntent(intent: TowerPlayIntent) {
         is TowerPlayIntent.ToggleSelection -> writeUUID(intent.pokemonId)
         is TowerPlayIntent.ChangeFormat -> writeBoundedString(intent.format.recordId)
         is TowerPlayIntent.ChangeMechanic -> writeBoundedString(intent.mechanic.id)
+        is TowerPlayIntent.ChangeLegendaryClassAllowed -> writeBoolean(intent.allowed)
         else -> Unit
     }
 }
@@ -218,6 +219,8 @@ private fun RegistryFriendlyByteBuf.readIntent(): TowerPlayIntent {
                 ?: throw IllegalArgumentException("Unsupported tower mechanic: $mechanicId")
             TowerPlayIntent.ChangeMechanic(requestId, contextId, revision, mechanic)
         }
+        "change_legendary_class_allowed" ->
+            TowerPlayIntent.ChangeLegendaryClassAllowed(requestId, contextId, revision, readBoolean())
         "lock_team" -> TowerPlayIntent.LockTeam(requestId, contextId, revision)
         "start" -> TowerPlayIntent.Start(requestId, contextId, revision)
         "resume" -> TowerPlayIntent.Resume(requestId, contextId, revision)

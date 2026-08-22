@@ -11,6 +11,7 @@ include(
     "better-cobblemon-music-more-battle-content",
     "better-cobblemon-music",
     "better-battle-presentation",
+    "cobblemon-custom-species",
     "more-battle-content",
     "more-battle-content-better-ai"
 )

@@ -20,6 +20,47 @@ class TowerPlayBattleLaunchTest {
     private val battleId = UUID.fromString("22222222-3333-4444-5555-666666666666")
 
     @Test
+    fun `legendary class option reaches the launcher and locks after the first battle starts`() {
+        val launches = ArrayList<TowerBattleLaunchRequest>()
+        val service = TowerPlaySessionService(
+            entryContextIdFactory = { contextId },
+            battleLauncher = TowerBattleLauncher { request ->
+                launches += request
+                TowerBattleLaunchResult.Started(battleId)
+            },
+            registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
+        )
+        var state = service.open(playerId, request())
+        state = (service.mutate(
+            playerId,
+            TowerPlayIntent.ChangeLegendaryClassAllowed(UUID(9, 1), contextId, state.revision, true),
+        ) as TowerPlayMutationResult.Accepted).state
+        state = (service.mutate(
+            playerId,
+            TowerPlayIntent.ChangeMechanic(UUID(9, 2), contextId, state.revision, MajorBattleMechanic.MEGA),
+        ) as TowerPlayMutationResult.Accepted).state
+        party().take(3).forEachIndexed { index, pokemon ->
+            state = (service.mutate(
+                playerId,
+                TowerPlayIntent.ToggleSelection(UUID(9, 3L + index), contextId, state.revision, pokemon.pokemonId),
+            ) as TowerPlayMutationResult.Accepted).state
+        }
+        state = (service.mutate(
+            playerId,
+            TowerPlayIntent.LockTeam(UUID(9, 7), contextId, state.revision),
+        ) as TowerPlayMutationResult.Accepted).state
+
+        val active = (service.mutate(
+            playerId,
+            TowerPlayIntent.Start(UUID(9, 8), contextId, state.revision),
+        ) as TowerPlayMutationResult.Accepted).state
+
+        assertTrue(launches.single().legendaryClassAllowed)
+        assertTrue(active.legendaryClassAllowed)
+        assertTrue(active.legendaryClassLocked)
+    }
+
+    @Test
     fun `successful start launches the locked team and enters active phase`() {
         val launches = ArrayList<TowerBattleLaunchRequest>()
         val service = TowerPlaySessionService(
@@ -230,7 +271,7 @@ class TowerPlayBattleLaunchTest {
         completed as TowerPlayBattleCompletionResult.Completed
         assertEquals(TowerPlayPhase.TEAM_LOCKED, completed.state.phase)
         assertEquals(active.revision + 1, completed.state.revision)
-        assertEquals(1, completed.state.rankPoints)
+        assertEquals(1, completed.state.currentWinStreak)
         assertTrue(completed.state.mechanicLocked)
         assertEquals(null, service.activeBattleId(playerId))
         assertEquals(TowerPlayBattleCompletionResult.NoActiveBattle, duplicate)
@@ -279,9 +320,32 @@ class TowerPlayBattleLaunchTest {
         cancelled as TowerPlayBattleCompletionResult.Completed
         assertEquals(TowerPlayPhase.TEAM_LOCKED, cancelled.state.phase)
         assertEquals(active.revision + 1, cancelled.state.revision)
-        assertEquals(active.rankPoints, cancelled.state.rankPoints)
+        assertEquals(active.currentWinStreak, cancelled.state.currentWinStreak)
         assertEquals(0, records)
         assertEquals(null, service.activeBattleId(playerId))
+    }
+
+    @Test
+    fun `disconnect during an active battle records a loss before closing the session`() {
+        val recorded = ArrayList<TowerProgressUpdate>()
+        val service = TowerPlaySessionService(
+            entryContextIdFactory = { contextId },
+            battleLauncher = TowerBattleLauncher { TowerBattleLaunchResult.Started(battleId) },
+            registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
+            battleCompletionSink = { _, update -> recorded += update },
+        )
+        val locked = lockFirstThree(service, currentWinStreak = 7)
+        service.mutate(
+            playerId,
+            TowerPlayIntent.Start(UUID(0, 34), contextId, locked.revision),
+        ) as TowerPlayMutationResult.Accepted
+
+        assertTrue(service.disconnect(playerId))
+
+        assertEquals(1, recorded.size)
+        assertEquals(TowerBattleOutcome.LOSS, recorded.single().outcome)
+        assertEquals(0, recorded.single().after.currentWinStreak)
+        assertEquals(null, service.current(playerId))
     }
 
     @Test
@@ -334,8 +398,11 @@ class TowerPlayBattleLaunchTest {
         assertEquals(0, launches)
     }
 
-    private fun lockFirstThree(service: TowerPlaySessionService): TowerPlayViewState {
-        var state = service.open(playerId, request())
+    private fun lockFirstThree(
+        service: TowerPlaySessionService,
+        currentWinStreak: Int = 0,
+    ): TowerPlayViewState {
+        var state = service.open(playerId, request(currentWinStreak))
         state = (service.mutate(
             playerId,
             TowerPlayIntent.ChangeMechanic(UUID(0, 9), contextId, state.revision, MajorBattleMechanic.MEGA),
@@ -354,10 +421,12 @@ class TowerPlayBattleLaunchTest {
         return (locked as TowerPlayMutationResult.Accepted).state
     }
 
-    private fun request() = TowerPlayOpenRequest(
+    private fun request(currentWinStreak: Int = 0) = TowerPlayOpenRequest(
         party = party(),
         initialFormat = TowerBattleFormat.SINGLE,
-        progressByFormat = TowerBattleFormat.entries.associateWith(TowerProgress::initial),
+        progressByFormat = TowerBattleFormat.entries.associateWith { format ->
+            TowerProgress(format, currentWinStreak, currentWinStreak)
+        },
         bpBalance = 0,
     )
 

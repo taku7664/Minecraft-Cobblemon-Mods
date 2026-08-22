@@ -9,6 +9,7 @@ import jbro.cobblemon.morebattlecontent.internal.application.BattleContentPhase
 import jbro.cobblemon.morebattlecontent.internal.application.BattleContentStatus
 import jbro.cobblemon.morebattlecontent.internal.application.BattleFormatId
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgression
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgress
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayPhase
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayViewState
@@ -93,10 +94,9 @@ internal class BattleTowerContentApplication(
         TowerBattleFormat.entries.forEach { format ->
             val progress = progressByFormat[format] ?: return@forEach
             val prefix = format.name.lowercase()
-            put("${prefix}_rank_order", progress.rank.leaderboardOrder)
-            put("${prefix}_rank_points", progress.rankPoints.toLong())
-            put("${prefix}_wins_required", progress.displayWinsRequired.toLong())
-            put("${prefix}_master_cycle_wins", progress.masterCycleWins.toLong())
+            put("${prefix}_current_win_streak", progress.currentWinStreak.toLong())
+            put("${prefix}_best_win_streak", progress.bestWinStreak.toLong())
+            put("${prefix}_bp_per_win", TowerProgression.rewardForNextVictory(progress).toLong())
         }
     }
 }

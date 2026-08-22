@@ -33,17 +33,17 @@ class BattleRecordStoreTest {
     @Test
     fun `progress and best metrics remain separate`() {
         val store = BattleRecordStore()
-        val rank = BattleRecordMetrics.CURRENT_RANK
-        val rankProgress = BattleRecordMetrics.RANK_PROGRESS
+        val currentFloor = BattleRecordMetrics.CURRENT_FLOOR
+        val currentRound = BattleRecordMetricId("current_round")
         val highestFloor = BattleRecordMetrics.HIGHEST_FLOOR
 
-        store.setProgressMetric(towerSingles, rank, 7)
-        store.setProgressMetric(towerSingles, rankProgress, 2)
+        store.setProgressMetric(towerSingles, currentFloor, 7)
+        store.setProgressMetric(towerSingles, currentRound, 2)
         store.submitBestMetric(towerSingles, highestFloor, 23)
         store.submitBestMetric(towerSingles, highestFloor, 19)
 
         val stats = store.get(towerSingles)
-        assertEquals(mapOf(rank to 7L, rankProgress to 2L), stats.progressMetrics)
+        assertEquals(mapOf(currentFloor to 7L, currentRound to 2L), stats.progressMetrics)
         assertEquals(mapOf(highestFloor to 23L), stats.bestMetrics)
     }
 
@@ -56,8 +56,8 @@ class BattleRecordStoreTest {
                 key = towerSingles,
                 outcome = BattleRecordOutcome.WIN,
                 progressMetrics = mapOf(
-                    BattleRecordMetrics.CURRENT_RANK to 4L,
-                    BattleRecordMetrics.RANK_PROGRESS to 1L,
+                    BattleRecordMetrics.CURRENT_FLOOR to 4L,
+                    BattleRecordMetricId("current_round") to 1L,
                 ),
                 bestMetrics = mapOf(BattleRecordMetrics.HIGHEST_FLOOR to 12L),
             ),
@@ -66,8 +66,8 @@ class BattleRecordStoreTest {
         assertEquals(1, result.totalWins)
         assertEquals(1, result.currentWinStreak)
         assertEquals(1, result.bestWinStreak)
-        assertEquals(4, result.progressMetrics.getValue(BattleRecordMetrics.CURRENT_RANK))
-        assertEquals(1, result.progressMetrics.getValue(BattleRecordMetrics.RANK_PROGRESS))
+        assertEquals(4, result.progressMetrics.getValue(BattleRecordMetrics.CURRENT_FLOOR))
+        assertEquals(1, result.progressMetrics.getValue(BattleRecordMetricId("current_round")))
         assertEquals(12, result.bestMetrics.getValue(BattleRecordMetrics.HIGHEST_FLOOR))
     }
 
@@ -78,7 +78,7 @@ class BattleRecordStoreTest {
             totalWins = Long.MAX_VALUE,
             currentWinStreak = 7,
             bestWinStreak = 7,
-            progressMetrics = mapOf(BattleRecordMetrics.CURRENT_RANK to 3L),
+            progressMetrics = mapOf(BattleRecordMetrics.CURRENT_FLOOR to 3L),
         )
         val store = BattleRecordStore(listOf(before))
 
@@ -87,7 +87,7 @@ class BattleRecordStoreTest {
                 BattleRecordCompletion(
                     key = towerSingles,
                     outcome = BattleRecordOutcome.WIN,
-                    progressMetrics = mapOf(BattleRecordMetrics.CURRENT_RANK to 4L),
+                    progressMetrics = mapOf(BattleRecordMetrics.CURRENT_FLOOR to 4L),
                     bestMetrics = mapOf(BattleRecordMetrics.HIGHEST_FLOOR to 20L),
                 ),
             )
@@ -116,7 +116,7 @@ class BattleRecordStoreTest {
     fun `nbt round trip stores only aggregate records`() {
         val store = BattleRecordStore()
         store.recordOutcome(towerSingles, BattleRecordOutcome.WIN)
-        store.setProgressMetric(towerSingles, BattleRecordMetricId("rank"), 4)
+        store.setProgressMetric(towerSingles, BattleRecordMetricId("current_round"), 4)
         store.submitBestMetric(towerSingles, BattleRecordMetricId("highest_floor"), 17)
 
         val tag = BattleRecordNbtCodec.encode(store.all())
@@ -193,7 +193,7 @@ class BattleRecordStoreTest {
             BattleRecordMetricId("Highest Floor")
         }
         org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
-            BattleRecordStore().setProgressMetric(towerSingles, BattleRecordMetricId("rank"), -1)
+            BattleRecordStore().setProgressMetric(towerSingles, BattleRecordMetricId("current_round"), -1)
         }
     }
 }

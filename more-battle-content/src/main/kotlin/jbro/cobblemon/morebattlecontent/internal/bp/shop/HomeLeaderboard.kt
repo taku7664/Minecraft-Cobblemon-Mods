@@ -9,8 +9,6 @@ internal data class HomeLeaderboardEntry(
     val place: Int,
     val playerId: UUID,
     val playerName: String,
-    val highestRank: Long = 0,
-    val rankProgress: Long = 0,
     val totalWins: Long = 0,
     val highestFloor: Long = 0,
     val totalLosses: Long = 0,
@@ -39,8 +37,6 @@ internal object HomeLeaderboard {
                     ?.trim()
                     ?.takeIf(String::isNotEmpty)
                     ?: record.key.playerId.toString().take(8),
-                highestRank = record.bestMetrics[BattleRecordMetrics.HIGHEST_RANK] ?: 0L,
-                rankProgress = record.progressMetrics[BattleRecordMetrics.RANK_PROGRESS] ?: 0L,
                 totalWins = record.totalWins,
                 highestFloor = record.bestMetrics[BattleRecordMetrics.HIGHEST_FLOOR] ?: 0L,
                 totalLosses = record.totalLosses,
@@ -57,23 +53,21 @@ internal object HomeLeaderboard {
             if (previous?.sameScore(entry, ranking) != true) place = index + 1
             previous = entry
             HomeLeaderboardEntry(
-                place,
-                entry.playerId,
-                entry.playerName,
-                entry.highestRank,
-                entry.rankProgress,
-                entry.totalWins,
-                entry.highestFloor,
-                entry.totalLosses,
-                entry.bestWinStreak,
+                place = place,
+                playerId = entry.playerId,
+                playerName = entry.playerName,
+                totalWins = entry.totalWins,
+                highestFloor = entry.highestFloor,
+                totalLosses = entry.totalLosses,
+                bestWinStreak = entry.bestWinStreak,
             )
         }
     }
 
     private fun scoreComparator(ranking: HomeLeaderboardRanking): Comparator<UnrankedEntry> = when (ranking) {
-        HomeLeaderboardRanking.TOWER -> compareByDescending<UnrankedEntry> { it.highestRank }
-            .thenByDescending { it.rankProgress }
+        HomeLeaderboardRanking.TOWER -> compareByDescending<UnrankedEntry> { it.bestWinStreak }
             .thenByDescending { it.totalWins }
+            .thenBy { it.totalLosses }
         HomeLeaderboardRanking.FACTORY -> compareByDescending<UnrankedEntry> { it.highestFloor }
             .thenByDescending { it.totalWins }
             .thenByDescending { it.bestWinStreak }
@@ -86,8 +80,6 @@ internal object HomeLeaderboard {
     private data class UnrankedEntry(
         val playerId: UUID,
         val playerName: String,
-        val highestRank: Long,
-        val rankProgress: Long,
         val totalWins: Long,
         val highestFloor: Long,
         val totalLosses: Long,
@@ -95,7 +87,7 @@ internal object HomeLeaderboard {
     ) {
         fun sameScore(other: UnrankedEntry, ranking: HomeLeaderboardRanking): Boolean = when (ranking) {
             HomeLeaderboardRanking.TOWER ->
-                highestRank == other.highestRank && rankProgress == other.rankProgress && totalWins == other.totalWins
+                bestWinStreak == other.bestWinStreak && totalWins == other.totalWins && totalLosses == other.totalLosses
             HomeLeaderboardRanking.FACTORY ->
                 highestFloor == other.highestFloor && totalWins == other.totalWins &&
                     bestWinStreak == other.bestWinStreak && totalLosses == other.totalLosses

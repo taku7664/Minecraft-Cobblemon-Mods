@@ -33,20 +33,25 @@ public final class BetterMusicClientCommands {
         GeneratedMusicPackController packController,
         FabricClientCommandSource source
     ) {
-        var result = configManager.reload();
+        var result = configManager.prepareReload();
         if (result.success()) {
-            var packFailure = configManager.activeSnapshot()
-                .flatMap(packController::prepareAndReload);
-            if (packFailure.isPresent()) {
-                source.sendError(Component.translatable(
-                    "better_cobblemon_music.command.reload.failure",
-                    packFailure.orElseThrow()
-                ));
-                return 0;
-            }
-            source.sendFeedback(Component.translatable(
-                "better_cobblemon_music.command.reload.success"
-            ).withStyle(ChatFormatting.GREEN));
+            var snapshot = result.snapshot().orElseThrow();
+            var client = net.minecraft.client.Minecraft.getInstance();
+            packController.prepareAndReload(
+                snapshot,
+                () -> configManager.activate(snapshot)
+            ).thenAcceptAsync(packFailure -> {
+                if (packFailure.isPresent()) {
+                    source.sendError(Component.translatable(
+                        "better_cobblemon_music.command.reload.failure",
+                        packFailure.orElseThrow()
+                    ));
+                    return;
+                }
+                source.sendFeedback(Component.translatable(
+                    "better_cobblemon_music.command.reload.success"
+                ).withStyle(ChatFormatting.GREEN));
+            }, client);
             return 1;
         }
         source.sendError(Component.translatable(

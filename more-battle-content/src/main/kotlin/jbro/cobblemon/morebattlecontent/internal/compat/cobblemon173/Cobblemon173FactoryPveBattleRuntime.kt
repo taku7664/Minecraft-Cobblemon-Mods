@@ -64,6 +64,7 @@ internal class Cobblemon173FactoryPveBattleRuntime(
             initialOpponentPokemonCount = prepared.playerTeam.size,
             baselineAi = Cobblemon173BaselineAiFactory.create(prepared.request.aiSkill),
             trainerProfile = prepared.trainerProfile,
+            trainerPersonaId = prepared.request.trainerNameKey,
             primaryBrain = Cobblemon173BrainProviderResolver.create(
                 brainRegistry,
                 capability,

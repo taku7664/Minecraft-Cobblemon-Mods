@@ -5,9 +5,130 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringReader;
+import java.util.Set;
+import jbro.cobblemon.bettermusic.field.FieldMusicContext;
+import jbro.cobblemon.bettermusic.field.FieldPlaylistResolver;
 import org.junit.jupiter.api.Test;
 
 final class MusicConfigParserTest {
+    @Test
+    void parsesOrderedSchemaTwoBiomeRulesWithMultiTrackPlaylists() {
+        var config = MusicConfigParser.parse(new StringReader("""
+            {
+              "schemaVersion": 2,
+              "scanIntervalSeconds": 1.0,
+              "fieldChangeDelaySeconds": 4.0,
+              "betweenTracksSeconds": 0.0,
+              "fadeInSeconds": 1.0,
+              "fadeOutSeconds": 1.0,
+              "selection": "shuffle",
+              "volume": 1.0,
+              "field": {
+                "default": "field/default.ogg",
+                "dimensions": {},
+                "biomes": {
+                  "minecraft:plains": ["field/plains_1.ogg", "field/plains_2.ogg"]
+                },
+                "biomeTags": [
+                  {
+                    "tag": "minecraft:is_forest",
+                    "playlist": {
+                      "selection": "sequential",
+                      "tracks": ["field/forest_1.ogg", "field/forest_2.ogg"]
+                    }
+                  },
+                  {"tag": "minecraft:is_mountain", "playlist": "field/mountain.ogg"}
+                ],
+                "biomePathContains": [
+                  {"contains": "frozen_river", "playlist": "field/frozen_river.ogg"},
+                  {
+                    "contains": "river",
+                    "playlist": ["field/river_1.ogg", "field/river_2.ogg"]
+                  }
+                ]
+              },
+              "battle": {
+                "wild": "battle/wild.ogg",
+                "trainer": "battle/trainer.ogg",
+                "pvp": "battle/pvp.ogg",
+                "pokemon": []
+              }
+            }
+            """));
+
+        assertEquals(
+            java.util.List.of("field/plains_1.ogg", "field/plains_2.ogg"),
+            config.field().biomes().get("minecraft:plains").tracks()
+        );
+        assertEquals(
+            java.util.List.of("#minecraft:is_forest", "#minecraft:is_mountain"),
+            config.field().biomes().keySet().stream().filter(key -> key.startsWith("#")).toList()
+        );
+        assertEquals(
+            PlaylistDefinition.Selection.SEQUENTIAL,
+            config.field().biomes().get("#minecraft:is_forest").selection()
+        );
+        assertEquals(
+            java.util.List.of("frozen_river", "river"),
+            java.util.List.copyOf(config.field().biomePathContains().keySet())
+        );
+        assertEquals(2, config.field().biomePathContains().get("river").tracks().size());
+        var fieldSelection = new FieldPlaylistResolver(config.field()).select(new FieldMusicContext(
+            "minecraft:overworld",
+            "minecraft:frozen_river",
+            Set.of(),
+            false
+        ));
+        assertEquals("field.path:frozen_river", fieldSelection.id());
+        assertEquals(java.util.List.of("field/frozen_river.ogg"), fieldSelection.playlist().tracks());
+    }
+
+    @Test
+    void schemaTwoRejectsLegacyOrderedObjectsAndTagsMixedIntoExactBiomes() {
+        String schemaTwo = minimalConfig("\"field/plains.ogg\"")
+            .replace("\"schemaVersion\": 1", "\"schemaVersion\": 2")
+            .replace(
+                "\"biomes\": {},",
+                "\"biomes\": {\"#minecraft:is_forest\": \"field/forest.ogg\"}, \"biomeTags\": [],"
+            );
+        var tagException = assertThrows(ConfigValidationException.class, () ->
+            MusicConfigParser.parse(new StringReader(schemaTwo.replace(
+                "\"biomePathContains\": {}",
+                "\"biomePathContains\": []"
+            )))
+        );
+        assertTrue(tagException.getMessage().contains("$.field.biomes['#minecraft:is_forest']"));
+
+        var objectException = assertThrows(ConfigValidationException.class, () ->
+            MusicConfigParser.parse(new StringReader(schemaTwo.replace(
+                "\"biomes\": {\"#minecraft:is_forest\": \"field/forest.ogg\"}",
+                "\"biomes\": {}"
+            )))
+        );
+        assertTrue(objectException.getMessage().contains("$.field.biomePathContains"));
+        assertTrue(objectException.getMessage().contains("array"));
+    }
+
+    @Test
+    void schemaTwoRejectsDuplicateOrderedSelectors() {
+        String duplicateTags = minimalConfig("\"field/plains.ogg\"")
+            .replace("\"schemaVersion\": 1", "\"schemaVersion\": 2")
+            .replace(
+                "\"biomes\": {},",
+                "\"biomes\": {}, \"biomeTags\": ["
+                    + "{\"tag\":\"minecraft:is_forest\",\"playlist\":\"field/forest_1.ogg\"},"
+                    + "{\"tag\":\"minecraft:is_forest\",\"playlist\":\"field/forest_2.ogg\"}],"
+            )
+            .replace("\"biomePathContains\": {}", "\"biomePathContains\": []");
+
+        var exception = assertThrows(ConfigValidationException.class, () ->
+            MusicConfigParser.parse(new StringReader(duplicateTags))
+        );
+
+        assertTrue(exception.getMessage().contains("$.field.biomeTags[1].tag"));
+        assertTrue(exception.getMessage().contains("duplicate ordered selector"));
+    }
+
     @Test
     void parsesStringArrayAndAdvancedPlaylistFormsWithoutCueIndirection() {
         var config = MusicConfigParser.parse(new StringReader("""
@@ -144,6 +265,46 @@ final class MusicConfigParserTest {
             ))
         );
         assertTrue(exception.getMessage().contains("$.battle.roles.gym"));
+    }
+
+    @Test
+    void rejectsTrackPathsThatCannotBecomeMinecraftResourceIds() {
+        var exception = assertThrows(ConfigValidationException.class, () ->
+            MusicConfigParser.parse(new StringReader(minimalConfig("\"field/My Song.ogg\"")))
+        );
+
+        assertTrue(exception.getMessage().contains("$.field.default"));
+        assertTrue(exception.getMessage().contains("lowercase Minecraft resource path"));
+    }
+
+    @Test
+    void rejectsPollingIntervalsBelowAQuarterSecond() {
+        var exception = assertThrows(ConfigValidationException.class, () ->
+            MusicConfigParser.parse(new StringReader(
+                minimalConfig("\"field/plains.ogg\"").replace(
+                    "\"scanIntervalSeconds\": 1.0",
+                    "\"scanIntervalSeconds\": 0.01"
+                )
+            ))
+        );
+
+        assertTrue(exception.getMessage().contains("$.scanIntervalSeconds"));
+        assertTrue(exception.getMessage().contains("at least 0.25"));
+    }
+
+    @Test
+    void rejectsTrainerRoleKeysThatNoRuntimeAdapterCanProduce() {
+        var exception = assertThrows(ConfigValidationException.class, () ->
+            MusicConfigParser.parse(new StringReader(
+                minimalConfig("\"field/plains.ogg\"").replace(
+                    "\"pokemon\": []",
+                    "\"roles\": {\"boss\": \"battle/boss.ogg\"}, \"pokemon\": []"
+                )
+            ))
+        );
+
+        assertTrue(exception.getMessage().contains("$.battle.roles['boss']"));
+        assertTrue(exception.getMessage().contains("champion, elite, gym, or rival"));
     }
 
     private static String minimalConfig(String defaultPlaylistJson) {

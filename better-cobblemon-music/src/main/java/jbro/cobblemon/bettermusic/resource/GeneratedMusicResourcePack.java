@@ -4,15 +4,18 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import jbro.cobblemon.bettermusic.config.BattleMusicConfig;
 import jbro.cobblemon.bettermusic.config.BetterMusicConfigSnapshot;
 import jbro.cobblemon.bettermusic.config.FieldMusicConfig;
@@ -25,17 +28,40 @@ public final class GeneratedMusicResourcePack {
 
     private final Path musicDirectory;
     private final Path packDirectory;
+    private final Path stagingRoot;
 
     public GeneratedMusicResourcePack(Path configDirectory, Path resourcePackDirectory) {
         Objects.requireNonNull(configDirectory, "configDirectory");
         Objects.requireNonNull(resourcePackDirectory, "resourcePackDirectory");
         this.musicDirectory = configDirectory.resolve("music").toAbsolutePath().normalize();
         this.packDirectory = resourcePackDirectory.resolve(DIRECTORY_NAME).toAbsolutePath().normalize();
+        this.stagingRoot = resourcePackDirectory.toAbsolutePath().normalize()
+            .resolveSibling("." + DIRECTORY_NAME + "_staging");
     }
 
     public GenerationResult generate(BetterMusicConfigSnapshot snapshot) throws IOException {
+        try (PreparedPack prepared = prepare(snapshot); PublishedPack published = prepared.publish()) {
+            published.commit();
+            return prepared.result();
+        }
+    }
+
+    public PreparedPack prepare(BetterMusicConfigSnapshot snapshot) throws IOException {
         Objects.requireNonNull(snapshot, "snapshot");
-        Path soundRoot = packDirectory.resolve("assets").resolve(NAMESPACE).resolve("sounds").normalize();
+        Files.createDirectories(stagingRoot);
+        Path stagingDirectory = Files.createTempDirectory(stagingRoot, "pack-");
+        try {
+            GenerationResult result = generateInto(stagingDirectory, snapshot);
+            return new PreparedPack(stagingDirectory, result);
+        } catch (IOException | RuntimeException exception) {
+            deleteTree(stagingDirectory);
+            throw exception;
+        }
+    }
+
+    private GenerationResult generateInto(Path targetPackDirectory, BetterMusicConfigSnapshot snapshot)
+        throws IOException {
+        Path soundRoot = targetPackDirectory.resolve("assets").resolve(NAMESPACE).resolve("sounds").normalize();
         Files.createDirectories(soundRoot);
 
         JsonObject sounds = new JsonObject();
@@ -46,6 +72,7 @@ public final class GeneratedMusicResourcePack {
                 missing.add(relativeTrack);
                 continue;
             }
+            validateOggVorbis(source, relativeTrack);
 
             String withoutExtension = relativeTrack.substring(0, relativeTrack.length() - ".ogg".length());
             String soundPath = "custom/" + withoutExtension.toLowerCase(java.util.Locale.ROOT);
@@ -58,9 +85,9 @@ public final class GeneratedMusicResourcePack {
             sounds.add(soundPath, streamingSound(soundPath));
         }
 
-        writeUtf8(packDirectory.resolve("pack.mcmeta"), packMetadata());
+        writeUtf8(targetPackDirectory.resolve("pack.mcmeta"), packMetadata());
         writeUtf8(
-            packDirectory.resolve("assets").resolve(NAMESPACE).resolve("sounds.json"),
+            targetPackDirectory.resolve("assets").resolve(NAMESPACE).resolve("sounds.json"),
             new GsonBuilder().setPrettyPrinting().create().toJson(sounds) + System.lineSeparator()
         );
         return new GenerationResult(List.copyOf(missing), sounds.size());
@@ -118,7 +145,6 @@ public final class GeneratedMusicResourcePack {
     }
 
     private static void replaceWithLinkOrCopy(Path source, Path target) throws IOException {
-        Files.deleteIfExists(target);
         try {
             Files.createLink(target, source);
         } catch (UnsupportedOperationException | IOException linkFailure) {
@@ -138,6 +164,162 @@ public final class GeneratedMusicResourcePack {
             }
         } finally {
             Files.deleteIfExists(temporary);
+        }
+    }
+
+    private static void validateOggVorbis(Path source, String relativeTrack) throws IOException {
+        byte[] prefix;
+        try (InputStream input = Files.newInputStream(source)) {
+            prefix = input.readNBytes(65_536);
+        }
+        if (prefix.length < 4
+            || prefix[0] != 'O'
+            || prefix[1] != 'g'
+            || prefix[2] != 'g'
+            || prefix[3] != 'S'
+            || !containsVorbisIdentification(prefix)) {
+            throw new IOException("Configured music file is not Ogg/Vorbis: " + relativeTrack);
+        }
+    }
+
+    private static boolean containsVorbisIdentification(byte[] bytes) {
+        byte[] signature = new byte[] {1, 'v', 'o', 'r', 'b', 'i', 's'};
+        outer:
+        for (int index = 0; index <= bytes.length - signature.length; index++) {
+            for (int offset = 0; offset < signature.length; offset++) {
+                if (bytes[index + offset] != signature[offset]) {
+                    continue outer;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private static void moveDirectory(Path source, Path target) throws IOException {
+        try {
+            Files.move(source, target, StandardCopyOption.ATOMIC_MOVE);
+        } catch (java.nio.file.AtomicMoveNotSupportedException ignored) {
+            Files.move(source, target);
+        }
+    }
+
+    private static void deleteTree(Path root) throws IOException {
+        if (!Files.exists(root)) {
+            return;
+        }
+        try (var paths = Files.walk(root)) {
+            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(path);
+            }
+        }
+    }
+
+    public final class PreparedPack implements AutoCloseable {
+        private final Path stagingDirectory;
+        private final GenerationResult result;
+        private boolean published;
+
+        private PreparedPack(Path stagingDirectory, GenerationResult result) {
+            this.stagingDirectory = stagingDirectory;
+            this.result = result;
+        }
+
+        public GenerationResult result() {
+            return result;
+        }
+
+        public PublishedPack publish() throws IOException {
+            if (published) {
+                throw new IllegalStateException("Prepared music pack was already published");
+            }
+            Path backup = stagingRoot.resolve("backup-" + java.util.UUID.randomUUID());
+            Files.createDirectories(packDirectory.getParent());
+            boolean hadPrevious = Files.exists(packDirectory);
+            if (hadPrevious) {
+                moveDirectory(packDirectory, backup);
+            }
+            try {
+                moveDirectory(stagingDirectory, packDirectory);
+                published = true;
+                return new PublishedPack(backup, hadPrevious);
+            } catch (IOException publishFailure) {
+                if (hadPrevious && Files.exists(backup) && !Files.exists(packDirectory)) {
+                    try {
+                        moveDirectory(backup, packDirectory);
+                    } catch (IOException restoreFailure) {
+                        publishFailure.addSuppressed(restoreFailure);
+                    }
+                }
+                throw publishFailure;
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (!published) {
+                deleteTree(stagingDirectory);
+            }
+        }
+    }
+
+    public final class PublishedPack implements AutoCloseable {
+        private final Path backup;
+        private final boolean hadPrevious;
+        private boolean finished;
+
+        private PublishedPack(Path backup, boolean hadPrevious) {
+            this.backup = backup;
+            this.hadPrevious = hadPrevious;
+        }
+
+        public void commit() throws IOException {
+            if (finished) {
+                return;
+            }
+            deleteTree(backup);
+            finished = true;
+        }
+
+        public void rollback() throws IOException {
+            if (finished) {
+                return;
+            }
+            if (!hadPrevious) {
+                deleteTree(packDirectory);
+                finished = true;
+                return;
+            }
+
+            if (!Files.isDirectory(backup)) {
+                throw new IOException("Previous generated music pack backup is missing: " + backup);
+            }
+
+            Path failedPublishedPack = stagingRoot.resolve("failed-published-" + UUID.randomUUID());
+            boolean movedPublishedPack = false;
+            if (Files.exists(packDirectory)) {
+                moveDirectory(packDirectory, failedPublishedPack);
+                movedPublishedPack = true;
+            }
+            try {
+                moveDirectory(backup, packDirectory);
+            } catch (IOException restoreFailure) {
+                if (movedPublishedPack && Files.exists(failedPublishedPack) && !Files.exists(packDirectory)) {
+                    try {
+                        moveDirectory(failedPublishedPack, packDirectory);
+                    } catch (IOException publishedRestoreFailure) {
+                        restoreFailure.addSuppressed(publishedRestoreFailure);
+                    }
+                }
+                throw restoreFailure;
+            }
+            deleteTree(failedPublishedPack);
+            finished = true;
+        }
+
+        @Override
+        public void close() throws IOException {
+            rollback();
         }
     }
 

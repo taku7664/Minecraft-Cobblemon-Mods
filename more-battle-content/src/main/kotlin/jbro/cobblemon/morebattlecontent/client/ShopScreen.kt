@@ -13,7 +13,6 @@ import jbro.cobblemon.morebattlecontent.internal.bp.shop.ShopStatePayload
 import jbro.cobblemon.morebattlecontent.internal.hub.BattleHubContent
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryLevelMode
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
-import jbro.cobblemon.morebattlecontent.internal.tower.TowerRank
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractButton
@@ -350,7 +349,7 @@ internal class ShopScreen(
                     if (own) MbcGuiPalette.BUTTON_SELECTED else MbcGuiPalette.BUTTON_DISABLED,
                 )
             }
-            val rankWidth = 24
+            val placeWidth = 24
             graphics.drawString(
                 font,
                 "#${entry.place}",
@@ -361,13 +360,13 @@ internal class ShopScreen(
             )
             val detail = leaderboardDetail(entry, row.width < 250)
             val detailWidth = font.width(detail)
-            val availableNameWidth = (row.width - rankWidth - detailWidth - 10).coerceAtLeast(1)
+            val availableNameWidth = (row.width - placeWidth - detailWidth - 10).coerceAtLeast(1)
             val name = font.plainSubstrByWidth(entry.playerName, availableNameWidth)
-            graphics.drawString(font, name, row.left + rankWidth, row.top + 3, MbcGuiPalette.TEXT_PRIMARY, false)
+            graphics.drawString(font, name, row.left + placeWidth, row.top + 3, MbcGuiPalette.TEXT_PRIMARY, false)
             graphics.drawString(
                 font,
                 detail,
-                (row.right - detailWidth - 3).coerceAtLeast(row.left + rankWidth),
+                (row.right - detailWidth - 3).coerceAtLeast(row.left + placeWidth),
                 row.top + 3,
                 MbcGuiPalette.TEXT_SECONDARY,
                 false,
@@ -484,9 +483,9 @@ internal class ShopScreen(
     private fun leaderboardDetail(entry: HomeLeaderboardEntry, compact: Boolean): String = when (leaderboardContent) {
         LeaderboardContent.TOWER -> Component.translatable(
             homeKey(if (compact) "leaderboard.detail.tower.compact" else "leaderboard.detail.tower"),
-            rankLabel(entry.highestRank),
-            entry.rankProgress,
+            entry.bestWinStreak,
             entry.totalWins,
+            entry.totalLosses,
         ).string
         LeaderboardContent.FACTORY -> Component.translatable(
             homeKey(if (compact) "leaderboard.detail.factory.compact" else "leaderboard.detail.factory"),
@@ -500,11 +499,6 @@ internal class ShopScreen(
             entry.totalLosses,
             entry.bestWinStreak,
         ).string
-    }
-
-    private fun rankLabel(order: Long): String {
-        val rank = TowerRank.entries.singleOrNull { it.leaderboardOrder == order } ?: return order.toString()
-        return if (rank == TowerRank.MAX) "MAX" else rank.serializedId
     }
 
     private fun selectEntry(entry: ShopEntryView) {

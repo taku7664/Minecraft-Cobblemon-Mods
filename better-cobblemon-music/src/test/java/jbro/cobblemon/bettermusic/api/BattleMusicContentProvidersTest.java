@@ -39,10 +39,27 @@ final class BattleMusicContentProvidersTest {
         providers.register("example:throws", ignored -> {
             throw new IllegalStateException("broken optional integration");
         });
+        providers.register("example:linkage_error", ignored -> {
+            throw new NoSuchMethodError("binary-incompatible optional integration");
+        });
         providers.register("example:null_result", ignored -> null);
         providers.register("example:invalid_id", ignored -> Optional.of("Not Namespaced"));
         providers.register("example:working", ignored -> Optional.of("example:tower"));
 
         assertEquals(Optional.of("example:tower"), providers.resolve(battleId));
+    }
+
+    @Test
+    void providerCallbacksRunOutsideTheRegistryLockAndUseAStableSnapshot() {
+        var providers = BattleMusicContentProviders.create();
+        UUID battleId = UUID.randomUUID();
+        providers.register("example:registers_late", ignored -> {
+            providers.register("example:late", lateIgnored -> Optional.of("example:late"));
+            return Optional.empty();
+        });
+        providers.register("example:working", ignored -> Optional.of("example:working"));
+
+        assertEquals(Optional.of("example:working"), providers.resolve(battleId));
+        assertEquals(Optional.of("example:working"), providers.resolve(battleId));
     }
 }

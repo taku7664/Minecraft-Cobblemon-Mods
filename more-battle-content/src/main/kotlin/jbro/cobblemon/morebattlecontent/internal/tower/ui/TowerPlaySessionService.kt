@@ -11,7 +11,6 @@ import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleOutcome
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgress
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgressUpdate
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgression
-import jbro.cobblemon.morebattlecontent.internal.tower.TowerRank
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerTeamRegistrationIssue
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerTeamRegistrationResult
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerTeamRules
@@ -67,6 +66,7 @@ internal object TowerPlayMessageKeys {
     const val DUPLICATE_HELD_ITEM = "$PREFIX.duplicate_held_item"
     const val SELECTION_SIZE = "$PREFIX.selection_size"
     const val UNREGISTERED_POKEMON = "$PREFIX.unregistered_pokemon"
+    const val LEGENDARY_CLASS_NOT_ALLOWED = "$PREFIX.legendary_class_not_allowed"
 
 }
 
@@ -117,7 +117,10 @@ internal class TowerPlaySessionService(
                 progress = progress,
                 bpBalance = request.bpBalance,
                 errorKeys = registrationErrors(request.party),
-                selectedMechanic = existing.state.selectedMechanic,
+                selectedMechanic = existing.state.selectedMechanic ?: DEFAULT_TOWER_MECHANIC,
+                mechanicLocked = existing.state.mechanicLocked,
+                legendaryClassAllowed = existing.state.legendaryClassAllowed,
+                legendaryClassLocked = existing.state.legendaryClassLocked,
             )
             sessions[playerId] = Session(request.progressByFormat, entryContext, refreshed)
             return refreshed
@@ -133,6 +136,7 @@ internal class TowerPlaySessionService(
             progress = progress,
             bpBalance = request.bpBalance,
             errorKeys = registrationErrors(request.party),
+            selectedMechanic = DEFAULT_TOWER_MECHANIC,
         )
         sessions[playerId] = Session(request.progressByFormat, entryContext, state)
         return state
@@ -150,6 +154,13 @@ internal class TowerPlaySessionService(
 
     @Synchronized
     fun activeBattleId(playerId: UUID): UUID? = sessions[playerId]?.activeBattleId
+
+    @Synchronized
+    fun refreshBpBalance(playerId: UUID, balance: Long): TowerPlayViewState? {
+        require(balance >= 0) { "BP balance cannot be negative" }
+        val session = sessions[playerId] ?: return null
+        return session.state.copy(bpBalance = balance).also { session.state = it }
+    }
 
     @Synchronized
     fun completeBattle(
@@ -213,10 +224,8 @@ internal class TowerPlaySessionService(
         val updated = state.copy(
             revision = state.revision + 1,
             phase = TowerPlayPhase.TEAM_LOCKED,
-            rank = update.after.rank,
-            rankPoints = update.after.rankPoints,
-            winsRequired = update.after.displayWinsRequired,
-            masterCycleWins = update.after.masterCycleWins,
+            currentWinStreak = update.after.currentWinStreak,
+            bestWinStreak = update.after.bestWinStreak,
         )
         session.state = updated
         return TowerPlayBattleCompletionResult.Completed(updated)
@@ -251,6 +260,20 @@ internal class TowerPlaySessionService(
     }
 
     @Synchronized
+    fun disconnect(
+        playerId: UUID,
+        completionSink: TowerPlayBattleCompletionSink = battleCompletionSink,
+    ): Boolean {
+        val session = sessions[playerId] ?: return false
+        session.activeBattleId?.let { battleId ->
+            finishBattle(playerId, battleId, TowerBattleOutcome.LOSS, completionSink)
+        }
+        registeredTeamSnapshots.discard(playerId)
+        removeSession(playerId)
+        return true
+    }
+
+    @Synchronized
     fun mutate(
         playerId: UUID,
         intent: TowerPlayIntent,
@@ -281,6 +304,7 @@ internal class TowerPlaySessionService(
             is TowerPlayIntent.ToggleSelection -> toggle(session, intent)
             is TowerPlayIntent.ChangeFormat -> changeFormat(session, intent)
             is TowerPlayIntent.ChangeMechanic -> changeMechanic(session, intent)
+            is TowerPlayIntent.ChangeLegendaryClassAllowed -> changeLegendaryClassAllowed(session, intent)
             is TowerPlayIntent.LockTeam -> lockTeam(playerId, session, intent, currentParty)
             is TowerPlayIntent.Start -> startBattle(playerId, session, intent)
             is TowerPlayIntent.Resume -> rejected(intent, session.state.revision, TowerPlayMessageKeys.BATTLE_UNAVAILABLE)
@@ -334,6 +358,9 @@ internal class TowerPlaySessionService(
                 bpBalance = state.bpBalance,
                 errorKeys = state.errorKeys,
                 selectedMechanic = state.selectedMechanic,
+                mechanicLocked = state.mechanicLocked,
+                legendaryClassAllowed = state.legendaryClassAllowed,
+                legendaryClassLocked = state.legendaryClassLocked,
             ),
         )
     }
@@ -350,6 +377,21 @@ internal class TowerPlaySessionService(
             session,
             intent,
             state.copy(revision = state.revision + 1, selectedMechanic = intent.mechanic),
+        )
+    }
+
+    private fun changeLegendaryClassAllowed(
+        session: Session,
+        intent: TowerPlayIntent.ChangeLegendaryClassAllowed,
+    ): TowerPlayMutationResult {
+        val state = session.state
+        if (state.phase != TowerPlayPhase.SELECTING || state.legendaryClassLocked) {
+            return rejected(intent, state.revision, TowerPlayMessageKeys.PHASE_INVALID)
+        }
+        return accept(
+            session,
+            intent,
+            state.copy(revision = state.revision + 1, legendaryClassAllowed = intent.allowed),
         )
     }
 
@@ -386,6 +428,7 @@ internal class TowerPlaySessionService(
             registration.team,
             state.format,
             state.selectedPokemonOrder,
+            state.legendaryClassAllowed,
         )
         if (selection is TowerTeamSelectionResult.Rejected) {
             return rejected(
@@ -428,7 +471,14 @@ internal class TowerPlaySessionService(
         }
         return when (
             val launch = battleLauncher.launch(
-                TowerBattleLaunchRequest(playerId, progress, selection, mechanic, session.state.entryContextId),
+                TowerBattleLaunchRequest(
+                    playerId,
+                    progress,
+                    selection,
+                    mechanic,
+                    state.legendaryClassAllowed,
+                    session.state.entryContextId,
+                ),
             )
         ) {
             is TowerBattleLaunchResult.Started -> {
@@ -440,6 +490,7 @@ internal class TowerPlaySessionService(
                         revision = state.revision + 1,
                         phase = TowerPlayPhase.ACTIVE,
                         mechanicLocked = true,
+                        legendaryClassLocked = true,
                     ),
                 )
             }
@@ -534,6 +585,9 @@ private fun viewState(
     bpBalance: Long,
     errorKeys: Collection<String>,
     selectedMechanic: MajorBattleMechanic? = null,
+    mechanicLocked: Boolean = false,
+    legendaryClassAllowed: Boolean = false,
+    legendaryClassLocked: Boolean = false,
 ): TowerPlayViewState = TowerPlayViewState(
     entryContextId = entryContextId,
     revision = revision,
@@ -541,14 +595,17 @@ private fun viewState(
     phase = phase,
     party = party,
     selectedPokemonIds = selected,
-    rank = progress.rank,
-    rankPoints = progress.rankPoints,
-    winsRequired = progress.displayWinsRequired,
-    masterCycleWins = progress.masterCycleWins,
+    currentWinStreak = progress.currentWinStreak,
+    bestWinStreak = progress.bestWinStreak,
     bpBalance = bpBalance,
     errorKeys = errorKeys,
     selectedMechanic = selectedMechanic,
+    mechanicLocked = mechanicLocked,
+    legendaryClassAllowed = legendaryClassAllowed,
+    legendaryClassLocked = legendaryClassLocked,
 )
+
+private val DEFAULT_TOWER_MECHANIC = MajorBattleMechanic.DYNAMAX
 
 private fun registrationErrors(party: Collection<TowerPlayPartySlot>): List<String> =
     when (val result = TowerTeamRules.register(party.map(TowerPlayPartySlot::asRegistration))) {
@@ -561,6 +618,7 @@ private fun TowerPlayPartySlot.asRegistration() = TowerPokemonRegistration(
     speciesId,
     heldItemId,
     level,
+    legendaryClass,
 )
 
 private fun List<TowerTeamRegistrationIssue>.associateIssueKeys(): Map<String, String> =
@@ -579,6 +637,7 @@ private fun List<TowerTeamSelectionIssue>.associateSelectionIssueKeys(): Map<Str
             is TowerTeamSelectionIssue.WrongSelectionSize -> "selection"
             is TowerTeamSelectionIssue.DuplicatePokemon -> "pokemon"
             is TowerTeamSelectionIssue.UnregisteredPokemon -> "pokemon"
+            is TowerTeamSelectionIssue.LegendaryClassNotAllowed -> "pokemon"
         } to issue.messageKey()
     }
 
@@ -593,6 +652,7 @@ private fun TowerTeamSelectionIssue.messageKey(): String = when (this) {
     is TowerTeamSelectionIssue.WrongSelectionSize -> TowerPlayMessageKeys.SELECTION_SIZE
     is TowerTeamSelectionIssue.DuplicatePokemon -> TowerPlayMessageKeys.DUPLICATE_POKEMON
     is TowerTeamSelectionIssue.UnregisteredPokemon -> TowerPlayMessageKeys.UNREGISTERED_POKEMON
+    is TowerTeamSelectionIssue.LegendaryClassNotAllowed -> TowerPlayMessageKeys.LEGENDARY_CLASS_NOT_ALLOWED
 }
 
 private fun orderedProgressCopy(source: Map<TowerBattleFormat, TowerProgress>): LinkedHashMap<TowerBattleFormat, TowerProgress> =

@@ -95,8 +95,17 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
             onlinePlayers[handler.player.uuid] = handler.player
         }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
-            play.disconnect(handler.player.uuid)
-            onlinePlayers.remove(handler.player.uuid)
+            val playerId = handler.player.uuid
+            try {
+                play.disconnect(playerId)
+            } catch (exception: RuntimeException) {
+                jbro.cobblemon.morebattlecontent.MoreBattleContent.LOGGER.error(
+                    "Battle Factory disconnect settlement failed for $playerId",
+                    exception,
+                )
+            } finally {
+                onlinePlayers.remove(playerId)
+            }
         }
     }
 

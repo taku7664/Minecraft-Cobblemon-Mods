@@ -3,7 +3,6 @@ package jbro.cobblemon.morebattlecontent.internal.tower.ui
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgress
-import jbro.cobblemon.morebattlecontent.internal.tower.TowerRank
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -22,9 +21,9 @@ class TowerPlayOpenRequestFactoryTest {
                 assertEquals(playerId, id)
                 requestedFormats += format
                 if (format == TowerBattleFormat.SINGLE) {
-                    TowerProgress(format, TowerRank.RANK_4, 1)
+                    TowerProgress(format, 6, 9)
                 } else {
-                    TowerProgress(format, TowerRank.RANK_8, 3)
+                    TowerProgress(format, 14, 20)
                 }
             },
             bpSource = { id -> assertEquals(playerId, id); 91 },
@@ -34,8 +33,8 @@ class TowerPlayOpenRequestFactoryTest {
 
         assertEquals(party, request.party)
         assertEquals(TowerBattleFormat.DOUBLE, request.initialFormat)
-        assertEquals(TowerRank.RANK_4, request.progressByFormat.getValue(TowerBattleFormat.SINGLE).rank)
-        assertEquals(TowerRank.RANK_8, request.progressByFormat.getValue(TowerBattleFormat.DOUBLE).rank)
+        assertEquals(6, request.progressByFormat.getValue(TowerBattleFormat.SINGLE).currentWinStreak)
+        assertEquals(20, request.progressByFormat.getValue(TowerBattleFormat.DOUBLE).bestWinStreak)
         assertEquals(TowerBattleFormat.entries, requestedFormats)
         assertEquals(91, request.bpBalance)
     }

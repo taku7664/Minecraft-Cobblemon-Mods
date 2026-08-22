@@ -3,7 +3,6 @@ package jbro.cobblemon.morebattlecontent.internal.factory
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyObjective
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTeamRole
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -85,24 +84,14 @@ class FactoryCatalogSelectorsTest {
     }
 
     @Test
-    fun `fixed item clause backtracks to another complete preset instead of changing an item`() {
-        val shared = (1..5).map { template("shared_$it", FactoryPoolGroup.STARTER, 1, it, item = "cobblemon:leftovers") }
-        val legal = (6..11).map { template("legal_$it", FactoryPoolGroup.STARTER, 1, it) }
-        val selector = FactoryDraftSelector(FactoryCatalog("test", emptyList(), shared + legal), firstChoiceRandom)
+    fun `draft accepts complete presets when every held item repeats`() {
+        val repeated = (1..8).map { template("shared_$it", FactoryPoolGroup.STARTER, 1, it, item = "cobblemon:leftovers") }
+        val selector = FactoryDraftSelector(FactoryCatalog("test", emptyList(), repeated), firstChoiceRandom)
 
         val draft = selector.select(FactoryLevelMode.LEVEL_50, round = 1, rentAndTradeCount = 1)!!
 
-        assertEquals(6, draft.sets.mapNotNull(FactoryRentalSet::heldItemId).distinct().size)
-        assertEquals(1, draft.sets.count { it.heldItemId == "cobblemon:leftovers" })
-    }
-
-    @Test
-    fun `draft fails when fixed complete presets cannot satisfy the item clause`() {
-        val illegal = (1..8).map { template("shared_$it", FactoryPoolGroup.STARTER, 1, it, item = "cobblemon:leftovers") }
-        assertNull(
-            FactoryDraftSelector(FactoryCatalog("test", emptyList(), illegal), firstChoiceRandom)
-                .select(FactoryLevelMode.LEVEL_50, round = 1, rentAndTradeCount = 1),
-        )
+        assertEquals(6, draft.sets.size)
+        assertTrue(draft.sets.all { it.heldItemId == "cobblemon:leftovers" })
     }
 
     @Test
@@ -113,6 +102,7 @@ class FactoryCatalogSelectorsTest {
                 FactoryPoolGroup.ADVANCED,
                 1,
                 index,
+                item = "cobblemon:leftovers",
                 roles = if (index % 2 == 0) setOf(BattleTeamRole.SETUP_ENABLER) else setOf(BattleTeamRole.WALLBREAKER),
             )
         }
@@ -122,7 +112,7 @@ class FactoryCatalogSelectorsTest {
 
         assertEquals(4, selected.team.size)
         assertEquals(4, selected.team.map(FactoryRentalSet::speciesId).distinct().size)
-        assertEquals(4, selected.team.mapNotNull(FactoryRentalSet::heldItemId).distinct().size)
+        assertEquals(1, selected.team.mapNotNull(FactoryRentalSet::heldItemId).distinct().size)
         assertEquals(1, selected.strategy.members.count { BattleTeamRole.ACE in it.roles })
         selected.team.zip(selected.strategy.members).forEach { (set, member) ->
             assertTrue(member.preferredMoveIds.all(set.moveIds::contains))

@@ -52,6 +52,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
     private val strategyBrief: BattleStrategyBrief? = null,
     private val trainerProfile: BattleTrainerProfile = BattleTrainerProfile.balanced(),
     private val learningScopeId: UUID? = null,
+    private val trainerPersonaId: String? = null,
     private val primaryBrain: BattleBrain? = null,
     localBrain: BattleBrain? = null,
     private val knowledgePolicy: BattleKnowledgePolicy = BattleKnowledgePolicy.FAIR_INFERENCE,
@@ -119,6 +120,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
             candidates = preparation.candidates,
             deadlineEpochMillis = safeDeadline(now),
             memory = tacticalMemory.view(state.turn),
+            publicActionCatalog = Cobblemon173PublicActionCatalog.from(state),
         )
         val primaryEndpoint = endpoint(primaryBrain, primarySession)
         val localEndpoint = endpoint(localBrain, localSession)
@@ -194,7 +196,12 @@ internal class Cobblemon173BrainTrainerBattleActor(
             )
             val submitted = submitPreparedResponses(expectedRequest, selectedResponses)
             if (submitted) {
-                tacticalMemory.accept(context.state, selectedCandidate, selectedDecision.advice)
+                val planOwner = when (selectedResolution.source) {
+                    BattleDecisionSource.PRIMARY_BRAIN -> jbro.cobblemon.morebattlecontent.api.ai.BattlePlanOwner.PRIMARY_BRAIN
+                    BattleDecisionSource.LOCAL_BRAIN -> jbro.cobblemon.morebattlecontent.api.ai.BattlePlanOwner.LOCAL_BRAIN
+                    else -> null
+                }
+                tacticalMemory.accept(context.state, selectedCandidate, selectedDecision.advice, planOwner)
             }
         } else {
             if (throwable != null) logFailure("Brain decision completion", throwable)
@@ -310,6 +317,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
         strategy = strategyBrief,
         trainerProfile = trainerProfile,
         learningScopeId = learningScopeId,
+        trainerPersonaId = trainerPersonaId,
     )
 
     private fun closeSessionReference(

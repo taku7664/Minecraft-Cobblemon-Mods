@@ -55,11 +55,10 @@
         "trainer_049",
         "trainer_050"
       ],
-      "rank_ids": [
-        "3",
-        "6",
-        "9",
-        "10"
+      "stage_ids": [
+        "introductory",
+        "practical",
+        "advanced"
       ],
       "format": "double",
       "opponent_kind": "tier_boss",

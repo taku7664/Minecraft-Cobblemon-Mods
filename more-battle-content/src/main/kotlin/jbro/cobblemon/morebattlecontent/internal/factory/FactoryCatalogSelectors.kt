@@ -60,7 +60,6 @@ internal class FactoryDraftSelector(
             selectedInGroup = 0,
             selected = selected,
             species = HashSet(),
-            heldItems = HashSet(),
             recentSpeciesIds = recentSpeciesIds,
             previousOverlap = 0,
             maxPreviousOverlap = maxPreviousOverlap,
@@ -75,7 +74,6 @@ internal class FactoryDraftSelector(
         selectedInGroup: Int,
         selected: MutableList<DraftCandidate>,
         species: MutableSet<String>,
-        heldItems: MutableSet<String>,
         recentSpeciesIds: Set<String>,
         previousOverlap: Int,
         maxPreviousOverlap: Int,
@@ -90,7 +88,6 @@ internal class FactoryDraftSelector(
                 0,
                 selected,
                 species,
-                heldItems,
                 recentSpeciesIds,
                 previousOverlap,
                 maxPreviousOverlap,
@@ -102,11 +99,8 @@ internal class FactoryDraftSelector(
             val repeated = candidate.template.speciesId in recentSpeciesIds
             if (candidate.template.speciesId in species) continue
             if (repeated && previousOverlap >= maxPreviousOverlap) continue
-            val item = candidate.template.heldItemId
-            if (item in heldItems) continue
             selected += candidate
             species += candidate.template.speciesId
-            heldItems += item
             if (
                 selectGroup(
                     groups,
@@ -115,7 +109,6 @@ internal class FactoryDraftSelector(
                     selectedInGroup + 1,
                     selected,
                     species,
-                    heldItems,
                     recentSpeciesIds,
                     previousOverlap + if (repeated) 1 else 0,
                     maxPreviousOverlap,
@@ -123,7 +116,6 @@ internal class FactoryDraftSelector(
             ) return true
             selected.removeAt(selected.lastIndex)
             species -= candidate.template.speciesId
-            heldItems -= item
         }
         return false
     }
@@ -204,7 +196,7 @@ internal class FactoryOpponentSelector(
     private fun selectTeam(candidates: List<FactoryRentalTemplate>, size: Int): List<FactoryRentalTemplate>? {
         val ordered = candidates.toMutableList().also(::shuffle)
         val selected = ArrayList<FactoryRentalTemplate>(size)
-        return selected.takeIf { selectTeam(ordered, size, 0, selected, HashSet(), HashSet()) }
+        return selected.takeIf { selectTeam(ordered, size, 0, selected, HashSet()) }
     }
 
     private fun selectTeam(
@@ -213,20 +205,17 @@ internal class FactoryOpponentSelector(
         startIndex: Int,
         selected: MutableList<FactoryRentalTemplate>,
         species: MutableSet<String>,
-        heldItems: MutableSet<String>,
     ): Boolean {
         if (selected.size == required) return true
         if (candidates.size - startIndex < required - selected.size) return false
         for (index in startIndex until candidates.size) {
             val candidate = candidates[index]
-            if (candidate.speciesId in species || candidate.heldItemId in heldItems) continue
+            if (candidate.speciesId in species) continue
             selected += candidate
             species += candidate.speciesId
-            heldItems += candidate.heldItemId
-            if (selectTeam(candidates, required, index + 1, selected, species, heldItems)) return true
+            if (selectTeam(candidates, required, index + 1, selected, species)) return true
             selected.removeAt(selected.lastIndex)
             species -= candidate.speciesId
-            heldItems -= candidate.heldItemId
         }
         return false
     }

@@ -131,6 +131,4 @@ internal class FactoryRentalDraft(sets: List<FactoryRentalSet>) {
 private fun requireLegalRentalCollection(sets: List<FactoryRentalSet>, label: String) {
     require(sets.map(FactoryRentalSet::setId).distinct().size == sets.size) { "$label set IDs must be unique" }
     require(sets.map(FactoryRentalSet::speciesId).distinct().size == sets.size) { "$label species must be unique" }
-    val heldItems = sets.mapNotNull(FactoryRentalSet::heldItemId)
-    require(heldItems.distinct().size == heldItems.size) { "$label held items must be unique" }
 }

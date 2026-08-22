@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.internal.factory
 
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordStats
+import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordOutcome
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -72,6 +73,22 @@ class FactorySessionServiceTest {
         )
         assertEquals(FactoryRunPhase.READY, active.snapshot(playerId)?.phase)
         assertEquals(started.runId, unavailable.snapshot(playerId)?.runId)
+    }
+
+    @Test
+    fun `disconnect during an active battle records a loss before closing the run`() {
+        val outcomes = ArrayList<BattleRecordOutcome>()
+        val active = service { completion ->
+            outcomes += completion.outcome
+            BattleRecordStats(completion.key)
+        }
+        active.start(playerId, team(), FactoryLevelMode.LEVEL_50) {}
+        active.beginBattle(playerId, opponent(), "trainer.factory", 3, strategyBrief())
+
+        assertTrue(active.disconnect(playerId))
+
+        assertEquals(listOf(BattleRecordOutcome.LOSS), outcomes)
+        assertEquals(null, active.snapshot(playerId))
     }
 
     private fun service(

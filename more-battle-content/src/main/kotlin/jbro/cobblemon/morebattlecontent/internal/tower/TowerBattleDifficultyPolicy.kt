@@ -5,7 +5,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
 
 internal object TowerBattleDifficultyPolicy {
     fun resolve(
-        rank: TowerRank,
+        stage: TowerStreakStage,
         opponentKind: TowerOpponentKind,
         aiSkill: Int,
     ): BattleTrainerProfile {
@@ -15,22 +15,11 @@ internal object TowerBattleDifficultyPolicy {
             -> return BattleTrainerProfile.champion(aiSkill)
             TowerOpponentKind.REGULAR -> Unit
         }
-        val difficulty = when (rank) {
-            TowerRank.RANK_1,
-            TowerRank.RANK_2,
-            TowerRank.RANK_3,
-            -> BattleDifficultyProfiles.INTRODUCTORY
-
-            TowerRank.RANK_4,
-            TowerRank.RANK_5,
-            TowerRank.RANK_6,
-            -> BattleDifficultyProfiles.STANDARD
-
-            TowerRank.RANK_7,
-            TowerRank.RANK_8,
-            TowerRank.RANK_9,
-            TowerRank.RANK_10,
-            TowerRank.MAX,
+        val difficulty = when (stage) {
+            TowerStreakStage.INTRODUCTORY -> BattleDifficultyProfiles.INTRODUCTORY
+            TowerStreakStage.PRACTICAL -> BattleDifficultyProfiles.STANDARD
+            TowerStreakStage.ADVANCED,
+            TowerStreakStage.PRO,
             -> BattleDifficultyProfiles.ADVANCED
         }
         return BattleTrainerProfile.balanced(aiSkill, difficulty)

@@ -39,10 +39,6 @@ internal data class BattleRecordCompletion(
 }
 
 internal object BattleRecordMetrics {
-    val CURRENT_RANK = BattleRecordMetricId("current_rank")
-    val RANK_PROGRESS = BattleRecordMetricId("rank_progress")
-    val MASTER_CYCLE_WINS = BattleRecordMetricId("master_cycle_wins")
-    val HIGHEST_RANK = BattleRecordMetricId("highest_rank")
     val CURRENT_FLOOR = BattleRecordMetricId("current_floor")
     val HIGHEST_FLOOR = BattleRecordMetricId("highest_floor")
     val BEST_SCORE = BattleRecordMetricId("best_score")

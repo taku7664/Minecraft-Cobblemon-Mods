@@ -5,6 +5,9 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFieldStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
+import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceBasis
+import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceConfidence
+import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleKnowledgePolicy
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMechanicCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveCandidateView
@@ -38,21 +41,33 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStandardDamageModel
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanIntent
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanUpdateOperation
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyBrief
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyObjective
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTeamMemberPlan
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTeamRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.UUID
 import kotlin.random.Random
 
 class LocalTacticalBrainSimulationTest {
-    private val brain = LocalTacticalBrain()
+    private val brain = LocalTacticalBrain(LocalHighestRankedActionSelector)
     private val session = brain.openSession(
         BattleBrainOpenContext(UUID.randomUUID(), BattleFormat.SINGLE, BattleKnowledgePolicy.FAIR_INFERENCE),
     )
+
+    @Test
+    fun `single legal action skips tactical ranking and recursive search`() {
+        val decision = decide(listOf(move("only", power = 40.0)))
+
+        assertEquals("only", decision.actionId)
+        assertEquals(1.0, decision.confidence)
+        assertTrue("single_legal_action" in decision.tags)
+        assertTrue(decision.tags.none { it.startsWith("lookahead_nodes_") })
+    }
 
     @Test
     fun `reliable high pressure move beats weaker or inaccurate alternatives`() {
@@ -297,7 +312,12 @@ class LocalTacticalBrainSimulationTest {
 
     @Test
     fun `a visible repeated move pattern can be broken without sacrificing a large advantage`() {
-        val memory = BattleTacticalMemoryView(lastMoveId = "cobblemon:repeat", sameMoveRepeatCount = 2)
+        val memory = BattleTacticalMemoryView(
+            lastMoveId = "cobblemon:repeat",
+            sameMoveRepeatCount = 2,
+            patternExposureCount = 2,
+            patternResponseShiftEvidence = 0.8,
+        )
 
         assertEquals(
             "alternative",
@@ -349,7 +369,7 @@ class LocalTacticalBrainSimulationTest {
                         fractionRange = BattleFractionRange(0.5, 0.5),
                     ),
                 ),
-                scriptedBehavior = false,
+                scriptedBehavior = true,
             ),
             facts = BattleCandidateFactsView(
                 baseAccuracyProbability = 1.0,
@@ -360,6 +380,110 @@ class LocalTacticalBrainSimulationTest {
         val chip = move("small_damage", power = 30.0, facts = damageFacts(0.10))
 
         assertEquals("small_damage", decide(listOf(recovery, chip), allyHp = 1.0).actionId)
+    }
+
+    @Test
+    fun `recovery loop stops when the public hp loss erased the previous heal`() {
+        val actorId = UUID.randomUUID()
+        val recovery = move(
+            id = "recover",
+            power = 0.0,
+            damageCategory = BattleMoveDamageCategory.STATUS,
+            effects = BattleMoveEffectsView(
+                coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                effects = listOf(
+                    BattleMoveEffectView(
+                        kind = BattleMoveEffectKind.HEAL_FRACTION,
+                        target = BattleMoveEffectTarget.USER,
+                        probability = 1.0,
+                        fractionRange = BattleFractionRange(0.5, 0.5),
+                    ),
+                ),
+                scriptedBehavior = true,
+            ),
+            facts = BattleCandidateFactsView(
+                baseAccuracyProbability = 1.0,
+                selfHealingFractionRange = BattleFractionRange(0.5, 0.5),
+                calculationCoverage = BattleCalculationCoverage.PARTIAL,
+            ),
+        )
+        val chip = move("small_damage", power = 40.0, facts = damageFacts(0.15))
+        val events = listOf(
+            BattleObservedEventView(
+                sequence = 10,
+                turn = 4,
+                kind = BattleObservedEventKind.MOVE_USED,
+                actorPokemonId = actorId,
+                publicValueId = "cobblemon:recover",
+            ),
+            BattleObservedEventView(
+                sequence = 11,
+                turn = 4,
+                kind = BattleObservedEventKind.HP_CHANGED,
+                actorPokemonId = actorId,
+                hpFractionDelta = 0.5,
+            ),
+            BattleObservedEventView(
+                sequence = 12,
+                turn = 4,
+                kind = BattleObservedEventKind.HP_CHANGED,
+                actorPokemonId = actorId,
+                hpFractionDelta = -0.55,
+            ),
+        )
+
+        assertEquals(
+            "small_damage",
+            decide(
+                candidates = listOf(recovery, chip),
+                turn = 5,
+                allyPokemonId = actorId,
+                allyHp = 0.10,
+                observedEvents = events,
+                memory = BattleTacticalMemoryView(lastMoveId = "cobblemon:recover", sameMoveRepeatCount = 1),
+            ).actionId,
+        )
+    }
+
+    @Test
+    fun `repeated pure recovery yields at high hp but remains available for low hp survival`() {
+        val recovery = move(
+            id = "recover",
+            power = 0.0,
+            damageCategory = BattleMoveDamageCategory.STATUS,
+            effects = BattleMoveEffectsView(
+                coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                effects = listOf(
+                    BattleMoveEffectView(
+                        kind = BattleMoveEffectKind.HEAL_FRACTION,
+                        target = BattleMoveEffectTarget.USER,
+                        probability = 1.0,
+                        fractionRange = BattleFractionRange(0.5, 0.5),
+                    ),
+                ),
+                scriptedBehavior = true,
+            ),
+            facts = BattleCandidateFactsView(
+                baseAccuracyProbability = 1.0,
+                selfHealingFractionRange = BattleFractionRange(0.5, 0.5),
+                calculationCoverage = BattleCalculationCoverage.PARTIAL,
+            ),
+        )
+        val chip = move("small_damage", power = 40.0, facts = damageFacts(0.15))
+        val repeatedRecovery = BattleTacticalMemoryView(
+            lastMoveId = "cobblemon:recover",
+            sameMoveRepeatCount = 3,
+        )
+
+        assertEquals("recover", decide(listOf(recovery, chip), allyHp = 0.82).actionId)
+        assertEquals(
+            "small_damage",
+            decide(listOf(recovery, chip), allyHp = 0.82, memory = repeatedRecovery).actionId,
+        )
+        assertEquals(
+            "recover",
+            decide(listOf(recovery, chip), allyHp = 0.25, memory = repeatedRecovery).actionId,
+        )
     }
 
     @Test
@@ -433,6 +557,36 @@ class LocalTacticalBrainSimulationTest {
     }
 
     @Test
+    fun `local plan is kept only while the selected action still serves its intent`() {
+        val advancedSession = brain.openSession(
+            BattleBrainOpenContext(
+                UUID.randomUUID(),
+                BattleFormat.SINGLE,
+                trainerProfile = BattleTrainerProfile.balanced(4),
+                trainerPersonaId = "mbc:test_planner",
+            ),
+        )
+        val pressure = move("pressure", 90.0)
+        val kept = decide(
+            listOf(pressure),
+            memory = BattleTacticalMemoryView(
+                activePlan = BattlePlanView(BattlePlanIntent.APPLY_PRESSURE, expiresAtTurn = 6),
+            ),
+            selectedSession = advancedSession,
+        )
+        val replaced = decide(
+            listOf(pressure),
+            memory = BattleTacticalMemoryView(
+                activePlan = BattlePlanView(BattlePlanIntent.ESTABLISH_FIELD, expiresAtTurn = 6),
+            ),
+            selectedSession = advancedSession,
+        )
+
+        assertEquals(BattlePlanUpdateOperation.KEEP, kept.advice?.planUpdate?.operation)
+        assertEquals(BattlePlanUpdateOperation.CLEAR, replaced.advice?.planUpdate?.operation)
+    }
+
+    @Test
     fun `known opponent typing changes move pressure without reading hidden types`() {
         val normal = move("normal", power = 90.0, typeId = "normal")
         val fire = move("fire", power = 70.0, typeId = "fire")
@@ -440,6 +594,21 @@ class LocalTacticalBrainSimulationTest {
         assertEquals("fire", decide(listOf(normal, fire), opponentTypes = setOf("grass")).actionId)
         assertEquals("normal", decide(listOf(normal, fire), opponentTypes = setOf("water")).actionId)
         assertEquals("normal", decide(listOf(normal, fire), opponentTypes = emptySet()).actionId)
+    }
+
+    @Test
+    fun `ghost immunity beats extreme speed priority even at critical hp`() {
+        val extremeSpeed = move("extreme_speed", power = 80.0, typeId = "normal", priority = 2)
+        val ember = move("ember", power = 30.0, typeId = "fire")
+
+        assertEquals(
+            "ember",
+            decide(
+                candidates = listOf(extremeSpeed, ember),
+                opponentHp = 0.15,
+                opponentTypes = setOf("ghost"),
+            ).actionId,
+        )
     }
 
     @Test
@@ -453,6 +622,31 @@ class LocalTacticalBrainSimulationTest {
                 candidates = listOf(ground, ice),
                 opponentTypes = setOf("electric"),
                 opponentAbilityId = "cobblemon:levitate",
+            ).actionId,
+        )
+    }
+
+    @Test
+    fun `sole public levitate possibility prevents ground damage before it activates`() {
+        val opponentId = UUID.randomUUID()
+        val ground = move("ground", power = 100.0, typeId = "ground", facts = damageFacts(0.60))
+        val ice = move("ice", power = 70.0, typeId = "ice", facts = damageFacts(0.25))
+
+        assertEquals(
+            "ice",
+            decide(
+                candidates = listOf(ground, ice),
+                opponentPokemonId = opponentId,
+                opponentTypes = setOf("electric"),
+                inferences = listOf(
+                    BattleInferenceView(
+                        subjectPokemonId = opponentId,
+                        categoryId = "ability",
+                        candidateId = "levitate",
+                        confidence = BattleInferenceConfidence.POSSIBLE,
+                        basis = setOf(BattleInferenceBasis.PUBLIC_SPECIES_RULES),
+                    ),
+                ),
             ).actionId,
         )
     }
@@ -744,12 +938,37 @@ class LocalTacticalBrainSimulationTest {
             ),
         )
         val candidates = listOf(
-            move("status", power = 0.0, damageCategory = BattleMoveDamageCategory.STATUS),
-            move("damage", power = 30.0),
+            statusMove("status"),
+            move("damage", power = 40.0),
+        )
+        val recovery = move(
+            id = "recover",
+            power = 0.0,
+            damageCategory = BattleMoveDamageCategory.STATUS,
+            effects = effects(
+                BattleMoveEffectView(
+                    BattleMoveEffectKind.HEAL_FRACTION,
+                    BattleMoveEffectTarget.USER,
+                    fractionRange = BattleFractionRange(0.5, 0.5),
+                ),
+            ),
+            facts = BattleCandidateFactsView(
+                baseAccuracyProbability = 1.0,
+                selfHealingFractionRange = BattleFractionRange(0.5, 0.5),
+                calculationCoverage = BattleCalculationCoverage.PARTIAL,
+            ),
         )
 
         assertEquals("status", decide(candidates, selectedSession = strategySession).actionId)
         assertEquals("damage", decide(candidates).actionId)
+        assertEquals(
+            "low_damage",
+            decide(
+                listOf(recovery, move("low_damage", power = 25.0)),
+                allyHp = 0.90,
+                selectedSession = strategySession,
+            ).actionId,
+        )
     }
 
     @Test
@@ -1032,6 +1251,17 @@ class LocalTacticalBrainSimulationTest {
     }
 
     @Test
+    fun `toxic into a public steel target is removed while a useful move exists`() {
+        val toxic = statusMove("toxic", statusId = "cobblemon:tox")
+        val chip = move("neutral_chip", power = 40.0, facts = damageFacts(0.15))
+
+        assertEquals(
+            "neutral_chip",
+            decide(listOf(toxic, chip), opponentTypes = setOf("steel")).actionId,
+        )
+    }
+
+    @Test
     fun `active non stackable ally side conditions are not used again`() {
         listOf("tailwind", "reflect", "lightscreen", "auroraveil").forEach { effectId ->
             val sideCondition = sideConditionMove(
@@ -1106,7 +1336,7 @@ class LocalTacticalBrainSimulationTest {
     }
 
     @Test
-    fun `one active screen does not block setting a different screen`() {
+    fun `one active screen is enough before returning to useful damage`() {
         val lightScreen = sideConditionMove(
             id = "set_light_screen",
             effectId = "lightscreen",
@@ -1114,8 +1344,9 @@ class LocalTacticalBrainSimulationTest {
         )
         val chip = move("small_damage", power = 40.0, facts = damageFacts(0.15))
 
+        assertEquals("set_light_screen", decide(listOf(lightScreen, chip)).actionId)
         assertEquals(
-            "set_light_screen",
+            "small_damage",
             decide(
                 candidates = listOf(lightScreen, chip),
                 field = sideConditionField(BattleSide.ALLY, "reflect", remainingTurns = 3),
@@ -1203,7 +1434,7 @@ class LocalTacticalBrainSimulationTest {
     }
 
     @Test
-    fun `fully saturated stat setup loses to useful damage`() {
+    fun `stat setup is used once then converts the boost into damage`() {
         val swordsDance = effectMove(
             id = "swords_dance",
             kind = BattleMoveEffectKind.STAT_STAGE,
@@ -1219,12 +1450,13 @@ class LocalTacticalBrainSimulationTest {
             ).actionId,
         )
         assertEquals(
-            "swords_dance",
+            "small_damage",
             decide(
                 candidates = listOf(swordsDance, chip),
                 allyStatStages = mapOf("attack" to 2),
             ).actionId,
         )
+        assertEquals("swords_dance", decide(listOf(swordsDance, chip)).actionId)
     }
 
     @Test
@@ -1515,6 +1747,7 @@ class LocalTacticalBrainSimulationTest {
         allyPokemonId: UUID = UUID.randomUUID(),
         allyHp: Double = 1.0,
         opponentHp: Double = 1.0,
+        opponentPokemonId: UUID = UUID.randomUUID(),
         allyTypes: Set<String> = emptySet(),
         opponentTypes: Set<String> = emptySet(),
         format: BattleFormat = BattleFormat.SINGLE,
@@ -1529,6 +1762,7 @@ class LocalTacticalBrainSimulationTest {
         allyStatStages: Map<String, Int> = emptyMap(),
         field: BattleFieldStateView = BattleFieldStateView.empty(),
         observedEvents: List<BattleObservedEventView> = emptyList(),
+        inferences: List<BattleInferenceView> = emptyList(),
         allyBench: Map<UUID, BenchPokemon> = emptyMap(),
         memory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
         selectedSession: BattleBrainSession = session,
@@ -1541,6 +1775,7 @@ class LocalTacticalBrainSimulationTest {
                 allyPokemonId,
                 allyHp,
                 opponentHp,
+                opponentPokemonId,
                 allyTypes,
                 opponentTypes,
                 format,
@@ -1555,6 +1790,7 @@ class LocalTacticalBrainSimulationTest {
                 allyStatStages,
                 field,
                 observedEvents,
+                inferences,
                 allyBench,
             ),
             candidates = candidates,
@@ -1597,7 +1833,11 @@ class LocalTacticalBrainSimulationTest {
         facts = facts,
     )
 
-    private fun statusMove(id: String, targetSlot: Int = 0) = BattleActionCandidate(
+    private fun statusMove(
+        id: String,
+        targetSlot: Int = 0,
+        statusId: String = "cobblemon:paralysis",
+    ) = BattleActionCandidate(
         actionId = id,
         kind = BattleActionKind.USE_MOVE,
         actorSlot = 0,
@@ -1619,7 +1859,7 @@ class LocalTacticalBrainSimulationTest {
                         kind = BattleMoveEffectKind.STATUS,
                         target = BattleMoveEffectTarget.SELECTED_TARGET,
                         probability = 1.0,
-                        valueId = "cobblemon:paralysis",
+                        valueId = statusId,
                     ),
                 ),
                 scriptedBehavior = false,
@@ -1808,6 +2048,7 @@ class LocalTacticalBrainSimulationTest {
         allyPokemonId: UUID,
         allyHp: Double,
         opponentHp: Double,
+        opponentPokemonId: UUID,
         allyTypes: Set<String>,
         opponentTypes: Set<String>,
         format: BattleFormat,
@@ -1822,6 +2063,7 @@ class LocalTacticalBrainSimulationTest {
         allyStatStages: Map<String, Int>,
         field: BattleFieldStateView,
         observedEvents: List<BattleObservedEventView>,
+        inferences: List<BattleInferenceView>,
         allyBench: Map<UUID, BenchPokemon>,
     ): BattleStateView {
         val ally = pokemon(
@@ -1837,6 +2079,7 @@ class LocalTacticalBrainSimulationTest {
             BattleSide.OPPONENT,
             opponentHp,
             opponentTypes,
+            pokemonId = opponentPokemonId,
             statusId = opponentStatusId,
             knownAbilityId = opponentAbilityId,
         )
@@ -1867,7 +2110,7 @@ class LocalTacticalBrainSimulationTest {
                 pokemon.count { it.side == side && !it.fainted }
             },
             observedEvents = observedEvents,
-            inferences = emptyList(),
+            inferences = inferences,
         )
     }
 

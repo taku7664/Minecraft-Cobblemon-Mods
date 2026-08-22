@@ -2,8 +2,11 @@ package jbro.cobblemon.bettermusic.client;
 
 import com.cobblemon.mod.common.client.battle.ClientBattleActor;
 import java.lang.reflect.Method;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import jbro.cobblemon.bettermusic.battle.RctTrainerRoleMapper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
@@ -14,9 +17,12 @@ final class RctTrainerRoleAdapter {
     private static final String RCT_MOD_ID = "rctmod";
     private static final String RCT_TRAINER_ENTITY_ID = "rctmod:trainer";
     private static final String RCT_API_CLASS = "com.gitlab.srcmc.rctmod.api.RCTMod";
+    private static final int MAX_CACHED_ACTORS = 128;
 
     private final Logger logger;
     private final boolean installed;
+    private final Map<UUID, Optional<String>> rolesByActor = new LinkedHashMap<>();
+    private Object cachedLevel;
     private boolean failureReported;
 
     RctTrainerRoleAdapter(Logger logger) {
@@ -28,13 +34,21 @@ final class RctTrainerRoleAdapter {
         if (!installed || client.level == null) {
             return Optional.empty();
         }
+        if (cachedLevel != client.level) {
+            cachedLevel = client.level;
+            rolesByActor.clear();
+        }
+        UUID actorId = actor.getUuid();
+        if (rolesByActor.containsKey(actorId)) {
+            return rolesByActor.get(actorId);
+        }
         for (var entity : client.level.entitiesForRendering()) {
-            if (!entity.getUUID().equals(actor.getUuid())) {
+            if (!entity.getUUID().equals(actorId)) {
                 continue;
             }
             String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
             if (!RCT_TRAINER_ENTITY_ID.equals(entityId)) {
-                return Optional.empty();
+                return cache(actorId, Optional.empty());
             }
             try {
                 String trainerId = (String) entity.getClass().getMethod("getTrainerId").invoke(entity);
@@ -51,13 +65,22 @@ final class RctTrainerRoleAdapter {
                     return Optional.empty();
                 }
                 String typeId = (String) type.getClass().getMethod("id").invoke(type);
-                return RctTrainerRoleMapper.map(typeId);
+                return cache(actorId, RctTrainerRoleMapper.map(typeId));
             } catch (ReflectiveOperationException | LinkageError | RuntimeException exception) {
                 reportFailureOnce(exception);
-                return Optional.empty();
+                return cache(actorId, Optional.empty());
             }
         }
         return Optional.empty();
+    }
+
+    private Optional<String> cache(UUID actorId, Optional<String> role) {
+        if (rolesByActor.size() >= MAX_CACHED_ACTORS) {
+            UUID oldest = rolesByActor.keySet().iterator().next();
+            rolesByActor.remove(oldest);
+        }
+        rolesByActor.put(actorId, role);
+        return role;
     }
 
     private void reportFailureOnce(Throwable failure) {

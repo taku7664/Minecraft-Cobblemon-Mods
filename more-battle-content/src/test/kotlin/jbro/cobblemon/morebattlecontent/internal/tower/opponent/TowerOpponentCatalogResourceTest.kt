@@ -10,7 +10,10 @@ import java.util.jar.JarFile
 import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerOpponentKind
-import jbro.cobblemon.morebattlecontent.internal.tower.TowerRank
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerStreakStage
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgress
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgression
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerLegendaryClassPolicy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -18,22 +21,54 @@ import org.junit.jupiter.api.Test
 
 class TowerOpponentCatalogResourceTest {
     @Test
+    fun `bundled catalog can prepare every streak stage with legendary class off and on`() {
+        val catalog = bundledCatalog()
+        val sampleStreaks = listOf(0, 4, 5, 9, 10, 14, 15, 19, 20, 24, 25)
+
+        TowerBattleFormat.entries.forEach { format ->
+            MajorBattleMechanic.entries.forEach { mechanic ->
+                sampleStreaks.forEach { streak ->
+                    val progress = TowerProgress(format, streak, streak)
+                    val selector = TowerOpponentSelector(catalog)
+                    listOf(false, true).forEach { allowed ->
+                        val result = selector.select(
+                            stage = progress.nextStage,
+                            format = format,
+                            opponentKind = TowerProgression.nextOpponent(progress),
+                            mechanic = mechanic,
+                            legendaryClassAllowed = allowed,
+                        ) as TowerOpponentSelectionResult.Selected
+                        assertEquals(
+                            if (allowed) 1 else 0,
+                            result.team.count { TowerLegendaryClassPolicy.isLegendaryClass(it.speciesId) },
+                            "$format $mechanic streak=$streak allowed=$allowed",
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     fun `every reachable tower battle has at least fifty eligible trainers`() {
         val catalog = bundledCatalog()
 
-        TowerRank.entries.forEach { rank ->
+        TowerStreakStage.entries.forEach { stage ->
             val reachableKinds = buildList {
                 add(TowerOpponentKind.REGULAR)
-                if (rank.completionChangesTier) add(TowerOpponentKind.TIER_BOSS)
-                if (rank == TowerRank.MAX) add(TowerOpponentKind.MASTER_BALL_BOSS)
+                if (stage == TowerStreakStage.PRO) {
+                    add(TowerOpponentKind.MASTER_BALL_BOSS)
+                } else {
+                    add(TowerOpponentKind.TIER_BOSS)
+                }
             }
             TowerBattleFormat.entries.forEach { format ->
                 MajorBattleMechanic.entries.forEach { mechanic ->
                     reachableKinds.forEach { kind ->
-                        val profiles = catalog.profilesFor(rank, format, kind, mechanic)
+                        val profiles = catalog.profilesFor(stage, format, kind, mechanic)
                         assertTrue(
                             profiles.size >= MINIMUM_TRAINERS_PER_CATEGORY,
-                            "$rank $format $kind $mechanic has only ${profiles.size} eligible trainers",
+                            "$stage $format $kind $mechanic has only ${profiles.size} eligible trainers",
                         )
                     }
                 }
@@ -48,7 +83,7 @@ class TowerOpponentCatalogResourceTest {
 
         assertTrue(profiles.map(TowerOpponentProfile::profileId).toSet().containsAll(setOf("trainer_001", "trainer_050")))
         val categories = profiles.groupBy {
-            listOf(it.rankIds, it.format, it.opponentKind, it.mechanic, it.theme)
+            listOf(it.stageIds, it.format, it.opponentKind, it.mechanic, it.theme)
         }
         assertEquals(EXPECTED_PROFILE_CATEGORY_COUNT, categories.size)
         categories.forEach { (category, trainers) ->
@@ -183,14 +218,14 @@ class TowerOpponentCatalogResourceTest {
     private fun approvedProfiles(catalog: TowerOpponentCatalog): List<TowerOpponentProfile> =
         MajorBattleMechanic.entries.flatMap { mechanic ->
             TowerBattleFormat.entries.flatMap { format ->
-                TowerRank.entries.flatMap { rank ->
+                TowerStreakStage.entries.flatMap { stage ->
                     TowerOpponentKind.entries.flatMap { kind ->
-                        catalog.profilesFor(rank, format, kind, mechanic)
+                        catalog.profilesFor(stage, format, kind, mechanic)
                     }
                 }
             }
         }.distinctBy { profile ->
-            listOf(profile.profileId, profile.rankIds, profile.format, profile.opponentKind, profile.mechanic, profile.theme)
+            listOf(profile.profileId, profile.stageIds, profile.format, profile.opponentKind, profile.mechanic, profile.theme)
         }
 
     private fun assertMechanicShape(mechanic: MajorBattleMechanic, set: TowerPokemonSet) {

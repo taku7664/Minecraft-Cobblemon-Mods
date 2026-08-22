@@ -59,7 +59,7 @@ class TowerPveBattleLauncherTest {
             TowerOpponentProfile(
                 profileId = id,
                 displayNameKey = "trainer.test.$id",
-                rankIds = listOf(TowerRank.RANK_1),
+                stageIds = listOf(TowerStreakStage.INTRODUCTORY),
                 format = TowerBattleFormat.SINGLE,
                 opponentKind = TowerOpponentKind.REGULAR,
                 mechanic = MajorBattleMechanic.MEGA,
@@ -95,12 +95,12 @@ class TowerPveBattleLauncherTest {
     @Test
     fun `promotion battle is exposed to brain selection as an actual boss encounter`() {
         val starts = ArrayList<TowerPreparedPveBattle<String, String>>()
-        val progress = TowerProgress(TowerBattleFormat.SINGLE, TowerRank.RANK_3, rankPoints = 1)
+        val progress = TowerProgress(TowerBattleFormat.SINGLE, currentWinStreak = 4, bestWinStreak = 4)
         val launcher = TowerPveBattleLauncher(
             registeredTeamMaterializer = { _, _ ->
                 TowerRegisteredBattleTeamResult.Created(listOf("player_1", "player_2", "player_3"))
             },
-            catalogSource = { catalog(MajorBattleMechanic.MEGA, TowerRank.RANK_3, TowerOpponentKind.TIER_BOSS) },
+            catalogSource = { catalog(MajorBattleMechanic.MEGA, TowerStreakStage.INTRODUCTORY, TowerOpponentKind.TIER_BOSS) },
             opponentMemberFactory = { set -> "opponent:${set.setId}" },
             runtime = TowerPveBattleRuntime { prepared ->
                 starts += prepared
@@ -156,14 +156,14 @@ class TowerPveBattleLauncherTest {
 
     private fun catalog(
         mechanic: MajorBattleMechanic,
-        rank: TowerRank = TowerRank.RANK_1,
+        stage: TowerStreakStage = TowerStreakStage.INTRODUCTORY,
         opponentKind: TowerOpponentKind = TowerOpponentKind.REGULAR,
     ): TowerOpponentCatalog {
         val sets = (1..6).map(::set)
         val profile = TowerOpponentProfile(
             profileId = "${mechanic.id}_profile",
             displayNameKey = "trainer.test.${mechanic.id}",
-            rankIds = listOf(rank),
+            stageIds = listOf(stage),
             format = TowerBattleFormat.SINGLE,
             opponentKind = opponentKind,
             mechanic = mechanic,

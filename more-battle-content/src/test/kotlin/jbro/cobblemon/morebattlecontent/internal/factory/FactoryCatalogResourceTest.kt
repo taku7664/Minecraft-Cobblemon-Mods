@@ -176,7 +176,6 @@ class FactoryCatalogResourceTest {
             }
             val draft = requireNotNull(draftSelector.select(levelMode, round, RENT_AND_TRADE_COUNTS[index % RENT_AND_TRADE_COUNTS.size]))
             assertEquals(6, draft.sets.map(FactoryRentalSet::speciesId).distinct().size)
-            assertEquals(6, draft.sets.mapNotNull(FactoryRentalSet::heldItemId).distinct().size)
             draft.sets.forEach { rental ->
                 val template = templates.getValue(rental.setId)
                 assertEquals(template.moveIds, rental.moveIds)
@@ -187,7 +186,6 @@ class FactoryCatalogResourceTest {
             val format = FactoryBattleFormat.entries[index % FactoryBattleFormat.entries.size]
             val selected = opponentSelector.select(format, levelMode, round) as FactoryOpponentSelectionResult.Selected
             assertEquals(format.selectionSize, selected.team.map(FactoryRentalSet::speciesId).distinct().size)
-            assertEquals(format.selectionSize, selected.team.mapNotNull(FactoryRentalSet::heldItemId).distinct().size)
         }
     }
 

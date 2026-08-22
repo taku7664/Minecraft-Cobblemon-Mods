@@ -3,8 +3,11 @@ package jbro.cobblemon.morebattlecontent.betterai
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
+import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
 import jbro.cobblemon.morebattlecontent.api.ai.BattleKnockoutAssessment
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectTarget
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyBrief
@@ -35,6 +38,9 @@ internal data class LocalBattleActionRank(
     val outcome: LocalBattleActionOutcome,
     val decisionTier: Int,
     val comparisonValue: Double,
+    val lookaheadUtility: Double = 0.0,
+    val executionProbability: Double = 1.0,
+    val worstResponseHpRetention: Double = 1.0,
 )
 
 internal object LocalBattleActionPolicy {
@@ -51,21 +57,31 @@ internal object LocalBattleActionPolicy {
             .filter { it.executableDamageActions > 0 && !it.publiclyInert }
             .mapNotNull { it.candidate.actorSlot }
             .toSet()
-        return outcomes.map { outcome ->
+        return sort(outcomes.map { outcome ->
             val tier = decisionTier(outcome, context, executableDamageSlots)
             LocalBattleActionRank(
                 outcome = outcome,
                 decisionTier = tier,
-                comparisonValue = tier * TIER_DISTANCE +
-                    outcome.secureStandardKnockouts * SECURE_KNOCKOUT_DISTANCE +
+                comparisonValue = tierAdjustment(tier) +
+                    outcome.secureStandardKnockouts * SECURE_KNOCKOUT_BONUS +
                     outcome.tacticalUtility,
             )
-        }.sortedWith(
-            compareByDescending<LocalBattleActionRank> { it.decisionTier }
-                .thenByDescending { it.outcome.secureStandardKnockouts }
-                .thenByDescending { it.outcome.tacticalUtility }
-                .thenBy { it.outcome.candidate.actionId },
-        )
+        })
+    }
+
+    fun sort(ranks: List<LocalBattleActionRank>): List<LocalBattleActionRank> = ranks.sortedWith(
+        compareByDescending<LocalBattleActionRank>(LocalBattleActionRank::comparisonValue)
+            .thenBy { it.outcome.candidate.actionId },
+    )
+
+    private fun tierAdjustment(tier: Int): Double = when (tier) {
+        TIER_FORFEIT -> FORFEIT_TIER_ADJUSTMENT
+        TIER_PUBLICLY_BAD -> PUBLICLY_BAD_TIER_ADJUSTMENT
+        TIER_TEMPO_LOSS -> TEMPO_LOSS_TIER_ADJUSTMENT
+        TIER_ORDINARY,
+        TIER_SECURE_KNOCKOUT,
+        -> 0.0
+        else -> 0.0
     }
 
     private fun decisionTier(
@@ -112,6 +128,16 @@ internal object LocalBattleActionPolicy {
         val improvement = outcome.survivalPositionImprovement
         if (improvement == null) return TIER_ORDINARY
         val recentlySwitched = context.memory.turnsSinceLastSwitch?.let { it <= 1 } == true
+        val offensiveImprovement = LocalLookaheadStateEvaluator
+            .switchOffensivePressureImprovement(outcome.candidate, context)
+            ?.coerceAtLeast(0.0)
+            ?: 0.0
+        val requiredOffensiveImprovement = if (recentlySwitched) {
+            RECENT_SWITCH_OFFENSIVE_IMPROVEMENT +
+                context.memory.switchesThisBattle * REPEATED_SWITCH_OFFENSIVE_STEP
+        } else {
+            MATERIAL_OFFENSIVE_IMPROVEMENT
+        }
         val requiredImprovement = if (recentlySwitched) {
             RECENT_SWITCH_SURVIVAL_IMPROVEMENT +
                 (context.memory.switchesThisBattle - 1).coerceAtLeast(0) * REPEATED_SWITCH_IMPROVEMENT_STEP
@@ -119,9 +145,15 @@ internal object LocalBattleActionPolicy {
             MATERIAL_SURVIVAL_IMPROVEMENT
         }
         val overwhelmingPublicEscape = recentlySwitched &&
-            outcome.currentDefensiveExposure?.let { it >= OVERWHELMING_PUBLIC_EXPOSURE } == true &&
+            LocalPublicPositionFacts.activeAlly(outcome.candidate, context)?.let { active ->
+                LocalPublicPositionFacts.isOverwhelmingPublicThreat(active, context)
+            } == true &&
             improvement >= RECENT_SWITCH_SURVIVAL_IMPROVEMENT
-        return if (improvement >= requiredImprovement || overwhelmingPublicEscape) {
+        return if (
+            improvement >= requiredImprovement ||
+            offensiveImprovement >= requiredOffensiveImprovement ||
+            overwhelmingPublicEscape
+        ) {
             TIER_ORDINARY
         } else {
             TIER_TEMPO_LOSS
@@ -133,12 +165,16 @@ internal object LocalBattleActionPolicy {
     private const val TIER_TEMPO_LOSS = 2
     private const val TIER_ORDINARY = 3
     private const val TIER_SECURE_KNOCKOUT = 4
-    private const val TIER_DISTANCE = 10_000.0
-    private const val SECURE_KNOCKOUT_DISTANCE = 1_000.0
+    internal const val SECURE_KNOCKOUT_BONUS = 250.0
+    private const val TEMPO_LOSS_TIER_ADJUSTMENT = -250.0
+    private const val PUBLICLY_BAD_TIER_ADJUSTMENT = -1_000.0
+    private const val FORFEIT_TIER_ADJUSTMENT = -10_000.0
     private const val MATERIAL_SURVIVAL_IMPROVEMENT = 0.25
     private const val RECENT_SWITCH_SURVIVAL_IMPROVEMENT = 0.75
     private const val REPEATED_SWITCH_IMPROVEMENT_STEP = 2.0
-    private const val OVERWHELMING_PUBLIC_EXPOSURE = 4.0
+    private const val MATERIAL_OFFENSIVE_IMPROVEMENT = 0.25
+    private const val RECENT_SWITCH_OFFENSIVE_IMPROVEMENT = 0.60
+    private const val REPEATED_SWITCH_OFFENSIVE_STEP = 0.10
 }
 
 internal object LocalBattleActionOutcomeEvaluator {
@@ -166,17 +202,20 @@ internal object LocalBattleActionOutcomeEvaluator {
         val details = candidate.moveDetails
         val accuracy = facts?.baseAccuracyProbability ?: details?.accuracy?.div(100.0) ?: 0.0
         val damageRange = facts?.standardDamageFractionRange
-        val mechanics = LocalPublicMechanicsKernel.projectMove(candidate, context)
+        val projection = PublicActionOutcomeProjector.project(candidate, context)
         val baseExpectedDamage = damageRange?.let { (it.minimum + it.maximum) / 2.0 * accuracy } ?: 0.0
-        val expectedDamage = baseExpectedDamage * mechanics.knownDamageMultiplier
-        val mechanicsUtilityAdjustment = (expectedDamage - baseExpectedDamage) * DAMAGE_UTILITY_SCALE
-        val publiclyInert = isPubliclyInert(candidate, context) || mechanics.publiclyNullified
-        val executableDamage = if (isExecutableDamage(candidate, context) && !mechanics.publiclyNullified) 1 else 0
-        val adjustedMinimumDamage = damageRange?.minimum?.times(mechanics.knownDamageMultiplier)
+        val expectedDamage = projection.expectedDamageFraction ?: 0.0
+        val mechanicsUtilityAdjustment = (expectedDamage - baseExpectedDamage) * DAMAGE_UTILITY_SCALE -
+            (projection.expectedSelfRecoilFraction ?: 0.0) * SELF_HP_UTILITY_SCALE
+        val publiclyInert = isPubliclyInert(candidate, context) ||
+            projection.publiclyNullified ||
+            isWastedPureRecovery(candidate, projection)
+        val executableDamage = if (isExecutableDamage(candidate, context) && !projection.publiclyNullified) 1 else 0
+        val adjustedMinimumDamage = projection.damageOnHitFractionRange?.minimum
         val secureKnockout = if (
             facts?.standardKnockoutAssessment == BattleKnockoutAssessment.GUARANTEED &&
             accuracy >= CERTAIN_ACCURACY && executableDamage > 0 &&
-            adjustedMinimumDamage != null && mechanics.targetHpFraction?.let { adjustedMinimumDamage >= it } == true
+            adjustedMinimumDamage != null && projection.targetHpBefore?.let { adjustedMinimumDamage >= it } == true
         ) {
             1
         } else {
@@ -206,8 +245,10 @@ internal object LocalBattleActionOutcomeEvaluator {
         val active = LocalPublicPositionFacts.activeAlly(candidate, context)
         val target = LocalPublicPositionFacts.switchTarget(candidate, context)
         val postEntryHp = target?.let { LocalTacticalSituationalEvaluator.postEntryHp(candidate, it.hpFraction) }
-        val currentExposure = active?.let { LocalPublicPositionFacts.defensiveExposure(it.knownTypeIds, context) }
-        val targetExposure = target?.let { LocalPublicPositionFacts.defensiveExposure(it.knownTypeIds, context) }
+        val currentExposure = active?.let { LocalPublicPositionFacts.defensiveExposure(it, context) }
+        val targetExposure = target?.let {
+            LocalPublicPositionFacts.defensiveExposure(it, context, candidate.actorSlot)
+        }
         val improvement = if (active != null && target != null && postEntryHp != null &&
             currentExposure != null && targetExposure != null
         ) {
@@ -289,8 +330,23 @@ internal object LocalBattleActionOutcomeEvaluator {
             LocalTacticalSituationalEvaluator.recentPublicFailurePenalty(candidate, context) > 0.0 ||
             LocalTacticalSituationalEvaluator.consecutiveUseForbiddenPenalty(candidate, context) > 0.0
 
+    private fun isWastedPureRecovery(
+        candidate: BattleActionCandidate,
+        projection: PublicActionOutcomeProjection,
+    ): Boolean {
+        val effects = candidate.moveDetails?.effects?.effects.orEmpty()
+        if (effects.isEmpty() || effects.any {
+                it.kind != BattleMoveEffectKind.HEAL_FRACTION || it.target != BattleMoveEffectTarget.USER
+            }
+        ) return false
+        return projection.actorHpBefore?.let { it >= 1.0 - FULL_HP_EPSILON } == true &&
+            (projection.expectedSelfHealingFraction ?: 0.0) <= FULL_HP_EPSILON
+    }
+
     private const val CERTAIN_ACCURACY = 0.999
     private const val DAMAGE_UTILITY_SCALE = 100.0
+    private const val SELF_HP_UTILITY_SCALE = 100.0
+    private const val FULL_HP_EPSILON = 1e-9
 }
 
 internal object LocalPublicPositionFacts {
@@ -310,16 +366,75 @@ internal object LocalPublicPositionFacts {
             }
         }
 
-    fun defensiveExposure(defenderTypes: Set<String>, context: BattleDecisionContext): Double? =
-        if (defenderTypes.isEmpty()) {
-            null
-        } else {
-            PublicSwitchTypeFactsCalculator.activeOpponentTypeChartMultipliers(defenderTypes, context)
+    fun defensiveExposure(
+        defender: BattlePokemonStateView,
+        context: BattleDecisionContext,
+        replacingSlot: Int? = null,
+    ): Double? {
+        val typeFallback = defender.knownTypeIds.takeIf { it.isNotEmpty() }?.let { types ->
+            PublicSwitchTypeFactsCalculator.activeOpponentTypeChartMultipliers(types, context)
                 .maxOfOrNull(PublicActiveOpponentTypeChartMultiplier::multiplier)
         }
+        if (context.state.format != BattleFormat.SINGLE) return typeFallback
+        val hasRevealedOpponentMove = context.state.pokemon.asSequence()
+            .filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted }
+            .any { context.publicActionCatalog.forPokemon(it.battlePokemonId).isNotEmpty() }
+        if (!hasRevealedOpponentMove) return typeFallback
+        val state = if (defender.side == BattleSide.ALLY && defender.activeSlot == null) {
+            val activeSlot = replacingSlot ?: context.state.pokemon.singleOrNull {
+                it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted
+            }?.activeSlot ?: return null
+            LocalSwitchStateProjector.project(
+                context.state,
+                BattleSide.ALLY,
+                BattleActionCandidate(
+                    actionId = "public-exposure-switch:${defender.battlePokemonId}",
+                    kind = BattleActionKind.SWITCH,
+                    actorSlot = activeSlot,
+                    switchPokemonId = defender.battlePokemonId,
+                ),
+            )
+        } else {
+            context.state
+        }
+        return revealedMoveDamageExposure(state, context) ?: typeFallback
+    }
+
+    fun isPublicKnockoutThreat(
+        defender: BattlePokemonStateView,
+        context: BattleDecisionContext,
+    ): Boolean {
+        val state = if (defender.activeSlot != null) context.state else return false
+        val revealedDamage = revealedMoveDamageExposure(state, context)
+        return if (revealedDamage != null) {
+            revealedDamage >= defender.hpFraction
+        } else {
+            defensiveExposure(defender, context)?.let { it >= KNOCKOUT_TYPE_EXPOSURE } == true
+        }
+    }
+
+    fun isOverwhelmingPublicThreat(
+        defender: BattlePokemonStateView,
+        context: BattleDecisionContext,
+    ): Boolean {
+        val revealedDamage = revealedMoveDamageExposure(context.state, context)
+        return if (revealedDamage != null) {
+            revealedDamage >= defender.hpFraction
+        } else {
+            defensiveExposure(defender, context)?.let { it >= OVERWHELMING_TYPE_EXPOSURE } == true
+        }
+    }
+
+    private fun revealedMoveDamageExposure(
+        state: jbro.cobblemon.morebattlecontent.api.ai.BattleStateView,
+        context: BattleDecisionContext,
+    ): Double? = LocalLookaheadStateEvaluator.attackPressure(state, BattleSide.OPPONENT, context)
+        .takeIf { it > 0.0 }
 
     fun survivalPosition(hpFraction: Double, defensiveExposure: Double): Double =
         hpFraction / defensiveExposure.coerceAtLeast(IMMUNITY_EXPOSURE_FLOOR)
 
     private const val IMMUNITY_EXPOSURE_FLOOR = 0.25
+    private const val OVERWHELMING_TYPE_EXPOSURE = 4.0
+    private const val KNOCKOUT_TYPE_EXPOSURE = 2.0
 }

@@ -8,6 +8,7 @@ import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordService
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgressRecordCodec
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgress
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerLegendaryClassPolicy
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerRecordContract
 import jbro.cobblemon.morebattlecontent.internal.tower.TOWER_BATTLE_LEVEL_CAP
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayOpenRequest
@@ -55,6 +56,10 @@ internal object Cobblemon173TowerPlayOpenRequestFactory {
                     heldItemId = if (heldItem.isEmpty) null else BuiltInRegistries.ITEM.getKey(heldItem.item).toString(),
                     level = it.level,
                     battleLevel = it.level.coerceAtMost(TOWER_BATTLE_LEVEL_CAP),
+                    legendaryClass = TowerLegendaryClassPolicy.isLegendaryClass(
+                        it.species.resourceIdentifier.toString(),
+                        it.species.labels,
+                    ),
                 )
             }
         }

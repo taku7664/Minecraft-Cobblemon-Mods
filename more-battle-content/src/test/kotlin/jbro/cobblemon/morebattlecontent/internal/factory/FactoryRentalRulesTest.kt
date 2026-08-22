@@ -22,17 +22,17 @@ class FactoryRentalRulesTest {
     }
 
     @Test
-    fun `drafts and selected teams reject duplicate species and held items`() {
+    fun `drafts reject duplicate species but allow duplicate held items`() {
         assertThrows<IllegalArgumentException> {
             FactoryRentalDraft(
                 (1..6).map(::rental).toMutableList().also { it[5] = rental(6, species = "cobblemon:species1") },
             )
         }
-        assertThrows<IllegalArgumentException> {
-            FactoryRentalDraft(
-                (1..6).map(::rental).toMutableList().also { it[5] = rental(6, item = "cobblemon:item1") },
-            )
-        }
+        val draft = FactoryRentalDraft((1..6).map { rental(it, item = "cobblemon:leftovers") })
+        val team = draft.select(listOf("set1", "set2", "set3"), FactoryBattleFormat.SINGLE)
+
+        assertEquals(1, draft.sets.mapNotNull(FactoryRentalSet::heldItemId).distinct().size)
+        assertEquals(1, team.sets.mapNotNull(FactoryRentalSet::heldItemId).distinct().size)
     }
 
     @Test
@@ -133,6 +133,27 @@ class FactoryRentalRulesTest {
         assertEquals(2, session.rentAndTradeCount)
         assertEquals(FactoryRunPhase.READY, session.phase)
         assertThrows<IllegalStateException> { session.swap("set2", offers[1].token) }
+    }
+
+    @Test
+    fun `swap allows an incoming rental to repeat a remaining held item`() {
+        val draft = FactoryRentalDraft((1..6).map(::rental))
+        val team = draft.select(listOf("set1", "set2", "set3"), FactoryBattleFormat.SINGLE)
+        val session = FactoryRunSession(UUID.randomUUID(), team, FactoryLevelMode.LEVEL_50, healRentals = {})
+        val battleId = UUID.randomUUID()
+        val incomingToken = UUID(1, 7)
+        val opponent = mapOf(
+            incomingToken to rental(7, item = "cobblemon:item2"),
+            UUID(1, 8) to rental(8),
+            UUID(1, 9) to rental(9),
+        )
+        session.beginBattle(battleId)
+        session.recordVictory(battleId, opponent, emptyMap())
+
+        session.swap("set3", incomingToken)
+
+        assertEquals(listOf("cobblemon:item1", "cobblemon:item2", "cobblemon:item2"), session.team.sets.map(FactoryRentalSet::heldItemId))
+        assertEquals(FactoryRunPhase.READY, session.phase)
     }
 
     @Test

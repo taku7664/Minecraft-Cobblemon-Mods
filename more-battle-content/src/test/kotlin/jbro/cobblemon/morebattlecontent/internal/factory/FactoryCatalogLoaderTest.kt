@@ -82,6 +82,18 @@ class FactoryCatalogLoaderTest {
     }
 
     @Test
+    fun `catalog accepts a pool whose complete presets repeat held items`() {
+        val root = JsonParser.parseString(validJson()).asJsonObject
+        root.getAsJsonArray("sets").forEach { element ->
+            element.asJsonObject.addProperty("held_item_id", "cobblemon:leftovers")
+        }
+
+        val loaded = FactoryCatalogLoader.load(StringReader(root.toString()))
+
+        assertTrue(loaded is FactoryCatalogLoadResult.Loaded)
+    }
+
+    @Test
     fun `schema four rejects every randomized candidate field and incomplete move sets`() {
         assertRejected(validJson().replace("\"moves\":", "\"move_slots\":"), FactoryCatalogIssueCode.UNKNOWN_FIELD)
         assertRejected(validJson().replace("\"held_item_id\":", "\"held_items\":"), FactoryCatalogIssueCode.UNKNOWN_FIELD)

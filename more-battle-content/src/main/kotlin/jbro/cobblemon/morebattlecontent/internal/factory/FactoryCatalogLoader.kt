@@ -253,11 +253,11 @@ internal object FactoryCatalogLoader {
 
     private fun validateLegalTeams(sets: List<FactoryRentalTemplate>) {
         sets.groupBy { it.poolGroup to it.variant }.forEach { (window, candidates) ->
-            if (!hasLegalTeam(candidates, DRAFT_SIZE, 0, HashSet(), HashSet())) {
+            if (!hasLegalTeam(candidates, DRAFT_SIZE, 0, HashSet())) {
                 reject(
                     FactoryCatalogIssueCode.NO_LEGAL_TEAM,
                     "$.sets",
-                    "Factory pool ${window.first.name.lowercase()}-${window.second} cannot produce six unique species and held items",
+                    "Factory pool ${window.first.name.lowercase()}-${window.second} cannot produce six unique species",
                 )
             }
         }
@@ -268,18 +268,15 @@ internal object FactoryCatalogLoader {
         remaining: Int,
         startIndex: Int,
         species: MutableSet<String>,
-        heldItems: MutableSet<String>,
     ): Boolean {
         if (remaining == 0) return true
         if (candidates.size - startIndex < remaining) return false
         for (index in startIndex until candidates.size) {
             val candidate = candidates[index]
-            if (candidate.speciesId in species || candidate.heldItemId in heldItems) continue
+            if (candidate.speciesId in species) continue
             species += candidate.speciesId
-            heldItems += candidate.heldItemId
-            if (hasLegalTeam(candidates, remaining - 1, index + 1, species, heldItems)) return true
+            if (hasLegalTeam(candidates, remaining - 1, index + 1, species)) return true
             species -= candidate.speciesId
-            heldItems -= candidate.heldItemId
         }
         return false
     }

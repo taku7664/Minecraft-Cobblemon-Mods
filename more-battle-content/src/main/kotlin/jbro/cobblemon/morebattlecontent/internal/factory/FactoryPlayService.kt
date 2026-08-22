@@ -195,7 +195,7 @@ internal class FactoryPlayService(
         pendingStarts.remove(playerId)
         draftOffers.forget(playerId)
         recentOpponentTrainers.forget(playerId)
-        sessions.close(playerId)
+        sessions.disconnect(playerId)
     }
 
     private fun current(playerId: UUID): FactoryPlayView {

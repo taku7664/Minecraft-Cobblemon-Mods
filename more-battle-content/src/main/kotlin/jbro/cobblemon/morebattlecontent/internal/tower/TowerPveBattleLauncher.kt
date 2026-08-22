@@ -64,12 +64,13 @@ internal class TowerPveBattleLauncher<P, O>(
         val catalog = catalogSource() ?: return TowerBattleLaunchResult.Unavailable
         val opponentKind = TowerProgression.nextOpponent(request.progress)
         val opponent = TowerOpponentSelector(catalog, random).select(
-            request.progress.rank,
+            request.progress.nextStage,
             request.progress.format,
             opponentKind,
             request.mechanic,
             recentProfiles.recent(request.playerId),
             recentSpecies.recent(request.playerId),
+            request.legendaryClassAllowed,
         )
         if (opponent !is TowerOpponentSelectionResult.Selected) {
             return TowerBattleLaunchResult.Unavailable
@@ -85,7 +86,7 @@ internal class TowerPveBattleLauncher<P, O>(
                 opponentTeam = opponentTeam.members,
                 profile = opponent.profile,
                 trainerProfile = TowerBattleDifficultyPolicy.resolve(
-                    request.progress.rank,
+                    request.progress.nextStage,
                     opponentKind,
                     opponent.profile.aiSkill,
                 ),

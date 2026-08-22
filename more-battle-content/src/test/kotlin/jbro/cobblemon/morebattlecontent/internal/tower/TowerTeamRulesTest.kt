@@ -111,6 +111,35 @@ class TowerTeamRulesTest {
     }
 
     @Test
+    fun `rejects selected legendary class pokemon while the option is disabled`() {
+        val candidates = validCandidates().toMutableList()
+        candidates[0] = candidates[0].copy(legendaryClass = true)
+        val team = (TowerTeamRules.register(candidates) as TowerTeamRegistrationResult.Accepted).team
+
+        val result = TowerTeamRules.select(
+            team,
+            TowerBattleFormat.SINGLE,
+            listOf(id(1), id(2), id(3)),
+            legendaryClassAllowed = false,
+        )
+
+        assertEquals(
+            TowerTeamSelectionResult.Rejected(
+                listOf(TowerTeamSelectionIssue.LegendaryClassNotAllowed(id(1))),
+            ),
+            result,
+        )
+        assertTrue(
+            TowerTeamRules.select(
+                team,
+                TowerBattleFormat.SINGLE,
+                listOf(id(1), id(2), id(3)),
+                legendaryClassAllowed = true,
+            ) is TowerTeamSelectionResult.Accepted,
+        )
+    }
+
+    @Test
     fun `caps levels above fifty without raising lower levels`() {
         assertEquals(1, pokemon(1, "cobblemon:pikachu", level = 1).battleLevel)
         assertEquals(50, pokemon(1, "cobblemon:pikachu", level = 50).battleLevel)

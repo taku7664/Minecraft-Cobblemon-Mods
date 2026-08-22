@@ -55,8 +55,8 @@
         "trainer_049",
         "trainer_050"
       ],
-      "rank_ids": [
-        "max"
+      "stage_ids": [
+        "pro"
       ],
       "format": "double",
       "opponent_kind": "master_ball_boss",

@@ -3,7 +3,8 @@ package jbro.cobblemon.morebattlecontent.internal.tower.opponent
 import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerOpponentKind
-import jbro.cobblemon.morebattlecontent.internal.tower.TowerRank
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerLegendaryClassPolicy
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerStreakStage
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -16,7 +17,7 @@ class TowerOpponentSelectorTest {
         val selector = TowerOpponentSelector(catalog(listOf(first, second), validSets()), FixedRandom(longValue = 1))
 
         val result = selector.select(
-            TowerRank.RANK_1,
+            TowerStreakStage.INTRODUCTORY,
             TowerBattleFormat.SINGLE,
             TowerOpponentKind.REGULAR,
             MajorBattleMechanic.MEGA,
@@ -36,14 +37,14 @@ class TowerOpponentSelectorTest {
         val selector = TowerOpponentSelector(catalog(listOf(first, second), validSets()), FixedRandom())
 
         val fresh = selector.select(
-            TowerRank.RANK_1,
+            TowerStreakStage.INTRODUCTORY,
             TowerBattleFormat.SINGLE,
             TowerOpponentKind.REGULAR,
             MajorBattleMechanic.MEGA,
             excludedProfileIds = setOf("first"),
         ) as TowerOpponentSelectionResult.Selected
         val fallback = selector.select(
-            TowerRank.RANK_1,
+            TowerStreakStage.INTRODUCTORY,
             TowerBattleFormat.SINGLE,
             TowerOpponentKind.REGULAR,
             MajorBattleMechanic.MEGA,
@@ -61,14 +62,14 @@ class TowerOpponentSelectorTest {
         val selector = TowerOpponentSelector(catalog(listOf(profile), sets), FixedRandom())
 
         val fresh = selector.select(
-            TowerRank.RANK_1,
+            TowerStreakStage.INTRODUCTORY,
             TowerBattleFormat.SINGLE,
             TowerOpponentKind.REGULAR,
             MajorBattleMechanic.MEGA,
             excludedSpeciesIds = sets.take(3).mapTo(LinkedHashSet(), TowerPokemonSet::speciesId),
         ) as TowerOpponentSelectionResult.Selected
         val exhausted = selector.select(
-            TowerRank.RANK_1,
+            TowerStreakStage.INTRODUCTORY,
             TowerBattleFormat.SINGLE,
             TowerOpponentKind.REGULAR,
             MajorBattleMechanic.MEGA,
@@ -88,7 +89,7 @@ class TowerOpponentSelectorTest {
         val selector = TowerOpponentSelector(catalog(listOf(profile), sets), FixedRandom())
 
         val result = selector.select(
-            TowerRank.RANK_1,
+            TowerStreakStage.INTRODUCTORY,
             TowerBattleFormat.DOUBLE,
             TowerOpponentKind.REGULAR,
             MajorBattleMechanic.MEGA,
@@ -112,7 +113,7 @@ class TowerOpponentSelectorTest {
         val selector = TowerOpponentSelector(catalog(listOf(profile), validSets()), FixedRandom())
 
         val result = selector.select(
-            TowerRank.RANK_1,
+            TowerStreakStage.INTRODUCTORY,
             TowerBattleFormat.SINGLE,
             TowerOpponentKind.REGULAR,
             MajorBattleMechanic.MEGA,
@@ -128,13 +129,50 @@ class TowerOpponentSelectorTest {
         val selector = TowerOpponentSelector(catalog(listOf(profile), sets), FixedRandom())
 
         val result = selector.select(
-            TowerRank.RANK_1,
+            TowerStreakStage.INTRODUCTORY,
             TowerBattleFormat.SINGLE,
             TowerOpponentKind.REGULAR,
             MajorBattleMechanic.MEGA,
         )
 
         assertEquals(TowerOpponentSelectionResult.NoLegalTeam("invalid"), result)
+    }
+
+    @Test
+    fun `legendary class off removes specials and on guarantees exactly one replacement`() {
+        val normalSets = validSets()
+        val specials = listOf(
+            pokemonSet(7, speciesId = "cobblemon:phione", mechanic = MajorBattleMechanic.MEGA),
+            pokemonSet(8, speciesId = "cobblemon:mewtwo", mechanic = MajorBattleMechanic.MEGA),
+        )
+        val allSets = normalSets + specials
+        val profile = profile(
+            "mixed",
+            1,
+            TowerBattleFormat.SINGLE,
+            allSets.map(TowerPokemonSet::setId),
+            stageIds = listOf(TowerStreakStage.INTRODUCTORY, TowerStreakStage.PRO),
+        )
+        val selector = TowerOpponentSelector(catalog(listOf(profile), allSets), FixedRandom())
+
+        val disabled = selector.select(
+            TowerStreakStage.INTRODUCTORY,
+            TowerBattleFormat.SINGLE,
+            TowerOpponentKind.REGULAR,
+            MajorBattleMechanic.MEGA,
+            legendaryClassAllowed = false,
+        ) as TowerOpponentSelectionResult.Selected
+        val enabled = selector.select(
+            TowerStreakStage.PRO,
+            TowerBattleFormat.SINGLE,
+            TowerOpponentKind.REGULAR,
+            MajorBattleMechanic.MEGA,
+            legendaryClassAllowed = true,
+        ) as TowerOpponentSelectionResult.Selected
+
+        assertTrue(disabled.team.none { TowerLegendaryClassPolicy.isLegendaryClass(it.speciesId) })
+        assertEquals(1, enabled.team.count { TowerLegendaryClassPolicy.isLegendaryClass(it.speciesId) })
+        assertEquals(3, enabled.team.size)
     }
 
     private fun catalog(
@@ -148,10 +186,11 @@ class TowerOpponentSelectorTest {
         format: TowerBattleFormat,
         setIds: List<String>,
         mechanic: MajorBattleMechanic = MajorBattleMechanic.MEGA,
+        stageIds: List<TowerStreakStage> = listOf(TowerStreakStage.INTRODUCTORY),
     ) = TowerOpponentProfile(
         profileId = id,
         displayNameKey = "trainer.test.$id",
-        rankIds = listOf(TowerRank.RANK_1),
+        stageIds = stageIds,
         format = format,
         opponentKind = TowerOpponentKind.REGULAR,
         mechanic = mechanic,
@@ -167,9 +206,11 @@ class TowerOpponentSelectorTest {
         index: Int,
         speciesId: String = "cobblemon:species_$index",
         heldItemId: String? = "minecraft:item_$index",
+        mechanic: MajorBattleMechanic? = null,
     ) = TowerPokemonSet(
         setId = "set_$index",
-        setTier = 1,
+            setTier = 1,
+            mechanic = mechanic,
         speciesId = speciesId,
         formId = null,
         abilityId = null,

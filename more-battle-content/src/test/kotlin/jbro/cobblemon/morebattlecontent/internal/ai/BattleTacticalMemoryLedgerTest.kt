@@ -12,6 +12,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleMindGameIntent
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanIntent
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanOwner
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanUpdate
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
@@ -47,6 +48,64 @@ class BattleTacticalMemoryLedgerTest {
 
         assertEquals(BattlePlanIntent.CREATE_SAFE_ENTRY, view.activePlan?.intent)
         assertEquals(0, view.predictionCalibration.samples)
+    }
+
+    @Test
+    fun `an accepted decision from another brain cannot leave a foreign plan behind`() {
+        val ledger = BattleTacticalMemoryLedger(BattleBrainOpenContext(battleId, BattleFormat.SINGLE))
+        val before = state(turn = 1)
+        ledger.observe(before)
+        ledger.accept(
+            state = before,
+            candidate = BattleActionCandidate("local", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0),
+            advice = advice(BattlePredictedResponse.MOVE),
+            planOwner = BattlePlanOwner.LOCAL_BRAIN,
+        )
+
+        ledger.accept(
+            state = state(turn = 2),
+            candidate = BattleActionCandidate("primary", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0),
+            advice = null,
+            planOwner = BattlePlanOwner.PRIMARY_BRAIN,
+        )
+
+        assertNull(ledger.view(2).activePlan)
+        assertNull(ledger.view(2).activePlanOwner)
+    }
+
+    @Test
+    fun `different control moves without board progress accumulate one shared repetition streak`() {
+        val ledger = BattleTacticalMemoryLedger(BattleBrainOpenContext(battleId, BattleFormat.SINGLE))
+        val first = state(turn = 1, allyHp = 0.5)
+        ledger.observe(first)
+        ledger.accept(
+            state = first,
+            candidate = BattleActionCandidate(
+                "recover",
+                BattleActionKind.USE_MOVE,
+                actorSlot = 0,
+                moveSlot = 0,
+                moveId = "cobblemon:recover",
+            ),
+            advice = null,
+        )
+        val second = state(turn = 2, allyHp = 0.5)
+        ledger.observe(second)
+        ledger.accept(
+            state = second,
+            candidate = BattleActionCandidate(
+                "protect",
+                BattleActionKind.USE_MOVE,
+                actorSlot = 0,
+                moveSlot = 1,
+                moveId = "cobblemon:protect",
+            ),
+            advice = null,
+        )
+
+        ledger.observe(state(turn = 3, allyHp = 0.5))
+
+        assertEquals(2, ledger.view(3).nonProgressControlStreak)
     }
 
     @Test
@@ -144,6 +203,120 @@ class BattleTacticalMemoryLedgerTest {
         val view = ledger.view(2)
         assertEquals(0, view.predictionCalibration.samples)
         assertEquals(1, view.tendencies.first { it.response == BattlePredictedResponse.MOVE }.samples)
+    }
+
+    @Test
+    fun `repetition becomes a mind game signal only after the opponent changes response`() {
+        val ledger = BattleTacticalMemoryLedger(BattleBrainOpenContext(battleId, BattleFormat.SINGLE))
+        val repeatedMove = BattleActionCandidate(
+            "repeat",
+            BattleActionKind.USE_MOVE,
+            actorSlot = 0,
+            moveSlot = 0,
+            moveId = "cobblemon:shadowball",
+        )
+        ledger.observe(state(turn = 1))
+        ledger.accept(state(turn = 1), repeatedMove, advice = null)
+        ledger.observe(
+            state(
+                turn = 2,
+                events = listOf(
+                    BattleObservedEventView(
+                        1,
+                        2,
+                        BattleObservedEventKind.MOVE_USED,
+                        opponentId,
+                        publicValueId = "cobblemon:tackle",
+                    ),
+                ),
+            ),
+        )
+        ledger.accept(state(turn = 2), repeatedMove, advice = null)
+
+        val exposed = ledger.view(2)
+        assertEquals(2, exposed.patternExposureCount)
+        assertEquals(0.0, exposed.patternResponseShiftEvidence)
+
+        ledger.observe(
+            state(
+                turn = 3,
+                events = listOf(BattleObservedEventView(2, 3, BattleObservedEventKind.SWITCHED, opponentId)),
+            ),
+        )
+
+        val adapted = ledger.view(3)
+        assertEquals(true, adapted.patternResponseShiftEvidence > 0.0)
+        assertEquals(true, adapted.opponentResponseVolatility > 0.0)
+    }
+
+    @Test
+    fun `forced replacement after a faint is not learned as adaptation`() {
+        val ledger = BattleTacticalMemoryLedger(BattleBrainOpenContext(battleId, BattleFormat.SINGLE))
+        val repeatedMove = BattleActionCandidate(
+            "repeat",
+            BattleActionKind.USE_MOVE,
+            actorSlot = 0,
+            moveSlot = 0,
+            moveId = "cobblemon:shadowball",
+        )
+        ledger.observe(state(turn = 1))
+        ledger.accept(state(turn = 1), repeatedMove, advice = null)
+        ledger.observe(
+            state(
+                turn = 2,
+                events = listOf(
+                    BattleObservedEventView(
+                        1,
+                        2,
+                        BattleObservedEventKind.MOVE_USED,
+                        opponentId,
+                        publicValueId = "cobblemon:tackle",
+                    ),
+                ),
+            ),
+        )
+        ledger.accept(state(turn = 2), repeatedMove, advice = null)
+        ledger.observe(
+            state(
+                turn = 3,
+                events = listOf(
+                    BattleObservedEventView(2, 3, BattleObservedEventKind.FAINTED, opponentId),
+                    BattleObservedEventView(3, 3, BattleObservedEventKind.SWITCHED, opponentId),
+                ),
+            ),
+        )
+
+        assertEquals(0.0, ledger.view(3).patternResponseShiftEvidence)
+    }
+
+    @Test
+    fun `pivot move followed by its switch is learned as one move response`() {
+        val ledger = BattleTacticalMemoryLedger(BattleBrainOpenContext(battleId, BattleFormat.SINGLE))
+        ledger.observe(state(turn = 1))
+        ledger.accept(
+            state(turn = 1),
+            BattleActionCandidate("wait", BattleActionKind.WAIT),
+            advice = null,
+        )
+        ledger.observe(
+            state(
+                turn = 2,
+                events = listOf(
+                    BattleObservedEventView(
+                        1,
+                        2,
+                        BattleObservedEventKind.MOVE_USED,
+                        opponentId,
+                        publicValueId = "cobblemon:voltswitch",
+                    ),
+                    BattleObservedEventView(2, 2, BattleObservedEventKind.SWITCHED, opponentId),
+                ),
+            ),
+        )
+
+        val view = ledger.view(2)
+        assertEquals(1, view.tendencies.first { it.response == BattlePredictedResponse.MOVE }.samples)
+        assertEquals(1.0 / 3.0, view.tendencies.first { it.response == BattlePredictedResponse.SWITCH }.estimatedRate, 0.0001)
     }
 
     @Test

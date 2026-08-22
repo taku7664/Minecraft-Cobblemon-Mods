@@ -29,6 +29,10 @@ final class BetterCobblemonMusicModuleContractTest {
             .orElse(null);
 
         assertNotNull(metadata, "the module fabric.mod.json must exist");
+        assertEquals(
+            "Data-driven field and battle music for Cobblemon.",
+            metadata.get("description").getAsString()
+        );
         assertEquals("Better Cobblemon Music", metadata.get("name").getAsString());
         assertEquals("client", metadata.get("environment").getAsString());
         assertEquals(

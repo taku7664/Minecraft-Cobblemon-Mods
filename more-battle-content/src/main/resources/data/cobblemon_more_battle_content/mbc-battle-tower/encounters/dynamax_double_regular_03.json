@@ -55,9 +55,8 @@
         "trainer_049",
         "trainer_050"
       ],
-      "rank_ids": [
-        "1",
-        "2"
+      "stage_ids": [
+        "introductory"
       ],
       "format": "double",
       "opponent_kind": "regular",

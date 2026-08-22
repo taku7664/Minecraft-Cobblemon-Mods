@@ -4,7 +4,10 @@ import java.util.Collections
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
-import jbro.cobblemon.morebattlecontent.internal.tower.TowerRank
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgress
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgression
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerStreakStage
+import jbro.cobblemon.morebattlecontent.internal.tower.TOWER_BOSS_INTERVAL
 import jbro.cobblemon.morebattlecontent.internal.tower.TOWER_BATTLE_LEVEL_CAP
 import jbro.cobblemon.morebattlecontent.internal.tower.TOWER_REGISTERED_TEAM_SIZE
 import jbro.cobblemon.morebattlecontent.internal.validation.IdentifierSyntax
@@ -43,6 +46,7 @@ internal data class TowerPlayPartySlot(
     val heldItemId: String?,
     val level: Int,
     val battleLevel: Int,
+    val legendaryClass: Boolean = false,
 ) {
     init {
         require(slot in PARTY_SLOT_RANGE) { "Party slot must be within the registered team" }
@@ -64,19 +68,27 @@ internal class TowerPlayViewState(
     val phase: TowerPlayPhase,
     party: Collection<TowerPlayPartySlot>,
     selectedPokemonIds: Collection<UUID>,
-    val rank: TowerRank,
-    val rankPoints: Int,
-    val winsRequired: Int,
-    val masterCycleWins: Int,
+    val currentWinStreak: Int,
+    val bestWinStreak: Int,
     val bpBalance: Long,
     errorKeys: Collection<String>,
     val selectedMechanic: MajorBattleMechanic? = null,
     val mechanicLocked: Boolean = false,
+    val legendaryClassAllowed: Boolean = false,
+    val legendaryClassLocked: Boolean = false,
 ) {
     val party: List<TowerPlayPartySlot> = party.immutableList()
     val selectedPokemonOrder: List<UUID> = selectedPokemonIds.immutableList()
     val selectedPokemonIds: Set<UUID> = selectedPokemonOrder.immutableSet()
     val errorKeys: List<String> = errorKeys.immutableList()
+    val streakStage: TowerStreakStage
+        get() = TowerStreakStage.forNextBattle(currentWinStreak)
+    val winsIntoSet: Int
+        get() = currentWinStreak % TOWER_BOSS_INTERVAL
+    val bpPerWin: Int
+        get() = TowerProgression.rewardForNextVictory(
+            TowerProgress(format, currentWinStreak, bestWinStreak),
+        )
 
     init {
         require(revision >= 0) { "Revision cannot be negative" }
@@ -93,9 +105,8 @@ internal class TowerPlayViewState(
         require(this.selectedPokemonIds.size <= format.selectionSize) {
             "Selection cannot exceed the battle format limit"
         }
-        require(rankPoints in 0..winsRequired) { "Rank points must fit the displayed rank requirement" }
-        require(winsRequired > 0) { "Wins required must be positive" }
-        require(masterCycleWins >= 0) { "Master cycle wins cannot be negative" }
+        require(currentWinStreak >= 0) { "Current win streak cannot be negative" }
+        require(bestWinStreak >= currentWinStreak) { "Best win streak cannot be below current win streak" }
         require(bpBalance >= 0) { "BP balance cannot be negative" }
         require(this.errorKeys.none(String::isBlank)) { "Error keys cannot be blank" }
         require(!mechanicLocked || selectedMechanic != null) { "A locked mechanic selection cannot be absent" }
@@ -108,14 +119,14 @@ internal class TowerPlayViewState(
         phase: TowerPlayPhase = this.phase,
         party: Collection<TowerPlayPartySlot> = this.party,
         selectedPokemonIds: Collection<UUID> = selectedPokemonOrder,
-        rank: TowerRank = this.rank,
-        rankPoints: Int = this.rankPoints,
-        winsRequired: Int = this.winsRequired,
-        masterCycleWins: Int = this.masterCycleWins,
+        currentWinStreak: Int = this.currentWinStreak,
+        bestWinStreak: Int = this.bestWinStreak,
         bpBalance: Long = this.bpBalance,
         errorKeys: Collection<String> = this.errorKeys,
         selectedMechanic: MajorBattleMechanic? = this.selectedMechanic,
         mechanicLocked: Boolean = this.mechanicLocked,
+        legendaryClassAllowed: Boolean = this.legendaryClassAllowed,
+        legendaryClassLocked: Boolean = this.legendaryClassLocked,
     ): TowerPlayViewState = TowerPlayViewState(
         entryContextId,
         revision,
@@ -123,14 +134,14 @@ internal class TowerPlayViewState(
         phase,
         party,
         selectedPokemonIds,
-        rank,
-        rankPoints,
-        winsRequired,
-        masterCycleWins,
+        currentWinStreak,
+        bestWinStreak,
         bpBalance,
         errorKeys,
         selectedMechanic,
         mechanicLocked,
+        legendaryClassAllowed,
+        legendaryClassLocked,
     )
 
     override fun equals(other: Any?): Boolean =
@@ -141,14 +152,14 @@ internal class TowerPlayViewState(
             phase == other.phase &&
             party == other.party &&
             selectedPokemonOrder == other.selectedPokemonOrder &&
-            rank == other.rank &&
-            rankPoints == other.rankPoints &&
-            winsRequired == other.winsRequired &&
-            masterCycleWins == other.masterCycleWins &&
+            currentWinStreak == other.currentWinStreak &&
+            bestWinStreak == other.bestWinStreak &&
             bpBalance == other.bpBalance &&
             errorKeys == other.errorKeys &&
             selectedMechanic == other.selectedMechanic &&
-            mechanicLocked == other.mechanicLocked
+            mechanicLocked == other.mechanicLocked &&
+            legendaryClassAllowed == other.legendaryClassAllowed &&
+            legendaryClassLocked == other.legendaryClassLocked
 
     override fun hashCode(): Int {
         var result = entryContextId.hashCode()
@@ -157,23 +168,25 @@ internal class TowerPlayViewState(
         result = 31 * result + phase.hashCode()
         result = 31 * result + party.hashCode()
         result = 31 * result + selectedPokemonOrder.hashCode()
-        result = 31 * result + rank.hashCode()
-        result = 31 * result + rankPoints
-        result = 31 * result + winsRequired
-        result = 31 * result + masterCycleWins
+        result = 31 * result + currentWinStreak
+        result = 31 * result + bestWinStreak
         result = 31 * result + bpBalance.hashCode()
         result = 31 * result + errorKeys.hashCode()
         result = 31 * result + (selectedMechanic?.hashCode() ?: 0)
         result = 31 * result + mechanicLocked.hashCode()
+        result = 31 * result + legendaryClassAllowed.hashCode()
+        result = 31 * result + legendaryClassLocked.hashCode()
         return result
     }
 
     override fun toString(): String =
         "TowerPlayViewState(entryContextId=$entryContextId, revision=$revision, format=$format, " +
-            "phase=$phase, party=$party, selectedPokemonOrder=$selectedPokemonOrder, rank=$rank, " +
-            "rankPoints=$rankPoints, winsRequired=$winsRequired, masterCycleWins=$masterCycleWins, " +
+            "phase=$phase, party=$party, selectedPokemonOrder=$selectedPokemonOrder, streakStage=$streakStage, " +
+            "currentWinStreak=$currentWinStreak, bestWinStreak=$bestWinStreak, winsIntoSet=$winsIntoSet, " +
+            "bpPerWin=$bpPerWin, " +
             "bpBalance=$bpBalance, errorKeys=$errorKeys, selectedMechanic=$selectedMechanic, " +
-            "mechanicLocked=$mechanicLocked)"
+            "mechanicLocked=$mechanicLocked, legendaryClassAllowed=$legendaryClassAllowed, " +
+            "legendaryClassLocked=$legendaryClassLocked)"
 }
 
 internal sealed interface TowerPlayIntent {
@@ -200,6 +213,13 @@ internal sealed interface TowerPlayIntent {
         override val entryContextId: UUID,
         override val expectedRevision: Long,
         val mechanic: MajorBattleMechanic,
+    ) : TowerPlayIntent
+
+    data class ChangeLegendaryClassAllowed(
+        override val requestId: UUID,
+        override val entryContextId: UUID,
+        override val expectedRevision: Long,
+        val allowed: Boolean,
     ) : TowerPlayIntent
 
     data class LockTeam(

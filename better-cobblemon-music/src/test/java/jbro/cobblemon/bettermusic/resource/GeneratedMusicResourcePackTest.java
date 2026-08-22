@@ -2,6 +2,7 @@ package jbro.cobblemon.bettermusic.resource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonParser;
@@ -27,7 +28,7 @@ final class GeneratedMusicResourcePackTest {
         Path config = temporaryDirectory.resolve("config");
         Path music = config.resolve("music");
         Files.createDirectories(music.resolve("field"));
-        Files.write(music.resolve("field/forest.ogg"), new byte[] {1, 2, 3});
+        Files.write(music.resolve("field/forest.ogg"), validOgg());
         var pack = new GeneratedMusicResourcePack(config, temporaryDirectory.resolve("resourcepacks"));
 
         var result = pack.generate(snapshot(List.of("field/forest.ogg", "field/missing.ogg")));
@@ -56,7 +57,7 @@ final class GeneratedMusicResourcePackTest {
         Path config = temporaryDirectory.resolve("config");
         Path music = config.resolve("music");
         Files.createDirectories(music.resolve("battle"));
-        Files.write(music.resolve("battle/content_only.ogg"), new byte[] {4, 5, 6});
+        Files.write(music.resolve("battle/content_only.ogg"), validOgg());
         var pack = new GeneratedMusicResourcePack(config, temporaryDirectory.resolve("resourcepacks"));
         var contentPlaylist = new PlaylistDefinition(
             PlaylistDefinition.Selection.SHUFFLE,
@@ -78,6 +79,89 @@ final class GeneratedMusicResourcePackTest {
             "assets/better_cobblemon_music/sounds.json"
         ))).getAsJsonObject();
         assertTrue(sounds.has("custom/battle/content_only"));
+    }
+
+    @Test
+    void rejectsAFileThatOnlyHasAnOggExtensionWithoutPublishingIt() throws Exception {
+        Path config = temporaryDirectory.resolve("config");
+        Path music = config.resolve("music");
+        Files.createDirectories(music.resolve("field"));
+        Files.write(music.resolve("field/fake.ogg"), new byte[] {1, 2, 3});
+        var pack = new GeneratedMusicResourcePack(config, temporaryDirectory.resolve("resourcepacks"));
+
+        var exception = assertThrows(
+            java.io.IOException.class,
+            () -> pack.prepare(snapshot(List.of("field/fake.ogg")))
+        );
+
+        assertTrue(exception.getMessage().contains("Ogg/Vorbis"));
+        assertFalse(Files.exists(pack.packDirectory()));
+    }
+
+    @Test
+    void failedPreparationLeavesThePreviouslyPublishedPackUntouched() throws Exception {
+        Path config = temporaryDirectory.resolve("config");
+        Path music = config.resolve("music");
+        Files.createDirectories(music.resolve("field"));
+        Files.write(music.resolve("field/old.ogg"), validOgg());
+        Files.write(music.resolve("field/fake.ogg"), new byte[] {1, 2, 3});
+        var pack = new GeneratedMusicResourcePack(config, temporaryDirectory.resolve("resourcepacks"));
+        pack.generate(snapshot(List.of("field/old.ogg")));
+
+        assertThrows(
+            java.io.IOException.class,
+            () -> pack.prepare(snapshot(List.of("field/fake.ogg")))
+        );
+
+        assertTrue(Files.exists(pack.packDirectory().resolve(
+            "assets/better_cobblemon_music/sounds/custom/field/old.ogg"
+        )));
+        assertFalse(Files.exists(pack.packDirectory().resolve(
+            "assets/better_cobblemon_music/sounds/custom/field/fake.ogg"
+        )));
+    }
+
+    @Test
+    void preparedPackCanBePublishedAndRolledBackAsAUnit() throws Exception {
+        Path config = temporaryDirectory.resolve("config");
+        Path music = config.resolve("music");
+        Files.createDirectories(music.resolve("field"));
+        Files.write(music.resolve("field/old.ogg"), validOgg());
+        Files.write(music.resolve("field/new.ogg"), validOgg());
+        var pack = new GeneratedMusicResourcePack(config, temporaryDirectory.resolve("resourcepacks"));
+        pack.generate(snapshot(List.of("field/old.ogg")));
+
+        try (var prepared = pack.prepare(snapshot(List.of("field/new.ogg")))) {
+            assertTrue(Files.exists(pack.packDirectory().resolve(
+                "assets/better_cobblemon_music/sounds/custom/field/old.ogg"
+            )));
+            try (var published = prepared.publish()) {
+                assertTrue(Files.exists(pack.packDirectory().resolve(
+                    "assets/better_cobblemon_music/sounds/custom/field/new.ogg"
+                )));
+                assertFalse(Files.exists(pack.packDirectory().resolve(
+                    "assets/better_cobblemon_music/sounds/custom/field/old.ogg"
+                )));
+                published.rollback();
+            }
+        }
+
+        assertTrue(Files.exists(pack.packDirectory().resolve(
+            "assets/better_cobblemon_music/sounds/custom/field/old.ogg"
+        )));
+        assertFalse(Files.exists(pack.packDirectory().resolve(
+            "assets/better_cobblemon_music/sounds/custom/field/new.ogg"
+        )));
+    }
+
+    private static byte[] validOgg() {
+        return new byte[] {
+            'O', 'g', 'g', 'S', 0, 2, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            1, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 7,
+            1, 'v', 'o', 'r', 'b', 'i', 's'
+        };
     }
 
     private static BetterMusicConfigSnapshot snapshot(List<String> tracks) {

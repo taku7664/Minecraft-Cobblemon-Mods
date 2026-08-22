@@ -82,12 +82,14 @@ internal object PvpPlayClientNetworking {
                     PvpRoomClientState.lastRoom = null
                 }
                 PvpRoomClientState.lastRooms = payload.rooms
+                PvpRoomHudOverlay.refreshControls()
                 context.client().setScreen(PvpRoomListScreen(payload.rooms))
             }
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpRoomStatePayload.TYPE) { payload, context ->
             context.client().execute {
                 PvpRoomClientState.lastRoom = payload.room
+                PvpRoomHudOverlay.refreshControls()
                 when (val current = context.client().screen) {
                     is PvpRoomScreen -> current.applyState(payload.room)
                     is PvpRoomListScreen -> if (PvpRoomNavigationContract.shouldOpen(payload.requestId, PvpRoomClientState.pendingOpenRequests, payload.reopen)) {

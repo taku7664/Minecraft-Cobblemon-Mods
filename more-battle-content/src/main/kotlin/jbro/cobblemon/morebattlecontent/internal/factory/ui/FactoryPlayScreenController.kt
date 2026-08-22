@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.internal.factory.ui
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryLevelMode
+import jbro.cobblemon.morebattlecontent.internal.factory.FactoryPlayError
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryPlayPhase
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryPlayView
 
@@ -35,6 +36,13 @@ internal sealed interface FactoryPlayIntent {
 
     data class Abandon(override val requestId: UUID) : FactoryPlayIntent
 }
+
+internal fun FactoryPlayError.feedbackId(phase: FactoryPlayPhase): String =
+    if (this == FactoryPlayError.INVALID_SELECTION && phase == FactoryPlayPhase.SWAP_DECISION) {
+        "invalid_swap"
+    } else {
+        name.lowercase()
+    }
 
 internal class FactoryPlayScreenController(
     initialState: FactoryPlayView,

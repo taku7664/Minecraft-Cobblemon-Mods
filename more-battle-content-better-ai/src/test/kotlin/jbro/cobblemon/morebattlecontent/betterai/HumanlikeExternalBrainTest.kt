@@ -355,6 +355,9 @@ class HumanlikeExternalBrainTest {
         assertFalse(request.contains("expectedUtility"))
         assertFalse(request.contains("localRank"))
         assertFalse(request.contains("recommendedAction"))
+        assertFalse(request.contains("patternResponseShiftEvidence"))
+        assertFalse(request.contains("opponentResponseVolatility"))
+        assertFalse(request.contains("nonProgressControlStreak"))
         assertEquals(8_192, requestRoot["max_tokens"].asInt)
         assertTrue(request.contains("Server-issued legal action ID"))
     }
@@ -374,12 +377,64 @@ class HumanlikeExternalBrainTest {
 
         assertEquals("INTRODUCTORY", introductoryDigest["tier"].asString)
         assertEquals(3, introductoryDigest["maximumHypothesesPerPokemon"].asInt)
-        assertEquals(0, introductoryDigest["lookaheadPlies"].asInt)
+        assertEquals(1, introductoryDigest["lookaheadPlies"].asInt)
         assertEquals("BOSS", bossDigest["tier"].asString)
         assertEquals(16, bossDigest["maximumHypothesesPerPokemon"].asInt)
-        assertEquals(2, bossDigest["lookaheadPlies"].asInt)
-        assertTrue(introductory.contains("Do not predict, condition, or maintain a multi-turn plan"))
-        assertTrue(boss.contains("Evaluate the opponent response and your counter-response"))
+        assertEquals(4, bossDigest["lookaheadPlies"].asInt)
+        assertTrue(introductory.contains("Compare one complete turn"))
+        assertTrue(boss.contains("Compare four complete turns"))
+    }
+
+    @Test
+    fun `router receives aliased public future actions without local search scores`() {
+        val base = context(turn = 1)
+        val moveDetails = BattleMoveCandidateView(
+            "ghost",
+            BattleMoveDamageCategory.SPECIAL,
+            80.0,
+            100.0,
+            0,
+            10,
+        )
+        val decisionContext = BattleDecisionContext(
+            requestId = base.requestId,
+            state = base.state,
+            candidates = base.candidates,
+            deadlineEpochMillis = base.deadlineEpochMillis,
+            memory = base.memory,
+            publicActionCatalog = BattlePublicActionCatalogView(
+                listOf(
+                    BattlePokemonActionCatalogView(
+                        opponentId,
+                        listOf(
+                            BattlePublicMoveOptionView(
+                                "cobblemon:shadow_ball",
+                                moveDetails,
+                                BattlePublicMoveKnowledge.PUBLICLY_REVEALED,
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val request = HumanlikePromptCodec.requestJson(
+            BetterAiConfig(enabled = true, apiKey = "test", model = "test/model"),
+            open,
+            PublicBattleTacticalCalculator.calculate(decisionContext),
+        )
+        val digest = promptDigest(request)
+        val future = digest.getAsJsonArray("publicFutureActions")[0].asJsonObject
+
+        assertEquals("opponent0", future["pokemon"].asString)
+        assertEquals("cobblemon:shadow_ball", future.getAsJsonArray("moves")[0].asJsonObject["moveId"].asString)
+        assertEquals(
+            "PUBLICLY_REVEALED",
+            future.getAsJsonArray("moves")[0].asJsonObject["knowledge"].asString,
+        )
+        assertFalse(request.contains(opponentId.toString()))
+        assertFalse(request.contains("lookaheadUtility"))
+        assertFalse(request.contains("comparisonValue"))
     }
 
     @Test
@@ -483,6 +538,9 @@ class HumanlikeExternalBrainTest {
         assertTrue(systemDoctrine.contains("Difficulty changes planning depth, never factual accuracy"))
         assertTrue(systemDoctrine.contains("do not claim that one switch target is safer"))
         assertTrue(systemDoctrine.contains("abilityAvailability=REGULAR|HIDDEN"))
+        assertTrue(systemDoctrine.contains("Never select a damaging move with an authoritative typeChartMultiplier of 0"))
+        assertTrue(systemDoctrine.contains("Repeated non-damaging actions require net public progress"))
+        assertTrue(systemDoctrine.contains("do not stack a second screen by habit"))
     }
 
     @Test
@@ -583,11 +641,17 @@ class HumanlikeExternalBrainTest {
         )
         val digest = promptDigest(request)
 
-        assertEquals("brain-choice-v14", digest["promptVersion"].asString)
+        assertEquals("brain-choice-v21", digest["promptVersion"].asString)
         assertTrue(request.contains("DECLARATIVE_PARTIAL"))
         assertTrue(request.contains("HEAL_FRACTION"))
         assertTrue(request.contains("scriptedBehavior"))
         assertTrue(request.contains("does not mean impossible"))
+        assertTrue(request.contains("publicOutcomeProjection"))
+        assertTrue(request.contains("top 40%"))
+        assertTrue(request.contains("A switch is valuable only when its net public gain"))
+        assertTrue(request.contains("prefer realizing the gain earlier"))
+        assertTrue(request.contains("actionConstraints"))
+        assertTrue(request.contains("mustRecharge"))
         assertFalse(request.contains("localRank"))
         assertFalse(request.contains("recommendedAction"))
     }
@@ -742,7 +806,7 @@ class HumanlikeExternalBrainTest {
         val trainer = digest.getAsJsonObject("trainer")
         val boardAlly = digest.getAsJsonArray("board")[0].asJsonObject
 
-        assertEquals("brain-choice-v14", digest["promptVersion"].asString)
+        assertEquals("brain-choice-v21", digest["promptVersion"].asString)
         assertEquals("Establish rain, then preserve the cleaner for the endgame.", trainer["aiSummary"].asString)
         assertEquals("Use Rain Dance when the field is clear.", trainer.getAsJsonArray("members")[0].asJsonObject["tacticalSummary"].asString)
         assertEquals(2, digest.getAsJsonObject("remainingPokemonBySide")["ALLY"].asInt)
@@ -1019,6 +1083,44 @@ class HumanlikeExternalBrainTest {
         assertEquals("status", brain.decide(session, context(turn = 1)).toCompletableFuture().join().actionId)
         assertEquals("status", brain.decide(session, context(turn = 2)).toCompletableFuture().join().actionId)
         assertEquals(2, calls.get())
+    }
+
+    @Test
+    fun `router never receives a publicly immune action while a viable action exists`() {
+        val calls = AtomicInteger()
+        val brain = OpenRouterTacticalBrain(
+            BetterAiConfig(enabled = true, apiKey = "test", model = "test/model"),
+            OpenRouterTransport { _, _ ->
+                calls.incrementAndGet()
+                CompletableFuture.completedFuture(keepResponse("move"))
+            },
+        )
+        val base = context(turn = 1)
+        val ghostState = BattleStateView(
+            battleId = base.state.battleId,
+            format = base.state.format,
+            turn = base.state.turn,
+            pokemon = listOf(
+                pokemon(allyId, BattleSide.ALLY, "showdown:ally"),
+                pokemon(opponentId, BattleSide.OPPONENT, "showdown:ghost", knownTypeIds = setOf("ghost")),
+            ),
+            field = base.state.field,
+            remainingPokemonBySide = base.state.remainingPokemonBySide,
+            observedEvents = base.state.observedEvents,
+            inferences = base.state.inferences,
+        )
+        val decisionContext = BattleDecisionContext(
+            requestId = base.requestId,
+            state = ghostState,
+            candidates = base.candidates,
+            deadlineEpochMillis = base.deadlineEpochMillis,
+            memory = base.memory,
+        )
+
+        val decision = brain.decide(brain.openSession(open), decisionContext).toCompletableFuture().join()
+
+        assertEquals("status", decision.actionId)
+        assertEquals(0, calls.get())
     }
 
     @Test

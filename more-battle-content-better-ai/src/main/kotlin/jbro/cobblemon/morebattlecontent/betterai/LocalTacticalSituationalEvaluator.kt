@@ -23,42 +23,7 @@ internal object LocalTacticalSituationalEvaluator {
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         accuracy: Double,
-    ): Double {
-        val facts = candidate.facts
-        val actor = candidate.actorSlot?.let { actorSlot ->
-            context.state.pokemon.firstOrNull {
-                it.side == BattleSide.ALLY && it.activeSlot == actorSlot && !it.fainted
-            }
-        }
-        val missingHp = (1.0 - (actor?.hpFraction ?: 1.0)).coerceIn(0.0, 1.0)
-        val recovery = facts?.selfHealingFractionRange?.let { range ->
-            val averageHealing = (range.minimum + range.maximum) / 2.0
-            minOf(averageHealing, missingHp) * 100.0
-        } ?: 0.0
-
-        val declaredEffects = candidate.moveDetails?.effects
-        val declaresMajorStatus = declaredEffects?.effects?.any {
-            it.kind == BattleMoveEffectKind.STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET
-        } == true
-        val declaresPureRecovery = declaredEffects != null &&
-            !declaredEffects.scriptedBehavior &&
-            declaredEffects.effects.isNotEmpty() &&
-            declaredEffects.effects.all {
-                it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == BattleMoveEffectTarget.USER
-            }
-        val target = selectedOpponent(candidate, context)
-        val statusProbability = facts?.statusEffectProbability
-        val status = when {
-            declaresMajorStatus && target?.statusId != null -> 0.0
-            statusProbability != null -> {
-                val targetHpWeight = target?.hpFraction?.let { 0.5 + it * 0.5 } ?: 1.0
-                statusProbability * MAJOR_STATUS_PRESSURE * targetHpWeight
-            }
-            declaresPureRecovery -> 0.0
-            else -> GENERIC_STATUS_PRESSURE * accuracy
-        }
-        return maxOf(recovery, status)
-    }
+    ): Double = LocalNonDamagingMoveEvaluator.pressure(candidate, context, accuracy)
 
     fun knockoutAdjustment(candidate: BattleActionCandidate, accuracy: Double): Double {
         val facts = candidate.facts
@@ -429,8 +394,6 @@ internal object LocalTacticalSituationalEvaluator {
     private fun canonicalEffectId(effectId: String): String =
         effectId.substringAfter(':').lowercase().filter { it.isLetterOrDigit() }
 
-    private const val GENERIC_STATUS_PRESSURE = 20.0
-    private const val MAJOR_STATUS_PRESSURE = 35.0
     private const val GUARANTEED_KNOCKOUT_BONUS = 50.0
     private const val POSSIBLE_KNOCKOUT_BONUS = 35.0
     private const val ENTRY_KNOCKOUT_PENALTY = 200.0

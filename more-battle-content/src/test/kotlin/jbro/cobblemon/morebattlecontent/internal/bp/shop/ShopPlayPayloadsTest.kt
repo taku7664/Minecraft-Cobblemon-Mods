@@ -28,8 +28,8 @@ class ShopPlayPayloadsTest {
             listOf(BattlePointShopCartLine("choice_band", 2), BattlePointShopCartLine("life_orb", 1)),
         )
         val leaderboard = HomeLeaderboardStatePayload(
-            singles = listOf(HomeLeaderboardEntry(1, UUID(0, 1), "Alpha", 10, 2, 40)),
-            doubles = listOf(HomeLeaderboardEntry(1, UUID(0, 2), "Beta", 8, 3, 28)),
+            singles = listOf(HomeLeaderboardEntry(1, UUID(0, 1), "Alpha", totalWins = 40, totalLosses = 8, bestWinStreak = 10)),
+            doubles = listOf(HomeLeaderboardEntry(1, UUID(0, 2), "Beta", totalWins = 28, totalLosses = 6, bestWinStreak = 8)),
         )
         val leaderboardCatalog = HomeLeaderboardCatalogPayload(
             boards = listOf(

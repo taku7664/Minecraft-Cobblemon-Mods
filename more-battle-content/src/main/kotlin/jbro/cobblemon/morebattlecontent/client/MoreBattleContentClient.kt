@@ -14,6 +14,7 @@ object MoreBattleContentClient : ClientModInitializer {
         TowerPlayClientNetworking.register()
         FactoryPlayClientNetworking.register()
         PvpLoungeSpectatorControls.register()
+        PvpRoomHudOverlay.register()
         PvpPlayClientNetworking.register()
         ShadowTrainerProjectionRenderer.register()
         ManagedBattleMechanicVisibilityClient.register()

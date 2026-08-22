@@ -9,6 +9,8 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainSession
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecision
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectTarget
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveTargetPattern
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyBrief
@@ -21,11 +23,18 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
-import kotlin.math.abs
 
-internal class LocalTacticalBrain : BattleBrain {
+internal class LocalTacticalBrain(
+    private val actionSelector: LocalActionSelector = LocalWeightedActionSelector(),
+) : BattleBrain {
     override fun openSession(context: BattleBrainOpenContext): BattleBrainSession =
-        Session(UUID.randomUUID(), context.strategy, context.trainerProfile)
+        Session(
+            UUID.randomUUID(),
+            context.battleId,
+            context.trainerPersonaId,
+            context.strategy,
+            context.trainerProfile,
+        )
 
     override fun decide(
         session: BattleBrainSession,
@@ -37,21 +46,78 @@ internal class LocalTacticalBrain : BattleBrain {
             profile.difficulty.tier == BattleTrainerTier.INTRODUCTORY
         }
         val calculatedContext = PublicBattleTacticalCalculator.calculate(context)
-        val difficultyContext = if (profile.difficulty.lookaheadPlies == 0) {
+            .forPlanOwner(jbro.cobblemon.morebattlecontent.api.ai.BattlePlanOwner.LOCAL_BRAIN)
+        val difficultyContext = if (profile.difficulty.tier == BattleTrainerTier.INTRODUCTORY) {
             calculatedContext.withoutActivePlan()
         } else {
             calculatedContext
         }
-        val ranked = LocalBattleActionPolicy.rank(difficultyContext, strategy, profile)
-        val best = ranked.first()
-        val margin = best.comparisonValue - (ranked.getOrNull(1)?.comparisonValue ?: best.comparisonValue)
-        val confidence = (0.5 + abs(margin) / 200.0).coerceIn(0.5, 0.99)
+        val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, profile)
+        baseRanked.singleOrNull()?.let { selected ->
+            return CompletableFuture.completedFuture(
+                BattleDecision(
+                    requestId = context.requestId,
+                    actionId = selected.outcome.candidate.actionId,
+                    confidence = 1.0,
+                    advice = LocalBattleMind.advice(selected, difficultyContext, strategy, profile),
+                    tags = setOf(
+                        "local_tactical_v4",
+                        "single_legal_action",
+                        "difficulty_${profile.difficulty.tier.name.lowercase()}",
+                    ),
+                ),
+            )
+        }
+        val battleId = active?.battleId ?: calculatedContext.state.battleId
+        val mind = LocalBattleMind.assess(
+            trainerPersonaId = active?.trainerPersonaId,
+            battleId = battleId,
+            context = difficultyContext,
+            profile = profile,
+        )
+        val lookahead = LocalRecursiveLookaheadEvaluator.evaluate(baseRanked, difficultyContext, profile)
+        val ranked = lookahead.ranked
+        val seed = LocalActionChoiceSeed.derive(
+            battleId = battleId,
+            turn = calculatedContext.state.turn,
+            ranked = ranked,
+        )
+        val selection = actionSelector.choose(
+            ranked,
+            seed,
+            LocalActionMixingContext(
+                personality = profile.personality,
+                memory = difficultyContext.memory,
+                style = mind.trainerStyle,
+                riskBudget = mind.riskBudget,
+            ),
+        )
+        val selected = selection.rank
+        val confidence = (0.35 + selection.probability * 0.6).coerceIn(0.35, 0.99)
         return CompletableFuture.completedFuture(
             BattleDecision(
                 requestId = context.requestId,
-                actionId = best.outcome.candidate.actionId,
+                actionId = selected.outcome.candidate.actionId,
                 confidence = confidence,
-                tags = setOf("local_tactical_v3", "difficulty_${profile.difficulty.tier.name.lowercase()}"),
+                advice = LocalBattleMind.advice(selected, difficultyContext, strategy, profile),
+                tags = buildSet {
+                    addAll(setOf(
+                    "local_tactical_v4",
+                    "mixed_top40",
+                    "contextual_human_mix",
+                    "persistent_intent",
+                    "evidence_gated_mixup",
+                    "position_risk_budget",
+                    "choice_pool_${selection.shortlistSize}",
+                    "choice_seed_${selection.seed.toULong().toString(16)}",
+                    "difficulty_${profile.difficulty.tier.name.lowercase()}",
+                     "lookahead_turns_${lookahead.depthCompleted}",
+                     "lookahead_nodes_${lookahead.nodesVisited}",
+                    "lookahead_pruned_${lookahead.branchesPruned}",
+                     ))
+                    if (lookahead.truncated) add("lookahead_truncated")
+                    if (lookahead.publicResponseIncomplete) add("lookahead_public_response_incomplete")
+                },
             ),
         )
     }
@@ -60,6 +126,8 @@ internal class LocalTacticalBrain : BattleBrain {
 
     private data class Session(
         override val sessionId: UUID,
+        val battleId: UUID,
+        val trainerPersonaId: String?,
         val strategy: BattleStrategyBrief?,
         val trainerProfile: BattleTrainerProfile,
     ) : BattleBrainSession
@@ -68,17 +136,23 @@ internal class LocalTacticalBrain : BattleBrain {
         requestId = requestId,
         state = state,
         candidates = candidates,
-        deadlineEpochMillis = deadlineEpochMillis,
-        memory = BattleTacticalMemoryView(
+            deadlineEpochMillis = deadlineEpochMillis,
+            memory = BattleTacticalMemoryView(
             activePlan = null,
+            activePlanOwner = null,
             tendencies = memory.tendencies,
             predictionCalibration = memory.predictionCalibration,
             turnsSinceLastSwitch = memory.turnsSinceLastSwitch,
             switchesThisBattle = memory.switchesThisBattle,
             lastMoveId = memory.lastMoveId,
             sameMoveRepeatCount = memory.sameMoveRepeatCount,
-        ),
-    )
+            patternExposureCount = memory.patternExposureCount,
+            patternResponseShiftEvidence = memory.patternResponseShiftEvidence,
+            opponentResponseVolatility = memory.opponentResponseVolatility,
+            nonProgressControlStreak = memory.nonProgressControlStreak,
+            ),
+            publicActionCatalog = publicActionCatalog,
+        )
 }
 
 internal object LocalTacticalScorer {
@@ -148,7 +222,9 @@ internal object LocalTacticalScorer {
     ): Double {
         if (candidate.moveId == null || candidate.moveId != context.memory.lastMoveId) return 0.0
         if (context.memory.sameMoveRepeatCount < 2) return 0.0
-        return -SELF_PATTERN_BREAK_PENALTY * profile.personality.information
+        if (context.memory.patternExposureCount < 2 || context.memory.patternResponseShiftEvidence < 0.35) return 0.0
+        return -SELF_PATTERN_BREAK_PENALTY * profile.personality.information *
+            context.memory.patternResponseShiftEvidence
     }
 
     private fun scoreSwitch(
@@ -163,8 +239,10 @@ internal object LocalTacticalScorer {
         val targetPostEntryHp = target?.let {
             LocalTacticalSituationalEvaluator.postEntryHp(candidate, it.hpFraction)
         }
-        val currentRisk = LocalPublicPositionFacts.defensiveExposure(active?.knownTypeIds.orEmpty(), context) ?: 1.0
-        val targetRisk = LocalPublicPositionFacts.defensiveExposure(target?.knownTypeIds.orEmpty(), context) ?: 1.0
+        val currentRisk = active?.let { LocalPublicPositionFacts.defensiveExposure(it, context) } ?: 1.0
+        val targetRisk = target?.let {
+            LocalPublicPositionFacts.defensiveExposure(it, context, candidate.actorSlot)
+        } ?: 1.0
         val riskImprovement = (currentRisk - targetRisk).coerceAtLeast(0.0)
         val riskWorsening = (targetRisk - currentRisk).coerceAtLeast(0.0)
         val healthAdvantage = targetPostEntryHp?.let { (it - activeHp).coerceAtLeast(0.0) } ?: 0.0
@@ -180,7 +258,7 @@ internal object LocalTacticalScorer {
             -SWITCH_TEMPO_PENALTY +
                 healthAdvantage * SWITCH_HEALTH_ADVANTAGE_WEIGHT +
                 riskImprovement * PUBLIC_RISK_IMPROVEMENT_WEIGHT +
-                (if (currentRisk >= PUBLIC_KO_THREAT_MULTIPLIER && riskImprovement > 0.0) {
+                (if (active != null && LocalPublicPositionFacts.isPublicKnockoutThreat(active, context) && riskImprovement > 0.0) {
                     PUBLIC_KO_THREAT_SWITCH_BONUS
                 } else {
                     0.0
@@ -190,6 +268,15 @@ internal object LocalTacticalScorer {
                 targetRisk * 10.0
         }
         val personalityAdjustment = (profile.personality.switching - 0.5) * 20.0
+        val offensivePressureImprovement = LocalLookaheadStateEvaluator
+            .switchOffensivePressureImprovement(candidate, context)
+            ?.coerceAtLeast(0.0)
+            ?.times(SWITCH_OFFENSIVE_PRESSURE_WEIGHT)
+            ?: 0.0
+        val initiativeImprovement = LocalLookaheadStateEvaluator
+            .switchInitiativeImprovement(candidate, context)
+            ?.times(SWITCH_INITIATIVE_WEIGHT)
+            ?: 0.0
         val entryPenalty = candidate.facts?.switchEntryHpLossFraction?.times(100.0) ?: 0.0
         val criticalTargetPenalty = if (
             targetPostEntryHp != null && targetPostEntryHp <= CRITICAL_HP && targetRisk > 0.0
@@ -202,7 +289,8 @@ internal object LocalTacticalScorer {
             LocalTacticalSituationalEvaluator.entryKnockoutPenalty(candidate, it.hpFraction)
         } ?: 0.0
         return baseScore - entryPenalty - criticalTargetPenalty - entryKnockoutPenalty +
-            personalityAdjustment + switchMemoryAdjustment(context) +
+            personalityAdjustment + offensivePressureImprovement + switchMemoryAdjustment(context) +
+            initiativeImprovement +
             strategySwitchAdjustment(candidate, context, strategy, hasPublicPositioningGain) +
             planSwitchAdjustment(candidate, context, strategy)
     }
@@ -257,7 +345,8 @@ internal object LocalTacticalScorer {
             0.0
         }
         if (BattleStrategyObjective.STATUS_PRESSURE in strategy.objectives &&
-            details?.damageCategory == BattleMoveDamageCategory.STATUS
+            details?.damageCategory == BattleMoveDamageCategory.STATUS &&
+            declaresOpponentStatusPressure(candidate)
         ) {
             adjustment += STATUS_PRESSURE_BONUS
         }
@@ -273,6 +362,23 @@ internal object LocalTacticalScorer {
         }
         return adjustment
     }
+
+    private fun declaresOpponentStatusPressure(candidate: BattleActionCandidate): Boolean =
+        candidate.moveDetails?.effects?.effects.orEmpty().any { effect ->
+            when (effect.target) {
+                BattleMoveEffectTarget.SELECTED_TARGET -> when (effect.kind) {
+                    BattleMoveEffectKind.STATUS,
+                    BattleMoveEffectKind.VOLATILE_STATUS,
+                    BattleMoveEffectKind.SWITCH_TARGET,
+                    BattleMoveEffectKind.SLOT_CONDITION,
+                    -> true
+                    BattleMoveEffectKind.STAT_STAGE -> effect.statStages.values.any { it < 0 }
+                    else -> false
+                }
+                BattleMoveEffectTarget.TARGET_SIDE -> effect.kind == BattleMoveEffectKind.SIDE_CONDITION
+                else -> false
+            }
+        }
 
     private fun strategySwitchAdjustment(
         candidate: BattleActionCandidate,
@@ -435,11 +541,12 @@ internal object LocalTacticalScorer {
 
     private const val CRITICAL_HP = 0.2
     private const val PRESERVE_CORE_HP = 0.5
-    private const val PUBLIC_KO_THREAT_MULTIPLIER = 2.0
     private const val SWITCH_TEMPO_PENALTY = 20.0
     private const val SWITCH_HEALTH_ADVANTAGE_WEIGHT = 40.0
     private const val PUBLIC_RISK_IMPROVEMENT_WEIGHT = 50.0
     private const val PUBLIC_RISK_WORSENING_WEIGHT = PUBLIC_RISK_IMPROVEMENT_WEIGHT
+    private const val SWITCH_OFFENSIVE_PRESSURE_WEIGHT = 40.0
+    private const val SWITCH_INITIATIVE_WEIGHT = 12.0
     private const val PUBLIC_KO_THREAT_SWITCH_BONUS = 25.0
     private const val CRITICAL_SWITCH_BONUS = 60.0
     private const val CRITICAL_SWITCH_TARGET_PENALTY = CRITICAL_SWITCH_BONUS

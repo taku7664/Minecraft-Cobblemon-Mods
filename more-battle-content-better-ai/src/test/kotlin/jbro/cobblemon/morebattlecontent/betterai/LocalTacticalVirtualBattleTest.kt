@@ -12,7 +12,6 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
 import jbro.cobblemon.morebattlecontent.api.ai.BattleIntegerRange
 import jbro.cobblemon.morebattlecontent.api.ai.BattleKnowledgePolicy
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveCandidateView
-import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveTargetPattern
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
@@ -28,7 +27,7 @@ import kotlin.random.Random
 
 class LocalTacticalVirtualBattleTest {
     @Test
-    fun `five thousand three on three battles attack without switch-only stalls`() {
+    fun `five thousand randomized complete preset battles attack without switch-only stalls`() {
         SEEDS.forEach { seed ->
             val summary = VirtualLeague(Random(seed), seed).run(BATTLES_PER_SEED)
             val report = summary.report()
@@ -39,6 +38,10 @@ class LocalTacticalVirtualBattleTest {
             assertTrue(summary.voluntarySwitchRate <= MAX_VOLUNTARY_SWITCH_RATE, report)
             assertTrue(summary.maximumConsecutiveVoluntarySwitches <= MAX_CONSECUTIVE_VOLUNTARY_SWITCHES, report)
             assertTrue(summary.sidesWithoutAnyAttack <= MAX_SIDES_WITHOUT_ATTACK, report)
+            assertTrue(summary.distinctSetsUsed >= minOf(MIN_DISTINCT_SETS_USED, summary.rosterPresetCount), report)
+            assertTrue(summary.distinctSpeciesUsed >= minOf(MIN_DISTINCT_SPECIES_USED, summary.rosterSpeciesCount), report)
+            assertTrue(summary.uniqueTeamRate >= MIN_UNIQUE_TEAM_RATE, report)
+            assertEquals(0, summary.adjacentRepeatedTeams, report)
         }
     }
 
@@ -46,8 +49,15 @@ class LocalTacticalVirtualBattleTest {
         private val random: Random,
         private val seed: Int,
     ) {
+        private val roster = LocalTacticalSimulationRoster.load()
+
         fun run(battles: Int): LeagueSummary {
-            val summary = LeagueSummary(battles, seed)
+            val summary = LeagueSummary(
+                battles = battles,
+                seed = seed,
+                rosterPresetCount = roster.entries.size,
+                rosterSpeciesCount = roster.entries.map { it.speciesId }.distinct().size,
+            )
             repeat(battles) { index ->
                 summary.accept(runBattle(index))
             }
@@ -97,11 +107,23 @@ class LocalTacticalVirtualBattleTest {
                 right.hasLivingPokemon() && !left.hasLivingPokemon() -> "right"
                 else -> null
             }
-            return BattleResult(index, completedTurn, stalled, winner, left.actions, right.actions, trace)
+            return BattleResult(
+                index = index,
+                turns = completedTurn,
+                stalled = stalled,
+                winner = winner,
+                left = left.actions,
+                right = right.actions,
+                leftSetIds = left.fighters.map { it.template.setId },
+                rightSetIds = right.fighters.map { it.template.setId },
+                leftSpeciesIds = left.fighters.map { it.template.speciesId },
+                rightSpeciesIds = right.fighters.map { it.template.speciesId },
+                trace = trace,
+            )
         }
 
         private fun team(label: String, battleId: UUID, brain: LocalTacticalBrain): TeamState {
-            val templates = TEMPLATES.shuffled(random).take(TEAM_SIZE)
+            val templates = roster.randomTeam(random, TEAM_SIZE)
             val fighters = templates.map { template ->
                 Fighter(
                     id = UUID(random.nextLong(), random.nextLong()),
@@ -166,14 +188,14 @@ class LocalTacticalVirtualBattleTest {
                     kind = BattleActionKind.USE_MOVE,
                     actorSlot = 0,
                     moveSlot = slot,
-                    moveId = "cobblemon:${move.id}",
+                    moveId = move.id,
                     targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
                     moveDetails = BattleMoveCandidateView(
                         typeId = move.typeId,
                         damageCategory = move.category,
                         power = move.power,
                         accuracy = move.accuracy,
-                        priority = 0,
+                        priority = move.priority,
                         currentPp = 10,
                         targetPattern = BattleMoveTargetPattern.SELECTED,
                     ),
@@ -284,7 +306,7 @@ class LocalTacticalVirtualBattleTest {
 
     private data class Fighter(
         val id: UUID,
-        val template: FighterTemplate,
+        val template: LocalTacticalSimulationEntry,
         var hpFraction: Double,
     ) {
         val fainted: Boolean get() = hpFraction <= 0.0
@@ -294,19 +316,19 @@ class LocalTacticalVirtualBattleTest {
             side = side,
             activeSlot = if (active) 0 else null,
             speciesId = template.speciesId,
-            formId = null,
+            formId = template.formId,
             level = LEVEL,
             hpFraction = hpFraction,
             statusId = null,
             statStages = emptyMap(),
-            knownMoveIds = if (own) template.moves.mapTo(linkedSetOf()) { "cobblemon:${it.id}" } else emptySet(),
-            knownAbilityId = null,
-            knownHeldItemId = null,
+            knownMoveIds = if (own) template.moves.mapTo(linkedSetOf()) { it.id } else emptySet(),
+            knownAbilityId = template.abilityId.takeIf { own },
+            knownHeldItemId = template.heldItemId.takeIf { own },
             fainted = fainted,
-            knownTypeIds = if (reveal) setOf(template.typeId) else emptySet(),
+            knownTypeIds = if (reveal) template.typeIds else emptySet(),
             combatStats = when {
                 own -> template.stats.exactView()
-                active -> template.stats.publicView()
+                active -> template.stats.publicView(PUBLIC_STAT_MIN, PUBLIC_STAT_MAX)
                 else -> null
             },
         )
@@ -387,6 +409,10 @@ class LocalTacticalVirtualBattleTest {
         val winner: String?,
         val left: SideActions,
         val right: SideActions,
+        val leftSetIds: List<String>,
+        val rightSetIds: List<String>,
+        val leftSpeciesIds: List<String>,
+        val rightSpeciesIds: List<String>,
         val trace: List<String>,
     ) {
         val voluntarySwitches: Int get() = left.voluntarySwitches + right.voluntarySwitches
@@ -398,6 +424,8 @@ class LocalTacticalVirtualBattleTest {
     private class LeagueSummary(
         private val battles: Int,
         private val seed: Int,
+        val rosterPresetCount: Int,
+        val rosterSpeciesCount: Int,
     ) {
         var totalTurns: Int = 0
             private set
@@ -415,18 +443,42 @@ class LocalTacticalVirtualBattleTest {
             private set
         var sidesWithoutAnyAttack: Int = 0
             private set
+        var adjacentRepeatedTeams: Int = 0
+            private set
+        private var sameTeamMatchups: Int = 0
         private var leftWins: Int = 0
         private var rightWins: Int = 0
         private var draws: Int = 0
         private var worstTrace: List<String> = emptyList()
         private var worstSwitchStreak: Int = -1
+        private val usedSetIds = linkedSetOf<String>()
+        private val usedSpeciesIds = linkedSetOf<String>()
+        private val uniqueTeamSignatures = linkedSetOf<String>()
+        private var previousLeftTeam: String? = null
+        private var previousRightTeam: String? = null
 
         val attackDecisionRate: Double
             get() = attacks.toDouble() / (attacks + voluntarySwitches).coerceAtLeast(1)
         val voluntarySwitchRate: Double
             get() = voluntarySwitches.toDouble() / (attacks + voluntarySwitches).coerceAtLeast(1)
+        val distinctSetsUsed: Int get() = usedSetIds.size
+        val distinctSpeciesUsed: Int get() = usedSpeciesIds.size
+        val uniqueTeamRate: Double get() = uniqueTeamSignatures.size.toDouble() / (battles * 2).coerceAtLeast(1)
 
         fun accept(result: BattleResult) {
+            val leftTeam = result.leftSetIds.joinToString("|")
+            val rightTeam = result.rightSetIds.joinToString("|")
+            if (leftTeam == previousLeftTeam) adjacentRepeatedTeams += 1
+            if (rightTeam == previousRightTeam) adjacentRepeatedTeams += 1
+            if (leftTeam == rightTeam) sameTeamMatchups += 1
+            previousLeftTeam = leftTeam
+            previousRightTeam = rightTeam
+            uniqueTeamSignatures += leftTeam
+            uniqueTeamSignatures += rightTeam
+            usedSetIds += result.leftSetIds
+            usedSetIds += result.rightSetIds
+            usedSpeciesIds += result.leftSpeciesIds
+            usedSpeciesIds += result.rightSpeciesIds
             totalTurns += result.turns
             maximumTurns = maxOf(maximumTurns, result.turns)
             if (result.stalled) stalledBattles += 1
@@ -453,6 +505,15 @@ class LocalTacticalVirtualBattleTest {
         fun report(): String = buildString {
             appendLine("LOCAL_BRAIN_VIRTUAL_LEAGUE")
             appendLine("battles=$battles seed=$seed")
+            appendLine(
+                "roster_presets=$rosterPresetCount roster_species=$rosterSpeciesCount " +
+                    "sets_used=$distinctSetsUsed species_used=$distinctSpeciesUsed",
+            )
+            appendLine(
+                "team_draws=${battles * 2} unique_teams=${uniqueTeamSignatures.size} " +
+                    "unique_team_rate=${"%.4f".format(uniqueTeamRate)} adjacent_repeats=$adjacentRepeatedTeams " +
+                    "same_team_matchups=$sameTeamMatchups",
+            )
             appendLine("wins_left=$leftWins wins_right=$rightWins draws=$draws stalled=$stalledBattles")
             appendLine("turns_total=$totalTurns turns_average=${"%.2f".format(totalTurns.toDouble() / battles)} turns_max=$maximumTurns")
             appendLine("attack_decisions=$attacks attack_rate=${"%.4f".format(attackDecisionRate)}")
@@ -463,54 +524,6 @@ class LocalTacticalVirtualBattleTest {
             worstTrace.take(MAX_TRACE_LINES).forEach(::appendLine)
         }
     }
-
-    private data class FighterTemplate(
-        val speciesId: String,
-        val typeId: String,
-        val stats: Stats,
-        val moves: List<Move>,
-    )
-
-    private data class Stats(
-        val maxHp: Int,
-        val attack: Int,
-        val defence: Int,
-        val specialAttack: Int,
-        val specialDefence: Int,
-        val speed: Int,
-    ) {
-        fun exactView() = BattleCombatStatRangesView.exact(
-            maxHp,
-            attack,
-            defence,
-            specialAttack,
-            specialDefence,
-            speed,
-        )
-
-        fun publicView() = BattleCombatStatRangesView(
-            maxHp = publicRange(maxHp),
-            attack = publicRange(attack),
-            defence = publicRange(defence),
-            specialAttack = publicRange(specialAttack),
-            specialDefence = publicRange(specialDefence),
-            speed = publicRange(speed),
-            knowledge = BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
-        )
-
-        private fun publicRange(value: Int) = BattleIntegerRange(
-            minimum = (value * PUBLIC_STAT_MIN).roundToInt().coerceAtLeast(1),
-            maximum = (value * PUBLIC_STAT_MAX).roundToInt().coerceAtLeast(1),
-        )
-    }
-
-    private data class Move(
-        val id: String,
-        val typeId: String,
-        val power: Double,
-        val category: BattleMoveDamageCategory,
-        val accuracy: Double = 100.0,
-    )
 
     private companion object {
         val SEEDS = listOf(8_192_026, 731_993, 2_026_081, 73_193, 19_937)
@@ -525,56 +538,33 @@ class LocalTacticalVirtualBattleTest {
         const val MAX_VOLUNTARY_SWITCH_RATE = 0.30
         const val MAX_CONSECUTIVE_VOLUNTARY_SWITCHES = 2
         const val MAX_SIDES_WITHOUT_ATTACK = 10
-
-        val TEMPLATES = listOf(
-            FighterTemplate(
-                "showdown:blaze", "fire", Stats(170, 105, 100, 150, 110, 135),
-                listOf(Move("flame_burst", "fire", 90.0, BattleMoveDamageCategory.SPECIAL), Move("energy_ball", "grass", 75.0, BattleMoveDamageCategory.SPECIAL)),
-            ),
-            FighterTemplate(
-                "showdown:torrent", "water", Stats(190, 110, 125, 140, 130, 100),
-                listOf(Move("surf", "water", 90.0, BattleMoveDamageCategory.SPECIAL), Move("ice_beam", "ice", 75.0, BattleMoveDamageCategory.SPECIAL)),
-            ),
-            FighterTemplate(
-                "showdown:grove", "grass", Stats(185, 120, 120, 135, 125, 95),
-                listOf(Move("leaf_storm", "grass", 90.0, BattleMoveDamageCategory.SPECIAL), Move("earth_power", "ground", 75.0, BattleMoveDamageCategory.SPECIAL)),
-            ),
-            FighterTemplate(
-                "showdown:volt", "electric", Stats(165, 110, 95, 150, 105, 145),
-                listOf(Move("thunderbolt", "electric", 90.0, BattleMoveDamageCategory.SPECIAL), Move("air_slash", "flying", 75.0, BattleMoveDamageCategory.SPECIAL, 95.0)),
-            ),
-            FighterTemplate(
-                "showdown:quake", "ground", Stats(205, 155, 135, 90, 105, 85),
-                listOf(Move("earthquake", "ground", 90.0, BattleMoveDamageCategory.PHYSICAL), Move("rock_slide", "rock", 75.0, BattleMoveDamageCategory.PHYSICAL, 90.0)),
-            ),
-            FighterTemplate(
-                "showdown:crag", "rock", Stats(200, 150, 155, 80, 105, 75),
-                listOf(Move("stone_edge", "rock", 90.0, BattleMoveDamageCategory.PHYSICAL, 85.0), Move("brick_break", "fighting", 75.0, BattleMoveDamageCategory.PHYSICAL)),
-            ),
-            FighterTemplate(
-                "showdown:brawl", "fighting", Stats(185, 155, 115, 80, 105, 115),
-                listOf(Move("close_combat", "fighting", 90.0, BattleMoveDamageCategory.PHYSICAL), Move("night_slash", "dark", 75.0, BattleMoveDamageCategory.PHYSICAL)),
-            ),
-            FighterTemplate(
-                "showdown:mind", "psychic", Stats(170, 85, 95, 155, 130, 125),
-                listOf(Move("psychic", "psychic", 90.0, BattleMoveDamageCategory.SPECIAL), Move("moonblast", "fairy", 75.0, BattleMoveDamageCategory.SPECIAL)),
-            ),
-            FighterTemplate(
-                "showdown:frost", "ice", Stats(175, 120, 100, 145, 110, 115),
-                listOf(Move("ice_beam", "ice", 90.0, BattleMoveDamageCategory.SPECIAL), Move("water_pulse", "water", 75.0, BattleMoveDamageCategory.SPECIAL)),
-            ),
-            FighterTemplate(
-                "showdown:wing", "flying", Stats(175, 145, 100, 95, 105, 140),
-                listOf(Move("brave_bird", "flying", 90.0, BattleMoveDamageCategory.PHYSICAL), Move("fire_fang", "fire", 75.0, BattleMoveDamageCategory.PHYSICAL, 95.0)),
-            ),
-            FighterTemplate(
-                "showdown:shade", "dark", Stats(180, 150, 105, 90, 115, 125),
-                listOf(Move("crunch", "dark", 90.0, BattleMoveDamageCategory.PHYSICAL), Move("poison_jab", "poison", 75.0, BattleMoveDamageCategory.PHYSICAL)),
-            ),
-            FighterTemplate(
-                "showdown:charm", "fairy", Stats(180, 90, 105, 150, 135, 110),
-                listOf(Move("moonblast", "fairy", 90.0, BattleMoveDamageCategory.SPECIAL), Move("psyshock", "psychic", 75.0, BattleMoveDamageCategory.SPECIAL)),
-            ),
-        )
+        const val MIN_DISTINCT_SETS_USED = 100
+        const val MIN_DISTINCT_SPECIES_USED = 50
+        const val MIN_UNIQUE_TEAM_RATE = 0.99
     }
 }
+
+private fun LocalTacticalSimulationStats.exactView() = BattleCombatStatRangesView.exact(
+    maxHp,
+    attack,
+    defence,
+    specialAttack,
+    specialDefence,
+    speed,
+)
+
+private fun LocalTacticalSimulationStats.publicView(minimumScale: Double, maximumScale: Double) =
+    BattleCombatStatRangesView(
+        maxHp = publicRange(maxHp, minimumScale, maximumScale),
+        attack = publicRange(attack, minimumScale, maximumScale),
+        defence = publicRange(defence, minimumScale, maximumScale),
+        specialAttack = publicRange(specialAttack, minimumScale, maximumScale),
+        specialDefence = publicRange(specialDefence, minimumScale, maximumScale),
+        speed = publicRange(speed, minimumScale, maximumScale),
+        knowledge = BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
+    )
+
+private fun publicRange(value: Int, minimumScale: Double, maximumScale: Double) = BattleIntegerRange(
+    minimum = (value * minimumScale).roundToInt().coerceAtLeast(1),
+    maximum = (value * maximumScale).roundToInt().coerceAtLeast(1),
+)

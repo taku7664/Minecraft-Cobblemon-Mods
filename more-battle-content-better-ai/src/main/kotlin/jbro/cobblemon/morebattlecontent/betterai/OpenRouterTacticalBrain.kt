@@ -98,6 +98,8 @@ internal class OpenRouterTacticalBrain(
     override fun decide(session: BattleBrainSession, context: BattleDecisionContext): CompletionStage<BattleDecision> {
         val active = session as? Session ?: return CompletableFuture.failedFuture(IllegalArgumentException("Unknown session"))
         val calculatedContext = PublicBattleTacticalCalculator.calculate(context)
+            .forPlanOwner(jbro.cobblemon.morebattlecontent.api.ai.BattlePlanOwner.PRIMARY_BRAIN)
+            .let(PublicMechanicalActionGate::removeNullifiedWhenPossible)
         if (calculatedContext.candidates.size == 1) {
             return CompletableFuture.completedFuture(
                 BattleDecision(

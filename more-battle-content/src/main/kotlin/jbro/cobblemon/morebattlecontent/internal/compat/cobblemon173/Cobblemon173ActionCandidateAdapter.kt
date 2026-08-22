@@ -309,6 +309,26 @@ internal object Cobblemon173ActionCandidateAdapter {
     internal fun publicAccuracy(cobblemonAccuracy: Double): Double =
         if (cobblemonAccuracy < 0.0) 100.0 else cobblemonAccuracy
 
+    internal fun publicMoveDetails(moveId: String): BattleMoveCandidateView? {
+        val template = Moves.getByName(moveId) ?: return null
+        val category = when (template.damageCategory.name.lowercase()) {
+            "physical" -> BattleMoveDamageCategory.PHYSICAL
+            "special" -> BattleMoveDamageCategory.SPECIAL
+            "status" -> BattleMoveDamageCategory.STATUS
+            else -> return null
+        }
+        return BattleMoveCandidateView(
+            typeId = template.elementalType.name,
+            damageCategory = category,
+            power = template.power,
+            accuracy = publicAccuracy(template.accuracy),
+            priority = template.priority,
+            currentPp = 1,
+            targetPattern = publicTargetPattern(template.target),
+            effects = publicMoveEffects(moveId),
+        )
+    }
+
     internal fun publicTargetPattern(target: MoveTarget): BattleMoveTargetPattern =
         when (target) {
             MoveTarget.all -> BattleMoveTargetPattern.ALL_ACTIVE

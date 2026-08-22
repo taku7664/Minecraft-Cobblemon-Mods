@@ -4,7 +4,6 @@ import io.netty.buffer.Unpooled
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
-import jbro.cobblemon.morebattlecontent.internal.tower.TowerRank
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayIntent
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayMutationResult
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayPartySlot
@@ -88,14 +87,14 @@ class TowerPlayPayloadsTest {
             )
         },
         selectedPokemonIds = selectedPokemonIds,
-        rank = TowerRank.RANK_5,
-        rankPoints = 2,
-        winsRequired = 3,
-        masterCycleWins = 0,
+        currentWinStreak = 7,
+        bestWinStreak = 12,
         bpBalance = 123,
         errorKeys = listOf("screen.cobblemon_more_battle_content.tower.warning.example"),
         selectedMechanic = MajorBattleMechanic.DYNAMAX,
         mechanicLocked = true,
+        legendaryClassAllowed = true,
+        legendaryClassLocked = true,
     )
 
     private fun <T : Any> roundTrip(

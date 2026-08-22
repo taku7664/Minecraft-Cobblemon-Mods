@@ -25,7 +25,7 @@ class TowerPlayMechanicSelectionTest {
     }
 
     @Test
-    fun `new challenge starts without an implicit mechanic and cannot lock team`() {
+    fun `new challenge defaults to dynamax and can lock without another mechanic click`() {
         val service = service()
         var state = service.open(playerId, request())
         party().take(3).forEachIndexed { index, slot ->
@@ -35,15 +35,16 @@ class TowerPlayMechanicSelectionTest {
             ))
         }
 
-        val result = service.mutate(
+        val result = accepted(service.mutate(
             playerId,
             TowerPlayIntent.LockTeam(UUID(0, 10), contextId, state.revision),
-        ) as TowerPlayMutationResult.Rejected
+        ))
 
-        assertEquals(null, state.selectedMechanic)
+        assertEquals(MajorBattleMechanic.DYNAMAX, state.selectedMechanic)
         assertFalse(state.mechanicLocked)
-        assertEquals(TowerPlayMessageKeys.MECHANIC_REQUIRED, result.messageKey)
-        assertEquals(TowerPlayPhase.SELECTING, service.current(playerId)?.phase)
+        assertEquals(MajorBattleMechanic.DYNAMAX, result.selectedMechanic)
+        assertFalse(result.mechanicLocked)
+        assertEquals(TowerPlayPhase.TEAM_LOCKED, service.current(playerId)?.phase)
     }
 
     @Test

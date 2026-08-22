@@ -13,10 +13,10 @@ class BattleTacticalContractTest {
 
         assertEquals(
             listOf(
-                BattleTrainerTier.INTRODUCTORY to Triple(3, 0, 3),
-                BattleTrainerTier.STANDARD to Triple(6, 0, 5),
-                BattleTrainerTier.ADVANCED to Triple(10, 1, 8),
-                BattleTrainerTier.BOSS to Triple(16, 2, 12),
+                BattleTrainerTier.INTRODUCTORY to Triple(3, 1, 3),
+                BattleTrainerTier.STANDARD to Triple(6, 2, 5),
+                BattleTrainerTier.ADVANCED to Triple(10, 3, 8),
+                BattleTrainerTier.BOSS to Triple(16, 4, 12),
             ),
             profiles.map {
                 it.tier to Triple(
@@ -189,6 +189,11 @@ class BattleTacticalContractTest {
             ),
             turnsSinceLastSwitch = 2,
             switchesThisBattle = 1,
+            lastMoveId = "cobblemon:shadowball",
+            sameMoveRepeatCount = 3,
+            patternExposureCount = 3,
+            patternResponseShiftEvidence = 0.65,
+            opponentResponseVolatility = 0.25,
         )
         val context = BattleDecisionContext(
             requestId = UUID.randomUUID(),
@@ -201,7 +206,52 @@ class BattleTacticalContractTest {
         assertEquals(memory, context.memory)
         assertEquals(0.7, context.memory.tendencies.single().estimatedRate)
         assertEquals(0.64, context.memory.predictionCalibration.brierSkillScoreAgainstAlwaysMove)
+        assertEquals(3, context.memory.patternExposureCount)
+        assertEquals(0.65, context.memory.patternResponseShiftEvidence)
     }
+
+    @Test
+    fun `future action catalog separates exact own moves from publicly revealed opponent moves`() {
+        val allyId = UUID.randomUUID()
+        val opponentId = UUID.randomUUID()
+        val allyMoves = arrayListOf(
+            BattlePublicMoveOptionView(
+                moveId = "cobblemon:surf",
+                details = moveDetails("water", 90.0),
+                knowledge = BattlePublicMoveKnowledge.EXACT_OWN,
+            ),
+        )
+        val entries = arrayListOf(
+            BattlePokemonActionCatalogView(allyId, allyMoves),
+            BattlePokemonActionCatalogView(
+                opponentId,
+                listOf(
+                    BattlePublicMoveOptionView(
+                        moveId = "cobblemon:shadow_ball",
+                        details = moveDetails("ghost", 80.0),
+                        knowledge = BattlePublicMoveKnowledge.PUBLICLY_REVEALED,
+                    ),
+                ),
+            ),
+        )
+        val catalog = BattlePublicActionCatalogView(entries)
+
+        allyMoves.clear()
+        entries.clear()
+
+        assertEquals("cobblemon:surf", catalog.forPokemon(allyId).single().moveId)
+        assertEquals(BattlePublicMoveKnowledge.PUBLICLY_REVEALED, catalog.forPokemon(opponentId).single().knowledge)
+        assertTrue(catalog.forPokemon(UUID.randomUUID()).isEmpty())
+    }
+
+    private fun moveDetails(typeId: String, power: Double) = BattleMoveCandidateView(
+        typeId = typeId,
+        damageCategory = BattleMoveDamageCategory.SPECIAL,
+        power = power,
+        accuracy = 100.0,
+        priority = 0,
+        currentPp = 1,
+    )
 
     private fun emptyState() = BattleStateView(
         battleId = UUID.randomUUID(),

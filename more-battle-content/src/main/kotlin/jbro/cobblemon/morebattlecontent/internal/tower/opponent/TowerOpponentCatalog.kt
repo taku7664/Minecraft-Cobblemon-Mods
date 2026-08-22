@@ -5,7 +5,7 @@ import java.util.Collections
 import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerOpponentKind
-import jbro.cobblemon.morebattlecontent.internal.tower.TowerRank
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerStreakStage
 
 internal data class TowerStatSpread(
     val hp: Int,
@@ -80,7 +80,7 @@ internal class TowerPokemonSet internal constructor(
 internal class TowerOpponentProfile internal constructor(
     val profileId: String,
     val displayNameKey: String,
-    rankIds: List<TowerRank>,
+    stageIds: List<TowerStreakStage>,
     val format: TowerBattleFormat,
     val opponentKind: TowerOpponentKind,
     val mechanic: MajorBattleMechanic? = null,
@@ -89,7 +89,7 @@ internal class TowerOpponentProfile internal constructor(
     val theme: String,
     setIds: List<String>,
 ) {
-    val rankIds: List<TowerRank> = rankIds.immutableCopy()
+    val stageIds: List<TowerStreakStage> = stageIds.immutableCopy()
     val setIds: List<String> = setIds.immutableCopy()
 }
 
@@ -104,25 +104,27 @@ internal class TowerOpponentCatalog internal constructor(
     )
 
     fun profilesFor(
-        rank: TowerRank,
+        stage: TowerStreakStage,
         format: TowerBattleFormat,
         opponentKind: TowerOpponentKind,
     ): List<TowerOpponentProfile> = profiles.filter { profile ->
-        rank in profile.rankIds && profile.format == format && profile.opponentKind == opponentKind
+        stage in profile.stageIds && profile.format == format && profile.opponentKind == opponentKind
     }.immutableCopy()
 
     fun profilesFor(
-        rank: TowerRank,
+        stage: TowerStreakStage,
         format: TowerBattleFormat,
         opponentKind: TowerOpponentKind,
         mechanic: MajorBattleMechanic,
     ): List<TowerOpponentProfile> = profiles.filter { profile ->
-        rank in profile.rankIds && profile.format == format && profile.opponentKind == opponentKind &&
+        stage in profile.stageIds && profile.format == format && profile.opponentKind == opponentKind &&
             profile.mechanic == mechanic
     }.immutableCopy()
 
     fun setsFor(profile: TowerOpponentProfile): List<TowerPokemonSet> =
         profile.setIds.map(setsById::getValue).immutableCopy()
+
+    fun allSets(): List<TowerPokemonSet> = setsById.values.toList().immutableCopy()
 }
 
 internal enum class TowerOpponentCatalogIssueCode {

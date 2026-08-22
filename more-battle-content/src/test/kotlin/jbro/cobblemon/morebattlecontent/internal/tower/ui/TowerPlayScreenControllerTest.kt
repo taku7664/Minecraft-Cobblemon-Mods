@@ -3,7 +3,6 @@ package jbro.cobblemon.morebattlecontent.internal.tower.ui
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
-import jbro.cobblemon.morebattlecontent.internal.tower.TowerRank
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotSame
@@ -169,10 +168,8 @@ class TowerPlayScreenControllerTest {
         phase = TowerPlayPhase.SELECTING,
         party = party,
         selectedPokemonIds = selected,
-        rank = TowerRank.RANK_1,
-        rankPoints = 0,
-        winsRequired = 2,
-        masterCycleWins = 0,
+        currentWinStreak = 0,
+        bestWinStreak = 0,
         bpBalance = 0,
         errorKeys = errors,
         selectedMechanic = mechanic,

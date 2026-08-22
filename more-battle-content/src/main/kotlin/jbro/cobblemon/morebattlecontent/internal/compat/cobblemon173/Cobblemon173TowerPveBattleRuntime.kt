@@ -69,6 +69,7 @@ internal class Cobblemon173TowerPveBattleRuntime(
             baselineAi = Cobblemon173BaselineAiFactory.create(prepared.profile.aiSkill),
             trainerProfile = prepared.trainerProfile,
             learningScopeId = prepared.request.learningScopeId,
+            trainerPersonaId = prepared.profile.profileId,
             primaryBrain = primaryBrain,
             localBrain = localBrain,
             mechanicPolicy = {

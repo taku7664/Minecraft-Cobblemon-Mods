@@ -35,6 +35,10 @@ internal class TowerPlayScreenController(
         TowerPlayIntent.ChangeMechanic(requestId, state.entryContextId, state.revision, mechanic)
     }
 
+    fun changeLegendaryClassAllowed(allowed: Boolean): Boolean = submit { requestId ->
+        TowerPlayIntent.ChangeLegendaryClassAllowed(requestId, state.entryContextId, state.revision, allowed)
+    }
+
     fun lockTeam(): Boolean = submit { requestId ->
         TowerPlayIntent.LockTeam(requestId, state.entryContextId, state.revision)
     }

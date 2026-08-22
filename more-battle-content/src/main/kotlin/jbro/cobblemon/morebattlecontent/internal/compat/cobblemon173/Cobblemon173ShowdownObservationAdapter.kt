@@ -26,6 +26,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
     private var battle: PokemonBattle? = null
     private var consumedMessages = 0
     private var observedTurn = 0
+    private val lastMoveByPokemon = linkedMapOf<UUID, String>()
 
     fun attach(value: PokemonBattle) {
         check(battle == null || battle === value) { "Observation adapter cannot be moved to another battle" }
@@ -59,6 +60,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
             consumedMessages = 0
             observedTurn = 0
             observer.reset()
+            lastMoveByPokemon.clear()
         }
         messages.subList(consumedMessages, messages.size).forEach { raw -> consume(activeBattle, raw) }
         consumedMessages = messages.size
@@ -88,6 +90,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
             "switch", "drag" -> {
                 observer.closeActionWindow()
                 resolvePokemon(activeBattle, message, 0)?.let {
+                    lastMoveByPokemon.remove(it.battlePokemonId)
                     observer.observe(
                         Cobblemon173PublicObservation.PokemonPresented(
                             observedTurn,
@@ -100,6 +103,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
             "move" -> {
                 val actor = resolvePokemon(activeBattle, message, 0) ?: return
                 val moveId = effectId(message.argumentAt(1)).takeIf(String::isNotBlank) ?: return
+                lastMoveByPokemon[actor.battlePokemonId] = moveId
                 val targets = listOfNotNull(resolvePokemon(activeBattle, message, 2))
                 observer.observe(
                     Cobblemon173PublicObservation.MoveUsed(
@@ -113,9 +117,13 @@ internal class Cobblemon173ShowdownObservationAdapter(
                 )
             }
 
+            "-start", "-end", "-mustrecharge" -> observeActionConstraint(activeBattle, message)
+
             "-miss", "-fail", "-block", "-notarget", "cant", "-crit", "-supereffective",
-            "-resisted", "-immune", "-hitcount", "-activate", "-singleturn" ->
+            "-resisted", "-immune", "-hitcount", "-activate", "-singleturn" -> {
+                observeActionConstraint(activeBattle, message)
                 observeMoveOutcome(activeBattle, message)
+            }
 
             "-ability" -> revealResource(activeBattle, message, ResourceKind.ABILITY)
             "-item", "-enditem" -> revealResource(activeBattle, message, ResourceKind.ITEM)
@@ -183,6 +191,25 @@ internal class Cobblemon173ShowdownObservationAdapter(
                 )
             }
         }
+    }
+
+    private fun observeActionConstraint(activeBattle: PokemonBattle, message: BattleMessage) {
+        val descriptor = actionConstraintDescriptor(message) ?: return
+        val pokemon = resolvePokemon(activeBattle, message, descriptor.pokemonArgument) ?: return
+        val lockedMoveId = if (descriptor.kind == BattleActionConstraintKind.ENCORE && descriptor.active) {
+            lastMoveByPokemon[pokemon.battlePokemonId] ?: return
+        } else {
+            null
+        }
+        observer.observe(
+            Cobblemon173PublicObservation.ActionConstraintChanged(
+                turn = observedTurn,
+                pokemon = pokemon,
+                kind = descriptor.kind,
+                active = descriptor.active,
+                lockedMoveId = lockedMoveId,
+            ),
+        )
     }
 
     private fun revealResource(activeBattle: PokemonBattle, message: BattleMessage, kind: ResourceKind) {
@@ -261,6 +288,9 @@ internal class Cobblemon173ShowdownObservationAdapter(
             combatStats = if (opponentIsNotVisible) null else {
                 Cobblemon173PublicStatHypothesis.fromForm(visible.level, visible.form)
             },
+            knownFormStates = if (opponentIsNotVisible) emptyMap() else {
+                Cobblemon173KnownFormStates.publicRanges(visible.level, visible.species)
+            },
         )
     }
 
@@ -290,6 +320,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
                 specialDefence = pokemon.specialDefence,
                 speed = pokemon.speed,
             ),
+            knownFormStates = Cobblemon173KnownFormStates.exactOwn(pokemon),
         )
     }
 
@@ -314,6 +345,18 @@ internal class Cobblemon173ShowdownObservationAdapter(
     internal companion object {
         private const val UNKNOWN_PUBLIC_SPECIES_ID = "showdown:unknown"
         private val ROOM_EFFECT_IDS = setOf("trickroom", "wonderroom", "magicroom")
+        private val PARTIAL_TRAPPING_MOVE_IDS = setOf(
+            "bind",
+            "clamp",
+            "firespin",
+            "infestation",
+            "magmastorm",
+            "sandtomb",
+            "snaptrap",
+            "thundercage",
+            "whirlpool",
+            "wrap",
+        )
         private val PUBLIC_LEVEL = Regex("(?:^|,\\s*)L(\\d+)(?:,|$)")
 
         fun publicSwitchSnapshot(
@@ -358,6 +401,37 @@ internal class Cobblemon173ShowdownObservationAdapter(
 
         fun publicSourceEffectId(message: BattleMessage): String? =
             message.effect("from")?.id?.takeIf(String::isNotBlank)
+
+        internal fun actionConstraintDescriptor(message: BattleMessage): ShowdownActionConstraintDescriptor? {
+            val effect = effectId(message.argumentAt(1))
+            return when (message.id) {
+                "-start" -> when (effect) {
+                    "taunt" -> ShowdownActionConstraintDescriptor(BattleActionConstraintKind.TAUNT, true)
+                    "encore" -> ShowdownActionConstraintDescriptor(BattleActionConstraintKind.ENCORE, true)
+                    else -> null
+                }
+                "-end" -> when {
+                    effect == "taunt" -> ShowdownActionConstraintDescriptor(BattleActionConstraintKind.TAUNT, false)
+                    effect == "encore" -> ShowdownActionConstraintDescriptor(BattleActionConstraintKind.ENCORE, false)
+                    effect in PARTIAL_TRAPPING_MOVE_IDS || message.hasOptionalArgument("partiallytrapped") ->
+                        ShowdownActionConstraintDescriptor(BattleActionConstraintKind.TRAPPED, false)
+                    else -> null
+                }
+                "-mustrecharge" -> ShowdownActionConstraintDescriptor(BattleActionConstraintKind.RECHARGE, true)
+                "cant" -> when (effect) {
+                    "recharge" -> ShowdownActionConstraintDescriptor(BattleActionConstraintKind.RECHARGE, false)
+                    "trapped" -> ShowdownActionConstraintDescriptor(BattleActionConstraintKind.TRAPPED, true)
+                    else -> null
+                }
+                "-activate" -> when {
+                    effect == "trapped" -> ShowdownActionConstraintDescriptor(BattleActionConstraintKind.TRAPPED, true)
+                    effect in PARTIAL_TRAPPING_MOVE_IDS && message.hasOptionalArgument("of") ->
+                        ShowdownActionConstraintDescriptor(BattleActionConstraintKind.TRAPPED, true)
+                    else -> null
+                }
+                else -> null
+            }
+        }
 
         fun moveOutcomeDescriptor(message: BattleMessage): ShowdownMoveOutcomeDescriptor? = when (message.id) {
             "-miss" -> ShowdownMoveOutcomeDescriptor(
@@ -446,5 +520,15 @@ internal data class ShowdownMoveOutcomeDescriptor(
         require(sourceArgument == null || sourceArgument >= 0)
         require(targetArguments.all { it >= 0 })
         require(targetArguments.distinct().size == targetArguments.size)
+    }
+}
+
+internal data class ShowdownActionConstraintDescriptor(
+    val kind: BattleActionConstraintKind,
+    val active: Boolean,
+    val pokemonArgument: Int = 0,
+) {
+    init {
+        require(pokemonArgument >= 0)
     }
 }

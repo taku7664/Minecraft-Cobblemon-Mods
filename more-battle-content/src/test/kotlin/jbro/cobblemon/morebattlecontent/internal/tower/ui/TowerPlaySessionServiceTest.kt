@@ -4,7 +4,6 @@ import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgress
-import jbro.cobblemon.morebattlecontent.internal.tower.TowerRank
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerRegisteredTeam
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerRegisteredTeamSnapshotResult
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerRegisteredTeamSnapshots
@@ -30,7 +29,7 @@ class TowerPlaySessionServiceTest {
                 initialFormat = TowerBattleFormat.DOUBLE,
                 progressByFormat = mapOf(
                     TowerBattleFormat.SINGLE to TowerProgress.initial(TowerBattleFormat.SINGLE),
-                    TowerBattleFormat.DOUBLE to TowerProgress(TowerBattleFormat.DOUBLE, TowerRank.RANK_5, 2),
+                    TowerBattleFormat.DOUBLE to TowerProgress(TowerBattleFormat.DOUBLE, 7, 9),
                 ),
                 bpBalance = 37,
             ),
@@ -41,11 +40,30 @@ class TowerPlaySessionServiceTest {
         assertEquals(TowerBattleFormat.DOUBLE, state.format)
         assertEquals(TowerPlayPhase.SELECTING, state.phase)
         assertEquals(6, state.party.size)
-        assertEquals(TowerRank.RANK_5, state.rank)
-        assertEquals(2, state.rankPoints)
-        assertEquals(3, state.winsRequired)
+        assertEquals(jbro.cobblemon.morebattlecontent.internal.tower.TowerStreakStage.PRACTICAL, state.streakStage)
+        assertEquals(7, state.currentWinStreak)
+        assertEquals(9, state.bestWinStreak)
+        assertEquals(2, state.bpPerWin)
         assertEquals(37, state.bpBalance)
         assertTrue(state.errorKeys.isEmpty())
+    }
+
+    @Test
+    fun `boss preview includes the five bp bonus`() {
+        val state = service().open(
+            playerId,
+            TowerPlayOpenRequest(
+                party = validParty(),
+                initialFormat = TowerBattleFormat.SINGLE,
+                progressByFormat = mapOf(
+                    TowerBattleFormat.SINGLE to TowerProgress(TowerBattleFormat.SINGLE, 4, 4),
+                    TowerBattleFormat.DOUBLE to TowerProgress.initial(TowerBattleFormat.DOUBLE),
+                ),
+                bpBalance = 0,
+            ),
+        )
+
+        assertEquals(6, state.bpPerWin)
     }
 
     @Test
@@ -303,8 +321,8 @@ class TowerPlaySessionServiceTest {
         )
 
         assertEquals(TowerBattleFormat.DOUBLE, changed.format)
-        assertEquals(TowerRank.RANK_5, changed.rank)
-        assertEquals(2, changed.rankPoints)
+        assertEquals(7, changed.currentWinStreak)
+        assertEquals(9, changed.bestWinStreak)
         assertTrue(changed.selectedPokemonIds.isEmpty())
         assertEquals(MajorBattleMechanic.MEGA, changed.selectedMechanic)
         assertEquals(3, changed.revision)
@@ -437,6 +455,21 @@ class TowerPlaySessionServiceTest {
         assertTrue(!service.close(playerId))
     }
 
+    @Test
+    fun `authoritative BP refresh is retained by later session states`() {
+        val service = service()
+        val opened = service.open(playerId, openRequest())
+
+        val refreshed = service.refreshBpBalance(playerId, 17)
+        val changed = service.mutate(
+            playerId,
+            TowerPlayIntent.ChangeFormat(UUID.randomUUID(), entryContextId, opened.revision, TowerBattleFormat.DOUBLE),
+        ) as TowerPlayMutationResult.Accepted
+
+        assertEquals(17, refreshed?.bpBalance)
+        assertEquals(17, changed.state.bpBalance)
+    }
+
     private fun service(): TowerPlaySessionService = TowerPlaySessionService(
         registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
     ) { entryContextId }
@@ -460,7 +493,7 @@ class TowerPlaySessionServiceTest {
 
     private fun progressByFormat(): Map<TowerBattleFormat, TowerProgress> = mapOf(
         TowerBattleFormat.SINGLE to TowerProgress.initial(TowerBattleFormat.SINGLE),
-        TowerBattleFormat.DOUBLE to TowerProgress(TowerBattleFormat.DOUBLE, TowerRank.RANK_5, 2),
+        TowerBattleFormat.DOUBLE to TowerProgress(TowerBattleFormat.DOUBLE, 7, 9),
     )
 
     private fun validParty(): List<TowerPlayPartySlot> = (1..6).map { index ->

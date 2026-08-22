@@ -5,7 +5,7 @@ import java.io.StringReader
 import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerOpponentKind
-import jbro.cobblemon.morebattlecontent.internal.tower.TowerRank
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerStreakStage
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
@@ -31,7 +31,7 @@ class TowerOpponentCatalogLoaderTest {
             ),
             encounterFragments = listOf(
                 "example:mbc-battle-tower/encounters/core.json" to StringReader(
-                    """{"schema_version":1,"encounters":[{"encounter_id":"mega_single_regular_low","trainer_ids":["ace"],"rank_ids":["1"],"format":"single","opponent_kind":"regular","mechanic_id":"mega","weight":1,"ai_skill":1,"theme":"mega_low","pool_id":"mega_low"}]}""",
+                    """{"schema_version":1,"encounters":[{"encounter_id":"mega_single_regular_low","trainer_ids":["ace"],"stage_ids":["introductory"],"format":"single","opponent_kind":"regular","mechanic_id":"mega","weight":1,"ai_skill":1,"theme":"mega_low","pool_id":"mega_low"}]}""",
                 ),
             ),
             pokemonSetFragments = listOf(
@@ -42,7 +42,7 @@ class TowerOpponentCatalogLoaderTest {
         ) as TowerOpponentCatalogLoadResult.Loaded
 
         val profile = loaded.catalog.profilesFor(
-            TowerRank.RANK_1,
+            TowerStreakStage.INTRODUCTORY,
             TowerBattleFormat.SINGLE,
             TowerOpponentKind.REGULAR,
             MajorBattleMechanic.MEGA,
@@ -72,7 +72,7 @@ class TowerOpponentCatalogLoaderTest {
             ),
             encounterFragments = listOf(
                 "example:mbc-battle-tower/encounters/core.json" to StringReader(
-                    """{"schema_version":1,"encounters":[{"encounter_id":"mega_single_regular_low","trainer_ids":["ace"],"rank_ids":["1"],"format":"single","opponent_kind":"regular","mechanic_id":"mega","weight":1,"ai_skill":1,"theme":"mega_low","pool_id":"mega_low"}]}""",
+                    """{"schema_version":1,"encounters":[{"encounter_id":"mega_single_regular_low","trainer_ids":["ace"],"stage_ids":["introductory"],"format":"single","opponent_kind":"regular","mechanic_id":"mega","weight":1,"ai_skill":1,"theme":"mega_low","pool_id":"mega_low"}]}""",
                 ),
             ),
             pokemonSetFragments = listOf(
@@ -104,7 +104,7 @@ class TowerOpponentCatalogLoaderTest {
             ),
         ) as TowerOpponentCatalogLoadResult.Loaded
         val profile = loaded.catalog.profilesFor(
-            TowerRank.RANK_1,
+            TowerStreakStage.INTRODUCTORY,
             TowerBattleFormat.SINGLE,
             TowerOpponentKind.REGULAR,
             MajorBattleMechanic.MEGA,
@@ -137,7 +137,7 @@ class TowerOpponentCatalogLoaderTest {
 
         result as TowerOpponentCatalogLoadResult.Loaded
         val profiles = result.catalog.profilesFor(
-            rank = TowerRank.RANK_1,
+            stage = TowerStreakStage.INTRODUCTORY,
             format = TowerBattleFormat.SINGLE,
             opponentKind = TowerOpponentKind.REGULAR,
             mechanic = MajorBattleMechanic.MEGA,
@@ -169,7 +169,7 @@ class TowerOpponentCatalogLoaderTest {
             StringReader(schemaThreeCatalogJson("tera", "\"tera_type\": \"fire\",")),
         ) as TowerOpponentCatalogLoadResult.Loaded
         val teraProfile = tera.catalog.profilesFor(
-            TowerRank.RANK_1,
+            TowerStreakStage.INTRODUCTORY,
             TowerBattleFormat.SINGLE,
             TowerOpponentKind.REGULAR,
             MajorBattleMechanic.TERA,
@@ -183,7 +183,7 @@ class TowerOpponentCatalogLoaderTest {
             StringReader(schemaThreeCatalogJson("dynamax", "\"dmax_level\": 10, \"gmax_factor\": true,")),
         ) as TowerOpponentCatalogLoadResult.Loaded
         val dynamaxProfile = dynamax.catalog.profilesFor(
-            TowerRank.RANK_1,
+            TowerStreakStage.INTRODUCTORY,
             TowerBattleFormat.SINGLE,
             TowerOpponentKind.REGULAR,
             MajorBattleMechanic.DYNAMAX,
@@ -284,11 +284,11 @@ class TowerOpponentCatalogLoaderTest {
 
         val loaded = TowerOpponentCatalogLoader.load(StringReader(legacyJson)) as TowerOpponentCatalogLoadResult.Loaded
 
-        assertEquals(null, loaded.catalog.profilesFor(TowerRank.RANK_1, TowerBattleFormat.SINGLE, TowerOpponentKind.REGULAR)
+        assertEquals(null, loaded.catalog.profilesFor(TowerStreakStage.INTRODUCTORY, TowerBattleFormat.SINGLE, TowerOpponentKind.REGULAR)
             .single().mechanic)
         assertTrue(
             loaded.catalog.profilesFor(
-                TowerRank.RANK_1,
+                TowerStreakStage.INTRODUCTORY,
                 TowerBattleFormat.SINGLE,
                 TowerOpponentKind.REGULAR,
                 MajorBattleMechanic.MEGA,
@@ -308,7 +308,7 @@ class TowerOpponentCatalogLoaderTest {
         )
         assertIssue(
             TowerOpponentCatalogIssueCode.INVALID_VALUE,
-            validCatalogJson().replace("\"rank_ids\": [\"1\"]", "\"rank_ids\": [\"missing\"]"),
+            validCatalogJson().replace("\"stage_ids\": [\"introductory\"]", "\"stage_ids\": [\"missing\"]"),
         )
         assertIssue(
             TowerOpponentCatalogIssueCode.INVALID_VALUE,
@@ -393,7 +393,7 @@ class TowerOpponentCatalogLoaderTest {
                 {
                   "profile_id": "r1_single_balanced",
                   "display_name_key": "trainer.cobblemon_more_battle_content.r1_single_balanced",
-                  "rank_ids": ["1"],
+                  "stage_ids": ["introductory"],
                   "format": "single",
                   "opponent_kind": "regular",
                   "mechanic_id": "mega",

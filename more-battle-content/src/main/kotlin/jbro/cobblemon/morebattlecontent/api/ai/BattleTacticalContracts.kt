@@ -34,7 +34,7 @@ object BattleDifficultyProfiles {
         id = "cobblemon_more_battle_content:introductory",
         tier = BattleTrainerTier.INTRODUCTORY,
         maximumHypothesesPerPokemon = 3,
-        lookaheadPlies = 0,
+        lookaheadPlies = 1,
         doubleCandidateLimitPerSlot = 3,
     )
 
@@ -43,7 +43,7 @@ object BattleDifficultyProfiles {
         id = "cobblemon_more_battle_content:standard",
         tier = BattleTrainerTier.STANDARD,
         maximumHypothesesPerPokemon = 6,
-        lookaheadPlies = 0,
+        lookaheadPlies = 2,
         doubleCandidateLimitPerSlot = 5,
     )
 
@@ -52,7 +52,7 @@ object BattleDifficultyProfiles {
         id = "cobblemon_more_battle_content:advanced",
         tier = BattleTrainerTier.ADVANCED,
         maximumHypothesesPerPokemon = 10,
-        lookaheadPlies = 1,
+        lookaheadPlies = 3,
         doubleCandidateLimitPerSlot = 8,
     )
 
@@ -61,7 +61,7 @@ object BattleDifficultyProfiles {
         id = "cobblemon_more_battle_content:boss",
         tier = BattleTrainerTier.BOSS,
         maximumHypothesesPerPokemon = 16,
-        lookaheadPlies = 2,
+        lookaheadPlies = 4,
         doubleCandidateLimitPerSlot = 12,
     )
 
@@ -397,6 +397,8 @@ class BattlePlanView(
 
 enum class BattlePlanUpdateOperation { KEEP, REPLACE, CLEAR }
 
+enum class BattlePlanOwner { PRIMARY_BRAIN, LOCAL_BRAIN }
+
 class BattlePlanUpdate(
     val operation: BattlePlanUpdateOperation,
     val plan: BattlePlanView? = null,
@@ -494,12 +496,17 @@ data class BattlePredictionCalibrationView @JvmOverloads constructor(
 
 class BattleTacticalMemoryView(
     val activePlan: BattlePlanView? = null,
+    val activePlanOwner: BattlePlanOwner? = null,
     tendencies: List<BattleTendencyView> = emptyList(),
     val predictionCalibration: BattlePredictionCalibrationView = BattlePredictionCalibrationView(0, 0, 0),
     val turnsSinceLastSwitch: Int? = null,
     val switchesThisBattle: Int = 0,
     val lastMoveId: String? = null,
     val sameMoveRepeatCount: Int = 0,
+    val patternExposureCount: Int = 0,
+    val patternResponseShiftEvidence: Double = 0.0,
+    val opponentResponseVolatility: Double = 0.0,
+    val nonProgressControlStreak: Int = 0,
 ) {
     val tendencies: List<BattleTendencyView> = Collections.unmodifiableList(ArrayList(tendencies))
 
@@ -509,6 +516,11 @@ class BattleTacticalMemoryView(
         require(lastMoveId == null || lastMoveId.isNotBlank())
         require(sameMoveRepeatCount >= 0)
         require((lastMoveId == null) == (sameMoveRepeatCount == 0))
+        require(patternExposureCount in 0..sameMoveRepeatCount)
+        require(activePlanOwner == null || activePlan != null)
+        require(patternResponseShiftEvidence.isFinite() && patternResponseShiftEvidence in 0.0..1.0)
+        require(opponentResponseVolatility.isFinite() && opponentResponseVolatility in 0.0..1.0)
+        require(nonProgressControlStreak >= 0)
     }
 
     companion object {

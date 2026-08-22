@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
+import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceConfidence
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
@@ -15,20 +16,36 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
  * base model into a final damage claim, and it never reads unrevealed opponent state.
  */
 internal object LocalPublicMechanicsKernel {
-    fun projectMove(candidate: BattleActionCandidate, context: BattleDecisionContext): LocalPublicMoveProjection {
+    fun projectMove(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        actingSide: BattleSide = BattleSide.ALLY,
+    ): LocalPublicMoveProjection {
         val details = candidate.moveDetails ?: return LocalPublicMoveProjection.neutral()
-        if (details.damageCategory == BattleMoveDamageCategory.STATUS) return LocalPublicMoveProjection.neutral()
-        val target = singleOpponentTarget(candidate, context) ?: return LocalPublicMoveProjection.neutral()
-        val actor = LocalPublicPositionFacts.activeAlly(candidate, context)
+        if (details.damageCategory == BattleMoveDamageCategory.STATUS) {
+            return projectStatusMove(candidate, details, context, actingSide)
+        }
+        val target = singleOpponentTarget(candidate, context, actingSide) ?: return LocalPublicMoveProjection.neutral()
+        val actor = context.state.pokemon.firstOrNull {
+            it.side == actingSide && it.activeSlot == candidate.actorSlot && !it.fainted
+        }
         val moveType = canonical(details.typeId)
         val actorAbility = canonicalOrNull(actor?.knownAbilityId)
         val actorItem = canonicalOrNull(actor?.knownHeldItemId)
-        val targetAbility = canonicalOrNull(target.knownAbilityId)
+        val targetAbility = publicAbility(target, context)
         val ignoresAbility = actorAbility in ABILITY_IGNORING_ABILITIES ||
             details.effects?.effects?.any { it.kind == BattleMoveEffectKind.IGNORE_ABILITY } == true
         val publicTypeMultiplier = candidate.facts?.typeChartMultiplier ?: target.knownTypeIds
             .takeIf { it.isNotEmpty() }
             ?.let { StandardTypeEffectiveness.multiplier(details.typeId, it) }
+
+        if (publicTypeMultiplier == 0.0) {
+            return LocalPublicMoveProjection(
+                knownDamageMultiplier = 0.0,
+                targetHpFraction = target.hpFraction,
+                publiclyNullified = true,
+            )
+        }
 
         val abilityImmune = !ignoresAbility && (
             targetAbility in TYPE_IMMUNITY_ABILITIES[moveType].orEmpty() ||
@@ -60,11 +77,51 @@ internal object LocalPublicMechanicsKernel {
             actorAbility = actorAbility,
             moveId = canonicalOrNull(candidate.moveId),
             context = context,
+            targetSide = if (actingSide == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY,
         )
         return LocalPublicMoveProjection(
             knownDamageMultiplier = abilityMultiplier * weatherMultiplier * screenMultiplier,
             targetHpFraction = target.hpFraction,
             publiclyNullified = false,
+        )
+    }
+
+    private fun projectStatusMove(
+        candidate: BattleActionCandidate,
+        details: jbro.cobblemon.morebattlecontent.api.ai.BattleMoveCandidateView,
+        context: BattleDecisionContext,
+        actingSide: BattleSide,
+    ): LocalPublicMoveProjection {
+        val declared = details.effects?.effects.orEmpty().filter { (it.probability ?: 1.0) > 0.0 }
+        val targetStatuses = declared.filter {
+            it.kind == BattleMoveEffectKind.STATUS &&
+                it.target == jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectTarget.SELECTED_TARGET &&
+                it.valueId != null
+        }
+        if (targetStatuses.isEmpty() || targetStatuses.size != declared.size) {
+            return LocalPublicMoveProjection.neutral()
+        }
+        val target = singleOpponentTarget(candidate, context, actingSide)
+            ?: return LocalPublicMoveProjection.neutral()
+        val types = target.knownTypeIds.mapTo(linkedSetOf(), ::canonical)
+        val ability = publicAbility(target, context)
+        val moveId = canonicalOrNull(candidate.moveId)
+        val nullified = targetStatuses.all { effect ->
+            val status = canonical(requireNotNull(effect.valueId))
+            target.statusId != null || when {
+                status in POISON_STATUSES -> POISON in types || STEEL in types || ability == "immunity"
+                status in BURN_STATUSES -> FIRE in types || ability == "waterveil" || ability == "waterbubble"
+                status in PARALYSIS_STATUSES -> ELECTRIC in types || ability == "limber" ||
+                    moveId == "thunderwave" && GROUND in types
+                status in SLEEP_STATUSES -> ability in SLEEP_IMMUNITY_ABILITIES
+                status in FREEZE_STATUSES -> ICE in types || ability == "magmaarmor"
+                else -> false
+            }
+        }
+        return LocalPublicMoveProjection(
+            knownDamageMultiplier = 1.0,
+            targetHpFraction = target.hpFraction,
+            publiclyNullified = nullified,
         )
     }
 
@@ -118,9 +175,10 @@ internal object LocalPublicMechanicsKernel {
         actorAbility: String?,
         moveId: String?,
         context: BattleDecisionContext,
+        targetSide: BattleSide,
     ): Double {
         if (actorAbility == INFILTRATOR || moveId in SCREEN_BREAKING_MOVES) return 1.0
-        val conditions = context.state.field.sideConditions.getValue(BattleSide.OPPONENT)
+        val conditions = context.state.field.sideConditions.getValue(targetSide)
             .mapTo(linkedSetOf()) { canonical(it.effectId) }
         val reduced = AURORA_VEIL in conditions || when (category) {
             BattleMoveDamageCategory.PHYSICAL -> REFLECT in conditions
@@ -134,17 +192,29 @@ internal object LocalPublicMechanicsKernel {
     private fun singleOpponentTarget(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
+        actingSide: BattleSide,
     ): BattlePokemonStateView? {
         val slots = candidate.targets.filter { it.side == BattleSide.OPPONENT }.map { it.slot }
+        val targetSide = if (actingSide == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
         if (slots.size == 1) {
             return context.state.pokemon.firstOrNull {
-                it.side == BattleSide.OPPONENT && it.activeSlot == slots.single() && !it.fainted
+                it.side == targetSide && it.activeSlot == slots.single() && !it.fainted
             }
         }
         return context.state.pokemon.filter {
-            it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted
+            it.side == targetSide && it.activeSlot != null && !it.fainted
         }.singleOrNull()
     }
+
+    private fun publicAbility(
+        target: BattlePokemonStateView,
+        context: BattleDecisionContext,
+    ): String? = canonicalOrNull(target.knownAbilityId) ?: context.state.inferences.asSequence()
+        .filter { it.subjectPokemonId == target.battlePokemonId && it.categoryId == ABILITY_INFERENCE_CATEGORY }
+        .filter { it.confidence != BattleInferenceConfidence.RULED_OUT }
+        .mapNotNull { it.candidateId?.let(::canonical) }
+        .distinct()
+        .singleOrNull()
 
     private fun canonicalOrNull(value: String?): String? = value?.let(::canonical)
 
@@ -165,6 +235,12 @@ internal object LocalPublicMechanicsKernel {
     private val HEAVY_RAIN_WEATHER = setOf("heavyrain", "primordialsea")
     private val HARSH_SUN_WEATHER = setOf("harshsunlight", "desolateland")
     private val SCREEN_BREAKING_MOVES = setOf("brickbreak", "psychicfangs", "ragingbull")
+    private val POISON_STATUSES = setOf("psn", "poison", "poisoned", "tox", "toxic", "badlypoisoned")
+    private val BURN_STATUSES = setOf("brn", "burn", "burned", "burnt")
+    private val PARALYSIS_STATUSES = setOf("par", "paralysis", "paralyzed", "paralysed")
+    private val SLEEP_STATUSES = setOf("slp", "sleep", "asleep")
+    private val FREEZE_STATUSES = setOf("frz", "freeze", "frozen")
+    private val SLEEP_IMMUNITY_ABILITIES = setOf("insomnia", "vitalspirit", "sweetveil")
 
     private const val GROUND = "ground"
     private const val FIRE = "fire"
@@ -173,9 +249,12 @@ internal object LocalPublicMechanicsKernel {
     private const val GRASS = "grass"
     private const val ICE = "ice"
     private const val GHOST = "ghost"
+    private const val POISON = "poison"
+    private const val STEEL = "steel"
     private const val WONDER_GUARD = "wonderguard"
     private const val UTILITY_UMBRELLA = "utilityumbrella"
     private const val INFILTRATOR = "infiltrator"
+    private const val ABILITY_INFERENCE_CATEGORY = "ability"
     private const val REFLECT = "reflect"
     private const val LIGHT_SCREEN = "lightscreen"
     private const val AURORA_VEIL = "auroraveil"

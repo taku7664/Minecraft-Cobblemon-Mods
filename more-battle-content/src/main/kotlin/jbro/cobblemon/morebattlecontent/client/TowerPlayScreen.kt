@@ -87,23 +87,18 @@ internal class TowerPlayScreen(
             font,
             Component.translatable(
                 "screen.cobblemon_more_battle_content.tower.progress",
-                rankLabel(state),
-                progressValue(state),
-                state.winsRequired,
+                stageLabel(state),
+                state.currentWinStreak,
+                state.bestWinStreak,
+                state.bpPerWin,
             ),
             layout.mainPanel.left + 7,
             layout.mainPanel.top + 6,
             MbcGuiPalette.TEXT_PRIMARY,
             false,
         )
-        val progress = progressValue(state)
-        val filledSegments = if (state.winsRequired <= 0) {
-            10
-        } else {
-            ((progress.coerceAtLeast(0) * 10 + state.winsRequired - 1) / state.winsRequired).coerceIn(0, 10)
-        }
-        layout.progressSegments(10).forEachIndexed { index, segment ->
-            MbcGuiSurface.drawProgressSegment(graphics, segment, index < filledSegments)
+        layout.progressSegments(5).forEachIndexed { index, segment ->
+            MbcGuiSurface.drawProgressSegment(graphics, segment, index < state.winsIntoSet)
         }
         graphics.drawString(
             font,
@@ -176,6 +171,7 @@ internal class TowerPlayScreen(
                 "screen.cobblemon_more_battle_content.tower.rule.items",
                 "screen.cobblemon_more_battle_content.tower.rule.bag",
                 "screen.cobblemon_more_battle_content.tower.rule.mechanic",
+                "screen.cobblemon_more_battle_content.tower.rule.legendary_class",
             )
             rules.take(((actionTop - rulesTop - 2) / 12).coerceAtLeast(0)).forEachIndexed { index, key ->
                 font.split(Component.translatable(key), textWidth).firstOrNull()?.let { line ->
@@ -201,10 +197,11 @@ internal class TowerPlayScreen(
         addFormatButton(TowerBattleFormat.SINGLE, formatButtons[0])
         addFormatButton(TowerBattleFormat.DOUBLE, formatButtons[1])
 
-        val mechanicButtons = layout.mechanicButtons(MajorBattleMechanic.entries.size)
+        val mechanicButtons = layout.mechanicButtons(MajorBattleMechanic.entries.size + 1)
         MajorBattleMechanic.entries.forEachIndexed { index, mechanic ->
             addMechanicButton(mechanic, mechanicButtons[index])
         }
+        addLegendaryClassButton(mechanicButtons.last())
 
         state.party.sortedBy(TowerPlayPartySlot::slot).forEachIndexed { index, pokemon ->
             val bounds = layout.partyCard(index)
@@ -321,6 +318,24 @@ internal class TowerPlayScreen(
         addRenderableWidget(button)
     }
 
+    private fun addLegendaryClassButton(bounds: TowerPlayRect) {
+        val allowed = controller.state.legendaryClassAllowed
+        val button = MbcStyledButton(
+            bounds,
+            optionLabel("screen.cobblemon_more_battle_content.tower.legendary_class_allowed", allowed),
+            MbcButtonTone.SECONDARY,
+            allowed,
+        ) { submit { controller.changeLegendaryClassAllowed(!allowed) } }
+        button.active = controller.state.phase == TowerPlayPhase.SELECTING &&
+            !controller.state.legendaryClassLocked && !controller.isPending
+        button.setTooltip(
+            Tooltip.create(
+                Component.translatable("screen.cobblemon_more_battle_content.tower.legendary_class_allowed.tooltip"),
+            ),
+        )
+        addRenderableWidget(button)
+    }
+
     private fun addActionButton(
         label: Component,
         bounds: TowerPlayRect,
@@ -358,15 +373,8 @@ internal class TowerPlayScreen(
         buildWidgets()
     }
 
-    private fun rankLabel(state: TowerPlayViewState): Component =
-        Component.translatable("screen.cobblemon_more_battle_content.tower.rank.${state.rank.serializedId}")
-
-    private fun progressValue(state: TowerPlayViewState): Int =
-        if (state.rank == jbro.cobblemon.morebattlecontent.internal.tower.TowerRank.MAX) {
-            state.masterCycleWins
-        } else {
-            state.rankPoints
-        }
+    private fun stageLabel(state: TowerPlayViewState): Component =
+        Component.translatable("screen.cobblemon_more_battle_content.tower.stage.${state.streakStage.serializedId}")
 
     private fun speciesName(speciesId: String): Component = Component.translatable(
         "cobblemon.species.${speciesId.substringAfter(':')}.name",

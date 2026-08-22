@@ -17,6 +17,7 @@ internal data class TowerPokemonRegistration(
     val speciesId: String,
     val heldItemId: String?,
     val level: Int,
+    val legendaryClass: Boolean = false,
 ) {
     init {
         require(IdentifierSyntax.isResourceId(speciesId)) { "Invalid species ID: $speciesId" }
@@ -68,6 +69,7 @@ internal sealed interface TowerTeamSelectionIssue {
 
     data class DuplicatePokemon(val pokemonId: UUID) : TowerTeamSelectionIssue
     data class UnregisteredPokemon(val pokemonId: UUID) : TowerTeamSelectionIssue
+    data class LegendaryClassNotAllowed(val pokemonId: UUID) : TowerTeamSelectionIssue
 }
 
 internal sealed interface TowerTeamSelectionResult {
@@ -103,6 +105,7 @@ internal object TowerTeamRules {
         team: TowerRegisteredTeam,
         format: TowerBattleFormat,
         pokemonIds: List<UUID>,
+        legendaryClassAllowed: Boolean = false,
     ): TowerTeamSelectionResult {
         val registeredById = team.members.associateBy { it.pokemonId }
         val issues = buildList {
@@ -114,6 +117,11 @@ internal object TowerTeamRules {
             }
             pokemonIds.distinct().filterNot(registeredById::containsKey).forEach {
                 add(TowerTeamSelectionIssue.UnregisteredPokemon(it))
+            }
+            if (!legendaryClassAllowed) {
+                pokemonIds.distinct().mapNotNull(registeredById::get).filter { it.legendaryClass }.forEach {
+                    add(TowerTeamSelectionIssue.LegendaryClassNotAllowed(it.pokemonId))
+                }
             }
         }
 

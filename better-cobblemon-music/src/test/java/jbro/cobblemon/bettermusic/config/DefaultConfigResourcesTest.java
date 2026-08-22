@@ -2,7 +2,9 @@ package jbro.cobblemon.bettermusic.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.JsonParser;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
@@ -19,6 +21,16 @@ final class DefaultConfigResourcesTest {
         assertEquals(3, config.field().dimensions().size());
         assertEquals(15, config.field().biomePathContains().size());
         assertEquals(13, config.battle().pokemon().size());
+    }
+
+    @Test
+    void bundledMusicConfigUsesSchemaTwoOrderedBiomeRules() {
+        var root = JsonParser.parseReader(resource("music.json")).getAsJsonObject();
+
+        assertEquals(2, root.get("schemaVersion").getAsInt());
+        var field = root.getAsJsonObject("field");
+        assertTrue(field.get("biomeTags").isJsonArray());
+        assertTrue(field.get("biomePathContains").isJsonArray());
     }
 
     private static InputStreamReader resource(String name) {

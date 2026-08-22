@@ -204,9 +204,9 @@ private fun RegistryFriendlyByteBuf.writeLeaderboardEntries(entries: List<HomeLe
         writeVarInt(entry.place)
         writeUUID(entry.playerId)
         writeShopString(entry.playerName)
-        writeVarLong(entry.highestRank)
-        writeVarLong(entry.rankProgress)
         writeVarLong(entry.totalWins)
+        writeVarLong(entry.totalLosses)
+        writeVarInt(entry.bestWinStreak)
     }
 }
 private fun RegistryFriendlyByteBuf.readLeaderboardEntries(): List<HomeLeaderboardEntry> = buildList {
@@ -216,9 +216,9 @@ private fun RegistryFriendlyByteBuf.readLeaderboardEntries(): List<HomeLeaderboa
                 place = readVarInt().also { require(it > 0) { "Invalid leaderboard place" } },
                 playerId = readUUID(),
                 playerName = readShopString(),
-                highestRank = readVarLong().also { require(it >= 0) { "Invalid leaderboard rank" } },
-                rankProgress = readVarLong().also { require(it >= 0) { "Invalid leaderboard progress" } },
                 totalWins = readVarLong().also { require(it >= 0) { "Invalid leaderboard wins" } },
+                totalLosses = readVarLong().also { require(it >= 0) { "Invalid leaderboard losses" } },
+                bestWinStreak = readVarInt().also { require(it >= 0) { "Invalid leaderboard streak" } },
             ),
         )
     }
@@ -227,8 +227,6 @@ private fun RegistryFriendlyByteBuf.writeExtendedLeaderboardEntries(entries: Lis
     writeLeaderboardEntries(entries)
     entries.forEach { entry ->
         writeVarLong(entry.highestFloor)
-        writeVarLong(entry.totalLosses)
-        writeVarInt(entry.bestWinStreak)
     }
 }
 private fun RegistryFriendlyByteBuf.readExtendedLeaderboardEntries(): List<HomeLeaderboardEntry> {
@@ -236,8 +234,6 @@ private fun RegistryFriendlyByteBuf.readExtendedLeaderboardEntries(): List<HomeL
     return base.map { entry ->
         entry.copy(
             highestFloor = readVarLong().also { require(it >= 0) { "Invalid leaderboard floor" } },
-            totalLosses = readVarLong().also { require(it >= 0) { "Invalid leaderboard losses" } },
-            bestWinStreak = readVarInt().also { require(it >= 0) { "Invalid leaderboard streak" } },
         )
     }
 }

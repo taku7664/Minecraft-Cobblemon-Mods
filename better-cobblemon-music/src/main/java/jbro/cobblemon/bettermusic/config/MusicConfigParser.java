@@ -20,6 +20,9 @@ public final class MusicConfigParser {
     private static final Pattern RESOURCE_ID = Pattern.compile("[a-z0-9_.-]+:[a-z0-9_./-]+");
     private static final Pattern BARE_SPECIES = Pattern.compile("[a-z0-9_.-]+");
     private static final Pattern PATH_TOKEN = Pattern.compile("[a-z0-9_./-]+");
+    private static final Pattern MUSIC_RESOURCE_PATH = Pattern.compile("[a-z0-9_./-]+\\.ogg");
+    private static final Set<String> SUPPORTED_TRAINER_ROLES = Set.of("champion", "elite", "gym", "rival");
+    private static final double MIN_SCAN_INTERVAL_SECONDS = 0.25;
 
     private MusicConfigParser() {
     }
@@ -38,9 +41,12 @@ public final class MusicConfigParser {
             "field",
             "battle"
         ));
-        requireSchemaVersion(root);
+        int schemaVersion = schemaVersion(root);
 
         double scanInterval = positiveNumber(root, "scanIntervalSeconds", "$.scanIntervalSeconds");
+        if (scanInterval < MIN_SCAN_INTERVAL_SECONDS) {
+            throw error("$.scanIntervalSeconds", "must be at least 0.25 seconds");
+        }
         double fieldDelay = nonNegativeNumber(root, "fieldChangeDelaySeconds", "$.fieldChangeDelaySeconds");
         double betweenTracks = nonNegativeNumber(root, "betweenTracksSeconds", "$.betweenTracksSeconds");
         double fadeIn = nonNegativeNumber(root, "fadeInSeconds", "$.fadeInSeconds");
@@ -59,15 +65,22 @@ public final class MusicConfigParser {
         );
         return new MusicConfig(
             playback,
-            parseField(object(root, "field", "$.field"), defaults),
+            parseField(object(root, "field", "$.field"), defaults, schemaVersion),
             parseBattle(object(root, "battle", "$.battle"), defaults)
         );
     }
 
-    private static FieldMusicConfig parseField(JsonObject object, PlaylistDefaults defaults) {
-        rejectUnknown(object, "$.field", Set.of(
-            "default", "dimensions", "biomes", "biomePathContains", "underground"
-        ));
+    private static FieldMusicConfig parseField(
+        JsonObject object,
+        PlaylistDefaults defaults,
+        int schemaVersion
+    ) {
+        Set<String> allowed = schemaVersion == 1
+            ? Set.of("default", "dimensions", "biomes", "biomePathContains", "underground")
+            : Set.of(
+                "default", "dimensions", "biomes", "biomeTags", "biomePathContains", "underground"
+            );
+        rejectUnknown(object, "$.field", allowed);
         var defaultPlaylist = playlist(required(object, "default", "$.field.default"), "$.field.default", defaults);
         var dimensions = playlistMap(
             object(object, "dimensions", "$.field.dimensions"),
@@ -79,18 +92,67 @@ public final class MusicConfigParser {
             object(object, "biomes", "$.field.biomes"),
             "$.field.biomes",
             defaults,
-            KeyKind.BIOME_SELECTOR
+            schemaVersion == 1 ? KeyKind.BIOME_SELECTOR : KeyKind.RESOURCE
         );
-        var pathContains = playlistMap(
-            object(object, "biomePathContains", "$.field.biomePathContains"),
-            "$.field.biomePathContains",
-            defaults,
-            KeyKind.PATH_TOKEN
-        );
+        if (schemaVersion == 2) {
+            Map<String, PlaylistDefinition> combinedBiomes = new LinkedHashMap<>(biomes);
+            combinedBiomes.putAll(orderedPlaylistRules(
+                array(object, "biomeTags", "$.field.biomeTags"),
+                "$.field.biomeTags",
+                "tag",
+                KeyKind.RESOURCE,
+                "#",
+                defaults
+            ));
+            biomes = combinedBiomes;
+        }
+        var pathContains = schemaVersion == 1
+            ? playlistMap(
+                object(object, "biomePathContains", "$.field.biomePathContains"),
+                "$.field.biomePathContains",
+                defaults,
+                KeyKind.PATH_TOKEN
+            )
+            : orderedPlaylistRules(
+                array(object, "biomePathContains", "$.field.biomePathContains"),
+                "$.field.biomePathContains",
+                "contains",
+                KeyKind.PATH_TOKEN,
+                "",
+                defaults
+            );
         Optional<PlaylistDefinition> underground = object.has("underground")
             ? Optional.of(playlist(object.get("underground"), "$.field.underground", defaults))
             : Optional.empty();
         return new FieldMusicConfig(defaultPlaylist, dimensions, biomes, pathContains, underground);
+    }
+
+    private static Map<String, PlaylistDefinition> orderedPlaylistRules(
+        JsonArray rules,
+        String path,
+        String selectorKey,
+        KeyKind keyKind,
+        String storedPrefix,
+        PlaylistDefaults defaults
+    ) {
+        Map<String, PlaylistDefinition> result = new LinkedHashMap<>();
+        for (int index = 0; index < rules.size(); index++) {
+            String rulePath = path + "[" + index + "]";
+            JsonObject rule = asObject(rules.get(index), rulePath);
+            rejectUnknown(rule, rulePath, Set.of(selectorKey, "playlist"));
+            String selectorPath = rulePath + "." + selectorKey;
+            String selector = string(rule, selectorKey, selectorPath);
+            validateKey(selector, selectorPath, keyKind);
+            String storedSelector = storedPrefix + selector;
+            if (result.containsKey(storedSelector)) {
+                throw error(selectorPath, "duplicate ordered selector '" + selector + "'");
+            }
+            result.put(
+                storedSelector,
+                playlist(required(rule, "playlist", rulePath + ".playlist"), rulePath + ".playlist", defaults)
+            );
+        }
+        return result;
     }
 
     private static BattleMusicConfig parseBattle(JsonObject object, PlaylistDefaults defaults) {
@@ -132,6 +194,14 @@ public final class MusicConfigParser {
                 KeyKind.ROLE_ID
             ))
             : new LinkedHashMap<>();
+        for (String role : roles.keySet()) {
+            if (!SUPPORTED_TRAINER_ROLES.contains(role)) {
+                throw error(
+                    "$.battle.roles['" + role + "']",
+                    "must be champion, elite, gym, or rival"
+                );
+            }
+        }
         if (battle.has("gym")) {
             if (roles.containsKey("gym")) {
                 throw error("$.battle.roles.gym", "duplicates the legacy $.battle.gym playlist");
@@ -268,6 +338,9 @@ public final class MusicConfigParser {
             if (part.isBlank() || part.equals(".") || part.equals("..")) {
                 throw error(path, "must be a relative .ogg path below the music directory");
             }
+        }
+        if (!MUSIC_RESOURCE_PATH.matcher(value).matches()) {
+            throw error(path, "must be a lowercase Minecraft resource path ending in .ogg");
         }
         return value;
     }
@@ -413,11 +486,12 @@ public final class MusicConfigParser {
         return value;
     }
 
-    private static void requireSchemaVersion(JsonObject root) {
+    private static int schemaVersion(JsonObject root) {
         double version = number(root, "schemaVersion", "$.schemaVersion");
-        if (version != 1.0 || version != Math.rint(version)) {
-            throw error("$.schemaVersion", "must be integer 1");
+        if (version != Math.rint(version) || (version != 1.0 && version != 2.0)) {
+            throw error("$.schemaVersion", "must be integer 1 or 2");
         }
+        return (int) version;
     }
 
     private static void rejectUnknown(JsonObject object, String path, Set<String> allowed) {

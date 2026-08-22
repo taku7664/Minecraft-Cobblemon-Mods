@@ -7,7 +7,6 @@ import jbro.cobblemon.morebattlecontent.internal.application.BattleEntryPoint
 import jbro.cobblemon.morebattlecontent.internal.application.BattleFormatId
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgress
-import jbro.cobblemon.morebattlecontent.internal.tower.TowerRank
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayPhase
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayViewState
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerSessionAbandonResult
@@ -42,14 +41,12 @@ class BattleTowerContentApplicationTest {
         assertEquals(BattleFormatId("double"), status.formatId)
         assertEquals(
             mapOf(
-                "single_rank_order" to 1L,
-                "single_rank_points" to 0L,
-                "single_wins_required" to 2L,
-                "single_master_cycle_wins" to 0L,
-                "double_rank_order" to 1L,
-                "double_rank_points" to 0L,
-                "double_wins_required" to 2L,
-                "double_master_cycle_wins" to 0L,
+                "single_current_win_streak" to 0L,
+                "single_best_win_streak" to 0L,
+                "single_bp_per_win" to 1L,
+                "double_current_win_streak" to 0L,
+                "double_best_win_streak" to 0L,
+                "double_bp_per_win" to 1L,
             ),
             status.progress,
         )
@@ -63,7 +60,10 @@ class BattleTowerContentApplicationTest {
 
         assertEquals(BattleContentPhase.AVAILABLE, status.phase)
         assertEquals(null, status.formatId)
-        assertEquals(setOf("single_rank_order", "double_rank_order"), status.progress.keys.filter { it.endsWith("rank_order") }.toSet())
+        assertEquals(
+            setOf("single_current_win_streak", "double_current_win_streak"),
+            status.progress.keys.filter { it.endsWith("current_win_streak") }.toSet(),
+        )
     }
 
     @Test
@@ -134,10 +134,8 @@ class BattleTowerContentApplicationTest {
         phase = phase,
         party = emptyList(),
         selectedPokemonIds = emptySet(),
-        rank = TowerRank.RANK_1,
-        rankPoints = 0,
-        winsRequired = 2,
-        masterCycleWins = 0,
+        currentWinStreak = 0,
+        bestWinStreak = 0,
         bpBalance = 0,
         errorKeys = emptyList(),
     )

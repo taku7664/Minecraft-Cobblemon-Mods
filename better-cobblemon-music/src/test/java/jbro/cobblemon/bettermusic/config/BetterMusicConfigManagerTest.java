@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.JsonParser;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,6 +15,22 @@ import org.junit.jupiter.api.io.TempDir;
 final class BetterMusicConfigManagerTest {
     @TempDir
     Path temporaryDirectory;
+
+    @Test
+    void newInstallationCreatesSchemaTwoWithoutRewritingLaterUserChanges() throws Exception {
+        Path configDirectory = temporaryDirectory.resolve("new_install");
+        var manager = new BetterMusicConfigManager(configDirectory);
+
+        assertEquals(BetterMusicConfigManager.Outcome.APPLIED, manager.initialize().outcome());
+        Path musicJson = configDirectory.resolve("music.json");
+        var root = JsonParser.parseString(Files.readString(musicJson)).getAsJsonObject();
+        assertEquals(2, root.get("schemaVersion").getAsInt());
+
+        String userSchemaOne = musicJson(2.0);
+        Files.writeString(musicJson, userSchemaOne, StandardCharsets.UTF_8);
+        assertEquals(BetterMusicConfigManager.Outcome.APPLIED, manager.initialize().outcome());
+        assertEquals(userSchemaOne, Files.readString(musicJson));
+    }
 
     @Test
     void initializeCreatesOnlyMissingDefaultsAndPreservesExistingUserFile() throws Exception {
@@ -86,6 +103,27 @@ final class BetterMusicConfigManagerTest {
         assertEquals(3.0, manager.activeSnapshot().orElseThrow().playback().scanIntervalSeconds());
         assertFalse(before == manager.activeSnapshot().orElseThrow());
         assertTrue(result.success());
+    }
+
+    @Test
+    void preparedReloadDoesNotPublishUntilExplicitlyActivated() throws Exception {
+        var manager = new BetterMusicConfigManager(temporaryDirectory.resolve("config"));
+        manager.initialize();
+        var before = manager.activeSnapshot().orElseThrow();
+        Files.writeString(
+            manager.configDirectory().resolve("music.json"),
+            musicJson(3.0),
+            StandardCharsets.UTF_8
+        );
+
+        var prepared = manager.prepareReload();
+
+        assertEquals(BetterMusicConfigManager.Outcome.APPLIED, prepared.outcome());
+        assertSame(before, manager.activeSnapshot().orElseThrow());
+        assertEquals(3.0, prepared.snapshot().orElseThrow().playback().scanIntervalSeconds());
+
+        manager.activate(prepared.snapshot().orElseThrow());
+        assertEquals(3.0, manager.activeSnapshot().orElseThrow().playback().scanIntervalSeconds());
     }
 
     private static String musicJson(double scanIntervalSeconds) {

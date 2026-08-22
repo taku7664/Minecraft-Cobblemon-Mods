@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "scanIntervalSeconds": 1.0,
   "fieldChangeDelaySeconds": 4.0,
   "betweenTracksSeconds": 0.0,
@@ -27,23 +27,24 @@
       "minecraft:grove": "field/snow/sinnoh_route_216_day.ogg",
       "minecraft:cherry_grove": "field/forest/viridian_forest.ogg"
     },
-    "biomePathContains": {
-      "river": "field/river/sinnoh_lake_theme.ogg",
-      "beach": "field/beach/pmd_beach_at_dusk.ogg",
-      "ocean": "field/ocean/dive.ogg",
-      "badlands": "field/desert/route_111.ogg",
-      "desert": "field/desert/route_111.ogg",
-      "swamp": "field/swamp/route_120.ogg",
-      "jungle": "field/jungle_swamp/alola_lush_jungle.ogg",
-      "snow": "field/snow/sinnoh_route_216_day.ogg",
-      "frozen": "field/snow/sinnoh_route_216_day.ogg",
-      "peak": "field/mountain/unova_route_4.ogg",
-      "slope": "field/mountain/unova_route_4.ogg",
-      "windswept": "field/mountain/unova_route_4.ogg",
-      "forest": "field/forest/viridian_forest.ogg",
-      "birch": "field/forest/viridian_forest.ogg",
-      "taiga": "field/forest/viridian_forest.ogg"
-    },
+    "biomeTags": [],
+    "biomePathContains": [
+      {"contains": "river", "playlist": "field/river/sinnoh_lake_theme.ogg"},
+      {"contains": "beach", "playlist": "field/beach/pmd_beach_at_dusk.ogg"},
+      {"contains": "ocean", "playlist": "field/ocean/dive.ogg"},
+      {"contains": "badlands", "playlist": "field/desert/route_111.ogg"},
+      {"contains": "desert", "playlist": "field/desert/route_111.ogg"},
+      {"contains": "swamp", "playlist": "field/swamp/route_120.ogg"},
+      {"contains": "jungle", "playlist": "field/jungle_swamp/alola_lush_jungle.ogg"},
+      {"contains": "snow", "playlist": "field/snow/sinnoh_route_216_day.ogg"},
+      {"contains": "frozen", "playlist": "field/snow/sinnoh_route_216_day.ogg"},
+      {"contains": "peak", "playlist": "field/mountain/unova_route_4.ogg"},
+      {"contains": "slope", "playlist": "field/mountain/unova_route_4.ogg"},
+      {"contains": "windswept", "playlist": "field/mountain/unova_route_4.ogg"},
+      {"contains": "forest", "playlist": "field/forest/viridian_forest.ogg"},
+      {"contains": "birch", "playlist": "field/forest/viridian_forest.ogg"},
+      {"contains": "taiga", "playlist": "field/forest/viridian_forest.ogg"}
+    ],
     "underground": "field/cave/johto_dark_cave.ogg"
   },
   "battle": {

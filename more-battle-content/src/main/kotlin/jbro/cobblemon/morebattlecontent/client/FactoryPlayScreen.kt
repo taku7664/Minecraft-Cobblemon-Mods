@@ -10,6 +10,7 @@ import jbro.cobblemon.morebattlecontent.internal.factory.FactoryPlayPhase
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryPlayView
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryRentalSet
 import jbro.cobblemon.morebattlecontent.internal.factory.FactorySwapOffer
+import jbro.cobblemon.morebattlecontent.internal.factory.ui.feedbackId
 import jbro.cobblemon.morebattlecontent.internal.factory.network.FactoryPlayIntentPayload
 import jbro.cobblemon.morebattlecontent.internal.factory.ui.FactoryPlayScreenController
 import net.minecraft.client.Minecraft
@@ -55,7 +56,7 @@ internal class FactoryPlayScreen(
     }
 
     fun applyRejected(requestId: UUID, error: FactoryPlayError) {
-        controller.applyRejected(requestId, key("error.${error.name.lowercase()}"))
+        controller.applyRejected(requestId, key("error.${error.feedbackId(controller.state.phase)}"))
         rebuild()
     }
 

@@ -10,6 +10,8 @@ import kotlin.math.floor
 internal data class ShowdownStandardDamageProjectionResult(
     val minimumDamage: Int,
     val maximumDamage: Int,
+    val minimumHypothesisRolls: List<Int>,
+    val maximumHypothesisRolls: List<Int>,
     val damageFractionRange: BattleDamageFractionRange,
     val koProbabilityRange: BattleFractionRange,
     val knockoutAssessment: BattleKnockoutAssessment,
@@ -60,6 +62,8 @@ internal object ShowdownStandardDamageProjection {
         return ShowdownStandardDamageProjectionResult(
             minimumDamage = minimumDamage,
             maximumDamage = maximumDamage,
+            minimumHypothesisRolls = minimumRolls,
+            maximumHypothesisRolls = maximumRolls,
             damageFractionRange = BattleDamageFractionRange(
                 minimum = minimumDamage.toDouble() / targetMaxHp.maximum,
                 maximum = maximumDamage.toDouble() / targetMaxHp.minimum,

@@ -55,17 +55,10 @@
         "trainer_049",
         "trainer_050"
       ],
-      "rank_ids": [
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "10",
-        "max"
+      "stage_ids": [
+        "practical",
+        "advanced",
+        "pro"
       ],
       "format": "double",
       "opponent_kind": "regular",

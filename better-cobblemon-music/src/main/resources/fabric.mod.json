@@ -3,7 +3,7 @@
   "id": "better_cobblemon_music",
   "version": "${version}",
   "name": "Better Cobblemon Music",
-  "description": "Data-driven field, battle, and hit audio presentation for Cobblemon.",
+  "description": "Data-driven field and battle music for Cobblemon.",
   "authors": ["jbro"],
   "license": "MIT",
   "environment": "client",

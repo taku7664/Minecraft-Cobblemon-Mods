@@ -55,6 +55,30 @@ public final class BetterMusicConfigManager {
         }
     }
 
+    public synchronized PreparedReload prepareReload() {
+        try {
+            BetterMusicConfigSnapshot candidate = loadFromDirectory();
+            return new PreparedReload(
+                Outcome.APPLIED,
+                "Validated Better Cobblemon Music configuration from " + configDirectory,
+                Optional.of(candidate)
+            );
+        } catch (ConfigReadException exception) {
+            String suffix = activeSnapshot == null
+                ? "; no configuration was activated"
+                : "; retained the last known good configuration";
+            return new PreparedReload(
+                activeSnapshot == null ? Outcome.NO_VALID_CONFIG : Outcome.RETAINED_LAST_GOOD,
+                exception.getMessage() + suffix,
+                Optional.empty()
+            );
+        }
+    }
+
+    public synchronized void activate(BetterMusicConfigSnapshot snapshot) {
+        activeSnapshot = Objects.requireNonNull(snapshot, "snapshot");
+    }
+
     public Optional<BetterMusicConfigSnapshot> activeSnapshot() {
         return Optional.ofNullable(activeSnapshot);
     }
@@ -176,6 +200,25 @@ public final class BetterMusicConfigManager {
         public ReloadResult {
             Objects.requireNonNull(outcome, "outcome");
             Objects.requireNonNull(message, "message");
+        }
+
+        public boolean success() {
+            return outcome == Outcome.APPLIED;
+        }
+    }
+
+    public record PreparedReload(
+        Outcome outcome,
+        String message,
+        Optional<BetterMusicConfigSnapshot> snapshot
+    ) {
+        public PreparedReload {
+            Objects.requireNonNull(outcome, "outcome");
+            Objects.requireNonNull(message, "message");
+            snapshot = Objects.requireNonNull(snapshot, "snapshot");
+            if ((outcome == Outcome.APPLIED) != snapshot.isPresent()) {
+                throw new IllegalArgumentException("Only an applied reload may contain a snapshot");
+            }
         }
 
         public boolean success() {

@@ -10,6 +10,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleIntegerRange
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveOutcomeKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveOutcomeView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonActionConstraintView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.internal.ai.PublicAbilityPossibility
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -19,6 +20,62 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class Cobblemon173PublicBattleObserverTest {
+    @Test
+    fun `public action constraints persist until cleared and disappear on switch`() {
+        val first = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
+        val second = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
+        val observer = Cobblemon173PublicBattleObserver(initialOpponentPokemonCount = 3)
+
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, first))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, first, "shadowball", emptyList()))
+        observer.observe(
+            Cobblemon173PublicObservation.ActionConstraintChanged(
+                turn = 1,
+                pokemon = first,
+                kind = BattleActionConstraintKind.TAUNT,
+                active = true,
+            ),
+        )
+        observer.observe(
+            Cobblemon173PublicObservation.ActionConstraintChanged(
+                turn = 1,
+                pokemon = first,
+                kind = BattleActionConstraintKind.ENCORE,
+                active = true,
+                lockedMoveId = "shadowball",
+            ),
+        )
+        observer.observe(
+            Cobblemon173PublicObservation.ActionConstraintChanged(
+                turn = 1,
+                pokemon = first,
+                kind = BattleActionConstraintKind.TRAPPED,
+                active = true,
+            ),
+        )
+        observer.observe(
+            Cobblemon173PublicObservation.ActionConstraintChanged(
+                turn = 1,
+                pokemon = first,
+                kind = BattleActionConstraintKind.RECHARGE,
+                active = true,
+            ),
+        )
+
+        val constrained = observer.publicSnapshot().pokemon.single().actionConstraints
+        assertTrue(constrained.taunted)
+        assertEquals("shadowball", constrained.encoreMoveId)
+        assertTrue(constrained.trapped)
+        assertTrue(constrained.mustRecharge)
+
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, second))
+
+        val afterSwitch = observer.publicSnapshot().pokemon.associateBy { it.battlePokemonId }
+        assertNull(afterSwitch.getValue(first.battlePokemonId).activeSlot)
+        assertEquals(BattlePokemonActionConstraintView.empty(), afterSwitch.getValue(first.battlePokemonId).actionConstraints)
+        assertEquals(BattlePokemonActionConstraintView.empty(), afterSwitch.getValue(second.battlePokemonId).actionConstraints)
+    }
+
     @Test
     fun `public snapshots cannot reveal moves abilities or held items before an event`() {
         val opponent = publicPokemon(BattleSide.OPPONENT, activeSlot = 0).copy(
@@ -374,6 +431,30 @@ class Cobblemon173PublicBattleObserverTest {
         assertEquals(0.0, Cobblemon173ShowdownObservationAdapter.parseHpFraction("0 fnt"))
         assertNull(Cobblemon173ShowdownObservationAdapter.parseHpFraction("75%"))
         assertNull(Cobblemon173ShowdownObservationAdapter.parseHpFraction("0/0"))
+        assertEquals(
+            ShowdownActionConstraintDescriptor(BattleActionConstraintKind.TAUNT, true),
+            Cobblemon173ShowdownObservationAdapter.actionConstraintDescriptor(
+                BattleMessage("|-start|p1a: Pikachu|move: Taunt"),
+            ),
+        )
+        assertEquals(
+            ShowdownActionConstraintDescriptor(BattleActionConstraintKind.ENCORE, false),
+            Cobblemon173ShowdownObservationAdapter.actionConstraintDescriptor(
+                BattleMessage("|-end|p1a: Pikachu|Encore"),
+            ),
+        )
+        assertEquals(
+            ShowdownActionConstraintDescriptor(BattleActionConstraintKind.RECHARGE, true),
+            Cobblemon173ShowdownObservationAdapter.actionConstraintDescriptor(
+                BattleMessage("|-mustrecharge|p1a: Pikachu"),
+            ),
+        )
+        assertEquals(
+            ShowdownActionConstraintDescriptor(BattleActionConstraintKind.TRAPPED, true),
+            Cobblemon173ShowdownObservationAdapter.actionConstraintDescriptor(
+                BattleMessage("|-activate|p1a: Pikachu|move: Fire Spin|[of] p2a: Garchomp"),
+            ),
+        )
         assertEquals(4, Cobblemon173ShowdownObservationAdapter.publicTurn("999", currentBattleTurn = 4, previous = 3))
         assertEquals(3, Cobblemon173ShowdownObservationAdapter.publicTurn("broken", currentBattleTurn = 4, previous = 3))
         assertEquals(

@@ -41,6 +41,10 @@ class ShowdownStandardDamageProjectionTest {
             typeMultiplier = 1.0,
         )
 
+        assertEquals(
+            listOf(76, 77, 78, 79, 80, 81, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90),
+            result.minimumHypothesisRolls,
+        )
         assertEquals(BattleFractionRange(6.0 / 16.0, 6.0 / 16.0), result.koProbabilityRange)
         assertEquals(BattleKnockoutAssessment.POSSIBLE, result.knockoutAssessment)
     }
