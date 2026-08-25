@@ -77,9 +77,31 @@ internal object TowerOpponentCatalogLoader {
         val trainers = trainerFragments.flatMap { (resourceId, reader) ->
             parseTypedFragment(resourceId, reader, "trainers", TOWER_DEFINITION_SCHEMA, TRAINER_FRAGMENT_FIELDS) { value, path ->
                 value.rejectUnknownFields(path, TRAINER_FIELDS)
+                val signatureSpeciesIds = if (value.has("signature_species_ids")) {
+                    value.requiredStringList(path, "signature_species_ids").also { speciesIds ->
+                        requireNotEmpty(speciesIds, "$path.signature_species_ids", "signature_species_ids")
+                        rejectDuplicateIds(speciesIds, "$path.signature_species_ids")
+                        speciesIds.forEachIndexed { index, speciesId ->
+                            if (!IdentifierSyntax.isResourceId(speciesId)) {
+                                reject(
+                                    TowerOpponentCatalogIssueCode.INVALID_VALUE,
+                                    "$path.signature_species_ids[$index]",
+                                    "Invalid signature species ID: $speciesId",
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    emptyList()
+                }
                 TowerTrainerDefinition(
                     value.requiredStableId(path, "trainer_id"),
                     value.requiredTranslationKey(path, "display_name_key"),
+                    parseTrainerStyle(
+                        if (value.has("team_style")) value.requiredString(path, "team_style") else TowerTrainerStyle.BALANCED.serializedId,
+                        "$path.team_style",
+                    ),
+                    signatureSpeciesIds,
                 )
             }
         }
@@ -177,6 +199,25 @@ internal object TowerOpponentCatalogLoader {
                     aiSkill = encounter.aiSkill,
                     theme = encounter.theme,
                     setIds = setIds,
+                    teamStyle = trainer.teamStyle,
+                    signatureSpeciesIds = trainer.signatureSpeciesIds,
+                )
+            }
+        }
+        val setsById = sets.associateBy(TowerPokemonSet::setId)
+        profiles.forEach { profile ->
+            if (profile.teamStyle != TowerTrainerStyle.BALANCED && profile.setIds.map(setsById::getValue).none(profile.teamStyle::matches)) {
+                reject(
+                    TowerOpponentCatalogIssueCode.NO_LEGAL_TEAM,
+                    "$.trainers.${profile.profileId}.team_style",
+                    "Trainer style ${profile.teamStyle.serializedId} has no signature set in the resolved pool",
+                )
+            }
+            if (profile.signatureSpeciesIds.isNotEmpty() && profile.setIds.map(setsById::getValue).none { it.speciesId in profile.signatureSpeciesIds }) {
+                reject(
+                    TowerOpponentCatalogIssueCode.NO_LEGAL_TEAM,
+                    "$.trainers.${profile.profileId}.signature_species_ids",
+                    "Trainer has no signature species in the resolved pool",
                 )
             }
         }
@@ -708,7 +749,7 @@ private val TRAINER_FRAGMENT_FIELDS = setOf("schema_version", "trainers")
 private val POOL_FRAGMENT_FIELDS = setOf("schema_version", "pools")
 private val ENCOUNTER_FRAGMENT_FIELDS = setOf("schema_version", "encounters")
 private val POKEMON_SET_FRAGMENT_FIELDS = setOf("schema_version", "pokemon_sets")
-private val TRAINER_FIELDS = setOf("trainer_id", "display_name_key")
+private val TRAINER_FIELDS = setOf("trainer_id", "display_name_key", "team_style", "signature_species_ids")
 private val POOL_FIELDS = setOf("pool_id", "mechanic_id", "set_tiers")
 private val ENCOUNTER_FIELDS = setOf(
     "encounter_id", "trainer_ids", "stage_ids", "format", "opponent_kind", "mechanic_id", "weight", "ai_skill", "theme", "pool_id",
@@ -741,7 +782,12 @@ private val SET_FIELDS_V3 = SET_FIELDS_V1_V2 + setOf("tera_type", "dmax_level", 
 private val SET_FIELDS_V4 = SET_FIELDS_V3 + "mechanic_id"
 private val STAT_FIELDS = setOf("hp", "attack", "defense", "special_attack", "special_defense", "speed")
 
-private data class TowerTrainerDefinition(val trainerId: String, val displayNameKey: String)
+private data class TowerTrainerDefinition(
+    val trainerId: String,
+    val displayNameKey: String,
+    val teamStyle: TowerTrainerStyle,
+    val signatureSpeciesIds: List<String>,
+)
 private data class TowerPoolDefinition(
     val poolId: String,
     val mechanic: MajorBattleMechanic,
@@ -759,3 +805,7 @@ private data class TowerEncounterDefinition(
     val theme: String,
     val poolId: String,
 )
+
+private fun parseTrainerStyle(id: String, path: String): TowerTrainerStyle =
+    TowerTrainerStyle.fromSerializedId(id)
+        ?: reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, path, "Unknown trainer team style: $id")

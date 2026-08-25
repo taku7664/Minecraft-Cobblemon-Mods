@@ -145,6 +145,7 @@ class BattleObservedEventView @JvmOverloads constructor(
     val precedingActionMoveId: String? = null,
     val publicSourceEffectId: String? = null,
     val moveOutcome: BattleMoveOutcomeView? = null,
+    val actorSlot: Int? = null,
 ) {
     val targetPokemonIds: List<UUID> = targetPokemonIds.toList()
 
@@ -155,6 +156,7 @@ class BattleObservedEventView @JvmOverloads constructor(
         require(publicValueId == null || publicValueId.isNotBlank())
         require(hpFractionDelta == null || hpFractionDelta.isFinite() && hpFractionDelta in -1.0..1.0)
         require(publicSourceEffectId == null || publicSourceEffectId.isNotBlank())
+        require(actorSlot == null || actorSlot >= 0) { "An observed actor slot cannot be negative" }
         if (kind in ID_REVEAL_EVENTS) require(!publicValueId.isNullOrBlank()) {
             "$kind must identify the publicly revealed value"
         }

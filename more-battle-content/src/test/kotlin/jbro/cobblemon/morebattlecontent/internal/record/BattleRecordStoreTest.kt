@@ -48,6 +48,104 @@ class BattleRecordStoreTest {
     }
 
     @Test
+    fun `admin streak setter raises but never lowers the best streak`() {
+        val store = BattleRecordStore()
+
+        val raised = store.setCurrentWinStreak(towerSingles, 12)
+        val lowered = store.setCurrentWinStreak(towerSingles, 3)
+
+        assertEquals(12, raised.currentWinStreak)
+        assertEquals(12, raised.bestWinStreak)
+        assertEquals(3, lowered.currentWinStreak)
+        assertEquals(12, lowered.bestWinStreak)
+    }
+
+    @Test
+    fun `admin floor setter raises but never lowers the highest floor`() {
+        val factorySingles = BattleRecordKey(
+            playerId,
+            BattleRecordCategory("battle_factory", "single_level_50"),
+        )
+        val store = BattleRecordStore()
+
+        val raised = store.setProgressAndBestMetric(
+            factorySingles,
+            BattleRecordMetrics.CURRENT_FLOOR,
+            BattleRecordMetrics.HIGHEST_FLOOR,
+            21,
+        )
+        val lowered = store.setProgressAndBestMetric(
+            factorySingles,
+            BattleRecordMetrics.CURRENT_FLOOR,
+            BattleRecordMetrics.HIGHEST_FLOOR,
+            7,
+        )
+
+        assertEquals(21, raised.progressMetrics.getValue(BattleRecordMetrics.CURRENT_FLOOR))
+        assertEquals(21, raised.bestMetrics.getValue(BattleRecordMetrics.HIGHEST_FLOOR))
+        assertEquals(7, lowered.progressMetrics.getValue(BattleRecordMetrics.CURRENT_FLOOR))
+        assertEquals(21, lowered.bestMetrics.getValue(BattleRecordMetrics.HIGHEST_FLOOR))
+    }
+
+    @Test
+    fun `current reset preserves best streak and floor`() {
+        val factorySingles = BattleRecordKey(
+            playerId,
+            BattleRecordCategory("battle_factory", "single_level_50"),
+        )
+        val store = BattleRecordStore()
+        store.setCurrentWinStreak(towerSingles, 12)
+        store.setProgressAndBestMetric(
+            factorySingles,
+            BattleRecordMetrics.CURRENT_FLOOR,
+            BattleRecordMetrics.HIGHEST_FLOOR,
+            21,
+        )
+
+        val tower = store.resetWinStreak(towerSingles, resetBest = false)
+        val factory = store.resetProgressAndBestMetric(
+            factorySingles,
+            BattleRecordMetrics.CURRENT_FLOOR,
+            BattleRecordMetrics.HIGHEST_FLOOR,
+            resetBest = false,
+        )
+
+        assertEquals(0, tower.currentWinStreak)
+        assertEquals(12, tower.bestWinStreak)
+        assertEquals(0, factory.progressMetrics.getValue(BattleRecordMetrics.CURRENT_FLOOR))
+        assertEquals(21, factory.bestMetrics.getValue(BattleRecordMetrics.HIGHEST_FLOOR))
+    }
+
+    @Test
+    fun `all reset clears current and best streak and floor`() {
+        val factorySingles = BattleRecordKey(
+            playerId,
+            BattleRecordCategory("battle_factory", "single_level_50"),
+        )
+        val store = BattleRecordStore()
+        store.setCurrentWinStreak(towerSingles, 12)
+        store.setProgressAndBestMetric(
+            factorySingles,
+            BattleRecordMetrics.CURRENT_FLOOR,
+            BattleRecordMetrics.HIGHEST_FLOOR,
+            21,
+        )
+
+        val tower = store.resetWinStreak(towerSingles, resetBest = true)
+        val factory = store.resetProgressAndBestMetric(
+            factorySingles,
+            BattleRecordMetrics.CURRENT_FLOOR,
+            BattleRecordMetrics.HIGHEST_FLOOR,
+            resetBest = true,
+        )
+
+        assertEquals(0, tower.currentWinStreak)
+        assertEquals(0, tower.bestWinStreak)
+        assertEquals(0, factory.progressMetrics.getValue(BattleRecordMetrics.CURRENT_FLOOR))
+        assertEquals(0, factory.bestMetrics.getValue(BattleRecordMetrics.HIGHEST_FLOOR))
+    }
+
+    @Test
     fun `completed battle updates outcome progress and best metrics as one record mutation`() {
         val store = BattleRecordStore()
 

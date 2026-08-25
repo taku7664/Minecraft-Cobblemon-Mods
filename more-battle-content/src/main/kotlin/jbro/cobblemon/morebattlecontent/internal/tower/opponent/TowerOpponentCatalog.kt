@@ -88,9 +88,12 @@ internal class TowerOpponentProfile internal constructor(
     val aiSkill: Int,
     val theme: String,
     setIds: List<String>,
+    val teamStyle: TowerTrainerStyle = TowerTrainerStyle.BALANCED,
+    signatureSpeciesIds: List<String> = emptyList(),
 ) {
     val stageIds: List<TowerStreakStage> = stageIds.immutableCopy()
     val setIds: List<String> = setIds.immutableCopy()
+    val signatureSpeciesIds: List<String> = signatureSpeciesIds.immutableCopy()
 }
 
 internal class TowerOpponentCatalog internal constructor(

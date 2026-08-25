@@ -266,11 +266,11 @@ internal class PvpSessionService<P>(
         if (winnerId == loserId || !match.isParticipant(winnerId) || !match.isParticipant(loserId)) return false
         if (setOf(winnerId, loserId) != setOf(match.challengerId, match.opponentId)) return false
 
-        completionSink.record(winnerId, loserId, match.format)
         match.complete()
         val transition = challenges.complete(matchId)
         check(transition is PvpChallengeMutationResult.Applied) { "PvP challenge failed to complete" }
         cleanup(match)
+        completionSink.record(winnerId, loserId, match.format)
         return true
     }
 
@@ -295,20 +295,30 @@ internal class PvpSessionService<P>(
     }
 
     private fun cleanup(match: PvpMatchSession) {
-        snapshots.discard(match.challengerId)
-        snapshots.discard(match.opponentId)
-        activeBattleIds.remove(match.matchId)
-        timers.remove(match.matchId)
-        matches.remove(match.matchId)
-        challenges.discard(match.matchId)
+        cleanup(match.matchId, match.challengerId, match.opponentId)
     }
 
     private fun cleanup(request: PvpChallengeRequest) {
-        snapshots.discard(request.challengerId)
-        snapshots.discard(request.opponentId)
-        activeBattleIds.remove(request.challengeId)
-        timers.remove(request.challengeId)
-        matches.remove(request.challengeId)
-        challenges.discard(request.challengeId)
+        cleanup(request.challengeId, request.challengerId, request.opponentId)
+    }
+
+    private fun cleanup(matchId: UUID, challengerId: UUID, opponentId: UUID) {
+        activeBattleIds.remove(matchId)
+        timers.remove(matchId)
+        matches.remove(matchId)
+
+        var failure: Exception? = null
+        fun attempt(action: () -> Unit) {
+            try {
+                action()
+            } catch (error: Exception) {
+                if (failure == null) failure = error else failure?.addSuppressed(error)
+            }
+        }
+
+        attempt { challenges.discard(matchId) }
+        attempt { snapshots.discard(challengerId) }
+        attempt { snapshots.discard(opponentId) }
+        failure?.let { throw it }
     }
 }

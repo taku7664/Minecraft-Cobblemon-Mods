@@ -1,21 +1,19 @@
 package jbro.cobblemon.morebattlecontent.client
 
-import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PvpLoungeExitButtonLayoutTest {
     @Test
-    fun `custom return button stays above the cobblemon spectator back button`() {
+    fun `MBC return button stays inside the lower left of the battle screen`() {
         val screenHeight = 240
-        val custom = PvpLoungeExitButtonLayout.bounds(screenHeight)
-        val cobblemon = TowerPlayRect(12, screenHeight - 32, 29, 17)
+        val button = PvpLoungeExitButtonLayout.bounds(screenHeight)
 
-        assertFalse(custom.overlaps(cobblemon))
-        assertTrue(custom.left <= 12)
-        assertTrue(custom.bottom <= cobblemon.top)
+        assertEquals(8, button.left)
+        assertEquals(104, button.width)
+        assertEquals(20, button.height)
+        assertTrue(button.top >= 8)
+        assertTrue(button.bottom <= screenHeight)
     }
-
-    private fun TowerPlayRect.overlaps(other: TowerPlayRect): Boolean =
-        left < other.right && right > other.left && top < other.bottom && bottom > other.top
 }

@@ -48,6 +48,34 @@ internal object PvpLoungeSpectatorControls {
         exitButtons.values.forEach { button -> button.active = active && !value }
     }
 
+    @JvmStatic
+    fun hidesNativeBackButton(): Boolean = PvpSpectatorBattleUiPolicy.hidesNativeBackButton(
+        loungeActive = active,
+        battleSpectating = CobblemonClient.battle?.spectating == true,
+    )
+
+    @JvmStatic
+    fun restoreDetailedView(nativeBindingCanApplyChange: Boolean): Boolean {
+        val client = Minecraft.getInstance()
+        val player = client.player ?: return false
+        val battle = CobblemonClient.battle ?: return false
+        if (!PvpSpectatorBattleUiPolicy.restoresDetailedView(
+                loungeActive = active,
+                nativeBindingCanApplyChange = nativeBindingCanApplyChange,
+                localPlayerIsSpectator = player.isSpectator,
+                battleSpectating = battle.spectating,
+                battleMinimised = battle.minimised,
+                screenOpen = client.screen != null,
+                guiHidden = client.options.hideGui,
+            )
+        ) {
+            return false
+        }
+        battle.minimised = false
+        client.setScreen(BattleGUI())
+        return true
+    }
+
     private fun enforce(client: Minecraft) {
         if (!active) return
         val allowBattleToggle = CobblemonClient.battle?.spectating == true

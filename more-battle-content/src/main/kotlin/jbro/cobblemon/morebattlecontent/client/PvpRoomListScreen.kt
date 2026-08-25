@@ -85,7 +85,7 @@ internal class PvpRoomListScreen(
                 visibility,
             )
             addRenderableWidget(MbcStyledButton(bounds, label, MbcButtonTone.PRIMARY) {
-                PvpPlayClientNetworking.openRoom(this, room.roomId)
+                PvpPlayClientNetworking.openRoom(room.roomId)
             })
         }
         val actions = layout.actionButtons(4)

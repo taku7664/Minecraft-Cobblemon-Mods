@@ -139,7 +139,7 @@ class TowerOpponentSelectorTest {
     }
 
     @Test
-    fun `legendary class off removes specials and on guarantees exactly one replacement`() {
+    fun `legendary class off removes specials while on can still select a normal only team`() {
         val normalSets = validSets()
         val specials = listOf(
             pokemonSet(7, speciesId = "cobblemon:phione", mechanic = MajorBattleMechanic.MEGA),
@@ -171,8 +171,30 @@ class TowerOpponentSelectorTest {
         ) as TowerOpponentSelectionResult.Selected
 
         assertTrue(disabled.team.none { TowerLegendaryClassPolicy.isLegendaryClass(it.speciesId) })
-        assertEquals(1, enabled.team.count { TowerLegendaryClassPolicy.isLegendaryClass(it.speciesId) })
+        assertTrue(enabled.team.none { TowerLegendaryClassPolicy.isLegendaryClass(it.speciesId) })
         assertEquals(3, enabled.team.size)
+    }
+
+    @Test
+    fun `legendary class on includes specials in the eligible pool`() {
+        val allSets = listOf(
+            pokemonSet(1),
+            pokemonSet(2),
+            pokemonSet(7, speciesId = "cobblemon:phione", mechanic = MajorBattleMechanic.MEGA),
+        )
+        val profile = profile("mixed", 1, TowerBattleFormat.SINGLE, allSets.map(TowerPokemonSet::setId))
+        val selector = TowerOpponentSelector(catalog(listOf(profile), allSets), FixedRandom())
+
+        val enabled = selector.select(
+            TowerStreakStage.INTRODUCTORY,
+            TowerBattleFormat.SINGLE,
+            TowerOpponentKind.REGULAR,
+            MajorBattleMechanic.MEGA,
+            legendaryClassAllowed = true,
+        ) as TowerOpponentSelectionResult.Selected
+
+        assertEquals(3, enabled.team.size)
+        assertEquals(1, enabled.team.count { TowerLegendaryClassPolicy.isLegendaryClass(it.speciesId) })
     }
 
     private fun catalog(

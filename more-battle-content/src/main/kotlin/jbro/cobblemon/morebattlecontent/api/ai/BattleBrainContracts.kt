@@ -273,6 +273,14 @@ enum class BattleMoveTargetPattern {
     ALL_ALLIES,
     SIDE,
     SCRIPTED,
+    /** A chosen opposing active slot (for example Showdown normal or adjacentFoe). */
+    SELECTED_OPPONENT,
+    /** A chosen active ally other than the user. */
+    SELECTED_ALLY,
+    /** A chosen active ally, including the user. */
+    SELECTED_ALLY_OR_SELF,
+    /** One opposing active slot selected by the battle engine. */
+    RANDOM_OPPONENT,
 }
 
 enum class BattleMoveEffectCoverage { DECLARATIVE_PARTIAL }
@@ -405,7 +413,7 @@ data class BattleMoveCandidateView @JvmOverloads constructor(
     val accuracy: Double,
     val priority: Int,
     val currentPp: Int,
-    val targetPattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED,
+    val targetPattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
     val effects: BattleMoveEffectsView? = null,
 ) {
     init {

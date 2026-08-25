@@ -3,10 +3,17 @@ package jbro.cobblemon.morebattlecontent.betterai
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleCandidateFactsView
-import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
-import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerPersonality
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanIntent
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerPersonality
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionMixingContext
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionOutcome
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionRank
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleMind
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalPositionRiskBudget
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalTrainerStyleModel
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalWeightedActionSelector
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -176,6 +183,53 @@ class LocalWeightedActionSelectorTest {
     }
 
     @Test
+    fun `top forty percent still removes a strategically dominated same sign action`() {
+        val ranked = listOf(
+            rank("best", 100.0),
+            rank("credible", 70.0),
+            rank("dominated", 5.0),
+            rank("outside_one", 4.0),
+            rank("outside_two", 3.0),
+            rank("outside_three", 2.0),
+        )
+
+        repeat(100) { seed ->
+            val choice = selector.choose(ranked, seed.toLong(), riskTolerance = 1.0)
+            assertEquals(2, choice.shortlistSize)
+            assertTrue(choice.rank.outcome.candidate.actionId != "dominated")
+        }
+    }
+
+    @Test
+    fun `risk budget widens regret allowance only for credible alternatives`() {
+        val ranked = listOf(
+            rank("best", 100.0),
+            rank("moderate", 60.0),
+            rank("high_risk", 40.0),
+            rank("outside_one", 20.0),
+            rank("outside_two", 10.0),
+            rank("outside_three", 0.0),
+        )
+
+        assertEquals(2, selector.choose(ranked, 7L, riskTolerance = 0.0).shortlistSize)
+        assertEquals(3, selector.choose(ranked, 7L, riskTolerance = 1.0).shortlistSize)
+    }
+
+    @Test
+    fun `uncertain conditional move gets a narrower regret allowance`() {
+        val ranked = listOf(
+            rank("reliable", 100.0),
+            rank("conditional", 51.0),
+        )
+        val unrestricted = mixingContext(riskTolerance = 1.0)
+        val conditional = unrestricted.copy(uncertainConditionalActionIds = setOf("conditional"))
+
+        assertEquals(2, selector.choose(ranked, 7L, unrestricted).shortlistSize)
+        assertEquals(1, selector.choose(ranked, 7L, conditional).shortlistSize)
+        assertEquals("reliable", selector.choose(ranked, 7L, conditional).rank.outcome.candidate.actionId)
+    }
+
+    @Test
     fun `nearby score cannot give weight to a move that will almost never execute`() {
         val ranked = listOf(
             rank("safe_switch", 100.0, executionProbability = 1.0),
@@ -208,6 +262,88 @@ class LocalWeightedActionSelectorTest {
                 selector.choose(ranked, seed.toLong(), riskTolerance = 1.0).rank.outcome.candidate.actionId,
             )
         }
+    }
+
+    @Test
+    fun `best ranked switch that loses most of its hp is rejected when an attack can execute`() {
+        val ranked = listOf(
+            rank(
+                "best_but_bad_switch",
+                110.0,
+                kind = BattleActionKind.SWITCH,
+                worstResponseHpRetention = 0.33,
+            ),
+            rank("credible_attack", 100.0, executableDamageActions = 1),
+        )
+
+        repeat(1_000) { seed ->
+            assertEquals(
+                "credible_attack",
+                selector.choose(ranked, seed.toLong(), riskTolerance = 1.0).rank.outcome.candidate.actionId,
+            )
+        }
+    }
+
+    @Test
+    fun `unsafe best switch remains available when every attack is certain to be stopped`() {
+        val ranked = listOf(
+            rank(
+                "only_escape",
+                110.0,
+                kind = BattleActionKind.SWITCH,
+                worstResponseHpRetention = 0.33,
+            ),
+            rank(
+                "faints_before_attack",
+                100.0,
+                executableDamageActions = 1,
+                executionProbability = 0.0,
+            ),
+        )
+
+        assertEquals(
+            "only_escape",
+            selector.choose(ranked, seed = 7L, riskTolerance = 1.0).rank.outcome.candidate.actionId,
+        )
+    }
+
+    @Test
+    fun `absurdly inferior attack cannot veto the best available switch`() {
+        val ranked = listOf(
+            rank(
+                "costly_but_best_switch",
+                110.0,
+                kind = BattleActionKind.SWITCH,
+                worstResponseHpRetention = 0.33,
+            ),
+            rank("hopeless_attack", -100.0, executableDamageActions = 1),
+        )
+
+        assertEquals(
+            "costly_but_best_switch",
+            selector.choose(ranked, seed = 7L, riskTolerance = 1.0).rank.outcome.candidate.actionId,
+        )
+    }
+
+    @Test
+    fun `switch veto score gap includes exactly 199 points but not anything worse`() {
+        val costlySwitch = rank(
+            "costly_switch",
+            110.0,
+            kind = BattleActionKind.SWITCH,
+            worstResponseHpRetention = 0.33,
+        )
+        val exactBoundary = rank("exact_boundary_attack", -89.0, executableDamageActions = 1)
+        val outsideBoundary = rank("outside_boundary_attack", -89.01, executableDamageActions = 1)
+
+        assertEquals(
+            "exact_boundary_attack",
+            selector.choose(listOf(costlySwitch, exactBoundary), 7L, 1.0).rank.outcome.candidate.actionId,
+        )
+        assertEquals(
+            "costly_switch",
+            selector.choose(listOf(costlySwitch, outsideBoundary), 7L, 1.0).rank.outcome.candidate.actionId,
+        )
     }
 
     @Test
@@ -255,6 +391,121 @@ class LocalWeightedActionSelectorTest {
         assertTrue(attackSelections(stalled) > attackSelections(fresh))
     }
 
+    @Test
+    fun `self setup that is answered by a known knockout gets no weight when damage can execute`() {
+        val ranked = listOf(
+            rank(
+                "doomed_nasty_plot",
+                110.0,
+                moveId = "nastyplot",
+                selfSetup = true,
+                worstResponseHpRetention = 0.0,
+            ),
+            rank("focus_blast", 100.0, moveId = "focusblast", executableDamageActions = 1),
+        )
+
+        repeat(1_000) { seed ->
+            assertEquals(
+                "focus_blast",
+                selector.choose(ranked, seed.toLong(), mixingContext()).rank.outcome.candidate.actionId,
+            )
+        }
+    }
+
+    @Test
+    fun `known knockout rejects best setup even when its score gap made the attack look noncredible`() {
+        val ranked = listOf(
+            rank(
+                "doomed_best_nasty_plot",
+                310.0,
+                moveId = "nastyplot",
+                selfSetup = true,
+                worstResponseHpRetention = 0.0,
+            ),
+            rank("dark_pulse", 100.0, moveId = "darkpulse", executableDamageActions = 1),
+        )
+
+        repeat(1_000) { seed ->
+            assertEquals(
+                "dark_pulse",
+                selector.choose(ranked, seed.toLong(), mixingContext()).rank.outcome.candidate.actionId,
+            )
+        }
+    }
+
+    @Test
+    fun `two setup turns remain possible but a third identical setup gets no weight`() {
+        val ranked = listOf(
+            rank("nasty_plot", 110.0, moveId = "nastyplot", selfSetup = true),
+            rank("focus_blast", 100.0, moveId = "focusblast", executableDamageActions = 1),
+        )
+        fun setupSelections(repeats: Int): Int {
+            val memory = BattleTacticalMemoryView(lastMoveId = "nastyplot", sameMoveRepeatCount = repeats)
+            return (0L until 1_000L).count { seed ->
+                selector.choose(ranked, seed, mixingContext(memory = memory))
+                    .rank.outcome.candidate.actionId == "nasty_plot"
+            }
+        }
+
+        assertTrue(setupSelections(repeats = 1) > 0, "A second setup turn must remain available")
+        assertEquals(0, setupSelections(repeats = 2), "A third identical setup turn must be blocked")
+    }
+
+    @Test
+    fun `an already boosted non best setup gets no exploratory weight when damage can execute`() {
+        val ranked = listOf(
+            rank("credible_attack", 110.0, moveId = "shadowball", executableDamageActions = 1),
+            rank("alternate_setup", 105.0, moveId = "agility", selfSetup = true),
+        )
+        val context = mixingContext().copy(alreadyBoostedSetupActionIds = setOf("alternate_setup"))
+
+        repeat(1_000) { seed ->
+            val choice = selector.choose(ranked, seed.toLong(), context)
+            assertEquals("credible_attack", choice.rank.outcome.candidate.actionId)
+            assertEquals(1, choice.shortlistSize)
+        }
+    }
+
+    @Test
+    fun `an already boosted setup remains available when lookahead still ranks it best`() {
+        val ranked = listOf(
+            rank("threshold_setup", 110.0, moveId = "dragondance", selfSetup = true),
+            rank("credible_attack", 105.0, moveId = "dragonclaw", executableDamageActions = 1),
+        )
+        val context = mixingContext().copy(alreadyBoostedSetupActionIds = setOf("threshold_setup"))
+
+        assertTrue((0L until 1_000L).any { seed ->
+            selector.choose(ranked, seed, context).rank.outcome.candidate.actionId == "threshold_setup"
+        })
+    }
+
+    @Test
+    fun `an overcommitted setup is rejected even when lookahead ranks it best`() {
+        val ranked = listOf(
+            rank("overcommitted_setup", 110.0, moveId = "quiverdance", selfSetup = true),
+            rank("credible_attack", 100.0, moveId = "bugbuzz", executableDamageActions = 1),
+        )
+        val context = mixingContext().copy(overcommittedSetupActionIds = setOf("overcommitted_setup"))
+
+        repeat(1_000) { seed ->
+            assertEquals(
+                "credible_attack",
+                selector.choose(ranked, seed.toLong(), context).rank.outcome.candidate.actionId,
+            )
+        }
+    }
+
+    @Test
+    fun `an overcommitted setup yields to an attack attempt even when neither line is likely to execute`() {
+        val ranked = listOf(
+            rank("only_progress", 110.0, moveId = "quiverdance", selfSetup = true),
+            rank("doomed_attack", 100.0, moveId = "bugbuzz", executableDamageActions = 1, executionProbability = 0.0),
+        )
+        val context = mixingContext().copy(overcommittedSetupActionIds = setOf("only_progress"))
+
+        assertEquals("doomed_attack", selector.choose(ranked, 7L, context).rank.outcome.candidate.actionId)
+    }
+
     private fun rank(
         actionId: String,
         score: Double,
@@ -265,6 +516,7 @@ class LocalWeightedActionSelectorTest {
         executionProbability: Double = 1.0,
         kind: BattleActionKind = BattleActionKind.USE_MOVE,
         worstResponseHpRetention: Double = 1.0,
+        selfSetup: Boolean = false,
     ): LocalBattleActionRank {
         val candidate = BattleActionCandidate(
             actionId = actionId,
@@ -272,6 +524,31 @@ class LocalWeightedActionSelectorTest {
             actorSlot = 0,
             moveSlot = if (kind == BattleActionKind.USE_MOVE) 0 else null,
             moveId = if (kind == BattleActionKind.USE_MOVE) moveId else null,
+            moveDetails = if (selfSetup) {
+                jbro.cobblemon.morebattlecontent.api.ai.BattleMoveCandidateView(
+                    typeId = "dark",
+                    damageCategory = jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory.STATUS,
+                    power = 0.0,
+                    accuracy = 100.0,
+                    priority = 0,
+                    currentPp = 10,
+                    targetPattern = jbro.cobblemon.morebattlecontent.api.ai.BattleMoveTargetPattern.SELF,
+                    effects = jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectsView(
+                        coverage = jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                        effects = listOf(
+                            jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectView(
+                                kind = jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectKind.STAT_STAGE,
+                                target = jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectTarget.USER,
+                                probability = 1.0,
+                                statStages = mapOf("special_attack" to 2),
+                            ),
+                        ),
+                        scriptedBehavior = false,
+                    ),
+                )
+            } else {
+                null
+            },
             switchPokemonId = if (kind == BattleActionKind.SWITCH) {
                 java.util.UUID.fromString("00000000-0000-0000-0000-000000000401")
             } else {

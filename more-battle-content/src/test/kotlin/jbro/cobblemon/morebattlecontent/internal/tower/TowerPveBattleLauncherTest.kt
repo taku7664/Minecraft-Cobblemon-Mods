@@ -116,6 +116,32 @@ class TowerPveBattleLauncherTest {
     }
 
     @Test
+    fun `pro stage regular battle reaches runtime with four turn difficulty`() {
+        val starts = ArrayList<TowerPreparedPveBattle<String, String>>()
+        val progress = TowerProgress(TowerBattleFormat.SINGLE, currentWinStreak = 20, bestWinStreak = 20)
+        val launcher = TowerPveBattleLauncher(
+            registeredTeamMaterializer = { _, _ ->
+                TowerRegisteredBattleTeamResult.Created(listOf("player_1", "player_2", "player_3"))
+            },
+            catalogSource = { catalog(MajorBattleMechanic.MEGA, TowerStreakStage.PRO) },
+            opponentMemberFactory = { set -> "opponent:${set.setId}" },
+            runtime = TowerPveBattleRuntime { prepared ->
+                starts += prepared
+                TowerBattleLaunchResult.Started(battleId)
+            },
+            random = FixedRandom,
+        )
+
+        launcher.launch(request(MajorBattleMechanic.MEGA, progress))
+
+        val prepared = starts.single()
+        assertEquals(BattleTrainerTier.BOSS, prepared.trainerProfile.difficulty.tier)
+        assertEquals(4, prepared.trainerProfile.difficulty.lookaheadPlies)
+        assertEquals(BattleTrainerTier.BOSS, prepared.brainSelectionContext.difficultyTier)
+        assertEquals(BattleEncounterRole.REGULAR, prepared.brainSelectionContext.encounterRole)
+    }
+
+    @Test
     fun `fails closed before runtime when snapshot or exact mechanic catalog is unavailable`() {
         var starts = 0
         val runtime = TowerPveBattleRuntime<String, String> {

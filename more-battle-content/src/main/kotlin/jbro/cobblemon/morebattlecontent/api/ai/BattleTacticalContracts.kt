@@ -501,6 +501,7 @@ class BattleTacticalMemoryView(
     val predictionCalibration: BattlePredictionCalibrationView = BattlePredictionCalibrationView(0, 0, 0),
     val turnsSinceLastSwitch: Int? = null,
     val switchesThisBattle: Int = 0,
+    val switchPressure: Double = 0.0,
     val lastMoveId: String? = null,
     val sameMoveRepeatCount: Int = 0,
     val patternExposureCount: Int = 0,
@@ -513,6 +514,7 @@ class BattleTacticalMemoryView(
     init {
         require(turnsSinceLastSwitch == null || turnsSinceLastSwitch >= 0)
         require(switchesThisBattle >= 0)
+        require(switchPressure.isFinite() && switchPressure >= 0.0)
         require(lastMoveId == null || lastMoveId.isNotBlank())
         require(sameMoveRepeatCount >= 0)
         require((lastMoveId == null) == (sameMoveRepeatCount == 0))

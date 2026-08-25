@@ -62,24 +62,30 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         Cobblemon173PvpBattleRuntime(
             playerResolver = onlinePlayers::get,
             completion = { server, matchId, winnerId, loserId, battleId ->
-                sessions.completeBattle(
-                    matchId,
-                    battleId,
-                    winnerId,
-                    loserId,
-                    PvpBattleCompletionSink { recordedWinner, recordedLoser, format ->
-                        PvpBattleRecordService { completions ->
-                            BattleRecordService.recordCompletedBattles(server, completions)
-                        }.recordResult(recordedWinner, recordedLoser, format)
-                    },
-                )
-                retryableMatches.remove(matchId)
-                finishRoom(matchId)
+                try {
+                    sessions.completeBattle(
+                        matchId,
+                        battleId,
+                        winnerId,
+                        loserId,
+                        PvpBattleCompletionSink { recordedWinner, recordedLoser, format ->
+                            PvpBattleRecordService { completions ->
+                                BattleRecordService.recordCompletedBattles(server, completions)
+                            }.recordResult(recordedWinner, recordedLoser, format)
+                        },
+                    )
+                } finally {
+                    retryableMatches.remove(matchId)
+                    finishRoom(matchId)
+                }
             },
             cancellation = { _, matchId, battleId ->
-                sessions.cancelBattle(matchId, battleId)
-                retryableMatches.remove(matchId)
-                finishRoom(matchId)
+                try {
+                    sessions.cancelBattle(matchId, battleId)
+                } finally {
+                    retryableMatches.remove(matchId)
+                    finishRoom(matchId)
+                }
             },
         )
     }
@@ -405,6 +411,23 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         if (!wasMember && joined.room.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.ACTIVE) {
             val targetId = joined.room.leftPlayerId
             if (targetId == null || !lounge.addSpectator(joined.room.roomId, player.uuid, targetId)) {
+                val battleId = sessions.battleIdFor(joined.room.roomId)
+                if (battleId == null || BattleRegistry.getBattle(battleId) == null) {
+                    runCatching { battleId?.let { sessions.cancelBattle(joined.room.roomId, it) } }
+                        .onFailure { exception ->
+                            MoreBattleContent.LOGGER.error(
+                                "Could not reconcile stale PvP match ${joined.room.roomId}",
+                                exception,
+                            )
+                        }
+                    finishRoom(joined.room.roomId)
+                    rooms.get(joined.room.roomId)?.let { recovered ->
+                        if (player.uuid in recovered.memberIds) {
+                            pushRoomToMembers(recovered, intent.requestId)
+                            return
+                        }
+                    }
+                }
                 rooms.leave(joined.room.roomId, player.uuid)
                 rejectRoom(player, intent.requestId, PvpRoomError.INVALID_PHASE)
                 return
@@ -598,7 +621,11 @@ internal object PvpPlayNetworking : PvpCommandBackend {
      * for a rematch. Only a room that no longer exists falls back to the room list.
      */
     private fun finishRoom(roomId: UUID) {
-        lounge.finish(roomId)
+        try {
+            lounge.finish(roomId)
+        } catch (exception: RuntimeException) {
+            MoreBattleContent.LOGGER.error("PvP lounge finish failed for room $roomId", exception)
+        }
         val room = rooms.finishMatch(roomId)
         if (room == null) {
             rooms.close(roomId)?.memberIds?.forEach { memberId ->

@@ -3,7 +3,13 @@
   "trainers": [
     {
       "trainer_id": "trainer_029",
-      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_single_regular_high"
+      "display_name_key": "trainer.cobblemon_more_battle_content.tower_trainer_029",
+      "team_style": "endurance",
+      "signature_species_ids": [
+        "cobblemon:abomasnow",
+        "cobblemon:camerupt",
+        "cobblemon:charizard"
+      ]
     }
   ]
 }

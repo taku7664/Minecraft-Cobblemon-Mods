@@ -91,6 +91,20 @@ class FactorySessionServiceTest {
         assertEquals(null, active.snapshot(playerId))
     }
 
+    @Test
+    fun `admin floor setter updates an idle run but rejects an active battle`() {
+        val active = service()
+        active.start(playerId, team(), FactoryLevelMode.LEVEL_50) {}
+
+        assertTrue(active.adminSetWins(playerId, 14))
+        assertEquals(14, active.snapshot(playerId)?.wins)
+
+        active.beginBattle(playerId, opponent(), "trainer.factory", 3, strategyBrief())
+
+        assertEquals(false, active.adminSetWins(playerId, 21))
+        assertEquals(14, active.snapshot(playerId)?.wins)
+    }
+
     private fun service(
         sink: FactoryBattleRecordSink = FactoryBattleRecordSink { BattleRecordStats(it.key) },
     ) = FactorySessionService(

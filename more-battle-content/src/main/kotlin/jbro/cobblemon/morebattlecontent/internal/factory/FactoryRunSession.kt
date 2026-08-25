@@ -21,7 +21,7 @@ internal object FactoryProgression {
         return (rentAndTradeCount / TRADES_PER_ELEVATION).coerceAtMost(MAX_STRONGER_OFFERS)
     }
 
-    fun poolWindow(levelMode: FactoryLevelMode, round: Int): FactoryPoolWindow {
+    fun playerPoolWindow(levelMode: FactoryLevelMode, round: Int): FactoryPoolWindow {
         require(round > 0) { "Factory round must be positive" }
         return when (levelMode) {
             FactoryLevelMode.LEVEL_50 -> when (round) {
@@ -29,14 +29,27 @@ internal object FactoryProgression {
                 2 -> FactoryPoolWindow(FactoryPoolGroup.INTERMEDIATE, setOf(1))
                 3 -> FactoryPoolWindow(FactoryPoolGroup.INTERMEDIATE, setOf(2))
                 in 4..7 -> FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(round - 3))
-                else -> FactoryPoolWindow(FactoryPoolGroup.ADVANCED, ALL_VARIANTS)
+                else -> FactoryPoolWindow(FactoryPoolGroup.ADVANCED, ALL_VARIANTS, legendaryClassAllowed = true)
             }
             FactoryLevelMode.OPEN_LEVEL -> when (round) {
                 in 1..4 -> FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(round))
-                else -> FactoryPoolWindow(FactoryPoolGroup.ADVANCED, ALL_VARIANTS)
+                in 5..7 -> FactoryPoolWindow(
+                    FactoryPoolGroup.ADVANCED,
+                    setOf(3, 4),
+                    legendaryClassAllowed = true,
+                )
+                else -> FactoryPoolWindow(FactoryPoolGroup.ADVANCED, ALL_VARIANTS, legendaryClassAllowed = true)
             }
         }
     }
+
+    fun opponentPoolWindow(levelMode: FactoryLevelMode, round: Int): FactoryPoolWindow =
+        if (levelMode == FactoryLevelMode.OPEN_LEVEL && round >= 5) {
+            require(round > 0) { "Factory round must be positive" }
+            FactoryPoolWindow(FactoryPoolGroup.ADVANCED, ALL_VARIANTS, legendaryClassAllowed = true)
+        } else {
+            playerPoolWindow(levelMode, round)
+        }
 
     fun isFactoryHeadBattle(battleNumber: Int, format: FactoryBattleFormat): Boolean =
         format == FactoryBattleFormat.SINGLE && battleNumber in FACTORY_HEAD_BATTLES
@@ -80,11 +93,16 @@ internal class FactoryRunSession(
     val levelMode: FactoryLevelMode,
     private val healRentals: (FactoryRentalTeam) -> Unit,
     initialDraft: FactoryRentalDraft? = null,
+    initialWins: Int = 0,
     private val nextDraft: (FactoryLevelMode, round: Int, rentAndTradeCount: Int) -> FactoryRentalDraft? = { _, _, _ -> null },
 ) {
+    init {
+        require(initialWins >= 0) { "Factory initial wins must be non-negative" }
+    }
+
     var team: FactoryRentalTeam = initialTeam
         private set
-    var wins: Int = 0
+    var wins: Int = initialWins
         private set
     var rentAndTradeCount: Int = 1
         private set
@@ -222,6 +240,13 @@ internal class FactoryRunSession(
         activeBattleId = null
         phase = FactoryRunPhase.READY
         swapOffers = emptyList()
+    }
+
+    fun adminSetWins(value: Int): Boolean {
+        require(value >= 0) { "Factory wins must be non-negative" }
+        if (activeBattleId != null || phase == FactoryRunPhase.IN_BATTLE) return false
+        wins = value
+        return true
     }
 
     private fun requireActiveBattle(battleId: UUID, operation: String) {

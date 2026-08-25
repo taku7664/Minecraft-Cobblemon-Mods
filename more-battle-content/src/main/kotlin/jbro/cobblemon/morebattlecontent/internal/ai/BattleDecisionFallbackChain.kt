@@ -56,6 +56,11 @@ internal class BattleBrainDecisionCoordinator(
                         timeout.cancel(false)
                     }
                     return@execute
+                } catch (_: LinkageError) {
+                    if (result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))) {
+                        timeout.cancel(false)
+                    }
+                    return@execute
                 }
                 val decisionFuture = decisionStage.toCompletableFuture()
                 pendingDecision.set(decisionFuture)

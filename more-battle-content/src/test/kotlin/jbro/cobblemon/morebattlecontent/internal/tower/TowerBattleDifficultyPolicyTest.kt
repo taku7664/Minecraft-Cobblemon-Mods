@@ -6,15 +6,17 @@ import org.junit.jupiter.api.Test
 
 class TowerBattleDifficultyPolicyTest {
     @Test
-    fun `regular opponents rise from introductory through advanced local ai profiles`() {
+    fun `regular opponents rise one lookahead turn per tower stage`() {
         val expected = mapOf(
-            TowerStreakStage.INTRODUCTORY to BattleTrainerTier.INTRODUCTORY,
-            TowerStreakStage.PRACTICAL to BattleTrainerTier.STANDARD,
-            TowerStreakStage.ADVANCED to BattleTrainerTier.ADVANCED,
-            TowerStreakStage.PRO to BattleTrainerTier.ADVANCED,
+            TowerStreakStage.INTRODUCTORY to (BattleTrainerTier.INTRODUCTORY to 1),
+            TowerStreakStage.PRACTICAL to (BattleTrainerTier.STANDARD to 2),
+            TowerStreakStage.ADVANCED to (BattleTrainerTier.ADVANCED to 3),
+            TowerStreakStage.PRO to (BattleTrainerTier.BOSS to 4),
         )
-        expected.forEach { (stage, tier) ->
-            assertEquals(tier, TowerBattleDifficultyPolicy.resolve(stage, TowerOpponentKind.REGULAR, 1).difficulty.tier)
+        expected.forEach { (stage, expectation) ->
+            val difficulty = TowerBattleDifficultyPolicy.resolve(stage, TowerOpponentKind.REGULAR, 1).difficulty
+            assertEquals(expectation.first, difficulty.tier)
+            assertEquals(expectation.second, difficulty.lookaheadPlies)
         }
     }
 

@@ -3,7 +3,13 @@
   "trainers": [
     {
       "trainer_id": "trainer_016",
-      "display_name_key": "trainer.cobblemon_more_battle_content.mega_double_regular_low_roster_4"
+      "display_name_key": "trainer.cobblemon_more_battle_content.tower_trainer_016",
+      "team_style": "weather_control",
+      "signature_species_ids": [
+        "cobblemon:abomasnow",
+        "cobblemon:ampharos",
+        "cobblemon:chimecho"
+      ]
     }
   ]
 }

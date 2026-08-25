@@ -1,6 +1,8 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
 import java.util.concurrent.CompletionException
+import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterDecisionSummaryDiagnostics
+import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterRequestDiagnostics
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue

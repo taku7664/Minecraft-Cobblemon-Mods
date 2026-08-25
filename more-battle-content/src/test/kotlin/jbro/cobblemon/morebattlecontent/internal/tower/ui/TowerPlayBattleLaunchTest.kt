@@ -10,6 +10,7 @@ import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgress
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleOutcome
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgressUpdate
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -37,6 +38,15 @@ class TowerPlayBattleLaunchTest {
         ) as TowerPlayMutationResult.Accepted).state
         state = (service.mutate(
             playerId,
+            TowerPlayIntent.ChangeLegendaryClassAllowed(UUID(9, 11), contextId, state.revision, false),
+        ) as TowerPlayMutationResult.Accepted).state
+        assertFalse(state.legendaryClassAllowed)
+        state = (service.mutate(
+            playerId,
+            TowerPlayIntent.ChangeLegendaryClassAllowed(UUID(9, 12), contextId, state.revision, true),
+        ) as TowerPlayMutationResult.Accepted).state
+        state = (service.mutate(
+            playerId,
             TowerPlayIntent.ChangeMechanic(UUID(9, 2), contextId, state.revision, MajorBattleMechanic.MEGA),
         ) as TowerPlayMutationResult.Accepted).state
         party().take(3).forEachIndexed { index, pokemon ->
@@ -58,6 +68,25 @@ class TowerPlayBattleLaunchTest {
         assertTrue(launches.single().legendaryClassAllowed)
         assertTrue(active.legendaryClassAllowed)
         assertTrue(active.legendaryClassLocked)
+
+        val completed = (service.completeBattle(
+            playerId,
+            battleId,
+            TowerBattleOutcome.WIN,
+        ) as TowerPlayBattleCompletionResult.Completed).state
+        val selecting = (service.mutate(
+            playerId,
+            TowerPlayIntent.Abandon(UUID(9, 13), contextId, completed.revision),
+        ) as TowerPlayMutationResult.Accepted).state
+        val rejected = service.mutate(
+            playerId,
+            TowerPlayIntent.ChangeLegendaryClassAllowed(UUID(9, 14), contextId, selecting.revision, false),
+        ) as TowerPlayMutationResult.Rejected
+
+        assertEquals(TowerPlayPhase.SELECTING, selecting.phase)
+        assertTrue(selecting.legendaryClassAllowed)
+        assertTrue(selecting.legendaryClassLocked)
+        assertEquals(TowerPlayMessageKeys.PHASE_INVALID, rejected.messageKey)
     }
 
     @Test

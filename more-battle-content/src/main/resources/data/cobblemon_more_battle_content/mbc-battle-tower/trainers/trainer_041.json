@@ -3,7 +3,13 @@
   "trainers": [
     {
       "trainer_id": "trainer_041",
-      "display_name_key": "trainer.cobblemon_more_battle_content.dynamax_double_regular_high"
+      "display_name_key": "trainer.cobblemon_more_battle_content.tower_trainer_041",
+      "team_style": "balanced",
+      "signature_species_ids": [
+        "cobblemon:abomasnow",
+        "cobblemon:charizard",
+        "cobblemon:chesnaught"
+      ]
     }
   ]
 }

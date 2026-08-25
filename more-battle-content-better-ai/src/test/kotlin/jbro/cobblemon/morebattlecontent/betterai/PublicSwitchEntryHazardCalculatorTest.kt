@@ -1,7 +1,8 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
-import jbro.cobblemon.morebattlecontent.api.ai.*
 import java.util.UUID
+import jbro.cobblemon.morebattlecontent.api.ai.*
+import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

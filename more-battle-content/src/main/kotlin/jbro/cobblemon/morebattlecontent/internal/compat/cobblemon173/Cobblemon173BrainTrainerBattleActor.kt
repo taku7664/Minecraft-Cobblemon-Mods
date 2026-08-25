@@ -192,6 +192,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
                 source = selectedResolution.source,
                 failures = selectedResolution.failures,
                 actionKinds = selectedCandidate.diagnosticActionKinds(),
+                diagnosticTags = selectedDecision.tags,
                 decisionStartedAtNanos = decisionStartedAtNanos,
             )
             val submitted = submitPreparedResponses(expectedRequest, selectedResponses)
@@ -360,6 +361,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
         source: BattleDecisionSource,
         failures: List<jbro.cobblemon.morebattlecontent.internal.ai.BattleDecisionFailure>,
         actionKinds: List<BattleActionKind> = emptyList(),
+        diagnosticTags: Set<String> = emptySet(),
         decisionStartedAtNanos: Long,
     ) {
         val elapsedMillis = TimeUnit.NANOSECONDS.toMillis(
@@ -374,6 +376,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
                 candidateCount = context.candidates.size,
                 elapsedMillis = elapsedMillis,
                 actionKinds = actionKinds,
+                diagnosticTags = diagnosticTags,
                 failures = failures,
             ),
         )

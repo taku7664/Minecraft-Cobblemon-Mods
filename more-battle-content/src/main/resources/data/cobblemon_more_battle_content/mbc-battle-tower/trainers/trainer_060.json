@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "trainer_060",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tower_trainer_060",
+      "team_style": "setup_sweep",
+      "signature_species_ids": [
+        "cobblemon:altaria",
+        "cobblemon:ampharos",
+        "cobblemon:chesnaught"
+      ]
+    }
+  ]
+}

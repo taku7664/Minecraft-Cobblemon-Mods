@@ -1,9 +1,9 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
+import kotlin.random.Random
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.random.Random
 
 class LocalTacticalSimulationRosterTest {
     @Test
@@ -62,6 +62,7 @@ class LocalTacticalSimulationRosterTest {
         assertTrue(scenarioRoster.entries.size > damageLeague.entries.size)
         assertEquals(4, slowbro.moves.size)
         assertTrue(slowbro.moves.any { it.id == "cobblemon:slackoff" })
+        assertEquals(5, slowbro.moves.single { it.id == "cobblemon:slackoff" }.pp)
         assertTrue(slowbro.moves.any { it.category.name == "STATUS" })
         assertTrue(damageLeague.entries.none { it.setId == slowbro.setId })
     }

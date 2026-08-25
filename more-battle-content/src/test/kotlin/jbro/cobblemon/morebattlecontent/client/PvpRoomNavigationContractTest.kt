@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.client
 
 import java.util.UUID
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -39,5 +40,16 @@ class PvpRoomNavigationContractTest {
 
         assertTrue(PvpRoomNavigationContract.shouldOpen(ownRequest, pending, reopen = true))
         assertFalse(ownRequest in pending)
+    }
+
+    @Test
+    fun `opening a cached room still requires a fresh server join confirmation`() {
+        val roomId = UUID.randomUUID()
+        val requestId = UUID.randomUUID()
+
+        val intent = PvpRoomNavigationContract.openIntent(requestId, roomId)
+
+        assertEquals(requestId, intent.requestId)
+        assertEquals(roomId, intent.roomId)
     }
 }

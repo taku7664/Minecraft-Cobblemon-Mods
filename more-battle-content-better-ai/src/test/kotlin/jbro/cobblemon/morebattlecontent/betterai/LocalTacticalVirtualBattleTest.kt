@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
+import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainOpenContext
@@ -18,16 +19,61 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
+import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
+import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
+import kotlin.math.roundToInt
+import kotlin.random.Random
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.util.UUID
-import kotlin.math.roundToInt
-import kotlin.random.Random
 
 class LocalTacticalVirtualBattleTest {
     @Test
-    fun `five thousand randomized complete preset battles attack without switch-only stalls`() {
+    fun `five randomized complete preset decision traces compare model top score and local choice`() {
+        val random = Random(AUDIT_SEED)
+        val roster = LocalTacticalSimulationRoster.loadAll()
+        val definitions = List(AUDIT_BATTLES) { index ->
+            LocalTacticalScenarioDefinition(
+                name = "random-complete-${index + 1}",
+                cycleSetIds = roster.randomTeam(random, TEAM_SIZE).map { it.setId },
+                offenseSetIds = roster.randomTeam(random, TEAM_SIZE).map { it.setId },
+                seed = random.nextInt(),
+            )
+        }
+        val reports = definitions.map { LocalTacticalScenarioBattle.run(it, maximumTurns = AUDIT_MAX_TURNS) }
+        val report = buildString {
+            appendLine("LOCAL_BRAIN_FIVE_BATTLE_AUDIT seed=$AUDIT_SEED")
+            appendLine("execution_model=public_single_turn_projector chance_effects=sampled_state")
+            reports.forEachIndexed { index, result ->
+                appendLine("battle=${index + 1}")
+                append(result.documentationLog().prependIndent("  "))
+            }
+        }
+        println(report)
+
+        assertEquals(AUDIT_BATTLES, reports.size, report)
+        assertTrue(reports.none { it.stalled }, report)
+        assertTrue(reports.all { it.turns.isNotEmpty() }, report)
+        assertTrue(reports.all {
+            it.definition.cycleSetIds.size == TEAM_SIZE && it.definition.offenseSetIds.size == TEAM_SIZE
+        }, report)
+        assertEquals(
+            AUDIT_BATTLES * 2,
+            reports.flatMap {
+                listOf(it.definition.cycleSetIds.joinToString("|"), it.definition.offenseSetIds.joinToString("|"))
+            }.distinct().size,
+            report,
+        )
+        assertTrue(reports.all { result ->
+            result.turns.all { turn ->
+                turn.cycleIdeal.isNotBlank() && turn.offenseIdeal.isNotBlank() &&
+                    turn.cycleActual.isNotBlank() && turn.offenseActual.isNotBlank() && turn.result.isNotBlank()
+            }
+        }, report)
+    }
+
+    @Test
+    fun `five thousand damage preset decisions attack without switch-only stalls`() {
         SEEDS.forEach { seed ->
             val summary = VirtualLeague(Random(seed), seed).run(BATTLES_PER_SEED)
             val report = summary.report()
@@ -122,7 +168,11 @@ class LocalTacticalVirtualBattleTest {
             )
         }
 
-        private fun team(label: String, battleId: UUID, brain: LocalTacticalBrain): TeamState {
+        private fun team(
+            label: String,
+            battleId: UUID,
+            brain: LocalTacticalBrain,
+        ): TeamState {
             val templates = roster.randomTeam(random, TEAM_SIZE)
             val fighters = templates.map { template ->
                 Fighter(
@@ -150,7 +200,7 @@ class LocalTacticalVirtualBattleTest {
             if (!team.hasLivingPokemon()) return false
             if (!team.active.fainted) return true
             val choice = choose(team, opponent, turn, forcedSwitchOnly = true)
-            team.memory.accept(turn, choice.candidate)
+            team.memory.accept(turn, choice.candidate, forcedSwitch = true)
             team.actions.acceptForcedSwitch()
             team.activeIndex = team.fighters.indexOfFirst { it.id == choice.candidate.switchPokemonId }
             trace += "t$turn ${team.label} forced -> ${team.active.template.speciesId}"
@@ -197,7 +247,7 @@ class LocalTacticalVirtualBattleTest {
                         accuracy = move.accuracy,
                         priority = move.priority,
                         currentPp = 10,
-                        targetPattern = BattleMoveTargetPattern.SELECTED,
+                        targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
                     ),
                 )
             }
@@ -337,20 +387,25 @@ class LocalTacticalVirtualBattleTest {
     private class SimulatedMemory {
         private var lastSwitchTurn: Int? = null
         private var switchesThisBattle: Int = 0
+        private var switchPressure: Double = 0.0
         private var lastMoveId: String? = null
         private var sameMoveRepeatCount: Int = 0
 
         fun view(turn: Int) = BattleTacticalMemoryView(
             turnsSinceLastSwitch = lastSwitchTurn?.let { (turn - it).coerceAtLeast(0) },
             switchesThisBattle = switchesThisBattle,
+            switchPressure = switchPressure,
             lastMoveId = lastMoveId,
             sameMoveRepeatCount = sameMoveRepeatCount,
         )
 
-        fun accept(turn: Int, candidate: BattleActionCandidate) {
+        fun accept(turn: Int, candidate: BattleActionCandidate, forcedSwitch: Boolean = false) {
             if (candidate.kind == BattleActionKind.SWITCH) {
                 switchesThisBattle += 1
+                if (!forcedSwitch) switchPressure = (switchPressure + 1.0).coerceAtMost(4.0)
                 lastSwitchTurn = turn
+            } else if (candidate.moveId != null) {
+                switchPressure = (switchPressure - 1.0).coerceAtLeast(0.0)
             }
             val moveId = candidate.moveId
             if (moveId == null) {
@@ -504,6 +559,7 @@ class LocalTacticalVirtualBattleTest {
 
         fun report(): String = buildString {
             appendLine("LOCAL_BRAIN_VIRTUAL_LEAGUE")
+            appendLine("execution_model=damage_only_decision_stress")
             appendLine("battles=$battles seed=$seed")
             appendLine(
                 "roster_presets=$rosterPresetCount roster_species=$rosterSpeciesCount " +
@@ -526,6 +582,9 @@ class LocalTacticalVirtualBattleTest {
     }
 
     private companion object {
+        const val AUDIT_SEED = 26_082_307
+        const val AUDIT_BATTLES = 5
+        const val AUDIT_MAX_TURNS = 30
         val SEEDS = listOf(8_192_026, 731_993, 2_026_081, 73_193, 19_937)
         const val BATTLES_PER_SEED = 1_000
         const val TEAM_SIZE = 3

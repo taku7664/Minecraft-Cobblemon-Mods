@@ -1,5 +1,7 @@
 package jbro.cobblemon.morebattlecontent.client
 
+import com.google.gson.JsonParser
+import java.io.InputStreamReader
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -53,6 +55,39 @@ class TowerPlayLayoutTest {
         assertEquals(10, progress.size)
         assertTrue(progress.all(layout.mainPanel::contains))
         assertTrue(progress.zipWithNext().all { (left, right) -> left.right < right.left })
+    }
+
+    @Test
+    fun `session rule row exposes separate legendary disallowed and allowed choices`() {
+        val layout = TowerPlayLayout.calculate(MbcContentFrameLayout.calculate(320, 240).content)
+        val buttons = layout.mechanicButtons(3 + TowerLegendaryClassOption.entries.size)
+
+        assertEquals(listOf(false, true), TowerLegendaryClassOption.entries.map { it.allowed })
+        assertEquals(5, buttons.size)
+        assertTrue(buttons.all(layout.mainPanel::contains))
+        assertTrue(buttons.zipWithNext().all { (left, right) -> left.right < right.left })
+    }
+
+    @Test
+    fun `both languages define full compact and tooltip text for legendary choices`() {
+        listOf("en_us", "ko_kr").forEach { language ->
+            val stream = requireNotNull(javaClass.getResourceAsStream(
+                "/assets/cobblemon_more_battle_content/lang/$language.json",
+            ))
+            val entries = InputStreamReader(stream).use(JsonParser::parseReader).asJsonObject
+
+            TowerLegendaryClassOption.entries.forEach { option ->
+                assertTrue(entries.has(option.translationKey), "$language is missing ${option.translationKey}")
+                assertTrue(
+                    entries.has(option.compactTranslationKey),
+                    "$language is missing ${option.compactTranslationKey}",
+                )
+            }
+            assertTrue(
+                entries.has("screen.cobblemon_more_battle_content.tower.legendary_class.tooltip"),
+                "$language is missing the legendary rule tooltip",
+            )
+        }
     }
 }
 

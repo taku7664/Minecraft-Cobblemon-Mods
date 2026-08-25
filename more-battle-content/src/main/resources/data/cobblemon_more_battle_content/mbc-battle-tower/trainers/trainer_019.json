@@ -3,7 +3,13 @@
   "trainers": [
     {
       "trainer_id": "trainer_019",
-      "display_name_key": "trainer.cobblemon_more_battle_content.mega_double_regular_high_roster_3"
+      "display_name_key": "trainer.cobblemon_more_battle_content.tower_trainer_019",
+      "team_style": "special_pressure",
+      "signature_species_ids": [
+        "cobblemon:abomasnow",
+        "cobblemon:ampharos",
+        "cobblemon:glalie"
+      ]
     }
   ]
 }

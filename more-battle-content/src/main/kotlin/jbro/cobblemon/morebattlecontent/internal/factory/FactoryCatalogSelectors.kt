@@ -26,9 +26,9 @@ internal class FactoryDraftSelector(
         rentAndTradeCount: Int,
         recentSpeciesIds: Set<String> = emptySet(),
     ): FactoryRentalDraft? {
-        val currentWindow = FactoryProgression.poolWindow(levelMode, round)
+        val currentWindow = FactoryProgression.playerPoolWindow(levelMode, round)
         val strongerCount = FactoryProgression.strongerOfferCount(rentAndTradeCount)
-        val nextWindow = FactoryProgression.poolWindow(levelMode, round + 1)
+        val nextWindow = FactoryProgression.playerPoolWindow(levelMode, round + 1)
         val current = orderedCandidates(catalog.rentalPool(currentWindow), recentSpeciesIds).map {
             DraftCandidate(it, FactoryProgression.uniformIvForRound(round))
         }
@@ -159,7 +159,7 @@ internal class FactoryOpponentSelector(
         round: Int,
         excludedTrainerIds: Set<String> = emptySet(),
     ): FactoryOpponentSelectionResult {
-        val window = FactoryProgression.poolWindow(levelMode, round)
+        val window = FactoryProgression.opponentPoolWindow(levelMode, round)
         val templates = selectTeam(catalog.rentalPool(window), format.selectionSize)
             ?: return FactoryOpponentSelectionResult.NoEligibleTrainer
         val eligible = catalog.trainersFor(format)

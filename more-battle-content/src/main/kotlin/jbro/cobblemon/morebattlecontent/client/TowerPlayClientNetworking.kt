@@ -12,14 +12,14 @@ internal object TowerPlayClientNetworking {
                 val current = context.client().screen
                 if (payload.requestId == null) {
                     context.client().setScreen(TowerPlayScreen(payload.state))
-                } else if (current is TowerPlayScreen) {
-                    current.applyAccepted(payload.requestId, payload.state)
+                } else {
+                    current.towerPlayScreen()?.applyAccepted(payload.requestId, payload.state)
                 }
             }
         }
         ClientPlayNetworking.registerGlobalReceiver(TowerPlayRejectedPayload.TYPE) { payload, context ->
             context.client().execute {
-                (context.client().screen as? TowerPlayScreen)?.applyRejected(payload.result)
+                context.client().screen.towerPlayScreen()?.applyRejected(payload.result)
             }
         }
     }
@@ -27,4 +27,10 @@ internal object TowerPlayClientNetworking {
     fun send(payload: TowerPlayIntentPayload) {
         ClientPlayNetworking.send(payload)
     }
+}
+
+private fun net.minecraft.client.gui.screens.Screen?.towerPlayScreen(): TowerPlayScreen? = when (this) {
+    is TowerPlayScreen -> this
+    is TowerGuideScreen -> towerPlayScreen
+    else -> null
 }

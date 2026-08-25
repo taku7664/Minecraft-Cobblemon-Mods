@@ -4,6 +4,7 @@ import java.io.Reader
 import java.util.Collections
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyObjective
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTeamRole
+import jbro.cobblemon.morebattlecontent.internal.battle.LegendaryClassPolicy
 
 /** A complete, immutable rental preset. Randomness chooses this preset, never its contents. */
 internal class FactoryRentalTemplate(
@@ -52,7 +53,10 @@ internal class FactoryRentalTemplate(
         )
     }
 
-    fun belongsTo(window: FactoryPoolWindow): Boolean = poolGroup == window.group && variant in window.variants
+    fun belongsTo(window: FactoryPoolWindow): Boolean =
+        poolGroup == window.group &&
+            variant in window.variants &&
+            (window.legendaryClassAllowed || !LegendaryClassPolicy.isLegendaryClass(speciesId))
 }
 
 /** Trainer identity and AI framing are independent from the randomly drawn rental team. */

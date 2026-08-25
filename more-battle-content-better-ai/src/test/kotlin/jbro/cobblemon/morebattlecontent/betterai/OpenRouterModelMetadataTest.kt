@@ -2,6 +2,8 @@ package jbro.cobblemon.morebattlecontent.betterai
 
 import java.net.URI
 import java.util.concurrent.CompletableFuture
+import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterModelCapabilityCache
+import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterModelMetadata
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull

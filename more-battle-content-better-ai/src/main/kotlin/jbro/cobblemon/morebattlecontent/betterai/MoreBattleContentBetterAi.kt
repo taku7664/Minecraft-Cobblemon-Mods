@@ -1,17 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
-import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainFactory
-import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainProvider
-import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainProviderRole
-import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainRegistrationStatus
-import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainRegistry
-import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainSelectionPolicy
-import jbro.cobblemon.morebattlecontent.api.ai.BrainCapability
-import jbro.cobblemon.morebattlecontent.api.ai.BrainId
-import net.fabricmc.api.ModInitializer
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
-import net.fabricmc.loader.api.FabricLoader
-import org.slf4j.LoggerFactory
+import java.net.URI
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.Executor
@@ -21,7 +10,29 @@ import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import java.net.URI
+import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainFactory
+import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainProvider
+import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainProviderRole
+import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainRegistrationStatus
+import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainRegistry
+import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainSelectionPolicy
+import jbro.cobblemon.morebattlecontent.api.ai.BrainCapability
+import jbro.cobblemon.morebattlecontent.api.ai.BrainId
+import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
+import jbro.cobblemon.morebattlecontent.betterai.brain.OpenRouterHttpTransport
+import jbro.cobblemon.morebattlecontent.betterai.brain.OpenRouterTacticalBrain
+import jbro.cobblemon.morebattlecontent.betterai.router.BetterAiConfig
+import jbro.cobblemon.morebattlecontent.betterai.router.BetterAiConfigStore
+import jbro.cobblemon.morebattlecontent.betterai.router.JsonlOpenRouterDecisionSummarySink
+import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterDecisionSummarySink
+import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterModelCapabilityCache
+import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterModelMetadata
+import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterModelMetadataHttpTransport
+import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterModelMetadataTransport
+import net.fabricmc.api.ModInitializer
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
+import net.fabricmc.loader.api.FabricLoader
+import org.slf4j.LoggerFactory
 
 object MoreBattleContentBetterAi : ModInitializer {
     const val MOD_ID: String = "cobblemon_more_battle_content_better_ai"

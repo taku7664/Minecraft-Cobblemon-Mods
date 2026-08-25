@@ -76,12 +76,16 @@ internal abstract class MbcTabbedContentScreen(
         )
     }
 
-    protected fun drawContentFrame(graphics: GuiGraphics, frame: MbcContentFrameLayout = frameLayout()) {
+    protected fun drawContentFrame(
+        graphics: GuiGraphics,
+        frame: MbcContentFrameLayout = frameLayout(),
+        headerContentRight: Int = frame.closeButton.left,
+    ) {
         MbcGuiSurface.drawBackdrop(graphics, width, height)
         MbcGuiSurface.drawShell(graphics, frame.shell)
         MbcGuiSurface.drawPanel(graphics, frame.header, MbcGuiPalette.ACCENT_SECONDARY, alternate = true)
         MbcGuiSurface.drawPanel(graphics, frame.tabs, MbcGuiPalette.BORDER_BRIGHT, alternate = true)
-        val brandRight = frame.closeButton.left - 6
+        val brandRight = headerContentRight - 6
         val brand = font.plainSubstrByWidth("Cobblemon: More Battle Content", (brandRight - frame.header.left - 8).coerceAtLeast(1))
         graphics.drawString(
             font,

@@ -18,10 +18,11 @@ class TowerOpponentCatalogLoaderTest {
         val root = JsonParser.parseString(validCatalogJson()).asJsonObject
         val sets = root.getAsJsonArray("sets")
         sets.forEach { it.asJsonObject.addProperty("mechanic_id", "mega") }
+        sets.first().asJsonObject.addProperty("nature_id", "cobblemon:jolly")
         val loaded = TowerOpponentCatalogLoader.loadSeparated(
             trainerFragments = listOf(
                 "example:mbc-battle-tower/trainers/core.json" to StringReader(
-                    """{"schema_version":1,"trainers":[{"trainer_id":"ace","display_name_key":"trainer.example.ace"}]}""",
+                    """{"schema_version":1,"trainers":[{"trainer_id":"ace","display_name_key":"trainer.example.ace","team_style":"physical_pressure","signature_species_ids":["cobblemon:species_1"]}]}""",
                 ),
             ),
             poolFragments = listOf(
@@ -49,6 +50,8 @@ class TowerOpponentCatalogLoaderTest {
         ).single()
         assertEquals("ace", profile.profileId)
         assertEquals("trainer.example.ace", profile.displayNameKey)
+        assertEquals(TowerTrainerStyle.PHYSICAL_PRESSURE, profile.teamStyle)
+        assertEquals(listOf("cobblemon:species_1"), profile.signatureSpeciesIds)
         assertTrue(loaded.catalog.setsFor(profile).isNotEmpty())
         assertTrue(loaded.catalog.setsFor(profile).all { it.mechanic == MajorBattleMechanic.MEGA })
     }

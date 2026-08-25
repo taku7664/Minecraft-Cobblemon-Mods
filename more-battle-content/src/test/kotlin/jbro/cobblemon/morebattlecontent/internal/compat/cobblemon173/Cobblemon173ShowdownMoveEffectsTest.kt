@@ -58,6 +58,14 @@ class Cobblemon173ShowdownMoveEffectsTest {
         val room = requireNotNull(Cobblemon173ShowdownMoveEffects.resolve("trickroom"))
 
         assertTrue(protect.effects.any { it.kind == BattleMoveEffectKind.PROTECT_USER })
+        assertTrue("stalling_move" in protect.mechanicFlags)
+        assertTrue("stall_counter_advance" in protect.mechanicFlags)
+        assertTrue("stalling_move" in requireNotNull(Cobblemon173ShowdownMoveEffects.resolve("detect")).mechanicFlags)
+        assertTrue("stalling_move" in requireNotNull(Cobblemon173ShowdownMoveEffects.resolve("endure")).mechanicFlags)
+        assertFalse("stalling_move" in requireNotNull(Cobblemon173ShowdownMoveEffects.resolve("matblock")).mechanicFlags)
+        val quickGuardFlags = requireNotNull(Cobblemon173ShowdownMoveEffects.resolve("quickguard")).mechanicFlags
+        assertFalse("stalling_move" in quickGuardFlags)
+        assertTrue("stall_counter_advance" in quickGuardFlags)
         assertTrue(protect.scriptedBehavior)
         assertTrue(rocks.effects.any {
             it.kind == BattleMoveEffectKind.SIDE_CONDITION &&
@@ -118,6 +126,7 @@ class Cobblemon173ShowdownMoveEffectsTest {
             Triple("healingwish", BattleMoveRequirementKind.RESERVE_ALLY_PRESENT, emptySet()),
             Triple("metalburst", BattleMoveRequirementKind.PRIOR_DAMAGE_THIS_TURN, emptySet()),
             Triple("lastresort", BattleMoveRequirementKind.OTHER_MOVES_USED, emptySet()),
+            Triple("suckerpunch", BattleMoveRequirementKind.TARGET_PENDING_DAMAGING_MOVE, emptySet()),
             Triple("darkvoid", BattleMoveRequirementKind.USER_SPECIES_ANY_OF, setOf("darkrai")),
         )
 
@@ -180,6 +189,23 @@ class Cobblemon173ShowdownMoveEffectsTest {
         cases.forEach { (moveId, kind) ->
             assertTrue(
                 requireNotNull(Cobblemon173ShowdownMoveEffects.resolve(moveId)).effects.any { it.kind == kind },
+                moveId,
+            )
+        }
+    }
+
+    @Test
+    fun `future move flag becomes a delayed slot condition for recursive simulation`() {
+        listOf("futuresight", "doomdesire").forEach { moveId ->
+            val effects = requireNotNull(Cobblemon173ShowdownMoveEffects.resolve(moveId))
+
+            assertTrue("futuremove" in effects.mechanicFlags, moveId)
+            assertTrue(
+                effects.effects.any {
+                    it.kind == BattleMoveEffectKind.SLOT_CONDITION &&
+                        it.target == BattleMoveEffectTarget.SELECTED_TARGET &&
+                        it.valueId == "futuremove"
+                },
                 moveId,
             )
         }

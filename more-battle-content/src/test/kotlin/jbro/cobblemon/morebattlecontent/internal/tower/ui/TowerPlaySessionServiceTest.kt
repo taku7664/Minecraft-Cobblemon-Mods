@@ -67,6 +67,22 @@ class TowerPlaySessionServiceTest {
     }
 
     @Test
+    fun `admin streak setter refreshes the matching open format`() {
+        val service = service()
+        service.open(playerId, openRequest())
+
+        val updated = service.adminSetProgress(
+            playerId,
+            TowerProgress(TowerBattleFormat.SINGLE, currentWinStreak = 14, bestWinStreak = 20),
+        )
+
+        assertTrue(updated)
+        assertEquals(14, service.current(playerId)?.currentWinStreak)
+        assertEquals(20, service.current(playerId)?.bestWinStreak)
+        assertEquals(14, service.progress(playerId)?.getValue(TowerBattleFormat.SINGLE)?.currentWinStreak)
+    }
+
+    @Test
     fun `verified terminal context becomes the new screen context`() {
         val verifiedContextId = UUID.fromString("12345678-2222-3333-4444-555555555555")
         val entryContext = TowerPlayEntryContext.VerifiedTerminal(
@@ -214,6 +230,96 @@ class TowerPlaySessionServiceTest {
         assertEquals(refreshedContext, reopened.entryContextId)
         assertNotEquals(first.entryContextId, reopened.entryContextId)
         assertTrue(reopened.selectedPokemonIds.isEmpty())
+    }
+
+    @Test
+    fun `reopening selection after team confirmation keeps the registered party until the challenge ends`() {
+        var snapshots = 0
+        val snapshotStore = object : TowerRegisteredTeamSnapshots {
+            override fun snapshot(playerId: UUID, team: TowerRegisteredTeam): TowerRegisteredTeamSnapshotResult {
+                snapshots++
+                return TowerRegisteredTeamSnapshotResult.Stored
+            }
+
+            override fun discard(playerId: UUID) = Unit
+        }
+        val service = TowerPlaySessionService(
+            registeredTeamSnapshots = snapshotStore,
+            entryContextIdFactory = { entryContextId },
+        )
+        val registeredParty = validParty()
+        var state = service.open(playerId, openRequest(registeredParty))
+        state = selectMechanic(service, state)
+        registeredParty.take(3).forEachIndexed { index, pokemon ->
+            state = accepted(service.mutate(
+                playerId,
+                TowerPlayIntent.ToggleSelection(
+                    UUID(11, index.toLong()),
+                    entryContextId,
+                    state.revision,
+                    pokemon.pokemonId,
+                ),
+            ))
+        }
+        state = accepted(service.mutate(
+            playerId,
+            TowerPlayIntent.LockTeam(UUID(11, 4), entryContextId, state.revision),
+            registeredParty,
+        ))
+        state = accepted(service.mutate(
+            playerId,
+            TowerPlayIntent.Abandon(UUID(11, 5), entryContextId, state.revision),
+        ))
+        val changedAdventureParty = registeredParty.mapIndexed { index, pokemon ->
+            pokemon.copy(
+                pokemonId = UUID(99, index.toLong() + 1),
+                speciesId = "cobblemon:replacement_${index + 1}",
+            )
+        }
+        val refreshedContext = UUID.fromString("99999999-8888-7777-6666-555555555555")
+
+        val reopened = service.open(
+            playerId,
+            openRequest(changedAdventureParty),
+            TowerPlayEntryContext.Command(refreshedContext),
+        )
+        val emptyPartyContext = UUID.fromString("77777777-6666-5555-4444-333333333333")
+        var reopenedWithEmptyParty = service.open(
+            playerId,
+            openRequest(emptyList()),
+            TowerPlayEntryContext.Command(emptyPartyContext),
+        )
+        registeredParty.takeLast(3).forEachIndexed { index, pokemon ->
+            reopenedWithEmptyParty = accepted(service.mutate(
+                playerId,
+                TowerPlayIntent.ToggleSelection(
+                    UUID(12, index.toLong()),
+                    emptyPartyContext,
+                    reopenedWithEmptyParty.revision,
+                    pokemon.pokemonId,
+                ),
+            ))
+        }
+        val relocked = service.mutate(
+            playerId,
+            TowerPlayIntent.LockTeam(UUID(12, 4), emptyPartyContext, reopenedWithEmptyParty.revision),
+            emptyList(),
+        )
+
+        assertTrue(service.close(playerId))
+        val afterChallenge = service.open(
+            playerId,
+            openRequest(changedAdventureParty),
+            TowerPlayEntryContext.Command(UUID.fromString("22222222-3333-4444-5555-666666666666")),
+        )
+
+        assertEquals(TowerPlayPhase.SELECTING, reopened.phase)
+        assertEquals(registeredParty, reopened.party)
+        assertEquals(refreshedContext, reopened.entryContextId)
+        assertEquals(registeredParty, reopenedWithEmptyParty.party)
+        assertTrue(relocked is TowerPlayMutationResult.Accepted)
+        assertEquals(changedAdventureParty, afterChallenge.party)
+        assertEquals(1, snapshots)
     }
 
     @Test

@@ -3,6 +3,8 @@ package jbro.cobblemon.morebattlecontent.betterai
 import com.google.gson.JsonParser
 import java.nio.file.Files
 import java.time.Instant
+import jbro.cobblemon.morebattlecontent.betterai.router.JsonlOpenRouterDecisionSummarySink
+import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterDecisionSummaryRecord
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test

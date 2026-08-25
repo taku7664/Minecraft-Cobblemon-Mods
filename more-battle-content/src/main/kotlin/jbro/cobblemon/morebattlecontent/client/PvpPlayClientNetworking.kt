@@ -156,13 +156,8 @@ internal object PvpPlayClientNetworking {
         ClientPlayNetworking.send(payload)
     }
 
-    fun openRoom(parent: PvpRoomListScreen, roomId: UUID) {
-        val cached = PvpRoomClientState.lastRoom
-        if (cached?.roomId == roomId) {
-            net.minecraft.client.Minecraft.getInstance().setScreen(PvpRoomScreen(cached, parent))
-        } else {
-            send(PvpRoomIntentPayload(PvpRoomIntent.Join(UUID.randomUUID(), roomId)))
-        }
+    fun openRoom(roomId: UUID) {
+        send(PvpRoomIntentPayload(PvpRoomNavigationContract.openIntent(UUID.randomUUID(), roomId)))
     }
 }
 

@@ -50,6 +50,9 @@ val unitTest by tasks.registering(JavaExec::class) {
         args("--scan-class-path=${it.absolutePath}")
     }
     args("--fail-if-no-tests", "--details=summary")
+    // Parameter sweeps run hundreds of simulated battles to calibrate a weight. They are opt-in so a
+    // normal verification run stays fast: ./gradlew :more-battle-content-better-ai:unitTest -Psweeps
+    systemProperty("betterai.sweeps", if (project.hasProperty("sweeps")) "true" else "false")
 }
 
 tasks.check { dependsOn(unitTest) }

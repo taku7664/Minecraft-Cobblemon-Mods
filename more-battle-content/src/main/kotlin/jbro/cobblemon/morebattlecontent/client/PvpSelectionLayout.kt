@@ -1,11 +1,34 @@
 package jbro.cobblemon.morebattlecontent.client
 
+internal data class PvpSelectionColumns(
+    val left: TowerPlayRect,
+    val center: TowerPlayRect,
+    val right: TowerPlayRect,
+)
+
 /**
  * Card geometry for the PvP entry selection panels. Both sides show six Pokemon, so the same
  * arithmetic serves the player's own party and the opponent's team preview.
  */
 internal object PvpSelectionLayout {
     const val PARTY_SIZE = 6
+
+    fun columns(shell: TowerPlayRect, top: Int, height: Int): PvpSelectionColumns {
+        require(height > 0) { "PvP selection column height must be positive" }
+        val contentLeft = shell.left + SCREEN_INSET
+        val contentRight = shell.right - SCREEN_INSET
+        val contentWidth = contentRight - contentLeft
+        val centerWidth = (shell.width * CENTER_WIDTH_PERCENT / 100).coerceIn(MIN_CENTER_WIDTH, MAX_CENTER_WIDTH)
+        val sideSpace = contentWidth - centerWidth - COLUMN_GAP * 2
+        require(sideSpace >= 2) { "PvP selection shell is too narrow for three columns" }
+        val leftWidth = sideSpace / 2
+        val rightWidth = sideSpace - leftWidth
+        val left = TowerPlayRect(contentLeft, top, leftWidth, height)
+        val center = TowerPlayRect(left.right + COLUMN_GAP, top, centerWidth, height)
+        val right = TowerPlayRect(center.right + COLUMN_GAP, top, rightWidth, height)
+        check(right.right == contentRight) { "PvP selection columns must fill the content width" }
+        return PvpSelectionColumns(left, center, right)
+    }
 
     fun partyCard(panel: TowerPlayRect, index: Int): TowerPlayRect {
         require(index in 0 until PARTY_SIZE) { "PvP party card index is out of range" }
@@ -56,4 +79,9 @@ internal object PvpSelectionLayout {
     private const val SUMMARY_LINE_HEIGHT = 9
     private const val MIN_PORTRAIT_SIZE = 14
     private const val MAX_PORTRAIT_SIZE = 34
+    private const val SCREEN_INSET = 6
+    private const val COLUMN_GAP = 5
+    private const val CENTER_WIDTH_PERCENT = 19
+    private const val MIN_CENTER_WIDTH = 58
+    private const val MAX_CENTER_WIDTH = 104
 }

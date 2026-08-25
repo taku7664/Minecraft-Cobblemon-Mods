@@ -5,6 +5,7 @@ import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordStore
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -186,6 +187,54 @@ class PvpSessionServiceTest {
     }
 
     @Test
+    fun `record failure cannot leave a completed battle active or block a rematch`() {
+        val snapshots = RecordingSnapshots()
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.ready(matchId, second))
+
+        assertThrows(IllegalStateException::class.java) {
+            service.completeBattle(
+                matchId,
+                battleId,
+                first,
+                second,
+                PvpBattleCompletionSink { _, _, _ -> error("record store unavailable") },
+            )
+        }
+
+        assertNull(service.challenge(matchId))
+        assertNull(service.battleIdFor(matchId))
+        assertEquals(setOf(first, second), snapshots.discarded)
+        assertTrue(
+            service.invite(PvpChallengeRequest(matchId, second, first, PvpBattleFormat.SINGLE)) is
+                PvpChallengeMutationResult.Applied,
+        )
+    }
+
+    @Test
+    fun `snapshot cleanup failure cannot leave a cancelled battle active or block a rematch`() {
+        val snapshots = RecordingSnapshots(discardFailurePlayer = first)
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.ready(matchId, second))
+
+        assertThrows(IllegalStateException::class.java) {
+            service.cancelBattle(matchId, battleId)
+        }
+
+        assertNull(service.challenge(matchId))
+        assertNull(service.battleIdFor(matchId))
+        assertEquals(setOf(first, second), snapshots.discarded)
+        assertTrue(
+            service.invite(PvpChallengeRequest(matchId, second, first, PvpBattleFormat.SINGLE)) is
+                PvpChallengeMutationResult.Applied,
+        )
+    }
+
+    @Test
     fun `a cancelled match frees its id so the same room can start again`() {
         val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
         ready(service)
@@ -243,6 +292,7 @@ class PvpSessionServiceTest {
 
     private class RecordingSnapshots(
         private val rejectedPlayer: UUID? = null,
+        private val discardFailurePlayer: UUID? = null,
     ) : PvpSessionSnapshots<String>, PvpBattleTeamMaterializer<String> {
         val captured = LinkedHashSet<UUID>()
         val discarded = LinkedHashSet<UUID>()
@@ -262,6 +312,7 @@ class PvpSessionServiceTest {
 
         override fun discard(playerId: UUID) {
             discarded += playerId
+            if (playerId == discardFailurePlayer) error("snapshot store unavailable")
         }
     }
 }

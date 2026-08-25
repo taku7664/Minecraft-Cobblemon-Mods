@@ -189,6 +189,7 @@ class BattleTacticalContractTest {
             ),
             turnsSinceLastSwitch = 2,
             switchesThisBattle = 1,
+            switchPressure = 1.5,
             lastMoveId = "cobblemon:shadowball",
             sameMoveRepeatCount = 3,
             patternExposureCount = 3,
@@ -206,8 +207,15 @@ class BattleTacticalContractTest {
         assertEquals(memory, context.memory)
         assertEquals(0.7, context.memory.tendencies.single().estimatedRate)
         assertEquals(0.64, context.memory.predictionCalibration.brierSkillScoreAgainstAlwaysMove)
+        assertEquals(1.5, context.memory.switchPressure)
         assertEquals(3, context.memory.patternExposureCount)
         assertEquals(0.65, context.memory.patternResponseShiftEvidence)
+        assertThrows(IllegalArgumentException::class.java) {
+            BattleTacticalMemoryView(switchPressure = -0.01)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            BattleTacticalMemoryView(switchPressure = Double.NaN)
+        }
     }
 
     @Test

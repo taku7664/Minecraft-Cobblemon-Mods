@@ -12,11 +12,15 @@ import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon17
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173OpponentPokemonPropertiesFactory
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173TowerPveBattleRuntime
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.TowerOpponentCatalogResources
+import jbro.cobblemon.morebattlecontent.internal.command.BattleProgressSetResult
+import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordCategory
+import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordKey
 import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordService
 import jbro.cobblemon.morebattlecontent.internal.hub.BattleHubNetworking
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleRecordService
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgressRecordCodec
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerRecordContract
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerPveBattleLauncher
 import jbro.cobblemon.morebattlecontent.internal.tower.application.BattleTowerApplicationBackend
 import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerOpponentRandom
@@ -162,6 +166,68 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         sessions.progress(playerId)
             ?: onlinePlayers[playerId]?.let(Cobblemon173TowerPlayOpenRequestFactory::readProgress)
             ?: emptyMap()
+
+    fun adminSetStreak(
+        player: ServerPlayer,
+        format: TowerBattleFormat,
+        value: Int,
+        resetBest: Boolean = false,
+    ): BattleProgressSetResult {
+        onlinePlayers[player.uuid] = player
+        val current = sessions.current(player.uuid)
+        if (sessions.activeBattleId(player.uuid) != null && current?.format == format) {
+            return BattleProgressSetResult.ActiveBattle
+        }
+        if (!BattleRecordService.isAvailable(player.server)) {
+            return BattleProgressSetResult.StorageUnavailable
+        }
+        val key = BattleRecordKey(
+            player.uuid,
+            BattleRecordCategory(TowerRecordContract.CONTENT_ID, format.recordId),
+        )
+        val before = BattleRecordService.get(player.server, key)
+        val stats = if (resetBest) {
+            check(value == 0) { "A full Battle Tower reset must set the current streak to zero" }
+            BattleRecordService.resetWinStreak(player.server, key, resetBest = true)
+        } else {
+            BattleRecordService.setCurrentWinStreak(player.server, key, value)
+        }
+        val progress = TowerProgressRecordCodec.decode(stats)
+        check(sessions.adminSetProgress(player.uuid, progress)) {
+            "Battle Tower session became active during an administrator progress update"
+        }
+        sessions.current(player.uuid)?.let { updated ->
+            if (ServerPlayNetworking.canSend(player, TowerPlayStatePayload.TYPE)) {
+                ServerPlayNetworking.send(player, TowerPlayStatePayload(null, updated))
+            }
+        }
+        return BattleProgressSetResult.Applied(
+            previousCurrent = before.currentWinStreak.toLong(),
+            previousBest = before.bestWinStreak.toLong(),
+            current = stats.currentWinStreak.toLong(),
+            best = stats.bestWinStreak.toLong(),
+        )
+    }
+
+    fun adminGetStreak(player: ServerPlayer, format: TowerBattleFormat): BattleProgressSetResult {
+        onlinePlayers[player.uuid] = player
+        if (!BattleRecordService.isAvailable(player.server)) {
+            return BattleProgressSetResult.StorageUnavailable
+        }
+        val stats = BattleRecordService.get(
+            player.server,
+            BattleRecordKey(
+                player.uuid,
+                BattleRecordCategory(TowerRecordContract.CONTENT_ID, format.recordId),
+            ),
+        )
+        return BattleProgressSetResult.Applied(
+            previousCurrent = stats.currentWinStreak.toLong(),
+            previousBest = stats.bestWinStreak.toLong(),
+            current = stats.currentWinStreak.toLong(),
+            best = stats.bestWinStreak.toLong(),
+        )
+    }
 
     override fun open(playerId: java.util.UUID, format: TowerBattleFormat): Boolean {
         val player = onlinePlayers[playerId] ?: return false

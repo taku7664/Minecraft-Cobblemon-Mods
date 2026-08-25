@@ -1,11 +1,15 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
+import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
+import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicSingleTurnProjector
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalEndTurnStateProjector
+import jbro.cobblemon.morebattlecontent.betterai.state.PublicTurnProjection
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.util.UUID
 
 class LocalBattleItemAbilityMechanicsTest {
     @Test
@@ -112,6 +116,16 @@ class LocalBattleItemAbilityMechanicsTest {
     }
 
     @Test
+    fun `salt cure removes one eighth at end of turn`() {
+        val projected = LocalEndTurnStateProjector.project(
+            state(opponentHp = 0.75),
+            saltCuredPokemonIds = setOf(OPPONENT_ID),
+        )
+
+        assertEquals(0.625, projected.pokemon.single { it.battlePokemonId == OPPONENT_ID }.hpFraction, 1e-9)
+    }
+
+    @Test
     fun `poison heal converts poison residual into one eighth healing`() {
         val projected = LocalEndTurnStateProjector.project(
             state(allyHp = 0.5, allyAbility = "cobblemon:poison_heal", allyStatus = "cobblemon:poison"),
@@ -128,6 +142,46 @@ class LocalBattleItemAbilityMechanicsTest {
         }.sumOf(PublicTurnProjection::probability)
 
         assertEquals(0.25, unableProbability, 1e-9)
+    }
+
+    @Test
+    fun `ranged public duration counts down instead of freezing in recursive turns`() {
+        val initial = state(
+            field = BattleFieldStateView(
+                weather = BattleTimedEffectView(
+                    effectId = "cobblemon:rain",
+                    remainingTurns = null,
+                    remainingTurnsRange = BattleIntegerRange(5, 8),
+                ),
+                terrain = null,
+                roomEffects = emptyList(),
+                globalEffects = emptyList(),
+                sideConditions = BattleSide.entries.associateWith { emptyList() },
+            ),
+        )
+
+        val projected = LocalEndTurnStateProjector.project(initial)
+
+        assertEquals(BattleIntegerRange(4, 7), projected.field.weather?.remainingTurnsRange)
+    }
+
+    @Test
+    fun `crash move miss removes half of the users maximum hp`() {
+        val crash = BattleMoveEffectsView(
+            coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+            effects = listOf(
+                BattleMoveEffectView(
+                    kind = BattleMoveEffectKind.CRASH_RECOIL,
+                    target = BattleMoveEffectTarget.USER,
+                    probability = 1.0,
+                ),
+            ),
+            scriptedBehavior = false,
+        )
+
+        val outcome = turn(state(), move("high_jump_kick", power = 130.0, accuracy = 0.0, effects = crash)).single()
+
+        assertEquals(0.5, outcome.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction, 1e-9)
     }
 
     private fun damageRange(state: BattleStateView, action: BattleActionCandidate): BattleDamageFractionRange =
@@ -153,6 +207,7 @@ class LocalBattleItemAbilityMechanicsTest {
         opponentItem: String? = null,
         opponentHp: Double = 1.0,
         opponentSpecies: String = "cobblemon:test",
+        field: BattleFieldStateView = BattleFieldStateView.empty(),
     ) = BattleStateView(
         battleId = BATTLE_ID,
         format = BattleFormat.SINGLE,
@@ -161,7 +216,7 @@ class LocalBattleItemAbilityMechanicsTest {
             pokemon(ALLY_ID, BattleSide.ALLY, "cobblemon:test", allyHp, allyAbility, allyItem, allyStatus),
             pokemon(OPPONENT_ID, BattleSide.OPPONENT, opponentSpecies, opponentHp, opponentAbility, opponentItem),
         ),
-        field = BattleFieldStateView.empty(),
+        field = field,
         remainingPokemonBySide = mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1),
         observedEvents = emptyList(),
         inferences = emptyList(),
@@ -210,6 +265,8 @@ class LocalBattleItemAbilityMechanicsTest {
         power: Double,
         contact: Boolean = false,
         category: BattleMoveDamageCategory = BattleMoveDamageCategory.PHYSICAL,
+        accuracy: Double = 100.0,
+        effects: BattleMoveEffectsView? = null,
     ) = BattleActionCandidate(
         actionId = id,
         kind = BattleActionKind.USE_MOVE,
@@ -221,11 +278,11 @@ class LocalBattleItemAbilityMechanicsTest {
             typeId = "normal",
             damageCategory = category,
             power = power,
-            accuracy = 100.0,
+            accuracy = accuracy,
             priority = 0,
             currentPp = 10,
-            targetPattern = BattleMoveTargetPattern.SELECTED,
-            effects = BattleMoveEffectsView(
+            targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
+            effects = effects ?: BattleMoveEffectsView(
                 coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
                 effects = emptyList(),
                 scriptedBehavior = false,

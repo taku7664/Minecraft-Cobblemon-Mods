@@ -284,11 +284,10 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
     private fun header() = TowerPlayRect(shell().left + 6, shell().top + 6, shell().width - 12, 27)
     private fun contentTop() = header().bottom + 5
     private fun contentHeight() = shell().height - 77
-    private fun centerWidth() = (shell().width * 19 / 100).coerceIn(58, 104)
-    private fun sideWidth() = (shell().width - 27 - centerWidth()) / 2
-    private fun leftPanel() = TowerPlayRect(shell().left + 6, contentTop(), sideWidth(), contentHeight())
-    private fun centerPanel() = TowerPlayRect(leftPanel().right + 5, contentTop(), centerWidth(), contentHeight())
-    private fun rightPanel() = TowerPlayRect(centerPanel().right + 5, contentTop(), sideWidth(), contentHeight())
+    private fun columns() = PvpSelectionLayout.columns(shell(), contentTop(), contentHeight())
+    private fun leftPanel() = columns().left
+    private fun centerPanel() = columns().center
+    private fun rightPanel() = columns().right
     private fun footer() = TowerPlayRect(shell().left + 6, shell().bottom - 32, shell().width - 12, 20)
 
     private fun split(bounds: TowerPlayRect, count: Int): List<TowerPlayRect> {

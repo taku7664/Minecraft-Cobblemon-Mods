@@ -1,10 +1,11 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
+import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
+import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicActionOutcomeProjector
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
-import java.util.UUID
 
 class PublicActionOutcomeProjectorTest {
     @Test
@@ -65,17 +66,109 @@ class PublicActionOutcomeProjectorTest {
         assertEquals(1.0, projection.actorExpectedHpAfterSelfEffects!!, 0.000_001)
     }
 
+    @Test
+    fun `declared level damage is projected instead of becoming a zero damage move`() {
+        val fixedDamage = move(
+            power = 0.0,
+            facts = BattleCandidateFactsView(
+                baseAccuracyProbability = 1.0,
+                typeChartMultiplier = 1.0,
+                calculationCoverage = BattleCalculationCoverage.PARTIAL,
+            ),
+            effects = BattleMoveEffectsView(
+                coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                effects = listOf(
+                    BattleMoveEffectView(
+                        kind = BattleMoveEffectKind.FIXED_DAMAGE_LEVEL,
+                        target = BattleMoveEffectTarget.SELECTED_TARGET,
+                        probability = 1.0,
+                    ),
+                ),
+                scriptedBehavior = false,
+            ),
+        )
+
+        val projection = PublicActionOutcomeProjector.project(fixedDamage, context(fixedDamage))
+
+        assertEquals(BattleFractionRange(0.25, 0.25), projection.damageOnHitFractionRange)
+        assertEquals(0.25, projection.expectedDamageFraction)
+    }
+
+    @Test
+    fun `declared one hit knockout uses hit chance and current target hp`() {
+        val oneHitKnockout = move(
+            power = 0.0,
+            facts = BattleCandidateFactsView(
+                baseAccuracyProbability = 0.30,
+                typeChartMultiplier = 1.0,
+                calculationCoverage = BattleCalculationCoverage.PARTIAL,
+            ),
+            effects = BattleMoveEffectsView(
+                coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                effects = listOf(
+                    BattleMoveEffectView(
+                        kind = BattleMoveEffectKind.ONE_HIT_KO,
+                        target = BattleMoveEffectTarget.SELECTED_TARGET,
+                        probability = 1.0,
+                    ),
+                ),
+                scriptedBehavior = false,
+            ),
+        )
+
+        val projection = PublicActionOutcomeProjector.project(
+            oneHitKnockout,
+            context(oneHitKnockout, opponentHp = 0.8),
+        )
+
+        assertEquals(BattleFractionRange(0.8, 0.8), projection.damageOnHitFractionRange)
+        assertEquals(0.24, projection.expectedDamageFraction!!, 1e-9)
+    }
+
+    @Test
+    fun `multi hit damage uses a representative public hit count and skill link uses the maximum`() {
+        val multiHit = move(
+            facts = damageFacts(0.10),
+            effects = BattleMoveEffectsView(
+                coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                effects = listOf(
+                    BattleMoveEffectView(
+                        kind = BattleMoveEffectKind.MULTI_HIT,
+                        target = BattleMoveEffectTarget.SELECTED_TARGET,
+                        probability = 1.0,
+                        amountRange = BattleIntegerRange(2, 5),
+                    ),
+                ),
+                scriptedBehavior = false,
+            ),
+        )
+
+        val ordinary = PublicActionOutcomeProjector.project(multiHit, context(multiHit))
+        val skillLink = PublicActionOutcomeProjector.project(
+            multiHit,
+            context(multiHit, allyAbility = "cobblemon:skill_link"),
+        )
+
+        val ordinaryRange = requireNotNull(ordinary.damageOnHitFractionRange)
+        val skillLinkRange = requireNotNull(skillLink.damageOnHitFractionRange)
+        assertEquals(0.30, ordinaryRange.minimum, 1e-9)
+        assertEquals(0.30, ordinaryRange.maximum, 1e-9)
+        assertEquals(0.50, skillLinkRange.minimum, 1e-9)
+        assertEquals(0.50, skillLinkRange.maximum, 1e-9)
+    }
+
     private fun context(
         candidate: BattleActionCandidate,
         allyHp: Double = 1.0,
         opponentHp: Double = 1.0,
+        allyAbility: String? = null,
     ): BattleDecisionContext {
         val state = BattleStateView(
             battleId = UUID.fromString("00000000-0000-0000-0000-000000000001"),
             format = BattleFormat.SINGLE,
             turn = 3,
             pokemon = listOf(
-                pokemon(BattleSide.ALLY, allyHp, 0),
+                pokemon(BattleSide.ALLY, allyHp, 0, allyAbility),
                 pokemon(BattleSide.OPPONENT, opponentHp, 0),
             ),
             field = BattleFieldStateView.empty(),
@@ -91,7 +184,12 @@ class PublicActionOutcomeProjectorTest {
         )
     }
 
-    private fun pokemon(side: BattleSide, hp: Double, activeSlot: Int) = BattlePokemonStateView(
+    private fun pokemon(
+        side: BattleSide,
+        hp: Double,
+        activeSlot: Int,
+        ability: String? = null,
+    ) = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(),
         side = side,
         activeSlot = activeSlot,
@@ -102,9 +200,23 @@ class PublicActionOutcomeProjectorTest {
         statusId = null,
         statStages = emptyMap(),
         knownMoveIds = emptySet(),
-        knownAbilityId = null,
+        knownAbilityId = ability,
         knownHeldItemId = null,
         fainted = false,
+        knownTypeIds = setOf("normal"),
+        combatStats = if (side == BattleSide.ALLY) {
+            BattleCombatStatRangesView.exact(200, 100, 100, 100, 100, 100)
+        } else {
+            BattleCombatStatRangesView(
+                BattleIntegerRange(200, 200),
+                BattleIntegerRange(100, 100),
+                BattleIntegerRange(100, 100),
+                BattleIntegerRange(100, 100),
+                BattleIntegerRange(100, 100),
+                BattleIntegerRange(100, 100),
+                BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
+            )
+        },
     )
 
     private fun move(

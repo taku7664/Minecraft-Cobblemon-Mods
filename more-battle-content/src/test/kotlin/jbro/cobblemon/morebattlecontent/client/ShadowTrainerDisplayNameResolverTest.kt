@@ -22,7 +22,7 @@ class ShadowTrainerDisplayNameResolverTest {
         val playerActor = ClientBattleActor("p1", Component.literal("Park_JH"), playerId, ActorType.PLAYER)
         val trainerActor = ClientBattleActor(
             "p2",
-            Component.translatable("trainer.cobblemon_more_battle_content.mega_single_regular_low"),
+            Component.translatable("trainer.cobblemon_more_battle_content.tower_trainer_001"),
             UUID.randomUUID(),
             ActorType.NPC,
         )

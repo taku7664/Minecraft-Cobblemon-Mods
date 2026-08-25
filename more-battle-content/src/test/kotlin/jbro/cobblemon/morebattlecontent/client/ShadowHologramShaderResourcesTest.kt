@@ -59,7 +59,9 @@ class ShadowHologramShaderResourcesTest {
 
         assertEquals(
             setOf(
+                "client.BattleGuiPvpSpectatorMixin",
                 "client.BattleMoveSelectionMixin",
+                "client.PartySendBindingPvpSpectatorMixin",
                 "client.ScreenPvpInviteClickMixin",
                 "client.RenderTypeCompositeAccessor",
                 "client.RenderTypeCompositeStateAccessor",

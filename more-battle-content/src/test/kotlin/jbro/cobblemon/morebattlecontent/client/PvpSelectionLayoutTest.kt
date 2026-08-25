@@ -1,10 +1,31 @@
 package jbro.cobblemon.morebattlecontent.client
 
+import kotlin.math.abs
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PvpSelectionLayoutTest {
+    @Test
+    fun `selection columns fill the content width symmetrically`() {
+        listOf(
+            TowerPlayRect(left = 8, top = 8, width = 304, height = 224),
+            TowerPlayRect(left = 157, top = 82, width = 540, height = 320),
+        ).forEach { shell ->
+            val columns = PvpSelectionLayout.columns(
+                shell = shell,
+                top = shell.top + 38,
+                height = shell.height - 77,
+            )
+
+            assertEquals(shell.left + 6, columns.left.left)
+            assertEquals(shell.right - 6, columns.right.right)
+            assertEquals(5, columns.center.left - columns.left.right)
+            assertEquals(5, columns.right.left - columns.center.right)
+            assertTrue(abs(columns.left.width - columns.right.width) <= 1)
+        }
+    }
+
     @Test
     fun `six cards stay inside the panel without overlapping`() {
         listOf(compactPanel(), widePanel()).forEach { panel ->

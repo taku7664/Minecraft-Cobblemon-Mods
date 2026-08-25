@@ -10,7 +10,9 @@
     "PokemonMixin"
   ],
   "client": [
+    "client.BattleGuiPvpSpectatorMixin",
     "client.BattleMoveSelectionMixin",
+    "client.PartySendBindingPvpSpectatorMixin",
     "client.ScreenPvpInviteClickMixin",
     "client.RenderTypeCompositeAccessor",
     "client.RenderTypeCompositeStateAccessor",

@@ -8,13 +8,10 @@ import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordService
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgressRecordCodec
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgress
-import jbro.cobblemon.morebattlecontent.internal.tower.TowerLegendaryClassPolicy
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerRecordContract
-import jbro.cobblemon.morebattlecontent.internal.tower.TOWER_BATTLE_LEVEL_CAP
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayOpenRequest
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayOpenRequestFactory
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayPartySlot
-import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.server.MinecraftServer
 import java.util.UUID
@@ -48,18 +45,15 @@ internal object Cobblemon173TowerPlayOpenRequestFactory {
     fun readParty(player: ServerPlayer): List<TowerPlayPartySlot> =
         Cobblemon.storage.getParty(player).toGappyList().mapIndexedNotNull { slot, pokemon ->
             pokemon?.let {
-                val heldItem = it.heldItem()
+                val registration = it.toTowerPokemonRegistration()
                 TowerPlayPartySlot(
                     slot = slot,
-                    pokemonId = it.uuid,
-                    speciesId = it.species.resourceIdentifier.toString(),
-                    heldItemId = if (heldItem.isEmpty) null else BuiltInRegistries.ITEM.getKey(heldItem.item).toString(),
-                    level = it.level,
-                    battleLevel = it.level.coerceAtMost(TOWER_BATTLE_LEVEL_CAP),
-                    legendaryClass = TowerLegendaryClassPolicy.isLegendaryClass(
-                        it.species.resourceIdentifier.toString(),
-                        it.species.labels,
-                    ),
+                    pokemonId = registration.pokemonId,
+                    speciesId = registration.speciesId,
+                    heldItemId = registration.heldItemId,
+                    level = registration.level,
+                    battleLevel = registration.battleLevel,
+                    legendaryClass = registration.legendaryClass,
                 )
             }
         }

@@ -2,13 +2,13 @@ package jbro.cobblemon.morebattlecontent.betterai
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
 import java.io.InputStreamReader
 import java.net.JarURLConnection
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.jar.JarFile
 import java.util.zip.ZipInputStream
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
 import kotlin.math.floor
 import kotlin.random.Random
 
@@ -156,6 +156,7 @@ internal class LocalTacticalSimulationRoster private constructor(
                 val category = field(body, "category") ?: return@mapNotNull null
                 val type = field(body, "type") ?: return@mapNotNull null
                 val power = numericField(body, "basePower") ?: return@mapNotNull null
+                val pp = numericField(body, "pp")?.toInt() ?: return@mapNotNull null
                 val accuracy = when (val raw = rawField(body, "accuracy")) {
                     "true" -> 100.0
                     null -> return@mapNotNull null
@@ -174,6 +175,7 @@ internal class LocalTacticalSimulationRoster private constructor(
                     category = damageCategory,
                     accuracy = accuracy,
                     priority = numericField(body, "priority")?.toInt() ?: 0,
+                    pp = pp,
                 )
             }.toMap()
         }
@@ -346,6 +348,7 @@ internal data class LocalTacticalSimulationMove(
     val category: BattleMoveDamageCategory,
     val accuracy: Double,
     val priority: Int,
+    val pp: Int,
 )
 
 internal data class LocalTacticalSimulationStats(

@@ -198,6 +198,28 @@ class BattleDecisionFallbackChainTest {
     }
 
     @Test
+    fun `brain linkage error fails immediately instead of consuming the deadline`() {
+        val context = context(System.currentTimeMillis() + 5_000L)
+        val coordinator = BattleBrainDecisionCoordinator(
+            scheduler = scheduler,
+            brainExecutor = brainExecutor,
+            maximumDecisionMillis = 500L,
+        )
+        val startedAt = System.nanoTime()
+
+        val result = BattleDecisionFallbackChain(coordinator).decide(
+            primary = null,
+            local = endpoint { throw NoSuchMethodError("missing addon API") },
+            context = context,
+        ).toCompletableFuture().get(1, TimeUnit.SECONDS)
+        val elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)
+
+        assertTrue(elapsedMillis < 200L, "linkage failure took ${elapsedMillis}ms")
+        assertEquals(BattleDecisionSource.BASELINE_REQUIRED, result.source)
+        assertEquals(BattleDecisionFailureReason.BRAIN_FAILURE, result.failures.single().reason)
+    }
+
+    @Test
     fun `late primary completion cannot replace baseline result`() {
         val context = context(System.currentTimeMillis() + 5_000L)
         val pending = CompletableFuture<BattleDecision>()

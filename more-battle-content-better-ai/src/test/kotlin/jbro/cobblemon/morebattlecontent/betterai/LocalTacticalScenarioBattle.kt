@@ -1,7 +1,22 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
-import jbro.cobblemon.morebattlecontent.api.ai.*
 import java.util.UUID
+import jbro.cobblemon.morebattlecontent.api.ai.*
+import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
+import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicFutureActionFactory
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
+import jbro.cobblemon.morebattlecontent.betterai.outcome.ChanceEffectProjectionMode
+import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicSingleTurnProjector
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionMixingContext
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionSelection
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionSelector
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionRank
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalWeightedActionSelector
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalEntryAbilityProjector
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalSwitchStateProjector
+import jbro.cobblemon.morebattlecontent.betterai.state.PublicTurnProjection
+import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
+import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveHistoryProjector
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -30,6 +45,7 @@ internal data class LocalTacticalScenarioReport(
     val cycleVoluntarySwitches: Int,
     val offenseStatusMoves: Int,
     val offenseVoluntarySwitches: Int,
+    val publicEvidenceCounts: Map<BattleObservedEventKind, Int> = emptyMap(),
 ) {
     fun documentationLog(): String = buildString {
         appendLine("SCENARIO=${definition.name} seed=${definition.seed}")
@@ -51,10 +67,22 @@ internal data class LocalTacticalScenarioReport(
 
 /** Focused 3v3 executor that reuses the production public single-turn projector. */
 internal object LocalTacticalScenarioBattle {
-    fun run(definition: LocalTacticalScenarioDefinition, maximumTurns: Int = 15): LocalTacticalScenarioReport =
-        Battle(definition).run(maximumTurns)
+    fun run(
+        definition: LocalTacticalScenarioDefinition,
+        maximumTurns: Int = 15,
+        cycleTuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+        offenseTuning: LocalDecisionTuning = cycleTuning,
+    ): LocalTacticalScenarioReport = Battle(definition, cycleTuning, offenseTuning).run(maximumTurns)
 
-    private class Battle(private val definition: LocalTacticalScenarioDefinition) {
+    private class Battle(
+        private val definition: LocalTacticalScenarioDefinition,
+        cycleTuning: LocalDecisionTuning,
+        offenseTuning: LocalDecisionTuning,
+    ) {
+        private val tunings = mapOf(
+            BattleSide.ALLY to cycleTuning,
+            BattleSide.OPPONENT to offenseTuning,
+        )
         private val random = Random(definition.seed)
         private val roster = LocalTacticalSimulationRoster.loadAll()
         private val battleId = UUID(random.nextLong(), random.nextLong())
@@ -65,7 +93,7 @@ internal object LocalTacticalScenarioBattle {
         private val revealedMoveIds = mutableMapOf<UUID, MutableSet<String>>()
         private val selectors = BattleSide.entries.associateWith { CapturingWeightedSelector() }
         private val actualBrains = BattleSide.entries.associateWith { side ->
-            LocalTacticalBrain(selectors.getValue(side))
+            LocalTacticalBrain(selectors.getValue(side), tunings.getValue(side))
         }
         private val profiles = BattleSide.entries.associateWith {
             BattleTrainerProfile(
@@ -88,6 +116,7 @@ internal object LocalTacticalScenarioBattle {
             actualBrains.getValue(side).openSession(openContext(side))
         }
         private val memories = BattleSide.entries.associateWith { ScenarioMemory() }
+        private val publicEvidence = LocalScenarioPublicEvidence()
         private var history = RecursiveActionHistory()
         private var state = initialState()
         private var cycleStatusMoves = 0
@@ -125,9 +154,18 @@ internal object LocalTacticalScenarioBattle {
                     offenseCanonical,
                     source,
                     history,
+                    chanceEffectMode = ChanceEffectProjectionMode.BRANCH_STATE,
                 )
                 val outcome = sample(projections)
                 state = outcome.state
+                publicEvidence.recordTurn(
+                    turn = turn,
+                    before = before,
+                    after = state,
+                    allyAction = cycleCanonical,
+                    opponentAction = offenseCanonical,
+                    outcome = outcome,
+                )
                 history = RecursiveHistoryProjector.project(
                     previous = history,
                     stateBefore = before,
@@ -165,6 +203,7 @@ internal object LocalTacticalScenarioBattle {
                 cycleVoluntarySwitches = cycleVoluntarySwitches,
                 offenseStatusMoves = offenseStatusMoves,
                 offenseVoluntarySwitches = offenseVoluntarySwitches,
+                publicEvidenceCounts = publicEvidence.counts(),
             )
         }
 
@@ -262,7 +301,18 @@ internal object LocalTacticalScenarioBattle {
             val selected = choose(side, candidates)
             val canonical = toCanonical(selected, side)
             state = LocalSwitchStateProjector.project(state, side, canonical)
-            memories.getValue(side).accept(state.turn, canonical, executed = true, madeProgress = true)
+            publicEvidence.recordReplacement(
+                turn = state.turn,
+                incomingPokemonId = requireNotNull(canonical.switchPokemonId),
+                actorSlot = requireNotNull(canonical.actorSlot),
+            )
+            memories.getValue(side).accept(
+                state.turn,
+                canonical,
+                executed = true,
+                madeProgress = true,
+                forcedSwitch = true,
+            )
             revealedPokemonIds += requireNotNull(canonical.switchPokemonId)
         }
 
@@ -280,8 +330,8 @@ internal object LocalTacticalScenarioBattle {
                     BattleSide.OPPONENT to state.remainingPokemonBySide.getValue(BattleSide.ALLY),
                 )
             },
-            observedEvents = emptyList(),
-            inferences = emptyList(),
+            observedEvents = publicEvidence.events(),
+            inferences = publicEvidence.inferences(state.pokemon, viewer),
         )
 
         private fun perspectivePokemon(pokemon: BattlePokemonStateView, viewer: BattleSide): BattlePokemonStateView {
@@ -321,7 +371,7 @@ internal object LocalTacticalScenarioBattle {
                     val moves = template.moves.filter { own || it.id in revealed }.map { move ->
                         BattlePublicMoveOptionView(
                             moveId = move.id,
-                            details = ScenarioMoveLibrary.details(move),
+                            details = LocalTacticalSimulationMoveLibrary.details(move),
                             knowledge = if (own) BattlePublicMoveKnowledge.EXACT_OWN
                             else BattlePublicMoveKnowledge.PUBLICLY_REVEALED,
                         )
@@ -337,7 +387,7 @@ internal object LocalTacticalScenarioBattle {
                     template.moves.map { move ->
                         BattlePublicMoveOptionView(
                             move.id,
-                            ScenarioMoveLibrary.details(move),
+                            LocalTacticalSimulationMoveLibrary.details(move),
                             BattlePublicMoveKnowledge.PUBLICLY_REVEALED,
                         )
                     },
@@ -513,6 +563,7 @@ internal object LocalTacticalScenarioBattle {
     private class ScenarioMemory {
         private var lastSwitchTurn: Int? = null
         private var switches = 0
+        private var switchPressure = 0.0
         private var lastMoveId: String? = null
         private var sameMoveRepeats = 0
         private var nonProgress = 0
@@ -520,16 +571,26 @@ internal object LocalTacticalScenarioBattle {
         fun view(turn: Int) = BattleTacticalMemoryView(
             turnsSinceLastSwitch = lastSwitchTurn?.let { (turn - it).coerceAtLeast(0) },
             switchesThisBattle = switches,
+            switchPressure = switchPressure,
             lastMoveId = lastMoveId,
             sameMoveRepeatCount = sameMoveRepeats,
             nonProgressControlStreak = nonProgress,
         )
 
-        fun accept(turn: Int, action: BattleActionCandidate, executed: Boolean, madeProgress: Boolean) {
+        fun accept(
+            turn: Int,
+            action: BattleActionCandidate,
+            executed: Boolean,
+            madeProgress: Boolean,
+            forcedSwitch: Boolean = false,
+        ) {
             if (!executed) return
             if (action.kind == BattleActionKind.SWITCH) {
                 switches++
+                if (!forcedSwitch) switchPressure = (switchPressure + 1.0).coerceAtMost(4.0)
                 lastSwitchTurn = turn
+            } else if (action.moveId != null) {
+                switchPressure = (switchPressure - 1.0).coerceAtLeast(0.0)
             }
             val moveId = action.moveId
             if (moveId != null) {
@@ -558,100 +619,6 @@ internal object LocalTacticalScenarioBattle {
         }
 
         fun ideal(): BattleActionCandidate = requireNotNull(lastIdeal).outcome.candidate
-    }
-
-    private object ScenarioMoveLibrary {
-        fun details(move: LocalTacticalSimulationMove): BattleMoveCandidateView {
-            val id = canonical(move.id)
-            val selfTarget = id in SELF_TARGET_MOVES
-            return BattleMoveCandidateView(
-                typeId = move.typeId,
-                damageCategory = move.category,
-                power = move.power,
-                accuracy = move.accuracy,
-                priority = move.priority,
-                currentPp = 16,
-                targetPattern = if (selfTarget) BattleMoveTargetPattern.SELF else BattleMoveTargetPattern.SELECTED,
-                effects = effectsFor(id),
-            )
-        }
-
-        private fun effectsFor(id: String): BattleMoveEffectsView? {
-            val effects = when (id) {
-                "slackoff", "recover", "roost", "moonlight", "morningsun", "softboiled" ->
-                    listOf(heal(0.5))
-                "swordsdance" -> listOf(stage(BattleMoveEffectTarget.USER, "attack" to 2))
-                "calmmind" -> listOf(stage(BattleMoveEffectTarget.USER, "special_attack" to 1, "special_defense" to 1))
-                "quiverdance" -> listOf(
-                    stage(BattleMoveEffectTarget.USER, "special_attack" to 1, "special_defense" to 1, "speed" to 1),
-                )
-                "dragondance" -> listOf(stage(BattleMoveEffectTarget.USER, "attack" to 1, "speed" to 1))
-                "protect" -> listOf(effect(BattleMoveEffectKind.PROTECT_USER, BattleMoveEffectTarget.USER))
-                "toxic" -> listOf(status("tox"))
-                "stunspore", "thunderwave" -> listOf(status("par"))
-                "spore" -> listOf(status("slp"))
-                "gigadrain" -> listOf(fraction(BattleMoveEffectKind.DRAIN_FRACTION, 0.5))
-                "uturn", "flipturn", "voltswitch" ->
-                    listOf(effect(BattleMoveEffectKind.SWITCH_USER, BattleMoveEffectTarget.USER))
-                "bravebird", "flareblitz", "wildcharge", "woodhammer" ->
-                    listOf(fraction(BattleMoveEffectKind.RECOIL_FRACTION, 1.0 / 3.0))
-                "headsmash" -> listOf(fraction(BattleMoveEffectKind.RECOIL_FRACTION, 0.5))
-                "closecombat" -> listOf(
-                    stage(BattleMoveEffectTarget.USER, "defense" to -1, "special_defense" to -1),
-                )
-                "scald" -> listOf(status("brn", 0.30))
-                "sludgebomb" -> listOf(status("psn", 0.30))
-                "fierydance" -> listOf(stage(BattleMoveEffectTarget.USER, 0.50, "special_attack" to 1))
-                "moonblast" -> listOf(stage(BattleMoveEffectTarget.SELECTED_TARGET, 0.30, "special_attack" to -1))
-                "playrough" -> listOf(stage(BattleMoveEffectTarget.SELECTED_TARGET, 0.10, "attack" to -1))
-                else -> emptyList()
-            }
-            val mechanicFlags = if (id in CONTACT_MOVES) setOf("contact") else emptySet()
-            if (effects.isEmpty() && mechanicFlags.isEmpty()) return null
-            return BattleMoveEffectsView(
-                BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
-                effects,
-                scriptedBehavior = false,
-                mechanicFlags = mechanicFlags,
-            )
-        }
-
-        private fun heal(value: Double) = fraction(BattleMoveEffectKind.HEAL_FRACTION, value)
-        private fun fraction(kind: BattleMoveEffectKind, value: Double) = BattleMoveEffectView(
-            kind,
-            BattleMoveEffectTarget.USER,
-            fractionRange = BattleFractionRange(value, value),
-        )
-        private fun status(value: String, probability: Double = 1.0) = BattleMoveEffectView(
-            BattleMoveEffectKind.STATUS,
-            BattleMoveEffectTarget.SELECTED_TARGET,
-            probability = probability,
-            valueId = value,
-        )
-        private fun stage(target: BattleMoveEffectTarget, vararg stages: Pair<String, Int>) =
-            stage(target, 1.0, *stages)
-        private fun stage(
-            target: BattleMoveEffectTarget,
-            probability: Double,
-            vararg stages: Pair<String, Int>,
-        ) = BattleMoveEffectView(
-            BattleMoveEffectKind.STAT_STAGE,
-            target,
-            probability = probability,
-            statStages = mapOf(*stages),
-        )
-        private fun effect(kind: BattleMoveEffectKind, target: BattleMoveEffectTarget) =
-            BattleMoveEffectView(kind, target, probability = 1.0)
-
-        private val SELF_TARGET_MOVES = setOf(
-            "slackoff", "recover", "roost", "moonlight", "morningsun", "softboiled",
-            "swordsdance", "calmmind", "quiverdance", "dragondance", "protect",
-        )
-        private val CONTACT_MOVES = setOf(
-            "outrage", "bravebird", "bodypress", "uturn", "bugbite", "bulletpunch", "closecombat",
-            "flareblitz", "extremespeed", "playrough", "shadowclaw", "shadowsneak", "wildcharge",
-            "firefang", "knockoff", "woodhammer",
-        )
     }
 
     private fun perspectiveField(field: BattleFieldStateView, viewer: BattleSide): BattleFieldStateView {

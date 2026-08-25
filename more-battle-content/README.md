@@ -39,6 +39,13 @@ Module-specific maintenance utilities are kept in [`tools`](tools/).
 렌탈 세트가 서로 분리되어 있습니다. BP 상점은 구매 제한 JSON 하나와 상품 JSON 여러 개를
 사용하므로 상품 하나만 따로 추가하거나 교체할 수 있습니다.
 
+타워 트레이너에는 선택 사항으로 `team_style`과 `signature_species_ids`를 적을 수 있습니다.
+`team_style`은 `balanced`, `physical_pressure`, `special_pressure`, `setup_sweep`, `endurance`,
+`field_control`, `speed_control`, `weather_control` 중 하나입니다. 시그니처 종족을 적으면 실제
+상대 선출에 그중 최소 한 종이 들어가며, 지정한 전술 성향을 보여 주는 기술·성격·특성의
+포켓몬도 최소 한 마리 포함됩니다. 해당 대전 조건의 출전 풀로 이 구성을 만들 수 없으면
+`/reload`에서 목록 전체를 거부합니다.
+
 같은 종류의 JSON은 `/reload` 때 하나의 목록으로 합쳐집니다. 합친 뒤 ID나 상점 정렬 번호가
 겹치거나, 다른 폴더를 가리키는 참조가 끊겼거나, 파일 하나라도 형식에 맞지 않으면 그 시설의
 변경 전체를 거부하고 마지막 정상 목록을 유지합니다. 기본 파일 하나를 통째로 교체하려면

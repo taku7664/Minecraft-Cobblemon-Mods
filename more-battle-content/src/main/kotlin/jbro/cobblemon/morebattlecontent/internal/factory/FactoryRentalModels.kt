@@ -37,6 +37,7 @@ internal enum class FactoryPoolGroup {
 internal data class FactoryPoolWindow(
     val group: FactoryPoolGroup,
     val variants: Set<Int>,
+    val legendaryClassAllowed: Boolean = false,
 ) {
     init {
         require(variants.isNotEmpty() && variants.all { it in 1..4 }) {

@@ -3,7 +3,13 @@
   "trainers": [
     {
       "trainer_id": "trainer_021",
-      "display_name_key": "trainer.cobblemon_more_battle_content.mega_double_tier_boss"
+      "display_name_key": "trainer.cobblemon_more_battle_content.tower_trainer_021",
+      "team_style": "endurance",
+      "signature_species_ids": [
+        "cobblemon:abomasnow",
+        "cobblemon:banette",
+        "cobblemon:chandelure"
+      ]
     }
   ]
 }

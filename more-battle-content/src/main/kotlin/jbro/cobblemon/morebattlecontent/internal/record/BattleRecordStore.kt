@@ -78,6 +78,66 @@ internal class BattleRecordStore(initialRecords: Collection<BattleRecordStats> =
     }
 
     @Synchronized
+    fun setCurrentWinStreak(key: BattleRecordKey, value: Int): BattleRecordStats {
+        require(value >= 0) { "Current win streak must be non-negative" }
+        val before = records[key] ?: BattleRecordStats(key)
+        val after = before.copy(
+            currentWinStreak = value,
+            bestWinStreak = maxOf(before.bestWinStreak, value),
+        )
+        records[key] = after
+        return after.copyWithDetachedMetrics()
+    }
+
+    @Synchronized
+    fun resetWinStreak(key: BattleRecordKey, resetBest: Boolean): BattleRecordStats {
+        val before = records[key] ?: BattleRecordStats(key)
+        val after = before.copy(
+            currentWinStreak = 0,
+            bestWinStreak = if (resetBest) 0 else before.bestWinStreak,
+        )
+        records[key] = after
+        return after.copyWithDetachedMetrics()
+    }
+
+    @Synchronized
+    fun setProgressAndBestMetric(
+        key: BattleRecordKey,
+        progressMetricId: BattleRecordMetricId,
+        bestMetricId: BattleRecordMetricId,
+        value: Long,
+    ): BattleRecordStats {
+        require(value >= 0) { "Progress metric value must be non-negative" }
+        val before = records[key] ?: BattleRecordStats(key)
+        val after = before.copy(
+            progressMetrics = before.progressMetrics + (progressMetricId to value),
+            bestMetrics = before.bestMetrics + (bestMetricId to maxOf(before.bestMetrics[bestMetricId] ?: 0L, value)),
+        )
+        records[key] = after
+        return after.copyWithDetachedMetrics()
+    }
+
+    @Synchronized
+    fun resetProgressAndBestMetric(
+        key: BattleRecordKey,
+        progressMetricId: BattleRecordMetricId,
+        bestMetricId: BattleRecordMetricId,
+        resetBest: Boolean,
+    ): BattleRecordStats {
+        val before = records[key] ?: BattleRecordStats(key)
+        val after = before.copy(
+            progressMetrics = before.progressMetrics + (progressMetricId to 0L),
+            bestMetrics = if (resetBest) {
+                before.bestMetrics + (bestMetricId to 0L)
+            } else {
+                before.bestMetrics
+            },
+        )
+        records[key] = after
+        return after.copyWithDetachedMetrics()
+    }
+
+    @Synchronized
     fun submitBestMetric(key: BattleRecordKey, metricId: BattleRecordMetricId, candidate: Long): BattleRecordStats {
         require(candidate >= 0) { "Best metric candidate must be non-negative" }
         val before = records[key] ?: BattleRecordStats(key)

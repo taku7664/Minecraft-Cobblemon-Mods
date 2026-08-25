@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
+import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
@@ -12,7 +13,10 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
-import java.util.UUID
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleMind
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalPositionRiskBudget
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalTrainerStyleModel
+import jbro.cobblemon.morebattlecontent.betterai.policy.forPlanOwner
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull

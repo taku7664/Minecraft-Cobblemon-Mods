@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.client
 internal class MbcContentFrameLayout private constructor(
     val shell: TowerPlayRect,
     val header: TowerPlayRect,
+    val helpButton: TowerPlayRect,
     val closeButton: TowerPlayRect,
     val tabs: TowerPlayRect,
     val content: TowerPlayRect,
@@ -34,6 +35,12 @@ internal class MbcContentFrameLayout private constructor(
             )
             val header = TowerPlayRect(shell.left + INSET, shell.top + INSET, shell.width - INSET * 2, HEADER_HEIGHT)
             val closeButton = TowerPlayRect(header.right - CLOSE_SIZE, header.top, CLOSE_SIZE, header.height)
+            val helpButton = TowerPlayRect(
+                closeButton.left - HEADER_BUTTON_GAP - CLOSE_SIZE,
+                header.top,
+                CLOSE_SIZE,
+                header.height,
+            )
             val tabs = TowerPlayRect(header.left, header.bottom + SECTION_GAP, header.width, TAB_HEIGHT)
             val content = TowerPlayRect(
                 tabs.left,
@@ -41,7 +48,7 @@ internal class MbcContentFrameLayout private constructor(
                 tabs.width,
                 shell.bottom - INSET - tabs.bottom - SECTION_GAP,
             )
-            return MbcContentFrameLayout(shell, header, closeButton, tabs, content)
+            return MbcContentFrameLayout(shell, header, helpButton, closeButton, tabs, content)
         }
     }
 }
@@ -57,3 +64,4 @@ private const val TAB_HEIGHT = 22
 private const val SECTION_GAP = 4
 private const val TAB_GAP = 4
 private const val CLOSE_SIZE = 22
+private const val HEADER_BUTTON_GAP = 4

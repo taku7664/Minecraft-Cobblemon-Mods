@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.internal.compat.fabric
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.internal.command.FactoryCommandBackend
+import jbro.cobblemon.morebattlecontent.internal.command.BattleProgressSetResult
 import jbro.cobblemon.morebattlecontent.internal.application.BattleContentId
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointRewardSettlementService
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointService
@@ -25,6 +26,9 @@ import jbro.cobblemon.morebattlecontent.internal.factory.FactoryRunBattleService
 import jbro.cobblemon.morebattlecontent.internal.factory.FactorySessionService
 import jbro.cobblemon.morebattlecontent.internal.factory.network.FactoryPlayNetworking
 import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordService
+import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordCategory
+import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordKey
+import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordMetrics
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.level.ServerPlayer
 import kotlin.random.Random
@@ -85,7 +89,24 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
         )
     }
     private val play: FactoryPlayService by lazy {
-        FactoryPlayService(FactoryCatalogResources.store::snapshot, sessions, random, draftOffers)
+        FactoryPlayService(
+            FactoryCatalogResources.store::snapshot,
+            sessions,
+            random,
+            draftOffers,
+        ) { playerId, format, levelMode ->
+            val player = onlinePlayers[playerId] ?: return@FactoryPlayService 0
+            BattleRecordService.get(
+                player.server,
+                BattleRecordKey(
+                    playerId,
+                    BattleRecordCategory(FactoryRecordContract.CONTENT_ID, format.recordId(levelMode)),
+                ),
+            ).progressMetrics[BattleRecordMetrics.CURRENT_FLOOR]
+                ?.coerceAtMost(Int.MAX_VALUE.toLong())
+                ?.toInt()
+                ?: 0
+        }
     }
 
     fun registerServer() {
@@ -149,6 +170,76 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
         } else {
             FactoryPlayResult.Accepted(play.abandon(player.uuid))
         }
+    }
+
+    fun adminSetFloor(
+        player: ServerPlayer,
+        format: FactoryBattleFormat,
+        levelMode: FactoryLevelMode,
+        value: Int,
+        resetBest: Boolean = false,
+    ): BattleProgressSetResult = withPlayer(player) {
+        val active = sessions.snapshot(player.uuid)
+        val matchingSession = active?.format == format && active.levelMode == levelMode
+        if (matchingSession && active.activeBattleId != null) {
+            return@withPlayer BattleProgressSetResult.ActiveBattle
+        }
+        if (!BattleRecordService.isAvailable(player.server)) {
+            return@withPlayer BattleProgressSetResult.StorageUnavailable
+        }
+        val key = BattleRecordKey(
+            player.uuid,
+            BattleRecordCategory(FactoryRecordContract.CONTENT_ID, format.recordId(levelMode)),
+        )
+        val before = BattleRecordService.get(player.server, key)
+        val stats = if (resetBest) {
+            check(value == 0) { "A full Battle Factory reset must set the current floor to zero" }
+            BattleRecordService.resetProgressAndBestMetric(
+                player.server,
+                key,
+                BattleRecordMetrics.CURRENT_FLOOR,
+                BattleRecordMetrics.HIGHEST_FLOOR,
+                resetBest = true,
+            )
+        } else {
+            BattleRecordService.setProgressAndBestMetric(
+                player.server,
+                key,
+                BattleRecordMetrics.CURRENT_FLOOR,
+                BattleRecordMetrics.HIGHEST_FLOOR,
+                value.toLong(),
+            )
+        }
+        check(play.adminSetWins(player.uuid, format, levelMode, value)) {
+            "Battle Factory session became active during an administrator progress update"
+        }
+        pushState(player.uuid)
+        BattleProgressSetResult.Applied(
+            previousCurrent = before.progressMetrics[BattleRecordMetrics.CURRENT_FLOOR] ?: 0L,
+            previousBest = before.bestMetrics[BattleRecordMetrics.HIGHEST_FLOOR] ?: 0L,
+            current = stats.progressMetrics.getValue(BattleRecordMetrics.CURRENT_FLOOR),
+            best = stats.bestMetrics[BattleRecordMetrics.HIGHEST_FLOOR] ?: 0L,
+        )
+    }
+
+    fun adminGetFloor(
+        player: ServerPlayer,
+        format: FactoryBattleFormat,
+        levelMode: FactoryLevelMode,
+    ): BattleProgressSetResult = withPlayer(player) {
+        if (!BattleRecordService.isAvailable(player.server)) {
+            return@withPlayer BattleProgressSetResult.StorageUnavailable
+        }
+        val stats = BattleRecordService.get(
+            player.server,
+            BattleRecordKey(
+                player.uuid,
+                BattleRecordCategory(FactoryRecordContract.CONTENT_ID, format.recordId(levelMode)),
+            ),
+        )
+        val current = stats.progressMetrics[BattleRecordMetrics.CURRENT_FLOOR] ?: 0L
+        val best = stats.bestMetrics[BattleRecordMetrics.HIGHEST_FLOOR] ?: 0L
+        BattleProgressSetResult.Applied(current, best, current, best)
     }
 
     private inline fun <T> withPlayer(player: ServerPlayer, operation: () -> T): T {

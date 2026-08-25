@@ -144,8 +144,20 @@ class Cobblemon173ActionCandidateAdapterTest {
             Cobblemon173ActionCandidateAdapter.publicTargetPattern(MoveTarget.allAdjacentFoes),
         )
         assertEquals(
-            BattleMoveTargetPattern.SELECTED,
+            BattleMoveTargetPattern.SELECTED_OPPONENT,
             Cobblemon173ActionCandidateAdapter.publicTargetPattern(MoveTarget.normal),
+        )
+        assertEquals(
+            BattleMoveTargetPattern.SELECTED_ALLY,
+            Cobblemon173ActionCandidateAdapter.publicTargetPattern(MoveTarget.adjacentAlly),
+        )
+        assertEquals(
+            BattleMoveTargetPattern.SELECTED_ALLY_OR_SELF,
+            Cobblemon173ActionCandidateAdapter.publicTargetPattern(MoveTarget.adjacentAllyOrSelf),
+        )
+        assertEquals(
+            BattleMoveTargetPattern.RANDOM_OPPONENT,
+            Cobblemon173ActionCandidateAdapter.publicTargetPattern(MoveTarget.randomNormal),
         )
     }
 

@@ -50,6 +50,46 @@ class FactoryPlayServiceTest {
     }
 
     @Test
+    fun `stored admin floor seeds the next run and opponent battle number`() {
+        var launched: FactoryBattleLaunchRequest? = null
+        val service = playService(
+            catalog = catalog(poolGroup = FactoryPoolGroup.INTERMEDIATE, variant = 2),
+            startingWins = { _, _, _ -> 14 },
+        ) { request ->
+            launched = request
+            FactoryBattleLaunchResult.Started(battleId)
+        }
+
+        val initial = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+            as FactoryPlayResult.Accepted
+        assertEquals(14, initial.view.wins)
+
+        service.selectDraft(playerId, initial.view.draftSets.take(3).map(FactoryRentalSet::setId))
+        service.beginBattle(playerId)
+
+        assertEquals(15, checkNotNull(launched).battleNumber)
+    }
+
+    @Test
+    fun `admin floor refreshes a pending rental selection before it is confirmed`() {
+        var launched: FactoryBattleLaunchRequest? = null
+        val service = playService(catalog()) { request ->
+            launched = request
+            FactoryBattleLaunchResult.Started(battleId)
+        }
+        service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+
+        assertTrue(service.adminSetWins(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50, 6))
+        val refreshed = service.status(playerId)
+        assertEquals(6, refreshed.wins)
+
+        service.selectDraft(playerId, refreshed.draftSets.take(3).map(FactoryRentalSet::setId))
+        service.beginBattle(playerId)
+
+        assertEquals(7, checkNotNull(launched).battleNumber)
+    }
+
+    @Test
     fun `successful battles avoid the players recent trainer`() {
         val launchedTrainerKeys = ArrayList<String>()
         val service = playService(catalog(listOf("first", "second"))) { request ->
@@ -210,6 +250,7 @@ class FactoryPlayServiceTest {
     private fun playService(
         catalog: FactoryCatalog?,
         catalogRandom: FactoryCatalogRandom = random,
+        startingWins: (UUID, FactoryBattleFormat, FactoryLevelMode) -> Int = { _, _, _ -> 0 },
         launcher: FactoryBattleLauncher,
     ): FactoryPlayService {
         val draftOffers = FactoryDraftOfferService({ catalog }, catalogRandom)
@@ -220,11 +261,15 @@ class FactoryPlayServiceTest {
             ),
             draftProvider = draftOffers::select,
         )
-        return FactoryPlayService({ catalog }, sessions, catalogRandom, draftOffers)
+        return FactoryPlayService({ catalog }, sessions, catalogRandom, draftOffers, startingWins)
     }
 
-    private fun catalog(trainerIds: List<String> = listOf("ordinary_ace")): FactoryCatalog {
-        val sets = (1..24).map(::template)
+    private fun catalog(
+        trainerIds: List<String> = listOf("ordinary_ace"),
+        poolGroup: FactoryPoolGroup = FactoryPoolGroup.STARTER,
+        variant: Int = 1,
+    ): FactoryCatalog {
+        val sets = (1..24).map { template(it, poolGroup, variant) }
         val trainers = trainerIds.map { trainerId ->
             FactoryTrainerProfile(
                 trainerId = trainerId,
@@ -240,10 +285,14 @@ class FactoryPlayServiceTest {
         return FactoryCatalog("test", trainers, sets)
     }
 
-    private fun template(index: Int) = FactoryRentalTemplate(
+    private fun template(
+        index: Int,
+        poolGroup: FactoryPoolGroup = FactoryPoolGroup.STARTER,
+        variant: Int = 1,
+    ) = FactoryRentalTemplate(
         setId = "starter_$index",
-        poolGroup = FactoryPoolGroup.STARTER,
-        variant = 1,
+        poolGroup = poolGroup,
+        variant = variant,
         speciesId = "cobblemon:species$index",
         moveIds = (1..4).map { "cobblemon:move${index}_$it" },
         abilityId = "cobblemon:ability$index",

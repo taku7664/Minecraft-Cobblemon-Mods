@@ -48,22 +48,28 @@ internal class FactorySessionService(
         levelMode: FactoryLevelMode,
         initialDraft: FactoryRentalDraft? = null,
         runId: UUID = UUID.randomUUID(),
+        initialWins: Int = 0,
         healRentals: (FactoryRentalTeam) -> Unit,
     ): FactorySessionStartResult {
         if (sessions.containsKey(playerId)) return FactorySessionStartResult.AlreadyActive
         sessions[playerId] = FactoryRunSession(
-            runId,
-            team,
-            levelMode,
-            healRentals,
-            initialDraft,
-            { mode, round, trades -> draftProvider(playerId, mode, round, trades) },
+            runId = runId,
+            initialTeam = team,
+            levelMode = levelMode,
+            healRentals = healRentals,
+            initialDraft = initialDraft,
+            initialWins = initialWins,
+            nextDraft = { mode, round, trades -> draftProvider(playerId, mode, round, trades) },
         )
         return FactorySessionStartResult.Started(runId)
     }
 
     @Synchronized
     fun snapshot(playerId: UUID): FactorySessionSnapshot? = sessions[playerId]?.snapshot()
+
+    @Synchronized
+    fun adminSetWins(playerId: UUID, value: Int): Boolean =
+        sessions[playerId]?.adminSetWins(value) ?: true
 
     @Synchronized
     fun beginBattle(

@@ -107,22 +107,34 @@ internal class TowerPlaySessionService(
     ): TowerPlayViewState {
         sessions[playerId]?.let { existing ->
             if (existing.state.phase != TowerPlayPhase.SELECTING) return existing.state
-            val progress = request.progressByFormat.getValue(existing.state.format)
+            val keepRegisteredTeam = existing.hasRegisteredSnapshot
+            val progressByFormat = if (keepRegisteredTeam) {
+                existing.progressByFormat
+            } else {
+                request.progressByFormat
+            }
+            val progress = progressByFormat.getValue(existing.state.format)
             val refreshed = viewState(
                 entryContextId = entryContext.entryContextId,
                 revision = 0,
                 phase = TowerPlayPhase.SELECTING,
-                party = request.party,
+                party = if (keepRegisteredTeam) existing.state.party else request.party,
                 selected = emptySet(),
                 progress = progress,
                 bpBalance = request.bpBalance,
-                errorKeys = registrationErrors(request.party),
+                errorKeys = if (keepRegisteredTeam) existing.state.errorKeys else registrationErrors(request.party),
                 selectedMechanic = existing.state.selectedMechanic ?: DEFAULT_TOWER_MECHANIC,
                 mechanicLocked = existing.state.mechanicLocked,
                 legendaryClassAllowed = existing.state.legendaryClassAllowed,
                 legendaryClassLocked = existing.state.legendaryClassLocked,
             )
-            sessions[playerId] = Session(request.progressByFormat, entryContext, refreshed)
+            sessions[playerId] = Session(
+                progressByFormat = progressByFormat,
+                entryContext = entryContext,
+                state = refreshed,
+                lockedSelection = existing.lockedSelection,
+                hasRegisteredSnapshot = keepRegisteredTeam,
+            )
             return refreshed
         }
         registeredTeamSnapshots.discard(playerId)
@@ -154,6 +166,21 @@ internal class TowerPlaySessionService(
 
     @Synchronized
     fun activeBattleId(playerId: UUID): UUID? = sessions[playerId]?.activeBattleId
+
+    @Synchronized
+    fun adminSetProgress(playerId: UUID, progress: TowerProgress): Boolean {
+        val session = sessions[playerId] ?: return true
+        if (session.activeBattleId != null && session.state.format == progress.format) return false
+        session.progressByFormat[progress.format] = progress
+        if (session.state.format == progress.format) {
+            session.state = session.state.copy(
+                revision = session.state.revision + 1,
+                currentWinStreak = progress.currentWinStreak,
+                bestWinStreak = progress.bestWinStreak,
+            )
+        }
+        return true
+    }
 
     @Synchronized
     fun refreshBpBalance(playerId: UUID, balance: Long): TowerPlayViewState? {

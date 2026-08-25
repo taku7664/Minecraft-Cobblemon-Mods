@@ -119,6 +119,28 @@ class FactoryCatalogSelectorsTest {
         }
     }
 
+    @Test
+    fun `original progression separates strong ordinary rentals from legendary class unlocks`() {
+        val catalog = FactoryCatalog(
+            "test",
+            emptyList(),
+            listOf(
+                template("ursaluna", FactoryPoolGroup.ADVANCED, 1, 1, speciesId = "cobblemon:ursaluna"),
+                template("calyrex_one", FactoryPoolGroup.ADVANCED, 1, 2, speciesId = "cobblemon:calyrex"),
+                template("calyrex_three", FactoryPoolGroup.ADVANCED, 3, 3, speciesId = "cobblemon:calyrex"),
+                template("phione", FactoryPoolGroup.STARTER, 1, 4, speciesId = "cobblemon:phione"),
+            ),
+        )
+
+        val openRoundOne = catalog.rentalPool(FactoryProgression.playerPoolWindow(FactoryLevelMode.OPEN_LEVEL, 1))
+        val openRoundFive = catalog.rentalPool(FactoryProgression.playerPoolWindow(FactoryLevelMode.OPEN_LEVEL, 5))
+        val level50RoundOne = catalog.rentalPool(FactoryProgression.playerPoolWindow(FactoryLevelMode.LEVEL_50, 1))
+
+        assertEquals(listOf("cobblemon:ursaluna"), openRoundOne.map(FactoryRentalTemplate::speciesId))
+        assertEquals(listOf("calyrex_three"), openRoundFive.map(FactoryRentalTemplate::setId))
+        assertTrue(level50RoundOne.isEmpty())
+    }
+
     private fun trainer(id: String) = FactoryTrainerProfile(
         trainerId = id,
         displayNameKey = "factory.trainer.$id.name",
@@ -137,11 +159,12 @@ class FactoryCatalogSelectorsTest {
         index: Int,
         item: String = "cobblemon:item$index",
         roles: Set<BattleTeamRole> = setOf(BattleTeamRole.WEAKNESS_COVER),
+        speciesId: String = "cobblemon:${id.filter(Char::isLetterOrDigit)}$index",
     ) = FactoryRentalTemplate(
         setId = id,
         poolGroup = group,
         variant = variant,
-        speciesId = "cobblemon:${id.filter(Char::isLetterOrDigit)}$index",
+        speciesId = speciesId,
         moveIds = (1..4).map { "cobblemon:move${index}_$it" },
         abilityId = "cobblemon:ability$index",
         heldItemId = item,

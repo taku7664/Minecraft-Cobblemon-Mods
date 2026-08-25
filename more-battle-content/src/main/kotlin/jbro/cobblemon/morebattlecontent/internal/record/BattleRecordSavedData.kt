@@ -34,6 +34,30 @@ internal class BattleRecordSavedData(
         value: Long,
     ): BattleRecordStats = ifAvailable(key) { store.setProgressMetric(key, metricId, value).also { setDirty() } }
 
+    fun setCurrentWinStreak(key: BattleRecordKey, value: Int): BattleRecordStats =
+        ifAvailable(key) { store.setCurrentWinStreak(key, value).also { setDirty() } }
+
+    fun resetWinStreak(key: BattleRecordKey, resetBest: Boolean): BattleRecordStats =
+        ifAvailable(key) { store.resetWinStreak(key, resetBest).also { setDirty() } }
+
+    fun setProgressAndBestMetric(
+        key: BattleRecordKey,
+        progressMetricId: BattleRecordMetricId,
+        bestMetricId: BattleRecordMetricId,
+        value: Long,
+    ): BattleRecordStats = ifAvailable(key) {
+        store.setProgressAndBestMetric(key, progressMetricId, bestMetricId, value).also { setDirty() }
+    }
+
+    fun resetProgressAndBestMetric(
+        key: BattleRecordKey,
+        progressMetricId: BattleRecordMetricId,
+        bestMetricId: BattleRecordMetricId,
+        resetBest: Boolean,
+    ): BattleRecordStats = ifAvailable(key) {
+        store.resetProgressAndBestMetric(key, progressMetricId, bestMetricId, resetBest).also { setDirty() }
+    }
+
     fun submitBestMetric(
         key: BattleRecordKey,
         metricId: BattleRecordMetricId,
@@ -79,6 +103,8 @@ internal class BattleRecordSavedData(
 }
 
 internal object BattleRecordService {
+    fun isAvailable(server: MinecraftServer): Boolean = data(server).isAvailable
+
     fun get(server: MinecraftServer, key: BattleRecordKey): BattleRecordStats = data(server).get(key)
 
     fun all(server: MinecraftServer, category: BattleRecordCategory): List<BattleRecordStats> =
@@ -106,6 +132,44 @@ internal object BattleRecordService {
         metricId: BattleRecordMetricId,
         value: Long,
     ): BattleRecordStats = data(server).setProgressMetric(key, metricId, value)
+
+    fun setCurrentWinStreak(
+        server: MinecraftServer,
+        key: BattleRecordKey,
+        value: Int,
+    ): BattleRecordStats = data(server).setCurrentWinStreak(key, value)
+
+    fun resetWinStreak(
+        server: MinecraftServer,
+        key: BattleRecordKey,
+        resetBest: Boolean,
+    ): BattleRecordStats = data(server).resetWinStreak(key, resetBest)
+
+    fun setProgressAndBestMetric(
+        server: MinecraftServer,
+        key: BattleRecordKey,
+        progressMetricId: BattleRecordMetricId,
+        bestMetricId: BattleRecordMetricId,
+        value: Long,
+    ): BattleRecordStats = data(server).setProgressAndBestMetric(
+        key,
+        progressMetricId,
+        bestMetricId,
+        value,
+    )
+
+    fun resetProgressAndBestMetric(
+        server: MinecraftServer,
+        key: BattleRecordKey,
+        progressMetricId: BattleRecordMetricId,
+        bestMetricId: BattleRecordMetricId,
+        resetBest: Boolean,
+    ): BattleRecordStats = data(server).resetProgressAndBestMetric(
+        key,
+        progressMetricId,
+        bestMetricId,
+        resetBest,
+    )
 
     fun submitBestMetric(
         server: MinecraftServer,

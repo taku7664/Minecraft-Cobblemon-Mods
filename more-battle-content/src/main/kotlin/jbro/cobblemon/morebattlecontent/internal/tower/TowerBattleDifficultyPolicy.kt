@@ -18,9 +18,8 @@ internal object TowerBattleDifficultyPolicy {
         val difficulty = when (stage) {
             TowerStreakStage.INTRODUCTORY -> BattleDifficultyProfiles.INTRODUCTORY
             TowerStreakStage.PRACTICAL -> BattleDifficultyProfiles.STANDARD
-            TowerStreakStage.ADVANCED,
-            TowerStreakStage.PRO,
-            -> BattleDifficultyProfiles.ADVANCED
+            TowerStreakStage.ADVANCED -> BattleDifficultyProfiles.ADVANCED
+            TowerStreakStage.PRO -> BattleDifficultyProfiles.BOSS
         }
         return BattleTrainerProfile.balanced(aiSkill, difficulty)
     }

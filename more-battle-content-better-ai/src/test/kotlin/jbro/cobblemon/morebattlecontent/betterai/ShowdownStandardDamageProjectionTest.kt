@@ -4,6 +4,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleDamageFractionRange
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFractionRange
 import jbro.cobblemon.morebattlecontent.api.ai.BattleIntegerRange
 import jbro.cobblemon.morebattlecontent.api.ai.BattleKnockoutAssessment
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.ShowdownStandardDamageProjection
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

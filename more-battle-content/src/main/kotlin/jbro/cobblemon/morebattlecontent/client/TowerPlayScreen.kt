@@ -16,6 +16,23 @@ import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
+internal enum class TowerLegendaryClassOption(
+    val allowed: Boolean,
+    val translationKey: String,
+    val compactTranslationKey: String,
+) {
+    DISALLOWED(
+        false,
+        "screen.cobblemon_more_battle_content.tower.legendary_class.disallowed",
+        "screen.cobblemon_more_battle_content.tower.legendary_class.disallowed.compact",
+    ),
+    ALLOWED(
+        true,
+        "screen.cobblemon_more_battle_content.tower.legendary_class.allowed",
+        "screen.cobblemon_more_battle_content.tower.legendary_class.allowed.compact",
+    ),
+}
+
 internal class TowerPlayScreen(
     initialState: TowerPlayViewState,
 ) : MbcTabbedContentScreen(
@@ -41,7 +58,7 @@ internal class TowerPlayScreen(
         MbcBattleHubClientState.update(state.bpBalance)
         val frame = frameLayout()
         val layout = TowerPlayLayout.calculate(frame.content)
-        drawContentFrame(graphics, frame)
+        drawContentFrame(graphics, frame, frame.helpButton.left)
         drawShell(graphics, layout, state)
         super.render(graphics, mouseX, mouseY, partialTick)
     }
@@ -193,15 +210,31 @@ internal class TowerPlayScreen(
         val frame = frameLayout()
         val layout = TowerPlayLayout.calculate(frame.content)
         addContentFrameWidgets(frame)
+        val guideButton = MbcStyledButton(
+            frame.helpButton,
+            Component.literal("?"),
+            MbcButtonTone.SECONDARY,
+        ) {
+            minecraft?.setScreen(TowerGuideScreen(this))
+        }
+        guideButton.setTooltip(
+            Tooltip.create(Component.translatable(TowerGuideContent.BUTTON_TOOLTIP_KEY)),
+        )
+        guideButton.active = !controller.isPending
+        addRenderableWidget(guideButton)
         val formatButtons = layout.formatButtons()
         addFormatButton(TowerBattleFormat.SINGLE, formatButtons[0])
         addFormatButton(TowerBattleFormat.DOUBLE, formatButtons[1])
 
-        val mechanicButtons = layout.mechanicButtons(MajorBattleMechanic.entries.size + 1)
+        val mechanicButtons = layout.mechanicButtons(
+            MajorBattleMechanic.entries.size + TowerLegendaryClassOption.entries.size,
+        )
         MajorBattleMechanic.entries.forEachIndexed { index, mechanic ->
             addMechanicButton(mechanic, mechanicButtons[index])
         }
-        addLegendaryClassButton(mechanicButtons.last())
+        TowerLegendaryClassOption.entries.forEachIndexed { index, option ->
+            addLegendaryClassButton(option, mechanicButtons[MajorBattleMechanic.entries.size + index])
+        }
 
         state.party.sortedBy(TowerPlayPartySlot::slot).forEachIndexed { index, pokemon ->
             val bounds = layout.partyCard(index)
@@ -318,19 +351,20 @@ internal class TowerPlayScreen(
         addRenderableWidget(button)
     }
 
-    private fun addLegendaryClassButton(bounds: TowerPlayRect) {
-        val allowed = controller.state.legendaryClassAllowed
+    private fun addLegendaryClassButton(option: TowerLegendaryClassOption, bounds: TowerPlayRect) {
+        val selected = controller.state.legendaryClassAllowed == option.allowed
+        val labelKey = if (bounds.width >= 48) option.translationKey else option.compactTranslationKey
         val button = MbcStyledButton(
             bounds,
-            optionLabel("screen.cobblemon_more_battle_content.tower.legendary_class_allowed", allowed),
+            Component.translatable(labelKey),
             MbcButtonTone.SECONDARY,
-            allowed,
-        ) { submit { controller.changeLegendaryClassAllowed(!allowed) } }
+            selected,
+        ) { submit { controller.changeLegendaryClassAllowed(option.allowed) } }
         button.active = controller.state.phase == TowerPlayPhase.SELECTING &&
-            !controller.state.legendaryClassLocked && !controller.isPending
+            !controller.state.legendaryClassLocked && !selected && !controller.isPending
         button.setTooltip(
             Tooltip.create(
-                Component.translatable("screen.cobblemon_more_battle_content.tower.legendary_class_allowed.tooltip"),
+                Component.translatable("screen.cobblemon_more_battle_content.tower.legendary_class.tooltip"),
             ),
         )
         addRenderableWidget(button)

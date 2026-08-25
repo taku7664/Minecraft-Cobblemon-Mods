@@ -484,7 +484,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
             } else {
                 null
             }
-            "-singleturn" -> if (effectId(message.argumentAt(1)) == "protect") {
+            "-singleturn" -> if (effectId(message.argumentAt(1)) in STALL_COUNTER_EFFECT_IDS) {
                 publicEffectOutcome(BattleMoveOutcomeKind.PROTECTION_STARTED, "protect")
             } else {
                 null
@@ -502,6 +502,8 @@ internal class Cobblemon173ShowdownObservationAdapter(
                 BattleMoveOutcomeView(kind, publicEffectId = publicEffectId),
                 targetArguments = listOf(0),
             )
+
+        private val STALL_COUNTER_EFFECT_IDS = setOf("protect", "endure", "maxguard", "quickguard", "wideguard")
 
         private fun fieldScope(id: String): FieldEffectScope = when {
             id.endsWith("terrain") -> FieldEffectScope.TERRAIN

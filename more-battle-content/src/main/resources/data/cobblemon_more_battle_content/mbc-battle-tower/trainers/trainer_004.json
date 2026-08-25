@@ -3,7 +3,13 @@
   "trainers": [
     {
       "trainer_id": "trainer_004",
-      "display_name_key": "trainer.cobblemon_more_battle_content.mega_single_regular_low_roster_4"
+      "display_name_key": "trainer.cobblemon_more_battle_content.tower_trainer_004",
+      "team_style": "setup_sweep",
+      "signature_species_ids": [
+        "cobblemon:abomasnow",
+        "cobblemon:altaria",
+        "cobblemon:chandelure"
+      ]
     }
   ]
 }

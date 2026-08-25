@@ -5,6 +5,7 @@ import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import com.cobblemon.mod.common.pokemon.Pokemon
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerPokemonRegistration
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerLegendaryClassPolicy
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerRegisteredBattleTeamResult
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerRegisteredTeam
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerRegisteredTeamSnapshotResult
@@ -42,13 +43,7 @@ internal class Cobblemon173TowerRegisteredTeamSnapshotStore(
 
     private companion object {
         fun registration(pokemon: Pokemon): TowerPokemonRegistration {
-            val heldItem = pokemon.heldItem()
-            return TowerPokemonRegistration(
-                pokemonId = pokemon.uuid,
-                speciesId = pokemon.species.resourceIdentifier.toString(),
-                heldItemId = if (heldItem.isEmpty) null else BuiltInRegistries.ITEM.getKey(heldItem.item).toString(),
-                level = pokemon.level,
-            )
+            return pokemon.toTowerPokemonRegistration()
         }
 
         fun snapshot(source: Source, battleLevel: Int): Pokemon =
@@ -65,4 +60,16 @@ internal class Cobblemon173TowerRegisteredTeamSnapshotStore(
             copy.effectedPokemon.heal()
         }
     }
+}
+
+internal fun Pokemon.toTowerPokemonRegistration(): TowerPokemonRegistration {
+    val heldItem = heldItem()
+    val speciesId = species.resourceIdentifier.toString()
+    return TowerPokemonRegistration(
+        pokemonId = uuid,
+        speciesId = speciesId,
+        heldItemId = if (heldItem.isEmpty) null else BuiltInRegistries.ITEM.getKey(heldItem.item).toString(),
+        level = level,
+        legendaryClass = TowerLegendaryClassPolicy.isLegendaryClass(speciesId, species.labels),
+    )
 }

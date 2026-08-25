@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.betterai
 
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
+import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -80,7 +81,7 @@ class PublicBattleTacticalCalculatorTest {
     }
 
     @Test
-    fun `mechanic and spread moves remain unprojected until their dynamic modifiers are resolved`() {
+    fun `unresolved mechanics stay unprojected while spread moves use their explicit public target`() {
         val mechanicFacts = requireNotNull(
             PublicBattleTacticalCalculator.calculate(
                 context(setOf("grass"), true, mechanic = BattleMechanicCandidate("tera", null, null)),
@@ -93,7 +94,8 @@ class PublicBattleTacticalCalculatorTest {
         )
 
         assertNull(mechanicFacts.standardDamageModel)
-        assertNull(spreadFacts.standardDamageModel)
+        assertEquals(BattleStandardDamageModel.SHOWDOWN_GEN9_BASE_NON_CRITICAL, spreadFacts.standardDamageModel)
+        assertTrue(spreadFacts.standardDamageFractionRange != null)
         assertTrue(BattleCalculationUnknown.DYNAMIC_DAMAGE_MODIFIERS in mechanicFacts.unknowns)
     }
 
@@ -130,13 +132,130 @@ class PublicBattleTacticalCalculatorTest {
         assertEquals(BattleCalculationCoverage.PARTIAL, facts.calculationCoverage)
     }
 
+    @Test
+    fun `ignore type immunity removes only the immune type contribution`() {
+        val effects = BattleMoveEffectsView(
+            coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+            effects = listOf(
+                BattleMoveEffectView(
+                    kind = BattleMoveEffectKind.IGNORE_TYPE_IMMUNITY,
+                    target = BattleMoveEffectTarget.SELECTED_TARGET,
+                    probability = 1.0,
+                ),
+            ),
+            scriptedBehavior = false,
+        )
+
+        val facts = requireNotNull(
+            PublicBattleTacticalCalculator.calculate(
+                context(
+                    opponentTypes = setOf("flying", "fire"),
+                    withCombatStats = true,
+                    effects = effects,
+                    moveType = "ground",
+                    damageCategory = BattleMoveDamageCategory.PHYSICAL,
+                ),
+            ).candidates.single().facts,
+        )
+
+        assertEquals(2.0, facts.typeChartMultiplier)
+        assertTrue(requireNotNull(facts.standardDamageFractionRange).minimum > 0.0)
+    }
+
+    @Test
+    fun `always critical ignores harmful offensive and helpful defensive stages and gains crit damage`() {
+        val ordinary = requireNotNull(
+            PublicBattleTacticalCalculator.calculate(
+                context(
+                    setOf("normal"),
+                    true,
+                    allyStages = mapOf("attack" to -2),
+                    opponentStages = mapOf("defense" to 2),
+                    damageCategory = BattleMoveDamageCategory.PHYSICAL,
+                ),
+            ).candidates.single().facts?.standardDamageFractionRange,
+        )
+        val critical = requireNotNull(
+            PublicBattleTacticalCalculator.calculate(
+                context(
+                    setOf("normal"),
+                    true,
+                    allyStages = mapOf("attack" to -2),
+                    opponentStages = mapOf("defense" to 2),
+                    damageCategory = BattleMoveDamageCategory.PHYSICAL,
+                    effects = singleEffect(BattleMoveEffectKind.ALWAYS_CRITICAL),
+                ),
+            ).candidates.single().facts?.standardDamageFractionRange,
+        )
+
+        assertTrue(critical.minimum > ordinary.minimum * 3.0)
+        assertTrue(critical.maximum > ordinary.maximum * 3.0)
+    }
+
+    @Test
+    fun `ignore defensive stages bypasses only the targets defence boost`() {
+        val ordinary = requireNotNull(
+            PublicBattleTacticalCalculator.calculate(
+                context(
+                    setOf("normal"),
+                    true,
+                    opponentStages = mapOf("defense" to 4),
+                    damageCategory = BattleMoveDamageCategory.PHYSICAL,
+                ),
+            ).candidates.single().facts?.standardDamageFractionRange,
+        )
+        val ignored = requireNotNull(
+            PublicBattleTacticalCalculator.calculate(
+                context(
+                    setOf("normal"),
+                    true,
+                    opponentStages = mapOf("defense" to 4),
+                    damageCategory = BattleMoveDamageCategory.PHYSICAL,
+                    effects = singleEffect(BattleMoveEffectKind.IGNORE_DEFENSIVE_STAGES),
+                ),
+            ).candidates.single().facts?.standardDamageFractionRange,
+        )
+
+        assertTrue(ignored.minimum > ordinary.minimum * 2.0)
+        assertTrue(ignored.maximum > ordinary.maximum * 2.0)
+    }
+
+    @Test
+    fun `future move slot condition is not published as immediate damage`() {
+        val facts = requireNotNull(
+            PublicBattleTacticalCalculator.calculate(
+                context(
+                    setOf("normal"),
+                    true,
+                    effects = BattleMoveEffectsView(
+                        BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                        listOf(
+                            BattleMoveEffectView(
+                                BattleMoveEffectKind.SLOT_CONDITION,
+                                BattleMoveEffectTarget.SELECTED_TARGET,
+                                valueId = "futuremove",
+                            ),
+                        ),
+                        scriptedBehavior = true,
+                    ),
+                ),
+            ).candidates.single().facts,
+        )
+
+        assertNull(facts.standardDamageFractionRange)
+        assertNull(facts.standardKnockoutAssessment)
+    }
+
     private fun context(
         opponentTypes: Set<String>,
         withCombatStats: Boolean,
         allyStages: Map<String, Int> = emptyMap(),
         mechanic: BattleMechanicCandidate? = null,
-        targetPattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED,
+        targetPattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
         effects: BattleMoveEffectsView? = null,
+        moveType: String = "fire",
+        damageCategory: BattleMoveDamageCategory = BattleMoveDamageCategory.SPECIAL,
+        opponentStages: Map<String, Int> = emptyMap(),
     ): BattleDecisionContext {
         val ally = UUID.randomUUID()
         val opponent = UUID.randomUUID()
@@ -154,7 +273,13 @@ class PublicBattleTacticalCalculatorTest {
                         ownStats().takeIf { withCombatStats },
                         allyStages,
                     ),
-                    pokemon(opponent, BattleSide.OPPONENT, opponentTypes, opponentStats().takeIf { withCombatStats }),
+                    pokemon(
+                        opponent,
+                        BattleSide.OPPONENT,
+                        opponentTypes,
+                        opponentStats().takeIf { withCombatStats },
+                        opponentStages,
+                    ),
                 ),
                 field = BattleFieldStateView.empty(),
                 remainingPokemonBySide = mapOf(BattleSide.ALLY to 3, BattleSide.OPPONENT to 3),
@@ -171,8 +296,8 @@ class PublicBattleTacticalCalculatorTest {
                     targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
                     mechanic = mechanic,
                     moveDetails = BattleMoveCandidateView(
-                        typeId = "fire",
-                        damageCategory = BattleMoveDamageCategory.SPECIAL,
+                        typeId = moveType,
+                        damageCategory = damageCategory,
                         power = 90.0,
                         accuracy = 80.0,
                         priority = 0,
@@ -220,5 +345,11 @@ class PublicBattleTacticalCalculatorTest {
         specialDefence = BattleIntegerRange(100, 170),
         speed = BattleIntegerRange(90, 160),
         knowledge = BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
+    )
+
+    private fun singleEffect(kind: BattleMoveEffectKind) = BattleMoveEffectsView(
+        BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+        listOf(BattleMoveEffectView(kind, BattleMoveEffectTarget.SELECTED_TARGET, probability = 1.0)),
+        scriptedBehavior = false,
     )
 }

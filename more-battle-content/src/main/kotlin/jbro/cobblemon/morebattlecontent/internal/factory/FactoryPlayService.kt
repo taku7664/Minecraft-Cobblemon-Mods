@@ -51,12 +51,39 @@ internal class FactoryPlayService(
     private val sessions: FactorySessionService,
     private val random: FactoryCatalogRandom,
     private val draftOffers: FactoryDraftOfferService,
+    private val startingWins: (UUID, FactoryBattleFormat, FactoryLevelMode) -> Int = { _, _, _ -> 0 },
 ) {
     private val pendingStarts = HashMap<UUID, PendingStart>()
     private val recentOpponentTrainers = RecentSelectionHistory<UUID, String>(RECENT_TRAINER_LIMIT)
 
     @Synchronized
     fun status(playerId: UUID): FactoryPlayView = current(playerId)
+
+    @Synchronized
+    fun adminSetWins(
+        playerId: UUID,
+        format: FactoryBattleFormat,
+        levelMode: FactoryLevelMode,
+        value: Int,
+    ): Boolean {
+        require(value >= 0) { "Factory wins must be non-negative" }
+        val pending = pendingStarts[playerId]
+        if (pending != null) {
+            if (pending.format == format && pending.levelMode == levelMode) {
+                val refreshedDraft = draftOffers.select(
+                    playerId,
+                    levelMode,
+                    round = FactoryProgression.roundForBattle(Math.addExact(value, 1)),
+                    rentAndTradeCount = 1,
+                ) ?: pending.draft
+                pendingStarts[playerId] = pending.copy(draft = refreshedDraft, initialWins = value)
+            }
+            return true
+        }
+        val active = sessions.snapshot(playerId) ?: return true
+        if (active.format != format || active.levelMode != levelMode) return true
+        return sessions.adminSetWins(playerId, value)
+    }
 
     @Synchronized
     fun start(
@@ -67,14 +94,16 @@ internal class FactoryPlayService(
         if (playerId in pendingStarts || sessions.snapshot(playerId) != null) {
             return FactoryPlayResult.Rejected(FactoryPlayError.ALREADY_ACTIVE)
         }
+        val initialWins = startingWins(playerId, format, levelMode)
+        require(initialWins >= 0) { "Factory starting wins must be non-negative" }
         val draft = draftOffers.select(
             playerId,
             levelMode,
-            round = 1,
+            round = FactoryProgression.roundForBattle(Math.addExact(initialWins, 1)),
             rentAndTradeCount = 1,
         )
             ?: return FactoryPlayResult.Rejected(FactoryPlayError.CATALOG_UNAVAILABLE)
-        pendingStarts[playerId] = PendingStart(format, levelMode, draft)
+        pendingStarts[playerId] = PendingStart(format, levelMode, draft, initialWins)
         return FactoryPlayResult.Accepted(current(playerId))
     }
 
@@ -91,7 +120,14 @@ internal class FactoryPlayService(
             } catch (_: IllegalStateException) {
                 return FactoryPlayResult.Rejected(FactoryPlayError.INVALID_SELECTION)
             }
-            val result = sessions.start(playerId, team, pending.levelMode, initialDraft = pending.draft, healRentals = {})
+            val result = sessions.start(
+                playerId,
+                team,
+                pending.levelMode,
+                initialDraft = pending.draft,
+                initialWins = pending.initialWins,
+                healRentals = {},
+            )
             if (result !is FactorySessionStartResult.Started) {
                 return FactoryPlayResult.Rejected(FactoryPlayError.ALREADY_ACTIVE)
             }
@@ -206,7 +242,7 @@ internal class FactoryPlayService(
                 phase = FactoryPlayPhase.INITIAL_DRAFT,
                 format = pending.format,
                 levelMode = pending.levelMode,
-                wins = 0,
+                wins = pending.initialWins,
                 rentAndTradeCount = 1,
                 draftSets = pending.draft.sets,
             )
@@ -261,6 +297,7 @@ internal class FactoryPlayService(
         val format: FactoryBattleFormat,
         val levelMode: FactoryLevelMode,
         val draft: FactoryRentalDraft,
+        val initialWins: Int,
     )
 
     private companion object {

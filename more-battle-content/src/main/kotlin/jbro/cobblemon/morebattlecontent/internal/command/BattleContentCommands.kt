@@ -37,6 +37,8 @@ internal object BattleContentCommands {
             }
         }
         .then(BattlePointCommands.build())
+        .then(BattleProgressCommands.tower())
+        .then(BattleProgressCommands.factory())
 
     private fun requestContext(source: CommandSourceStack): BattleApplicationRequestContext =
         BattleApplicationRequestContext(

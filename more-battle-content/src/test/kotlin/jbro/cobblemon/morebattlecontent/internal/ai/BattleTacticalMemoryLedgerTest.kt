@@ -25,6 +25,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleSituation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class BattleTacticalMemoryLedgerTest {
@@ -106,6 +107,52 @@ class BattleTacticalMemoryLedgerTest {
         ledger.observe(state(turn = 3, allyHp = 0.5))
 
         assertEquals(2, ledger.view(3).nonProgressControlStreak)
+    }
+
+    @Test
+    fun `switch pressure rises on switches and decays after committed moves`() {
+        val ledger = BattleTacticalMemoryLedger(BattleBrainOpenContext(battleId, BattleFormat.SINGLE))
+        val current = state(turn = 1, allyHp = 1.0)
+        val switch = BattleActionCandidate(
+            actionId = "switch",
+            kind = BattleActionKind.SWITCH,
+            actorSlot = 0,
+            switchPokemonId = UUID.randomUUID(),
+        )
+        val move = BattleActionCandidate(
+            actionId = "move",
+            kind = BattleActionKind.USE_MOVE,
+            actorSlot = 0,
+            moveSlot = 0,
+            moveId = "cobblemon:tackle",
+        )
+
+        ledger.accept(current, switch, advice = null)
+        ledger.accept(current, switch, advice = null)
+        assertEquals(2.0, ledger.view(1).switchPressure, 1e-9)
+        assertEquals(2, ledger.view(1).switchesThisBattle)
+
+        ledger.accept(current, move, advice = null)
+        assertEquals(1.0, ledger.view(1).switchPressure, 1e-9)
+        ledger.accept(current, move, advice = null)
+        assertEquals(0.0, ledger.view(1).switchPressure, 1e-9)
+        assertEquals(2, ledger.view(1).switchesThisBattle)
+    }
+
+    @Test
+    fun `forced replacement does not raise voluntary switch pressure`() {
+        val ledger = BattleTacticalMemoryLedger(BattleBrainOpenContext(battleId, BattleFormat.SINGLE))
+        val replacement = BattleActionCandidate(
+            actionId = "forced-switch",
+            kind = BattleActionKind.SWITCH,
+            actorSlot = 0,
+            switchPokemonId = UUID.randomUUID(),
+        )
+
+        ledger.accept(state(turn = 1), replacement, advice = null)
+
+        assertEquals(0.0, ledger.view(1).switchPressure, 1e-9)
+        assertEquals(1, ledger.view(1).switchesThisBattle)
     }
 
     @Test
@@ -359,6 +406,75 @@ class BattleTacticalMemoryLedgerTest {
     }
 
     @Test
+    fun `double responses update tendencies and adaptation independently by actor slot`() {
+        val ledger = BattleTacticalMemoryLedger(BattleBrainOpenContext(battleId, BattleFormat.DOUBLE))
+        val first = doubleState(turn = 1)
+        ledger.observe(first)
+        ledger.accept(first, BattleActionCandidate("wait:1", BattleActionKind.WAIT), advice = null)
+        ledger.observe(
+            doubleState(
+                turn = 2,
+                events = listOf(
+                    BattleObservedEventView(
+                        1, 2, BattleObservedEventKind.MOVE_USED, opponentId,
+                        publicValueId = "cobblemon:tackle", actorSlot = 0,
+                    ),
+                    BattleObservedEventView(
+                        2, 2, BattleObservedEventKind.MOVE_USED, opponentRightId,
+                        publicValueId = "cobblemon:tackle", actorSlot = 1,
+                    ),
+                ),
+            ),
+        )
+
+        val second = doubleState(turn = 2)
+        ledger.accept(second, BattleActionCandidate("wait:2", BattleActionKind.WAIT), advice = null)
+        ledger.observe(
+            doubleState(
+                turn = 3,
+                events = listOf(
+                    BattleObservedEventView(
+                        3, 3, BattleObservedEventKind.MOVE_USED, opponentId,
+                        publicValueId = "cobblemon:tackle", actorSlot = 0,
+                    ),
+                    BattleObservedEventView(4, 3, BattleObservedEventKind.SWITCHED, opponentRightId, actorSlot = 1),
+                ),
+            ),
+        )
+
+        val view = ledger.view(3)
+        val general = view.tendencies.filter { it.situation == BattleSituation.GENERAL }
+        assertEquals(4, general.first { it.response == BattlePredictedResponse.MOVE }.samples)
+        assertTrue(view.opponentResponseVolatility > 0.0)
+    }
+
+    @Test
+    fun `double pivot switch is not learned as a voluntary switch response`() {
+        val outgoingId = UUID.randomUUID()
+        val ledger = BattleTacticalMemoryLedger(BattleBrainOpenContext(battleId, BattleFormat.DOUBLE))
+        val before = doubleState(turn = 1, opponentBenchIds = listOf(outgoingId))
+        ledger.observe(before)
+        ledger.accept(before, BattleActionCandidate("wait", BattleActionKind.WAIT), advice = null)
+        ledger.observe(
+            doubleState(
+                turn = 2,
+                opponentBenchIds = listOf(outgoingId),
+                events = listOf(
+                    BattleObservedEventView(
+                        1, 2, BattleObservedEventKind.MOVE_USED, outgoingId,
+                        publicValueId = "cobblemon:voltswitch", actorSlot = 1,
+                    ),
+                    BattleObservedEventView(2, 2, BattleObservedEventKind.SWITCHED, opponentRightId, actorSlot = 1),
+                ),
+            ),
+        )
+
+        val general = ledger.view(2).tendencies.filter { it.situation == BattleSituation.GENERAL }
+        assertEquals(1, general.first { it.response == BattlePredictedResponse.MOVE }.samples)
+        assertEquals(1.0 / 3.0, general.first { it.response == BattlePredictedResponse.SWITCH }.estimatedRate, 0.0001)
+    }
+
+    @Test
     fun `missing declared double slot response cannot borrow another slots matching action`() {
         val ledger = BattleTacticalMemoryLedger(BattleBrainOpenContext(battleId, BattleFormat.DOUBLE))
         val before = doubleState(turn = 4)
@@ -519,6 +635,7 @@ class BattleTacticalMemoryLedgerTest {
     private fun doubleState(
         turn: Int,
         events: List<BattleObservedEventView> = emptyList(),
+        opponentBenchIds: List<UUID> = emptyList(),
     ) = BattleStateView(
         battleId = battleId,
         format = BattleFormat.DOUBLE,
@@ -554,7 +671,23 @@ class BattleTacticalMemoryLedgerTest {
                 knownHeldItemId = null,
                 fainted = false,
             ),
-        ),
+        ) + opponentBenchIds.map { id ->
+            BattlePokemonStateView(
+                battlePokemonId = id,
+                side = BattleSide.OPPONENT,
+                activeSlot = null,
+                speciesId = "showdown:bench",
+                formId = null,
+                level = 50,
+                hpFraction = 1.0,
+                statusId = null,
+                statStages = emptyMap(),
+                knownMoveIds = emptySet(),
+                knownAbilityId = null,
+                knownHeldItemId = null,
+                fainted = false,
+            )
+        },
         field = BattleFieldStateView.empty(),
         remainingPokemonBySide = BattleSide.entries.associateWith { 2 },
         observedEvents = events,

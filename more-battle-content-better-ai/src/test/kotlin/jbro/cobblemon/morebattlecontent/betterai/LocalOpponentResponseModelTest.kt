@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.betterai
 
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
+import jbro.cobblemon.morebattlecontent.betterai.search.LocalOpponentResponseModel
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

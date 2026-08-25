@@ -37,6 +37,7 @@ internal class BattleTacticalMemoryLedger(
     private var topResponseBrierSum: Double = 0.0
     private var alwaysMoveBrierSum: Double = 0.0
     private var switchesThisBattle: Int = 0
+    private var switchPressure: Double = 0.0
     private var lastSwitchTurn: Int? = null
     private var lastMoveId: String? = null
     private var sameMoveRepeatCount: Int = 0
@@ -76,20 +77,24 @@ internal class BattleTacticalMemoryLedger(
             event.kind == BattleObservedEventKind.FAINTED &&
                 (event.actorPokemonId in opponentById || event.targetPokemonIds.any(opponentById::containsKey))
         }
-        val opponentMovedThisWindow = newEvents.any { event ->
-            event.kind == BattleObservedEventKind.MOVE_USED && event.actorPokemonId in opponentById
-        }
+        val opponentMoveSlotsThisWindow = newEvents.asSequence()
+            .filter { event ->
+                event.kind == BattleObservedEventKind.MOVE_USED && event.actorPokemonId in opponentById
+            }
+            .mapNotNull { event -> event.actorSlot ?: opponentById[event.actorPokemonId]?.activeSlot }
+            .toSet()
         val responses = newEvents.mapNotNull { event ->
             val actor = opponentById[event.actorPokemonId] ?: return@mapNotNull null
+            val actorSlot = event.actorSlot ?: actor.activeSlot
             val response = when (event.kind) {
                 BattleObservedEventKind.SWITCHED -> if (
                     opponentFaintedThisWindow || observation.forcedSwitchPossible ||
-                    state.format == BattleFormat.SINGLE && opponentMovedThisWindow
+                    actorSlot in opponentMoveSlotsThisWindow
                 ) return@mapNotNull null else BattlePredictedResponse.SWITCH
                 BattleObservedEventKind.MOVE_USED -> BattlePredictedResponse.MOVE
                 else -> return@mapNotNull null
             }
-            ObservedOpponentResponse(actor.activeSlot, response)
+            ObservedOpponentResponse(actorSlot, response)
         }.distinctBy { it.actorSlot }
         if (responses.isEmpty()) {
             if (opponentFaintedThisWindow || observation.forcedSwitchPossible) {
@@ -99,9 +104,9 @@ internal class BattleTacticalMemoryLedger(
             return
         }
 
-        val comparableResponses = if (state.format == BattleFormat.SINGLE) responses.mapNotNull { response ->
+        val comparableResponses = responses.mapNotNull { response ->
             lastOpponentResponseBySlot[response.actorSlot]?.let { previous -> previous to response }
-        } else emptyList()
+        }
         val responseShifted = comparableResponses.any { (previous, response) -> previous != response.response }
         if (comparableResponses.isNotEmpty()) {
             opponentResponseVolatility = if (responseShifted) {
@@ -119,11 +124,9 @@ internal class BattleTacticalMemoryLedger(
                 patternResponseShiftEvidence * PASSIVE_ADAPTATION_DECAY
             }
         }
-        if (state.format == BattleFormat.SINGLE) {
-            responses.forEach { response ->
-                recordTendency(observation.situations, response.response)
-                lastOpponentResponseBySlot[response.actorSlot] = response.response
-            }
+        responses.forEach { response ->
+            recordTendency(observation.situations, response.response)
+            lastOpponentResponseBySlot[response.actorSlot] = response.response
         }
         pendingObservation = null
         pendingPrediction?.takeIf { state.turn > it.turn }?.let { pending ->
@@ -151,7 +154,12 @@ internal class BattleTacticalMemoryLedger(
         require(turn >= 0)
         if (candidate.containsSwitch()) {
             switchesThisBattle += 1
+            if (candidate.containsVoluntarySwitch(state)) {
+                switchPressure = (switchPressure + SWITCH_PRESSURE_PER_SWITCH).coerceAtMost(MAX_SWITCH_PRESSURE)
+            }
             lastSwitchTurn = turn
+        } else if (candidate.selectedMoveId() != null) {
+            switchPressure = (switchPressure - SWITCH_PRESSURE_RECOVERY_PER_MOVE).coerceAtLeast(0.0)
         }
         val selectedMoveId = candidate.selectedMoveId()
         if (selectedMoveId == null) {
@@ -226,6 +234,7 @@ internal class BattleTacticalMemoryLedger(
             ),
             turnsSinceLastSwitch = lastSwitchTurn?.let { (turn - it).coerceAtLeast(0) },
             switchesThisBattle = switchesThisBattle,
+            switchPressure = switchPressure,
             lastMoveId = lastMoveId,
             sameMoveRepeatCount = sameMoveRepeatCount,
             patternExposureCount = patternExposureCount,
@@ -355,6 +364,16 @@ internal class BattleTacticalMemoryLedger(
     private fun BattleActionCandidate.containsSwitch(): Boolean =
         kind == BattleActionKind.SWITCH || componentActions.any { it.containsSwitch() }
 
+    private fun BattleActionCandidate.containsVoluntarySwitch(state: BattleStateView): Boolean =
+        atomicActions().filter { it.kind == BattleActionKind.SWITCH }.any { switch ->
+            state.pokemon.any { pokemon ->
+                pokemon.side == BattleSide.ALLY &&
+                    pokemon.activeSlot != null &&
+                    (switch.actorSlot == null || pokemon.activeSlot == switch.actorSlot) &&
+                    !pokemon.fainted && pokemon.hpFraction > 0.0
+            }
+        }
+
     private fun BattleActionCandidate.selectedMoveId(): String? =
         moveId ?: componentActions.firstNotNullOfOrNull { it.selectedMoveId() }
 
@@ -446,6 +465,9 @@ internal class BattleTacticalMemoryLedger(
         const val PASSIVE_ADAPTATION_DECAY = 0.85
         const val MINIMUM_PROGRESS_DELTA = 0.005
         const val MAX_NON_PROGRESS_STREAK = 99
+        const val SWITCH_PRESSURE_PER_SWITCH = 1.0
+        const val SWITCH_PRESSURE_RECOVERY_PER_MOVE = 1.0
+        const val MAX_SWITCH_PRESSURE = 4.0
         val TRACKED_RESPONSES = listOf(BattlePredictedResponse.MOVE, BattlePredictedResponse.SWITCH)
         val BOARD_CHANGE_EVENTS = setOf(BattleObservedEventKind.SWITCHED, BattleObservedEventKind.FAINTED)
         val FIELD_PROGRESS_EFFECTS = setOf(

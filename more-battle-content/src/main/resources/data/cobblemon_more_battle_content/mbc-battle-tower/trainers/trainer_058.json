@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "trainer_058",
+      "display_name_key": "trainer.cobblemon_more_battle_content.tower_trainer_058",
+      "team_style": "physical_pressure",
+      "signature_species_ids": [
+        "cobblemon:altaria",
+        "cobblemon:ampharos",
+        "cobblemon:chandelure"
+      ]
+    }
+  ]
+}

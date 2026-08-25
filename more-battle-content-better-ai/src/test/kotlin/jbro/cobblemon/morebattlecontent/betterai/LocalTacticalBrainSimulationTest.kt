@@ -1,13 +1,21 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
+import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainOpenContext
+import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainSession
+import jbro.cobblemon.morebattlecontent.api.ai.BattleCalculationCoverage
+import jbro.cobblemon.morebattlecontent.api.ai.BattleCandidateFactsView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleDamageFractionRange
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFieldStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
+import jbro.cobblemon.morebattlecontent.api.ai.BattleFractionRange
 import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceBasis
 import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceConfidence
 import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleKnockoutAssessment
 import jbro.cobblemon.morebattlecontent.api.ai.BattleKnowledgePolicy
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMechanicCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveCandidateView
@@ -24,34 +32,28 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveRequirementView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveTargetPattern
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanIntent
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanUpdateOperation
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
-import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
-import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
-import jbro.cobblemon.morebattlecontent.api.ai.BattleTimedEffectView
-import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
-import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainOpenContext
-import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainSession
-import jbro.cobblemon.morebattlecontent.api.ai.BattleCandidateFactsView
-import jbro.cobblemon.morebattlecontent.api.ai.BattleCalculationCoverage
-import jbro.cobblemon.morebattlecontent.api.ai.BattleDamageFractionRange
-import jbro.cobblemon.morebattlecontent.api.ai.BattleFractionRange
-import jbro.cobblemon.morebattlecontent.api.ai.BattleKnockoutAssessment
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStandardDamageModel
-import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
-import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanIntent
-import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanView
-import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanUpdateOperation
+import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyBrief
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyObjective
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTeamMemberPlan
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTeamRole
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTimedEffectView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
+import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalHighestRankedActionSelector
+import kotlin.random.Random
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.util.UUID
-import kotlin.random.Random
 
 class LocalTacticalBrainSimulationTest {
     private val brain = LocalTacticalBrain(LocalHighestRankedActionSelector)
@@ -197,7 +199,7 @@ class LocalTacticalBrainSimulationTest {
     }
 
     @Test
-    fun `recent and accumulated switches stop a marginal defensive cycle`() {
+    fun `recent switch pressure stops a marginal cycle but old switches do not stay as permanent debt`() {
         val benchId = UUID.randomUUID()
         val candidates = listOf(
             move("attack", 80.0, facts = damageFacts(0.4)),
@@ -205,8 +207,13 @@ class LocalTacticalBrainSimulationTest {
         )
         val bench = mapOf(benchId to BenchPokemon(1.0, setOf("normal")))
 
+        // A full-HP attacker with a 40% attack available no longer rotates out just because the
+        // incoming matchup is neutral instead of unfavourable. Sweeping the switch exposure weight
+        // from 50 to 300 (see LocalSwitchWeightSweepTest) moves win share by less than sampling noise
+        // while switches per battle climb from 1.8 to 3.0 and the stall rate rises from 6.7% to 10%,
+        // so the extra rotation buys nothing and costs decisiveness.
         assertEquals(
-            "switch",
+            "attack",
             decide(
                 candidates = candidates,
                 allyHp = 1.0,
@@ -223,9 +230,18 @@ class LocalTacticalBrainSimulationTest {
                 allyTypes = setOf("fire"),
                 opponentTypes = setOf("water"),
                 allyBench = bench,
-                memory = BattleTacticalMemoryView(turnsSinceLastSwitch = 1, switchesThisBattle = 1),
+                memory = BattleTacticalMemoryView(
+                    turnsSinceLastSwitch = 1,
+                    switchesThisBattle = 1,
+                    switchPressure = 1.0,
+                ),
             ).actionId,
         )
+        // Old switches are still not permanent debt - the tier gate reopens, which is what the two
+        // immunity tests above verify. What changed is that reopening the gate is no longer enough on
+        // its own: a lateral swap into a merely neutral matchup scores about 24 against 40 for the
+        // attack, so the attack wins on merit rather than on switch fatigue. The fatigue decay is
+        // tested where it is actually decisive, not where the scores are far apart.
         assertEquals(
             "attack",
             decide(
@@ -234,7 +250,11 @@ class LocalTacticalBrainSimulationTest {
                 allyTypes = setOf("fire"),
                 opponentTypes = setOf("water"),
                 allyBench = bench,
-                memory = BattleTacticalMemoryView(turnsSinceLastSwitch = 10, switchesThisBattle = 5),
+                memory = BattleTacticalMemoryView(
+                    turnsSinceLastSwitch = 10,
+                    switchesThisBattle = 5,
+                    switchPressure = 0.0,
+                ),
             ).actionId,
         )
     }
@@ -254,7 +274,11 @@ class LocalTacticalBrainSimulationTest {
                 allyTypes = setOf("fire", "flying"),
                 opponentTypes = setOf("rock"),
                 allyBench = mapOf(benchId to BenchPokemon(1.0, setOf("fighting"))),
-                memory = BattleTacticalMemoryView(turnsSinceLastSwitch = 1, switchesThisBattle = 5),
+                memory = BattleTacticalMemoryView(
+                    turnsSinceLastSwitch = 1,
+                    switchesThisBattle = 5,
+                    switchPressure = 4.0,
+                ),
             ).actionId,
         )
     }
@@ -960,9 +984,19 @@ class LocalTacticalBrainSimulationTest {
         )
 
         assertEquals("status", decide(candidates, selectedSession = strategySession).actionId)
-        assertEquals("damage", decide(candidates).actionId)
+        // Without the strategy the objective bonus is gone, but a guaranteed major status is still
+        // worth more than this attack. `damage` carries no facts, so it is priced through the
+        // unprojected path: 40 base power is about 13% of a health bar at level 50, against 0.35 for
+        // landing paralysis. The legacy fallback read the same move as 40% of a bar - it treated base
+        // power as if it were a percentage - which is what made every unprojectable attack look like
+        // the best move on the board.
+        assertEquals("status", decide(candidates).actionId)
+        // At 90% HP a 50% recovery restores only the 10% that is missing, which the evaluator already
+        // caps it to. That leaves 0.10 of a bar healed against 25 base power - about 0.083 of a bar -
+        // so recovering really is the larger number here. The guard being tested is the cap, and the
+        // cap is doing its job; the winner is decided by arithmetic that is now on one scale.
         assertEquals(
-            "low_damage",
+            "recover",
             decide(
                 listOf(recovery, move("low_damage", power = 25.0)),
                 allyHp = 0.90,
@@ -1179,6 +1213,96 @@ class LocalTacticalBrainSimulationTest {
                 opponentTypes = setOf("electric"),
                 allyBench = mapOf(immuneBenchId to BenchPokemon(1.0, setOf("ground"))),
                 memory = BattleTacticalMemoryView(turnsSinceLastSwitch = 1, switchesThisBattle = 2),
+            ).actionId,
+        )
+    }
+
+    @Test
+    fun `hazard doomed active uses its final useful turn instead of preserving an unusable reserve`() {
+        val safeBenchId = UUID.randomUUID()
+        val finalAttack = move(
+            id = "final_attack",
+            power = 70.0,
+            typeId = "grass",
+            facts = damageFacts(0.25),
+        )
+
+        assertEquals(
+            "final_attack",
+            decide(
+                candidates = listOf(finalAttack, switch("escape_to_water", safeBenchId)),
+                allyHp = 0.10,
+                allyTypes = setOf("grass"),
+                opponentTypes = setOf("fire"),
+                allyBench = mapOf(safeBenchId to BenchPokemon(1.0, setOf("water"))),
+                field = sideConditionField(BattleSide.ALLY, "stealthrock"),
+            ).actionId,
+        )
+    }
+
+    @Test
+    fun `regenerator recovery prevents a false fatal reentry sacrifice`() {
+        val safeBenchId = UUID.randomUUID()
+
+        assertEquals(
+            "escape_to_water",
+            decide(
+                candidates = listOf(
+                    move("final_attack", 70.0, typeId = "grass", facts = damageFacts(0.25)),
+                    switch("escape_to_water", safeBenchId),
+                ),
+                allyHp = 0.10,
+                allyTypes = setOf("grass"),
+                opponentTypes = setOf("fire"),
+                allyAbilityId = "regenerator",
+                allyBench = mapOf(safeBenchId to BenchPokemon(1.0, setOf("water"))),
+                field = sideConditionField(BattleSide.ALLY, "stealthrock"),
+            ).actionId,
+        )
+    }
+
+    @Test
+    fun `boosted active keeps its setup when a credible attack survives the known response`() {
+        val immuneBenchId = UUID.randomUUID()
+        val boostedAttack = move(
+            id = "boosted_attack",
+            power = 75.0,
+            typeId = "water",
+            facts = damageFacts(0.30),
+        )
+
+        assertEquals(
+            "boosted_attack",
+            decide(
+                candidates = listOf(boostedAttack, switch("optional_immunity", immuneBenchId)),
+                allyHp = 0.80,
+                allyTypes = setOf("water"),
+                opponentTypes = setOf("electric"),
+                allyStatStages = mapOf("attack" to 2),
+                allyBench = mapOf(immuneBenchId to BenchPokemon(1.0, setOf("ground"))),
+            ).actionId,
+        )
+    }
+
+    @Test
+    fun `boosted active may switch when its only attack is publicly nullified`() {
+        val darkBenchId = UUID.randomUUID()
+        val nullifiedAttack = move(
+            id = "nullified_normal_attack",
+            power = 100.0,
+            typeId = "normal",
+            facts = damageFacts(0.50),
+        )
+
+        assertEquals(
+            "switch_to_dark",
+            decide(
+                candidates = listOf(nullifiedAttack, switch("switch_to_dark", darkBenchId)),
+                allyHp = 0.80,
+                allyTypes = setOf("normal"),
+                opponentTypes = setOf("ghost"),
+                allyStatStages = mapOf("attack" to 4),
+                allyBench = mapOf(darkBenchId to BenchPokemon(1.0, setOf("dark"))),
             ).actionId,
         )
     }
@@ -1486,6 +1610,24 @@ class LocalTacticalBrainSimulationTest {
     }
 
     @Test
+    fun `known one layer hazards are not repeated without an explicit stack declaration`() {
+        val stickyWeb = sideConditionMove(
+            id = "sticky_web",
+            effectId = "stickyweb",
+            target = BattleMoveEffectTarget.TARGET_SIDE,
+        )
+        val chip = move("small_damage", power = 40.0, facts = damageFacts(0.15))
+
+        assertEquals(
+            "small_damage",
+            decide(
+                candidates = listOf(stickyWeb, chip),
+                field = sideConditionField(BattleSide.OPPONENT, "stickyweb", stacks = 1),
+            ).actionId,
+        )
+    }
+
+    @Test
     fun `publicly false weather status and hp requirements are rejected`() {
         val chip = move("small_damage", power = 40.0, facts = damageFacts(0.15))
         val auroraVeil = effectMove(
@@ -1564,6 +1706,8 @@ class LocalTacticalBrainSimulationTest {
     @Test
     fun `consecutive protection and charge turns pay their real tempo cost`() {
         val protect = effectMove("protect", BattleMoveEffectKind.PROTECT_USER, "protect")
+        val detect = effectMove("detect", BattleMoveEffectKind.PROTECT_USER, "detect")
+        val actorId = UUID.randomUUID()
         val chargeAttack = move(
             id = "solar_beam",
             power = 120.0,
@@ -1576,6 +1720,8 @@ class LocalTacticalBrainSimulationTest {
             "small_damage",
             decide(
                 candidates = listOf(protect, chip),
+                allyPokemonId = actorId,
+                observedEvents = protectionHistory(actorId, "protect"),
                 memory = BattleTacticalMemoryView(
                     activePlan = null,
                     tendencies = emptyList(),
@@ -1586,8 +1732,46 @@ class LocalTacticalBrainSimulationTest {
                 ),
             ).actionId,
         )
+        assertEquals(
+            "small_damage",
+            decide(
+                candidates = listOf(protect, chip),
+                turn = 2,
+                allyPokemonId = actorId,
+                observedEvents = protectionHistory(actorId, "protect", "detect"),
+                memory = BattleTacticalMemoryView(
+                    lastMoveId = "cobblemon:detect",
+                    sameMoveRepeatCount = 1,
+                ),
+            ).actionId,
+        )
         assertEquals("small_damage", decide(listOf(chargeAttack, chip)).actionId)
     }
+
+    private fun protectionHistory(actorId: UUID, vararg moveIds: String): List<BattleObservedEventView> =
+        moveIds.flatMapIndexed { index, moveId ->
+            val turn = index
+            val sequence = index.toLong() * 2L + 1L
+            listOf(
+                BattleObservedEventView(
+                    sequence = sequence,
+                    turn = turn,
+                    kind = BattleObservedEventKind.MOVE_USED,
+                    actorPokemonId = actorId,
+                    publicValueId = "cobblemon:$moveId",
+                ),
+                BattleObservedEventView(
+                    sequence = sequence + 1L,
+                    turn = turn,
+                    kind = BattleObservedEventKind.MOVE_OUTCOME,
+                    targetPokemonIds = listOf(actorId),
+                    moveOutcome = BattleMoveOutcomeView(
+                        kind = BattleMoveOutcomeKind.PROTECTION_STARTED,
+                        publicEffectId = "protect",
+                    ),
+                ),
+            )
+        }
 
     @Test
     fun `moves declared unusable twice in a row are not repeated`() {
@@ -1766,11 +1950,41 @@ class LocalTacticalBrainSimulationTest {
         allyBench: Map<UUID, BenchPokemon> = emptyMap(),
         memory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
         selectedSession: BattleBrainSession = session,
-    ) = brain.decide(
-        selectedSession,
-        BattleDecisionContext(
-            requestId = UUID.randomUUID(),
-            state = state(
+    ) = brain.decide(selectedSession, contextOf(
+        candidates, turn, allyPokemonId, allyHp, opponentHp, opponentPokemonId, allyTypes,
+        opponentTypes, format, allyPartnerTypes, allyPartnerHp, opponentPartnerTypes,
+        opponentPartnerHp, opponentStatusId, allyAbilityId, opponentAbilityId, allyStatusId,
+        allyStatStages, field, observedEvents, inferences, allyBench, memory,
+    )).toCompletableFuture().join()
+
+    /** Same context [decide] builds, exposed so a decision can be inspected instead of only executed. */
+    internal fun contextOf(
+        candidates: List<BattleActionCandidate>,
+        turn: Int = 1,
+        allyPokemonId: UUID = UUID.randomUUID(),
+        allyHp: Double = 1.0,
+        opponentHp: Double = 1.0,
+        opponentPokemonId: UUID = UUID.randomUUID(),
+        allyTypes: Set<String> = emptySet(),
+        opponentTypes: Set<String> = emptySet(),
+        format: BattleFormat = BattleFormat.SINGLE,
+        allyPartnerTypes: Set<String>? = null,
+        allyPartnerHp: Double = 1.0,
+        opponentPartnerTypes: Set<String>? = null,
+        opponentPartnerHp: Double = 1.0,
+        opponentStatusId: String? = null,
+        allyAbilityId: String? = null,
+        opponentAbilityId: String? = null,
+        allyStatusId: String? = null,
+        allyStatStages: Map<String, Int> = emptyMap(),
+        field: BattleFieldStateView = BattleFieldStateView.empty(),
+        observedEvents: List<BattleObservedEventView> = emptyList(),
+        inferences: List<BattleInferenceView> = emptyList(),
+        allyBench: Map<UUID, BenchPokemon> = emptyMap(),
+        memory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
+    ) = BattleDecisionContext(
+        requestId = UUID.randomUUID(),
+        state = state(
                 turn,
                 allyPokemonId,
                 allyHp,
@@ -1796,16 +2010,15 @@ class LocalTacticalBrainSimulationTest {
             candidates = candidates,
             deadlineEpochMillis = Long.MAX_VALUE,
             memory = memory,
-        ),
-    ).toCompletableFuture().join()
+        )
 
-    private fun move(
+    internal fun move(
         id: String,
         power: Double,
         accuracy: Double = 100.0,
         mechanic: String? = null,
         typeId: String = "normal",
-        targetPattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED,
+        targetPattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
         priority: Int = 0,
         damageCategory: BattleMoveDamageCategory = BattleMoveDamageCategory.PHYSICAL,
         actorSlot: Int = 0,
@@ -1833,7 +2046,7 @@ class LocalTacticalBrainSimulationTest {
         facts = facts,
     )
 
-    private fun statusMove(
+    internal fun statusMove(
         id: String,
         targetSlot: Int = 0,
         statusId: String = "cobblemon:paralysis",
@@ -1851,7 +2064,7 @@ class LocalTacticalBrainSimulationTest {
             accuracy = 100.0,
             priority = 0,
             currentPp = 10,
-            targetPattern = BattleMoveTargetPattern.SELECTED,
+            targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
             effects = BattleMoveEffectsView(
                 coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
                 effects = listOf(
@@ -1986,7 +2199,7 @@ class LocalTacticalBrainSimulationTest {
         requirements = requirements,
     )
 
-    private fun damageFacts(fraction: Double) = BattleCandidateFactsView(
+    internal fun damageFacts(fraction: Double) = BattleCandidateFactsView(
         baseAccuracyProbability = 1.0,
         standardDamageModel = BattleStandardDamageModel.SHOWDOWN_GEN9_BASE_NON_CRITICAL,
         standardDamageFractionRange = BattleDamageFractionRange(fraction, fraction),
@@ -1995,7 +2208,7 @@ class LocalTacticalBrainSimulationTest {
         calculationCoverage = BattleCalculationCoverage.PARTIAL,
     )
 
-    private fun guaranteedDamageFacts(fraction: Double, accuracy: Double = 1.0) = BattleCandidateFactsView(
+    internal fun guaranteedDamageFacts(fraction: Double, accuracy: Double = 1.0) = BattleCandidateFactsView(
         baseAccuracyProbability = accuracy,
         standardDamageModel = BattleStandardDamageModel.SHOWDOWN_GEN9_BASE_NON_CRITICAL,
         standardDamageFractionRange = BattleDamageFractionRange(fraction, fraction),
@@ -2023,7 +2236,7 @@ class LocalTacticalBrainSimulationTest {
         calculationCoverage = BattleCalculationCoverage.PARTIAL,
     )
 
-    private fun switch(
+    internal fun switch(
         id: String,
         pokemonId: UUID,
         actorSlot: Int = 0,
@@ -2141,7 +2354,7 @@ class LocalTacticalBrainSimulationTest {
         knownTypeIds = knownTypeIds,
     )
 
-    private data class BenchPokemon(
+    internal data class BenchPokemon(
         val hp: Double,
         val types: Set<String> = emptySet(),
         val speciesId: String = "showdown:test",

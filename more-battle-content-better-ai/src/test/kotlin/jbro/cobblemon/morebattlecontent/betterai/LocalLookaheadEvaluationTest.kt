@@ -1,13 +1,87 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
+import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
+import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicFutureActionFactory
+import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicMoveOutcomeBranchProjector
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalLookaheadStateEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalPublicSpeedRelation
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalScorer
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalSituationalEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.RecursiveControlEffectKind
+import jbro.cobblemon.morebattlecontent.betterai.outcome.ChanceEffectProjectionMode
+import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicSingleTurnProjector
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionMixingContext
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionOutcome
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionOutcomeEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionPolicy
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionRank
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalWeightedActionSelector
+import jbro.cobblemon.morebattlecontent.betterai.search.LocalRecursiveLookaheadEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalSwitchStateProjector
+import jbro.cobblemon.morebattlecontent.betterai.state.PublicTurnProjection
+import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
+import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveEncoreLock
+import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveHistoryProjector
+import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveMoveUseKey
+import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveSnapshotActionConstraints
+import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveTrapLock
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.util.UUID
 
 class LocalLookaheadEvaluationTest {
+    @Test
+    fun `self setup is marked as already boosted from public accumulated stages`() {
+        val setup = move(
+            id = "agility",
+            category = BattleMoveDamageCategory.STATUS,
+            power = 0.0,
+            targetPattern = BattleMoveTargetPattern.SELF,
+            effects = effects(
+                BattleMoveEffectView(
+                    kind = BattleMoveEffectKind.STAT_STAGE,
+                    target = BattleMoveEffectTarget.USER,
+                    probability = 1.0,
+                    statStages = mapOf("speed" to 2),
+                ),
+            ),
+        )
+
+        assertFalse(LocalTacticalSituationalEvaluator.alreadyBoostedSelfSetup(setup, context(state(), listOf(setup))))
+        assertTrue(
+            LocalTacticalSituationalEvaluator.alreadyBoostedSelfSetup(
+                setup,
+                context(state(allyStatStages = mapOf("attack" to 2)), listOf(setup)),
+            ),
+            "A different setup move must still see stages accumulated by the active Pokemon",
+        )
+        assertFalse(
+            LocalTacticalSituationalEvaluator.overcommittedSelfSetup(
+                setup,
+                context(state(allyStatStages = mapOf("attack" to 2)), listOf(setup)),
+            ),
+            "One strong boost at healthy HP must not be treated as exhausted setup budget",
+        )
+        assertTrue(
+            LocalTacticalSituationalEvaluator.overcommittedSelfSetup(
+                setup,
+                context(state(allyStatStages = mapOf("attack" to 2, "speed" to 2)), listOf(setup)),
+            ),
+            "Four accumulated positive stages are enough setup when an attack is available",
+        )
+        assertTrue(
+            LocalTacticalSituationalEvaluator.overcommittedSelfSetup(
+                setup,
+                context(state(allyHp = 0.20, allyStatStages = mapOf("special_attack" to 1)), listOf(setup)),
+            ),
+            "Critical HP must stop another boost after setup has already begun",
+        )
+    }
+
     @Test
     fun `snapshot action constraints filter the first recursive decision boundary`() {
         val attack = move("attack", power = 80.0)
@@ -83,10 +157,13 @@ class LocalLookaheadEvaluationTest {
         }
         assertEquals(0.50, requireNotNull(targetStates[1.0]).probability, 1e-9)
         assertEquals(0.50, requireNotNull(targetStates[0.0]).probability, 1e-9)
+        assertEquals(0.0, requireNotNull(targetStates[1.0]).expectedScoreAdjustment, 1e-9)
+        // Knockout material is one living Pokemon: 2.0 board points, see expectedKnockoutBonus.
+        assertEquals(2.0, requireNotNull(targetStates[0.0]).expectedScoreAdjustment, 1e-9)
     }
 
     @Test
-    fun `thirty percent stat drop branches into discrete outcomes`() {
+    fun `thirty percent stat drop stays out of recursive state and contributes weighted score`() {
         val initial = state()
         val moonblast = move(
             id = "moonblast",
@@ -104,14 +181,138 @@ class LocalLookaheadEvaluationTest {
 
         val outcomes = PublicSingleTurnProjector.project(initial, moonblast, wait("opponent_wait"), context(initial, listOf(moonblast)))
 
-        val dropped = outcomes.filter { outcome ->
-            outcome.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.statStages["special_attack"] == -1
+        assertEquals(1, outcomes.size)
+        assertEquals(
+            null,
+            outcomes.single().state.pokemon.single { it.battlePokemonId == OPPONENT_ID }
+                .statStages["special_attack"],
+        )
+        assertEquals(0.10 * 0.30, outcomes.single().expectedScoreAdjustment, 1e-9)
+    }
+
+    @Test
+    fun `sampled battle mode branches a thirty percent stat drop into real states`() {
+        val initial = state()
+        val moonblast = move(
+            id = "sampled_moonblast",
+            category = BattleMoveDamageCategory.SPECIAL,
+            power = 95.0,
+            effects = effects(
+                BattleMoveEffectView(
+                    kind = BattleMoveEffectKind.STAT_STAGE,
+                    target = BattleMoveEffectTarget.SELECTED_TARGET,
+                    probability = 0.30,
+                    statStages = mapOf("special_attack" to -1),
+                ),
+            ),
+        )
+
+        val outcomes = PublicSingleTurnProjector.project(
+            initial,
+            moonblast,
+            wait("opponent_wait"),
+            context(initial, listOf(moonblast)),
+            chanceEffectMode = ChanceEffectProjectionMode.BRANCH_STATE,
+        )
+
+        assertEquals(2, outcomes.size)
+        val byStage = outcomes.associateBy {
+            it.state.pokemon.single { pokemon -> pokemon.battlePokemonId == OPPONENT_ID }
+                .statStages["special_attack"] ?: 0
         }
-        val unchanged = outcomes.filter { outcome ->
-            outcome.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.statStages["special_attack"] == null
+        assertEquals(0.70, requireNotNull(byStage[0]).probability, 1e-9)
+        assertEquals(0.30, requireNotNull(byStage[-1]).probability, 1e-9)
+        assertTrue(outcomes.all { it.expectedScoreAdjustment == 0.0 })
+    }
+
+    @Test
+    fun `simulation move library changes projected battle state for special damage moves`() {
+        fun simulationAction(
+            id: String,
+            power: Double,
+            category: BattleMoveDamageCategory = BattleMoveDamageCategory.PHYSICAL,
+        ): BattleActionCandidate {
+            val simulationMove = LocalTacticalSimulationMove(
+                id = "cobblemon:$id",
+                typeId = "normal",
+                power = power,
+                category = category,
+                accuracy = 100.0,
+                priority = 0,
+                pp = 16,
+            )
+            val details = LocalTacticalSimulationMoveLibrary.details(simulationMove)
+            return move(
+                id = id,
+                power = power,
+                category = category,
+                targetPattern = details.targetPattern,
+                effects = details.effects,
+            )
         }
-        assertEquals(0.30, dropped.sumOf { it.probability }, 1e-9)
-        assertEquals(0.70, unchanged.sumOf { it.probability }, 1e-9)
+
+        fun project(initial: BattleStateView, action: BattleActionCandidate): PublicTurnProjection =
+            PublicSingleTurnProjector.project(
+                initial,
+                action,
+                wait("opponent_wait"),
+                context(initial, listOf(action), catalog(allyMoves = listOf(action))),
+                chanceEffectMode = ChanceEffectProjectionMode.BRANCH_STATE,
+            ).single()
+
+        val explosion = project(state(), simulationAction("explosion", 250.0))
+        assertTrue(explosion.state.pokemon.single { it.battlePokemonId == ALLY_ID }.fainted)
+
+        val braveBird = project(state(), simulationAction("bravebird", 120.0))
+        assertTrue(braveBird.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction < 1.0)
+
+        val gigaDrain = project(
+            state(allyHp = 0.40),
+            simulationAction("gigadrain", 75.0, BattleMoveDamageCategory.SPECIAL),
+        )
+        assertTrue(gigaDrain.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction > 0.40)
+
+        val closeCombat = project(state(), simulationAction("closecombat", 120.0))
+        val closeCombatUser = closeCombat.state.pokemon.single { it.battlePokemonId == ALLY_ID }
+        assertEquals(-1, closeCombatUser.statStages["defense"])
+        assertEquals(-1, closeCombatUser.statStages["special_defense"])
+
+        val benchId = UUID.fromString("00000000-0000-0000-0000-000000000220")
+        val pivotState = state(bench = pokemon(benchId, BattleSide.ALLY, speed = 80, activeSlot = null))
+        val uTurn = project(pivotState, simulationAction("uturn", 70.0))
+        assertEquals(null, uTurn.state.pokemon.single { it.battlePokemonId == ALLY_ID }.activeSlot)
+        assertEquals(0, uTurn.state.pokemon.single { it.battlePokemonId == benchId }.activeSlot)
+
+        val saltCureAction = simulationAction("saltcure", 40.0)
+        val saltCure = project(state(), saltCureAction)
+        assertTrue(saltCure.controlEffects.any {
+            it.kind == RecursiveControlEffectKind.SALT_CURE && it.targetPokemonId == OPPONENT_ID
+        })
+        val directOnly = project(state(), move("plain_rock_hit", power = 40.0))
+        val saltedHp = saltCure.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.hpFraction
+        val directOnlyHp = directOnly.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.hpFraction
+        assertEquals(directOnlyHp - 1.0 / 8.0, saltedHp, 1e-9)
+        val saltHistory = RecursiveHistoryProjector.project(
+            RecursiveActionHistory(),
+            state(),
+            saltCure,
+            saltCureAction,
+            wait("opponent_wait"),
+        )
+        assertTrue(OPPONENT_ID in saltHistory.saltCuredPokemonIds)
+        val nextTurn = PublicSingleTurnProjector.project(
+            saltCure.state,
+            wait("ally_wait"),
+            wait("opponent_wait"),
+            context(saltCure.state, listOf(wait("ally_wait"))),
+            saltHistory,
+            chanceEffectMode = ChanceEffectProjectionMode.BRANCH_STATE,
+        ).single()
+        assertEquals(
+            saltedHp - 1.0 / 8.0,
+            nextTurn.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.hpFraction,
+            1e-9,
+        )
     }
 
     @Test
@@ -139,11 +340,60 @@ class LocalLookaheadEvaluationTest {
             context(initial, listOf(inaccurateMoonblast)),
         )
 
-        val totalDropProbability = outcomes.filter { outcome ->
+        assertEquals(2, outcomes.size)
+        assertTrue(outcomes.all { outcome ->
             outcome.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }
-                .statStages["special_attack"] == -1
-        }.sumOf { it.probability }
-        assertEquals(0.15, totalDropProbability, 1e-9)
+                .statStages["special_attack"] == null
+        })
+        assertEquals(
+            0.10 * 0.30 * 0.50,
+            outcomes.sumOf { it.probability * it.expectedScoreAdjustment },
+            1e-9,
+        )
+    }
+
+    @Test
+    fun `damage rolls use one possible lower median state instead of sixteen recursive states`() {
+        val initial = state()
+        val attack = move("median_damage", power = 90.0)
+        val source = context(initial, listOf(attack))
+        val calculated = PublicBattleTacticalCalculator.calculate(source)
+        val calculatedAttack = calculated.candidates.single()
+        val rolls = requireNotNull(
+            PublicBattleTacticalCalculator.conservativeDamageRollFractions(
+                calculatedAttack,
+                calculated,
+                BattleSide.ALLY,
+            ),
+        ).sorted()
+
+        val outcomes = PublicSingleTurnProjector.project(
+            initial,
+            attack,
+            wait("opponent_wait"),
+            source,
+        )
+
+        assertEquals(16, rolls.size)
+        assertEquals(1, outcomes.size)
+        val expectedDamage = rolls[(rolls.size - 1) / 2]
+        val remainingHp = outcomes.single().state.pokemon.single {
+            it.battlePokemonId == OPPONENT_ID
+        }.hpFraction
+        assertEquals(1.0 - expectedDamage, remainingHp, 1e-9)
+    }
+
+    @Test
+    fun `damage roll summary keeps lower median and fractional knockout chance`() {
+        val rolls = (0 until 16).map { index -> 0.90 + index * 0.01 }
+
+        val summary = PublicMoveOutcomeBranchProjector.summarizeDamageRolls(
+            rolls = rolls,
+            targetHpFraction = 1.0,
+        )
+
+        assertEquals(0.97, summary.damageFraction, 1e-9)
+        assertEquals(6.0 / 16.0, summary.knockoutProbability, 1e-9)
     }
 
     @Test
@@ -175,6 +425,400 @@ class LocalLookaheadEvaluationTest {
         assertTrue(outcomes.all { outcome ->
             outcome.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction == 1.0
         })
+    }
+
+    @Test
+    fun `second consecutive stalling protection branches at one third success`() {
+        val initial = state(allySpeed = 80, opponentSpeed = 120)
+        val protect = stallingProtection("protect")
+        val opponentHit = move("opponent_hit", side = BattleSide.OPPONENT, power = 100.0)
+
+        val outcomes = PublicSingleTurnProjector.project(
+            initial,
+            protect,
+            opponentHit,
+            context(initial, listOf(protect)),
+            history = RecursiveActionHistory(protectionChainByPokemon = mapOf(ALLY_ID to 1)),
+        )
+
+        val success = outcomes.single { it.protectionResultsByPokemon[ALLY_ID] == true }
+        val failure = outcomes.single { it.protectionResultsByPokemon[ALLY_ID] == false }
+        assertEquals(1.0 / 3.0, success.probability, 1e-9)
+        assertEquals(2.0 / 3.0, failure.probability, 1e-9)
+        assertEquals(1.0, success.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction, 1e-9)
+        assertTrue(failure.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction < 1.0)
+    }
+
+    @Test
+    fun `detect shares the stalling chain and third attempt succeeds one ninth`() {
+        val initial = state(allySpeed = 80, opponentSpeed = 120)
+        val detect = stallingProtection("detect")
+        val opponentHit = move("opponent_hit", side = BattleSide.OPPONENT, power = 100.0)
+
+        val outcomes = PublicSingleTurnProjector.project(
+            initial,
+            detect,
+            opponentHit,
+            context(initial, listOf(detect)),
+            history = RecursiveActionHistory(protectionChainByPokemon = mapOf(ALLY_ID to 2)),
+        )
+
+        assertEquals(1.0 / 9.0, outcomes.single { it.protectionResultsByPokemon[ALLY_ID] == true }.probability, 1e-9)
+        assertEquals(8.0 / 9.0, outcomes.single { it.protectionResultsByPokemon[ALLY_ID] == false }.probability, 1e-9)
+    }
+
+    @Test
+    fun `stalling protection chance bottoms out at one over seven hundred twenty nine`() {
+        assertEquals(1.0 / 729.0, LocalStallingProtectionRules.nextSuccessProbability(6), 1e-12)
+        assertEquals(1.0 / 729.0, LocalStallingProtectionRules.nextSuccessProbability(12), 1e-12)
+    }
+
+    @Test
+    fun `public protection chain reads protected target events and resets on the next failed use`() {
+        val successfulEvents = listOf("protect", "detect").flatMapIndexed { index, moveId ->
+            val turn = index + 1
+            val sequence = index.toLong() * 2L + 1L
+            listOf(
+                BattleObservedEventView(
+                    sequence,
+                    turn,
+                    BattleObservedEventKind.MOVE_USED,
+                    actorPokemonId = ALLY_ID,
+                    publicValueId = "cobblemon:$moveId",
+                ),
+                BattleObservedEventView(
+                    sequence + 1L,
+                    turn,
+                    BattleObservedEventKind.MOVE_OUTCOME,
+                    targetPokemonIds = listOf(ALLY_ID),
+                    moveOutcome = BattleMoveOutcomeView(
+                        BattleMoveOutcomeKind.PROTECTION_STARTED,
+                        publicEffectId = "protect",
+                    ),
+                ),
+            )
+        }
+        val successfulState = state(turn = 3, observedEvents = successfulEvents)
+        val failedState = state(
+            turn = 4,
+            observedEvents = successfulEvents + BattleObservedEventView(
+                sequence = 5L,
+                turn = 3,
+                kind = BattleObservedEventKind.MOVE_USED,
+                actorPokemonId = ALLY_ID,
+                publicValueId = "cobblemon:protect",
+            ),
+        )
+
+        assertEquals(2, LocalStallingProtectionRules.consecutiveSuccessfulUses(successfulState, BattleSide.ALLY))
+        assertEquals(0, LocalStallingProtectionRules.consecutiveSuccessfulUses(failedState, BattleSide.ALLY))
+        assertEquals(2, RecursiveSnapshotActionConstraints.seed(successfulState).protectionChainByPokemon[ALLY_ID])
+    }
+
+    @Test
+    fun `guaranteed side guard advances the shared counter without using its failure chance`() {
+        val initial = state(allySpeed = 80, opponentSpeed = 120)
+        val quickGuard = move(
+            id = "quick_guard",
+            category = BattleMoveDamageCategory.STATUS,
+            power = 0.0,
+            priority = 3,
+            targetPattern = BattleMoveTargetPattern.SELF,
+            effects = BattleMoveEffectsView(
+                coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                effects = emptyList(),
+                scriptedBehavior = true,
+                mechanicFlags = setOf("stall_counter_advance"),
+            ),
+        )
+        val opponentStatus = move(
+            "opponent_status",
+            side = BattleSide.OPPONENT,
+            category = BattleMoveDamageCategory.STATUS,
+            power = 0.0,
+            targetPattern = BattleMoveTargetPattern.SELF,
+        )
+
+        val outcome = PublicSingleTurnProjector.project(
+            initial,
+            quickGuard,
+            opponentStatus,
+            context(initial, listOf(quickGuard)),
+        ).single()
+        val nextHistory = RecursiveHistoryProjector.project(
+            RecursiveActionHistory(),
+            initial,
+            outcome,
+            quickGuard,
+            opponentStatus,
+        )
+
+        assertEquals(true, outcome.protectionResultsByPokemon[ALLY_ID])
+        assertEquals(1, nextHistory.protectionChainByPokemon[ALLY_ID])
+    }
+
+    @Test
+    fun `failed stalling protection resets the next attempt to certain success`() {
+        val initial = state(allySpeed = 80, opponentSpeed = 120)
+        val protect = stallingProtection("protect")
+        val opponentHit = move("opponent_hit", side = BattleSide.OPPONENT, power = 100.0)
+        val previous = RecursiveActionHistory(protectionChainByPokemon = mapOf(ALLY_ID to 1))
+        val failed = PublicSingleTurnProjector.project(
+            initial,
+            protect,
+            opponentHit,
+            context(initial, listOf(protect)),
+            history = previous,
+        ).single { it.protectionResultsByPokemon[ALLY_ID] == false }
+        val nextHistory = RecursiveHistoryProjector.project(previous, initial, failed, protect, opponentHit)
+
+        val next = PublicSingleTurnProjector.project(
+            failed.state,
+            protect,
+            opponentHit,
+            context(failed.state, listOf(protect)),
+            history = nextHistory,
+        )
+
+        assertEquals(0, nextHistory.protectionChainByPokemon[ALLY_ID] ?: 0)
+        assertEquals(1, next.size)
+        assertEquals(1.0, next.single().probability, 1e-9)
+        assertEquals(true, next.single().protectionResultsByPokemon[ALLY_ID])
+    }
+
+    @Test
+    fun `repeated protection remains a real winning branch when toxic residual finishes the opponent`() {
+        val initial = state(
+            allySpeed = 80,
+            opponentSpeed = 120,
+            allyHp = 0.20,
+            opponentHp = 0.05,
+            opponentStatus = "tox",
+        )
+        val protect = stallingProtection("protect")
+        val knockout = move("opponent_knockout", side = BattleSide.OPPONENT, power = 500.0)
+
+        val outcomes = PublicSingleTurnProjector.project(
+            initial,
+            protect,
+            knockout,
+            context(initial, listOf(protect)),
+            history = RecursiveActionHistory(
+                protectionChainByPokemon = mapOf(ALLY_ID to 2),
+                badPoisonTurnsByPokemon = mapOf(OPPONENT_ID to 1),
+            ),
+        )
+        val success = outcomes.single { it.protectionResultsByPokemon[ALLY_ID] == true }
+        val failure = outcomes.single { it.protectionResultsByPokemon[ALLY_ID] == false }
+
+        assertEquals(1.0 / 9.0, success.probability, 1e-9)
+        assertTrue(success.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction > 0.0)
+        assertTrue(success.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.fainted)
+        assertTrue(failure.state.pokemon.single { it.battlePokemonId == ALLY_ID }.fainted)
+    }
+
+    @Test
+    fun `sucker punch executes only against a still pending damaging move`() {
+        val initial = state(allySpeed = 80, opponentSpeed = 120)
+        val suckerPunch = move(
+            id = "sucker_punch",
+            power = 70.0,
+            priority = 1,
+            effects = BattleMoveEffectsView(
+                coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                effects = emptyList(),
+                scriptedBehavior = true,
+                requirements = listOf(
+                    BattleMoveRequirementView(BattleMoveRequirementKind.TARGET_PENDING_DAMAGING_MOVE),
+                ),
+            ),
+        )
+        val opponentAttack = move("opponent_attack", side = BattleSide.OPPONENT, power = 80.0)
+        val opponentStatus = move(
+            "opponent_status",
+            side = BattleSide.OPPONENT,
+            category = BattleMoveDamageCategory.STATUS,
+            power = 0.0,
+            targetPattern = BattleMoveTargetPattern.SELF,
+        )
+
+        val attackOutcome = PublicSingleTurnProjector.project(
+            initial,
+            suckerPunch,
+            opponentAttack,
+            context(initial, listOf(suckerPunch)),
+        ).single()
+        val statusOutcome = PublicSingleTurnProjector.project(
+            initial,
+            suckerPunch,
+            opponentStatus,
+            context(initial, listOf(suckerPunch)),
+        ).single()
+
+        assertTrue(attackOutcome.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.hpFraction < 1.0)
+        assertEquals(1.0, statusOutcome.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.hpFraction, 1e-9)
+    }
+
+    @Test
+    fun `lookahead does not rate sucker punch as guaranteed against a status response`() {
+        val initial = state(allySpeed = 120, opponentSpeed = 100)
+        val suckerPunch = move(
+            id = "sucker_punch",
+            power = 70.0,
+            priority = 1,
+            effects = BattleMoveEffectsView(
+                coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                effects = emptyList(),
+                scriptedBehavior = true,
+                requirements = listOf(
+                    BattleMoveRequirementView(BattleMoveRequirementKind.TARGET_PENDING_DAMAGING_MOVE),
+                ),
+            ),
+        )
+        val fireBlast = move(
+            id = "fire_blast",
+            typeId = "fire",
+            category = BattleMoveDamageCategory.SPECIAL,
+            power = 110.0,
+        )
+        val opponentAttack = move("opponent_attack", side = BattleSide.OPPONENT, power = 80.0)
+        val opponentStatus = move(
+            "opponent_status",
+            side = BattleSide.OPPONENT,
+            category = BattleMoveDamageCategory.STATUS,
+            power = 0.0,
+            targetPattern = BattleMoveTargetPattern.SELF,
+        )
+        val source = context(
+            initial,
+            listOf(suckerPunch, fireBlast),
+            catalog(
+                allyMoves = listOf(suckerPunch, fireBlast),
+                opponentMoves = listOf(opponentAttack, opponentStatus),
+            ),
+        )
+
+        val evaluated = LocalRecursiveLookaheadEvaluator.evaluate(
+            listOf(rank(suckerPunch), rank(fireBlast)),
+            source,
+            BattleTrainerProfile.balanced(skillLevel = 1),
+            clockMillis = { 0L },
+        )
+        val values = evaluated.ranked.associate { it.outcome.candidate.actionId to it.comparisonValue }
+        assertTrue(values.getValue("fire_blast") > values.getValue("sucker_punch"))
+    }
+
+    @Test
+    fun `mega houndoom prefers special fire pressure to resisted sucker punch into drapion`() {
+        val initial = state(
+            allySpeed = 185,
+            opponentSpeed = 115,
+            allyTypes = setOf("dark", "fire"),
+            opponentTypes = setOf("poison", "dark"),
+            allySpeciesId = "cobblemon:houndoom",
+            allyFormId = "mega",
+            allyCombatStats = BattleCombatStatRangesView.exact(150, 85, 105, 200, 120, 185),
+        )
+        val suckerPunch = move(
+            id = "sucker_punch",
+            typeId = "dark",
+            power = 70.0,
+            priority = 1,
+            effects = BattleMoveEffectsView(
+                coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                effects = emptyList(),
+                scriptedBehavior = true,
+                requirements = listOf(
+                    BattleMoveRequirementView(BattleMoveRequirementKind.TARGET_PENDING_DAMAGING_MOVE),
+                ),
+            ),
+        )
+        val fireBlast = move(
+            id = "fire_blast",
+            typeId = "fire",
+            category = BattleMoveDamageCategory.SPECIAL,
+            power = 110.0,
+            accuracy = 85.0,
+        )
+        val crossPoison = move(
+            id = "cross_poison",
+            side = BattleSide.OPPONENT,
+            typeId = "poison",
+            power = 70.0,
+        )
+        val swordsDance = move(
+            id = "swords_dance",
+            side = BattleSide.OPPONENT,
+            category = BattleMoveDamageCategory.STATUS,
+            power = 0.0,
+            targetPattern = BattleMoveTargetPattern.SELF,
+        )
+        val source = context(
+            initial,
+            listOf(suckerPunch, fireBlast),
+            catalog(
+                allyMoves = listOf(suckerPunch, fireBlast),
+                opponentMoves = listOf(crossPoison, swordsDance),
+            ),
+        )
+
+        val evaluated = LocalRecursiveLookaheadEvaluator.evaluate(
+            listOf(rank(suckerPunch), rank(fireBlast)),
+            source,
+            BattleTrainerProfile.balanced(skillLevel = 1),
+            clockMillis = { 0L },
+        )
+        val values = evaluated.ranked.associate { it.outcome.candidate.actionId to it.comparisonValue }
+        val mixedSelection = LocalWeightedActionSelector().choose(
+            evaluated.ranked,
+            seed = 0L,
+            context = LocalActionMixingContext.balanced(riskTolerance = 1.0).copy(
+                uncertainConditionalActionIds = setOf("sucker_punch"),
+            ),
+        )
+
+        assertTrue(values.getValue("fire_blast") > values.getValue("sucker_punch"))
+        assertEquals("fire_blast", mixedSelection.rank.outcome.candidate.actionId)
+        assertEquals(1, mixedSelection.shortlistSize, "comparison values=$values")
+    }
+
+    @Test
+    fun `sucker punch shortlist score pays for known status alternatives`() {
+        val initial = state()
+        val suckerPunch = move(
+            id = "sucker_punch",
+            power = 70.0,
+            priority = 1,
+            effects = BattleMoveEffectsView(
+                coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                effects = emptyList(),
+                scriptedBehavior = true,
+                requirements = listOf(
+                    BattleMoveRequirementView(BattleMoveRequirementKind.TARGET_PENDING_DAMAGING_MOVE),
+                ),
+            ),
+        )
+        val opponentAttack = move("opponent_attack", side = BattleSide.OPPONENT)
+        val opponentStatus = move(
+            "opponent_status",
+            side = BattleSide.OPPONENT,
+            category = BattleMoveDamageCategory.STATUS,
+            power = 0.0,
+            targetPattern = BattleMoveTargetPattern.SELF,
+        )
+        val onlyAttack = context(
+            initial,
+            listOf(suckerPunch),
+            catalog(opponentMoves = listOf(opponentAttack)),
+        )
+        val mixed = context(
+            initial,
+            listOf(suckerPunch),
+            catalog(opponentMoves = listOf(opponentAttack, opponentStatus)),
+        )
+
+        assertEquals(0.0, LocalTacticalSituationalEvaluator.pendingDamagingMoveRiskPenalty(suckerPunch, onlyAttack))
+        assertTrue(LocalTacticalSituationalEvaluator.pendingDamagingMoveRiskPenalty(suckerPunch, mixed) > 0.0)
     }
 
     @Test
@@ -312,6 +956,24 @@ class LocalLookaheadEvaluationTest {
         val initial = state(allySpeed = 120, opponentSpeed = 100, allyStatus = "cobblemon:paralysis")
 
         assertEquals(LocalPublicSpeedRelation.OPPONENT_FIRST, LocalLookaheadStateEvaluator.speedRelation(initial))
+    }
+
+    @Test
+    fun `trick room reverses the leaf speed relation while active`() {
+        val trickRoom = BattleTimedEffectView("cobblemon:trickroom", remainingTurns = 3)
+        val initial = state(
+            allySpeed = 60,
+            opponentSpeed = 120,
+            field = BattleFieldStateView(
+                weather = null,
+                terrain = null,
+                roomEffects = listOf(trickRoom),
+                globalEffects = emptyList(),
+                sideConditions = BattleSide.entries.associateWith { emptyList() },
+            ),
+        )
+
+        assertEquals(LocalPublicSpeedRelation.ALLY_FIRST, LocalLookaheadStateEvaluator.speedRelation(initial))
     }
 
     @Test
@@ -1216,11 +1878,19 @@ class LocalLookaheadEvaluationTest {
             listOf(rank(plain), rank(moonblast)),
             source,
             BattleTrainerProfile.balanced(0, BattleDifficultyProfiles.INTRODUCTORY),
+            clockMillis = { 0L },
         )
 
+        val moonblastValue = result.ranked.single {
+            it.outcome.candidate.actionId == "moonblast_with_drop"
+        }.lookaheadUtility
+        val plainValue = result.ranked.single {
+            it.outcome.candidate.actionId == "plain_fairy_hit"
+        }.lookaheadUtility
         assertTrue(
-            result.ranked.single { it.outcome.candidate.actionId == "moonblast_with_drop" }.lookaheadUtility >
-                result.ranked.single { it.outcome.candidate.actionId == "plain_fairy_hit" }.lookaheadUtility,
+            moonblastValue > plainValue,
+            "expected secondary drop value: moonblast=$moonblastValue plain=$plainValue " +
+                "depth=${result.depthCompleted} truncated=${result.truncated}",
         )
     }
 
@@ -1372,6 +2042,13 @@ class LocalLookaheadEvaluationTest {
         opponentBench: BattlePokemonStateView? = null,
         allyActionConstraints: BattlePokemonActionConstraintView = BattlePokemonActionConstraintView.empty(),
         observedEvents: List<BattleObservedEventView> = emptyList(),
+        opponentHp: Double = 1.0,
+        opponentStatus: String? = null,
+        allySpeciesId: String = "showdown:test",
+        allyFormId: String? = null,
+        allyCombatStats: BattleCombatStatRangesView? = null,
+        allyStatStages: Map<String, Int> = emptyMap(),
+        field: BattleFieldStateView = BattleFieldStateView.empty(),
     ) = BattleStateView(
         battleId = BATTLE_ID,
         format = BattleFormat.SINGLE,
@@ -1386,18 +2063,24 @@ class LocalLookaheadEvaluationTest {
                 knownAbility = allyAbility,
                 types = allyTypes,
                 actionConstraints = allyActionConstraints,
+                speciesId = allySpeciesId,
+                formId = allyFormId,
+                combatStats = allyCombatStats,
+                statStages = allyStatStages,
             ),
             pokemon(
                 OPPONENT_ID,
                 BattleSide.OPPONENT,
                 opponentSpeed,
+                hp = opponentHp,
+                status = opponentStatus,
                 knownAbility = opponentAbility,
                 types = opponentTypes,
             ),
             bench,
             opponentBench,
         ),
-        field = BattleFieldStateView.empty(),
+        field = field,
         remainingPokemonBySide = mapOf(
             BattleSide.ALLY to if (bench == null) 1 else 2,
             BattleSide.OPPONENT to if (opponentBench == null) 1 else 2,
@@ -1420,6 +2103,7 @@ class LocalLookaheadEvaluationTest {
         combatStats: BattleCombatStatRangesView? = null,
         knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
         actionConstraints: BattlePokemonActionConstraintView = BattlePokemonActionConstraintView.empty(),
+        statStages: Map<String, Int> = emptyMap(),
     ) = BattlePokemonStateView(
         battlePokemonId = id,
         side = side,
@@ -1429,7 +2113,7 @@ class LocalLookaheadEvaluationTest {
         level = 50,
         hpFraction = hp,
         statusId = status,
-        statStages = emptyMap(),
+        statStages = statStages,
         knownMoveIds = emptySet(),
         knownAbilityId = knownAbility,
         knownHeldItemId = null,
@@ -1461,7 +2145,7 @@ class LocalLookaheadEvaluationTest {
         accuracy: Double = 100.0,
         priority: Int = 0,
         currentPp: Int = 10,
-        targetPattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED,
+        targetPattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
         effects: BattleMoveEffectsView? = null,
     ) = BattleActionCandidate(
         actionId = id,
@@ -1469,7 +2153,9 @@ class LocalLookaheadEvaluationTest {
         actorSlot = 0,
         moveSlot = 0,
         moveId = "cobblemon:$id",
-        targets = if (targetPattern == BattleMoveTargetPattern.SELECTED) {
+        targets = if (targetPattern == BattleMoveTargetPattern.SELECTED ||
+            targetPattern == BattleMoveTargetPattern.SELECTED_OPPONENT
+        ) {
             listOf(BattleTargetSlot(if (side == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY, 0))
         } else {
             emptyList()
@@ -1492,6 +2178,26 @@ class LocalLookaheadEvaluationTest {
         coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
         effects = effects.toList(),
         scriptedBehavior = false,
+    )
+
+    private fun stallingProtection(id: String) = move(
+        id = id,
+        category = BattleMoveDamageCategory.STATUS,
+        power = 0.0,
+        priority = 4,
+        targetPattern = BattleMoveTargetPattern.SELF,
+        effects = BattleMoveEffectsView(
+            coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+            effects = listOf(
+                BattleMoveEffectView(
+                    kind = BattleMoveEffectKind.PROTECT_USER,
+                    target = BattleMoveEffectTarget.USER,
+                    probability = 1.0,
+                ),
+            ),
+            scriptedBehavior = true,
+            mechanicFlags = setOf("stalling_move"),
+        ),
     )
 
     private fun rank(candidate: BattleActionCandidate) = LocalBattleActionRank(

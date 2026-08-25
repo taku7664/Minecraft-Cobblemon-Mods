@@ -9,11 +9,21 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import jbro.cobblemon.morebattlecontent.api.ai.*
+import jbro.cobblemon.morebattlecontent.betterai.brain.OpenRouterTacticalBrain
+import jbro.cobblemon.morebattlecontent.betterai.brain.OpenRouterTransport
+import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.morebattlecontent.betterai.router.BetterAiConfig
+import jbro.cobblemon.morebattlecontent.betterai.router.BetterAiConfigStore
+import jbro.cobblemon.morebattlecontent.betterai.router.BetterAiDecisionMode
+import jbro.cobblemon.morebattlecontent.betterai.router.HumanlikePromptCodec
+import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterDecisionSummarySink
+import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterModelCapabilities
+import jbro.cobblemon.morebattlecontent.betterai.router.RouterActivationMode
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class HumanlikeExternalBrainTest {
@@ -641,7 +651,7 @@ class HumanlikeExternalBrainTest {
         )
         val digest = promptDigest(request)
 
-        assertEquals("brain-choice-v21", digest["promptVersion"].asString)
+        assertEquals("brain-choice-v22", digest["promptVersion"].asString)
         assertTrue(request.contains("DECLARATIVE_PARTIAL"))
         assertTrue(request.contains("HEAL_FRACTION"))
         assertTrue(request.contains("scriptedBehavior"))
@@ -654,6 +664,91 @@ class HumanlikeExternalBrainTest {
         assertTrue(request.contains("mustRecharge"))
         assertFalse(request.contains("localRank"))
         assertFalse(request.contains("recommendedAction"))
+    }
+
+    @Test
+    fun `double prompt exposes exact shared protection chance without local utility`() {
+        val base = context(turn = 3)
+        val protect = BattleActionCandidate(
+            actionId = "protect",
+            kind = BattleActionKind.USE_MOVE,
+            actorSlot = 0,
+            moveSlot = 0,
+            moveId = "cobblemon:protect",
+            moveDetails = BattleMoveCandidateView(
+                typeId = "normal",
+                damageCategory = BattleMoveDamageCategory.STATUS,
+                power = 0.0,
+                accuracy = 100.0,
+                priority = 4,
+                currentPp = 10,
+                targetPattern = BattleMoveTargetPattern.SELF,
+                effects = BattleMoveEffectsView(
+                    coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                    effects = listOf(
+                        BattleMoveEffectView(BattleMoveEffectKind.PROTECT_USER, BattleMoveEffectTarget.USER),
+                    ),
+                    scriptedBehavior = true,
+                    mechanicFlags = setOf("stalling_move"),
+                ),
+            ),
+        )
+        val protectionEvents = listOf("protect", "detect").flatMapIndexed { index, moveId ->
+            val turn = index + 1
+            val sequence = index.toLong() * 2L + 1L
+            listOf(
+                BattleObservedEventView(
+                    sequence = sequence,
+                    turn = turn,
+                    kind = BattleObservedEventKind.MOVE_USED,
+                    actorPokemonId = allyId,
+                    publicValueId = "cobblemon:$moveId",
+                ),
+                BattleObservedEventView(
+                    sequence = sequence + 1L,
+                    turn = turn,
+                    kind = BattleObservedEventKind.MOVE_OUTCOME,
+                    targetPokemonIds = listOf(allyId),
+                    moveOutcome = BattleMoveOutcomeView(
+                        kind = BattleMoveOutcomeKind.PROTECTION_STARTED,
+                        publicEffectId = "protect",
+                    ),
+                ),
+            )
+        }
+        val stateWithProtectionHistory = BattleStateView(
+            battleId = base.state.battleId,
+            format = BattleFormat.DOUBLE,
+            turn = base.state.turn,
+            pokemon = base.state.pokemon,
+            field = base.state.field,
+            remainingPokemonBySide = base.state.remainingPokemonBySide,
+            observedEvents = protectionEvents,
+            inferences = base.state.inferences,
+        )
+        val decisionContext = BattleDecisionContext(
+            requestId = base.requestId,
+            state = stateWithProtectionHistory,
+            candidates = listOf(protect),
+            deadlineEpochMillis = base.deadlineEpochMillis,
+            memory = BattleTacticalMemoryView(
+                lastMoveId = "cobblemon:detect",
+                sameMoveRepeatCount = 1,
+            ),
+        )
+
+        val request = HumanlikePromptCodec.requestJson(
+            BetterAiConfig(enabled = true, apiKey = "test", model = "test/model"),
+            open.copy(format = BattleFormat.DOUBLE),
+            decisionContext,
+        )
+        val protection = promptDigest(request).getAsJsonArray("candidates")[0].asJsonObject
+            .getAsJsonObject("stallingProtection")
+
+        assertEquals(2, protection["consecutiveSuccessfulUses"].asInt)
+        assertEquals(1.0 / 9.0, protection["nextSuccessProbability"].asDouble, 1e-9)
+        assertFalse(request.contains("expectedUtility"))
+        assertFalse(request.contains("localRank"))
     }
 
     @Test
@@ -702,7 +797,11 @@ class HumanlikeExternalBrainTest {
         val digest = promptDigest(
             HumanlikePromptCodec.requestJson(
                 BetterAiConfig(enabled = true, apiKey = "test", model = "test/model"),
-                BattleBrainOpenContext(battleId, BattleFormat.DOUBLE),
+                BattleBrainOpenContext(
+                    battleId,
+                    BattleFormat.DOUBLE,
+                    trainerProfile = BattleTrainerProfile.balanced(5, BattleDifficultyProfiles.BOSS),
+                ),
                 context,
             ),
         )
@@ -715,6 +814,7 @@ class HumanlikeExternalBrainTest {
         assertEquals("opponent1", boardBySpecies.getValue("showdown:a_opponent").asJsonObject["slot"].asString)
         assertEquals("opponent0", candidates[0].getAsJsonArray("targets")[0].asJsonObject["activeAlias"].asString)
         assertEquals("opponent1", candidates[1].getAsJsonArray("targets")[0].asJsonObject["activeAlias"].asString)
+        assertEquals(4, digest.getAsJsonObject("trainer").getAsJsonObject("difficulty")["lookaheadPlies"].asInt)
     }
 
     @Test
@@ -806,7 +906,7 @@ class HumanlikeExternalBrainTest {
         val trainer = digest.getAsJsonObject("trainer")
         val boardAlly = digest.getAsJsonArray("board")[0].asJsonObject
 
-        assertEquals("brain-choice-v21", digest["promptVersion"].asString)
+        assertEquals("brain-choice-v22", digest["promptVersion"].asString)
         assertEquals("Establish rain, then preserve the cleaner for the endgame.", trainer["aiSummary"].asString)
         assertEquals("Use Rain Dance when the field is clear.", trainer.getAsJsonArray("members")[0].asJsonObject["tacticalSummary"].asString)
         assertEquals(2, digest.getAsJsonObject("remainingPokemonBySide")["ALLY"].asInt)
@@ -848,6 +948,7 @@ class HumanlikeExternalBrainTest {
                     opponentId,
                     publicValueId = "quickattack",
                     baseMovePriority = 1,
+                    actorSlot = 0,
                 ),
                 BattleObservedEventView(
                     21,
@@ -955,6 +1056,7 @@ class HumanlikeExternalBrainTest {
         val relation = digest.getAsJsonArray("inferences")[0].asJsonObject
 
         assertEquals(1, action["baseMovePriority"].asInt)
+        assertEquals(0, action["actorSlot"].asInt)
         assertEquals("opponent0", damage.getAsJsonObject("precedingAction")["actor"].asString)
         assertEquals("quickattack", damage.getAsJsonObject("precedingAction")["moveId"].asString)
         assertEquals("brn", residual["publicSourceEffectId"].asString)

@@ -8,6 +8,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.jar.JarFile
+import jbro.cobblemon.morebattlecontent.internal.battle.LegendaryClassPolicy
 import kotlin.random.Random
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -140,6 +141,32 @@ class FactoryCatalogResourceTest {
     }
 
     @Test
+    fun `bundled rentals preserve original legendary class unlock timing`() {
+        val catalog = bundledCatalog()
+
+        (1..7).forEach { round ->
+            assertNoLegendaryClass(catalog.rentalPool(FactoryProgression.playerPoolWindow(FactoryLevelMode.LEVEL_50, round)))
+            assertNoLegendaryClass(catalog.rentalPool(FactoryProgression.opponentPoolWindow(FactoryLevelMode.LEVEL_50, round)))
+        }
+        (1..4).forEach { round ->
+            assertNoLegendaryClass(catalog.rentalPool(FactoryProgression.playerPoolWindow(FactoryLevelMode.OPEN_LEVEL, round)))
+            assertNoLegendaryClass(catalog.rentalPool(FactoryProgression.opponentPoolWindow(FactoryLevelMode.OPEN_LEVEL, round)))
+        }
+
+        val openRoundOne = catalog.rentalPool(FactoryProgression.playerPoolWindow(FactoryLevelMode.OPEN_LEVEL, 1))
+        assertTrue(openRoundOne.any { it.speciesId == "cobblemon:ursaluna" })
+        assertTrue(openRoundOne.none { it.speciesId == "cobblemon:calyrex" })
+        assertTrue(
+            catalog.rentalPool(FactoryProgression.playerPoolWindow(FactoryLevelMode.OPEN_LEVEL, 5))
+                .any { LegendaryClassPolicy.isLegendaryClass(it.speciesId) },
+        )
+        assertTrue(
+            catalog.rentalPool(FactoryProgression.playerPoolWindow(FactoryLevelMode.LEVEL_50, 8))
+                .any { LegendaryClassPolicy.isLegendaryClass(it.speciesId) },
+        )
+    }
+
+    @Test
     fun `every bundled trainer has unique translated names and a shared explanation`() {
         val catalog = bundledCatalog()
         val english = language("en_us")
@@ -210,14 +237,21 @@ class FactoryCatalogResourceTest {
     }
 
     private fun approvedPools(catalog: FactoryCatalog): Map<String, List<FactoryRentalTemplate>> = linkedMapOf(
-        "starter-1" to catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.STARTER, setOf(1))),
-        "intermediate-1" to catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.INTERMEDIATE, setOf(1))),
-        "intermediate-2" to catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.INTERMEDIATE, setOf(2))),
-        "advanced-1" to catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(1))),
-        "advanced-2" to catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(2))),
-        "advanced-3" to catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(3))),
-        "advanced-4" to catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(4))),
+        "starter-1" to catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.STARTER, setOf(1), legendaryClassAllowed = true)),
+        "intermediate-1" to catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.INTERMEDIATE, setOf(1), legendaryClassAllowed = true)),
+        "intermediate-2" to catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.INTERMEDIATE, setOf(2), legendaryClassAllowed = true)),
+        "advanced-1" to catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(1), legendaryClassAllowed = true)),
+        "advanced-2" to catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(2), legendaryClassAllowed = true)),
+        "advanced-3" to catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(3), legendaryClassAllowed = true)),
+        "advanced-4" to catalog.rentalPool(FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(4), legendaryClassAllowed = true)),
     )
+
+    private fun assertNoLegendaryClass(pool: List<FactoryRentalTemplate>) {
+        assertTrue(
+            pool.none { LegendaryClassPolicy.isLegendaryClass(it.speciesId) },
+            "Legendary-class rental leaked into an original pre-unlock pool",
+        )
+    }
 
     private fun language(code: String) = javaClass.getResourceAsStream(
         "/assets/cobblemon_more_battle_content/lang/$code.json",

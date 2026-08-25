@@ -384,6 +384,7 @@ internal class Cobblemon173PublicBattleObserver(
             precedingActionMoveId = precedingActionMoveId,
             publicSourceEffectId = publicSourceEffectId,
             moveOutcome = moveOutcome,
+            actorSlot = actor?.let { pokemon[it]?.activeSlot },
         )
         events += event
         while (events.size > maximumRecentEvents) events.removeFirst()

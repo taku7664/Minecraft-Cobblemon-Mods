@@ -58,35 +58,43 @@ class FactoryRentalRulesTest {
     fun `level 50 and open level use distinct original-style pool progressions`() {
         assertEquals(
             FactoryPoolWindow(FactoryPoolGroup.STARTER, setOf(1)),
-            FactoryProgression.poolWindow(FactoryLevelMode.LEVEL_50, 1),
+            FactoryProgression.playerPoolWindow(FactoryLevelMode.LEVEL_50, 1),
         )
         assertEquals(
             FactoryPoolWindow(FactoryPoolGroup.INTERMEDIATE, setOf(1)),
-            FactoryProgression.poolWindow(FactoryLevelMode.LEVEL_50, 2),
+            FactoryProgression.playerPoolWindow(FactoryLevelMode.LEVEL_50, 2),
         )
         assertEquals(
             FactoryPoolWindow(FactoryPoolGroup.INTERMEDIATE, setOf(2)),
-            FactoryProgression.poolWindow(FactoryLevelMode.LEVEL_50, 3),
+            FactoryProgression.playerPoolWindow(FactoryLevelMode.LEVEL_50, 3),
         )
         assertEquals(
             FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(1)),
-            FactoryProgression.poolWindow(FactoryLevelMode.LEVEL_50, 4),
+            FactoryProgression.playerPoolWindow(FactoryLevelMode.LEVEL_50, 4),
         )
         assertEquals(
-            FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(1, 2, 3, 4)),
-            FactoryProgression.poolWindow(FactoryLevelMode.LEVEL_50, 8),
+            FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(1, 2, 3, 4), legendaryClassAllowed = true),
+            FactoryProgression.playerPoolWindow(FactoryLevelMode.LEVEL_50, 8),
         )
         assertEquals(
             FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(1)),
-            FactoryProgression.poolWindow(FactoryLevelMode.OPEN_LEVEL, 1),
+            FactoryProgression.playerPoolWindow(FactoryLevelMode.OPEN_LEVEL, 1),
         )
         assertEquals(
             FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(4)),
-            FactoryProgression.poolWindow(FactoryLevelMode.OPEN_LEVEL, 4),
+            FactoryProgression.playerPoolWindow(FactoryLevelMode.OPEN_LEVEL, 4),
         )
         assertEquals(
-            FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(1, 2, 3, 4)),
-            FactoryProgression.poolWindow(FactoryLevelMode.OPEN_LEVEL, 5),
+            FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(3, 4), legendaryClassAllowed = true),
+            FactoryProgression.playerPoolWindow(FactoryLevelMode.OPEN_LEVEL, 5),
+        )
+        assertEquals(
+            FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(1, 2, 3, 4), legendaryClassAllowed = true),
+            FactoryProgression.opponentPoolWindow(FactoryLevelMode.OPEN_LEVEL, 5),
+        )
+        assertEquals(
+            FactoryPoolWindow(FactoryPoolGroup.ADVANCED, setOf(1, 2, 3, 4), legendaryClassAllowed = true),
+            FactoryProgression.playerPoolWindow(FactoryLevelMode.OPEN_LEVEL, 8),
         )
     }
 

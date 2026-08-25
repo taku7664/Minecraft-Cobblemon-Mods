@@ -21,6 +21,25 @@ import org.junit.jupiter.api.Test
 
 class Cobblemon173PublicBattleObserverTest {
     @Test
+    fun `events preserve the public actor slot at action time across a pivot switch`() {
+        val outgoing = publicPokemon(BattleSide.OPPONENT, activeSlot = 1)
+        val incoming = publicPokemon(BattleSide.OPPONENT, activeSlot = 1)
+        val observer = Cobblemon173PublicBattleObserver(initialOpponentPokemonCount = 3)
+
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, outgoing))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, outgoing, "voltswitch", emptyList()))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(1, incoming))
+
+        val events = observer.publicSnapshot().events
+        assertEquals(
+            1,
+            events.last { it.kind == BattleObservedEventKind.MOVE_USED }.actorSlot,
+            "The outgoing actor slot must survive after the observer marks it inactive",
+        )
+        assertEquals(1, events.last { it.kind == BattleObservedEventKind.SWITCHED }.actorSlot)
+    }
+
+    @Test
     fun `public action constraints persist until cleared and disappear on switch`() {
         val first = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
         val second = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
@@ -520,11 +539,16 @@ class Cobblemon173PublicBattleObserverTest {
                 BattleMessage("|-activate|p2a: Garchomp|move: Substitute"),
             ),
         )
-        assertNull(
-            Cobblemon173ShowdownObservationAdapter.moveOutcomeDescriptor(
-                BattleMessage("|-singleturn|p1a: Pikachu|move: Endure"),
-            ),
-        )
+        listOf("move: Endure", "Max Guard", "Quick Guard", "Wide Guard").forEach { effect ->
+            val stallCounter = requireNotNull(
+                Cobblemon173ShowdownObservationAdapter.moveOutcomeDescriptor(
+                    BattleMessage("|-singleturn|p1a: Pikachu|$effect"),
+                ),
+            )
+            assertEquals(BattleMoveOutcomeKind.PROTECTION_STARTED, stallCounter.outcome.kind, effect)
+            assertEquals("protect", stallCounter.outcome.publicEffectId, effect)
+            assertEquals(listOf(0), stallCounter.targetArguments, effect)
+        }
 
         val hitCount = requireNotNull(
             Cobblemon173ShowdownObservationAdapter.moveOutcomeDescriptor(

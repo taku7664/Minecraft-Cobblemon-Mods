@@ -341,7 +341,13 @@ internal object Cobblemon173ActionCandidateAdapter {
             MoveTarget.foeSide,
             -> BattleMoveTargetPattern.SIDE
             MoveTarget.scripted -> BattleMoveTargetPattern.SCRIPTED
-            else -> BattleMoveTargetPattern.SELECTED
+            MoveTarget.normal,
+            MoveTarget.adjacentFoe,
+            -> BattleMoveTargetPattern.SELECTED_OPPONENT
+            MoveTarget.adjacentAlly -> BattleMoveTargetPattern.SELECTED_ALLY
+            MoveTarget.adjacentAllyOrSelf -> BattleMoveTargetPattern.SELECTED_ALLY_OR_SELF
+            MoveTarget.randomNormal -> BattleMoveTargetPattern.RANDOM_OPPONENT
+            MoveTarget.any -> BattleMoveTargetPattern.SELECTED
         }
 
     private val BattleFormat.activeSlotsPerSide: Int

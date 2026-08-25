@@ -36,4 +36,24 @@ class BattleDecisionDiagnosticsTest {
             ),
         )
     }
+
+    @Test
+    fun `local lookahead summary exposes bounded depth and pruning diagnostics only`() {
+        assertEquals(
+            "source=LOCAL_BRAIN candidate_count=6 elapsed_ms=25 diagnostics=difficulty_standard,lookahead_nodes_81,lookahead_pruned_9,lookahead_turns_2 failures=none",
+            BattleDecisionDiagnostics.summary(
+                source = BattleDecisionSource.LOCAL_BRAIN,
+                candidateCount = 6,
+                elapsedMillis = 25L,
+                diagnosticTags = setOf(
+                    "lookahead_turns_2",
+                    "lookahead_nodes_81",
+                    "lookahead_pruned_9",
+                    "difficulty_standard",
+                    "choice_seed_should_not_be_logged",
+                ),
+                failures = emptyList(),
+            ),
+        )
+    }
 }

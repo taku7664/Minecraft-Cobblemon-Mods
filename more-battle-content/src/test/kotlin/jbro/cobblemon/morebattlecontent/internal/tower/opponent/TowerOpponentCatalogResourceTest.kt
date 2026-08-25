@@ -38,11 +38,13 @@ class TowerOpponentCatalogResourceTest {
                             mechanic = mechanic,
                             legendaryClassAllowed = allowed,
                         ) as TowerOpponentSelectionResult.Selected
-                        assertEquals(
-                            if (allowed) 1 else 0,
-                            result.team.count { TowerLegendaryClassPolicy.isLegendaryClass(it.speciesId) },
-                            "$format $mechanic streak=$streak allowed=$allowed",
-                        )
+                        assertEquals(format.selectionSize, result.team.size)
+                        if (!allowed) {
+                            assertTrue(
+                                result.team.none { TowerLegendaryClassPolicy.isLegendaryClass(it.speciesId) },
+                                "$format $mechanic streak=$streak allowed=false",
+                            )
+                        }
                     }
                 }
             }
@@ -50,7 +52,7 @@ class TowerOpponentCatalogResourceTest {
     }
 
     @Test
-    fun `every reachable tower battle has at least fifty eligible trainers`() {
+    fun `every reachable tower battle has a broad regular pool and dedicated bosses`() {
         val catalog = bundledCatalog()
 
         TowerStreakStage.entries.forEach { stage ->
@@ -66,10 +68,12 @@ class TowerOpponentCatalogResourceTest {
                 MajorBattleMechanic.entries.forEach { mechanic ->
                     reachableKinds.forEach { kind ->
                         val profiles = catalog.profilesFor(stage, format, kind, mechanic)
-                        assertTrue(
-                            profiles.size >= MINIMUM_TRAINERS_PER_CATEGORY,
-                            "$stage $format $kind $mechanic has only ${profiles.size} eligible trainers",
-                        )
+                        val minimum = if (kind == TowerOpponentKind.REGULAR) {
+                            MINIMUM_REGULAR_TRAINERS_PER_CATEGORY
+                        } else {
+                            MINIMUM_BOSSES_PER_CATEGORY
+                        }
+                        assertTrue(profiles.size >= minimum, "$stage $format $kind $mechanic has only ${profiles.size} eligible trainers")
                     }
                 }
             }
@@ -77,17 +81,33 @@ class TowerOpponentCatalogResourceTest {
     }
 
     @Test
-    fun `bundled catalog provides fifty real trainers and broad species pools per category`() {
+    fun `bundled catalog provides many distinct tactical trainers and broad species pools per category`() {
         val catalog = bundledCatalog()
         val profiles = approvedProfiles(catalog)
 
-        assertTrue(profiles.map(TowerOpponentProfile::profileId).toSet().containsAll(setOf("trainer_001", "trainer_050")))
+        val distinctTrainers = profiles.distinctBy(TowerOpponentProfile::profileId)
+        assertEquals(EXPECTED_DISTINCT_TRAINERS, distinctTrainers.size)
+        assertTrue(distinctTrainers.map(TowerOpponentProfile::profileId).toSet().containsAll(setOf("trainer_001", "trainer_096")))
+        assertEquals(TowerTrainerStyle.entries.toSet(), distinctTrainers.map(TowerOpponentProfile::teamStyle).toSet())
+        assertTrue(distinctTrainers.all { it.signatureSpeciesIds.size == SIGNATURE_SPECIES_PER_TRAINER })
+        assertTrue(distinctTrainers.map { it.signatureSpeciesIds }.distinct().size >= MINIMUM_DISTINCT_SIGNATURE_GROUPS)
+        distinctTrainers.forEach { trainer ->
+            assertTrue(
+                trainer.teamStyle == TowerTrainerStyle.BALANCED || catalog.setsFor(trainer).any(trainer.teamStyle::matches),
+                "${trainer.profileId} has no ${trainer.teamStyle.serializedId} signature set",
+            )
+        }
         val categories = profiles.groupBy {
             listOf(it.stageIds, it.format, it.opponentKind, it.mechanic, it.theme)
         }
         assertEquals(EXPECTED_PROFILE_CATEGORY_COUNT, categories.size)
         categories.forEach { (category, trainers) ->
-            assertEquals(MINIMUM_TRAINERS_PER_CATEGORY, trainers.size, category.toString())
+            val minimum = if (trainers.first().opponentKind == TowerOpponentKind.REGULAR) {
+                MINIMUM_REGULAR_TRAINERS_PER_CATEGORY
+            } else {
+                MINIMUM_BOSSES_PER_CATEGORY
+            }
+            assertTrue(trainers.size >= minimum, category.toString())
             assertEquals(1, trainers.map { it.setIds.sorted() }.distinct().size, "Trainers in $category must share its rule-driven pool")
         }
         profiles.forEach { profile ->
@@ -136,6 +156,38 @@ class TowerOpponentCatalogResourceTest {
     }
 
     @Test
+    fun `every bundled tactical style puts a signature set on its selected team`() {
+        val catalog = bundledCatalog()
+        val categories = approvedProfiles(catalog).groupBy {
+            listOf(it.stageIds, it.format, it.opponentKind, it.mechanic, it.theme)
+        }
+
+        categories.values.forEach { profiles ->
+            profiles.distinctBy(TowerOpponentProfile::teamStyle).forEach { target ->
+                if (target.teamStyle == TowerTrainerStyle.BALANCED) return@forEach
+                val result = TowerOpponentSelector(catalog).select(
+                    stage = target.stageIds.first(),
+                    format = target.format,
+                    opponentKind = target.opponentKind,
+                    mechanic = requireNotNull(target.mechanic),
+                    excludedProfileIds = profiles.map(TowerOpponentProfile::profileId).filterNot { it == target.profileId }.toSet(),
+                    legendaryClassAllowed = true,
+                ) as TowerOpponentSelectionResult.Selected
+
+                assertEquals(target.profileId, result.profile.profileId)
+                assertTrue(
+                    result.team.any(target.teamStyle::matches),
+                    "${target.profileId} selected no ${target.teamStyle.serializedId} signature",
+                )
+                assertTrue(
+                    result.team.any { it.speciesId in target.signatureSpeciesIds },
+                    "${target.profileId} selected none of its signature species ${target.signatureSpeciesIds}",
+                )
+            }
+        }
+    }
+
+    @Test
     fun `approved trainer profile names exist in both bundled languages`() {
         val english = language("en_us")
         val korean = language("ko_kr")
@@ -143,14 +195,12 @@ class TowerOpponentCatalogResourceTest {
         val profiles = approvedProfiles(bundledCatalog())
         val englishNames = profiles.map { english[it.displayNameKey].asString }
         val koreanNames = profiles.map { korean[it.displayNameKey].asString }
-        assertTrue(englishNames.distinct().size >= MINIMUM_TRAINERS_PER_CATEGORY)
-        assertTrue(koreanNames.distinct().size >= MINIMUM_TRAINERS_PER_CATEGORY)
-
-        EXPECTED_NAMES.forEach { (profileId, names) ->
-            val key = "trainer.cobblemon_more_battle_content.$profileId"
-            assertEquals(names.first, english[key].asString)
-            assertEquals(names.second, korean[key].asString)
-        }
+        assertEquals(EXPECTED_DISTINCT_TRAINERS, englishNames.distinct().size)
+        assertEquals(EXPECTED_DISTINCT_TRAINERS, koreanNames.distinct().size)
+        val bosses = profiles.filter { it.opponentKind != TowerOpponentKind.REGULAR }.distinctBy(TowerOpponentProfile::profileId)
+        assertEquals(EXPECTED_DEDICATED_BOSSES, bosses.size)
+        assertTrue(bosses.all { english[it.displayNameKey].asString.startsWith("Tower Ace ") })
+        assertTrue(bosses.all { korean[it.displayNameKey].asString.startsWith("타워 에이스 ") })
     }
 
     @Test
@@ -272,33 +322,17 @@ class TowerOpponentCatalogResourceTest {
     }
 
     private companion object {
-        const val MINIMUM_TRAINERS_PER_CATEGORY = 50
+        const val MINIMUM_REGULAR_TRAINERS_PER_CATEGORY = 84
+        const val MINIMUM_BOSSES_PER_CATEGORY = 4
+        const val EXPECTED_DISTINCT_TRAINERS = 120
+        const val EXPECTED_DEDICATED_BOSSES = 24
+        const val SIGNATURE_SPECIES_PER_TRAINER = 3
+        const val MINIMUM_DISTINCT_SIGNATURE_GROUPS = 60
         const val MINIMUM_SPECIES_PER_MECHANIC_TIER = 50
         const val EXPECTED_PROFILE_CATEGORY_COUNT = 24
         const val TRAINER_DIRECTORY = "/data/cobblemon_more_battle_content/mbc-battle-tower/trainers"
         const val POOL_DIRECTORY = "/data/cobblemon_more_battle_content/mbc-battle-tower/pools"
         const val ENCOUNTER_DIRECTORY = "/data/cobblemon_more_battle_content/mbc-battle-tower/encounters"
         const val POKEMON_SET_DIRECTORY = "/data/cobblemon_more_battle_content/mbc-battle-tower/pokemon-sets"
-
-        val EXPECTED_NAMES = mapOf(
-            "mega_single_regular_low" to ("Liam" to "민준"),
-            "mega_single_regular_high" to ("Emma" to "서연"),
-            "mega_single_tier_boss" to ("Noah" to "지훈"),
-            "mega_double_regular_low" to ("Olivia" to "유나"),
-            "mega_double_regular_high" to ("Ethan" to "현우"),
-            "mega_double_tier_boss" to ("Sophie" to "수빈"),
-            "dynamax_single_regular_low" to ("Lucas" to "준호"),
-            "dynamax_single_regular_high" to ("Mia" to "하린"),
-            "dynamax_single_tier_boss" to ("Owen" to "도윤"),
-            "dynamax_double_regular_low" to ("Chloe" to "지민"),
-            "dynamax_double_regular_high" to ("Mason" to "태윤"),
-            "dynamax_double_tier_boss" to ("Lily" to "예린"),
-            "tera_single_regular_low" to ("Ryan" to "승현"),
-            "tera_single_regular_high" to ("Grace" to "나연"),
-            "tera_single_tier_boss" to ("Leo" to "시우"),
-            "tera_double_regular_low" to ("Hannah" to "다은"),
-            "tera_double_regular_high" to ("Jack" to "건우"),
-            "tera_double_tier_boss" to ("Ella" to "채원"),
-        )
     }
 }

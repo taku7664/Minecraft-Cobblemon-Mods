@@ -76,7 +76,10 @@ internal object ShowdownDeclarativeMoveParser {
         if (booleanLike(properties["forceSwitch"])) {
             effects += effect(BattleMoveEffectKind.SWITCH_TARGET, BattleMoveEffectTarget.SELECTED_TARGET)
         }
-        if (booleanLike(properties["stallingMove"])) {
+        val stallingMove = booleanLike(properties["stallingMove"])
+        val usesSharedStallCheck = STALL_MOVE_CHECK_PATTERN.containsMatchIn(rawObject)
+        val advancesSharedStallCounter = STALL_COUNTER_ADVANCE_PATTERN.containsMatchIn(rawObject)
+        if (stallingMove) {
             effects += effect(BattleMoveEffectKind.PROTECT_USER, BattleMoveEffectTarget.USER)
         }
         stringValue(properties["sideCondition"])?.let { condition ->
@@ -112,6 +115,13 @@ internal object ShowdownDeclarativeMoveParser {
 
         val flags = properties["flags"]?.takeIf { it.startsWith('{') }
             ?.let { objectProperties(trimContainer(it, '{', '}')) }.orEmpty()
+        if (flagEnabled(flags["futuremove"])) {
+            effects += effect(
+                BattleMoveEffectKind.SLOT_CONDITION,
+                BattleMoveEffectTarget.SELECTED_TARGET,
+                valueId = "futuremove",
+            )
+        }
         if (flags["charge"]?.trim()?.toIntOrNull() == 1) {
             effects += effect(BattleMoveEffectKind.CHARGE_TURN, BattleMoveEffectTarget.USER)
             CHARGE_SKIP_WEATHER_PATTERN.find(rawObject)?.groupValues?.get(1)?.let(::quotedValues)
@@ -171,7 +181,11 @@ internal object ShowdownDeclarativeMoveParser {
             effects = effects,
             scriptedBehavior = scripted,
             requirements = requirements,
-            mechanicFlags = flags.filterValues(::flagEnabled).keys,
+            mechanicFlags = buildSet {
+                addAll(flags.filterValues(::flagEnabled).keys)
+                if (usesSharedStallCheck) add(STALLING_MOVE_FLAG)
+                if (advancesSharedStallCounter) add(STALL_COUNTER_ADVANCE_FLAG)
+            },
         )
     }
 
@@ -544,5 +558,9 @@ internal object ShowdownDeclarativeMoveParser {
     }
 
     private const val MOVES_MARKER = "const Moves ="
+    private const val STALLING_MOVE_FLAG = "stalling_move"
+    private const val STALL_COUNTER_ADVANCE_FLAG = "stall_counter_advance"
+    private val STALL_MOVE_CHECK_PATTERN = Regex("runEvent\\(\\s*['\"]StallMove['\"]")
+    private val STALL_COUNTER_ADVANCE_PATTERN = Regex("addVolatile\\(\\s*['\"]stall['\"]")
     private val STRING_QUOTES = setOf('\'', '"', '`')
 }
