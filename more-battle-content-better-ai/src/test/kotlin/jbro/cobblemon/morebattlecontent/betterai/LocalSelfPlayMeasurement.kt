@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
+import jbro.cobblemon.morebattlecontent.api.ai.BattleDifficultyProfile
 import kotlin.random.Random
 
 internal data class LocalSelfPlayTally(
@@ -115,6 +116,47 @@ internal object LocalSelfPlayMeasurement {
             defenderWins = defenderWins,
             undecided = undecided,
         )
+    }
+
+    /**
+     * Two difficulty tiers against each other, sides swapped every pairing.
+     *
+     * A tier is a promise about strength, and until the lookahead trust gate was fixed it could not
+     * keep one: the search result was multiplied to zero before the opponent revealed anything, so
+     * every tier fell back to the same flat heuristic no matter how many plies it was allowed.
+     */
+    fun tierDuel(
+        label: String,
+        challenger: BattleDifficultyProfile,
+        defender: BattleDifficultyProfile,
+        battles: Int,
+        seed: Int,
+        maximumTurns: Int = 30,
+    ): LocalHeadToHeadTally {
+        var challengerWins = 0
+        var defenderWins = 0
+        var undecided = 0
+        definitions(battles, seed).forEach { definition ->
+            val asCycle = LocalTacticalScenarioBattle.run(
+                definition, maximumTurns,
+                cycleDifficulty = challenger, offenseDifficulty = defender,
+            )
+            when (asCycle.winner) {
+                "cycle" -> challengerWins++
+                "offense" -> defenderWins++
+                else -> undecided++
+            }
+            val asOffense = LocalTacticalScenarioBattle.run(
+                definition, maximumTurns,
+                cycleDifficulty = defender, offenseDifficulty = challenger,
+            )
+            when (asOffense.winner) {
+                "offense" -> challengerWins++
+                "cycle" -> defenderWins++
+                else -> undecided++
+            }
+        }
+        return LocalHeadToHeadTally(label, battles * 2, challengerWins, defenderWins, undecided)
     }
 
     /** Deterministic team pairings shared by every measurement so runs stay comparable. */

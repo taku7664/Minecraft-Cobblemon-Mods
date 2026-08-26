@@ -115,9 +115,19 @@ internal object LocalTacticalSimulationMoveLibrary {
 
     private fun heal(value: Double) = fraction(BattleMoveEffectKind.HEAL_FRACTION, value)
 
+    /**
+     * Certain self-affecting fraction effect: healing, drain, recoil.
+     *
+     * `probability` is stated explicitly because omitting it leaves it null, and the production parser
+     * never produces null - `ShowdownDeclarativeMoveParser` defaults every declared effect to `1.0`.
+     * While this builder disagreed, the harness fed the calculator data no real battle can produce, and
+     * the strict `probability == 1.0` checks in PublicBattleTacticalCalculator silently dropped every
+     * recovery move here. Measurements taken on that harness were measuring the harness.
+     */
     private fun fraction(kind: BattleMoveEffectKind, value: Double) = BattleMoveEffectView(
         kind,
         BattleMoveEffectTarget.USER,
+        probability = 1.0,
         fractionRange = BattleFractionRange(value, value),
     )
 

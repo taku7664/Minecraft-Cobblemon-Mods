@@ -72,13 +72,32 @@ internal object LocalTacticalScenarioBattle {
         maximumTurns: Int = 15,
         cycleTuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
         offenseTuning: LocalDecisionTuning = cycleTuning,
-    ): LocalTacticalScenarioReport = Battle(definition, cycleTuning, offenseTuning).run(maximumTurns)
+        cycleDifficulty: BattleDifficultyProfile = BattleDifficultyProfiles.STANDARD,
+        offenseDifficulty: BattleDifficultyProfile = cycleDifficulty,
+        /**
+         * When supplied, every decision context the battle builds is appended here.
+         *
+         * Replaying real positions is the only cheap way to ask whether a deeper search decides
+         * anything differently. Win rate cannot answer it: separating a ten point edge needs hundreds
+         * of battles per arm, and a Boss decision is allowed three seconds.
+         */
+        recordedContexts: MutableList<BattleDecisionContext>? = null,
+    ): LocalTacticalScenarioReport = Battle(
+        definition, cycleTuning, offenseTuning, cycleDifficulty, offenseDifficulty, recordedContexts,
+    ).run(maximumTurns)
 
     private class Battle(
         private val definition: LocalTacticalScenarioDefinition,
         cycleTuning: LocalDecisionTuning,
         offenseTuning: LocalDecisionTuning,
+        cycleDifficulty: BattleDifficultyProfile,
+        offenseDifficulty: BattleDifficultyProfile,
+        private val recordedContexts: MutableList<BattleDecisionContext>?,
     ) {
+        private val difficulties = mapOf(
+            BattleSide.ALLY to cycleDifficulty,
+            BattleSide.OPPONENT to offenseDifficulty,
+        )
         private val tunings = mapOf(
             BattleSide.ALLY to cycleTuning,
             BattleSide.OPPONENT to offenseTuning,
@@ -95,11 +114,11 @@ internal object LocalTacticalScenarioBattle {
         private val actualBrains = BattleSide.entries.associateWith { side ->
             LocalTacticalBrain(selectors.getValue(side), tunings.getValue(side))
         }
-        private val profiles = BattleSide.entries.associateWith {
+        private val profiles = BattleSide.entries.associateWith { side ->
             BattleTrainerProfile(
                 skillLevel = 2,
                 personality = BattleTrainerProfile.champion().personality,
-                difficulty = BattleDifficultyProfiles.STANDARD,
+                difficulty = difficulties.getValue(side),
             )
         }
         private val strategies = mapOf(
@@ -278,6 +297,7 @@ internal object LocalTacticalScenarioBattle {
                 memory = memories.getValue(side).view(state.turn),
                 publicActionCatalog = decisionCatalog(side),
             )
+            recordedContexts?.add(context)
             val decision = brain.decide(session, context).toCompletableFuture().join()
             return candidates.single { it.actionId == decision.actionId }
         }
