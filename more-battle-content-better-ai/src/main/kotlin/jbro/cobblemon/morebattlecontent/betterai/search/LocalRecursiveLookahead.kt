@@ -85,6 +85,14 @@ internal object LocalRecursiveLookaheadEvaluator {
         var truncated = false
         var publicResponseIncomplete = false
         var lastCoverage = 1.0
+        // Board gain each candidate showed at a single ply, keyed by action.
+        //
+        // A one-ply search already resolves the whole turn including the opponent's reply, so this is
+        // the search's own account of the turn being played - the same event the immediate heuristic
+        // scores. Everything past it is foresight, and only foresight is scaled by the difficulty
+        // tier. Without the split, a tier weight would also dial down how well a trainer reads the
+        // turn in front of it, which is not what a difficulty setting should mean.
+        val singlePlyGain = mutableMapOf<String, Double>()
         for (depth in 1..requestedDepth) {
             val search = Search(
                 context = context,
@@ -123,7 +131,19 @@ internal object LocalRecursiveLookaheadEvaluator {
                         // no re-derivation, no removal.
                         rank.outcome.knockoutUtility.coerceAtMost(searchBoardGain.coerceAtLeast(0.0))
                     }
-                    val rawAdjustment = searchBoardGain - rootSecureKoBaselineCorrection
+                    val actionId = rank.outcome.candidate.actionId
+                    if (depth == 1) singlePlyGain[actionId] = searchBoardGain
+                    // Split the search result at the turn boundary and scale only the far side.
+                    //
+                    // Depth was measured to be a weak difficulty lever precisely because it was not
+                    // split: a deeper search disagreed with the immediate heuristic in about 60% of
+                    // positions, but its verdict entered the ranking as one lump dominated by the turn
+                    // the heuristic had already scored, so the ranking barely moved and every tier
+                    // played alike. The near half stays whole for every trainer; the far half is what
+                    // a difficulty tier actually buys.
+                    val immediateGain = singlePlyGain[actionId] ?: searchBoardGain
+                    val foresightGain = (searchBoardGain - immediateGain) * profile.difficulty.foresightWeight
+                    val rawAdjustment = immediateGain + foresightGain - rootSecureKoBaselineCorrection
                     val adjustment = (rawAdjustment * search.publicResponseCoverage)
                         .coerceIn(-tuning.maximumLookaheadAdjustment, tuning.maximumLookaheadAdjustment)
                     val responseHpBaseline = trackedOwnPokemonIds(context.state, rank.outcome.candidate)

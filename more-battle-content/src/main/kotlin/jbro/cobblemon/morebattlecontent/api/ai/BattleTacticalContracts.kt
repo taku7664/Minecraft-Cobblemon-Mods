@@ -15,12 +15,29 @@ data class BattleDifficultyProfile(
     val maximumHypothesesPerPokemon: Int,
     val lookaheadPlies: Int,
     val doubleCandidateLimitPerSlot: Int,
+    /**
+     * How far a tier trusts what the search found beyond the turn in front of it.
+     *
+     * Plies alone were measured to be a poor difficulty lever. A deeper search does reach a different
+     * conclusion - it disagreed with the immediate-turn heuristic in about 60% of measured positions,
+     * at every allowance - but the extra depth almost never survived into the final ranking, so the
+     * tiers played the same battle. Depth decides how much foresight is *available*; this decides how
+     * much of it is acted on, which is the part a player can feel.
+     *
+     * It never reaches the turn actually being played. Every tier keeps the full immediate evaluation,
+     * including the value of status and utility moves, so a low setting produces a short-sighted
+     * trainer rather than one that only attacks.
+     */
+    val foresightWeight: Double = 1.0,
 ) {
     init {
         require(RESOURCE_ID.matches(id)) { "Difficulty profile id must be a lowercase namespaced id" }
         require(maximumHypothesesPerPokemon > 0)
         require(lookaheadPlies >= 0)
         require(doubleCandidateLimitPerSlot > 0)
+        require(foresightWeight.isFinite() && foresightWeight in 0.0..1.0) {
+            "Foresight weight must be between 0 and 1"
+        }
     }
 
     private companion object {
@@ -36,6 +53,11 @@ object BattleDifficultyProfiles {
         maximumHypothesesPerPokemon = 3,
         lookaheadPlies = 1,
         doubleCandidateLimitPerSlot = 3,
+        // At one ply there is no foresight to scale, so this tier's short-sightedness comes from the
+        // depth itself. The weight is still stated rather than left at the default: it is what this
+        // tier would trust if it ever searched further, and one ply per tower stage is a designed
+        // contract that this change has no business rewriting.
+        foresightWeight = 0.25,
     )
 
     @JvmField
@@ -45,6 +67,9 @@ object BattleDifficultyProfiles {
         maximumHypothesesPerPokemon = 6,
         lookaheadPlies = 2,
         doubleCandidateLimitPerSlot = 5,
+        // Same depth as Introductory, so the difference between the two tiers is purely how much of
+        // that foresight is acted on.
+        foresightWeight = 0.60,
     )
 
     @JvmField
@@ -54,6 +79,7 @@ object BattleDifficultyProfiles {
         maximumHypothesesPerPokemon = 10,
         lookaheadPlies = 3,
         doubleCandidateLimitPerSlot = 8,
+        foresightWeight = 0.85,
     )
 
     @JvmField
@@ -63,6 +89,8 @@ object BattleDifficultyProfiles {
         maximumHypothesesPerPokemon = 16,
         lookaheadPlies = 4,
         doubleCandidateLimitPerSlot = 12,
+        // Acts on everything it finds. Boss behaviour is unchanged by this lever.
+        foresightWeight = 1.0,
     )
 
     @JvmField
