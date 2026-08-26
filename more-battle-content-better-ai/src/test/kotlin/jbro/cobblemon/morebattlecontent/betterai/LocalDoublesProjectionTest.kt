@@ -18,6 +18,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -27,17 +28,89 @@ import java.util.UUID
 /**
  * Measures the scoring path a double battle actually takes.
  *
- * `PublicBattleTacticalCalculator` resolves a defender by taking the single active opponent, so with
- * two of them on the field an untargeted or spread move has no resolvable target and the Showdown
- * projection is skipped. Doubles therefore mixes projected and unprojected candidates on the same
- * turn as a matter of course - which is exactly the condition that made the old scorer compare raw
- * move power against HP fractions and prefer the resisted move 83% of the time.
+ * `PublicBattleTacticalCalculator` used to resolve a defender by taking the single active opponent,
+ * so with two of them on the field no untargeted move had a resolvable target and the Showdown
+ * projection was skipped. That covered every spread move, because the engine offers no target choice
+ * for one and the adapter therefore builds it with an empty target list. Doubles consequently mixed
+ * projected and unprojected candidates on the same turn as a matter of course - exactly the condition
+ * that made the old scorer compare raw move power against HP fractions.
+ *
+ * A move's target pattern is the fact that resolves this, and it was being ignored. These tests hold
+ * both halves of the distinction: a spread move now projects against every opposing slot, while a
+ * single-target move with no chosen target still has no determined defender and must stay unresolved
+ * rather than guess between two opponents.
  *
  * Every whole-battle number this module reports comes from a singles harness, so none of it covers
- * this. These tests build fixtures that carry public combat stats, because without them the
- * projection cannot run in either format and a comparison between the two would measure nothing.
+ * this. These fixtures carry public combat stats, because without them the projection cannot run in
+ * either format and a comparison between the two would measure nothing.
  */
 class LocalDoublesProjectionTest {
+    @Test
+    fun `a spread move projects against every opposing slot with the Gen 9 reduction`() {
+        val singles = PublicBattleTacticalCalculator
+            .calculate(spreadContext(opponentPartner = false))
+            .candidates.single().facts
+        val doubles = PublicBattleTacticalCalculator
+            .calculate(spreadContext(opponentPartner = true))
+            .candidates.single().facts
+
+        val report = buildString {
+            appendLine("=".repeat(96))
+            appendLine("SPREAD MOVE PROJECTION  (water 90BP, ALL_OPPONENTS, vs rock)")
+            appendLine("=".repeat(96))
+            appendLine("A spread move never carries an explicit target, so resolving the defender by")
+            appendLine("'the single active opponent' silently dropped it in doubles. The pattern is the")
+            appendLine("fact that decides it.")
+            appendLine()
+            listOf("singles" to singles, "doubles" to doubles).forEach { (label, facts) ->
+                appendLine(
+                    String.format(
+                        "  %-9s primary=%-14s spreadTargets=%d",
+                        label,
+                        facts?.standardDamageFractionRange?.let {
+                            String.format("%.3f-%.3f", it.minimum, it.maximum)
+                        } ?: "none",
+                        facts?.spreadTargets?.size ?: 0,
+                    ),
+                )
+                facts?.spreadTargets?.forEach { each ->
+                    appendLine(
+                        String.format(
+                            "      %s slot%d  damage=%-14s typeMultiplier=%s",
+                            each.side, each.slot,
+                            each.standardDamageFractionRange?.let {
+                                String.format("%.3f-%.3f", it.minimum, it.maximum)
+                            } ?: "none",
+                            each.typeChartMultiplier?.toString() ?: "unknown",
+                        ),
+                    )
+                }
+            }
+            appendLine()
+            appendLine("Singles keeps an empty spreadTargets list: one target is not a spread.")
+            appendLine("Each doubles entry is 0.75x the singles figure, which is the reduction itself.")
+        }
+        println(report)
+
+        val singlesDamage = singles?.standardDamageFractionRange
+        val doublesDamage = doubles?.standardDamageFractionRange
+        assertNotNull(singlesDamage, report)
+        assertNotNull(doublesDamage, report)
+        assertTrue(singles?.spreadTargets?.isEmpty() == true, report)
+        assertEquals(2, doubles?.spreadTargets?.size, report)
+        assertTrue(
+            doubles?.spreadTargets.orEmpty().all { it.standardDamageFractionRange != null },
+            report,
+        )
+        // The reduction is the whole reason the projection cannot simply be reused per target. Rolls
+        // are integers, so the ratio lands near 0.75 rather than exactly on it.
+        val ratio = doublesDamage!!.maximum / singlesDamage!!.maximum
+        assertTrue(ratio in 0.70..0.80, "spread reduction was $ratio\n$report")
+        // The published type multiplier must stay the plain effectiveness; the reduction belongs to
+        // damage, not to the type chart.
+        assertEquals(2.0, doubles?.spreadTargets?.first()?.typeChartMultiplier, report)
+    }
+
     @Test
     fun `a second active opponent removes the damage projection from an untargeted move`() {
         val singles = PublicBattleTacticalCalculator
@@ -94,9 +167,15 @@ class LocalDoublesProjectionTest {
             appendLine("=".repeat(96))
             appendLine("RESISTED-MOVE MEASUREMENT IN DOUBLES  matchups=${MATCHUPS.size}")
             appendLine("=".repeat(96))
-            appendLine("The super-effective move names a target, so it projects. The resisted move is a")
-            appendLine("spread move, so it does not. That is an ordinary doubles turn, and it is the exact")
-            appendLine("shape that put two different scales into one comparison.")
+            appendLine("A targeted super-effective move against a high-power resisted spread move: the")
+            appendLine("ordinary doubles turn where the AI used to reach for the wrong one.")
+            appendLine()
+            appendLine("Both tunings now read 0%, and that is the point rather than a flat result. This")
+            appendLine("used to separate them (62.5% against 0.0%) because the spread move had no")
+            appendLine("resolvable target and fell to the coarse power fallback, so the two moves were")
+            appendLine("compared on different scales and only the fixed tuning survived it. Target")
+            appendLine("resolution is a calculator fact, not a tuning, so fixing it removed the mixed")
+            appendLine("comparison for both. What remains here is a regression gate on the choice itself.")
             appendLine()
             appendLine(String.format("  legacy (pre-fix)   resisted-pick rate=%6.1f%%  (%d/%d)",
                 legacyWrong * 100.0 / MATCHUPS.size, legacyWrong, MATCHUPS.size))
@@ -105,8 +184,10 @@ class LocalDoublesProjectionTest {
         }
         println(report)
 
-        assertTrue(currentWrong <= legacyWrong, report)
         assertTrue(currentWrong == 0, report)
+        // Deliberately asserted for both. Once the target resolves, picking the resisted move is wrong
+        // under any weighting, so a failure here is a calculator regression rather than a tuning one.
+        assertTrue(legacyWrong == 0, report)
     }
 
     private fun picksResisted(
@@ -132,6 +213,16 @@ class LocalDoublesProjectionTest {
         )
         return breakdown.chosenByRanking?.actionId == "resisted"
     }
+
+    private fun spreadContext(opponentPartner: Boolean) = BattleDecisionContext(
+        requestId = UUID.randomUUID(),
+        state = state(opponentPartner, setOf("rock")),
+        candidates = listOf(
+            move("spread", 90.0, "water", BattleMoveTargetPattern.ALL_OPPONENTS, targeted = false),
+        ),
+        deadlineEpochMillis = Long.MAX_VALUE,
+        memory = BattleTacticalMemoryView.empty(),
+    )
 
     private fun context(opponentPartner: Boolean, targeted: Boolean) = BattleDecisionContext(
         requestId = UUID.randomUUID(),

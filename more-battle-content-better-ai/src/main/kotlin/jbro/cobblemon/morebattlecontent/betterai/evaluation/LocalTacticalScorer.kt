@@ -90,6 +90,9 @@ internal object LocalTacticalScorer {
             else -> details.priority * 2.0
         }
         val knockoutBonus = LocalTacticalSituationalEvaluator.knockoutAdjustment(candidate, accuracy, tuning)
+        // A spread move's other targets. Zero for every single-target move, so this changes nothing
+        // outside doubles.
+        val spreadBonus = LocalTacticalSituationalEvaluator.spreadAdjustment(candidate, accuracy, tuning)
         // Recoil is charged once, by the outcome evaluator, from the accuracy-weighted and
         // HP-clamped projection. Charging `selfRecoilFractionRange` here as well double-billed every
         // recoil attacker - which is exactly the class of move a physical sweeper wants to click.
@@ -98,7 +101,8 @@ internal object LocalTacticalScorer {
         } else {
             0.0
         }
-        return pressure + priorityBonus + knockoutBonus - recoilPenalty - publicAllyCollateral(candidate, context) -
+        return pressure + priorityBonus + knockoutBonus + spreadBonus -
+            recoilPenalty - publicAllyCollateral(candidate, context) -
             LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.saturatedStatStagePenalty(candidate, context) -

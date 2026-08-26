@@ -36,18 +36,29 @@ internal object ShowdownStandardDamageProjection {
         stab: Double,
         typeMultiplier: Double,
         guaranteedCritical: Boolean = false,
+        /**
+         * Gen 9 reduction for a move that actually lands on more than one target.
+         *
+         * Kept separate from [typeMultiplier] on purpose. That parameter is contractually a type-chart
+         * value and is checked against the chart below, so folding the reduction into it would both
+         * break the check and misreport the move's effectiveness to anything reading it back.
+         */
+        spreadMultiplier: Double = 1.0,
     ): ShowdownStandardDamageProjectionResult {
         require(level > 0)
         require(power > 0)
         require(targetHpFraction.isFinite() && targetHpFraction in 0.0..1.0)
         require(stab == 1.0 || stab == 1.5)
         require(typeMultiplier in setOf(0.0, 0.25, 0.5, 1.0, 2.0, 4.0))
+        require(spreadMultiplier == 1.0 || spreadMultiplier == 0.75)
 
         val minimumRolls = rolls(
             level, power, attack.minimum, defence.maximum, stab, typeMultiplier, guaranteedCritical,
+            spreadMultiplier,
         )
         val maximumRolls = rolls(
             level, power, attack.maximum, defence.minimum, stab, typeMultiplier, guaranteedCritical,
+            spreadMultiplier,
         )
         val minimumDamage = minimumRolls.min()
         val maximumDamage = maximumRolls.max()
@@ -86,9 +97,17 @@ internal object ShowdownStandardDamageProjection {
         stab: Double,
         typeMultiplier: Double,
         guaranteedCritical: Boolean,
+        spreadMultiplier: Double,
     ): List<Int> {
         val levelFactor = 2L * level / 5L + 2L
-        val baseDamage = (((levelFactor * power * attack) / defence) / 50L).toInt() + 2
+        val unreducedBaseDamage = (((levelFactor * power * attack) / defence) / 50L).toInt() + 2
+        // Showdown applies the spread reduction to the base damage, ahead of the critical, random and
+        // STAB steps, so it is applied here rather than to the finished roll.
+        val baseDamage = if (spreadMultiplier == 0.75) {
+            showdownModify(unreducedBaseDamage, 3, 4)
+        } else {
+            unreducedBaseDamage
+        }
         return randomRolls.map { randomRoll ->
             var damage = if (guaranteedCritical) showdownModify(baseDamage, 3, 2) else baseDamage
             damage = damage * randomRoll / 100

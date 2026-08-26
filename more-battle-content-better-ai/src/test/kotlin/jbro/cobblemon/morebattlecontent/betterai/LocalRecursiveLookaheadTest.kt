@@ -906,12 +906,18 @@ class LocalRecursiveLookaheadTest {
         assertEquals(250L, LocalLookaheadBudgetPolicy.forTier(BattleTrainerTier.INTRODUCTORY).timeMillis)
         assertEquals(750L, LocalLookaheadBudgetPolicy.forTier(BattleTrainerTier.STANDARD).timeMillis)
         assertEquals(1_500L, LocalLookaheadBudgetPolicy.forTier(BattleTrainerTier.ADVANCED).timeMillis)
-        assertEquals(3_000L, LocalLookaheadBudgetPolicy.forTier(BattleTrainerTier.BOSS).timeMillis)
+        // Boss shares Advanced's wall clock deliberately. Three seconds bought a deeper search that
+        // reached the same decision in every measured position, and it was charged to the server
+        // thread on every Boss turn. See LocalSearchBudgetTest.
+        assertEquals(1_500L, LocalLookaheadBudgetPolicy.forTier(BattleTrainerTier.BOSS).timeMillis)
 
-        assertTrue(
-            LocalLookaheadBudgetPolicy.forTier(BattleTrainerTier.INTRODUCTORY).chanceBranchesPerMove <
-                LocalLookaheadBudgetPolicy.forTier(BattleTrainerTier.BOSS).chanceBranchesPerMove,
-        )
+        // What still separates a Boss search is how wide it may go, not how long it may run.
+        val introductory = LocalLookaheadBudgetPolicy.forTier(BattleTrainerTier.INTRODUCTORY)
+        val advanced = LocalLookaheadBudgetPolicy.forTier(BattleTrainerTier.ADVANCED)
+        val boss = LocalLookaheadBudgetPolicy.forTier(BattleTrainerTier.BOSS)
+        assertTrue(introductory.chanceBranchesPerMove < boss.chanceBranchesPerMove)
+        assertTrue(advanced.chanceBranchesPerMove < boss.chanceBranchesPerMove)
+        assertTrue(advanced.nodeLimit < boss.nodeLimit)
     }
 
     @Test

@@ -66,6 +66,39 @@ internal object LocalTacticalSituationalEvaluator {
         return tuning.knockoutMaterialScore * probability * accuracy
     }
 
+    /**
+     * Damage and knockout value for the slots a spread move hits *besides* its primary target.
+     *
+     * The primary target is already priced by the ordinary pressure and knockout terms, and the
+     * outcome evaluator cancels its own copy of that term against them. The extra slots appear in
+     * neither, so without this a doubles spread move was valued as if it hit one Pokemon - the AI
+     * could not see the one thing that makes a spread move worth clicking.
+     *
+     * Only the extras are summed here, so the cancellation between the scorer and the outcome
+     * evaluator over the primary target is left exactly as it was.
+     */
+    fun spreadAdjustment(
+        candidate: BattleActionCandidate,
+        accuracy: Double,
+        tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+    ): Double {
+        val extras = candidate.facts?.spreadTargets.orEmpty().drop(1)
+        if (extras.isEmpty()) return 0.0
+        return extras.sumOf { extra ->
+            val damage = extra.standardDamageFractionRange
+                ?.let { (it.minimum + it.maximum) * 50.0 * accuracy }
+                ?: 0.0
+            val knockoutProbability = when (extra.standardKnockoutAssessment) {
+                BattleKnockoutAssessment.GUARANTEED -> 1.0
+                BattleKnockoutAssessment.POSSIBLE -> extra.standardDamageRollKoProbabilityRange
+                    ?.let { (it.minimum + it.maximum) / 2.0 }
+                    ?: 0.0
+                else -> 0.0
+            }
+            damage + tuning.knockoutMaterialScore * knockoutProbability * accuracy
+        }
+    }
+
     fun activePersistentEffectRefreshPenalty(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,

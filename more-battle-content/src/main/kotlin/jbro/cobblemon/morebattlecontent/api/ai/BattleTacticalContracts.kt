@@ -245,6 +245,47 @@ enum class BattleCalculationBasis {
 }
 
 /**
+ * One target of a move that hits several slots at once.
+ *
+ * A spread move has no single defender, but every field on [BattleCandidateFactsView] that describes
+ * damage describes exactly one. Publishing the extra slots separately keeps that contract intact:
+ * the primary fields stay a statement about one Pokemon, and a Brain that wants the whole picture
+ * reads every entry here instead of reinterpreting a field that was never a sum.
+ *
+ * The projection behind these values already carries the Gen 9 spread reduction, so they are what
+ * each slot actually takes on this turn, not a single-target figure to be scaled afterwards.
+ */
+class BattleSpreadTargetFactsView(
+    val side: BattleSide,
+    val slot: Int,
+    val typeChartMultiplier: Double? = null,
+    val standardDamageFractionRange: BattleDamageFractionRange? = null,
+    val standardDamageRollKoProbabilityRange: BattleFractionRange? = null,
+    val standardKnockoutAssessment: BattleKnockoutAssessment? = null,
+) {
+    init {
+        require(slot >= 0) { "Spread target slot must not be negative" }
+        require(typeChartMultiplier == null || typeChartMultiplier.isFinite() && typeChartMultiplier >= 0.0)
+    }
+
+    override fun equals(other: Any?): Boolean = other is BattleSpreadTargetFactsView &&
+        side == other.side && slot == other.slot &&
+        typeChartMultiplier == other.typeChartMultiplier &&
+        standardDamageFractionRange == other.standardDamageFractionRange &&
+        standardDamageRollKoProbabilityRange == other.standardDamageRollKoProbabilityRange &&
+        standardKnockoutAssessment == other.standardKnockoutAssessment
+
+    override fun hashCode(): Int = listOf(
+        side,
+        slot,
+        typeChartMultiplier,
+        standardDamageFractionRange,
+        standardDamageRollKoProbabilityRange,
+        standardKnockoutAssessment,
+    ).hashCode()
+}
+
+/**
  * Mechanical facts only. This contract deliberately has no utility, rank, recommendation, or
  * tactical evidence label: interpreting these dimensions belongs to the selected BattleBrain.
  */
@@ -264,9 +305,20 @@ class BattleCandidateFactsView(
     val calculationCoverage: BattleCalculationCoverage = BattleCalculationCoverage.UNKNOWN,
     unknowns: Set<BattleCalculationUnknown> = emptySet(),
     basis: Set<BattleCalculationBasis> = emptySet(),
+    spreadTargets: List<BattleSpreadTargetFactsView> = emptyList(),
 ) {
     val unknowns: Set<BattleCalculationUnknown> = Collections.unmodifiableSet(LinkedHashSet(unknowns))
     val basis: Set<BattleCalculationBasis> = Collections.unmodifiableSet(LinkedHashSet(basis))
+
+    /**
+     * Every slot this move hits, when it hits more than one.
+     *
+     * Empty for an ordinary single-target move, so nothing that reads only the primary fields has to
+     * change. When it is populated the first entry is the same target the primary `standard*` fields
+     * describe, which is what lets both readings stay correct at once.
+     */
+    val spreadTargets: List<BattleSpreadTargetFactsView> =
+        Collections.unmodifiableList(ArrayList(spreadTargets))
 
     init {
         requireProbability(baseAccuracyProbability, "base accuracy probability")
@@ -289,6 +341,12 @@ class BattleCandidateFactsView(
         require(calculationCoverage != BattleCalculationCoverage.EXACT || this.unknowns.isEmpty()) {
             "An exact calculation cannot retain unknown inputs"
         }
+        require(this.spreadTargets.size != 1) {
+            "A single spread target is an ordinary single-target move; leave the list empty"
+        }
+        require(this.spreadTargets.distinctBy { it.side to it.slot }.size == this.spreadTargets.size) {
+            "Spread targets must name distinct active slots"
+        }
     }
 
     fun copy(
@@ -307,6 +365,7 @@ class BattleCandidateFactsView(
         calculationCoverage: BattleCalculationCoverage = this.calculationCoverage,
         unknowns: Set<BattleCalculationUnknown> = this.unknowns,
         basis: Set<BattleCalculationBasis> = this.basis,
+        spreadTargets: List<BattleSpreadTargetFactsView> = this.spreadTargets,
     ) = BattleCandidateFactsView(
         baseAccuracyProbability,
         typeChartMultiplier,
@@ -323,6 +382,7 @@ class BattleCandidateFactsView(
         calculationCoverage,
         unknowns,
         basis,
+        spreadTargets,
     )
 
     override fun equals(other: Any?): Boolean = other is BattleCandidateFactsView &&
@@ -339,7 +399,8 @@ class BattleCandidateFactsView(
         statusEffectProbability == other.statusEffectProbability &&
         switchEntryHpLossFraction == other.switchEntryHpLossFraction &&
         calculationCoverage == other.calculationCoverage &&
-        unknowns == other.unknowns && basis == other.basis
+        unknowns == other.unknowns && basis == other.basis &&
+        spreadTargets == other.spreadTargets
 
     override fun hashCode(): Int = listOf(
         baseAccuracyProbability,
@@ -357,6 +418,7 @@ class BattleCandidateFactsView(
         calculationCoverage,
         unknowns,
         basis,
+        spreadTargets,
     ).hashCode()
 
     private companion object {

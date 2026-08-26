@@ -50,6 +50,11 @@ val unitTest by tasks.registering(JavaExec::class) {
         args("--scan-class-path=${it.absolutePath}")
     }
     args("--fail-if-no-tests", "--details=summary")
+    // Narrow a run to a few classes while iterating; the whole suite is minutes of simulated battles.
+    // ./gradlew :more-battle-content-better-ai:unitTest -Ptests=LocalDoublesProjectionTest
+    if (project.hasProperty("tests")) {
+        args("--include-classname=.*(${project.property("tests")}).*")
+    }
     // Parameter sweeps run hundreds of simulated battles to calibrate a weight. They are opt-in so a
     // normal verification run stays fast: ./gradlew :more-battle-content-better-ai:unitTest -Psweeps
     systemProperty("betterai.sweeps", if (project.hasProperty("sweeps")) "true" else "false")

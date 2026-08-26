@@ -47,9 +47,11 @@ internal object LocalRecursiveLookaheadEvaluator {
         profile: BattleTrainerProfile,
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
         clockMillis: () -> Long = System::currentTimeMillis,
+        // Overridable so the cost of a budget can be measured against the decisions it buys, rather
+        // than argued about. Production always takes the tier default.
+        budget: LocalLookaheadBudget = LocalLookaheadBudgetPolicy.forTier(profile.difficulty.tier),
     ): LocalLookaheadEvaluation {
         val requestedDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1)
-        val budget = LocalLookaheadBudgetPolicy.forTier(profile.difficulty.tier)
         val searchStartedAt = clockMillis()
         val localDeadline = LocalLookaheadBudgetPolicy.deadline(
             startMillis = searchStartedAt,

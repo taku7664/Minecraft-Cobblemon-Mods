@@ -44,15 +44,21 @@ internal object PublicBattleTacticalCalculator {
     ): List<Double>? {
         val details = candidate.moveDetails ?: return null
         val actor = candidate.actorSlot?.let { slot -> active(context, actingSide, slot) }
-        val target = singleOpponentTarget(candidate, context, actingSide)
+        val targets = resolvedTargets(candidate, context, actingSide)
+        // These rolls feed the search, which applies them to one defender. A spread move is therefore
+        // projected against its primary target only: the extra slot is visible to the scorer through
+        // `spreadTargets`, but the recursive projection still moves one HP bar per action.
+        val target = targets.firstOrNull()
+        val spreadMultiplier = if (targets.size > 1) SPREAD_DAMAGE_MULTIPLIER else 1.0
         val stab = actor?.knownTypeIds?.takeIf { it.isNotEmpty() }?.let { types ->
             if (types.any { it.equals(details.typeId, ignoreCase = true) }) 1.5 else 1.0
         }
         val typeMultiplier = publicTypeMultiplier(details, target)
         val mechanics = LocalPublicMechanicsKernel.projectMove(candidate, context, actingSide)
         declaredDamageRollFractions(candidate, actor, target, mechanics)?.let { return it }
-        val projection = standardDamageProjection(candidate, details, actor, target, stab, typeMultiplier)
-            ?: return null
+        val projection =
+            standardDamageProjection(candidate, details, actor, target, stab, typeMultiplier, spreadMultiplier)
+                ?: return null
         val maxHp = target?.combatStats?.maxHp ?: return null
         val (rolls, denominator) = if (actingSide == BattleSide.ALLY) {
             projection.minimumHypothesisRolls to maxHp.maximum
@@ -170,7 +176,9 @@ internal object PublicBattleTacticalCalculator {
             basis += BattleCalculationBasis.PUBLIC_TYPES
             if (types.any { it.equals(details.typeId, ignoreCase = true) }) 1.5 else 1.0
         }
-        val target = singleOpponentTarget(candidate, context, actingSide)
+        val targets = resolvedTargets(candidate, context, actingSide)
+        val target = targets.firstOrNull()
+        val spreadMultiplier = if (targets.size > 1) SPREAD_DAMAGE_MULTIPLIER else 1.0
         val typeMultiplier = target?.knownTypeIds?.takeIf { it.isNotEmpty() }?.let {
             basis += BattleCalculationBasis.PUBLIC_TYPES
             publicTypeMultiplier(details, target)
@@ -179,7 +187,8 @@ internal object PublicBattleTacticalCalculator {
             unknowns += BattleCalculationUnknown.DYNAMIC_DAMAGE_MODIFIERS
             if (typeMultiplier == null) unknowns += BattleCalculationUnknown.TARGET_TYPES
         }
-        val projection = standardDamageProjection(candidate, details, actor, target, stab, typeMultiplier)
+        val projection =
+            standardDamageProjection(candidate, details, actor, target, stab, typeMultiplier, spreadMultiplier)
         if (details.damageCategory != BattleMoveDamageCategory.STATUS && projection == null) {
             if (actor?.combatStats == null) unknowns += BattleCalculationUnknown.ATTACKER_OFFENSIVE_STATS
             if (target?.combatStats == null) unknowns += BattleCalculationUnknown.OPPONENT_DEFENSIVE_STATS
@@ -218,7 +227,40 @@ internal object PublicBattleTacticalCalculator {
             calculationCoverage = BattleCalculationCoverage.PARTIAL,
             unknowns = unknowns,
             basis = basis,
+            spreadTargets = spreadTargetFacts(candidate, details, actor, stab, targets, spreadMultiplier),
         )
+    }
+
+    /**
+     * Per-slot facts for a move that hits several opponents, or nothing for an ordinary move.
+     *
+     * The first entry deliberately repeats the primary target rather than listing only the extras, so
+     * a reader never has to combine two differently shaped sources to see the whole turn.
+     */
+    private fun spreadTargetFacts(
+        candidate: BattleActionCandidate,
+        details: BattleMoveCandidateView,
+        actor: BattlePokemonStateView?,
+        stab: Double?,
+        targets: List<BattlePokemonStateView>,
+        spreadMultiplier: Double,
+    ): List<BattleSpreadTargetFactsView> {
+        if (targets.size < 2) return emptyList()
+        return targets.mapNotNull { each ->
+            val slot = each.activeSlot ?: return@mapNotNull null
+            val typeMultiplier = each.knownTypeIds.takeIf { it.isNotEmpty() }
+                ?.let { publicTypeMultiplier(details, each) }
+            val projection =
+                standardDamageProjection(candidate, details, actor, each, stab, typeMultiplier, spreadMultiplier)
+            BattleSpreadTargetFactsView(
+                side = each.side,
+                slot = slot,
+                typeChartMultiplier = typeMultiplier,
+                standardDamageFractionRange = projection?.damageFractionRange,
+                standardDamageRollKoProbabilityRange = projection?.koProbabilityRange,
+                standardKnockoutAssessment = projection?.knockoutAssessment,
+            )
+        }
     }
 
     private fun standardDamageProjection(
@@ -228,6 +270,7 @@ internal object PublicBattleTacticalCalculator {
         target: BattlePokemonStateView?,
         stab: Double?,
         typeMultiplier: Double?,
+        spreadMultiplier: Double = 1.0,
     ): ShowdownStandardDamageProjectionResult? {
         if (details.damageCategory == BattleMoveDamageCategory.STATUS || isDelayedSlotDamage(details)) return null
         if (details.targetPattern !in DAMAGE_TARGET_PATTERNS || candidate.mechanic != null) return null
@@ -288,6 +331,9 @@ internal object PublicBattleTacticalCalculator {
             stab = knownStab,
             typeMultiplier = knownTypeMultiplier,
             guaranteedCritical = guaranteedCritical,
+            // The reduction is a damage step, not a type-chart fact. The published
+            // `typeChartMultiplier` must stay the plain effectiveness against that Pokemon.
+            spreadMultiplier = spreadMultiplier,
         )
     }
 
@@ -313,6 +359,16 @@ internal object PublicBattleTacticalCalculator {
         details.effects?.effects.orEmpty().any {
             it.kind == BattleMoveEffectKind.SLOT_CONDITION && canonical(it.valueId) == "futuremove"
         }
+
+    /** Patterns the engine resolves itself, striking every opposing active slot at once. */
+    private val SPREAD_OPPONENT_PATTERNS = setOf(
+        BattleMoveTargetPattern.ALL_OPPONENTS,
+        BattleMoveTargetPattern.ALL_ADJACENT,
+        BattleMoveTargetPattern.ALL_ACTIVE,
+    )
+
+    /** Gen 9 reduces a spread move to 0.75x when it actually lands on more than one target. */
+    private const val SPREAD_DAMAGE_MULTIPLIER = 0.75
 
     private val DAMAGE_TARGET_PATTERNS = setOf(
         BattleMoveTargetPattern.SELECTED,
@@ -373,14 +429,39 @@ internal object PublicBattleTacticalCalculator {
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         actingSide: BattleSide,
-    ): BattlePokemonStateView? {
+    ): BattlePokemonStateView? = resolvedTargets(candidate, context, actingSide).firstOrNull()
+
+    /**
+     * Every opposing slot this move hits, in active-slot order.
+     *
+     * A spread move never carries an explicit target: the engine offers no target choice for it, so
+     * the adapter builds one candidate with an empty target list. Resolving that by taking the single
+     * active opponent worked in singles and returned nothing in doubles, which skipped the damage
+     * projection entirely and dropped every spread move onto the coarse power-based fallback. The
+     * move's own target pattern is the fact that was being ignored.
+     *
+     * Only opposing slots are resolved. `ALL_ADJACENT` and `ALL_ACTIVE` also strike the ally, but that
+     * is priced separately as collateral rather than as pressure, and folding it in here would put
+     * damage dealt to one's own side into a field that means damage dealt to the opponent's.
+     */
+    private fun resolvedTargets(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        actingSide: BattleSide,
+    ): List<BattlePokemonStateView> {
         val explicitTarget = candidate.targets.singleOrNull()
-        if (explicitTarget != null) return active(context, explicitTarget.side, explicitTarget.slot)
-        val targetSide = if (actingSide == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
-        val activeOpponents = context.state.pokemon.filter {
-            it.side == targetSide && it.activeSlot != null && !it.fainted
+        if (explicitTarget != null) {
+            return listOfNotNull(active(context, explicitTarget.side, explicitTarget.slot))
         }
-        return activeOpponents.singleOrNull()
+        val targetSide = if (actingSide == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
+        val activeOpponents = context.state.pokemon
+            .filter { it.side == targetSide && it.activeSlot != null && !it.fainted }
+            .sortedBy { it.activeSlot }
+        val pattern = candidate.moveDetails?.targetPattern
+        if (pattern in SPREAD_OPPONENT_PATTERNS) return activeOpponents
+        // Without an explicit target and without a spread pattern the defender is only determined when
+        // exactly one opponent is on the field; guessing between two would invent a fact.
+        return listOfNotNull(activeOpponents.singleOrNull())
     }
 
     private fun active(context: BattleDecisionContext, side: BattleSide, slot: Int): BattlePokemonStateView? =
