@@ -1,6 +1,8 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
+import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDifficultyProfile
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDifficultyProfiles
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
@@ -91,6 +93,82 @@ class LocalLookaheadInfluenceTest {
 
         assertTrue(contexts.isNotEmpty(), report)
         assertTrue(readingsByTier.values.all { it.size == contexts.size }, report)
+    }
+
+    @Test
+    fun `the search is measured for whether its disagreements are anti-utility`() {
+        val contexts = recordPositions()
+        val profile = BattleTrainerProfile(
+            skillLevel = 2,
+            personality = BattleTrainerProfile.champion().personality,
+            difficulty = BattleDifficultyProfiles.BOSS,
+        )
+
+        var disagreements = 0
+        var searchDroppedUtility = 0
+        var searchAddedUtility = 0
+        var utilityAvailable = 0
+        val rows = contexts.map { context ->
+            val breakdown = LocalDecisionInstrumentation.inspect(context = context, profile = profile)
+            val heuristicBest = breakdown.candidates.maxByOrNull { it.heuristicOnlyValue }
+            val searchBest = breakdown.candidates.maxByOrNull { it.lookaheadUtility }
+            val heuristicUtility = isUtility(context, heuristicBest?.actionId)
+            val searchUtility = isUtility(context, searchBest?.actionId)
+            if (context.candidates.any { isUtility(context, it.actionId) }) utilityAvailable++
+            if (heuristicBest?.actionId != searchBest?.actionId) {
+                disagreements++
+                if (heuristicUtility && !searchUtility) searchDroppedUtility++
+                if (!heuristicUtility && searchUtility) searchAddedUtility++
+            }
+            heuristicUtility to searchUtility
+        }
+
+        val report = buildString {
+            appendLine("=".repeat(100))
+            appendLine("SEARCH UTILITY BIAS  positions=${contexts.size}")
+            appendLine("=".repeat(100))
+            appendLine("The leaf evaluator's attackPressure filters STATUS moves and zero-power moves out")
+            appendLine("entirely, so the search cannot see a utility move's worth except where it changes")
+            appendLine("projected damage. Before promoting the search to decide, that blindness has to be")
+            appendLine("quantified: if its disagreements are mostly 'attack instead of the utility move',")
+            appendLine("handing it the decision produces exactly the attack-only AI this work forbids.")
+            appendLine()
+            appendLine("  positions with a utility move available   = %d/%d".format(utilityAvailable, contexts.size))
+            appendLine("  heuristic picks a utility move            = %d/%d".format(
+                rows.count { it.first }, contexts.size,
+            ))
+            appendLine("  search picks a utility move               = %d/%d".format(
+                rows.count { it.second }, contexts.size,
+            ))
+            appendLine()
+            appendLine("  disagreements                             = %d".format(disagreements))
+            appendLine("    search drops a utility move for an attack = %d (%.1f%% of disagreements)".format(
+                searchDroppedUtility,
+                if (disagreements == 0) 0.0 else searchDroppedUtility * 100.0 / disagreements,
+            ))
+            appendLine("    search adds a utility move                = %d (%.1f%%)".format(
+                searchAddedUtility,
+                if (disagreements == 0) 0.0 else searchAddedUtility * 100.0 / disagreements,
+            ))
+            appendLine()
+            appendLine("A large drop count is the measured size of the hole the leaf evaluator has to fill")
+            appendLine("before the root comparison can be handed over.")
+        }
+        println(report)
+
+        assertTrue(contexts.isNotEmpty(), report)
+    }
+
+    private fun isUtility(context: BattleDecisionContext, actionId: String?): Boolean {
+        val candidate = context.candidates.firstOrNull { it.actionId == actionId } ?: return false
+        val atomic = candidate.componentActions.ifEmpty { listOf(candidate) }
+        return atomic.any { action ->
+            action.kind == BattleActionKind.USE_MOVE &&
+                (
+                    action.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS ||
+                        (action.moveDetails?.power ?: 0.0) <= 0.0
+                    )
+        }
     }
 
     private data class Reading(
