@@ -81,7 +81,13 @@ class LocalSituationalPenaltyCharacterizationTest {
         context: BattleDecisionContext,
         penalty: (BattleActionCandidate, BattleDecisionContext) -> Double,
     ): Boolean {
-        val breakdown = LocalDecisionInstrumentation.inspect(context = context, profile = PROFILE)
+        // Memoized because the ranking does not depend on which penalty is being examined, while
+        // producing it runs a full Boss search - four plies with a 1500ms ceiling. Recomputing it per
+        // penalty made this one test 360 searches and roughly nine minutes, over a third of the whole
+        // suite, for a report that nine calls could produce.
+        val breakdown = breakdownCache.getOrPut(context) {
+            LocalDecisionInstrumentation.inspect(context = context, profile = PROFILE)
+        }
         val withPenalty = breakdown.candidates.maxByOrNull { it.comparisonValue }?.actionId
         val without = breakdown.candidates.maxByOrNull { candidate ->
             val original = calculated(context).candidates.firstOrNull { it.actionId == candidate.actionId }
@@ -89,6 +95,8 @@ class LocalSituationalPenaltyCharacterizationTest {
         }?.actionId
         return withPenalty != without
     }
+
+    private val breakdownCache = mutableMapOf<BattleDecisionContext, LocalDecisionBreakdown>()
 
     private val calculatedCache = mutableMapOf<BattleDecisionContext, BattleDecisionContext>()
 
