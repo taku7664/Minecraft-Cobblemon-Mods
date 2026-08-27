@@ -41,6 +41,7 @@ class LocalSearchPruningTest {
             appendLine("nodes    = states the search actually evaluated")
             appendLine("pruned   = continuations abandoned by LocalTurnBranchPruner")
             appendLine("share    = pruned / (pruned + nodes), the fraction of work avoided")
+            appendLine("leaf     = the share of nodes spent scoring leaves rather than projecting turns")
             appendLine()
             tiers.forEach { (name, difficulty) ->
                 val profile = BattleTrainerProfile(
@@ -50,6 +51,11 @@ class LocalSearchPruningTest {
                 )
                 var nodes = 0L
                 var pruned = 0L
+                // The node budget is spent by two different things. Projecting a turn is the tree work
+                // the limit is named for; scoring a leaf recalculates every damaging move on both sides
+                // and charges the same counter. A tier's allowance is therefore not all going to depth,
+                // and until this was split nobody knew how much of it was not.
+                var leafWork = 0L
                 // Budget exhaustion does not merely stop early - inside a node it abandons the
                 // remaining own-actions in list order, so which moves get considered at all is decided
                 // by catalog position rather than by promise.
@@ -62,12 +68,16 @@ class LocalSearchPruningTest {
                     )
                     nodes += evaluation.nodesVisited
                     pruned += evaluation.branchesPruned
+                    leafWork += evaluation.leafWorkUnits
                     if (evaluation.truncated) truncated++
                 }
                 val share = if (nodes + pruned == 0L) 0.0 else pruned * 100.0 / (nodes + pruned)
+                val leafShare = if (nodes == 0L) 0.0 else leafWork * 100.0 / nodes
                 appendLine(
-                    "  %-14s nodes=%-10d pruned=%-8d share=%5.2f%%   nodes/decision=%-8.0f truncated=%d/%d".format(
-                        name, nodes, pruned, share, nodes.toDouble() / contexts.size, truncated, contexts.size,
+                    ("  %-14s nodes=%-10d pruned=%-8d share=%5.2f%%   nodes/decision=%-8.0f " +
+                        "leaf=%5.1f%% truncated=%d/%d").format(
+                        name, nodes, pruned, share, nodes.toDouble() / contexts.size,
+                        leafShare, truncated, contexts.size,
                     ),
                 )
             }

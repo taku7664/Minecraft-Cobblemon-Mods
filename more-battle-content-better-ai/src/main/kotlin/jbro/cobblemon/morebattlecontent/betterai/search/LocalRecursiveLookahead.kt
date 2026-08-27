@@ -34,6 +34,8 @@ internal data class LocalLookaheadEvaluation(
     val leafCalculations: Int = 0,
     /** What the same search would have cost with the caches keyed by object identity. */
     val leafCalculationsUnderIdentityKeying: Int = 0,
+    /** The share of [nodesVisited] spent scoring leaves rather than projecting turns. */
+    val leafWorkUnits: Int = 0,
 )
 
 /**
@@ -94,6 +96,7 @@ internal object LocalRecursiveLookaheadEvaluator {
         var completedDepth = 0
         var totalNodes = 0
         var totalBranchesPruned = 0
+        var totalLeafWorkUnits = 0
         var truncated = false
         var publicResponseIncomplete = false
         var lastCoverage = 1.0
@@ -200,6 +203,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             }
             totalNodes += search.nodesVisited
             totalBranchesPruned += search.branchesPruned
+            totalLeafWorkUnits += search.leafWorkUnits
             publicResponseIncomplete = publicResponseIncomplete || search.publicResponseIncomplete
             lastCoverage = search.publicResponseCoverage
             if (search.truncated) {
@@ -219,6 +223,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             publicResponseCoverage = lastCoverage,
             leafCalculations = actionCalculationCache.calculationsPerformed,
             leafCalculationsUnderIdentityKeying = actionCalculationCache.calculationsUnderIdentityKeying,
+            leafWorkUnits = totalLeafWorkUnits,
         )
     }
 
@@ -256,6 +261,8 @@ internal object LocalRecursiveLookaheadEvaluator {
         var publicResponseIncomplete: Boolean = false
             private set
         var publicResponseCoverage: Double = 1.0
+            private set
+        var leafWorkUnits: Int = 0
             private set
         private val memo = HashMap<SearchKey, Double>()
         // Structural, like the search's own value memo. Keying leaf values by object identity meant a
@@ -653,7 +660,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 state = state,
                 source = context,
                 calculationCache = actionCalculationCache,
-                shouldContinue = ::projectedWorkAvailable,
+                shouldContinue = ::leafWorkAvailable,
                 tuning = tuning,
             )
             // A leaf whose move list was cut short by the budget is a partial reading, not a value:
@@ -740,6 +747,20 @@ internal object LocalRecursiveLookaheadEvaluator {
                 truncated = true
             }
             return !truncated
+        }
+
+        /**
+         * The same budget check, attributed to leaf evaluation rather than to the tree.
+         *
+         * `nodesVisited` is one counter spent by two very different things: projecting a turn, and
+         * scoring a leaf by recalculating every damaging move on both sides. They share a limit named
+         * for the first, so the reported node count is not a tree size and the allowance a tier thinks
+         * it is granting to depth is partly consumed by evaluation. Splitting the count says how much,
+         * which has to be known before the budgets are worth separating.
+         */
+        private fun leafWorkAvailable(): Boolean {
+            leafWorkUnits++
+            return projectedWorkAvailable()
         }
     }
 
