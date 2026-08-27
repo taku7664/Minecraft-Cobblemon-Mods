@@ -193,9 +193,11 @@ class LocalWeightedActionSelectorTest {
             rank("outside_three", 2.0),
         )
 
+        // The shortlist size is no longer asserted. Weight now decays with regret instead of falling
+        // off a cliff, so a dominated action can sit in the list at negligible weight; what matters
+        // is that it never gets played, which is what this checks.
         repeat(100) { seed ->
             val choice = selector.choose(ranked, seed.toLong(), riskTolerance = 1.0)
-            assertEquals(2, choice.shortlistSize)
             assertTrue(choice.rank.outcome.candidate.actionId != "dominated")
         }
     }
@@ -211,8 +213,27 @@ class LocalWeightedActionSelectorTest {
             rank("outside_three", 0.0),
         )
 
-        assertEquals(2, selector.choose(ranked, 7L, riskTolerance = 0.0).shortlistSize)
-        assertEquals(3, selector.choose(ranked, 7L, riskTolerance = 1.0).shortlistSize)
+        // Stated as behaviour rather than as a shortlist size. The size was a proxy for "how many
+        // actions are live", which stopped being a clean count once weight began decaying smoothly -
+        // an action can be listed and still be all but unreachable. What the name promises is that a
+        // bold trainer reaches past the best action more often than a cautious one does, so that is
+        // what is measured.
+        val cautiousAlternatives = (0 until 200).count { seed ->
+            selector.choose(ranked, seed.toLong(), riskTolerance = 0.0).rank.outcome.candidate.actionId != "best"
+        }
+        val boldAlternatives = (0 until 200).count { seed ->
+            selector.choose(ranked, seed.toLong(), riskTolerance = 1.0).rank.outcome.candidate.actionId != "best"
+        }
+        assertTrue(
+            boldAlternatives > cautiousAlternatives,
+            "bold=$boldAlternatives cautious=$cautiousAlternatives",
+        )
+        // The widening is for credible alternatives only; the tail must stay unreachable at any risk.
+        repeat(200) { seed ->
+            val chosen = selector.choose(ranked, seed.toLong(), riskTolerance = 1.0)
+                .rank.outcome.candidate.actionId
+            assertTrue(chosen !in setOf("outside_one", "outside_two", "outside_three"), chosen)
+        }
     }
 
     @Test
@@ -224,8 +245,18 @@ class LocalWeightedActionSelectorTest {
         val unrestricted = mixingContext(riskTolerance = 1.0)
         val conditional = unrestricted.copy(uncertainConditionalActionIds = setOf("conditional"))
 
-        assertEquals(2, selector.choose(ranked, 7L, unrestricted).shortlistSize)
-        assertEquals(1, selector.choose(ranked, 7L, conditional).shortlistSize)
+        // Narrower means chosen less often, which survives the move from a cliff to a decay; the
+        // old size assertion only described where the cliff happened to sit.
+        val unrestrictedPicks = (0 until 200).count { seed ->
+            selector.choose(ranked, seed.toLong(), unrestricted).rank.outcome.candidate.actionId == "conditional"
+        }
+        val conditionalPicks = (0 until 200).count { seed ->
+            selector.choose(ranked, seed.toLong(), conditional).rank.outcome.candidate.actionId == "conditional"
+        }
+        assertTrue(
+            conditionalPicks < unrestrictedPicks,
+            "conditional=$conditionalPicks unrestricted=$unrestrictedPicks",
+        )
         assertEquals("reliable", selector.choose(ranked, 7L, conditional).rank.outcome.candidate.actionId)
     }
 

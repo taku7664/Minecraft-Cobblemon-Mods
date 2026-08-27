@@ -10,7 +10,6 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerPersonality
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import kotlin.math.ceil
 import kotlin.math.exp
-import kotlin.math.pow
 
 internal data class LocalActionSelection(
     val rank: LocalBattleActionRank,
@@ -88,31 +87,52 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
             context.tuning.maximumReasonableScoreGap,
             adaptiveRegretGap(context.riskBudget, bestScore, context.tuning),
         )
+        // The regret gap used to be a single cliff: anything further than `allowedGap` behind the
+        // best was removed outright. That cliff was where trainer character went to die - the
+        // shortlist collapsed to one entry in a third of positions, two thirds once a cautious
+        // valuation made the favourite more dominant, and a list of one cannot express a personality
+        // however it is weighted.
+        //
+        // It is now two things that were being conflated. Within `allowedGap` the trainer is choosing
+        // between real alternatives, and weight decays smoothly rather than falling off an edge.
+        // Past `ABSURD_REGRET_MULTIPLE` times that, the action is not a close call at all and stays
+        // excluded outright - a player who watched an AI pick a move three times worse than the
+        // obvious one would call it broken, not characterful, and removing that boundary entirely did
+        // exactly that in the regression suite.
+        val absurdGap = allowedGap * ABSURD_REGRET_MULTIPLE
         val shortlist = countShortlist.filter { rank ->
-            val conditionalScale = if (
-                rank.outcome.candidate.actionId in context.uncertainConditionalActionIds
-            ) {
-                UNCERTAIN_CONDITION_REGRET_SCALE
-            } else {
-                1.0
-            }
-            bestScore - rank.comparisonValue <= allowedGap * conditionalScale
-        }
+            bestScore - rank.comparisonValue <= absurdGap * conditionalScale(rank, context)
+        }.ifEmpty { listOf(countShortlist.first()) }
         if (shortlist.size == 1) {
             return LocalActionSelection(shortlist.single(), seed, 1, 1.0)
         }
 
-        val floor = shortlist.minOf(LocalBattleActionRank::comparisonValue)
         val style = context.style
         val riskTolerance = context.riskBudget
-        val exponent = MAX_WEIGHT_EXPONENT -
-            (MAX_WEIGHT_EXPONENT - MIN_WEIGHT_EXPONENT) * riskTolerance +
+        // Sharpness of the draw, deliberately independent of risk appetite.
+        //
+        // Risk already has a lever: it widens `allowedGap`, so a bold trainer treats a larger band of
+        // actions as live alternatives. Letting it flatten the decay as well applied it twice, and
+        // the second application meant something different and wrong - not "willing to take a close
+        // alternative" but "willing to take a bad move". A dominated action 95 points behind kept
+        // over half the weight of the best one.
+        //
+        // A plan in progress still sharpens: sticking to a line is what having a plan means.
+        val sharpness = BASE_DRAW_SHARPNESS +
             if (context.memory.activePlan == null) 0.0 else context.personality.planPersistence * PLAN_SHARPNESS
         val weights = shortlist.map { rank ->
-            val scoreWeight = (rank.comparisonValue - floor + MINIMUM_POSITIVE_WEIGHT)
-                .coerceAtLeast(MINIMUM_POSITIVE_WEIGHT)
-                .pow(exponent)
-            scoreWeight * riskMultiplier(rank, riskTolerance) * patternMultiplier(rank, shortlist, context, style) *
+            // Weight decays with regret against the best action, on a scale set by how much regret
+            // this trainer tolerates. Nothing else shapes it.
+            //
+            // It used to be multiplied by `(score - floor)^exponent`, and that term was the real
+            // reason the draw stayed effectively deterministic even after the shortlist was widened:
+            // the lowest-scoring member of any shortlist sits exactly at `floor`, so its weight was
+            // always the epsilon, whatever the exponent. The last candidate could never be chosen -
+            // not because it was bad, but because it was last. Softening the cliff had barely moved
+            // the favourite's 94% share until this went with it.
+            val regret = (bestScore - rank.comparisonValue).coerceAtLeast(0.0)
+            exp(-sharpness * regret / (allowedGap * conditionalScale(rank, context))) *
+                riskMultiplier(rank, riskTolerance) * patternMultiplier(rank, shortlist, context, style) *
                 switchHysteresisMultiplier(rank, shortlist, context.memory) *
                 nonProgressControlMultiplier(rank, context.memory) *
                 LocalBattleMind.planAlignment(rank.outcome.candidate, context.memory)
@@ -144,6 +164,20 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         riskTolerance: Double,
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     ): LocalActionSelection = choose(ranked, seed, LocalActionMixingContext.balanced(riskTolerance, tuning))
+
+    /**
+     * Scale applied to an action whose success depends on a condition that is not resolved yet.
+     *
+     * The scale is below one, so uncertainty *narrows* the band: an action that may simply fail is
+     * held to a stricter standard before it is worth mixing in, which is what the old cliff meant by
+     * it too.
+     */
+    private fun conditionalScale(rank: LocalBattleActionRank, context: LocalActionMixingContext): Double =
+        if (rank.outcome.candidate.actionId in context.uncertainConditionalActionIds) {
+            UNCERTAIN_CONDITION_REGRET_SCALE
+        } else {
+            1.0
+        }
 
     fun shortlistSize(
         candidateCount: Int,
@@ -342,10 +376,30 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
 
     private companion object {
         const val MINIMUM_MIXED_CHOICES = 2
-        const val MINIMUM_POSITIVE_WEIGHT = 1.0
         const val UNCERTAIN_CONDITION_REGRET_SCALE = 0.50
-        const val MIN_WEIGHT_EXPONENT = 0.5
-        const val MAX_WEIGHT_EXPONENT = 1.6
+        /**
+         * How far past the regret band an action stops being a choice and becomes a mistake.
+         *
+         * One, meaning the band itself is the boundary - the same exclusion the old cliff made. It
+         * was briefly two, on the theory that a wider band would give trainer character more room,
+         * and it did: persona divergence went from 7.5% to 32.5%. But the room it opened is populated
+         * by actions between 45% and 160% worse than the best available, and the regression suite
+         * caught the AI playing one of them. That is not character, it is a worse player, and the
+         * measurement that looked like success could not tell the two apart.
+         *
+         * What the band admits is unchanged. What changed is the shape inside it.
+         */
+        const val ABSURD_REGRET_MULTIPLE = 1.0
+
+        /**
+         * Decay rate of weight against regret, in units of the trainer's own regret band.
+         *
+         * One means an action exactly at the edge of the band keeps `1/e` of the best action's
+         * weight. Replaced the pair of weight exponents that shaped the old power-law term; those
+         * were calibrated for a different formula and reusing them here made the risky end far too
+         * flat.
+         */
+        const val BASE_DRAW_SHARPNESS = 1.0
         const val PLAN_SHARPNESS = 0.25
         const val RISK_TILT = 2.0
         const val PATTERN_TILT = 0.45
