@@ -5,6 +5,7 @@ import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTactica
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalPublicPositionFacts
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalSituationalEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalDeclaredMultiHit
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalRiskAttitude
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
 
@@ -31,11 +32,16 @@ internal object PublicActionOutcomeProjector {
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         actingSide: BattleSide = BattleSide.ALLY,
+        /**
+         * Which roll of the damage range this trainer expects. Neutral is the midpoint, so every
+         * caller that does not care keeps its previous behaviour exactly.
+         */
+        riskAttitude: Double = LocalRiskAttitude.NEUTRAL,
     ): PublicActionOutcomeProjection =
         when (candidate.kind) {
-            BattleActionKind.USE_MOVE -> move(candidate, context, actingSide)
+            BattleActionKind.USE_MOVE -> move(candidate, context, actingSide, riskAttitude)
             BattleActionKind.SWITCH -> switch(candidate, context)
-            BattleActionKind.COMPOSITE -> composite(candidate, context, actingSide)
+            BattleActionKind.COMPOSITE -> composite(candidate, context, actingSide, riskAttitude)
             BattleActionKind.WAIT, BattleActionKind.FORFEIT -> empty(candidate)
         }
 
@@ -43,6 +49,7 @@ internal object PublicActionOutcomeProjector {
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         actingSide: BattleSide,
+        riskAttitude: Double,
     ): PublicActionOutcomeProjection {
         val facts = candidate.facts
         val actor = active(context, actingSide, candidate.actorSlot)
@@ -72,8 +79,11 @@ internal object PublicActionOutcomeProjector {
         }
         val adjustedDamage = standardAdjustedDamage ?: declaredDamage
         val expectedDamage = adjustedDamage?.let { damage ->
-            val midpoint = (damage.minimum + damage.maximum) / 2.0
-            if (LocalDeclaredMultiHit.usesPerHitAccuracy(candidate)) midpoint else midpoint * accuracy
+            // The single place the sixteen-roll range becomes one number. Everything downstream -
+            // the scorer's cancellation, knockout pressure, the search's board value - resolves to
+            // this, so it is the only place a trainer's expectation of the dice has to be applied.
+            val expected = LocalRiskAttitude.expectedFraction(damage.minimum, damage.maximum, riskAttitude)
+            if (LocalDeclaredMultiHit.usesPerHitAccuracy(candidate)) expected else expected * accuracy
         }
         val afterHit = if (targetHp != null && adjustedDamage != null) {
             BattleFractionRange(
@@ -148,8 +158,9 @@ internal object PublicActionOutcomeProjector {
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         actingSide: BattleSide,
+        riskAttitude: Double,
     ): PublicActionOutcomeProjection {
-        val components = candidate.componentActions.map { project(it, context, actingSide) }
+        val components = candidate.componentActions.map { project(it, context, actingSide, riskAttitude) }
         return blank(candidate).copy(
             coverage = if (components.all { it.coverage == BattleCalculationCoverage.EXACT }) {
                 BattleCalculationCoverage.EXACT

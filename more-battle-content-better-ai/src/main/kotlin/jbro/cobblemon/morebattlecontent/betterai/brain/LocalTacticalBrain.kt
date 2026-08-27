@@ -68,7 +68,26 @@ internal class LocalTacticalBrain(
         } else {
             calculatedContext
         }
-        val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, profile, tuning)
+        // Assessed before ranking, not after, because the risk budget it resolves belongs in the
+        // scoring rather than only in the draw at the end.
+        //
+        // `riskBudget` is the trainer's personality risk, shifted by a style offset derived stably
+        // from their persona id, shifted again by how far ahead or behind they are. All three were
+        // being computed and then handed only to the weighted selector - which was measured to have
+        // almost nothing to tilt, so three separate trainers played identically in 40 of 40 recorded
+        // positions. Carrying it as the effective personality means every consumer of
+        // `personality.riskTolerance` sees the resolved value without a new parameter on any of them.
+        val battleId = active?.battleId ?: calculatedContext.state.battleId
+        val mind = LocalBattleMind.assess(
+            trainerPersonaId = active?.trainerPersonaId,
+            battleId = battleId,
+            context = difficultyContext,
+            profile = profile,
+        )
+        val decidingProfile = profile.copy(
+            personality = profile.personality.copy(riskTolerance = mind.riskBudget),
+        )
+        val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
         baseRanked.singleOrNull()?.let { selected ->
             return CompletableFuture.completedFuture(
                 BattleDecision(
@@ -85,14 +104,8 @@ internal class LocalTacticalBrain(
                 ),
             )
         }
-        val battleId = active?.battleId ?: calculatedContext.state.battleId
-        val mind = LocalBattleMind.assess(
-            trainerPersonaId = active?.trainerPersonaId,
-            battleId = battleId,
-            context = difficultyContext,
-            profile = profile,
-        )
-        val lookahead = LocalRecursiveLookaheadEvaluator.evaluate(baseRanked, difficultyContext, profile, tuning)
+        val lookahead =
+            LocalRecursiveLookaheadEvaluator.evaluate(baseRanked, difficultyContext, decidingProfile, tuning)
         val rootDecision = LocalRootDecisionPolicy.refine(lookahead.ranked, difficultyContext)
         val ranked = rootDecision.ranked
         val seed = LocalActionChoiceSeed.derive(

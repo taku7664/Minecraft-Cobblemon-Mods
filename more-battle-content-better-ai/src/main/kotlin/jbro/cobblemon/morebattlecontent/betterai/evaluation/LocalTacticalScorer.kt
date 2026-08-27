@@ -15,6 +15,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyBrief
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyObjective
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalRiskAttitude
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffectiveness
 
 /**
@@ -79,7 +80,14 @@ internal object LocalTacticalScorer {
             // evaluator adds `(clampedExpectedDamage - thisValue / 100) * 100`, so the two terms
             // cancel into the clamped, mechanics-aware expected damage. Changing the constant here
             // without changing DAMAGE_UTILITY_SCALE would break that cancellation.
-            (damageRange.minimum + damageRange.maximum) * 50.0 * accuracy
+            //
+            // The risk attitude has to match the one the outcome evaluator hands the projector, for
+            // the same reason: these two are one term split across two files.
+            LocalRiskAttitude.expectedFraction(
+                damageRange.minimum,
+                damageRange.maximum,
+                profile.personality.riskTolerance,
+            ) * 100.0 * accuracy
         } else {
             unprojectedPressure(candidate, context, details, facts, tuning)
         }

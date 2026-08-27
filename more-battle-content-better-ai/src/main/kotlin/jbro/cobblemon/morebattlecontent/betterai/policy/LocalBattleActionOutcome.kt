@@ -17,6 +17,7 @@ import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalPublicPositionF
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalSituationalEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicActionOutcomeProjection
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalRiskAttitude
 import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicActionOutcomeProjector
 
 /**
@@ -230,8 +231,14 @@ internal object LocalBattleActionOutcomeEvaluator {
         val details = candidate.moveDetails
         val accuracy = facts?.baseAccuracyProbability ?: details?.accuracy?.div(100.0) ?: 0.0
         val damageRange = facts?.standardDamageFractionRange
-        val projection = PublicActionOutcomeProjector.project(candidate, context)
-        val baseExpectedDamage = damageRange?.let { (it.minimum + it.maximum) / 2.0 * accuracy } ?: 0.0
+        // How this trainer expects the dice to fall. The projector and the cancellation below have to
+        // read the same attitude, or the scorer's pressure stops cancelling and the move is paid for
+        // twice.
+        val riskAttitude = profile.personality.riskTolerance
+        val projection = PublicActionOutcomeProjector.project(candidate, context, riskAttitude = riskAttitude)
+        val baseExpectedDamage = damageRange?.let {
+            LocalRiskAttitude.expectedFraction(it.minimum, it.maximum, riskAttitude) * accuracy
+        } ?: 0.0
         val expectedDamage = projection.expectedDamageFraction ?: 0.0
         // When the facts carry a damage range, `- baseExpectedDamage` cancels the scorer's unclamped
         // pressure and leaves the clamped, mechanics-aware figure. When they do not, the scorer used
