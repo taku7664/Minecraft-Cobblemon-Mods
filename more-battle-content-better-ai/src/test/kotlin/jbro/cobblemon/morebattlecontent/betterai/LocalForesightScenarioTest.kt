@@ -276,6 +276,53 @@ class LocalForesightScenarioTest {
             publicActionCatalog = context.publicActionCatalog,
         )
 
+    @Test
+    fun `turning the search off is measured against the positions it was built for`() {
+        // Asked directly: is the search worth keeping at all? Self-play could not answer it - these
+        // positions are rare enough in random battles that 120 of them said nothing either way. The
+        // positions can answer it, because they are the thing the search is for.
+        val positions = reachablePositions()
+        val profile = BattleTrainerProfile(
+            skillLevel = 2,
+            personality = BattleTrainerProfile.champion().personality,
+            difficulty = BattleDifficultyProfiles.BOSS,
+        )
+        val withSearch = LocalDecisionTuning.CURRENT
+        // Nothing the search finds can reach the ranking; the immediate heuristic decides alone.
+        val withoutSearch = LocalDecisionTuning.CURRENT.copy(
+            id = "no_search", maximumLookaheadAdjustment = 0.0,
+        )
+
+        fun solve(tuning: LocalDecisionTuning) = positions.count { position ->
+            LocalDecisionInstrumentation.inspect(
+                context = PublicBattleTacticalCalculator.calculate(position.context),
+                profile = profile,
+                tuning = tuning,
+            ).candidates.maxByOrNull { it.comparisonValue }?.actionId == position.patientAction
+        }
+
+        val on = solve(withSearch)
+        val off = solve(withoutSearch)
+
+        val report = buildString {
+            appendLine("=".repeat(96))
+            appendLine("IS THE SEARCH LOAD-BEARING")
+            appendLine("=".repeat(96))
+            appendLine("  search on   solved %d of %d".format(on, positions.size))
+            appendLine("  search off  solved %d of %d".format(off, positions.size))
+            appendLine()
+            positions.forEach { position ->
+                appendLine("   - %s: patient action is %s".format(position.name, position.patientAction))
+            }
+            appendLine()
+            appendLine("These are the positions the capability was asked for. If turning the search off")
+            appendLine("loses them, the search is what delivers it, whatever whole-battle win rate says.")
+        }
+        println(report)
+
+        assertTrue(on > off, report)
+    }
+
     /**
      * The positions whose payoff lands inside a search horizon, for tests that need to price a change
      * against the capability it might cost.
