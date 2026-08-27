@@ -79,7 +79,10 @@ internal object PublicSingleTurnProjector {
         val orders = when (moveActions.size) {
             0 -> listOf(emptyList())
             1 -> listOf(moveActions)
-            else -> possibleOrders(switchedState, moveActions)
+            // The decision state is passed alongside the projected one because an action-order
+            // observation only describes the speed conditions it was seen under, and those are the
+            // conditions of the state the inferences were drawn from.
+            else -> possibleOrders(sourceContext.state, switchedState, moveActions)
         }
         return orders.flatMap { order ->
             if (!shouldContinue()) return emptyList()
@@ -1296,12 +1299,13 @@ internal object PublicSingleTurnProjector {
     }
 
     private fun possibleOrders(
+        observedState: BattleStateView,
         state: BattleStateView,
         actions: List<TurnPrimitiveAction>,
     ): List<List<TurnPrimitiveAction>> {
         val constraints = actions.indices.flatMap { firstIndex ->
             (firstIndex + 1 until actions.size).mapNotNull { secondIndex ->
-                definiteOrder(state, actions[firstIndex], actions[secondIndex])
+                definiteOrder(observedState, state, actions[firstIndex], actions[secondIndex])
             }
         }
         return permutations(actions).filter { order ->
@@ -1310,6 +1314,7 @@ internal object PublicSingleTurnProjector {
     }
 
     private fun definiteOrder(
+        observedState: BattleStateView,
         state: BattleStateView,
         first: TurnPrimitiveAction,
         second: TurnPrimitiveAction,
@@ -1343,7 +1348,7 @@ internal object PublicSingleTurnProjector {
         if (speedOrder != null || trickRoom) return speedOrder
         val firstActorId = first.actorPokemonId ?: return null
         val secondActorId = second.actorPokemonId ?: return null
-        return when (LocalObservedActionOrder.before(state, firstActorId, secondActorId)) {
+        return when (LocalObservedActionOrder.before(observedState, state, firstActorId, secondActorId)) {
             true -> first to second
             false -> second to first
             null -> null
