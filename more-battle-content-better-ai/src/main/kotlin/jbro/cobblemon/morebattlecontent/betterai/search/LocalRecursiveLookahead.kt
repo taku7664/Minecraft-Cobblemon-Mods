@@ -1,6 +1,5 @@
 package jbro.cobblemon.morebattlecontent.betterai.search
 
-import java.util.IdentityHashMap
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.calculation.LocalForcedReplacementResolution
@@ -21,7 +20,6 @@ import jbro.cobblemon.morebattlecontent.betterai.state.PublicTurnProjection
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveHistoryProjector
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveSnapshotActionConstraints
-import kotlin.math.roundToInt
 
 internal data class LocalLookaheadEvaluation(
     val ranked: List<LocalBattleActionRank>,
@@ -32,6 +30,10 @@ internal data class LocalLookaheadEvaluation(
     val publicResponseIncomplete: Boolean,
     /** Effective weight the search result carried into the ranking, for diagnostics. */
     val publicResponseCoverage: Double = 1.0,
+    /** Public tactical calculations the leaf evaluations actually performed. */
+    val leafCalculations: Int = 0,
+    /** What the same search would have cost with the caches keyed by object identity. */
+    val leafCalculationsUnderIdentityKeying: Int = 0,
 )
 
 /**
@@ -215,6 +217,8 @@ internal object LocalRecursiveLookaheadEvaluator {
             truncated = truncated,
             publicResponseIncomplete = publicResponseIncomplete,
             publicResponseCoverage = lastCoverage,
+            leafCalculations = actionCalculationCache.calculationsPerformed,
+            leafCalculationsUnderIdentityKeying = actionCalculationCache.calculationsUnderIdentityKeying,
         )
     }
 
@@ -254,8 +258,11 @@ internal object LocalRecursiveLookaheadEvaluator {
         var publicResponseCoverage: Double = 1.0
             private set
         private val memo = HashMap<SearchKey, Double>()
-        private val stateUtilityMemo = IdentityHashMap<BattleStateView, Double>().apply {
-            put(initialState, initialStateUtility)
+        // Structural, like the search's own value memo. Keying leaf values by object identity meant a
+        // position reached by two different routes was evaluated twice, and a leaf evaluation is a full
+        // tactical calculation for every damaging move on both sides.
+        private val stateUtilityMemo = HashMap<String, Double>().apply {
+            put(actionCalculationCache.fingerprints.of(initialState), initialStateUtility)
         }
 
         fun rootActionValue(state: BattleStateView, ownAction: BattleActionCandidate, depth: Int): RootActionEvaluation? {
@@ -529,10 +536,47 @@ internal object LocalRecursiveLookaheadEvaluator {
                     (remainingHpFraction / totalProbability).coerceIn(0.0, 1.0),
                 )
             }
-            val worstOrder = orderExpectations.minByOrNull(TurnValue::value) ?: return null
-            return worstOrder.copy(
+            // Turn order is chance, not choice, and it used to be collapsed by a flat minimum - full
+            // pessimism at every tier, deeper than the worst case an opponent's actual decision is
+            // given. The opponent picks their move; they do not pick their IVs, and an order the public
+            // stat ranges leave open is exactly that kind of unknown.
+            //
+            // The cost of the old reading was invisible while every fixture handed the search a point
+            // range for the opponent, which made the order known and the minimum harmless. Against the
+            // species range production really supplies - about 1.8x wide on Speed - the ranges overlap
+            // almost always, so the search assumed it moved second on every node of every branch. Any
+            // patient line whose payoff needs surviving one turn then priced as "I move second and die",
+            // and the AI could only ever be greedy.
+            //
+            // So the orders are averaged, then pulled toward the worst by the same tier weight the
+            // opponent's own choices get. A Boss is still deeply cautious; it is no longer more
+            // frightened of an unlucky stat spread than of a hostile decision.
+            if (orderExpectations.isEmpty()) return null
+            val worstOrder = orderExpectations.minBy(TurnValue::value)
+            if (orderExpectations.size == 1) return worstOrder
+            val pessimism = (worstCaseWeight() * tuning.turnOrderPessimismScale).coerceIn(0.0, 1.0)
+            val meanValue = orderExpectations.sumOf(TurnValue::value) / orderExpectations.size
+            val meanExecution = orderExpectations.sumOf(TurnValue::ownExecutionProbability) /
+                orderExpectations.size
+            return TurnValue(
+                value = meanValue * (1.0 - pessimism) + worstOrder.value * pessimism,
+                ownExecutionProbability = meanExecution * (1.0 - pessimism) +
+                    worstOrder.ownExecutionProbability * pessimism,
                 ownRemainingHpFraction = orderExpectations.minOf(TurnValue::ownRemainingHpFraction),
             )
+        }
+
+        /**
+         * How far a tier leans on the worst branch rather than the average one.
+         *
+         * Shared by the opponent's action choices and by the turn orders their stat ranges leave open,
+         * so the search cannot end up more afraid of an unknown than of an adversary.
+         */
+        private fun worstCaseWeight(): Double = when (profile.difficulty.tier) {
+            BattleTrainerTier.INTRODUCTORY -> 0.20
+            BattleTrainerTier.STANDARD -> 0.40
+            BattleTrainerTier.ADVANCED -> 0.65
+            BattleTrainerTier.BOSS -> 0.85
         }
 
         private fun aggregateOpponentResponses(
@@ -593,12 +637,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             } else {
                 worst
             }
-            val worstWeight = when (profile.difficulty.tier) {
-                BattleTrainerTier.INTRODUCTORY -> 0.20
-                BattleTrainerTier.STANDARD -> 0.40
-                BattleTrainerTier.ADVANCED -> 0.65
-                BattleTrainerTier.BOSS -> 0.85
-            }
+            val worstWeight = worstCaseWeight()
             return TurnValue(
                 value = expected.value * (1.0 - worstWeight) + worst.value * worstWeight,
                 ownExecutionProbability = expected.ownExecutionProbability * (1.0 - worstWeight) +
@@ -607,14 +646,23 @@ internal object LocalRecursiveLookaheadEvaluator {
             )
         }
 
-        private fun stateUtility(state: BattleStateView): Double = stateUtilityMemo[state]
-            ?: LocalLookaheadStateEvaluator.evaluate(
+        private fun stateUtility(state: BattleStateView): Double {
+            val key = fingerprint(state)
+            stateUtilityMemo[key]?.let { return it }
+            val value = LocalLookaheadStateEvaluator.evaluate(
                 state = state,
                 source = context,
                 calculationCache = actionCalculationCache,
                 shouldContinue = ::projectedWorkAvailable,
                 tuning = tuning,
-            ).also { stateUtilityMemo[state] = it }
+            )
+            // A leaf whose move list was cut short by the budget is a partial reading, not a value:
+            // `attackPressure` takes a prefix of each side's moves and then maxes, and the ally's list
+            // is walked before the opponent's, so a truncated evaluation reads as free advantage.
+            // Storing it would spread that one reading over every later use of the position.
+            if (!truncated) stateUtilityMemo[key] = value
+            return value
+        }
 
         private data class TurnValue(
             val value: Double,
@@ -682,6 +730,9 @@ internal object LocalRecursiveLookaheadEvaluator {
             return truncated
         }
 
+        private fun fingerprint(state: BattleStateView): String =
+            actionCalculationCache.fingerprints.of(state)
+
         private fun projectedWorkAvailable(): Boolean {
             if (truncated) return false
             nodesVisited++
@@ -721,44 +772,6 @@ internal object LocalRecursiveLookaheadEvaluator {
     }.distinct()
 
     private fun List<Double>.averageOrNull(): Double? = if (isEmpty()) null else average()
-
-    private fun fingerprint(state: BattleStateView): String = buildString {
-        append(state.turn).append('|')
-        state.pokemon.sortedBy { it.battlePokemonId }.forEach { pokemon ->
-            append(pokemon.battlePokemonId).append(':')
-            append(pokemon.side.ordinal).append(':')
-            append(pokemon.activeSlot ?: -1).append(':')
-            append((pokemon.hpFraction * 10_000).roundToInt()).append(':')
-            append(pokemon.statusId ?: "-").append(':')
-            append(pokemon.formId ?: "-").append(':')
-            append(pokemon.knownHeldItemId ?: "-").append(':')
-            append(pokemon.actionConstraints.taunted).append(':')
-            append(pokemon.actionConstraints.encoreMoveId ?: "-").append(':')
-            append(pokemon.actionConstraints.trapped).append(':')
-            append(pokemon.actionConstraints.mustRecharge).append(':')
-            pokemon.statStages.toSortedMap().forEach { (stat, stage) -> append(stat).append('=').append(stage).append(',') }
-            append(';')
-        }
-        BattleSide.entries.forEach { side ->
-            append("remaining:").append(side.ordinal).append('=')
-                .append(state.remainingPokemonBySide.getValue(side)).append(';')
-            state.field.sideConditions.getValue(side).sortedBy { it.effectId }.forEach { effect ->
-                appendSearchTimedEffect("side:${side.ordinal}", effect)
-            }
-        }
-        appendSearchTimedEffect("weather", state.field.weather)
-        appendSearchTimedEffect("terrain", state.field.terrain)
-        state.field.roomEffects.sortedBy { it.effectId }.forEach { appendSearchTimedEffect("room", it) }
-        state.field.globalEffects.sortedBy { it.effectId }.forEach { appendSearchTimedEffect("global", it) }
-    }
-
-    private fun StringBuilder.appendSearchTimedEffect(scope: String, effect: BattleTimedEffectView?) {
-        if (effect == null) return
-        append(scope).append(':').append(effect.effectId).append(':')
-        append(effect.remainingTurns).append(':')
-        append(effect.remainingTurnsRange?.minimum).append('-').append(effect.remainingTurnsRange?.maximum).append(':')
-        append(effect.stacks).append(';')
-    }
 
     private fun battleEnded(state: BattleStateView): Boolean = BattleSide.entries.any { side ->
         state.remainingPokemonBySide.getValue(side) <= 0

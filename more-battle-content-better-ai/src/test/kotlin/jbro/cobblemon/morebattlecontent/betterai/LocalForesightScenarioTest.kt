@@ -36,6 +36,7 @@ import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.math.roundToInt
 import java.util.UUID
 
 /**
@@ -657,6 +658,26 @@ class LocalForesightScenarioTest {
         ),
     )
 
+    /**
+     * The opponent's Speed is a species range, the way production sees it.
+     *
+     * Every stat here used to be a point range on both sides, which quietly proved these positions in
+     * an information regime the real game never provides: the bridge hands the AI exact stats for its
+     * own team and a `PUBLIC_SPECIES_RANGE` for the opponent, and for Speed at level 50 that range is
+     * about 1.8x wide. A capability gate is only worth what its fixture represents, and this one was
+     * asserting that the AI reads turn order it cannot actually read.
+     *
+     * Only Speed is widened. The arithmetic each position is labelled by - 0.63 a hit, 0.48 back, one
+     * sixteenth from Leftovers - is derived from HP, offence and defence, and turning those into ranges
+     * would turn every one of those numbers into a range too and leave the positions unproven. Speed
+     * enters solely as an ordering, so widening it changes what the AI knows without changing what is
+     * true. Widening the rest means re-deriving all six labels, and that is its own piece of work.
+     */
+    private fun publicSpeed(speed: Int) = BattleIntegerRange(
+        (speed * 0.72).roundToInt().coerceAtLeast(1),
+        (speed * 1.29).roundToInt().coerceAtLeast(1),
+    )
+
     private fun pokemon(
         side: BattleSide,
         speed: Int,
@@ -685,8 +706,12 @@ class LocalForesightScenarioTest {
             defence = BattleIntegerRange(100, 100),
             specialAttack = BattleIntegerRange(130, 130),
             specialDefence = BattleIntegerRange(specialDefence, specialDefence),
-            speed = BattleIntegerRange(speed, speed),
-            knowledge = BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
+            speed = if (side == BattleSide.ALLY) BattleIntegerRange(speed, speed) else publicSpeed(speed),
+            knowledge = if (side == BattleSide.ALLY) {
+                BattleCombatStatKnowledge.EXACT_OWN
+            } else {
+                BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE
+            },
         ),
     )
 }

@@ -95,6 +95,34 @@ internal data class LocalDecisionTuning(
      * itself; no amount of pruning will do it.
      */
     val branchPruneThresholdOffset: Double = 0.0,
+    /**
+     * How much of a tier's worst-case weight applies to turn orders the stat ranges leave open.
+     *
+     * The opponent chooses their move; they do not choose their IVs. An order the public Speed range
+     * cannot resolve is an unknown, not a decision, and the search used to collapse it by a flat
+     * minimum - full pessimism at every tier, harsher than the treatment the opponent's actual choices
+     * get. Every fixture hid it by handing the search a point range for the opponent, which made the
+     * order known and the minimum a no-op; against the roughly 1.8x-wide species range production
+     * really supplies, the ranges overlap nearly always and the AI assumed it moved second everywhere.
+     *
+     * 1.0 keeps the tier weight, 0.0 averages the orders outright. The value is a scale rather than a
+     * weight so the difficulty ladder still means something: whatever a Boss's caution is set to, this
+     * says how much of it a coin flip deserves.
+     *
+     * Zero ships. Swept against the foresight positions in the information regime production actually
+     * has, the scale is monotone: 1.00 and 0.75 solve one of three, 0.50 and 0.25 solve two, and 0.00
+     * solves all three. Played out it is flat - 48.2% over 120 battles at 0.00 and 48.7% at 0.50
+     * against the old reading, both inside the noise of a sample that size, which is the expected
+     * answer rather than a disappointing one: these positions are rare enough in random battles that
+     * win rate has already been shown blind to them.
+     *
+     * The argument for a middle value is that the uncertainty is correlated - an opponent who is
+     * genuinely faster is faster every turn, not re-rolled per node, so averaging under-weights the
+     * world where they simply outspeed you. It is a real effect and it is what the tier weight on the
+     * opponent's *choices* still covers. Paying for it twice is what produced an AI that could only
+     * ever be greedy.
+     */
+    val turnOrderPessimismScale: Double = 0.0,
 
     // ---- damage ---------------------------------------------------------------------------------
     /**
