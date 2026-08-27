@@ -16,10 +16,19 @@ internal object LocalTurnBranchPruner {
         immediateTurnDelta: Double,
         depthRemaining: Int,
         newlyLostAllyHpBefore: Double?,
+        /**
+         * Raises the bar for abandoning a continuation, as a board-unit offset.
+         *
+         * Zero is the shipped behaviour: only a turn that already lost close to a full health bar is
+         * dropped. Raising it prunes more, and prunes exactly the branches a turn-order or survival
+         * play lives in - those are the ones whose immediate delta is small. Exposed so that trade
+         * can be measured rather than argued about.
+         */
+        thresholdOffset: Double = 0.0,
     ): Boolean {
         if (depthRemaining <= 0 || !immediateTurnDelta.isFinite()) return false
         if (newlyLostAllyHpBefore != null) return false
-        return immediateTurnDelta <= threshold(depthRemaining)
+        return immediateTurnDelta <= threshold(depthRemaining) + thresholdOffset
     }
 
     fun newlyLostAllyHpBefore(

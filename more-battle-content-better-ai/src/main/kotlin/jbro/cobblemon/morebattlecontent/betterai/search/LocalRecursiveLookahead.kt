@@ -470,6 +470,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                                 state,
                                 outcome.state,
                             ),
+                            thresholdOffset = tuning.branchPruneThresholdOffset,
                         )
                     val value = if (depth <= 1 || battleEnded(outcome.state) || stopBranch) {
                         if (stopBranch) branchesPruned++

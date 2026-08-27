@@ -276,6 +276,16 @@ class LocalForesightScenarioTest {
             publicActionCatalog = context.publicActionCatalog,
         )
 
+    /**
+     * The positions whose payoff lands inside a search horizon, for tests that need to price a change
+     * against the capability it might cost.
+     */
+    internal fun reachablePositions(): List<LocalForesightPositions.Position> = listOf(
+        speedDrop(), healOutOfRange(), protectAndLeftovers(), setupThenFinish(),
+        burnTheAttacker(), specialDefenceBoost(),
+    ).filter { it.withinSearchHorizon }
+        .map { LocalForesightPositions.Position(it.name, it.context, it.patientAction) }
+
     private class Scenario(
         val name: String,
         val rationale: String,

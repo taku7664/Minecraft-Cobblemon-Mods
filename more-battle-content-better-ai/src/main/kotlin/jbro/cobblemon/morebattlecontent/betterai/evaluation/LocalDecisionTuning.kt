@@ -73,6 +73,28 @@ internal data class LocalDecisionTuning(
     val leafKnockoutPressure: Double = 0.35,
     /** Board value of moving first, when the public speed order is resolvable. */
     val leafSpeedControlValue: Double = 0.15,
+    /**
+     * How much more willing the search is to abandon a continuation, in board units.
+     *
+     * Zero ships, and stays zero. Pruning harder was asked for, built, measured, and rejected.
+     *
+     * The pruner stops a branch only once the turn has already lost close to a full health bar, which
+     * is why it fires on about one node in two thousand. The worry was that raising it would cut the
+     * branches where a weak-looking move pays off later - a Speed drop, a Protect - because a small
+     * immediate delta is exactly what those look like on the turn they are played. That worry was
+     * wrong: at an offset of 0.85 the pruner abandons 179 times as many branches and all three
+     * foresight positions are still solved. Those moves chip the target, so their delta never
+     * approaches the threshold.
+     *
+     * What it does not do is save any work. Total nodes went from 5.47M to 5.83M. The total is set by
+     * the node and time budget, not by the pruner: freeing work inside the allowance only lets
+     * iterative deepening spend it further down. So the real trade is depth against breadth, and
+     * played out at an offset of 0.70 it loses - 51 wins to 58 across 120 battles, a 46.8% share.
+     *
+     * Searching wider beats searching deeper here. Reducing server cost means reducing the budget
+     * itself; no amount of pruning will do it.
+     */
+    val branchPruneThresholdOffset: Double = 0.0,
 
     // ---- damage ---------------------------------------------------------------------------------
     /**
