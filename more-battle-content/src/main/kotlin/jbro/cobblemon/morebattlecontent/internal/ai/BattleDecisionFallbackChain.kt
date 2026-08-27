@@ -14,6 +14,8 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleDecision
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionValidationStatus
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionValidator
+import jbro.cobblemon.morebattlecontent.MoreBattleContent
+import java.util.concurrent.ConcurrentHashMap
 
 /** Runs an untrusted Brain call off-thread and resolves it exactly once before the shared deadline. */
 internal class BattleBrainDecisionCoordinator(
@@ -22,6 +24,8 @@ internal class BattleBrainDecisionCoordinator(
     private val maximumDecisionMillis: Long = BattleBrainDefaults.DECISION_TIMEOUT_MILLIS,
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
 ) {
+    private val brainFailureCounts = ConcurrentHashMap<String, Int>()
+
     init {
         require(maximumDecisionMillis in 1..BattleBrainDefaults.DECISION_TIMEOUT_MILLIS)
     }
@@ -51,15 +55,17 @@ internal class BattleBrainDecisionCoordinator(
             brainExecutor.execute {
                 val decisionStage = try {
                     endpoint.brain.decide(endpoint.session(), context)
-                } catch (_: Exception) {
+                } catch (exception: Exception) {
                     if (result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))) {
                         timeout.cancel(false)
                     }
+                    reportBrainFailure(context, exception)
                     return@execute
-                } catch (_: LinkageError) {
+                } catch (error: LinkageError) {
                     if (result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))) {
                         timeout.cancel(false)
                     }
+                    reportBrainFailure(context, error)
                     return@execute
                 }
                 val decisionFuture = decisionStage.toCompletableFuture()
@@ -70,20 +76,60 @@ internal class BattleBrainDecisionCoordinator(
                 }
                 decisionFuture.whenComplete { decision, throwable ->
                     if (result.isDone) return@whenComplete
-                    val attempt = when {
-                        throwable != null || decision == null ->
-                            BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE)
-
-                        else -> validate(context, decision)
+                    val failed = throwable != null || decision == null
+                    val attempt = if (failed) {
+                        BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE)
+                    } else {
+                        validate(context, decision)
                     }
                     if (result.complete(attempt)) timeout.cancel(false)
+                    if (failed) throwable?.let { reportBrainFailure(context, it) }
                 }
             }
-        } catch (_: Exception) {
+        } catch (exception: Exception) {
             timeout.cancel(false)
             result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))
+            reportBrainFailure(context, exception)
         }
         return result
+    }
+
+    /**
+     * Says why a Brain failed, once per distinct fault.
+     *
+     * A Brain is untrusted, so the coordinator has always been right to catch everything and fall
+     * back. What it also did was discard the reason, and a Brain that throws on every turn then looks
+     * exactly like one that is merely unlucky: the battle log reported `BRAIN_FAILURE` on 50 of 54
+     * decisions in one session with no way to learn what threw. Falling back is the correct behaviour;
+     * doing it silently is not.
+     *
+     * The first sighting of a fault carries its stack trace, later ones only a count, so a fault that
+     * repeats every turn stays one readable entry rather than flooding the log.
+     *
+     * Always called after the attempt has been completed, never before. Initialising the logger costs
+     * a few hundred milliseconds the first time, and a decision has a deadline: reporting the failure
+     * must not be what makes the fallback miss it. `BattleDecisionFallbackChainTest` holds this.
+     */
+    private fun reportBrainFailure(context: BattleDecisionContext, throwable: Throwable) {
+        val cause = generateSequence(throwable) { it.cause }.last()
+        val signature = "${cause.javaClass.name}:${cause.message.orEmpty()}"
+        val seen = brainFailureCounts.merge(signature, 1, Int::plus) ?: 1
+        if (seen == 1) {
+            MoreBattleContent.LOGGER.error(
+                "Battle {} turn {} Brain threw with {} candidates; falling back",
+                runCatching { context.state.battleId }.getOrNull(),
+                runCatching { context.state.turn }.getOrNull(),
+                context.candidates.size,
+                throwable,
+            )
+        } else if (seen % REPEATED_FAILURE_LOG_INTERVAL == 0) {
+            MoreBattleContent.LOGGER.error(
+                "Battle {} Brain has now thrown {} times with {}",
+                runCatching { context.state.battleId }.getOrNull(),
+                seen,
+                signature,
+            )
+        }
     }
 
     private fun validate(context: BattleDecisionContext, decision: BattleDecision): BattleBrainAttempt =
@@ -122,6 +168,8 @@ internal class BattleBrainAttempt private constructor(
         fun failed(reason: BattleDecisionFailureReason) = BattleBrainAttempt(null, reason)
     }
 }
+
+private const val REPEATED_FAILURE_LOG_INTERVAL = 25
 
 internal enum class BattleDecisionStage { PRIMARY, LOCAL }
 
