@@ -261,20 +261,28 @@ class LocalForesightScenarioTest {
 
     /** Raise special defence so the losing two-hit race becomes a winning one. */
     /**
-     * Ally 0.60, slower, taking 0.35 a hit.
+     * Ally 0.60, slower, taking 0.35 a hit; Blizzard does 0.63 into a target at 0.95.
      *
-     *  greedy   0.60 -> 0.25 on their turn, attack, then 0.25 - 0.35 faints on the next.
-     *  patient  0.60 -> 0.25, boost, and the next hit is halved to 0.175 - alive at 0.075 with a
-     *           turn of damage still to come.
+     *  greedy   T1 hit to 0.25, attack to 0.32. T2 hit for 0.35 - faints, target survives.
+     *  patient  T1 hit to 0.25, boost. T2 halved hit to 0.075, attack to 0.32. T3 - faints, target
+     *           survives.
      *
-     * The first version used the full 0.48 threat, where the boost still left the ally dead. Halving
-     * a hit only matters when the halved hit is survivable.
+     * Both lines lose. The boost buys one more turn and the same damage, and never turns the exchange
+     * around, so it is long-horizon like the others: worth something over a long fight, worth nothing
+     * inside a tree.
+     *
+     * Two earlier versions of this were labelled winnable and were not, which is what makes it worth
+     * keeping. At two plies the search values it at +192 - it sees "still alive at the end of turn
+     * two" and stops. At three and four it sees the ally dying anyway and drops to +12 and +22. That
+     * looked like depth making the AI worse and is the opposite: the shallow search was wrong, the
+     * deep one is right, and the label was mine.
      */
     private fun specialDefenceBoost() = Scenario(
         name = "special defence boost",
-        rationale = "The next hit kills; halving it does not.",
+        rationale = "Buys a turn and loses anyway; the deeper search is right to decline.",
         greedyAction = "blizzard",
         patientAction = "amnesia",
+        withinSearchHorizon = false,
         context = position(
             threatPower = 60.0,
             allyHp = 0.60, allySpeed = 100, opponentHp = 0.95, opponentSpeed = 110,
