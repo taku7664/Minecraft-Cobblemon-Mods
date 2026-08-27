@@ -18,6 +18,9 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectTarget
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectsView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveTargetPattern
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanIntent
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanOwner
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonActionCatalogView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
@@ -132,6 +135,71 @@ class LocalForesightScenarioTest {
 
         assertTrue(scenarios.size == 5, report)
     }
+
+    @Test
+    fun `an active plan is measured for whether it can reach the long-horizon cases`() {
+        // The long-horizon scenarios were handed to plan persistence. Before building anything there,
+        // the cheap question: can a plan that already exists reach them at all?
+        //
+        // Two reasons to doubt it. The intent vocabulary has nothing for "invest now, cash in later" -
+        // it aligns with attacking, switching, or establishing a field, and a self-boost or a status
+        // is none of those. And alignment is a multiplier on the selector's draw, not a term in the
+        // score, which is exactly where risk attitude was found to be inert before it was moved.
+        val scenarios = listOf(setupThenFinish(), burnTheAttacker(), specialDefenceBoost())
+        val profile = BattleTrainerProfile(
+            skillLevel = 2,
+            personality = BattleTrainerProfile.champion().personality,
+            difficulty = BattleDifficultyProfiles.BOSS,
+        )
+
+        val report = buildString {
+            appendLine("=".repeat(100))
+            appendLine("PLANS AGAINST THE LONG-HORIZON CASES")
+            appendLine("=".repeat(100))
+            scenarios.forEach { scenario ->
+                appendLine("-- ${scenario.name} --  patient action is ${scenario.patientAction}")
+                (listOf<BattlePlanIntent?>(null) + BattlePlanIntent.entries).forEach { intent ->
+                    val planned = withPlan(scenario.context, intent)
+                    val breakdown = LocalDecisionInstrumentation.inspect(
+                        context = PublicBattleTacticalCalculator.calculate(planned),
+                        profile = profile,
+                        tuning = LocalDecisionTuning.CURRENT,
+                    )
+                    val chosen = breakdown.candidates.maxByOrNull { it.comparisonValue }?.actionId
+                    appendLine(
+                        "   plan=%-18s production=%-14s %s".format(
+                            intent?.name ?: "(none)", chosen ?: "-",
+                            if (chosen == scenario.patientAction) "<-- reached" else "",
+                        ),
+                    )
+                }
+                appendLine()
+            }
+            appendLine("If no intent reaches any of them, plans as they stand cannot deliver this and the")
+            appendLine("work is a new intent plus a route into the score, not tuning what is here.")
+        }
+        println(report)
+
+        assertTrue(scenarios.isNotEmpty(), report)
+    }
+
+    private fun withPlan(context: BattleDecisionContext, intent: BattlePlanIntent?): BattleDecisionContext =
+        BattleDecisionContext(
+            requestId = context.requestId,
+            state = context.state,
+            candidates = context.candidates,
+            deadlineEpochMillis = context.deadlineEpochMillis,
+            memory = if (intent == null) {
+                BattleTacticalMemoryView.empty()
+            } else {
+                BattleTacticalMemoryView(
+                    activePlan = BattlePlanView(intent = intent, expiresAtTurn = context.state.turn + 4),
+                    activePlanOwner = BattlePlanOwner.LOCAL_BRAIN,
+                    turnsSinceLastSwitch = 3,
+                )
+            },
+            publicActionCatalog = context.publicActionCatalog,
+        )
 
     private class Scenario(
         val name: String,
