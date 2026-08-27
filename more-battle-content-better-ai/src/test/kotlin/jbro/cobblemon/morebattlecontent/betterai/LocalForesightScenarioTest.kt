@@ -59,6 +59,7 @@ class LocalForesightScenarioTest {
         val scenarios = listOf(
             speedDrop(),
             healOutOfRange(),
+            protectAndLeftovers(),
             setupThenFinish(),
             burnTheAttacker(),
             specialDefenceBoost(),
@@ -183,6 +184,73 @@ class LocalForesightScenarioTest {
         assertTrue(scenarios.isNotEmpty(), report)
     }
 
+    @Test
+    fun `leaf pressure weight is swept against every foresight position`() {
+        // The signal the long-horizon cases need is already computed. A boost raises the attacker's
+        // own projected pressure in the state it produces, and the leaf evaluator measures exactly
+        // that, for both sides, without asking what kind of move caused it.
+        //
+        // It is then multiplied by 0.30. Pressure tops out around one health bar, so the entire
+        // positional term is worth at most 0.30 board - 30 points - against a 42.7 point preference
+        // for attacking. The knob was swept once before against win rate and did nothing; win rate
+        // has since been shown blind to exactly this kind of position, so it is worth asking again
+        // with the positions themselves.
+        val scenarios = listOf(
+            speedDrop(), healOutOfRange(), setupThenFinish(), burnTheAttacker(), specialDefenceBoost(),
+        )
+        val weights = listOf(0.30, 0.60, 1.00, 1.50, 2.50)
+        val profile = BattleTrainerProfile(
+            skillLevel = 2,
+            personality = BattleTrainerProfile.champion().personality,
+            difficulty = BattleDifficultyProfiles.BOSS,
+        )
+
+        val report = buildString {
+            appendLine("=".repeat(104))
+            appendLine("LEAF PRESSURE WEIGHT AGAINST THE FORESIGHT POSITIONS  tier=boss")
+            appendLine("=".repeat(104))
+            appendLine("0.30 is what ships. Higher values price a position that has not paid off yet.")
+            appendLine()
+            weights.forEach { weight ->
+                val tuning = LocalDecisionTuning.CURRENT.copy(id = "p$weight", leafPressureWeight = weight)
+                val chosen = scenarios.map { scenario ->
+                    val breakdown = LocalDecisionInstrumentation.inspect(
+                        context = PublicBattleTacticalCalculator.calculate(scenario.context),
+                        profile = profile,
+                        tuning = tuning,
+                    )
+                    val best = breakdown.candidates.maxByOrNull { it.comparisonValue }?.actionId
+                    scenario to (best == scenario.patientAction)
+                }
+                appendLine(
+                    "  weight=%.2f  solved=%d/%d   %s".format(
+                        weight,
+                        chosen.count { it.second },
+                        scenarios.size,
+                        chosen.joinToString(" ") { (scenario, ok) ->
+                            "${scenario.name.take(9)}=${if (ok) "yes" else "no"}"
+                        },
+                    ),
+                )
+            }
+            appendLine()
+            appendLine("Read the last three columns as 'changed', not as 'improved'.")
+            appendLine()
+            appendLine("Only the two reachable positions have a patient answer that is demonstrably")
+            appendLine("better. The defensive boost loses either way - the boost buys one turn and the")
+            appendLine("target still survives - so choosing it at a high weight is the AI getting worse.")
+            appendLine("The setup position is an exact tie: two unboosted attacks and one boosted attack")
+            appendLine("both knock the target out on turn two, from the same health, having taken the same")
+            appendLine("hit. Preferring either is a tie-break, not foresight.")
+            appendLine()
+            appendLine("So this sweep buys nothing it can show. The knob moves behaviour and the only")
+            appendLine("position where the movement is checkable is one where it moves the wrong way.")
+        }
+        println(report)
+
+        assertTrue(weights.isNotEmpty(), report)
+    }
+
     private fun withPlan(context: BattleDecisionContext, intent: BattlePlanIntent?): BattleDecisionContext =
         BattleDecisionContext(
             requestId = context.requestId,
@@ -276,8 +344,49 @@ class LocalForesightScenarioTest {
 
     /** Give up a turn of damage for a boost that turns the next attack into a knockout. */
     /**
-     * Two unboosted attacks and one boosted attack both take two turns, so the boost gains nothing
-     * until the third attack. Nothing here can see that far, and the search declining it is right.
+     * The second position asked for directly: block a turn, let the item heal, and be out of range.
+     *
+     * Ally 0.45 and faster, holding Leftovers, facing a hit that does 0.48. Blizzard does 0.63 into a
+     * target at 0.90, so two are needed.
+     *
+     *  greedy   T1 attack to 0.27, their hit lands for 0.48 and 0.45 is not enough - faints with the
+     *           target alive.
+     *  patient  T1 Protect blocks it, Leftovers adds 1/16 to 0.5125 - now above the 0.48 that would
+     *           have killed. T2 attack to 0.27 and survive the hit at 0.0325. T3 attack finishes it.
+     *
+     * The whole difference is one sixteenth of a health bar arriving before the hit rather than after,
+     * which is the narrow band that makes the item worth holding at all.
+     */
+    private fun protectAndLeftovers() = Scenario(
+        name = "protect and leftovers",
+        rationale = "Blocking one turn and healing a sixteenth puts the defender out of range.",
+        greedyAction = "blizzard",
+        patientAction = "protect",
+        context = position(
+            allyHp = 0.45, allySpeed = 120, opponentHp = 0.90, opponentSpeed = 100,
+            allyHeldItem = "leftovers",
+            candidates = listOf(
+                specialMove("blizzard", 110.0),
+                statusMove("protect", listOf(effectOf(BattleMoveEffectKind.PROTECT_USER))),
+            ),
+        ),
+    )
+
+    private fun effectOf(kind: BattleMoveEffectKind) = BattleMoveEffectView(
+        kind,
+        BattleMoveEffectTarget.USER,
+        probability = 1.0,
+    )
+
+    /**
+     * Ally 0.85 and faster, target at full, threat 0.48, Blizzard 0.63, boosted Blizzard 1.26.
+     *
+     *  greedy   T1 attack to 0.37 and take a hit to 0.37. T2 attack knocks it out.
+     *  patient  T1 boost and take a hit to 0.37. T2 boosted attack knocks it out.
+     *
+     * The same turn, the same health, the same result - an exact tie. The boost only pulls ahead from
+     * a third attack onwards, which nothing here reaches. Neither answer is the right one, so this
+     * position cannot be used to argue for a change; it is kept to stop a fix claiming a win here.
      */
     private fun setupThenFinish() = Scenario(
         name = "setup then finish",
@@ -379,8 +488,11 @@ class LocalForesightScenarioTest {
         candidates: List<BattleActionCandidate>,
         threatPower: Double = 85.0,
         threatCategory: BattleMoveDamageCategory = BattleMoveDamageCategory.SPECIAL,
+        allyHeldItem: String? = null,
     ): BattleDecisionContext {
-        val ally = pokemon(BattleSide.ALLY, allySpeed, allyHp, setOf("ice"), specialDefence = 95)
+        val ally = pokemon(
+            BattleSide.ALLY, allySpeed, allyHp, setOf("ice"), specialDefence = 95, heldItem = allyHeldItem,
+        )
         val opponent = pokemon(BattleSide.OPPONENT, opponentSpeed, opponentHp, setOf("dragon"), specialDefence = 190)
         val pokemon = listOf(ally, opponent)
         return BattleDecisionContext(
@@ -487,6 +599,7 @@ class LocalForesightScenarioTest {
         hpFraction: Double,
         types: Set<String>,
         specialDefence: Int,
+        heldItem: String? = null,
     ) = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(),
         side = side,
@@ -499,7 +612,7 @@ class LocalForesightScenarioTest {
         statStages = emptyMap(),
         knownMoveIds = emptySet(),
         knownAbilityId = null,
-        knownHeldItemId = null,
+        knownHeldItemId = heldItem,
         fainted = false,
         knownTypeIds = types,
         combatStats = BattleCombatStatRangesView(
