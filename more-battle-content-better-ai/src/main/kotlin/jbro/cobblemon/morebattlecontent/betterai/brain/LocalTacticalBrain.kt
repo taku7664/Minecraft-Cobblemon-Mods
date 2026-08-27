@@ -104,8 +104,13 @@ internal class LocalTacticalBrain(
                 ),
             )
         }
-        val lookahead =
-            LocalRecursiveLookaheadEvaluator.evaluate(baseRanked, difficultyContext, decidingProfile, tuning)
+        val lookahead = LocalRecursiveLookaheadEvaluator.evaluate(
+            baseRanked,
+            difficultyContext,
+            decidingProfile,
+            tuning,
+            strategy = strategy,
+        )
         val rootDecision = LocalRootDecisionPolicy.refine(lookahead.ranked, difficultyContext)
         val ranked = rootDecision.ranked
         val seed = LocalActionChoiceSeed.derive(

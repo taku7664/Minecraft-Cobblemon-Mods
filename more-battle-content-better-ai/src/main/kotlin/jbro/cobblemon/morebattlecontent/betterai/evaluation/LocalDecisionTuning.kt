@@ -46,6 +46,19 @@ internal data class LocalDecisionTuning(
     /** When true, coverage decays linearly in revealed fraction instead of quadratically. */
     val lookaheadLinearCoverage: Boolean = true,
     val maximumLookaheadAdjustment: Double = 800.0,
+    /**
+     * How much of the value judgement belongs to the search rather than to the immediate heuristic.
+     *
+     * Zero leaves the heuristic deciding and the search advising, which is what shipped and what was
+     * measured to waste the search entirely: it reaches a different conclusion in 57-72% of positions
+     * and moves the final answer in 10-17.5%. One hands the value half over completely - the search
+     * supplies the board judgement and the heuristic keeps only what a board search cannot re-derive,
+     * which is its statements about the candidate itself.
+     *
+     * Expressed as a weight rather than a switch so the exchange rate can be swept and chosen by
+     * measurement. Penalties, collateral, mechanic cost and strategy alignment are never scaled by it.
+     */
+    val searchAuthority: Double = 0.0,
 
     // ---- damage ---------------------------------------------------------------------------------
     /**
@@ -177,6 +190,7 @@ internal data class LocalDecisionTuning(
 ) {
     init {
         require(lookaheadCoverageFloor in 0.0..1.0)
+        require(searchAuthority.isFinite() && searchAuthority in 0.0..1.0)
         require(unprojectedPowerPerHpBar > 0.0)
         require(shortlistFraction > 0.0 && shortlistFraction <= 1.0)
         require(relativeRegretGap >= 0.0)
@@ -190,6 +204,32 @@ internal data class LocalDecisionTuning(
 
     companion object {
         /** Current, unit-consistent weights. */
+        /**
+         * `searchAuthority` stays at 0.0. The inversion was built, measured, and rejected.
+         *
+         * Handing the value judgement to the search does change the answer, sharply and
+         * non-linearly: partial authority buys almost nothing because the two terms are correlated
+         * and a blend still points the same way, while full withdrawal moves the answer in 40% of
+         * recorded positions and differs from the immediate heuristic in 52.5%. That cleared the
+         * target this work set for itself.
+         *
+         * It also plays worse. Head to head against itself with the setting off - the only comparison
+         * that isolates it - the search-led side won 47 of 113 decided battles, a 41.6% share over
+         * 120 games. Every other reading looked like an improvement: more decisive battles (95.0%
+         * against 91.7%), fewer stalls, noticeably more status and utility moves (4.68 against 3.77
+         * per battle). It simply lost.
+         *
+         * The reason is not that the inversion is wrong in principle - depth is still computed and
+         * discarded - but that the leaf evaluator is not yet good enough to be handed the decision.
+         * It scores a board as material, best available attack pressure and a speed term, while the
+         * heuristic it would replace knows about knockout certainty, priority, spread damage, status
+         * pressure and switch survival. Withdrawing the richer of the two in favour of the cruder one
+         * loses more than the extra depth returns.
+         *
+         * The knob and `LocalSearchAuthoritySweepTest` stay so the question can be reopened once the
+         * leaf evaluator has been given what it is missing. Raising this without doing that first
+         * will reproduce the same result.
+         */
         val CURRENT = LocalDecisionTuning(id = "current")
 
         /**

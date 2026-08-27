@@ -60,6 +60,51 @@ internal object LocalTacticalScorer {
         return LocalTacticalSituationalEvaluator.knockoutAdjustment(candidate, accuracy, tuning)
     }
 
+    /**
+     * The half of a move's score that is a statement about the candidate rather than about value.
+     *
+     * Penalties, ally collateral, mechanic cost, self-pattern and strategy alignment. None of these
+     * is a claim about how good the resulting board is - they are reasons this particular action is
+     * or is not available in good conscience - so none of them is something a board search can
+     * re-derive, and all of them must survive when the search takes over the value half.
+     *
+     * Subtracting this from `tacticalUtility` leaves exactly the part the search does re-derive.
+     */
+    fun candidateAdjustments(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        strategy: BattleStrategyBrief? = null,
+        profile: BattleTrainerProfile = BattleTrainerProfile.balanced(),
+    ): Double = when (candidate.kind) {
+        BattleActionKind.USE_MOVE -> moveAdjustments(candidate, context, strategy, profile)
+        BattleActionKind.COMPOSITE ->
+            candidate.componentActions.sumOf { candidateAdjustments(it, context, strategy, profile) } +
+                LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context)
+        else -> 0.0
+    }
+
+    private fun moveAdjustments(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        strategy: BattleStrategyBrief?,
+        profile: BattleTrainerProfile,
+    ): Double {
+        if (candidate.moveDetails == null) return strategyMoveAdjustment(candidate, context, strategy)
+        return -publicAllyCollateral(candidate, context) -
+            LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) -
+            LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) -
+            LocalTacticalSituationalEvaluator.saturatedStatStagePenalty(candidate, context) -
+            LocalTacticalSituationalEvaluator.unmetPublicRequirementPenalty(candidate, context) -
+            LocalTacticalSituationalEvaluator.recentPublicFailurePenalty(candidate, context) -
+            LocalTacticalSituationalEvaluator.repeatedProtectionPenalty(candidate, context) -
+            LocalTacticalSituationalEvaluator.pendingDamagingMoveRiskPenalty(candidate, context) -
+            LocalTacticalSituationalEvaluator.consecutiveUseForbiddenPenalty(candidate, context) -
+            LocalTacticalSituationalEvaluator.forcedTempoPenalty(candidate, context) +
+            mechanicResourceAdjustment(candidate) +
+            selfPatternAdjustment(candidate, context, profile) +
+            strategyMoveAdjustment(candidate, context, strategy)
+    }
+
     private fun scoreMove(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,

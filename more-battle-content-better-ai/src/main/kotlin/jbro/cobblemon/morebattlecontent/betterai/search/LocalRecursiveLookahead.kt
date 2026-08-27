@@ -9,6 +9,7 @@ import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicFutureActionF
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalImmediateTurnScorer
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalLookaheadStateEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicSingleTurnProjector
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionPolicy
@@ -47,6 +48,14 @@ internal object LocalRecursiveLookaheadEvaluator {
         profile: BattleTrainerProfile,
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
         clockMillis: () -> Long = System::currentTimeMillis,
+        /**
+         * The same brief the root ranking used.
+         *
+         * Needed because withdrawing the heuristic's value half means computing what that half was,
+         * and strategy alignment sits on the other side of the line. Scoring it with a brief and
+         * withdrawing it without one would delete the alignment along with the value.
+         */
+        strategy: BattleStrategyBrief? = null,
         // Overridable so the cost of a budget can be measured against the decisions it buys, rather
         // than argued about. Production always takes the tier default.
         budget: LocalLookaheadBudget = LocalLookaheadBudgetPolicy.forTier(profile.difficulty.tier),
@@ -143,17 +152,40 @@ internal object LocalRecursiveLookaheadEvaluator {
                     // a difficulty tier actually buys.
                     val immediateGain = singlePlyGain[actionId] ?: searchBoardGain
                     val foresightGain = (searchBoardGain - immediateGain) * profile.difficulty.foresightWeight
-                    val rawAdjustment = immediateGain + foresightGain - rootSecureKoBaselineCorrection
+                    // The knockout correction exists only to stop the search's knockout value landing
+                    // on top of the root scorer's. As the search takes over the value half, the root
+                    // value it would be correcting for goes away, so the correction retires with it.
+                    val authority = tuning.searchAuthority
+                    val rawAdjustment =
+                        immediateGain + foresightGain - rootSecureKoBaselineCorrection * (1.0 - authority)
                     val adjustment = (rawAdjustment * search.publicResponseCoverage)
                         .coerceIn(-tuning.maximumLookaheadAdjustment, tuning.maximumLookaheadAdjustment)
+                    // Hand over as much of the immediate heuristic's value judgement as this tuning
+                    // says the search should own. What is withdrawn is only the part a board search
+                    // re-derives; the candidate statements the heuristic makes - penalties, ally
+                    // collateral, mechanic cost, strategy alignment - are never touched, because
+                    // nothing in a board evaluation can reconstruct them.
+                    val heuristicValue = rank.outcome.tacticalUtility -
+                        LocalTacticalScorer.candidateAdjustments(
+                            rank.outcome.candidate,
+                            context,
+                            strategy,
+                            profile,
+                        )
+                    val withdrawnHeuristicValue = heuristicValue * authority
                     val responseHpBaseline = trackedOwnPokemonIds(context.state, rank.outcome.candidate)
                         .mapNotNull { id -> context.state.pokemon.firstOrNull { it.battlePokemonId == id }?.hpFraction }
                         .averageOrNull()
                         ?: rank.outcome.switchPostEntryHp
                         ?: 1.0
                     rank.copy(
-                        comparisonValue = rank.comparisonValue + adjustment,
-                        lookaheadUtility = adjustment,
+                        comparisonValue = rank.comparisonValue - withdrawnHeuristicValue + adjustment,
+                        // Everything the search changed relative to the pure heuristic ranking, the
+                        // withdrawal included. Reporting only the added term made
+                        // `comparisonValue - lookaheadUtility` stop meaning "the heuristic's answer"
+                        // the moment any value was withdrawn, which silently turned the influence
+                        // measurements into a comparison against the leftover penalty terms.
+                        lookaheadUtility = adjustment - withdrawnHeuristicValue,
                         executionProbability = evaluation.ownExecutionProbability,
                         worstResponseHpRetention = if (responseHpBaseline <= 0.0) {
                             0.0
