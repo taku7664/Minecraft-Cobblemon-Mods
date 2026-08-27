@@ -21,19 +21,21 @@ internal object LocalLookaheadStateEvaluator {
         source: BattleDecisionContext,
         calculationCache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
         shouldContinue: () -> Boolean = { true },
+        tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     ): Double {
         val material = sideMaterial(state, BattleSide.ALLY) - sideMaterial(state, BattleSide.OPPONENT)
         if (battleEnded(state)) return material
-        val pressure = attackPressure(state, BattleSide.ALLY, source, calculationCache, shouldContinue) -
-            attackPressure(state, BattleSide.OPPONENT, source, calculationCache, shouldContinue)
+        val pressure =
+            attackPressure(state, BattleSide.ALLY, source, calculationCache, shouldContinue, tuning) -
+                attackPressure(state, BattleSide.OPPONENT, source, calculationCache, shouldContinue, tuning)
         val speedControl = when (speedRelation(state)) {
-            LocalPublicSpeedRelation.ALLY_FIRST -> SPEED_CONTROL_VALUE
-            LocalPublicSpeedRelation.OPPONENT_FIRST -> -SPEED_CONTROL_VALUE
+            LocalPublicSpeedRelation.ALLY_FIRST -> tuning.leafSpeedControlValue
+            LocalPublicSpeedRelation.OPPONENT_FIRST -> -tuning.leafSpeedControlValue
             LocalPublicSpeedRelation.AMBIGUOUS,
             LocalPublicSpeedRelation.UNAVAILABLE,
             -> 0.0
         }
-        return material + pressure * FUTURE_PRESSURE_WEIGHT + speedControl
+        return material + pressure * tuning.leafPressureWeight + speedControl
     }
 
     fun speedRelation(state: BattleStateView): LocalPublicSpeedRelation {
@@ -91,6 +93,7 @@ internal object LocalLookaheadStateEvaluator {
         source: BattleDecisionContext,
         calculationCache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
         shouldContinue: () -> Boolean = { true },
+        tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     ): Double = PublicFutureActionFactory.actions(state, side, source.publicActionCatalog)
         .flatMap { action ->
             if (action.kind == BattleActionKind.COMPOSITE) action.componentActions else listOf(action)
@@ -120,7 +123,7 @@ internal object LocalLookaheadStateEvaluator {
             val knockoutProbability = facts?.standardDamageRollKoProbabilityRange?.let { range ->
                 (range.minimum + range.maximum) / 2.0 * accuracy
             } ?: 0.0
-            expectedDamage + knockoutProbability * FUTURE_KNOCKOUT_PRESSURE
+            expectedDamage + knockoutProbability * tuning.leafKnockoutPressure
         }
         .maxOrNull()
         ?: 0.0
@@ -196,9 +199,6 @@ internal object LocalLookaheadStateEvaluator {
     private fun canonicalId(id: String?): String? = id?.substringAfter(':')?.lowercase()?.filter { it.isLetterOrDigit() }
 
     private const val LIVING_POKEMON_VALUE = 2.0
-    private const val FUTURE_PRESSURE_WEIGHT = 0.30
-    private const val FUTURE_KNOCKOUT_PRESSURE = 0.35
-    private const val SPEED_CONTROL_VALUE = 0.15
     private val SPEED_ALIASES = setOf("speed", "spe")
     private val PARALYSIS_IDS = setOf("par", "paralysis", "paralyzed", "paralysed")
 }

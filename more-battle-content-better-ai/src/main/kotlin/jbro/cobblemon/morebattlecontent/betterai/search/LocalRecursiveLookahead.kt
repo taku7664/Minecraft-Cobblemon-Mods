@@ -83,6 +83,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             source = context,
             calculationCache = actionCalculationCache,
             shouldContinue = { clockMillis() < localDeadline - DEADLINE_MARGIN_MILLIS },
+            tuning = tuning,
         )
         if (clockMillis() >= localDeadline - DEADLINE_MARGIN_MILLIS) {
             return LocalLookaheadEvaluation(ranked, 0, 0, 0, true, false, 0.0)
@@ -611,6 +612,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 source = context,
                 calculationCache = actionCalculationCache,
                 shouldContinue = ::projectedWorkAvailable,
+                tuning = tuning,
             ).also { stateUtilityMemo[state] = it }
 
         private data class TurnValue(

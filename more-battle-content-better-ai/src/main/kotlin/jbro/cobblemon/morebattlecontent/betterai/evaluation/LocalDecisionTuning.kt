@@ -59,6 +59,20 @@ internal data class LocalDecisionTuning(
      * measurement. Penalties, collateral, mechanic cost and strategy alignment are never scaled by it.
      */
     val searchAuthority: Double = 0.0,
+    /**
+     * Board value of a one-HP-bar-per-turn pressure advantage in the search's leaf evaluation.
+     *
+     * These three were private constants in the leaf. They are here because handing the search the
+     * decision made them load-bearing: while the heuristic decides, the leaf only nudges a ranking
+     * and a rough weight is harmless; when the search decides, this ratio *is* the AI's character.
+     * Material is worth 1.0 per bar and a living Pokemon 2.0, so 0.30 says positional advantage is
+     * worth roughly a third of the health it threatens - a number nothing has ever tested.
+     */
+    val leafPressureWeight: Double = 0.30,
+    /** Board value of a certain knockout threat in the leaf, beyond the damage it represents. */
+    val leafKnockoutPressure: Double = 0.35,
+    /** Board value of moving first, when the public speed order is resolvable. */
+    val leafSpeedControlValue: Double = 0.15,
 
     // ---- damage ---------------------------------------------------------------------------------
     /**
@@ -191,6 +205,9 @@ internal data class LocalDecisionTuning(
     init {
         require(lookaheadCoverageFloor in 0.0..1.0)
         require(searchAuthority.isFinite() && searchAuthority in 0.0..1.0)
+        require(leafPressureWeight.isFinite() && leafPressureWeight >= 0.0)
+        require(leafKnockoutPressure.isFinite() && leafKnockoutPressure >= 0.0)
+        require(leafSpeedControlValue.isFinite() && leafSpeedControlValue >= 0.0)
         require(unprojectedPowerPerHpBar > 0.0)
         require(shortlistFraction > 0.0 && shortlistFraction <= 1.0)
         require(relativeRegretGap >= 0.0)

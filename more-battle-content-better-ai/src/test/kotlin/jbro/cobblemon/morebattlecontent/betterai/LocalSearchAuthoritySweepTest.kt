@@ -6,6 +6,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 
 /**
  * Sweeps how much of the value judgement should belong to the search.
@@ -115,6 +116,115 @@ class LocalSearchAuthoritySweepTest {
         println(report)
 
         assertTrue(duel.challengerWins + duel.defenderWins + duel.undecided == BATTLES_PLAYED * 2, report)
+    }
+
+    @Test
+    @EnabledIfSystemProperty(
+        named = "betterai.sweeps",
+        matches = "true",
+        disabledReason = "Plays hundreds of battles to calibrate the leaf evaluator. Run with -Psweeps.",
+    )
+    fun `leaf weights are swept for one that survives handing over the decision`() {
+        // Full authority lost at 41.6%, and the diagnosis was that the leaf evaluator is too crude to
+        // be handed the decision. Before adding terms to it, the cheaper question: are the terms it
+        // already has simply weighted wrong? While the heuristic decides, a rough leaf weight only
+        // nudges a ranking. Once the search decides, this ratio is the AI's whole character, and none
+        // of these three numbers has ever been tested against a result.
+        val shipping = LocalDecisionTuning.CURRENT.copy(id = "heuristic_led", searchAuthority = 0.0)
+        val variants = listOf(
+            "as-built      p=0.30 k=0.35 s=0.15" to LocalDecisionTuning.CURRENT.copy(
+                id = "leaf_asbuilt", searchAuthority = 1.0,
+            ),
+            "pressure x2   p=0.60 k=0.35 s=0.15" to LocalDecisionTuning.CURRENT.copy(
+                id = "leaf_p60", searchAuthority = 1.0, leafPressureWeight = 0.60,
+            ),
+            "pressure x3   p=0.90 k=0.35 s=0.15" to LocalDecisionTuning.CURRENT.copy(
+                id = "leaf_p90", searchAuthority = 1.0, leafPressureWeight = 0.90,
+            ),
+            "ko x3         p=0.30 k=1.05 s=0.15" to LocalDecisionTuning.CURRENT.copy(
+                id = "leaf_k105", searchAuthority = 1.0, leafKnockoutPressure = 1.05,
+            ),
+            "both raised   p=0.60 k=1.05 s=0.30" to LocalDecisionTuning.CURRENT.copy(
+                id = "leaf_both", searchAuthority = 1.0, leafPressureWeight = 0.60,
+                leafKnockoutPressure = 1.05, leafSpeedControlValue = 0.30,
+            ),
+        )
+
+        val rows = variants.map { (label, tuning) ->
+            label to LocalSelfPlayMeasurement.headToHead(
+                label = label,
+                challenger = tuning,
+                defender = shipping,
+                battles = BATTLES_PLAYED,
+                seed = SEED,
+            )
+        }
+
+        val report = buildString {
+            appendLine("=".repeat(112))
+            appendLine("LEAF WEIGHT SWEEP UNDER FULL SEARCH AUTHORITY  battles=$BATTLES_PLAYED per variant")
+            appendLine("=".repeat(112))
+            appendLine("Every row is search-led against the shipping heuristic-led tuning, so share is")
+            appendLine("directly 'would handing over the decision with these weights be an improvement'.")
+            appendLine()
+            rows.forEach { (_, tally) -> appendLine(tally.row()) }
+            appendLine()
+            appendLine("A row above 50% means the loss was a calibration problem and the inversion can be")
+            appendLine("reopened. All rows below means the leaf is missing information, not weight, and")
+            appendLine("terms have to be added before this is worth asking again.")
+        }
+        println(report)
+
+        assertTrue(rows.all { it.second.battles == BATTLES_PLAYED * 2 }, report)
+    }
+
+    @Test
+    @EnabledIfSystemProperty(
+        named = "betterai.sweeps",
+        matches = "true",
+        disabledReason = "Plays hundreds of battles. Run with -Psweeps.",
+    )
+    fun `each evaluator alone is measured against the two of them together`() {
+        // The head-to-head that rejected the inversion was not the comparison it looked like.
+        //
+        // What ships is heuristic *and* search: the heuristic ranks and the search adds its verdict.
+        // Full authority removes the heuristic's value half, so that duel was "both evaluators" against
+        // "the search alone", and the combination has strictly more information. Losing it says nothing
+        // about which evaluator is better - only that two are better than one.
+        //
+        // The missing arm is the heuristic alone. If the combination beats both, they are complementary
+        // and replacing either with the other is the wrong shape of change entirely.
+        val combined = LocalDecisionTuning.CURRENT.copy(id = "combined")
+        val searchOnly = LocalDecisionTuning.CURRENT.copy(id = "search_only", searchAuthority = 1.0)
+        val heuristicOnly = LocalDecisionTuning.CURRENT.copy(
+            id = "heuristic_only",
+            // Nothing the search finds can reach the ranking.
+            maximumLookaheadAdjustment = 0.0,
+        )
+
+        val searchDuel = LocalSelfPlayMeasurement.headToHead(
+            "search alone vs combined", searchOnly, combined, BATTLES_PLAYED, SEED,
+        )
+        val heuristicDuel = LocalSelfPlayMeasurement.headToHead(
+            "heuristic alone vs combined", heuristicOnly, combined, BATTLES_PLAYED, SEED,
+        )
+
+        val report = buildString {
+            appendLine("=".repeat(112))
+            appendLine("ONE EVALUATOR OR TWO  battles=$BATTLES_PLAYED per duel")
+            appendLine("=".repeat(112))
+            appendLine(searchDuel.row())
+            appendLine(heuristicDuel.row())
+            appendLine()
+            appendLine("Both below 50% means the two evaluators are complementary and the shipping")
+            appendLine("comparison is an ensemble rather than one model drowning another. In that case")
+            appendLine("'the search is outvoted' was never the defect it was taken for, and the room that")
+            appendLine("difficulty and personality need has to come from somewhere else.")
+        }
+        println(report)
+
+        assertTrue(searchDuel.battles == BATTLES_PLAYED * 2, report)
+        assertTrue(heuristicDuel.battles == BATTLES_PLAYED * 2, report)
     }
 
     private fun recordPositions(): List<BattleDecisionContext> {
