@@ -687,7 +687,7 @@ internal object LocalTacticalScenarioBattle {
     )
 
     private fun LocalTacticalSimulationStats.publicView() = BattleCombatStatRangesView(
-        maxHp = publicRange(maxHp),
+        maxHp = publicHealthRange(maxHp),
         attack = publicRange(attack),
         defence = publicRange(defence),
         specialAttack = publicRange(specialAttack),
@@ -696,9 +696,27 @@ internal object LocalTacticalScenarioBattle {
         knowledge = BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
     )
 
+    /**
+     * The width production actually gives, not a comfortable stand-in for it.
+     *
+     * `Cobblemon173PublicStatHypothesis` refuses the opponent's IVs, EVs and nature, so a public
+     * non-HP stat spans a zero-IV zero-EV hindering spread up to a maxed helping one. At level 50 that
+     * is about 0.72x to 1.30x of a typical value - roughly twice the +-15% this harness used to
+     * assume, which quietly measured every knob against an opponent whose stats were known twice as
+     * precisely as the real game allows.
+     *
+     * The harness only knows final stats, so the production formula is applied as the ratio it
+     * produces rather than re-derived from a base stat it does not have.
+     */
     private fun publicRange(value: Int) = BattleIntegerRange(
-        (value * 0.85).roundToInt().coerceAtLeast(1),
-        (value * 1.15).roundToInt().coerceAtLeast(1),
+        (value * 0.72).roundToInt().coerceAtLeast(1),
+        (value * 1.30).roundToInt().coerceAtLeast(1),
+    )
+
+    /** Health takes no nature modifier, so its public range is far tighter than the others. */
+    private fun publicHealthRange(value: Int) = BattleIntegerRange(
+        (value * 0.87).roundToInt().coerceAtLeast(1),
+        (value * 1.13).roundToInt().coerceAtLeast(1),
     )
 
     private const val LEVEL = 50
