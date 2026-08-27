@@ -29,7 +29,7 @@ class CoreModuleContractTest {
         val depends = root.getAsJsonObject("depends")
         assertTrue(depends.has("fabric-language-kotlin"))
         assertTrue(depends.has("cobblemon"))
-        assertEquals("1.9.3+1.7.3+1.21.1", depends["mega_showdown"].asString)
+        assertEquals(">=1.9.3+1.7.3+1.21.1", depends["mega_showdown"].asString)
 
         val mixinConfigName = root.getAsJsonArray("mixins").single().asString
         assertEquals("cobblemon_more_battle_content.mixins.json", mixinConfigName)

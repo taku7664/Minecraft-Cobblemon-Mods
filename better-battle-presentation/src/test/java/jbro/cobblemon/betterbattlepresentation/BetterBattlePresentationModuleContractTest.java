@@ -35,7 +35,7 @@ final class BetterBattlePresentationModuleContractTest {
         assertEquals("*", metadata.get("environment").getAsString());
 
         var dependencies = metadata.getAsJsonObject("depends");
-        assertEquals("1.9.3+1.7.3+1.21.1", dependencies.get("mega_showdown").getAsString());
+        assertEquals(">=1.9.3+1.7.3+1.21.1", dependencies.get("mega_showdown").getAsString());
         assertFalse(dependencies.has("cobblemon_more_battle_content"));
         assertFalse(dependencies.has("cobblemon_more_battle_content_better_ai"));
 

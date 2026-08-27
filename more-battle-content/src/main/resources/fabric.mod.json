@@ -31,7 +31,7 @@
     "minecraft": "~1.21.1",
     "java": ">=21",
     "cobblemon": "1.7.3",
-    "mega_showdown": "1.9.3+1.7.3+1.21.1"
+    "mega_showdown": ">=1.9.3+1.7.3+1.21.1"
   },
   "suggests": {
     "battlecam": "*"
