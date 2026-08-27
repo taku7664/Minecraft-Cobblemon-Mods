@@ -33,6 +33,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.UUID
@@ -134,7 +135,13 @@ class LocalForesightScenarioTest {
         }
         println(report)
 
-        assertTrue(scenarios.size == 5, report)
+        // The capability this work was asked for, as a gate rather than a report. Every position whose
+        // payoff lands inside the search horizon has to keep being solved - the Speed drop, the heal,
+        // and Protect with Leftovers. The three that land outside are deliberately excluded: two are
+        // ties and one is a position where declining is correct, so requiring them would be requiring
+        // the AI to play worse.
+        val reachable = scenarios.count { it.withinSearchHorizon }
+        assertEquals(reachable, solved, report)
     }
 
     @Test

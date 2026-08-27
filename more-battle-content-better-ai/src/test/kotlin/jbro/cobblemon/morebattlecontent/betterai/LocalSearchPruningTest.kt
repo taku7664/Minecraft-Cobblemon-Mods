@@ -50,6 +50,10 @@ class LocalSearchPruningTest {
                 )
                 var nodes = 0L
                 var pruned = 0L
+                // Budget exhaustion does not merely stop early - inside a node it abandons the
+                // remaining own-actions in list order, so which moves get considered at all is decided
+                // by catalog position rather than by promise.
+                var truncated = 0
                 contexts.forEach { context ->
                     val calculated = PublicBattleTacticalCalculator.calculate(context)
                     val base = LocalBattleActionPolicy.rank(calculated, null, profile, LocalDecisionTuning.CURRENT)
@@ -58,11 +62,12 @@ class LocalSearchPruningTest {
                     )
                     nodes += evaluation.nodesVisited
                     pruned += evaluation.branchesPruned
+                    if (evaluation.truncated) truncated++
                 }
                 val share = if (nodes + pruned == 0L) 0.0 else pruned * 100.0 / (nodes + pruned)
                 appendLine(
-                    "  %-14s nodes=%-10d pruned=%-8d share=%5.2f%%   nodes/decision=%.0f".format(
-                        name, nodes, pruned, share, nodes.toDouble() / contexts.size,
+                    "  %-14s nodes=%-10d pruned=%-8d share=%5.2f%%   nodes/decision=%-8.0f truncated=%d/%d".format(
+                        name, nodes, pruned, share, nodes.toDouble() / contexts.size, truncated, contexts.size,
                     ),
                 )
             }
