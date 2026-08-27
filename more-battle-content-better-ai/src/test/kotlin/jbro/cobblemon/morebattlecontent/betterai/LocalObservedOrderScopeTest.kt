@@ -22,6 +22,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
 import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicSingleTurnProjector
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
@@ -74,6 +75,47 @@ class LocalObservedOrderScopeTest {
             "Nothing has changed the Speed of either side, so the observation still applies and the " +
                 "search must not branch an order it has evidence against.",
         )
+    }
+
+    @Test
+    fun `a bigger speed drop is priced as more likely to win the order than a smaller one`() {
+        // The order was previously either proven or a coin flip, with nothing in between. Every drop
+        // that left the ranges overlapping therefore scored the same, so the search had no reason to
+        // prefer two stages over one, paralysis over a chip, or Tailwind over nothing.
+        val neutral = orderProbability(opponentSpeedStage = 0)
+        val oneStage = orderProbability(opponentSpeedStage = -1)
+        val twoStages = orderProbability(opponentSpeedStage = -2)
+
+        val report = "ally 100 against a public 120-200: " +
+            "neutral=%.3f oneStage=%.3f twoStages=%.3f".format(neutral, oneStage, twoStages)
+
+        assertTrue(neutral < oneStage, "One stage has to improve on none. $report")
+        assertTrue(oneStage < twoStages, "Two stages have to improve on one. $report")
+        // Not a certainty either: at one stage the opponent is 80-133 and the ally sits inside it, so
+        // claiming the order outright would be inventing information the ranges do not carry.
+        assertTrue(oneStage in 0.01..0.99, "One stage must stay uncertain, not become proof. $report")
+    }
+
+    /** The chance the ally acts first, read off the orders the projector actually produced. */
+    private fun orderProbability(opponentSpeedStage: Int): Double {
+        val state = state(opponentSpeedStage)
+        val source = BattleDecisionContext(
+            requestId = UUID.randomUUID(),
+            state = state(opponentSpeedStage = 0),
+            candidates = listOf(move(BattleSide.ALLY)),
+            deadlineEpochMillis = Long.MAX_VALUE,
+            memory = BattleTacticalMemoryView.empty(),
+            publicActionCatalog = BattlePublicActionCatalogView(emptyList()),
+        )
+        val projections = PublicSingleTurnProjector.project(
+            initialState = state,
+            allyAction = move(BattleSide.ALLY),
+            opponentAction = move(BattleSide.OPPONENT),
+            sourceContext = source,
+        )
+        val allyFirst = projections.filter { it.order.firstOrNull() == BattleSide.ALLY }
+        if (allyFirst.isEmpty()) return 0.0
+        return allyFirst.first().orderProbability
     }
 
     private fun project(observedState: BattleStateView, projectedState: BattleStateView): Set<List<BattleSide>> {

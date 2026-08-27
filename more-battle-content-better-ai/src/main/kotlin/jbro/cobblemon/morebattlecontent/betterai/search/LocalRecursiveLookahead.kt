@@ -458,6 +458,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             val orderExpectations = projections.groupBy(PublicTurnProjection::order).values.mapNotNull { outcomes ->
                 val totalProbability = outcomes.sumOf(PublicTurnProjection::probability)
                 if (totalProbability <= 0.0) return@mapNotNull null
+                val orderWeight = outcomes.first().orderProbability
                 var executionProbability = 0.0
                 var remainingHpFraction = 0.0
                 val value = outcomes.sumOf { rawOutcome ->
@@ -537,7 +538,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     )
                     (value + switchTempo + moveHabitTempo - uncertaintyReserve) * outcome.probability
                 } / totalProbability
-                TurnValue(
+                orderWeight to TurnValue(
                     value,
                     (executionProbability / totalProbability).coerceIn(0.0, 1.0),
                     (remainingHpFraction / totalProbability).coerceIn(0.0, 1.0),
@@ -559,17 +560,28 @@ internal object LocalRecursiveLookaheadEvaluator {
             // opponent's own choices get. A Boss is still deeply cautious; it is no longer more
             // frightened of an unlucky stat spread than of a hostile decision.
             if (orderExpectations.isEmpty()) return null
-            val worstOrder = orderExpectations.minBy(TurnValue::value)
-            if (orderExpectations.size == 1) return worstOrder
+            val worstOrder = orderExpectations.minBy { it.second.value }
+            if (orderExpectations.size == 1) return worstOrder.second
             val pessimism = (worstCaseWeight() * tuning.turnOrderPessimismScale).coerceIn(0.0, 1.0)
-            val meanValue = orderExpectations.sumOf(TurnValue::value) / orderExpectations.size
-            val meanExecution = orderExpectations.sumOf(TurnValue::ownExecutionProbability) /
-                orderExpectations.size
+            // Weighted by how likely each order is, not spread evenly across the ones left open. An
+            // even spread made every degree of Speed uncertainty identical, so a drop that nearly
+            // reversed the order scored the same as one that barely moved it.
+            val weightTotal = orderExpectations.sumOf { it.first }
+            val meanValue = if (weightTotal > 0.0) {
+                orderExpectations.sumOf { it.first * it.second.value } / weightTotal
+            } else {
+                orderExpectations.sumOf { it.second.value } / orderExpectations.size
+            }
+            val meanExecution = if (weightTotal > 0.0) {
+                orderExpectations.sumOf { it.first * it.second.ownExecutionProbability } / weightTotal
+            } else {
+                orderExpectations.sumOf { it.second.ownExecutionProbability } / orderExpectations.size
+            }
             return TurnValue(
-                value = meanValue * (1.0 - pessimism) + worstOrder.value * pessimism,
+                value = meanValue * (1.0 - pessimism) + worstOrder.second.value * pessimism,
                 ownExecutionProbability = meanExecution * (1.0 - pessimism) +
-                    worstOrder.ownExecutionProbability * pessimism,
-                ownRemainingHpFraction = orderExpectations.minOf(TurnValue::ownRemainingHpFraction),
+                    worstOrder.second.ownExecutionProbability * pessimism,
+                ownRemainingHpFraction = orderExpectations.minOf { it.second.ownRemainingHpFraction },
             )
         }
 

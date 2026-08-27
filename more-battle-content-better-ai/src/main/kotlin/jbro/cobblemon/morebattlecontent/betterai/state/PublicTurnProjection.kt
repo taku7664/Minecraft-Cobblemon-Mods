@@ -18,6 +18,15 @@ internal data class PublicTurnProjection(
     val order: List<BattleSide>,
     val actionOrderPokemonIds: List<UUID> = emptyList(),
     val probability: Double = 1.0,
+    /**
+     * How likely this action order is, given what is public about both sides' Speed.
+     *
+     * Separate from [probability], which is the chance of this outcome *within* the order. An order
+     * the public ranges cannot resolve used to be one of an equally weighted set, so a Speed drop that
+     * narrowed the gap without closing it read exactly like one that did nothing - the AI could not
+     * tell a one-stage drop from a two-stage one once either left the order merely uncertain.
+     */
+    val orderProbability: Double = 1.0,
     val executedSides: Set<BattleSide> = emptySet(),
     val controlEffects: List<RecursiveControlEffect> = emptyList(),
     val switchedSides: Set<BattleSide> = emptySet(),

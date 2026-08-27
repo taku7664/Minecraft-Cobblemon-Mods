@@ -41,6 +41,8 @@ private data class TurnPrimitiveAction(
     val actorPokemonId: UUID?,
 )
 
+private data class WeightedOrder(val actions: List<TurnPrimitiveAction>, val probability: Double)
+
 internal enum class ChanceEffectProjectionMode {
     EXPECTED_SCORE,
     BRANCH_STATE,
@@ -77,14 +79,15 @@ internal object PublicSingleTurnProjector {
 
         val moveActions = turnActions.filter { it.action.kind == BattleActionKind.USE_MOVE }
         val orders = when (moveActions.size) {
-            0 -> listOf(emptyList())
-            1 -> listOf(moveActions)
+            0 -> listOf(WeightedOrder(emptyList(), 1.0))
+            1 -> listOf(WeightedOrder(moveActions, 1.0))
             // The decision state is passed alongside the projected one because an action-order
             // observation only describes the speed conditions it was seen under, and those are the
             // conditions of the state the inferences were drawn from.
             else -> possibleOrders(sourceContext.state, switchedState, moveActions)
         }
-        return orders.flatMap { order ->
+        return orders.flatMap { weightedOrder ->
+            val order = weightedOrder.actions
             if (!shouldContinue()) return emptyList()
             var branches = listOf(
                 WeightedState(
@@ -177,6 +180,7 @@ internal object PublicSingleTurnProjector {
                     order.map(TurnPrimitiveAction::side),
                     order.mapNotNull(TurnPrimitiveAction::actorPokemonId),
                     outcome.probability,
+                    weightedOrder.probability,
                     outcome.executedSides,
                     outcome.controlEffects,
                     outcome.switchedSides,
@@ -1302,15 +1306,76 @@ internal object PublicSingleTurnProjector {
         observedState: BattleStateView,
         state: BattleStateView,
         actions: List<TurnPrimitiveAction>,
-    ): List<List<TurnPrimitiveAction>> {
+    ): List<WeightedOrder> {
         val constraints = actions.indices.flatMap { firstIndex ->
             (firstIndex + 1 until actions.size).mapNotNull { secondIndex ->
                 definiteOrder(observedState, state, actions[firstIndex], actions[secondIndex])
             }
         }
-        return permutations(actions).filter { order ->
+        val allowed = permutations(actions).filter { order ->
             constraints.all { (before, after) -> order.indexOf(before) < order.indexOf(after) }
         }.ifEmpty { listOf(actions) }
+        if (allowed.size == 1) return listOf(WeightedOrder(allowed.single(), 1.0))
+        if (allowed.size == 2 && actions.size == 2) {
+            val firstLeads = allowed.first().first() == actions.first()
+            val leadProbability = actsFirstProbability(state, actions[0], actions[1])
+            if (leadProbability != null) {
+                val head = if (firstLeads) leadProbability else 1.0 - leadProbability
+                return listOf(
+                    WeightedOrder(allowed[0], head),
+                    WeightedOrder(allowed[1], 1.0 - head),
+                )
+            }
+        }
+        val uniform = 1.0 / allowed.size
+        return allowed.map { WeightedOrder(it, uniform) }
+    }
+
+    /**
+     * How likely the first action is to resolve first, given only what is public about both Speeds.
+     *
+     * Reached only when the ranges overlap, so neither side is provably faster. The old reading called
+     * that a coin flip, which made every degree of uncertainty identical: a Speed drop that took the
+     * opponent from certainly-faster to probably-slower scored exactly the same as one that barely
+     * moved, and the search had no reason to prefer the bigger drop, the paralysis, or the Tailwind.
+     *
+     * Both Speeds are treated as uniform over their public range, which is the honest reading of a
+     * range that refuses IVs, EVs and nature: no value in it is claimed to be likelier than another.
+     * Ties are split evenly, matching the coin flip the real engine performs.
+     *
+     * Only the two-action case is priced. Four actions in a double battle have up to twenty-four
+     * orders whose probabilities do not factor into pairwise comparisons, and nothing measures doubles
+     * yet; those stay uniform rather than carrying a number this cannot justify.
+     */
+    private fun actsFirstProbability(
+        state: BattleStateView,
+        first: TurnPrimitiveAction,
+        second: TurnPrimitiveAction,
+    ): Double? {
+        val firstSpeed = actionSpeedRange(state, first) ?: return null
+        val secondSpeed = actionSpeedRange(state, second) ?: return null
+        val trickRoom = state.field.roomEffects.any { effect ->
+            val remainingTurns = effect.remainingTurns
+            canonicalId(effect.effectId) == "trickroom" && (remainingTurns == null || remainingTurns > 0)
+        }
+        val probability = uniformGreaterProbability(firstSpeed, secondSpeed)
+        return if (trickRoom) 1.0 - probability else probability
+    }
+
+    /** P(a > b) plus half of P(a == b), for two independent uniform integer ranges. */
+    private fun uniformGreaterProbability(a: Pair<Int, Int>, b: Pair<Int, Int>): Double {
+        val aValues = (a.second - a.first + 1).toLong()
+        val bValues = (b.second - b.first + 1).toLong()
+        if (aValues <= 0L || bValues <= 0L) return 0.5
+        var greater = 0L
+        var equal = 0L
+        // Counted over b, so the cost is the width of one range rather than the product of both.
+        for (bValue in b.first..b.second) {
+            greater += (a.second.toLong() - maxOf(a.first, bValue + 1) + 1).coerceAtLeast(0L)
+            if (bValue in a.first..a.second) equal++
+        }
+        val total = (aValues * bValues).toDouble()
+        return (greater + equal / 2.0) / total
     }
 
     private fun definiteOrder(
