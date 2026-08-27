@@ -55,11 +55,22 @@ internal object PublicFutureActionFactory {
         actions: List<BattleActionCandidate>,
         limit: Int,
     ): List<BattleActionCandidate> {
-        if (actions.size <= limit) return actions
         val ranked = actions.sortedWith(
             compareByDescending<BattleActionCandidate> { primitivePriority(state, side, actor, it) }
                 .thenBy(BattleActionCandidate::actionId),
         )
+        // Ordering is applied even when nothing is trimmed, which it previously was not.
+        //
+        // The search does not always finish. It stops on a node or time budget, and inside a node it
+        // abandons the remaining actions where it stands - so a budget that runs out decides which
+        // moves were considered at all. Measured, Boss exhausts its budget on 24 of 40 decisions and
+        // Advanced on 10, and until now the surviving prefix was whatever order the move slots
+        // happened to be in.
+        //
+        // Sorting costs nothing when the budget holds: the caller takes a maximum over all of them and
+        // order cannot change a maximum. It only matters when the search is cut short, and then it is
+        // the difference between examining the plausible moves and examining the first ones.
+        if (actions.size <= limit) return ranked
         val selected = linkedMapOf<String, BattleActionCandidate>()
         fun reserve(predicate: (BattleActionCandidate) -> Boolean) {
             if (selected.size >= limit) return
