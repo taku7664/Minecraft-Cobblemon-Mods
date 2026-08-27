@@ -1,0 +1,20 @@
+{
+  "required": true,
+  "package": "jbro.cobblemon.simplemyroom.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BaseFireBlockMixin",
+    "BlockItemMixin",
+    "ExplosionMixin",
+    "FarmBlockMixin",
+    "FireBlockMixin",
+    "LevelMixin",
+    "NaturalSpawnerMixin",
+    "PistonBaseBlockMixin",
+    "ServerLevelMixin",
+    "TurtleEggBlockMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

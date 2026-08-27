@@ -13,5 +13,6 @@ include(
     "better-battle-presentation",
     "cobblemon-custom-species",
     "more-battle-content",
-    "more-battle-content-better-ai"
+    "more-battle-content-better-ai",
+    "simple-myroom"
 )
