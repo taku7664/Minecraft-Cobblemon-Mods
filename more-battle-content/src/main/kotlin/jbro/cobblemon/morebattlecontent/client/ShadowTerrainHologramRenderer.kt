@@ -30,6 +30,7 @@ internal object ShadowTerrainHologramRenderer {
     private var terrainTarget: TextureTarget? = null
     private var finalSceneTarget: TextureTarget? = null
     private var backgroundCaptured = false
+    private var shaderPackBackgroundCaptured = false
     private var shaderPackTerrainCaptured = false
     private var pendingShaderPackContext: WorldRenderContext? = null
     private var loggedLateShaderPackComposite = false
@@ -45,6 +46,7 @@ internal object ShadowTerrainHologramRenderer {
         }
         WorldRenderEvents.START.register {
             backgroundCaptured = false
+            shaderPackBackgroundCaptured = false
             shaderPackTerrainCaptured = false
             pendingShaderPackContext = null
         }
@@ -65,6 +67,7 @@ internal object ShadowTerrainHologramRenderer {
     fun clear() {
         transition.clear()
         backgroundCaptured = false
+        shaderPackBackgroundCaptured = false
         shaderPackTerrainCaptured = false
         pendingShaderPackContext = null
         destroyTargets()
@@ -72,16 +75,18 @@ internal object ShadowTerrainHologramRenderer {
 
     private fun captureBackground(@Suppress("UNUSED_PARAMETER") context: WorldRenderContext) {
         if (transition.snapshot(System.nanoTime()) == null) return
-        if (ExternalShaderPackState.isInUse()) return
         if (ExternalShaderPackState.isRenderingShadowPass()) return
+        val shaderPackActive = ExternalShaderPackState.isInUse()
         try {
             preserveFramebufferBindings { active ->
                 ensureTargets(active.width, active.height)
                 copyFramebuffer(active, requireNotNull(backgroundTarget), GL11.GL_COLOR_BUFFER_BIT)
-                backgroundCaptured = true
+                backgroundCaptured = !shaderPackActive
+                shaderPackBackgroundCaptured = shaderPackActive
             }
         } catch (exception: RuntimeException) {
             backgroundCaptured = false
+            shaderPackBackgroundCaptured = false
             warnOnce("Failed to capture the pre-terrain framebuffer; skipping the terrain hologram frame", exception)
         }
     }
@@ -141,8 +146,14 @@ internal object ShadowTerrainHologramRenderer {
                     return@preserveFramebufferBindings
                 }
                 val finalScene = finalSceneTarget ?: return@preserveFramebufferBindings
+                val shaderPackBackground = backgroundTarget
+                    ?.takeIf {
+                        shaderPackBackgroundCaptured &&
+                            it.viewWidth == active.width && it.viewHeight == active.height
+                    }
+                    ?: finalScene
                 copyFramebuffer(active, finalScene, GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT)
-                drawComposite(context, snapshot, active, finalScene, finalScene, terrain, true, shader)
+                drawComposite(context, snapshot, active, finalScene, shaderPackBackground, terrain, true, shader)
                 if (!loggedLateShaderPackComposite) {
                     loggedLateShaderPackComposite = true
                     MoreBattleContent.LOGGER.info(

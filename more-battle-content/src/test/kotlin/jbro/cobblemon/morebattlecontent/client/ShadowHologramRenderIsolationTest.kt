@@ -73,6 +73,24 @@ class ShadowHologramRenderIsolationTest {
     }
 
     @Test
+    fun `shader pack terrain keeps a distinct pre terrain background for dither reveal`() {
+        val renderer = Files.readString(
+            Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client/ShadowTerrainHologramRenderer.kt"),
+        )
+        val captureBackground = renderer.substringAfter("private fun captureBackground")
+            .substringBefore("private fun compositeTerrain")
+
+        assertFalse(captureBackground.contains("if (ExternalShaderPackState.isInUse()) return"))
+        assertTrue(renderer.contains("shaderPackBackgroundCaptured"))
+        assertTrue(renderer.contains("val shaderPackBackground = backgroundTarget"))
+        assertTrue(
+            renderer.contains(
+                "drawComposite(context, snapshot, active, finalScene, shaderPackBackground, terrain, true, shader)",
+            ),
+        )
+    }
+
+    @Test
     fun `shader pack model uses the original core shader after external finalization`() {
         val projectionRenderer = Files.readString(
             Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client/ShadowTrainerProjectionRenderer.kt"),
