@@ -8,8 +8,10 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import jbro.cobblemon.betterbattlepresentation.BetterBattlePresentation;
 import net.minecraft.client.renderer.ShaderInstance;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
 
 public final class DynamaxSkyRenderer {
+    private static final float SKY_DEPTH = 1.0F;
     private static boolean warned;
 
     private DynamaxSkyRenderer() {
@@ -25,6 +27,7 @@ public final class DynamaxSkyRenderer {
             return;
         }
 
+        RenderStateSnapshot renderState = RenderStateSnapshot.capture();
         try {
             setFloat(shader, "EffectStrength", strength);
             setFloat(
@@ -42,7 +45,8 @@ public final class DynamaxSkyRenderer {
                 worldUpUniform.set(0.0F, 1.0F, 0.0F);
             }
 
-            RenderSystem.disableDepthTest();
+            RenderSystem.enableDepthTest();
+            RenderSystem.depthFunc(GL11.GL_LEQUAL);
             RenderSystem.depthMask(false);
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
@@ -53,11 +57,7 @@ public final class DynamaxSkyRenderer {
         } catch (RuntimeException exception) {
             warnOnce(exception);
         } finally {
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            RenderSystem.enableCull();
-            RenderSystem.disableBlend();
-            RenderSystem.depthMask(true);
-            RenderSystem.enableDepthTest();
+            renderState.restore();
         }
     }
 
@@ -70,10 +70,10 @@ public final class DynamaxSkyRenderer {
 
     private static void drawFullscreenQuad() {
         var builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        builder.addVertex(-1.0F, -1.0F, 0.0F).setUv(0.0F, 0.0F);
-        builder.addVertex(1.0F, -1.0F, 0.0F).setUv(1.0F, 0.0F);
-        builder.addVertex(1.0F, 1.0F, 0.0F).setUv(1.0F, 1.0F);
-        builder.addVertex(-1.0F, 1.0F, 0.0F).setUv(0.0F, 1.0F);
+        builder.addVertex(-1.0F, -1.0F, SKY_DEPTH).setUv(0.0F, 0.0F);
+        builder.addVertex(1.0F, -1.0F, SKY_DEPTH).setUv(1.0F, 0.0F);
+        builder.addVertex(1.0F, 1.0F, SKY_DEPTH).setUv(1.0F, 1.0F);
+        builder.addVertex(-1.0F, 1.0F, SKY_DEPTH).setUv(0.0F, 1.0F);
         BufferUploader.drawWithShader(builder.buildOrThrow());
     }
 

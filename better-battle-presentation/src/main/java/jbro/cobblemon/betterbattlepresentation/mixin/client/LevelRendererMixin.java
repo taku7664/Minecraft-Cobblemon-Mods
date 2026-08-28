@@ -13,22 +13,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(LevelRenderer.class)
+@Mixin(value = LevelRenderer.class, priority = 800)
 abstract class LevelRendererMixin {
-    @Inject(method = "renderSky", at = @At("TAIL"), require = 0)
-    private void betterBattlePresentation$afterNormalSky(
-        Matrix4f modelViewMatrix,
-        Matrix4f projectionMatrix,
-        float partialTick,
-        Camera camera,
-        boolean fogBlocksSky,
-        Runnable setupFog,
-        CallbackInfo callbackInfo
-    ) {
-        DynamaxSkyRenderer.render(modelViewMatrix, projectionMatrix);
-    }
-
-    @Inject(method = "renderLevel", at = @At("TAIL"))
+    @Inject(method = "renderLevel", at = @At("RETURN"))
     private void betterBattlePresentation$afterRenderedWorld(
         DeltaTracker deltaTracker,
         boolean renderBlockOutline,
@@ -39,6 +26,7 @@ abstract class LevelRendererMixin {
         Matrix4f projectionMatrix,
         CallbackInfo callbackInfo
     ) {
+        DynamaxSkyRenderer.render(modelViewMatrix, projectionMatrix);
         DynamaxWorldGradeRenderer.render();
     }
 }

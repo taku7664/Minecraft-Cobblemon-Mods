@@ -20,6 +20,7 @@ public final class DynamaxWorldGradeRenderer {
             return;
         }
 
+        RenderStateSnapshot renderState = RenderStateSnapshot.capture();
         try {
             var strengthUniform = shader.getUniform("EffectStrength");
             if (strengthUniform != null) {
@@ -46,11 +47,7 @@ public final class DynamaxWorldGradeRenderer {
         } catch (RuntimeException exception) {
             warnOnce(exception);
         } finally {
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            RenderSystem.enableCull();
-            RenderSystem.disableBlend();
-            RenderSystem.depthMask(true);
-            RenderSystem.enableDepthTest();
+            renderState.restore();
         }
     }
 
