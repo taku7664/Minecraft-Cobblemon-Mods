@@ -101,7 +101,7 @@ class ShadowHologramRenderIsolationTest {
         assertTrue(renderer.contains("val shaderPackBackground = backgroundTarget"))
         assertTrue(
             renderer.contains(
-                "drawComposite(context, snapshot, active, finalScene, shaderPackBackground, terrain, true, shader)",
+                "drawComposite(frame, snapshot, active, finalScene, shaderPackBackground, terrain, true, shader)",
             ),
         )
     }
@@ -142,6 +142,32 @@ class ShadowHologramRenderIsolationTest {
         assertFalse(projectionRenderer.contains("useCoreShader = !shaderPackActive"))
         assertTrue(lateMixin.contains("ShadowTerrainHologramRenderer.compositeAfterExternalShaderPack()"))
         assertTrue(lateMixin.contains("ShadowTrainerProjectionRenderer.renderAfterExternalShaderPack()"))
+    }
+
+    @Test
+    fun `shader pack model snapshots camera matrices instead of retaining the mutable render context`() {
+        val projectionRenderer = Files.readString(
+            Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client/ShadowTrainerProjectionRenderer.kt"),
+        )
+        val terrainRenderer = Files.readString(
+            Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client/ShadowTerrainHologramRenderer.kt"),
+        )
+
+        assertFalse(projectionRenderer.contains("pendingShaderPackContext: WorldRenderContext?"))
+        assertTrue(projectionRenderer.contains("pendingShaderPackFrame: TrainerHologramRenderFrame?"))
+        assertTrue(projectionRenderer.contains("TrainerHologramRenderFrame.capture(context)"))
+        assertTrue(projectionRenderer.contains("Matrix4f(source.last().pose())"))
+        assertTrue(projectionRenderer.contains("Matrix3f(source.last().normal())"))
+        assertTrue(projectionRenderer.contains("Matrix4f(RenderSystem.getModelViewMatrix())"))
+        assertTrue(projectionRenderer.contains("Matrix4f(RenderSystem.getProjectionMatrix())"))
+        assertTrue(projectionRenderer.contains("frame.withCapturedRenderSystemState"))
+        assertFalse(projectionRenderer.contains("poseStack.translate(x, y, z)"))
+        assertFalse(projectionRenderer.contains("poseStack.translate(-x, -y, -z)"))
+        assertTrue(projectionRenderer.contains("HOLOGRAM_ARMOR_SLOTS.forEach"))
+        assertFalse(projectionRenderer.contains("EquipmentSlot.entries.forEach"))
+        assertFalse(terrainRenderer.contains("pendingShaderPackContext: WorldRenderContext?"))
+        assertTrue(terrainRenderer.contains("pendingShaderPackFrame: TerrainHologramRenderFrame?"))
+        assertTrue(terrainRenderer.contains("TerrainHologramRenderFrame.capture(context)"))
     }
 
     @Test

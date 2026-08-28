@@ -15,6 +15,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents
 import net.minecraft.client.Minecraft
+import net.minecraft.world.phys.Vec3
 import org.joml.Matrix4f
 import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL30
@@ -32,7 +33,7 @@ internal object ShadowTerrainHologramRenderer {
     private var backgroundCaptured = false
     private var shaderPackBackgroundCaptured = false
     private var shaderPackTerrainCaptured = false
-    private var pendingShaderPackContext: WorldRenderContext? = null
+    private var pendingShaderPackFrame: TerrainHologramRenderFrame? = null
     private var loggedLateShaderPackComposite = false
     private var warned = false
 
@@ -49,7 +50,7 @@ internal object ShadowTerrainHologramRenderer {
             backgroundCaptured = false
             shaderPackBackgroundCaptured = false
             shaderPackTerrainCaptured = false
-            pendingShaderPackContext = null
+            pendingShaderPackFrame = null
         }
         WorldRenderEvents.AFTER_SETUP.register(::captureBackground)
         WorldRenderEvents.BEFORE_ENTITIES.register(::captureShaderPackTerrain)
@@ -70,7 +71,7 @@ internal object ShadowTerrainHologramRenderer {
         backgroundCaptured = false
         shaderPackBackgroundCaptured = false
         shaderPackTerrainCaptured = false
-        pendingShaderPackContext = null
+        pendingShaderPackFrame = null
         destroyTargets()
     }
 
@@ -105,6 +106,7 @@ internal object ShadowTerrainHologramRenderer {
         if (ExternalShaderPackState.isRenderingShadowPass()) return
         if (!backgroundCaptured || snapshot.strength <= 0F) return
         val shader = ShadowTerrainHologramShader.activeShader() ?: return
+        val frame = TerrainHologramRenderFrame.capture(context)
 
         try {
             preserveFramebufferBindings { active ->
@@ -113,7 +115,7 @@ internal object ShadowTerrainHologramRenderer {
                 val background = backgroundTarget ?: return@preserveFramebufferBindings
                 val terrain = terrainTarget ?: return@preserveFramebufferBindings
                 copyFramebuffer(active, terrain, GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT)
-                drawComposite(context, snapshot, active, terrain, background, terrain, false, shader)
+                drawComposite(frame, snapshot, active, terrain, background, terrain, false, shader)
             }
         } catch (exception: RuntimeException) {
             warnOnce("Failed to composite the terrain hologram; skipping the terrain effect", exception)
@@ -140,7 +142,7 @@ internal object ShadowTerrainHologramRenderer {
     }
 
     /** Runs after Iris has written its final world image but before the held item and GUI are rendered. */
-    private fun compositeShaderPackTerrain(context: WorldRenderContext) {
+    private fun compositeShaderPackTerrain(frame: TerrainHologramRenderFrame) {
         if (!ExternalShaderPackState.isInUse()) return
         val snapshot = transition.snapshot(System.nanoTime()) ?: return
         if (!shaderPackTerrainCaptured || snapshot.strength <= 0F) return
@@ -161,7 +163,7 @@ internal object ShadowTerrainHologramRenderer {
                     }
                     ?: finalScene
                 copyFramebuffer(active, finalScene, GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT)
-                drawComposite(context, snapshot, active, finalScene, shaderPackBackground, terrain, true, shader)
+                drawComposite(frame, snapshot, active, finalScene, shaderPackBackground, terrain, true, shader)
                 if (!loggedLateShaderPackComposite) {
                     loggedLateShaderPackComposite = true
                     MoreBattleContent.LOGGER.info(
@@ -178,11 +180,11 @@ internal object ShadowTerrainHologramRenderer {
     }
 
     private fun prepareShaderPackComposite(context: WorldRenderContext) {
-        pendingShaderPackContext = if (
+        pendingShaderPackFrame = if (
             ExternalShaderPackState.isInUse() && shaderPackTerrainCaptured &&
             transition.snapshot(System.nanoTime()) != null
         ) {
-            context
+            TerrainHologramRenderFrame.capture(context)
         } else {
             null
         }
@@ -191,13 +193,13 @@ internal object ShadowTerrainHologramRenderer {
     /** Called by a low-priority renderLevel RETURN mixin after Iris finalizes its external pipeline. */
     @JvmStatic
     fun compositeAfterExternalShaderPack() {
-        val context = pendingShaderPackContext ?: return
-        pendingShaderPackContext = null
-        compositeShaderPackTerrain(context)
+        val frame = pendingShaderPackFrame ?: return
+        pendingShaderPackFrame = null
+        compositeShaderPackTerrain(frame)
     }
 
     private fun drawComposite(
-        context: WorldRenderContext,
+        frame: TerrainHologramRenderFrame,
         snapshot: ShadowTerrainHologramSnapshot,
         active: FramebufferBindings,
         scene: TextureTarget,
@@ -219,9 +221,9 @@ internal object ShadowTerrainHologramRenderer {
             (System.nanoTime() % EFFECT_TIME_PERIOD_NANOS).toFloat() / EFFECT_TIME_PERIOD_NANOS,
         )
         shader.getUniform("InverseViewProjection")?.set(
-            Matrix4f(context.projectionMatrix()).mul(context.positionMatrix()).invert(),
+            frame.inverseViewProjection(),
         )
-        val camera = context.camera().position
+        val camera = frame.cameraPosition
         shader.getUniform("ArenaCenterRelative")?.set(
             (snapshot.arenaCenter.x - camera.x).toFloat(),
             (snapshot.arenaCenter.y - camera.y).toFloat(),
@@ -364,4 +366,36 @@ internal object ShadowTerrainHologramRenderer {
 
     private const val FADE_DURATION_NANOS = 600_000_000L
     private const val EFFECT_TIME_PERIOD_NANOS = 60_000_000_000L
+}
+
+/** Immutable inputs required by the terrain compositor after the Fabric render event has returned. */
+internal class TerrainHologramRenderFrame private constructor(
+    private val inverseViewProjectionMatrix: Matrix4f,
+    val cameraPosition: Vec3,
+) {
+    fun inverseViewProjection(): Matrix4f = Matrix4f(inverseViewProjectionMatrix)
+
+    companion object {
+        fun capture(context: WorldRenderContext): TerrainHologramRenderFrame {
+            val camera = context.camera().position
+            return capture(
+                projectionMatrix = context.projectionMatrix(),
+                positionMatrix = context.positionMatrix(),
+                cameraPosition = Vec3(camera.x, camera.y, camera.z),
+            )
+        }
+
+        internal fun capture(
+            projectionMatrix: Matrix4f,
+            positionMatrix: Matrix4f,
+            cameraPosition: Vec3,
+        ): TerrainHologramRenderFrame {
+            return TerrainHologramRenderFrame(
+                inverseViewProjectionMatrix = Matrix4f(projectionMatrix)
+                    .mul(positionMatrix)
+                    .invert(),
+                cameraPosition = Vec3(cameraPosition.x, cameraPosition.y, cameraPosition.z),
+            )
+        }
+    }
 }

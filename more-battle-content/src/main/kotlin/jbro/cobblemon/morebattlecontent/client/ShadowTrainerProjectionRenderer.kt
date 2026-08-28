@@ -1,8 +1,10 @@
 package jbro.cobblemon.morebattlecontent.client
 
 import com.mojang.authlib.GameProfile
+import com.mojang.blaze3d.systems.RenderSystem
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
+import com.mojang.blaze3d.vertex.VertexSorting
 import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.client.battle.ClientBattle
 import java.util.UUID
@@ -23,13 +25,16 @@ import net.minecraft.client.renderer.RenderType
 import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.entity.player.Player
+import net.minecraft.world.phys.Vec3
+import org.joml.Matrix3f
+import org.joml.Matrix4f
 
 /** Renders a client-only copy of the challenger; no shadow entity is added to either world. */
 internal object ShadowTrainerProjectionRenderer {
     private val state = ShadowTrainerProjectionState()
     private var renderedBattleId: UUID? = null
     private var shadowPlayer: ShadowPlayer? = null
-    private var pendingShaderPackContext: WorldRenderContext? = null
+    private var pendingShaderPackFrame: TrainerHologramRenderFrame? = null
 
     fun register() {
         MbcClientSessionReset.onReset("trainer hologram", ::clear)
@@ -48,7 +53,7 @@ internal object ShadowTrainerProjectionRenderer {
                 if (state.current() == null) clearCachedPlayer()
             }
         }
-        WorldRenderEvents.START.register { pendingShaderPackContext = null }
+        WorldRenderEvents.START.register { pendingShaderPackFrame = null }
         WorldRenderEvents.AFTER_ENTITIES.register(::renderBeforeExternalFinalization)
         WorldRenderEvents.LAST.register(::prepareShaderPackRender)
     }
@@ -56,15 +61,16 @@ internal object ShadowTrainerProjectionRenderer {
     private fun renderBeforeExternalFinalization(context: WorldRenderContext) {
         if (ExternalShaderPackState.isInUse()) return
         val buffers = context.consumers() ?: return
-        render(context, buffers)
+        val frame = TrainerHologramRenderFrame.capture(context) ?: return
+        render(frame, buffers)
     }
 
     private fun prepareShaderPackRender(context: WorldRenderContext) {
-        pendingShaderPackContext = if (
+        pendingShaderPackFrame = if (
             ExternalShaderPackState.isInUse() && !ExternalShaderPackState.isRenderingShadowPass() &&
             state.current() != null
         ) {
-            context
+            TrainerHologramRenderFrame.capture(context)
         } else {
             null
         }
@@ -73,25 +79,27 @@ internal object ShadowTrainerProjectionRenderer {
     /** Draws the original GLSL model after Iris has finalized its world framebuffer. */
     @JvmStatic
     fun renderAfterExternalShaderPack() {
-        val context = pendingShaderPackContext ?: return
-        pendingShaderPackContext = null
+        val frame = pendingShaderPackFrame ?: return
+        pendingShaderPackFrame = null
         if (!ExternalShaderPackState.isInUse() || ExternalShaderPackState.isRenderingShadowPass()) return
         val client = Minecraft.getInstance()
         val buffers = client.renderBuffers().bufferSource()
-        try {
-            render(context, buffers)
-        } finally {
-            buffers.endBatch()
+        frame.withCapturedRenderSystemState {
+            try {
+                render(frame, buffers)
+            } finally {
+                buffers.endBatch()
+            }
         }
     }
 
-    private fun render(context: WorldRenderContext, buffers: MultiBufferSource) {
+    private fun render(frame: TrainerHologramRenderFrame, buffers: MultiBufferSource) {
         val projection = state.current() ?: return
         val client = Minecraft.getInstance()
         val sourcePlayer = client.player ?: return
         val level = client.level ?: return
-        val poseStack = context.matrixStack() ?: return
-        val partialTick = context.tickCounter().getGameTimeDeltaPartialTick(false)
+        val poseStack = frame.newPoseStack()
+        val partialTick = frame.partialTick
         val shadow = shadowPlayer(level, projection)
         copyVisibleEquipment(sourcePlayer, shadow)
         place(
@@ -100,26 +108,24 @@ internal object ShadowTrainerProjectionRenderer {
             ShadowTrainerDisplayNameResolver.resolve(projection, CobblemonClient.battle, sourcePlayer.uuid),
         )
 
-        val camera = context.camera().position
-        val relativeX = projection.x - camera.x
-        val relativeY = projection.y - camera.y
-        val relativeZ = projection.z - camera.z
+        val camera = frame.cameraPosition
+        val relative = frame.relativePosition(Vec3(projection.x, projection.y, projection.z))
         ShadowHologramShader.setCameraWorldPosition(camera.x, camera.y, camera.z)
         ShadowHologramFloorRenderer.render(
             poseStack,
             buffers,
-            relativeX,
-            relativeY,
-            relativeZ,
+            relative.x,
+            relative.y,
+            relative.z,
         )
         renderPass(
             client,
             shadow,
             poseStack,
             buffers,
-            relativeX,
-            relativeY,
-            relativeZ,
+            relative.x,
+            relative.y,
+            relative.z,
             projection.yaw,
             partialTick,
             camera.y,
@@ -150,7 +156,7 @@ internal object ShadowTrainerProjectionRenderer {
     }
 
     private fun copyVisibleEquipment(source: net.minecraft.client.player.LocalPlayer, target: ShadowPlayer) {
-        EquipmentSlot.entries.forEach { slot -> target.setItemSlot(slot, source.getItemBySlot(slot).copy()) }
+        HOLOGRAM_ARMOR_SLOTS.forEach { slot -> target.setItemSlot(slot, source.getItemBySlot(slot).copy()) }
     }
 
     private fun renderPass(
@@ -167,8 +173,6 @@ internal object ShadowTrainerProjectionRenderer {
     ) {
         val gameTicks = (client.level?.gameTime ?: 0L).toDouble() + partialTick
         poseStack.pushPose()
-        poseStack.translate(x, y, z)
-        poseStack.translate(-x, -y, -z)
         try {
             client.entityRenderDispatcher.render(
                 shadow,
@@ -192,7 +196,7 @@ internal object ShadowTrainerProjectionRenderer {
 
     private fun clear() {
         state.clear()
-        pendingShaderPackContext = null
+        pendingShaderPackFrame = null
         clearCachedPlayer()
     }
 
@@ -206,6 +210,82 @@ internal object ShadowTrainerProjectionRenderer {
         override fun isInvisibleTo(player: Player): Boolean = false
     }
 
+    private val HOLOGRAM_ARMOR_SLOTS = listOf(
+        EquipmentSlot.FEET,
+        EquipmentSlot.LEGS,
+        EquipmentSlot.CHEST,
+        EquipmentSlot.HEAD,
+    )
+
+}
+
+/** Immutable camera transform captured before Iris tears down the world's render state. */
+internal class TrainerHologramRenderFrame private constructor(
+    private val poseMatrix: Matrix4f,
+    private val normalMatrix: Matrix3f,
+    private val modelViewMatrix: Matrix4f,
+    private val projectionMatrix: Matrix4f,
+    private val vertexSorting: VertexSorting,
+    val cameraPosition: Vec3,
+    val partialTick: Float,
+) {
+    fun newPoseStack(): PoseStack = PoseStack().also { target ->
+        target.last().pose().set(poseMatrix)
+        target.last().normal().set(normalMatrix)
+    }
+
+    fun relativePosition(worldPosition: Vec3): Vec3 = worldPosition.subtract(cameraPosition)
+
+    fun <T> withCapturedRenderSystemState(block: () -> T): T {
+        val previousProjection = Matrix4f(RenderSystem.getProjectionMatrix())
+        val previousVertexSorting = RenderSystem.getVertexSorting()
+        val modelViewStack = RenderSystem.getModelViewStack()
+        modelViewStack.pushMatrix()
+        return try {
+            modelViewStack.set(modelViewMatrix)
+            RenderSystem.applyModelViewMatrix()
+            RenderSystem.setProjectionMatrix(projectionMatrix, vertexSorting)
+            block()
+        } finally {
+            RenderSystem.setProjectionMatrix(previousProjection, previousVertexSorting)
+            modelViewStack.popMatrix()
+            RenderSystem.applyModelViewMatrix()
+        }
+    }
+
+    companion object {
+        fun capture(context: WorldRenderContext): TrainerHologramRenderFrame? {
+            val source = context.matrixStack() ?: return null
+            val camera = context.camera().position
+            return capture(
+                source = source,
+                cameraPosition = Vec3(camera.x, camera.y, camera.z),
+                partialTick = context.tickCounter().getGameTimeDeltaPartialTick(false),
+                modelViewMatrix = Matrix4f(RenderSystem.getModelViewMatrix()),
+                projectionMatrix = Matrix4f(RenderSystem.getProjectionMatrix()),
+                vertexSorting = RenderSystem.getVertexSorting(),
+            )
+        }
+
+        internal fun capture(
+            source: PoseStack,
+            cameraPosition: Vec3,
+            partialTick: Float,
+            modelViewMatrix: Matrix4f = Matrix4f(),
+            projectionMatrix: Matrix4f = Matrix4f(),
+            vertexSorting: VertexSorting = VertexSorting.DISTANCE_TO_ORIGIN,
+        ): TrainerHologramRenderFrame {
+            return TrainerHologramRenderFrame(
+                poseMatrix = Matrix4f(source.last().pose()),
+                normalMatrix = Matrix3f(source.last().normal()),
+                modelViewMatrix = Matrix4f(modelViewMatrix),
+                projectionMatrix = Matrix4f(projectionMatrix),
+                vertexSorting = vertexSorting,
+                cameraPosition = Vec3(cameraPosition.x, cameraPosition.y, cameraPosition.z),
+                partialTick = partialTick,
+            )
+        }
+    }
 }
 
 internal object ShadowTrainerDisplayNameResolver {
