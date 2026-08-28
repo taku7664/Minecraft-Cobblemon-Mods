@@ -14,6 +14,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalSideConditionRules
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
@@ -83,13 +84,19 @@ internal object LocalTacticalSituationalEvaluator {
         }
         val probability = context?.let { publicKnockoutProbability(candidate, it, declared) } ?: declared
         if (probability <= 0.0) return 0.0
+        // The accuracy handed in is the move's printed one. Evasion and accuracy stages are resolved
+        // in exactly one place, and until now only the outcome projection called it - so a Double
+        // Team changed the projection made after the choice and not the choice itself. The damage
+        // term escapes this because the outcome evaluator cancels the scorer's copy and substitutes
+        // the projector's; the knockout term has no such cancellation and has to ask directly.
+        val landing = context?.let { LocalPublicAccuracy.probability(candidate, it, BattleSide.ALLY) } ?: accuracy
         // A knockout landed before the reply is worth more than the same knockout landed after it: one
         // ends the exchange, the other only wins the trade. `firstStrikeWeight` says how much of the
         // knockout's value is conditional on getting there first, and it ships at zero until the
         // measurement says otherwise.
         val order = facts?.actsFirstProbability
         val initiative = if (order == null) 1.0 else 1.0 - tuning.firstStrikeWeight * (1.0 - order)
-        return tuning.knockoutMaterialScore * probability * accuracy * initiative
+        return tuning.knockoutMaterialScore * probability * landing * initiative
     }
 
     /**
@@ -421,10 +428,12 @@ internal object LocalTacticalSituationalEvaluator {
             val target = context.state.pokemon.firstOrNull {
                 it.side == BattleSide.OPPONENT && it.activeSlot == targetSlot && !it.fainted
             } ?: return@sumOf 0.0
+            // "Already secured" has to mean secured against this defender, not against an average
+            // one. Reading the printed accuracy let a second attacker be called redundant into a
+            // target that had just doubled its evasion.
             val alreadySecured = attacks.any { action ->
-                val facts = action.facts
-                facts?.standardKnockoutAssessment == BattleKnockoutAssessment.GUARANTEED &&
-                    (facts.baseAccuracyProbability ?: 0.0) >= CERTAIN_ACCURACY
+                action.facts?.standardKnockoutAssessment == BattleKnockoutAssessment.GUARANTEED &&
+                    LocalPublicAccuracy.probability(action, context, BattleSide.ALLY) >= CERTAIN_ACCURACY
             }
             if (alreadySecured) {
                 -REDUNDANT_FOCUS_PENALTY
@@ -433,7 +442,7 @@ internal object LocalTacticalSituationalEvaluator {
                     it.facts?.standardDamageFractionRange?.minimum ?: 0.0
                 }
                 val allHitProbability = attacks.fold(1.0) { probability, action ->
-                    probability * (action.facts?.baseAccuracyProbability ?: 0.0)
+                    probability * LocalPublicAccuracy.probability(action, context, BattleSide.ALLY)
                 }
                 if (minimumCombinedDamage >= target.hpFraction) {
                     SECURE_FOCUS_KNOCKOUT_BONUS * allHitProbability
