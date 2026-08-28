@@ -39,6 +39,8 @@ import jbro.cobblemon.morebattlecontent.betterai.policy.forPlanOwner
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalRecursiveLookaheadEvaluator
 import kotlin.math.roundToInt
 
+private const val WEAKER_CHOICE_MARGIN = 0.05
+
 internal class LocalTacticalBrain(
     private val actionSelector: LocalActionSelector = LocalWeightedActionSelector(),
     private val tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
@@ -184,6 +186,60 @@ internal class LocalTacticalBrain(
                      ))
                     if (lookahead.truncated) add("lookahead_truncated")
                     if (lookahead.publicResponseIncomplete) add("lookahead_public_response_incomplete")
+                    // What the trainer could see of the Pokemon in front of it. A move is ranked almost
+                    // entirely on the damage it projects, and that needs the defender's types: without
+                    // them every attack scores on base power alone, four moves look nearly equal, and
+                    // the draw can land on one the type chart would have ruled out. When that happens
+                    // the choice looks like a broken evaluation and is really a blind one, so the two
+                    // have to be distinguishable in a log after the fact.
+                    val opponentActive = calculatedContext.state.pokemon.filter {
+                        it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted
+                    }
+                    when {
+                        opponentActive.isEmpty() -> add("opponent_active_absent")
+                        opponentActive.any { it.knownTypeIds.isEmpty() } -> add("opponent_types_unknown")
+                        else -> add("opponent_types_known")
+                    }
+                    if (opponentActive.any { it.combatStats == null }) add("opponent_stats_unknown")
+                    selected.outcome.candidate.let { chosen ->
+                        add("chose_${chosen.kind.name.lowercase()}")
+                        chosen.moveDetails?.typeId?.let { add("chose_type_$it") }
+                    }
+                    val chosenFacts = calculatedContext.candidates
+                        .firstOrNull { it.actionId == selected.outcome.candidate.actionId }?.facts
+                    chosenFacts?.typeChartMultiplier
+                        ?.let { add("chose_type_multiplier_${(it * 100).roundToInt()}") }
+                    // Why this move and not the stronger one, recorded at the moment it is chosen.
+                    //
+                    // A trainer picking a weak attack while a far better one sits in the same move set
+                    // is the complaint that cannot be reproduced on demand: it needs that opponent,
+                    // that team and that matchup to come round again, and in a battle tower it may not.
+                    // So the decision states its own case whenever the move played is not the hardest
+                    // hitting one available - every candidate, its type, what the chart said, and what
+                    // damage was projected. Silent on every turn where the obvious move was taken.
+                    val damaging = calculatedContext.candidates.filter {
+                        it.moveDetails?.damageCategory != null &&
+                            it.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS
+                    }
+                    fun expectedDamage(candidate: BattleActionCandidate): Double =
+                        candidate.facts?.standardDamageFractionRange
+                            ?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.0
+                    val chosenCandidate = calculatedContext.candidates
+                        .firstOrNull { it.actionId == selected.outcome.candidate.actionId }
+                    val strongest = damaging.maxByOrNull(::expectedDamage)
+                    if (chosenCandidate != null && strongest != null &&
+                        expectedDamage(strongest) > expectedDamage(chosenCandidate) + WEAKER_CHOICE_MARGIN
+                    ) {
+                        add("weaker_attack_chosen")
+                        calculatedContext.candidates.forEach { candidate ->
+                            val moveType = candidate.moveDetails?.typeId ?: return@forEach
+                            val name = candidate.moveId?.substringAfter(':') ?: candidate.actionId
+                            val multiplier = candidate.facts?.typeChartMultiplier
+                                ?.let { (it * 100).roundToInt().toString() } ?: "none"
+                            val damage = (expectedDamage(candidate) * 1000).roundToInt()
+                            add("cand_${name}_${moveType}_x${multiplier}_dmg$damage")
+                        }
+                    }
                     rootDecision.switchReasonsByActionId[selected.outcome.candidate.actionId]
                         .orEmpty()
                         .forEach { add("switch_reason_${it.name.lowercase()}") }

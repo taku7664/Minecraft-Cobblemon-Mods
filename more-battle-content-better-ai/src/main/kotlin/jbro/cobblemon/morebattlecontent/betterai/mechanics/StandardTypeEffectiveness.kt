@@ -93,7 +93,7 @@ internal object StandardTypeEffectiveness {
             "flying" to 2.0, "dragon" to 0.5,
         ),
         "grass" to mapOf(
-            "fire" to 0.5, "water" to 2.0, "grass" to 0.5, "poison" to 0.5,
+            "fire" to 0.5, "water" to 2.0, "grass" to 0.5, "ice" to 0.5, "poison" to 0.5,
             "ground" to 2.0, "flying" to 0.5, "bug" to 0.5, "rock" to 2.0,
             "dragon" to 0.5, "steel" to 0.5,
         ),
