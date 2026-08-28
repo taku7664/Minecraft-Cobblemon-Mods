@@ -75,7 +75,9 @@ internal object ShowdownStandardDamageProjection {
         require(level > 0)
         require(power > 0)
         require(targetHpFraction.isFinite() && targetHpFraction in 0.0..1.0)
-        require(stab == 1.0 || stab == 1.5)
+        // 2.0 is the Terastallized case, where the move matches both the original type and the Tera
+        // type. Showdown treats it as its own modifier rather than a second application of the 1.5.
+        require(stab in SUPPORTED_SAME_TYPE_BONUSES)
         require(typeMultiplier in setOf(0.0, 0.25, 0.5, 1.0, 2.0, 4.0))
         require(spreadMultiplier == 1.0 || spreadMultiplier == 0.75)
 
@@ -139,13 +141,19 @@ internal object ShowdownStandardDamageProjection {
         return randomRolls.map { randomRoll ->
             var damage = if (guaranteedCritical) showdownModify(baseDamage, 3, 2) else baseDamage
             damage = damage * randomRoll / 100
-            damage = showdownModify(damage, if (stab == 1.5) 3 else 1, if (stab == 1.5) 2 else 1)
+            damage = applySameTypeBonus(damage, stab)
             damage = applyTypeMultiplier(damage, typeMultiplier)
             // Item modifiers land after the type chart, the way Showdown orders them, and go through
             // the same rounding every other modifier does so the rolls stay comparable.
             damage = applyItemMultiplier(damage, itemDamageMultiplier)
             if (typeMultiplier == 0.0) 0 else damage.coerceAtLeast(1)
         }
+    }
+
+    private fun applySameTypeBonus(value: Int, stab: Double): Int = when (stab) {
+        1.5 -> showdownModify(value, 3, 2)
+        2.0 -> showdownModify(value, 2, 1)
+        else -> value
     }
 
     private fun applyItemMultiplier(value: Int, multiplier: Double): Int = when (multiplier) {
@@ -158,6 +166,8 @@ internal object ShowdownStandardDamageProjection {
         val modifier = floor(numerator.toDouble() * 4096.0 / denominator).toLong()
         return ((value.toLong() * modifier + 2047L) / 4096L).toInt()
     }
+
+    private val SUPPORTED_SAME_TYPE_BONUSES = setOf(1.0, 1.5, 2.0)
 
     private fun applyTypeMultiplier(value: Int, multiplier: Double): Int = when (multiplier) {
         0.0 -> 0

@@ -249,17 +249,52 @@ data class BattleTargetSlot(val side: BattleSide, val slot: Int) {
     }
 }
 
-data class BattleMechanicCandidate(
+class BattleMechanicCandidate(
     val mechanicId: String,
     val target: BattleTargetSlot?,
     val publicCost: Int?,
     val transformedMoveId: String? = null,
+    /**
+     * The actor's types once the mechanic has resolved, when the mechanic changes them.
+     *
+     * Empty means unchanged. Terastallization is the case this exists for: the move keeps its own
+     * type, but the user's changes, and with it every same-type bonus the damage is computed from.
+     * Without this the projection had no way to describe a transformed attacker, so it declined to
+     * describe one at all - and a mechanic candidate that projects no damage is a mechanic the AI
+     * will never choose.
+     */
+    transformedActorTypeIds: Set<String> = emptySet(),
+    /**
+     * The actor's combat stats once the mechanic has resolved, when the mechanic changes them.
+     *
+     * Null means unchanged. Dynamax doubles maximum health; Mega Evolution rewrites the whole spread.
+     */
+    val transformedActorCombatStats: BattleCombatStatRangesView? = null,
 ) {
+    val transformedActorTypeIds: Set<String> =
+        Collections.unmodifiableSet(LinkedHashSet(transformedActorTypeIds))
+
     init {
         require(mechanicId.isNotBlank())
         require(publicCost == null || publicCost >= 0)
         require(transformedMoveId == null || transformedMoveId.isNotBlank())
+        require(this.transformedActorTypeIds.all { it.isNotBlank() }) {
+            "Transformed actor types cannot be blank"
+        }
     }
+
+    override fun equals(other: Any?): Boolean = this === other || other is BattleMechanicCandidate &&
+        mechanicId == other.mechanicId && target == other.target && publicCost == other.publicCost &&
+        transformedMoveId == other.transformedMoveId &&
+        transformedActorTypeIds == other.transformedActorTypeIds &&
+        transformedActorCombatStats == other.transformedActorCombatStats
+
+    override fun hashCode(): Int = listOf(
+        mechanicId, target, publicCost, transformedMoveId,
+        transformedActorTypeIds, transformedActorCombatStats,
+    ).hashCode()
+
+    override fun toString(): String = "BattleMechanicCandidate(mechanicId=$mechanicId)"
 }
 
 enum class BattleMoveDamageCategory { PHYSICAL, SPECIAL, STATUS }

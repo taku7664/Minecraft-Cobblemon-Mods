@@ -14,6 +14,7 @@ import com.cobblemon.mod.common.battles.SwitchActionResponse
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
+import jbro.cobblemon.morebattlecontent.api.ai.BattleCombatStatRangesView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMechanicCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveCandidateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
@@ -226,6 +227,8 @@ internal object Cobblemon173ActionCandidateAdapter {
                             target = null,
                             publicCost = null,
                             transformedMoveId = transformed?.move,
+                            transformedActorTypeIds = transformedActorTypes(active, it),
+                            transformedActorCombatStats = transformedActorStats(active, it),
                         )
                     },
                 ),
@@ -296,6 +299,51 @@ internal object Cobblemon173ActionCandidateAdapter {
                 scriptId.lowercase().filter(Char::isLetterOrDigit) == canonicalId
         }
     }.getOrDefault(true)
+
+    /**
+     * The actor's types once the mechanic resolves, for the mechanics that change them.
+     *
+     * Only Terastallization does. The AI needs it because Tera keeps the same-type bonus on the
+     * original types and adds one on the Tera type, so a projection that cannot see the Tera type
+     * prices a Tera attack as an ordinary one.
+     */
+    private fun transformedActorTypes(
+        active: ActiveBattlePokemon,
+        gimmick: ShowdownMoveset.Gimmick,
+    ): Set<String> = if (gimmick != ShowdownMoveset.Gimmick.TERASTALLIZATION) {
+        emptySet()
+    } else {
+        runCatching {
+            active.battlePokemon?.effectedPokemon?.teraType?.let { setOf(it.name) }
+        }.getOrNull().orEmpty()
+    }
+
+    /**
+     * The actor's combat stats once the mechanic resolves, for the mechanics that change them.
+     *
+     * Dynamax doubles maximum health and nothing else the damage path reads. Mega Evolution rewrites
+     * the whole spread and is not resolved here: the form data lives behind another mod, and inventing
+     * a number for it would be worse than leaving the ordinary stats, which at least describe a real
+     * Pokemon. That leaves Mega priced as an un-transformed attack - understated rather than absent,
+     * which is the safe direction.
+     */
+    private fun transformedActorStats(
+        active: ActiveBattlePokemon,
+        gimmick: ShowdownMoveset.Gimmick,
+    ): BattleCombatStatRangesView? {
+        if (gimmick != ShowdownMoveset.Gimmick.DYNAMAX) return null
+        val pokemon = active.battlePokemon?.effectedPokemon ?: return null
+        return runCatching {
+            Cobblemon173PublicStatHypothesis.exactOwn(
+                maxHp = pokemon.maxHealth * 2,
+                attack = pokemon.attack,
+                defence = pokemon.defence,
+                specialAttack = pokemon.specialAttack,
+                specialDefence = pokemon.specialDefence,
+                speed = pokemon.speed,
+            )
+        }.getOrNull()
+    }
 
     private fun mechanicId(gimmick: ShowdownMoveset.Gimmick): String = when (gimmick) {
         ShowdownMoveset.Gimmick.MEGA_EVOLUTION -> MajorBattleMechanic.MEGA.id

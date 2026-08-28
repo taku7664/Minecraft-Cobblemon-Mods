@@ -56,9 +56,7 @@ internal object PublicBattleTacticalCalculator {
         // `spreadTargets`, but the recursive projection still moves one HP bar per action.
         val target = targets.firstOrNull()
         val spreadMultiplier = if (targets.size > 1) SPREAD_DAMAGE_MULTIPLIER else 1.0
-        val stab = actor?.knownTypeIds?.takeIf { it.isNotEmpty() }?.let { types ->
-            if (types.any { it.equals(details.typeId, ignoreCase = true) }) 1.5 else 1.0
-        }
+        val stab = sameTypeAttackBonus(details, actor, candidate)
         val typeMultiplier = publicTypeMultiplier(details, target, context)
         val mechanics = LocalPublicMechanicsKernel.projectMove(candidate, context, actingSide)
         declaredDamageRollFractions(candidate, actor, target, mechanics)?.let { return it }
@@ -178,10 +176,8 @@ internal object PublicBattleTacticalCalculator {
             BattleCalculationUnknown.MOVE_EFFECTS,
         )
         val actor = candidate.actorSlot?.let { slot -> active(context, actingSide, slot) }
-        val stab = actor?.knownTypeIds?.takeIf { it.isNotEmpty() }?.let { types ->
-            basis += BattleCalculationBasis.PUBLIC_TYPES
-            if (types.any { it.equals(details.typeId, ignoreCase = true) }) 1.5 else 1.0
-        }
+        val stab = sameTypeAttackBonus(details, actor, candidate)
+            ?.also { basis += BattleCalculationBasis.PUBLIC_TYPES }
         val targets = resolvedTargets(candidate, context, actingSide)
         val target = targets.firstOrNull()
         val spreadMultiplier = if (targets.size > 1) SPREAD_DAMAGE_MULTIPLIER else 1.0
@@ -305,9 +301,28 @@ internal object PublicBattleTacticalCalculator {
         spreadMultiplier: Double = 1.0,
     ): ShowdownStandardDamageProjectionResult? {
         if (details.damageCategory == BattleMoveDamageCategory.STATUS || isDelayedSlotDamage(details)) return null
-        if (details.targetPattern !in DAMAGE_TARGET_PATTERNS || candidate.mechanic != null) return null
+        if (details.targetPattern !in DAMAGE_TARGET_PATTERNS) return null
         val level = actor?.level ?: return null
-        val actorStats = actor.combatStats ?: return null
+        // A mechanic candidate used to project nothing at all - not a rough number, nothing - which put
+        // every Mega, Tera and Dynamax option into the ranking as an attack that deals no damage. Every
+        // battle tower set carries one, so the whole feature sat unusable behind a single condition.
+        //
+        // What the mechanic does to the *move* already arrives resolved: a Max move is described as
+        // itself. What was missing is the actor using it, which the bridge now supplies for the
+        // mechanics whose effect on the actor it can actually read - the Tera type, the doubled health.
+        //
+        // A mechanic that supplies neither stays unprojected, which is the rule that was there before
+        // and is the right one. Mega Evolution rewrites a species' whole spread from data behind
+        // another mod; projecting it from the un-transformed stats would not be a cautious estimate but
+        // a wrong one, and a wrong number is worse than an absent one because the ranking believes it.
+        val mechanic = candidate.mechanic
+        if (mechanic != null &&
+            mechanic.transformedActorTypeIds.isEmpty() &&
+            mechanic.transformedActorCombatStats == null
+        ) {
+            return null
+        }
+        val actorStats = mechanic?.transformedActorCombatStats ?: actor.combatStats ?: return null
         val targetStats = target?.combatStats ?: return null
         val wholePower = details.power.toInt().takeIf { it > 0 && it.toDouble() == details.power } ?: return null
         val effectivePower = LocalKnownStatMechanics.effectivePower(wholePower, actor)
@@ -374,6 +389,32 @@ internal object PublicBattleTacticalCalculator {
             // here alongside the spread reduction instead of inside the attack range.
             itemDamageMultiplier = LocalKnownStatMechanics.damageMultiplier(actor, knownTypeMultiplier),
         )
+    }
+
+    /**
+     * The same-type bonus, including what Terastallization does to it.
+     *
+     * Tera is the one mechanic that changes the attacker rather than the attack, and it does not simply
+     * swap the type: the user keeps the bonus on its original types and gains one on the Tera type, and
+     * a move matching both is doubled rather than raised once. Reading only the pre-Tera types would
+     * price a Tera attack as an ordinary one and reading only the Tera type would throw away the
+     * bonus the user still has.
+     */
+    private fun sameTypeAttackBonus(
+        details: BattleMoveCandidateView,
+        actor: BattlePokemonStateView?,
+        candidate: BattleActionCandidate,
+    ): Double? {
+        val original = actor?.knownTypeIds?.takeIf { it.isNotEmpty() } ?: return null
+        val transformed = candidate.mechanic?.transformedActorTypeIds.orEmpty()
+        fun matches(types: Collection<String>) = types.any { it.equals(details.typeId, ignoreCase = true) }
+        val matchesOriginal = matches(original)
+        val matchesTransformed = transformed.isNotEmpty() && matches(transformed)
+        return when {
+            matchesOriginal && matchesTransformed -> 2.0
+            matchesOriginal || matchesTransformed -> 1.5
+            else -> 1.0
+        }
     }
 
     private fun publicTypeMultiplier(

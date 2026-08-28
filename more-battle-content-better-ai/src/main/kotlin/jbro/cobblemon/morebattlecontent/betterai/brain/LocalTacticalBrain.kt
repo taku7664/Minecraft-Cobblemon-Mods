@@ -227,7 +227,13 @@ internal class LocalTacticalBrain(
                     val chosenCandidate = calculatedContext.candidates
                         .firstOrNull { it.actionId == selected.outcome.candidate.actionId }
                     val strongest = damaging.maxByOrNull(::expectedDamage)
-                    if (chosenCandidate != null && strongest != null &&
+                    // Only when an attack was chosen over a better attack. Switching or using a status
+                    // move projects no damage by definition, so comparing those against the hardest
+                    // hitting option fired the tag on almost every decision and buried the ones worth
+                    // reading. A trainer that switches instead of attacking is answering a different
+                    // question, not making the mistake this looks for.
+                    val chosenIsAttack = chosenCandidate != null && chosenCandidate in damaging
+                    if (chosenIsAttack && chosenCandidate != null && strongest != null &&
                         expectedDamage(strongest) > expectedDamage(chosenCandidate) + WEAKER_CHOICE_MARGIN
                     ) {
                         add("weaker_attack_chosen")
