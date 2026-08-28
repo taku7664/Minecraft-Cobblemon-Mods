@@ -91,6 +91,21 @@ class ShadowHologramRenderIsolationTest {
     }
 
     @Test
+    fun `terrain render targets are released only after the fade is no longer retained`() {
+        val renderer = Files.readString(
+            Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client/ShadowTerrainHologramRenderer.kt"),
+        )
+        val idleRelease = renderer.substringAfter("private fun releaseTargetsWhenIdle")
+            .substringBefore("private fun captureBackground")
+
+        assertTrue(renderer.contains("WorldRenderEvents.START.register"))
+        assertTrue(renderer.contains("releaseTargetsWhenIdle(System.nanoTime())"))
+        assertTrue(idleRelease.contains("transition.snapshot(nowNanos)"))
+        assertTrue(idleRelease.contains("!transition.isRetained()"))
+        assertTrue(idleRelease.contains("destroyTargets()"))
+    }
+
+    @Test
     fun `shader pack model uses the original core shader after external finalization`() {
         val projectionRenderer = Files.readString(
             Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client/ShadowTrainerProjectionRenderer.kt"),

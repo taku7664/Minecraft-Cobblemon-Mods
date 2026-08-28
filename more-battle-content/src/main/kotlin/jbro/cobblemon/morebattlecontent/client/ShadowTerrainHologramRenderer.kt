@@ -45,6 +45,7 @@ internal object ShadowTerrainHologramRenderer {
             context.client().execute { hide(payload.battleId) }
         }
         WorldRenderEvents.START.register {
+            releaseTargetsWhenIdle(System.nanoTime())
             backgroundCaptured = false
             shaderPackBackgroundCaptured = false
             shaderPackTerrainCaptured = false
@@ -71,6 +72,13 @@ internal object ShadowTerrainHologramRenderer {
         shaderPackTerrainCaptured = false
         pendingShaderPackContext = null
         destroyTargets()
+    }
+
+    private fun releaseTargetsWhenIdle(nowNanos: Long) {
+        if (backgroundTarget == null && terrainTarget == null && finalSceneTarget == null) return
+        if (transition.snapshot(nowNanos) == null && !transition.isRetained()) {
+            destroyTargets()
+        }
     }
 
     private fun captureBackground(@Suppress("UNUSED_PARAMETER") context: WorldRenderContext) {
