@@ -321,11 +321,14 @@ internal object Cobblemon173ActionCandidateAdapter {
     /**
      * The actor's combat stats once the mechanic resolves, for the mechanics that change them.
      *
-     * Dynamax doubles maximum health and nothing else the damage path reads. Mega Evolution rewrites
-     * the whole spread and is not resolved here: the form data lives behind another mod, and inventing
-     * a number for it would be worse than leaving the ordinary stats, which at least describe a real
-     * Pokemon. That leaves Mega priced as an un-transformed attack - understated rather than absent,
-     * which is the safe direction.
+     * Dynamax doubles maximum health and nothing else the damage path reads, so it is the only case
+     * this has to compute.
+     *
+     * Mega Evolution is deliberately not resolved here, and no longer needs to be. Every battle form
+     * a species has already crosses the boundary on the Pokemon itself, as `knownFormStates`, so the
+     * AI reads the Mega spread from there rather than being handed a second copy of it. Returning
+     * null is the honest answer for this field: the mechanic candidate describes what the *bridge*
+     * knows the mechanic does to the actor, and for a Mega that is nothing the bridge has to say.
      */
     private fun transformedActorStats(
         active: ActiveBattlePokemon,
