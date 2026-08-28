@@ -29,6 +29,7 @@ internal object ShadowTrainerProjectionRenderer {
     private val state = ShadowTrainerProjectionState()
     private var renderedBattleId: UUID? = null
     private var shadowPlayer: ShadowPlayer? = null
+    private var pendingShaderPackContext: WorldRenderContext? = null
 
     fun register() {
         MbcClientSessionReset.onReset("trainer hologram", ::clear)
@@ -47,16 +48,49 @@ internal object ShadowTrainerProjectionRenderer {
                 if (state.current() == null) clearCachedPlayer()
             }
         }
-        WorldRenderEvents.AFTER_ENTITIES.register(::render)
+        WorldRenderEvents.START.register { pendingShaderPackContext = null }
+        WorldRenderEvents.AFTER_ENTITIES.register(::renderBeforeExternalFinalization)
+        WorldRenderEvents.LAST.register(::prepareShaderPackRender)
     }
 
-    private fun render(context: WorldRenderContext) {
+    private fun renderBeforeExternalFinalization(context: WorldRenderContext) {
+        if (ExternalShaderPackState.isInUse()) return
+        val buffers = context.consumers() ?: return
+        render(context, buffers)
+    }
+
+    private fun prepareShaderPackRender(context: WorldRenderContext) {
+        pendingShaderPackContext = if (
+            ExternalShaderPackState.isInUse() && !ExternalShaderPackState.isRenderingShadowPass() &&
+            state.current() != null
+        ) {
+            context
+        } else {
+            null
+        }
+    }
+
+    /** Draws the original GLSL model after Iris has finalized its world framebuffer. */
+    @JvmStatic
+    fun renderAfterExternalShaderPack() {
+        val context = pendingShaderPackContext ?: return
+        pendingShaderPackContext = null
+        if (!ExternalShaderPackState.isInUse() || ExternalShaderPackState.isRenderingShadowPass()) return
+        val client = Minecraft.getInstance()
+        val buffers = client.renderBuffers().bufferSource()
+        try {
+            render(context, buffers)
+        } finally {
+            buffers.endBatch()
+        }
+    }
+
+    private fun render(context: WorldRenderContext, buffers: MultiBufferSource) {
         val projection = state.current() ?: return
         val client = Minecraft.getInstance()
         val sourcePlayer = client.player ?: return
         val level = client.level ?: return
         val poseStack = context.matrixStack() ?: return
-        val buffers = context.consumers() ?: return
         val partialTick = context.tickCounter().getGameTimeDeltaPartialTick(false)
         val shadow = shadowPlayer(level, projection)
         copyVisibleEquipment(sourcePlayer, shadow)
@@ -132,7 +166,6 @@ internal object ShadowTrainerProjectionRenderer {
         cameraY: Double,
     ) {
         val gameTicks = (client.level?.gameTime ?: 0L).toDouble() + partialTick
-        val shaderPackActive = ExternalShaderPackState.isInUse()
         poseStack.pushPose()
         poseStack.translate(x, y, z)
         poseStack.translate(-x, -y, -z)
@@ -147,7 +180,6 @@ internal object ShadowTrainerProjectionRenderer {
                 poseStack,
                 HologramBufferSource(
                     delegate = buffers,
-                    useCoreShader = !shaderPackActive,
                     gameTicks = gameTicks,
                     cameraY = cameraY,
                 ),
@@ -160,6 +192,7 @@ internal object ShadowTrainerProjectionRenderer {
 
     private fun clear() {
         state.clear()
+        pendingShaderPackContext = null
         clearCachedPlayer()
     }
 
@@ -202,7 +235,6 @@ internal object ShadowHologramAppearance {
 
 private class HologramBufferSource(
     private val delegate: MultiBufferSource,
-    private val useCoreShader: Boolean,
     private val gameTicks: Double,
     private val cameraY: Double,
 ) : MultiBufferSource {
@@ -217,11 +249,7 @@ private class HologramBufferSource(
                 cameraY = cameraY,
             )
         }
-        return if (useCoreShader) {
-            ShadowHologramShader.buffer(delegate, renderType, fallback)
-        } else {
-            fallback()
-        }
+        return ShadowHologramShader.buffer(delegate, renderType, fallback)
     }
 }
 

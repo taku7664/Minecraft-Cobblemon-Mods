@@ -73,17 +73,26 @@ class ShadowHologramRenderIsolationTest {
     }
 
     @Test
-    fun `shader pack model fallback uses a translucent render type`() {
+    fun `shader pack model uses the original core shader after external finalization`() {
         val projectionRenderer = Files.readString(
             Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client/ShadowTrainerProjectionRenderer.kt"),
         )
-        val shader = Files.readString(
-            Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client/ShadowHologramShader.kt"),
+        val lateMixin = Files.readString(
+            Path.of(
+                "src/main/java/jbro/cobblemon/morebattlecontent/internal/mixin/client/" +
+                    "LevelRendererLateHologramMixin.java",
+            ),
         )
 
-        assertTrue(projectionRenderer.contains("ShadowHologramShader.shaderPackFallbackBuffer"))
-        assertTrue(shader.contains("shaderPackFallbackTypes"))
-        assertTrue(shader.contains("GameRenderer.getRendertypeEntityTranslucentShader"))
+        assertTrue(projectionRenderer.contains("WorldRenderEvents.LAST.register(::prepareShaderPackRender)"))
+        assertTrue(projectionRenderer.contains("if (ExternalShaderPackState.isInUse()) return"))
+        assertTrue(projectionRenderer.contains("fun renderAfterExternalShaderPack()"))
+        assertTrue(projectionRenderer.contains("client.renderBuffers().bufferSource()"))
+        assertTrue(projectionRenderer.contains("buffers.endBatch()"))
+        assertTrue(projectionRenderer.contains("ShadowHologramShader.buffer"))
+        assertFalse(projectionRenderer.contains("useCoreShader = !shaderPackActive"))
+        assertTrue(lateMixin.contains("ShadowTerrainHologramRenderer.compositeAfterExternalShaderPack()"))
+        assertTrue(lateMixin.contains("ShadowTrainerProjectionRenderer.renderAfterExternalShaderPack()"))
     }
 
     @Test
