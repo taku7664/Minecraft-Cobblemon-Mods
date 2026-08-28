@@ -52,7 +52,7 @@ internal object LocalPublicTurnOrder {
     }
 
     fun effectiveSpeed(state: BattleStateView, pokemon: BattlePokemonStateView): Pair<Int, Int>? {
-        val speed = pokemon.combatStats?.speed ?: return null
+        val speed = pokemon.combatStats?.speed?.let { LocalKnownStatMechanics.speed(it, pokemon) } ?: return null
         val stage = pokemon.statStages.entries
             .firstOrNull { canonical(it.key) in SPEED_ALIASES }?.value?.coerceIn(-6, 6) ?: 0
         val paralysis = if (canonical(pokemon.statusId.orEmpty()) in PARALYSIS_IDS) 0.5 else 1.0

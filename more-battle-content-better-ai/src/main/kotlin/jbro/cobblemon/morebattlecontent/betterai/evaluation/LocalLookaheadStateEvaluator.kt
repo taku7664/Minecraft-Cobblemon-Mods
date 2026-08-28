@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai.evaluation
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicFutureActionFactory
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalKnownStatMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalSwitchStateProjector
@@ -159,7 +160,8 @@ internal object LocalLookaheadStateEvaluator {
         val ranges = state.pokemon.filter {
             it.side == side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         }.map { pokemon ->
-            val range = pokemon.combatStats?.speed ?: return null
+            val range = pokemon.combatStats?.speed
+                ?.let { LocalKnownStatMechanics.speed(it, pokemon) } ?: return null
             val stage = pokemon.statStages.entries.firstOrNull {
                 canonicalStat(it.key) in SPEED_ALIASES
             }?.value?.coerceIn(-6, 6) ?: 0

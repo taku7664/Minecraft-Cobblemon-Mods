@@ -70,6 +70,7 @@ internal object ShowdownStandardDamageProjection {
          * break the check and misreport the move's effectiveness to anything reading it back.
          */
         spreadMultiplier: Double = 1.0,
+        itemDamageMultiplier: Double = 1.0,
     ): ShowdownStandardDamageProjectionResult {
         require(level > 0)
         require(power > 0)
@@ -80,11 +81,11 @@ internal object ShowdownStandardDamageProjection {
 
         val minimumRolls = rolls(
             level, power, attack.minimum, defence.maximum, stab, typeMultiplier, guaranteedCritical,
-            spreadMultiplier,
+            spreadMultiplier, itemDamageMultiplier,
         )
         val maximumRolls = rolls(
             level, power, attack.maximum, defence.minimum, stab, typeMultiplier, guaranteedCritical,
-            spreadMultiplier,
+            spreadMultiplier, itemDamageMultiplier,
         )
         val minimumDamage = minimumRolls.min()
         val maximumDamage = maximumRolls.max()
@@ -124,6 +125,7 @@ internal object ShowdownStandardDamageProjection {
         typeMultiplier: Double,
         guaranteedCritical: Boolean,
         spreadMultiplier: Double,
+        itemDamageMultiplier: Double,
     ): List<Int> {
         val levelFactor = 2L * level / 5L + 2L
         val unreducedBaseDamage = (((levelFactor * power * attack) / defence) / 50L).toInt() + 2
@@ -139,8 +141,17 @@ internal object ShowdownStandardDamageProjection {
             damage = damage * randomRoll / 100
             damage = showdownModify(damage, if (stab == 1.5) 3 else 1, if (stab == 1.5) 2 else 1)
             damage = applyTypeMultiplier(damage, typeMultiplier)
+            // Item modifiers land after the type chart, the way Showdown orders them, and go through
+            // the same rounding every other modifier does so the rolls stay comparable.
+            damage = applyItemMultiplier(damage, itemDamageMultiplier)
             if (typeMultiplier == 0.0) 0 else damage.coerceAtLeast(1)
         }
+    }
+
+    private fun applyItemMultiplier(value: Int, multiplier: Double): Int = when (multiplier) {
+        1.3 -> showdownModify(value, 5324, 4096)
+        1.2 -> showdownModify(value, 4915, 4096)
+        else -> value
     }
 
     private fun showdownModify(value: Int, numerator: Int, denominator: Int): Int {

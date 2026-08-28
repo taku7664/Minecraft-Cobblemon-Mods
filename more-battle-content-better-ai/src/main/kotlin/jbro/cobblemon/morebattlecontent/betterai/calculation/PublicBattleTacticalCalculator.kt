@@ -352,7 +352,11 @@ internal object PublicBattleTacticalCalculator {
         return ShowdownStandardDamageProjection.project(
             level = level,
             power = effectivePower,
-            attack = publicStatusModifiedAttack(stagedAttack, details.damageCategory, actor),
+            attack = LocalKnownStatMechanics.attack(
+                publicStatusModifiedAttack(stagedAttack, details.damageCategory, actor),
+                details.damageCategory,
+                actor,
+            ),
             defence = LocalKnownStatMechanics.defence(
                 applyStage(defence, effectiveDefenceStage),
                 details.damageCategory,
@@ -366,6 +370,9 @@ internal object PublicBattleTacticalCalculator {
             // The reduction is a damage step, not a type-chart fact. The published
             // `typeChartMultiplier` must stay the plain effectiveness against that Pokemon.
             spreadMultiplier = spreadMultiplier,
+            // Life Orb and Expert Belt scale the finished damage rather than a stat, so they arrive
+            // here alongside the spread reduction instead of inside the attack range.
+            itemDamageMultiplier = LocalKnownStatMechanics.damageMultiplier(actor, knownTypeMultiplier),
         )
     }
 

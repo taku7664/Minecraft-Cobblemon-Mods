@@ -12,6 +12,7 @@ import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalSituati
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalBadPoisonCounter
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalContactAfterHitMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalDirectHitMechanics
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalKnownStatMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalObservedActionOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicStatusImmunity
@@ -1435,7 +1436,7 @@ internal object PublicSingleTurnProjector {
         val actor = state.pokemon.firstOrNull {
             it.side == ordered.side && it.activeSlot == ordered.action.actorSlot && !it.fainted && it.hpFraction > 0.0
         } ?: return null
-        val speed = actor.combatStats?.speed ?: return null
+        val speed = actor.combatStats?.speed?.let { LocalKnownStatMechanics.speed(it, actor) } ?: return null
         val stage = actor.statStages.entries.firstOrNull {
             canonicalId(it.key) in SPEED_ALIASES
         }?.value?.coerceIn(-6, 6) ?: 0
