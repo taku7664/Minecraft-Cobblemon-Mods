@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.betterai
 
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDifficultyProfile
+import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
 import kotlin.random.Random
 
 internal data class LocalSelfPlayTally(
@@ -61,8 +62,9 @@ internal object LocalSelfPlayMeasurement {
         battles: Int,
         seed: Int,
         maximumTurns: Int = 30,
+        format: BattleFormat = BattleFormat.SINGLE,
     ): LocalSelfPlayTally {
-        val reports = definitions(battles, seed).map { definition ->
+        val reports = definitions(battles, seed, format).map { definition ->
             LocalTacticalScenarioBattle.run(definition, maximumTurns, tuning, tuning)
         }
         return LocalSelfPlayTally(
@@ -160,18 +162,27 @@ internal object LocalSelfPlayMeasurement {
     }
 
     /** Deterministic team pairings shared by every measurement so runs stay comparable. */
-    fun definitions(count: Int, seed: Int): List<LocalTacticalScenarioDefinition> {
+    fun definitions(
+        count: Int,
+        seed: Int,
+        format: BattleFormat = BattleFormat.SINGLE,
+    ): List<LocalTacticalScenarioDefinition> {
         val random = Random(seed)
         val roster = LocalTacticalSimulationRoster.loadAll()
+        val teamSize = if (format == BattleFormat.DOUBLE) DOUBLE_TEAM_SIZE else SINGLE_TEAM_SIZE
         return List(count) { index ->
             LocalTacticalScenarioDefinition(
                 name = "selfplay-${index + 1}",
-                cycleSetIds = roster.randomTeam(random, TEAM_SIZE).map { it.setId },
-                offenseSetIds = roster.randomTeam(random, TEAM_SIZE).map { it.setId },
+                cycleSetIds = roster.randomTeam(random, teamSize).map { it.setId },
+                offenseSetIds = roster.randomTeam(random, teamSize).map { it.setId },
                 seed = random.nextInt(),
+                format = format,
             )
         }
     }
 
-    private const val TEAM_SIZE = 3
+    private const val SINGLE_TEAM_SIZE = 3
+
+    /** Doubles starts two, so a third and fourth body are what make a knockout replaceable. */
+    private const val DOUBLE_TEAM_SIZE = 4
 }

@@ -25,7 +25,22 @@ internal data class LocalTacticalScenarioDefinition(
     val cycleSetIds: List<String>,
     val offenseSetIds: List<String>,
     val seed: Int,
-)
+    /**
+     * Singles unless a scenario says otherwise.
+     *
+     * The harness was hardcoded to singles, which meant the doubles half of the product had no
+     * measurement at all - not a worse number, no number. Every rejection and every acceptance in
+     * this plan was decided on one format. Nothing about the projector needed changing: it already
+     * flattens a joint action into its components. What was missing was a board with two slots on it.
+     */
+    val format: BattleFormat = BattleFormat.SINGLE,
+) {
+    /** How many slots each side has on the field at once. */
+    val activeSlots: Int get() = if (format == BattleFormat.DOUBLE) 2 else 1
+
+    /** Doubles needs a fourth body, or a single knockout ends the battle with a slot still empty. */
+    val teamSize: Int get() = if (format == BattleFormat.DOUBLE) 4 else 3
+}
 
 internal data class LocalTacticalScenarioTurn(
     val turn: Int,
@@ -108,7 +123,9 @@ internal object LocalTacticalScenarioBattle {
         private val templates = linkedMapOf<UUID, LocalTacticalSimulationEntry>()
         private val cycleIds = createTeam(definition.cycleSetIds)
         private val offenseIds = createTeam(definition.offenseSetIds)
-        private val revealedPokemonIds = linkedSetOf(cycleIds.first(), offenseIds.first())
+        private val revealedPokemonIds = (
+            cycleIds.take(definition.activeSlots) + offenseIds.take(definition.activeSlots)
+            ).toCollection(linkedSetOf())
         private val revealedMoveIds = mutableMapOf<UUID, MutableSet<String>>()
         private val selectors = BattleSide.entries.associateWith { CapturingWeightedSelector() }
         private val actualBrains = BattleSide.entries.associateWith { side ->
@@ -227,24 +244,29 @@ internal object LocalTacticalScenarioBattle {
         }
 
         private fun createTeam(setIds: List<String>): List<UUID> {
-            require(setIds.size == 3)
+            require(setIds.size == definition.teamSize) {
+                "${definition.format} needs ${definition.teamSize} members, got ${setIds.size}"
+            }
             val selected = setIds.map { id -> roster.entries.single { it.setId == id } }
             require(selected.map { it.speciesId }.distinct().size == selected.size)
             require(selected.map { it.heldItemId }.distinct().size == selected.size)
-            return selected.mapIndexed { index, template ->
-                UUID(definition.seed.toLong(), (templates.size + index + 1).toLong()).also { templates[it] = template }
+            // The counter is the number already registered, not that plus the position in this team:
+            // adding both double-counted, which happened to stay unique at three members a side and
+            // collided at four. A doubles battle then had two Pokemon claiming the same identity.
+            return selected.map { template ->
+                UUID(definition.seed.toLong(), (templates.size + 1).toLong()).also { templates[it] = template }
             }
         }
 
         private fun initialState(): BattleStateView {
             var initial = BattleStateView(
                 battleId = battleId,
-                format = BattleFormat.SINGLE,
+                format = definition.format,
                 turn = 1,
-                pokemon = cycleIds.mapIndexed { index, id -> initialPokemon(id, BattleSide.ALLY, index == 0) } +
-                    offenseIds.mapIndexed { index, id -> initialPokemon(id, BattleSide.OPPONENT, index == 0) },
+                pokemon = cycleIds.mapIndexed { index, id -> initialPokemon(id, BattleSide.ALLY, index) } +
+                    offenseIds.mapIndexed { index, id -> initialPokemon(id, BattleSide.OPPONENT, index) },
                 field = BattleFieldStateView.empty(),
-                remainingPokemonBySide = mapOf(BattleSide.ALLY to 3, BattleSide.OPPONENT to 3),
+                remainingPokemonBySide = BattleSide.entries.associateWith { definition.teamSize },
                 observedEvents = emptyList(),
                 inferences = emptyList(),
             )
@@ -254,12 +276,12 @@ internal object LocalTacticalScenarioBattle {
             return initial
         }
 
-        private fun initialPokemon(id: UUID, side: BattleSide, active: Boolean): BattlePokemonStateView {
+        private fun initialPokemon(id: UUID, side: BattleSide, index: Int): BattlePokemonStateView {
             val template = templates.getValue(id)
             return BattlePokemonStateView(
                 battlePokemonId = id,
                 side = side,
-                activeSlot = if (active) 0 else null,
+                activeSlot = index.takeIf { it < definition.activeSlots },
                 speciesId = template.speciesId,
                 formId = template.formId,
                 level = LEVEL,
@@ -302,11 +324,27 @@ internal object LocalTacticalScenarioBattle {
             return candidates.single { it.actionId == decision.actionId }
         }
 
+        /**
+         * Fills every empty slot on a side, one decision each.
+         *
+         * Singles only ever has one, so this used to ask "is anyone out?" and send a replacement to
+         * slot zero. Doubles can lose either slot, or both in the same turn, and each vacancy is its
+         * own choice - so the question is now per slot, and it repeats until the side is either full
+         * or out of bodies.
+         */
         private fun forceReplacement(side: BattleSide) {
-            val hasActive = state.pokemon.any {
+            repeat(definition.activeSlots) { forceOneReplacement(side) }
+        }
+
+        private fun forceOneReplacement(side: BattleSide) {
+            val occupied = state.pokemon.filter {
                 it.side == side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+            }.mapTo(mutableSetOf()) { it.activeSlot }
+            val emptySlot = (0 until definition.activeSlots).firstOrNull { it !in occupied } ?: return
+            val benched = state.pokemon.count {
+                it.side == side && it.activeSlot == null && !it.fainted && it.hpFraction > 0.0
             }
-            if (hasActive || living(side) == 0) return
+            if (benched == 0) return
             val view = perspective(side)
             val candidates = view.pokemon.filter {
                 it.side == BattleSide.ALLY && it.activeSlot == null && !it.fainted && it.hpFraction > 0.0
@@ -314,7 +352,7 @@ internal object LocalTacticalScenarioBattle {
                 BattleActionCandidate(
                     actionId = "forced:${target.battlePokemonId}",
                     kind = BattleActionKind.SWITCH,
-                    actorSlot = 0,
+                    actorSlot = emptySlot,
                     switchPokemonId = target.battlePokemonId,
                 )
             }
@@ -425,7 +463,26 @@ internal object LocalTacticalScenarioBattle {
             )
         }
 
+        /**
+         * Rewrites an action taken from a side's own perspective into the shared board's terms.
+         *
+         * Each brain decides on a view where it is always `ALLY`, so the opponent's targets point at
+         * the wrong side of the real board. In doubles the decision is a joint action, and its
+         * components carry the targets - so the composite has to be rebuilt around rewritten
+         * components rather than returned untouched, which is what happened before and would have
+         * sent every opposing attack into its own team.
+         */
         private fun toCanonical(action: BattleActionCandidate, side: BattleSide): BattleActionCandidate {
+            if (action.kind == BattleActionKind.COMPOSITE) {
+                val components = action.componentActions.map { toCanonical(it, side) }
+                return BattleActionCandidate(
+                    actionId = action.actionId,
+                    kind = BattleActionKind.COMPOSITE,
+                    componentActionIds = action.componentActionIds,
+                    componentActions = components,
+                    tags = action.tags,
+                )
+            }
             if (side == BattleSide.ALLY || action.kind !in setOf(BattleActionKind.USE_MOVE, BattleActionKind.SWITCH)) {
                 return action
             }
@@ -460,6 +517,12 @@ internal object LocalTacticalScenarioBattle {
             after: BattleStateView,
             outcome: PublicTurnProjection,
         ) {
+            // A joint action is not a thing that happened; its components are. The tallies and the
+            // memory are per action, so the composite is opened here rather than counted as one move.
+            if (action.kind == BattleActionKind.COMPOSITE) {
+                action.componentActions.forEach { acceptActual(side, it, before, after, outcome) }
+                return
+            }
             val executed = when (action.kind) {
                 BattleActionKind.USE_MOVE -> side in outcome.executedSides
                 BattleActionKind.SWITCH -> true
@@ -517,7 +580,10 @@ internal object LocalTacticalScenarioBattle {
             if (outcome.order.isNotEmpty()) {
                 parts += "order=" + outcome.order.joinToString(">") { if (it == BattleSide.ALLY) "cycle" else "offense" }
             }
-            listOf(BattleSide.ALLY to cycleAction, BattleSide.OPPONENT to offenseAction).forEach { (side, action) ->
+            listOf(BattleSide.ALLY to cycleAction, BattleSide.OPPONENT to offenseAction).flatMap { (side, action) ->
+                val taken = if (action.kind == BattleActionKind.COMPOSITE) action.componentActions else listOf(action)
+                taken.map { side to it }
+            }.forEach { (side, action) ->
                 if (action.kind == BattleActionKind.USE_MOVE) {
                     val actorId = before.pokemon.firstOrNull { it.side == side && it.activeSlot == action.actorSlot }?.battlePokemonId
                     if (actorId !in outcome.executedMoveIdsByPokemon) parts += "${sideLabel(side)}:${moveLabel(action.moveId)} 미실행"
@@ -546,6 +612,7 @@ internal object LocalTacticalScenarioBattle {
         }
 
         private fun actionLabel(action: BattleActionCandidate): String = when (action.kind) {
+            BattleActionKind.COMPOSITE -> action.componentActions.joinToString("+") { actionLabel(it) }
             BattleActionKind.USE_MOVE -> moveLabel(action.moveId)
             BattleActionKind.SWITCH -> "교체→${speciesLabel(templates.getValue(requireNotNull(action.switchPokemonId)).speciesId)}"
             BattleActionKind.WAIT -> "대기"
@@ -560,7 +627,7 @@ internal object LocalTacticalScenarioBattle {
 
         private fun openContext(side: BattleSide) = BattleBrainOpenContext(
             battleId = battleId,
-            format = BattleFormat.SINGLE,
+            format = definition.format,
             knowledgePolicy = BattleKnowledgePolicy.FAIR_INFERENCE,
             strategy = strategies.getValue(side),
             trainerProfile = profiles.getValue(side),
