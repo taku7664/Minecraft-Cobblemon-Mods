@@ -123,6 +123,29 @@ internal data class LocalDecisionTuning(
      * ever be greedy.
      */
     val turnOrderPessimismScale: Double = 0.0,
+    /**
+     * How much of a knockout's value depends on landing it before the reply.
+     *
+     * `actsFirstProbability` sat in the contract unfilled, so the root ranking had no notion of turn
+     * order at all and the whole subject lived inside the search - which at the lowest tier is one ply
+     * and discounted twice over. Filling the field is a bug fix. Spending it is a design change, and
+     * design changes here get measured before they ship.
+     *
+     * At 1.0 a knockout the trainer is certain to move second for is worth nothing, which is too
+     * strong: moving second and knocking out still wins the exchange whenever the reply does not kill.
+     * The value is a scale so the sweep can find where between the two the AI actually plays better.
+     *
+     * Zero ships, and the sweep is why. Every weight from 0.00 to 1.00 solves all three foresight
+     * positions and lands inside the noise when played out - 50.0%, 50.0%, 46.8%, 52.6%, 52.6% over 80
+     * battles each, against a zero-versus-zero control that returned exactly 50.0%. The harness was
+     * measuring the knob and the knob does nothing.
+     *
+     * That reads as a sound intuition already paid for. The search rolls the turn out, so it already
+     * sees that a knockout landed second can be answered and one landed first cannot. Pricing the same
+     * fact again in the ranking is double counting, and double counting a true thing still makes the
+     * numbers wrong. Filling `actsFirstProbability` was the fix; spending it here was not.
+     */
+    val firstStrikeWeight: Double = 0.0,
 
     // ---- damage ---------------------------------------------------------------------------------
     /**

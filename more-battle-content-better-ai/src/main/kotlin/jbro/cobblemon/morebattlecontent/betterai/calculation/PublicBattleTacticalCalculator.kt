@@ -1,9 +1,15 @@
 package jbro.cobblemon.morebattlecontent.betterai.calculation
 
 import jbro.cobblemon.morebattlecontent.api.ai.*
+import jbro.cobblemon.morebattlecontent.api.ai.BattleAbilityAvailability
+import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceConfidence
+import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceView
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalDeclaredMultiHit
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalFullHealthSurvivalRules
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalKnownStatMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicStatusImmunity
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveProjection
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.PublicSwitchEntryHazardCalculator
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.ShowdownStandardDamageProjection
@@ -53,7 +59,7 @@ internal object PublicBattleTacticalCalculator {
         val stab = actor?.knownTypeIds?.takeIf { it.isNotEmpty() }?.let { types ->
             if (types.any { it.equals(details.typeId, ignoreCase = true) }) 1.5 else 1.0
         }
-        val typeMultiplier = publicTypeMultiplier(details, target)
+        val typeMultiplier = publicTypeMultiplier(details, target, context)
         val mechanics = LocalPublicMechanicsKernel.projectMove(candidate, context, actingSide)
         declaredDamageRollFractions(candidate, actor, target, mechanics)?.let { return it }
         val projection =
@@ -181,14 +187,23 @@ internal object PublicBattleTacticalCalculator {
         val spreadMultiplier = if (targets.size > 1) SPREAD_DAMAGE_MULTIPLIER else 1.0
         val typeMultiplier = target?.knownTypeIds?.takeIf { it.isNotEmpty() }?.let {
             basis += BattleCalculationBasis.PUBLIC_TYPES
-            publicTypeMultiplier(details, target)
+            publicTypeMultiplier(details, target, context)
         }
         if (details.damageCategory != BattleMoveDamageCategory.STATUS) {
             unknowns += BattleCalculationUnknown.DYNAMIC_DAMAGE_MODIFIERS
             if (typeMultiplier == null) unknowns += BattleCalculationUnknown.TARGET_TYPES
         }
-        val projection =
+        val rawProjection =
             standardDamageProjection(candidate, details, actor, target, stab, typeMultiplier, spreadMultiplier)
+        // A Focus Sash or Sturdy at full health turns a knockout the rolls call guaranteed into a
+        // survivor on one health. The projector has always known that; the facts the ranking is built
+        // from did not, so the layer that decides was the one working from the wrong premise. A move
+        // that strikes more than once is unaffected - the second hit goes through whatever held the
+        // first.
+        val survivesOneHit = target != null &&
+            LocalDeclaredMultiHit.maximumCount(candidate) <= 1 &&
+            LocalFullHealthSurvivalRules.survivesAnySingleHit(context.state, target)
+        val projection = if (survivesOneHit) rawProjection?.withoutKnockout(target) else rawProjection
         if (details.damageCategory != BattleMoveDamageCategory.STATUS && projection == null) {
             if (actor?.combatStats == null) unknowns += BattleCalculationUnknown.ATTACKER_OFFENSIVE_STATS
             if (target?.combatStats == null) unknowns += BattleCalculationUnknown.OPPONENT_DEFENSIVE_STATS
@@ -218,12 +233,29 @@ internal object PublicBattleTacticalCalculator {
             baseAccuracyProbability = details.accuracy.div(100.0).coerceIn(0.0, 1.0),
             typeChartMultiplier = typeMultiplier,
             baseSameTypeAttackBonus = stab,
+            // The contract has always carried this field and nothing ever filled it, so the ranking
+            // had no notion of who moves first and the entire subject lived inside the search. At the
+            // lowest tier that search is one ply and discounted twice, which is precisely the trainer
+            // a player meets first. The opponent's priority is unknown, so this answers the question
+            // that can be answered honestly: how this move compares against an ordinary reply.
+            actsFirstProbability = LocalPublicTurnOrder.actsFirstProbability(
+                state = context.state,
+                actorSide = actingSide,
+                actorSlot = candidate.actorSlot,
+                actorPriority = details.priority,
+                opponentPriority = 0,
+            ),
             standardDamageModel = projection?.let { BattleStandardDamageModel.SHOWDOWN_GEN9_BASE_NON_CRITICAL },
             standardDamageFractionRange = projection?.damageFractionRange,
             standardDamageRollKoProbabilityRange = projection?.koProbabilityRange,
             standardKnockoutAssessment = projection?.knockoutAssessment,
             selfHealingFractionRange = declaredHeal?.fractionRange,
-            statusEffectProbability = declaredStatus?.probability?.times(details.accuracy / 100.0),
+            // The projector has always refused a status the target cannot take; the facts the root
+            // ranking is built from did not, so Toxic into a Steel type was priced as a normal play
+            // and only the search knew better. Same module, same answer, one place.
+            statusEffectProbability = declaredStatus
+                ?.takeIf { target == null || !LocalPublicStatusImmunity.blocked(context.state, target, it.valueId) }
+                ?.probability?.times(details.accuracy / 100.0),
             calculationCoverage = BattleCalculationCoverage.PARTIAL,
             unknowns = unknowns,
             basis = basis,
@@ -340,6 +372,7 @@ internal object PublicBattleTacticalCalculator {
     private fun publicTypeMultiplier(
         details: BattleMoveCandidateView,
         target: BattlePokemonStateView?,
+        context: BattleDecisionContext? = null,
     ): Double? {
         val types = target?.knownTypeIds?.takeIf { it.isNotEmpty() } ?: return null
         val ignoresImmunity = details.effects?.effects.orEmpty().any {
@@ -350,10 +383,50 @@ internal object PublicBattleTacticalCalculator {
         return StandardTypeEffectiveness.multiplierAgainst(
             attackingTypeId = details.typeId,
             defendingTypeIds = types,
-            defenderAbilityId = target.knownAbilityId,
+            defenderAbilityId = target.knownAbilityId
+                ?: context?.let { blockingOrdinaryAbility(details.typeId, target, it) },
             ignoreTypeImmunity = ignoresImmunity,
         )
     }
+
+    /**
+     * An immunity every ordinary member of the species has, treated as the fact it is.
+     *
+     * The chart honoured a defensive ability only once the battle had revealed it, which left the
+     * damage facts - the numbers the ranking is built on - reporting a clean hit into an absorber the
+     * species always has. Sap Sipper worked because it had been revealed; Earth Eater did not, so
+     * trainers threw Earthquake into an Orthworm and healed it, turn after turn.
+     *
+     * This does not guess at the individual. The species' ability pool is public data, and when every
+     * ordinary entry in it grants the same immunity there is nothing left to guess: the hidden ability
+     * is the exception, not the expectation, and no player treats it as one. A pool with two ordinary
+     * abilities where only one absorbs stays unresolved, because there the doubt is real.
+     */
+    private fun blockingOrdinaryAbility(
+        moveTypeId: String,
+        target: BattlePokemonStateView,
+        context: BattleDecisionContext,
+    ): String? {
+        val ordinary = context.state.inferences.asSequence()
+            .filter { it.subjectPokemonId == target.battlePokemonId && it.categoryId == ABILITY_CATEGORY }
+            .filter { it.confidence != BattleInferenceConfidence.RULED_OUT }
+            .filter { it.abilityAvailability != BattleAbilityAvailability.HIDDEN }
+            .mapNotNull(BattleInferenceView::candidateId)
+            .distinct()
+            .toList()
+        if (ordinary.isEmpty()) return null
+        val neutral = StandardTypeEffectiveness.multiplier(moveTypeId, target.knownTypeIds)
+        val allBlock = ordinary.all { ability ->
+            StandardTypeEffectiveness.multiplierAgainst(
+                attackingTypeId = moveTypeId,
+                defendingTypeIds = target.knownTypeIds,
+                defenderAbilityId = ability,
+            ) < neutral
+        }
+        return ordinary.first().takeIf { allBlock }
+    }
+
+    private const val ABILITY_CATEGORY = "ability"
 
     private fun isDelayedSlotDamage(details: BattleMoveCandidateView): Boolean =
         details.effects?.effects.orEmpty().any {

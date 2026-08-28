@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.betterai.mechanics
 
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDamageFractionRange
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFractionRange
 import jbro.cobblemon.morebattlecontent.api.ai.BattleIntegerRange
 import jbro.cobblemon.morebattlecontent.api.ai.BattleKnockoutAssessment
@@ -15,7 +16,32 @@ internal data class ShowdownStandardDamageProjectionResult(
     val damageFractionRange: BattleDamageFractionRange,
     val koProbabilityRange: BattleFractionRange,
     val knockoutAssessment: BattleKnockoutAssessment,
-)
+) {
+    /**
+     * The same hit against a defender that cannot be knocked out by it.
+     *
+     * Damage still lands - a Sash user drops to one health, not to none - so only the knockout half is
+     * rewritten. The reported fraction is capped at what actually leaves the defender alive, because a
+     * reader that trusted the raw number would still conclude the target is gone.
+     */
+    fun withoutKnockout(target: BattlePokemonStateView): ShowdownStandardDamageProjectionResult {
+        if (knockoutAssessment == BattleKnockoutAssessment.IMPOSSIBLE) return this
+        val survivingFraction = (target.hpFraction - oneHealthFraction(target)).coerceAtLeast(0.0)
+        return copy(
+            damageFractionRange = BattleDamageFractionRange(
+                minimum = minOf(damageFractionRange.minimum, survivingFraction),
+                maximum = minOf(damageFractionRange.maximum, survivingFraction),
+            ),
+            koProbabilityRange = BattleFractionRange(0.0, 0.0),
+            knockoutAssessment = BattleKnockoutAssessment.IMPOSSIBLE,
+        )
+    }
+
+    private fun oneHealthFraction(target: BattlePokemonStateView): Double {
+        val maximumHp = target.combatStats?.maxHp?.maximum?.takeIf { it > 0 } ?: return 0.0
+        return 1.0 / maximumHp
+    }
+}
 
 /**
  * Pure projection of the Gen 9 Showdown base single-target damage path.

@@ -118,11 +118,51 @@ internal object LocalDirectHitMechanics {
         }
 
         val hp = (target.hpFraction - incomingDamage).coerceAtLeast(0.0)
+        // A pinch berry fires the moment the hit lands, so it belongs here beside the Sash rather than
+        // with the end-of-turn residuals. It does not save anything from a knockout - it only triggers
+        // on a survivor - but it moves the health a second attack has to get through, and 394 of the
+        // battle tower's sets carry one. The AI holds them itself, where the item is never hidden, so
+        // this is mostly the trainer learning that it can afford the turn it was refusing to take.
+        val berryHealing = pinchBerryHealing(target, hp)
+        if (berryHealing > 0.0) {
+            val healed = (hp + berryHealing).coerceAtMost(1.0)
+            return TargetResolution(
+                pokemon = copyPokemon(target, hpFraction = healed, knownHeldItemId = null, fainted = false),
+                directDamageFraction = (target.hpFraction - healed).coerceAtLeast(0.0),
+            )
+        }
         return TargetResolution(
             pokemon = copyPokemon(target, hpFraction = hp, fainted = hp <= 0.0),
             directDamageFraction = incomingDamage,
         )
     }
+
+    /**
+     * What a revealed pinch berry restores, given the health the hit left behind.
+     *
+     * Nothing is restored to a fainted Pokemon, and nothing to one still above the threshold: the berry
+     * is a reaction to being brought low, not a passive heal. Only a revealed item counts, which for
+     * the opponent means one that has already been seen to fire.
+     */
+    private fun pinchBerryHealing(target: BattlePokemonStateView, healthAfterHit: Double): Double {
+        if (healthAfterHit <= 0.0) return 0.0
+        val fraction = PINCH_BERRY_HEALING[canonical(target.knownHeldItemId)] ?: return 0.0
+        if (target.hpFraction <= PINCH_BERRY_THRESHOLD) return 0.0
+        if (healthAfterHit > PINCH_BERRY_THRESHOLD) return 0.0
+        return fraction
+    }
+
+    /** Berries that restore health the moment it falls to half, by the share of maximum they give back. */
+    private val PINCH_BERRY_HEALING = mapOf(
+        "sitrusberry" to 0.25,
+        "oranberry" to 0.10,
+        "figyberry" to 1.0 / 3.0,
+        "wikiberry" to 1.0 / 3.0,
+        "magoberry" to 1.0 / 3.0,
+        "aguavberry" to 1.0 / 3.0,
+        "iapapaberry" to 1.0 / 3.0,
+    )
+    private const val PINCH_BERRY_THRESHOLD = 0.5
 
     private fun oneHpFraction(target: BattlePokemonStateView): Double {
         val maxHp = target.combatStats?.maxHp?.maximum?.coerceAtLeast(1) ?: return DEFAULT_ONE_HP_FRACTION

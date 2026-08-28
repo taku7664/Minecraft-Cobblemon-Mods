@@ -63,7 +63,13 @@ internal object LocalTacticalSituationalEvaluator {
                 ?: 0.0
             else -> return 0.0
         }
-        return tuning.knockoutMaterialScore * probability * accuracy
+        // A knockout landed before the reply is worth more than the same knockout landed after it: one
+        // ends the exchange, the other only wins the trade. `firstStrikeWeight` says how much of the
+        // knockout's value is conditional on getting there first, and it ships at zero until the
+        // measurement says otherwise.
+        val order = facts?.actsFirstProbability
+        val initiative = if (order == null) 1.0 else 1.0 - tuning.firstStrikeWeight * (1.0 - order)
+        return tuning.knockoutMaterialScore * probability * accuracy * initiative
     }
 
     /**

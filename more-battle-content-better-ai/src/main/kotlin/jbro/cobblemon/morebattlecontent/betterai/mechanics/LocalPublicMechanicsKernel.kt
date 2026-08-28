@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai.mechanics
 
+import jbro.cobblemon.morebattlecontent.api.ai.BattleAbilityAvailability
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
@@ -52,7 +53,8 @@ internal object LocalPublicMechanicsKernel {
 
         val abilityImmune = !ignoresAbility && (
             targetAbility in TYPE_IMMUNITY_ABILITIES[moveType].orEmpty() ||
-                targetAbility == WONDER_GUARD && publicTypeMultiplier?.let { it <= 1.0 } == true
+                targetAbility == WONDER_GUARD && publicTypeMultiplier?.let { it <= 1.0 } == true ||
+                ordinaryAbilitiesAllBlock(target, context, moveType)
             )
         if (abilityImmune) {
             return LocalPublicMoveProjection(
@@ -220,6 +222,39 @@ internal object LocalPublicMechanicsKernel {
         .mapNotNull { it.candidateId?.let(::canonical) }
         .distinct()
         .singleOrNull()
+
+    /**
+     * Whether every ordinary ability this species can have blocks the move type outright.
+     *
+     * The ability itself stays unknown until it is revealed - that part of the fair-information policy
+     * is untouched. What is public is the species' ability pool, and when every regular entry in it
+     * grants the same immunity, "this attack does nothing" is a fact about the species rather than a
+     * guess about the individual. A player reads it that way too: nobody aims Earthquake at an
+     * Orthworm and waits to find out.
+     *
+     * Only regular abilities count. A hidden ability is the exception rather than the expectation, so
+     * its presence in the pool must not be what makes the AI keep firing into an immunity - which is
+     * exactly what a strict "one candidate only" reading did. Orthworm's pool is Earth Eater plus a
+     * hidden one, so the single-candidate rule found two entries, concluded nothing, and let the
+     * trainer throw Ground moves into a Ground absorber turn after turn.
+     */
+    private fun ordinaryAbilitiesAllBlock(
+        target: BattlePokemonStateView,
+        context: BattleDecisionContext,
+        moveType: String,
+    ): Boolean {
+        if (target.knownAbilityId != null) return false
+        val blocking = TYPE_IMMUNITY_ABILITIES[moveType].orEmpty()
+        if (blocking.isEmpty()) return false
+        val ordinary = context.state.inferences.asSequence()
+            .filter { it.subjectPokemonId == target.battlePokemonId && it.categoryId == ABILITY_INFERENCE_CATEGORY }
+            .filter { it.confidence != BattleInferenceConfidence.RULED_OUT }
+            .filter { it.abilityAvailability != BattleAbilityAvailability.HIDDEN }
+            .mapNotNull { it.candidateId?.let(::canonical) }
+            .distinct()
+            .toList()
+        return ordinary.isNotEmpty() && ordinary.all { it in blocking }
+    }
 
     private fun canonicalOrNull(value: String?): String? = value?.let(::canonical)
 

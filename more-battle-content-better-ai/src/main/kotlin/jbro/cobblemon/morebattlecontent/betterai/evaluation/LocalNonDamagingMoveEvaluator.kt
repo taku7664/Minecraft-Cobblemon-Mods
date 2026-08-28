@@ -31,6 +31,7 @@ internal object LocalNonDamagingMoveEvaluator {
         } ?: 0.0
 
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()
+        if (LocalIdleUtilityMoveRules.isIdle(candidate, context)) return 0.0
         val selectedTarget = selectedTarget(candidate, context)
         val declaresMajorStatus = selectedTarget?.side == BattleSide.OPPONENT && effects.any {
             it.kind == BattleMoveEffectKind.STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET
