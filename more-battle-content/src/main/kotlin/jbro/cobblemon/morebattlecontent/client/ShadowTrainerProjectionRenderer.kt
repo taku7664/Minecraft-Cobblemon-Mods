@@ -47,7 +47,8 @@ internal object ShadowTrainerProjectionRenderer {
                 if (state.current() == null) clearCachedPlayer()
             }
         }
-        ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> clear() }
+        ClientPlayConnectionEvents.JOIN.register { _, _, client -> client.execute(::clear) }
+        ClientPlayConnectionEvents.DISCONNECT.register { _, client -> client.execute(::clear) }
         WorldRenderEvents.AFTER_ENTITIES.register(::render)
     }
 

@@ -52,6 +52,7 @@ internal object ShadowTerrainHologramRenderer {
         WorldRenderEvents.BEFORE_ENTITIES.register(::captureShaderPackTerrain)
         WorldRenderEvents.BEFORE_ENTITIES.register(::compositeTerrain)
         WorldRenderEvents.LAST.register(::prepareShaderPackComposite)
+        ClientPlayConnectionEvents.JOIN.register { _, _, client -> client.execute(::clear) }
         ClientPlayConnectionEvents.DISCONNECT.register { _, client -> client.execute(::clear) }
     }
 

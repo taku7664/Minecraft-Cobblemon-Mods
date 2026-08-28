@@ -44,7 +44,7 @@ internal object ShadowHologramFloorRenderer {
                 .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
                 .setCullState(RenderStateShard.NO_CULL)
                 .setDepthTestState(RenderStateShard.LEQUAL_DEPTH_TEST)
-                .setWriteMaskState(RenderStateShard.COLOR_WRITE)
+                .setWriteMaskState(RenderStateShard.COLOR_DEPTH_WRITE)
                 .createCompositeState(false),
         )
     }
