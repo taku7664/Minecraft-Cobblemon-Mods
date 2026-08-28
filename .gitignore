@@ -82,5 +82,13 @@ WIP-*.md
 *.swp
 *~
 
+# Local Better Cobblemon Music hand-off audio. Keep copyrighted media out of Git.
+better-cobblemon-music/music-input/**/*.ogg
+better-cobblemon-music/music-input/**/*.mp3
+better-cobblemon-music/music-input/**/*.wav
+better-cobblemon-music/music-input/**/*.flac
+better-cobblemon-music/music-input/**/*.m4a
+better-cobblemon-music/music-input/**/*.aac
+
 # Keep the Gradle wrapper JAR tracked.
 !gradle/wrapper/gradle-wrapper.jar

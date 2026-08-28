@@ -30,7 +30,7 @@ final class BetterCobblemonMusicModuleContractTest {
 
         assertNotNull(metadata, "the module fabric.mod.json must exist");
         assertEquals(
-            "Data-driven field and battle music for Cobblemon.",
+            "Data-driven field and battle music with battle hit audio for Cobblemon.",
             metadata.get("description").getAsString()
         );
         assertEquals("Better Cobblemon Music", metadata.get("name").getAsString());
@@ -38,6 +38,10 @@ final class BetterCobblemonMusicModuleContractTest {
         assertEquals(
             "jbro.cobblemon.bettermusic.BetterCobblemonMusicClient",
             metadata.getAsJsonObject("entrypoints").getAsJsonArray("client").get(0).getAsString()
+        );
+        assertEquals(
+            "better_cobblemon_music.mixins.json",
+            metadata.getAsJsonArray("mixins").get(0).getAsString()
         );
 
         var dependencies = metadata.getAsJsonObject("depends");
@@ -47,6 +51,10 @@ final class BetterCobblemonMusicModuleContractTest {
         assertFalse(dependencies.has("cobblemon_better_battle_presentation"));
         assertFalse(dependencies.has("mega_showdown"));
         assertFalse(dependencies.has("rctmod"));
+        assertEquals(
+            "*",
+            metadata.getAsJsonObject("suggests").get("cobblemon_more_battle_content").getAsString()
+        );
 
         var serialized = metadata.toString();
         assertFalse(serialized.contains("CobbleServer"));
@@ -54,5 +62,8 @@ final class BetterCobblemonMusicModuleContractTest {
         assertFalse(serialized.contains("kr.parkjh"));
 
         assertNotNull(Class.forName("jbro.cobblemon.bettermusic.BetterCobblemonMusicClient"));
+        assertNotNull(Class.forName(
+            "jbro.cobblemon.bettermusic.integration.mbc.MoreBattleContentIntegration"
+        ));
     }
 }

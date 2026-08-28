@@ -76,13 +76,119 @@
       ],
       "rival": "battle/rival/unova_rival_battle.ogg"
     },
-    "legendary": [
-      "battle/legendary/oras_dialga_palkia_battle.ogg",
-      "battle/legendary/oras_reshiram_zekrom_battle.ogg",
-      "battle/legendary/za_darkrai_battle.ogg"
-    ],
-    "ultraBeast": "battle/ultra_beast/alola_ultra_beast_battle.ogg",
+    "legendary": "battle/legendary/generic_legendary_battle.ogg",
+    "ultraBeast": "battle/ultra_beast/sm_ultra_beast_battle.ogg",
     "pokemon": [
+      {
+        "species": ["articuno#galarian", "zapdos#galarian", "moltres#galarian"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/swsh_galarian_legendary_birds_battle.ogg"]
+      },
+      {
+        "species": ["groudon#primal", "kyogre#primal"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/oras_primal_reversion_battle.ogg"]
+      },
+      {
+        "species": ["dialga#origin", "palkia#origin"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/pla_origin_dialga_palkia_battle.ogg"]
+      },
+      {
+        "species": ["giratina#origin"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/pla_origin_giratina_battle.ogg"]
+      },
+      {
+        "species": ["kyurem#black", "kyurem#white"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/b2w2_black_white_kyurem_battle.ogg"]
+      },
+      {
+        "species": ["necrozma#dusk-mane", "necrozma#dawn-wings"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/usum_dusk_mane_dawn_wings_necrozma_battle.ogg"]
+      },
+      {
+        "species": ["necrozma#ultra"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/usum_ultra_necrozma_battle.ogg"]
+      },
+      {
+        "species": ["calyrex#ice-rider", "calyrex#shadow-rider"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/swsh_king_of_bountiful_harvests_battle.ogg"]
+      },
+      {
+        "species": ["terapagos#stellar"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/sv_stellar_terapagos_battle.ogg"]
+      },
+      {
+        "species": ["articuno", "zapdos", "moltres"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/frlg_legendary_pokemon_battle.ogg"]
+      },
+      {
+        "species": ["mewtwo"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/frlg_mewtwo_battle.ogg"]
+      },
+      {
+        "species": ["mew"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/emerald_mew_battle.ogg"]
+      },
+      {
+        "species": ["celebi"],
+        "only": ["wild"],
+        "tracks": ["battle/wild/johto_wild_pokemon_battle.ogg"]
+      },
+      {
+        "species": ["raikou"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/hgss_raikou_battle.ogg"]
+      },
+      {
+        "species": ["entei"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/hgss_entei_battle.ogg"]
+      },
+      {
+        "species": ["suicune"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/hgss_suicune_battle.ogg"]
+      },
+      {
+        "species": ["lugia"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/hgss_lugia_battle.ogg"]
+      },
+      {
+        "species": ["hooh"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/hgss_ho-oh_battle.ogg"]
+      },
+      {
+        "species": ["groudon", "kyogre", "rayquaza"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/rse_super_ancient_pokemon_battle.ogg"]
+      },
+      {
+        "species": ["regirock", "regice", "registeel"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/rse_regirock_regice_registeel_battle.ogg"]
+      },
+      {
+        "species": ["latias", "latios", "jirachi"],
+        "only": ["wild"],
+        "tracks": ["battle/wild/hoenn_wild_pokemon_battle.ogg"]
+      },
+      {
+        "species": ["deoxys"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/frlg_deoxys_battle.ogg"]
+      },
       {
         "species": ["arceus"],
         "only": ["wild"],
@@ -94,65 +200,119 @@
         "tracks": ["battle/legendary/dppt_azelf_mesprit_uxie_battle.ogg"]
       },
       {
+        "species": ["dialga", "palkia"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/dppt_dialga_palkia_battle.ogg"]
+      },
+      {
         "species": ["giratina"],
         "only": ["wild"],
         "tracks": ["battle/legendary/dppt_giratina_battle.ogg"]
       },
       {
-        "species": ["deoxys"],
+        "species": ["heatran", "regigigas", "darkrai", "shaymin"],
         "only": ["wild"],
-        "tracks": ["battle/legendary/frlg_deoxys_battle_music.ogg"]
+        "tracks": ["battle/legendary/dppt_legendary_pokemon_battle.ogg"]
       },
       {
-        "species": ["entei"],
+        "species": ["cresselia", "manaphy", "phione"],
         "only": ["wild"],
-        "tracks": ["battle/legendary/hgss_entei_battle.ogg"]
+        "tracks": ["battle/wild/sinnoh_wild_pokemon_battle.ogg"]
       },
       {
-        "species": ["hooh"],
+        "species": ["reshiram"],
         "only": ["wild"],
-        "tracks": ["battle/legendary/hgss_ho-oh_battle.ogg"]
+        "tracks": ["battle/legendary/bw_reshiram_battle.ogg"]
       },
       {
-        "species": ["lugia"],
+        "species": ["zekrom"],
         "only": ["wild"],
-        "tracks": ["battle/legendary/hgss_lugia_battle.ogg"]
+        "tracks": ["battle/legendary/bw_zekrom_battle.ogg"]
       },
       {
-        "species": ["suicune"],
+        "species": ["kyurem"],
         "only": ["wild"],
-        "tracks": ["battle/legendary/hgss_suicune_battle.ogg"]
+        "tracks": ["battle/legendary/bw_kyurem_battle.ogg"]
       },
       {
-        "species": ["dialga", "palkia"],
+        "species": ["victini", "cobalion", "terrakion", "virizion", "tornadus", "thundurus", "landorus", "keldeo", "meloetta", "genesect"],
         "only": ["wild"],
-        "tracks": ["battle/legendary/oras_dialga_palkia_battle.ogg"]
+        "tracks": ["battle/legendary/bw_legendary_pokemon_battle.ogg"]
       },
       {
-        "species": ["groudon", "kyogre"],
+        "species": ["xerneas", "yveltal", "zygarde", "diancie", "hoopa", "volcanion"],
         "only": ["wild"],
-        "tracks": [
-          "battle/legendary/oras_groudon_kyogre_battle.ogg",
-          "battle/legendary/rse_groudon_kyogre_battle.ogg"
-        ]
+        "tracks": ["battle/legendary/xy_xerneas_yveltal_zygarde_battle.ogg"]
       },
       {
-        "species": ["regirock", "regice", "registeel"],
+        "species": ["solgaleo", "lunala", "necrozma", "cosmog", "cosmoem", "magearna", "marshadow", "zeraora", "typenull", "silvally"],
         "only": ["wild"],
-        "tracks": [
-          "battle/legendary/oras_regirock_regice_registeel_battle.ogg",
-          "battle/legendary/rse_regirock_regice_registeel_battle.ogg"
-        ]
+        "tracks": ["battle/legendary/sm_solgaleo_lunala_necrozma_battle.ogg"]
       },
       {
-        "species": ["reshiram", "zekrom"],
+        "species": ["tapukoko", "tapulele", "tapubulu", "tapufini"],
         "only": ["wild"],
-        "tracks": ["battle/legendary/oras_reshiram_zekrom_battle.ogg"]
+        "tracks": ["battle/legendary/sm_tapu_battle.ogg"]
       },
       {
-        "species": ["darkrai"],
+        "species": ["zacian", "zamazenta"],
         "only": ["wild"],
-        "tracks": ["battle/legendary/za_darkrai_battle.ogg"]
+        "tracks": ["battle/legendary/swsh_zacian_zamazenta_battle.ogg"]
+      },
+      {
+        "species": ["eternatus"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/swsh_eternatus_battle.ogg"]
+      },
+      {
+        "species": ["regieleki", "regidrago"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/swsh_legendary_giants_battle.ogg"]
+      },
+      {
+        "species": ["calyrex"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/swsh_calyrex_battle.ogg"]
+      },
+      {
+        "species": ["glastrier", "spectrier"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/swsh_glastrier_spectrier_battle.ogg"]
+      },
+      {
+        "species": ["kubfu", "urshifu", "zarude"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/generic_legendary_battle.ogg"]
+      },
+      {
+        "species": ["koraidon", "miraidon"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/sv_koraidon_miraidon_battle.ogg"]
+      },
+      {
+        "species": ["wochien", "chienpao", "tinglu", "chiyu"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/sv_treasures_of_ruin_battle.ogg"]
+      },
+      {
+        "species": ["okidogi", "munkidori", "fezandipiti"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/sv_loyal_three_battle.ogg"]
+      },
+      {
+        "species": ["ogerpon"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/sv_ogerpon_battle.ogg"]
+      },
+      {
+        "species": ["terapagos"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/sv_terapagos_battle.ogg"]
+      },
+      {
+        "species": ["pecharunt"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/sv_pecharunt_battle.ogg"]
       }
     ]
   }

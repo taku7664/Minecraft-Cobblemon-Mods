@@ -20,7 +20,7 @@ final class DefaultConfigResourcesTest {
         assertEquals(1.0, config.playback().fadeOutSeconds());
         assertEquals(3, config.field().dimensions().size());
         assertEquals(15, config.field().biomePathContains().size());
-        assertEquals(13, config.battle().pokemon().size());
+        assertEquals(47, config.battle().pokemon().size());
     }
 
     @Test

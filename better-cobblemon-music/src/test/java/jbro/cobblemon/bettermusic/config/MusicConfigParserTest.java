@@ -210,6 +210,23 @@ final class MusicConfigParserTest {
     }
 
     @Test
+    void acceptsFormQualifiedPokemonRules() {
+        var config = MusicConfigParser.parse(new StringReader(
+            minimalConfig("\"field/plains.ogg\"").replace(
+                "\"pokemon\": []",
+                "\"pokemon\": [{\"species\":[\"articuno#galarian\","
+                    + "\"cobblemon:necrozma#dusk-mane\"],"
+                    + "\"tracks\":[\"battle/forms.ogg\"]}]"
+            )
+        ));
+
+        assertEquals(
+            Set.of("cobblemon:articuno#galarian", "cobblemon:necrozma#dusk-mane"),
+            config.battle().pokemon().getFirst().species()
+        );
+    }
+
+    @Test
     void contentPlaylistKeysMustBeNamespacedIds() {
         var exception = assertThrows(ConfigValidationException.class, () ->
             MusicConfigParser.parse(new StringReader(

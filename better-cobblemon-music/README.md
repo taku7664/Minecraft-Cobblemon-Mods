@@ -1,6 +1,8 @@
 # Better Cobblemon Music
 
-Cobblemon의 필드와 전투 음악을 사용자가 직접 바꿀 수 있는 클라이언트 모드입니다.
+Cobblemon의 필드와 전투 음악을 사용자가 직접 바꿀 수 있는 클라이언트 모드입니다. 기술이 명중하면 보통·굉장한 효과·별로인 효과에 맞는 타격음도 재생합니다.
+
+타격음은 `cobleserver:battle.hit.normal`, `cobleserver:battle.hit.super_effective`, `cobleserver:battle.hit.not_very_effective` 사운드 이벤트를 사용하므로, 해당 이벤트와 OGG가 든 리소스팩이 활성화돼 있어야 합니다.
 
 - Mod ID: `better_cobblemon_music`
 - 실행 환경: 클라이언트 전용
@@ -85,13 +87,13 @@ config/better_cobblemon_music/
 
 ## More Battle Content 연동
 
-선택형 `better-cobblemon-music-more-battle-content` 애드온을 함께 설치하면 `battle.content`에서 다음 ID를 사용할 수 있습니다.
+More Battle Content가 설치돼 있으면 Better Cobblemon Music 본체가 자동으로 감지합니다. 별도 애드온 없이 `battle.content`에서 다음 ID를 사용할 수 있습니다.
 
 - `cobblemon_more_battle_content:battle_tower`
 - `cobblemon_more_battle_content:battle_factory`
 - `cobblemon_more_battle_content:pvp`
 
-음원과 설정은 애드온별로 복제하지 않고 Better Cobblemon Music의 `music.json`과 `music/` 하나를 함께 사용합니다.
+음원과 설정은 Better Cobblemon Music의 `music.json`과 `music/`을 그대로 사용합니다. MBC가 없거나 연동 API를 읽지 못하면 기본 전투 선곡으로 돌아갑니다.
 
 ## 빌드
 

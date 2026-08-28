@@ -2,8 +2,6 @@ package jbro.cobblemon.bettermusic.client;
 
 import java.util.HashSet;
 import java.util.HashMap;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -17,6 +15,7 @@ import jbro.cobblemon.bettermusic.playback.FadingMusicPlayer;
 import jbro.cobblemon.bettermusic.playback.MusicFileSoundIds;
 import jbro.cobblemon.bettermusic.playback.MusicPlaybackCoordinator;
 import jbro.cobblemon.bettermusic.playback.PlaylistNavigator;
+import jbro.cobblemon.bettermusic.playback.PlayablePlaylistResolver;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
@@ -30,6 +29,7 @@ public final class BetterMusicClientRuntime {
     private final Cobblemon173BattleMusicSampler battleSampler;
     private final Set<String> reportedUnavailableTracks = new HashSet<>();
     private final Map<String, PlaylistDefinition> playlistsById = new HashMap<>();
+    private final Map<String, String> fallbackPlaylistIds = new HashMap<>();
     private final PlaylistNavigator playlistNavigator = new PlaylistNavigator(ThreadLocalRandom.current());
 
     private BetterMusicConfigSnapshot snapshot;
@@ -93,6 +93,7 @@ public final class BetterMusicClientRuntime {
         fieldResolver = new FieldPlaylistResolver(latest.field());
         battleResolver = new BattlePlaylistResolver(latest.battle());
         playlistsById.clear();
+        fallbackPlaylistIds.clear();
         playlistNavigator.reset();
         reportedUnavailableTracks.clear();
         nextScanSeconds = nowSeconds;
@@ -125,6 +126,10 @@ public final class BetterMusicClientRuntime {
             .map(battleResolver::select)
             .map(selection -> {
                 playlistsById.put(selection.id(), selection.playlist());
+                selection.fallback().ifPresent(fallback -> {
+                    playlistsById.put(fallback.id(), fallback.playlist());
+                    fallbackPlaylistIds.put(selection.id(), fallback.id());
+                });
                 return selection.id();
             });
         var input = new MusicPlaybackCoordinator.Input(fieldCue, battleCue.isPresent(), battleCue);
@@ -157,35 +162,31 @@ public final class BetterMusicClientRuntime {
     }
 
     private Optional<FadingMusicPlayer.TrackSource> playableSource(String playlistId) {
-        PlaylistDefinition playlist = playlistsById.get(playlistId);
-        if (playlist == null) {
+        if (!playlistsById.containsKey(playlistId)) {
             logger.warn("Music playlist '{}' was selected but is no longer configured", playlistId);
             return Optional.empty();
         }
 
-        List<String> playableTracks = new ArrayList<>();
-        for (String track : playlist.tracks()) {
-            String sound = MusicFileSoundIds.soundEvent(track);
-            if (backend.isSoundAvailable(sound)) {
-                playableTracks.add(track);
-            } else if (reportedUnavailableTracks.add(track)) {
-                logger.warn("Music file '{}' is unavailable in the generated resource pack", track);
+        Optional<PlayablePlaylistResolver.ResolvedPlaylist> resolved = PlayablePlaylistResolver.resolve(
+            playlistId,
+            playlistsById,
+            fallbackPlaylistIds,
+            track -> backend.isSoundAvailable(MusicFileSoundIds.soundEvent(track)),
+            track -> {
+                if (reportedUnavailableTracks.add(track)) {
+                    logger.warn("Music file '{}' is unavailable in the generated resource pack", track);
+                }
             }
-        }
-        if (playableTracks.isEmpty()) {
+        );
+        if (resolved.isEmpty()) {
             return Optional.empty();
         }
-
-        PlaylistDefinition playable = new PlaylistDefinition(
-            playlist.selection(),
-            playlist.volume(),
-            playlist.betweenTracksSeconds(),
-            playableTracks
-        );
+        String resolvedId = resolved.orElseThrow().id();
+        PlaylistDefinition playable = resolved.orElseThrow().playlist();
         return Optional.of(new FadingMusicPlayer.TrackSource() {
             @Override
             public FadingMusicPlayer.Track nextTrack() {
-                String track = playlistNavigator.next(playlistId, playable);
+                String track = playlistNavigator.next(resolvedId, playable);
                 return new FadingMusicPlayer.Track(MusicFileSoundIds.soundEvent(track), playable.volume());
             }
 

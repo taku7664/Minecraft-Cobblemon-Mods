@@ -353,13 +353,22 @@ public final class MusicConfigParser {
         for (int index = 0; index < array.size(); index++) {
             String itemPath = path + "[" + index + "]";
             String value = stringElement(array.get(index), itemPath);
+            String[] selector = value.split("#", -1);
+            if (selector.length > 2
+                || (selector.length == 2 && !BARE_SPECIES.matcher(selector[1]).matches())) {
+                throw error(itemPath, "must use an optional lowercase #form suffix");
+            }
+            String species = selector[0];
             String normalized;
-            if (BARE_SPECIES.matcher(value).matches()) {
-                normalized = "cobblemon:" + value;
-            } else if (RESOURCE_ID.matcher(value).matches()) {
-                normalized = value;
+            if (BARE_SPECIES.matcher(species).matches()) {
+                normalized = "cobblemon:" + species;
+            } else if (RESOURCE_ID.matcher(species).matches()) {
+                normalized = species;
             } else {
                 throw error(itemPath, "must be a Cobblemon species name or namespaced species id");
+            }
+            if (selector.length == 2) {
+                normalized += "#" + selector[1];
             }
             if (!result.add(normalized)) {
                 throw error(itemPath, "duplicate species '" + normalized + "'");

@@ -9,6 +9,7 @@ import com.cobblemon.mod.common.client.battle.ClientBattleSide;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import jbro.cobblemon.bettermusic.battle.BattleMusicContext;
@@ -103,7 +104,10 @@ public final class Cobblemon173BattleMusicSampler {
         if (pokemonSpecies == null) {
             return;
         }
-        species.add(pokemonSpecies.getResourceIdentifier().toString());
+        String speciesId = pokemonSpecies.getResourceIdentifier().toString();
+        var properties = battlePokemon.getProperties();
+        String form = properties == null ? null : properties.getForm();
+        species.addAll(battleMusicSpeciesKeys(speciesId, form));
         if (type != BattleMusicConfig.BattleType.WILD) {
             return;
         }
@@ -114,6 +118,16 @@ public final class Cobblemon173BattleMusicSampler {
         if (speciesLabels.contains("legendary") || speciesLabels.contains("mythical")) {
             labels.add(BattleMusicContext.Label.LEGENDARY);
         }
+    }
+
+    static List<String> battleMusicSpeciesKeys(String speciesId, String form) {
+        if (form == null || form.isBlank()) {
+            return List.of(speciesId);
+        }
+        String normalizedForm = form.strip()
+            .toLowerCase(Locale.ROOT)
+            .replace(' ', '-');
+        return List.of(speciesId + "#" + normalizedForm, speciesId);
     }
 
     private static BattleOpponentSideSelector.ActorKind actorKind(ClientBattleActor actor) {

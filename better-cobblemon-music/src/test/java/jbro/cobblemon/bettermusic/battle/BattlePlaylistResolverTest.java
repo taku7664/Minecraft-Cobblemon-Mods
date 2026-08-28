@@ -74,6 +74,61 @@ final class BattlePlaylistResolverTest {
         ).id());
     }
 
+    @Test
+    void formQualifiedRuleWinsBeforeItsBaseSpeciesRule() {
+        BattleMusicConfig base = config();
+        var resolver = new BattlePlaylistResolver(new BattleMusicConfig(
+            base.wild(), base.trainer(), base.pvp(), base.content(), base.roles(),
+            base.legendary(), base.ultraBeast(),
+            List.of(
+                new BattleMusicConfig.PokemonRule(
+                    Set.of("cobblemon:necrozma#ultra"),
+                    Set.of(BattleMusicConfig.BattleType.WILD),
+                    playlist("ultra_necrozma")
+                ),
+                new BattleMusicConfig.PokemonRule(
+                    Set.of("cobblemon:necrozma"),
+                    Set.of(BattleMusicConfig.BattleType.WILD),
+                    playlist("base_necrozma")
+                )
+            )
+        ));
+
+        var selection = resolver.select(new BattleMusicContext(
+            BattleMusicConfig.BattleType.WILD,
+            Set.of("cobblemon:necrozma#ultra", "cobblemon:necrozma"),
+            Set.of(),
+            Set.of(BattleMusicContext.Label.LEGENDARY)
+        ));
+
+        assertEquals("battle.pokemon:0", selection.id());
+        assertEquals(List.of("ultra_necrozma.ogg"), selection.playlist().tracks());
+    }
+
+    @Test
+    void specializedBattleSelectionsCarryTheirBattleTypeDefaultAsFallback() {
+        var resolver = new BattlePlaylistResolver(config());
+
+        var pokemon = resolver.select(new BattleMusicContext(
+            BattleMusicConfig.BattleType.WILD,
+            Set.of("cobblemon:groudon"),
+            Set.of(),
+            Set.of(BattleMusicContext.Label.LEGENDARY)
+        ));
+        assertEquals("battle.wild", pokemon.fallback().orElseThrow().id());
+
+        var legendary = resolver.select(wildContext(BattleMusicContext.Label.LEGENDARY));
+        assertEquals("battle.wild", legendary.fallback().orElseThrow().id());
+
+        var champion = resolver.select(context(Set.of("champion")));
+        assertEquals("battle.trainer", champion.fallback().orElseThrow().id());
+
+        var ordinaryWild = resolver.select(new BattleMusicContext(
+            BattleMusicConfig.BattleType.WILD, Set.of(), Set.of(), Set.of()
+        ));
+        assertEquals(Optional.empty(), ordinaryWild.fallback());
+    }
+
     private static BattleMusicContext context(Set<String> roles) {
         return new BattleMusicContext(BattleMusicConfig.BattleType.TRAINER, Set.of(), roles, Set.of());
     }

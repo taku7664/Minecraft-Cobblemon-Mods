@@ -3,7 +3,7 @@
   "id": "better_cobblemon_music",
   "version": "${version}",
   "name": "Better Cobblemon Music",
-  "description": "Data-driven field and battle music for Cobblemon.",
+  "description": "Data-driven field and battle music with battle hit audio for Cobblemon.",
   "authors": ["jbro"],
   "license": "MIT",
   "environment": "client",
@@ -12,11 +12,17 @@
       "jbro.cobblemon.bettermusic.BetterCobblemonMusicClient"
     ]
   },
+  "mixins": [
+    "better_cobblemon_music.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.19.3",
     "fabric-api": "*",
     "minecraft": "~1.21.1",
     "java": ">=21",
     "cobblemon": "1.7.3"
+  },
+  "suggests": {
+    "cobblemon_more_battle_content": "*"
   }
 }

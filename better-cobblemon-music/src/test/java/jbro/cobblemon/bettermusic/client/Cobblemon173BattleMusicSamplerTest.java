@@ -1,6 +1,7 @@
 package jbro.cobblemon.bettermusic.client;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.LinkedHashSet;
@@ -23,5 +24,20 @@ final class Cobblemon173BattleMusicSamplerTest {
 
         assertTrue(species.isEmpty());
         assertTrue(labels.isEmpty());
+    }
+
+    @Test
+    void producesBaseAndFormQualifiedKeysWithoutAssumingAFormExists() {
+        assertEquals(
+            java.util.List.of("cobblemon:necrozma#dusk-mane", "cobblemon:necrozma"),
+            Cobblemon173BattleMusicSampler.battleMusicSpeciesKeys(
+                "cobblemon:necrozma",
+                "Dusk-Mane"
+            )
+        );
+        assertEquals(
+            java.util.List.of("cobblemon:articuno"),
+            Cobblemon173BattleMusicSampler.battleMusicSpeciesKeys("cobblemon:articuno", null)
+        );
     }
 }

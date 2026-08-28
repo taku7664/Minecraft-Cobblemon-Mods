@@ -8,7 +8,6 @@ pluginManagement {
 rootProject.name = "Cobblemon Mods"
 
 include(
-    "better-cobblemon-music-more-battle-content",
     "better-cobblemon-music",
     "better-battle-presentation",
     "cobblemon-custom-species",
