@@ -32,6 +32,8 @@ internal object ShadowTerrainHologramRenderer {
     private var finalSceneTarget: TextureTarget? = null
     private var backgroundCaptured = false
     private var shaderPackTerrainCaptured = false
+    private var pendingShaderPackContext: WorldRenderContext? = null
+    private var loggedLateShaderPackComposite = false
     private var warned = false
 
     fun register() {
@@ -44,11 +46,12 @@ internal object ShadowTerrainHologramRenderer {
         WorldRenderEvents.START.register {
             backgroundCaptured = false
             shaderPackTerrainCaptured = false
+            pendingShaderPackContext = null
         }
         WorldRenderEvents.AFTER_SETUP.register(::captureBackground)
         WorldRenderEvents.BEFORE_ENTITIES.register(::captureShaderPackTerrain)
         WorldRenderEvents.BEFORE_ENTITIES.register(::compositeTerrain)
-        WorldRenderEvents.LAST.register(::compositeShaderPackTerrain)
+        WorldRenderEvents.LAST.register(::prepareShaderPackComposite)
         ClientPlayConnectionEvents.DISCONNECT.register { _, client -> client.execute(::clear) }
     }
 
@@ -64,6 +67,7 @@ internal object ShadowTerrainHologramRenderer {
         transition.clear()
         backgroundCaptured = false
         shaderPackTerrainCaptured = false
+        pendingShaderPackContext = null
         destroyTargets()
     }
 
@@ -140,10 +144,38 @@ internal object ShadowTerrainHologramRenderer {
                 val finalScene = finalSceneTarget ?: return@preserveFramebufferBindings
                 copyFramebuffer(active, finalScene, GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT)
                 drawComposite(context, snapshot, active, finalScene, finalScene, terrain, true, shader)
+                if (!loggedLateShaderPackComposite) {
+                    loggedLateShaderPackComposite = true
+                    MoreBattleContent.LOGGER.info(
+                        "Composited MBC terrain hologram after external shader finalization ({}x{}, framebuffer {})",
+                        active.width,
+                        active.height,
+                        active.drawFramebuffer,
+                    )
+                }
             }
         } catch (exception: RuntimeException) {
             warnOnce("Failed to composite the shader-pack terrain hologram", exception)
         }
+    }
+
+    private fun prepareShaderPackComposite(context: WorldRenderContext) {
+        pendingShaderPackContext = if (
+            ExternalShaderPackState.isInUse() && shaderPackTerrainCaptured &&
+            transition.snapshot(System.nanoTime()) != null
+        ) {
+            context
+        } else {
+            null
+        }
+    }
+
+    /** Called by a low-priority renderLevel RETURN mixin after Iris finalizes its external pipeline. */
+    @JvmStatic
+    fun compositeAfterExternalShaderPack() {
+        val context = pendingShaderPackContext ?: return
+        pendingShaderPackContext = null
+        compositeShaderPackTerrain(context)
     }
 
     private fun drawComposite(

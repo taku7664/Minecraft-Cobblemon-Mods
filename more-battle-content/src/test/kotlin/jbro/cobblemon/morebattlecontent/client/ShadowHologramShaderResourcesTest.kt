@@ -62,6 +62,7 @@ class ShadowHologramShaderResourcesTest {
                 "client.BattleGuiPvpSpectatorMixin",
                 "client.BattleMoveSelectionMixin",
                 "client.PartySendBindingPvpSpectatorMixin",
+                "client.LevelRendererLateHologramMixin",
                 "client.ScreenPvpInviteClickMixin",
                 "client.RenderTypeCompositeAccessor",
                 "client.RenderTypeCompositeStateAccessor",

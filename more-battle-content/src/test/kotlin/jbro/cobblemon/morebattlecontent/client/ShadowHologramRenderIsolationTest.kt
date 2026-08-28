@@ -54,11 +54,22 @@ class ShadowHologramRenderIsolationTest {
         val renderer = Files.readString(
             Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client/ShadowTerrainHologramRenderer.kt"),
         )
+        val mixins = Files.readString(Path.of("src/main/resources/cobblemon_more_battle_content.mixins.json"))
+        val lateMixin = Path.of(
+            "src/main/java/jbro/cobblemon/morebattlecontent/internal/mixin/client/" +
+                "LevelRendererLateHologramMixin.java",
+        )
 
-        assertTrue(renderer.contains("WorldRenderEvents.LAST.register(::compositeShaderPackTerrain)"))
+        assertTrue(renderer.contains("WorldRenderEvents.LAST.register(::prepareShaderPackComposite)"))
         assertTrue(renderer.contains("if (ExternalShaderPackState.isInUse()) return"))
         assertTrue(renderer.contains("FinalSceneSampler"))
         assertTrue(renderer.contains("FinalDepthSampler"))
+        assertTrue(mixins.contains("client.LevelRendererLateHologramMixin"))
+        assertTrue(Files.exists(lateMixin))
+        val lateMixinSource = Files.readString(lateMixin)
+        assertTrue(lateMixinSource.contains("priority = 900"))
+        assertTrue(lateMixinSource.contains("@At(\"RETURN\")"))
+        assertTrue(lateMixinSource.contains("compositeAfterExternalShaderPack"))
     }
 
     @Test
