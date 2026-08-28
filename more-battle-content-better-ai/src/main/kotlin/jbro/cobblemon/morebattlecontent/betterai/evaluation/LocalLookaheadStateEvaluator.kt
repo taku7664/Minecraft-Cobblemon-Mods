@@ -3,7 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai.evaluation
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicFutureActionFactory
-import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalKnownStatMechanics
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalSwitchStateProjector
@@ -147,29 +147,19 @@ internal object LocalLookaheadStateEvaluator {
         -> 0.0
     }
 
+    /**
+     * The side's public Speed range, widened over every active slot.
+     *
+     * The per-Pokemon arithmetic - stage, paralysis, Tailwind, a revealed Choice Scarf - used to be
+     * written out here as well as in [LocalPublicTurnOrder], two copies of the same answer to the
+     * same question. They agreed today, which is exactly why the duplication was dangerous: the next
+     * Speed rule added to one of them would silently miss the other, and nothing would fail. One
+     * implementation, two callers.
+     */
     private fun activeSpeed(state: BattleStateView, side: BattleSide): Pair<Int, Int>? {
-        val tailwindMultiplier = if (state.field.sideConditions.getValue(side).any {
-                val remainingTurns = it.remainingTurns
-                canonicalId(it.effectId) == "tailwind" && (remainingTurns == null || remainingTurns > 0)
-            }
-        ) {
-            2.0
-        } else {
-            1.0
-        }
         val ranges = state.pokemon.filter {
             it.side == side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
-        }.map { pokemon ->
-            val range = pokemon.combatStats?.speed
-                ?.let { LocalKnownStatMechanics.speed(it, pokemon) } ?: return null
-            val stage = pokemon.statStages.entries.firstOrNull {
-                canonicalStat(it.key) in SPEED_ALIASES
-            }?.value?.coerceIn(-6, 6) ?: 0
-            val statusMultiplier = if (canonicalId(pokemon.statusId) in PARALYSIS_IDS) 0.5 else 1.0
-            val multiplier = statusMultiplier * tailwindMultiplier
-            (applyStage(range.minimum, stage) * multiplier).toInt().coerceAtLeast(1) to
-                (applyStage(range.maximum, stage) * multiplier).toInt().coerceAtLeast(1)
-        }
+        }.map { pokemon -> LocalPublicTurnOrder.effectiveSpeed(state, pokemon) ?: return null }
         if (ranges.isEmpty()) return null
         return ranges.minOf { it.first } to ranges.maxOf { it.second }
     }
@@ -191,18 +181,9 @@ internal object LocalLookaheadStateEvaluator {
         state.remainingPokemonBySide.getValue(side) <= 0
     }
 
-    private fun applyStage(value: Int, stage: Int): Int = if (stage >= 0) {
-        value * (2 + stage) / 2
-    } else {
-        value * 2 / (2 - stage)
-    }.coerceAtLeast(1)
-
-    private fun canonicalStat(stat: String): String = stat.substringAfter(':').lowercase().filter { it.isLetterOrDigit() }
     private fun canonicalId(id: String?): String? = id?.substringAfter(':')?.lowercase()?.filter { it.isLetterOrDigit() }
 
     private const val LIVING_POKEMON_VALUE = 2.0
-    private val SPEED_ALIASES = setOf("speed", "spe")
-    private val PARALYSIS_IDS = setOf("par", "paralysis", "paralyzed", "paralysed")
 }
 
 internal enum class LocalPublicSpeedRelation { ALLY_FIRST, OPPONENT_FIRST, AMBIGUOUS, UNAVAILABLE }
