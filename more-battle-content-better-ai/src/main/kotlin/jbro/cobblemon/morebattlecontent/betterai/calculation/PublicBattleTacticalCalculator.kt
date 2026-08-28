@@ -7,6 +7,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceView
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalDeclaredMultiHit
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalFullHealthSurvivalRules
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalKnownStatMechanics
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalMechanicFormResolution
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicStatusImmunity
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
@@ -308,21 +309,27 @@ internal object PublicBattleTacticalCalculator {
         // battle tower set carries one, so the whole feature sat unusable behind a single condition.
         //
         // What the mechanic does to the *move* already arrives resolved: a Max move is described as
-        // itself. What was missing is the actor using it, which the bridge now supplies for the
-        // mechanics whose effect on the actor it can actually read - the Tera type, the doubled health.
+        // itself. What was missing is the actor using it - the Tera type, the doubled health, the Mega
+        // spread.
         //
-        // A mechanic that supplies neither stays unprojected, which is the rule that was there before
-        // and is the right one. Mega Evolution rewrites a species' whole spread from data behind
-        // another mod; projecting it from the un-transformed stats would not be a cautious estimate but
-        // a wrong one, and a wrong number is worse than an absent one because the ranking believes it.
+        // Mega was the last one left, on the reasoning that its spread lives behind another mod. That
+        // reasoning was wrong about where the data is. Every battle form a species has is already
+        // published on the Pokemon as `knownFormStates` - exact for one's own party, public species
+        // ranges for the opponent - so the form is read rather than invented. A species with two Megas
+        // resolves only when the held stone names which one.
+        //
+        // A mechanic that still resolves to neither types nor stats projects nothing, which is the rule
+        // that was here before and remains the right one: a wrong number is worse than an absent one,
+        // because the ranking believes it.
         val mechanic = candidate.mechanic
+        val mechanicStats = LocalMechanicFormResolution.transformedStats(candidate, actor)
         if (mechanic != null &&
-            mechanic.transformedActorTypeIds.isEmpty() &&
-            mechanic.transformedActorCombatStats == null
+            LocalMechanicFormResolution.transformedTypeIds(candidate, actor).isEmpty() &&
+            mechanicStats == null
         ) {
             return null
         }
-        val actorStats = mechanic?.transformedActorCombatStats ?: actor.combatStats ?: return null
+        val actorStats = mechanicStats ?: actor.combatStats ?: return null
         val targetStats = target?.combatStats ?: return null
         val wholePower = details.power.toInt().takeIf { it > 0 && it.toDouble() == details.power } ?: return null
         val effectivePower = LocalKnownStatMechanics.effectivePower(wholePower, actor)
@@ -406,8 +413,13 @@ internal object PublicBattleTacticalCalculator {
         candidate: BattleActionCandidate,
     ): Double? {
         val original = actor?.knownTypeIds?.takeIf { it.isNotEmpty() } ?: return null
-        val transformed = candidate.mechanic?.transformedActorTypeIds.orEmpty()
+        val transformed = LocalMechanicFormResolution.transformedTypeIds(candidate, actor)
         fun matches(types: Collection<String>) = types.any { it.equals(details.typeId, ignoreCase = true) }
+        // A Mega swaps the typing rather than adding to it, so the doubling below - which exists for
+        // Tera keeping both - must not reach it.
+        if (transformed.isNotEmpty() && LocalMechanicFormResolution.replacesOriginalTypes(candidate, actor)) {
+            return if (matches(transformed)) 1.5 else 1.0
+        }
         val matchesOriginal = matches(original)
         val matchesTransformed = transformed.isNotEmpty() && matches(transformed)
         return when {
