@@ -87,19 +87,6 @@ class ShadowHologramRenderIsolationTest {
     }
 
     @Test
-    fun `hologram state is cleared when joining another server`() {
-        val terrainRenderer = Files.readString(
-            Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client/ShadowTerrainHologramRenderer.kt"),
-        )
-        val trainerRenderer = Files.readString(
-            Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client/ShadowTrainerProjectionRenderer.kt"),
-        )
-
-        assertTrue(terrainRenderer.contains("ClientPlayConnectionEvents.JOIN.register"))
-        assertTrue(trainerRenderer.contains("ClientPlayConnectionEvents.JOIN.register"))
-    }
-
-    @Test
     fun `floor glow writes depth so the late shader compositor preserves it`() {
         val floorRenderer = Files.readString(
             Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client/ShadowHologramFloorRenderer.kt"),

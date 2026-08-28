@@ -4,6 +4,7 @@ import net.fabricmc.api.ClientModInitializer
 
 object MoreBattleContentClient : ClientModInitializer {
     override fun onInitializeClient() {
+        MbcClientSessionReset.registerEvents()
         ShadowHologramShader.register()
         ShadowTerrainHologramShader.register()
         ShadowTerrainHologramRenderer.register()

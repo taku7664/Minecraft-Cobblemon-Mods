@@ -11,7 +11,6 @@ import jbro.cobblemon.morebattlecontent.internal.shadow.ShadowTrainerProjection
 import jbro.cobblemon.morebattlecontent.internal.shadow.ShadowTrainerProjectionState
 import jbro.cobblemon.morebattlecontent.internal.shadow.ShowShadowTrainerPayload
 import kotlin.math.roundToInt
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents
@@ -32,6 +31,7 @@ internal object ShadowTrainerProjectionRenderer {
     private var shadowPlayer: ShadowPlayer? = null
 
     fun register() {
+        MbcClientSessionReset.onReset("trainer hologram", ::clear)
         ClientPlayNetworking.registerGlobalReceiver(ShowShadowTrainerPayload.TYPE) { payload, context ->
             context.client().execute {
                 val isNewProjection = state.current()?.battleId != payload.projection.battleId
@@ -47,8 +47,6 @@ internal object ShadowTrainerProjectionRenderer {
                 if (state.current() == null) clearCachedPlayer()
             }
         }
-        ClientPlayConnectionEvents.JOIN.register { _, _, client -> client.execute(::clear) }
-        ClientPlayConnectionEvents.DISCONNECT.register { _, client -> client.execute(::clear) }
         WorldRenderEvents.AFTER_ENTITIES.register(::render)
     }
 

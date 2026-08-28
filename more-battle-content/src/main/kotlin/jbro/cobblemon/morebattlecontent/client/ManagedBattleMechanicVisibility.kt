@@ -9,7 +9,6 @@ import jbro.cobblemon.morebattlecontent.internal.battle.ShowManagedBattleMechani
 import jbro.cobblemon.morebattlecontent.internal.battle.ShowManagedBattleContentPayload
 import jbro.cobblemon.morebattlecontent.internal.battle.HideManagedBattleContentPayload
 import jbro.cobblemon.morebattlecontent.api.presentation.ManagedBattleContentClient
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 
 internal class ManagedBattleMechanicVisibilityState {
@@ -57,7 +56,7 @@ object ManagedBattleMechanicVisibilityClient {
         ClientPlayNetworking.registerGlobalReceiver(HideManagedBattleMechanicsPayload.TYPE) { payload, context ->
             context.client().execute { state.hide(payload.battleId) }
         }
-        ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> state.clear() }
+        MbcClientSessionReset.onReset("managed battle mechanic visibility", state::clear)
     }
 
     @JvmStatic
@@ -79,7 +78,7 @@ object ManagedBattleContentClientNetworking {
         ClientPlayNetworking.registerGlobalReceiver(HideManagedBattleContentPayload.TYPE) { payload, context ->
             context.client().execute { ManagedBattleContentClient.hide(payload.battleId) }
         }
-        ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> ManagedBattleContentClient.clear() }
+        MbcClientSessionReset.onReset("managed battle content", ManagedBattleContentClient::clear)
     }
 }
 

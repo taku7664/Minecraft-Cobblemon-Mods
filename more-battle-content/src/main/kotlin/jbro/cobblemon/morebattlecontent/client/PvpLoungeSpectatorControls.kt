@@ -5,7 +5,6 @@ import com.cobblemon.mod.common.client.gui.battle.BattleGUI
 import java.util.WeakHashMap
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpSpectatorInputPolicy
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.fabricmc.fabric.api.client.screen.v1.Screens
 import net.minecraft.client.Minecraft
@@ -21,7 +20,7 @@ internal object PvpLoungeSpectatorControls {
         ClientTickEvents.START_CLIENT_TICK.register(::enforce)
         ClientTickEvents.END_CLIENT_TICK.register(::enforce)
         ScreenEvents.AFTER_INIT.register { _, screen, _, _ -> installExitButton(screen) }
-        ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
+        MbcClientSessionReset.onReset("PvP spectator controls") {
             setActive(false)
             PvpPlayClientNetworking.resetLoungeExitRequest()
         }

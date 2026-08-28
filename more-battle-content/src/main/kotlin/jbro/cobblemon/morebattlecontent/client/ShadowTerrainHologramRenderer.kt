@@ -12,7 +12,6 @@ import jbro.cobblemon.morebattlecontent.internal.presentation.BattleArenaHologra
 import jbro.cobblemon.morebattlecontent.internal.presentation.HideBattleArenaHologramPayload
 import jbro.cobblemon.morebattlecontent.internal.presentation.ShowBattleArenaHologramPayload
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents
 import net.minecraft.client.Minecraft
@@ -37,6 +36,7 @@ internal object ShadowTerrainHologramRenderer {
     private var warned = false
 
     fun register() {
+        MbcClientSessionReset.onReset("terrain hologram", ::clear)
         ClientPlayNetworking.registerGlobalReceiver(ShowBattleArenaHologramPayload.TYPE) { payload, context ->
             context.client().execute { show(payload.projection) }
         }
@@ -52,8 +52,6 @@ internal object ShadowTerrainHologramRenderer {
         WorldRenderEvents.BEFORE_ENTITIES.register(::captureShaderPackTerrain)
         WorldRenderEvents.BEFORE_ENTITIES.register(::compositeTerrain)
         WorldRenderEvents.LAST.register(::prepareShaderPackComposite)
-        ClientPlayConnectionEvents.JOIN.register { _, _, client -> client.execute(::clear) }
-        ClientPlayConnectionEvents.DISCONNECT.register { _, client -> client.execute(::clear) }
     }
 
     fun show(projection: BattleArenaHologramProjection) {
