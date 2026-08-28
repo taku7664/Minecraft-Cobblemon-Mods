@@ -39,6 +39,11 @@ internal class Cobblemon173ShowdownObservationAdapter(
         require(actor.battle === activeBattle) { "Actor belongs to a different battle" }
         require(actor.uuid != opponentActorId) { "The observed opponent cannot be the decision actor" }
         consumeNewMessages(activeBattle)
+        // The opening decision is taken before the battle's first `switch` lines exist, so the store
+        // would otherwise hand the trainer a battle with no opponent in it. Whatever is standing in
+        // the opposing slots is public by inspection; read it directly rather than wait for a message
+        // that has not been written yet.
+        seedActiveOpponents(activeBattle)
         observer.advanceTurn(activeBattle.turn)
         val format = when (activeBattle.format.battleType.pokemonPerSide) {
             1 -> BattleFormat.SINGLE
@@ -52,6 +57,16 @@ internal class Cobblemon173ShowdownObservationAdapter(
             ownPokemon = actor.pokemonList.map { it.toOwnState(actor) },
             publicSnapshot = observer.publicSnapshot(),
         )
+    }
+
+    private fun seedActiveOpponents(activeBattle: PokemonBattle) {
+        val opponent = activeBattle.actors.firstOrNull { it.uuid == opponentActorId } ?: return
+        opponent.activePokemon.forEach { active ->
+            val battlePokemon = active.battlePokemon ?: return@forEach
+            runCatching { battlePokemon.toPublicSnapshot() }
+                .getOrNull()
+                ?.let(observer::observeActivePresence)
+        }
     }
 
     private fun consumeNewMessages(activeBattle: PokemonBattle) {

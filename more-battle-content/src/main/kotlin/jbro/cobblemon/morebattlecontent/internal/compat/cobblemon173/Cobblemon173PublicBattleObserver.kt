@@ -302,6 +302,29 @@ internal class Cobblemon173PublicBattleObserver(
         return snapshot.toView(previous, refreshPublicIdentity).also { pokemon[it.battlePokemonId] = it }
     }
 
+    /**
+     * Records a Pokemon that is standing on the field right now.
+     *
+     * The store is filled by protocol messages, which means it knows nothing until one arrives - and
+     * the first decision of a battle is made before the opening `switch` lines are consumed. The
+     * opponent was therefore absent from the state entirely on the turn that decides a player's first
+     * impression: no types, no stats, no target. Every attack scored on base power alone, four moves
+     * came out nearly level, and the draw could land on one the type chart would have ruled out. That
+     * is how a Chandelure opens with Energy Ball into an Abomasnow.
+     *
+     * Reading the active Pokemon off the field is not an exception to the public-information policy.
+     * It is the most public thing in the battle - the player is looking straight at it. Illusion is
+     * still respected, because the snapshot is built from the visible Pokemon rather than the real
+     * one.
+     *
+     * No event is appended. This is not something that happened; it is something that is true.
+     */
+    @Synchronized
+    fun observeActivePresence(snapshot: Cobblemon173PublicPokemonSnapshot) {
+        if (snapshot.activeSlot == null) return
+        upsert(snapshot, refreshPublicIdentity = pokemon[snapshot.battlePokemonId] == null)
+    }
+
     private fun knownOrUpsert(snapshot: Cobblemon173PublicPokemonSnapshot): BattlePokemonStateView =
         pokemon[snapshot.battlePokemonId] ?: upsert(snapshot)
 
