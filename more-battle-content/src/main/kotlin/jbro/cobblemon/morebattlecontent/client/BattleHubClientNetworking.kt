@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft
 
 internal object BattleHubClientNetworking {
     fun register() {
+        MbcClientSessionReset.onReset("battle hub header") { MbcBattleHubClientState.clear() }
         ClientPlayNetworking.registerGlobalReceiver(BattleHubStatePayload.TYPE) { _, context ->
             context.client().execute {
                 MbcContentNavigation.open(MbcContentTabContract.DEFAULT_CONTENT)
@@ -43,5 +44,9 @@ internal object MbcBattleHubClientState {
 
     fun update(value: Long) {
         bpBalance = value.coerceAtLeast(0L)
+    }
+
+    fun clear() {
+        bpBalance = 0L
     }
 }

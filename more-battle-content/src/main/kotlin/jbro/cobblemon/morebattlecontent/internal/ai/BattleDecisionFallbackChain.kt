@@ -113,6 +113,7 @@ internal class BattleBrainDecisionCoordinator(
     private fun reportBrainFailure(context: BattleDecisionContext, throwable: Throwable) {
         val cause = generateSequence(throwable) { it.cause }.last()
         val signature = "${cause.javaClass.name}:${cause.message.orEmpty()}"
+        if (!brainFailureCounts.containsKey(signature) && brainFailureCounts.size >= MAX_DISTINCT_FAILURE_SIGNATURES) return
         val seen = brainFailureCounts.merge(signature, 1, Int::plus) ?: 1
         if (seen == 1) {
             MoreBattleContent.LOGGER.error(
@@ -170,6 +171,7 @@ internal class BattleBrainAttempt private constructor(
 }
 
 private const val REPEATED_FAILURE_LOG_INTERVAL = 25
+private const val MAX_DISTINCT_FAILURE_SIGNATURES = 256
 
 internal enum class BattleDecisionStage { PRIMARY, LOCAL }
 

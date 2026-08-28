@@ -7,6 +7,7 @@ import jbro.cobblemon.morebattlecontent.internal.command.PvpCommandBackend
 import jbro.cobblemon.morebattlecontent.internal.command.PvpCommandOutcome
 import jbro.cobblemon.morebattlecontent.internal.command.PvpCommandStatus
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173PvpBattleRuntime
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173ManagedBattleTermination
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173PvpLoungeGateway
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173PvpRegisteredTeamSnapshotStore
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173PvpTeamFactory
@@ -20,6 +21,9 @@ import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengeMutationError
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengeMutationResult
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengePhase
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengeRequest
+import jbro.cobblemon.morebattlecontent.internal.pvp.PendingPvpCompletion
+import jbro.cobblemon.morebattlecontent.internal.pvp.PvpCompletionRetryQueue
+import jbro.cobblemon.morebattlecontent.internal.pvp.PVP_COMPLETION_RETRY_MILLIS
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpMatchPhase
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpLoungeCoordinator
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpLoungeRescuePolicy
@@ -52,6 +56,7 @@ import net.minecraft.server.level.ServerPlayer
 internal object PvpPlayNetworking : PvpCommandBackend {
     private val onlinePlayers = HashMap<UUID, ServerPlayer>()
     private val retryableMatches = HashSet<UUID>()
+    private val pendingCompletions = PvpCompletionRetryQueue()
     private val rooms = PvpRoomService()
     private var currentServer: MinecraftServer? = null
     private val loungeGateway by lazy { Cobblemon173PvpLoungeGateway({ currentServer }, onlinePlayers::get) }
@@ -62,22 +67,10 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         Cobblemon173PvpBattleRuntime(
             playerResolver = onlinePlayers::get,
             completion = { server, matchId, winnerId, loserId, battleId ->
-                try {
-                    sessions.completeBattle(
-                        matchId,
-                        battleId,
-                        winnerId,
-                        loserId,
-                        PvpBattleCompletionSink { recordedWinner, recordedLoser, format ->
-                            PvpBattleRecordService { completions ->
-                                BattleRecordService.recordCompletedBattles(server, completions)
-                            }.recordResult(recordedWinner, recordedLoser, format)
-                        },
-                    )
-                } finally {
-                    retryableMatches.remove(matchId)
-                    finishRoom(matchId)
-                }
+                val pending = PendingPvpCompletion(matchId, battleId, winnerId, loserId)
+                pendingCompletions.submit(pending) { completion -> settleCompletion(server, completion) }
+                retryableMatches.remove(matchId)
+                finishRoom(matchId)
             },
             cancellation = { _, matchId, battleId ->
                 try {
@@ -176,6 +169,21 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                     notifyClosed(challenge.request, "screen.${MoreBattleContent.MOD_ID}.pvp.closed.disconnected")
                     finishRoom(challenge.request.challengeId)
                 }
+                if (challenge?.phase == PvpChallengePhase.ACTIVE) {
+                    val matchId = challenge.request.challengeId
+                    if (matchId in pendingCompletions) {
+                        // The Cobblemon battle already ended; preserve its unsettled result even if a
+                        // participant disconnects while record storage is temporarily unavailable.
+                        processPendingCompletions(handler.player.server, force = true)
+                    } else {
+                        try {
+                            sessions.disconnectActiveBattle(playerId, Cobblemon173ManagedBattleTermination::end)
+                        } finally {
+                            retryableMatches.remove(matchId)
+                            finishRoom(matchId)
+                        }
+                    }
+                }
                 if (room?.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.ACTIVE &&
                     playerId in room.spectatorIds
                 ) {
@@ -199,12 +207,35 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         }
         ServerLifecycleEvents.SERVER_STARTING.register { server -> currentServer = server }
         ServerLifecycleEvents.SERVER_STOPPING.register { server ->
-            lounge.activeRoomIds().forEach(lounge::finish)
+            processPendingCompletions(server, force = true)
+            sessions.activeBattles().values.toSet().forEach { battleId ->
+                runCatching { Cobblemon173ManagedBattleTermination.end(battleId) }
+                    .onFailure { exception ->
+                        MoreBattleContent.LOGGER.error("PvP battle $battleId could not be terminated during server shutdown", exception)
+                    }
+            }
+            runCatching(lounge::shutdown).onFailure { exception ->
+                MoreBattleContent.LOGGER.error("PvP lounge shutdown cleanup failed", exception)
+            }
+            runCatching(sessions::clear).onFailure { exception ->
+                MoreBattleContent.LOGGER.error("PvP session shutdown cleanup failed", exception)
+            }
+            rooms.clear()
+            retryableMatches.clear()
+            if (pendingCompletions.size() > 0) {
+                MoreBattleContent.LOGGER.error(
+                    "Discarding {} PvP completion retries because the server is stopping and record storage is still unavailable",
+                    pendingCompletions.size(),
+                )
+            }
+            pendingCompletions.clear()
+            onlinePlayers.clear()
             if (currentServer === server) currentServer = null
         }
         ServerTickEvents.END_SERVER_TICK.register { server ->
             currentServer = server
             processEntryTimeouts()
+            processPendingCompletions(server)
             lounge.restoreAvailable(onlinePlayers::containsKey)
             loungeGateway.enforceSpectatorAnchors()
         }
@@ -827,6 +858,43 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                 else -> sendStateToBoth(request)
             }
         }
+    }
+
+    private fun processPendingCompletions(server: MinecraftServer, force: Boolean = false) {
+        pendingCompletions.retryDue(force) { pending ->
+            settleCompletion(server, pending)
+        }
+    }
+
+    private fun settleCompletion(server: MinecraftServer, pending: PendingPvpCompletion): Boolean = try {
+        val accepted = sessions.completeBattle(
+            pending.matchId,
+            pending.battleId,
+            pending.winnerId,
+            pending.loserId,
+            PvpBattleCompletionSink { winnerId, loserId, format ->
+                PvpBattleRecordService { completions ->
+                    BattleRecordService.recordCompletedBattles(server, completions)
+                }.recordResult(winnerId, loserId, format)
+            },
+        )
+        if (!accepted) {
+            MoreBattleContent.LOGGER.warn(
+                "Dropping stale PvP completion retry for match {} and battle {}",
+                pending.matchId,
+                pending.battleId,
+            )
+        }
+        true
+    } catch (exception: RuntimeException) {
+        MoreBattleContent.LOGGER.error(
+            "PvP record settlement failed for match {} and battle {}; retrying in {} ms",
+            pending.matchId,
+            pending.battleId,
+            PVP_COMPLETION_RETRY_MILLIS,
+            exception,
+        )
+        false
     }
 
     private fun pushActiveRoomToSpectators(matchId: UUID) {

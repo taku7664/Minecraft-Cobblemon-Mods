@@ -7,7 +7,6 @@ import com.cobblemon.mod.common.battles.ShowdownActionResponse
 import com.cobblemon.mod.common.battles.actor.TrainerBattleActor
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import java.util.UUID
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
@@ -28,6 +27,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleBrainDecisionCoordinator
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleBrainEndpoint
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleDecisionFallbackChain
+import jbro.cobblemon.morebattlecontent.internal.ai.BattleBrainExecutors
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleDecisionDiagnostics
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleDecisionResolution
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleDecisionSource
@@ -387,12 +387,8 @@ internal class Cobblemon173BrainTrainerBattleActor(
 
     private companion object {
         val coordinator = BattleBrainDecisionCoordinator(
-            scheduler = Executors.newSingleThreadScheduledExecutor { runnable ->
-                Thread(runnable, "mbc-brain-deadline").apply { isDaemon = true }
-            },
-            brainExecutor = Executors.newCachedThreadPool { runnable ->
-                Thread(runnable, "mbc-brain-worker").apply { isDaemon = true }
-            },
+            scheduler = BattleBrainExecutors.deadlineScheduler(),
+            brainExecutor = BattleBrainExecutors.worker(),
         )
         val fallbackChain = BattleDecisionFallbackChain(coordinator)
     }

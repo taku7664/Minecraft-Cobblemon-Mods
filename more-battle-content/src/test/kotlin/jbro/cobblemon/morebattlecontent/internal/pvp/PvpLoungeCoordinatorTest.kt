@@ -173,6 +173,20 @@ class PvpLoungeCoordinatorTest {
         assertEquals(setOf(left, right, viewer), coordinator.pendingReturnPlayerIds())
     }
 
+    @Test
+    fun `server shutdown rolls back preparations and drops stale return points`() {
+        val gateway = RecordingGateway().apply { unavailableForRestore += viewer }
+        val pool = PvpArenaPool()
+        val coordinator = PvpLoungeCoordinator(pool, gateway)
+        assertTrue(coordinator.prepare(room(phase = PvpRoomPhase.TEAM_PREVIEW)))
+
+        coordinator.shutdown()
+
+        assertTrue(coordinator.activeRoomIds().isEmpty())
+        assertTrue(coordinator.pendingReturnPlayerIds().isEmpty())
+        assertTrue(pool.activeLeases().isEmpty())
+    }
+
     private fun room(
         spectators: List<UUID> = listOf(viewer),
         phase: PvpRoomPhase = PvpRoomPhase.ACTIVE,

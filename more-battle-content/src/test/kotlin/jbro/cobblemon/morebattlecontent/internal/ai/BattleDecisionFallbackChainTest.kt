@@ -33,8 +33,10 @@ class BattleDecisionFallbackChainTest {
 
     @AfterEach
     fun closeExecutors() {
-        scheduler.shutdownNow()
-        brainExecutor.shutdownNow()
+        scheduler.shutdown()
+        brainExecutor.shutdown()
+        if (!scheduler.awaitTermination(1, TimeUnit.SECONDS)) scheduler.shutdownNow()
+        if (!brainExecutor.awaitTermination(1, TimeUnit.SECONDS)) brainExecutor.shutdownNow()
     }
 
     @Test

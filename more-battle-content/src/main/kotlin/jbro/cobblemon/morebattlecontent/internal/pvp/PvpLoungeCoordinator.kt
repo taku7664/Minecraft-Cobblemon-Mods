@@ -207,6 +207,16 @@ internal class PvpLoungeCoordinator(
     @Synchronized
     fun activeRoomIds(): Set<UUID> = sessions.keys.toSet()
 
+    /** Best-effort restoration followed by a hard state reset for an ending server instance. */
+    @Synchronized
+    fun shutdown() {
+        (sessions.keys + preparations.keys).toSet().forEach(::finish)
+        restoreAvailable { true }
+        sessions.clear()
+        preparations.clear()
+        returns.clear()
+    }
+
     private fun rollbackCaptured(roomId: UUID, captured: Map<UUID, PvpReturnPoint>): Boolean {
         captured.forEach { (playerId, point) ->
             if (restorePoint(playerId, point)) returns.remove(playerId)

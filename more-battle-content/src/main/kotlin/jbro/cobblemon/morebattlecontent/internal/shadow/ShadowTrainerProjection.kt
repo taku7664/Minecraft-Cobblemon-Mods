@@ -100,26 +100,44 @@ internal object ShadowTrainerProjectionNetworking {
     }
 
     fun show(player: ServerPlayer, battleId: UUID, position: Vec3) {
-        if (!ServerPlayNetworking.canSend(player, ShowShadowTrainerPayload.TYPE)) return
-        ServerPlayNetworking.send(
-            player,
-            ShowShadowTrainerPayload(
-                ShadowTrainerProjection(
-                    battleId = battleId,
-                    profileId = player.gameProfile.id,
-                    profileName = player.gameProfile.name,
-                    x = position.x,
-                    y = position.y,
-                    z = position.z,
-                    yaw = player.yRot + HALF_TURN_DEGREES,
+        try {
+            if (!ServerPlayNetworking.canSend(player, ShowShadowTrainerPayload.TYPE)) return
+            ServerPlayNetworking.send(
+                player,
+                ShowShadowTrainerPayload(
+                    ShadowTrainerProjection(
+                        battleId = battleId,
+                        profileId = player.gameProfile.id,
+                        profileName = player.gameProfile.name,
+                        x = position.x,
+                        y = position.y,
+                        z = position.z,
+                        yaw = player.yRot + HALF_TURN_DEGREES,
+                    ),
                 ),
-            ),
-        )
+            )
+        } catch (exception: RuntimeException) {
+            MoreBattleContent.LOGGER.warn(
+                "Trainer hologram show failed for player {} and battle {}; continuing without the optional effect",
+                player.uuid,
+                battleId,
+                exception,
+            )
+        }
     }
 
     fun hide(player: ServerPlayer, battleId: UUID) {
-        if (ServerPlayNetworking.canSend(player, HideShadowTrainerPayload.TYPE)) {
-            ServerPlayNetworking.send(player, HideShadowTrainerPayload(battleId))
+        try {
+            if (ServerPlayNetworking.canSend(player, HideShadowTrainerPayload.TYPE)) {
+                ServerPlayNetworking.send(player, HideShadowTrainerPayload(battleId))
+            }
+        } catch (exception: RuntimeException) {
+            MoreBattleContent.LOGGER.warn(
+                "Trainer hologram hide failed for player {} and battle {}; core battle cleanup will continue",
+                player.uuid,
+                battleId,
+                exception,
+            )
         }
     }
 }

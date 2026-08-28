@@ -235,6 +235,12 @@ internal class PvpRoomService(
     }
 
     @Synchronized
+    fun clear() {
+        rooms.clear()
+        roomByPlayer.clear()
+    }
+
+    @Synchronized
     fun leave(roomId: UUID, playerId: UUID): PvpRoomView? {
         val room = rooms[roomId] ?: return null
         if (room.members.remove(playerId) == null) {

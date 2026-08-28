@@ -187,7 +187,7 @@ class PvpSessionServiceTest {
     }
 
     @Test
-    fun `record failure cannot leave a completed battle active or block a rematch`() {
+    fun `record failure keeps settlement retryable until the paired record succeeds`() {
         val snapshots = RecordingSnapshots()
         val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
         ready(service)
@@ -204,6 +204,11 @@ class PvpSessionServiceTest {
             )
         }
 
+        assertEquals(PvpChallengePhase.ACTIVE, service.challenge(matchId)?.phase)
+        assertEquals(battleId, service.battleIdFor(matchId))
+        assertTrue(
+            service.completeBattle(matchId, battleId, first, second, PvpBattleCompletionSink { _, _, _ -> }),
+        )
         assertNull(service.challenge(matchId))
         assertNull(service.battleIdFor(matchId))
         assertEquals(setOf(first, second), snapshots.discarded)
@@ -211,6 +216,40 @@ class PvpSessionServiceTest {
             service.invite(PvpChallengeRequest(matchId, second, first, PvpBattleFormat.SINGLE)) is
                 PvpChallengeMutationResult.Applied,
         )
+    }
+
+    @Test
+    fun `disconnect during an active battle terminates and cancels the match before releasing participants`() {
+        val snapshots = RecordingSnapshots()
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.ready(matchId, second))
+        var terminated: UUID? = null
+
+        assertEquals(matchId, service.disconnectActiveBattle(first) { terminated = it })
+
+        assertEquals(battleId, terminated)
+        assertNull(service.challenge(matchId))
+        assertNull(service.battleIdFor(matchId))
+        assertEquals(setOf(first, second), snapshots.discarded)
+    }
+
+    @Test
+    fun `server shutdown clears active matches timers and snapshots`() {
+        val snapshots = RecordingSnapshots()
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        service.ready(matchId, second)
+
+        assertEquals(mapOf(matchId to battleId), service.activeBattles())
+        service.clear()
+
+        assertTrue(service.activeBattles().isEmpty())
+        assertNull(service.challengeFor(first))
+        assertNull(service.battleIdFor(matchId))
+        assertEquals(setOf(first, second), snapshots.discarded)
     }
 
     @Test

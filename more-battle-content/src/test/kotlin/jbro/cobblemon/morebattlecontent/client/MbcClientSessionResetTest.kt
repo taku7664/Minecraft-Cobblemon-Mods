@@ -44,6 +44,8 @@ class MbcClientSessionResetTest {
             "PvpRoomHudOverlay.kt",
             "PvpLoungeSpectatorControls.kt",
             "ManagedBattleMechanicVisibility.kt",
+            "BattleHubClientNetworking.kt",
+            "ShopPlayClientNetworking.kt",
         ).associateWith { name -> Files.readString(root.resolve(name)) }
 
         assertTrue(initializer.contains("MbcClientSessionReset.registerEvents()"))

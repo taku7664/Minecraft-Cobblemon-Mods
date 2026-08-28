@@ -229,6 +229,31 @@ internal class PvpSessionService<P>(
     fun battleIdFor(matchId: UUID): UUID? = activeBattleIds[matchId]
 
     @Synchronized
+    fun activeBattles(): Map<UUID, UUID> = LinkedHashMap(activeBattleIds)
+
+    /** Drops every server-owned session after callers have attempted to terminate its live battles. */
+    @Synchronized
+    fun clear() {
+        val participantIds = matches.values
+            .flatMap { match -> listOf(match.challengerId, match.opponentId) }
+            .toSet()
+        activeBattleIds.clear()
+        timers.clear()
+        matches.clear()
+        challenges.clear()
+
+        var failure: Exception? = null
+        participantIds.forEach { playerId ->
+            try {
+                snapshots.discard(playerId)
+            } catch (exception: Exception) {
+                if (failure == null) failure = exception else failure.addSuppressed(exception)
+            }
+        }
+        failure?.let { throw it }
+    }
+
+    @Synchronized
     fun expireEntrySelections(): List<PvpEntryTimeoutResolution> {
         val resolutions = ArrayList<PvpEntryTimeoutResolution>()
         matches.values.toList().forEach { match ->
@@ -265,13 +290,35 @@ internal class PvpSessionService<P>(
         if (match.phase != PvpMatchPhase.ACTIVE || activeBattleIds[matchId] != battleId) return false
         if (winnerId == loserId || !match.isParticipant(winnerId) || !match.isParticipant(loserId)) return false
         if (setOf(winnerId, loserId) != setOf(match.challengerId, match.opponentId)) return false
+        if (challenges.get(matchId)?.phase != PvpChallengePhase.ACTIVE) return false
 
+        // Keep the active match intact until the paired record has committed. The battle-end callback
+        // can then retry the exact same settlement instead of silently losing both players' result.
+        completionSink.record(winnerId, loserId, match.format)
         match.complete()
         val transition = challenges.complete(matchId)
         check(transition is PvpChallengeMutationResult.Applied) { "PvP challenge failed to complete" }
         cleanup(match)
-        completionSink.record(winnerId, loserId, match.format)
         return true
+    }
+
+    /** Explicitly owns active-participant disconnect instead of relying on Cobblemon to emit onEnd. */
+    @Synchronized
+    fun disconnectActiveBattle(playerId: UUID, terminateBattle: (UUID) -> Unit): UUID? {
+        val challenge = challenges.forPlayer(playerId) ?: return null
+        val match = matches[challenge.request.challengeId] ?: return null
+        if (match.phase != PvpMatchPhase.ACTIVE || !match.isParticipant(playerId)) return null
+        val battleId = activeBattleIds[match.matchId] ?: return null
+        try {
+            terminateBattle(battleId)
+        } finally {
+            // Battle termination normally invokes the onEnd callback synchronously. If an integration
+            // failure skips that callback, cancel the still-owned match here so snapshots cannot leak.
+            if (activeBattleIds[match.matchId] == battleId) {
+                cancelBattle(match.matchId, battleId)
+            }
+        }
+        return match.matchId
     }
 
     @Synchronized
@@ -312,7 +359,7 @@ internal class PvpSessionService<P>(
             try {
                 action()
             } catch (error: Exception) {
-                if (failure == null) failure = error else failure?.addSuppressed(error)
+                if (failure == null) failure = error else failure.addSuppressed(error)
             }
         }
 

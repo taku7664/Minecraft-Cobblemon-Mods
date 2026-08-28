@@ -120,6 +120,12 @@ internal class PvpChallengeService {
     @Synchronized
     fun forPlayer(playerId: UUID): PvpChallenge? = activeByPlayer[playerId]?.let(challenges::get)
 
+    @Synchronized
+    fun clear() {
+        challenges.clear()
+        activeByPlayer.clear()
+    }
+
     /**
      * Forgets a settled challenge so its ID can be reused. Rooms keep their ID as the challenge ID, so
      * without this a rematch inside the same room would collide with the finished challenge.

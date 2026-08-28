@@ -206,6 +206,19 @@ class PvpRoomServiceTest {
         assertNull(rooms.finishMatch(roomId))
     }
 
+    @Test
+    fun `server shutdown clears rooms and every player index`() {
+        val rooms = PvpRoomService { roomId }
+        rooms.create(host, settings(PvpRoomVisibility.PUBLIC))
+        rooms.join(roomId, guest)
+
+        rooms.clear()
+
+        assertTrue(rooms.publicRooms().isEmpty())
+        assertNull(rooms.roomFor(host))
+        assertNull(rooms.roomFor(guest))
+    }
+
     private fun settings(visibility: PvpRoomVisibility) = PvpRoomSettings(
         visibility = visibility,
         format = PvpBattleFormat.SINGLE,

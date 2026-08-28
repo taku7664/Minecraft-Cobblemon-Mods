@@ -13,6 +13,10 @@ internal object ShopPlayClientNetworking {
     private var leaderboardCatalog: HomeLeaderboardCatalogPayload? = null
 
     fun register() {
+        MbcClientSessionReset.onReset("shop leaderboard") {
+            leaderboard = null
+            leaderboardCatalog = null
+        }
         ClientPlayNetworking.registerGlobalReceiver(ShopStatePayload.TYPE) { payload, context ->
             context.client().execute {
                 MbcBattleHubClientState.update(payload.balanceBp)

@@ -8,6 +8,22 @@ import org.junit.jupiter.api.Test
 
 class ShadowHologramRenderIsolationTest {
     @Test
+    fun `optional trainer projection networking cannot escape into battle lifecycle`() {
+        val networking = Files.readString(
+            Path.of(
+                "src/main/kotlin/jbro/cobblemon/morebattlecontent/internal/shadow/" +
+                    "ShadowTrainerProjection.kt",
+            ),
+        )
+        val objectBody = networking.substringAfter("internal object ShadowTrainerProjectionNetworking")
+
+        assertTrue(objectBody.substringAfter("fun show").substringBefore("fun hide").contains("catch (exception: RuntimeException)"))
+        assertTrue(objectBody.substringAfter("fun hide").contains("catch (exception: RuntimeException)"))
+        assertTrue(objectBody.contains("continuing without the optional effect"))
+        assertTrue(objectBody.contains("core battle cleanup will continue"))
+    }
+
+    @Test
     fun `managed battle holograms never replace the Pokemon renderer`() {
         val mixins = Files.readString(Path.of("src/main/resources/cobblemon_more_battle_content.mixins.json"))
         val clientInitializer = Files.readString(
