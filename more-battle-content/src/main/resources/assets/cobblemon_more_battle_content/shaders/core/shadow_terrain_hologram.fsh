@@ -3,9 +3,12 @@
 uniform sampler2D SceneSampler;
 uniform sampler2D BackgroundSampler;
 uniform sampler2D DepthSampler;
+uniform sampler2D FinalSceneSampler;
+uniform sampler2D FinalDepthSampler;
 uniform float GameTime;
 uniform float EffectAgeSeconds;
 uniform float EffectStrength;
+uniform float PreserveForeground;
 uniform mat4 InverseViewProjection;
 uniform vec3 ArenaCenterRelative;
 uniform vec2 ArenaOpponentDirection;
@@ -18,6 +21,7 @@ in vec2 TexCoord;
 out vec4 fragColor;
 
 const float SKY_DEPTH_THRESHOLD = 0.99998;
+const float FOREGROUND_DEPTH_EPSILON = 0.00002;
 const float ARENA_INNER_RADIUS = 5.5;
 const float ARENA_OUTER_RADIUS = 13.0;
 const float RING_SPACING = 1.8;
@@ -132,6 +136,15 @@ vec3 arenaLedFloor(vec3 sceneColor, vec3 worldDelta) {
 void main() {
     vec4 scene = texture(SceneSampler, TexCoord);
     float depth = texture(DepthSampler, TexCoord).r;
+    vec4 finalScene = texture(FinalSceneSampler, TexCoord);
+    float finalDepth = texture(FinalDepthSampler, TexCoord).r;
+    bool foregroundPixel = PreserveForeground > 0.5
+        && finalDepth < depth - FOREGROUND_DEPTH_EPSILON
+        && abs(finalDepth - depth) > FOREGROUND_DEPTH_EPSILON;
+    if (foregroundPixel) {
+        fragColor = finalScene;
+        return;
+    }
     if (depth >= SKY_DEPTH_THRESHOLD || EffectStrength <= 0.001) {
         fragColor = scene;
         return;

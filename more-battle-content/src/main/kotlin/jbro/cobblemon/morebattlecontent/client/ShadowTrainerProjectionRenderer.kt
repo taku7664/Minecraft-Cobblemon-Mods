@@ -210,7 +210,10 @@ private class HologramBufferSource(
     override fun getBuffer(renderType: RenderType): VertexConsumer {
         val fallback = {
             HologramVertexConsumer(
-                delegate = delegate.getBuffer(renderType),
+                delegate = ShadowHologramShader.shaderPackFallbackBuffer(
+                    delegate,
+                    renderType,
+                ) { delegate.getBuffer(renderType) },
                 gameTicks = gameTicks,
                 cameraY = cameraY,
             )

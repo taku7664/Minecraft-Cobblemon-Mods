@@ -19,7 +19,10 @@ class ShadowTerrainHologramShaderResourcesTest {
         assertEquals("cobblemon_more_battle_content:shadow_terrain_hologram", json["vertex"].asString)
         assertEquals("cobblemon_more_battle_content:shadow_terrain_hologram", json["fragment"].asString)
         val samplers = json.getAsJsonArray("samplers").map { it.asJsonObject["name"].asString }.toSet()
-        assertEquals(setOf("SceneSampler", "BackgroundSampler", "DepthSampler"), samplers)
+        assertEquals(
+            setOf("SceneSampler", "BackgroundSampler", "DepthSampler", "FinalSceneSampler", "FinalDepthSampler"),
+            samplers,
+        )
         val uniforms = json.getAsJsonArray("uniforms").map { it.asJsonObject["name"].asString }.toSet()
         assertTrue(
             uniforms.containsAll(
@@ -31,12 +34,17 @@ class ShadowTerrainHologramShaderResourcesTest {
                     "ArenaCenterRelative",
                     "ArenaOpponentDirection",
                     "CameraWorldPosition",
+                    "PreserveForeground",
                 ),
             ),
         )
 
         assertTrue(vertex.contains("TexCoord"))
         assertTrue(fragment.contains("DepthSampler"))
+        assertTrue(fragment.contains("FinalSceneSampler"))
+        assertTrue(fragment.contains("FinalDepthSampler"))
+        assertTrue(fragment.contains("abs(finalDepth - depth)"))
+        assertTrue(fragment.contains("fragColor = finalScene"))
         assertTrue(fragment.contains("SKY_DEPTH_THRESHOLD"))
         assertTrue(fragment.contains("orderedDither"))
         assertTrue(fragment.contains("risingScan"))

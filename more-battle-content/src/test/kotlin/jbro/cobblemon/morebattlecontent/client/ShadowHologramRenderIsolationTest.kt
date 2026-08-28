@@ -48,4 +48,30 @@ class ShadowHologramRenderIsolationTest {
             "The compositor must resize targets before retaining references to them",
         )
     }
+
+    @Test
+    fun `shader pack terrain is composited after the external pipeline finishes`() {
+        val renderer = Files.readString(
+            Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client/ShadowTerrainHologramRenderer.kt"),
+        )
+
+        assertTrue(renderer.contains("WorldRenderEvents.LAST.register(::compositeShaderPackTerrain)"))
+        assertTrue(renderer.contains("if (ExternalShaderPackState.isInUse()) return"))
+        assertTrue(renderer.contains("FinalSceneSampler"))
+        assertTrue(renderer.contains("FinalDepthSampler"))
+    }
+
+    @Test
+    fun `shader pack model fallback uses a translucent render type`() {
+        val projectionRenderer = Files.readString(
+            Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client/ShadowTrainerProjectionRenderer.kt"),
+        )
+        val shader = Files.readString(
+            Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client/ShadowHologramShader.kt"),
+        )
+
+        assertTrue(projectionRenderer.contains("ShadowHologramShader.shaderPackFallbackBuffer"))
+        assertTrue(shader.contains("shaderPackFallbackTypes"))
+        assertTrue(shader.contains("GameRenderer.getRendertypeEntityTranslucentShader"))
+    }
 }

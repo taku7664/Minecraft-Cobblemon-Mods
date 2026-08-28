@@ -18,6 +18,7 @@ import net.minecraft.resources.ResourceLocation
 internal object ShadowHologramShader {
     private val shaderId = ResourceLocation.fromNamespaceAndPath(MoreBattleContent.MOD_ID, "shadow_hologram")
     private val renderTypes = ConcurrentHashMap<ResourceLocation, RenderType>()
+    private val shaderPackFallbackTypes = ConcurrentHashMap<ResourceLocation, RenderType>()
 
     @Volatile
     private var shader: ShaderInstance? = null
@@ -28,11 +29,13 @@ internal object ShadowHologramShader {
                 context.register(shaderId, DefaultVertexFormat.NEW_ENTITY) { loaded ->
                     shader = loaded
                     renderTypes.clear()
+                    shaderPackFallbackTypes.clear()
                     MoreBattleContent.LOGGER.info("Loaded MBC Shadow hologram shader")
                 }
             } catch (exception: IOException) {
                 shader = null
                 renderTypes.clear()
+                shaderPackFallbackTypes.clear()
                 MoreBattleContent.LOGGER.error("Failed to load MBC Shadow hologram shader; using translucent fallback", exception)
             }
         }
@@ -50,6 +53,16 @@ internal object ShadowHologramShader {
     }
 
     internal fun supports(format: VertexFormat): Boolean = format == DefaultVertexFormat.NEW_ENTITY
+
+    fun shaderPackFallbackBuffer(
+        delegate: MultiBufferSource,
+        requestedType: RenderType,
+        fallback: () -> VertexConsumer,
+    ): VertexConsumer {
+        if (!supports(requestedType.format())) return fallback()
+        val texture = RenderTypeTextureBridge.textureOf(requestedType) ?: return fallback()
+        return delegate.getBuffer(shaderPackFallbackTypes.computeIfAbsent(texture, ::createShaderPackFallbackType))
+    }
 
     fun setCameraWorldPosition(x: Double, y: Double, z: Double) {
         shader?.getUniform("CameraWorldPosition")?.set(x.toFloat(), y.toFloat(), z.toFloat())
@@ -69,6 +82,24 @@ internal object ShadowHologramShader {
             .setCullState(RenderStateShard.NO_CULL)
             .setLightmapState(RenderStateShard.NO_LIGHTMAP)
             .setOverlayState(RenderStateShard.NO_OVERLAY)
+            .setWriteMaskState(RenderStateShard.COLOR_DEPTH_WRITE)
+            .createCompositeState(false),
+    )
+
+    private fun createShaderPackFallbackType(texture: ResourceLocation): RenderType = RenderType.create(
+        "mbc_shadow_hologram_shader_pack_fallback",
+        DefaultVertexFormat.NEW_ENTITY,
+        VertexFormat.Mode.QUADS,
+        1536,
+        false,
+        true,
+        RenderType.CompositeState.builder()
+            .setShaderState(RenderStateShard.ShaderStateShard(GameRenderer::getRendertypeEntityTranslucentShader))
+            .setTextureState(RenderStateShard.TextureStateShard(texture, false, false))
+            .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
+            .setCullState(RenderStateShard.NO_CULL)
+            .setLightmapState(RenderStateShard.LIGHTMAP)
+            .setOverlayState(RenderStateShard.OVERLAY)
             .setWriteMaskState(RenderStateShard.COLOR_DEPTH_WRITE)
             .createCompositeState(false),
     )

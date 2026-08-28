@@ -29,7 +29,9 @@ internal object ShadowTerrainHologramRenderer {
     private val transition = ShadowTerrainHologramTransition(FADE_DURATION_NANOS)
     private var backgroundTarget: TextureTarget? = null
     private var terrainTarget: TextureTarget? = null
+    private var finalSceneTarget: TextureTarget? = null
     private var backgroundCaptured = false
+    private var shaderPackTerrainCaptured = false
     private var warned = false
 
     fun register() {
@@ -39,9 +41,14 @@ internal object ShadowTerrainHologramRenderer {
         ClientPlayNetworking.registerGlobalReceiver(HideBattleArenaHologramPayload.TYPE) { payload, context ->
             context.client().execute { hide(payload.battleId) }
         }
-        WorldRenderEvents.START.register { backgroundCaptured = false }
+        WorldRenderEvents.START.register {
+            backgroundCaptured = false
+            shaderPackTerrainCaptured = false
+        }
         WorldRenderEvents.AFTER_SETUP.register(::captureBackground)
+        WorldRenderEvents.BEFORE_ENTITIES.register(::captureShaderPackTerrain)
         WorldRenderEvents.BEFORE_ENTITIES.register(::compositeTerrain)
+        WorldRenderEvents.LAST.register(::compositeShaderPackTerrain)
         ClientPlayConnectionEvents.DISCONNECT.register { _, client -> client.execute(::clear) }
     }
 
@@ -56,11 +63,13 @@ internal object ShadowTerrainHologramRenderer {
     fun clear() {
         transition.clear()
         backgroundCaptured = false
+        shaderPackTerrainCaptured = false
         destroyTargets()
     }
 
     private fun captureBackground(@Suppress("UNUSED_PARAMETER") context: WorldRenderContext) {
         if (transition.snapshot(System.nanoTime()) == null) return
+        if (ExternalShaderPackState.isInUse()) return
         if (ExternalShaderPackState.isRenderingShadowPass()) return
         try {
             preserveFramebufferBindings { active ->
@@ -76,6 +85,7 @@ internal object ShadowTerrainHologramRenderer {
 
     private fun compositeTerrain(context: WorldRenderContext) {
         val snapshot = transition.snapshot(System.nanoTime()) ?: return
+        if (ExternalShaderPackState.isInUse()) return
         if (ExternalShaderPackState.isRenderingShadowPass()) return
         if (!backgroundCaptured || snapshot.strength <= 0F) return
         val shader = ShadowTerrainHologramShader.activeShader() ?: return
@@ -87,53 +97,111 @@ internal object ShadowTerrainHologramRenderer {
                 val background = backgroundTarget ?: return@preserveFramebufferBindings
                 val terrain = terrainTarget ?: return@preserveFramebufferBindings
                 copyFramebuffer(active, terrain, GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT)
-                bindForDrawing(active)
-
-                shader.setSampler("SceneSampler", terrain.colorTextureId)
-                shader.setSampler("BackgroundSampler", background.colorTextureId)
-                shader.setSampler("DepthSampler", terrain.depthTextureId)
-                shader.getUniform("EffectStrength")?.set(snapshot.strength)
-                shader.getUniform("EffectAgeSeconds")?.set(snapshot.effectAgeSeconds)
-                shader.getUniform("GameTime")?.set(
-                    (System.nanoTime() % EFFECT_TIME_PERIOD_NANOS).toFloat() / EFFECT_TIME_PERIOD_NANOS,
-                )
-                shader.getUniform("InverseViewProjection")?.set(
-                    Matrix4f(context.projectionMatrix()).mul(context.positionMatrix()).invert(),
-                )
-                val camera = context.camera().position
-                shader.getUniform("ArenaCenterRelative")?.set(
-                    (snapshot.arenaCenter.x - camera.x).toFloat(),
-                    (snapshot.arenaCenter.y - camera.y).toFloat(),
-                    (snapshot.arenaCenter.z - camera.z).toFloat(),
-                )
-                shader.getUniform("ArenaOpponentDirection")?.set(
-                    snapshot.arenaDirection.x.toFloat(),
-                    snapshot.arenaDirection.z.toFloat(),
-                )
-                shader.getUniform("LedFloorRadius")?.set(snapshot.projection.ledFloorRadius.toFloat())
-                shader.getUniform("CameraWorldPosition")?.set(
-                    camera.x.toFloat(),
-                    camera.y.toFloat(),
-                    camera.z.toFloat(),
-                )
-
-                preserveFixedFunctionState {
-                    RenderSystem.disableDepthTest()
-                    RenderSystem.depthMask(false)
-                    RenderSystem.disableBlend()
-                    RenderSystem.disableCull()
-                    RenderSystem.setShader { shader }
-                    drawFullscreenQuad()
-                }
+                drawComposite(context, snapshot, active, terrain, background, terrain, false, shader)
             }
         } catch (exception: RuntimeException) {
             warnOnce("Failed to composite the terrain hologram; skipping the terrain effect", exception)
         }
     }
 
+    /** Captures terrain depth before entities so the late Iris-safe pass can leave foreground models untouched. */
+    private fun captureShaderPackTerrain(@Suppress("UNUSED_PARAMETER") context: WorldRenderContext) {
+        if (!ExternalShaderPackState.isInUse()) return
+        if (transition.snapshot(System.nanoTime()) == null) return
+        if (ExternalShaderPackState.isRenderingShadowPass()) return
+        try {
+            preserveFramebufferBindings { active ->
+                if (active.width <= 0 || active.height <= 0) return@preserveFramebufferBindings
+                ensureTargets(active.width, active.height)
+                val terrain = terrainTarget ?: return@preserveFramebufferBindings
+                copyFramebuffer(active, terrain, GL11.GL_DEPTH_BUFFER_BIT)
+                shaderPackTerrainCaptured = true
+            }
+        } catch (exception: RuntimeException) {
+            shaderPackTerrainCaptured = false
+            warnOnce("Failed to capture terrain depth for the shader-pack hologram frame", exception)
+        }
+    }
+
+    /** Runs after Iris has written its final world image but before the held item and GUI are rendered. */
+    private fun compositeShaderPackTerrain(context: WorldRenderContext) {
+        if (!ExternalShaderPackState.isInUse()) return
+        val snapshot = transition.snapshot(System.nanoTime()) ?: return
+        if (!shaderPackTerrainCaptured || snapshot.strength <= 0F) return
+        val shader = ShadowTerrainHologramShader.activeShader() ?: return
+
+        try {
+            preserveFramebufferBindings { active ->
+                if (active.width <= 0 || active.height <= 0) return@preserveFramebufferBindings
+                val terrain = terrainTarget ?: return@preserveFramebufferBindings
+                if (terrain.viewWidth != active.width || terrain.viewHeight != active.height) {
+                    return@preserveFramebufferBindings
+                }
+                val finalScene = finalSceneTarget ?: return@preserveFramebufferBindings
+                copyFramebuffer(active, finalScene, GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT)
+                drawComposite(context, snapshot, active, finalScene, finalScene, terrain, true, shader)
+            }
+        } catch (exception: RuntimeException) {
+            warnOnce("Failed to composite the shader-pack terrain hologram", exception)
+        }
+    }
+
+    private fun drawComposite(
+        context: WorldRenderContext,
+        snapshot: ShadowTerrainHologramSnapshot,
+        active: FramebufferBindings,
+        scene: TextureTarget,
+        background: TextureTarget,
+        terrainDepth: TextureTarget,
+        preserveForeground: Boolean,
+        shader: net.minecraft.client.renderer.ShaderInstance,
+    ) {
+        bindForDrawing(active)
+        shader.setSampler("SceneSampler", scene.colorTextureId)
+        shader.setSampler("BackgroundSampler", background.colorTextureId)
+        shader.setSampler("DepthSampler", terrainDepth.depthTextureId)
+        shader.setSampler("FinalSceneSampler", scene.colorTextureId)
+        shader.setSampler("FinalDepthSampler", scene.depthTextureId)
+        shader.getUniform("PreserveForeground")?.set(if (preserveForeground) 1F else 0F)
+        shader.getUniform("EffectStrength")?.set(snapshot.strength)
+        shader.getUniform("EffectAgeSeconds")?.set(snapshot.effectAgeSeconds)
+        shader.getUniform("GameTime")?.set(
+            (System.nanoTime() % EFFECT_TIME_PERIOD_NANOS).toFloat() / EFFECT_TIME_PERIOD_NANOS,
+        )
+        shader.getUniform("InverseViewProjection")?.set(
+            Matrix4f(context.projectionMatrix()).mul(context.positionMatrix()).invert(),
+        )
+        val camera = context.camera().position
+        shader.getUniform("ArenaCenterRelative")?.set(
+            (snapshot.arenaCenter.x - camera.x).toFloat(),
+            (snapshot.arenaCenter.y - camera.y).toFloat(),
+            (snapshot.arenaCenter.z - camera.z).toFloat(),
+        )
+        shader.getUniform("ArenaOpponentDirection")?.set(
+            snapshot.arenaDirection.x.toFloat(),
+            snapshot.arenaDirection.z.toFloat(),
+        )
+        shader.getUniform("LedFloorRadius")?.set(snapshot.projection.ledFloorRadius.toFloat())
+        shader.getUniform("CameraWorldPosition")?.set(
+            camera.x.toFloat(),
+            camera.y.toFloat(),
+            camera.z.toFloat(),
+        )
+
+        preserveFixedFunctionState {
+            RenderSystem.disableDepthTest()
+            RenderSystem.depthMask(false)
+            RenderSystem.disableBlend()
+            RenderSystem.disableCull()
+            RenderSystem.setShader { shader }
+            drawFullscreenQuad()
+        }
+    }
+
     private fun ensureTargets(width: Int, height: Int) {
         if (backgroundTarget?.viewWidth == width && backgroundTarget?.viewHeight == height &&
-            terrainTarget?.viewWidth == width && terrainTarget?.viewHeight == height
+            terrainTarget?.viewWidth == width && terrainTarget?.viewHeight == height &&
+            finalSceneTarget?.viewWidth == width && finalSceneTarget?.viewHeight == height
         ) return
 
         destroyTargets()
@@ -141,6 +209,9 @@ internal object ShadowTerrainHologramRenderer {
             setFilterMode(GL11.GL_NEAREST)
         }
         terrainTarget = TextureTarget(width, height, true, Minecraft.ON_OSX).apply {
+            setFilterMode(GL11.GL_NEAREST)
+        }
+        finalSceneTarget = TextureTarget(width, height, true, Minecraft.ON_OSX).apply {
             setFilterMode(GL11.GL_NEAREST)
         }
     }
@@ -220,8 +291,10 @@ internal object ShadowTerrainHologramRenderer {
     private fun destroyTargets() {
         backgroundTarget?.destroyBuffers()
         terrainTarget?.destroyBuffers()
+        finalSceneTarget?.destroyBuffers()
         backgroundTarget = null
         terrainTarget = null
+        finalSceneTarget = null
     }
 
     private fun warnOnce(message: String, exception: RuntimeException) {
