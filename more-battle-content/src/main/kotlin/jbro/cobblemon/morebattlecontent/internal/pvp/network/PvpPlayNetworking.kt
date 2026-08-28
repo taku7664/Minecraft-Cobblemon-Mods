@@ -95,6 +95,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             runtime = runtime,
             placement = PvpRoomBattlePlacement(rooms, lounge),
             abortBattle = { battleId -> BattleRegistry.getBattle(battleId)?.end() },
+            diagnostics = { reason -> MoreBattleContent.LOGGER.error("PvP launch failed: {}", reason) },
         )
     }
     private val sessions: PvpSessionService<BattlePokemon> by lazy {

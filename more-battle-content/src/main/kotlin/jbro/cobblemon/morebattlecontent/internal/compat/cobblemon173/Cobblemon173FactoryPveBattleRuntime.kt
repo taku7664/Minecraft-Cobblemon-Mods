@@ -41,8 +41,19 @@ internal class Cobblemon173FactoryPveBattleRuntime(
     private val brainRegistry: BattleBrainRegistry = BattleBrainRegistry.global(),
 ) : FactoryPveBattleRuntime<BattlePokemon> {
     override fun start(prepared: FactoryPreparedPveBattle<BattlePokemon>): FactoryBattleLaunchResult {
-        val player = playerResolver(prepared.request.playerId) ?: return FactoryBattleLaunchResult.Unavailable
-        if (BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) != null) {
+        val player = playerResolver(prepared.request.playerId) ?: run {
+            MoreBattleContent.LOGGER.error(
+                "Battle Factory start failed: player {} is not tracked as online",
+                prepared.request.playerId,
+            )
+            return FactoryBattleLaunchResult.Unavailable
+        }
+        BattleRegistry.getBattleByParticipatingPlayerId(player.uuid)?.let { existing ->
+            MoreBattleContent.LOGGER.error(
+                "Battle Factory start failed: player {} is already registered in battle {}",
+                player.uuid,
+                existing.battleId,
+            )
             return FactoryBattleLaunchResult.Unavailable
         }
 
@@ -115,6 +126,11 @@ internal class Cobblemon173FactoryPveBattleRuntime(
         if (result !is SuccessfulBattleStart) {
             Cobblemon173BattleRuleHooks.finishRegistration(null)
             ownerRegistration.close()
+            MoreBattleContent.LOGGER.error(
+                "Battle Factory start was refused by Cobblemon for player {}: {}",
+                player.uuid,
+                result,
+            )
             return FactoryBattleLaunchResult.Unavailable
         }
         val battle = result.battle

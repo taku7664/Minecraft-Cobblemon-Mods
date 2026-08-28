@@ -67,13 +67,29 @@ internal class PvpBattleLauncher<P>(
     private val runtime: PvpBattleRuntime<P>,
     private val placement: PvpBattlePlacement = PvpBattlePlacement { NoOpPvpBattlePlacement },
     private val abortBattle: (UUID) -> Unit = {},
+    private val diagnostics: (String) -> Unit = {},
 ) {
     fun launch(request: PvpBattleLaunchRequest): PvpBattleLaunchResult {
         val first = materialize.materialize(request.firstPlayerId, request.firstSelection)
-        if (first !is PvpRegisteredBattleTeamResult.Created) return PvpBattleLaunchResult.Unavailable
+        if (first !is PvpRegisteredBattleTeamResult.Created) {
+            diagnostics(
+                "match ${request.matchId}: the team of ${request.firstPlayerId} could not be " +
+                    "materialized: ${first.describe()}",
+            )
+            return PvpBattleLaunchResult.Unavailable
+        }
         val second = materialize.materialize(request.secondPlayerId, request.secondSelection)
-        if (second !is PvpRegisteredBattleTeamResult.Created) return PvpBattleLaunchResult.Unavailable
-        val preparedPlacement = placement.prepare(request) ?: return PvpBattleLaunchResult.Unavailable
+        if (second !is PvpRegisteredBattleTeamResult.Created) {
+            diagnostics(
+                "match ${request.matchId}: the team of ${request.secondPlayerId} could not be " +
+                    "materialized: ${second.describe()}",
+            )
+            return PvpBattleLaunchResult.Unavailable
+        }
+        val preparedPlacement = placement.prepare(request) ?: run {
+            diagnostics("match ${request.matchId}: no lounge placement could be prepared")
+            return PvpBattleLaunchResult.Unavailable
+        }
         val result = try {
             runtime.start(PvpPreparedBattle(request, first.members, second.members))
         } catch (exception: RuntimeException) {
@@ -86,15 +102,34 @@ internal class PvpBattleLauncher<P>(
         }
         val activated = try {
             preparedPlacement.activate(result.battleId)
-        } catch (_: RuntimeException) {
+        } catch (exception: RuntimeException) {
+            diagnostics(
+                "match ${request.matchId}: lounge placement threw while activating battle " +
+                    "${result.battleId}: ${exception.message}",
+            )
             false
         }
         if (activated) return result
+        diagnostics(
+            "match ${request.matchId}: lounge placement could not be activated for battle " +
+                "${result.battleId}; aborting the battle",
+        )
         try {
             abortBattle(result.battleId)
         } finally {
             preparedPlacement.rollback()
         }
         return PvpBattleLaunchResult.Unavailable
+    }
+
+    private companion object {
+        fun PvpRegisteredBattleTeamResult<*>.describe(): String = when (this) {
+            is PvpRegisteredBattleTeamResult.Created -> "created"
+            PvpRegisteredBattleTeamResult.NoSnapshot -> "no registered team snapshot is stored"
+            is PvpRegisteredBattleTeamResult.SnapshotMismatch ->
+                "the snapshot no longer matches Pokemon $pokemonId"
+            is PvpRegisteredBattleTeamResult.CopyFailed ->
+                "the battle copy of Pokemon $pokemonId failed: ${cause.message}"
+        }
     }
 }

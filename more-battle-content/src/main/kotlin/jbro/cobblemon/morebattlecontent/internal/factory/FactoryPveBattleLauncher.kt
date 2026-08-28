@@ -73,15 +73,23 @@ internal class FactoryPveBattleLauncher<M>(
     private val playerMemberFactory: (FactoryRentalSet, FactoryLevelMode) -> M,
     private val opponentMemberFactory: (FactoryRentalSet, FactoryLevelMode) -> M,
     private val runtime: FactoryPveBattleRuntime<M>,
+    private val diagnostics: (String) -> Unit = {},
 ) : FactoryBattleLauncher {
     override fun launch(request: FactoryBattleLaunchRequest): FactoryBattleLaunchResult {
         val playerMembers = materialize(request.playerTeam.sets, request.levelMode, playerMemberFactory)
-            ?: return FactoryBattleLaunchResult.Unavailable
+            ?: run {
+                diagnostics("the rental team of ${request.playerId} could not be materialized")
+                return FactoryBattleLaunchResult.Unavailable
+            }
         val opponentMembers = LinkedHashMap<UUID, M>()
         for ((token, set) in request.opponentTeam) {
             val member = try {
                 opponentMemberFactory(set, request.levelMode)
-            } catch (_: RuntimeException) {
+            } catch (exception: RuntimeException) {
+                diagnostics(
+                    "opponent rental ${set.setId} could not be materialized for ${request.playerId}: " +
+                        "${exception.message}",
+                )
                 return FactoryBattleLaunchResult.Unavailable
             }
             opponentMembers[token] = member

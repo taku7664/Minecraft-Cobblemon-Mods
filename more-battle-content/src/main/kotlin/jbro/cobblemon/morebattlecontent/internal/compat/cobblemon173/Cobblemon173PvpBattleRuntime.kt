@@ -24,11 +24,42 @@ internal class Cobblemon173PvpBattleRuntime(
 ) : PvpBattleRuntime<BattlePokemon> {
     override fun start(prepared: PvpPreparedBattle<BattlePokemon>): PvpBattleLaunchResult {
         val request = prepared.request
-        val first = playerResolver(request.firstPlayerId) ?: return PvpBattleLaunchResult.Unavailable
-        val second = playerResolver(request.secondPlayerId) ?: return PvpBattleLaunchResult.Unavailable
-        if (first.server !== second.server) return PvpBattleLaunchResult.Unavailable
-        if (BattleRegistry.getBattleByParticipatingPlayerId(first.uuid) != null) return PvpBattleLaunchResult.Unavailable
-        if (BattleRegistry.getBattleByParticipatingPlayerId(second.uuid) != null) return PvpBattleLaunchResult.Unavailable
+        val first = playerResolver(request.firstPlayerId) ?: run {
+            MoreBattleContent.LOGGER.error(
+                "PvP start failed for match {}: player {} is not tracked as online",
+                request.matchId,
+                request.firstPlayerId,
+            )
+            return PvpBattleLaunchResult.Unavailable
+        }
+        val second = playerResolver(request.secondPlayerId) ?: run {
+            MoreBattleContent.LOGGER.error(
+                "PvP start failed for match {}: player {} is not tracked as online",
+                request.matchId,
+                request.secondPlayerId,
+            )
+            return PvpBattleLaunchResult.Unavailable
+        }
+        if (first.server !== second.server) {
+            MoreBattleContent.LOGGER.error(
+                "PvP start failed for match {}: players {} and {} are on different servers",
+                request.matchId,
+                first.uuid,
+                second.uuid,
+            )
+            return PvpBattleLaunchResult.Unavailable
+        }
+        listOf(first, second).forEach { player ->
+            BattleRegistry.getBattleByParticipatingPlayerId(player.uuid)?.let { existing ->
+                MoreBattleContent.LOGGER.error(
+                    "PvP start failed for match {}: player {} is already registered in battle {}",
+                    request.matchId,
+                    player.uuid,
+                    existing.battleId,
+                )
+                return PvpBattleLaunchResult.Unavailable
+            }
+        }
 
         val firstParticipant = Cobblemon173ManagedPlayerBattleParticipants.prepare(first.uuid, prepared.firstTeam)
         val secondParticipant = Cobblemon173ManagedPlayerBattleParticipants.prepare(second.uuid, prepared.secondTeam)
@@ -65,6 +96,11 @@ internal class Cobblemon173PvpBattleRuntime(
         }
         if (result !is SuccessfulBattleStart) {
             Cobblemon173BattleRuleHooks.finishRegistration(null)
+            MoreBattleContent.LOGGER.error(
+                "PvP start was refused by Cobblemon for match {}: {}",
+                request.matchId,
+                result,
+            )
             return PvpBattleLaunchResult.Unavailable
         }
         val battle = result.battle

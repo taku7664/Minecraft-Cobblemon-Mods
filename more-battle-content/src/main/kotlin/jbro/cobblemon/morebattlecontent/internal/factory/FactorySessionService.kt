@@ -154,11 +154,18 @@ internal class FactorySessionService(
     fun close(playerId: UUID): Boolean = sessions.remove(playerId) != null
 
     @Synchronized
-    fun disconnect(playerId: UUID): Boolean {
+    fun disconnect(
+        playerId: UUID,
+        terminateBattle: (UUID) -> Unit = {},
+    ): Boolean {
         val session = sessions[playerId] ?: return false
         try {
             session.activeBattleId?.let { battleId ->
-                completions.completeLoss(playerId, session, battleId)
+                try {
+                    terminateBattle(battleId)
+                } finally {
+                    completions.completeLoss(playerId, session, battleId)
+                }
             }
         } finally {
             sessions.remove(playerId)

@@ -227,11 +227,14 @@ internal class FactoryPlayService(
     }
 
     @Synchronized
-    fun disconnect(playerId: UUID) {
+    fun disconnect(
+        playerId: UUID,
+        terminateBattle: (UUID) -> Unit = {},
+    ) {
         pendingStarts.remove(playerId)
         draftOffers.forget(playerId)
         recentOpponentTrainers.forget(playerId)
-        sessions.disconnect(playerId)
+        sessions.disconnect(playerId, terminateBattle)
     }
 
     private fun current(playerId: UUID): FactoryPlayView {

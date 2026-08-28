@@ -55,12 +55,13 @@ internal class ShadowTerrainHologramTransition(
         targetStrength = 1F
     }
 
-    fun hide(battleId: UUID, nowNanos: Long) {
-        val current = projection ?: return
-        if (current.battleId != battleId || targetStrength == 0F) return
+    fun hide(battleId: UUID, nowNanos: Long): Boolean {
+        val current = projection ?: return false
+        if (current.battleId != battleId || targetStrength == 0F) return false
         transitionStartStrength = strengthAt(nowNanos)
         transitionStartedNanos = nowNanos
         targetStrength = 0F
+        return true
     }
 
     fun clear() {

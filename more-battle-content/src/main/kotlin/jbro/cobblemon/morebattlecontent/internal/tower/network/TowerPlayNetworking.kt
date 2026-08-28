@@ -11,7 +11,9 @@ import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon17
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173BattleForfeit
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173OpponentPokemonPropertiesFactory
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173TowerPveBattleRuntime
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173ManagedBattleTermination
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.TowerOpponentCatalogResources
+import jbro.cobblemon.morebattlecontent.internal.compat.fabric.dispatchToServerThread
 import jbro.cobblemon.morebattlecontent.internal.command.BattleProgressSetResult
 import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordCategory
 import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordKey
@@ -70,6 +72,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
                 override fun nextLong(bound: Long): Long = Random.Default.nextLong(bound)
                 override fun nextInt(bound: Int): Int = Random.Default.nextInt(bound)
             },
+            diagnostics = { reason -> MoreBattleContent.LOGGER.error("Battle Tower launch failed: {}", reason) },
         )
     }
     private val sessions: TowerPlaySessionService by lazy {
@@ -117,22 +120,27 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
             onlinePlayers[handler.player.uuid] = handler.player
         }
-        ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
-            val player = handler.player
-            val playerId = player.uuid
-            try {
-                val battleId = sessions.activeBattleId(playerId)
-                if (battleId == null) {
-                    sessions.disconnect(playerId)
-                } else {
-                    sessions.disconnect(playerId, completionSink(player.server, battleId))
+        ServerPlayConnectionEvents.DISCONNECT.register { handler, server ->
+            val playerId = handler.player.uuid
+            dispatchToServerThread(server.isSameThread, { action -> server.execute(action) }) {
+                try {
+                    val battleId = sessions.activeBattleId(playerId)
+                    if (battleId == null) {
+                        sessions.disconnect(playerId)
+                    } else {
+                        sessions.disconnect(
+                            playerId,
+                            completionSink(server, battleId),
+                            Cobblemon173ManagedBattleTermination::end,
+                        )
+                    }
+                } catch (exception: RuntimeException) {
+                    MoreBattleContent.LOGGER.error("Battle Tower disconnect settlement failed for $playerId", exception)
+                } finally {
+                    sessions.close(playerId)
+                    launcher.forget(playerId)
+                    onlinePlayers.remove(playerId)
                 }
-            } catch (exception: RuntimeException) {
-                MoreBattleContent.LOGGER.error("Battle Tower disconnect settlement failed for $playerId", exception)
-            } finally {
-                sessions.close(playerId)
-                launcher.forget(playerId)
-                onlinePlayers.remove(playerId)
             }
         }
     }

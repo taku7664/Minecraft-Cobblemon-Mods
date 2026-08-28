@@ -51,6 +51,7 @@ internal class TowerPveBattleLauncher<P, O>(
     opponentMemberFactory: (TowerPokemonSet) -> O,
     private val runtime: TowerPveBattleRuntime<P, O>,
     private val random: TowerOpponentRandom,
+    private val diagnostics: (String) -> Unit = {},
 ) : TowerBattleLauncher {
     private val opponentMaterializer = TowerOpponentBattleTeamMaterializer(opponentMemberFactory)
     private val recentProfiles = RecentSelectionHistory<UUID, String>(RECENT_PROFILE_LIMIT)
@@ -59,9 +60,13 @@ internal class TowerPveBattleLauncher<P, O>(
     override fun launch(request: TowerBattleLaunchRequest): TowerBattleLaunchResult {
         val playerTeam = registeredTeamMaterializer(request.playerId, request.selection)
         if (playerTeam !is TowerRegisteredBattleTeamResult.Created) {
+            diagnostics("registered team could not be materialized for ${request.playerId}: ${playerTeam.describe()}")
             return TowerBattleLaunchResult.Unavailable
         }
-        val catalog = catalogSource() ?: return TowerBattleLaunchResult.Unavailable
+        val catalog = catalogSource() ?: run {
+            diagnostics("the Battle Tower opponent catalog is not loaded; check the earlier catalog reload errors")
+            return TowerBattleLaunchResult.Unavailable
+        }
         val opponentKind = TowerProgression.nextOpponent(request.progress)
         val opponent = TowerOpponentSelector(catalog, random).select(
             request.progress.nextStage,
@@ -73,10 +78,16 @@ internal class TowerPveBattleLauncher<P, O>(
             request.legendaryClassAllowed,
         )
         if (opponent !is TowerOpponentSelectionResult.Selected) {
+            diagnostics(
+                "no opponent could be selected for stage ${request.progress.nextStage}, format " +
+                    "${request.progress.format}, kind $opponentKind, mechanic ${request.mechanic}, " +
+                    "legendaryClassAllowed=${request.legendaryClassAllowed}: ${opponent.describe()}",
+            )
             return TowerBattleLaunchResult.Unavailable
         }
         val opponentTeam = opponentMaterializer.materialize(opponent.team)
         if (opponentTeam !is TowerOpponentBattleTeamMaterialization.Created) {
+            diagnostics("opponent team ${opponent.profile.profileId} could not be materialized")
             return TowerBattleLaunchResult.Unavailable
         }
         val result = runtime.start(
@@ -108,5 +119,22 @@ internal class TowerPveBattleLauncher<P, O>(
     private companion object {
         const val RECENT_PROFILE_LIMIT = 3
         const val RECENT_SPECIES_LIMIT = 24
+
+        fun TowerRegisteredBattleTeamResult<*>.describe(): String = when (this) {
+            is TowerRegisteredBattleTeamResult.Created -> "created"
+            TowerRegisteredBattleTeamResult.NoSnapshot -> "no registered team snapshot is stored"
+            is TowerRegisteredBattleTeamResult.SnapshotMismatch ->
+                "the snapshot no longer matches Pokemon $pokemonId"
+            is TowerRegisteredBattleTeamResult.CopyFailed ->
+                "the battle copy of Pokemon $pokemonId failed: ${cause.message}"
+        }
+
+        fun TowerOpponentSelectionResult.describe(): String = when (this) {
+            is TowerOpponentSelectionResult.Selected -> "selected"
+            TowerOpponentSelectionResult.NoEligibleProfile ->
+                "no trainer profile matches this stage, format, opponent kind, and mechanic"
+            is TowerOpponentSelectionResult.NoLegalTeam ->
+                "trainer $profileId has no legal team in its resolved set pool"
+        }
     }
 }

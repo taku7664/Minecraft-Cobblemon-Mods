@@ -290,13 +290,21 @@ internal class TowerPlaySessionService(
     fun disconnect(
         playerId: UUID,
         completionSink: TowerPlayBattleCompletionSink = battleCompletionSink,
+        terminateBattle: (UUID) -> Unit = {},
     ): Boolean {
         val session = sessions[playerId] ?: return false
-        session.activeBattleId?.let { battleId ->
-            finishBattle(playerId, battleId, TowerBattleOutcome.LOSS, completionSink)
+        try {
+            session.activeBattleId?.let { battleId ->
+                try {
+                    terminateBattle(battleId)
+                } finally {
+                    finishBattle(playerId, battleId, TowerBattleOutcome.LOSS, completionSink)
+                }
+            }
+        } finally {
+            registeredTeamSnapshots.discard(playerId)
+            removeSession(playerId)
         }
-        registeredTeamSnapshots.discard(playerId)
-        removeSession(playerId)
         return true
     }
 

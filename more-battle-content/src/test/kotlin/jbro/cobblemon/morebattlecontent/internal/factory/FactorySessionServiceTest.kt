@@ -77,6 +77,27 @@ class FactorySessionServiceTest {
 
     @Test
     fun `disconnect during an active battle records a loss before closing the run`() {
+        val lifecycle = ArrayList<String>()
+        val outcomes = ArrayList<BattleRecordOutcome>()
+        val active = service { completion ->
+            lifecycle += "record"
+            outcomes += completion.outcome
+            BattleRecordStats(completion.key)
+        }
+        active.start(playerId, team(), FactoryLevelMode.LEVEL_50) {}
+        active.beginBattle(playerId, opponent(), "trainer.factory", 3, strategyBrief())
+
+        assertTrue(active.disconnect(playerId) { terminatedBattleId ->
+            lifecycle += "terminate-$terminatedBattleId"
+        })
+
+        assertEquals(listOf(BattleRecordOutcome.LOSS), outcomes)
+        assertEquals(listOf("terminate-$battleId", "record"), lifecycle)
+        assertEquals(null, active.snapshot(playerId))
+    }
+
+    @Test
+    fun `disconnect still records the loss and removes the run when battle termination throws`() {
         val outcomes = ArrayList<BattleRecordOutcome>()
         val active = service { completion ->
             outcomes += completion.outcome
@@ -85,7 +106,9 @@ class FactorySessionServiceTest {
         active.start(playerId, team(), FactoryLevelMode.LEVEL_50) {}
         active.beginBattle(playerId, opponent(), "trainer.factory", 3, strategyBrief())
 
-        assertTrue(active.disconnect(playerId))
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException::class.java) {
+            active.disconnect(playerId) { throw IllegalStateException("termination failed") }
+        }
 
         assertEquals(listOf(BattleRecordOutcome.LOSS), outcomes)
         assertEquals(null, active.snapshot(playerId))

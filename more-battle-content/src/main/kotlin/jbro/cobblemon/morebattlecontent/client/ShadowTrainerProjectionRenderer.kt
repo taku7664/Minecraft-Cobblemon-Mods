@@ -89,6 +89,7 @@ internal object ShadowTrainerProjectionRenderer {
             relativeZ,
             projection.yaw,
             partialTick,
+            camera.y,
         )
     }
 
@@ -129,7 +130,10 @@ internal object ShadowTrainerProjectionRenderer {
         z: Double,
         yaw: Float,
         partialTick: Float,
+        cameraY: Double,
     ) {
+        val gameTicks = (client.level?.gameTime ?: 0L).toDouble() + partialTick
+        val shaderPackActive = ExternalShaderPackState.isInUse()
         poseStack.pushPose()
         poseStack.translate(x, y, z)
         poseStack.translate(-x, -y, -z)
@@ -142,7 +146,12 @@ internal object ShadowTrainerProjectionRenderer {
                 yaw,
                 partialTick,
                 poseStack,
-                HologramBufferSource(buffers),
+                HologramBufferSource(
+                    delegate = buffers,
+                    useCoreShader = !shaderPackActive,
+                    gameTicks = gameTicks,
+                    cameraY = cameraY,
+                ),
                 LightTexture.FULL_BRIGHT,
             )
         } finally {
@@ -194,32 +203,45 @@ internal object ShadowHologramAppearance {
 
 private class HologramBufferSource(
     private val delegate: MultiBufferSource,
+    private val useCoreShader: Boolean,
+    private val gameTicks: Double,
+    private val cameraY: Double,
 ) : MultiBufferSource {
-    override fun getBuffer(renderType: RenderType): VertexConsumer =
-        ShadowHologramShader.buffer(delegate, renderType) {
-            HologramVertexConsumer(delegate.getBuffer(renderType), FALLBACK_OPACITY)
+    override fun getBuffer(renderType: RenderType): VertexConsumer {
+        val fallback = {
+            HologramVertexConsumer(
+                delegate = delegate.getBuffer(renderType),
+                gameTicks = gameTicks,
+                cameraY = cameraY,
+            )
         }
-
-    private companion object {
-        const val FALLBACK_OPACITY = 0.62F
+        return if (useCoreShader) {
+            ShadowHologramShader.buffer(delegate, renderType, fallback)
+        } else {
+            fallback()
+        }
     }
 }
 
 private class HologramVertexConsumer(
     private val delegate: VertexConsumer,
-    private val opacity: Float,
+    private val gameTicks: Double,
+    private val cameraY: Double,
 ) : VertexConsumer {
+    private var signal = ShadowHologramFallbackSignal.sample(gameTicks, cameraY)
+
     override fun addVertex(x: Float, y: Float, z: Float): VertexConsumer {
-        delegate.addVertex(x, y, z)
+        signal = ShadowHologramFallbackSignal.sample(gameTicks, y + cameraY)
+        delegate.addVertex(x + signal.horizontalOffset, y, z)
         return this
     }
 
     override fun setColor(red: Int, green: Int, blue: Int, alpha: Int): VertexConsumer {
         delegate.setColor(
-            (red * ShadowHologramAppearance.FALLBACK_RED).roundToInt().coerceIn(0, 255),
-            (green * ShadowHologramAppearance.FALLBACK_GREEN).roundToInt().coerceIn(0, 255),
-            (blue * ShadowHologramAppearance.FALLBACK_BLUE).roundToInt().coerceIn(0, 255),
-            ShadowHologramAppearance.alpha(alpha, opacity),
+            (red * ShadowHologramAppearance.FALLBACK_RED * signal.brightness).roundToInt().coerceIn(0, 255),
+            (green * ShadowHologramAppearance.FALLBACK_GREEN * signal.brightness).roundToInt().coerceIn(0, 255),
+            (blue * ShadowHologramAppearance.FALLBACK_BLUE * signal.brightness).roundToInt().coerceIn(0, 255),
+            ShadowHologramAppearance.alpha(alpha, signal.alpha),
         )
         return this
     }

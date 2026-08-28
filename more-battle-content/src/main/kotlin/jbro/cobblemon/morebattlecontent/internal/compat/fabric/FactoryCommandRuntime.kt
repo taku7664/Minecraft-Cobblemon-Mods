@@ -10,6 +10,7 @@ import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointService
 import jbro.cobblemon.morebattlecontent.internal.bp.requireAcceptedReward
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173FactoryPokemonFactory
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173FactoryPveBattleRuntime
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173ManagedBattleTermination
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173BattleForfeit
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryBattleCompletionService
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryBattleFormat
@@ -61,6 +62,7 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
             playerMemberFactory = Cobblemon173FactoryPokemonFactory::toPlayerBattlePokemon,
             opponentMemberFactory = Cobblemon173FactoryPokemonFactory::toOpponentBattlePokemon,
             runtime = runtime,
+            diagnostics = { reason -> jbro.cobblemon.morebattlecontent.MoreBattleContent.LOGGER.error("Battle Factory launch failed: {}", reason) },
         )
     }
     private val draftOffers by lazy {
@@ -115,17 +117,19 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
             onlinePlayers[handler.player.uuid] = handler.player
         }
-        ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
+        ServerPlayConnectionEvents.DISCONNECT.register { handler, server ->
             val playerId = handler.player.uuid
-            try {
-                play.disconnect(playerId)
-            } catch (exception: RuntimeException) {
-                jbro.cobblemon.morebattlecontent.MoreBattleContent.LOGGER.error(
-                    "Battle Factory disconnect settlement failed for $playerId",
-                    exception,
-                )
-            } finally {
-                onlinePlayers.remove(playerId)
+            dispatchToServerThread(server.isSameThread, { action -> server.execute(action) }) {
+                try {
+                    play.disconnect(playerId, Cobblemon173ManagedBattleTermination::end)
+                } catch (exception: RuntimeException) {
+                    jbro.cobblemon.morebattlecontent.MoreBattleContent.LOGGER.error(
+                        "Battle Factory disconnect settlement failed for $playerId",
+                        exception,
+                    )
+                } finally {
+                    onlinePlayers.remove(playerId)
+                }
             }
         }
     }

@@ -61,17 +61,26 @@ internal class TowerOpponentSelector(
         val profile = selectWeighted(selectableProfiles)
         val completePool = catalog.setsFor(profile).filter(isEligibleSet)
         val freshPool = completePool.filterNot { it.speciesId in excludedSpeciesIds }
-        val selectedPool = freshPool.takeIf {
-            TowerLegalTeamSearch.exists(it, teamSize)
-        } ?: completePool
-        val randomizedPool = selectedPool.toMutableList()
-        shuffle(randomizedPool)
-        val team = selectStyledTeam(profile, randomizedPool, teamSize)
+        // Species freshness is only a preference. Dropping recently faced species can strip a trainer of every
+        // signature or style anchor, so fall back to the complete pool instead of reporting no legal team.
+        val team = selectStyledTeamFrom(profile, freshPool, teamSize)
+            ?: selectStyledTeamFrom(profile, completePool, teamSize)
             ?: return TowerOpponentSelectionResult.NoLegalTeam(profile.profileId)
         return TowerOpponentSelectionResult.Selected(
             profile,
             Collections.unmodifiableList(ArrayList(team)),
         )
+    }
+
+    private fun selectStyledTeamFrom(
+        profile: TowerOpponentProfile,
+        pool: List<TowerPokemonSet>,
+        teamSize: Int,
+    ): List<TowerPokemonSet>? {
+        if (pool.size < teamSize) return null
+        val randomizedPool = pool.toMutableList()
+        shuffle(randomizedPool)
+        return selectStyledTeam(profile, randomizedPool, teamSize)
     }
 
     private fun isNormal(set: TowerPokemonSet): Boolean =

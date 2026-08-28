@@ -5,7 +5,6 @@ import net.fabricmc.api.ClientModInitializer
 object MoreBattleContentClient : ClientModInitializer {
     override fun onInitializeClient() {
         ShadowHologramShader.register()
-        ShadowPokemonHologramShader.register()
         ShadowTerrainHologramShader.register()
         ShadowTerrainHologramRenderer.register()
         HoloBattleTerminalClientContent.register()

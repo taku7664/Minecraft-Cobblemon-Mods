@@ -33,8 +33,19 @@ internal class Cobblemon173TowerPveBattleRuntime(
     override fun start(
         prepared: TowerPreparedPveBattle<BattlePokemon, BattlePokemon>,
     ): TowerBattleLaunchResult {
-        val player = playerResolver(prepared.request.playerId) ?: return TowerBattleLaunchResult.Unavailable
-        if (BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) != null) {
+        val player = playerResolver(prepared.request.playerId) ?: run {
+            MoreBattleContent.LOGGER.error(
+                "Battle Tower start failed: player {} is not tracked as online",
+                prepared.request.playerId,
+            )
+            return TowerBattleLaunchResult.Unavailable
+        }
+        BattleRegistry.getBattleByParticipatingPlayerId(player.uuid)?.let { existing ->
+            MoreBattleContent.LOGGER.error(
+                "Battle Tower start failed: player {} is already registered in battle {}",
+                player.uuid,
+                existing.battleId,
+            )
             return TowerBattleLaunchResult.Unavailable
         }
 
@@ -110,6 +121,11 @@ internal class Cobblemon173TowerPveBattleRuntime(
         if (result !is SuccessfulBattleStart) {
             Cobblemon173BattleRuleHooks.finishRegistration(null)
             ownerRegistration.close()
+            MoreBattleContent.LOGGER.error(
+                "Battle Tower start was refused by Cobblemon for player {}: {}",
+                player.uuid,
+                result,
+            )
             return TowerBattleLaunchResult.Unavailable
         }
         val battle = result.battle

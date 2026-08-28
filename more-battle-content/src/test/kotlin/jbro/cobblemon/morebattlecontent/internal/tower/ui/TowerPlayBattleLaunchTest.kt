@@ -356,12 +356,16 @@ class TowerPlayBattleLaunchTest {
 
     @Test
     fun `disconnect during an active battle records a loss before closing the session`() {
+        val lifecycle = ArrayList<String>()
         val recorded = ArrayList<TowerProgressUpdate>()
         val service = TowerPlaySessionService(
             entryContextIdFactory = { contextId },
             battleLauncher = TowerBattleLauncher { TowerBattleLaunchResult.Started(battleId) },
             registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
-            battleCompletionSink = { _, update -> recorded += update },
+            battleCompletionSink = { _, update ->
+                lifecycle += "record"
+                recorded += update
+            },
         )
         val locked = lockFirstThree(service, currentWinStreak = 7)
         service.mutate(
@@ -369,11 +373,38 @@ class TowerPlayBattleLaunchTest {
             TowerPlayIntent.Start(UUID(0, 34), contextId, locked.revision),
         ) as TowerPlayMutationResult.Accepted
 
-        assertTrue(service.disconnect(playerId))
+        assertTrue(service.disconnect(playerId, terminateBattle = { terminatedBattleId ->
+            lifecycle += "terminate-$terminatedBattleId"
+        }))
+
+        assertEquals(1, recorded.size)
+        assertEquals(listOf("terminate-$battleId", "record"), lifecycle)
+        assertEquals(TowerBattleOutcome.LOSS, recorded.single().outcome)
+        assertEquals(0, recorded.single().after.currentWinStreak)
+        assertEquals(null, service.current(playerId))
+    }
+
+    @Test
+    fun `disconnect still records the loss and removes the session when battle termination throws`() {
+        val recorded = ArrayList<TowerProgressUpdate>()
+        val service = TowerPlaySessionService(
+            entryContextIdFactory = { contextId },
+            battleLauncher = TowerBattleLauncher { TowerBattleLaunchResult.Started(battleId) },
+            registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
+            battleCompletionSink = { _, update -> recorded += update },
+        )
+        val locked = lockFirstThree(service, currentWinStreak = 4)
+        service.mutate(
+            playerId,
+            TowerPlayIntent.Start(UUID(0, 35), contextId, locked.revision),
+        ) as TowerPlayMutationResult.Accepted
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException::class.java) {
+            service.disconnect(playerId, terminateBattle = { throw IllegalStateException("termination failed") })
+        }
 
         assertEquals(1, recorded.size)
         assertEquals(TowerBattleOutcome.LOSS, recorded.single().outcome)
-        assertEquals(0, recorded.single().after.currentWinStreak)
         assertEquals(null, service.current(playerId))
     }
 

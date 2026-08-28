@@ -197,6 +197,72 @@ class TowerOpponentSelectorTest {
         assertEquals(1, enabled.team.count { TowerLegendaryClassPolicy.isLegendaryClass(it.speciesId) })
     }
 
+    @Test
+    fun `keeps the signature species when every fresh set would strip the anchor`() {
+        val sets = validSets()
+        val signatureSpecies = sets.first().speciesId
+        val profile = profile(
+            "signature",
+            1,
+            TowerBattleFormat.SINGLE,
+            sets.map(TowerPokemonSet::setId),
+            signatureSpeciesIds = listOf(signatureSpecies),
+        )
+        val selector = TowerOpponentSelector(catalog(listOf(profile), sets), FixedRandom())
+
+        val result = selector.select(
+            TowerStreakStage.INTRODUCTORY,
+            TowerBattleFormat.SINGLE,
+            TowerOpponentKind.REGULAR,
+            MajorBattleMechanic.MEGA,
+            excludedSpeciesIds = setOf(signatureSpecies),
+        )
+
+        result as TowerOpponentSelectionResult.Selected
+        assertEquals(3, result.team.size)
+        assertTrue(result.team.any { it.speciesId == signatureSpecies })
+    }
+
+    @Test
+    fun `keeps the team style when every fresh set would strip the anchor`() {
+        val styledSet = pokemonSet(1).let { base ->
+            TowerPokemonSet(
+                setId = base.setId,
+                setTier = base.setTier,
+                mechanic = base.mechanic,
+                speciesId = base.speciesId,
+                formId = null,
+                abilityId = null,
+                natureId = base.natureId,
+                heldItemId = base.heldItemId,
+                moves = listOf("cobblemon:swordsdance"),
+                ivs = base.ivs,
+                evs = base.evs,
+            )
+        }
+        val sets = listOf(styledSet) + (2..6).map(::pokemonSet)
+        val profile = profile(
+            "styled",
+            1,
+            TowerBattleFormat.SINGLE,
+            sets.map(TowerPokemonSet::setId),
+            teamStyle = TowerTrainerStyle.SETUP_SWEEP,
+        )
+        val selector = TowerOpponentSelector(catalog(listOf(profile), sets), FixedRandom())
+
+        val result = selector.select(
+            TowerStreakStage.INTRODUCTORY,
+            TowerBattleFormat.SINGLE,
+            TowerOpponentKind.REGULAR,
+            MajorBattleMechanic.MEGA,
+            excludedSpeciesIds = setOf(styledSet.speciesId),
+        )
+
+        result as TowerOpponentSelectionResult.Selected
+        assertEquals(3, result.team.size)
+        assertTrue(result.team.any(TowerTrainerStyle.SETUP_SWEEP::matches))
+    }
+
     private fun catalog(
         profiles: List<TowerOpponentProfile>,
         sets: List<TowerPokemonSet>,
@@ -209,6 +275,8 @@ class TowerOpponentSelectorTest {
         setIds: List<String>,
         mechanic: MajorBattleMechanic = MajorBattleMechanic.MEGA,
         stageIds: List<TowerStreakStage> = listOf(TowerStreakStage.INTRODUCTORY),
+        teamStyle: TowerTrainerStyle = TowerTrainerStyle.BALANCED,
+        signatureSpeciesIds: List<String> = emptyList(),
     ) = TowerOpponentProfile(
         profileId = id,
         displayNameKey = "trainer.test.$id",
@@ -220,6 +288,8 @@ class TowerOpponentSelectorTest {
         aiSkill = 1,
         theme = "balanced",
         setIds = setIds,
+        teamStyle = teamStyle,
+        signatureSpeciesIds = signatureSpeciesIds,
     )
 
     private fun validSets() = (1..6).map(::pokemonSet)
