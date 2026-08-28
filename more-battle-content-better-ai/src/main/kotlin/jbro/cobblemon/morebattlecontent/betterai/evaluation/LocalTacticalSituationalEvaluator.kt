@@ -13,6 +13,8 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveRequirementView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
+import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalSideConditionRules
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
 
@@ -42,6 +44,22 @@ internal object LocalTacticalSituationalEvaluator {
         candidate: BattleActionCandidate,
         accuracy: Double,
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+        /**
+         * Supplied wherever the caller has it, so a knockout can be reconsidered under a screen.
+         *
+         * The damage half of the score is already mechanics-aware, by a route that is easy to miss:
+         * the scorer publishes an unclamped pressure from the facts, and the outcome evaluator
+         * subtracts exactly that and adds the projector's figure instead - and the projector applies
+         * the public mechanics kernel. The two terms are one term split across two files.
+         *
+         * The knockout half has no such cancellation. It reads the facts' assessment straight, and
+         * that assessment is contractually the plain Showdown base projection with every dynamic
+         * modifier excluded. So behind a Light Screen the AI priced the damage correctly and still
+         * believed the attack was a guaranteed knockout - and a guaranteed knockout is not a bigger
+         * number, it is a different kind of position. Whether a patient line is affordable, whether
+         * it is time to switch, whether to set up: all of it is decided on that premise.
+         */
+        context: BattleDecisionContext? = null,
     ): Double {
         val facts = candidate.facts
         if (tuning.legacyRawPowerFallback) {
@@ -56,13 +74,15 @@ internal object LocalTacticalSituationalEvaluator {
                 else -> 0.0
             }
         }
-        val probability = when (facts?.standardKnockoutAssessment) {
+        val declared = when (facts?.standardKnockoutAssessment) {
             BattleKnockoutAssessment.GUARANTEED -> 1.0
             BattleKnockoutAssessment.POSSIBLE -> facts.standardDamageRollKoProbabilityRange
                 ?.let { (it.minimum + it.maximum) / 2.0 }
                 ?: 0.0
             else -> return 0.0
         }
+        val probability = context?.let { publicKnockoutProbability(candidate, it, declared) } ?: declared
+        if (probability <= 0.0) return 0.0
         // A knockout landed before the reply is worth more than the same knockout landed after it: one
         // ends the exchange, the other only wins the trade. `firstStrikeWeight` says how much of the
         // knockout's value is conditional on getting there first, and it ships at zero until the
@@ -70,6 +90,39 @@ internal object LocalTacticalSituationalEvaluator {
         val order = facts?.actsFirstProbability
         val initiative = if (order == null) 1.0 else 1.0 - tuning.firstStrikeWeight * (1.0 - order)
         return tuning.knockoutMaterialScore * probability * accuracy * initiative
+    }
+
+    /**
+     * The declared knockout chance, reconsidered under the modifiers the facts are not allowed to carry.
+     *
+     * The kernel is consulted first and the answer returned unchanged when its multiplier is one,
+     * which is every ordinary turn: no screen, no weather on a matching type, no halving ability.
+     * Only when something actually modifies the hit does this pay for a second projection, and then
+     * it counts the modified rolls rather than scaling an average - because "can this still kill" is
+     * a question about individual rolls, and an average cannot answer it.
+     */
+    private fun publicKnockoutProbability(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        declared: Double,
+    ): Double {
+        val mechanics = LocalPublicMechanicsKernel.projectMove(candidate, context)
+        if (mechanics.publiclyNullified) return 0.0
+        if (mechanics.knownDamageMultiplier == 1.0) return declared
+        val target = candidate.targets.singleOrNull()?.let { slot ->
+            context.state.pokemon.firstOrNull {
+                it.side == slot.side && it.activeSlot == slot.slot && !it.fainted
+            }
+        } ?: context.state.pokemon.singleOrNull {
+            it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted
+        } ?: return declared
+        val rolls = PublicBattleTacticalCalculator
+            .conservativeDamageRollFractions(candidate, context, BattleSide.ALLY)
+            ?.takeIf { it.isNotEmpty() }
+            ?: return declared
+        // The roll fractions are capped at the target's remaining health, so a roll that reaches it
+        // is exactly a roll that kills.
+        return rolls.count { it >= target.hpFraction }.toDouble() / rolls.size
     }
 
     /**

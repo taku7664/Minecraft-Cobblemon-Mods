@@ -280,7 +280,7 @@ internal object LocalBattleActionOutcomeEvaluator {
             currentDefensiveExposure = null,
             resultingDefensiveExposure = null,
             survivalPositionImprovement = null,
-            knockoutUtility = LocalTacticalScorer.knockoutUtility(candidate, tuning),
+            knockoutUtility = LocalTacticalScorer.knockoutUtility(candidate, tuning, context),
         )
     }
 

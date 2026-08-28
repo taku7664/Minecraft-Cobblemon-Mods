@@ -52,12 +52,14 @@ internal object LocalTacticalScorer {
     fun knockoutUtility(
         candidate: BattleActionCandidate,
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+        /** Passed through so a screen or the weather can take the knockout off the table. */
+        context: BattleDecisionContext? = null,
     ): Double {
         if (candidate.kind != BattleActionKind.USE_MOVE) return 0.0
         val details = candidate.moveDetails ?: return 0.0
         if (details.damageCategory == BattleMoveDamageCategory.STATUS) return 0.0
         val accuracy = candidate.facts?.baseAccuracyProbability ?: details.accuracy / 100.0
-        return LocalTacticalSituationalEvaluator.knockoutAdjustment(candidate, accuracy, tuning)
+        return LocalTacticalSituationalEvaluator.knockoutAdjustment(candidate, accuracy, tuning, context)
     }
 
     /**
@@ -142,7 +144,7 @@ internal object LocalTacticalScorer {
             allyActiveHp(context) <= CRITICAL_HP -> details.priority * 8.0
             else -> details.priority * 2.0
         }
-        val knockoutBonus = LocalTacticalSituationalEvaluator.knockoutAdjustment(candidate, accuracy, tuning)
+        val knockoutBonus = LocalTacticalSituationalEvaluator.knockoutAdjustment(candidate, accuracy, tuning, context)
         // A spread move's other targets. Zero for every single-target move, so this changes nothing
         // outside doubles.
         val spreadBonus = LocalTacticalSituationalEvaluator.spreadAdjustment(candidate, accuracy, tuning)
