@@ -584,7 +584,8 @@ internal object PublicBattleTacticalCalculator {
     ): List<BattlePokemonStateView> {
         val explicitTarget = candidate.targets.singleOrNull()
         if (explicitTarget != null) {
-            return listOfNotNull(active(context, explicitTarget.side, explicitTarget.slot))
+            val declared = active(context, explicitTarget.side, explicitTarget.slot)
+            return listOfNotNull(declared?.let { redirectedAwayFrom(it, candidate, context) ?: it })
         }
         val targetSide = if (actingSide == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
         val activeOpponents = context.state.pokemon
@@ -596,6 +597,76 @@ internal object PublicBattleTacticalCalculator {
         // exactly one opponent is on the field; guessing between two would invent a fact.
         return listOfNotNull(activeOpponents.singleOrNull())
     }
+
+
+    /**
+     * The slot a publicly known ability pulls this move into instead, or nothing.
+     *
+     * Lightning Rod and Storm Drain were modelled only as absorbers standing on their own slot, which
+     * is the whole of what they do in singles and half of what they do in doubles. The other half is
+     * that they take the move away from the partner: an Electric attack aimed at the slot beside a
+     * Lightning Rod does not hit that slot at all.
+     *
+     * Missing it is not a small mispricing. The AI projected full damage on the declared target,
+     * spent the turn, dealt nothing, and handed the opponent a free Special Attack stage - and would
+     * do it again next turn, because nothing about the failure was in the public state it reads. The
+     * fix belongs here rather than in the damage step, because the question being got wrong is "who
+     * does this move hit", and this is the one function that answers it. Everything downstream - the
+     * type chart, the absorbing-ability check, the knockout - then reads the right defender without
+     * knowing redirection exists.
+     *
+     * The same public standard as every other ability reading: revealed, or the only ordinary ability
+     * the species has. Ability-ignoring attackers are deliberately not exempted. Mold Breaker stops
+     * the absorption, not the redirection, so such a move still gets pulled aside and then lands -
+     * which is exactly what falls out of resolving the target here and letting the kernel decide the
+     * rest.
+     */
+    private fun redirectedAwayFrom(
+        declared: BattlePokemonStateView,
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+    ): BattlePokemonStateView? {
+        if (context.state.format != BattleFormat.DOUBLE) return null
+        if (candidate.moveDetails?.targetPattern !in REDIRECTABLE_TARGET_PATTERNS) return null
+        val moveType = canonical(candidate.moveDetails?.typeId) ?: return null
+        return context.state.pokemon.firstOrNull { other ->
+            other.side == declared.side &&
+                other.activeSlot != null &&
+                other.battlePokemonId != declared.battlePokemonId &&
+                !other.fainted &&
+                other.hpFraction > 0.0 &&
+                redirectsPublicly(other, context, moveType)
+        }
+    }
+
+    private fun redirectsPublicly(
+        pokemon: BattlePokemonStateView,
+        context: BattleDecisionContext,
+        moveType: String,
+    ): Boolean {
+        val revealed = canonical(pokemon.knownAbilityId)
+        if (revealed != null) return REDIRECTING_ABILITIES[revealed] == moveType
+        val ordinary = context.state.inferences.asSequence()
+            .filter { it.subjectPokemonId == pokemon.battlePokemonId && it.categoryId == ABILITY_CATEGORY }
+            .filter { it.confidence != BattleInferenceConfidence.RULED_OUT }
+            .filter { it.abilityAvailability != BattleAbilityAvailability.HIDDEN }
+            .mapNotNull { canonical(it.candidateId) }
+            .distinct()
+            .toList()
+        return ordinary.isNotEmpty() && ordinary.all { REDIRECTING_ABILITIES[it] == moveType }
+    }
+
+    /** The abilities that take a single-target move of their type away from the slot beside them. */
+    private val REDIRECTING_ABILITIES = mapOf(
+        "lightningrod" to "electric",
+        "stormdrain" to "water",
+    )
+
+    /** Only a move that picks one slot can be pulled to a different one. */
+    private val REDIRECTABLE_TARGET_PATTERNS = setOf(
+        BattleMoveTargetPattern.SELECTED,
+        BattleMoveTargetPattern.SELECTED_OPPONENT,
+    )
 
     private fun active(context: BattleDecisionContext, side: BattleSide, slot: Int): BattlePokemonStateView? =
         context.state.pokemon.firstOrNull {
