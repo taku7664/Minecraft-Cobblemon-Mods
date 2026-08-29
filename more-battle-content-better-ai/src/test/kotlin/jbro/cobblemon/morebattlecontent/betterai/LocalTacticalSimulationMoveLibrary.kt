@@ -25,14 +25,38 @@ internal object LocalTacticalSimulationMoveLibrary {
             accuracy = move.accuracy,
             priority = move.priority,
             currentPp = move.pp,
+            // Showdown's own target string decides this now. The hand-kept self and side lists stay
+            // ahead of it, because they encode cases this library models by move id rather than by
+            // target, but everything else - and in particular every spread move - is read from the
+            // data instead of being flattened to a single target.
             targetPattern = when {
                 selfTarget -> BattleMoveTargetPattern.SELF
                 sideTarget -> BattleMoveTargetPattern.SIDE
-                else -> BattleMoveTargetPattern.SELECTED_OPPONENT
+                else -> targetPattern(move.showdownTarget)
             },
             effects = effectsFor(id),
         )
     }
+
+    /**
+     * Showdown's target string in the terms the contract uses.
+     *
+     * Unknown or absent falls back to a single opposing target, which is what every move used to get.
+     */
+    private fun targetPattern(showdownTarget: String?): BattleMoveTargetPattern =
+        when (showdownTarget?.lowercase()) {
+            "alladjacentfoes" -> BattleMoveTargetPattern.ALL_OPPONENTS
+            "alladjacent" -> BattleMoveTargetPattern.ALL_ADJACENT
+            "all" -> BattleMoveTargetPattern.ALL_ACTIVE
+            "allies" -> BattleMoveTargetPattern.ALL_ALLIES
+            "adjacentally" -> BattleMoveTargetPattern.SELECTED_ALLY
+            "adjacentallyorself" -> BattleMoveTargetPattern.SELECTED_ALLY_OR_SELF
+            "randomnormal" -> BattleMoveTargetPattern.RANDOM_OPPONENT
+            "self" -> BattleMoveTargetPattern.SELF
+            "allyside" -> BattleMoveTargetPattern.SIDE
+            "foeside" -> BattleMoveTargetPattern.SIDE
+            else -> BattleMoveTargetPattern.SELECTED_OPPONENT
+        }
 
     private fun effectsFor(id: String): BattleMoveEffectsView? {
         val effects = when (id) {

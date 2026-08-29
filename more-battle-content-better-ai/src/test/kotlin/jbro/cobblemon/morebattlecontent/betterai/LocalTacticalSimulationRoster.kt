@@ -168,6 +168,7 @@ internal class LocalTacticalSimulationRoster private constructor(
                     "status" -> BattleMoveDamageCategory.STATUS
                     else -> return@mapNotNull null
                 }
+                val showdownTarget = field(body, "target")
                 id to LocalTacticalSimulationMove(
                     id = "cobblemon:$id",
                     typeId = type.lowercase(),
@@ -176,6 +177,7 @@ internal class LocalTacticalSimulationRoster private constructor(
                     accuracy = accuracy,
                     priority = numericField(body, "priority")?.toInt() ?: 0,
                     pp = pp,
+                    showdownTarget = showdownTarget,
                 )
             }.toMap()
         }
@@ -349,6 +351,15 @@ internal data class LocalTacticalSimulationMove(
     val accuracy: Double,
     val priority: Int,
     val pp: Int,
+    /**
+     * Showdown's own target string, kept rather than discarded.
+     *
+     * It was being dropped at parse time and every simulated move became a single-target one, which
+     * made the doubles harness blind to the only things doubles is actually about: a spread move that
+     * catches your own partner, a Follow Me that takes the turn's attack, two slots interacting at
+     * all. The harness ran doubles and measured singles played on a wider board.
+     */
+    val showdownTarget: String? = null,
 )
 
 internal data class LocalTacticalSimulationStats(
