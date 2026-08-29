@@ -77,10 +77,11 @@ internal object LocalTacticalScorer {
         context: BattleDecisionContext,
         strategy: BattleStrategyBrief? = null,
         profile: BattleTrainerProfile = BattleTrainerProfile.balanced(),
+        tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     ): Double = when (candidate.kind) {
-        BattleActionKind.USE_MOVE -> moveAdjustments(candidate, context, strategy, profile)
+        BattleActionKind.USE_MOVE -> moveAdjustments(candidate, context, strategy, profile, tuning)
         BattleActionKind.COMPOSITE ->
-            candidate.componentActions.sumOf { candidateAdjustments(it, context, strategy, profile) } +
+            candidate.componentActions.sumOf { candidateAdjustments(it, context, strategy, profile, tuning) } +
                 LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context)
         else -> 0.0
     }
@@ -90,9 +91,10 @@ internal object LocalTacticalScorer {
         context: BattleDecisionContext,
         strategy: BattleStrategyBrief?,
         profile: BattleTrainerProfile,
+        tuning: LocalDecisionTuning,
     ): Double {
         if (candidate.moveDetails == null) return strategyMoveAdjustment(candidate, context, strategy)
-        return -publicAllyCollateral(candidate, context) -
+        return -publicAllyCollateral(candidate, context, tuning) -
             LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.saturatedStatStagePenalty(candidate, context) -
@@ -157,7 +159,7 @@ internal object LocalTacticalScorer {
             0.0
         }
         return pressure + priorityBonus + knockoutBonus + spreadBonus -
-            recoilPenalty - publicAllyCollateral(candidate, context) -
+            recoilPenalty - publicAllyCollateral(candidate, context, tuning) -
             LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.saturatedStatStagePenalty(candidate, context) -
@@ -516,9 +518,25 @@ internal object LocalTacticalScorer {
         return targetAverage * spreadDamageModifier(candidate, context)
     }
 
+    /**
+     * What this move costs by landing on one's own side.
+     *
+     * The same scale collision as the resisted-move bug, at the site that fix did not reach. This
+     * returned `power * accuracy * stab * typeMultiplier` - a raw-power number - and it was
+     * subtracted from a score whose damage half is an HP fraction times a hundred. A hundred-power
+     * same-type spread move was therefore charged about a hundred and twelve for grazing a partner
+     * while earning about thirty-two for hitting two opponents, so Earthquake in doubles scored
+     * around minus forty-six against plus forty-six for hitting one opponent. The AI was not being
+     * careful with its partner; it was comparing two different units.
+     *
+     * Converted the same way [unprojectedPressure] converts, through the same tuning constants, so
+     * the two coarse estimates stay coarse in the same unit. `legacyRawPowerFallback` keeps the old
+     * arithmetic for the legacy tuning, which is measured against the old numbers.
+     */
     private fun publicAllyCollateral(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
+        tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     ): Double {
         val details = candidate.moveDetails ?: return 0.0
         if (details.damageCategory == BattleMoveDamageCategory.STATUS) return 0.0
@@ -538,14 +556,20 @@ internal object LocalTacticalScorer {
             }
             else -> emptyList()
         }
-        val basePressure = details.power * details.accuracy / 100.0 * publicSameTypeBonus(candidate, context)
+        val effectivePower = details.power * details.accuracy / 100.0
+        val sameTypeBonus = publicSameTypeBonus(candidate, context)
         return targets.sumOf { target ->
             val multiplier = if (target.knownTypeIds.isEmpty()) {
                 1.0
             } else {
                 StandardTypeEffectiveness.multiplier(details.typeId, target.knownTypeIds)
             }
-            basePressure * multiplier
+            if (tuning.legacyRawPowerFallback) {
+                effectivePower * sameTypeBonus * multiplier
+            } else {
+                val hpFraction = effectivePower / tuning.unprojectedPowerPerHpBar * sameTypeBonus * multiplier
+                hpFraction.coerceIn(0.0, 1.5) * tuning.boardToScore
+            }
         } * spreadDamageModifier(candidate, context)
     }
 
