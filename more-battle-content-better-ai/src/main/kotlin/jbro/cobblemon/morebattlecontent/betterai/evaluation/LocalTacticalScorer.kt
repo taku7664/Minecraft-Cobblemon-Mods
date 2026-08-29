@@ -11,10 +11,12 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectTarget
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveTargetPattern
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanIntent
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyBrief
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyObjective
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalRiskAttitude
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffectiveness
 
@@ -461,6 +463,15 @@ internal object LocalTacticalScorer {
         }
     }
 
+    /** A partner that gets its move off before the knockout lands loses nothing but health. */
+    private const val DOOMED_ALLY_FULL_DISCOUNT = 1.0
+
+    /** Reading one turn ahead is not free, so a partner struck before it acts keeps half its price. */
+    private const val DOOMED_ALLY_PARTIAL_DISCOUNT = 0.5
+
+    /** How sure the public speed reading has to be before the full discount applies. */
+    private const val DOOMED_ALLY_ORDER_CONFIDENCE = 0.8
+
     private fun canonicalResourceId(id: String): String =
         id.substringAfter(':').lowercase(Locale.ROOT).filter { it.isLetterOrDigit() }
 
@@ -532,6 +543,11 @@ internal object LocalTacticalScorer {
      * Converted the same way [unprojectedPressure] converts, through the same tuning constants, so
      * the two coarse estimates stay coarse in the same unit. `legacyRawPowerFallback` keeps the old
      * arithmetic for the legacy tuning, which is measured against the old numbers.
+     *
+     * Health that is already gone is not charged for. pokeemerald-expansion #6357 describes the two
+     * ways a doubles AI gets friendly fire wrong, and refusing it whenever a partner is in the blast
+     * is one of them: a partner the opponent is publicly certain to knock out this turn has no health
+     * left to protect, so declining the spread move buys nothing and costs the second target.
      */
     private fun publicAllyCollateral(
         candidate: BattleActionCandidate,
@@ -558,6 +574,7 @@ internal object LocalTacticalScorer {
         }
         val effectivePower = details.power * details.accuracy / 100.0
         val sameTypeBonus = publicSameTypeBonus(candidate, context)
+        val doomedDiscount = { ally: BattlePokemonStateView -> doomedAllyDiscount(ally, context, tuning) }
         return targets.sumOf { target ->
             val multiplier = if (target.knownTypeIds.isEmpty()) {
                 1.0
@@ -568,9 +585,44 @@ internal object LocalTacticalScorer {
                 effectivePower * sameTypeBonus * multiplier
             } else {
                 val hpFraction = effectivePower / tuning.unprojectedPowerPerHpBar * sameTypeBonus * multiplier
-                hpFraction.coerceIn(0.0, 1.5) * tuning.boardToScore
+                hpFraction.coerceIn(0.0, 1.5) * tuning.boardToScore * (1.0 - doomedDiscount(target))
             }
         } * spreadDamageModifier(candidate, context)
+    }
+
+    /**
+     * How much of this partner's health is already spoken for by the opponent.
+     *
+     * Nothing is discounted unless the opponent is a *publicly certain* knockout on that partner -
+     * a revealed move that reaches its remaining health - so this never fires on a guess about a
+     * hidden set. When it does fire, the order of the turn decides how much:
+     *
+     * - the partner acts before the incoming knockout, so it gets its move off either way, and the
+     *   spread move costs only health that was leaving anyway;
+     * - the partner acts after it, so hitting it can only cost health, not a turn - but the read
+     *   itself is one turn of prediction, so half is discounted rather than all of it.
+     *
+     * The conservative direction here is to charge for the health, and that is what an absent or
+     * unresolved action order falls back to.
+     */
+    private fun doomedAllyDiscount(
+        ally: BattlePokemonStateView,
+        context: BattleDecisionContext,
+        tuning: LocalDecisionTuning,
+    ): Double {
+        if (!LocalPublicPositionFacts.isPublicKnockoutThreat(ally, context, tuning)) return 0.0
+        val actsFirst = LocalPublicTurnOrder.actsFirstProbability(
+            state = context.state,
+            actorSide = BattleSide.ALLY,
+            actorSlot = ally.activeSlot,
+            actorPriority = 0,
+            opponentPriority = 0,
+        ) ?: return DOOMED_ALLY_PARTIAL_DISCOUNT
+        return if (actsFirst >= DOOMED_ALLY_ORDER_CONFIDENCE) {
+            DOOMED_ALLY_FULL_DISCOUNT
+        } else {
+            DOOMED_ALLY_PARTIAL_DISCOUNT
+        }
     }
 
     private fun spreadDamageModifier(
