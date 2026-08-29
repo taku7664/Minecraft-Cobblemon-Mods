@@ -115,11 +115,16 @@ class LocalSelfPlayMeasurementTest {
          */
         val BATTLES = if (System.getProperty("betterai.sweeps") == "true") 200 else 40
         /**
-         * Deliberately small. Each pairing plays this many battles twice, and the deeper tier spends
-         * up to three seconds per decision, so the ladder is minutes per pairing however it is sized.
-         * The report prints the resolution per battle so a narrow result is read as narrow.
+         * Deliberately small on an ordinary run. Each pairing plays this many battles twice, and the
+         * deeper tier spends up to a second and a half per decision, so the ladder is minutes per
+         * pairing however it is sized. The report prints the resolution per battle so a narrow result
+         * is read as narrow.
+         *
+         * A sweep widens it, because the one result that has ever come back outside the noise -
+         * two plies beating one - arrived at n=24 where a single battle is 4.2 points. A number that
+         * would change a conclusion in the plan has to be measured at a width that can carry it.
          */
-        const val TIER_BATTLES = 12
+        val TIER_BATTLES = if (System.getProperty("betterai.sweeps") == "true") 30 else 12
         const val SEED = 20260825
     }
 }
