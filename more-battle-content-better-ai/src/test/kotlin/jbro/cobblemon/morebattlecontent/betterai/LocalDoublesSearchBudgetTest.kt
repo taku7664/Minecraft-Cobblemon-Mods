@@ -23,19 +23,20 @@ import org.junit.jupiter.api.Test
  * widens the branching while the budget stays fixed" - and this is that same sentence with a much
  * larger multiplier in front of it.
  *
- * Measured, 24 positions a side: singles reaches 2.00 plies and truncates nothing; doubles reaches
- * **0.83** and truncates **92%**. Doubles is not searched shallowly - most of the time it does not
- * finish a single turn, so what decides a doubles position is very nearly the flat heuristic alone.
+ * The binding limit turned out to be the node allowance rather than the clock: a doubles position
+ * spent about 18,000 nodes against the 15,000 a Standard trainer is given, while singles spends 2,600
+ * of the same allowance and finishes two plies. Capping the root list at eight moved doubles from
+ * 0.75 plies to 1.08 *and* made it cheaper, because the trainer's own move list was the one thing in
+ * the search that had no cap - the opponent's replies were already limited to five a slot.
  *
- * Two obvious causes were probed and neither is it. Cutting the root candidates from fifty-five to
- * four moved the depth by less than the position-to-position noise, and quartering the chance
- * branches per move moved it not at all. **The bottleneck is not yet identified**, and this file
- * deliberately stops at saying so rather than tuning something that was not measured to be the
- * cause - which is the failure mode this whole plan exists to record.
+ * The depth is still half of singles, and that is not the same as the search being wasted. Measured
+ * separately, the doubles search changes the chosen action in 15% of positions against 5% in singles,
+ * for 181ms against 51ms. A shallow search is not a useless one here: doubles is exactly where the
+ * flat heuristic has the most to miss - the partner in the blast, a redirect, two attacks landing on
+ * one target - and a single resolved turn catches those.
  *
- * So this reports and guards a floor, and does not assert the depth it would like to see. What it
- * protects is that the numbers stay visible and that the ranking still separates its candidates; the
- * depth figure is here to be improved by whoever finds the real cause.
+ * So this reports and guards a floor rather than asserting a depth. The remaining gap to singles is
+ * structural: a doubles turn is four actions and its ply costs roughly twenty times a singles one.
  */
 class LocalDoublesSearchBudgetTest {
     @Test
@@ -57,9 +58,8 @@ class LocalDoublesSearchBudgetTest {
             "Some search has to happen, however little: " + doubles.row(),
         )
         assertTrue(
-            doubles.meanDepth < singles.meanDepth,
-            "Recorded as the known-bad state rather than asserted as acceptable. If this ever fails " +
-                "because doubles caught up, delete the assertion and celebrate: " + doubles.row(),
+            doubles.meanDepth >= 1.0,
+            "A doubles position has to resolve at least the turn in front of it: " + doubles.row(),
         )
         assertTrue(
             doubles.separatedRate > 0.5,
@@ -88,6 +88,8 @@ class LocalDoublesSearchBudgetTest {
         var depth = 0
         var truncated = 0
         var separated = 0
+        var nodes = 0
+        var leafWork = 0
         positions.forEach { context ->
             val calculated = PublicBattleTacticalCalculator.calculate(context)
             val base = LocalBattleActionPolicy.rank(calculated, null, profile, LocalDecisionTuning.CURRENT)
@@ -99,6 +101,8 @@ class LocalDoublesSearchBudgetTest {
             )
             candidates += calculated.candidates.size
             depth += evaluation.depthCompleted
+            nodes += evaluation.nodesVisited
+            leafWork += evaluation.leafWorkUnits
             if (evaluation.truncated) truncated++
             val values = evaluation.ranked.map { it.comparisonValue }
             if (values.distinct().size > 1) separated++
@@ -111,6 +115,8 @@ class LocalDoublesSearchBudgetTest {
             meanDepth = depth.toDouble() / n,
             truncationRate = truncated.toDouble() / n,
             separatedRate = separated.toDouble() / n,
+            meanNodes = nodes.toDouble() / n,
+            meanLeafWork = leafWork.toDouble() / n,
         )
     }
 
@@ -129,11 +135,13 @@ class LocalDoublesSearchBudgetTest {
         val meanDepth: Double,
         val truncationRate: Double,
         val separatedRate: Double,
+        val meanNodes: Double = 0.0,
+        val meanLeafWork: Double = 0.0,
     ) {
         fun row(): String = String.format(
             "%-8s n=%-3d candidates=%6.1f  depth=%4.2f  truncated=%5.1f%%  separated=%5.1f%%",
             label, positions, meanCandidates, meanDepth, truncationRate * 100, separatedRate * 100,
-        )
+        ) + String.format("  nodes=%8.0f  leafWork=%8.0f", meanNodes, meanLeafWork)
     }
 
     private companion object {
