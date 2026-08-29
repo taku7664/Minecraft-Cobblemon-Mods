@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "rounding_block",
+  "version": "${version}",
+  "name": "Rounding-Block",
+  "description": "Rounds only the exposed edges of full cube blocks while preserving Minecraft's block grid.",
+  "authors": ["jbro"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "jbro.minecraft.roundingblock.client.RoundingBlockClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "fabric-api": "*",
+    "minecraft": "~1.21.1",
+    "java": ">=21"
+  }
+}

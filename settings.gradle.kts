@@ -14,5 +14,6 @@ include(
     "more-battle-content",
     "more-battle-content-better-ai",
     "pokefusion",
+    "rounding-block",
     "simple-myroom"
 )
