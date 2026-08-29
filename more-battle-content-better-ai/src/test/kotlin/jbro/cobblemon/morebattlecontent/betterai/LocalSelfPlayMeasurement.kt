@@ -34,15 +34,69 @@ internal data class LocalHeadToHeadTally(
     val challengerWins: Int,
     val defenderWins: Int,
     val undecided: Int,
+    /** Team pairings the challenger took from both sides; see [pairedShare]. */
+    val pairedSweeps: Int = 0,
+    /** Team pairings the defender took from both sides. */
+    val pairedLosses: Int = 0,
+    /** Team pairings where each side won its own orientation, so the pairing said nothing. */
+    val pairedSplits: Int = 0,
 ) {
     /** Share of decided battles the challenger took; 0.5 means the change did nothing. */
     val challengerShare: Double get() = (challengerWins + defenderWins).let {
         if (it == 0) 0.5 else challengerWins.toDouble() / it
     }
 
+    /**
+     * The same question asked of pairings rather than battles.
+     *
+     * Built on the reasoning that the dominant variance is which two teams were drawn, so requiring
+     * the challenger to take *both* orientations of a pairing would cancel it. Measured, it does the
+     * opposite: about four pairings in five split, and discarding them costs far more precision than
+     * the cancellation buys - one full-span foresight arm came back at 57.9% +-11.5 paired against
+     * 51.4% +-3.8 unpaired. A split is not a pairing the teams decided, it is the ordinary case, and
+     * throwing it away throws away the measurement.
+     *
+     * Kept as a secondary reading, because a paired number that disagrees with the unpaired one is
+     * worth seeing. [challengerShare] is the one to judge on.
+     */
+    val pairedShare: Double get() = (pairedSweeps + pairedLosses).let {
+        if (it == 0) 0.5 else pairedSweeps.toDouble() / it
+    }
+
+    /**
+     * One standard error on [pairedShare], so a reported number carries the width it was measured at.
+     *
+     * The ladder was read for a session as non-monotonic on the strength of 56.1%, 49.1% and 46.4%
+     * over sixty battles each. Every one of those sat inside one standard error of a coin. Numbers
+     * printed without their width invite exactly that.
+     */
+    val pairedStandardError: Double get() = (pairedSweeps + pairedLosses).let {
+        if (it <= 1) 0.5 else 0.5 / Math.sqrt(it.toDouble())
+    }
+
+    /**
+     * One standard error on [challengerShare].
+     *
+     * The ladder was read for a session as non-monotonic on the strength of 56.1%, 49.1% and 46.4%
+     * over sixty battles each. Every one of those sat inside one standard error of a coin, and three
+     * coin flips are intransitive about as often as not. A share printed without the width it was
+     * measured at invites exactly that reading, so the width is no longer optional here.
+     */
+    val standardError: Double get() = (challengerWins + defenderWins).let {
+        if (it <= 1) 0.5 else 0.5 / Math.sqrt(it.toDouble())
+    }
+
     fun row(): String = String.format(
-        "%-26s n=%-4d challenger=%-4d defender=%-4d undecided=%-4d  share=%5.1f%%",
-        label, battles, challengerWins, defenderWins, undecided, challengerShare * 100,
+        "%-26s n=%-4d challenger=%-4d defender=%-4d undecided=%-4d  share=%5.1f%% +-%4.1f",
+        label, battles, challengerWins, defenderWins, undecided,
+        challengerShare * 100, standardError * 100,
+    )
+
+    /** The paired reading, with the width it was measured at and the pairings it had to discard. */
+    fun pairedRow(): String = String.format(
+        "%-26s pairings=%-4d swept=%-4d lost=%-4d split=%-4d  paired=%5.1f%% +-%4.1f",
+        label, pairedSweeps + pairedLosses + pairedSplits, pairedSweeps, pairedLosses, pairedSplits,
+        pairedShare * 100, pairedStandardError * 100,
     )
 }
 
@@ -138,6 +192,9 @@ internal object LocalSelfPlayMeasurement {
         var challengerWins = 0
         var defenderWins = 0
         var undecided = 0
+        var pairedSweeps = 0
+        var pairedLosses = 0
+        var pairedSplits = 0
         definitions(battles, seed).forEach { definition ->
             val asCycle = LocalTacticalScenarioBattle.run(
                 definition, maximumTurns,
@@ -157,8 +214,22 @@ internal object LocalSelfPlayMeasurement {
                 "cycle" -> defenderWins++
                 else -> undecided++
             }
+            // Both orientations of one pairing, judged together. A pairing only counts for the
+            // challenger if the challenger took the side the defender could not.
+            val tookFirst = asCycle.winner == "cycle"
+            val tookSecond = asOffense.winner == "offense"
+            val lostFirst = asCycle.winner == "offense"
+            val lostSecond = asOffense.winner == "cycle"
+            when {
+                tookFirst && tookSecond -> pairedSweeps++
+                lostFirst && lostSecond -> pairedLosses++
+                else -> pairedSplits++
+            }
         }
-        return LocalHeadToHeadTally(label, battles * 2, challengerWins, defenderWins, undecided)
+        return LocalHeadToHeadTally(
+            label, battles * 2, challengerWins, defenderWins, undecided,
+            pairedSweeps = pairedSweeps, pairedLosses = pairedLosses, pairedSplits = pairedSplits,
+        )
     }
 
     /** Deterministic team pairings shared by every measurement so runs stay comparable. */
