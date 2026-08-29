@@ -163,6 +163,55 @@ internal data class LocalDecisionTuning(
      * must stay the *neutral* figure. 300 keeps a small margin for the fact that an unprojectable move
      * is more often a mechanic-boosted or spread move than a plain one.
      */
+    /**
+     * How many root candidates the search is allowed to look at.
+     *
+     * Singles offers about five, so this never binds there. A doubles turn is a Cartesian product of
+     * two slots and offers about fifty-five, and the search was measured completing 0.83 plies on
+     * them - a full turn unfinished in 92% of positions, against 2.00 plies and no truncation in
+     * singles. Doubles was not being searched shallowly; it was barely being searched.
+     *
+     * The candidates were already being dropped, because the budget ran out partway down the list.
+     * What this changes is that the dropping becomes deliberate: the heuristic's best few are the
+     * ones the search spends its budget on, and everything below keeps the heuristic's own verdict
+     * instead of a search result that was cut off mid-way.
+     *
+     * There is also a plain inconsistency being fixed. The opponent's replies were already capped -
+     * `doubleCandidateLimitPerSlot`, five a slot at Standard - while the trainer's own root list was
+     * whatever the engine handed over. The search was being asked to weigh fifty-five of its own
+     * moves against twenty-five replies, and the asymmetry was not a decision anyone made.
+     *
+     * Measured over 24 doubles positions at the Standard budget:
+     *
+     *     root=unlimited  depth=0.75  238 ms
+     *     root=8          depth=1.00  204 ms
+     *
+     * Both cheaper and deeper, which is the shape of a fix rather than a trade. Raising the node
+     * allowance instead buys 1.17 plies for 628 ms - three times the server-thread cost for a sixth
+     * of a ply, the same bad exchange the Boss clock was cut for.
+     */
+    val maximumRootCandidates: Int = 8,
+    /**
+     * How many distinct actions per slot the search is allowed to consider at the root.
+     *
+     * Taking the top N whole joint actions is the obvious way to narrow a doubles root and it has a
+     * flaw that only shows up when you look at what survives: the best joint action's first-slot move
+     * tends to appear in most of the others too, so a list of eight joints can contain one first-slot
+     * move paired with eight second-slot moves. The search then spends its whole budget re-deciding
+     * one half of the turn.
+     *
+     * Filtering by slot instead keeps both halves open. Each slot's actions are ranked by the best
+     * joint they appear in, the top few per slot are kept, and any joint built only from survivors
+     * stays. Four a slot is sixteen combinations rather than eight, but they are sixteen that differ
+     * in both halves.
+     *
+     * PokeRogue narrows at this level too - it scores each target and drops anything below half the
+     * best - but it never builds the joint action at all, which is why it is cheap and why its AI has
+     * the partner-coordination problem that pokeemerald-expansion #10135 describes: two slots
+     * independently deciding to finish the same target. Narrowing per slot and *then* scoring the
+     * combination is meant to buy the cheapness without the blind spot.
+     */
+    val maximumRootActionsPerSlot: Int = 4,
     val unprojectedPowerPerHpBar: Double = 300.0,
     /**
      * When true, an unprojectable move keeps the legacy `power * accuracy * stab * typeMultiplier`
@@ -282,6 +331,8 @@ internal data class LocalDecisionTuning(
         require(leafKnockoutPressure.isFinite() && leafKnockoutPressure >= 0.0)
         require(leafSpeedControlValue.isFinite() && leafSpeedControlValue >= 0.0)
         require(unprojectedPowerPerHpBar > 0.0)
+        require(maximumRootCandidates > 0)
+        require(maximumRootActionsPerSlot > 0)
         require(shortlistFraction > 0.0 && shortlistFraction <= 1.0)
         require(relativeRegretGap >= 0.0)
         require(neutralHitHpFraction > 0.0)

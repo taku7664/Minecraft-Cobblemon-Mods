@@ -121,8 +121,18 @@ internal object LocalRecursiveLookaheadEvaluator {
                 actionCalculationCache = actionCalculationCache,
                 clockMillis = clockMillis,
             )
+            // Which candidates this ply is allowed to spend the budget on.
+            //
+            // Recomputed per depth from the ranking as it now stands, so a candidate the previous ply
+            // promoted is searched at the next one. Singles never trims - it does not have enough
+            // candidates to reach the limit - so this changes nothing outside doubles.
+            val searchable = searchableActionIds(ranked, tuning)
             val evaluated = ranked.map { rank ->
-                val evaluation = search.rootActionValue(context.state, rank.outcome.candidate, depth)
+                val evaluation = if (searchable != null && rank.outcome.candidate.actionId !in searchable) {
+                    null
+                } else {
+                    search.rootActionValue(context.state, rank.outcome.candidate, depth)
+                }
                 if (evaluation == null) rank else {
                     // The recursive turn score carries its own knockout value, weighted by the actual
                     // damage-roll KO ratio and execution probability. Remove exactly the knockout
@@ -782,6 +792,52 @@ internal object LocalRecursiveLookaheadEvaluator {
         val ownExecutionProbability: Double,
         val worstResponseRemainingHp: Double,
     )
+
+    /**
+     * Which root candidates this ply may spend the budget on, or null to allow all of them.
+     *
+     * Narrowed per slot rather than per joint action. Ranking whole joints and keeping the top few
+     * looks equivalent and is not: the best joint's first-slot move usually recurs through the rest
+     * of the list, so the survivors differ only in their second half and the search re-decides one
+     * side of the turn eight times over. Each slot's actions are scored here by the best joint they
+     * appear in, the top few per slot survive, and a joint stays only if every one of its parts did.
+     *
+     * Singles has one slot and few candidates, so nothing is trimmed there.
+     */
+    private fun searchableActionIds(
+        ranked: List<LocalBattleActionRank>,
+        tuning: LocalDecisionTuning,
+    ): Set<String>? {
+        if (ranked.size <= tuning.maximumRootCandidates) return null
+        val bestBySlotAction = linkedMapOf<Pair<Int, String>, Double>()
+        ranked.forEach { rank ->
+            primitiveActions(rank.outcome.candidate).forEach { component ->
+                val slot = component.actorSlot ?: return@forEach
+                val key = slot to component.actionId
+                val best = bestBySlotAction[key]
+                if (best == null || rank.comparisonValue > best) {
+                    bestBySlotAction[key] = rank.comparisonValue
+                }
+            }
+        }
+        if (bestBySlotAction.isEmpty()) return null
+        val keptBySlot = bestBySlotAction.entries
+            .groupBy { it.key.first }
+            .mapValues { (_, entries) ->
+                entries.sortedByDescending { it.value }
+                    .take(tuning.maximumRootActionsPerSlot)
+                    .mapTo(linkedSetOf()) { it.key.second }
+            }
+        return ranked.asSequence()
+            .filter { rank ->
+                primitiveActions(rank.outcome.candidate).all { component ->
+                    val slot = component.actorSlot ?: return@all true
+                    component.actionId in keptBySlot.getValue(slot)
+                }
+            }
+            .mapTo(linkedSetOf()) { it.outcome.candidate.actionId }
+            .takeIf { it.isNotEmpty() }
+    }
 
     private fun primitiveActions(action: BattleActionCandidate): List<BattleActionCandidate> =
         if (action.kind == BattleActionKind.COMPOSITE) action.componentActions else listOf(action)
