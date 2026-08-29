@@ -22,6 +22,10 @@ public record VoxelNeighborhood(int bits) {
         return new VoxelNeighborhood(0);
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     /**
      * Returns true when occupancy changes along only one axis and is uniform
      * across both tangential axes. Such a neighborhood is a plane or slab and
@@ -115,5 +119,18 @@ public record VoxelNeighborhood(int bits) {
             throw new IllegalArgumentException("Neighborhood coordinate outside -1..1: " + x + "," + y + "," + z);
         }
         return 1 << ((x + 1) + 3 * (y + 1) + 9 * (z + 1));
+    }
+
+    public static final class Builder {
+        private int bits;
+
+        public Builder occupy(int x, int y, int z) {
+            bits |= bit(x, y, z);
+            return this;
+        }
+
+        public VoxelNeighborhood build() {
+            return new VoxelNeighborhood(bits);
+        }
     }
 }

@@ -1,6 +1,8 @@
 package jbro.minecraft.roundingblock.client.render;
 
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -8,6 +10,7 @@ import java.util.function.Supplier;
 
 import jbro.minecraft.roundingblock.mesh.CubeFace;
 import jbro.minecraft.roundingblock.mesh.Vec3;
+import jbro.minecraft.roundingblock.mesh.VerticalBlockShape;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
@@ -16,6 +19,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 
 record FaceAppearance(
+    CubeFace face,
     TextureAtlasSprite sprite,
     int tintIndex,
     boolean shade,
@@ -28,33 +32,55 @@ record FaceAppearance(
     static Map<CubeFace, List<FaceAppearance>> analyze(
         BakedModel model,
         BlockState state,
+        VerticalBlockShape shape,
         Supplier<RandomSource> randomSupplier,
         Map<BakedQuad, Optional<FaceAppearance>> appearanceCache
     ) {
-        if (!model.getQuads(state, null, randomSupplier.get()).isEmpty()) {
+        EnumMap<CubeFace, List<FaceAppearance>> result = new EnumMap<>(CubeFace.class);
+        EnumMap<CubeFace, java.util.ArrayList<FaceAppearance>> layersByFace = new EnumMap<>(CubeFace.class);
+        java.util.Set<BakedQuad> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        if (!collect(
+            model.getQuads(state, null, randomSupplier.get()), shape, appearanceCache, seen, layersByFace
+        )) {
             return Map.of();
         }
-        EnumMap<CubeFace, List<FaceAppearance>> result = new EnumMap<>(CubeFace.class);
         for (Direction direction : Direction.values()) {
             List<BakedQuad> quads = model.getQuads(state, direction, randomSupplier.get());
-            if (quads.isEmpty()) {
+            if (!collect(quads, shape, appearanceCache, seen, layersByFace)) {
                 return Map.of();
             }
-            CubeFace face = toCubeFace(direction);
-            java.util.ArrayList<FaceAppearance> layers = new java.util.ArrayList<>(quads.size());
-            for (BakedQuad quad : quads) {
-                FaceAppearance appearance = appearanceCache.computeIfAbsent(
-                    quad,
-                    ignored -> Optional.ofNullable(fromQuad(quad, face))
-                ).orElse(null);
-                if (appearance == null || !appearance.shade()) {
-                    return Map.of();
-                }
-                layers.add(appearance);
+        }
+        for (CubeFace face : CubeFace.values()) {
+            List<FaceAppearance> layers = layersByFace.get(face);
+            if (layers == null || layers.isEmpty()) {
+                return Map.of();
             }
             result.put(face, List.copyOf(layers));
         }
         return Map.copyOf(result);
+    }
+
+    private static boolean collect(
+        List<BakedQuad> quads,
+        VerticalBlockShape shape,
+        Map<BakedQuad, Optional<FaceAppearance>> appearanceCache,
+        java.util.Set<BakedQuad> seen,
+        EnumMap<CubeFace, java.util.ArrayList<FaceAppearance>> layersByFace
+    ) {
+        for (BakedQuad quad : quads) {
+            if (!seen.add(quad)) {
+                continue;
+            }
+            FaceAppearance appearance = appearanceCache.computeIfAbsent(
+                quad,
+                ignored -> Optional.ofNullable(fromQuad(quad, shape))
+            ).orElse(null);
+            if (appearance == null || !appearance.shade()) {
+                return false;
+            }
+            layersByFace.computeIfAbsent(appearance.face(), ignored -> new java.util.ArrayList<>()).add(appearance);
+        }
+        return true;
     }
 
     AffineUvMapping.Uv uv(Vec3 position) {
@@ -71,7 +97,17 @@ record FaceAppearance(
         return coordinate - Math.floor(coordinate);
     }
 
-    private static FaceAppearance fromQuad(BakedQuad quad, CubeFace face) {
+    private static FaceAppearance fromQuad(BakedQuad quad, VerticalBlockShape shape) {
+        for (CubeFace face : CubeFace.values()) {
+            FaceAppearance appearance = fromQuadOnFace(quad, face, shape);
+            if (appearance != null) {
+                return appearance;
+            }
+        }
+        return null;
+    }
+
+    private static FaceAppearance fromQuadOnFace(BakedQuad quad, CubeFace face, VerticalBlockShape shape) {
         int[] data = quad.getVertices();
         if (data.length % 4 != 0 || data.length / 4 < 6) {
             return null;
@@ -87,7 +123,7 @@ record FaceAppearance(
         double maxA = Double.NEGATIVE_INFINITY;
         double minB = Double.POSITIVE_INFINITY;
         double maxB = Double.NEGATIVE_INFINITY;
-        double faceCoordinate = face.sign() > 0 ? 1.0 : 0.0;
+        double faceCoordinate = face.sign() > 0 ? shape.maximum(face.axis()) : shape.minimum(face.axis());
         for (int vertex = 0; vertex < 4; vertex++) {
             int base = vertex * stride;
             Vec3 position = new Vec3(
@@ -107,13 +143,15 @@ record FaceAppearance(
             minB = Math.min(minB, b[vertex]);
             maxB = Math.max(maxB, b[vertex]);
         }
-        if (minA > POSITION_EPSILON || maxA < 1.0 - POSITION_EPSILON
-            || minB > POSITION_EPSILON || maxB < 1.0 - POSITION_EPSILON) {
+        if (minA > shape.minimum(axisA) + POSITION_EPSILON
+            || maxA < shape.maximum(axisA) - POSITION_EPSILON
+            || minB > shape.minimum(axisB) + POSITION_EPSILON
+            || maxB < shape.maximum(axisB) - POSITION_EPSILON) {
             return null;
         }
         try {
             return new FaceAppearance(
-                quad.getSprite(), quad.getTintIndex(), quad.isShade(), axisA, axisB,
+                face, quad.getSprite(), quad.getTintIndex(), quad.isShade(), axisA, axisB,
                 AffineUvMapping.fit(a, b, u, v)
             );
         } catch (IllegalArgumentException ignored) {

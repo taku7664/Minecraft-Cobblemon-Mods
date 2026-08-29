@@ -109,6 +109,31 @@ class RoundedVoxelMesherTest {
     }
 
     @Test
+    void neighborhoodBuildersMatchImmutableConstruction() {
+        VoxelNeighborhood immutable = VoxelNeighborhood.empty()
+            .withOccupied(-1, -1, -1)
+            .withOccupied(0, 0, 0)
+            .withOccupied(1, 1, 1);
+        VoxelNeighborhood built = VoxelNeighborhood.builder()
+            .occupy(-1, -1, -1)
+            .occupy(0, 0, 0)
+            .occupy(1, 1, 1)
+            .build();
+        VerticalVoxelNeighborhood verticalImmutable = VerticalVoxelNeighborhood.empty()
+            .withOccupied(-1, -2, -1)
+            .withOccupied(0, 0, 0)
+            .withOccupied(1, 3, 1);
+        VerticalVoxelNeighborhood verticalBuilt = VerticalVoxelNeighborhood.builder()
+            .occupy(-1, -2, -1)
+            .occupy(0, 0, 0)
+            .occupy(1, 3, 1)
+            .build();
+
+        assertEquals(immutable, built);
+        assertEquals(verticalImmutable, verticalBuilt);
+    }
+
+    @Test
     void isolatedBlockKeepsATriangleBudget() {
         MeshPlan plan = new RoundedVoxelMesher().mesh(
             VoxelNeighborhood.empty().withOccupied(0, 0, 0)
@@ -121,6 +146,110 @@ class RoundedVoxelMesherTest {
                 + " flat=" + plan.primitives().stream().filter(p -> p.kind() == PrimitiveKind.FACE).count()
                 + " curved=" + plan.primitives().stream().filter(p -> p.kind() == PrimitiveKind.EDGE).count()
         );
+    }
+
+    @Test
+    void isolatedBottomSlabStaysInsideItsVisualHalfBlock() {
+        VerticalVoxelNeighborhood neighborhood = VerticalVoxelNeighborhood.empty()
+            .withOccupied(0, 0, 0);
+
+        MeshPlan plan = new RoundedVoxelMesher().mesh(neighborhood);
+
+        assertFalse(plan.primitives().isEmpty());
+        assertTrue(plan.primitives().stream().flatMap(primitive -> primitive.vertices().stream()).allMatch(vertex ->
+            vertex.position().y() >= -EPSILON && vertex.position().y() <= 0.5 + EPSILON
+        ));
+        assertTrue(plan.primitives().stream().flatMap(primitive -> primitive.vertices().stream()).anyMatch(vertex ->
+            Math.abs(vertex.position().y() - 0.5) <= EPSILON
+        ));
+    }
+
+    @Test
+    void isolatedTopSlabStaysInsideItsVisualHalfBlock() {
+        VerticalVoxelNeighborhood neighborhood = VerticalVoxelNeighborhood.empty()
+            .withOccupied(0, 1, 0);
+
+        MeshPlan plan = new RoundedVoxelMesher().mesh(neighborhood);
+
+        assertFalse(plan.primitives().isEmpty());
+        assertTrue(plan.primitives().stream().flatMap(primitive -> primitive.vertices().stream()).allMatch(vertex ->
+            vertex.position().y() >= 0.5 - EPSILON && vertex.position().y() <= 1.0 + EPSILON
+        ));
+        assertTrue(plan.primitives().stream().flatMap(primitive -> primitive.vertices().stream()).anyMatch(vertex ->
+            Math.abs(vertex.position().y() - 0.5) <= EPSILON
+        ));
+    }
+
+    @Test
+    void halfHeightOccupancyRoundTripsAcrossNeighboringBlocks() {
+        VerticalVoxelNeighborhood neighborhood = VerticalVoxelNeighborhood.empty()
+            .withOccupied(-1, -2, -1)
+            .withOccupied(0, 0, 0)
+            .withOccupied(0, 1, 0)
+            .withOccupied(1, 3, 1);
+
+        for (int z = -1; z <= 1; z++) {
+            for (int halfY = -2; halfY <= 3; halfY++) {
+                for (int x = -1; x <= 1; x++) {
+                    boolean expected = x == -1 && halfY == -2 && z == -1
+                        || x == 0 && (halfY == 0 || halfY == 1) && z == 0
+                        || x == 1 && halfY == 3 && z == 1;
+                    assertEquals(expected, neighborhood.occupied(x, halfY, z));
+                }
+            }
+        }
+    }
+
+    @Test
+    void twoOccupiedHalfCellsDoNotCreateAnInternalSlabFace() {
+        VerticalVoxelNeighborhood neighborhood = VerticalVoxelNeighborhood.empty()
+            .withOccupied(0, 0, 0)
+            .withOccupied(0, 1, 0);
+
+        MeshPlan plan = new RoundedVoxelMesher().mesh(neighborhood);
+
+        assertFalse(plan.primitives().isEmpty());
+        assertFalse(plan.primitives().stream().anyMatch(primitive ->
+            (primitive.materialFace() == CubeFace.UP || primitive.materialFace() == CubeFace.DOWN)
+                && primitive.vertices().stream().allMatch(vertex ->
+                    Math.abs(vertex.position().y() - 0.5) <= EPSILON
+                )
+        ));
+    }
+
+    @Test
+    void flatSlabFieldCanUseTheOriginalPlanarModel() {
+        VerticalVoxelNeighborhood neighborhood = VerticalVoxelNeighborhood.empty();
+        for (int z = -1; z <= 1; z++) {
+            for (int x = -1; x <= 1; x++) {
+                neighborhood = neighborhood.withOccupied(x, 0, z);
+            }
+        }
+
+        assertTrue(neighborhood.isHorizontallyLayered());
+    }
+
+    @Test
+    void slabAndFullBlockJunctionAssemblesWithoutOpenOrOverlappingEdges() {
+        Set<HalfCell> solids = Set.of(
+            new HalfCell(0, 0, 0),
+            new HalfCell(1, 0, 0),
+            new HalfCell(1, 1, 0)
+        );
+
+        List<WorldTriangle> triangles = assembleHalfHeight(solids, new RoundedVoxelMesher());
+        Map<WorldEdge, Integer> edgeUses = new HashMap<>();
+        for (WorldTriangle triangle : triangles) {
+            if (triangle.a().equals(triangle.b())
+                || triangle.b().equals(triangle.c())
+                || triangle.c().equals(triangle.a())) {
+                continue;
+            }
+            edgeUses.merge(WorldEdge.of(triangle.a(), triangle.b()), 1, Integer::sum);
+            edgeUses.merge(WorldEdge.of(triangle.b(), triangle.c()), 1, Integer::sum);
+            edgeUses.merge(WorldEdge.of(triangle.c(), triangle.a()), 1, Integer::sum);
+        }
+        assertClosedLineCoverage(-2, edgeUses);
     }
 
     @Test
@@ -304,6 +433,43 @@ class RoundedVoxelMesherTest {
         return result;
     }
 
+    private static List<WorldTriangle> assembleHalfHeight(Set<HalfCell> solids, RoundedVoxelMesher mesher) {
+        Set<Cell> ownerBlocks = new HashSet<>();
+        for (HalfCell solid : solids) {
+            ownerBlocks.add(new Cell(solid.x(), Math.floorDiv(solid.halfY(), 2), solid.z()));
+        }
+        List<WorldTriangle> result = new ArrayList<>();
+        for (Cell block : ownerBlocks) {
+            VerticalVoxelNeighborhood neighborhood = VerticalVoxelNeighborhood.empty();
+            for (int z = -1; z <= 1; z++) {
+                for (int halfY = -2; halfY <= 3; halfY++) {
+                    for (int x = -1; x <= 1; x++) {
+                        int worldHalfY = block.y() * 2 + halfY;
+                        if (solids.contains(new HalfCell(block.x() + x, worldHalfY, block.z() + z))) {
+                            neighborhood = neighborhood.withOccupied(x, halfY, z);
+                        }
+                    }
+                }
+            }
+            for (MeshPrimitive primitive : mesher.mesh(neighborhood).primitives()) {
+                List<MeshVertex> vertices = primitive.vertices();
+                result.add(new WorldTriangle(
+                    PointKey.of(vertices.get(0).position(), block),
+                    PointKey.of(vertices.get(1).position(), block),
+                    PointKey.of(vertices.get(2).position(), block)
+                ));
+                if (vertices.size() == 4) {
+                    result.add(new WorldTriangle(
+                        PointKey.of(vertices.get(0).position(), block),
+                        PointKey.of(vertices.get(2).position(), block),
+                        PointKey.of(vertices.get(3).position(), block)
+                    ));
+                }
+            }
+        }
+        return result;
+    }
+
     private static List<WorldTriangle> assembleComposed(Set<Cell> solids, RoundedVoxelMesher mesher) {
         List<WorldTriangle> result = new ArrayList<>();
         for (Cell cell : solids) {
@@ -431,6 +597,9 @@ class RoundedVoxelMesherTest {
     }
 
     private record Cell(int x, int y, int z) {
+    }
+
+    private record HalfCell(int x, int halfY, int z) {
     }
 
     private record PointKey(long x, long y, long z) implements Comparable<PointKey> {

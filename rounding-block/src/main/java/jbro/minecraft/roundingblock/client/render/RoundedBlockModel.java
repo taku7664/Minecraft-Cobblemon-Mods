@@ -14,6 +14,8 @@ import jbro.minecraft.roundingblock.mesh.MeshPrimitive;
 import jbro.minecraft.roundingblock.mesh.MeshVertex;
 import jbro.minecraft.roundingblock.mesh.RoundedVoxelMesher;
 import jbro.minecraft.roundingblock.mesh.VoxelNeighborhood;
+import jbro.minecraft.roundingblock.mesh.VerticalBlockShape;
+import jbro.minecraft.roundingblock.mesh.VerticalVoxelNeighborhood;
 import net.fabricmc.fabric.api.renderer.v1.Renderer;
 import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
@@ -44,11 +46,13 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
     private static final int PLAN_CACHE_LIMIT = 256;
     private static final RoundedVoxelMesher MESHER = new RoundedVoxelMesher();
     private static final Map<Integer, MeshPlan> PLAN_CACHE = new ConcurrentHashMap<>();
-    private static final Set<BlockState> ROUNDED_STATES = ConcurrentHashMap.newKeySet();
+    private static final Map<Long, MeshPlan> VERTICAL_PLAN_CACHE = new ConcurrentHashMap<>();
+    private static final Map<BlockState, VerticalBlockShape> ROUNDED_SHAPES = new ConcurrentHashMap<>();
     private static final Set<String> LOGGED_DIAGNOSTICS = ConcurrentHashMap.newKeySet();
 
     private final BakedModel delegate;
     private final BlockState expectedState;
+    private final VerticalBlockShape shape;
     private final ModelAppearanceMode appearanceMode;
     private final Map<CubeFace, List<FaceAppearance>> staticAppearances;
     private final Map<BakedQuad, Optional<FaceAppearance>> appearanceCache;
@@ -56,12 +60,14 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
     private RoundedBlockModel(
         BakedModel delegate,
         BlockState expectedState,
+        VerticalBlockShape shape,
         ModelAppearanceMode appearanceMode,
         Map<CubeFace, List<FaceAppearance>> appearances,
         Map<BakedQuad, Optional<FaceAppearance>> appearanceCache
     ) {
         this.delegate = delegate;
         this.expectedState = expectedState;
+        this.shape = shape;
         this.appearanceMode = appearanceMode;
         this.staticAppearances = appearances;
         this.appearanceCache = appearanceCache;
@@ -70,20 +76,22 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
     public static BakedModel wrapIfEligible(
         BakedModel delegate,
         BlockState expectedState,
+        VerticalBlockShape shape,
         ModelAppearanceMode appearanceMode
     ) {
         Map<BakedQuad, Optional<FaceAppearance>> appearanceCache = new ConcurrentHashMap<>();
         Map<CubeFace, List<FaceAppearance>> appearances = FaceAppearance.analyze(
             delegate,
             expectedState,
+            shape,
             () -> RandomSource.create(0x524F554E444544L),
             appearanceCache
         );
         if (appearances.size() != CubeFace.values().length) {
             return delegate;
         }
-        ROUNDED_STATES.add(expectedState);
-        return new RoundedBlockModel(delegate, expectedState, appearanceMode, appearances, appearanceCache);
+        ROUNDED_SHAPES.put(expectedState, shape);
+        return new RoundedBlockModel(delegate, expectedState, shape, appearanceMode, appearances, appearanceCache);
     }
 
     @Override
@@ -106,18 +114,19 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
             emitOriginal(blockView, state, pos, randomSupplier, context);
             return;
         }
+        NeighborhoodSnapshot snapshot = neighborhood(blockView, pos);
         ExposureMask exposure = exposureMask(blockView, state, pos);
-        if (exposure.bits() == 0) {
+        if (!snapshot.hasPartialShape() && exposure.bits() == 0) {
             return;
         }
-        VoxelNeighborhood neighborhood = neighborhood(blockView, pos);
-        if (neighborhood.isAxisAlignedLayered()) {
+        if ((!snapshot.hasPartialShape() && snapshot.blocks().isAxisAlignedLayered())
+            || (snapshot.hasPartialShape() && snapshot.vertical().isHorizontallyLayered())) {
             logOnce("layered-original", "Axis-aligned terrain uses the original model directly; first state is {}", state);
             emitOriginal(blockView, state, pos, randomSupplier, context);
             return;
         }
         Map<CubeFace, List<FaceAppearance>> appearances = appearanceMode == ModelAppearanceMode.DYNAMIC
-            ? FaceAppearance.analyze(delegate, state, randomSupplier, appearanceCache)
+            ? FaceAppearance.analyze(delegate, state, shape, randomSupplier, appearanceCache)
             : staticAppearances;
         Renderer renderer = RendererAccess.INSTANCE.getRenderer();
         if (appearances.size() != CubeFace.values().length) {
@@ -131,8 +140,10 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
             return;
         }
 
-        int planarFaceBits = neighborhood.planarFaceBits();
-        MeshPlan plan = cachedPlan(neighborhood);
+        int planarFaceBits = snapshot.hasPartialShape() ? 0 : snapshot.blocks().planarFaceBits();
+        MeshPlan plan = snapshot.hasPartialShape()
+            ? cachedPlan(snapshot.vertical())
+            : cachedPlan(snapshot.blocks());
         if (planarFaceBits != 0) {
             logOnce("planar-original", "Planar faces use original model quads; first state is {}", state);
             emitOriginalFaces(blockView, state, pos, randomSupplier, context, planarFaceBits);
@@ -150,6 +161,14 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
                 "Non-empty rounded world geometry emitted; first state is {}, exposure bits={}, primitives={}",
                 state,
                 exposure.bits(),
+                plan.primitives().size()
+            );
+        }
+        if (shape.isPartial()) {
+            logOnce(
+                "rounded-partial-output",
+                "Rounded slab geometry emitted; first state is {}, primitives={}",
+                state,
                 plan.primitives().size()
             );
         }
@@ -174,7 +193,7 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
         if (!state.getFluidState().isEmpty()) {
             return "contains-fluid";
         }
-        if (!state.canOcclude() && !state.is(BlockTags.LEAVES)) {
+        if (!state.canOcclude() && !state.is(BlockTags.LEAVES) && !shape.isPartial()) {
             return "non-occluding";
         }
         if (!isSupportedRenderType(ItemBlockRenderTypes.getChunkRenderType(state))) {
@@ -187,18 +206,27 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
         return renderType == RenderType.solid() || renderType == RenderType.cutoutMipped();
     }
 
-    private static VoxelNeighborhood neighborhood(BlockAndTintGetter blockView, BlockPos pos) {
-        VoxelNeighborhood result = VoxelNeighborhood.empty();
+    private static NeighborhoodSnapshot neighborhood(BlockAndTintGetter blockView, BlockPos pos) {
+        VoxelNeighborhood.Builder blocks = VoxelNeighborhood.builder();
+        VerticalVoxelNeighborhood.Builder vertical = VerticalVoxelNeighborhood.builder();
+        boolean hasPartialShape = false;
         for (int z = -1; z <= 1; z++) {
             for (int y = -1; y <= 1; y++) {
                 for (int x = -1; x <= 1; x++) {
-                    if (ROUNDED_STATES.contains(blockView.getBlockState(pos.offset(x, y, z)))) {
-                        result = result.withOccupied(x, y, z);
+                    VerticalBlockShape neighborShape = ROUNDED_SHAPES.get(blockView.getBlockState(pos.offset(x, y, z)));
+                    if (neighborShape != null) {
+                        blocks.occupy(x, y, z);
+                        hasPartialShape |= neighborShape.isPartial();
+                        for (int layer = 0; layer <= 1; layer++) {
+                            if (neighborShape.occupiesLayer(layer)) {
+                                vertical.occupy(x, 2 * y + layer, z);
+                            }
+                        }
                     }
                 }
             }
         }
-        return result;
+        return new NeighborhoodSnapshot(blocks.build(), vertical.build(), hasPartialShape);
     }
 
     private static MeshPlan cachedPlan(VoxelNeighborhood neighborhood) {
@@ -211,6 +239,19 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
             return generated;
         }
         MeshPlan raced = PLAN_CACHE.putIfAbsent(neighborhood.bits(), generated);
+        return raced == null ? generated : raced;
+    }
+
+    private static MeshPlan cachedPlan(VerticalVoxelNeighborhood neighborhood) {
+        MeshPlan cached = VERTICAL_PLAN_CACHE.get(neighborhood.bits());
+        if (cached != null) {
+            return cached;
+        }
+        MeshPlan generated = MESHER.mesh(neighborhood);
+        if (VERTICAL_PLAN_CACHE.size() >= PLAN_CACHE_LIMIT) {
+            return generated;
+        }
+        MeshPlan raced = VERTICAL_PLAN_CACHE.putIfAbsent(neighborhood.bits(), generated);
         return raced == null ? generated : raced;
     }
 
@@ -336,6 +377,13 @@ public final class RoundedBlockModel implements BakedModel, FabricBakedModel {
     @Override
     public ItemOverrides getOverrides() {
         return delegate.getOverrides();
+    }
+
+    private record NeighborhoodSnapshot(
+        VoxelNeighborhood blocks,
+        VerticalVoxelNeighborhood vertical,
+        boolean hasPartialShape
+    ) {
     }
 
 }

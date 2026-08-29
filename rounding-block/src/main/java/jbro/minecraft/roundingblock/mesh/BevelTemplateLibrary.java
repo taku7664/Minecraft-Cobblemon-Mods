@@ -28,6 +28,18 @@ final class BevelTemplateLibrary {
 
     private final Map<Integer, List<MeshPrimitive>> cache = new ConcurrentHashMap<>();
     private final Map<Integer, List<RegionPrimitive>> partitionCache = new ConcurrentHashMap<>();
+    private final double cellHeight;
+
+    BevelTemplateLibrary() {
+        this(1.0);
+    }
+
+    BevelTemplateLibrary(double cellHeight) {
+        if (cellHeight <= 2.0 * RADIUS) {
+            throw new IllegalArgumentException("Cell height must be wider than the bevel diameter");
+        }
+        this.cellHeight = cellHeight;
+    }
 
     List<MeshPrimitive> template(int mask) {
         if (mask < 0 || mask > 255) {
@@ -36,7 +48,7 @@ final class BevelTemplateLibrary {
         if (mask == 0 || mask == 255) {
             return List.of();
         }
-        return cache.computeIfAbsent(mask, BevelTemplateLibrary::generate);
+        return cache.computeIfAbsent(mask, this::generate);
     }
 
     List<RegionPrimitive> partitionedTemplate(int mask) {
@@ -113,15 +125,17 @@ final class BevelTemplateLibrary {
         throw new IllegalStateException("Clipped surface has no compatible region for mask " + mask);
     }
 
-    private static List<MeshPrimitive> generate(int mask) {
-        double[] coordinates = axisCoordinates();
-        int sampleCount = coordinates.length;
+    private List<MeshPrimitive> generate(int mask) {
+        double[][] coordinates = {axisCoordinates(0), axisCoordinates(1), axisCoordinates(2)};
+        int sampleCount = coordinates[0].length;
         int cellCount = sampleCount - 1;
         Sample[][][] samples = new Sample[sampleCount][sampleCount][sampleCount];
         for (int x = 0; x < sampleCount; x++) {
             for (int y = 0; y < sampleCount; y++) {
                 for (int z = 0; z < sampleCount; z++) {
-                    samples[x][y][z] = sample(mask, new Vec3(coordinates[x], coordinates[y], coordinates[z]));
+                    samples[x][y][z] = sample(mask, new Vec3(
+                        coordinates[0][x], coordinates[1][y], coordinates[2][z]
+                    ));
                 }
             }
         }
@@ -141,20 +155,21 @@ final class BevelTemplateLibrary {
         }
         List<MeshPrimitive> result = new ArrayList<>();
         for (MeshPrimitive primitive : untrimmed) {
-            clipToTemplateCube(primitive, result);
+            clipToTemplateCell(primitive, result);
         }
         return List.copyOf(result);
     }
 
-    private static double[] axisCoordinates() {
+    private double[] axisCoordinates(int axis) {
+        double halfExtent = axis == 1 ? cellHeight * 0.5 : 0.5;
         double[] result = new double[2 * SEGMENTS + 5];
-        result[0] = -0.5 - RADIUS;
-        result[1] = -0.5;
+        result[0] = -halfExtent - RADIUS;
+        result[1] = -halfExtent;
         for (int index = 0; index <= 2 * SEGMENTS; index++) {
             result[index + 2] = -RADIUS + 2.0 * RADIUS * index / (2.0 * SEGMENTS);
         }
-        result[result.length - 2] = 0.5;
-        result[result.length - 1] = 0.5 + RADIUS;
+        result[result.length - 2] = halfExtent;
+        result[result.length - 1] = halfExtent + RADIUS;
         return result;
     }
 
@@ -283,11 +298,12 @@ final class BevelTemplateLibrary {
         output.add(new MeshPrimitive(flat ? PrimitiveKind.FACE : PrimitiveKind.EDGE, material, vertices));
     }
 
-    private static void clipToTemplateCube(MeshPrimitive primitive, List<MeshPrimitive> output) {
+    private void clipToTemplateCell(MeshPrimitive primitive, List<MeshPrimitive> output) {
         List<MeshVertex> polygon = new ArrayList<>(primitive.vertices());
         for (int axis = 0; axis < 3; axis++) {
-            polygon = clip(polygon, axis, -0.5, true);
-            polygon = clip(polygon, axis, 0.5, false);
+            double halfExtent = axis == 1 ? cellHeight * 0.5 : 0.5;
+            polygon = clip(polygon, axis, -halfExtent, true);
+            polygon = clip(polygon, axis, halfExtent, false);
         }
         if (polygon.size() < 3) {
             return;

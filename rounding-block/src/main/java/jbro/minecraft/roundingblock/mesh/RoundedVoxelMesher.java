@@ -12,20 +12,46 @@ import java.util.List;
  */
 public final class RoundedVoxelMesher {
     private static final BevelTemplateLibrary TEMPLATES = new BevelTemplateLibrary();
+    private static final double HALF_HEIGHT = 0.5;
+    private static final BevelTemplateLibrary HALF_HEIGHT_TEMPLATES = new BevelTemplateLibrary(HALF_HEIGHT);
 
     public MeshPlan mesh(VoxelNeighborhood neighborhood) {
         if (!neighborhood.occupied(0, 0, 0)) {
             return new MeshPlan(List.of());
         }
         List<MeshPrimitive> output = new ArrayList<>();
+        emitCell(neighborhood::occupied, 0, 1.0, TEMPLATES, output);
+        return new MeshPlan(output);
+    }
+
+    public MeshPlan mesh(VerticalVoxelNeighborhood neighborhood) {
+        if (!neighborhood.hasOccupiedCenterCell()) {
+            return new MeshPlan(List.of());
+        }
+        List<MeshPrimitive> output = new ArrayList<>();
+        for (int halfY = 0; halfY <= 1; halfY++) {
+            if (neighborhood.occupied(0, halfY, 0)) {
+                emitCell(neighborhood::occupied, halfY, HALF_HEIGHT, HALF_HEIGHT_TEMPLATES, output);
+            }
+        }
+        return new MeshPlan(output);
+    }
+
+    private static void emitCell(
+        Occupancy occupancy,
+        int cellY,
+        double cellHeight,
+        BevelTemplateLibrary templates,
+        List<MeshPrimitive> output
+    ) {
         for (int corner = 0; corner < 8; corner++) {
             int cornerX = corner & 1;
             int cornerY = (corner >> 1) & 1;
             int cornerZ = (corner >> 2) & 1;
-            int mask = vertexMask(neighborhood, cornerX, cornerY, cornerZ);
+            int mask = vertexMask(occupancy, cornerX, cellY + cornerY, cornerZ);
             int currentOctant = (1 - cornerX) | ((1 - cornerY) << 1) | ((1 - cornerZ) << 2);
-            Vec3 translation = new Vec3(cornerX, cornerY, cornerZ);
-            for (BevelTemplateLibrary.RegionPrimitive region : TEMPLATES.partitionedTemplate(mask)) {
+            Vec3 translation = new Vec3(cornerX, (cellY + cornerY) * cellHeight, cornerZ);
+            for (BevelTemplateLibrary.RegionPrimitive region : templates.partitionedTemplate(mask)) {
                 MeshPrimitive primitive = region.primitive();
                 boolean solidRegion = (mask & (1 << region.octant())) != 0;
                 int owner = solidRegion
@@ -37,7 +63,6 @@ public final class RoundedVoxelMesher {
                 }
             }
         }
-        return new MeshPlan(output);
     }
 
     private static int concaveOwner(int mask, int surfaceOctant, CubeFace materialFace) {
@@ -63,7 +88,7 @@ public final class RoundedVoxelMesher {
         return bestOctant;
     }
 
-    private static int vertexMask(VoxelNeighborhood neighborhood, int cornerX, int cornerY, int cornerZ) {
+    private static int vertexMask(Occupancy occupancy, int cornerX, int cornerY, int cornerZ) {
         int mask = 0;
         for (int octant = 0; octant < 8; octant++) {
             int octantX = octant & 1;
@@ -72,7 +97,7 @@ public final class RoundedVoxelMesher {
             int x = cornerX + octantX - 1;
             int y = cornerY + octantY - 1;
             int z = cornerZ + octantZ - 1;
-            if (neighborhood.occupied(x, y, z)) {
+            if (occupancy.occupied(x, y, z)) {
                 mask |= 1 << octant;
             }
         }
@@ -89,5 +114,10 @@ public final class RoundedVoxelMesher {
 
     private static MeshPrimitive withKind(MeshPrimitive primitive, PrimitiveKind kind) {
         return new MeshPrimitive(kind, primitive.materialFace(), primitive.vertices());
+    }
+
+    @FunctionalInterface
+    private interface Occupancy {
+        boolean occupied(int x, int y, int z);
     }
 }
