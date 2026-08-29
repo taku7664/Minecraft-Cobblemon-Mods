@@ -103,7 +103,7 @@ internal object PublicSingleTurnProjector {
                     applyMove(
                         branch.state,
                         ordered.side,
-                        ordered.action,
+                        drawnAsideBy(ordered.action, branch.state, ordered.side, branch.redirectingPokemonIds),
                         sourceContext,
                         branch.protectedPokemonIds,
                         branch.protectionAttackDrops,
@@ -124,6 +124,9 @@ internal object PublicSingleTurnProjector {
                             }?.battlePokemonId
                         },
                     ).map { outcome ->
+                        val newlyRedirecting = outcome.executedMoveIdsByPokemon
+                            .filterValues { canonicalId(it) in REDIRECTING_MOVE_IDS }
+                            .keys
                         val newlyTaunted = outcome.controlEffects.filter {
                             it.kind == RecursiveControlEffectKind.TAUNT
                         }.mapTo(linkedSetOf()) { it.targetPokemonId }
@@ -146,6 +149,7 @@ internal object PublicSingleTurnProjector {
                             branch.executedMoveIdsByPokemon + outcome.executedMoveIdsByPokemon,
                             branch.expectedScoreAdjustment + outcome.expectedScoreAdjustment,
                             branch.protectionResultsByPokemon + outcome.protectionResultsByPokemon,
+                            branch.redirectingPokemonIds + newlyRedirecting,
                         )
                     }
                 }.let { mergeBranches(it, maxChanceBranchesPerMove) }
@@ -1276,6 +1280,10 @@ internal object PublicSingleTurnProjector {
                     probability,
                 ),
                 identical.first().protectionResultsByPokemon,
+                // Merged branches are identical turns, so they share whatever has drawn this turn's
+                // attacks. Rebuilding the state without this silently reset it to nobody, which is
+                // the whole reason a positional constructor call is a bad place to add a field.
+                identical.first().redirectingPokemonIds,
             )
         }.sortedByDescending(WeightedState::probability)
         val total = merged.sumOf(WeightedState::probability)
@@ -1521,6 +1529,61 @@ internal object PublicSingleTurnProjector {
         append(effect.stacks).append('|')
     }
 
+    /**
+     * The same action with its target replaced, when a redirector has already taken this turn.
+     *
+     * Rewriting the action rather than teaching every later step about redirection is deliberate:
+     * everything downstream - the type chart, the absorbing ability, the damage, the knockout - then
+     * resolves against the Pokemon the move actually reaches, without any of it knowing redirection
+     * exists. The same reasoning as the ability version of this, which is resolved where targets are
+     * resolved.
+     *
+     * Only a move that picks one opposing slot can be drawn aside. A move aimed at one's own side is
+     * not, and neither is a spread move, which already reaches every slot there is.
+     */
+    private fun drawnAsideBy(
+        action: BattleActionCandidate,
+        state: BattleStateView,
+        actingSide: BattleSide,
+        redirectingPokemonIds: Set<UUID>,
+    ): BattleActionCandidate {
+        if (redirectingPokemonIds.isEmpty()) return action
+        if (action.kind != BattleActionKind.USE_MOVE) return action
+        if (action.moveDetails?.targetPattern !in REDIRECTABLE_TARGET_PATTERNS) return action
+        val declared = action.targets.singleOrNull() ?: return action
+        if (declared.side == actingSide) return action
+        val redirector = state.pokemon.firstOrNull {
+            it.battlePokemonId in redirectingPokemonIds &&
+                it.side == declared.side &&
+                it.activeSlot != null &&
+                !it.fainted &&
+                it.hpFraction > 0.0
+        } ?: return action
+        val redirectorSlot = redirector.activeSlot ?: return action
+        if (redirectorSlot == declared.slot) return action
+        return BattleActionCandidate(
+            actionId = action.actionId,
+            kind = action.kind,
+            actorSlot = action.actorSlot,
+            moveSlot = action.moveSlot,
+            moveId = action.moveId,
+            targets = listOf(BattleTargetSlot(declared.side, redirectorSlot)),
+            mechanic = action.mechanic,
+            moveDetails = action.moveDetails,
+            facts = null,
+            tags = action.tags,
+        )
+    }
+
+    /** Moves whose whole purpose is to become this turn's target. */
+    private val REDIRECTING_MOVE_IDS = setOf("followme", "ragepowder", "spotlight")
+
+    /** Only a move that picks one slot can be drawn to a different one. */
+    private val REDIRECTABLE_TARGET_PATTERNS = setOf(
+        BattleMoveTargetPattern.SELECTED,
+        BattleMoveTargetPattern.SELECTED_OPPONENT,
+    )
+
     private data class WeightedState(
         val state: BattleStateView,
         val probability: Double,
@@ -1535,6 +1598,18 @@ internal object PublicSingleTurnProjector {
         val executedMoveIdsByPokemon: Map<UUID, String> = emptyMap(),
         val expectedScoreAdjustment: Double = 0.0,
         val protectionResultsByPokemon: Map<UUID, Boolean> = emptyMap(),
+        /**
+         * Who has drawn this turn's single-target attacks onto themselves.
+         *
+         * Follow Me is a whole turn's worth of protection for a partner and it was worth nothing to
+         * this projector, which meant it was worth nothing to the search, which meant a trainer built
+         * around it never pressed it. Same shape as a mechanic candidate that projects no damage: not
+         * priced badly, priced at zero, so it loses to everything.
+         *
+         * It lives on the branch rather than on the state because it is true for exactly one turn and
+         * only for actions that have not resolved yet.
+         */
+        val redirectingPokemonIds: Set<UUID> = emptySet(),
     )
 
     private fun weightedExpectedScoreAdjustment(
