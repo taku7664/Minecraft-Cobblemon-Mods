@@ -13,5 +13,6 @@ include(
     "cobblemon-custom-species",
     "more-battle-content",
     "more-battle-content-better-ai",
+    "pokefusion",
     "simple-myroom"
 )
