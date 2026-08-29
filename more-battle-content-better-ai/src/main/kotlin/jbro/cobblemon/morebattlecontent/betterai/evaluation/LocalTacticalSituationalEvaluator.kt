@@ -428,12 +428,25 @@ internal object LocalTacticalSituationalEvaluator {
             val target = context.state.pokemon.firstOrNull {
                 it.side == BattleSide.OPPONENT && it.activeSlot == targetSlot && !it.fainted
             } ?: return@sumOf 0.0
-            // "Already secured" has to mean secured against this defender, not against an average
-            // one. Reading the printed accuracy let a second attacker be called redundant into a
-            // target that had just doubled its evasion.
+            // "Already secured" has to mean secured against this defender, before it acts, not just
+            // secured eventually. Two conditions, and both were missing something.
+            //
+            // Reading the printed accuracy let a second attacker be called redundant into a target
+            // that had just doubled its evasion. And a knockout that lands *after* the target moves
+            // does not make a second attack redundant at all - the target gets its turn either way,
+            // so a faster second attack is buying the turn rather than wasting one. The redundancy
+            // pokeemerald-expansion #10135 describes is two slots finishing a target that one of
+            // them was already going to finish first; it is not two slots racing a target that is
+            // going to act regardless.
             val alreadySecured = attacks.any { action ->
                 action.facts?.standardKnockoutAssessment == BattleKnockoutAssessment.GUARANTEED &&
-                    LocalPublicAccuracy.probability(action, context, BattleSide.ALLY) >= CERTAIN_ACCURACY
+                    LocalPublicAccuracy.probability(action, context, BattleSide.ALLY) >= CERTAIN_ACCURACY &&
+                    // Unknown order keeps the old reading. Only a knockout the public speeds say
+                    // will land *after* the target moves is exempted, because that is the case where
+                    // a second attack buys the target's turn instead of wasting one. Defaulting the
+                    // other way would have exempted every position that cannot resolve an order,
+                    // which is most of them.
+                    (action.facts?.actsFirstProbability ?: 1.0) >= SECURED_BEFORE_TARGET_ACTS
             }
             if (alreadySecured) {
                 -REDUNDANT_FOCUS_PENALTY
@@ -618,6 +631,9 @@ internal object LocalTacticalSituationalEvaluator {
     private const val CRITICAL_SETUP_HP_FRACTION = 0.25
     private const val MAXIMUM_SETUP_STAGE_BUDGET = 4
     private const val CERTAIN_ACCURACY = 0.999
+    
+    /** How sure the knockout has to be of landing first before a second attack counts as redundant. */
+    private const val SECURED_BEFORE_TARGET_ACTS = 0.8
     private val PUBLIC_FAILURE_OUTCOMES = setOf(
         BattleMoveOutcomeKind.FAILED,
         BattleMoveOutcomeKind.NO_TARGET,
