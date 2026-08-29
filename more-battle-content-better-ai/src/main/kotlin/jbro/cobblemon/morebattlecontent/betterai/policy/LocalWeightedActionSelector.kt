@@ -35,6 +35,8 @@ internal data class LocalActionMixingContext(
     val alreadyBoostedSetupActionIds: Set<String> = emptySet(),
     val overcommittedSetupActionIds: Set<String> = emptySet(),
     val tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+    /** The deciding tier's `decisionRegretBand`, multiplied into the regret band. One is shipped. */
+    val decisionRegretBand: Double = 1.0,
 ) {
     companion object {
         fun balanced(
@@ -83,10 +85,17 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         }.ifEmpty { listOf(emergencyFallback(ranked, context.overcommittedSetupActionIds)) }
         val countShortlist = viable.take(shortlistSize(viable.size, context.tuning))
         val bestScore = countShortlist.first().comparisonValue
+        // The tier multiplier is applied after the tuning ceiling, not before it.
+        //
+        // `maximumReasonableScoreGap` is a global guard against a huge-swing turn sweeping bad actions
+        // into the shortlist by absolute size alone. Folding the tier into the operands would let that
+        // guard silently swallow the whole setting on exactly the turns a weak trainer is most likely
+        // to be punished for a mistake - the tier would then mean nothing precisely where it means
+        // most. A tier that widens the band is doing it deliberately and is allowed past the ceiling.
         val allowedGap = minOf(
             context.tuning.maximumReasonableScoreGap,
             adaptiveRegretGap(context.riskBudget, bestScore, context.tuning),
-        )
+        ) * context.decisionRegretBand
         // The regret gap used to be a single cliff: anything further than `allowedGap` behind the
         // best was removed outright. That cliff was where trainer character went to die - the
         // shortlist collapsed to one entry in a third of positions, two thirds once a cautious

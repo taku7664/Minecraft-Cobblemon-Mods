@@ -39,18 +39,27 @@ class LocalTierLeverSweepTest {
         matches = "true",
         disabledReason = "A ladder sweep is minutes per pairing. Run with -Psweeps when a lever is in question.",
     )
-    fun `sweep the foresight lever at a fixed depth`() {
+    fun `sweep the difficulty levers at a fixed depth`() {
         val report = buildString {
-            appendLine("FORESIGHT SWEEP  depth held at $FIXED_PLIES plies for every arm")
+            appendLine("LADDER SWEEP  depth held at $FIXED_PLIES plies for every arm but the last")
             appendLine("Anything that separates here separates without spending a deeper search.")
             appendLine("Read the paired row, not the battle row: an unbalanced pairing scores one win")
             appendLine("and one loss whatever either trainer does, and that is noise, not evidence.")
             appendLine()
-            FORESIGHT_ARMS.forEach { (low, high) ->
+            appendLine("-- regret band: whether the tier is allowed a worse action at all --")
+            appendLine("Every other axis measured flat, and the draw diagnostics say why. Sharpness")
+            appendLine("swings non-best choices from 44.1% of contested turns to 17.6% and wins nothing,")
+            appendLine("because the band admits only actions that are genuinely interchangeable - which")
+            appendLine("means the band is well calibrated and that no lever inside it can be a")
+            appendLine("difficulty. The band itself is the boundary, and widening it moves the share of")
+            appendLine("turns with no choice at all from 43.3% down to 13.3%.")
+            appendLine("Challenger is the *narrow* arm here, so above 50% means narrow plays better and")
+            appendLine("the ladder points the right way.")
+            BAND_ARMS.forEach { (narrow, wide) ->
                 val tally = LocalSelfPlayMeasurement.tierDuel(
-                    label = "foresight $high vs $low",
-                    challenger = base(foresightWeight = high),
-                    defender = base(foresightWeight = low),
+                    label = "band $narrow vs $wide",
+                    challenger = base().copy(decisionRegretBand = narrow),
+                    defender = base().copy(decisionRegretBand = wide),
                     battles = DEFINITIONS,
                     seed = SEED,
                 )
@@ -58,6 +67,19 @@ class LocalTierLeverSweepTest {
                 appendLine("  " + tally.pairedRow())
                 appendLine()
             }
+
+            appendLine("-- the shipped ladder end to end, once the tiers carry their own bands --")
+            val combined = LocalSelfPlayMeasurement.tierDuel(
+                label = "shipped vs fourfold band",
+                challenger = base(),
+                defender = base().copy(decisionRegretBand = 4.0),
+                battles = DEFINITIONS,
+                seed = SEED,
+            )
+            appendLine("  " + combined.row())
+            appendLine("  " + combined.pairedRow())
+            appendLine()
+
             appendLine("-- depth, at the one rung the ladder measurement said was outside the noise --")
             appendLine("Re-asked at three times the width. 61.1% over sixty battles was 1.7 standard")
             appendLine("errors; that is a number to check, not a number to build a ladder on.")
@@ -93,15 +115,16 @@ class LocalTierLeverSweepTest {
         const val SEED = 20260829
 
         /**
-         * The ends first, then the halves.
+         * Narrow against wide, at the ends of what the draw diagnostics showed the band reaching.
          *
-         * The shipped steps were measured before and could not be resolved; taking the full span is
-         * the only arm with a prior reason to show anything, and the halves say where in the span the
-         * strength actually lives.
+         * Both arms take the narrow side as challenger, so a working ladder reads above 50% and the
+         * sign of the result is the whole question. A band that widens without weakening would be one
+         * more setting that changes behaviour and not strength, and this module has now found three.
          */
-        val FORESIGHT_ARMS = listOf(0.0 to 1.0, 0.0 to 0.60, 0.60 to 1.0)
+        val BAND_ARMS = listOf(1.0 to 4.0, 1.0 to 8.0)
 
         /** The rung that carried the whole ladder, taken at a width that can hold it. */
         val DEPTH_ARMS = listOf(1 to 2)
+
     }
 }

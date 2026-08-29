@@ -12,6 +12,19 @@ enum class BattleTrainerTier {
 data class BattleDifficultyProfile(
     val id: String,
     val tier: BattleTrainerTier,
+    /**
+     * How many competing readings of one opposing Pokemon a brain may carry.
+     *
+     * Router-side only, and deliberately so. It is sent in the prompt digest and the doctrine holds
+     * the model to "inference within the supplied hypothesis budget", which is a real constraint on
+     * a brain that reasons in prose. The local brain has nothing to bind it to: it does not enumerate
+     * readings of an opponent at all, it represents everything unrevealed as a single reserve branch
+     * and prices it. A sweep of 3, 10 and 16 against each other returned 29-29 three times over -
+     * not a close result, the same battle replayed.
+     *
+     * Left in place rather than removed, because the Router contract is the reason it exists. Do not
+     * sweep it as a local difficulty lever again; there is no local code path for it to travel.
+     */
     val maximumHypothesesPerPokemon: Int,
     val lookaheadPlies: Int,
     val doubleCandidateLimitPerSlot: Int,
@@ -29,6 +42,29 @@ data class BattleDifficultyProfile(
      * trainer rather than one that only attacks.
      */
     val foresightWeight: Double = 1.0,
+    /**
+     * How far behind the best action a tier will still consider an action at all.
+     *
+     * A multiplier on the regret band. The band is what decides whether the trainer has a choice to
+     * make: actions further behind the best than the band allows are removed before any weighting
+     * happens, so nothing downstream of it can reach them.
+     *
+     * This is the axis the measurements pointed at, by elimination. Depth two against one is 55.1%
+     * +-3.7 and every other lever came back flat - the full foresight span 51.4% +-3.8, sharpness
+     * 50.3% +-3.8. Sharpness is not flat because it does nothing: it swings how often the trainer
+     * takes a non-best action from 44.1% of contested turns to 17.6%. It is flat because taking the
+     * second action inside the band costs nothing. The band admits actions that are genuinely
+     * interchangeable, which means it is well calibrated, and it also means no lever operating
+     * *inside* it can ever be a difficulty setting.
+     *
+     * So a tier that is meant to be weaker has to be allowed outside it. Above one this widens what
+     * the trainer will consider and it will sometimes play a real mistake; at one it is the shipped
+     * band and the trainer never does. That is the intended difference. It was measured once before
+     * as a *personality* lever and rejected with "that is not character, it is a worse player" -
+     * correctly, because a persona should not be a handicap. A difficulty tier is exactly the place
+     * where being a worse player is the point.
+     */
+    val decisionRegretBand: Double = 1.0,
 ) {
     init {
         require(RESOURCE_ID.matches(id)) { "Difficulty profile id must be a lowercase namespaced id" }
@@ -37,6 +73,9 @@ data class BattleDifficultyProfile(
         require(doubleCandidateLimitPerSlot > 0)
         require(foresightWeight.isFinite() && foresightWeight in 0.0..1.0) {
             "Foresight weight must be between 0 and 1"
+        }
+        require(decisionRegretBand.isFinite() && decisionRegretBand > 0.0) {
+            "Decision regret band must be a positive multiplier on the regret band"
         }
     }
 
@@ -58,6 +97,9 @@ object BattleDifficultyProfiles {
         // tier would trust if it ever searched further, and one ply per tower stage is a designed
         // contract that this change has no business rewriting.
         foresightWeight = 0.25,
+        // Widest band on the ladder. This tier is the one a player meets first and the one that has
+        // to be beatable, and it is the only place a genuine mistake is wanted.
+        decisionRegretBand = 8.0,
     )
 
     @JvmField
@@ -70,6 +112,7 @@ object BattleDifficultyProfiles {
         // Same depth as Introductory, so the difference between the two tiers is purely how much of
         // that foresight is acted on.
         foresightWeight = 0.60,
+        decisionRegretBand = 4.0,
     )
 
     @JvmField
@@ -80,6 +123,7 @@ object BattleDifficultyProfiles {
         lookaheadPlies = 3,
         doubleCandidateLimitPerSlot = 8,
         foresightWeight = 0.85,
+        decisionRegretBand = 2.0,
     )
 
     @JvmField
@@ -91,6 +135,9 @@ object BattleDifficultyProfiles {
         doubleCandidateLimitPerSlot = 12,
         // Acts on everything it finds. Boss behaviour is unchanged by this lever.
         foresightWeight = 1.0,
+        // The shipped band exactly. Boss is the tier that never plays a move outside what the
+        // evaluation calls a genuinely close alternative, and that is now what makes it a Boss.
+        decisionRegretBand = 1.0,
     )
 
     @JvmField

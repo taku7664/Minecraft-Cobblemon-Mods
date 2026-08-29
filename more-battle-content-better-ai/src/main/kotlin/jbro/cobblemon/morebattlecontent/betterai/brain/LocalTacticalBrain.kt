@@ -128,6 +128,7 @@ internal class LocalTacticalBrain(
                 memory = difficultyContext.memory,
                 style = mind.trainerStyle,
                 riskBudget = mind.riskBudget,
+                decisionRegretBand = decidingProfile.difficulty.decisionRegretBand,
                 uncertainConditionalActionIds = ranked.asSequence()
                     .filter {
                         LocalTacticalSituationalEvaluator.pendingDamagingMoveRiskPenalty(
