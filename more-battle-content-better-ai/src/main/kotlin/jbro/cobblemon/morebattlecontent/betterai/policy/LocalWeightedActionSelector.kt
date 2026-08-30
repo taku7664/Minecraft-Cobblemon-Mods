@@ -37,6 +37,8 @@ internal data class LocalActionMixingContext(
     val tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     /** The deciding tier's `decisionRegretBand`, multiplied into the regret band. One is shipped. */
     val decisionRegretBand: Double = 1.0,
+    /** The deciding tier's `decisionShortlistWidth`, multiplied into the shortlist fraction. */
+    val decisionShortlistWidth: Double = 1.0,
 ) {
     companion object {
         fun balanced(
@@ -83,7 +85,9 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
                 context.overcommittedSetupActionIds,
             )
         }.ifEmpty { listOf(emergencyFallback(ranked, context.overcommittedSetupActionIds)) }
-        val countShortlist = viable.take(shortlistSize(viable.size, context.tuning))
+        val countShortlist = viable.take(
+            shortlistSize(viable.size, context.tuning, context.decisionShortlistWidth),
+        )
         val bestScore = countShortlist.first().comparisonValue
         // The tier multiplier is applied after the tuning ceiling, not before it.
         //
@@ -142,7 +146,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
             val regret = (bestScore - rank.comparisonValue).coerceAtLeast(0.0)
             exp(-sharpness * regret / (allowedGap * conditionalScale(rank, context))) *
                 riskMultiplier(rank, riskTolerance) * patternMultiplier(rank, shortlist, context, style) *
-                switchHysteresisMultiplier(rank, shortlist, context.memory) *
+                switchHysteresisMultiplier(rank, shortlist, context.memory, context.decisionShortlistWidth) *
                 nonProgressControlMultiplier(rank, context.memory) *
                 LocalBattleMind.planAlignment(rank.outcome.candidate, context.memory)
         }
@@ -191,10 +195,18 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
     fun shortlistSize(
         candidateCount: Int,
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+        width: Double = 1.0,
     ): Int {
         require(candidateCount > 0)
+        require(width > 0.0)
         if (candidateCount == 1) return 1
-        return ceil(candidateCount * tuning.shortlistFraction).toInt().coerceAtLeast(MINIMUM_MIXED_CHOICES)
+        // The floor stays at two rather than scaling with the tier.
+        //
+        // It exists so that a position with two legal actions is still a choice, which is true at
+        // every difficulty. Scaling it would mean a Boss position with two candidates could be cut to
+        // one, and that is not a stronger trainer, it is a trainer with the draw switched off.
+        return ceil(candidateCount * tuning.shortlistFraction * width).toInt()
+            .coerceAtLeast(MINIMUM_MIXED_CHOICES)
             .coerceAtMost(candidateCount)
     }
 
@@ -358,16 +370,30 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         }
     }
 
+    /**
+     * Damping on an exploratory switch made immediately after switching.
+     *
+     * Divided by the tier's shortlist width, because the constant alone holds down the wrong
+     * quantity. What must stay bounded is the *total* probability that the draw switches again, and
+     * that is the damped weight summed over every switch in the shortlist - so a tier holding twice
+     * as many alternatives carries roughly twice the switch mass at the same multiplier. The virtual
+     * league caught it the first time a tier was widened: a side switched voluntarily on three
+     * consecutive turns against a ceiling of two, in a run where every other measure was comfortably
+     * inside its bound.
+     *
+     * At width one this is the shipped constant exactly, so Boss and Advanced are untouched.
+     */
     private fun switchHysteresisMultiplier(
         rank: LocalBattleActionRank,
         shortlist: List<LocalBattleActionRank>,
         memory: BattleTacticalMemoryView,
+        shortlistWidth: Double,
     ): Double = if (
         rank !== shortlist.first() &&
         rank.outcome.candidate.kind == BattleActionKind.SWITCH &&
         memory.turnsSinceLastSwitch?.let { it <= 1 } == true
     ) {
-        RECENT_SWITCH_EXPLORATION_MULTIPLIER
+        RECENT_SWITCH_EXPLORATION_MULTIPLIER / shortlistWidth.coerceAtLeast(1.0)
     } else {
         1.0
     }

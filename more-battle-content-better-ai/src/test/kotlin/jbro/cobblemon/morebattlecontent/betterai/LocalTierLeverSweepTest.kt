@@ -68,6 +68,25 @@ class LocalTierLeverSweepTest {
                 appendLine()
             }
 
+            appendLine("-- shortlist width: how many close alternatives the tier may hold at once --")
+            appendLine("Held at the widest band, because that is where the count was measured to be")
+            appendLine("what stops the shortlist - 61.7% of positions at width 1.0, and 0.0% at 3.0,")
+            appendLine("with the shortlist growing 2.05 to 3.85. The band bounds how bad an alternative")
+            appendLine("may be, so this admits more genuinely close actions rather than worse ones.")
+            appendLine("Challenger is the *narrow* arm, so above 50% means the ladder points right.")
+            WIDTH_ARMS.forEach { (narrow, wide) ->
+                val tally = LocalSelfPlayMeasurement.tierDuel(
+                    label = "width $narrow vs $wide",
+                    challenger = base().copy(decisionRegretBand = 8.0, decisionShortlistWidth = narrow),
+                    defender = base().copy(decisionRegretBand = 8.0, decisionShortlistWidth = wide),
+                    battles = DEFINITIONS,
+                    seed = SEED,
+                )
+                appendLine("  " + tally.row())
+                appendLine("  " + tally.pairedRow())
+                appendLine()
+            }
+
             appendLine("-- depth, at the one rung the ladder measurement said was outside the noise --")
             appendLine("Re-asked at three times the width. 61.1% over sixty battles was 1.7 standard")
             appendLine("errors; that is a number to check, not a number to build a ladder on.")
@@ -152,6 +171,15 @@ class LocalTierLeverSweepTest {
          * more setting that changes behaviour and not strength, and this module has now found three.
          */
         val BAND_ARMS = listOf(1.0 to 4.0, 1.0 to 8.0)
+
+        /**
+         * Narrow against wide, at the band where the count was shown to be the binding limit.
+         *
+         * The deterministic diagnostic already says the width changes the draw; what it cannot say is
+         * whether the changed draw is worse. Sharpness moved the draw at least as much and was worth
+         * nothing, so a lever is not established until this arm has a sign.
+         */
+        val WIDTH_ARMS = listOf(1.0 to 2.0, 1.0 to 3.0)
 
         /** The rung that carried the whole ladder, taken at a width that can hold it. */
         val DEPTH_ARMS = listOf(1 to 2)

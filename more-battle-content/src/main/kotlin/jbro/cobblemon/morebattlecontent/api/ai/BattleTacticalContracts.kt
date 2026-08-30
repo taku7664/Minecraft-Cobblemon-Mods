@@ -65,6 +65,24 @@ data class BattleDifficultyProfile(
      * where being a worse player is the point.
      */
     val decisionRegretBand: Double = 1.0,
+    /**
+     * How many close alternatives a tier will hold at once, as a multiplier on the shortlist width.
+     *
+     * The band decides how far behind the best an action may be; this decides how many of them
+     * survive to be drawn from at all. They are separate limits and the second one binds first: the
+     * shortlist takes 40% of the legal actions with a floor of two, so an ordinary singles position
+     * with four or five candidates is cut to exactly two before the band is ever consulted.
+     *
+     * Measured, that cap is what stops the shortlist in 61.7% of positions at an eightfold band, and
+     * it is why the bottom of the ladder is flat - Introductory at band 8.0 and Standard at 4.0 both
+     * come down to "consider the top two", so they measured 51.0% +-5.1 against each other while the
+     * rung where the cap binds least, Boss against Advanced, separated at 56.8%.
+     *
+     * Above one the tier can reach a third and fourth alternative; at one it is the shipped width.
+     * The band still bounds how bad any of them may be, so widening the count admits more genuinely
+     * close actions rather than worse ones.
+     */
+    val decisionShortlistWidth: Double = 1.0,
 ) {
     init {
         require(RESOURCE_ID.matches(id)) { "Difficulty profile id must be a lowercase namespaced id" }
@@ -76,6 +94,9 @@ data class BattleDifficultyProfile(
         }
         require(decisionRegretBand.isFinite() && decisionRegretBand > 0.0) {
             "Decision regret band must be a positive multiplier on the regret band"
+        }
+        require(decisionShortlistWidth.isFinite() && decisionShortlistWidth > 0.0) {
+            "Decision shortlist width must be a positive multiplier on the shortlist fraction"
         }
     }
 
@@ -100,6 +121,10 @@ object BattleDifficultyProfiles {
         // Widest band on the ladder. This tier is the one a player meets first and the one that has
         // to be beatable, and it is the only place a genuine mistake is wanted.
         decisionRegretBand = 8.0,
+        // The strongest handicap on the ladder, and the effect saturates just past this: narrow
+        // against twofold is 64.2% +-3.8 and against threefold 63.3%, because the count limit is
+        // fully released by then and there is nothing further to open.
+        decisionShortlistWidth = 2.0,
     )
 
     @JvmField
@@ -113,6 +138,7 @@ object BattleDifficultyProfiles {
         // that foresight is acted on.
         foresightWeight = 0.60,
         decisionRegretBand = 4.0,
+        decisionShortlistWidth = 1.6,
     )
 
     @JvmField
@@ -124,6 +150,7 @@ object BattleDifficultyProfiles {
         doubleCandidateLimitPerSlot = 8,
         foresightWeight = 0.85,
         decisionRegretBand = 2.0,
+        decisionShortlistWidth = 1.25,
     )
 
     @JvmField
@@ -138,6 +165,7 @@ object BattleDifficultyProfiles {
         // The shipped band exactly. Boss is the tier that never plays a move outside what the
         // evaluation calls a genuinely close alternative, and that is now what makes it a Boss.
         decisionRegretBand = 1.0,
+        decisionShortlistWidth = 1.0,
     )
 
     @JvmField

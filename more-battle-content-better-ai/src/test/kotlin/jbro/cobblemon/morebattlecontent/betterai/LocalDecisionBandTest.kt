@@ -106,6 +106,68 @@ class LocalDecisionBandTest {
         }
     }
 
+    /**
+     * The count limit, asked at the band where it was shown to bind.
+     *
+     * At an eightfold band the shortlist is stopped by the count and not the band in 61.7% of
+     * positions, so the weak end of the ladder is capped by how many alternatives it may hold rather
+     * than by how bad they may be. This holds the band at that end and moves the width instead. If
+     * the shortlist does not grow, the fraction is not the cap and the account of the flat bottom
+     * rungs is wrong.
+     */
+    @Test
+    fun `report what widening the shortlist count opens up`() {
+        val rankings = rankPositions()
+        val sizes = LinkedHashMap<Double, Double>()
+        println("SHORTLIST WIDTH  positions=${rankings.size}  band held at $WEAK_END")
+        println()
+        println("%-10s %12s %12s %12s".format("width", "shortlist", "chose-2nd", "stopped-by-count"))
+        WIDTHS.forEach { width ->
+            var contested = 0
+            var choseOther = 0
+            var shortlistTotal = 0
+            var cappedCount = 0
+            rankings.forEach { (calculated, ranked) ->
+                val selection = LocalWeightedActionSelector().choose(
+                    ranked,
+                    LocalActionChoiceSeed.derive(calculated.state.battleId, calculated.state.turn, ranked),
+                    LocalActionMixingContext.balanced(0.5)
+                        .copy(decisionRegretBand = WEAK_END, decisionShortlistWidth = width),
+                )
+                shortlistTotal += selection.shortlistSize
+                if (selection.shortlistSize >= LocalWeightedActionSelector()
+                        .shortlistSize(ranked.size, LocalDecisionTuning.CURRENT, width) &&
+                    ranked.size > selection.shortlistSize
+                ) {
+                    cappedCount++
+                }
+                if (selection.shortlistSize > 1) {
+                    contested++
+                    if (selection.rank !== ranked.first()) choseOther++
+                }
+            }
+            sizes[width] = shortlistTotal.toDouble() / rankings.size
+            println(
+                "%-10.2f %12.2f %11.1f%% %15.1f%%".format(
+                    width, sizes.getValue(width),
+                    if (contested == 0) 0.0 else choseOther * 100.0 / contested,
+                    cappedCount * 100.0 / rankings.size,
+                ),
+            )
+        }
+        println()
+        println("A width that does not grow the shortlist means the fraction was not the cap.")
+
+        // The account of the flat bottom rungs rests entirely on this being the binding limit, so it
+        // is asserted rather than read off a report nobody reruns.
+        val shipped = sizes.getValue(1.0)
+        assertTrue(
+            sizes.getValue(WIDTHS.last()) > shipped,
+            "Widening the shortlist fraction has to hold more alternatives than the shipped width, " +
+                "was ${sizes.getValue(WIDTHS.last())} against $shipped.",
+        )
+    }
+
     private fun rankPositions(): List<Pair<BattleDecisionContext, List<LocalBattleActionRank>>> {
         val profile = BattleTrainerProfile(
             skillLevel = 3,
@@ -132,5 +194,9 @@ class LocalDecisionBandTest {
     private companion object {
         const val SEED = 20260830
         val BANDS = listOf(1.0, 2.0, 4.0, 8.0)
+
+        /** The widest band on the ladder, where the count was measured to be what binds. */
+        const val WEAK_END = 8.0
+        val WIDTHS = listOf(1.0, 1.5, 2.0, 3.0)
     }
 }
