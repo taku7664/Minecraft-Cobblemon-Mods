@@ -38,16 +38,18 @@ class LocalDecisionBandTest {
     fun `report what widening the regret band opens up`() {
         val rankings = rankPositions()
         val opened = LinkedHashMap<Double, Double>()
+        val capped = LinkedHashMap<Double, Double>()
         println("REGRET BAND  positions=${rankings.size}")
         println("collapsed = the shortlist held one entry, so there was no choice to make.")
         println("chose-2nd = share of contested turns that did not take the top-ranked action.")
         println()
-        println("%-10s %10s %12s %12s".format("band", "collapsed", "shortlist", "chose-2nd"))
+        println("%-10s %10s %12s %12s %10s".format("band", "collapsed", "shortlist", "chose-2nd", "count-cap"))
         BANDS.forEach { band ->
             var collapsed = 0
             var contested = 0
             var choseOther = 0
             var shortlistTotal = 0
+            var cappedCount = 0
             rankings.forEach { (calculated, ranked) ->
                 val selection = LocalWeightedActionSelector().choose(
                     ranked,
@@ -55,6 +57,18 @@ class LocalDecisionBandTest {
                     LocalActionMixingContext.balanced(0.5).copy(decisionRegretBand = band),
                 )
                 shortlistTotal += selection.shortlistSize
+                // Whether the *count* limit is what stopped the shortlist, rather than the band.
+                //
+                // `shortlistSize` takes a fraction of the candidate count with a floor of two, so a
+                // position with several live options can still be cut to two before the band is ever
+                // consulted. Where that binds, widening the band cannot reach a third action however
+                // far it is widened, and the weak end of the ladder is capped by the count instead.
+                if (selection.shortlistSize >= LocalWeightedActionSelector()
+                        .shortlistSize(ranked.size, LocalDecisionTuning.CURRENT) &&
+                    ranked.size > selection.shortlistSize
+                ) {
+                    cappedCount++
+                }
                 if (selection.shortlistSize <= 1) {
                     collapsed++
                 } else {
@@ -63,16 +77,20 @@ class LocalDecisionBandTest {
                 }
             }
             opened[band] = collapsed * 100.0 / rankings.size
+            capped[band] = cappedCount * 100.0 / rankings.size
             println(
-                "%-10.2f %9.1f%% %12.2f %11.1f%%".format(
+                "%-10.2f %9.1f%% %12.2f %11.1f%% %9.1f%%".format(
                     band, opened.getValue(band), shortlistTotal.toDouble() / rankings.size,
                     if (contested == 0) 0.0 else choseOther * 100.0 / contested,
+                    capped.getValue(band),
                 ),
             )
         }
         println()
         println("A band that moves the collapse share is reaching actions the shipped setting")
         println("refuses outright, which is the only place a weaker tier can live.")
+        println("count-cap is where the shortlist was stopped by the count limit and not the band.")
+        println("Where that is high, widening further buys nothing and the count is the next lever.")
 
         // The shipped band is the strict one, and every widening has to stay strictly wider than it.
         // Asserted rather than only printed because the tier values now depend on this ordering: if a

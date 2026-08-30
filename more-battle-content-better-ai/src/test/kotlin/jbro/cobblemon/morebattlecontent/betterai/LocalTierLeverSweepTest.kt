@@ -68,18 +68,6 @@ class LocalTierLeverSweepTest {
                 appendLine()
             }
 
-            appendLine("-- the shipped ladder end to end, once the tiers carry their own bands --")
-            val combined = LocalSelfPlayMeasurement.tierDuel(
-                label = "shipped vs fourfold band",
-                challenger = base(),
-                defender = base().copy(decisionRegretBand = 4.0),
-                battles = DEFINITIONS,
-                seed = SEED,
-            )
-            appendLine("  " + combined.row())
-            appendLine("  " + combined.pairedRow())
-            appendLine()
-
             appendLine("-- depth, at the one rung the ladder measurement said was outside the noise --")
             appendLine("Re-asked at three times the width. 61.1% over sixty battles was 1.7 standard")
             appendLine("errors; that is a number to check, not a number to build a ladder on.")
@@ -100,6 +88,45 @@ class LocalTierLeverSweepTest {
         println(report)
     }
 
+    /**
+     * The shipped tiers against each other, exactly as a player meets them.
+     *
+     * Separate from the lever sweep and reporting as it goes, for a reason that cost half an hour:
+     * the sweep accumulated its whole report into one string and printed at the end, and when the
+     * JVM died partway through a Boss arm every arm that had already finished died with it. A
+     * measurement that only exists at the end of a thirty-minute run is a measurement that does not
+     * survive its own failure.
+     *
+     * Boss searches four plies, so this is the most expensive thing in the module. Fewer definitions
+     * than the lever arms use, and the reported error says what that costs.
+     */
+    @Test
+    @EnabledIfSystemProperty(
+        named = "betterai.sweeps",
+        matches = "true",
+        disabledReason = "The Boss arms search four plies. Run with -Psweeps when the ladder is in question.",
+    )
+    fun `measure the shipped ladder rung by rung`() {
+        println("SHIPPED LADDER  challenger is always the higher tier")
+        println("Adjacent rungs are the promise a difficulty setting makes; the ends say whether the")
+        println("ladder has any total height. Before the band existed the middle rungs were 48.1% and")
+        println("45.5% - three stages that were the same stage.")
+        println()
+        LADDER_ARMS.forEach { (lower, higher) ->
+            val tally = LocalSelfPlayMeasurement.tierDuel(
+                label = "${higher.tier} vs ${lower.tier}",
+                challenger = higher,
+                defender = lower,
+                battles = LADDER_DEFINITIONS,
+                seed = SEED,
+            )
+            // Printed per arm rather than collected, so a run that dies still leaves its evidence.
+            println("  " + tally.row())
+            println("  " + tally.pairedRow())
+            println()
+        }
+    }
+
     /** Advanced in every respect except the lever under test, and always at the fixed depth. */
     private fun base(
         foresightWeight: Double = BattleDifficultyProfiles.ADVANCED.foresightWeight,
@@ -112,6 +139,9 @@ class LocalTierLeverSweepTest {
         /** Two plies, because that is the depth the ladder measurement says is actually reached and used. */
         const val FIXED_PLIES = 2
         const val DEFINITIONS = 90
+
+        /** Boss searches four plies per decision, so the ladder buys its arms at a narrower width. */
+        const val LADDER_DEFINITIONS = 50
         const val SEED = 20260829
 
         /**
@@ -125,6 +155,21 @@ class LocalTierLeverSweepTest {
 
         /** The rung that carried the whole ladder, taken at a width that can hold it. */
         val DEPTH_ARMS = listOf(1 to 2)
+
+        /**
+         * The shipped tiers, adjacent rungs first and then the full ladder.
+         *
+         * Adjacent rungs are the promise a difficulty setting actually makes - a player who moves up
+         * one stage should meet a better trainer - and the ends say whether the ladder has any total
+         * height. Before the band existed the middle rungs measured 48.1% and 45.5%, which is to say
+         * the ladder had three stages that were the same stage.
+         */
+        val LADDER_ARMS = listOf(
+            BattleDifficultyProfiles.INTRODUCTORY to BattleDifficultyProfiles.STANDARD,
+            BattleDifficultyProfiles.STANDARD to BattleDifficultyProfiles.ADVANCED,
+            BattleDifficultyProfiles.ADVANCED to BattleDifficultyProfiles.BOSS,
+            BattleDifficultyProfiles.INTRODUCTORY to BattleDifficultyProfiles.BOSS,
+        )
 
     }
 }
