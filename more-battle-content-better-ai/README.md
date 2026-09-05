@@ -200,3 +200,44 @@ This comparison found an HP reconstruction defect: `122/362` multiplied back to
 recognizes exact integer-derived ratios without applying an arbitrary epsilon;
 genuinely higher fractions still round upward. It changes KO assessment, not the
 damage-roll formula.
+
+## Root allocation probe (early experiment, not enabled in the AI)
+
+```powershell
+.\gradlew.bat :more-battle-content-better-ai:unitTest -Ptests=Allocation --no-daemon
+.\gradlew.bat :more-battle-content-better-ai:compareRootAllocation --no-daemon
+```
+
+This advances a small part of the planned search-policy experiment without
+adopting a new product search. It compares round-robin sampling with a UCB-style
+root allocator: inspect every action first, then favour promising or less-visited
+actions. The reference is [poke-engine's MCTS implementation](https://github.com/pmariglia/poke-engine/blob/4909360fddc827942b18d840dd796385b46eb9e4/src/mcts.rs)
+at commit `4909360fddc827942b18d840dd796385b46eb9e4` ([MIT license](https://github.com/pmariglia/poke-engine/blob/4909360fddc827942b18d840dd796385b46eb9e4/LICENSE)).
+No upstream code or engine is bundled. This is an independently written root
+bandit, not a tree search, a port of MCTS, or poke-engine's two-sided selection.
+
+Two newly drawn complete team pairs (seed `20260906`) provide public contexts
+from up to four turns each. Positions without a revealed damaging reply or public
+active stats are excluded with reasons; first-turn switch-only responses must not
+masquerade as a successful comparison. Flat expectations are flagged separately.
+The existing public turn projector and leaf evaluator precompute a
+one-turn outcome table. Opponent replies are **uniform over generated public
+responses**, not the product opponent model or hidden sets. Order and chance
+weights are normalized separately. Both allocators see the same sample prefix
+for each action; only the allocation order changes. Every run uses the same
+budget of 4, 16 or 64 draws per action in total, across 32 paired seeds. The UCB
+exploration scale is fixed at one board unit, not a calibrated confidence bound.
+
+The scorer, not the allocator, sees exact model expectations. `regret` is the
+difference between the best expected board value and that of the selected action.
+It is not win-rate loss. Precomputation, stored tables and class hashes are
+recorded in `comparison.json` under `build/reports/betterai-allocation/`; use
+`'-PallocationOutput=<new-directory>'` to choose a fresh output directory.
+
+**Limits:** equal table draws do not mean equal engine calls, nodes, or server
+time. This is neither a comparison against the shipping recursive search nor an
+independent mechanics validation. No deeper continuation, adversarial opponent,
+hidden-set hypotheses, doubles, trainer selection, or held-out strength test is
+included. A regression deliberately demonstrates that both allocators can miss
+a rare catastrophic loss. Better allocation alone does not make that safe.
+Product selection, evaluation weights, Router ownership and defaults are unchanged.

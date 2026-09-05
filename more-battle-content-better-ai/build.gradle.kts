@@ -134,3 +134,16 @@ tasks.register<JavaExec>("compareDamageOracle") {
             ?: layout.buildDirectory.dir("reports/betterai-damage/${UUID.randomUUID()}").get().asFile.absolutePath))
     }
 }
+
+tasks.register<JavaExec>("compareRootAllocation") {
+    group = "verification"
+    description = "Test-only uniform vs UCB root allocation probe; not a product search benchmark."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.PublicRootAllocationExperiment")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(providers.gradleProperty("allocationOutput").orNull
+            ?: layout.buildDirectory.dir("reports/betterai-allocation/${UUID.randomUUID()}").get().asFile.absolutePath))
+    }
+}
