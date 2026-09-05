@@ -97,8 +97,9 @@ internal object LocalTacticalScenarioBattle {
          * of battles per arm, and a Boss decision is allowed three seconds.
          */
         recordedContexts: MutableList<BattleDecisionContext>? = null,
+        recordedDecisions: MutableList<LocalScenarioDecisionTrace>? = null,
     ): LocalTacticalScenarioReport = Battle(
-        definition, cycleTuning, offenseTuning, cycleDifficulty, offenseDifficulty, recordedContexts,
+        definition, cycleTuning, offenseTuning, cycleDifficulty, offenseDifficulty, recordedContexts, recordedDecisions,
     ).run(maximumTurns)
 
     private class Battle(
@@ -108,6 +109,7 @@ internal object LocalTacticalScenarioBattle {
         cycleDifficulty: BattleDifficultyProfile,
         offenseDifficulty: BattleDifficultyProfile,
         private val recordedContexts: MutableList<BattleDecisionContext>?,
+        private val recordedDecisions: MutableList<LocalScenarioDecisionTrace>?,
     ) {
         private val difficulties = mapOf(
             BattleSide.ALLY to cycleDifficulty,
@@ -320,7 +322,16 @@ internal object LocalTacticalScenarioBattle {
                 publicActionCatalog = decisionCatalog(side),
             )
             recordedContexts?.add(context)
+            val started = if (recordedDecisions != null) System.nanoTime() else 0L
             val decision = brain.decide(session, context).toCompletableFuture().join()
+            recordedDecisions?.add(LocalScenarioDecisionTrace(
+                turn = state.turn,
+                side = side.name,
+                actionId = decision.actionId,
+                elapsedNanos = System.nanoTime() - started,
+                source = "LOCAL_BRAIN_DIRECT",
+                tags = decision.tags.sorted(),
+            ))
             return candidates.single { it.actionId == decision.actionId }
         }
 

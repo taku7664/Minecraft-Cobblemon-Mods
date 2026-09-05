@@ -1,3 +1,5 @@
+import java.util.UUID
+
 plugins {
     kotlin("jvm")
     id("fabric-loom")
@@ -61,3 +63,24 @@ val unitTest by tasks.registering(JavaExec::class) {
 }
 
 tasks.check { dependsOn(unitTest) }
+
+// Opt-in test-harness capture; never part of build/check or the shipped server JAR.
+tasks.register<JavaExec>("captureBaseline") {
+    group = "verification"
+    description = "Records local self-play inputs and actual decisions, or validates and replays a capture."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.LocalBaselineCapture")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        val output = providers.gradleProperty("baselineOutput").orNull
+            ?: layout.buildDirectory.dir("reports/betterai-baseline/${UUID.randomUUID()}").get().asFile.absolutePath
+        setArgs(listOf(rootProject.projectDir.absolutePath, output,
+            providers.gradleProperty("baselineBattles").getOrElse("2"),
+            providers.gradleProperty("baselineSeed").getOrElse("20260905"),
+            providers.gradleProperty("baselineTurns").getOrElse("30"),
+            providers.gradleProperty("baselineFormat").getOrElse("SINGLE"),
+            providers.gradleProperty("baselineTier").getOrElse("STANDARD"),
+            providers.gradleProperty("baselineReplay").getOrElse("")))
+    }
+}
