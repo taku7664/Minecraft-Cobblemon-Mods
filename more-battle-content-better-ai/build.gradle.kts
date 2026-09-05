@@ -186,3 +186,17 @@ tasks.register<JavaExec>("compareRootDeepening") {
             ?: layout.buildDirectory.dir("reports/betterai-root-deepening/${UUID.randomUUID()}").get().asFile.absolutePath))
     }
 }
+
+tasks.register<JavaExec>("compareRootTactics") {
+    group = "verification"
+    description = "Runs the fixed public tactical grid through both recursive root schedules."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.RootDeepeningExperiment")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(providers.gradleProperty("rootTacticsOutput").orNull
+            ?: layout.buildDirectory.dir("reports/betterai-root-tactics/${UUID.randomUUID()}").get().asFile.absolutePath,
+            "tactical"))
+    }
+}

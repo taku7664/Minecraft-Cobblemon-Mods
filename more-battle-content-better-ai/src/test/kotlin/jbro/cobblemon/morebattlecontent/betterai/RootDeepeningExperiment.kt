@@ -11,30 +11,43 @@ import kotlin.math.abs
 internal object RootDeepeningExperiment {
     @JvmStatic
     fun main(args: Array<String>) {
-        require(args.size == 1)
+        require(args.size == 1 || (args.size == 2 && args[1] == "tactical"))
+        val tactical = args.size == 2
         val directory = Path.of(args[0]).toAbsolutePath().normalize()
         Files.createDirectories(directory.parent)
         Files.createDirectory(directory)
-        val definitions = LocalSelfPlayMeasurement.definitions(2, 20260906)
-        val contexts = mutableListOf<BattleDecisionContext>()
+        val fixtures = if (tactical) RootTacticalFixtures.all() else emptyList()
+        val definitions = if (tactical) emptyList() else LocalSelfPlayMeasurement.definitions(2, 20260906)
+        val contexts = fixtures.map { it.context }.toMutableList()
         definitions.forEach { LocalTacticalScenarioBattle.run(it, maximumTurns = 4,
             cycleDifficulty = BattleDifficultyProfiles.INTRODUCTORY, recordedContexts = contexts) }
         val positions = contexts.withIndex().filter { PublicRootAllocationExperiment.exclusion(it.value) == null }
         val rows = mutableListOf<Map<String, Any?>>()
         val references = mutableListOf<Map<String, Any?>>()
         val mismatches = mutableListOf<String>()
+        var horizonChanges = 0
         for ((position, original) in positions) {
             val context = PublicBattleTacticalCalculator.calculate(original)
             val reference = (1..2).associateWith { RootObjectiveReference.evaluate(context, it) }
             check(reference.values.all { it.matches })
+            val oneBest = reference.getValue(1).isolatedRanking.first()
+            val twoBest = reference.getValue(2).isolatedRanking.first()
+            if (oneBest != twoBest) horizonChanges++
+            val fixture = fixtures.getOrNull(position)
+            if (fixture?.expectedAction != null && (oneBest != fixture.expectedAction || twoBest != fixture.expectedAction)) {
+                mismatches += "${fixture.id}:control-expectation"
+            }
             references += mapOf("position" to position, "scoresByDepth" to reference.mapValues { it.value.scores },
-                "targetRanking" to reference.getValue(2).isolatedRanking)
+                "fixtureId" to fixture?.id, "depthOneBest" to oneBest, "depthTwoBest" to twoBest,
+                "horizonChangesBest" to (oneBest != twoBest), "targetRanking" to reference.getValue(2).isolatedRanking)
             val ids = context.candidates.map { it.actionId }
             // Warm-up is excluded. Both arms get identical evaluator setup and acceptance rules.
             for (policy in RootDeepeningPolicy.entries) {
                 RootDeepeningAllocator.run(ids, policy, 500, LiveRecursiveRootEvaluator(context)::evaluate)
             }
-            for ((budgetIndex, budget) in listOf(250, 500, 1_000, 2_000, 4_000, 8_000, 20_000).withIndex()) {
+            val budgets = if (tactical) listOf(25, 50, 100, 200, 400, 800, 1_600)
+                else listOf(250, 500, 1_000, 2_000, 4_000, 8_000, 20_000)
+            for ((budgetIndex, budget) in budgets.withIndex()) {
                 val policies = RootDeepeningPolicy.entries.let { if ((position + budgetIndex) % 2 == 0) it else it.reversed() }
                 for (policy in policies) {
                     val start = System.nanoTime()
@@ -51,7 +64,8 @@ internal object RootDeepeningExperiment {
                     if (result.targetDepthComplete && (loss == null || loss > 1e-9)) {
                         mismatches += "$position:$budget:$policy:completed-target-choice"
                     }
-                    rows += mapOf("position" to position, "policy" to policy.name, "nodeBudget" to budget,
+                    rows += mapOf("position" to position, "fixtureId" to fixture?.id,
+                        "policy" to policy.name, "nodeBudget" to budget,
                         "result" to result, "unusedNodes" to budget - result.nodes, "elapsedMillis" to elapsed,
                         "mixedDepths" to (result.depths.values.distinct().size > 1), "targetScoreLoss" to loss)
                 }
@@ -60,6 +74,9 @@ internal object RootDeepeningExperiment {
         val report = mapOf("scope" to "SAME_RECURSIVE_OBJECTIVE_ROOT_ORDER_PROBE_NOT_PRODUCT_ADOPTION",
             "provenance" to LocalBaselineProvenance.capture(Path.of("").toAbsolutePath().normalize()),
             "javaVersion" to System.getProperty("java.version"), "definitions" to definitions,
+            "fixtureMode" to tactical, "fixtures" to fixtures.map { mapOf("id" to it.id,
+                "family" to it.family, "expectedAction" to it.expectedAction) },
+            "horizonChangesBestCount" to horizonChanges,
             "contexts" to positions.associate { it.index to it.value },
             "excluded" to contexts.mapIndexedNotNull { i, c -> PublicRootAllocationExperiment.exclusion(c)?.let {
                 mapOf("position" to i, "reason" to it) } },
@@ -69,7 +86,7 @@ internal object RootDeepeningExperiment {
             "scoreMismatches" to mismatches, "rows" to rows)
         Files.writeString(directory.resolve("comparison.json"), GsonBuilder().setPrettyPrinting().serializeNulls()
             .create().toJson(report), CREATE_NEW)
-        println("root deepening positions=${positions.size} rows=${rows.size} scoreMismatches=${mismatches.size}")
-        check(positions.isNotEmpty() && mismatches.isEmpty())
+        println("root deepening positions=${positions.size} rows=${rows.size} scoreMismatches=${mismatches.size} horizonChanges=$horizonChanges")
+        check(positions.isNotEmpty() && mismatches.isEmpty() && (!tactical || horizonChanges > 0))
     }
 }

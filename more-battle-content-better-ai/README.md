@@ -374,3 +374,37 @@ zero target-score loss. This validates integration, not a quality gain. Before
 adoption, add public tactical fixtures with depth-dependent best actions and
 measure failure rates as well as cost; do not select fixtures solely because the
 priority schedule wins on them.
+
+### Fixed tactical fixtures
+
+Run `./gradlew :more-battle-content-better-ai:compareRootTactics --no-daemon`
+with optional `'-ProotTacticsOutput=<fresh-directory>'`. Results go under
+`build/reports/betterai-root-tactics/`; tests use `-Ptests=RootTactical`.
+
+The fixture set includes all 18 combinations of own HP (0.4/1.0), physical strike
+power (60/90/120) and revealed opponent strike power (30/60/90), with Swords Dance
+as the alternative. Two controls cover an immediate finishing hit and a priority
+finisher that prevents a lethal faster reply. The latter's projected survival
+and knockout are checked separately from AI ranking. All cells are retained;
+the fixture builder never queries a scheduler or filters by its success.
+
+These are synthetic 1v1 public snapshots: 200 HP, specified point stat ranges,
+normal typing, complete revealed move catalogs and custom strike templates.
+They are not legal preset teams, hidden-set inference, independent-engine ground
+truth, holdout battles, or proof of in-game quality. The two-turn ranking is the
+current model's reference, not an independently established optimal move.
+
+The same scheduler runner measures 25/50/100/200/400/800/1600 reported-work
+budgets, records depth-dependent best-action changes, and fails if the tactical
+grid no longer contains any such change. Canonical ordering depends on action
+IDs (here `setup` precedes `strike`); comparisons against it are not a claim of
+general superiority over other move orderings or the production search.
+
+The initial tactical run exposes non-monotonic choice quality under mixed depths:
+at 100 work checks canonical ordering misses the reference best in 7/20 cases,
+score priority in 9/20, while both match all 20 after full depth completion at 200.
+In `setup_hp40_hit120_reply60`, score priority chooses the reference best at 50,
+switches to a worse setup at 100, and returns to the best at 200. This known
+experimental limitation is characterized by a regression test; it is not a
+required behavior for a future fix. Resolve mixed-depth acceptance before product
+adoption. The current production evaluator does not use this experimental rule.
