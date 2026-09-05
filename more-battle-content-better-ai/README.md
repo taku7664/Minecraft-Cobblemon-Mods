@@ -304,3 +304,33 @@ search depth must also match before an allocation-only quality comparison is
 valid. Do not reinterpret the existing cost reports as matched-objective results.
 
 Targeted regression: `./gradlew :more-battle-content-better-ai:unitTest -Ptests=LocalRecursive --no-daemon`.
+
+### Common recursive referee (offline objective reference)
+
+Run `./gradlew :more-battle-content-better-ai:compareRootObjective --no-daemon`.
+Use `'-ProotObjectiveOutput=<fresh-directory>'` to override the output under
+`build/reports/betterai-root-objective/`. Tests use `-Ptests=Root`.
+
+The test-only reference calls the existing recursive evaluator for the complete
+ranking, then for each root in reverse order with a fresh cache. It preserves the
+complete public context and original base ranks. At Boss depth 1 and 2 it checks
+ranking and score, lookahead adjustment, execution probability and worst-response
+HP retention (absolute tolerance 1e-9). This reuses full-turn scoring, unknown
+response reserves, habits and root corrections without duplicating their formulas.
+Singles only: doubles root pruning needs its own equivalence proof.
+
+The reference uses a constant offline clock with 200,000 nodes per depth and a
+64-branch chance width. Incomplete depth or node exhaustion fails instead of
+becoming an exact reference. Fresh per-root runs have different cache costs and
+node-budget scope from the full run: this is **not equal-cost or latency evidence**.
+It measures the current model, not independent mechanics or an optimal battle policy.
+
+Live uniform/UCB choices (24/96 draws, four seeds, previous two team pairs) are
+scored by that common referee without receiving its scores as inputs. `scoreLoss`
+is the best recursive comparison score minus the chosen score, not win-rate loss
+or the earlier board-value regret. Missing recommendations remain null, never
+zero loss. Depth-1 and depth-2 rows reuse the same sampled choice and are correlated.
+
+**The samplers still optimize raw leaf means.** A common referee makes the
+disagreement measurable; it does not yet isolate allocation from objective
+differences or justify adopting UCB. This task changes no product logic or defaults.

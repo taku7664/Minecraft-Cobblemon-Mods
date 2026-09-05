@@ -160,3 +160,16 @@ tasks.register<JavaExec>("compareLiveRootSearch") {
             ?: layout.buildDirectory.dir("reports/betterai-live-root/${UUID.randomUUID()}").get().asFile.absolutePath))
     }
 }
+
+tasks.register<JavaExec>("compareRootObjective") {
+    group = "verification"
+    description = "Verifies per-root recursive objective parity and scores live probe choices with a common referee."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.RootObjectiveExperiment")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(providers.gradleProperty("rootObjectiveOutput").orNull
+            ?: layout.buildDirectory.dir("reports/betterai-root-objective/${UUID.randomUUID()}").get().asFile.absolutePath))
+    }
+}
