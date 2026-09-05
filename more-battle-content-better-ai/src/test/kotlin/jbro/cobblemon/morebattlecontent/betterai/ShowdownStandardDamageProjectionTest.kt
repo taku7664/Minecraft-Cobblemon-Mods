@@ -10,6 +10,24 @@ import org.junit.jupiter.api.Test
 
 class ShowdownStandardDamageProjectionTest {
     @Test
+    fun `exact integer hp survives a fraction round trip at the knockout boundary`() {
+        val result = hpBoundaryProjection(122.0 / 362)
+        assertEquals(BattleFractionRange(5.0 / 16, 5.0 / 16), result.koProbabilityRange)
+    }
+
+    @Test
+    fun `genuinely higher hp fractions still round upward without a broad epsilon`() {
+        for (fraction in listOf(Math.nextUp(122.0 / 362), 122.25 / 362)) {
+            assertEquals(BattleFractionRange(3.0 / 16, 3.0 / 16), hpBoundaryProjection(fraction).koProbabilityRange)
+        }
+    }
+
+    private fun hpBoundaryProjection(fraction: Double) = ShowdownStandardDamageProjection.project(
+        level = 100, power = 90, attack = BattleIntegerRange(136, 136), defence = BattleIntegerRange(246, 246),
+        targetMaxHp = BattleIntegerRange(362, 362), targetHpFraction = fraction, stab = 1.5, typeMultiplier = 2.0,
+    )
+
+    @Test
     fun `gen nine base formula preserves all sixteen Showdown random rolls`() {
         val result = ShowdownStandardDamageProjection.project(
             level = 50,

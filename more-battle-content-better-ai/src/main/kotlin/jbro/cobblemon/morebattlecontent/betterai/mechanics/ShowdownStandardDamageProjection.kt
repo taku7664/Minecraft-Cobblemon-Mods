@@ -7,6 +7,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleIntegerRange
 import jbro.cobblemon.morebattlecontent.api.ai.BattleKnockoutAssessment
 import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.math.roundToInt
 
 internal data class ShowdownStandardDamageProjectionResult(
     val minimumDamage: Int,
@@ -179,9 +180,15 @@ internal object ShowdownStandardDamageProjection {
         else -> error("Unsupported standard type multiplier: $multiplier")
     }
 
-    private fun currentHp(maxHp: Int, fraction: Double): Int = when {
-        fraction == 0.0 -> 0
-        else -> ceil(maxHp * fraction).toInt().coerceIn(1, maxHp)
+    private fun currentHp(maxHp: Int, fraction: Double): Int {
+        if (fraction == 0.0) return 0
+        val scaled = maxHp * fraction
+        val nearest = scaled.roundToInt()
+        // An integer HP ratio can multiply back just above that integer (122/362 ->
+        // 122.00000000000001). Recognize the exact ratio, not a broad epsilon that
+        // would also round down genuinely higher public fractions.
+        val hp = if (nearest.toDouble() / maxHp == fraction) nearest else ceil(scaled).toInt()
+        return hp.coerceIn(1, maxHp)
     }
 
     private fun knockoutProbability(rolls: List<Int>, currentHp: Int): Double =
