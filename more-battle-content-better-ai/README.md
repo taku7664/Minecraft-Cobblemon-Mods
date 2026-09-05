@@ -288,3 +288,19 @@ does not run the final personality-weighted product selector.
 Reports are written to a fresh `build/reports/betterai-live-root/` directory;
 override with `'-PliveRootOutput=<new-directory>'`. Production code, defaults,
 Router ownership and deployment remain unchanged.
+
+### Response-objective alignment (first slice)
+
+`LocalSearchResponseObjective` now owns the existing recursive search's opponent
+response aggregation: tier-weighted soft minimum, learned move/switch category
+blend, execution probability and conservative remaining HP. The recursive search
+uses this implementation; formulas, temperature and tier weights are unchanged.
+It consumes local turn evaluations and public memory, not hidden sets or Router
+recommendations. This extraction is not an AI-strength improvement.
+
+The live allocation probe still uses raw leaf means. It is **not yet aligned**:
+full-turn effects, unknown-response reserves, root heuristic corrections and
+search depth must also match before an allocation-only quality comparison is
+valid. Do not reinterpret the existing cost reports as matched-objective results.
+
+Targeted regression: `./gradlew :more-battle-content-better-ai:unitTest -Ptests=LocalRecursive --no-daemon`.

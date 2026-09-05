@@ -14,6 +14,8 @@ import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicSingleTurnProject
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionPolicy
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionRank
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleMind
+import jbro.cobblemon.morebattlecontent.betterai.search.LocalResponseValue as TurnValue
+import jbro.cobblemon.morebattlecontent.betterai.search.LocalOpponentResponseValue as OpponentTurnValue
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalRecursiveMoveHabit
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalRecursiveSwitchTempo
 import jbro.cobblemon.morebattlecontent.betterai.state.PublicTurnProjection
@@ -601,12 +603,8 @@ internal object LocalRecursiveLookaheadEvaluator {
          * Shared by the opponent's action choices and by the turn orders their stat ranges leave open,
          * so the search cannot end up more afraid of an unknown than of an adversary.
          */
-        private fun worstCaseWeight(): Double = when (profile.difficulty.tier) {
-            BattleTrainerTier.INTRODUCTORY -> 0.20
-            BattleTrainerTier.STANDARD -> 0.40
-            BattleTrainerTier.ADVANCED -> 0.65
-            BattleTrainerTier.BOSS -> 0.85
-        }
+        private fun worstCaseWeight(): Double =
+            LocalSearchResponseObjective.worstCaseWeight(profile.difficulty.tier)
 
         private fun aggregateOpponentResponses(
             values: List<OpponentTurnValue>,
@@ -614,64 +612,8 @@ internal object LocalRecursiveLookaheadEvaluator {
             ownAction: BattleActionCandidate,
         ): TurnValue? {
             if (values.isEmpty()) return null
-            val robust = robustAggregate(values.map(OpponentTurnValue::value))
-            val learned = LocalOpponentResponseModel.distribution(
-                actions = values.map(OpponentTurnValue::action),
-                memory = context.memory,
-                information = profile.personality.information,
-                situations = LocalBattleMind.situations(state, ownAction),
-            ) ?: return robust
-            val categories = values.groupBy { LocalOpponentResponseModel.responseKind(it.action) }
-                .filterKeys { it == BattlePredictedResponse.MOVE || it == BattlePredictedResponse.SWITCH }
-            val weightedCategories = categories.mapNotNull { (_, responses) ->
-                val mass = responses.sumOf { learned.weights[it.action] ?: 0.0 }
-                if (mass <= 0.0 || !mass.isFinite()) null else mass to robustAggregate(
-                    responses.map(OpponentTurnValue::value),
-                )
-            }
-            val learnedTotal = weightedCategories.sumOf { it.first }
-            if (learnedTotal <= 0.0 || !learnedTotal.isFinite()) return robust
-            val modeled = TurnValue(
-                value = weightedCategories.sumOf { (mass, response) -> response.value * mass } / learnedTotal,
-                ownExecutionProbability = weightedCategories.sumOf { (mass, response) ->
-                    response.ownExecutionProbability * mass
-                } / learnedTotal,
-                ownRemainingHpFraction = weightedCategories.minOf { (_, response) ->
-                    response.ownRemainingHpFraction
-                },
-            )
-            return TurnValue(
-                value = robust.value * (1.0 - learned.influence) + modeled.value * learned.influence,
-                ownExecutionProbability = robust.ownExecutionProbability * (1.0 - learned.influence) +
-                    modeled.ownExecutionProbability * learned.influence,
-                ownRemainingHpFraction = minOf(robust.ownRemainingHpFraction, modeled.ownRemainingHpFraction),
-            )
-        }
-
-        private fun robustAggregate(turns: List<TurnValue>): TurnValue {
-            require(turns.isNotEmpty())
-            val worst = turns.minBy(TurnValue::value)
-            if (turns.size == 1) return worst
-            val temperature = RESPONSE_SOFTMIN_TEMPERATURE
-            val weights = turns.map { response -> kotlin.math.exp((worst.value - response.value) / temperature) }
-            val weightTotal = weights.sum()
-            val expected = if (weightTotal > 0.0 && weightTotal.isFinite()) {
-                TurnValue(
-                    value = turns.indices.sumOf { index -> turns[index].value * weights[index] } / weightTotal,
-                    ownExecutionProbability = turns.indices.sumOf { index ->
-                        turns[index].ownExecutionProbability * weights[index]
-                    } / weightTotal,
-                    ownRemainingHpFraction = turns.minOf(TurnValue::ownRemainingHpFraction),
-                )
-            } else {
-                worst
-            }
-            val worstWeight = worstCaseWeight()
-            return TurnValue(
-                value = expected.value * (1.0 - worstWeight) + worst.value * worstWeight,
-                ownExecutionProbability = expected.ownExecutionProbability * (1.0 - worstWeight) +
-                    worst.ownExecutionProbability * worstWeight,
-                ownRemainingHpFraction = minOf(expected.ownRemainingHpFraction, worst.ownRemainingHpFraction),
+            return LocalSearchResponseObjective.aggregate(
+                values, context.memory, profile, LocalBattleMind.situations(state, ownAction),
             )
         }
 
@@ -692,14 +634,6 @@ internal object LocalRecursiveLookaheadEvaluator {
             if (!truncated) stateUtilityMemo[key] = value
             return value
         }
-
-        private data class TurnValue(
-            val value: Double,
-            val ownExecutionProbability: Double,
-            val ownRemainingHpFraction: Double,
-        )
-        private data class OpponentTurnValue(val action: BattleActionCandidate, val value: TurnValue)
-
         private fun actionExecuted(
             stateBefore: BattleStateView,
             outcome: PublicTurnProjection,
@@ -869,7 +803,6 @@ internal object LocalRecursiveLookaheadEvaluator {
     private const val BOARD_TO_SCORE = 100.0
     private const val MAX_ADJUSTMENT = 800.0
     private const val DEADLINE_MARGIN_MILLIS = 20L
-    private const val RESPONSE_SOFTMIN_TEMPERATURE = 0.35
     private const val FUTURE_DELTA_DISCOUNT = 0.90
     private const val UNKNOWN_RESPONSE_RESERVE = 0.20
     private const val UNKNOWN_PUBLIC_RESPONSE_TAG = "unknown_public_response"
