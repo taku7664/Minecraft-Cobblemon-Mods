@@ -41,33 +41,53 @@ internal object RootDeepeningExperiment {
                 "fixtureId" to fixture?.id, "depthOneBest" to oneBest, "depthTwoBest" to twoBest,
                 "horizonChangesBest" to (oneBest != twoBest), "targetRanking" to reference.getValue(2).isolatedRanking)
             val ids = context.candidates.map { it.actionId }
-            // Warm-up is excluded. Both arms get identical evaluator setup and acceptance rules.
-            for (policy in RootDeepeningPolicy.entries) {
-                RootDeepeningAllocator.run(ids, policy, 500, evaluate = LiveRecursiveRootEvaluator(context)::evaluate)
+            // Warm-up is excluded. Acceptance must not change the actual recursive work.
+            for (policy in RootDeepeningPolicy.entries) for (acceptance in RootDepthAcceptance.entries) {
+                RootDeepeningAllocator.run(ids, policy, 500, acceptance, LiveRecursiveRootEvaluator(context)::evaluate)
             }
             val budgets = if (tactical) listOf(25, 50, 100, 200, 400, 800, 1_600)
                 else listOf(250, 500, 1_000, 2_000, 4_000, 8_000, 20_000)
             for ((budgetIndex, budget) in budgets.withIndex()) {
                 val policies = RootDeepeningPolicy.entries.let { if ((position + budgetIndex) % 2 == 0) it else it.reversed() }
                 for (policy in policies) {
-                    val start = System.nanoTime()
-                    val evaluator = LiveRecursiveRootEvaluator(context)
-                    val result = RootDeepeningAllocator.run(ids, policy, budget, evaluate = evaluator::evaluate)
-                    val elapsed = (System.nanoTime() - start) / 1_000_000.0
-                    for (attempt in result.attempts) {
-                        val score = attempt.reading.score ?: continue
-                        if (abs(score - reference.getValue(attempt.depth).scores.getValue(attempt.actionId)) > 1e-9) {
-                            mismatches += "$position:$budget:$policy:${attempt.actionId}:${attempt.depth}"
+                    var pairedResult: RootDeepeningResult? = null
+                    val acceptances = RootDepthAcceptance.entries.let {
+                        if ((position + budgetIndex + policy.ordinal) % 2 == 0) it else it.reversed()
+                    }
+                    for (acceptance in acceptances) {
+                        val start = System.nanoTime()
+                        val evaluator = LiveRecursiveRootEvaluator(context)
+                        val result = RootDeepeningAllocator.run(ids, policy, budget, acceptance, evaluator::evaluate)
+                        val elapsed = (System.nanoTime() - start) / 1_000_000.0
+                        pairedResult?.let { paired ->
+                            check(result.attempts == paired.attempts && result.nodes == paired.nodes &&
+                                result.scores == paired.scores && result.depths == paired.depths) {
+                                "Acceptance changed work: $position:$budget:$policy"
+                            }
                         }
+                        pairedResult = result
+                        if (acceptance == RootDepthAcceptance.COMMON_DEPTH && result.chosen != null) {
+                            val accepted = reference.getValue(requireNotNull(result.selectionDepth)).scores
+                            check(ids.all { abs(result.selectionScores.getValue(it) - accepted.getValue(it)) <= 1e-9 })
+                            check(result.chosen == reference.getValue(result.selectionDepth).isolatedRanking.first())
+                        }
+                        for (attempt in result.attempts) {
+                            val score = attempt.reading.score ?: continue
+                            if (abs(score - reference.getValue(attempt.depth).scores.getValue(attempt.actionId)) > 1e-9) {
+                                mismatches += "$position:$budget:$policy:${attempt.actionId}:${attempt.depth}"
+                            }
+                        }
+                        val loss = RootObjectiveReference.loss(reference.getValue(2).scores, result.chosen)
+                        if (result.targetDepthComplete && (loss == null || loss > 1e-9)) {
+                            mismatches += "$position:$budget:$policy:completed-target-choice"
+                        }
+                        rows += mapOf("position" to position, "fixtureId" to fixture?.id,
+                            "policy" to policy.name, "acceptance" to acceptance.name, "nodeBudget" to budget,
+                            "result" to result, "unusedNodes" to budget - result.nodes, "elapsedMillis" to elapsed,
+                            "mixedDepths" to (result.depths.values.distinct().size > 1),
+                            "selectionUsesMixedDepths" to (result.chosen != null && result.selectionDepth == null),
+                            "targetScoreLoss" to loss)
                     }
-                    val loss = RootObjectiveReference.loss(reference.getValue(2).scores, result.chosen)
-                    if (result.targetDepthComplete && (loss == null || loss > 1e-9)) {
-                        mismatches += "$position:$budget:$policy:completed-target-choice"
-                    }
-                    rows += mapOf("position" to position, "fixtureId" to fixture?.id,
-                        "policy" to policy.name, "nodeBudget" to budget,
-                        "result" to result, "unusedNodes" to budget - result.nodes, "elapsedMillis" to elapsed,
-                        "mixedDepths" to (result.depths.values.distinct().size > 1), "targetScoreLoss" to loss)
                 }
             }
         }
@@ -82,6 +102,8 @@ internal object RootDeepeningExperiment {
                 mapOf("position" to i, "reason" to it) } },
             "referenceNodeLimitPerDepth" to 200_000, "chanceWidth" to 64, "targetDepth" to 2,
             "clock" to "OFFLINE_CONSTANT_NOT_LATENCY_LIMIT", "mixedDepthChoicesAreProvisional" to true,
+            "acceptanceModes" to RootDepthAcceptance.entries.map { it.name },
+            "defaultAcceptance" to RootDepthAcceptance.COMMON_DEPTH.name,
             "countsExcludeBasePreparation" to true, "references" to references,
             "scoreMismatches" to mismatches, "rows" to rows)
         Files.writeString(directory.resolve("comparison.json"), GsonBuilder().setPrettyPrinting().serializeNulls()

@@ -351,8 +351,11 @@ reference. No referee score is passed to either scheduler.
 This is score-priority iterative deepening, **not UCB or MCTS**. Deterministic
 full-turn scores are not new random samples when reevaluated at the same depth.
 Both schedules use the same objective implementation, target depth, evaluator
-and default acceptance rule. `LATEST_COMPLETED` explicitly opts into the legacy
-mixed-depth selection for comparisons. Common-depth acceptance avoids comparing
+and default acceptance rule. The runner crosses both schedules with both acceptance
+modes (four arms). `LATEST_COMPLETED` explicitly opts into the legacy
+mixed-depth selection for comparisons. It checks identical attempts, nodes and
+observations across each acceptance pair, and validates accepted common-depth
+scores against the matching reference depth. Common-depth acceptance avoids comparing
 different horizons, but also defers useful partial warnings and delayed payoffs.
 It does not guarantee monotonic quality against the depth-2 reference or real play.
 
@@ -414,3 +417,16 @@ is retained as an explicit comparison mode. Default common-depth acceptance now
 keeps the finishing strike at all three budgets in this regression. The current
 production evaluator does not use either test-only scheduler; adoption remains
 unapproved.
+
+The acceptance comparison (20 fixtures, 560 rows) reproduces every legacy choice,
+score and work count. At budget 100, common-depth selection reduces reference
+misses to 4/20 for either schedule, with mean score loss 0.408 (legacy canonical:
+3.408375; legacy score-priority: 16.52625). Both schedules reach zero loss at 200.
+All acceptance pairs perform identical work, with no budget overruns or reference
+score mismatches. The remaining four misses require the deeper setup payoff;
+common-depth acceptance deliberately waits for full coverage. This fixture set
+therefore demonstrates a comparison fix, not a remaining advantage of priority
+scheduling. Unit tests also preserve a counterexample where legacy acceptance
+uses a helpful early warning that common-depth selection defers. The six recorded
+positions are retained as a separate 168-row integration regression, not tactical
+quality evidence. None of these model-score losses is a win-rate measurement.
