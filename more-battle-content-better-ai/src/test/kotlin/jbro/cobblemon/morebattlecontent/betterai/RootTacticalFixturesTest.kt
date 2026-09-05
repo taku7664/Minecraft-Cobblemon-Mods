@@ -8,6 +8,17 @@ import org.junit.jupiter.api.Test
 
 class RootTacticalFixturesTest {
     @Test
+    fun `default acceptance does not compare different completed depths`() {
+        val source = RootTacticalFixtures.all().single { it.id == "setup_hp40_hit120_reply60" }.context
+        for (budget in listOf(50, 100, 200)) {
+            val result = RootDeepeningAllocator.run(source.candidates.map { it.actionId },
+                RootDeepeningPolicy.SCORE_PRIORITY, budget, evaluate = LiveRecursiveRootEvaluator(source)::evaluate)
+            assertEquals("strike", result.chosen, "budget=$budget")
+            assertEquals(if (budget == 200) 2 else 1, result.selectionDepth)
+        }
+    }
+
+    @Test
     fun `fixed grid is complete not filtered by scheduler success`() {
         val fixtures = RootTacticalFixtures.all()
         assertEquals(20, fixtures.size)
@@ -52,7 +63,8 @@ class RootTacticalFixturesTest {
         val source = RootTacticalFixtures.all().single { it.id == "setup_hp40_hit120_reply60" }.context
         val reference = RootObjectiveReference.evaluate(source, 2)
         fun run(budget: Int) = RootDeepeningAllocator.run(source.candidates.map { it.actionId },
-            RootDeepeningPolicy.SCORE_PRIORITY, budget, LiveRecursiveRootEvaluator(source)::evaluate)
+            RootDeepeningPolicy.SCORE_PRIORITY, budget, RootDepthAcceptance.LATEST_COMPLETED,
+            LiveRecursiveRootEvaluator(source)::evaluate)
         val shallow = run(50)
         val mixed = run(100)
         val complete = run(200)

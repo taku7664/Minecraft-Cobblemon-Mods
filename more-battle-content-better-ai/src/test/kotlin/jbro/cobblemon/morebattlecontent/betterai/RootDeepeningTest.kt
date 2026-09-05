@@ -43,7 +43,7 @@ class RootDeepeningTest {
     @Test
     fun `priority can reveal a trap sooner but can also miss a delayed payoff`() {
         fun choose(policy: RootDeepeningPolicy, values: Map<String, List<Double>>) =
-            RootDeepeningAllocator.run(values.keys.toList(), policy, 4) { id, depth, _ ->
+            RootDeepeningAllocator.run(values.keys.toList(), policy, 4, RootDepthAcceptance.LATEST_COMPLETED) { id, depth, _ ->
                 RootDeepeningReading(values.getValue(id)[depth - 1], 1)
             }.chosen
         val trap = mapOf("a" to listOf(0.0, 0.0), "b" to listOf(10.0, -100.0), "c" to listOf(9.0, 9.0))
@@ -65,6 +65,39 @@ class RootDeepeningTest {
             assertEquals(4, result.attempts.size)
             assertTrue(result.targetDepthComplete)
         }
+    }
+
+    @Test
+    fun `acceptance changes selection not work and defers useful partial warnings`() {
+        val values = mapOf("a" to listOf(0.0, 0.0), "b" to listOf(10.0, -100.0), "c" to listOf(9.0, 9.0))
+        fun run(acceptance: RootDepthAcceptance, budget: Int) = RootDeepeningAllocator.run(
+            values.keys.toList(), RootDeepeningPolicy.SCORE_PRIORITY, budget, acceptance) { id, depth, _ ->
+            RootDeepeningReading(values.getValue(id)[depth - 1], 1)
+        }
+        for (budget in 1..6) {
+            val common = run(RootDepthAcceptance.COMMON_DEPTH, budget)
+            val latest = run(RootDepthAcceptance.LATEST_COMPLETED, budget)
+            assertEquals(latest.attempts, common.attempts)
+            assertEquals(latest.nodes, common.nodes)
+            assertEquals(latest.scores, common.scores)
+            assertEquals(latest.depths, common.depths)
+            if (budget < 3) {
+                assertNull(common.chosen)
+                assertNull(common.selectionDepth)
+                assertTrue(common.selectionScores.isEmpty())
+            } else if (budget < 6) {
+                assertEquals("b", common.chosen)
+                assertEquals(1, common.selectionDepth)
+                assertEquals(values.mapValues { it.value.first() }, common.selectionScores)
+            } else {
+                assertEquals("c", common.chosen)
+                assertEquals(2, common.selectionDepth)
+                assertEquals(common.scores, common.selectionScores)
+            }
+        }
+        // Deliberate tradeoff: the common snapshot cannot use an early valid warning about b.
+        assertEquals("c", run(RootDepthAcceptance.LATEST_COMPLETED, 4).chosen)
+        assertNull(run(RootDepthAcceptance.LATEST_COMPLETED, 4).selectionDepth)
     }
 
     @Test

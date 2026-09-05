@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
 internal enum class RootDeepeningPolicy { CANONICAL, SCORE_PRIORITY }
+internal enum class RootDepthAcceptance { COMMON_DEPTH, LATEST_COMPLETED }
 internal data class RootDeepeningReading(
     val score: Double?,
     val nodes: Int,
@@ -16,14 +17,17 @@ internal data class RootDeepeningResult(
     val nodes: Int,
     val targetDepthComplete: Boolean,
     val attempts: List<RootDeepeningAttempt>,
+    val selectionScores: Map<String, Double>,
+    val selectionDepth: Int?,
 )
 
-/** Test-only two-depth scheduling; completed deeper scores replace shallow scores, never average them. */
+/** Test-only scheduling. Observations may differ in depth; default selection uses a complete depth. */
 internal object RootDeepeningAllocator {
     fun run(
         actionIds: List<String>,
         policy: RootDeepeningPolicy,
         nodeBudget: Int,
+        acceptance: RootDepthAcceptance = RootDepthAcceptance.COMMON_DEPTH,
         evaluate: (String, Int, Int) -> RootDeepeningReading,
     ): RootDeepeningResult {
         require(actionIds.isNotEmpty() && actionIds.distinct().size == actionIds.size && nodeBudget > 0)
@@ -50,6 +54,7 @@ internal object RootDeepeningAllocator {
             return true
         }
         for (id in ids) if (!visit(id, 1)) break
+        val shallowScores = scores.toMap()
         if (depths.size == ids.size) {
             val order = when (policy) {
                 RootDeepeningPolicy.CANONICAL -> ids
@@ -58,10 +63,22 @@ internal object RootDeepeningAllocator {
             }
             for (id in order) if (!visit(id, 2)) break
         }
-        // Deliberately provisional when depths differ: no claim of a certified depth-2 optimum.
-        val chosen = if (depths.size != ids.size) null else ids.sortedWith(
-            compareByDescending<String> { scores.getValue(it) }.thenBy { it }).first()
+        val covered = depths.size == ids.size
+        val complete = covered && depths.values.all { it == 2 }
+        val selectionScores = when {
+            !covered -> emptyMap()
+            acceptance == RootDepthAcceptance.COMMON_DEPTH && !complete -> shallowScores
+            else -> scores.toMap()
+        }
+        val selectionDepth = when {
+            !covered -> null
+            complete -> 2
+            acceptance == RootDepthAcceptance.COMMON_DEPTH || depths.values.all { it == 1 } -> 1
+            else -> null // Legacy mixed-depth selection has no single accepted depth.
+        }
+        val chosen = if (!covered) null else ids.sortedWith(
+            compareByDescending<String> { selectionScores.getValue(it) }.thenBy { it }).first()
         return RootDeepeningResult(chosen, scores.toMap(), depths.toMap(), used,
-            depths.size == ids.size && depths.values.all { it == 2 }, attempts.toList())
+            complete, attempts.toList(), selectionScores, selectionDepth)
     }
 }

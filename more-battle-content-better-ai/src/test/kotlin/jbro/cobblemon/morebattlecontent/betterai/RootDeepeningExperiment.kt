@@ -43,7 +43,7 @@ internal object RootDeepeningExperiment {
             val ids = context.candidates.map { it.actionId }
             // Warm-up is excluded. Both arms get identical evaluator setup and acceptance rules.
             for (policy in RootDeepeningPolicy.entries) {
-                RootDeepeningAllocator.run(ids, policy, 500, LiveRecursiveRootEvaluator(context)::evaluate)
+                RootDeepeningAllocator.run(ids, policy, 500, evaluate = LiveRecursiveRootEvaluator(context)::evaluate)
             }
             val budgets = if (tactical) listOf(25, 50, 100, 200, 400, 800, 1_600)
                 else listOf(250, 500, 1_000, 2_000, 4_000, 8_000, 20_000)
@@ -52,7 +52,7 @@ internal object RootDeepeningExperiment {
                 for (policy in policies) {
                     val start = System.nanoTime()
                     val evaluator = LiveRecursiveRootEvaluator(context)
-                    val result = RootDeepeningAllocator.run(ids, policy, budget, evaluator::evaluate)
+                    val result = RootDeepeningAllocator.run(ids, policy, budget, evaluate = evaluator::evaluate)
                     val elapsed = (System.nanoTime() - start) / 1_000_000.0
                     for (attempt in result.attempts) {
                         val score = attempt.reading.score ?: continue

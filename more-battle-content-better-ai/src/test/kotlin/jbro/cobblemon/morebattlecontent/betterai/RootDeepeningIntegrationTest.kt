@@ -16,7 +16,7 @@ class RootDeepeningIntegrationTest {
         assertTrue(reference.matches)
         for (policy in RootDeepeningPolicy.entries) {
             val evaluator = LiveRecursiveRootEvaluator(context)
-            val result = RootDeepeningAllocator.run(context.candidates.map { it.actionId }, policy, 200_000, evaluator::evaluate)
+            val result = RootDeepeningAllocator.run(context.candidates.map { it.actionId }, policy, 200_000, evaluate = evaluator::evaluate)
             assertTrue(result.targetDepthComplete)
             for ((id, score) in result.scores) assertEquals(reference.scores.getValue(id), score, 1e-9)
             assertEquals(reference.isolatedRanking.first(), result.chosen)

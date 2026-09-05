@@ -338,20 +338,23 @@ differences or justify adopting UCB. This task changes no product logic or defau
 ### Recursive-score root deepening (test-only scheduling)
 
 `compareRootDeepening` connects production recursive scores to scheduling and
-provisional selection, not just post-hoc grading. All roots complete depth 1
+selection, not just post-hoc grading. All roots complete depth 1
 first; depth 2 then follows either canonical action IDs or descending observed
 depth-1 score. Each call performs real recursive work with the complete public
-context. A complete depth-2 score replaces depth 1; incomplete results consume
-budget but never replace a completed score. Missing depth-1 coverage yields no
+context. A complete depth-2 score replaces the observed depth-1 score; incomplete
+results consume budget but never replace a completed observation. Default
+`COMMON_DEPTH` selection retains the complete depth-1 snapshot until every root
+completes depth 2, then accepts the entire depth-2 snapshot. Missing depth-1 coverage yields no
 recommendation. All roots completed at depth 2 must match the full recursive
 reference. No referee score is passed to either scheduler.
 
 This is score-priority iterative deepening, **not UCB or MCTS**. Deterministic
 full-turn scores are not new random samples when reevaluated at the same depth.
 Both schedules use the same objective implementation, target depth, evaluator
-and provisional-selection rule. The only experimental difference is root order.
-Mixed-depth rankings can still miss delayed payoffs; tests demonstrate both a
-benefit and a failure of score priority. They are not certified depth-2 optima.
+and default acceptance rule. `LATEST_COMPLETED` explicitly opts into the legacy
+mixed-depth selection for comparisons. Common-depth acceptance avoids comparing
+different horizons, but also defers useful partial warnings and delayed payoffs.
+It does not guarantee monotonic quality against the depth-2 reference or real play.
 
 The global budget counts reported recursive work checks, including interrupted
 calls and repeated depth-1 work inside a depth-2 evaluation. The evaluator's
@@ -365,7 +368,9 @@ iterative-deepening baseline.
 Run `./gradlew :more-battle-content-better-ai:compareRootDeepening --no-daemon`,
 optionally with `'-ProotDeepeningOutput=<fresh-directory>'`. Reports under
 `build/reports/betterai-root-deepening/` include per-root depths, observed scores,
-attempts, charged/unused work and depth-2 reference score loss. Tests use
+attempts, accepted `selectionScores`/`selectionDepth`, charged/unused work and
+depth-2 reference score loss. Observed `scores`/`depths` can still be mixed even
+when the accepted snapshot is not. Tests use
 `-Ptests=RootDeepening`. Singles/Boss depth 1–2 only; product defaults are unchanged.
 
 The initial six-position measurement did not distinguish the schedules: depth 1
@@ -404,7 +409,8 @@ The initial tactical run exposes non-monotonic choice quality under mixed depths
 at 100 work checks canonical ordering misses the reference best in 7/20 cases,
 score priority in 9/20, while both match all 20 after full depth completion at 200.
 In `setup_hp40_hit120_reply60`, score priority chooses the reference best at 50,
-switches to a worse setup at 100, and returns to the best at 200. This known
-experimental limitation is characterized by a regression test; it is not a
-required behavior for a future fix. Resolve mixed-depth acceptance before product
-adoption. The current production evaluator does not use this experimental rule.
+switches to a worse setup at 100, and returns to the best at 200. The legacy rule
+is retained as an explicit comparison mode. Default common-depth acceptance now
+keeps the finishing strike at all three budgets in this regression. The current
+production evaluator does not use either test-only scheduler; adoption remains
+unapproved.
