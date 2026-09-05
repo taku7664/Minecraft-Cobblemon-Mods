@@ -65,3 +65,60 @@ Replay uses saved options and refuses changed teams, settings, sources or runtim
 contents. It is a same-input replay, not a cross-version comparison tool: timed
 search can still choose differently under different machine load. Wins in this
 harness do not establish real-game strength or independent mechanics correctness.
+
+## Paired evaluation and held-out cases
+
+`evaluatePaired` runs every sampled team pair twice. Teams, leads, battle seed,
+difficulty and strategy roles stay fixed; challenger and defender tuning swap
+between the cycle and offense sides. Execution order alternates between pairs.
+The default is a `CURRENT` versus `CURRENT` sanity check, not an improvement claim.
+
+```powershell
+.\gradlew.bat :more-battle-content-better-ai:evaluatePaired --no-daemon `
+  -PevaluationPairs=10 -PevaluationSeed=20260906 -PevaluationTurns=30 `
+  -PevaluationFormat=SINGLE -PevaluationTier=STANDARD `
+  -PevaluationSplit=TUNING -PevaluationChallenger=CURRENT -PevaluationDefender=LEGACY
+```
+
+These are the defaults except defender (`CURRENT`). Both arms accept `CURRENT`
+or `LEGACY`; formats and tiers match baseline capture. Pair count is 1–1,000.
+`-PevaluationOutput=<new-directory>` selects an output directory; otherwise a
+unique directory under `build/reports/betterai-paired/` is created.
+
+The versioned corpus partitions **unordered pairs of complete-set teams** by a
+stable hash (approximately 80% tuning, 20% holdout), with reserved fixed regression
+pairs. Changing a seed, team order, or side cannot move the same pair to the other
+partition. Individual species, moves and sets can occur in both partitions; this
+does not test generalization to unseen species. Duplicate sampled pairs and fixed
+regression pairs are excluded from the random sample.
+
+Two fixed, seeded regression cases per format/partition check turn progression,
+public move evidence and stalled battles. They are reported separately, **not**
+added to the random-pair confidence interval. They are whole-battle regression
+cases, not yet curated tests of counter preservation, sacrifice or doubles combos.
+
+Held-out battle execution requires both `-PevaluationSplit=HOLDOUT` and
+`-PallowHoldout`. Normal tests check partitioning without executing held-out
+battles. Freeze the policy and sample count before using holdout results. If those
+results inform tuning, retire that corpus version as held-out evidence; the flag
+prevents accidental execution, not deliberate reuse or data access.
+
+Each run writes `manifest.json`, `pairs.jsonl` (flushed only after both orientations
+finish), and `summary.json` only after all requested pairs complete and input
+fingerprints remain unchanged. The manifest includes full teams, both tunings,
+partition rule and failure conditions. An existing directory is never overwritten.
+Baseline `baselineReplay` does not accept paired manifests; retain the saved
+options and fingerprints when reproducing a paired run.
+
+The random summary keeps wins, losses and undecided games. A win scores 1, a loss
+0 and an undecided game 0.5; the two scores are averaged into one pair score. The
+reported mean is **not** a decisive-only win rate. A turn-limit cutoff also counts
+as undecided, so short smoke runs must not be used to judge strength.
+
+For `n` pair scores, the conservative 95% interval is the mean plus/minus
+`sqrt(ln(40)/(2*n))`, clipped to `[0,1]`, using the
+[two-sided Hoeffding bound](https://www.stat.cmu.edu/~cshalizi/sml/21/lectures/06/lecture-06.html).
+Its population interpretation assumes independent representative pair outcomes
+and a sample count fixed in advance; repeated peeking, selecting favorable seeds,
+correlated cases and timed-search machine-load effects undermine that reading.
+The tool does not automatically declare a stronger AI from this interval.

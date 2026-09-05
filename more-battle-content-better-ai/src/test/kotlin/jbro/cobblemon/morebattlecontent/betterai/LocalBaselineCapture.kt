@@ -47,8 +47,11 @@ internal data class LocalBaselineIdentity(
 internal object LocalBaselineCapture {
     private val json = GsonBuilder().setPrettyPrinting().serializeNulls().create()
 
-    fun manifest(options: LocalBaselineOptions, identity: LocalBaselineIdentity): JsonObject {
-        val definitions = LocalSelfPlayMeasurement.definitions(options.battles, options.seed, options.format)
+    fun manifest(
+        options: LocalBaselineOptions,
+        identity: LocalBaselineIdentity,
+        definitions: List<LocalTacticalScenarioDefinition> = LocalSelfPlayMeasurement.definitions(options.battles, options.seed, options.format),
+    ): JsonObject {
         val ids = definitions.flatMap { it.cycleSetIds + it.offenseSetIds }.toSet()
         val roster = LocalTacticalSimulationRoster.loadAll().entries
         return JsonObject().apply {
@@ -150,7 +153,7 @@ internal object LocalBaselineCapture {
         println("baseline complete: $output")
     }
 
-    private fun difficulty(tier: String): BattleDifficultyProfile = when (tier) {
+    internal fun difficulty(tier: String): BattleDifficultyProfile = when (tier) {
         "INTRODUCTORY" -> BattleDifficultyProfiles.INTRODUCTORY
         "STANDARD" -> BattleDifficultyProfiles.STANDARD
         "ADVANCED" -> BattleDifficultyProfiles.ADVANCED

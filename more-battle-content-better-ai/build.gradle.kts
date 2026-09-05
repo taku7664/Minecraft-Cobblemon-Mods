@@ -84,3 +84,26 @@ tasks.register<JavaExec>("captureBaseline") {
             providers.gradleProperty("baselineReplay").getOrElse("")))
     }
 }
+
+tasks.register<JavaExec>("evaluatePaired") {
+    group = "verification"
+    description = "Evaluates side-swapped team pairs in separate tuning or held-out corpora."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.LocalPairedEvaluationCapture")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(rootProject.projectDir.absolutePath,
+            providers.gradleProperty("evaluationOutput").orNull
+                ?: layout.buildDirectory.dir("reports/betterai-paired/${UUID.randomUUID()}").get().asFile.absolutePath,
+            providers.gradleProperty("evaluationPairs").getOrElse("10"),
+            providers.gradleProperty("evaluationSeed").getOrElse("20260906"),
+            providers.gradleProperty("evaluationTurns").getOrElse("30"),
+            providers.gradleProperty("evaluationFormat").getOrElse("SINGLE"),
+            providers.gradleProperty("evaluationTier").getOrElse("STANDARD"),
+            providers.gradleProperty("evaluationSplit").getOrElse("TUNING"),
+            providers.gradleProperty("evaluationChallenger").getOrElse("CURRENT"),
+            providers.gradleProperty("evaluationDefender").getOrElse("CURRENT"),
+            project.hasProperty("allowHoldout").toString()))
+    }
+}
