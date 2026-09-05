@@ -241,3 +241,50 @@ hidden-set hypotheses, doubles, trainer selection, or held-out strength test is
 included. A regression deliberately demonstrates that both allocators can miss
 a rare catastrophic loss. Better allocation alone does not make that safe.
 Product selection, evaluation weights, Router ownership and defaults are unchanged.
+
+## Live root cost comparison (test only)
+
+```powershell
+.\gradlew.bat :more-battle-content-better-ai:unitTest -Ptests=Root --no-daemon
+.\gradlew.bat :more-battle-content-better-ai:compareLiveRootSearch --no-daemon
+```
+
+Unlike the precomputed probe, every attempted sample calls the existing **public
+turn projector**, enumerates that pair's chance branches and evaluates only one
+sampled leaf. No result-table cache is used. This is still a local projection,
+not an independent Showdown execution or a live Minecraft battle.
+
+Before adaptive allocation starts, every generated public action/reply pair is
+checked once. The sampled score and the probability of a new ally faint across
+all generated outcomes are kept separately. The maximum observed probability
+across replies is a diagnostic, not a risk veto or a guarantee against hidden
+responses, future turns, or outcomes omitted by the 64-branch limit. An incomplete
+coverage pass yields **no recommendation**, not an apparently safe best action.
+Interrupted or late samples are charged as attempted work but not accepted.
+
+The runner uses the previous two team pairs and up to four turns, excludes
+unsupported public contexts, and measures two separate comparisons:
+
+- Uniform/UCB with 24 or 96 live draws and four paired seeds. Calls, generated
+  branches and leaf evaluations are separate work counts; a call can cost more
+  than another call.
+- Uniform/UCB and existing Boss recursive **ranking** with 50/150ms active search
+  windows, three repeats, per-context warm-up and rotated arm order. The probe
+  reads the recursive evaluator's safety margin through test-only reflection and
+  adds it to its configured budget (currently 70/170ms for a 20ms margin), so the
+  active windows match. A renamed/missing constant fails the probe rather than
+  silently invalidating this comparison. Both budgets are recorded. The recursive
+  node ceiling is lifted for this experiment; chance width stays 64. Input
+  calculation, base ranking and reply generation are shared setup outside the
+  timers. Sampler setup is inside its timer. Actual elapsed time is reported:
+  cancellation is cooperative, so the time limit is not a hard latency guarantee.
+
+Recursive node counts are not sample counts. Recursive scoring also has deeper
+turns, response aggregation and heuristic corrections that the one-turn sampler
+does not reproduce. Thus this is a **cost/integration comparison**, not an
+isolated strength comparison or permission to replace the product search. It
+does not run the final personality-weighted product selector.
+
+Reports are written to a fresh `build/reports/betterai-live-root/` directory;
+override with `'-PliveRootOutput=<new-directory>'`. Production code, defaults,
+Router ownership and deployment remain unchanged.

@@ -147,3 +147,16 @@ tasks.register<JavaExec>("compareRootAllocation") {
             ?: layout.buildDirectory.dir("reports/betterai-allocation/${UUID.randomUUID()}").get().asFile.absolutePath))
     }
 }
+
+tasks.register<JavaExec>("compareLiveRootSearch") {
+    group = "verification"
+    description = "Measures live public projection sampling and recursive search costs without changing the AI."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.LiveRootSearchExperiment")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(providers.gradleProperty("liveRootOutput").orNull
+            ?: layout.buildDirectory.dir("reports/betterai-live-root/${UUID.randomUUID()}").get().asFile.absolutePath))
+    }
+}
