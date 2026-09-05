@@ -122,3 +122,47 @@ Its population interpretation assumes independent representative pair outcomes
 and a sample count fixed in advance; repeated peeking, selecting favorable seeds,
 correlated cases and timed-search machine-load effects undermine that reading.
 The tool does not automatically declare a stronger AI from this interval.
+
+## Embedded Showdown oracle (initial scope)
+
+This independent **scripted referee** executes the `showdown.zip` supplied by the
+Cobblemon dependency on the test classpath. It does not use Better AI's projector,
+download upstream Showdown, install npm packages, or start a server. Node.js must
+be on `PATH` (verified with v24.14.1). Ordinary tests skip this external-runtime
+check unless explicitly enabled:
+
+```powershell
+.\gradlew.bat :more-battle-content-better-ai:unitTest '-Ptests=EmbeddedShowdownOracleTest' -Poracle --no-daemon
+.\gradlew.bat :more-battle-content-better-ai:captureOracle --no-daemon
+```
+
+`captureOracle` creates a unique directory under `build/reports/betterai-oracle/`.
+Use `'-PoracleOutput=<new-directory>'` to select one. Existing runs are not
+overwritten. Archive paths are constrained to the extraction directory, extraction
+is bounded to 128 MiB of JS/JSON, and the child engine has a 30-second timeout.
+The adapter supplies Cobblemon's mandatory `movesInfo` PP fields and stable UUIDs.
+
+The diagnostic singles fixture uses deliberately unequal, small teams to exercise
+voluntary switching, damage, fainting, forced replacement and victory. It is not a
+legal competitive preset benchmark or a strength measurement. Engine ZIP and
+adapter hashes, artifact version when available, Node version, explicit format,
+PRNG seed, commands, teams and exact referee end state are recorded in `result.json`.
+This file is written last as the completed-run marker. `engine/`, `oracle.cjs`,
+`referee-output.json` and `stderr.txt` remain for diagnosis.
+
+**Information boundary:** Cobblemon emits `pp_update` containing unrevealed move
+names even in the spectator channel. The adapter therefore uses both the engine's
+split-channel filtering and an explicit public-event allowlist; unknown/custom
+events are discarded. `public-observation.json` contains only this filtered view.
+All `referee*` fields/files and the combined `result.json` are privileged and must
+never be passed as AI input. A regression changes unused opponent moves/items and
+checks that the filtered observations stay identical while the referee sets differ.
+
+Verified scope is only this scripted singles lifecycle with the embedded
+`cobblemon` mod inheriting its base data. Runtime registry injection (species,
+moves, abilities, items), Mega Showdown hooks, datapack overrides, bag items,
+doubles and special mechanics are **not loaded/validated**. The format is recorded
+and fixed for this fixture, not claimed to match a live facility's full rules.
+There is no Better AI decision loop or projection-differential comparison yet;
+those are follow-up work. The log finding above is not evidence that the existing
+production AI consumes `pp_update`.

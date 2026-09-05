@@ -60,6 +60,7 @@ val unitTest by tasks.registering(JavaExec::class) {
     // Parameter sweeps run hundreds of simulated battles to calibrate a weight. They are opt-in so a
     // normal verification run stays fast: ./gradlew :more-battle-content-better-ai:unitTest -Psweeps
     systemProperty("betterai.sweeps", if (project.hasProperty("sweeps")) "true" else "false")
+    systemProperty("betterai.oracle", project.hasProperty("oracle").toString())
 }
 
 tasks.check { dependsOn(unitTest) }
@@ -106,4 +107,17 @@ tasks.register<JavaExec>("evaluatePaired") {
             providers.gradleProperty("evaluationDefender").getOrElse("CURRENT"),
             project.hasProperty("allowHoldout").toString()))
     }
+}
+
+tasks.register<JavaExec>("captureOracle") {
+    group = "verification"
+    description = "Runs the embedded Showdown scripted oracle (requires Node.js on PATH)."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.EmbeddedShowdownOracle")
+    doFirst {
+        setArgs(listOf(providers.gradleProperty("oracleOutput").orNull
+            ?: layout.buildDirectory.dir("reports/betterai-oracle/${UUID.randomUUID()}").get().asFile.absolutePath))
+    }
+    workingDir(rootProject.projectDir)
 }
