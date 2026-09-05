@@ -334,3 +334,43 @@ zero loss. Depth-1 and depth-2 rows reuse the same sampled choice and are correl
 **The samplers still optimize raw leaf means.** A common referee makes the
 disagreement measurable; it does not yet isolate allocation from objective
 differences or justify adopting UCB. This task changes no product logic or defaults.
+
+### Recursive-score root deepening (test-only scheduling)
+
+`compareRootDeepening` connects production recursive scores to scheduling and
+provisional selection, not just post-hoc grading. All roots complete depth 1
+first; depth 2 then follows either canonical action IDs or descending observed
+depth-1 score. Each call performs real recursive work with the complete public
+context. A complete depth-2 score replaces depth 1; incomplete results consume
+budget but never replace a completed score. Missing depth-1 coverage yields no
+recommendation. All roots completed at depth 2 must match the full recursive
+reference. No referee score is passed to either scheduler.
+
+This is score-priority iterative deepening, **not UCB or MCTS**. Deterministic
+full-turn scores are not new random samples when reevaluated at the same depth.
+Both schedules use the same objective implementation, target depth, evaluator
+and provisional-selection rule. The only experimental difference is root order.
+Mixed-depth rankings can still miss delayed payoffs; tests demonstrate both a
+benefit and a failure of score priority. They are not certified depth-2 optima.
+
+The global budget counts reported recursive work checks, including interrupted
+calls and repeated depth-1 work inside a depth-2 evaluation. The evaluator's
+per-depth limit reserves its first denied check too. Nodes are not equal-cost
+operations: base ranking and initial board preparation are outside that counter,
+and caches are fresh per call. Elapsed time includes evaluator preparation, but
+the offline clock does not enforce a latency deadline. Compare node budgets and
+actual elapsed time separately. Neither scheduler is the production whole-tree
+iterative-deepening baseline.
+
+Run `./gradlew :more-battle-content-better-ai:compareRootDeepening --no-daemon`,
+optionally with `'-ProotDeepeningOutput=<fresh-directory>'`. Reports under
+`build/reports/betterai-root-deepening/` include per-root depths, observed scores,
+attempts, charged/unused work and depth-2 reference score loss. Tests use
+`-Ptests=RootDeepening`. Singles/Boss depth 1–2 only; product defaults are unchanged.
+
+The initial six-position measurement did not distinguish the schedules: depth 1
+and 2 chose the same best action in every reference, and all recommendations had
+zero target-score loss. This validates integration, not a quality gain. Before
+adoption, add public tactical fixtures with depth-dependent best actions and
+measure failure rates as well as cost; do not select fixtures solely because the
+priority schedule wins on them.

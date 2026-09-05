@@ -173,3 +173,16 @@ tasks.register<JavaExec>("compareRootObjective") {
             ?: layout.buildDirectory.dir("reports/betterai-root-objective/${UUID.randomUUID()}").get().asFile.absolutePath))
     }
 }
+
+tasks.register<JavaExec>("compareRootDeepening") {
+    group = "verification"
+    description = "Compares root order with the same live recursive objective and a global reported-node budget."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.RootDeepeningExperiment")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(providers.gradleProperty("rootDeepeningOutput").orNull
+            ?: layout.buildDirectory.dir("reports/betterai-root-deepening/${UUID.randomUUID()}").get().asFile.absolutePath))
+    }
+}
