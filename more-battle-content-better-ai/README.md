@@ -163,6 +163,40 @@ Verified scope is only this scripted singles lifecycle with the embedded
 moves, abilities, items), Mega Showdown hooks, datapack overrides, bag items,
 doubles and special mechanics are **not loaded/validated**. The format is recorded
 and fixed for this fixture, not claimed to match a live facility's full rules.
-There is no Better AI decision loop or projection-differential comparison yet;
-those are follow-up work. The log finding above is not evidence that the existing
+This scripted fixture has no Better AI decision loop or full-turn projection
+comparison. The separate base-damage comparison below covers only the damage
+kernel. The log finding above is not evidence that the existing
 production AI consumes `pp_update`.
+
+## Base damage differential checks
+
+```powershell
+.\gradlew.bat :more-battle-content-better-ai:unitTest '-Ptests=EmbeddedDamageDifferentialTest' -Poracle --no-daemon
+.\gradlew.bat :more-battle-content-better-ai:compareDamageOracle --no-daemon
+```
+
+The damage oracle calls the embedded engine's native `getDamage` with critical
+hits disabled. It enumerates all 16 damage RNG values by controlling only the RNG
+return, without replacing the engine's damage formula or randomizer. Eight
+physical/special, STAB, neutral, resisted, super-effective and immune matchups at
+six levels and three defender HP EV values give 144 cases. Fixtures deliberately
+disable abilities/items and are not competitive team presets.
+
+The test compares every damage roll against `ShowdownStandardDamageProjection`,
+then checks conditional KO probability at every integer remaining HP. Exact
+opponent stats are private synthetic referee inputs, not additions to the AI
+observation contract. No production brain or live battle is used.
+
+Reports go to a unique `build/reports/betterai-damage/` directory; override with
+`'-PdamageOutput=<new-directory>'`. `comparison.json` records the native results,
+engine/script and projection-class hashes, checks and mismatches. Mismatches are
+saved **before** the command fails. `MATCH` applies only to this damage kernel
+scope: accuracy, natural critical chance, abilities/items, status, field/weather,
+spread, action order/cancellation, switching effects and end-of-turn effects are
+not covered. This is not a complete turn-projector validation or strength verdict.
+
+This comparison found an HP reconstruction defect: `122/362` multiplied back to
+`122.00000000000001`, so rounding upward incorrectly used 123 HP. The correction
+recognizes exact integer-derived ratios without applying an arbitrary epsilon;
+genuinely higher fractions still round upward. It changes KO assessment, not the
+damage-roll formula.

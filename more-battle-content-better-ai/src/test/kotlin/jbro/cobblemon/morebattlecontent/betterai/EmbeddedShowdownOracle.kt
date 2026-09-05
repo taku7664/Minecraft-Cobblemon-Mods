@@ -20,7 +20,12 @@ internal object EmbeddedShowdownOracle {
         return target
     }
 
-    fun run(directory: Path, hiddenVariant: Boolean = false): JsonObject {
+    fun run(directory: Path, hiddenVariant: Boolean = false): JsonObject =
+        runScript(directory, "/oracle/embedded-showdown.cjs", hiddenVariant.toString())
+
+    fun damage(directory: Path): JsonObject = runScript(directory, "/oracle/damage-oracle.cjs", "")
+
+    private fun runScript(directory: Path, scriptResource: String, argument: String): JsonObject {
         Files.createDirectories(directory)
         val engine = Files.createDirectory(directory.resolve("engine")).toAbsolutePath()
         val resource = requireNotNull(javaClass.getResource("/data/cobblemon/showdown.zip")) {
@@ -48,12 +53,12 @@ internal object EmbeddedShowdownOracle {
                 zip.closeEntry()
             }
         }
-        val scriptBytes = requireNotNull(javaClass.getResourceAsStream("/oracle/embedded-showdown.cjs")).use { it.readBytes() }
+        val scriptBytes = requireNotNull(javaClass.getResourceAsStream(scriptResource)).use { it.readBytes() }
         val script = directory.resolve("oracle.cjs").toAbsolutePath()
         Files.write(script, scriptBytes, CREATE_NEW)
         val stdout = directory.resolve("referee-output.json").toAbsolutePath()
         val stderr = directory.resolve("stderr.txt").toAbsolutePath()
-        val builder = ProcessBuilder("node", "--unhandled-rejections=strict", script.toString(), engine.toString(), hiddenVariant.toString())
+        val builder = ProcessBuilder("node", "--unhandled-rejections=strict", script.toString(), engine.toString(), argument)
             .directory(directory.toFile()).redirectOutput(stdout.toFile()).redirectError(stderr.toFile())
         builder.environment().remove("NODE_OPTIONS")
         builder.environment().remove("NODE_PATH")
