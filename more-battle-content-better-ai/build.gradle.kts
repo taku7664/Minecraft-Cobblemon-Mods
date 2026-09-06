@@ -200,3 +200,16 @@ tasks.register<JavaExec>("compareRootTactics") {
             "tactical"))
     }
 }
+
+tasks.register<JavaExec>("compareTurnOrder") {
+    group = "verification"
+    description = "Compares native lethal turn order and action cancellation with public projections."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.EmbeddedTurnOrderDifferential")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(providers.gradleProperty("turnOrderOutput").orNull
+            ?: layout.buildDirectory.dir("reports/betterai-turn-order/${UUID.randomUUID()}").get().asFile.absolutePath))
+    }
+}

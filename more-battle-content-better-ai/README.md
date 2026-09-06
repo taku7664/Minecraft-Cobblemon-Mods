@@ -430,3 +430,23 @@ scheduling. Unit tests also preserve a counterexample where legacy acceptance
 uses a helpful early warning that common-depth selection defers. The six recorded
 positions are retained as a separate 168-row integration regression, not tactical
 quality evidence. None of these model-score losses is a win-rate measurement.
+
+### Native turn order and lethal cancellation differential
+
+Run `./gradlew :more-battle-content-better-ai:compareTurnOrder --no-daemon`,
+optionally with `'-PturnOrderOutput=<fresh-directory>'`. The report under
+`build/reports/betterai-turn-order/` includes native cases, mismatch categories,
+engine/adapter hashes and source provenance. Tests use `unitTest -Ptests=Embedded -Poracle`.
+
+Eight scripted native turns cover faster/slower attacks, move priority, Trick Room
+with and without priority, speed stages +1/-1, and Tailwind overcoming a speed drop.
+Both combatants start at 1 HP, so damage rolls and critical hits cannot change which
+connecting attack is lethal. The native engine's first actor, sole executed move,
+and fainted side are checked against predeclared expectations, then against both
+the public order calculator and all outcomes of the complete-turn projector.
+
+Exact native stats are confined to synthetic test inputs; this is not a live
+opponent-stat adapter. No product AI code changes. Speed ties, paralysis, damage
+distributions, end-turn effects, doubles, addon registrations and actual battle
+quality are outside this slice. Passing these cases does not complete mechanics
+validation or establish stronger AI play.
