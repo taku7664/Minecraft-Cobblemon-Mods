@@ -158,8 +158,8 @@ class LocalLookaheadEvaluationTest {
         assertEquals(0.50, requireNotNull(targetStates[1.0]).probability, 1e-9)
         assertEquals(0.50, requireNotNull(targetStates[0.0]).probability, 1e-9)
         assertEquals(0.0, requireNotNull(targetStates[1.0]).expectedScoreAdjustment, 1e-9)
-        // Knockout material is one living Pokemon: 2.0 board points, see expectedKnockoutBonus.
-        assertEquals(2.0, requireNotNull(targetStates[0.0]).expectedScoreAdjustment, 1e-9)
+        // The fainted board already removes the living value; no extra KO bonus is owed.
+        assertEquals(0.0, requireNotNull(targetStates[0.0]).expectedScoreAdjustment, 1e-9)
     }
 
     @Test
@@ -251,44 +251,50 @@ class LocalLookaheadEvaluationTest {
             )
         }
 
-        fun project(initial: BattleStateView, action: BattleActionCandidate): PublicTurnProjection =
+        fun project(initial: BattleStateView, action: BattleActionCandidate): List<PublicTurnProjection> =
             PublicSingleTurnProjector.project(
                 initial,
                 action,
                 wait("opponent_wait"),
                 context(initial, listOf(action), catalog(allyMoves = listOf(action))),
                 chanceEffectMode = ChanceEffectProjectionMode.BRANCH_STATE,
-            ).single()
+            ).also { outcomes ->
+                assertEquals(1.0, outcomes.sumOf { it.probability * it.orderProbability }, 1e-9)
+            }
 
         val explosion = project(state(), simulationAction("explosion", 250.0))
-        assertTrue(explosion.state.pokemon.single { it.battlePokemonId == ALLY_ID }.fainted)
+        assertTrue(explosion.all { it.state.pokemon.single { mon -> mon.battlePokemonId == ALLY_ID }.fainted })
 
         val braveBird = project(state(), simulationAction("bravebird", 120.0))
-        assertTrue(braveBird.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction < 1.0)
+        assertTrue(braveBird.all { it.state.pokemon.single { mon -> mon.battlePokemonId == ALLY_ID }.hpFraction < 1.0 })
 
         val gigaDrain = project(
             state(allyHp = 0.40),
             simulationAction("gigadrain", 75.0, BattleMoveDamageCategory.SPECIAL),
         )
-        assertTrue(gigaDrain.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction > 0.40)
+        assertTrue(gigaDrain.all { it.state.pokemon.single { mon -> mon.battlePokemonId == ALLY_ID }.hpFraction > 0.40 })
 
         val closeCombat = project(state(), simulationAction("closecombat", 120.0))
-        val closeCombatUser = closeCombat.state.pokemon.single { it.battlePokemonId == ALLY_ID }
-        assertEquals(-1, closeCombatUser.statStages["defense"])
-        assertEquals(-1, closeCombatUser.statStages["special_defense"])
+        closeCombat.forEach { outcome ->
+            val user = outcome.state.pokemon.single { it.battlePokemonId == ALLY_ID }
+            assertEquals(-1, user.statStages["defense"])
+            assertEquals(-1, user.statStages["special_defense"])
+        }
 
         val benchId = UUID.fromString("00000000-0000-0000-0000-000000000220")
         val pivotState = state(bench = pokemon(benchId, BattleSide.ALLY, speed = 80, activeSlot = null))
         val uTurn = project(pivotState, simulationAction("uturn", 70.0))
-        assertEquals(null, uTurn.state.pokemon.single { it.battlePokemonId == ALLY_ID }.activeSlot)
-        assertEquals(0, uTurn.state.pokemon.single { it.battlePokemonId == benchId }.activeSlot)
+        uTurn.forEach { outcome ->
+            assertEquals(null, outcome.state.pokemon.single { it.battlePokemonId == ALLY_ID }.activeSlot)
+            assertEquals(0, outcome.state.pokemon.single { it.battlePokemonId == benchId }.activeSlot)
+        }
 
         val saltCureAction = simulationAction("saltcure", 40.0)
-        val saltCure = project(state(), saltCureAction)
+        val saltCure = project(state(), saltCureAction).single()
         assertTrue(saltCure.controlEffects.any {
             it.kind == RecursiveControlEffectKind.SALT_CURE && it.targetPokemonId == OPPONENT_ID
         })
-        val directOnly = project(state(), move("plain_rock_hit", power = 40.0))
+        val directOnly = project(state(), move("plain_rock_hit", power = 40.0)).single()
         val saltedHp = saltCure.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.hpFraction
         val directOnlyHp = directOnly.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.hpFraction
         assertEquals(directOnlyHp - 1.0 / 8.0, saltedHp, 1e-9)

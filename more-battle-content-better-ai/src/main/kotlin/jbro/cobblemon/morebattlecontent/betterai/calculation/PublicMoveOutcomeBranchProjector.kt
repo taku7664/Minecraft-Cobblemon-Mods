@@ -13,7 +13,6 @@ internal data class PublicMoveOutcomeBranch(
     val probability: Double,
     val hit: Boolean,
     val damageFraction: Double,
-    val knockoutProbability: Double = 0.0,
 )
 
 internal data class PublicDamageRollSummary(
@@ -45,26 +44,10 @@ internal object PublicMoveOutcomeBranchProjector {
                 it.side == defaultTargetSide && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
             }?.hpFraction
         }
-        val summary = summarizeDamageRolls(rolls, targetHp)
         if (LocalDeclaredMultiHit.usesPerHitAccuracy(candidate)) {
-            return perHitAccuracyBranches(candidate, accuracy, summary.damageFraction, targetHp)
+            return perHitAccuracyBranches(candidate, accuracy, rolls, targetHp)
         }
-        val fallbackKnockoutProbability = candidate.facts?.standardDamageRollKoProbabilityRange?.let { range ->
-            if (actingSide == BattleSide.ALLY) range.minimum else range.maximum
-        }
-        val knockoutProbability = if (calculatedRolls != null) {
-            summary.knockoutProbability
-        } else {
-            fallbackKnockoutProbability ?: summary.knockoutProbability
-        }
-        val hitBranches = listOf(
-            PublicMoveOutcomeBranch(
-                probability = accuracy,
-                hit = true,
-                damageFraction = summary.damageFraction,
-                knockoutProbability = knockoutProbability.coerceIn(0.0, 1.0),
-            ),
-        )
+        val hitBranches = damageBranches(rolls, targetHp, accuracy)
         val miss = if (accuracy < 1.0) {
             listOf(PublicMoveOutcomeBranch(1.0 - accuracy, hit = false, damageFraction = 0.0))
         } else {
@@ -76,29 +59,38 @@ internal object PublicMoveOutcomeBranchProjector {
     private fun perHitAccuracyBranches(
         candidate: BattleActionCandidate,
         accuracy: Double,
-        damagePerHit: Double,
+        damageRolls: List<Double>,
         targetHp: Double?,
     ): List<PublicMoveOutcomeBranch> {
         val maximum = LocalDeclaredMultiHit.maximumCount(candidate)
         val branches = mutableListOf(PublicMoveOutcomeBranch(1.0 - accuracy, false, 0.0))
         for (hits in 1 until maximum) {
             val probability = accuracy.pow(hits) * (1.0 - accuracy)
-            val damage = (damagePerHit * hits).coerceAtMost(targetHp ?: 1.0)
-            branches += PublicMoveOutcomeBranch(
-                probability,
+            branches += damageBranches(damageRolls.map { it * hits }, targetHp, probability)
+        }
+        branches += damageBranches(damageRolls.map { it * maximum }, targetHp, accuracy.pow(maximum))
+        return branches.filter { it.probability > 0.0 }
+    }
+
+    /**
+     * KO and survival must reach distinct states: later actions can disappear or change target.
+     * Keep one real roll within each class, retaining the existing compact model for other HP
+     * thresholds. Direct-hit mechanics subsequently resolve Sash, Sturdy, Disguise and healing;
+     * removal value comes from those resulting states, never an additional raw-roll KO bonus.
+     */
+    private fun damageBranches(
+        rolls: List<Double>,
+        targetHp: Double?,
+        probability: Double,
+    ): List<PublicMoveOutcomeBranch> {
+        if (rolls.isEmpty()) return listOf(PublicMoveOutcomeBranch(probability, true, 0.0))
+        return rolls.groupBy { targetHp != null && it >= targetHp }.values.map { group ->
+            PublicMoveOutcomeBranch(
+                probability * group.size / rolls.size,
                 true,
-                damage,
-                if (targetHp != null && damage + DAMAGE_EPSILON >= targetHp) 1.0 else 0.0,
+                summarizeDamageRolls(group, targetHp).damageFraction,
             )
         }
-        val finalDamage = (damagePerHit * maximum).coerceAtMost(targetHp ?: 1.0)
-        branches += PublicMoveOutcomeBranch(
-            accuracy.pow(maximum),
-            true,
-            finalDamage,
-            if (targetHp != null && finalDamage + DAMAGE_EPSILON >= targetHp) 1.0 else 0.0,
-        )
-        return branches.filter { it.probability > 0.0 }
     }
 
     /**

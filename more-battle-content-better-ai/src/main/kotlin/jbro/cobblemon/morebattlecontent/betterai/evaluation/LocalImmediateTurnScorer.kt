@@ -17,8 +17,8 @@ internal data class LocalImmediateTurnScore(
 /**
  * Scores only what changed during one projected turn.
  *
- * Random damage and secondary effects do not become recursive states. The projector keeps one
- * representative damage state and uses the helpers here to add probability-weighted score.
+ * Damage keeps separate KO/survival states with a representative roll within each class.
+ * Removal value is already part of materialDelta; secondary effects can still use weighted score.
  */
 internal object LocalImmediateTurnScorer {
     fun score(before: BattleStateView, after: BattleStateView): LocalImmediateTurnScore {
@@ -46,12 +46,6 @@ internal object LocalImmediateTurnScorer {
         afterEffect: BattleStateView,
         probability: Double,
     ): Double = score(before, afterEffect).total * probability.coerceIn(0.0, 1.0)
-
-    /** Shared board removal value, excluding HP loss; not a tactical-ranking bonus. */
-    fun expectedKnockoutBonus(
-        actingSide: BattleSide,
-        knockoutProbability: Double,
-    ): Double = LocalBoardMaterial.expectedRemovalCredit(actingSide, knockoutProbability)
 
     private fun positionStages(state: BattleStateView): Double =
         sideStages(state, BattleSide.ALLY) - sideStages(state, BattleSide.OPPONENT)

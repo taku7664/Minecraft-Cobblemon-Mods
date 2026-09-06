@@ -665,11 +665,6 @@ internal object PublicSingleTurnProjector {
                         directDamage = LocalDirectDamageLedger.hit(
                             actor.battlePokemonId, target?.battlePokemonId, appliedHit.directDamageFraction,
                         ),
-                        expectedScoreAdjustment = effectOutcome.expectedScoreAdjustment +
-                            LocalImmediateTurnScorer.expectedKnockoutBonus(
-                                side,
-                                moveOutcome.knockoutProbability,
-                            ),
                         controlEffects = effectOutcome.controlEffects + if (recharge) {
                             listOf(
                                 RecursiveControlEffect(
@@ -971,8 +966,7 @@ internal object PublicSingleTurnProjector {
                                         currentActor.battlePokemonId, currentTarget.battlePokemonId, applied.directDamageFraction,
                                     ),
                                     expectedScoreAdjustment = branch.expectedScoreAdjustment +
-                                        effectOutcome.expectedScoreAdjustment +
-                                        LocalImmediateTurnScorer.expectedKnockoutBonus(side, outcome.knockoutProbability),
+                                        effectOutcome.expectedScoreAdjustment,
                                 )
                             }
                         }

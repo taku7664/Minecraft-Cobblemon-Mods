@@ -69,23 +69,6 @@ class LocalImmediateTurnScorerTest {
         )
     }
 
-    @Test
-    fun `fractional knockout bonus is proportional to possible knockout rolls`() {
-        // Board value of removing a Pokemon, which is exactly what being alive is worth in
-        // sideMaterial: 2.0, not the 2.5 that fell out of dividing a ranking-layer score constant by
-        // a hard-coded exchange rate.
-        assertEquals(
-            2.0 * (6.0 / 16.0),
-            LocalImmediateTurnScorer.expectedKnockoutBonus(BattleSide.ALLY, 6.0 / 16.0),
-            1e-9,
-        )
-        assertEquals(
-            -2.0 * (6.0 / 16.0),
-            LocalImmediateTurnScorer.expectedKnockoutBonus(BattleSide.OPPONENT, 6.0 / 16.0),
-            1e-9,
-        )
-    }
-
     private fun state(
         ally: BattlePokemonStateView,
         opponent: BattlePokemonStateView,

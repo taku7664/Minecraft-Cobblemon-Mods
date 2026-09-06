@@ -31,7 +31,7 @@ class LocalMaterialOwnershipTest {
     }
 
     @Test
-    fun `probabilistic knockout credit equals removal value beyond lost HP`() {
+    fun `immediate and leaf removal value agree beyond lost HP`() {
         for (victim in BattleSide.entries) {
             for (hp in listOf(0.125, 0.5, 1.0)) {
                 val before = state(listOf(pokemon(1, victim, hp)), if (victim == BattleSide.ALLY) 1 else 0,
@@ -41,10 +41,8 @@ class LocalMaterialOwnershipTest {
                 val sign = if (attacker == BattleSide.ALLY) 1 else -1
                 val removal = LocalImmediateTurnScorer.score(before, after).materialDelta - sign * hp
                 assertEquals(sign * 2.0, removal)
-                for (probability in listOf(-1.0, 0.0, 0.375, 1.0, 2.0)) {
-                    assertEquals(removal * probability.coerceIn(0.0, 1.0),
-                        LocalImmediateTurnScorer.expectedKnockoutBonus(attacker, probability))
-                }
+                assertEquals(removal, LocalLookaheadStateEvaluator.evaluate(after, context(after)) -
+                    LocalLookaheadStateEvaluator.evaluate(before, context(before)) - sign * hp, 1e-9)
             }
         }
     }

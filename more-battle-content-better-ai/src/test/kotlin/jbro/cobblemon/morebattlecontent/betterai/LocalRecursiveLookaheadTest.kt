@@ -262,11 +262,12 @@ class LocalRecursiveLookaheadTest {
 
         val first = PublicSingleTurnProjector.project(initial, chargeMove, wait, context(initial, listOf(chargeMove))).single()
         val history = RecursiveHistoryProjector.project(RecursiveActionHistory(), initial, first, chargeMove, wait)
-        val second = PublicSingleTurnProjector.project(first.state, chargeMove, wait, context(first.state, listOf(chargeMove)), history).single()
+        val second = PublicSingleTurnProjector.project(first.state, chargeMove, wait, context(first.state, listOf(chargeMove)), history)
 
         assertEquals(1.0, first.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.hpFraction)
         assertEquals("cobblemon:solar_beam", history.chargingMoveByPokemon[ALLY_ID])
-        assertTrue(second.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.hpFraction < 1.0)
+        assertEquals(1.0, second.sumOf { it.probability * it.orderProbability }, 1e-9)
+        assertTrue(second.all { it.state.pokemon.single { mon -> mon.battlePokemonId == OPPONENT_ID }.hpFraction < 1.0 })
     }
 
     @Test

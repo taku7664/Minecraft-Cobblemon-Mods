@@ -4,7 +4,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 
 /**
- * Shared material units for turn deltas, leaf positions and probabilistic removal credit.
+ * Shared material units for turn deltas and leaf positions, including actual removals.
  * One unit is one full HP bar; surviving Pokemon retain two additional units. Unseen living
  * Pokemon keep the existing full-HP estimate, not fabricated species or hidden set knowledge.
  * Tactical ranking bonuses and attack-pressure weights are intentionally not owned here.
@@ -12,12 +12,6 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 internal object LocalBoardMaterial {
     fun evaluate(state: BattleStateView): Double =
         sideValue(state, BattleSide.ALLY) - sideValue(state, BattleSide.OPPONENT)
-
-    /** Only the living-value part, beyond HP loss already represented in the projected board. */
-    fun expectedRemovalCredit(actingSide: BattleSide, knockoutProbability: Double): Double {
-        val signedValue = if (actingSide == BattleSide.ALLY) LIVING_POKEMON_VALUE else -LIVING_POKEMON_VALUE
-        return signedValue * knockoutProbability.coerceIn(0.0, 1.0)
-    }
 
     private fun sideValue(state: BattleStateView, side: BattleSide): Double {
         val knownLiving = state.pokemon.filter {
