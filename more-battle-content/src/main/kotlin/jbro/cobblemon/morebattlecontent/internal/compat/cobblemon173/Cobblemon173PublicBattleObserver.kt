@@ -78,10 +78,11 @@ internal class Cobblemon173PublicBattleObserver(
                 val uses = moveUses.getOrPut(actor.battlePokemonId) { linkedMapOf() }
                 uses[observation.moveId] = ((uses[observation.moveId] ?: 0).toLong() + 1)
                     .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-                observePpLoss(actor.battlePokemonId, observation.moveId, 1)
+                if (observation.ppCallerMoveId == null) observePpLoss(actor.battlePokemonId, observation.moveId, 1)
                 observation.targets.forEach(::upsert)
                 val pressureLoss = pressureLoss(actor, observation)
-                if (pressureLoss > 0) observePpLoss(actor.battlePokemonId, observation.moveId, pressureLoss)
+                if (pressureLoss > 0) observePpLoss(actor.battlePokemonId,
+                    observation.ppCallerMoveId ?: observation.moveId, pressureLoss)
                 pokemon[actor.battlePokemonId] = actor.withKnownMove(observation.moveId)
                 val actionSequence = appendEvent(
                     turn = observation.turn,
@@ -639,9 +640,11 @@ internal sealed interface Cobblemon173PublicObservation {
         val baseMovePriority: Int? = null,
         val missed: Boolean = false,
         val pressureTargetPattern: BattleMoveTargetPattern? = null,
+        val ppCallerMoveId: String? = null,
     ) : Cobblemon173PublicObservation {
         init {
             require(moveId.isNotBlank())
+            require(ppCallerMoveId == null || ppCallerMoveId.isNotBlank())
         }
     }
 

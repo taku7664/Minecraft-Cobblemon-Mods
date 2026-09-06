@@ -133,6 +133,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
             "move" -> {
                 val actor = resolvePokemon(activeBattle, message, 0) ?: return
                 val moveId = effectId(message.argumentAt(1)).takeIf(String::isNotBlank) ?: return
+                val ppCaller = ppCallerMove(message, lastMoveByPokemon[actor.battlePokemonId])
                 lastMoveByPokemon[actor.battlePokemonId] = moveId
                 val targets = listOfNotNull(resolvePokemon(activeBattle, message, 2))
                 observer.observe(
@@ -143,9 +144,10 @@ internal class Cobblemon173ShowdownObservationAdapter(
                         targets = targets,
                         baseMovePriority = Moves.getByName(moveId)?.priority,
                         missed = message.hasOptionalArgument("miss"),
-                        // Called moves have separate PP attribution; do not charge their target twice.
-                        pressureTargetPattern = if (message.hasOptionalArgument("from")) null else
+                        // A confirmed same-actor caller owns the called move's extra Pressure cost.
+                        pressureTargetPattern = if (message.hasOptionalArgument("from") && ppCaller == null) null else
                             Moves.getByName(moveId)?.let { Cobblemon173ActionCandidateAdapter.pressureTargetPattern(moveId, it.target) },
+                        ppCallerMoveId = ppCaller,
                     ),
                 )
             }
@@ -394,6 +396,14 @@ internal class Cobblemon173ShowdownObservationAdapter(
     private enum class ResourceKind { ABILITY, ITEM }
 
     internal companion object {
+        fun ppCallerMove(message: BattleMessage, previousMoveId: String?): String? {
+            if (message.id != "move") return null
+            // This is public protocol attribution, independent of the live move registry.
+            val source = message.optionalArgument("from")?.trim() ?: return null
+            if (!source.startsWith("move:")) return null
+            return effectId(source).takeIf { it.isNotBlank() && it == previousMoveId }
+        }
+
         fun abilityPpEffect(message: BattleMessage): Pair<String, Boolean>? {
             val effect = effectId(message.argumentAt(1))
             return when {

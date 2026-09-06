@@ -788,6 +788,36 @@ class Cobblemon173PublicBattleObserverTest {
         assertNull(effect("|move|p1a: test|Gastro Acid|p2a: target"))
     }
 
+    @Test
+    fun `called attack keeps its use evidence but charges Pressure to the caller`() {
+        val observer = Cobblemon173PublicBattleObserver(3)
+        val actor = publicPokemon(BattleSide.ALLY, 0)
+        val target = publicPokemon(BattleSide.OPPONENT, 0)
+        observer.observe(Cobblemon173PublicObservation.AbilityRevealed(0, target, "pressure"))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, actor, "sleeptalk", listOf(actor),
+            pressureTargetPattern = BattleMoveTargetPattern.SELF))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, actor, "tackle", listOf(target),
+            pressureTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT, ppCallerMoveId = "sleeptalk"))
+        assertEquals(2, observer.publicPpSpent()[actor.battlePokemonId]?.get("sleeptalk"))
+        assertEquals(0, observer.publicPpSpent()[actor.battlePokemonId]?.get("tackle") ?: 0)
+        assertEquals(1, observer.publicSnapshot().moveUses[actor.battlePokemonId]?.get("tackle"))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(2, actor, "tackle", listOf(target),
+            pressureTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT))
+        assertEquals(2, observer.publicPpSpent()[actor.battlePokemonId]?.get("tackle"))
+    }
+
+    @Test
+    fun `caller PP link requires an explicit move source matching the same actor previous move`() {
+        fun caller(line: String, previous: String?) =
+            Cobblemon173ShowdownObservationAdapter.ppCallerMove(BattleMessage(line), previous)
+        val called = "|move|p1a: test|Tackle|p2a: target|[from]move: Sleep Talk"
+        assertEquals("sleeptalk", caller(called, "sleeptalk"))
+        assertNull(caller(called, "tackle"))
+        assertNull(caller(called, null))
+        assertNull(caller("|move|p1a: test|Tackle|p2a: target", "sleeptalk"))
+        assertNull(caller("|move|p1a: test|Tackle|p2a: target|[from]ability: Magic Bounce", "magicbounce"))
+    }
+
     private fun publicPokemon(side: BattleSide, activeSlot: Int?) = Cobblemon173PublicPokemonSnapshot(
         battlePokemonId = UUID.randomUUID(),
         side = side,
