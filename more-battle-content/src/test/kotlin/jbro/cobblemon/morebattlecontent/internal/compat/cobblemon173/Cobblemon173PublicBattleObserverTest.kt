@@ -665,6 +665,32 @@ class Cobblemon173PublicBattleObserverTest {
         assertEquals(10, snapshot.moveUses[first.battlePokemonId]?.get("protect"))
     }
 
+    @Test
+    fun `explicit Spite PP loss is separate from uses and survives event eviction`() {
+        val observer = Cobblemon173PublicBattleObserver(3, maximumRecentEvents = 2)
+        val target = publicPokemon(BattleSide.OPPONENT, 0)
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, target, "tackle", emptyList()))
+        observer.observePpLoss(target.battlePokemonId, "tackle", 4)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, target))
+        assertEquals(1, observer.publicSnapshot().moveUses[target.battlePokemonId]?.get("tackle"))
+        assertEquals(5, observer.publicPpSpent()[target.battlePokemonId]?.get("tackle"))
+        observer.reset()
+        assertTrue(observer.publicPpSpent().isEmpty())
+    }
+
+    @Test
+    fun `only a valid explicit Spite activation establishes extra PP loss`() {
+        fun loss(line: String) = Cobblemon173ShowdownObservationAdapter.spitePpLoss(BattleMessage(line))
+        assertEquals("tackle" to 4, loss("|-activate|p1a: test|move: Spite|Tackle|4"))
+        assertEquals("tackle" to 1, loss("|-activate|p1a: test|move: Spite|Tackle|1"))
+        assertNull(loss("|move|p2a: test|Spite|p1a: target"))
+        assertNull(loss("|-fail|p1a: test|move: Spite|Tackle|4"))
+        assertNull(loss("|-activate|p1a: test|item: Leppa Berry|Tackle|[consumed]"))
+        for (amount in listOf("", "bad", "-1", "0", "5")) {
+            assertNull(loss("|-activate|p1a: test|move: Spite|Tackle|$amount"))
+        }
+    }
+
     private fun publicPokemon(side: BattleSide, activeSlot: Int?) = Cobblemon173PublicPokemonSnapshot(
         battlePokemonId = UUID.randomUUID(),
         side = side,

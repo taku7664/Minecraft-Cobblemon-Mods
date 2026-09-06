@@ -13,7 +13,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 internal object Cobblemon173PublicActionCatalog {
     fun from(
         state: BattleStateView,
-        moveUses: Map<UUID, Map<String, Int>>,
+        ppSpent: Map<UUID, Map<String, Int>>,
         ownCurrentPp: Map<UUID, Map<String, Int>>,
         moveDetails: (String) -> BattleMoveCandidateView? = Cobblemon173ActionCandidateAdapter::publicMoveDetails,
     ): BattlePublicActionCatalogView = BattlePublicActionCatalogView(
@@ -29,7 +29,7 @@ internal object Cobblemon173PublicActionCatalog {
                     } else null
                     BattlePublicMoveOptionView(moveId, details.copy(currentPp = remainingPp(
                         details.currentPp,
-                        moveUses[pokemon.battlePokemonId]?.get(moveId) ?: 0,
+                        ppSpent[pokemon.battlePokemonId]?.get(moveId) ?: 0,
                         actual,
                     )), knowledge)
                 }
@@ -43,10 +43,10 @@ internal object Cobblemon173PublicActionCatalog {
     )
 
     /** A point estimate under the PP Max assumption, not knowledge of the opponent's real PP. */
-    internal fun remainingPp(maximumPp: Int, observedUses: Int, actualCurrentPp: Int?): Int {
-        require(maximumPp >= 0 && observedUses >= 0)
+    internal fun remainingPp(maximumPp: Int, ppSpent: Int, actualCurrentPp: Int?): Int {
+        require(maximumPp >= 0 && ppSpent >= 0)
         require(actualCurrentPp == null || actualCurrentPp >= 0)
-        return actualCurrentPp ?: (maximumPp - observedUses).coerceAtLeast(0)
+        return actualCurrentPp ?: (maximumPp - ppSpent).coerceAtLeast(0)
     }
 
     private const val MAX_MOVE_SLOTS = 4

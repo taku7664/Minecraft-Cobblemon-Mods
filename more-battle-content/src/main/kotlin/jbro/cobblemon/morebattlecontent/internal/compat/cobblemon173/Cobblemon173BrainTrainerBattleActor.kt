@@ -122,7 +122,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
             memory = tacticalMemory.view(state.turn),
             publicActionCatalog = Cobblemon173PublicActionCatalog.from(
                 state,
-                observationAdapter.publicMoveUses(),
+                observationAdapter.publicPpSpent(),
                 currentRequest.active.orEmpty().mapIndexedNotNull { slot, moveset ->
                     activePokemon.getOrNull(slot)?.battlePokemon?.uuid?.let { id ->
                         id to moveset.moves.associate { it.id to it.pp }

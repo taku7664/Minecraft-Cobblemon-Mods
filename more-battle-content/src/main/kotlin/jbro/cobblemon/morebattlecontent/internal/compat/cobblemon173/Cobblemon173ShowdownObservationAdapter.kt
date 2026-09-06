@@ -61,7 +61,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
 
     /** Called after snapshot has consumed the public log for this decision. */
     @Synchronized
-    fun publicMoveUses(): Map<UUID, Map<String, Int>> = observer.publicSnapshot().moveUses
+    fun publicPpSpent(): Map<UUID, Map<String, Int>> = observer.publicPpSpent()
 
     private fun seedActiveOpponents(activeBattle: PokemonBattle) {
         val opponent = activeBattle.actors.firstOrNull { it.uuid == opponentActorId } ?: return
@@ -153,6 +153,11 @@ internal class Cobblemon173ShowdownObservationAdapter(
 
             "-miss", "-fail", "-block", "-notarget", "cant", "-crit", "-supereffective",
             "-resisted", "-immune", "-hitcount", "-activate", "-singleturn" -> {
+                spitePpLoss(message)?.let { (move, amount) ->
+                    resolvePokemon(activeBattle, message, 0)?.let { target ->
+                        observer.observePpLoss(target.battlePokemonId, move, amount)
+                    }
+                }
                 observeActionConstraint(activeBattle, message)
                 observeMoveOutcome(activeBattle, message)
             }
@@ -375,6 +380,13 @@ internal class Cobblemon173ShowdownObservationAdapter(
     private enum class ResourceKind { ABILITY, ITEM }
 
     internal companion object {
+        fun spitePpLoss(message: BattleMessage): Pair<String, Int>? {
+            if (message.id != "-activate" || message.argumentAt(1) != "move: Spite") return null
+            val move = effectId(message.argumentAt(2)).takeIf { it.isNotBlank() } ?: return null
+            val amount = message.argumentAt(3)?.toIntOrNull()?.takeIf { it in 1..4 } ?: return null
+            return move to amount
+        }
+
         fun substituteChange(message: BattleMessage): Boolean? =
             if (message.id in setOf("-start", "-end") && effectId(message.argumentAt(1)) == "substitute")
                 message.id == "-start" else null

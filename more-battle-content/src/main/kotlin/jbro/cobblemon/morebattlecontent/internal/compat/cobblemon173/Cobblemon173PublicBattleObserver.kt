@@ -30,6 +30,7 @@ internal class Cobblemon173PublicBattleObserver(
     private val publicTypes = Cobblemon173PublicTypeKnowledge()
     private val events = ArrayDeque<BattleObservedEventView>()
     private val moveUses = linkedMapOf<UUID, MutableMap<String, Int>>()
+    private val extraPpLosses = linkedMapOf<UUID, MutableMap<String, Int>>()
     private val faintedOpponents = linkedSetOf<UUID>()
     private var sequence = 0L
     private var currentTurn = 0
@@ -268,6 +269,27 @@ internal class Cobblemon173PublicBattleObserver(
         currentTurn = maxOf(currentTurn, turn)
     }
 
+    /** Records only a PP loss explicitly named by a public protocol effect. */
+    @Synchronized
+    fun observePpLoss(pokemonId: UUID, moveId: String, amount: Int) {
+        require(moveId.isNotBlank() && amount > 0)
+        val losses = extraPpLosses.getOrPut(pokemonId) { linkedMapOf() }
+        losses[moveId] = ((losses[moveId] ?: 0).toLong() + amount)
+            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+    }
+
+    /** Publicly modeled expenditure; use counts remain independently available for auditing. */
+    @Synchronized
+    fun publicPpSpent(): Map<UUID, Map<String, Int>> =
+        (moveUses.keys + extraPpLosses.keys).associateWith { id ->
+            val uses = moveUses[id].orEmpty()
+            val losses = extraPpLosses[id].orEmpty()
+            (uses.keys + losses.keys).associateWith { move ->
+                ((uses[move] ?: 0).toLong() + (losses[move] ?: 0))
+                    .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+            }
+        }
+
     @Synchronized
     fun publicSnapshot(): Cobblemon173PublicBattleSnapshot = Cobblemon173PublicBattleSnapshot(
         pokemon = pokemon.values.sortedBy { it.battlePokemonId.toString() },
@@ -292,6 +314,7 @@ internal class Cobblemon173PublicBattleObserver(
         publicTypes.reset()
         events.clear()
         moveUses.clear()
+        extraPpLosses.clear()
         faintedOpponents.clear()
         sequence = 0
         currentTurn = 0
