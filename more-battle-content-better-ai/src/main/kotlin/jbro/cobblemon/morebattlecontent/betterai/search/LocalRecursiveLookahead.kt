@@ -134,7 +134,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             // Recomputed per depth from the ranking as it now stands, so a candidate the previous ply
             // promoted is searched at the next one. Singles never trims - it does not have enough
             // candidates to reach the limit - so this changes nothing outside doubles.
-            val searchable = searchableActionIds(ranked, tuning)
+            val searchable = searchableActionIds(ranked, tuning, context)
             val evaluatedCoverage = mutableMapOf<String, LocalLookaheadCoverage>()
             val evaluated = ranked.map { rank ->
                 val evaluation = if (searchable != null && rank.outcome.candidate.actionId !in searchable) {
@@ -752,13 +752,14 @@ internal object LocalRecursiveLookaheadEvaluator {
      * of the list, so the survivors differ only in their second half and the search re-decides one
      * side of the turn eight times over. Each slot's actions are scored here by the best joint they
      * appear in, the top few per slot survive, and a joint stays only if every one of its parts did.
-     * One best declared redirect/self-setup joint is also retained for cooperative turn evaluation.
+     * A best joint for each supported cooperation pattern is also retained for turn evaluation.
      *
      * Singles has one slot and few candidates, so nothing is trimmed there.
      */
     private fun searchableActionIds(
         ranked: List<LocalBattleActionRank>,
         tuning: LocalDecisionTuning,
+        context: BattleDecisionContext,
     ): Set<String>? {
         if (ranked.size <= tuning.maximumRootCandidates) return null
         val bestBySlotAction = linkedMapOf<Pair<Int, String>, Double>()
@@ -788,27 +789,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 }
             }
             .mapTo(linkedSetOf()) { it.outcome.candidate.actionId }
-        // A redirect protects its partner's investment rather than dealing immediate damage.
-        // Reserve at most one such joint beyond the per-slot shortlist; it still consumes the
-        // ordinary search budget and receives no score bonus or forced final selection.
-        ranked.asSequence().filter { rank ->
-            val parts = rank.outcome.candidate.componentActions
-            parts.size == 2 && parts.any { redirect ->
-                redirect.kind == BattleActionKind.USE_MOVE &&
-                    redirect.moveId?.substringAfter(':')?.lowercase()?.filter(Char::isLetterOrDigit) in
-                    setOf("followme", "ragepowder") && parts.any { setup ->
-                    setup.actorSlot != null && setup.actorSlot != redirect.actorSlot &&
-                        setup.kind == BattleActionKind.USE_MOVE &&
-                        setup.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS &&
-                        setup.moveDetails?.effects?.effects?.any { effect ->
-                            effect.kind == BattleMoveEffectKind.STAT_STAGE &&
-                                effect.target == BattleMoveEffectTarget.USER &&
-                                effect.probability?.let { it > 0.0 } == true &&
-                                effect.statStages.values.any { it > 0 }
-                        } == true
-                }
-            }
-        }.maxByOrNull { it.comparisonValue }?.let { kept += it.outcome.candidate.actionId }
+        kept += LocalCooperativeRootRetention.select(ranked, context)
         return kept.takeIf { it.isNotEmpty() }
     }
 

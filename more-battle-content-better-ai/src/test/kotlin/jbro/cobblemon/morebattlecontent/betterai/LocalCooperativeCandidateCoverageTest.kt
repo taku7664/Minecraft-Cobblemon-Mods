@@ -64,7 +64,8 @@ class LocalCooperativeCandidateCoverageTest {
         val reply = attack(0, 1, 0, BattleSide.ALLY)
         fun partnerHp(action: BattleActionCandidate): Double = PublicSingleTurnProjector.project(
             state, action, reply, context, RecursiveActionHistory()).sumOf { branch ->
-            branch.probability * branch.state.pokemon.single { it.battlePokemonId == partner.battlePokemonId }.hpFraction
+            branch.probability * branch.orderProbability *
+                branch.state.pokemon.single { it.battlePokemonId == partner.battlePokemonId }.hpFraction
         }
         if (redirectId != "splash") {
             assertTrue(partnerHp(cooperative) > partnerHp(exposed), "Redirection must demonstrably protect the setup user")
