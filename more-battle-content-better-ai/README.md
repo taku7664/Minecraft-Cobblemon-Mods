@@ -699,3 +699,13 @@ move options receive static effects from the bundled `data/moves.js`, always as
 remain null. No opponent's unobserved moves are added by this lookup. Per-decision
 traces retain the candidate effects actually supplied, and results count annotated
 candidates. These facts can change choices; they do not establish better choices.
+
+Public action restrictions are also carried to both sides' state views: Taunt,
+Encore tied only to a previously observed move, explicit trapping/attributed
+partial trapping, and recharge. End messages and switch lifecycle clear the
+corresponding restriction; no hidden ability or opponent request is consulted.
+The tracker does not edit the native candidate list. Unit traces cover independent
+expiration, missing Encore evidence and cross-side isolation. A separate native
+Smeargle/Blissey protocol fixture exercises recharge, Encore and Taunt announcements;
+it is a scripted mechanics check, not one of the sampled AI quality battles.
+Other volatile conditions and detailed public outcomes remain incomplete.

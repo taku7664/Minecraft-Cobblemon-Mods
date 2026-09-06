@@ -38,6 +38,7 @@ internal object EmbeddedTeamInput {
         val speciesData = input.getAsJsonObject("species")
         val moveData = input.getAsJsonObject("moves")
         val seen = linkedMapOf<String, Seen>()
+        val constraints = EmbeddedPublicActionConstraints()
         val sizes = mutableMapOf<BattleSide, Int>()
         val events = mutableListOf<BattleObservedEventView>()
         val sideEffects = BattleSide.entries.associateWith { linkedMapOf<String, Int>() }
@@ -47,6 +48,7 @@ internal object EmbeddedTeamInput {
         fun baseTypes(species: String): Set<String> = if (species.startsWith("arceus")) emptySet() else
             speciesData.getAsJsonObject(species)?.getAsJsonArray("types")?.map { it.asString }?.toSet().orEmpty()
         input.getAsJsonArray("publicLog").forEachIndexed { index, element ->
+            constraints.observe(element.asString)
             val p = element.asString.split('|')
             val kind = p.getOrNull(1) ?: return@forEachIndexed
             val actor = p.getOrNull(2).orEmpty()
@@ -125,7 +127,8 @@ internal object EmbeddedTeamInput {
                 privateMap("ownItems", ident)?.asString?.takeIf { it.isNotEmpty() }, hp.first == 0.0,
                 privateMap("ownTypes", ident)?.asJsonArray?.map { it.asString }?.toSet().orEmpty(),
                 combatStats = if (maxHp > 0) BattleCombatStatRangesView.exact(maxHp, stats["atk"].asInt,
-                    stats["def"].asInt, stats["spa"].asInt, stats["spd"].asInt, stats["spe"].asInt) else null)
+                    stats["def"].asInt, stats["spa"].asInt, stats["spd"].asInt, stats["spe"].asInt) else null,
+                actionConstraints = constraints.forPokemon(ident))
         }
         val opponents = seen.values.filter { side(it.ident) == BattleSide.OPPONENT }.map { pokemon ->
             val stats = speciesData.getAsJsonObject(pokemon.species)?.getAsJsonObject("baseStats")
@@ -134,7 +137,8 @@ internal object EmbeddedTeamInput {
                 pokemon.ability, pokemon.item, pokemon.hp == 0.0,
                 if (pokemon.types.isEmpty()) emptySet() else pokemon.types + listOfNotNull(pokemon.added),
                 combatStats = stats?.let { BattlePublicStatRanges.fromBaseStats(pokemon.level, it["hp"].asInt,
-                    it["atk"].asInt, it["def"].asInt, it["spa"].asInt, it["spd"].asInt, it["spe"].asInt) })
+                    it["atk"].asInt, it["def"].asInt, it["spa"].asInt, it["spd"].asInt, it["spe"].asInt) },
+                actionConstraints = constraints.forPokemon(pokemon.ident))
         }
         fun moveDetails(moveId: String, pp: Int): BattleMoveCandidateView {
             val move = requireNotNull(moveData.getAsJsonObject(moveId)) { "Missing exposed move metadata $moveId" }
