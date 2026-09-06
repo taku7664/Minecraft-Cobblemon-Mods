@@ -295,6 +295,8 @@ class LocalDeclaredMoveEffectsTest {
 
         assertEquals(1.0, third.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.hpFraction, 1e-9)
         assertTrue(third.state.pokemon.single { it.battlePokemonId == reserveId }.hpFraction < 1.0)
+        assertTrue(third.directDamage.amounts.isEmpty(),
+            "A previously reserved strike must not be credited to this turn's submitted WAIT actions")
     }
 
     @Test

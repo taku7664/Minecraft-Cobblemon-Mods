@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.betterai.outcome
 
 import java.util.IdentityHashMap
 import java.util.UUID
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalDirectDamageLedger
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicFutureActionFactory
@@ -150,6 +151,7 @@ internal object PublicSingleTurnProjector {
                             branch.expectedScoreAdjustment + outcome.expectedScoreAdjustment,
                             branch.protectionResultsByPokemon + outcome.protectionResultsByPokemon,
                             branch.redirectingPokemonIds + newlyRedirecting,
+                            directDamage = branch.directDamage + outcome.directDamage,
                         )
                     }
                 }.let { mergeBranches(it, maxChanceBranchesPerMove) }
@@ -194,6 +196,7 @@ internal object PublicSingleTurnProjector {
                     outcome.expectedScoreAdjustment,
                     outcome.protectionResultsByPokemon,
                     stateBeforeResidual = outcome.state,
+                    directDamage = outcome.directDamage,
                 )
             }
         }.groupBy { projection ->
@@ -220,6 +223,7 @@ internal object PublicSingleTurnProjector {
                         identical.map { it.probability to it.expectedScoreAdjustment },
                         probability,
                     ),
+                    directDamage = LocalDirectDamageLedger.weighted(identical.map { it.probability to it.directDamage }),
                 )
             }
     }
@@ -658,6 +662,9 @@ internal object PublicSingleTurnProjector {
                     }
                     effectOutcome.copy(
                         probability = effectOutcome.probability * moveOutcome.probability,
+                        directDamage = LocalDirectDamageLedger.hit(
+                            actor.battlePokemonId, target?.battlePokemonId, appliedHit.directDamageFraction,
+                        ),
                         expectedScoreAdjustment = effectOutcome.expectedScoreAdjustment +
                             LocalImmediateTurnScorer.expectedKnockoutBonus(
                                 side,
@@ -960,6 +967,9 @@ internal object PublicSingleTurnProjector {
                                             currentTarget.battlePokemonId,
                                         ),
                                     executedMoveIdsByPokemon = branch.executedMoveIdsByPokemon,
+                                    directDamage = branch.directDamage + LocalDirectDamageLedger.hit(
+                                        currentActor.battlePokemonId, currentTarget.battlePokemonId, applied.directDamageFraction,
+                                    ),
                                     expectedScoreAdjustment = branch.expectedScoreAdjustment +
                                         effectOutcome.expectedScoreAdjustment +
                                         LocalImmediateTurnScorer.expectedKnockoutBonus(side, outcome.knockoutProbability),
@@ -1308,6 +1318,7 @@ internal object PublicSingleTurnProjector {
                 // attacks. Rebuilding the state without this silently reset it to nobody, which is
                 // the whole reason a positional constructor call is a bad place to add a field.
                 identical.first().redirectingPokemonIds,
+                directDamage = LocalDirectDamageLedger.weighted(identical.map { it.probability to it.directDamage }),
             )
         }.sortedByDescending(WeightedState::probability)
         val total = merged.sumOf(WeightedState::probability)
@@ -1634,6 +1645,7 @@ internal object PublicSingleTurnProjector {
          * only for actions that have not resolved yet.
          */
         val redirectingPokemonIds: Set<UUID> = emptySet(),
+        val directDamage: LocalDirectDamageLedger = LocalDirectDamageLedger.EMPTY,
     )
 
     private fun weightedExpectedScoreAdjustment(

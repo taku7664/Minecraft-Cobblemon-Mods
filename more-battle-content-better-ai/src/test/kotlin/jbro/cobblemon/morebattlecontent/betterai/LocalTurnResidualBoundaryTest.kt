@@ -17,6 +17,7 @@ class LocalTurnResidualBoundaryTest {
             assertEquals(0.875, foeHp(it.state), 1e-9)
             assertEquals(2, it.stateBeforeResidual.turn)
             assertEquals(3, it.state.turn)
+            assertTrue(it.directDamage.amounts.isEmpty(), "Poison is not damage from a submitted move")
         }
         assertEquals(1.0, outcomes.sumOf { it.probability * it.orderProbability }, 1e-9)
     }
@@ -42,11 +43,26 @@ class LocalTurnResidualBoundaryTest {
 
     private fun foeHp(state: BattleStateView) = state.pokemon.single { it.side == BattleSide.OPPONENT }.hpFraction
 
-    private fun project(hp: Double, status: String?, attack: Boolean): List<PublicTurnProjection> {
+    @Test
+    fun `berry recovery does not erase direct move damage`() {
+        val plain = project(0.55, null, attack = true)
+        val berry = project(0.55, null, attack = true, item = "sitrusberry")
+        fun damage(outcomes: List<PublicTurnProjection>) = outcomes.sumOf {
+            it.probability * it.orderProbability * it.directDamage.amounts.values.sum()
+        }
+        assertTrue(damage(plain) > 0.0)
+        assertEquals(damage(plain), damage(berry), 1e-9)
+        val netLoss = berry.sumOf {
+            it.probability * it.orderProbability * (0.55 - foeHp(it.stateBeforeResidual))
+        }
+        assertTrue(netLoss < damage(berry), "The fixture must actually trigger berry recovery")
+    }
+
+    private fun project(hp: Double, status: String?, attack: Boolean, item: String? = null): List<PublicTurnProjection> {
         fun mon(side: BattleSide) = BattlePokemonStateView(
             UUID(0, 10L + side.ordinal), side, 0, "cobblemon:probe", null, 50,
             if (side == BattleSide.ALLY) 1.0 else hp, if (side == BattleSide.ALLY) null else status,
-            emptyMap(), emptySet(), null, null, false, knownTypeIds = setOf("normal"),
+            emptyMap(), emptySet(), null, if (side == BattleSide.OPPONENT) item else null, false, knownTypeIds = setOf("normal"),
             combatStats = if (side == BattleSide.ALLY) BattleCombatStatRangesView.exact(200, 100, 100, 100, 100, 200)
                 else publicExactStats(200, 100, 100, 100, 100, 50))
         val state = BattleStateView(UUID(0, 1), BattleFormat.SINGLE, 2, BattleSide.entries.map(::mon),

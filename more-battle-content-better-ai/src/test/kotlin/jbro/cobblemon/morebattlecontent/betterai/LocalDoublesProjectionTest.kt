@@ -18,6 +18,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
+import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicSingleTurnProjector
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -45,6 +46,25 @@ import java.util.UUID
  * either format and a comparison between the two would measure nothing.
  */
 class LocalDoublesProjectionTest {
+    @Test
+    fun `spread direct damage retains each actual recipient`() {
+        val context = PublicBattleTacticalCalculator.calculate(spreadContext(opponentPartner = true))
+        val outcomes = PublicSingleTurnProjector.project(context.state, context.candidates.single(),
+            BattleActionCandidate("wait", BattleActionKind.WAIT), context)
+        assertEquals(1.0, outcomes.sumOf { it.probability * it.orderProbability }, 1e-9)
+        outcomes.forEach { outcome ->
+            val amounts = outcome.directDamage.amounts
+            assertEquals(2, amounts.size)
+            context.state.pokemon.filter { it.side == BattleSide.OPPONENT }.forEach { target ->
+                val damage = amounts.entries.single { it.key.targetId == target.battlePokemonId }.value
+                assertTrue(damage > 0.0)
+                assertEquals(target.hpFraction - outcome.stateBeforeResidual.pokemon.single {
+                    it.battlePokemonId == target.battlePokemonId
+                }.hpFraction, damage, 1e-9)
+            }
+        }
+    }
+
     @Test
     fun `a spread move projects against every opposing slot with the Gen 9 reduction`() {
         val singles = PublicBattleTacticalCalculator

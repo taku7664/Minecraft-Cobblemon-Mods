@@ -40,4 +40,5 @@ internal data class PublicTurnProjection(
      * Kept separately so poison, weather and residual healing need not be credited to an attack.
      */
     val stateBeforeResidual: BattleStateView,
+    val directDamage: LocalDirectDamageLedger,
 )

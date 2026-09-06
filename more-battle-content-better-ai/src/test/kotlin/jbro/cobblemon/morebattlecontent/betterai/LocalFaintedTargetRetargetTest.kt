@@ -76,8 +76,19 @@ class LocalFaintedTargetRetargetTest {
                 val outcomes = PublicSingleTurnProjector.project(state, candidate,
                     BattleActionCandidate("wait", BattleActionKind.WAIT), context)
                 assertEquals(1.0, outcomes.sumOf { it.probability * it.orderProbability }, 1e-9)
+                val damageByTarget = outcomes.flatMap { branch ->
+                    branch.directDamage.amounts.map { (hit, damage) ->
+                        assertTrue(allies.any { it.battlePokemonId == hit.actorId })
+                        hit.targetId to damage * branch.probability * branch.orderProbability
+                    }
+                }.groupBy({ it.first }, { it.second }).mapValues { it.value.sum() }
                 fun hp(id: UUID) = outcomes.sumOf { branch -> branch.probability * branch.orderProbability *
                     branch.state.pokemon.single { it.battlePokemonId == id }.hpFraction }
+                foes.forEach { foe ->
+                    assertEquals(foe.hpFraction - hp(foe.battlePokemonId),
+                        damageByTarget[foe.battlePokemonId] ?: 0.0, 1e-9,
+                        "Direct damage must follow the actual recipient, including retargets and misses")
+                }
                 return hp(foes[targetSlot].battlePokemonId) to hp(foes[1 - targetSlot].battlePokemonId)
             }
             val focused = project(targetSlot)
