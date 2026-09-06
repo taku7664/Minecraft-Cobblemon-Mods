@@ -22,6 +22,8 @@ import jbro.cobblemon.morebattlecontent.betterai.state.PublicTurnProjection
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveHistoryProjector
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveSnapshotActionConstraints
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalBranchMoveInputs
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalBranchMoveInputKey
 
 internal data class LocalLookaheadCoverage(val immediate: Double, val future: Double)
 
@@ -297,8 +299,8 @@ internal object LocalRecursiveLookaheadEvaluator {
         // Structural, like the search's own value memo. Keying leaf values by object identity meant a
         // position reached by two different routes was evaluated twice, and a leaf evaluation is a full
         // tactical calculation for every damaging move on both sides.
-        private val stateUtilityMemo = HashMap<String, Double>().apply {
-            put(actionCalculationCache.fingerprints.of(initialState), initialStateUtility)
+        private val stateUtilityMemo = HashMap<LocalBranchMoveInputKey, Double>().apply {
+            put(LocalBranchMoveInputs.key(actionCalculationCache.fingerprints.of(initialState), RecursiveActionHistory()), initialStateUtility)
         }
 
         fun rootActionValue(state: BattleStateView, ownAction: BattleActionCandidate, depth: Int): RootActionEvaluation? {
@@ -317,7 +319,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 publicResponseIncomplete = true
                 return null
             }
-            val turnStartValue = stateUtility(state)
+            val turnStartValue = stateUtility(state, initialHistory)
             val responseValues = mutableListOf<OpponentTurnValue>()
             for (opponentAction in opponentActions) {
                 if (budgetExhausted()) break
@@ -342,8 +344,9 @@ internal object LocalRecursiveLookaheadEvaluator {
             }
         }
 
-        private fun searchState(state: BattleStateView, depth: Int, history: RecursiveActionHistory): Double {
-            if (depth <= 0 || battleEnded(state) || budgetExhausted()) return stateUtility(state)
+        private fun searchState(projectedState: BattleStateView, depth: Int, history: RecursiveActionHistory): Double {
+            val state = LocalBranchMoveInputs.state(projectedState, context.publicActionCatalog, history)
+            if (depth <= 0 || battleEnded(state) || budgetExhausted()) return stateUtility(state, history)
             forcedReplacementValue(state, depth, history)?.let { return it }
             val key = SearchKey(depth, fingerprint(state), history)
             memo[key]?.let { return it }
@@ -354,12 +357,12 @@ internal object LocalRecursiveLookaheadEvaluator {
                 history,
                 profile.difficulty.doubleCandidateLimitPerSlot,
             )
-            val opponentActions = completeOpponentActions(state, history) ?: return stateUtility(state)
+            val opponentActions = completeOpponentActions(state, history) ?: return stateUtility(state, history)
             if (ownActions.isEmpty() || opponentActions.isEmpty()) {
                 if (opponentActions.isEmpty() && !battleEnded(state)) publicResponseIncomplete = true
-                return stateUtility(state)
+                return stateUtility(state, history)
             }
-            val turnStartValue = stateUtility(state)
+            val turnStartValue = stateUtility(state, history)
             var best = Double.NEGATIVE_INFINITY
             for (ownAction in ownActions) {
                 if (budgetExhausted()) break
@@ -381,7 +384,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     best = maxOf(best, responseValue.value)
                 }
             }
-            val result = if (best.isFinite()) best else stateUtility(state)
+            val result = if (best.isFinite()) best else stateUtility(state, history)
             if (!truncated) memo[key] = result
             return result
         }
@@ -406,25 +409,27 @@ internal object LocalRecursiveLookaheadEvaluator {
             if (!allyMissing && !opponentMissing) return null
 
             val allyResolution = if (allyMissing) {
-                LocalForcedReplacementResolver.resolve(state, BattleSide.ALLY, context)
+                LocalForcedReplacementResolver.resolve(state, BattleSide.ALLY,
+                    LocalBranchMoveInputs.context(context, state, history, spendPp = true))
             } else {
                 LocalForcedReplacementResolution(listOf(state), 1.0)
             }
             recordReplacementCoverage(allyResolution)
             val allyOptions = allyResolution.states
             if (allyOptions.isEmpty()) {
-                return stateUtility(state)
+                return stateUtility(state, history)
             }
             val allyValues = allyOptions.map { allyState ->
                 val opponentResolution = if (opponentMissing) {
-                    LocalForcedReplacementResolver.resolve(allyState, BattleSide.OPPONENT, context)
+                    LocalForcedReplacementResolver.resolve(allyState, BattleSide.OPPONENT,
+                        LocalBranchMoveInputs.context(context, allyState, history, spendPp = true))
                 } else {
                     LocalForcedReplacementResolution(listOf(allyState), 1.0)
                 }
                 recordReplacementCoverage(opponentResolution)
                 val opponentOptions = opponentResolution.states
                 if (opponentOptions.isEmpty()) {
-                    stateUtility(allyState)
+                    stateUtility(allyState, history)
                 } else {
                     opponentOptions.minOf { replacementState ->
                         searchState(replacementState, depth, history)
@@ -476,7 +481,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 initialState = state,
                 allyAction = ownAction,
                 opponentAction = opponentAction,
-                sourceContext = context,
+                sourceContext = LocalBranchMoveInputs.context(context, state, history),
                 history = history,
                 maxChanceBranchesPerMove = chanceBranchesPerMove,
                 calculationCache = actionCalculationCache,
@@ -636,12 +641,12 @@ internal object LocalRecursiveLookaheadEvaluator {
             )
         }
 
-        private fun stateUtility(state: BattleStateView): Double {
-            val key = fingerprint(state)
+        private fun stateUtility(state: BattleStateView, history: RecursiveActionHistory): Double {
+            val key = LocalBranchMoveInputs.key(fingerprint(state), history)
             stateUtilityMemo[key]?.let { return it }
             val value = LocalLookaheadStateEvaluator.evaluate(
                 state = state,
-                source = context,
+                source = LocalBranchMoveInputs.context(context, state, history, spendPp = true),
                 calculationCache = actionCalculationCache,
                 shouldContinue = ::leafWorkAvailable,
                 tuning = tuning,

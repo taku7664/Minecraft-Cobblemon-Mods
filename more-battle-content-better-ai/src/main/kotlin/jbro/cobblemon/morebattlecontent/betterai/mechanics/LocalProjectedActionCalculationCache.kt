@@ -7,6 +7,9 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicMoveOptionView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveCandidateView
 
 /**
  * Reuses an equal projected state's public tactical calculation within one search.
@@ -36,11 +39,13 @@ internal class LocalProjectedActionCalculationCache(
         private set
 
     private val byStateIdentity = java.util.IdentityHashMap<BattleStateView, MutableSet<ActionKey>>()
+    private val catalogKeys = java.util.IdentityHashMap<BattlePublicActionCatalogView, CatalogKey>()
 
     fun getOrCalculate(
         state: BattleStateView,
         side: BattleSide,
         action: BattleActionCandidate,
+        catalog: BattlePublicActionCatalogView? = null,
         calculation: () -> BattleDecisionContext,
     ): BattleDecisionContext {
         val key = ActionKey(
@@ -53,6 +58,12 @@ internal class LocalProjectedActionCalculationCache(
             targets = action.targets,
             switchPokemonId = action.switchPokemonId,
             mechanicId = action.mechanic?.mechanicId,
+            moveDetails = action.moveDetails,
+            catalog = catalog?.let { source -> catalogKeys.getOrPut(source) {
+                fun entries(values: List<jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonActionCatalogView>) =
+                    values.map { CatalogEntryKey(it.battlePokemonId, it.moves, it.moveSetComplete) }
+                CatalogKey(entries(source.entries), entries(source.originalEntries))
+            } },
         )
         if (byStateIdentity.getOrPut(state) { HashSet() }.add(key)) calculationsUnderIdentityKeying++
         val stateEntries = byState.getOrPut(fingerprints.of(state)) { HashMap() }
@@ -72,5 +83,9 @@ internal class LocalProjectedActionCalculationCache(
         val targets: List<BattleTargetSlot>,
         val switchPokemonId: UUID?,
         val mechanicId: String?,
+        val moveDetails: BattleMoveCandidateView?,
+        val catalog: CatalogKey?,
     )
+    private data class CatalogEntryKey(val id: UUID, val moves: List<BattlePublicMoveOptionView>, val complete: Boolean)
+    private data class CatalogKey(val current: List<CatalogEntryKey>, val original: List<CatalogEntryKey>)
 }

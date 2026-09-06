@@ -107,7 +107,7 @@ internal object LocalLookaheadStateEvaluator {
         }
         .takeWhile { shouldContinue() }
         .map { action ->
-            val calculatedContext = calculationCache.getOrCalculate(state, side, action) {
+            val calculatedContext = calculationCache.getOrCalculate(state, side, action, catalog = source.publicActionCatalog) {
                 PublicBattleTacticalCalculator.calculate(
                     actionContext(state, action, source),
                     side,

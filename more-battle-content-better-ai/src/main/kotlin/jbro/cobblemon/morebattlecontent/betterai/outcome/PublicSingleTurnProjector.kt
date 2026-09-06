@@ -252,7 +252,7 @@ internal object PublicSingleTurnProjector {
         calculationCache: LocalProjectedActionCalculationCache,
     ): BattleStateView {
         val actionWithoutFacts = action.withoutFacts()
-        val calculatedContext = calculationCache.getOrCalculate(state, side, actionWithoutFacts) {
+        val calculatedContext = calculationCache.getOrCalculate(state, side, actionWithoutFacts, catalog = sourceContext.publicActionCatalog) {
             PublicBattleTacticalCalculator.calculate(
                 actionContext(state, actionWithoutFacts, sourceContext),
                 side,
@@ -395,7 +395,7 @@ internal object PublicSingleTurnProjector {
             return listOf(WeightedState(projectedFormState, 1.0))
         }
         val actionWithoutFacts = effectiveAction.withoutFacts()
-        val calculated = calculationCache.getOrCalculate(projectedFormState, side, actionWithoutFacts) {
+        val calculated = calculationCache.getOrCalculate(projectedFormState, side, actionWithoutFacts, catalog = sourceContext.publicActionCatalog) {
             PublicBattleTacticalCalculator.calculate(
                 actionContext(projectedFormState, actionWithoutFacts, sourceContext),
                 side,
@@ -830,7 +830,7 @@ internal object PublicSingleTurnProjector {
                 switchPokemonId = reserve.battlePokemonId,
                 tags = setOf("public_lookahead", "forced_target_switch"),
             )
-            val calculated = calculationCache.getOrCalculate(outcome.state, target.side, raw) {
+            val calculated = calculationCache.getOrCalculate(outcome.state, target.side, raw, catalog = sourceContext.publicActionCatalog) {
                 PublicBattleTacticalCalculator.calculate(
                     actionContext(outcome.state, raw, sourceContext),
                     target.side,
@@ -903,7 +903,7 @@ internal object PublicSingleTurnProjector {
                     it.battlePokemonId == initialTarget.battlePokemonId && !it.fainted && it.hpFraction > 0.0
                 } ?: return@flatMap listOf(branch)
                 val targetedAction = originalAction.withSingleTarget(currentTarget)
-                val calculatedContext = calculationCache.getOrCalculate(branch.state, side, targetedAction) {
+                val calculatedContext = calculationCache.getOrCalculate(branch.state, side, targetedAction, catalog = sourceContext.publicActionCatalog) {
                     PublicBattleTacticalCalculator.calculate(actionContext(branch.state, targetedAction, sourceContext), side)
                 }
                 val calculatedAction = calculatedContext.candidates.single()

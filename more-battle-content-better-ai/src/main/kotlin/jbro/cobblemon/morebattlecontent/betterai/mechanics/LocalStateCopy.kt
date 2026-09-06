@@ -43,6 +43,7 @@ internal fun BattlePokemonStateView.copyState(
     fainted: Boolean = this.fainted,
     actionConstraints: BattlePokemonActionConstraintView = this.actionConstraints,
     knownVolatileEffectIds: Set<String> = this.knownVolatileEffectIds,
+    knownMoveIds: Set<String> = this.knownMoveIds,
 ): BattlePokemonStateView = BattlePokemonStateView(
     battlePokemonId = battlePokemonId,
     side = side,
