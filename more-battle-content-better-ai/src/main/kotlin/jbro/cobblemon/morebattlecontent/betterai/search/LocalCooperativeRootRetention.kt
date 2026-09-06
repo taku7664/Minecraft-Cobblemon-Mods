@@ -12,6 +12,8 @@ internal object LocalCooperativeRootRetention {
         ranked.filter { isRedirectSetup(it.outcome.candidate) }.maxByOrNull { it.comparisonValue }
             ?.let { retained += it.outcome.candidate.actionId }
         if (context.state.format != BattleFormat.DOUBLE) return retained
+        ranked.filter { isProtectAttack(it.outcome.candidate) }.maxByOrNull { it.comparisonValue }
+            ?.let { retained += it.outcome.candidate.actionId }
         val nullified = mutableMapOf<Triple<String, Int?, UUID>, Boolean>()
         fun nullifiedAgainst(action: BattleActionCandidate, target: BattlePokemonStateView): Boolean =
             nullified.getOrPut(Triple(action.actionId, action.actorSlot, target.battlePokemonId)) {
@@ -45,6 +47,31 @@ internal object LocalCooperativeRootRetention {
             }
         }.maxByOrNull { it.comparisonValue }?.let { retained += it.outcome.candidate.actionId }
         return retained
+    }
+
+    private fun isProtectAttack(candidate: BattleActionCandidate): Boolean {
+        val parts = candidate.componentActions
+        if (parts.size != 2 || parts.any { it.kind != BattleActionKind.USE_MOVE || it.mechanic != null } ||
+            parts.map { it.actorSlot }.distinct().size != 2) return false
+        return parts.any { protect ->
+            protect.moveId?.substringAfter(':')?.lowercase()?.filter(Char::isLetterOrDigit) == "protect" &&
+                protect.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS &&
+                protect.moveDetails?.effects?.effects?.any { effect ->
+                    // Match the projector's declaration default; streak-dependent success is still projected there.
+                    effect.kind == BattleMoveEffectKind.PROTECT_USER && effect.target == BattleMoveEffectTarget.USER &&
+                        (effect.probability == null || effect.probability == 1.0)
+                } == true && parts.any { attack ->
+                attack.actorSlot != protect.actorSlot &&
+                    attack.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS &&
+                    attack.moveDetails?.power?.let { it > 0.0 } == true &&
+                    (if (attack.targets.isNotEmpty()) attack.targets.all { it.side == BattleSide.OPPONENT }
+                    else attack.moveDetails?.targetPattern in setOf(BattleMoveTargetPattern.ALL_OPPONENTS,
+                        BattleMoveTargetPattern.ALL_ADJACENT, BattleMoveTargetPattern.ALL_ACTIVE)) &&
+                    (attack.facts?.standardDamageFractionRange?.minimum?.let { it > 0.0 } == true ||
+                        attack.facts?.spreadTargets?.any { it.side == BattleSide.OPPONENT &&
+                            it.standardDamageFractionRange?.minimum?.let { damage -> damage > 0.0 } == true } == true)
+            }
+        }
     }
 
     private fun isRedirectSetup(candidate: BattleActionCandidate): Boolean {
