@@ -13,7 +13,13 @@ class EmbeddedPpTimelineTest {
         val result = EmbeddedShowdownOracle.ppTimeline(directory)
         val cases = result.getAsJsonArray("cases").associate { it.asJsonObject["id"].asString to it.asJsonObject }
         assertEquals(setOf("ordinary", "pivot", "transform", "pressure", "spite", "leppa", "sleeptalk",
-            "fly", "fly_pressure", "outrage", "outrage_pressure"), cases.keys)
+            "fly", "fly_pressure", "outrage", "outrage_pressure", "transform_lifecycle"), cases.keys)
+        val lifecycle = cases.getValue("transform_lifecycle").getAsJsonArray("snapshots").map { it.asJsonObject }
+        assertEquals(listOf("copied", "used", "benched", "returned"), lifecycle.map { it["phase"].asString })
+        assertEquals(listOf("splash", "splash", "transform", "transform"), lifecycle.map { it["move"].asString })
+        assertEquals(listOf(5, 4, 9, 9), lifecycle.map { it["pp"].asInt })
+        assertEquals(listOf(true, true, false, false), lifecycle.map { it["transformed"].asBoolean })
+        assertEquals(listOf(true, true, false, true), lifecycle.map { it["active"].asBoolean })
         for ((id, pp) in mapOf("fly" to 14, "fly_pressure" to 13, "outrage" to 9, "outrage_pressure" to 8)) {
             val sample = cases.getValue(id)
             assertEquals(listOf(pp, pp), sample.getAsJsonArray("ppByTurn").map { it.asInt }, id)

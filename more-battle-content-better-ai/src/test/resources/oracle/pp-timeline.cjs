@@ -47,6 +47,23 @@ function run(id, species, move, options = {}) {
       publicLog: battle.log.filter(line => !line.startsWith('|pp_update|')) };
   } finally { battle.destroy(); }
 }
+function runTransformLifecycle() {
+  const battle = new Battle({ format, seed: [1, 2, 3, 4] });
+  try {
+    battle.setPlayer('p1', { name: 'p1', team: [set('Ditto', 'transform', 1), set('Eevee', 'splash', 2)] });
+    battle.setPlayer('p2', { name: 'p2', team: [set('Magikarp', 'splash', 3)] });
+    const snapshots = [];
+    for (const [phase, choice] of [['copied', 'move 1'], ['used', 'move 1'], ['benched', 'switch 2'], ['returned', 'switch 2']]) {
+      if (!battle.choose('p1', choice) || !battle.choose('p2', 'move 1')) throw new Error(`Transform lifecycle rejected ${phase}`);
+      const pokemon = battle.p1.pokemon.find(p => p.uuid.endsWith('1'));
+      snapshots.push({ phase, move: pokemon.moveSlots[0].id, pp: pokemon.moveSlots[0].pp,
+        transformed: pokemon.transformed, active: pokemon.isActive });
+    }
+    return { id: 'transform_lifecycle', snapshots,
+      publicLog: battle.log.filter(line => !line.startsWith('|pp_update|')) };
+  } finally { battle.destroy(); }
+}
+
 function runCalledMove() {
   const battle = new Battle({ format, seed: [1, 2, 3, 4] });
   try {
@@ -73,6 +90,7 @@ process.stdout.write(JSON.stringify({ status: 'COMPLETE', format, seed: [1, 2, 3
   run('spite', 'Snorlax', 'tackle', { foeSpecies: 'Shuckle', foeMove: 'spite' }),
   run('leppa', 'Snorlax', 'tackle', { item: 'Leppa Berry', initialPp: 1 }),
   runCalledMove(),
+  runTransformLifecycle(),
   run('fly', 'Snorlax', 'fly', { foeSpecies: 'Shuckle', turns: 2 }),
   run('fly_pressure', 'Snorlax', 'fly', { foeSpecies: 'Shuckle', foeAbility: 'Pressure', turns: 2 }),
   run('outrage', 'Snorlax', 'outrage', { foeSpecies: 'Shuckle', turns: 2 }),
