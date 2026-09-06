@@ -33,4 +33,5 @@ function run(id, move, partnerAbility = 'Illuminate') {
 process.stdout.write(JSON.stringify({ status: 'COMPLETE', cases: [
   run('selected', 'tackle'), run('spread', 'rockslide'), run('self', 'protect'),
   run('ally_pressure', 'earthquake', 'Pressure'), run('suppressed', 'rockslide', 'Neutralizing Gas'),
+  run('hazard_pressure', 'stealthrock'), run('hazard_no_pressure', 'stickyweb'), run('self_pressure', 'imprison'),
 ] }));

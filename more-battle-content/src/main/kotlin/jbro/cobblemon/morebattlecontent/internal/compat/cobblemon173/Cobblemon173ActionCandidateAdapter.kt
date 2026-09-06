@@ -380,6 +380,11 @@ internal object Cobblemon173ActionCandidateAdapter {
         )
     }
 
+    internal fun pressureTargetPattern(moveId: String, target: MoveTarget): BattleMoveTargetPattern =
+        if (publicMoveEffects(moveId)?.mechanicFlags?.contains("mustpressure") == true) {
+            BattleMoveTargetPattern.ALL_OPPONENTS
+        } else publicTargetPattern(target)
+
     internal fun publicTargetPattern(target: MoveTarget): BattleMoveTargetPattern =
         when (target) {
             MoveTarget.all -> BattleMoveTargetPattern.ALL_ACTIVE

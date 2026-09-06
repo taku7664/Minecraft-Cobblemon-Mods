@@ -12,7 +12,8 @@ class EmbeddedPressurePpTest {
     fun `native doubles Pressure counts effective opposing targets not all active abilities`(@TempDir directory: Path) {
         val result = EmbeddedShowdownOracle.pressurePp(directory)
         val cases = result.getAsJsonArray("cases").associate { it.asJsonObject["id"].asString to it.asJsonObject }
-        val expected = mapOf("selected" to 2, "spread" to 3, "self" to 1, "ally_pressure" to 3, "suppressed" to 1)
+        val expected = mapOf("selected" to 2, "spread" to 3, "self" to 1, "ally_pressure" to 3, "suppressed" to 1,
+            "hazard_pressure" to 3, "hazard_no_pressure" to 1, "self_pressure" to 3)
         assertEquals(expected.keys, cases.keys)
         expected.forEach { (id, spent) ->
             assertEquals(spent, cases.getValue(id)["spent"].asInt, id)

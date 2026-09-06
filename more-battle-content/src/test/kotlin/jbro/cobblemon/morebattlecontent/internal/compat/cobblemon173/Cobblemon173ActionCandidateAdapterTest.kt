@@ -22,6 +22,18 @@ import org.junit.jupiter.api.Test
 
 class Cobblemon173ActionCandidateAdapterTest {
     @Test
+    fun `Pressure target flags override self and side targets only when declared`() {
+        assertEquals(BattleMoveTargetPattern.ALL_OPPONENTS,
+            Cobblemon173ActionCandidateAdapter.pressureTargetPattern("stealthrock", MoveTarget.foeSide))
+        assertEquals(BattleMoveTargetPattern.SIDE,
+            Cobblemon173ActionCandidateAdapter.pressureTargetPattern("stickyweb", MoveTarget.foeSide))
+        assertEquals(BattleMoveTargetPattern.ALL_OPPONENTS,
+            Cobblemon173ActionCandidateAdapter.pressureTargetPattern("imprison", MoveTarget.self))
+        assertEquals(BattleMoveTargetPattern.SELF,
+            Cobblemon173ActionCandidateAdapter.pressureTargetPattern("protect", MoveTarget.self))
+    }
+
+    @Test
     fun `public move effects use embedded data but suppress a datapack override`() {
         val recover = requireNotNull(Cobblemon173ActionCandidateAdapter.publicMoveEffects("cobblemon:recover"))
         assertTrue(recover.effects.any { it.kind == BattleMoveEffectKind.HEAL_FRACTION })

@@ -145,7 +145,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
                         missed = message.hasOptionalArgument("miss"),
                         // Called moves have separate PP attribution; do not charge their target twice.
                         pressureTargetPattern = if (message.hasOptionalArgument("from")) null else
-                            Moves.getByName(moveId)?.let { Cobblemon173ActionCandidateAdapter.publicTargetPattern(it.target) },
+                            Moves.getByName(moveId)?.let { Cobblemon173ActionCandidateAdapter.pressureTargetPattern(moveId, it.target) },
                     ),
                 )
             }
