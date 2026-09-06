@@ -193,6 +193,7 @@ internal object PublicSingleTurnProjector {
                     badPoisonTurns,
                     outcome.expectedScoreAdjustment,
                     outcome.protectionResultsByPokemon,
+                    stateBeforeResidual = outcome.state,
                 )
             }
         }.groupBy { projection ->
@@ -200,6 +201,8 @@ internal object PublicSingleTurnProjector {
                 projection.order,
                 projection.actionOrderPokemonIds,
                 fingerprint(projection.state),
+                // Residual damage can make distinct action outcomes converge (e.g. poison KO).
+                fingerprint(projection.stateBeforeResidual),
                 projection.executedSides,
                 projection.controlEffects,
                 projection.switchedSides,
