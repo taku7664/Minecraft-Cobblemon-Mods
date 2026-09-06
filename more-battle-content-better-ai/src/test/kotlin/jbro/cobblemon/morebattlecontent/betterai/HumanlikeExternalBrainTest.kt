@@ -425,6 +425,9 @@ class HumanlikeExternalBrainTest {
                         ),
                     ),
                 ),
+                originalEntries = listOf(BattlePokemonActionCatalogView(opponentId,
+                    listOf(BattlePublicMoveOptionView("transform", moveDetails.copy(currentPp = 7),
+                        BattlePublicMoveKnowledge.PUBLICLY_REVEALED)))),
             ),
         )
 
@@ -445,6 +448,12 @@ class HumanlikeExternalBrainTest {
         assertFalse(request.contains(opponentId.toString()))
         assertFalse(request.contains("lookaheadUtility"))
         assertFalse(request.contains("comparisonValue"))
+        val original = digest.getAsJsonArray("originalFutureActionsAfterSwitch")[0].asJsonObject
+        assertEquals("opponent0", original["pokemon"].asString)
+        assertEquals("transform", original.getAsJsonArray("moves")[0].asJsonObject["moveId"].asString)
+        assertEquals(7, original.getAsJsonArray("moves")[0].asJsonObject.getAsJsonObject("move")["currentPp"].asInt)
+        assertEquals(1, future.getAsJsonArray("moves").size())
+        assertTrue(request.contains("not currently usable"))
     }
 
     @Test

@@ -35,7 +35,7 @@ internal object HumanlikePromptCodec {
             }
             add("messages", JsonArray().apply {
                 val summaryDoctrine = if (config.logDecisionSummary) DECISION_SUMMARY_DOCTRINE else ""
-                add(message("system", SYSTEM_DOCTRINE + ACTION_CONSTRAINT_DOCTRINE + VOLATILE_DOCTRINE + MIXED_STRATEGY_DOCTRINE +
+                add(message("system", SYSTEM_DOCTRINE + ACTION_CONSTRAINT_DOCTRINE + VOLATILE_DOCTRINE + TRANSFORM_PP_DOCTRINE + MIXED_STRATEGY_DOCTRINE +
                     difficultyDoctrine(open.trainerProfile.difficulty.tier) + summaryDoctrine))
                 add(message("user", gson.toJson(digest(open, context))))
             })
@@ -225,17 +225,10 @@ internal object HumanlikePromptCodec {
                 else candidateDigest(candidate, aliases, context)
             },
             "publicFutureActions" to context.publicActionCatalog.entries.map { entry ->
-                linkedMapOf(
-                    "pokemon" to aliases[entry.battlePokemonId],
-                    "moveSetComplete" to entry.moveSetComplete,
-                    "moves" to entry.moves.map { move ->
-                        linkedMapOf(
-                            "moveId" to move.moveId,
-                            "move" to move.details,
-                            "knowledge" to move.knowledge.name,
-                        )
-                    },
-                )
+                catalogEntryDigest(entry, aliases)
+            },
+            "originalFutureActionsAfterSwitch" to context.publicActionCatalog.originalEntries.map { entry ->
+                catalogEntryDigest(entry, aliases)
             },
             "memory" to linkedMapOf(
                 "activePlan" to context.memory.activePlan,
@@ -257,6 +250,17 @@ internal object HumanlikePromptCodec {
         }
         return root
     }
+
+    private fun catalogEntryDigest(entry: BattlePokemonActionCatalogView, aliases: Map<java.util.UUID, String>) =
+        linkedMapOf(
+            "pokemon" to aliases[entry.battlePokemonId],
+            "moveSetComplete" to entry.moveSetComplete,
+            "moves" to entry.moves.map { move ->
+                linkedMapOf("moveId" to move.moveId, "move" to move.details, "knowledge" to move.knowledge.name)
+            },
+        )
+
+    private const val TRANSFORM_PP_DOCTRINE = """ `originalFutureActionsAfterSwitch` contains pre-Transform move pools that are not currently usable. When that Pokemon leaves the field, replace its copied pool with this original pool for a later return; do not combine the two pools. Copied move use does not spend original PP, even when the move IDs match. Restore only once; subsequent original move use still spends PP. Supplied estimated PP assumes PP Max minus observed expenditure unless actual own current PP is available; copied moves instead use their temporary capacity. These inputs are facts or estimates, not Local Brain recommendations."""
 
     private fun pokemonAliases(state: BattleStateView): Map<java.util.UUID, String> = buildMap {
         BattleSide.entries.forEach { side ->
