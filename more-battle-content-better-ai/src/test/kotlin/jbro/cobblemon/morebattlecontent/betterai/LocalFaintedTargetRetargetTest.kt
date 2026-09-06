@@ -28,9 +28,13 @@ class LocalFaintedTargetRetargetTest {
     @Test
     fun `uncertain second hit is not silently treated as a full duplicate credit`() = checkRetarget(accuracy = 50.0)
 
+    @Test
+    fun `joint score retains declared recoil adjustments without a knockout`() =
+        checkRetarget(targetHp = 1.0, recoil = true)
+
     private fun checkRetarget(replacementTypes: Set<String> = setOf("normal"),
         pattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT, targetHp: Double = 0.01,
-        accuracy: Double = 100.0) {
+        accuracy: Double = 100.0, recoil: Boolean = false) {
         for (targetSlot in 0..1) {
             val allies = (0..1).map { mon(BattleSide.ALLY, it, 1.0, 200 - it * 50) }
             val foes = (0..1).map { mon(BattleSide.OPPONENT, it, if (it == targetSlot) targetHp else 1.0, 50,
@@ -42,7 +46,11 @@ class LocalFaintedTargetRetargetTest {
                 targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, target)),
                 moveDetails = BattleMoveCandidateView("normal", BattleMoveDamageCategory.PHYSICAL,
                     40.0, if (slot == 0) 100.0 else accuracy, 0, 35,
-                    if (slot == 0) BattleMoveTargetPattern.SELECTED_OPPONENT else pattern))
+                    if (slot == 0) BattleMoveTargetPattern.SELECTED_OPPONENT else pattern,
+                    effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                        if (recoil) listOf(BattleMoveEffectView(BattleMoveEffectKind.MAX_HP_RECOIL,
+                            BattleMoveEffectTarget.USER, 1.0, fractionRange = BattleFractionRange(0.1, 0.1)))
+                        else emptyList(), false)))
             fun joint(secondTarget: Int): BattleActionCandidate {
                 val parts = listOf(attack(0, targetSlot), attack(1, secondTarget))
                 return BattleActionCandidate("joint-$secondTarget", BattleActionKind.COMPOSITE,
@@ -51,6 +59,18 @@ class LocalFaintedTargetRetargetTest {
             val context = PublicBattleTacticalCalculator.calculate(BattleDecisionContext(UUID(0, 2), state,
                 listOf(joint(targetSlot), joint(1 - targetSlot)), Long.MAX_VALUE))
             val ranked = LocalBattleActionPolicy.rank(context, null, BattleTrainerProfile.balanced(2))
+            ranked.forEach { rank ->
+                val candidate = rank.outcome.candidate
+                val expected = rank.outcome.componentOutcomes.sumOf { it.tacticalUtility } +
+                    LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context) -
+                    LocalTacticalScorer.duplicateCertainKnockoutCredit(candidate, context)
+                assertEquals(expected, rank.outcome.tacticalUtility, 1e-9,
+                    "A joint must retain the mechanics adjustments already applied to its components")
+                if (recoil) assertTrue(rank.outcome.componentOutcomes.any {
+                    kotlin.math.abs(it.tacticalUtility - LocalTacticalScorer.score(it.candidate, context,
+                        profile = BattleTrainerProfile.balanced(2))) > 1e-9
+                }, "The recoil fixture must actually exercise a nonzero component adjustment")
+            }
             fun project(secondTarget: Int): Pair<Double, Double> {
                 val candidate = context.candidates.single { it.actionId == "joint-$secondTarget" }
                 val outcomes = PublicSingleTurnProjector.project(state, candidate,
@@ -78,8 +98,13 @@ class LocalFaintedTargetRetargetTest {
                 val coordinationDifference = LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(
                     focusedRank.outcome.candidate, context) - LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(
                     splitRank.outcome.candidate, context)
-                assertEquals(coordinationDifference, focusedRank.outcome.tacticalUtility - splitRank.outcome.tacticalUtility, 1e-9,
-                    "The scorer and the reported knockout credit must remove the same duplicate")
+                val componentDifference = focusedRank.outcome.componentOutcomes.sumOf { it.tacticalUtility } -
+                    splitRank.outcome.componentOutcomes.sumOf { it.tacticalUtility }
+                val duplicateDifference = LocalTacticalScorer.duplicateCertainKnockoutCredit(focusedRank.outcome.candidate, context) -
+                    LocalTacticalScorer.duplicateCertainKnockoutCredit(splitRank.outcome.candidate, context)
+                assertEquals(componentDifference + coordinationDifference - duplicateDifference,
+                    focusedRank.outcome.tacticalUtility - splitRank.outcome.tacticalUtility, 1e-9,
+                    "Component mechanics, joint coordination and duplicate credit must each be applied once")
                 // Baseline evidence, not a frozen expected score or a new scoring contract.
                 ranked.forEach { rank ->
                     val candidate = rank.outcome.candidate

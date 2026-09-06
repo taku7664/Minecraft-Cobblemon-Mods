@@ -337,9 +337,14 @@ internal object LocalBattleActionOutcomeEvaluator {
             .flatMap { (action, _) -> action.targets.filter { it.side == BattleSide.OPPONENT } }
             .distinct()
             .size
+        // Keep each component's HP-clamped, mechanics-aware damage and recoil adjustment.
+        // Re-running the raw composite scorer here used to discard that work.
+        val coordinatedUtility = components.sumOf(LocalBattleActionOutcome::tacticalUtility) +
+            LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context) -
+            LocalTacticalScorer.duplicateCertainKnockoutCredit(candidate, context, tuning)
         return LocalBattleActionOutcome(
             candidate = candidate,
-            tacticalUtility = LocalTacticalScorer.score(candidate, context, strategy, profile, tuning),
+            tacticalUtility = coordinatedUtility,
             expectedDamageFraction = components.sumOf(LocalBattleActionOutcome::expectedDamageFraction),
             secureStandardKnockouts = secureTargets,
             executableDamageActions = components.sumOf(LocalBattleActionOutcome::executableDamageActions),
