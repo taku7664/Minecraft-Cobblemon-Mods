@@ -12,6 +12,15 @@ import kotlin.math.abs
 
 class EmbeddedStatusResidualTest {
     @Test
+    fun `unknown max HP still applies recovery and damage in event order`() {
+        val full = state("psn", 1.0, null, item = "leftovers")
+        assertEquals(0.875, LocalEndTurnStateProjector.project(full).pokemon.single().hpFraction)
+        val combined = state("psn", 0.5, null, ability = "poisonheal", item = "leftovers")
+        assertEquals(0.5625, LocalEndTurnStateProjector.project(combined,
+            saltCuredPokemonIds = setOf(POKEMON)).pokemon.single().hpFraction)
+    }
+
+    @Test
     fun `fractional expectations are not rounded to a fabricated integer HP`() {
         val source = state("psn", 0.1234, 199)
         assertEquals(0.1234 - 24.0 / 199,
@@ -74,7 +83,7 @@ class EmbeddedStatusResidualTest {
     }
 
     private fun state(status: String, hp: Double, maxHp: Int?, ranged: Boolean = false,
-        ability: String? = null, active: Boolean = true): BattleStateView {
+        ability: String? = null, active: Boolean = true, item: String? = null): BattleStateView {
         val stats = maxHp?.let {
             BattleCombatStatRangesView(BattleIntegerRange(it, if (ranged) it + 50 else it),
                 BattleIntegerRange(100, 100), BattleIntegerRange(100, 100), BattleIntegerRange(100, 100),
@@ -84,7 +93,7 @@ class EmbeddedStatusResidualTest {
             listOf(BattlePokemonStateView(battlePokemonId = POKEMON, side = BattleSide.ALLY,
                 activeSlot = if (active) 0 else null, speciesId = "fixture:status", formId = null, level = 50,
                 hpFraction = hp, statusId = status, statStages = emptyMap(), knownMoveIds = emptySet(),
-                knownAbilityId = ability, knownHeldItemId = null, fainted = false, combatStats = stats)),
+                knownAbilityId = ability, knownHeldItemId = item, fainted = false, combatStats = stats)),
             BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1), emptyList(), emptyList())
     }
 

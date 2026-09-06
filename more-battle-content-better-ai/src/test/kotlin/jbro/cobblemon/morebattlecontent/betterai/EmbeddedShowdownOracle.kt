@@ -29,6 +29,8 @@ internal object EmbeddedShowdownOracle {
 
     fun statusResidual(directory: Path): JsonObject = runScript(directory, "/oracle/status-residual-oracle.cjs", "")
 
+    fun passiveResidual(directory: Path): JsonObject = runScript(directory, "/oracle/passive-residual-oracle.cjs", "")
+
     private fun runScript(directory: Path, scriptResource: String, argument: String): JsonObject {
         Files.createDirectories(directory)
         val engine = Files.createDirectory(directory.resolve("engine")).toAbsolutePath()

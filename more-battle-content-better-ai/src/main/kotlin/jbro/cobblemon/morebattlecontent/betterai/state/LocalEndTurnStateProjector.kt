@@ -24,30 +24,28 @@ internal object LocalEndTurnStateProjector {
             }
             val status = canonical(pokemon.statusId)
             val poisonHeal = ability == "poisonheal" && status in POISON_IDS
-            val residual = if (ability == "magicguard" || poisonHeal) {
-                0.0
-            } else {
-                val majorStatusResidual = when (status) {
-                    in BAD_POISON_IDS -> statusDamageFraction(pokemon, 16,
+            var hp = pokemon.hpFraction
+            fun apply(change: Double) {
+                if (hp > 0.0) hp = applyHpChange(pokemon, hp, change).coerceIn(0.0, 1.0)
+            }
+            // Native event order: item healing (5), poison/burn (9/10), Salt Cure (13).
+            if (canonical(pokemon.knownHeldItemId) == "leftovers") apply(hpFractionTick(pokemon, 16))
+            if (poisonHeal) {
+                apply(hpFractionTick(pokemon, 8))
+            } else if (ability != "magicguard") {
+                apply(-when (status) {
+                    in BAD_POISON_IDS -> hpFractionTick(pokemon, 16,
                         (badPoisonTurnsByPokemon[pokemon.battlePokemonId] ?: 1)
                             .coerceIn(1, LocalBadPoisonCounter.MAXIMUM_BAD_POISON_TURN))
-                    in REGULAR_POISON_IDS -> statusDamageFraction(pokemon, 8)
-                    in BURN_IDS -> statusDamageFraction(pokemon, 16)
+                    in REGULAR_POISON_IDS -> hpFractionTick(pokemon, 8)
+                    in BURN_IDS -> hpFractionTick(pokemon, 16)
                     else -> 0.0
-                }
-                val saltCureResidual = if (pokemon.battlePokemonId in saltCuredPokemonIds) {
-                    if (pokemon.knownTypeIds.any { canonical(it) in SALT_CURE_WEAK_TYPES }) 1.0 / 4.0 else 1.0 / 8.0
-                } else {
-                    0.0
-                }
-                majorStatusResidual + saltCureResidual
+                })
             }
-            val passiveHealing = when {
-                poisonHeal -> 1.0 / 8.0
-                canonical(pokemon.knownHeldItemId) == "leftovers" -> 1.0 / 16.0
-                else -> 0.0
+            if (ability != "magicguard" && pokemon.battlePokemonId in saltCuredPokemonIds) {
+                val divisor = if (pokemon.knownTypeIds.any { canonical(it) in SALT_CURE_WEAK_TYPES }) 4 else 8
+                apply(-hpFractionTick(pokemon, divisor))
             }
-            val hp = (subtractResidual(pokemon, residual) + passiveHealing).coerceIn(0.0, 1.0)
             copyPokemon(pokemon, hpFraction = hp, statStages = stages, fainted = hp <= 0.0)
         }
         val nextField = decrementField(state.field)
@@ -72,7 +70,7 @@ internal object LocalEndTurnStateProjector {
         )
     }
 
-    private fun statusDamageFraction(pokemon: BattlePokemonStateView, divisor: Int, ticks: Int = 1): Double {
+    private fun hpFractionTick(pokemon: BattlePokemonStateView, divisor: Int, ticks: Int = 1): Double {
         val maxHp = pokemon.combatStats?.maxHp
         // Only a public point range permits integer HP rounding. Do not invent hidden max HP.
         if (maxHp == null || maxHp.minimum != maxHp.maximum) return ticks.toDouble() / divisor
@@ -80,18 +78,18 @@ internal object LocalEndTurnStateProjector {
         return (maxHp.minimum / divisor).coerceAtLeast(1).toDouble() * ticks / maxHp.minimum
     }
 
-    private fun subtractResidual(pokemon: BattlePokemonStateView, residual: Double): Double {
+    private fun applyHpChange(pokemon: BattlePokemonStateView, hpFraction: Double, change: Double): Double {
         val maxHp = pokemon.combatStats?.maxHp
         if (maxHp != null && maxHp.minimum == maxHp.maximum) {
             val maximum = maxHp.minimum.toDouble()
-            val currentHp = (pokemon.hpFraction * maximum).roundToLong()
-            val damage = (residual * maximum).roundToLong()
+            val currentHp = (hpFraction * maximum).roundToLong()
+            val delta = (change * maximum).roundToLong()
             // Preserve integer-HP round trips, not arbitrary fractional expectations or an epsilon band.
-            if (currentHp / maximum == pokemon.hpFraction && damage / maximum == residual) {
-                return (currentHp - damage) / maximum
+            if (currentHp / maximum == hpFraction && delta / maximum == change) {
+                return (currentHp + delta) / maximum
             }
         }
-        return pokemon.hpFraction - residual
+        return hpFraction + change
     }
 
     private fun decrementField(field: BattleFieldStateView): BattleFieldStateView = BattleFieldStateView(

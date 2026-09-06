@@ -107,12 +107,12 @@ class LocalBattleItemAbilityMechanicsTest {
     }
 
     @Test
-    fun `leftovers heals one sixteenth at end of turn`() {
+    fun `leftovers heals one sixteenth rounded down to integer HP`() {
         val projected = LocalEndTurnStateProjector.project(
             state(allyHp = 0.5, allyItem = "cobblemon:leftovers"),
         )
 
-        assertEquals(0.5625, projected.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction, 1e-9)
+        assertEquals(112.0 / 200.0, projected.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction, 1e-9)
     }
 
     @Test

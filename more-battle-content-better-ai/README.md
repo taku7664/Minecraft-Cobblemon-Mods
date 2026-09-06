@@ -464,3 +464,16 @@ repeated ticks. Fractional expectations are not snapped to integer HP.
 Missing or ranged max HP keeps the fractional estimate,
 without selecting a hidden exact stat. These cases do not validate healing/residual
 ordering, weather, Salt Cure, special forms, or actual battle quality.
+
+### Ordered passive recovery and residual damage
+
+`unitTest -Ptests=EmbeddedPassiveResidual -Poracle` compares 54 native turns:
+nine Leftovers/Poison Heal/Magic Guard/status/Salt Cure combinations at levels 1
+and 50, each at full, half and 1 HP. Synthetic species/ability combinations isolate
+mechanics; they are not legal team presets. The implemented order is Leftovers
+healing, poison/burn (including Poison Heal), then Salt Cure. Each event clamps HP
+separately and no later event revives a fainted Pokemon. Leftovers and Poison Heal
+both apply; Poison Heal does not suppress Salt Cure, whereas Magic Guard does.
+Known exact HP also uses native integer ticks for healing and Salt Cure. This
+extends the earlier status-only slice; weather, other passive effects, special
+forms and live battle quality remain unverified.
