@@ -526,6 +526,22 @@ at 40 opponent-HP levels, recalculating candidate facts after every HP change.
 With equal budgets, fixed clocks, completed depths and equal response coverage,
 1,640 action comparisons had seven mismatches before the fix and none after it.
 A separate check keeps nonzero foresight effective. These are synthetic model
-regressions, not legal-team or win-rate evidence. Depth-dependent response
-coverage can still change the overall adjustment when later turns expose
-incomplete responses; universal zero-foresight depth invariance is not claimed.
+regressions, not legal-team or win-rate evidence. This KO-only correction did
+not separate depth-dependent response coverage; the follow-up below does.
+
+### Current-turn and future response coverage
+
+The completed one-turn coverage now weights the immediate score (including its
+KO correction), while the current depth's coverage weights only the foresight
+term. Both terms are added before the existing score clamp. A later unknown
+replacement therefore cannot reduce a fully modelled current-turn score when
+foresight is disabled. No hidden replacement is invented or read.
+
+`LocalForesightOwnershipTest` includes a known finishing turn followed by an
+unseen opposing replacement, and reverses the candidate traversal order. The
+zero-foresight scores agree at completed depths 1/2. The existing 1,640 comparisons
+and nonzero-foresight control remain. `responseCoverageByAction` reports immediate
+and future coverage for accepted results; the older aggregate field describes
+the last probed action, not a universal score multiplier. These checks do not
+prove quality with unknown teams, deadline-limited choices or all double-battle
+branches. Search authority and coverage priors remain unchanged.

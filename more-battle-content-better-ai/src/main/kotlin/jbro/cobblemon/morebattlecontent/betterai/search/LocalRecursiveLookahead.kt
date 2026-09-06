@@ -23,6 +23,8 @@ import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveHistoryProjector
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveSnapshotActionConstraints
 
+internal data class LocalLookaheadCoverage(val immediate: Double, val future: Double)
+
 internal data class LocalLookaheadEvaluation(
     val ranked: List<LocalBattleActionRank>,
     val nodesVisited: Int,
@@ -30,7 +32,7 @@ internal data class LocalLookaheadEvaluation(
     val depthCompleted: Int,
     val truncated: Boolean,
     val publicResponseIncomplete: Boolean,
-    /** Effective weight the search result carried into the ranking, for diagnostics. */
+    /** Coverage of the last probed root action; not a single weight for every accepted score. */
     val publicResponseCoverage: Double = 1.0,
     /** Public tactical calculations the leaf evaluations actually performed. */
     val leafCalculations: Int = 0,
@@ -38,6 +40,8 @@ internal data class LocalLookaheadEvaluation(
     val leafCalculationsUnderIdentityKeying: Int = 0,
     /** The share of [nodesVisited] spent scoring leaves rather than projecting turns. */
     val leafWorkUnits: Int = 0,
+    /** Per-action coverage for the accepted depth, excluding discarded partial iterations. */
+    val responseCoverageByAction: Map<String, LocalLookaheadCoverage> = emptyMap(),
 )
 
 /**
@@ -110,6 +114,8 @@ internal object LocalRecursiveLookaheadEvaluator {
         // tier. Without the split, a tier weight would also dial down how well a trainer reads the
         // turn in front of it, which is not what a difficulty setting should mean.
         val singlePlyGain = mutableMapOf<String, Double>()
+        val singlePlyCoverage = mutableMapOf<String, Double>()
+        var acceptedCoverage = emptyMap<String, LocalLookaheadCoverage>()
         for (depth in 1..requestedDepth) {
             val search = Search(
                 context = context,
@@ -129,6 +135,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             // promoted is searched at the next one. Singles never trims - it does not have enough
             // candidates to reach the limit - so this changes nothing outside doubles.
             val searchable = searchableActionIds(ranked, tuning)
+            val evaluatedCoverage = mutableMapOf<String, LocalLookaheadCoverage>()
             val evaluated = ranked.map { rank ->
                 val evaluation = if (searchable != null && rank.outcome.candidate.actionId !in searchable) {
                     null
@@ -146,7 +153,13 @@ internal object LocalRecursiveLookaheadEvaluator {
                     val searchBoardGain = (evaluation.value - baseline) * BOARD_TO_SCORE
                     val actionId = rank.outcome.candidate.actionId
                     if (depth == 1) singlePlyGain[actionId] = searchBoardGain
+                    if (depth == 1) singlePlyCoverage[actionId] = search.publicResponseCoverage
                     val immediateGain = singlePlyGain[actionId] ?: searchBoardGain
+                    val coverage = LocalLookaheadCoverage(
+                        singlePlyCoverage[actionId] ?: search.publicResponseCoverage,
+                        search.publicResponseCoverage,
+                    )
+                    evaluatedCoverage[actionId] = coverage
                     val rootSecureKoBaselineCorrection = if (tuning.legacyRawPowerFallback) {
                         rank.outcome.secureStandardKnockouts * LocalBattleActionPolicy.SECURE_KNOCKOUT_BONUS
                     } else {
@@ -176,9 +189,9 @@ internal object LocalRecursiveLookaheadEvaluator {
                     // on top of the root scorer's. As the search takes over the value half, the root
                     // value it would be correcting for goes away, so the correction retires with it.
                     val authority = tuning.searchAuthority
-                    val rawAdjustment =
-                        immediateGain + foresightGain - rootSecureKoBaselineCorrection * (1.0 - authority)
-                    val adjustment = (rawAdjustment * search.publicResponseCoverage)
+                    val immediateAdjustment = immediateGain - rootSecureKoBaselineCorrection * (1.0 - authority)
+                    // Future unknown replacements must not discount an already modelled current turn.
+                    val adjustment = (immediateAdjustment * coverage.immediate + foresightGain * coverage.future)
                         .coerceIn(-tuning.maximumLookaheadAdjustment, tuning.maximumLookaheadAdjustment)
                     // Hand over as much of the immediate heuristic's value judgement as this tuning
                     // says the search should own. What is withdrawn is only the part a board search
@@ -225,6 +238,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 break
             }
             accepted = LocalBattleActionPolicy.sort(evaluated)
+            acceptedCoverage = evaluatedCoverage.toMap()
             completedDepth = depth
         }
         return LocalLookaheadEvaluation(
@@ -238,6 +252,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             leafCalculations = actionCalculationCache.calculationsPerformed,
             leafCalculationsUnderIdentityKeying = actionCalculationCache.calculationsUnderIdentityKeying,
             leafWorkUnits = totalLeafWorkUnits,
+            responseCoverageByAction = acceptedCoverage,
         )
     }
 

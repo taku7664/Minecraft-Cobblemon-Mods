@@ -11,6 +11,36 @@ import kotlin.math.abs
 
 class LocalForesightOwnershipTest {
     @Test
+    fun `unknown future replacement does not discount the known current turn`() {
+        val fixture = RootTacticalFixtures.all().single { it.id == "secure_finish" }.context
+        val source = withOpponentHp(fixture, 0.05, opponentRemaining = 2)
+        val profile = BattleTrainerProfile.balanced().let {
+            it.copy(difficulty = it.difficulty.copy(foresightWeight = 0.0))
+        }
+        val ranked = LocalBattleActionPolicy.rank(source, strategy = null, profile = profile)
+        fun evaluate(depth: Int, reverse: Boolean = false) = LocalRecursiveLookaheadEvaluator.evaluate(
+            if (reverse) ranked.reversed() else ranked, source,
+            profile.copy(difficulty = profile.difficulty.copy(lookaheadPlies = depth)),
+            clockMillis = { 0L }, budget = LocalLookaheadBudget(100000, 100000, 2))
+        val shallow = evaluate(1)
+        val deep = evaluate(2)
+        val reversed = evaluate(2, reverse = true)
+        assertEquals(1, shallow.depthCompleted)
+        assertEquals(2, deep.depthCompleted)
+        assertEquals(2, reversed.depthCompleted)
+        assertTrue(deep.publicResponseIncomplete)
+        val coverage = deep.responseCoverageByAction.getValue("strike")
+        assertEquals(1.0, coverage.immediate)
+        assertTrue(coverage.future < coverage.immediate)
+        assertEquals(shallow.responseCoverageByAction.getValue("strike").immediate, coverage.immediate)
+        val before = shallow.ranked.associate { it.outcome.candidate.actionId to it.comparisonValue }
+        val after = deep.ranked.associate { it.outcome.candidate.actionId to it.comparisonValue }
+        println("UNKNOWN_REPLACEMENT shallow=$before deep=$after")
+        assertEquals(before, after)
+        assertEquals(after, reversed.ranked.associate { it.outcome.candidate.actionId to it.comparisonValue })
+    }
+
+    @Test
     fun `zero foresight preserves one turn scores across deeper completed searches`() {
         val failures = mutableListOf<String>()
         var compared = 0
@@ -63,7 +93,7 @@ class LocalForesightOwnershipTest {
         assertEquals((values[0] + values[2]) / 2.0, values[1], 1e-9)
     }
 
-    private fun withOpponentHp(source: BattleDecisionContext, hp: Double): BattleDecisionContext {
+    private fun withOpponentHp(source: BattleDecisionContext, hp: Double, opponentRemaining: Int? = null): BattleDecisionContext {
         val state = source.state
         val pokemon = state.pokemon.map { old ->
             if (old.side == BattleSide.ALLY) old else BattlePokemonStateView(
@@ -73,7 +103,9 @@ class LocalForesightOwnershipTest {
         }
         return PublicBattleTacticalCalculator.calculate(BattleDecisionContext(source.requestId,
             BattleStateView(state.battleId, state.format, state.turn, pokemon, state.field,
-                state.remainingPokemonBySide, state.observedEvents, state.inferences), source.candidates.map { old ->
+                state.remainingPokemonBySide + (BattleSide.OPPONENT to
+                    (opponentRemaining ?: state.remainingPokemonBySide.getValue(BattleSide.OPPONENT))),
+                state.observedEvents, state.inferences), source.candidates.map { old ->
                     BattleActionCandidate(old.actionId, old.kind, old.actorSlot, old.moveSlot, old.moveId,
                         old.targets, old.switchPokemonId, old.componentActionIds, old.componentActions,
                         old.mechanic, old.moveDetails, facts = null, tags = old.tags)
