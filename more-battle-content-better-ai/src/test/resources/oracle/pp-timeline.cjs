@@ -14,11 +14,16 @@ const set = (species, move, index) => ({ species, level: index === 3 ? 100 : 50,
   evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
   ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 } });
 
-function run(id, species, move) {
+function run(id, species, move, options = {}) {
   const battle = new Battle({ format, seed: [1, 2, 3, 4] });
   try {
-    battle.setPlayer('p1', { name: 'p1', team: [set(species, move, 1), set('Eevee', 'splash', 2)] });
-    battle.setPlayer('p2', { name: 'p2', team: [set('Magikarp', 'splash', 3)] });
+    const own = set(species, move, 1);
+    own.item = options.item || '';
+    if (options.initialPp !== undefined) own.movesInfo[0].pp = options.initialPp;
+    const foe = set(options.foeSpecies || 'Magikarp', options.foeMove || 'splash', 3);
+    foe.ability = options.foeAbility || 'Illuminate';
+    battle.setPlayer('p1', { name: 'p1', team: [own, set('Eevee', 'splash', 2)] });
+    battle.setPlayer('p2', { name: 'p2', team: [foe] });
     for (const side of ['p1', 'p2']) {
       if (!battle.choose(side, 'move 1')) throw new Error(`${id}: rejected ${side}`);
     }
@@ -34,9 +39,14 @@ function run(id, species, move) {
     }));
     return { id, requestType: battle.requestState, liveMove: live.id, livePp: live.pp,
       baseMove: base.id, basePp: base.pp, publishedPp: values[live.id], updates,
-      requestMoves: battle.p1.activeRequest?.active?.[0]?.moves ?? null };
+      requestMoves: battle.p1.activeRequest?.active?.[0]?.moves ?? null,
+      publicLog: battle.log.filter(line => !line.startsWith('|pp_update|')) };
   } finally { battle.destroy(); }
 }
 process.stdout.write(JSON.stringify({ status: 'COMPLETE', format, seed: [1, 2, 3, 4], cases: [
   run('ordinary', 'Snorlax', 'tackle'), run('pivot', 'Scizor', 'uturn'), run('transform', 'Ditto', 'transform'),
+  run('pressure', 'Snorlax', 'tackle', { foeAbility: 'Pressure' }),
+  // Shuckle moves after Snorlax, so Spite can target the Tackle used in this turn.
+  run('spite', 'Snorlax', 'tackle', { foeSpecies: 'Shuckle', foeMove: 'spite' }),
+  run('leppa', 'Snorlax', 'tackle', { item: 'Leppa Berry', initialPp: 1 }),
 ] }));

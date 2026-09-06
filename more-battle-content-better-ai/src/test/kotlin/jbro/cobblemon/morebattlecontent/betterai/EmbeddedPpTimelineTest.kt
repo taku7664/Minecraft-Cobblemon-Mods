@@ -12,7 +12,17 @@ class EmbeddedPpTimelineTest {
     fun `native PP updates distinguish ordinary turns mid turn switches and transformed slots`(@TempDir directory: Path) {
         val result = EmbeddedShowdownOracle.ppTimeline(directory)
         val cases = result.getAsJsonArray("cases").associate { it.asJsonObject["id"].asString to it.asJsonObject }
-        assertEquals(setOf("ordinary", "pivot", "transform"), cases.keys)
+        assertEquals(setOf("ordinary", "pivot", "transform", "pressure", "spite", "leppa"), cases.keys)
+        for ((id, expectedPp) in mapOf("pressure" to 33, "spite" to 30, "leppa" to 10)) {
+            val sample = cases.getValue(id)
+            assertEquals(expectedPp, sample["livePp"].asInt, id)
+            assertEquals(expectedPp, sample["publishedPp"].asInt, id)
+            assertEquals(expectedPp, sample.getAsJsonArray("requestMoves").single().asJsonObject["pp"].asInt, id)
+        }
+        fun publicLines(id: String) = cases.getValue(id).getAsJsonArray("publicLog").map { it.asString }
+        assertTrue(publicLines("pressure").any { it.startsWith("|-ability|") && it.endsWith("|Pressure") })
+        assertTrue(publicLines("spite").any { it.startsWith("|-activate|") && it.endsWith("|move: Spite|Tackle|4") })
+        assertTrue(publicLines("leppa").any { it.startsWith("|-activate|") && it.endsWith("|item: Leppa Berry|Tackle|[consumed]") })
         val ordinary = cases.getValue("ordinary")
         assertEquals("move", ordinary["requestType"].asString)
         assertEquals(34, ordinary["livePp"].asInt)
