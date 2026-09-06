@@ -545,3 +545,25 @@ and future coverage for accepted results; the older aggregate field describes
 the last probed action, not a universal score multiplier. These checks do not
 prove quality with unknown teams, deadline-limited choices or all double-battle
 branches. Search authority and coverage priors remain unchanged.
+
+### Local Brain to native battle smoke loop
+
+`unitTest -Ptests=EmbeddedAiDecisionLoop -Poracle` calls the real
+`LocalTacticalBrain` with two eligible moves, submits its chosen command to the
+embedded engine, and reads the next public board until victory. The opposing
+policy remains scripted Splash plus forced replacement. The referee never
+chooses or substitutes the Local Brain's action. Each step replays the submitted
+history with the same engine seed, with a 12-decision safety bound.
+
+The fixture is level-50 Pikachu against two level-5 Magikarp, not a competitive
+team evaluation. Opponent identity/HP comes from allowed spectator events;
+unrevealed moves, ability, item and stats are not decision inputs. A hidden unused
+move/item variant produces identical decision inputs and chosen actions. Own PP
+comes from the own-side request, not Cobblemon's publicly emitted `pp_update`.
+
+This first adapter supplies no combat-stat ranges or full event/memory catalog,
+so the Brain uses its non-recursive fallback evaluation. It does not validate
+deep search, full legal presets, either-side forced-choice handling, doubles,
+runtime addons, win rates or gameplay. Replaying from scratch is a bounded smoke
+mechanism, not a performance measurement or the final long-battle transport.
+JSON is Base64/UTF-8 encoded for Windows-safe argument transport, not secrecy.

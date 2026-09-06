@@ -33,6 +33,11 @@ internal object EmbeddedShowdownOracle {
 
     fun weatherResidual(directory: Path): JsonObject = runScript(directory, "/oracle/weather-residual-oracle.cjs", "")
 
+    fun aiDecisionReplay(directory: Path, choices: List<String>, hiddenVariant: Boolean = false): JsonObject =
+        runScript(directory, "/oracle/ai-decision-replay.cjs", java.util.Base64.getEncoder().encodeToString(
+            GsonBuilder().create().toJson(mapOf("choices" to choices, "hiddenVariant" to hiddenVariant))
+                .toByteArray(Charsets.UTF_8)))
+
     private fun runScript(directory: Path, scriptResource: String, argument: String): JsonObject {
         Files.createDirectories(directory)
         val engine = Files.createDirectory(directory.resolve("engine")).toAbsolutePath()
