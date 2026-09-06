@@ -345,11 +345,12 @@ internal object PublicSingleTurnProjector {
             }
             return listOf(unable) + able
         }
-        val effectiveAction = forcedMoveIdsByPokemon[actorBeforeTransition.battlePokemonId]
+        val requestedAction = forcedMoveIdsByPokemon[actorBeforeTransition.battlePokemonId]
             ?.let { forcedMoveId ->
                 forcedMoveAction(state, side, actorBeforeTransition.battlePokemonId, forcedMoveId, sourceContext)
             }
             ?: action
+        val effectiveAction = retargetFaintedOpponent(requestedAction, state, side)
         if (
             effectiveAction.moveDetails?.targetPattern == BattleMoveTargetPattern.RANDOM_OPPONENT &&
             effectiveAction.targets.isEmpty()
@@ -1007,6 +1008,26 @@ internal object PublicSingleTurnProjector {
         effects.filterNot { effect ->
             effect.target == BattleMoveEffectTarget.USER && effect.kind in ONCE_PER_SPREAD_USER_EFFECTS
         }
+    }
+
+    private fun retargetFaintedOpponent(
+        action: BattleActionCandidate, state: BattleStateView, side: BattleSide,
+    ): BattleActionCandidate {
+        // The embedded engine reselects a fainted opposing target, but never a fainted ally.
+        // Doubles has at most one remaining foe here; do not invent probabilities for other formats.
+        if (state.format != BattleFormat.DOUBLE ||
+            action.moveDetails?.targetPattern != BattleMoveTargetPattern.SELECTED_OPPONENT) return action
+        val selected = action.targets.singleOrNull() ?: return action
+        if (selected.side == side) return action
+        val oldTarget = state.pokemon.singleOrNull {
+            it.side == selected.side && it.activeSlot == selected.slot
+        } ?: return action
+        if (!oldTarget.fainted && oldTarget.hpFraction > 0.0) return action
+        val replacement = state.pokemon.singleOrNull {
+            it.side == selected.side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+        } ?: return action
+        // Recalculate effectiveness and damage for the actual recipient, not the old target's facts.
+        return action.withoutFacts().withSingleTarget(replacement)
     }
 
     private fun BattleActionCandidate.withSingleTarget(target: BattlePokemonStateView) = BattleActionCandidate(

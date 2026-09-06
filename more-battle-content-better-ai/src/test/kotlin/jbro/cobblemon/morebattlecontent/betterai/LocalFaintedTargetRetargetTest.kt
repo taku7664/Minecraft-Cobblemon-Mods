@@ -1,0 +1,66 @@
+package jbro.cobblemon.morebattlecontent.betterai
+
+import jbro.cobblemon.morebattlecontent.api.ai.*
+import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicSingleTurnProjector
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Test
+import java.util.UUID
+
+class LocalFaintedTargetRetargetTest {
+    @Test
+    fun `second focused attack reaches surviving foe after first attack knocks out its target`() = checkRetarget()
+
+    @Test
+    fun `replacement immunity is calculated instead of reusing the fainted targets damage`() =
+        checkRetarget(replacementTypes = setOf("ghost"))
+
+    @Test
+    fun `scripted target rules are not guessed from an opposing slot`() =
+        checkRetarget(pattern = BattleMoveTargetPattern.SCRIPTED)
+
+    @Test
+    fun `a living selected foe is not replaced by the other foe`() = checkRetarget(targetHp = 1.0)
+
+    private fun checkRetarget(replacementTypes: Set<String> = setOf("normal"),
+        pattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT, targetHp: Double = 0.01) {
+        for (targetSlot in 0..1) {
+            val allies = (0..1).map { mon(BattleSide.ALLY, it, 1.0, 200 - it * 50) }
+            val foes = (0..1).map { mon(BattleSide.OPPONENT, it, if (it == targetSlot) targetHp else 1.0, 50,
+                if (it == targetSlot) setOf("normal") else replacementTypes) }
+            val state = BattleStateView(UUID(0, 1), BattleFormat.DOUBLE, 2, allies + foes,
+                BattleFieldStateView.empty(), BattleSide.entries.associateWith { 2 }, emptyList(), emptyList())
+            fun attack(slot: Int, target: Int) = BattleActionCandidate("hit-$slot-$target", BattleActionKind.USE_MOVE,
+                actorSlot = slot, moveSlot = 0, moveId = "cobblemon:tackle",
+                targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, target)),
+                moveDetails = BattleMoveCandidateView("normal", BattleMoveDamageCategory.PHYSICAL,
+                    40.0, 100.0, 0, 35, if (slot == 0) BattleMoveTargetPattern.SELECTED_OPPONENT else pattern))
+            fun project(secondTarget: Int): Pair<Double, Double> {
+                val parts = listOf(attack(0, targetSlot), attack(1, secondTarget))
+                val joint = BattleActionCandidate("joint", BattleActionKind.COMPOSITE,
+                    componentActionIds = parts.map { it.actionId }, componentActions = parts)
+                val context = BattleDecisionContext(UUID(0, 2), state, listOf(joint), Long.MAX_VALUE)
+                val outcomes = PublicSingleTurnProjector.project(state, joint,
+                    BattleActionCandidate("wait", BattleActionKind.WAIT), context)
+                assertEquals(1.0, outcomes.sumOf { it.probability * it.orderProbability }, 1e-9)
+                fun hp(id: UUID) = outcomes.sumOf { branch -> branch.probability * branch.orderProbability *
+                    branch.state.pokemon.single { it.battlePokemonId == id }.hpFraction }
+                return hp(foes[targetSlot].battlePokemonId) to hp(foes[1 - targetSlot].battlePokemonId)
+            }
+            val focused = project(targetSlot)
+            val split = project(1 - targetSlot)
+            if (targetHp < 1.0) assertEquals(0.0, focused.first, 1e-9)
+            else assertTrue(focused.first > 0.0 && focused.first < split.first)
+            if (replacementTypes == setOf("ghost") || pattern == BattleMoveTargetPattern.SCRIPTED)
+                assertEquals(1.0, split.second, 1e-9)
+            else assertTrue(split.second < 1.0)
+            assertEquals(if (pattern == BattleMoveTargetPattern.SCRIPTED || targetHp == 1.0) 1.0 else split.second, focused.second, 1e-9,
+                "A fainted opposing target must not silently discard the second attack")
+        }
+    }
+
+    private fun mon(side: BattleSide, slot: Int, hp: Double, speed: Int, types: Set<String> = setOf("normal")) = BattlePokemonStateView(
+        UUID(0, (10 + side.ordinal * 2 + slot).toLong()), side, slot, "cobblemon:probe", null, 50,
+        hp, null, emptyMap(), emptySet(), null, null, false, knownTypeIds = types,
+        combatStats = if (side == BattleSide.ALLY) BattleCombatStatRangesView.exact(200, 100, 100, 100, 100, speed)
+        else publicExactStats(200, 100, 100, 100, 100, speed))
+}
