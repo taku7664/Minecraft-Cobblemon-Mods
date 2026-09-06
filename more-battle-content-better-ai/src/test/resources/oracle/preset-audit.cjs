@@ -2,6 +2,7 @@
 
 const path = require('node:path');
 const fs = require('node:fs');
+const { createHash } = require('node:crypto');
 const { Dex } = require(path.join(process.argv[2], 'sim/dex.js'));
 const { Format } = require(path.join(process.argv[2], 'sim/dex-formats.js'));
 const { TeamValidator } = require(path.join(process.argv[2], 'sim/team-validator.js'));
@@ -92,6 +93,12 @@ const rows = input.sets.map(raw => {
 const sampleTeams = () => {
   const count = input.teamPairs || 0;
   const seed = input.teamSeed === undefined ? 20260906 : input.teamSeed;
+  const partition = input.teamSplit || 'ALL';
+  if (!['ALL', 'TUNING', 'HOLDOUT'].includes(partition)) throw new Error('Invalid corpus partition');
+  const reserved = new Set(input.reservedTuningKeys || []);
+  const encode = values => [...values].sort().map(value => `${value.length}:${value}`).join('');
+  const corpusKey = (p1, p2) => createHash('sha256').update('native-single-set-pair-v1|' +
+    encode([encode(p1.setIds), encode(p2.setIds)]), 'utf8').digest('hex');
   if (!Number.isInteger(count) || count < 0 || count > 1000 || !Number.isInteger(seed)) {
     throw new Error('Invalid team sampling count or seed');
   }
@@ -131,13 +138,23 @@ const sampleTeams = () => {
     return { setIds: chosen.map(row => row.setId), sets, validatedSets, problems };
   };
   const pairs = [];
-  for (let index = 0; index < count; index++) {
+  const seen = new Set();
+  let attemptedPairs = 0;
+  let partitionSkipped = 0;
+  let duplicatePairsSkipped = 0;
+  while (pairs.length < count && attemptedPairs < count * 100) {
+    attemptedPairs++;
     const p1 = draw();
     const p2 = draw();
     if (p1.problems.length || p2.problems.length) {
       throw new Error(`Drawn team failed validation: ${JSON.stringify([p1.problems, p2.problems])}`);
     }
     const battleSeed = Array.from({ length: 4 }, () => Math.floor(next() * 65536));
+    const key = corpusKey(p1, p2);
+    const split = !reserved.has(key) && parseInt(key.slice(0, 8), 16) % 5 === 0 ? 'HOLDOUT' : 'TUNING';
+    if (partition !== 'ALL' && split !== partition) { partitionSkipped++; continue; }
+    if (partition !== 'ALL' && seen.has(key)) { duplicatePairsSkipped++; continue; }
+    seen.add(key);
     const battle = new Battle({ format: initializationFormat, seed: battleSeed });
     try {
       for (const [side, team] of [['p1', p1], ['p2', p2]]) {
@@ -149,9 +166,12 @@ const sampleTeams = () => {
       p2.initializedCount = battle.p2.pokemon.length;
       if (p1.initializedCount !== 3 || p2.initializedCount !== 3) throw new Error('Incomplete initialized team');
     } finally { battle.destroy(); }
-    pairs.push({ index, battleSeed, p1, p2 });
+    pairs.push({ index: pairs.length, battleSeed, p1, p2, corpusKey: key, partition: split });
   }
+  if (pairs.length !== count) throw new Error('Cannot draw enough distinct pairs in corpus partition');
   return { seed, algorithm: 'MULBERRY32_SEQUENTIAL_SET_DRAW_V1', teamSize: 3,
+    partition, partitionMethod: 'SHA256_UNORDERED_SET_IDS_V1_MOD5_RESERVED_TUNING',
+    reservedTuningKeys: [...reserved].sort(), attemptedPairs, partitionSkipped, duplicatePairsSkipped,
     eligibleSets: pool.length, ruleset: teamRules, rejectedTeams: 0, pairs,
     scope: 'TEAM_VALIDATION_AND_INITIALIZATION_ONLY_NO_TURNS_OR_AI_INPUT' };
 };

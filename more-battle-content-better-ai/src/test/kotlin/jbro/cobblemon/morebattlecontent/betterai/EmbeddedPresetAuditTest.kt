@@ -11,6 +11,35 @@ import java.nio.file.Path
 @EnabledIfSystemProperty(named = "betterai.oracle", matches = "true")
 class EmbeddedPresetAuditTest {
     @Test
+    fun `native corpus partitions are disjoint reproducible and match independent keys`(@TempDir directory: Path) {
+        val audits = EvaluationSplit.entries.associateWith { split ->
+            EmbeddedPresetAudit.run(directory.resolve(split.name), teamPairs = 20, teamSplit = split)
+        }
+        val keys = audits.mapValues { (split, audit) ->
+            val sampling = audit.getAsJsonObject("teamSampling")
+            assertEquals(split.name, sampling["partition"].asString)
+            sampling.getAsJsonArray("pairs").map { value ->
+                val pair = value.asJsonObject
+                assertEquals(EmbeddedNativeCorpus.key(pair), pair["corpusKey"].asString)
+                assertEquals(split, EmbeddedNativeCorpus.split(pair))
+                assertEquals(split.name, pair["partition"].asString)
+                pair["corpusKey"].asString
+            }.also { assertEquals(20, it.size) }.toSet().also { assertEquals(20, it.size) }
+        }
+        assertTrue(keys.getValue(EvaluationSplit.TUNING).intersect(keys.getValue(EvaluationSplit.HOLDOUT)).isEmpty())
+        assertEquals(audits.getValue(EvaluationSplit.HOLDOUT), EmbeddedPresetAudit.run(
+            directory.resolve("replay"), teamPairs = 20, teamSplit = EvaluationSplit.HOLDOUT))
+        val smallPool = JsonArray().apply {
+            EmbeddedPresetAudit.rawSets().filter { it.asJsonObject["set_id"].asString in
+                setOf("golem_preset_1", "decidueyehisui_preset_4", "delphox_preset_4") }.forEach(::add)
+        }
+        val exhausted = assertThrows(IllegalStateException::class.java) {
+            EmbeddedPresetAudit.run(directory.resolve("exhausted"), smallPool, teamPairs = 2, teamSplit = EvaluationSplit.TUNING)
+        }
+        assertTrue(exhausted.message!!.contains("Cannot draw enough distinct pairs in corpus partition"))
+    }
+
+    @Test
     fun `audit accounts for every raw preset including rejected moves`(@TempDir directory: Path) {
         val sets = EmbeddedPresetAudit.rawSets()
         val broken = sets[0].asJsonObject.deepCopy().apply {

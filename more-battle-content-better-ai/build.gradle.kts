@@ -163,7 +163,8 @@ tasks.register<JavaExec>("captureNativePairs") {
         setArgs(listOf(providers.gradleProperty("nativePairOutput").orNull
             ?: layout.buildDirectory.dir("reports/betterai-native-pairs/${UUID.randomUUID()}").get().asFile.absolutePath,
             providers.gradleProperty("nativeTeamPairs").orNull ?: "1",
-            providers.gradleProperty("nativeTeamSeed").orNull ?: "20260906"))
+            providers.gradleProperty("nativeTeamSeed").orNull ?: "20260906",
+            providers.gradleProperty("nativePairSplit").orNull ?: "ALL"))
     }
 }
 

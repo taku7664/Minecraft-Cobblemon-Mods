@@ -15,7 +15,8 @@ internal object EmbeddedPresetAudit {
         }
     }
 
-    fun run(directory: Path, sets: JsonArray = rawSets(), teamPairs: Int = 0, teamSeed: Int = 20260906): JsonObject {
+    fun run(directory: Path, sets: JsonArray = rawSets(), teamPairs: Int = 0, teamSeed: Int = 20260906,
+        teamSplit: EvaluationSplit? = null): JsonObject {
         require(teamPairs in 0..1000)
         val ids = sets.map { it.asJsonObject["set_id"].asString }
         require(ids.isNotEmpty() && ids.distinct().size == ids.size) { "Empty or duplicate preset IDs" }
@@ -23,10 +24,18 @@ internal object EmbeddedPresetAudit {
             add("sets", sets.deepCopy())
             addProperty("teamPairs", teamPairs)
             addProperty("teamSeed", teamSeed)
+            addProperty("teamSplit", teamSplit?.name ?: "ALL")
+            add("reservedTuningKeys", JsonArray().apply { EmbeddedNativeCorpus.reservedTuningKeys.sorted().forEach(::add) })
         }
         return EmbeddedShowdownOracle.presetAudit(directory, input).apply {
             check(getAsJsonArray("sets").map { it.asJsonObject["setId"].asString } == ids) {
                 "Native audit lost or reordered presets"
+            }
+            getAsJsonObject("teamSampling").getAsJsonArray("pairs").forEach { value ->
+                val pair = value.asJsonObject
+                check(pair["corpusKey"].asString == EmbeddedNativeCorpus.key(pair)) { "Native corpus identity mismatch" }
+                check(pair["partition"].asString == EmbeddedNativeCorpus.split(pair).name) { "Native corpus partition mismatch" }
+                check(teamSplit == null || pair["partition"].asString == teamSplit.name) { "Native corpus crossed partition" }
             }
             val catalog = JsonObject().apply { add("sets", sets.deepCopy()) }
             addProperty("catalogSha256", LocalBaselineCapture.digest(catalog.toString().toByteArray(Charsets.UTF_8)))

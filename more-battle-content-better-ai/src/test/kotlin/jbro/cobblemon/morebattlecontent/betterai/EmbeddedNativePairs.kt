@@ -10,14 +10,15 @@ import java.nio.file.StandardOpenOption.CREATE_NEW
 internal object EmbeddedNativePairs {
     @JvmStatic
     fun main(args: Array<String>) {
-        require(args.size == 3) { "Expected new output directory, pair count and sampling seed" }
+        require(args.size in 3..4) { "Expected new output directory, pair count, sampling seed and optional partition" }
         val count = args[1].toInt()
         require(count in 1..1000)
         val seed = args[2].toInt()
+        val split = args.getOrNull(3)?.takeUnless { it == "ALL" }?.let(EvaluationSplit::valueOf)
         val directory = Path.of(args[0]).toAbsolutePath()
         Files.createDirectories(directory.parent)
         Files.createDirectory(directory)
-        val audit = EmbeddedPresetAudit.run(directory.resolve("audit"), teamPairs = count, teamSeed = seed)
+        val audit = EmbeddedPresetAudit.run(directory.resolve("audit"), teamPairs = count, teamSeed = seed, teamSplit = split)
         Files.writeString(directory.resolve("audit.json"), audit.toString(), CREATE_NEW)
         val results = JsonArray()
         audit.getAsJsonObject("teamSampling").getAsJsonArray("pairs").forEachIndexed { index, value ->
@@ -29,6 +30,9 @@ internal object EmbeddedNativePairs {
         val outcomes = results.flatMap { it.asJsonObject.getAsJsonArray("teamAOutcomes").map { value -> value.asString } }
         val summary = JsonObject().apply {
             addProperty("schemaVersion", 1); addProperty("samplingSeed", seed)
+            addProperty("partition", split?.name ?: "ALL")
+            addProperty("catalogSha256", audit["catalogSha256"].asString)
+            add("partitionMethod", audit.getAsJsonObject("teamSampling")["partitionMethod"].deepCopy())
             addProperty("pairs", results.size()); addProperty("battles", outcomes.size)
             addProperty("completePairs", results.count { it.asJsonObject["complete"].asBoolean })
             for (kind in listOf("WIN", "LOSS", "DRAW", "INCOMPLETE")) addProperty(kind.lowercase(), outcomes.count { it == kind })
@@ -73,6 +77,8 @@ internal object EmbeddedNativePairs {
             outcomes.add(outcome(result, reverse))
         }
         val result = JsonObject().apply {
+            addProperty("corpusKey", EmbeddedNativeCorpus.key(pair))
+            addProperty("partition", EmbeddedNativeCorpus.split(pair).name)
             add("originalTeamASetIds", pair.getAsJsonObject("p1")["setIds"].deepCopy())
             add("originalTeamBSetIds", pair.getAsJsonObject("p2")["setIds"].deepCopy())
             add("battleSeed", pair["battleSeed"].deepCopy())

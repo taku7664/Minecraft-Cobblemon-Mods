@@ -739,7 +739,27 @@ dropped game. Invalid choices or execution errors still abort the capture instea
 of fabricating a result. A partially written directory is not a completed report.
 
 Summary counts are descriptive only: no policy-improvement rate or confidence
-interval is reported. Repeated draws of the same teams are possible, tuning and
-holdout partitions are not wired into this native capture yet, and the partial
-input-adapter limits above still apply. Changing seats does not resolve those
-limits or prove game-server compatibility.
+interval is reported. The partial input-adapter limits above still apply. Changing
+seats does not resolve those limits or prove game-server compatibility.
+
+`-PnativePairSplit=TUNING` or `HOLDOUT` restricts the native capture to one stable
+team-pair partition. The default `ALL` preserves unrestricted sampling and must
+not be treated as a held-out evaluation. Each pair key is SHA-256 over nested,
+length-prefixed, sorted complete-set IDs; seats, roster order, seed and outcomes
+do not affect membership. Prefix modulo five assigns roughly one fifth of keys
+to HOLDOUT, except the three previously observed native pairs reserved for TUNING
+in `EmbeddedNativeCorpus`. These reservations came from the existing native-team
+and native-pair captures through `04878cc`. Kotlin independently verifies the
+native keys and membership. Pair records, audit and summary retain the partition;
+the summary also identifies the source catalog hash.
+
+Partitioned sampling rejects duplicate unordered pairs within a run and fails if
+the bounded draw limit cannot supply the requested count. ALL still allows repeats.
+Partitioning does not make species or individual presets disjoint, does not hide
+the catalog, and does not guarantee statistical independence or a fixed population
+ratio. Set IDs are the grouping contract: renamed aliases of the same sets require
+an explicit corpus review. Previously observed results outside the recorded native
+captures must likewise be accounted for before claiming a pristine holdout. A
+HOLDOUT result used to tune the policy is no longer held out; selecting the option
+does not enforce that workflow. Partition unit checks validate teams without
+running holdout AI battles.
