@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption.CREATE_NEW
@@ -28,9 +29,12 @@ internal object EmbeddedTeamBattle {
         println("native team capture: $directory")
     }
 
-    fun run(engine: Path, pair: JsonObject, directory: Path, maxTurns: Int = 200): JsonObject {
+    fun run(engine: Path, pair: JsonObject, directory: Path, maxTurns: Int = 200,
+        p1Tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+        p2Tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT): JsonObject {
         val battleId = UUID.nameUUIDFromBytes(pair["battleSeed"].toString().toByteArray())
-        val brains = listOf("p1", "p2").associateWith { LocalTacticalBrain() }
+        val tunings = mapOf("p1" to p1Tuning, "p2" to p2Tuning)
+        val brains = tunings.mapValues { (_, tuning) -> LocalTacticalBrain(tuning = tuning) }
         val sessions = brains.mapValues { (_, brain) -> brain.openSession(BattleBrainOpenContext(battleId, BattleFormat.SINGLE)) }
         var final: JsonObject? = null
         val counts = mutableMapOf("p1" to 0, "p2" to 0)
@@ -50,6 +54,7 @@ internal object EmbeddedTeamBattle {
                             frame.addProperty("forcedSwitchDecisions", forced)
                             frame.addProperty("illegalChoices", 0) // Any illegal/rejected choice aborts instead of producing a result.
                             frame.addProperty("effectAnnotatedCandidates", effectAnnotatedCandidates)
+                            frame.add("policyTuning", com.google.gson.Gson().toJsonTree(tunings))
                             frame.addProperty("evidence", "NATIVE_LOCAL_BRAIN_TEAMS_PARTIAL_INPUT_ADAPTER_NOT_QUALITY_PROOF")
                             frame.addProperty("adapterLimits", "PARTIAL_DECLARATIVE_EFFECTS_NO_CALLBACK_EXECUTION;PARTIAL_PUBLIC_EVENTS_AND_VOLATILES;UNKNOWN_EFFECT_DURATIONS;NO_GIMMICK_CANDIDATES;INCOMPLETE_FUTURE_PP;NO_RUNTIME_ADDONS")
                             Files.writeString(directory.resolve("result.json"), frame.toString(), CREATE_NEW)
@@ -73,6 +78,7 @@ internal object EmbeddedTeamBattle {
                                 addProperty("side", side); addProperty("turn", frame["turn"].asInt)
                                 add("input", input); addProperty("actionId", decision.actionId)
                                 add("candidateEffects", com.google.gson.Gson().toJsonTree(effects))
+                                add("decisionTags", com.google.gson.Gson().toJsonTree(decision.tags))
                             }.toString()).appendLine()
                             trace.flush()
                         }

@@ -763,3 +763,37 @@ captures must likewise be accounted for before claiming a pristine holdout. A
 HOLDOUT result used to tune the policy is no longer held out; selecting the option
 does not enforce that workflow. Partition unit checks validate teams without
 running holdout AI battles.
+
+### Native policy comparison
+
+`compareNativePolicies -PnativeTeamPairs=10` runs CURRENT versus LEGACY on tuning
+pairs, with four games per pair: both team-seat placements crossed with both policy
+placements. Each arm therefore plays both teams in both seats; execution order
+rotates between pairs. LEGACY means the existing `LocalDecisionTuning.LEGACY` values
+running today's code, not a historical binary. No product defaults are changed.
+`-PnativeChallenger=CURRENT -PnativeDefender=CURRENT` is an equal-arm control.
+Only CURRENT and LEGACY are accepted. Both use the same default trainer profile,
+public-input adapter and per-decision deadline, with fresh sessions every game.
+
+Output defaults to `build/reports/betterai-native-policies/<id>/`; override with
+`-PnativePolicyOutput=<new-directory>`. `nativeTeamSeed`, `nativeMaxTurns` and
+`nativePairSplit` control sampling, turn limit and partition. Unlike unrestricted
+captures, policy comparisons require TUNING or HOLDOUT; HOLDOUT additionally
+requires `-PallowHoldout=true`. Do not use a holdout result to tune and still call
+it held-out evidence.
+
+The manifest records source revision/source hash/runtime hash, catalog hash and
+both complete tuning objects. Source/runtime identity is checked again at the end.
+Every game retains native inputs, results, supplied policy settings and actual
+decision tags. Invalid choices or changed inputs abort instead of producing a
+successful summary. Pair records track challenger outcomes independently of seat.
+
+Each complete pair contributes the mean of its four scores (win 1, tie 0.5, loss 0).
+Incomplete games instead contribute a [0,1] score range and suppress the confidence
+interval for the run; they are not silently dropped or called ties. A fully
+completed run reports the same fixed-sample 95% Hoeffding construction used by the
+local paired evaluator, using the number of team pairs, never four times that
+number. Its population interpretation requires independent representative pair
+outcomes; deterministic sampling and team overlap do not establish that assumption.
+These partial-adapter comparisons are preliminary evidence, not automatic policy
+adoption, historical-version comparisons, or proof of in-game battle quality.

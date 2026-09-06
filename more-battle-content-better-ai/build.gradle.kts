@@ -168,6 +168,27 @@ tasks.register<JavaExec>("captureNativePairs") {
     }
 }
 
+tasks.register<JavaExec>("compareNativePolicies") {
+    group = "verification"
+    description = "Compares existing Local Brain tunings with crossed teams and seats in native battles."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.EmbeddedPolicyComparison")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(rootProject.projectDir.absolutePath,
+            providers.gradleProperty("nativePolicyOutput").orNull
+                ?: layout.buildDirectory.dir("reports/betterai-native-policies/${UUID.randomUUID()}").get().asFile.absolutePath,
+            providers.gradleProperty("nativeTeamPairs").orNull ?: "3",
+            providers.gradleProperty("nativeTeamSeed").orNull ?: "20260906",
+            providers.gradleProperty("nativeChallenger").orNull ?: "CURRENT",
+            providers.gradleProperty("nativeDefender").orNull ?: "LEGACY",
+            providers.gradleProperty("nativePairSplit").orNull ?: "TUNING",
+            providers.gradleProperty("allowHoldout").orNull ?: "false",
+            providers.gradleProperty("nativeMaxTurns").orNull ?: "200"))
+    }
+}
+
 tasks.register<JavaExec>("compareDamageOracle") {
     group = "verification"
     description = "Compares base damage rolls and KO thresholds against embedded Showdown (requires Node.js)."

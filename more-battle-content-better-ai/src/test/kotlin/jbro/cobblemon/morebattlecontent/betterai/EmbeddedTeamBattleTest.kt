@@ -13,6 +13,33 @@ import java.util.UUID
 @EnabledIfSystemProperty(named = "betterai.oracle", matches = "true")
 class EmbeddedTeamBattleTest {
     @Test
+    fun `native comparison installs declared policy in every crossed seat`(@TempDir directory: Path) {
+        val audit = EmbeddedPresetAudit.run(directory.resolve("audit"), teamPairs = 1)
+        val pair = audit.getAsJsonObject("teamSampling").getAsJsonArray("pairs")[0].asJsonObject
+        val result = EmbeddedPolicyComparison.runPair(directory.resolve("audit/engine"), pair,
+            directory.resolve("comparison"), 0,
+            jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning.CURRENT,
+            jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning.LEGACY, maxTurns = 2)
+        assertEquals(4, result.getAsJsonArray("games").size())
+        result.getAsJsonArray("games").forEach { game ->
+            val record = game.asJsonObject
+            val gameResult = directory.resolve("comparison").resolve(record["result"].asString)
+            val native = com.google.gson.JsonParser.parseString(java.nio.file.Files.readString(gameResult)).asJsonObject
+            val policies = native.getAsJsonObject("policyTuning")
+            val challengerSeat = record["challengerSeat"].asString
+            assertEquals("current", policies.getAsJsonObject(challengerSeat)["id"].asString)
+            assertEquals("legacy", policies.getAsJsonObject(if (challengerSeat == "p1") "p2" else "p1")["id"].asString)
+            val lines = java.nio.file.Files.readAllLines(gameResult.parent.resolve("decisions.jsonl"))
+            assertTrue(lines.isNotEmpty())
+            lines.forEach { line ->
+                val trace = com.google.gson.JsonParser.parseString(line).asJsonObject
+                val expected = policies.getAsJsonObject(trace["side"].asString)["id"].asString
+                assertTrue(trace.getAsJsonArray("decisionTags").any { it.asString == "tuning_$expected" })
+            }
+        }
+    }
+
+    @Test
     fun `paired native capture runs both seats and keeps turn limits separate`(@TempDir directory: Path) {
         val audit = EmbeddedPresetAudit.run(directory.resolve("audit"), teamPairs = 1)
         val pair = audit.getAsJsonObject("teamSampling").getAsJsonArray("pairs")[0].asJsonObject
