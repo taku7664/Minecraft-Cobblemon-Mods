@@ -2,7 +2,7 @@ package jbro.cobblemon.morebattlecontent.betterai.state
 
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalBadPoisonCounter
-import kotlin.math.roundToLong
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalHpArithmetic
 
 /** Applies public, deterministic end-of-turn mechanics used by recursive search. */
 internal object LocalEndTurnStateProjector {
@@ -32,7 +32,7 @@ internal object LocalEndTurnStateProjector {
             val poisonHeal = ability == "poisonheal" && status in POISON_IDS
             var hp = pokemon.hpFraction
             fun apply(change: Double) {
-                if (hp > 0.0) hp = applyHpChange(pokemon, hp, change).coerceIn(0.0, 1.0)
+                if (hp > 0.0) hp = LocalHpArithmetic.change(pokemon, hp, change).coerceIn(0.0, 1.0)
             }
             // Native event order: weather (1), item healing (5), poison/burn (9/10), Salt Cure (13).
             if (sandActive && ability !in SAND_IMMUNE_ABILITIES &&
@@ -86,20 +86,6 @@ internal object LocalEndTurnStateProjector {
         if (maxHp == null || maxHp.minimum != maxHp.maximum) return ticks.toDouble() / divisor
         // Native toxic rounds the base tick before multiplying the public elapsed-turn counter.
         return (maxHp.minimum / divisor).coerceAtLeast(1).toDouble() * ticks / maxHp.minimum
-    }
-
-    private fun applyHpChange(pokemon: BattlePokemonStateView, hpFraction: Double, change: Double): Double {
-        val maxHp = pokemon.combatStats?.maxHp
-        if (maxHp != null && maxHp.minimum == maxHp.maximum) {
-            val maximum = maxHp.minimum.toDouble()
-            val currentHp = (hpFraction * maximum).roundToLong()
-            val delta = (change * maximum).roundToLong()
-            // Preserve integer-HP round trips, not arbitrary fractional expectations or an epsilon band.
-            if (currentHp / maximum == hpFraction && delta / maximum == change) {
-                return (currentHp + delta) / maximum
-            }
-        }
-        return hpFraction + change
     }
 
     private fun decrementField(field: BattleFieldStateView): BattleFieldStateView = BattleFieldStateView(

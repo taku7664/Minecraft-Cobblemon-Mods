@@ -120,7 +120,7 @@ internal object LocalDirectHitMechanics {
             )
         }
 
-        val hp = (target.hpFraction - incomingDamage).coerceAtLeast(0.0)
+        val hp = LocalHpArithmetic.change(target, target.hpFraction, -incomingDamage).coerceAtLeast(0.0)
         // A pinch berry fires the moment the hit lands, so it belongs here beside the Sash rather than
         // with the end-of-turn residuals. It does not save anything from a knockout - it only triggers
         // on a survivor - but it moves the health a second attack has to get through, and 394 of the
