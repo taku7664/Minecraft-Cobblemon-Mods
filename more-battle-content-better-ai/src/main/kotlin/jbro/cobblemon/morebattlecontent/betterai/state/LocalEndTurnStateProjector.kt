@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.betterai.state
 
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalBadPoisonCounter
+import kotlin.math.roundToLong
 
 /** Applies public, deterministic end-of-turn mechanics used by recursive search. */
 internal object LocalEndTurnStateProjector {
@@ -27,10 +28,11 @@ internal object LocalEndTurnStateProjector {
                 0.0
             } else {
                 val majorStatusResidual = when (status) {
-                    in BAD_POISON_IDS -> (
-                        badPoisonTurnsByPokemon[pokemon.battlePokemonId] ?: 1
-                        ).coerceIn(1, LocalBadPoisonCounter.MAXIMUM_BAD_POISON_TURN) / 16.0
-                    in REGULAR_POISON_IDS, in BURN_IDS -> 1.0 / 16.0
+                    in BAD_POISON_IDS -> statusDamageFraction(pokemon, 16,
+                        (badPoisonTurnsByPokemon[pokemon.battlePokemonId] ?: 1)
+                            .coerceIn(1, LocalBadPoisonCounter.MAXIMUM_BAD_POISON_TURN))
+                    in REGULAR_POISON_IDS -> statusDamageFraction(pokemon, 8)
+                    in BURN_IDS -> statusDamageFraction(pokemon, 16)
                     else -> 0.0
                 }
                 val saltCureResidual = if (pokemon.battlePokemonId in saltCuredPokemonIds) {
@@ -45,7 +47,7 @@ internal object LocalEndTurnStateProjector {
                 canonical(pokemon.knownHeldItemId) == "leftovers" -> 1.0 / 16.0
                 else -> 0.0
             }
-            val hp = (pokemon.hpFraction - residual + passiveHealing).coerceIn(0.0, 1.0)
+            val hp = (subtractResidual(pokemon, residual) + passiveHealing).coerceIn(0.0, 1.0)
             copyPokemon(pokemon, hpFraction = hp, statStages = stages, fainted = hp <= 0.0)
         }
         val nextField = decrementField(state.field)
@@ -68,6 +70,28 @@ internal object LocalEndTurnStateProjector {
             observedEvents = state.observedEvents,
             inferences = state.inferences,
         )
+    }
+
+    private fun statusDamageFraction(pokemon: BattlePokemonStateView, divisor: Int, ticks: Int = 1): Double {
+        val maxHp = pokemon.combatStats?.maxHp
+        // Only a public point range permits integer HP rounding. Do not invent hidden max HP.
+        if (maxHp == null || maxHp.minimum != maxHp.maximum) return ticks.toDouble() / divisor
+        // Native toxic rounds the base tick before multiplying the public elapsed-turn counter.
+        return (maxHp.minimum / divisor).coerceAtLeast(1).toDouble() * ticks / maxHp.minimum
+    }
+
+    private fun subtractResidual(pokemon: BattlePokemonStateView, residual: Double): Double {
+        val maxHp = pokemon.combatStats?.maxHp
+        if (maxHp != null && maxHp.minimum == maxHp.maximum) {
+            val maximum = maxHp.minimum.toDouble()
+            val currentHp = (pokemon.hpFraction * maximum).roundToLong()
+            val damage = (residual * maximum).roundToLong()
+            // Preserve integer-HP round trips, not arbitrary fractional expectations or an epsilon band.
+            if (currentHp / maximum == pokemon.hpFraction && damage / maximum == residual) {
+                return (currentHp - damage) / maximum
+            }
+        }
+        return pokemon.hpFraction - residual
     }
 
     private fun decrementField(field: BattleFieldStateView): BattleFieldStateView = BattleFieldStateView(

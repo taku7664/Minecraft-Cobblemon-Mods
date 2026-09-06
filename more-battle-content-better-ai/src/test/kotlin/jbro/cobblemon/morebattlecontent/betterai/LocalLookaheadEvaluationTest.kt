@@ -1639,7 +1639,7 @@ class LocalLookaheadEvaluationTest {
             context(initial, listOf(ownWait)),
         ).single()
 
-        assertEquals(15.0 / 16.0, outcome.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction, 1e-9)
+        assertEquals(7.0 / 8.0, outcome.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction, 1e-9)
     }
 
     @Test
@@ -1654,7 +1654,7 @@ class LocalLookaheadEvaluationTest {
             context(initial, listOf(ownWait)),
         ).single()
 
-        assertEquals(15.0 / 16.0, outcome.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction, 1e-9)
+        assertEquals(188.0 / 200.0, outcome.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction, 1e-9)
     }
 
     @Test
@@ -1684,7 +1684,7 @@ class LocalLookaheadEvaluationTest {
             firstHistory,
         ).single()
 
-        assertEquals(13.0 / 16.0, second.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction, 1e-9)
+        assertEquals(164.0 / 200.0, second.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction, 1e-9)
     }
 
     @Test
@@ -1752,7 +1752,7 @@ class LocalLookaheadEvaluationTest {
             afterOut,
         ).single()
 
-        assertEquals(15.0 / 16.0, back.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction, 1e-9)
+        assertEquals(188.0 / 200.0, back.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction, 1e-9)
         assertEquals(1, back.badPoisonTurnsByPokemon.getValue(ALLY_ID))
     }
 

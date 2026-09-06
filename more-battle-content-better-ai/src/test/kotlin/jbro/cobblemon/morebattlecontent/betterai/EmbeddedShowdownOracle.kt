@@ -27,6 +27,8 @@ internal object EmbeddedShowdownOracle {
 
     fun turnOrder(directory: Path): JsonObject = runScript(directory, "/oracle/turn-order-oracle.cjs", "")
 
+    fun statusResidual(directory: Path): JsonObject = runScript(directory, "/oracle/status-residual-oracle.cjs", "")
+
     private fun runScript(directory: Path, scriptResource: String, argument: String): JsonObject {
         Files.createDirectories(directory)
         val engine = Files.createDirectory(directory.resolve("engine")).toAbsolutePath()

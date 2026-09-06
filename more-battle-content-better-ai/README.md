@@ -450,3 +450,17 @@ opponent-stat adapter. No product AI code changes. Speed ties, paralysis, damage
 distributions, end-turn effects, doubles, addon registrations and actual battle
 quality are outside this slice. Passing these cases does not complete mechanics
 validation or establish stronger AI play.
+
+### Poison, burn and toxic residual regression
+
+`unitTest -Ptests=EmbeddedStatusResidual -Poracle` runs 24 native end-turn cases:
+Snorlax (235 HP) and level-1 Pikachu (12 HP), full or 1 remaining HP, with poison,
+burn, and toxic turns 1/2/3/15. It compares remaining HP, fainting and living counts.
+Regular poison now uses 1/8, not burn's 1/16. With an exact public max-HP range,
+status damage rounds down to integer HP with a minimum of 1; toxic multiplies
+that rounded base tick. Exactly representable integer HP and damage are subtracted
+as integers before converting back, preventing floating-point ghost survival after
+repeated ticks. Fractional expectations are not snapped to integer HP.
+Missing or ranged max HP keeps the fractional estimate,
+without selecting a hidden exact stat. These cases do not validate healing/residual
+ordering, weather, Salt Cure, special forms, or actual battle quality.
