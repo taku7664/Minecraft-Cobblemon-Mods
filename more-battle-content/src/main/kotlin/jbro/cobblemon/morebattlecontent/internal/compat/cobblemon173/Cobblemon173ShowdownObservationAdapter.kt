@@ -115,6 +115,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
                         Cobblemon173PublicObservation.PokemonPresented(
                             observedTurn,
                             publicSwitchSnapshot(it, message.argumentAt(1)),
+                            transfersSubstitute = transfersSubstitute(message),
                         ),
                     )
                 }
@@ -137,7 +138,14 @@ internal class Cobblemon173ShowdownObservationAdapter(
                 )
             }
 
-            "-start", "-end", "-mustrecharge" -> observeActionConstraint(activeBattle, message)
+            "-start", "-end", "-mustrecharge" -> {
+                observeActionConstraint(activeBattle, message)
+                substituteChange(message)?.let { active ->
+                    resolvePokemon(activeBattle, message, 0)?.let { pokemon ->
+                        observer.observe(Cobblemon173PublicObservation.SubstituteChanged(observedTurn, pokemon, active))
+                    }
+                }
+            }
 
             "-miss", "-fail", "-block", "-notarget", "cant", "-crit", "-supereffective",
             "-resisted", "-immune", "-hitcount", "-activate", "-singleturn" -> {
@@ -363,6 +371,13 @@ internal class Cobblemon173ShowdownObservationAdapter(
     private enum class ResourceKind { ABILITY, ITEM }
 
     internal companion object {
+        fun substituteChange(message: BattleMessage): Boolean? =
+            if (message.id in setOf("-start", "-end") && effectId(message.argumentAt(1)) == "substitute")
+                message.id == "-start" else null
+
+        fun transfersSubstitute(message: BattleMessage): Boolean =
+            message.id == "switch" && message.effect("from")?.id in setOf("batonpass", "shedtail")
+
         private const val UNKNOWN_PUBLIC_SPECIES_ID = "showdown:unknown"
         private val ROOM_EFFECT_IDS = setOf("trickroom", "wonderroom", "magicroom")
         private val PARTIAL_TRAPPING_MOVE_IDS = setOf(

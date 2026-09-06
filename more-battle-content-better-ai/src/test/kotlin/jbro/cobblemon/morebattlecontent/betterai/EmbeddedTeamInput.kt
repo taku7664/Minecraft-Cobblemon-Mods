@@ -20,7 +20,8 @@ internal object EmbeddedTeamInput {
     private data class Seen(val ident: String, var species: String, var level: Int, var hp: Double,
         var status: String?, var active: Boolean = true, var types: Set<String> = emptySet(),
         var added: String? = null, val stages: MutableMap<String, Int> = mutableMapOf(),
-        val moves: MutableSet<String> = linkedSetOf(), var ability: String? = null, var item: String? = null)
+        val moves: MutableSet<String> = linkedSetOf(), var ability: String? = null, var item: String? = null,
+        val volatileEffects: MutableSet<String> = linkedSetOf())
 
     fun identity(ident: String): String = ident.take(2) + ":" + ident.substringAfter(':').trim()
     private fun uuid(ident: String) = UUID.nameUUIDFromBytes(identity(ident).toByteArray(Charsets.UTF_8))
@@ -62,8 +63,14 @@ internal object EmbeddedTeamInput {
                 "turn" -> eventTurn = actor.toInt()
                 "teamsize" -> sizes[side(actor)] = p[3].toInt()
                 "switch", "drag", "replace" -> {
+                    val inherited = if (kind == "replace" || kind == "switch" &&
+                        p.drop(5).singleOrNull { it.startsWith("[from] ") }?.removePrefix("[from] ")
+                            ?.let(::id) in setOf("batonpass", "shedtail")) {
+                        seen.values.singleOrNull { it.active && it.ident.take(2) == actor.take(2) }
+                            ?.volatileEffects.orEmpty().toSet()
+                    } else emptySet()
                     seen.values.filter { it.ident.take(2) == actor.take(2) }.forEach {
-                        it.active = false; it.stages.clear(); it.added = null; it.types = baseTypes(it.species)
+                        it.active = false; it.stages.clear(); it.added = null; it.types = baseTypes(it.species); it.volatileEffects.clear()
                     }
                     val details = p[3].split(',').map(String::trim)
                     val species = id(details[0])
@@ -71,6 +78,7 @@ internal object EmbeddedTeamInput {
                     val entry = Seen(actor, species, details.firstOrNull { it.matches(Regex("L\\d+")) }?.drop(1)?.toInt() ?: 100,
                         hp.first, hp.second, types = baseTypes(species))
                     current?.let { entry.moves += it.moves; entry.ability = it.ability; entry.item = it.item }
+                    entry.volatileEffects += inherited
                     seen[key] = entry
                     events += BattleObservedEventView(index.toLong() * 2, eventTurn, BattleObservedEventKind.SWITCHED, uuid(actor))
                 }
@@ -92,7 +100,7 @@ internal object EmbeddedTeamInput {
                         }
                     }
                 }
-                "faint" -> current?.let { it.hp = 0.0; event(BattleObservedEventKind.FAINTED) }
+                "faint" -> current?.let { it.hp = 0.0; it.volatileEffects.clear(); event(BattleObservedEventKind.FAINTED) }
                 "move" -> current?.let { it.moves += id(p[3]); event(BattleObservedEventKind.MOVE_USED, id(p[3])) }
                 "-status" -> current?.let { it.status = id(p[3]) }
                 "-curestatus" -> current?.let { it.status = null }
@@ -107,13 +115,17 @@ internal object EmbeddedTeamInput {
                 "-clearboost" -> current?.stages?.clear()
                 "-clearallboost" -> seen.values.forEach { it.stages.clear() }
                 "-start" -> current?.let {
+                    if (id(p[3]) == "substitute") it.volatileEffects += "substitute"
                     when (p[3]) {
                         "typechange" -> { it.types = p.getOrNull(4)?.takeUnless { value -> value.startsWith('[') || value == "???" }
                             ?.lowercase()?.split('/')?.toSet().orEmpty(); it.added = null }
                         "typeadd" -> it.added = p.getOrNull(4)?.lowercase()
                     }
                 }
-                "-end" -> if (p[3] == "typeadd") current?.added = null
+                "-end" -> {
+                    if (p[3] == "typeadd") current?.added = null
+                    if (id(p[3]) == "substitute") current?.volatileEffects?.remove("substitute")
+                }
                 "detailschange", "-formechange" -> current?.let {
                     it.species = id(p[3].substringBefore(',')); it.types = baseTypes(it.species); it.added = null
                 }
@@ -150,7 +162,9 @@ internal object EmbeddedTeamInput {
                 privateMap("ownTypes", ident)?.asJsonArray?.map { it.asString }?.toSet().orEmpty(),
                 combatStats = if (maxHp > 0) BattleCombatStatRangesView.exact(maxHp, stats["atk"].asInt,
                     stats["def"].asInt, stats["spa"].asInt, stats["spd"].asInt, stats["spe"].asInt) else null,
-                actionConstraints = constraints.forPokemon(ident))
+                actionConstraints = constraints.forPokemon(ident),
+                knownVolatileEffectIds = if (pokemon["active"].asBoolean && hp.first > 0.0)
+                    seen[identity(ident)]?.volatileEffects.orEmpty() else emptySet())
         }
         val opponents = seen.values.filter { side(it.ident) == BattleSide.OPPONENT }.map { pokemon ->
             val stats = speciesData.getAsJsonObject(pokemon.species)?.getAsJsonObject("baseStats")
@@ -160,7 +174,8 @@ internal object EmbeddedTeamInput {
                 if (pokemon.types.isEmpty()) emptySet() else pokemon.types + listOfNotNull(pokemon.added),
                 combatStats = stats?.let { BattlePublicStatRanges.fromBaseStats(pokemon.level, it["hp"].asInt,
                     it["atk"].asInt, it["def"].asInt, it["spa"].asInt, it["spd"].asInt, it["spe"].asInt) },
-                actionConstraints = constraints.forPokemon(pokemon.ident))
+                actionConstraints = constraints.forPokemon(pokemon.ident),
+                knownVolatileEffectIds = if (pokemon.active && pokemon.hp > 0.0) pokemon.volatileEffects else emptySet())
         }
         fun moveDetails(moveId: String, pp: Int): BattleMoveCandidateView {
             val move = requireNotNull(moveData.getAsJsonObject(moveId)) { "Missing exposed move metadata $moveId" }

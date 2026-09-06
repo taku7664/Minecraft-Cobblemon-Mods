@@ -160,6 +160,7 @@ internal object LocalEndTurnStateProjector {
         combatStats = pokemon.combatStats,
         knownFormStates = pokemon.knownFormStates,
         actionConstraints = pokemon.actionConstraints,
+        knownVolatileEffectIds = if (fainted) emptySet() else pokemon.knownVolatileEffectIds,
     )
 
     private fun canonical(value: String?): String? = value

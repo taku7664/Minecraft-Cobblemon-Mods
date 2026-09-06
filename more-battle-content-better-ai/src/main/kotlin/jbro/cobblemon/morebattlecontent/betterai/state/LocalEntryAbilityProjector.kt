@@ -61,6 +61,7 @@ internal object LocalEntryAbilityProjector {
             combatStats = pokemon.combatStats,
             knownFormStates = pokemon.knownFormStates,
             actionConstraints = pokemon.actionConstraints,
+            knownVolatileEffectIds = pokemon.knownVolatileEffectIds,
         )
     }
 

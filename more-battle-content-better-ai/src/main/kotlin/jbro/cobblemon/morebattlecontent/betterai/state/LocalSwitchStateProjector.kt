@@ -98,5 +98,6 @@ internal object LocalSwitchStateProjector {
         combatStats = formState?.combatStats ?: combatStats,
         knownFormStates = knownFormStates,
         actionConstraints = BattlePokemonActionConstraintView.empty(),
+        knownVolatileEffectIds = emptySet(),
     )
 }

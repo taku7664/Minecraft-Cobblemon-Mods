@@ -137,7 +137,33 @@ class BattlePokemonStateView(
     val combatStats: BattleCombatStatRangesView? = null,
     knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
     val actionConstraints: BattlePokemonActionConstraintView = BattlePokemonActionConstraintView.empty(),
+    knownVolatileEffectIds: Set<String>,
 ) {
+    /** Preserve the original JVM constructor and Kotlin default-argument constructor. */
+    constructor(
+        battlePokemonId: UUID,
+        side: BattleSide,
+        activeSlot: Int?,
+        speciesId: String,
+        formId: String?,
+        level: Int?,
+        hpFraction: Double,
+        statusId: String?,
+        statStages: Map<String, Int>,
+        knownMoveIds: Set<String>,
+        knownAbilityId: String?,
+        knownHeldItemId: String?,
+        fainted: Boolean,
+        knownTypeIds: Set<String> = emptySet(),
+        combatStats: BattleCombatStatRangesView? = null,
+        knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
+        actionConstraints: BattlePokemonActionConstraintView = BattlePokemonActionConstraintView.empty(),
+    ) : this(battlePokemonId, side, activeSlot, speciesId, formId, level, hpFraction, statusId,
+        statStages, knownMoveIds, knownAbilityId, knownHeldItemId, fainted, knownTypeIds,
+        combatStats, knownFormStates, actionConstraints, emptySet())
+
+    /** Observed active effects only. Absence is not proof of complete volatile knowledge or future persistence. */
+    val knownVolatileEffectIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownVolatileEffectIds))
     val statStages: Map<String, Int> = statStages.toMap()
     val knownMoveIds: Set<String> = knownMoveIds.toSet()
     val knownTypeIds: Set<String> = knownTypeIds.toSet()
@@ -150,6 +176,7 @@ class BattlePokemonStateView(
         require(speciesId.isNotBlank())
         require(this.knownTypeIds.all { it.isNotBlank() })
         require(this.knownFormStates.keys.all { it.isNotBlank() })
+        require(this.knownVolatileEffectIds.all { it.isNotBlank() })
     }
 }
 

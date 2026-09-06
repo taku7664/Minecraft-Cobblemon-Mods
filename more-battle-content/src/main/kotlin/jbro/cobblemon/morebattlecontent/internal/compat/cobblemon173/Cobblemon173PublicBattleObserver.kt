@@ -52,7 +52,13 @@ internal class Cobblemon173PublicBattleObserver(
         when (observation) {
             is Cobblemon173PublicObservation.PokemonPresented -> {
                 closeActionWindow()
-                upsert(observation.pokemon, refreshPublicIdentity = true)
+                val incoming = observation.pokemon
+                val inherited = if (observation.transfersSubstitute && incoming.activeSlot != null) {
+                    pokemon.values.singleOrNull { it.side == incoming.side && it.activeSlot == incoming.activeSlot }
+                        ?.knownVolatileEffectIds.orEmpty().intersect(setOf("substitute"))
+                } else emptySet()
+                val presented = upsert(incoming, refreshPublicIdentity = true)
+                pokemon[presented.battlePokemonId] = presented.copyView(knownVolatileEffectIds = inherited)
                 appendEvent(
                     turn = observation.turn,
                     kind = BattleObservedEventKind.SWITCHED,
@@ -101,6 +107,13 @@ internal class Cobblemon173PublicBattleObserver(
             }
 
             is Cobblemon173PublicObservation.MoveOutcome -> appendMoveOutcome(observation)
+
+            is Cobblemon173PublicObservation.SubstituteChanged -> {
+                val actor = knownOrUpsert(observation.pokemon)
+                pokemon[actor.battlePokemonId] = actor.copyView(knownVolatileEffectIds =
+                    if (observation.active) actor.knownVolatileEffectIds + "substitute"
+                    else actor.knownVolatileEffectIds - "substitute")
+            }
 
             is Cobblemon173PublicObservation.TypesChanged -> {
                 val actor = knownOrUpsert(observation.pokemon)
@@ -179,6 +192,7 @@ internal class Cobblemon173PublicBattleObserver(
 
             is Cobblemon173PublicObservation.Fainted -> {
                 val current = upsert(observation.pokemon.copy(hpFraction = 0.0, fainted = true))
+                pokemon[current.battlePokemonId] = current.copyView(knownVolatileEffectIds = emptySet())
                 if (current.side == BattleSide.OPPONENT) faintedOpponents += current.battlePokemonId
                 appendEvent(observation.turn, BattleObservedEventKind.FAINTED, current.battlePokemonId)
             }
@@ -303,6 +317,7 @@ internal class Cobblemon173PublicBattleObserver(
                     current.copyView(
                         activeSlot = null,
                         actionConstraints = BattlePokemonActionConstraintView.empty(),
+                        knownVolatileEffectIds = emptySet(),
                         knownTypeIds = publicTypes.clear(id) ?: current.knownTypeIds,
                     )
                 } else {
@@ -523,6 +538,7 @@ internal data class Cobblemon173PublicPokemonSnapshot(
         knownTypeIds = if (previous != null && !refreshPublicIdentity) previous.knownTypeIds else knownTypeIds,
         combatStats = if (previous != null && !refreshPublicIdentity) previous.combatStats else combatStats,
         knownFormStates = if (previous != null && !refreshPublicIdentity) previous.knownFormStates else knownFormStates,
+        knownVolatileEffectIds = if (refreshPublicIdentity || fainted) emptySet() else previous?.knownVolatileEffectIds.orEmpty(),
         actionConstraints = if (refreshPublicIdentity && activeSlot != null) {
             BattlePokemonActionConstraintView.empty()
         } else {
@@ -534,8 +550,12 @@ internal data class Cobblemon173PublicPokemonSnapshot(
 internal sealed interface Cobblemon173PublicObservation {
     val turn: Int
 
-    data class PokemonPresented(override val turn: Int, val pokemon: Cobblemon173PublicPokemonSnapshot) :
+    data class PokemonPresented(override val turn: Int, val pokemon: Cobblemon173PublicPokemonSnapshot,
+        val transfersSubstitute: Boolean = false) :
         Cobblemon173PublicObservation
+
+    data class SubstituteChanged(override val turn: Int, val pokemon: Cobblemon173PublicPokemonSnapshot,
+        val active: Boolean) : Cobblemon173PublicObservation
 
     data class TypesChanged(
         override val turn: Int,
@@ -691,6 +711,8 @@ internal object Cobblemon173BattleStateAssembler {
         val allies = ownPokemon.map { own ->
             own.copyView(
                 actionConstraints = publicById[own.battlePokemonId]?.actionConstraints ?: own.actionConstraints,
+                knownVolatileEffectIds = if (own.activeSlot == null || own.fainted) emptySet()
+                    else publicById[own.battlePokemonId]?.knownVolatileEffectIds.orEmpty(),
                 knownTypeIds = if (own.activeSlot == null) own.knownTypeIds else
                     publicSnapshot.typeOverrides[own.battlePokemonId] ?: own.knownTypeIds,
             )
@@ -728,6 +750,7 @@ private fun BattlePokemonStateView.copyView(
     knownHeldItemId: String? = this.knownHeldItemId,
     actionConstraints: BattlePokemonActionConstraintView = this.actionConstraints,
     knownTypeIds: Set<String> = this.knownTypeIds,
+    knownVolatileEffectIds: Set<String> = this.knownVolatileEffectIds,
 ) = BattlePokemonStateView(
     battlePokemonId = battlePokemonId,
     side = side,
@@ -746,4 +769,5 @@ private fun BattlePokemonStateView.copyView(
     combatStats = combatStats,
     knownFormStates = knownFormStates,
     actionConstraints = actionConstraints,
+    knownVolatileEffectIds = knownVolatileEffectIds,
 )

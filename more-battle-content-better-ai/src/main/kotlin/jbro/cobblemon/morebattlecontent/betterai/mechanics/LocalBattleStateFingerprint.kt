@@ -41,6 +41,7 @@ internal class LocalBattleStateFingerprint {
             append(pokemon.actionConstraints.encoreMoveId ?: "-").append(':')
             append(pokemon.actionConstraints.trapped).append(':')
             append(pokemon.actionConstraints.mustRecharge).append(':')
+            append(pokemon.knownVolatileEffectIds.sorted().joinToString(",")).append(':')
             pokemon.statStages.toSortedMap().forEach { (stat, stage) ->
                 append(stat).append('=').append(stage).append(',')
             }

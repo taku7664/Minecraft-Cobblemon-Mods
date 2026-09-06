@@ -651,7 +651,7 @@ class HumanlikeExternalBrainTest {
         )
         val digest = promptDigest(request)
 
-        assertEquals("brain-choice-v22", digest["promptVersion"].asString)
+        assertEquals("brain-choice-v23", digest["promptVersion"].asString)
         assertTrue(request.contains("DECLARATIVE_PARTIAL"))
         assertTrue(request.contains("HEAL_FRACTION"))
         assertTrue(request.contains("scriptedBehavior"))
@@ -906,7 +906,7 @@ class HumanlikeExternalBrainTest {
         val trainer = digest.getAsJsonObject("trainer")
         val boardAlly = digest.getAsJsonArray("board")[0].asJsonObject
 
-        assertEquals("brain-choice-v22", digest["promptVersion"].asString)
+        assertEquals("brain-choice-v23", digest["promptVersion"].asString)
         assertEquals("Establish rain, then preserve the cleaner for the endgame.", trainer["aiSummary"].asString)
         assertEquals("Use Rain Dance when the field is clear.", trainer.getAsJsonArray("members")[0].asJsonObject["tacticalSummary"].asString)
         assertEquals(2, digest.getAsJsonObject("remainingPokemonBySide")["ALLY"].asInt)

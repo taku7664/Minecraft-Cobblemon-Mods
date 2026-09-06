@@ -828,4 +828,23 @@ or Shed Tail transfers it without a fresh `-start` announcement on the recipient
 The oracle uses separate referee state to verify these facts, not as Brain input.
 These tests constrain the pending public-state integration: current presence is
 not an unconditional future failure, and not every switch discards the effect.
-They do not yet add a persistent-effect field or change either Brain's policy.
+That oracle-only increment did not add a persistent-effect field or change policy.
+
+The follow-up adds `knownVolatileEffectIds` to the shared Pokemon state. It records
+observed active Substitute only; an empty set is not complete volatile knowledge,
+and no substitute HP or guaranteed future persistence is supplied. Production
+public start/end observations, fainting, ordinary switch clearing and explicit
+Baton Pass/Shed Tail transfer now update this state by active slot. The native
+adapter supplies the same field, and the own-team assembler merges the public
+observation into private-own facts without accessing hidden opponent state.
+
+Local state copies preserve the field, ordinary switch/faint projections clear it,
+and the state fingerprint distinguishes it. Router prompt `brain-choice-v23`
+receives the same public fact with the same-turn recreation limitation, not a
+local recommendation. This is state plumbing, not a substitute damage simulator:
+durability, absorption, projected transfer and conditional action evaluation are
+still unimplemented. Existing projection limitations must not be mistaken for
+verified native outcomes merely because the field survives a copy. The original
+Pokemon-state constructor and Kotlin default-argument constructor are preserved;
+the old default-mask invocation has a regression test. Broader mixed-version
+runtime compatibility is not implied by that one ABI check.

@@ -35,7 +35,7 @@ internal object HumanlikePromptCodec {
             }
             add("messages", JsonArray().apply {
                 val summaryDoctrine = if (config.logDecisionSummary) DECISION_SUMMARY_DOCTRINE else ""
-                add(message("system", SYSTEM_DOCTRINE + ACTION_CONSTRAINT_DOCTRINE + MIXED_STRATEGY_DOCTRINE +
+                add(message("system", SYSTEM_DOCTRINE + ACTION_CONSTRAINT_DOCTRINE + VOLATILE_DOCTRINE + MIXED_STRATEGY_DOCTRINE +
                     difficultyDoctrine(open.trainerProfile.difficulty.tier) + summaryDoctrine))
                 add(message("user", gson.toJson(digest(open, context))))
             })
@@ -202,6 +202,7 @@ internal object HumanlikePromptCodec {
                     "combatStats" to pokemon.combatStats,
                     "knownFormStates" to pokemon.knownFormStates,
                     "actionConstraints" to pokemon.actionConstraints,
+                    "knownVolatileEffectIds" to pokemon.knownVolatileEffectIds.sorted(),
                 )
             },
             "field" to context.state.field,
@@ -449,7 +450,8 @@ internal object HumanlikePromptCodec {
     private const val MAXIMUM_CONSECUTIVE_MISSES = 2
     private const val CALIBRATION_SAMPLE_FLOOR = 4
     private const val MINIMUM_CALIBRATED_HIT_RATE = 0.55
-    private const val EFFECTIVE_PROMPT_VERSION = "brain-choice-v22"
+    private const val EFFECTIVE_PROMPT_VERSION = "brain-choice-v23"
+    private const val VOLATILE_DOCTRINE = """ `knownVolatileEffectIds` lists publicly observed currently active Pokemon effects, initially Substitute only. An empty list does not establish complete volatile knowledge. Substitute HP is unknown; no exact durability is supplied. Current presence does not imply it will persist until the selected action: an earlier opposing hit may break it and allow same-turn recreation. Ordinary switching clears Substitute; an explicitly observed Baton Pass or Shed Tail can transfer it."""
     private const val RECENT_EVENT_TURNS = 3
     private const val ACTION_CONSTRAINT_DOCTRINE = """ Each board Pokemon's `actionConstraints` is a current public fact: `taunted` removes status moves, `encoreMoveId` locks the move, `trapped` removes voluntary switches, and `mustRecharge` forces the recharge turn."""
     private const val MIXED_STRATEGY_DOCTRINE = """ Independently rank the legal actions, keep your own top 40% (at least two when two useful alternatives exist), and make the final choice within that set with probability weighted toward your own higher-valued actions. This mixed strategy never permits a publicly nullified action, and the server never supplies local utility, rank, weight, or a recommended action. Repetition alone is not proof that the opponent read a pattern: infer a possible read yourself only from `patternExposureCount`, recent public events, situation-specific tendencies, and prediction calibration. Preserve only the `activePlan` authored by this Router across turns; another Brain's plan, utility, rank, weight, recommendation, and derived psychological scores are never supplied. Abandon a plan through its public abort conditions and never let plan persistence justify repeated recovery, protection, walls, or setup without fresh net progress. Adjust variance to the public match position: when behind, credible high-variance lines may gain value; when ahead, favor minimum-regret lines. Position-based risk never permits an illegal, immune, publicly nullified, entry-fainting, or otherwise dominated action. `lookaheadPlies` counts complete turns, where one turn contains your action and an opponent response. Enumerate only moves listed in `publicFutureActions`; opponent entries contain publicly revealed moves only, so never invent a hidden move to fill a branch. `publicOutcomeProjection` is an event-free, public-information-only partial projection: damage is capped at the target's remaining HP and declared self healing or recoil is reflected, but unresolved opponent action order and mechanics remain in `unknowns`; it does not by itself claim that the opponent stayed in or that the complete turn was simulated. In future turns, subtract PP after every executed move; a successful RECHARGE_TURN forces the user's next action, SWITCH_USER requires an immediate legal replacement that receives later actions that turn, and taunt, encore, or trapping must constrain later legal actions for their public duration. For Stance Change, use `knownFormStates` instead of swapping current stats or inventing alternate-form stats. A switch is valuable only when its net public gain in survival, offensive pressure, or speed control exceeds entry damage, lost immediate action tempo, and repeat-switch cost; a healthy proactive switch is allowed when this net gain is material. When two lines reach the same public advantage, prefer realizing the gain earlier, and require fresh net progress before switching again."""

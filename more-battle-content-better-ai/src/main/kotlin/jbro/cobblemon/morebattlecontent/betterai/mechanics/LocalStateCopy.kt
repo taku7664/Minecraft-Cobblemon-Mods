@@ -42,6 +42,7 @@ internal fun BattlePokemonStateView.copyState(
     statStages: Map<String, Int> = this.statStages,
     fainted: Boolean = this.fainted,
     actionConstraints: BattlePokemonActionConstraintView = this.actionConstraints,
+    knownVolatileEffectIds: Set<String> = this.knownVolatileEffectIds,
 ): BattlePokemonStateView = BattlePokemonStateView(
     battlePokemonId = battlePokemonId,
     side = side,
@@ -60,4 +61,5 @@ internal fun BattlePokemonStateView.copyState(
     combatStats = combatStats,
     knownFormStates = knownFormStates,
     actionConstraints = actionConstraints,
+    knownVolatileEffectIds = if (fainted || activeSlot == null) emptySet() else knownVolatileEffectIds,
 )

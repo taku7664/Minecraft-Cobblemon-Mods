@@ -21,6 +21,55 @@ import org.junit.jupiter.api.Test
 
 class Cobblemon173PublicBattleObserverTest {
     @Test
+    fun `old Kotlin default argument constructor remains callable`() {
+        val constructor = BattlePokemonStateView::class.java.constructors.single {
+            it.parameterCount == 19 && it.parameterTypes.last().name == "kotlin.jvm.internal.DefaultConstructorMarker"
+        }
+        val result = constructor.newInstance(UUID.randomUUID(), BattleSide.ALLY, 0, "pikachu", null, 50,
+            1.0, null, emptyMap<String, Int>(), emptySet<String>(), null, null, false,
+            null, null, null, null, (1 shl 13) or (1 shl 14) or (1 shl 15) or (1 shl 16), null) as BattlePokemonStateView
+        assertTrue(result.knownVolatileEffectIds.isEmpty())
+        assertEquals(BattlePokemonActionConstraintView.empty(), result.actionConstraints)
+    }
+
+    @Test
+    fun `only explicit substitute protocol establishes effect or transfer`() {
+        fun message(line: String) = BattleMessage(line)
+        assertEquals(true, Cobblemon173ShowdownObservationAdapter.substituteChange(message("|-start|p1a: test|Substitute")))
+        assertEquals(false, Cobblemon173ShowdownObservationAdapter.substituteChange(message("|-end|p1a: test|Substitute")))
+        assertNull(Cobblemon173ShowdownObservationAdapter.substituteChange(message("|-activate|p1a: test|move: Substitute|[damage]")))
+        assertTrue(Cobblemon173ShowdownObservationAdapter.transfersSubstitute(message("|switch|p1a: next|Pikachu|100/100|[from] Baton Pass")))
+        assertTrue(Cobblemon173ShowdownObservationAdapter.transfersSubstitute(message("|switch|p1a: next|Pikachu|100/100|[from] Shed Tail")))
+        assertFalse(Cobblemon173ShowdownObservationAdapter.transfersSubstitute(message("|drag|p1a: next|Pikachu|100/100|[from] Baton Pass")))
+        assertFalse(Cobblemon173ShowdownObservationAdapter.transfersSubstitute(message("|switch|p1a: next|Pikachu|100/100|[from] U-turn")))
+    }
+
+    @Test
+    fun `substitute transfers only from matching active slot and clears on ordinary switch`() {
+        val first = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
+        val second = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
+        val other = publicPokemon(BattleSide.OPPONENT, activeSlot = 1)
+        val observer = Cobblemon173PublicBattleObserver(initialOpponentPokemonCount = 3)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, first))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, other))
+        observer.observe(Cobblemon173PublicObservation.SubstituteChanged(1, first, true))
+        observer.observe(Cobblemon173PublicObservation.SubstituteChanged(1, other, true))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(1, second, transfersSubstitute = true))
+        fun effects(id: UUID) = observer.publicSnapshot().pokemon.single { it.battlePokemonId == id }.knownVolatileEffectIds
+        assertEquals(emptySet<String>(), effects(first.battlePokemonId))
+        assertEquals(setOf("substitute"), effects(second.battlePokemonId))
+        assertEquals(setOf("substitute"), effects(other.battlePokemonId))
+        observer.observe(Cobblemon173PublicObservation.SubstituteChanged(2, second, false))
+        assertTrue(effects(second.battlePokemonId).isEmpty())
+        observer.observe(Cobblemon173PublicObservation.SubstituteChanged(2, second, true))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(3, first))
+        assertTrue(effects(second.battlePokemonId).isEmpty())
+        assertTrue(effects(first.battlePokemonId).isEmpty())
+        observer.observe(Cobblemon173PublicObservation.Fainted(3, other))
+        assertTrue(effects(other.battlePokemonId).isEmpty())
+    }
+
+    @Test
     fun `events preserve the public actor slot at action time across a pivot switch`() {
         val outgoing = publicPokemon(BattleSide.OPPONENT, activeSlot = 1)
         val incoming = publicPokemon(BattleSide.OPPONENT, activeSlot = 1)
@@ -408,6 +457,7 @@ class Cobblemon173PublicBattleObserverTest {
         observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, publicAlly))
         observer.observe(Cobblemon173PublicObservation.MoveUsed(1, opponent, "tackle", listOf(publicAlly), 0))
         observer.observe(Cobblemon173PublicObservation.MoveUsed(1, publicAlly, "protect", emptyList(), 0))
+        observer.observe(Cobblemon173PublicObservation.SubstituteChanged(1, publicAlly, true))
 
         val state = Cobblemon173BattleStateAssembler.assemble(
             battleId = UUID.randomUUID(),
@@ -427,6 +477,7 @@ class Cobblemon173PublicBattleObserverTest {
         assertEquals(1, state.remainingPokemonBySide.getValue(BattleSide.ALLY))
         assertEquals(3, state.remainingPokemonBySide.getValue(BattleSide.OPPONENT))
         assertEquals(setOf("protect"), state.pokemon.single { it.side == BattleSide.ALLY }.knownMoveIds)
+        assertEquals(setOf("substitute"), state.pokemon.single { it.side == BattleSide.ALLY }.knownVolatileEffectIds)
         assertEquals(setOf("tackle"), state.pokemon.single { it.side == BattleSide.OPPONENT }.knownMoveIds)
         val abilities = state.inferences.filter { it.categoryId == "ability" }
         assertEquals(setOf("roughskin", "sandveil"), abilities.mapNotNull { it.candidateId }.toSet())
