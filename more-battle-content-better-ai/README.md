@@ -110,12 +110,15 @@ partition rule and failure conditions. An existing directory is never overwritte
 Baseline `baselineReplay` does not accept paired manifests; retain the saved
 options and fingerprints when reproducing a paired run.
 
-The random summary keeps wins, losses and undecided games. A win scores 1, a loss
-0 and an undecided game 0.5; the two scores are averaged into one pair score. The
-reported mean is **not** a decisive-only win rate. A turn-limit cutoff also counts
-as undecided, so short smoke runs must not be used to judge strength.
+Paired evaluation v2 keeps wins, losses, simulator draws and incomplete games
+separate. A win scores 1, a loss 0 and a non-stalled draw 0.5. A stalled or
+turn-limited game retains score bounds [0,1], without assigning a probability.
+Both orientations contribute to each pair's mean score bounds. The JSON fields
+`meanPairScoreLower/Upper` and `challengerPairScoreLower/Upper` replace the v1
+point scores; old captures are not rewritten. Capture status COMPLETE means the
+writer finished, not that every battle finished. Short smoke runs are not strength evidence.
 
-For `n` pair scores, the conservative 95% interval is the mean plus/minus
+For `n` pairs, the conditional 95% interval expands the lower/upper score bounds by
 `sqrt(ln(40)/(2*n))`, clipped to `[0,1]`, using the
 [two-sided Hoeffding bound](https://www.stat.cmu.edu/~cshalizi/sml/21/lectures/06/lecture-06.html).
 Its population interpretation assumes independent representative pair outcomes

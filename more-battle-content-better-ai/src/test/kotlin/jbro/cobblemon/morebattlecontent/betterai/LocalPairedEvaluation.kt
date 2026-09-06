@@ -1,8 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
-import kotlin.math.ln
-import kotlin.math.sqrt
 import kotlin.random.Random
 
 internal enum class EvaluationSplit { TUNING, HOLDOUT }
@@ -48,39 +46,20 @@ internal object LocalEvaluationCorpus {
     }
 }
 
-/** Exactly two completed orientations. Null is an undecided game, never silently discarded. */
-internal data class LocalPairOutcome(val id: String, val asCycleWinner: String?, val asOffenseWinner: String?) {
-    init {
-        require(id.isNotBlank())
-        require(asCycleWinner in setOf(null, "cycle", "offense"))
-        require(asOffenseWinner in setOf(null, "cycle", "offense"))
-    }
-    val scores: List<Double> get() = listOf(score(asCycleWinner, "cycle"), score(asOffenseWinner, "offense"))
-    private fun score(winner: String?, challengerSide: String) = when (winner) {
-        null -> 0.5
-        challengerSide -> 1.0
-        else -> 0.0
-    }
-}
-
+/** JSON projection of the same evidence used by console comparisons. */
 internal data class LocalPairedSummary(
     val pairs: Int, val battles: Int, val wins: Int, val losses: Int, val draws: Int,
-    val meanPairScore: Double, val intervalLower: Double, val intervalUpper: Double,
+    val incomplete: Int, val meanPairScoreLower: Double, val meanPairScoreUpper: Double,
+    val intervalLower: Double, val intervalUpper: Double,
     val intervalMethod: String = "HOEFFDING_95_PAIR_LEVEL_FIXED_SAMPLE",
+    val intervalAssumption: String = "INDEPENDENT_REPRESENTATIVE_PAIRS_NOT_GUARANTEED_BY_PRNG",
 ) {
     companion object {
-        fun from(outcomes: List<LocalPairOutcome>): LocalPairedSummary {
-            require(outcomes.isNotEmpty())
-            require(outcomes.map { it.id }.distinct().size == outcomes.size) { "Duplicate team pairs" }
-            val scores = outcomes.flatMap { it.scores }
-            val mean = outcomes.map { it.scores.average() }.average()
-            // Each pair mean is in [0,1]. Two-sided Hoeffding radius; n is pairs, not games.
-            // Conditional on independently sampled pair outcomes and a predeclared sample count.
-            // See README for source, sampling assumptions, and why fixed cases are excluded.
-            val radius = sqrt(ln(2.0 / 0.05) / (2 * outcomes.size))
-            return LocalPairedSummary(outcomes.size, scores.size, scores.count { it == 1.0 },
-                scores.count { it == 0.0 }, scores.count { it == 0.5 }, mean,
-                (mean - radius).coerceAtLeast(0.0), (mean + radius).coerceAtMost(1.0))
+        fun from(outcomes: List<LocalHeadToHeadPair>): LocalPairedSummary {
+            val tally = LocalHeadToHeadTally("JSON", outcomes)
+            return LocalPairedSummary(outcomes.size, tally.battles, tally.challengerWins,
+                tally.defenderWins, tally.draws, tally.incomplete, tally.scoreLower, tally.scoreUpper,
+                tally.intervalLower, tally.intervalUpper)
         }
     }
 }

@@ -36,7 +36,7 @@ internal object LocalPairedEvaluationCapture {
         val manifest = LocalBaselineCapture.manifest(
             LocalBaselineOptions(count + scenarios.size, seed, turns, format, difficulty), identity, definitions + scenarios,
         ).apply {
-            addProperty("schemaVersion", "paired-evaluation-v1")
+            addProperty("schemaVersion", "paired-evaluation-v2")
             addProperty("split", split.name)
             addProperty("partitionRule", "UNORDERED_COMPLETE_SET_PAIRS_SHA256_MOD5_HOLDOUT0_WITH_RESERVED_REGRESSIONS_V1")
             addProperty("requestedRandomPairs", count)
@@ -51,17 +51,18 @@ internal object LocalPairedEvaluationCapture {
             add("regressionPairIds", json.toJsonTree(scenarios.map(LocalEvaluationCorpus::key)))
             addProperty("regressionObjective", "Turn progression, public move evidence and completion; not tactical optimality")
             add("regressionFailureConditions", json.toJsonTree(listOf("NO_TURNS", "NO_MOVE_EVIDENCE", "STALLED")))
-            addProperty("drawMeaning", "No winner, including turn-limit truncation; scored 0.5, not proof of a natural draw")
+            addProperty("drawMeaning", "No winner and not stalled in the local simulator; scored 0.5")
+            addProperty("incompleteMeaning", "Stalled or turn-limited; score bounds [0,1], not a draw or assigned probability")
             addProperty("samplingCaveat", "Distinct pseudo-random pairs; confidence bound assumes independent representative pair outcomes")
             addProperty("holdoutPolicy", "Explicit opt-in only; results used to tune must be retired from held-out evidence")
         }
         LocalBaselineCapture.createRun(output, manifest)
-        val outcomes = mutableListOf<LocalPairOutcome>()
+        val outcomes = mutableListOf<LocalHeadToHeadPair>()
         var regressionFailures = 0
         Files.newBufferedWriter(output.resolve("pairs.jsonl"), CREATE_NEW).use { writer ->
             (definitions + scenarios).forEachIndexed { index, definition ->
                 val records = JsonObject()
-                val winners = mutableMapOf<Boolean, String?>()
+                val reports = mutableMapOf<Boolean, LocalTacticalScenarioReport>()
                 // Alternate execution order to avoid always warming up on the same challenger side.
                 val order = if (index % 2 == 0) listOf(true, false) else listOf(false, true)
                 var failures = 0
@@ -71,7 +72,7 @@ internal object LocalPairedEvaluationCapture {
                         cycleTuning = if (asCycle) challenger else defender,
                         offenseTuning = if (asCycle) defender else challenger,
                         cycleDifficulty = difficulty, offenseDifficulty = difficulty, recordedDecisions = trace)
-                    winners[asCycle] = report.winner
+                    reports[asCycle] = report
                     val flags = failureConditions(report)
                     failures += flags.size
                     records.add(if (asCycle) "challengerAsCycle" else "challengerAsOffense", JsonObject().apply {
@@ -81,14 +82,15 @@ internal object LocalPairedEvaluationCapture {
                         addProperty("unresolved", report.winner == null)
                     })
                 }
-                val outcome = LocalPairOutcome(LocalEvaluationCorpus.key(definition), winners[true], winners[false])
+                val outcome = LocalHeadToHeadPair.fromReports(reports.getValue(true), reports.getValue(false))
                 val isRegression = index >= definitions.size
                 if (isRegression) regressionFailures += failures else outcomes.add(outcome)
                 val record = JsonObject().apply {
                     addProperty("kind", if (isRegression) "FIXED_REGRESSION" else "RANDOM_PAIR")
                     addProperty("split", split.name)
                     add("outcome", json.toJsonTree(outcome))
-                    addProperty("challengerPairScore", outcome.scores.average())
+                    addProperty("challengerPairScoreLower", (outcome.asCycle.lower + outcome.asOffense.lower) / 2)
+                    addProperty("challengerPairScoreUpper", (outcome.asCycle.upper + outcome.asOffense.upper) / 2)
                     add("executionOrder", json.toJsonTree(order.map { if (it) "CYCLE" else "OFFENSE" }))
                     add("orientations", records)
                 }
@@ -99,7 +101,9 @@ internal object LocalPairedEvaluationCapture {
         }
         check(LocalBaselineProvenance.capture(root) == identity) { "Inputs changed during paired evaluation" }
         val summary = JsonObject().apply {
+            addProperty("schemaVersion", "paired-evaluation-v2")
             addProperty("status", "COMPLETE")
+            addProperty("statusMeaning", "Capture finished; individual battles may remain incomplete")
             addProperty("split", split.name)
             add("randomPairs", json.toJsonTree(LocalPairedSummary.from(outcomes)))
             addProperty("regressionPairs", scenarios.size)

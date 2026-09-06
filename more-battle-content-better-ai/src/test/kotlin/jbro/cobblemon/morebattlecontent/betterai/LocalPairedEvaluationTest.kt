@@ -11,6 +11,21 @@ import kotlin.math.sqrt
 
 class LocalPairedEvaluationTest {
     @Test
+    fun `JSON summary preserves unfinished evidence instead of awarding draws`() {
+        val summary = LocalPairedSummary.from(listOf(
+            LocalHeadToHeadPair("mixed", LocalDuelOutcome.DRAW, LocalDuelOutcome.INCOMPLETE),
+        ))
+        assertEquals(1, summary.draws)
+        assertEquals(1, summary.incomplete)
+        assertEquals(0.25, summary.meanPairScoreLower)
+        assertEquals(0.75, summary.meanPairScoreUpper)
+        val json = com.google.gson.Gson().toJsonTree(summary).asJsonObject
+        assertFalse(json.has("meanPairScore"))
+        assertEquals(1, json["incomplete"].asInt)
+        assertEquals("INDEPENDENT_REPRESENTATIVE_PAIRS_NOT_GUARANTEED_BY_PRNG", json["intervalAssumption"].asString)
+    }
+
+    @Test
     fun `holdout requires explicit opt in before writing output`(@TempDir temporary: Path) {
         val output = temporary.resolve("should-not-exist")
         assertThrows(IllegalArgumentException::class.java) {
@@ -55,19 +70,21 @@ class LocalPairedEvaluationTest {
     @Test
     fun `pair summary keeps split wins and draws and uses pairs not battles`() {
         val result = LocalPairedSummary.from(listOf(
-            LocalPairOutcome("sweep", "cycle", "offense"),
-            LocalPairOutcome("split", "cycle", "cycle"),
-            LocalPairOutcome("draw", null, null),
+            LocalHeadToHeadPair("sweep", LocalDuelOutcome.WIN, LocalDuelOutcome.WIN),
+            LocalHeadToHeadPair("split", LocalDuelOutcome.WIN, LocalDuelOutcome.LOSS),
+            LocalHeadToHeadPair("draw", LocalDuelOutcome.DRAW, LocalDuelOutcome.DRAW),
         ))
         assertEquals(3, result.pairs)
         assertEquals(6, result.battles)
         assertEquals(3, result.wins)
         assertEquals(1, result.losses)
         assertEquals(2, result.draws)
-        assertEquals(2.0 / 3, result.meanPairScore, 1e-12)
+        assertEquals(0, result.incomplete)
+        assertEquals(2.0 / 3, result.meanPairScoreLower, 1e-12)
+        assertEquals(result.meanPairScoreLower, result.meanPairScoreUpper)
         assertEquals(0.0, result.intervalLower)
         assertEquals(1.0, result.intervalUpper)
-        val many = LocalPairedSummary.from(List(100) { LocalPairOutcome("p$it", "cycle", "cycle") })
+        val many = LocalPairedSummary.from(List(100) { LocalHeadToHeadPair("p$it", LocalDuelOutcome.WIN, LocalDuelOutcome.LOSS) })
         assertEquals(0.5 - sqrt(ln(40.0) / 200), many.intervalLower, 1e-12)
         assertEquals(0.5 + sqrt(ln(40.0) / 200), many.intervalUpper, 1e-12)
     }
@@ -75,9 +92,9 @@ class LocalPairedEvaluationTest {
     @Test
     fun `empty duplicate or invalid pair outcomes cannot become evidence`() {
         assertThrows(IllegalArgumentException::class.java) { LocalPairedSummary.from(emptyList()) }
-        val pair = LocalPairOutcome("duplicate", null, null)
+        val pair = LocalHeadToHeadPair("duplicate", LocalDuelOutcome.DRAW, LocalDuelOutcome.DRAW)
         assertThrows(IllegalArgumentException::class.java) { LocalPairedSummary.from(listOf(pair, pair)) }
-        assertThrows(IllegalArgumentException::class.java) { LocalPairOutcome("invalid", "unknown", null) }
+        assertThrows(IllegalArgumentException::class.java) { LocalHeadToHeadPair("", LocalDuelOutcome.WIN, LocalDuelOutcome.LOSS) }
         assertThrows(IllegalArgumentException::class.java) { LocalEvaluationCorpus.sample(0, 42, BattleFormat.SINGLE, EvaluationSplit.TUNING) }
     }
 }
