@@ -662,3 +662,31 @@ The fixed 100-pair regression checks 200 distinct teams, exact replay and a chan
 seed, plus insufficient-pool failure. This prepares reproducible teams; it does
 not execute battle turns, connect the full AI input adapter, demonstrate win rate,
 or validate runtime addons. Team sets and initialization data remain referee-only.
+
+### Native battles with both Local Brains
+
+`captureNativeTeams -PnativeTeamPairs=3 -PnativeTeamSeed=20260906` draws complete
+teams with the preceding evaluation policy, then runs singles with a separate
+real `LocalTacticalBrain` session for each side. A persistent Node process owns
+only battle execution. Both requests are captured before either choice is applied;
+every ordinary move/switch and forced replacement decision goes through its Brain.
+Illegal or rejected choices abort; the bridge never substitutes an action.
+
+Each new `build/reports/betterai-native-teams/<id>/` records the raw audit, team IDs,
+sets and seeds, plus per-battle referee input, decision-input/action JSONL, stderr
+and result. Defaults are one pair and at most 200 turns; `TURN_LIMIT` is not a win.
+Battle execution and requests are native, but the input adapter is still partial:
+basic public HP/status/stages/types/field state and revealed bench/moves are mapped;
+declarative move effects/callbacks, full public outcomes/volatiles, exact effect
+durations, gimmick candidates, complete future PP and runtime addons are not.
+Unannounced opponent Arceus types remain unknown rather than using private types.
+Own exact types/stats/items/abilities are available only to that side's Brain.
+
+Tests cover complete sampled battle termination with both Brains and forced
+replacements, hidden opponent bench mutation invariance, public observation
+mapping and illegal-action failure. Request names are normalized to the same UUIDs
+as public logs because the native engine truncates nicknames at 20 characters.
+Terminal/error paths destroy the stdin stream as well as the battle so the child
+process exits. This is an executable integration baseline, not an AI strength or
+production-adapter equivalence claim. Do not use these results to tune strength
+until the documented input gaps are addressed and paired evaluation is connected.

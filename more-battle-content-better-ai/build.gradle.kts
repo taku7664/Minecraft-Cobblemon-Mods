@@ -137,6 +137,21 @@ tasks.register<JavaExec>("auditPresetOracle") {
     }
 }
 
+tasks.register<JavaExec>("captureNativeTeams") {
+    group = "verification"
+    description = "Runs sampled complete teams with both Local Brains in embedded native singles."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.EmbeddedTeamBattle")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(providers.gradleProperty("nativeTeamOutput").orNull
+            ?: layout.buildDirectory.dir("reports/betterai-native-teams/${UUID.randomUUID()}").get().asFile.absolutePath,
+            providers.gradleProperty("nativeTeamPairs").orNull ?: "1",
+            providers.gradleProperty("nativeTeamSeed").orNull ?: "20260906"))
+    }
+}
+
 tasks.register<JavaExec>("compareDamageOracle") {
     group = "verification"
     description = "Compares base damage rolls and KO thresholds against embedded Showdown (requires Node.js)."
