@@ -720,3 +720,26 @@ mapped here pending resolution of the product adapter's broader mapping versus
 the Protect-only contract. Other volatile conditions and full observation parity
 with the product adapter remain incomplete. This is test infrastructure, not a
 production AI policy change or evidence of improved win rate.
+
+### Native seat-swapped pairs
+
+`captureNativePairs -PnativeTeamPairs=3 -PnativeTeamSeed=20260906` samples complete
+teams through the same audit, then runs each pair twice with the whole teams
+swapped between p1 and p2. Both seats use the current Local Brain; this is not a
+challenger-versus-baseline policy comparison. Each pair retains the same initial
+engine seed in both orientations, not a guarantee of matching random events after
+the actions diverge. Each game starts fresh Brain sessions.
+
+The new `build/reports/betterai-native-pairs/<id>/` directory contains `audit.json`,
+per-pair `pair.json`, separate forward/reversed native inputs, decision traces and
+results, and `summary.json`. `-PnativePairOutput=<new-directory>` overrides the
+output location. Outcomes follow the original p1 team (team A) after the swap.
+Native ties are `DRAW`; `TURN_LIMIT` is `INCOMPLETE`, never a draw or a silently
+dropped game. Invalid choices or execution errors still abort the capture instead
+of fabricating a result. A partially written directory is not a completed report.
+
+Summary counts are descriptive only: no policy-improvement rate or confidence
+interval is reported. Repeated draws of the same teams are possible, tuning and
+holdout partitions are not wired into this native capture yet, and the partial
+input-adapter limits above still apply. Changing seats does not resolve those
+limits or prove game-server compatibility.

@@ -152,6 +152,21 @@ tasks.register<JavaExec>("captureNativeTeams") {
     }
 }
 
+tasks.register<JavaExec>("captureNativePairs") {
+    group = "verification"
+    description = "Runs both native seat orientations for each complete sampled team pair."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.EmbeddedNativePairs")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(providers.gradleProperty("nativePairOutput").orNull
+            ?: layout.buildDirectory.dir("reports/betterai-native-pairs/${UUID.randomUUID()}").get().asFile.absolutePath,
+            providers.gradleProperty("nativeTeamPairs").orNull ?: "1",
+            providers.gradleProperty("nativeTeamSeed").orNull ?: "20260906"))
+    }
+}
+
 tasks.register<JavaExec>("compareDamageOracle") {
     group = "verification"
     description = "Compares base damage rolls and KO thresholds against embedded Showdown (requires Node.js)."

@@ -13,6 +13,20 @@ import java.util.UUID
 @EnabledIfSystemProperty(named = "betterai.oracle", matches = "true")
 class EmbeddedTeamBattleTest {
     @Test
+    fun `paired native capture runs both seats and keeps turn limits separate`(@TempDir directory: Path) {
+        val audit = EmbeddedPresetAudit.run(directory.resolve("audit"), teamPairs = 1)
+        val pair = audit.getAsJsonObject("teamSampling").getAsJsonArray("pairs")[0].asJsonObject
+        val result = EmbeddedNativePairs.run(directory.resolve("audit/engine"), pair, directory.resolve("pair"), maxTurns = 1)
+        assertFalse(result["complete"].asBoolean)
+        assertEquals(listOf("INCOMPLETE", "INCOMPLETE"), result.getAsJsonArray("teamAOutcomes").map { it.asString })
+        fun input(seat: String) = com.google.gson.JsonParser.parseString(java.nio.file.Files.readString(
+            directory.resolve("pair/$seat/referee-input.json"))).asJsonObject
+        assertEquals(input("forward")["p1"], input("reversed")["p2"])
+        assertEquals(input("forward")["p2"], input("reversed")["p1"])
+        assertEquals(input("forward")["battleSeed"], input("reversed")["battleSeed"])
+    }
+
+    @Test
     fun `native recharge encore and taunt announcements reach public constraints`(@TempDir directory: Path) {
         val audit = EmbeddedPresetAudit.run(directory.resolve("audit"), teamPairs = 1)
         val pair = audit.getAsJsonObject("teamSampling").getAsJsonArray("pairs")[0].asJsonObject.deepCopy()
