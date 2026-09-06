@@ -63,6 +63,8 @@ internal class Cobblemon173ShowdownObservationAdapter(
     @Synchronized
     fun publicPpSpent(): Map<UUID, Map<String, Int>> = observer.publicPpSpent()
 
+    fun transformedPokemon(): Set<UUID> = observer.transformedPokemon()
+
     private fun seedActiveOpponents(activeBattle: PokemonBattle) {
         val opponent = activeBattle.actors.firstOrNull { it.uuid == opponentActorId } ?: return
         opponent.activePokemon.forEach { active ->

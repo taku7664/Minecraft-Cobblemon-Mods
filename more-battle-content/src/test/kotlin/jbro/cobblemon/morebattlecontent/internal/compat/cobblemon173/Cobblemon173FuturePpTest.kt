@@ -7,6 +7,24 @@ import org.junit.jupiter.api.Test
 
 class Cobblemon173FuturePpTest {
     @Test
+    fun `copied public moves use temporary capacity while actual own PP still wins`() {
+        val own = pokemon(BattleSide.ALLY)
+        val opponent = pokemon(BattleSide.OPPONENT)
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 2, listOf(own, opponent),
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1),
+            emptyList(), emptyList())
+        fun pp(maximum: Int) = Cobblemon173PublicActionCatalog.from(state,
+            mapOf(opponent.battlePokemonId to mapOf("recover" to 2)),
+            mapOf(own.battlePokemonId to mapOf("recover" to 4)),
+            transformedPokemon = setOf(own.battlePokemonId, opponent.battlePokemonId),
+        ) { BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, maximum) }
+            .entries.associate { it.battlePokemonId to it.moves.single().details.currentPp }
+        assertEquals(3, pp(8)[opponent.battlePokemonId])
+        assertEquals(0, pp(1)[opponent.battlePokemonId])
+        assertEquals(4, pp(8)[own.battlePokemonId])
+    }
+
+    @Test
     fun `catalog shares PP estimates while refusing actual opponent PP and hidden moves`() {
         val own = pokemon(BattleSide.ALLY)
         val opponent = pokemon(BattleSide.OPPONENT)

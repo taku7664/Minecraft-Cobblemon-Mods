@@ -128,6 +128,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
                         id to moveset.moves.associate { it.id to it.pp }
                     }
                 }.toMap(),
+                transformedPokemon = observationAdapter.transformedPokemon(),
             ),
         )
         val primaryEndpoint = endpoint(primaryBrain, primarySession)

@@ -30,17 +30,32 @@ class Cobblemon173PublicBattleObserverTest {
         observer.observePpLoss(actor.battlePokemonId, "transform", 1)
         observer.observePpLoss(actor.battlePokemonId, "tackle", 7)
         observer.observeTransformation(actor.battlePokemonId)
+        assertEquals(setOf(actor.battlePokemonId), observer.transformedPokemon())
         assertEquals(emptyMap<String, Int>(), observer.publicPpSpent()[actor.battlePokemonId])
         observer.observePpLoss(actor.battlePokemonId, "tackle", 2)
         observer.observePpRestore(actor.battlePokemonId, "tackle", 1, 5)
         assertEquals(mapOf("tackle" to 1), observer.publicPpSpent()[actor.battlePokemonId])
         observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, bench))
+        assertTrue(observer.transformedPokemon().isEmpty())
         assertEquals(mapOf("transform" to 1, "tackle" to 7), observer.publicPpSpent()[actor.battlePokemonId])
         observer.observe(Cobblemon173PublicObservation.PokemonPresented(3, actor))
         observer.observeTransformation(actor.battlePokemonId)
         assertEquals(emptyMap<String, Int>(), observer.publicPpSpent()[actor.battlePokemonId])
         observer.reset()
         assertTrue(observer.publicPpSpent().isEmpty())
+        assertTrue(observer.transformedPokemon().isEmpty())
+    }
+
+    @Test
+    fun `copied PP restoration caps expenditure at copied capacity not original capacity`() {
+        val id = UUID.randomUUID()
+        val observer = Cobblemon173PublicBattleObserver(initialOpponentPokemonCount = 1)
+        observer.observeTransformation(id)
+        observer.observePpLoss(id, "tackle", 30)
+        observer.observePpRestore(id, "tackle", 10, 56)
+        assertEquals(0, observer.publicPpSpent()[id]?.get("tackle"))
+        observer.observePpLoss(id, "tackle", 1)
+        assertEquals(1, observer.publicPpSpent()[id]?.get("tackle"))
     }
 
     @Test

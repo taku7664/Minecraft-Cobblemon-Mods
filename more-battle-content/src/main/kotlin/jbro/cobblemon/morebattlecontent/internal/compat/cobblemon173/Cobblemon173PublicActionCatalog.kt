@@ -15,6 +15,7 @@ internal object Cobblemon173PublicActionCatalog {
         state: BattleStateView,
         ppSpent: Map<UUID, Map<String, Int>>,
         ownCurrentPp: Map<UUID, Map<String, Int>>,
+        transformedPokemon: Set<UUID> = emptySet(),
         moveDetails: (String) -> BattleMoveCandidateView? = Cobblemon173ActionCandidateAdapter::publicMoveDetails,
     ): BattlePublicActionCatalogView = BattlePublicActionCatalogView(
         state.pokemon.filterNot { it.fainted }.mapNotNull { pokemon ->
@@ -28,7 +29,7 @@ internal object Cobblemon173PublicActionCatalog {
                         ownCurrentPp[pokemon.battlePokemonId]?.get(moveId)
                     } else null
                     BattlePublicMoveOptionView(moveId, details.copy(currentPp = remainingPp(
-                        details.currentPp,
+                        ppCapacity(details.currentPp, pokemon.battlePokemonId in transformedPokemon),
                         ppSpent[pokemon.battlePokemonId]?.get(moveId) ?: 0,
                         actual,
                     )), knowledge)
@@ -41,6 +42,10 @@ internal object Cobblemon173PublicActionCatalog {
             ).takeIf { moves.isNotEmpty() }
         },
     )
+
+    /** Native Transform has a temporary five-PP pool, except for one-PP moves. */
+    internal fun ppCapacity(maximumPp: Int, transformed: Boolean): Int =
+        if (!transformed) maximumPp else if (maximumPp == 1) 1 else 5
 
     /** A point estimate under the PP Max assumption, not knowledge of the opponent's real PP. */
     internal fun remainingPp(maximumPp: Int, ppSpent: Int, actualCurrentPp: Int?): Int {

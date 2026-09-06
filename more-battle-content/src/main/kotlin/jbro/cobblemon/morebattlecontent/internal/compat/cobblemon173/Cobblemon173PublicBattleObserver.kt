@@ -322,6 +322,9 @@ internal class Cobblemon173PublicBattleObserver(
         copiedPpSpent[pokemonId] = linkedMapOf()
     }
 
+    @Synchronized
+    fun transformedPokemon(): Set<UUID> = copiedPpSpent.keys.toSet()
+
     private fun expenditure(pokemonId: UUID): MutableMap<String, Int> =
         copiedPpSpent[pokemonId] ?: ppSpent.getOrPut(pokemonId) { linkedMapOf() }
 
@@ -339,7 +342,8 @@ internal class Cobblemon173PublicBattleObserver(
     fun observePpRestore(pokemonId: UUID, moveId: String, amount: Int, maximumPp: Int) {
         require(moveId.isNotBlank() && amount > 0 && maximumPp >= 0)
         val spent = expenditure(pokemonId)
-        spent[moveId] = ((spent[moveId] ?: 0).coerceAtMost(maximumPp) - amount).coerceAtLeast(0)
+        val capacity = Cobblemon173PublicActionCatalog.ppCapacity(maximumPp, pokemonId in copiedPpSpent)
+        spent[moveId] = ((spent[moveId] ?: 0).coerceAtMost(capacity) - amount).coerceAtLeast(0)
     }
 
     /** Publicly modeled net expenditure; raw use counts remain available for auditing. */
