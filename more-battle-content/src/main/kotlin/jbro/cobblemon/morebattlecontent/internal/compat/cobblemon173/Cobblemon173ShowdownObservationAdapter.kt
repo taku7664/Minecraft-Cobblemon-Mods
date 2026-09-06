@@ -116,6 +116,9 @@ internal class Cobblemon173ShowdownObservationAdapter(
             }
         }
         when (message.id) {
+            "-transform" -> resolvePokemon(activeBattle, message, 0)?.let {
+                observer.observeTransformation(it.battlePokemonId)
+            }
             "switch", "drag" -> {
                 observer.closeActionWindow()
                 resolvePokemon(activeBattle, message, 0)?.let {

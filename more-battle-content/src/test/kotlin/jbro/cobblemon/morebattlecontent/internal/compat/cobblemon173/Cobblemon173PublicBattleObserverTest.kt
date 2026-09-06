@@ -22,6 +22,28 @@ import org.junit.jupiter.api.Test
 
 class Cobblemon173PublicBattleObserverTest {
     @Test
+    fun `copied PP is isolated and original expenditure returns on switching out`() {
+        val actor = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
+        val bench = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
+        val observer = Cobblemon173PublicBattleObserver(initialOpponentPokemonCount = 2)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, actor))
+        observer.observePpLoss(actor.battlePokemonId, "transform", 1)
+        observer.observePpLoss(actor.battlePokemonId, "tackle", 7)
+        observer.observeTransformation(actor.battlePokemonId)
+        assertEquals(emptyMap<String, Int>(), observer.publicPpSpent()[actor.battlePokemonId])
+        observer.observePpLoss(actor.battlePokemonId, "tackle", 2)
+        observer.observePpRestore(actor.battlePokemonId, "tackle", 1, 5)
+        assertEquals(mapOf("tackle" to 1), observer.publicPpSpent()[actor.battlePokemonId])
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, bench))
+        assertEquals(mapOf("transform" to 1, "tackle" to 7), observer.publicPpSpent()[actor.battlePokemonId])
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(3, actor))
+        observer.observeTransformation(actor.battlePokemonId)
+        assertEquals(emptyMap<String, Int>(), observer.publicPpSpent()[actor.battlePokemonId])
+        observer.reset()
+        assertTrue(observer.publicPpSpent().isEmpty())
+    }
+
+    @Test
     fun `old Kotlin default argument constructor remains callable`() {
         val constructor = BattlePokemonStateView::class.java.constructors.single {
             it.parameterCount == 19 && it.parameterTypes.last().name == "kotlin.jvm.internal.DefaultConstructorMarker"

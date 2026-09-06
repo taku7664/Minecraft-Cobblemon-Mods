@@ -32,6 +32,7 @@ internal class Cobblemon173PublicBattleObserver(
     private val events = ArrayDeque<BattleObservedEventView>()
     private val moveUses = linkedMapOf<UUID, MutableMap<String, Int>>()
     private val ppSpent = linkedMapOf<UUID, MutableMap<String, Int>>()
+    private val copiedPpSpent = linkedMapOf<UUID, MutableMap<String, Int>>()
     private val gastroAcid = linkedSetOf<UUID>()
     private val endedGas = linkedSetOf<UUID>()
     private val faintedOpponents = linkedSetOf<UUID>()
@@ -58,6 +59,7 @@ internal class Cobblemon173PublicBattleObserver(
             is Cobblemon173PublicObservation.PokemonPresented -> {
                 closeActionWindow()
                 val incoming = observation.pokemon
+                copiedPpSpent.remove(incoming.battlePokemonId)
                 gastroAcid.remove(incoming.battlePokemonId)
                 endedGas.remove(incoming.battlePokemonId)
                 val inherited = if (observation.transfersSubstitute && incoming.activeSlot != null) {
@@ -314,11 +316,20 @@ internal class Cobblemon173PublicBattleObserver(
         }
     }
 
+    /** A successful public Transform starts a fresh temporary PP pool, retaining the original. */
+    @Synchronized
+    fun observeTransformation(pokemonId: UUID) {
+        copiedPpSpent[pokemonId] = linkedMapOf()
+    }
+
+    private fun expenditure(pokemonId: UUID): MutableMap<String, Int> =
+        copiedPpSpent[pokemonId] ?: ppSpent.getOrPut(pokemonId) { linkedMapOf() }
+
     /** Records modeled use expenditure or a PP loss explicitly named by a public effect. */
     @Synchronized
     fun observePpLoss(pokemonId: UUID, moveId: String, amount: Int) {
         require(moveId.isNotBlank() && amount > 0)
-        val losses = ppSpent.getOrPut(pokemonId) { linkedMapOf() }
+        val losses = expenditure(pokemonId)
         losses[moveId] = ((losses[moveId] ?: 0).toLong() + amount)
             .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
     }
@@ -327,14 +338,14 @@ internal class Cobblemon173PublicBattleObserver(
     @Synchronized
     fun observePpRestore(pokemonId: UUID, moveId: String, amount: Int, maximumPp: Int) {
         require(moveId.isNotBlank() && amount > 0 && maximumPp >= 0)
-        val spent = ppSpent.getOrPut(pokemonId) { linkedMapOf() }
+        val spent = expenditure(pokemonId)
         spent[moveId] = ((spent[moveId] ?: 0).coerceAtMost(maximumPp) - amount).coerceAtLeast(0)
     }
 
     /** Publicly modeled net expenditure; raw use counts remain available for auditing. */
     @Synchronized
     fun publicPpSpent(): Map<UUID, Map<String, Int>> =
-        ppSpent.mapValues { it.value.toMap() }
+        (ppSpent + copiedPpSpent).mapValues { it.value.toMap() }
 
     @Synchronized
     fun publicSnapshot(): Cobblemon173PublicBattleSnapshot = Cobblemon173PublicBattleSnapshot(
@@ -361,6 +372,7 @@ internal class Cobblemon173PublicBattleObserver(
         events.clear()
         moveUses.clear()
         ppSpent.clear()
+        copiedPpSpent.clear()
         gastroAcid.clear()
         endedGas.clear()
         faintedOpponents.clear()
@@ -391,6 +403,7 @@ internal class Cobblemon173PublicBattleObserver(
                     current.side == snapshot.side &&
                     current.activeSlot == snapshot.activeSlot
                 ) {
+                    copiedPpSpent.remove(id)
                     current.copyView(
                         activeSlot = null,
                         actionConstraints = BattlePokemonActionConstraintView.empty(),
