@@ -119,7 +119,8 @@ internal class Cobblemon173ShowdownObservationAdapter(
         }
         when (message.id) {
             "-transform" -> resolvePokemon(activeBattle, message, 0)?.let {
-                observer.observeTransformation(it.battlePokemonId)
+                observer.observeTransformation(it.battlePokemonId,
+                    resolvePokemon(activeBattle, message, 1)?.battlePokemonId)
             }
             "switch", "drag" -> {
                 observer.closeActionWindow()

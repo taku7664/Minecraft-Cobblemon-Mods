@@ -33,6 +33,7 @@ internal class Cobblemon173PublicBattleObserver(
     private val moveUses = linkedMapOf<UUID, MutableMap<String, Int>>()
     private val ppSpent = linkedMapOf<UUID, MutableMap<String, Int>>()
     private val copiedPpSpent = linkedMapOf<UUID, MutableMap<String, Int>>()
+    private val originalMoves = linkedMapOf<UUID, Set<String>>()
     private val gastroAcid = linkedSetOf<UUID>()
     private val endedGas = linkedSetOf<UUID>()
     private val faintedOpponents = linkedSetOf<UUID>()
@@ -59,7 +60,11 @@ internal class Cobblemon173PublicBattleObserver(
             is Cobblemon173PublicObservation.PokemonPresented -> {
                 closeActionWindow()
                 val incoming = observation.pokemon
-                copiedPpSpent.remove(incoming.battlePokemonId)
+                finishTransformation(incoming.battlePokemonId)?.let { moves ->
+                    pokemon[incoming.battlePokemonId]?.let { current ->
+                        pokemon[incoming.battlePokemonId] = current.copyView(knownMoveIds = moves)
+                    }
+                }
                 gastroAcid.remove(incoming.battlePokemonId)
                 endedGas.remove(incoming.battlePokemonId)
                 val inherited = if (observation.transfersSubstitute && incoming.activeSlot != null) {
@@ -318,8 +323,18 @@ internal class Cobblemon173PublicBattleObserver(
 
     /** A successful public Transform starts a fresh temporary PP pool, retaining the original. */
     @Synchronized
-    fun observeTransformation(pokemonId: UUID) {
+    fun observeTransformation(pokemonId: UUID, targetId: UUID? = null) {
+        val copiedMoves = pokemon[targetId]?.knownMoveIds.orEmpty().toSet()
+        pokemon[pokemonId]?.let { current ->
+            originalMoves.putIfAbsent(pokemonId, current.knownMoveIds.toSet())
+            pokemon[pokemonId] = current.copyView(knownMoveIds = copiedMoves)
+        }
         copiedPpSpent[pokemonId] = linkedMapOf()
+    }
+
+    private fun finishTransformation(pokemonId: UUID): Set<String>? {
+        copiedPpSpent.remove(pokemonId)
+        return originalMoves.remove(pokemonId)
     }
 
     @Synchronized
@@ -377,6 +392,7 @@ internal class Cobblemon173PublicBattleObserver(
         moveUses.clear()
         ppSpent.clear()
         copiedPpSpent.clear()
+        originalMoves.clear()
         gastroAcid.clear()
         endedGas.clear()
         faintedOpponents.clear()
@@ -407,8 +423,9 @@ internal class Cobblemon173PublicBattleObserver(
                     current.side == snapshot.side &&
                     current.activeSlot == snapshot.activeSlot
                 ) {
-                    copiedPpSpent.remove(id)
+                    val restoredMoves = finishTransformation(id)
                     current.copyView(
+                        knownMoveIds = restoredMoves ?: current.knownMoveIds,
                         activeSlot = null,
                         actionConstraints = BattlePokemonActionConstraintView.empty(),
                         knownVolatileEffectIds = emptySet(),

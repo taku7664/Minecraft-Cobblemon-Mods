@@ -22,6 +22,28 @@ import org.junit.jupiter.api.Test
 
 class Cobblemon173PublicBattleObserverTest {
     @Test
+    fun `transform copies only revealed target moves and restores original moves on switch`() {
+        val actor = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
+        val target = publicPokemon(BattleSide.ALLY, activeSlot = 0)
+        val bench = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
+        val observer = Cobblemon173PublicBattleObserver(initialOpponentPokemonCount = 2)
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, target, "splash", emptyList()))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, actor, "transform", listOf(target)))
+        observer.observeTransformation(actor.battlePokemonId, target.battlePokemonId)
+        fun moves(id: UUID) = observer.publicSnapshot().pokemon.single { it.battlePokemonId == id }.knownMoveIds
+        assertEquals(setOf("splash"), moves(actor.battlePokemonId))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(2, actor, "tackle", emptyList()))
+        assertEquals(setOf("splash", "tackle"), moves(actor.battlePokemonId))
+        assertEquals(setOf("splash"), moves(target.battlePokemonId))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(3, bench))
+        assertEquals(setOf("transform"), moves(actor.battlePokemonId))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(4, actor))
+        assertEquals(setOf("transform"), moves(actor.battlePokemonId))
+        observer.observeTransformation(actor.battlePokemonId, UUID.randomUUID())
+        assertTrue(moves(actor.battlePokemonId).isEmpty())
+    }
+
+    @Test
     fun `copied PP is isolated and original expenditure returns on switching out`() {
         val actor = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
         val bench = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
