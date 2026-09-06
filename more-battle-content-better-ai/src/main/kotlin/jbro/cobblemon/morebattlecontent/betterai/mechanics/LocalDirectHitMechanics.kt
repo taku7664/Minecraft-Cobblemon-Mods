@@ -128,7 +128,7 @@ internal object LocalDirectHitMechanics {
             val healed = (hp + berryHealing).coerceAtMost(1.0)
             return TargetResolution(
                 pokemon = copyPokemon(target, hpFraction = healed, knownHeldItemId = null, fainted = false),
-                directDamageFraction = (target.hpFraction - healed).coerceAtLeast(0.0),
+                directDamageFraction = incomingDamage,
             )
         }
         return TargetResolution(

@@ -848,3 +848,10 @@ verified native outcomes merely because the field survives a copy. The original
 Pokemon-state constructor and Kotlin default-argument constructor are preserved;
 the old default-mask invocation has a regression test. Broader mixed-version
 runtime compatibility is not implied by that one ABI check.
+
+Direct-hit accounting now keeps inflicted damage separate from the target's
+post-hit berry healing. `LocalPinchBerryTest` covers ordinary Sitrus healing,
+healing larger than the hit, and overkill capping: restoring target HP does not
+retroactively reduce damage attributed to the move. This does not resolve the
+separate target-HP/actor-HP conversion used by drain and recoil, or validate every
+berry's activation threshold and healing amount.
