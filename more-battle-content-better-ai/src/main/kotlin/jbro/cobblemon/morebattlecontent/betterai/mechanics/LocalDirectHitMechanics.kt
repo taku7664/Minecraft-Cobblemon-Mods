@@ -104,13 +104,16 @@ internal object LocalDirectHitMechanics {
 
         val sashReady = canonical(target.knownHeldItemId) == "focussash" &&
             target.hpFraction >= FULL_HP_EPSILON && incomingDamage >= target.hpFraction
-        if (sashReady) {
+        val sturdyReady = !ignoreTargetAbility && canonical(target.knownAbilityId) == "sturdy" &&
+            target.hpFraction >= FULL_HP_EPSILON && incomingDamage >= target.hpFraction
+        if (sturdyReady || sashReady) {
             val oneHp = oneHpFraction(target)
             return TargetResolution(
                 pokemon = copyPokemon(
                     target,
                     hpFraction = oneHp,
-                    knownHeldItemId = null,
+                    // Sturdy's damage callback precedes Sash, so the item is not consumed.
+                    knownHeldItemId = if (sturdyReady) target.knownHeldItemId else null,
                     fainted = false,
                 ),
                 directDamageFraction = (target.hpFraction - oneHp).coerceAtLeast(0.0),
