@@ -12,7 +12,14 @@ class EmbeddedPpTimelineTest {
     fun `native PP updates distinguish ordinary turns mid turn switches and transformed slots`(@TempDir directory: Path) {
         val result = EmbeddedShowdownOracle.ppTimeline(directory)
         val cases = result.getAsJsonArray("cases").associate { it.asJsonObject["id"].asString to it.asJsonObject }
-        assertEquals(setOf("ordinary", "pivot", "transform", "pressure", "spite", "leppa"), cases.keys)
+        assertEquals(setOf("ordinary", "pivot", "transform", "pressure", "spite", "leppa", "sleeptalk"), cases.keys)
+        val called = cases.getValue("sleeptalk")
+        assertEquals(8, called["callerPp"].asInt)
+        assertEquals(35, called["calledPp"].asInt)
+        assertTrue(called.getAsJsonArray("publicLog").any {
+            it.asString.startsWith("|move|") && it.asString.contains("|Tackle|") &&
+                it.asString.contains("[from]move: Sleep Talk")
+        })
         for ((id, expectedPp) in mapOf("pressure" to 33, "spite" to 30, "leppa" to 10)) {
             val sample = cases.getValue(id)
             assertEquals(expectedPp, sample["livePp"].asInt, id)

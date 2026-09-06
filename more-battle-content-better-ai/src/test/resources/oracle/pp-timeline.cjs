@@ -43,10 +43,30 @@ function run(id, species, move, options = {}) {
       publicLog: battle.log.filter(line => !line.startsWith('|pp_update|')) };
   } finally { battle.destroy(); }
 }
+function runCalledMove() {
+  const battle = new Battle({ format, seed: [1, 2, 3, 4] });
+  try {
+    const own = set('Snorlax', 'sleeptalk', 1);
+    // Comatose makes Sleep Talk deterministic without manipulating hidden sleep counters.
+    own.ability = 'Comatose';
+    own.moves = ['sleeptalk', 'tackle'];
+    own.movesInfo = own.moves.map(move => ({ pp: dex.moves.get(move).pp, maxPp: dex.moves.get(move).pp }));
+    const foe = set('Shuckle', 'splash', 3);
+    foe.ability = 'Pressure';
+    battle.setPlayer('p1', { name: 'p1', team: [own] });
+    battle.setPlayer('p2', { name: 'p2', team: [foe] });
+    if (!battle.choose('p1', 'move 1') || !battle.choose('p2', 'move 1')) throw new Error('Sleep Talk choice rejected');
+    const slots = battle.p1.active[0].moveSlots;
+    return { id: 'sleeptalk', callerPp: slots.find(move => move.id === 'sleeptalk').pp,
+      calledPp: slots.find(move => move.id === 'tackle').pp,
+      publicLog: battle.log.filter(line => !line.startsWith('|pp_update|')) };
+  } finally { battle.destroy(); }
+}
 process.stdout.write(JSON.stringify({ status: 'COMPLETE', format, seed: [1, 2, 3, 4], cases: [
   run('ordinary', 'Snorlax', 'tackle'), run('pivot', 'Scizor', 'uturn'), run('transform', 'Ditto', 'transform'),
   run('pressure', 'Snorlax', 'tackle', { foeAbility: 'Pressure' }),
   // Shuckle moves after Snorlax, so Spite can target the Tackle used in this turn.
   run('spite', 'Snorlax', 'tackle', { foeSpecies: 'Shuckle', foeMove: 'spite' }),
   run('leppa', 'Snorlax', 'tackle', { item: 'Leppa Berry', initialPp: 1 }),
+  runCalledMove(),
 ] }));
