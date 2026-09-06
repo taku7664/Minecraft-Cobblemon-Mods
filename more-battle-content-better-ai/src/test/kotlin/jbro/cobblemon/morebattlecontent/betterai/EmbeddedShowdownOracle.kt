@@ -33,6 +33,8 @@ internal object EmbeddedShowdownOracle {
 
     fun weatherResidual(directory: Path): JsonObject = runScript(directory, "/oracle/weather-residual-oracle.cjs", "")
 
+    fun typeChanges(directory: Path): JsonObject = runScript(directory, "/oracle/type-change-oracle.cjs", "")
+
     fun presetAudit(directory: Path, input: JsonObject): JsonObject {
         Files.createDirectories(directory)
         val inputFile = directory.resolve("preset-input.json").toAbsolutePath()

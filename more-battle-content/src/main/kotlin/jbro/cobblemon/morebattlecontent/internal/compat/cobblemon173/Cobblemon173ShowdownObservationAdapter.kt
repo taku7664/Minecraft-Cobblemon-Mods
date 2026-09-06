@@ -101,6 +101,11 @@ internal class Cobblemon173ShowdownObservationAdapter(
     }
 
     private fun consumeMessage(activeBattle: PokemonBattle, message: BattleMessage) {
+        Cobblemon173PublicTypeChange.fromMessage(message)?.let { change ->
+            resolvePokemon(activeBattle, message, 0)?.let { pokemon ->
+                observer.observe(Cobblemon173PublicObservation.TypesChanged(observedTurn, pokemon, change))
+            }
+        }
         when (message.id) {
             "switch", "drag" -> {
                 observer.closeActionWindow()

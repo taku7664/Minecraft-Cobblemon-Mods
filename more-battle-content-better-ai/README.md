@@ -618,3 +618,25 @@ The audit does not execute AI battles, sample teams, load runtime addon
 registrations, or prove battle quality. Run
 `unitTest -Ptests=EmbeddedPresetAudit -Poracle` for unknown-move,
 impossible-ability and actual Arceus starting-type controls.
+
+### Public temporary type observation
+
+The core observation adapter now consumes explicit `-start ... typechange` and
+`typeadd` messages for both sides. Replacement clears the added type; a new
+added type replaces the previous addition. `-end ... typeadd` removes it.
+Ordinary HP/status snapshots preserve the public override, while switching out,
+re-entry and battle reset clear it. The common state assembler also applies the
+override to own active Pokemon, so both Brain owners receive the same facts.
+
+Missing or unsupported type values become UNKNOWN (an empty known-type set),
+not the old species types or a hidden target lookup. Reflect Type is one native
+example whose first event omits the value; a later explicit public type update
+can resolve it. This does not resolve unannounced Multitype
+types, Terastallization, Transform, Illusion or all form-change messages.
+
+`unitTest -Ptests=EmbeddedTypeChanges -Poracle` independently executes three
+native protocol fixtures with ten checkpoints: Soak plus switch reset,
+Forest's Curse/Trick-or-Treat/Soak, and Reflect Type's missing-value event followed
+by the explicit silent type update. Core unit tests
+exercise the parser, knowledge lifetime and own-state assembly separately;
+this is not an end-to-end live Cobblemon adapter or full-preset AI battle test.

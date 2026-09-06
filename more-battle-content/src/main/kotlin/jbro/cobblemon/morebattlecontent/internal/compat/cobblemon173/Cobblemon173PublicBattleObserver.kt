@@ -27,6 +27,7 @@ internal class Cobblemon173PublicBattleObserver(
     private val maximumRecentEvents: Int = DEFAULT_MAXIMUM_RECENT_EVENTS,
 ) {
     private val pokemon = linkedMapOf<UUID, BattlePokemonStateView>()
+    private val publicTypes = Cobblemon173PublicTypeKnowledge()
     private val events = ArrayDeque<BattleObservedEventView>()
     private val faintedOpponents = linkedSetOf<UUID>()
     private var sequence = 0L
@@ -100,6 +101,13 @@ internal class Cobblemon173PublicBattleObserver(
             }
 
             is Cobblemon173PublicObservation.MoveOutcome -> appendMoveOutcome(observation)
+
+            is Cobblemon173PublicObservation.TypesChanged -> {
+                val actor = knownOrUpsert(observation.pokemon)
+                pokemon[actor.battlePokemonId] = actor.copyView(knownTypeIds = publicTypes.apply(
+                    actor.battlePokemonId, actor.knownTypeIds, observation.change,
+                ))
+            }
 
             is Cobblemon173PublicObservation.ActionConstraintChanged -> {
                 val actor = knownOrUpsert(observation.pokemon)
@@ -256,11 +264,13 @@ internal class Cobblemon173PublicBattleObserver(
         ),
         events = events.toList(),
         remainingOpponentPokemon = (initialOpponentPokemonCount - faintedOpponents.size).coerceAtLeast(0),
+        typeOverrides = publicTypes.snapshot(),
     )
 
     @Synchronized
     fun reset() {
         pokemon.clear()
+        publicTypes.reset()
         events.clear()
         faintedOpponents.clear()
         sequence = 0
@@ -282,6 +292,7 @@ internal class Cobblemon173PublicBattleObserver(
         snapshot: Cobblemon173PublicPokemonSnapshot,
         refreshPublicIdentity: Boolean = false,
     ): BattlePokemonStateView {
+        if (refreshPublicIdentity) publicTypes.clear(snapshot.battlePokemonId)
         if (snapshot.activeSlot != null) {
             pokemon.replaceAll { id, current ->
                 if (
@@ -292,6 +303,7 @@ internal class Cobblemon173PublicBattleObserver(
                     current.copyView(
                         activeSlot = null,
                         actionConstraints = BattlePokemonActionConstraintView.empty(),
+                        knownTypeIds = publicTypes.clear(id) ?: current.knownTypeIds,
                     )
                 } else {
                     current
@@ -525,6 +537,12 @@ internal sealed interface Cobblemon173PublicObservation {
     data class PokemonPresented(override val turn: Int, val pokemon: Cobblemon173PublicPokemonSnapshot) :
         Cobblemon173PublicObservation
 
+    data class TypesChanged(
+        override val turn: Int,
+        val pokemon: Cobblemon173PublicPokemonSnapshot,
+        val change: Cobblemon173PublicTypeChange,
+    ) : Cobblemon173PublicObservation
+
     data class MoveUsed(
         override val turn: Int,
         val actor: Cobblemon173PublicPokemonSnapshot,
@@ -648,9 +666,11 @@ internal class Cobblemon173PublicBattleSnapshot(
     val field: BattleFieldStateView,
     events: List<BattleObservedEventView>,
     val remainingOpponentPokemon: Int,
+    typeOverrides: Map<UUID, Set<String>> = emptyMap(),
 ) {
     val pokemon = pokemon.toList()
     val events = events.toList()
+    val typeOverrides = typeOverrides.mapValues { it.value.toSet() }
 
     init {
         require(remainingOpponentPokemon >= 0)
@@ -669,7 +689,11 @@ internal object Cobblemon173BattleStateAssembler {
         require(ownPokemon.all { it.side == BattleSide.ALLY })
         val publicById = publicSnapshot.pokemon.associateBy(BattlePokemonStateView::battlePokemonId)
         val allies = ownPokemon.map { own ->
-            own.copyView(actionConstraints = publicById[own.battlePokemonId]?.actionConstraints ?: own.actionConstraints)
+            own.copyView(
+                actionConstraints = publicById[own.battlePokemonId]?.actionConstraints ?: own.actionConstraints,
+                knownTypeIds = if (own.activeSlot == null) own.knownTypeIds else
+                    publicSnapshot.typeOverrides[own.battlePokemonId] ?: own.knownTypeIds,
+            )
         }
         val opponents = publicSnapshot.pokemon.filter { it.side == BattleSide.OPPONENT }
         val pokemon = allies + opponents
@@ -703,6 +727,7 @@ private fun BattlePokemonStateView.copyView(
     knownAbilityId: String? = this.knownAbilityId,
     knownHeldItemId: String? = this.knownHeldItemId,
     actionConstraints: BattlePokemonActionConstraintView = this.actionConstraints,
+    knownTypeIds: Set<String> = this.knownTypeIds,
 ) = BattlePokemonStateView(
     battlePokemonId = battlePokemonId,
     side = side,
