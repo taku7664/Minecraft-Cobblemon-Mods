@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalSituationalEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionPolicy
 import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicSingleTurnProjector
 import org.junit.jupiter.api.Assertions.*
@@ -24,8 +25,12 @@ class LocalFaintedTargetRetargetTest {
     @Test
     fun `a living selected foe is not replaced by the other foe`() = checkRetarget(targetHp = 1.0)
 
+    @Test
+    fun `uncertain second hit is not silently treated as a full duplicate credit`() = checkRetarget(accuracy = 50.0)
+
     private fun checkRetarget(replacementTypes: Set<String> = setOf("normal"),
-        pattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT, targetHp: Double = 0.01) {
+        pattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT, targetHp: Double = 0.01,
+        accuracy: Double = 100.0) {
         for (targetSlot in 0..1) {
             val allies = (0..1).map { mon(BattleSide.ALLY, it, 1.0, 200 - it * 50) }
             val foes = (0..1).map { mon(BattleSide.OPPONENT, it, if (it == targetSlot) targetHp else 1.0, 50,
@@ -36,7 +41,8 @@ class LocalFaintedTargetRetargetTest {
                 actorSlot = slot, moveSlot = 0, moveId = "cobblemon:tackle",
                 targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, target)),
                 moveDetails = BattleMoveCandidateView("normal", BattleMoveDamageCategory.PHYSICAL,
-                    40.0, 100.0, 0, 35, if (slot == 0) BattleMoveTargetPattern.SELECTED_OPPONENT else pattern))
+                    40.0, if (slot == 0) 100.0 else accuracy, 0, 35,
+                    if (slot == 0) BattleMoveTargetPattern.SELECTED_OPPONENT else pattern))
             fun joint(secondTarget: Int): BattleActionCandidate {
                 val parts = listOf(attack(0, targetSlot), attack(1, secondTarget))
                 return BattleActionCandidate("joint-$secondTarget", BattleActionKind.COMPOSITE,
@@ -64,7 +70,16 @@ class LocalFaintedTargetRetargetTest {
             assertEquals(if (pattern == BattleMoveTargetPattern.SCRIPTED || targetHp == 1.0) 1.0 else split.second, focused.second, 1e-9,
                 "A fainted opposing target must not silently discard the second attack")
             if (targetHp < 1.0 && replacementTypes == setOf("normal") &&
-                pattern == BattleMoveTargetPattern.SELECTED_OPPONENT) {
+                pattern == BattleMoveTargetPattern.SELECTED_OPPONENT && accuracy == 100.0) {
+                val focusedRank = ranked.single { it.outcome.candidate.actionId == "joint-$targetSlot" }
+                val splitRank = ranked.single { it.outcome.candidate.actionId == "joint-${1 - targetSlot}" }
+                assertEquals(splitRank.outcome.knockoutUtility, focusedRank.outcome.knockoutUtility, 1e-9,
+                    "One certain fainted target must contribute one knockout credit")
+                val coordinationDifference = LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(
+                    focusedRank.outcome.candidate, context) - LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(
+                    splitRank.outcome.candidate, context)
+                assertEquals(coordinationDifference, focusedRank.outcome.tacticalUtility - splitRank.outcome.tacticalUtility, 1e-9,
+                    "The scorer and the reported knockout credit must remove the same duplicate")
                 // Baseline evidence, not a frozen expected score or a new scoring contract.
                 ranked.forEach { rank ->
                     val candidate = rank.outcome.candidate
@@ -75,6 +90,10 @@ class LocalFaintedTargetRetargetTest {
                         "damage=${rank.outcome.expectedDamageFraction} " +
                         "coordination=${LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context)}")
                 }
+            }
+            if (accuracy < 100.0) {
+                context.candidates.forEach { assertEquals(0.0,
+                    LocalTacticalScorer.duplicateCertainKnockoutCredit(it, context), 1e-9) }
             }
         }
     }

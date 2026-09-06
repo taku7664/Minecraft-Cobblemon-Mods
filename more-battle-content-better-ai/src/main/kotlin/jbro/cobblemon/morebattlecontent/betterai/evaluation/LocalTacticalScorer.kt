@@ -40,7 +40,8 @@ internal object LocalTacticalScorer {
         BattleActionKind.SWITCH -> scoreSwitch(candidate, context, strategy, profile, tuning)
         BattleActionKind.COMPOSITE ->
             candidate.componentActions.sumOf { score(it, context, strategy, profile, tuning) } +
-                LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context)
+                LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context) -
+                duplicateCertainKnockoutCredit(candidate, context, tuning)
         BattleActionKind.WAIT -> -100.0
         BattleActionKind.FORFEIT -> -10_000.0
     }
@@ -62,6 +63,28 @@ internal object LocalTacticalScorer {
         if (details.damageCategory == BattleMoveDamageCategory.STATUS) return 0.0
         val accuracy = candidate.facts?.baseAccuracyProbability ?: details.accuracy / 100.0
         return LocalTacticalSituationalEvaluator.knockoutAdjustment(candidate, accuracy, tuning, context)
+    }
+
+    /** Duplicate full material credit is value, not a permanent candidate penalty. */
+    fun duplicateCertainKnockoutCredit(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+    ): Double {
+        if (tuning.legacyRawPowerFallback || tuning.knockoutMaterialScore <= 0.0) return 0.0
+        val fullCredits = candidate.componentActions.mapNotNull { action ->
+            if (action.kind != BattleActionKind.USE_MOVE || action.mechanic != null ||
+                action.moveDetails?.targetPattern != BattleMoveTargetPattern.SELECTED_OPPONENT) return@mapNotNull null
+            val target = action.targets.singleOrNull()?.takeIf { it.side == BattleSide.OPPONENT }
+                ?: return@mapNotNull null
+            // The existing credit already resolves damage modifiers, accuracy and initiative.
+            // Only full credit is certain here; partial credits need a joint probability model.
+            if (knockoutUtility(action, tuning, context) != tuning.knockoutMaterialScore) return@mapNotNull null
+            target
+        }
+        return fullCredits.groupingBy { it }.eachCount().values.sumOf { count ->
+            (count - 1).coerceAtLeast(0) * tuning.knockoutMaterialScore
+        }
     }
 
     /**

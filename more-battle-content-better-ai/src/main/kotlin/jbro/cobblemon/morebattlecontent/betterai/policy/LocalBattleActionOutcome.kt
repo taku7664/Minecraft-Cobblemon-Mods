@@ -349,7 +349,8 @@ internal object LocalBattleActionOutcomeEvaluator {
             currentDefensiveExposure = null,
             resultingDefensiveExposure = null,
             survivalPositionImprovement = null,
-            knockoutUtility = components.sumOf(LocalBattleActionOutcome::knockoutUtility),
+            knockoutUtility = components.sumOf(LocalBattleActionOutcome::knockoutUtility) -
+                LocalTacticalScorer.duplicateCertainKnockoutCredit(candidate, context, tuning),
             componentOutcomes = components,
         )
     }
