@@ -677,7 +677,7 @@ sets and seeds, plus per-battle referee input, decision-input/action JSONL, stde
 and result. Defaults are one pair and at most 200 turns; `TURN_LIMIT` is not a win.
 Battle execution and requests are native, but the input adapter is still partial:
 basic public HP/status/stages/types/field state and revealed bench/moves are mapped;
-declarative move effects/callbacks, full public outcomes/volatiles, exact effect
+callback execution, full public outcomes/volatiles, exact effect
 durations, gimmick candidates, complete future PP and runtime addons are not.
 Unannounced opponent Arceus types remain unknown rather than using private types.
 Own exact types/stats/items/abilities are available only to that side's Brain.
@@ -690,3 +690,12 @@ Terminal/error paths destroy the stdin stream as well as the battle so the child
 process exits. This is an executable integration baseline, not an AI strength or
 production-adapter equivalence claim. Do not use these results to tune strength
 until the documented input gaps are addressed and paired evaluation is connected.
+
+The native team input now uses the same non-executing `BattleDeclarativeMoveEffects`
+parser as the production compatibility layer. Existing production calls retain
+their wrapper; parser behavior is unchanged. Current candidates and known future
+move options receive static effects from the bundled `data/moves.js`, always as
+`DECLARATIVE_PARTIAL`, including scripted-behavior caveats. Missing/custom entries
+remain null. No opponent's unobserved moves are added by this lookup. Per-decision
+traces retain the candidate effects actually supplied, and results count annotated
+candidates. These facts can change choices; they do not establish better choices.

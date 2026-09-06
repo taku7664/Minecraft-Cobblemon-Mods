@@ -23,6 +23,7 @@ class EmbeddedTeamBattleTest {
         assertTrue(result.getAsJsonObject("decisionsBySide")["p2"].asInt > 0)
         assertTrue(result["forcedSwitchDecisions"].asInt > 0)
         assertEquals(0, result["illegalChoices"].asInt)
+        assertTrue(result["effectAnnotatedCandidates"].asInt > 0)
         assertTrue(result.getAsJsonArray("publicLog").none { it.asString.contains("pp_update") })
     }
 
@@ -56,6 +57,13 @@ class EmbeddedTeamBattleTest {
             })
             assertEquals(4, context.state.pokemon.map { it.battlePokemonId }.distinct().size,
                 "Native 20-character nickname truncation must not merge UUID identities")
+            val moveCandidates = context.candidates.filter { it.kind == BattleActionKind.USE_MOVE }
+            assertTrue(moveCandidates.isNotEmpty())
+            assertTrue(moveCandidates.all { it.moveDetails?.effects?.coverage == BattleMoveEffectCoverage.DECLARATIVE_PARTIAL },
+                "Native candidates must carry the product's partial declarative effect facts")
+            assertTrue(context.publicActionCatalog.entries.flatMap { it.moves }.all {
+                it.details.effects?.coverage == BattleMoveEffectCoverage.DECLARATIVE_PARTIAL
+            })
         }
         val observations = request(original, "p1").deepCopy()
         val opponentIdent = observations.getAsJsonArray("publicLog").map { it.asString }

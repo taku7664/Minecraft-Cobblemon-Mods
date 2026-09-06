@@ -3,9 +3,20 @@ package jbro.cobblemon.morebattlecontent.betterai
 import com.google.gson.JsonObject
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import java.util.UUID
+import java.util.zip.ZipInputStream
 
 /** Test adapter, deliberately separate from privileged team definitions and referee state. */
 internal object EmbeddedTeamInput {
+    private val declarativeEffects by lazy {
+        ZipInputStream(requireNotNull(javaClass.getResourceAsStream("/data/cobblemon/showdown.zip"))).use { zip ->
+            while (true) {
+                val entry = zip.nextEntry ?: error("Missing embedded data/moves.js")
+                if (entry.name == "data/moves.js") return@use BattleDeclarativeMoveEffects.parse(zip.readBytes().toString(Charsets.UTF_8))
+            }
+            @Suppress("UNREACHABLE_CODE")
+            emptyMap<String, BattleMoveEffectsView>()
+        }
+    }
     private data class Seen(val ident: String, var species: String, var level: Int, var hp: Double,
         var status: String?, var active: Boolean = true, var types: Set<String> = emptySet(),
         var added: String? = null, val stages: MutableMap<String, Int> = mutableMapOf(),
@@ -140,7 +151,8 @@ internal object EmbeddedTeamInput {
                 else -> BattleMoveTargetPattern.SELECTED_OPPONENT
             }
             return BattleMoveCandidateView(move["type"].asString, BattleMoveDamageCategory.valueOf(move["category"].asString.uppercase()),
-                move["power"].asDouble, move["accuracy"].asDouble, move["priority"].asInt, pp, target)
+                move["power"].asDouble, move["accuracy"].asDouble, move["priority"].asInt, pp, target,
+                effects = declarativeEffects[moveId])
         }
         val candidates = input.getAsJsonArray("actions").map { it.asJsonObject }.map { action ->
             val slot = action["slot"].asInt

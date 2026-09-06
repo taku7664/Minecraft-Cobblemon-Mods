@@ -35,6 +35,7 @@ internal object EmbeddedTeamBattle {
         var final: JsonObject? = null
         val counts = mutableMapOf("p1" to 0, "p2" to 0)
         var forced = 0
+        var effectAnnotatedCandidates = 0
         try {
             NativeSession(engine, pair, directory, maxTurns).use { native ->
                 Files.newBufferedWriter(directory.resolve("decisions.jsonl"), CREATE_NEW).use { trace ->
@@ -48,8 +49,9 @@ internal object EmbeddedTeamBattle {
                             frame.add("decisionsBySide", JsonObject().apply { counts.forEach { (side, count) -> addProperty(side, count) } })
                             frame.addProperty("forcedSwitchDecisions", forced)
                             frame.addProperty("illegalChoices", 0) // Any illegal/rejected choice aborts instead of producing a result.
+                            frame.addProperty("effectAnnotatedCandidates", effectAnnotatedCandidates)
                             frame.addProperty("evidence", "NATIVE_LOCAL_BRAIN_TEAMS_PARTIAL_INPUT_ADAPTER_NOT_QUALITY_PROOF")
-                            frame.addProperty("adapterLimits", "NO_DECLARATIVE_MOVE_EFFECTS_OR_CALLBACKS;PARTIAL_PUBLIC_EVENTS_AND_VOLATILES;UNKNOWN_EFFECT_DURATIONS;NO_GIMMICK_CANDIDATES;INCOMPLETE_FUTURE_PP;NO_RUNTIME_ADDONS")
+                            frame.addProperty("adapterLimits", "PARTIAL_DECLARATIVE_EFFECTS_NO_CALLBACK_EXECUTION;PARTIAL_PUBLIC_EVENTS_AND_VOLATILES;UNKNOWN_EFFECT_DURATIONS;NO_GIMMICK_CANDIDATES;INCOMPLETE_FUTURE_PP;NO_RUNTIME_ADDONS")
                             Files.writeString(directory.resolve("result.json"), frame.toString(), CREATE_NEW)
                             return frame
                         }
@@ -58,6 +60,9 @@ internal object EmbeddedTeamBattle {
                             val input = value.asJsonObject
                             val side = input["side"].asString
                             val context = EmbeddedTeamInput.context(input, battleId, frame["turn"].asInt, round)
+                            val effects = context.candidates.filter { it.kind == BattleActionKind.USE_MOVE }
+                                .associate { it.actionId to it.moveDetails?.effects }
+                            effectAnnotatedCandidates += effects.values.count { it != null }
                             val decision = brains.getValue(side).decide(sessions.getValue(side), context)
                                 .toCompletableFuture().get(25, TimeUnit.SECONDS)
                             check(decision.requestId == context.requestId && context.candidates.any { it.actionId == decision.actionId })
@@ -67,6 +72,7 @@ internal object EmbeddedTeamBattle {
                             trace.append(JsonObject().apply {
                                 addProperty("side", side); addProperty("turn", frame["turn"].asInt)
                                 add("input", input); addProperty("actionId", decision.actionId)
+                                add("candidateEffects", com.google.gson.Gson().toJsonTree(effects))
                             }.toString()).appendLine()
                             trace.flush()
                         }
