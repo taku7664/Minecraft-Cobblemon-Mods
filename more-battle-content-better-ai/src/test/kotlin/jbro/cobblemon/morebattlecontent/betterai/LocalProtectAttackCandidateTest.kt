@@ -30,6 +30,12 @@ class LocalProtectAttackCandidateTest {
     }
 
     @Test
+    fun `all three cooperation patterns survive a shared root shortlist`() {
+        checkCoverage(180, mixed = true)
+        checkCoverage(180, protectorSlot = 1, mixed = true)
+    }
+
+    @Test
     fun `omitted probability follows the existing unconditional Protect declaration`() {
         checkCoverage(180, probability = null)
     }
@@ -42,9 +48,11 @@ class LocalProtectAttackCandidateTest {
     }
 
     private fun checkCoverage(attackStat: Int, protectionMoveId: String = "protect", declared: Boolean = true,
-        probability: Double? = 1.0, expectedReservation: Boolean = true, protectorSlot: Int = 0) {
+        probability: Double? = 1.0, expectedReservation: Boolean = true, protectorSlot: Int = 0,
+        mixed: Boolean = false) {
         val partnerSlot = 1 - protectorSlot
-        val allies = listOf(mon(BattleSide.ALLY, protectorSlot, attackStat), mon(BattleSide.ALLY, partnerSlot))
+        val allies = listOf(mon(BattleSide.ALLY, protectorSlot, attackStat),
+            mon(BattleSide.ALLY, partnerSlot, types = if (mixed) setOf("flying") else setOf("normal")))
         val foes = (0..1).map { mon(BattleSide.OPPONENT, it) }
         val protect = BattleActionCandidate("protect", BattleActionKind.USE_MOVE, actorSlot = protectorSlot, moveSlot = 0,
             moveId = "cobblemon:$protectionMoveId", moveDetails = BattleMoveCandidateView(
@@ -58,7 +66,21 @@ class LocalProtectAttackCandidateTest {
             return BattleActionCandidate(parts.joinToString("+") { it.actionId }, BattleActionKind.COMPOSITE,
                 componentActionIds = parts.map { it.actionId }, componentActions = parts)
         }
-        val candidates = (listOf(protect) + attacks(protectorSlot)).flatMap { a -> attacks(partnerSlot).map { joint(a, it) } }
+        fun status(id: String, slot: Int, stages: Map<String, Int> = emptyMap()) = BattleActionCandidate(
+            id, BattleActionKind.USE_MOVE, actorSlot = slot, moveSlot = 4, moveId = "cobblemon:$id",
+            moveDetails = BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0,
+                if (id == "followme") 2 else 0, 10, BattleMoveTargetPattern.SELF,
+                BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                    if (stages.isEmpty()) emptyList() else listOf(BattleMoveEffectView(
+                        BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.USER, 1.0, statStages = stages)), false)))
+        val spread = BattleActionCandidate("spread", BattleActionKind.USE_MOVE, actorSlot = protectorSlot,
+            moveSlot = 5, moveId = "cobblemon:earthquake", moveDetails = BattleMoveCandidateView(
+                "ground", BattleMoveDamageCategory.PHYSICAL, 20.0, 100.0, 0, 10, BattleMoveTargetPattern.ALL_ADJACENT))
+        val firstOptions = listOf(protect) + attacks(protectorSlot) +
+            if (mixed) listOf(status("followme", protectorSlot), spread) else emptyList()
+        val secondOptions = attacks(partnerSlot) +
+            if (mixed) listOf(status("swordsdance", partnerSlot, mapOf("attack" to 2))) else emptyList()
+        val candidates = firstOptions.flatMap { a -> secondOptions.map { joint(a, it) } }
         val state = BattleStateView(UUID(0, 1), BattleFormat.DOUBLE, 2, allies + foes, BattleFieldStateView.empty(),
             BattleSide.entries.associateWith { 2 }, emptyList(), emptyList())
         val known = attack(0, 0, 0)
@@ -69,7 +91,10 @@ class LocalProtectAttackCandidateTest {
         val calculated = PublicBattleTacticalCalculator.calculate(context)
         val profile = BattleTrainerProfile.balanced(2).let { it.copy(difficulty = it.difficulty.copy(lookaheadPlies = 1)) }
         val ranked = LocalBattleActionPolicy.rank(calculated, null, profile)
-        val cooperative = ranked.first { it.outcome.candidate.componentActions.any { part -> part.actionId == "protect" } }.outcome.candidate
+        val cooperative = ranked.first { rank ->
+            val parts = rank.outcome.candidate.componentActions
+            parts.any { it.actionId == "protect" } && parts.any { it.actionId.startsWith("hit-") }
+        }.outcome.candidate
         val exposed = joint(attacks(protectorSlot).first(), cooperative.componentActions.single { it.actorSlot == partnerSlot })
         val reply = attack(0, protectorSlot, 0, BattleSide.ALLY)
         fun project(action: BattleActionCandidate) = PublicSingleTurnProjector.project(state, action, reply, calculated, RecursiveActionHistory())
@@ -93,9 +118,22 @@ class LocalProtectAttackCandidateTest {
         assertFalse(wide.truncated)
         assertEquals(candidates.size, wide.responseCoverageByAction.size)
         assertEquals(expectedReservation, cooperative.actionId in LocalCooperativeRootRetention.select(ranked, calculated))
+        if (mixed) {
+            // Find each expected representative independently of the retention implementation.
+            fun bestWith(id: String, other: String? = null) = ranked.first { rank ->
+                val ids = rank.outcome.candidate.componentActionIds
+                id in ids && (other == null || other in ids)
+            }.outcome.candidate.actionId
+            val expected = setOf(cooperative.actionId, bestWith("followme", "swordsdance"), bestWith("spread"))
+            assertEquals(3, expected.size)
+            assertEquals(expected, LocalCooperativeRootRetention.select(ranked, calculated))
+            assertTrue(narrow.responseCoverageByAction.keys.containsAll(expected))
+            assertTrue(wide.responseCoverageByAction.keys.containsAll(expected))
+            assertEquals(candidates.size, candidates.map { it.actionId }.distinct().size)
+        }
         assertTrue(narrow.responseCoverageByAction.size <= LocalDecisionTuning.CURRENT.maximumRootActionsPerSlot *
             LocalDecisionTuning.CURRENT.maximumRootActionsPerSlot + 3)
-        println("PROTECT_ATTACK slot=$protectorSlot move=$protectionMoveId declared=$declared probability=$probability attack=$attackStat " +
+        println("PROTECT_ATTACK mixed=$mixed slot=$protectorSlot move=$protectionMoveId declared=$declared probability=$probability attack=$attackStat " +
             "candidates=${candidates.size} kept=${narrow.responseCoverageByAction.size} " +
             "retained=${cooperative.actionId in narrow.responseCoverageByAction} nodes=${narrow.nodesVisited} wideNodes=${wide.nodesVisited} " +
             "baseRank=${ranked.indexOfFirst { it.outcome.candidate.actionId == cooperative.actionId } + 1} " +
@@ -110,11 +148,11 @@ class LocalProtectAttackCandidateTest {
         moveDetails = BattleMoveCandidateView("normal", BattleMoveDamageCategory.PHYSICAL,
             70.0 + move * 10, 100.0, 0, 10, BattleMoveTargetPattern.SELECTED_OPPONENT))
 
-    private fun mon(side: BattleSide, slot: Int, attackStat: Int = 100) = BattlePokemonStateView(
+    private fun mon(side: BattleSide, slot: Int, attackStat: Int = 100, types: Set<String> = setOf("normal")) = BattlePokemonStateView(
         battlePokemonId = UUID(0, (10 + side.ordinal * 2 + slot).toLong()), side = side, activeSlot = slot,
         speciesId = "cobblemon:probe", formId = null, level = 50, hpFraction = 1.0, statusId = null,
         statStages = emptyMap(), knownMoveIds = emptySet(), knownAbilityId = null, knownHeldItemId = null,
-        fainted = false, knownTypeIds = setOf("normal"), combatStats = if (side == BattleSide.ALLY)
+        fainted = false, knownTypeIds = types, combatStats = if (side == BattleSide.ALLY)
             BattleCombatStatRangesView.exact(200, attackStat, 100, 100, 100, 100)
         else publicExactStats(200, 100, 100, 100, 100, 90))
 }
