@@ -496,3 +496,20 @@ continued-weather estimate until its maximum expires, not an expiry probability
 distribution. Hidden immunities are not read. Hail, weather-triggered abilities,
 ability/item suppression, semi-invulnerable states, doubles and live runtime
 registrations remain outside this slice.
+
+### Board material ownership
+
+`LocalBoardMaterial` owns HP, living-Pokemon value, unseen-living estimates and
+the corresponding probabilistic removal credit. Both immediate turn deltas and
+leaf evaluation use it. `LocalImmediateTurnScorer` still owns stage/status/field
+changes; the leaf evaluator still owns projected attack pressure and initiative.
+Tactical ranking's KO bonus remains a separate policy term. This refactor does
+not alter weights, discounting, pruning, or the immediate/future KO combination.
+
+`unitTest -Ptests=LocalMaterialOwnership` characterizes nine material boards and
+both-sided removal credit at three HP levels and five clamped probabilities.
+The existing 20-position tactical probe produced identical reference values and
+all 560 comparison rows before/after, excluding elapsed time. That is scoped
+behavior-preservation evidence, not a win-rate or real-time performance claim.
+The fixed value of surviving Pokemon and full-HP unseen estimates remain model
+assumptions to evaluate in the later team-role work.

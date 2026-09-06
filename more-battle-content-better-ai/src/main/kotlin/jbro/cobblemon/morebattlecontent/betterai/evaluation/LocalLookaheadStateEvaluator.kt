@@ -24,7 +24,7 @@ internal object LocalLookaheadStateEvaluator {
         shouldContinue: () -> Boolean = { true },
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     ): Double {
-        val material = sideMaterial(state, BattleSide.ALLY) - sideMaterial(state, BattleSide.OPPONENT)
+        val material = LocalBoardMaterial.evaluate(state)
         if (battleEnded(state)) return material
         val pressure =
             attackPressure(state, BattleSide.ALLY, source, calculationCache, shouldContinue, tuning) -
@@ -129,16 +129,6 @@ internal object LocalLookaheadStateEvaluator {
         .maxOrNull()
         ?: 0.0
 
-    private fun sideMaterial(state: BattleStateView, side: BattleSide): Double {
-        val knownLiving = state.pokemon.filter {
-            it.side == side && !it.fainted && it.hpFraction > 0.0
-        }
-        val unseenLiving = (state.remainingPokemonBySide.getValue(side) - knownLiving.size).coerceAtLeast(0)
-        return knownLiving.sumOf { pokemon ->
-            pokemon.hpFraction + if (!pokemon.fainted && pokemon.hpFraction > 0.0) LIVING_POKEMON_VALUE else 0.0
-        } + unseenLiving * (1.0 + LIVING_POKEMON_VALUE)
-    }
-
     private fun initiativeValue(relation: LocalPublicSpeedRelation): Double = when (relation) {
         LocalPublicSpeedRelation.ALLY_FIRST -> 1.0
         LocalPublicSpeedRelation.OPPONENT_FIRST -> -1.0
@@ -183,7 +173,6 @@ internal object LocalLookaheadStateEvaluator {
 
     private fun canonicalId(id: String?): String? = id?.substringAfter(':')?.lowercase()?.filter { it.isLetterOrDigit() }
 
-    private const val LIVING_POKEMON_VALUE = 2.0
 }
 
 internal enum class LocalPublicSpeedRelation { ALLY_FIRST, OPPONENT_FIRST, AMBIGUOUS, UNAVAILABLE }

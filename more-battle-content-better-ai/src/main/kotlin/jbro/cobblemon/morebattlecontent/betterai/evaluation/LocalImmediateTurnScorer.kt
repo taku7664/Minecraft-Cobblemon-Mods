@@ -22,8 +22,8 @@ internal data class LocalImmediateTurnScore(
  */
 internal object LocalImmediateTurnScorer {
     fun score(before: BattleStateView, after: BattleStateView): LocalImmediateTurnScore {
-        val beforeMaterial = positionMaterial(before)
-        val afterMaterial = positionMaterial(after)
+        val beforeMaterial = LocalBoardMaterial.evaluate(before)
+        val afterMaterial = LocalBoardMaterial.evaluate(after)
         val beforeStages = positionStages(before)
         val afterStages = positionStages(after)
         val beforeStatus = positionStatus(before)
@@ -47,40 +47,11 @@ internal object LocalImmediateTurnScorer {
         probability: Double,
     ): Double = score(before, afterEffect).total * probability.coerceIn(0.0, 1.0)
 
-    /**
-     * Board value of removing a Pokemon, beyond the HP the projected state already lost.
-     *
-     * This is [LIVING_POKEMON_VALUE] by definition - it is the same quantity [sideMaterial] adds for
-     * being alive - so it is derived from the board model, not imported from the ranking layer.
-     *
-     * It used to be defined as `LocalBattleActionPolicy.SECURE_KNOCKOUT_BONUS / 100.0`, which pulled a
-     * hand-tuned score constant across the layer boundary, divided it by a hard-coded exchange rate,
-     * and produced `2.5` where the board model says `2.0`. That single line was the whole reason the
-     * board evaluator and the ranking policy could not be separated.
-     */
+    /** Shared board removal value, excluding HP loss; not a tactical-ranking bonus. */
     fun expectedKnockoutBonus(
         actingSide: BattleSide,
         knockoutProbability: Double,
-    ): Double {
-        val signedBonus = if (actingSide == BattleSide.ALLY) {
-            LIVING_POKEMON_VALUE
-        } else {
-            -LIVING_POKEMON_VALUE
-        }
-        return signedBonus * knockoutProbability.coerceIn(0.0, 1.0)
-    }
-
-    private fun positionMaterial(state: BattleStateView): Double =
-        sideMaterial(state, BattleSide.ALLY) - sideMaterial(state, BattleSide.OPPONENT)
-
-    private fun sideMaterial(state: BattleStateView, side: BattleSide): Double {
-        val knownLiving = state.pokemon.filter {
-            it.side == side && !it.fainted && it.hpFraction > 0.0
-        }
-        val unseenLiving = (state.remainingPokemonBySide.getValue(side) - knownLiving.size).coerceAtLeast(0)
-        return knownLiving.sumOf { it.hpFraction + LIVING_POKEMON_VALUE } +
-            unseenLiving * (1.0 + LIVING_POKEMON_VALUE)
-    }
+    ): Double = LocalBoardMaterial.expectedRemovalCredit(actingSide, knockoutProbability)
 
     private fun positionStages(state: BattleStateView): Double =
         sideStages(state, BattleSide.ALLY) - sideStages(state, BattleSide.OPPONENT)
@@ -138,7 +109,6 @@ internal object LocalImmediateTurnScorer {
         ?.lowercase()
         ?.filter(Char::isLetterOrDigit)
 
-    private const val LIVING_POKEMON_VALUE = 2.0
     private const val MAX_STAGE_VALUE = 0.60
     private const val DEFAULT_STAGE_WEIGHT = 0.06
     private const val SPEED_CONTROL_VALUE = 0.15
