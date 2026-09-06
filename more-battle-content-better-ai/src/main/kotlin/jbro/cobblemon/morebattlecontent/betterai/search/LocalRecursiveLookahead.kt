@@ -752,6 +752,7 @@ internal object LocalRecursiveLookaheadEvaluator {
      * of the list, so the survivors differ only in their second half and the search re-decides one
      * side of the turn eight times over. Each slot's actions are scored here by the best joint they
      * appear in, the top few per slot survive, and a joint stays only if every one of its parts did.
+     * One best declared redirect/self-setup joint is also retained for cooperative turn evaluation.
      *
      * Singles has one slot and few candidates, so nothing is trimmed there.
      */
@@ -779,7 +780,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     .take(tuning.maximumRootActionsPerSlot)
                     .mapTo(linkedSetOf()) { it.key.second }
             }
-        return ranked.asSequence()
+        val kept = ranked.asSequence()
             .filter { rank ->
                 primitiveActions(rank.outcome.candidate).all { component ->
                     val slot = component.actorSlot ?: return@all true
@@ -787,7 +788,28 @@ internal object LocalRecursiveLookaheadEvaluator {
                 }
             }
             .mapTo(linkedSetOf()) { it.outcome.candidate.actionId }
-            .takeIf { it.isNotEmpty() }
+        // A redirect protects its partner's investment rather than dealing immediate damage.
+        // Reserve at most one such joint beyond the per-slot shortlist; it still consumes the
+        // ordinary search budget and receives no score bonus or forced final selection.
+        ranked.asSequence().filter { rank ->
+            val parts = rank.outcome.candidate.componentActions
+            parts.size == 2 && parts.any { redirect ->
+                redirect.kind == BattleActionKind.USE_MOVE &&
+                    redirect.moveId?.substringAfter(':')?.lowercase()?.filter(Char::isLetterOrDigit) in
+                    setOf("followme", "ragepowder") && parts.any { setup ->
+                    setup.actorSlot != null && setup.actorSlot != redirect.actorSlot &&
+                        setup.kind == BattleActionKind.USE_MOVE &&
+                        setup.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS &&
+                        setup.moveDetails?.effects?.effects?.any { effect ->
+                            effect.kind == BattleMoveEffectKind.STAT_STAGE &&
+                                effect.target == BattleMoveEffectTarget.USER &&
+                                effect.probability?.let { it > 0.0 } == true &&
+                                effect.statStages.values.any { it > 0 }
+                        } == true
+                }
+            }
+        }.maxByOrNull { it.comparisonValue }?.let { kept += it.outcome.candidate.actionId }
+        return kept.takeIf { it.isNotEmpty() }
     }
 
     private fun primitiveActions(action: BattleActionCandidate): List<BattleActionCandidate> =
