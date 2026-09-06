@@ -7,6 +7,35 @@ import org.junit.jupiter.api.Test
 
 class LocalTacticalSimulationRosterTest {
     @Test
+    fun `cooperation move coverage distinguishes absent source data from loader loss`() {
+        val raw = LocalTacticalSimulationRoster.rentalSetRoots().flatMap { root ->
+            root.getAsJsonArray("rental_sets").map { it.asJsonObject }
+        }
+        val loaded = LocalTacticalSimulationRoster.loadAll().entries
+        val groups = linkedMapOf(
+            "redirection" to setOf("followme", "ragepowder"),
+            "protect" to setOf("protect"),
+            "selected_setup" to setOf("swordsdance", "nastyplot", "calmmind", "dragondance"),
+            "selected_ally_spread" to setOf("earthquake", "surf", "discharge"),
+        )
+        assertTrue(raw.isNotEmpty())
+        assertEquals(raw.size, raw.map { it["set_id"].asString }.distinct().size)
+        groups.forEach { (group, moves) ->
+            val sourceIds = raw.filter { entry ->
+                entry.getAsJsonArray("moves").any { it.asString.substringAfter(':') in moves }
+            }.map { it["set_id"].asString }.toSet()
+            val loadedIds = loaded.filter { entry ->
+                entry.moves.any { it.id.substringAfter(':') in moves }
+            }.map { it.setId }.toSet()
+            println("COOPERATION_DATA group=$group source=${sourceIds.size} loaded=${loadedIds.size} " +
+                "availability=${if (sourceIds.isEmpty()) "ABSENT_FROM_SOURCE" else "PRESENT_NOT_BEHAVIOR_VERIFIED"}")
+            assertEquals(sourceIds, loadedIds, "$group presets lost or invented by the simulation loader")
+        }
+        // Presence is necessary, not sufficient: this does not prove compatible partner teams,
+        // public move revelation, joint candidate retention, projected effects or good decisions.
+    }
+
+    @Test
     fun `simulation roster uses complete fixed factory presets`() {
         val roster = LocalTacticalSimulationRoster.load()
 
