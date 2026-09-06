@@ -645,6 +645,26 @@ class Cobblemon173PublicBattleObserverTest {
         assertEquals(50, publicSwitch.level)
     }
 
+    @Test
+    fun `cumulative move uses survive event eviction and switch but reset with battle`() {
+        val observer = Cobblemon173PublicBattleObserver(3, maximumRecentEvents = 2)
+        val first = publicPokemon(BattleSide.OPPONENT, 0)
+        val second = publicPokemon(BattleSide.OPPONENT, 0)
+        repeat(10) { observer.observe(Cobblemon173PublicObservation.MoveUsed(it + 1, first, "protect", emptyList())) }
+        val beforeSwitch = observer.publicSnapshot()
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(11, second))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(11, second, "protect", emptyList()))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(12, first))
+        val snapshot = observer.publicSnapshot()
+        assertEquals(2, snapshot.events.size)
+        assertEquals(10, snapshot.moveUses[first.battlePokemonId]?.get("protect"))
+        assertEquals(1, snapshot.moveUses[second.battlePokemonId]?.get("protect"))
+        assertNull(beforeSwitch.moveUses[second.battlePokemonId])
+        observer.reset()
+        assertTrue(observer.publicSnapshot().moveUses.isEmpty())
+        assertEquals(10, snapshot.moveUses[first.battlePokemonId]?.get("protect"))
+    }
+
     private fun publicPokemon(side: BattleSide, activeSlot: Int?) = Cobblemon173PublicPokemonSnapshot(
         battlePokemonId = UUID.randomUUID(),
         side = side,

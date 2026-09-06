@@ -29,6 +29,7 @@ internal class Cobblemon173PublicBattleObserver(
     private val pokemon = linkedMapOf<UUID, BattlePokemonStateView>()
     private val publicTypes = Cobblemon173PublicTypeKnowledge()
     private val events = ArrayDeque<BattleObservedEventView>()
+    private val moveUses = linkedMapOf<UUID, MutableMap<String, Int>>()
     private val faintedOpponents = linkedSetOf<UUID>()
     private var sequence = 0L
     private var currentTurn = 0
@@ -68,6 +69,9 @@ internal class Cobblemon173PublicBattleObserver(
 
             is Cobblemon173PublicObservation.MoveUsed -> {
                 val actor = upsert(observation.actor)
+                val uses = moveUses.getOrPut(actor.battlePokemonId) { linkedMapOf() }
+                uses[observation.moveId] = ((uses[observation.moveId] ?: 0).toLong() + 1)
+                    .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
                 observation.targets.forEach(::upsert)
                 pokemon[actor.battlePokemonId] = actor.withKnownMove(observation.moveId)
                 val actionSequence = appendEvent(
@@ -279,6 +283,7 @@ internal class Cobblemon173PublicBattleObserver(
         events = events.toList(),
         remainingOpponentPokemon = (initialOpponentPokemonCount - faintedOpponents.size).coerceAtLeast(0),
         typeOverrides = publicTypes.snapshot(),
+        moveUses = moveUses,
     )
 
     @Synchronized
@@ -286,6 +291,7 @@ internal class Cobblemon173PublicBattleObserver(
         pokemon.clear()
         publicTypes.reset()
         events.clear()
+        moveUses.clear()
         faintedOpponents.clear()
         sequence = 0
         currentTurn = 0
@@ -687,10 +693,13 @@ internal class Cobblemon173PublicBattleSnapshot(
     events: List<BattleObservedEventView>,
     val remainingOpponentPokemon: Int,
     typeOverrides: Map<UUID, Set<String>> = emptyMap(),
+    moveUses: Map<UUID, Map<String, Int>> = emptyMap(),
 ) {
     val pokemon = pokemon.toList()
     val events = events.toList()
     val typeOverrides = typeOverrides.mapValues { it.value.toSet() }
+    /** Public uses across the whole battle, independent of the bounded event window; not exact PP loss. */
+    val moveUses = moveUses.mapValues { it.value.toMap() }
 
     init {
         require(remainingOpponentPokemon >= 0)
