@@ -477,3 +477,22 @@ both apply; Poison Heal does not suppress Salt Cure, whereas Magic Guard does.
 Known exact HP also uses native integer ticks for healing and Salt Cure. This
 extends the earlier status-only slice; weather, other passive effects, special
 forms and live battle quality remain unverified.
+
+### Sandstorm residual and weather expiry
+
+`unitTest -Ptests=EmbeddedWeatherResidual -Poracle` compares 120 native turns:
+15 profiles at levels 1/50, full/1 HP and one/two remaining weather turns.
+Sandstorm now damages before passive healing, except for publicly known Rock,
+Ground or Steel types, Magic Guard, Overcoat, Sand Veil, Sand Rush, Sand Force,
+Safety Goggles, or an active living Air Lock/Cloud Nine user. Expiring weather
+ends before damage; suppression does not stop its duration decreasing. Snow is
+a no-damage control. The low-HP cases prevent healing from reviving a Pokemon
+already knocked out by weather. Public exact max HP uses integer ticks.
+
+These synthetic fixtures are not legal teams or AI-quality evidence. Opponent
+exact combat stats are not passed to the public state. Unknown max HP retains
+fractional damage, and unknown/ranged weather duration retains the existing
+continued-weather estimate until its maximum expires, not an expiry probability
+distribution. Hidden immunities are not read. Hail, weather-triggered abilities,
+ability/item suppression, semi-invulnerable states, doubles and live runtime
+registrations remain outside this slice.

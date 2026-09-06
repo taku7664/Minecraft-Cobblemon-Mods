@@ -11,6 +11,12 @@ internal object LocalEndTurnStateProjector {
         badPoisonTurnsByPokemon: Map<java.util.UUID, Int> = emptyMap(),
         saltCuredPokemonIds: Set<java.util.UUID> = emptySet(),
     ): BattleStateView {
+        // Weather expires before its residual callback. Unknown durations retain the existing estimate.
+        val nextField = decrementField(state.field)
+        val sandActive = canonical(nextField.weather?.effectId) == "sandstorm" && state.pokemon.none {
+            it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 &&
+                canonical(it.knownAbilityId) in WEATHER_SUPPRESSION_ABILITIES
+        }
         val next = state.pokemon.map { pokemon ->
             if (pokemon.activeSlot == null || pokemon.fainted || pokemon.hpFraction <= 0.0) return@map pokemon
             val ability = canonical(pokemon.knownAbilityId)
@@ -28,7 +34,12 @@ internal object LocalEndTurnStateProjector {
             fun apply(change: Double) {
                 if (hp > 0.0) hp = applyHpChange(pokemon, hp, change).coerceIn(0.0, 1.0)
             }
-            // Native event order: item healing (5), poison/burn (9/10), Salt Cure (13).
+            // Native event order: weather (1), item healing (5), poison/burn (9/10), Salt Cure (13).
+            if (sandActive && ability !in SAND_IMMUNE_ABILITIES &&
+                canonical(pokemon.knownHeldItemId) != "safetygoggles" &&
+                pokemon.knownTypeIds.none { canonical(it) in SAND_IMMUNE_TYPES }) {
+                apply(-hpFractionTick(pokemon, 16))
+            }
             if (canonical(pokemon.knownHeldItemId) == "leftovers") apply(hpFractionTick(pokemon, 16))
             if (poisonHeal) {
                 apply(hpFractionTick(pokemon, 8))
@@ -48,7 +59,6 @@ internal object LocalEndTurnStateProjector {
             }
             copyPokemon(pokemon, hpFraction = hp, statStages = stages, fainted = hp <= 0.0)
         }
-        val nextField = decrementField(state.field)
         return BattleStateView(
             battleId = state.battleId,
             format = state.format,
@@ -163,4 +173,7 @@ internal object LocalEndTurnStateProjector {
     private val POISON_IDS = REGULAR_POISON_IDS + BAD_POISON_IDS
     private val BURN_IDS = setOf("brn", "burn", "burned", "burnt")
     private val SALT_CURE_WEAK_TYPES = setOf("water", "steel")
+    private val SAND_IMMUNE_TYPES = setOf("rock", "ground", "steel")
+    private val SAND_IMMUNE_ABILITIES = setOf("magicguard", "overcoat", "sandveil", "sandrush", "sandforce")
+    private val WEATHER_SUPPRESSION_ABILITIES = setOf("airlock", "cloudnine")
 }
