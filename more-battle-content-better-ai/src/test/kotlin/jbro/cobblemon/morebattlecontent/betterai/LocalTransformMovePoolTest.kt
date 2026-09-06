@@ -47,6 +47,13 @@ class LocalTransformMovePoolTest {
         assertEquals(7, PublicFutureActionFactory.actions(returned, BattleSide.ALLY, catalog, restored)
             .single { it.moveId == "recover" }.moveDetails?.currentPp)
         assertTrue(canRecover(returned, restored.copy(moveUses = restored.moveUses + (key to 5))))
+        val usedFive = restored.copy(moveUses = restored.moveUses + (key to 5))
+        repeat(2) {
+            assertEquals(2, PublicFutureActionFactory.actions(returned, BattleSide.ALLY, catalog, usedFive)
+                .single { it.moveId == "recover" }.moveDetails?.currentPp)
+        }
+        assertEquals(2, catalog.forPokemon(actor).single().details.currentPp)
+        assertEquals(7, catalog.originalEntries.single().moves.single().details.currentPp)
         assertFalse(canRecover(initial, prior))
         val exhausted = restored.copy(moveUses = restored.moveUses + (key to 7))
         val (outAgain, leftAgain) = transition(returned, bench, exhausted)

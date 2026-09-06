@@ -158,7 +158,8 @@ internal object PublicFutureActionFactory {
         val currentCatalog = catalog.afterSwitch(history.restoredOriginalPokemonIds)
         val moves = currentCatalog.forPokemon(active.battlePokemonId).flatMapIndexed { index, option ->
             val used = history.moveUses[RecursiveMoveUseKey(active.battlePokemonId, option.moveId)] ?: 0
-            val legal = option.details.currentPp - used > 0 &&
+            val remainingPp = (option.details.currentPp - used).coerceAtLeast(0)
+            val legal = remainingPp > 0 &&
                 (canonicalId(option.moveId) !in FIRST_ENTRY_ONLY_MOVES ||
                     active.battlePokemonId !in history.actedSinceEntryPokemonIds) &&
                 (!taunted || option.details.damageCategory != BattleMoveDamageCategory.STATUS) &&
@@ -177,7 +178,7 @@ internal object PublicFutureActionFactory {
                     moveSlot = index,
                     moveId = option.moveId,
                     targets = targets,
-                    moveDetails = option.details,
+                    moveDetails = option.details.copy(currentPp = remainingPp),
                     tags = setOf("public_lookahead"),
                 )
             }
