@@ -21,6 +21,8 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
 import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionSelector
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalWeightedActionSelector
 import kotlin.math.roundToInt
 import kotlin.random.Random
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -96,6 +98,7 @@ class LocalTacticalVirtualBattleTest {
         private val seed: Int,
     ) {
         private val roster = LocalTacticalSimulationRoster.load()
+        private var lastSelectionTrace: String? = null
 
         fun run(battles: Int): LeagueSummary {
             val summary = LeagueSummary(
@@ -112,7 +115,17 @@ class LocalTacticalVirtualBattleTest {
 
         private fun runBattle(index: Int): BattleResult {
             val battleId = UUID(random.nextLong(), random.nextLong())
-            val brain = LocalTacticalBrain()
+            val selector = LocalWeightedActionSelector()
+            val brain = LocalTacticalBrain(actionSelector = LocalActionSelector { ranked, choiceSeed, mixing ->
+                val selected = selector.choose(ranked, choiceSeed, mixing)
+                lastSelectionTrace = "selected_rank=${ranked.indexOf(selected.rank) + 1} " +
+                    "probability=${selected.probability} shortlist=${selected.shortlistSize} " +
+                    "pressure=${mixing.memory.switchPressure} " +
+                    "scores=" + ranked.joinToString(",") {
+                        "${it.outcome.candidate.actionId}:${it.comparisonValue}"
+                    }
+                selected
+            })
             val left = team("left", battleId, brain)
             val right = team("right", battleId, brain)
             val trace = mutableListOf<String>()
@@ -215,10 +228,12 @@ class LocalTacticalVirtualBattleTest {
         ): Choice {
             val candidates = candidates(team, forcedSwitchOnly)
             val context = context(team, opponent, turn, candidates)
+            lastSelectionTrace = null
             val decision = team.brain.decide(team.session, context).toCompletableFuture().join()
             return Choice(
                 actorId = team.active.id,
                 candidate = candidates.single { it.actionId == decision.actionId },
+                selectionTrace = lastSelectionTrace ?: "selector_not_called",
             )
         }
 
@@ -302,7 +317,7 @@ class LocalTacticalVirtualBattleTest {
         private fun applySwitch(team: TeamState, choice: Choice, trace: MutableList<String>, turn: Int) {
             if (choice.candidate.kind != BattleActionKind.SWITCH) return
             team.activeIndex = team.fighters.indexOfFirst { it.id == choice.candidate.switchPokemonId }
-            trace += "t$turn ${team.label} switch -> ${team.active.template.speciesId}"
+            trace += "t$turn ${team.label} switch -> ${team.active.template.speciesId} ${choice.selectionTrace}"
         }
 
         private fun applyMove(
@@ -352,6 +367,7 @@ class LocalTacticalVirtualBattleTest {
     private data class Choice(
         val actorId: UUID,
         val candidate: BattleActionCandidate,
+        val selectionTrace: String,
     )
 
     private data class Fighter(
@@ -553,7 +569,9 @@ class LocalTacticalVirtualBattleTest {
             }
             if (result.maximumConsecutiveVoluntarySwitches > worstSwitchStreak) {
                 worstSwitchStreak = result.maximumConsecutiveVoluntarySwitches
-                worstTrace = result.trace
+                worstTrace = listOf(
+                    "battle_index=${result.index} left_sets=$leftTeam right_sets=$rightTeam",
+                ) + result.trace
             }
         }
 

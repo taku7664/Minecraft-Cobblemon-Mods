@@ -22,6 +22,41 @@ class LocalWeightedActionSelectorTest {
     private val selector = LocalWeightedActionSelector()
 
     @Test
+    fun `recent repeated switch pressure excludes exploratory switches when a credible attack exists`() {
+        val ranked = listOf(
+            rank("attack", 100.0, executableDamageActions = 1),
+            rank("explore_switch", 95.0, kind = BattleActionKind.SWITCH),
+        )
+        val context = mixingContext(memory = BattleTacticalMemoryView(
+            turnsSinceLastSwitch = 1, switchPressure = 2.0,
+        ))
+        repeat(1_000) { seed ->
+            assertEquals("attack", selector.choose(ranked, seed.toLong(), context).rank.outcome.candidate.actionId)
+        }
+    }
+
+    @Test
+    fun `repeat switch guard preserves fresh exploration best escapes and switches without credible attacks`() {
+        val attack = rank("attack", 100.0, executableDamageActions = 1)
+        val switching = rank("explore_switch", 95.0, kind = BattleActionKind.SWITCH)
+        val recent = BattleTacticalMemoryView(turnsSinceLastSwitch = 1, switchPressure = 2.0)
+        val cases = listOf(
+            listOf(attack, switching) to BattleTacticalMemoryView(turnsSinceLastSwitch = 1, switchPressure = 1.0),
+            listOf(attack, switching) to BattleTacticalMemoryView(turnsSinceLastSwitch = 2, switchPressure = 2.0),
+            listOf(attack, switching) to BattleTacticalMemoryView(switchPressure = 2.0),
+            listOf(switching.copy(comparisonValue = 105.0), attack) to recent,
+            listOf(rank("non_damage", 100.0), switching) to recent,
+            listOf(rank("cancelled_attack", 100.0, executableDamageActions = 1, executionProbability = 0.0), switching) to recent,
+        )
+        cases.forEachIndexed { index, (ranked, memory) ->
+            val context = mixingContext(memory = memory)
+            assertTrue((0L until 1_000L).any { seed ->
+                selector.choose(ranked, seed, context).rank.outcome.candidate.actionId == "explore_switch"
+            }, "Switch must remain available in preservation case $index")
+        }
+    }
+
+    @Test
     fun `top forty percent keeps at least two choices when alternatives exist`() {
         assertEquals(1, selector.shortlistSize(1))
         assertEquals(2, selector.shortlistSize(2))

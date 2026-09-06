@@ -222,7 +222,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         !rank.outcome.publiclyInert &&
             !rank.outcome.entryFaints &&
             rank.executionProbability >= MINIMUM_EXPLORATORY_EXECUTION_PROBABILITY &&
-            switchIsSafeEnough(rank, bestRanked, credibleStayAlternativeExists, riskBudget) &&
+            switchIsSafeEnough(rank, bestRanked, credibleStayAlternativeExists, riskBudget, memory) &&
             selfSetupHasFuture(
                 rank,
                 bestRanked,
@@ -239,8 +239,17 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         bestRanked: Boolean,
         credibleStayAlternativeExists: Boolean,
         riskBudget: Double,
+        memory: BattleTacticalMemoryView,
     ): Boolean {
         if (rank.outcome.candidate.kind != BattleActionKind.SWITCH) return true
+        // Damping alone leaves a nonzero chance of arbitrarily long exploratory switch chains.
+        // Pressure is accumulated tempo debt, not an exact consecutive-switch counter. Restrict
+        // only another recent, lower-ranked exploration while a credible damaging stay exists;
+        // the best escape and positions without a credible attack retain their existing safety rules.
+        if (!bestRanked && credibleStayAlternativeExists &&
+            memory.turnsSinceLastSwitch?.let { it <= 1 } == true &&
+            memory.switchPressure >= REPEATED_SWITCH_PRESSURE
+        ) return false
         if (!bestRanked) return rank.worstResponseHpRetention >= exploratorySwitchHpRetention(riskBudget)
         if (!credibleStayAlternativeExists) return true
         return rank.worstResponseHpRetention >= MINIMUM_BEST_SWITCH_HP_RETENTION
@@ -410,6 +419,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
     }
 
     private companion object {
+        const val REPEATED_SWITCH_PRESSURE = 2.0
         const val MINIMUM_MIXED_CHOICES = 2
         const val UNCERTAIN_CONDITION_REGRET_SCALE = 0.50
         /**
