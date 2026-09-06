@@ -820,3 +820,12 @@ reveal without importing referee team data. `EmbeddedPublicResourceTest` covers
 the original capture, self-source healing, ability retaliation, removal and
 unresolved owners. Other message kinds and persistent Pokemon effects remain
 outside this adapter addition; production observation code is unchanged.
+
+`EmbeddedSubstituteLifecycleTest` checks five scripted native lifecycle cases:
+repeating an intact Substitute fails, an earlier opposing hit can break it and
+allow recreation in the same turn, ordinary switching clears it, and Baton Pass
+or Shed Tail transfers it without a fresh `-start` announcement on the recipient.
+The oracle uses separate referee state to verify these facts, not as Brain input.
+These tests constrain the pending public-state integration: current presence is
+not an unconditional future failure, and not every switch discards the effect.
+They do not yet add a persistent-effect field or change either Brain's policy.

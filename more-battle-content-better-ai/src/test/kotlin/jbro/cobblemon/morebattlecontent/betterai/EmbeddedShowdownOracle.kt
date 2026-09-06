@@ -35,6 +35,8 @@ internal object EmbeddedShowdownOracle {
 
     fun typeChanges(directory: Path): JsonObject = runScript(directory, "/oracle/type-change-oracle.cjs", "")
 
+    fun substituteLifecycle(directory: Path): JsonObject = runScript(directory, "/oracle/substitute-lifecycle.cjs", "")
+
     fun presetAudit(directory: Path, input: JsonObject): JsonObject {
         Files.createDirectories(directory)
         val inputFile = directory.resolve("preset-input.json").toAbsolutePath()
