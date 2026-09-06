@@ -16,6 +16,7 @@ import jbro.cobblemon.morebattlecontent.betterai.state.LocalEntryAbilityProjecto
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalSwitchStateProjector
 import jbro.cobblemon.morebattlecontent.betterai.state.PublicTurnProjection
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
+import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveMoveUseKey
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveHistoryProjector
 import kotlin.math.roundToInt
 import kotlin.random.Random
@@ -302,7 +303,10 @@ internal object LocalTacticalScenarioBattle {
         private fun candidates(side: BattleSide): List<BattleActionCandidate> {
             val view = perspective(side)
             val catalog = decisionCatalog(side)
-            val actions = PublicFutureActionFactory.actions(view, BattleSide.ALLY, catalog, perspectiveHistory(side))
+            // The decision catalog is already a current-PP snapshot. Preserve the other constraints,
+            // but do not subtract the battle's historical uses a second time.
+            val actions = PublicFutureActionFactory.actions(view, BattleSide.ALLY, catalog,
+                perspectiveHistory(side).copy(moveUses = emptyMap()))
             require(actions.isNotEmpty()) { "No legal actions for $side on turn ${state.turn}" }
             return actions
         }
@@ -440,7 +444,10 @@ internal object LocalTacticalScenarioBattle {
                     val moves = template.moves.filter { own || it.id in revealed }.map { move ->
                         BattlePublicMoveOptionView(
                             moveId = move.id,
-                            details = LocalTacticalSimulationMoveLibrary.details(move),
+                            details = LocalTacticalSimulationMoveLibrary.details(move).let { details ->
+                                val used = history.moveUses[RecursiveMoveUseKey(id, move.id)] ?: 0
+                                details.copy(currentPp = (details.currentPp - used).coerceAtLeast(0))
+                            },
                             knowledge = if (own) BattlePublicMoveKnowledge.EXACT_OWN
                             else BattlePublicMoveKnowledge.PUBLICLY_REVEALED,
                         )
