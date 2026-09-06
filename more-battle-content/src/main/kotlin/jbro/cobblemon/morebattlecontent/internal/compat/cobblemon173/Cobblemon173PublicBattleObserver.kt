@@ -340,6 +340,16 @@ internal class Cobblemon173PublicBattleObserver(
     @Synchronized
     fun transformedPokemon(): Set<UUID> = copiedPpSpent.keys.toSet()
 
+    /** Own request knowledge is allowed; a locked request is not a complete replacement list. */
+    @Synchronized
+    fun observeOwnCopiedMoves(pokemonId: UUID, moveIds: Set<String>) {
+        val current = pokemon[pokemonId] ?: return
+        if (current.side != BattleSide.ALLY || pokemonId !in copiedPpSpent || current.activeSlot == null) return
+        require(moveIds.all(String::isNotBlank))
+        val learned = moveIds - setOf("recharge", "struggle")
+        pokemon[pokemonId] = current.copyView(knownMoveIds = current.knownMoveIds + learned)
+    }
+
     private fun expenditure(pokemonId: UUID): MutableMap<String, Int> =
         copiedPpSpent[pokemonId] ?: ppSpent.getOrPut(pokemonId) { linkedMapOf() }
 
@@ -382,6 +392,7 @@ internal class Cobblemon173PublicBattleObserver(
         remainingOpponentPokemon = (initialOpponentPokemonCount - faintedOpponents.size).coerceAtLeast(0),
         typeOverrides = publicTypes.snapshot(),
         moveUses = moveUses,
+        transformedPokemon = copiedPpSpent.keys,
     )
 
     @Synchronized
@@ -804,7 +815,9 @@ internal class Cobblemon173PublicBattleSnapshot(
     val remainingOpponentPokemon: Int,
     typeOverrides: Map<UUID, Set<String>> = emptyMap(),
     moveUses: Map<UUID, Map<String, Int>> = emptyMap(),
+    transformedPokemon: Set<UUID> = emptySet(),
 ) {
+    val transformedPokemon = transformedPokemon.toSet()
     val pokemon = pokemon.toList()
     val events = events.toList()
     val typeOverrides = typeOverrides.mapValues { it.value.toSet() }
@@ -829,6 +842,8 @@ internal object Cobblemon173BattleStateAssembler {
         val publicById = publicSnapshot.pokemon.associateBy(BattlePokemonStateView::battlePokemonId)
         val allies = ownPokemon.map { own ->
             own.copyView(
+                knownMoveIds = if (own.activeSlot != null && own.battlePokemonId in publicSnapshot.transformedPokemon)
+                    publicById[own.battlePokemonId]?.knownMoveIds.orEmpty() else own.knownMoveIds,
                 actionConstraints = publicById[own.battlePokemonId]?.actionConstraints ?: own.actionConstraints,
                 knownVolatileEffectIds = if (own.activeSlot == null || own.fainted) emptySet()
                     else publicById[own.battlePokemonId]?.knownVolatileEffectIds.orEmpty(),

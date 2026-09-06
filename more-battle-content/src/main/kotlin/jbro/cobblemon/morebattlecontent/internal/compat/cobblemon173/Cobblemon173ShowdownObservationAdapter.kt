@@ -34,11 +34,15 @@ internal class Cobblemon173ShowdownObservationAdapter(
     }
 
     @Synchronized
-    fun snapshot(actor: BattleActor): BattleStateView {
+    fun snapshot(actor: BattleActor, ownCurrentPp: Map<UUID, Map<String, Int>> = emptyMap()): BattleStateView {
         val activeBattle = requireNotNull(battle) { "Observation adapter must be attached before use" }
         require(actor.battle === activeBattle) { "Actor belongs to a different battle" }
         require(actor.uuid != opponentActorId) { "The observed opponent cannot be the decision actor" }
         consumeNewMessages(activeBattle)
+        val ownIds = actor.pokemonList.mapTo(hashSetOf()) { it.uuid }
+        ownCurrentPp.filterKeys { it in ownIds }.forEach { (id, moves) ->
+            observer.observeOwnCopiedMoves(id, moves.keys)
+        }
         // The opening decision is taken before the battle's first `switch` lines exist, so the store
         // would otherwise hand the trainer a battle with no opponent in it. Whatever is standing in
         // the opposing slots is public by inspection; read it directly rather than wait for a message

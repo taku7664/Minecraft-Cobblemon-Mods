@@ -22,6 +22,33 @@ import org.junit.jupiter.api.Test
 
 class Cobblemon173PublicBattleObserverTest {
     @Test
+    fun `own copied request moves survive a locked request and assembler drops them after switch`() {
+        val own = ownPokemon()
+        val actor = publicPokemon(BattleSide.ALLY, 0).copy(battlePokemonId = own.battlePokemonId)
+        val opponent = publicPokemon(BattleSide.OPPONENT, 0)
+        val observer = Cobblemon173PublicBattleObserver(1)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, actor))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, opponent))
+        observer.observeTransformation(actor.battlePokemonId, opponent.battlePokemonId)
+        observer.observeOwnCopiedMoves(actor.battlePokemonId, setOf("fly", "splash"))
+        val captured = observer.publicSnapshot()
+        observer.observeOwnCopiedMoves(actor.battlePokemonId, setOf("fly"))
+        observer.observeOwnCopiedMoves(actor.battlePokemonId, setOf("recharge", "struggle"))
+        observer.observeTransformation(opponent.battlePokemonId)
+        observer.observeOwnCopiedMoves(opponent.battlePokemonId, setOf("hiddenmove"))
+        fun assembled() = Cobblemon173BattleStateAssembler.assemble(UUID.randomUUID(), BattleFormat.SINGLE,
+            3, listOf(own), observer.publicSnapshot(), inferenceKnowledge = { _, _ -> emptyList() })
+            .pokemon.single { it.battlePokemonId == own.battlePokemonId }.knownMoveIds
+        assertEquals(setOf("fly", "splash"), assembled())
+        assertTrue(observer.publicSnapshot().pokemon.single { it.battlePokemonId == opponent.battlePokemonId }.knownMoveIds.isEmpty())
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(3, actor))
+        observer.observeOwnCopiedMoves(actor.battlePokemonId, setOf("stale"))
+        assertEquals(own.knownMoveIds, assembled())
+        assertEquals(setOf(actor.battlePokemonId), captured.transformedPokemon)
+        assertEquals(setOf(opponent.battlePokemonId), observer.publicSnapshot().transformedPokemon)
+    }
+
+    @Test
     fun `transform copies only revealed target moves and restores original moves on switch`() {
         val actor = publicPokemon(BattleSide.OPPONENT, activeSlot = 0)
         val target = publicPokemon(BattleSide.ALLY, activeSlot = 0)

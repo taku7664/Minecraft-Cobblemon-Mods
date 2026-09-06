@@ -98,9 +98,14 @@ internal class Cobblemon173BrainTrainerBattleActor(
             return
         }
 
+        val ownCurrentPp = currentRequest.active.orEmpty().mapIndexedNotNull { slot, moveset ->
+            activePokemon.getOrNull(slot)?.battlePokemon?.uuid?.let { id ->
+                id to moveset.moves.associate { it.id to it.pp }
+            }
+        }.toMap()
         val state = try {
             observationAdapter.attach(battle)
-            observationAdapter.snapshot(this)
+            observationAdapter.snapshot(this, ownCurrentPp)
         } catch (exception: Exception) {
             logFailure("public observation", exception)
             submitBaselineOrEmergency(currentRequest, preparation)
@@ -123,11 +128,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
             publicActionCatalog = Cobblemon173PublicActionCatalog.from(
                 state,
                 observationAdapter.publicPpSpent(),
-                currentRequest.active.orEmpty().mapIndexedNotNull { slot, moveset ->
-                    activePokemon.getOrNull(slot)?.battlePokemon?.uuid?.let { id ->
-                        id to moveset.moves.associate { it.id to it.pp }
-                    }
-                }.toMap(),
+                ownCurrentPp,
                 transformedPokemon = observationAdapter.transformedPokemon(),
             ),
         )
