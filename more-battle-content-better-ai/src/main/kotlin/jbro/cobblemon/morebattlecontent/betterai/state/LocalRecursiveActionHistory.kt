@@ -33,6 +33,7 @@ internal data class RecursiveActionHistory(
     val saltCuredPokemonIds: Set<UUID> = emptySet(),
     val protectionChainByPokemon: Map<UUID, Int> = emptyMap(),
     val delayedStrikes: List<RecursiveDelayedStrike> = emptyList(),
+    val restoredOriginalPokemonIds: Set<UUID> = emptySet(),
 )
 
 internal data class RecursiveMoveUseKey(val pokemonId: UUID, val moveId: String)
@@ -141,6 +142,7 @@ internal object RecursiveHistoryProjector {
         outcome: PublicTurnProjection,
         allyAction: BattleActionCandidate,
         opponentAction: BattleActionCandidate,
+        originalPoolPokemonIds: Set<UUID> = emptySet(),
     ): RecursiveActionHistory {
         val actorIds = stateBefore.pokemon.filter {
             it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
@@ -227,6 +229,11 @@ internal object RecursiveHistoryProjector {
         val activeIds = outcome.state.pokemon.filter { it.activeSlot != null && !it.fainted }.mapTo(hashSetOf()) {
             it.battlePokemonId
         }
+        val newlyRestored = actorIds.filterTo(linkedSetOf()) {
+            it !in activeIds && it in originalPoolPokemonIds && it !in previous.restoredOriginalPokemonIds
+        }
+        // Copied use belongs to the discarded pool. Never reset original use on later switches.
+        moveUses.keys.removeIf { it.pokemonId in newlyRestored }
         taunt.keys.retainAll(activeIds)
         trapped.keys.retainAll(activeIds)
         trapped.entries.removeIf { (_, lock) -> lock.sourcePokemonId !in activeIds }
@@ -244,6 +251,7 @@ internal object RecursiveHistoryProjector {
             allySwitchedLastTurn = allyAction.kind == BattleActionKind.SWITCH || BattleSide.ALLY in outcome.switchedSides,
             opponentSwitchedLastTurn = opponentAction.kind == BattleActionKind.SWITCH || BattleSide.OPPONENT in outcome.switchedSides,
             moveUses = moveUses,
+            restoredOriginalPokemonIds = previous.restoredOriginalPokemonIds + newlyRestored,
             rechargingPokemonIds = recharge,
             chargingMoveByPokemon = charging,
             tauntTurnsByPokemon = taunt,

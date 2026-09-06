@@ -526,6 +526,8 @@ internal object LocalRecursiveLookaheadEvaluator {
                             outcome = outcome,
                             allyAction = ownAction,
                             opponentAction = opponentAction,
+                            originalPoolPokemonIds = context.publicActionCatalog.originalEntries
+                                .mapTo(hashSetOf()) { it.battlePokemonId },
                         )
                         val continuationValue = searchState(
                             outcome.state,
@@ -675,11 +677,12 @@ internal object LocalRecursiveLookaheadEvaluator {
             state: BattleStateView,
             history: RecursiveActionHistory,
         ): List<BattleActionCandidate>? {
+            val currentCatalog = context.publicActionCatalog.afterSwitch(history.restoredOriginalPokemonIds)
             val activeOpponents = state.pokemon.filter {
                 it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
             }
             val incompleteIds = activeOpponents.filterNot {
-                context.publicActionCatalog.isMoveSetComplete(it.battlePokemonId)
+                currentCatalog.isMoveSetComplete(it.battlePokemonId)
             }.mapTo(linkedSetOf(), BattlePokemonStateView::battlePokemonId)
             val actions = PublicFutureActionFactory.actions(
                 state,
@@ -692,7 +695,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             if (incompleteIds.isNotEmpty()) {
                 publicResponseIncomplete = true
                 val revealedCoverage = incompleteIds.fold(1.0) { coverage, pokemonId ->
-                    val revealedMoveCount = context.publicActionCatalog.forPokemon(pokemonId).size
+                    val revealedMoveCount = currentCatalog.forPokemon(pokemonId).size
                     val revealedFraction = (revealedMoveCount.toDouble() / STANDARD_MOVE_SLOTS).coerceIn(0.0, 1.0)
                     coverage * confidence(revealedFraction)
                 }

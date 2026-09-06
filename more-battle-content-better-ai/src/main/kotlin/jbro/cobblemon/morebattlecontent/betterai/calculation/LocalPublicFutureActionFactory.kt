@@ -155,7 +155,8 @@ internal object PublicFutureActionFactory {
             ?.moveId
         val taunted = active.actionConstraints.taunted ||
             (history.tauntTurnsByPokemon[active.battlePokemonId] ?: 0) > 0
-        val moves = catalog.forPokemon(active.battlePokemonId).flatMapIndexed { index, option ->
+        val currentCatalog = catalog.afterSwitch(history.restoredOriginalPokemonIds)
+        val moves = currentCatalog.forPokemon(active.battlePokemonId).flatMapIndexed { index, option ->
             val used = history.moveUses[RecursiveMoveUseKey(active.battlePokemonId, option.moveId)] ?: 0
             val legal = option.details.currentPp - used > 0 &&
                 (canonicalId(option.moveId) !in FIRST_ENTRY_ONLY_MOVES ||
