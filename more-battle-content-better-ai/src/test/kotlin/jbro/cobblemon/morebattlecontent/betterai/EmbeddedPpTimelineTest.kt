@@ -13,7 +13,21 @@ class EmbeddedPpTimelineTest {
         val result = EmbeddedShowdownOracle.ppTimeline(directory)
         val cases = result.getAsJsonArray("cases").associate { it.asJsonObject["id"].asString to it.asJsonObject }
         assertEquals(setOf("ordinary", "pivot", "transform", "pressure", "spite", "leppa", "sleeptalk",
-            "fly", "fly_pressure", "outrage", "outrage_pressure", "transform_lifecycle"), cases.keys)
+            "fly", "fly_pressure", "outrage", "outrage_pressure", "transform_lifecycle",
+            "fly_last_pp", "fly_pressure_last_pp", "encore_empty", "encore_available"), cases.keys)
+        for (id in listOf("fly_last_pp", "fly_pressure_last_pp")) {
+            val sample = cases.getValue(id)
+            assertEquals(listOf(0, 0), sample.getAsJsonArray("ppByTurn").map { it.asInt }, id)
+            assertTrue(sample.getAsJsonArray("publicLog").any {
+                it.asString.startsWith("|move|") && it.asString.contains("|Fly|") && it.asString.contains("[from]lockedmove")
+            }, id)
+        }
+        for ((id, expectedMove) in mapOf("encore_empty" to "Splash", "encore_available" to "Tackle")) {
+            val sample = cases.getValue(id)
+            assertEquals(listOf(expectedMove), sample.getAsJsonArray("secondTurnMoves").map { it.asString }, id)
+            assertEquals(id == "encore_available", sample["encoreStarted"].asBoolean, id)
+            assertEquals(0, sample["tacklePp"].asInt, id)
+        }
         val lifecycle = cases.getValue("transform_lifecycle").getAsJsonArray("snapshots").map { it.asJsonObject }
         assertEquals(listOf("copied", "used", "benched", "returned"), lifecycle.map { it["phase"].asString })
         assertEquals(listOf("splash", "splash", "transform", "transform"), lifecycle.map { it["move"].asString })

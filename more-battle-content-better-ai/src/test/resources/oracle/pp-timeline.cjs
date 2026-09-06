@@ -47,6 +47,29 @@ function run(id, species, move, options = {}) {
       publicLog: battle.log.filter(line => !line.startsWith('|pp_update|')) };
   } finally { battle.destroy(); }
 }
+function runEncore(id, initialPp) {
+  const battle = new Battle({ format, seed: [1, 2, 3, 4] });
+  try {
+    const own = set('Snorlax', 'tackle', 1);
+    own.moves = ['tackle', 'splash'];
+    own.movesInfo = own.moves.map(move => ({ pp: move === 'tackle' ? initialPp : dex.moves.get(move).pp,
+      maxPp: dex.moves.get(move).pp }));
+    const foe = set('Alakazam', 'splash', 3);
+    foe.moves = ['splash', 'encore'];
+    foe.movesInfo = foe.moves.map(move => ({ pp: dex.moves.get(move).pp, maxPp: dex.moves.get(move).pp }));
+    battle.setPlayer('p1', { name: 'p1', team: [own] });
+    battle.setPlayer('p2', { name: 'p2', team: [foe] });
+    if (!battle.choose('p1', 'move 1') || !battle.choose('p2', 'move 1')) throw new Error(`${id}: first choices rejected`);
+    const offset = battle.log.length;
+    if (!battle.choose('p1', 'move 2') || !battle.choose('p2', 'move 2')) throw new Error(`${id}: second choices rejected`);
+    const lines = battle.log.slice(offset);
+    return { id, secondTurnMoves: lines.filter(line => line.startsWith('|move|p1a:')).map(line => line.split('|')[3]),
+      encoreStarted: lines.some(line => line.startsWith('|-start|p1a:') && line.endsWith('|Encore')),
+      tacklePp: battle.p1.active[0].moveSlots.find(move => move.id === 'tackle').pp,
+      publicLog: lines.filter(line => !line.startsWith('|pp_update|')) };
+  } finally { battle.destroy(); }
+}
+
 function runTransformLifecycle() {
   const battle = new Battle({ format, seed: [1, 2, 3, 4] });
   try {
@@ -91,6 +114,9 @@ process.stdout.write(JSON.stringify({ status: 'COMPLETE', format, seed: [1, 2, 3
   run('leppa', 'Snorlax', 'tackle', { item: 'Leppa Berry', initialPp: 1 }),
   runCalledMove(),
   runTransformLifecycle(),
+  runEncore('encore_empty', 1), runEncore('encore_available', 2),
+  run('fly_last_pp', 'Snorlax', 'fly', { foeSpecies: 'Shuckle', initialPp: 1, turns: 2 }),
+  run('fly_pressure_last_pp', 'Snorlax', 'fly', { foeSpecies: 'Shuckle', foeAbility: 'Pressure', initialPp: 1, turns: 2 }),
   run('fly', 'Snorlax', 'fly', { foeSpecies: 'Shuckle', turns: 2 }),
   run('fly_pressure', 'Snorlax', 'fly', { foeSpecies: 'Shuckle', foeAbility: 'Pressure', turns: 2 }),
   run('outrage', 'Snorlax', 'outrage', { foeSpecies: 'Shuckle', turns: 2 }),
