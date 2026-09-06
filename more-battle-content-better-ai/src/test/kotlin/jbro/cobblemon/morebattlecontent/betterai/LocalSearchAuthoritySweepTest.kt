@@ -110,8 +110,7 @@ class LocalSearchAuthoritySweepTest {
             appendLine(heuristicLed.row())
             appendLine(searchLed.row())
             appendLine()
-            appendLine("share below 50% means handing the value judgement to the search made the AI")
-            appendLine("worse, whatever it did to how often the answer changed.")
+            appendLine("A point estimate below 0.5 is not proof of worse play; inspect pair bounds and corpus limits.")
         }
         println(report)
 
@@ -169,9 +168,8 @@ class LocalSearchAuthoritySweepTest {
             appendLine()
             rows.forEach { (_, tally) -> appendLine(tally.row()) }
             appendLine()
-            appendLine("A row above 50% means the loss was a calibration problem and the inversion can be")
-            appendLine("reopened. All rows below means the leaf is missing information, not weight, and")
-            appendLine("terms have to be added before this is worth asking again.")
+            appendLine("These comparisons cannot alone identify calibration versus missing information.")
+            appendLine("Pair bounds and independent validation are required before adopting a change.")
         }
         println(report)
 
@@ -216,10 +214,8 @@ class LocalSearchAuthoritySweepTest {
             appendLine(searchDuel.row())
             appendLine(heuristicDuel.row())
             appendLine()
-            appendLine("Both below 50% means the two evaluators are complementary and the shipping")
-            appendLine("comparison is an ensemble rather than one model drowning another. In that case")
-            appendLine("'the search is outvoted' was never the defect it was taken for, and the room that")
-            appendLine("difficulty and personality need has to come from somewhere else.")
+            appendLine("Point estimates alone do not prove complementary evaluators or explain the mechanism.")
+            appendLine("Keep the default policy unless representative independent validation supports adoption.")
         }
         println(report)
 

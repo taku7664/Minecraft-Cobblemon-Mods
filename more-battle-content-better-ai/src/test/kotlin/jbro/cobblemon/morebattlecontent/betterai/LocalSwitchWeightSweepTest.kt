@@ -61,8 +61,7 @@ class LocalSwitchWeightSweepTest {
             }
             appendLine()
             appendLine("Read switch/battle as churn and decisive/stall as whether battles resolve.")
-            appendLine("share is the only strength signal; anything near 50% means the weight is not")
-            appendLine("what decides games at this sample size.")
+            appendLine("Pair-score bounds describe this sample; they do not automatically establish strength.")
         }
         println(report)
 

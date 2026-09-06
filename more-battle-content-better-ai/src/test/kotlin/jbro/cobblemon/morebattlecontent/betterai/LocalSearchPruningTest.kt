@@ -173,8 +173,8 @@ class LocalSearchPruningTest {
             appendLine("=".repeat(104))
             appendLine(duel.row())
             appendLine()
-            appendLine("Below 50% means the abandoned branches were carrying information after all, and")
-            appendLine("the deeper search bought with them did not replace it.")
+            appendLine("Pair-score bounds and corpus limitations constrain any pruning comparison.")
+            appendLine("A small point-estimate difference does not establish a pruning benefit or loss.")
         }
         println(report)
 

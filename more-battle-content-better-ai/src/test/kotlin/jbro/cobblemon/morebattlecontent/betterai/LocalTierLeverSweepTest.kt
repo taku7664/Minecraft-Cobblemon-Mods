@@ -53,8 +53,7 @@ class LocalTierLeverSweepTest {
             appendLine("means the band is well calibrated and that no lever inside it can be a")
             appendLine("difficulty. The band itself is the boundary, and widening it moves the share of")
             appendLine("turns with no choice at all from 43.3% down to 13.3%.")
-            appendLine("Challenger is the *narrow* arm here, so above 50% means narrow plays better and")
-            appendLine("the ladder points the right way.")
+            appendLine("Challenger is the narrow arm; compare pair-score bounds and sampling assumptions.")
             BAND_ARMS.forEach { (narrow, wide) ->
                 val tally = LocalSelfPlayMeasurement.tierDuel(
                     label = "band $narrow vs $wide",
@@ -64,7 +63,6 @@ class LocalTierLeverSweepTest {
                     seed = SEED,
                 )
                 appendLine("  " + tally.row())
-                appendLine("  " + tally.pairedRow())
                 appendLine()
             }
 
@@ -73,7 +71,7 @@ class LocalTierLeverSweepTest {
             appendLine("what stops the shortlist - 61.7% of positions at width 1.0, and 0.0% at 3.0,")
             appendLine("with the shortlist growing 2.05 to 3.85. The band bounds how bad an alternative")
             appendLine("may be, so this admits more genuinely close actions rather than worse ones.")
-            appendLine("Challenger is the *narrow* arm, so above 50% means the ladder points right.")
+            appendLine("Challenger is the narrow arm; a point estimate alone does not establish tier ordering.")
             WIDTH_ARMS.forEach { (narrow, wide) ->
                 val tally = LocalSelfPlayMeasurement.tierDuel(
                     label = "width $narrow vs $wide",
@@ -83,7 +81,6 @@ class LocalTierLeverSweepTest {
                     seed = SEED,
                 )
                 appendLine("  " + tally.row())
-                appendLine("  " + tally.pairedRow())
                 appendLine()
             }
 
@@ -99,7 +96,6 @@ class LocalTierLeverSweepTest {
                     seed = SEED,
                 )
                 appendLine("  " + tally.row())
-                appendLine("  " + tally.pairedRow())
                 appendLine()
             }
             appendLine("A lever worth using has to clear its own reported error by a comfortable margin.")
@@ -141,7 +137,6 @@ class LocalTierLeverSweepTest {
             )
             // Printed per arm rather than collected, so a run that dies still leaves its evidence.
             println("  " + tally.row())
-            println("  " + tally.pairedRow())
             println()
         }
     }
@@ -166,9 +161,8 @@ class LocalTierLeverSweepTest {
         /**
          * Narrow against wide, at the ends of what the draw diagnostics showed the band reaching.
          *
-         * Both arms take the narrow side as challenger, so a working ladder reads above 50% and the
-         * sign of the result is the whole question. A band that widens without weakening would be one
-         * more setting that changes behaviour and not strength, and this module has now found three.
+         * Both arms take the narrow side as challenger. Pair-level uncertainty and sampling limits
+         * constrain conclusions about the ladder; the sign of a point estimate is not sufficient.
          */
         val BAND_ARMS = listOf(1.0 to 4.0, 1.0 to 8.0)
 

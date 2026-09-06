@@ -17,8 +17,8 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 class LocalSelfPlayMeasurementTest {
     @Test
     fun `mirror and head to head results are reported for both tunings`() {
-        val legacy = LocalSelfPlayMeasurement.mirror("legacy (pre-fix)", LocalDecisionTuning.LEGACY, BATTLES, SEED)
-        val current = LocalSelfPlayMeasurement.mirror("current (fixed)", LocalDecisionTuning.CURRENT, BATTLES, SEED)
+        val legacy = LocalSelfPlayMeasurement.mirror("legacy tuning (current code)", LocalDecisionTuning.LEGACY, BATTLES, SEED)
+        val current = LocalSelfPlayMeasurement.mirror("current tuning (current code)", LocalDecisionTuning.CURRENT, BATTLES, SEED)
         val duel = LocalSelfPlayMeasurement.headToHead(
             label = "current vs legacy",
             challenger = LocalDecisionTuning.CURRENT,
@@ -39,7 +39,7 @@ class LocalSelfPlayMeasurementTest {
             appendLine(duel.row())
             appendLine()
             appendLine("stall = neither side eliminated within the turn limit")
-            appendLine("share = fraction of decided battles won by the challenger; 50% means no effect")
+            appendLine("pair_score includes split results and draws; unfinished games remain outcome bounds")
         }
         println(report)
 
@@ -93,8 +93,7 @@ class LocalSelfPlayMeasurementTest {
                 appendLine("${tally.row()}   plies ${plies.first} vs ${plies.second}")
             }
             appendLine()
-            appendLine("share above 50% means the deeper tier is genuinely stronger.")
-            appendLine("At n=${TIER_BATTLES * 2} one battle is ${"%.1f".format(100.0 / (TIER_BATTLES * 2))} points, so read small gaps as noise.")
+            appendLine("Tier strength requires representative paired evidence, not a point estimate above 0.5.")
         }
         println(report)
 
