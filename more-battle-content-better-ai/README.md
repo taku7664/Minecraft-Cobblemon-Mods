@@ -576,3 +576,45 @@ presets, either-side forced-choice handling, doubles,
 runtime addons, win rates or gameplay. Replaying from scratch is a bounded smoke
 mechanism, not a performance measurement or the final long-battle transport.
 JSON is Base64/UTF-8 encoded for Windows-safe argument transport, not secrecy.
+
+### Full raw Factory preset audit
+
+Run `:more-battle-content-better-ai:auditPresetOracle` (Node.js required), with
+optional `-PpresetAuditOutput=<new-directory>`. This bypasses the simulation
+roster's move-metadata filter and accounts for every original rental set by ID.
+The report retains rejected sets; it never repairs the catalog or silently
+removes a set. Large inputs are passed through a create-new JSON file, not a
+command-line argument. `preset-input.json` preserves the raw inputs, and
+`audit.json` records catalog/engine/adapter hashes and the engine version.
+Audit defaults are explicit: level 50, absent IVs 31, fixed species gender where
+applicable and male otherwise. The catalog has no gender field; the validator
+otherwise fills it randomly outside the battle seed. This deterministic audit
+assignment is not a statement about the actual runtime Pokemon's gender and
+does not evaluate alternative-gender event legality.
+
+Two checks are separate: `registryCompatible` requires known species/form,
+ability, item, nature, four distinct known moves and valid stat spreads;
+`obtainable` uses the embedded `TeamValidator` with `Obtainable` and
+`Max Level = 50`. `obtainableChecked=false` means the registry/shape gate prevented
+that second check. The validator receives a copy, with `engineSet` and its
+possibly normalized `validatedSet` preserved separately. Unknown forms are
+rejected, never replaced with their base species.
+
+Every registry-compatible set also starts in a fresh, fixed-seed native singles
+battle against a Splash Magikarp under empty battle rules. This independently
+records actual starting species, effective types, ability, item and max HP;
+initialization errors and static-species/type mismatches are explicit counters.
+These are privileged referee diagnostics, never public decision inputs. For
+example, Multitype can leave an Arceus-Bug label while making its effective type
+Normal without the required plate. Validation warnings alone do not prove that
+a form actually reverts. No turns or AI decisions are executed by this audit.
+
+This is individual-set compatibility with the embedded base-gen9 rules, not
+proof of our game's legality or full-team legality. Level-50 facility scaling
+can conflict with source-game event/learnset minimum levels; required form items
+and Pokemon GO origin constraints can also differ from runtime integrations.
+Do not delete or rewrite presets merely because this report rejects them.
+The audit does not execute AI battles, sample teams, load runtime addon
+registrations, or prove battle quality. Run
+`unitTest -Ptests=EmbeddedPresetAudit -Poracle` for unknown-move,
+impossible-ability and actual Arceus starting-type controls.

@@ -122,6 +122,19 @@ tasks.register<JavaExec>("captureOracle") {
     workingDir(rootProject.projectDir)
 }
 
+tasks.register<JavaExec>("auditPresetOracle") {
+    group = "verification"
+    description = "Accounts for every raw Factory preset against embedded registry and Obtainable rules."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.EmbeddedPresetAudit")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(providers.gradleProperty("presetAuditOutput").orNull
+            ?: layout.buildDirectory.dir("reports/betterai-presets/${UUID.randomUUID()}").get().asFile.absolutePath))
+    }
+}
+
 tasks.register<JavaExec>("compareDamageOracle") {
     group = "verification"
     description = "Compares base damage rolls and KO thresholds against embedded Showdown (requires Node.js)."

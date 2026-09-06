@@ -261,7 +261,7 @@ internal class LocalTacticalSimulationRoster private constructor(
         private fun rawField(body: String, name: String): String? =
             Regex("(?:^|\\n)\\s*$name:\\s*(true|-?\\d+(?:\\.\\d+)?)").find(body)?.groupValues?.get(1)
 
-        private fun rentalSetRoots(): List<JsonObject> {
+        internal fun rentalSetRoots(): List<JsonObject> {
             val url = requireNotNull(LocalTacticalSimulationRoster::class.java.getResource(RENTAL_SET_DIRECTORY)) {
                 "Missing Battle Factory rental set resources"
             }
