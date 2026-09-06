@@ -24,8 +24,12 @@ function run(id, species, move, options = {}) {
     foe.ability = options.foeAbility || 'Illuminate';
     battle.setPlayer('p1', { name: 'p1', team: [own, set('Eevee', 'splash', 2)] });
     battle.setPlayer('p2', { name: 'p2', team: [foe] });
-    for (const side of ['p1', 'p2']) {
-      if (!battle.choose(side, 'move 1')) throw new Error(`${id}: rejected ${side}`);
+    const ppByTurn = [];
+    for (let turn = 0; turn < (options.turns || 1); turn++) {
+      for (const side of ['p1', 'p2']) {
+        if (!battle.choose(side, 'move 1')) throw new Error(`${id}: rejected ${side}`);
+      }
+      ppByTurn.push(battle.p1.pokemon.find(p => p.uuid.endsWith('1')).moveSlots[0].pp);
     }
     const pokemon = battle.p1.pokemon.find(p => p.uuid.endsWith('1'));
     const live = pokemon.moveSlots[0];
@@ -37,7 +41,7 @@ function run(id, species, move, options = {}) {
       const [name, pp] = entry.trim().split(':').map(s => s.trim());
       return [name, Number(pp)];
     }));
-    return { id, requestType: battle.requestState, liveMove: live.id, livePp: live.pp,
+    return { id, ppByTurn, requestType: battle.requestState, liveMove: live.id, livePp: live.pp,
       baseMove: base.id, basePp: base.pp, publishedPp: values[live.id], updates,
       requestMoves: battle.p1.activeRequest?.active?.[0]?.moves ?? null,
       publicLog: battle.log.filter(line => !line.startsWith('|pp_update|')) };
@@ -69,4 +73,8 @@ process.stdout.write(JSON.stringify({ status: 'COMPLETE', format, seed: [1, 2, 3
   run('spite', 'Snorlax', 'tackle', { foeSpecies: 'Shuckle', foeMove: 'spite' }),
   run('leppa', 'Snorlax', 'tackle', { item: 'Leppa Berry', initialPp: 1 }),
   runCalledMove(),
+  run('fly', 'Snorlax', 'fly', { foeSpecies: 'Shuckle', turns: 2 }),
+  run('fly_pressure', 'Snorlax', 'fly', { foeSpecies: 'Shuckle', foeAbility: 'Pressure', turns: 2 }),
+  run('outrage', 'Snorlax', 'outrage', { foeSpecies: 'Shuckle', turns: 2 }),
+  run('outrage_pressure', 'Snorlax', 'outrage', { foeSpecies: 'Shuckle', foeAbility: 'Pressure', turns: 2 }),
 ] }));

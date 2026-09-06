@@ -148,6 +148,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
                         pressureTargetPattern = if (message.hasOptionalArgument("from") && ppCaller == null) null else
                             Moves.getByName(moveId)?.let { Cobblemon173ActionCandidateAdapter.pressureTargetPattern(moveId, it.target) },
                         ppCallerMoveId = ppCaller,
+                        ppLockedContinuation = ppLockedContinuation(message),
                     ),
                 )
             }
@@ -396,6 +397,9 @@ internal class Cobblemon173ShowdownObservationAdapter(
     private enum class ResourceKind { ABILITY, ITEM }
 
     internal companion object {
+        fun ppLockedContinuation(message: BattleMessage): Boolean =
+            message.id == "move" && message.optionalArgument("from")?.trim() == "lockedmove"
+
         fun ppCallerMove(message: BattleMessage, previousMoveId: String?): String? {
             if (message.id != "move") return null
             // This is public protocol attribution, independent of the live move registry.

@@ -818,6 +818,33 @@ class Cobblemon173PublicBattleObserverTest {
         assertNull(caller("|move|p1a: test|Tackle|p2a: target|[from]ability: Magic Bounce", "magicbounce"))
     }
 
+    @Test
+    fun `locked continuation preserves execution evidence without spending PP again`() {
+        val observer = Cobblemon173PublicBattleObserver(3)
+        val actor = publicPokemon(BattleSide.ALLY, 0)
+        val target = publicPokemon(BattleSide.OPPONENT, 0)
+        observer.observe(Cobblemon173PublicObservation.AbilityRevealed(0, target, "pressure"))
+        fun use(turn: Int, locked: Boolean) = observer.observe(Cobblemon173PublicObservation.MoveUsed(
+            turn, actor, "outrage", listOf(target), pressureTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
+            ppLockedContinuation = locked))
+        use(1, false)
+        use(2, true)
+        assertEquals(2, observer.publicPpSpent()[actor.battlePokemonId]?.get("outrage"))
+        assertEquals(2, observer.publicSnapshot().moveUses[actor.battlePokemonId]?.get("outrage"))
+        use(3, false)
+        assertEquals(4, observer.publicPpSpent()[actor.battlePokemonId]?.get("outrage"))
+    }
+
+    @Test
+    fun `only explicit lockedmove source waives continuation PP`() {
+        fun locked(line: String) = Cobblemon173ShowdownObservationAdapter.ppLockedContinuation(BattleMessage(line))
+        assertTrue(locked("|move|p1a: test|Fly|p2a: target|[from]lockedmove"))
+        assertTrue(locked("|move|p1a: test|Outrage|p2a: target|[from] lockedmove"))
+        assertFalse(locked("|move|p1a: test|Fly||[still]"))
+        assertFalse(locked("|move|p1a: test|Fly|p2a: target"))
+        assertFalse(locked("|move|p1a: test|Tackle|p2a: target|[from]move: Sleep Talk"))
+    }
+
     private fun publicPokemon(side: BattleSide, activeSlot: Int?) = Cobblemon173PublicPokemonSnapshot(
         battlePokemonId = UUID.randomUUID(),
         side = side,
