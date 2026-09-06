@@ -105,6 +105,11 @@ internal class Cobblemon173ShowdownObservationAdapter(
     }
 
     private fun consumeMessage(activeBattle: PokemonBattle, message: BattleMessage) {
+        abilityPpEffect(message)?.let { (effect, active) ->
+            resolvePokemon(activeBattle, message, 0)?.let { target ->
+                observer.observeAbilityPpEffect(target.battlePokemonId, effect, active)
+            }
+        }
         Cobblemon173PublicTypeChange.fromMessage(message)?.let { change ->
             resolvePokemon(activeBattle, message, 0)?.let { pokemon ->
                 observer.observe(Cobblemon173PublicObservation.TypesChanged(observedTurn, pokemon, change))
@@ -138,6 +143,9 @@ internal class Cobblemon173ShowdownObservationAdapter(
                         targets = targets,
                         baseMovePriority = Moves.getByName(moveId)?.priority,
                         missed = message.hasOptionalArgument("miss"),
+                        // Called moves have separate PP attribution; do not charge their target twice.
+                        pressureTargetPattern = if (message.hasOptionalArgument("from")) null else
+                            Moves.getByName(moveId)?.let { Cobblemon173ActionCandidateAdapter.publicTargetPattern(it.target) },
                     ),
                 )
             }
@@ -386,6 +394,17 @@ internal class Cobblemon173ShowdownObservationAdapter(
     private enum class ResourceKind { ABILITY, ITEM }
 
     internal companion object {
+        fun abilityPpEffect(message: BattleMessage): Pair<String, Boolean>? {
+            val effect = effectId(message.argumentAt(1))
+            return when {
+                effect == "gastroacid" && message.id in setOf("-start", "-end") ->
+                    effect to (message.id == "-start")
+                effect == "neutralizinggas" && message.id in setOf("-ability", "-end") ->
+                    effect to (message.id == "-ability")
+                else -> null
+            }
+        }
+
         fun leppaRestoredMove(message: BattleMessage): String? =
             if (message.id == "-activate" && message.argumentAt(1) == "item: Leppa Berry") {
                 effectId(message.argumentAt(2)).takeIf { it.isNotBlank() }

@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173
 
 import java.util.UUID
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveTargetPattern
 import jbro.cobblemon.morebattlecontent.api.ai.BattleCombatStatRangesView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFieldStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
@@ -31,6 +32,8 @@ internal class Cobblemon173PublicBattleObserver(
     private val events = ArrayDeque<BattleObservedEventView>()
     private val moveUses = linkedMapOf<UUID, MutableMap<String, Int>>()
     private val ppSpent = linkedMapOf<UUID, MutableMap<String, Int>>()
+    private val gastroAcid = linkedSetOf<UUID>()
+    private val endedGas = linkedSetOf<UUID>()
     private val faintedOpponents = linkedSetOf<UUID>()
     private var sequence = 0L
     private var currentTurn = 0
@@ -55,6 +58,8 @@ internal class Cobblemon173PublicBattleObserver(
             is Cobblemon173PublicObservation.PokemonPresented -> {
                 closeActionWindow()
                 val incoming = observation.pokemon
+                gastroAcid.remove(incoming.battlePokemonId)
+                endedGas.remove(incoming.battlePokemonId)
                 val inherited = if (observation.transfersSubstitute && incoming.activeSlot != null) {
                     pokemon.values.singleOrNull { it.side == incoming.side && it.activeSlot == incoming.activeSlot }
                         ?.knownVolatileEffectIds.orEmpty().intersect(setOf("substitute"))
@@ -75,6 +80,8 @@ internal class Cobblemon173PublicBattleObserver(
                     .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
                 observePpLoss(actor.battlePokemonId, observation.moveId, 1)
                 observation.targets.forEach(::upsert)
+                val pressureLoss = pressureLoss(actor, observation)
+                if (pressureLoss > 0) observePpLoss(actor.battlePokemonId, observation.moveId, pressureLoss)
                 pokemon[actor.battlePokemonId] = actor.withKnownMove(observation.moveId)
                 val actionSequence = appendEvent(
                     turn = observation.turn,
@@ -145,6 +152,7 @@ internal class Cobblemon173PublicBattleObserver(
             is Cobblemon173PublicObservation.AbilityRevealed -> {
                 val actor = knownOrUpsert(observation.pokemon)
                 pokemon[actor.battlePokemonId] = actor.withKnownAbility(observation.abilityId)
+                if (observation.abilityId == "neutralizinggas") endedGas.remove(actor.battlePokemonId)
                 appendEvent(
                     observation.turn,
                     BattleObservedEventKind.ABILITY_REVEALED,
@@ -270,7 +278,34 @@ internal class Cobblemon173PublicBattleObserver(
         currentTurn = maxOf(currentTurn, turn)
     }
 
-    /** Records only a PP loss explicitly named by a public protocol effect. */
+    private fun pressureLoss(actor: BattlePokemonStateView, move: Cobblemon173PublicObservation.MoveUsed): Int {
+        val active = pokemon.values.filter { it.activeSlot != null && !it.fainted }
+        val targets = when (move.pressureTargetPattern) {
+            BattleMoveTargetPattern.ALL_OPPONENTS, BattleMoveTargetPattern.ALL_ADJACENT,
+            BattleMoveTargetPattern.ALL_ACTIVE -> active.filter { it.side != actor.side }
+            BattleMoveTargetPattern.SELECTED_OPPONENT, BattleMoveTargetPattern.SELECTED,
+            BattleMoveTargetPattern.RANDOM_OPPONENT -> {
+                val ids = move.targets.map { it.battlePokemonId }.toSet()
+                active.filter { it.battlePokemonId in ids && it.side != actor.side }
+            }
+            else -> emptyList()
+        }
+        val gas = active.any { it.knownAbilityId == "neutralizinggas" &&
+            it.battlePokemonId !in gastroAcid && it.battlePokemonId !in endedGas }
+        return targets.count { it.knownAbilityId == "pressure" && it.battlePokemonId !in gastroAcid &&
+            (!gas || it.knownHeldItemId == "abilityshield") }
+    }
+
+    @Synchronized
+    fun observeAbilityPpEffect(pokemonId: UUID, effectId: String, active: Boolean) {
+        when (effectId) {
+            "gastroacid" -> if (active) gastroAcid.add(pokemonId) else gastroAcid.remove(pokemonId)
+            "neutralizinggas" -> if (active) endedGas.remove(pokemonId) else endedGas.add(pokemonId)
+            else -> error("Unsupported public PP ability effect: $effectId")
+        }
+    }
+
+    /** Records modeled use expenditure or a PP loss explicitly named by a public effect. */
     @Synchronized
     fun observePpLoss(pokemonId: UUID, moveId: String, amount: Int) {
         require(moveId.isNotBlank() && amount > 0)
@@ -317,6 +352,8 @@ internal class Cobblemon173PublicBattleObserver(
         events.clear()
         moveUses.clear()
         ppSpent.clear()
+        gastroAcid.clear()
+        endedGas.clear()
         faintedOpponents.clear()
         sequence = 0
         currentTurn = 0
@@ -601,6 +638,7 @@ internal sealed interface Cobblemon173PublicObservation {
         val targets: List<Cobblemon173PublicPokemonSnapshot>,
         val baseMovePriority: Int? = null,
         val missed: Boolean = false,
+        val pressureTargetPattern: BattleMoveTargetPattern? = null,
     ) : Cobblemon173PublicObservation {
         init {
             require(moveId.isNotBlank())

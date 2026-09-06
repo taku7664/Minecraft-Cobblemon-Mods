@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173
 
 import com.cobblemon.mod.common.api.battles.interpreter.BattleMessage
 import java.util.UUID
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveTargetPattern
 import jbro.cobblemon.morebattlecontent.api.ai.BattleAbilityAvailability
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
@@ -717,6 +718,74 @@ class Cobblemon173PublicBattleObserverTest {
         assertNull(restored("|-item|p1a: test|Leppa Berry"))
         assertNull(restored("|-activate|p1a: test|move: Spite|Tackle|4"))
         assertNull(restored("|-activate|p1a: test|item: Leppa Berry||[consumed]"))
+    }
+
+    @Test
+    fun `public Pressure counts opposing spread targets but respects active neutralizing gas`() {
+        val observer = Cobblemon173PublicBattleObserver(3)
+        val actor = publicPokemon(BattleSide.ALLY, 0)
+        val first = publicPokemon(BattleSide.OPPONENT, 0)
+        val second = publicPokemon(BattleSide.OPPONENT, 1)
+        val gas = publicPokemon(BattleSide.ALLY, 1)
+        for (target in listOf(first, second)) {
+            observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, target))
+            observer.observe(Cobblemon173PublicObservation.AbilityRevealed(0, target, "pressure"))
+        }
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(1, actor, "rockslide", listOf(first),
+            pressureTargetPattern = BattleMoveTargetPattern.ALL_OPPONENTS))
+        assertEquals(3, observer.publicPpSpent()[actor.battlePokemonId]?.get("rockslide"))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(2, actor, "tackle", listOf(first),
+            pressureTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT))
+        assertEquals(2, observer.publicPpSpent()[actor.battlePokemonId]?.get("tackle"))
+        observer.observe(Cobblemon173PublicObservation.AbilityRevealed(2, gas, "neutralizinggas"))
+        observer.observe(Cobblemon173PublicObservation.MoveUsed(3, actor, "rockslide", listOf(first),
+            pressureTargetPattern = BattleMoveTargetPattern.ALL_OPPONENTS))
+        assertEquals(4, observer.publicPpSpent()[actor.battlePokemonId]?.get("rockslide"))
+    }
+
+    @Test
+    fun `Pressure suppression follows Gastro Acid and gas ending before the next switch snapshot`() {
+        val observer = Cobblemon173PublicBattleObserver(3)
+        val actor = publicPokemon(BattleSide.ALLY, 0)
+        val target = publicPokemon(BattleSide.OPPONENT, 0)
+        val gas = publicPokemon(BattleSide.ALLY, 1)
+        observer.observe(Cobblemon173PublicObservation.AbilityRevealed(0, target, "pressure"))
+        var turn = 0
+        fun use() = observer.observe(Cobblemon173PublicObservation.MoveUsed(++turn, actor, "tackle", listOf(target),
+            pressureTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT))
+        fun spent() = observer.publicPpSpent()[actor.battlePokemonId]?.get("tackle")
+        observer.observeAbilityPpEffect(target.battlePokemonId, "gastroacid", true)
+        use()
+        assertEquals(1, spent())
+        observer.observeAbilityPpEffect(target.battlePokemonId, "gastroacid", false)
+        use()
+        assertEquals(3, spent())
+        observer.observe(Cobblemon173PublicObservation.AbilityRevealed(turn, gas, "neutralizinggas"))
+        use()
+        assertEquals(4, spent())
+        observer.observeAbilityPpEffect(gas.battlePokemonId, "neutralizinggas", false)
+        use()
+        assertEquals(6, spent())
+        observer.observeAbilityPpEffect(gas.battlePokemonId, "neutralizinggas", true)
+        use()
+        assertEquals(7, spent())
+        observer.observeAbilityPpEffect(gas.battlePokemonId, "gastroacid", true)
+        use()
+        assertEquals(9, spent())
+        observer.reset()
+        observer.observe(Cobblemon173PublicObservation.AbilityRevealed(0, target, "pressure"))
+        use()
+        assertEquals(2, spent())
+    }
+
+    @Test
+    fun `PP ability effect parser distinguishes starts ends and unrelated messages`() {
+        fun effect(line: String) = Cobblemon173ShowdownObservationAdapter.abilityPpEffect(BattleMessage(line))
+        assertEquals("gastroacid" to true, effect("|-start|p1a: test|Gastro Acid"))
+        assertEquals("gastroacid" to false, effect("|-end|p1a: test|Gastro Acid"))
+        assertEquals("neutralizinggas" to true, effect("|-ability|p1a: test|Neutralizing Gas"))
+        assertEquals("neutralizinggas" to false, effect("|-end|p1a: test|ability: Neutralizing Gas"))
+        assertNull(effect("|move|p1a: test|Gastro Acid|p2a: target"))
     }
 
     private fun publicPokemon(side: BattleSide, activeSlot: Int?) = Cobblemon173PublicPokemonSnapshot(
