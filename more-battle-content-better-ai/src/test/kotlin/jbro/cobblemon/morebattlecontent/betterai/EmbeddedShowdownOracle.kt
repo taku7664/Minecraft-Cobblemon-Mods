@@ -41,6 +41,8 @@ internal object EmbeddedShowdownOracle {
 
     fun ppTimeline(directory: Path): JsonObject = runScript(directory, "/oracle/pp-timeline.cjs", "")
 
+    fun pressurePp(directory: Path): JsonObject = runScript(directory, "/oracle/pressure-pp.cjs", "")
+
     fun presetAudit(directory: Path, input: JsonObject): JsonObject {
         Files.createDirectories(directory)
         val inputFile = directory.resolve("preset-input.json").toAbsolutePath()
