@@ -25,6 +25,11 @@ class LocalProtectAttackCandidateTest {
     }
 
     @Test
+    fun `Protect works from slot one with canonical component order`() {
+        checkCoverage(180, protectorSlot = 1)
+    }
+
+    @Test
     fun `omitted probability follows the existing unconditional Protect declaration`() {
         checkCoverage(180, probability = null)
     }
@@ -37,20 +42,23 @@ class LocalProtectAttackCandidateTest {
     }
 
     private fun checkCoverage(attackStat: Int, protectionMoveId: String = "protect", declared: Boolean = true,
-        probability: Double? = 1.0, expectedReservation: Boolean = true) {
-        val allies = (0..1).map { mon(BattleSide.ALLY, it, if (it == 0) attackStat else 100) }
+        probability: Double? = 1.0, expectedReservation: Boolean = true, protectorSlot: Int = 0) {
+        val partnerSlot = 1 - protectorSlot
+        val allies = listOf(mon(BattleSide.ALLY, protectorSlot, attackStat), mon(BattleSide.ALLY, partnerSlot))
         val foes = (0..1).map { mon(BattleSide.OPPONENT, it) }
-        val protect = BattleActionCandidate("protect", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
+        val protect = BattleActionCandidate("protect", BattleActionKind.USE_MOVE, actorSlot = protectorSlot, moveSlot = 0,
             moveId = "cobblemon:$protectionMoveId", moveDetails = BattleMoveCandidateView(
                 "normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 4, 10, BattleMoveTargetPattern.SELF,
                 BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
                     if (declared) listOf(BattleMoveEffectView(BattleMoveEffectKind.PROTECT_USER,
                         BattleMoveEffectTarget.USER, probability)) else emptyList(), false)))
         fun attacks(slot: Int) = (0..2).flatMap { move -> (0..1).map { target -> attack(slot, target, move) } }
-        fun joint(a: BattleActionCandidate, b: BattleActionCandidate) = BattleActionCandidate(
-            "${a.actionId}+${b.actionId}", BattleActionKind.COMPOSITE,
-            componentActionIds = listOf(a.actionId, b.actionId), componentActions = listOf(a, b))
-        val candidates = (listOf(protect) + attacks(0)).flatMap { a -> attacks(1).map { joint(a, it) } }
+        fun joint(a: BattleActionCandidate, b: BattleActionCandidate): BattleActionCandidate {
+            val parts = listOf(a, b).sortedBy { it.actorSlot }
+            return BattleActionCandidate(parts.joinToString("+") { it.actionId }, BattleActionKind.COMPOSITE,
+                componentActionIds = parts.map { it.actionId }, componentActions = parts)
+        }
+        val candidates = (listOf(protect) + attacks(protectorSlot)).flatMap { a -> attacks(partnerSlot).map { joint(a, it) } }
         val state = BattleStateView(UUID(0, 1), BattleFormat.DOUBLE, 2, allies + foes, BattleFieldStateView.empty(),
             BattleSide.entries.associateWith { 2 }, emptyList(), emptyList())
         val known = attack(0, 0, 0)
@@ -61,9 +69,9 @@ class LocalProtectAttackCandidateTest {
         val calculated = PublicBattleTacticalCalculator.calculate(context)
         val profile = BattleTrainerProfile.balanced(2).let { it.copy(difficulty = it.difficulty.copy(lookaheadPlies = 1)) }
         val ranked = LocalBattleActionPolicy.rank(calculated, null, profile)
-        val cooperative = ranked.first { it.outcome.candidate.componentActions.first().actionId == "protect" }.outcome.candidate
-        val exposed = joint(attacks(0).first(), cooperative.componentActions[1])
-        val reply = attack(0, 0, 0, BattleSide.ALLY)
+        val cooperative = ranked.first { it.outcome.candidate.componentActions.any { part -> part.actionId == "protect" } }.outcome.candidate
+        val exposed = joint(attacks(protectorSlot).first(), cooperative.componentActions.single { it.actorSlot == partnerSlot })
+        val reply = attack(0, protectorSlot, 0, BattleSide.ALLY)
         fun project(action: BattleActionCandidate) = PublicSingleTurnProjector.project(state, action, reply, calculated, RecursiveActionHistory())
         val protected = project(cooperative)
         val unprotected = project(exposed)
@@ -87,7 +95,7 @@ class LocalProtectAttackCandidateTest {
         assertEquals(expectedReservation, cooperative.actionId in LocalCooperativeRootRetention.select(ranked, calculated))
         assertTrue(narrow.responseCoverageByAction.size <= LocalDecisionTuning.CURRENT.maximumRootActionsPerSlot *
             LocalDecisionTuning.CURRENT.maximumRootActionsPerSlot + 3)
-        println("PROTECT_ATTACK move=$protectionMoveId declared=$declared probability=$probability attack=$attackStat " +
+        println("PROTECT_ATTACK slot=$protectorSlot move=$protectionMoveId declared=$declared probability=$probability attack=$attackStat " +
             "candidates=${candidates.size} kept=${narrow.responseCoverageByAction.size} " +
             "retained=${cooperative.actionId in narrow.responseCoverageByAction} nodes=${narrow.nodesVisited} wideNodes=${wide.nodesVisited} " +
             "baseRank=${ranked.indexOfFirst { it.outcome.candidate.actionId == cooperative.actionId } + 1} " +

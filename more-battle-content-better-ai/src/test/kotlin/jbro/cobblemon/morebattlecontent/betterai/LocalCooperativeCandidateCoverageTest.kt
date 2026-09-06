@@ -24,6 +24,12 @@ class LocalCooperativeCandidateCoverageTest {
     }
 
     @Test
+    fun `redirection works from slot one with canonical component order`() {
+        checkCoverage(drawerSlot = 1)
+        checkCoverage(redirectId = "ragepowder", drawerSlot = 1)
+    }
+
+    @Test
     fun `ordinary status does not reserve a cooperative search slot`() {
         checkCoverage(redirectId = "splash", expectedCoverage = false)
     }
@@ -37,16 +43,17 @@ class LocalCooperativeCandidateCoverageTest {
 
     private fun checkCoverage(
         redirectId: String = "followme", stages: Map<String, Int> = mapOf("attack" to 2),
-        probability: Double? = 1.0, expectedCoverage: Boolean = true,
+        probability: Double? = 1.0, expectedCoverage: Boolean = true, drawerSlot: Int = 0,
     ) {
-        val drawer = mon(BattleSide.ALLY, 0, 1.0, 300, 200)
-        val partner = mon(BattleSide.ALLY, 1, 0.3, 150, 50)
+        val partnerSlot = 1 - drawerSlot
+        val drawer = mon(BattleSide.ALLY, drawerSlot, 1.0, 300, 200)
+        val partner = mon(BattleSide.ALLY, partnerSlot, 0.3, 150, 50)
         val opponents = listOf(mon(BattleSide.OPPONENT, 0, 1.0, 200, 100),
             mon(BattleSide.OPPONENT, 1, 1.0, 200, 100))
-        val follow = status(redirectId, 0, 2)
-        val setup = status("swordsdance", 1, 0, stages, probability)
-        val own = listOf(follow) + attacks(0)
-        val other = listOf(setup) + attacks(1)
+        val follow = status(redirectId, drawerSlot, 2)
+        val setup = status("swordsdance", partnerSlot, 0, stages, probability)
+        val own = listOf(follow) + attacks(drawerSlot)
+        val other = listOf(setup) + attacks(partnerSlot)
         val joints = own.flatMap { first -> other.map { second -> joint(first, second) } }
         val state = BattleStateView(UUID(0, 1), BattleFormat.DOUBLE, 2,
             listOf(drawer, partner) + opponents, BattleFieldStateView.empty(),
@@ -61,7 +68,7 @@ class LocalCooperativeCandidateCoverageTest {
             publicActionCatalog = catalog)
         val cooperative = joint(follow, setup)
         val exposed = joint(own[1], setup)
-        val reply = attack(0, 1, 0, BattleSide.ALLY)
+        val reply = attack(0, partnerSlot, 0, BattleSide.ALLY)
         fun partnerHp(action: BattleActionCandidate): Double = PublicSingleTurnProjector.project(
             state, action, reply, context, RecursiveActionHistory()).sumOf { branch ->
             branch.probability * branch.orderProbability *
@@ -96,16 +103,18 @@ class LocalCooperativeCandidateCoverageTest {
         assertEquals(expectedCoverage, cooperative.actionId in narrow.responseCoverageByAction,
             "Only a declared redirect plus positive self setup receives the reserved search slot")
         assertTrue(narrow.responseCoverageByAction.size <= tuning.maximumRootActionsPerSlot * tuning.maximumRootActionsPerSlot + 1)
-        println("COOPERATIVE_ROOT candidates=${joints.size} narrow=${narrow.responseCoverageByAction.size} " +
+        println("COOPERATIVE_ROOT slot=$drawerSlot candidates=${joints.size} narrow=${narrow.responseCoverageByAction.size} " +
             "wide=${wide.responseCoverageByAction.size} redirectSetupNarrow=${cooperative.actionId in narrow.responseCoverageByAction} " +
             "baseRank=${ranked.indexOfFirst { it.outcome.candidate.actionId == cooperative.actionId } + 1} " +
             "narrowNodes=${narrow.nodesVisited} wideNodes=${wide.nodesVisited} " +
             "narrowChoice=${narrow.ranked.first().outcome.candidate.actionId} wideChoice=${wide.ranked.first().outcome.candidate.actionId}")
     }
 
-    private fun joint(a: BattleActionCandidate, b: BattleActionCandidate) = BattleActionCandidate(
-        actionId = "${a.actionId}+${b.actionId}", kind = BattleActionKind.COMPOSITE,
-        componentActionIds = listOf(a.actionId, b.actionId), componentActions = listOf(a, b))
+    private fun joint(a: BattleActionCandidate, b: BattleActionCandidate): BattleActionCandidate {
+        val parts = listOf(a, b).sortedBy { it.actorSlot }
+        return BattleActionCandidate(parts.joinToString("+") { it.actionId }, BattleActionKind.COMPOSITE,
+            componentActionIds = parts.map { it.actionId }, componentActions = parts)
+    }
 
     private fun attacks(slot: Int) = (0..2).flatMap { move -> (0..1).map { target -> attack(slot, target, move) } }
 
