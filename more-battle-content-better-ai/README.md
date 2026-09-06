@@ -513,3 +513,19 @@ all 560 comparison rows before/after, excluding elapsed time. That is scoped
 behavior-preservation evidence, not a win-rate or real-time performance claim.
 The fixed value of surviving Pokemon and full-HP unseen estimates remain model
 assumptions to evaluate in the later team-role work.
+
+### Immediate KO correction does not use future gain
+
+The root KO duplicate-credit correction is capped by the completed one-turn
+gain, not the gain at the current search depth. Later gains/losses therefore do
+not change this immediate correction when foresight weight is zero. Legacy
+correction, search objectives, budgets and tuning defaults are unchanged.
+
+`unitTest -Ptests=LocalForesightOwnership` compares 20 public tactical fixtures
+at 40 opponent-HP levels, recalculating candidate facts after every HP change.
+With equal budgets, fixed clocks, completed depths and equal response coverage,
+1,640 action comparisons had seven mismatches before the fix and none after it.
+A separate check keeps nonzero foresight effective. These are synthetic model
+regressions, not legal-team or win-rate evidence. Depth-dependent response
+coverage can still change the overall adjustment when later turns expose
+incomplete responses; universal zero-foresight depth invariance is not claimed.

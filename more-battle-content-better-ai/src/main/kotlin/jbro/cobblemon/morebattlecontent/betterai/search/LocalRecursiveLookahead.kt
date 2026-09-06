@@ -144,6 +144,9 @@ internal object LocalRecursiveLookaheadEvaluator {
                     // subtracted nothing at all for a merely probable knockout that had still been
                     // priced in.
                     val searchBoardGain = (evaluation.value - baseline) * BOARD_TO_SCORE
+                    val actionId = rank.outcome.candidate.actionId
+                    if (depth == 1) singlePlyGain[actionId] = searchBoardGain
+                    val immediateGain = singlePlyGain[actionId] ?: searchBoardGain
                     val rootSecureKoBaselineCorrection = if (tuning.legacyRawPowerFallback) {
                         rank.outcome.secureStandardKnockouts * LocalBattleActionPolicy.SECURE_KNOCKOUT_BONUS
                     } else {
@@ -156,10 +159,10 @@ internal object LocalRecursiveLookaheadEvaluator {
                         // up ranked below a speculative switch. Capping the correction at what the
                         // search itself gained makes the exchange conservative in the right direction:
                         // no re-derivation, no removal.
-                        rank.outcome.knockoutUtility.coerceAtMost(searchBoardGain.coerceAtLeast(0.0))
+                        // This corrects the root turn, not later turns. Using the current depth's
+                        // gain here leaks future losses/gains into ranking even at zero foresight.
+                        rank.outcome.knockoutUtility.coerceAtMost(immediateGain.coerceAtLeast(0.0))
                     }
-                    val actionId = rank.outcome.candidate.actionId
-                    if (depth == 1) singlePlyGain[actionId] = searchBoardGain
                     // Split the search result at the turn boundary and scale only the far side.
                     //
                     // Depth was measured to be a weak difficulty lever precisely because it was not
@@ -168,7 +171,6 @@ internal object LocalRecursiveLookaheadEvaluator {
                     // the heuristic had already scored, so the ranking barely moved and every tier
                     // played alike. The near half stays whole for every trainer; the far half is what
                     // a difficulty tier actually buys.
-                    val immediateGain = singlePlyGain[actionId] ?: searchBoardGain
                     val foresightGain = (searchBoardGain - immediateGain) * profile.difficulty.foresightWeight
                     // The knockout correction exists only to stop the search's knockout value landing
                     // on top of the root scorer's. As the search takes over the value half, the root
