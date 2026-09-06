@@ -811,3 +811,12 @@ Unmodeled mechanic candidates are excluded from this ordinary-move rule because
 their sequence may heal first or transform the move. This does not establish that
 the entire lost match is fixed, model all health-cost callbacks, or address the
 separate repeated-Substitute/public-volatile gaps visible in the same match.
+
+The native test adapter also reads explicit item/ability sources on public
+`-damage` and `-heal` messages. `[of]` identifies the resource owner; without it,
+the affected Pokemon is the owner. An unknown or malformed explicit owner does
+not fall back to the damaged Pokemon. This recovers the recorded Rocky Helmet
+reveal without importing referee team data. `EmbeddedPublicResourceTest` covers
+the original capture, self-source healing, ability retaliation, removal and
+unresolved owners. Other message kinds and persistent Pokemon effects remain
+outside this adapter addition; production observation code is unchanged.

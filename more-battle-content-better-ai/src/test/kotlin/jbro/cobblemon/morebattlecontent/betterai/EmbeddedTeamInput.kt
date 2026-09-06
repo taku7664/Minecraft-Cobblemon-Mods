@@ -74,7 +74,24 @@ internal object EmbeddedTeamInput {
                     seen[key] = entry
                     events += BattleObservedEventView(index.toLong() * 2, eventTurn, BattleObservedEventKind.SWITCHED, uuid(actor))
                 }
-                "-damage", "-heal" -> current?.let { val hp = condition(p[3]); it.hp = hp.first; it.status = hp.second }
+                "-damage", "-heal" -> {
+                    current?.let { val hp = condition(p[3]); it.hp = hp.first; it.status = hp.second }
+                    val source = p.drop(4).singleOrNull { it.startsWith("[from] ") }?.removePrefix("[from] ")
+                    val ownerTags = p.drop(4).filter { it.startsWith("[of]") }
+                    val owner = when {
+                        ownerTags.isEmpty() -> current
+                        ownerTags.size == 1 && ownerTags.single().startsWith("[of] ") ->
+                            seen[identity(ownerTags.single().removePrefix("[of] "))]
+                        else -> null
+                    }
+                    if (source != null && owner != null) {
+                        val resource = id(source).takeIf(String::isNotEmpty)
+                        if (resource != null) when {
+                            source.startsWith("item: ") -> owner.item = resource
+                            source.startsWith("ability: ") -> owner.ability = resource
+                        }
+                    }
+                }
                 "faint" -> current?.let { it.hp = 0.0; event(BattleObservedEventKind.FAINTED) }
                 "move" -> current?.let { it.moves += id(p[3]); event(BattleObservedEventKind.MOVE_USED, id(p[3])) }
                 "-status" -> current?.let { it.status = id(p[3]) }
