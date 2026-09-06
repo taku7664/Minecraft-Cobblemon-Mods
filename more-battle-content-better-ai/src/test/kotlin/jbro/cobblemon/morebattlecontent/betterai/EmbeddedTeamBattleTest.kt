@@ -48,6 +48,9 @@ class EmbeddedTeamBattleTest {
             assertTrue(constraint(BattleSide.ALLY).mustRecharge)
             step("move 1") // Native forced recharge slot, not a scripted fallback.
             assertFalse(constraint(BattleSide.ALLY).mustRecharge)
+            assertTrue(context().state.observedEvents.any {
+                it.moveOutcome?.kind == BattleMoveOutcomeKind.CANNOT_ACT && it.moveOutcome?.publicEffectId == "recharge"
+            })
             step("move 2")
             assertEquals("softboiled", constraint(BattleSide.OPPONENT).encoreMoveId)
             step("move 1")
@@ -122,6 +125,28 @@ class EmbeddedTeamBattleTest {
         assertEquals(2, observed.statStages["attack"])
         assertEquals(0.5, observed.hpFraction)
         assertEquals("brn", observed.statusId)
+        val sourceIdent = observations.getAsJsonArray("publicLog").map { it.asString }
+            .first { it.startsWith("|switch|p1a:") }.split('|')[2]
+        observations.getAsJsonArray("publicLog").apply {
+            add("|move|$sourceIdent|Thunderbolt|$opponentIdent|[miss]")
+            add("|-miss|$sourceIdent|$opponentIdent")
+            add("|-immune|$opponentIdent|[from] ability: Levitate")
+            add("|-activate|$opponentIdent|move: Substitute|[damage]")
+        }
+        val outcomeState = EmbeddedTeamInput.context(observations, UUID(0, 1), original["turn"].asInt, 0).state
+        val misses = outcomeState.observedEvents.filter { it.moveOutcome?.kind == BattleMoveOutcomeKind.MISSED }
+        assertEquals(1, misses.size)
+        assertEquals("thunderbolt", misses.single().moveOutcome!!.moveId)
+        val immunity = outcomeState.observedEvents.single { it.moveOutcome?.kind == BattleMoveOutcomeKind.IMMUNE }
+        assertNull(immunity.actorPokemonId)
+        assertNull(immunity.moveOutcome!!.moveId)
+        assertNull(immunity.moveOutcome!!.publicEffectId)
+        assertEquals(0.5, outcomeState.pokemon.single { it.side == BattleSide.OPPONENT }.hpFraction)
+        assertTrue(outcomeState.observedEvents.zipWithNext().all { (a, b) -> a.sequence < b.sequence })
+        val knownIds = outcomeState.pokemon.map { it.battlePokemonId }.toSet()
+        assertTrue(outcomeState.observedEvents.all {
+            (it.actorPokemonId == null || it.actorPokemonId in knownIds) && it.targetPokemonIds.all(knownIds::contains)
+        })
         for (side in listOf("p1", "p2")) {
             val limited = request(original, side).deepCopy()
             limited.getAsJsonArray("publicLog").apply {

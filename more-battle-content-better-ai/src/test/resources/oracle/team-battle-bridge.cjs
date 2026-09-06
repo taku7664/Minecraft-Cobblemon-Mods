@@ -29,7 +29,7 @@ const team = (side, sets) => {
 };
 const publicEvents = new Set(['gametype', 'player', 'teamsize', 'gen', 'tier', 'start',
   'switch', 'drag', 'replace', 'detailschange', '-formechange', 'move', '-damage', '-heal',
-  'faint', 'win', 'tie', 'turn', '-supereffective', '-resisted', '-immune', '-crit', '-fail',
+  'faint', 'win', 'tie', 'turn', '-supereffective', '-resisted', '-immune', '-crit', '-hitcount', '-fail',
   'cant', '-status', '-curestatus', '-cureteam', '-start', '-end', '-activate', '-ability',
   '-endability', '-item', '-enditem', '-boost', '-unboost', '-setboost', '-swapboost',
   '-copyboost', '-clearboost', '-clearallboost', '-clearpositiveboost', '-clearnegativeboost',

@@ -55,7 +55,7 @@ internal object EmbeddedTeamInput {
             val key = identity(actor)
             val current = seen[key]
             fun event(eventKind: BattleObservedEventKind, value: String? = null) {
-                events += BattleObservedEventView(index.toLong(), eventTurn, eventKind,
+                events += BattleObservedEventView(index.toLong() * 2, eventTurn, eventKind,
                     actorPokemonId = current?.let { uuid(it.ident) }, publicValueId = value)
             }
             when (kind) {
@@ -72,7 +72,7 @@ internal object EmbeddedTeamInput {
                         hp.first, hp.second, types = baseTypes(species))
                     current?.let { entry.moves += it.moves; entry.ability = it.ability; entry.item = it.item }
                     seen[key] = entry
-                    events += BattleObservedEventView(index.toLong(), eventTurn, BattleObservedEventKind.SWITCHED, uuid(actor))
+                    events += BattleObservedEventView(index.toLong() * 2, eventTurn, BattleObservedEventKind.SWITCHED, uuid(actor))
                 }
                 "-damage", "-heal" -> current?.let { val hp = condition(p[3]); it.hp = hp.first; it.status = hp.second }
                 "faint" -> current?.let { it.hp = 0.0; event(BattleObservedEventKind.FAINTED) }
@@ -107,6 +107,11 @@ internal object EmbeddedTeamInput {
                 "-sidestart" -> { val effects = sideEffects.getValue(side(actor)); val name = id(p[3])
                     effects[name] = ((effects[name] ?: 0) + 1).coerceAtMost(if (name == "spikes") 3 else if (name == "toxicspikes") 2 else 1) }
                 "-sideend" -> sideEffects.getValue(side(actor)).remove(id(p[3]))
+            }
+            EmbeddedPublicMoveOutcomes.read(element.asString, eventTurn, index.toLong() * 2 + 1) { ident ->
+                seen[identity(ident)]?.let { uuid(it.ident) }
+            }?.let { outcome ->
+                if (!EmbeddedPublicMoveOutcomes.duplicatesMiss(events.lastOrNull(), outcome)) events += outcome
             }
         }
         val request = input.getAsJsonObject("request")

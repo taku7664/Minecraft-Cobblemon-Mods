@@ -708,4 +708,15 @@ The tracker does not edit the native candidate list. Unit traces cover independe
 expiration, missing Encore evidence and cross-side isolation. A separate native
 Smeargle/Blissey protocol fixture exercises recharge, Encore and Taunt announcements;
 it is a scripted mechanics check, not one of the sampled AI quality battles.
-Other volatile conditions and detailed public outcomes remain incomplete.
+Explicit public move outcomes now enter the observation history: misses, failures,
+blocks, no target, inability to act, critical/effectiveness/immunity messages,
+positive hit counts, Substitute damage and Protect start. Adjacent duplicate miss
+announcements retain the explicit move ID. Target-only messages do not acquire a
+previous attacker, move or hidden cause; Substitute damage does not change Pokemon
+HP. Unit and adapter checks cover these boundaries, and the native recharge fixture
+checks an actual `cant` announcement. Protect start is not a confirmed blocked hit.
+Other protection-start effects (Endure/Max Guard/Quick Guard/Wide Guard) are not
+mapped here pending resolution of the product adapter's broader mapping versus
+the Protect-only contract. Other volatile conditions and full observation parity
+with the product adapter remain incomplete. This is test infrastructure, not a
+production AI policy change or evidence of improved win rate.
