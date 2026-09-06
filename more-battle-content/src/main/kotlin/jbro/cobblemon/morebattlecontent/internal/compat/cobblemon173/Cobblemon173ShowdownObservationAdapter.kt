@@ -149,6 +149,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
                             Moves.getByName(moveId)?.let { Cobblemon173ActionCandidateAdapter.pressureTargetPattern(moveId, it.target) },
                         ppCallerMoveId = ppCaller,
                         ppLockedContinuation = ppLockedContinuation(message),
+                        ppPreparing = ppPreparingMove(message, moveId),
                     ),
                 )
             }
@@ -397,6 +398,10 @@ internal class Cobblemon173ShowdownObservationAdapter(
     private enum class ResourceKind { ABILITY, ITEM }
 
     internal companion object {
+        fun ppPreparingMove(message: BattleMessage, moveId: String): Boolean =
+            message.id == "move" && message.hasOptionalArgument("still") &&
+                Cobblemon173ActionCandidateAdapter.publicMoveEffects(moveId)?.mechanicFlags?.contains("charge") == true
+
         fun ppLockedContinuation(message: BattleMessage): Boolean =
             message.id == "move" && message.optionalArgument("from")?.trim() == "lockedmove"
 

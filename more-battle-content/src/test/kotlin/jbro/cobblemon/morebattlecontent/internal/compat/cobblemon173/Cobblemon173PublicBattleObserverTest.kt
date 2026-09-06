@@ -845,6 +845,34 @@ class Cobblemon173PublicBattleObserverTest {
         assertFalse(locked("|move|p1a: test|Tackle|p2a: target|[from]move: Sleep Talk"))
     }
 
+    @Test
+    fun `untargeted preparation charges Pressure only when all possible foes agree`() {
+        for ((abilities, expected) in listOf(listOf("pressure") to 2,
+            listOf("pressure", "pressure") to 2, listOf("pressure", "illuminate") to 1)) {
+            val observer = Cobblemon173PublicBattleObserver(3)
+            val actor = publicPokemon(BattleSide.ALLY, 0)
+            abilities.forEachIndexed { slot, ability ->
+                observer.observe(Cobblemon173PublicObservation.AbilityRevealed(0,
+                    publicPokemon(BattleSide.OPPONENT, slot), ability))
+            }
+            observer.observe(Cobblemon173PublicObservation.MoveUsed(1, actor, "fly", emptyList(),
+                pressureTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT, ppPreparing = true))
+            assertEquals(expected, observer.publicPpSpent()[actor.battlePokemonId]?.get("fly"), abilities.toString())
+            observer.observe(Cobblemon173PublicObservation.MoveUsed(2, actor, "tackle", emptyList(),
+                pressureTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT))
+            assertEquals(1, observer.publicPpSpent()[actor.battlePokemonId]?.get("tackle"))
+        }
+    }
+
+    @Test
+    fun `preparation requires both the public still marker and a declared charge flag`() {
+        fun preparing(line: String, move: String) =
+            Cobblemon173ShowdownObservationAdapter.ppPreparingMove(BattleMessage(line), move)
+        assertTrue(preparing("|move|p1a: test|Fly||[still]", "fly"))
+        assertFalse(preparing("|move|p1a: test|Fly|p2a: target", "fly"))
+        assertFalse(preparing("|move|p1a: test|Protect||[still]", "protect"))
+    }
+
     private fun publicPokemon(side: BattleSide, activeSlot: Int?) = Cobblemon173PublicPokemonSnapshot(
         battlePokemonId = UUID.randomUUID(),
         side = side,

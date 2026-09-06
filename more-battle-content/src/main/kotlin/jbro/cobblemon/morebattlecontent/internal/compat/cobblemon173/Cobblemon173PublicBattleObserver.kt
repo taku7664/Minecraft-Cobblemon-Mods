@@ -294,8 +294,15 @@ internal class Cobblemon173PublicBattleObserver(
         }
         val gas = active.any { it.knownAbilityId == "neutralizinggas" &&
             it.battlePokemonId !in gastroAcid && it.battlePokemonId !in endedGas }
-        return targets.count { it.knownAbilityId == "pressure" && it.battlePokemonId !in gastroAcid &&
-            (!gas || it.knownHeldItemId == "abilityshield") }
+        fun exertsPressure(target: BattlePokemonStateView) = target.knownAbilityId == "pressure" &&
+            target.battlePokemonId !in gastroAcid && (!gas || target.knownHeldItemId == "abilityshield")
+        if (move.ppPreparing && move.targets.isEmpty() &&
+            move.pressureTargetPattern == BattleMoveTargetPattern.SELECTED_OPPONENT) {
+            val possibleTargets = active.filter { it.side != actor.side }
+            // The target is not public, but a unanimous cost is public without choosing its identity.
+            return if (possibleTargets.isNotEmpty() && possibleTargets.all(::exertsPressure)) 1 else 0
+        }
+        return targets.count(::exertsPressure)
     }
 
     @Synchronized
@@ -643,6 +650,7 @@ internal sealed interface Cobblemon173PublicObservation {
         val pressureTargetPattern: BattleMoveTargetPattern? = null,
         val ppCallerMoveId: String? = null,
         val ppLockedContinuation: Boolean = false,
+        val ppPreparing: Boolean = false,
     ) : Cobblemon173PublicObservation {
         init {
             require(moveId.isNotBlank())
