@@ -7,6 +7,30 @@ import org.junit.jupiter.api.Test
 
 class Cobblemon173FuturePpTest {
     @Test
+    fun `original catalog restores once without mutating sibling branch or consuming copied PP`() {
+        val own = pokemon(BattleSide.ALLY)
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 2, listOf(own),
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 0),
+            emptyList(), emptyList())
+        val catalog = Cobblemon173PublicActionCatalog.from(state,
+            mapOf(own.battlePokemonId to mapOf("recover" to 2)),
+            mapOf(own.battlePokemonId to mapOf("recover" to 3)),
+            transformedPokemon = setOf(own.battlePokemonId),
+            originalMoveIds = mapOf(own.battlePokemonId to setOf("recover")),
+            originalPpSpent = mapOf(own.battlePokemonId to mapOf("recover" to 1)),
+        ) { BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 8) }
+        val restored = catalog.afterSwitch(setOf(own.battlePokemonId))
+        assertEquals(3, catalog.forPokemon(own.battlePokemonId).single().details.currentPp)
+        assertEquals(7, restored.forPokemon(own.battlePokemonId).single().details.currentPp)
+        assertEquals(1, catalog.originalEntries.size)
+        assertEquals(0, restored.originalEntries.size)
+        assertEquals(restored, restored.afterSwitch(setOf(own.battlePokemonId)))
+        val legacy = BattlePublicActionCatalogView::class.java.getConstructor(List::class.java)
+            .newInstance(emptyList<BattlePokemonActionCatalogView>())
+        assertEquals(emptyList<BattlePokemonActionCatalogView>(), legacy.entries)
+    }
+
+    @Test
     fun `copied public moves use temporary capacity while actual own PP still wins`() {
         val own = pokemon(BattleSide.ALLY)
         val opponent = pokemon(BattleSide.OPPONENT)

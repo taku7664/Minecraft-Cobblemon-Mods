@@ -340,6 +340,12 @@ internal class Cobblemon173PublicBattleObserver(
     @Synchronized
     fun transformedPokemon(): Set<UUID> = copiedPpSpent.keys.toSet()
 
+    @Synchronized
+    fun originalMoveIds(): Map<UUID, Set<String>> = originalMoves.mapValues { it.value.toSet() }
+
+    @Synchronized
+    fun originalPpSpent(): Map<UUID, Map<String, Int>> = ppSpent.mapValues { it.value.toMap() }
+
     /** Own request knowledge is allowed; a locked request is not a complete replacement list. */
     @Synchronized
     fun observeOwnCopiedMoves(pokemonId: UUID, moveIds: Set<String>) {

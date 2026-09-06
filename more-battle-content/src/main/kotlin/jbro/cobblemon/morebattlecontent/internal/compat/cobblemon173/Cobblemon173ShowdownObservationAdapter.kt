@@ -69,6 +69,14 @@ internal class Cobblemon173ShowdownObservationAdapter(
 
     fun transformedPokemon(): Set<UUID> = observer.transformedPokemon()
 
+    fun originalMoveIds(actor: BattleActor): Map<UUID, Set<String>> {
+        val transformed = observer.transformedPokemon()
+        return observer.originalMoveIds() + actor.pokemonList.filter { it.uuid in transformed }
+            .associate { it.uuid to it.moveSet.getMoves().mapTo(linkedSetOf()) { move -> move.name } }
+    }
+
+    fun originalPpSpent(): Map<UUID, Map<String, Int>> = observer.originalPpSpent()
+
     private fun seedActiveOpponents(activeBattle: PokemonBattle) {
         val opponent = activeBattle.actors.firstOrNull { it.uuid == opponentActorId } ?: return
         opponent.activePokemon.forEach { active ->

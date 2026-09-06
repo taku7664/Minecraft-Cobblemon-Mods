@@ -16,32 +16,42 @@ internal object Cobblemon173PublicActionCatalog {
         ppSpent: Map<UUID, Map<String, Int>>,
         ownCurrentPp: Map<UUID, Map<String, Int>>,
         transformedPokemon: Set<UUID> = emptySet(),
+        originalMoveIds: Map<UUID, Set<String>> = emptyMap(),
+        originalPpSpent: Map<UUID, Map<String, Int>> = emptyMap(),
         moveDetails: (String) -> BattleMoveCandidateView? = Cobblemon173ActionCandidateAdapter::publicMoveDetails,
-    ): BattlePublicActionCatalogView = BattlePublicActionCatalogView(
-        state.pokemon.filterNot { it.fainted }.mapNotNull { pokemon ->
+    ): BattlePublicActionCatalogView {
+        fun entry(pokemon: jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView, original: Boolean): BattlePokemonActionCatalogView {
             val knowledge = when (pokemon.side) {
                 BattleSide.ALLY -> BattlePublicMoveKnowledge.EXACT_OWN
                 BattleSide.OPPONENT -> BattlePublicMoveKnowledge.PUBLICLY_REVEALED
             }
-            val moves = pokemon.knownMoveIds.sorted().mapNotNull { moveId ->
+            val ids = if (original) originalMoveIds[pokemon.battlePokemonId].orEmpty() else pokemon.knownMoveIds
+            val spent = if (original) originalPpSpent else ppSpent
+            val moves = ids.sorted().mapNotNull { moveId ->
                 moveDetails(moveId)?.let { details ->
-                    val actual = if (pokemon.side == BattleSide.ALLY) {
+                    val actual = if (!original && pokemon.side == BattleSide.ALLY) {
                         ownCurrentPp[pokemon.battlePokemonId]?.get(moveId)
                     } else null
                     BattlePublicMoveOptionView(moveId, details.copy(currentPp = remainingPp(
-                        ppCapacity(details.currentPp, pokemon.battlePokemonId in transformedPokemon),
-                        ppSpent[pokemon.battlePokemonId]?.get(moveId) ?: 0,
+                        ppCapacity(details.currentPp, !original && pokemon.battlePokemonId in transformedPokemon),
+                        spent[pokemon.battlePokemonId]?.get(moveId) ?: 0,
                         actual,
                     )), knowledge)
                 }
             }
-            BattlePokemonActionCatalogView(
+            return BattlePokemonActionCatalogView(
                 battlePokemonId = pokemon.battlePokemonId,
                 moves = moves,
                 moveSetComplete = pokemon.side == BattleSide.ALLY || moves.size >= MAX_MOVE_SLOTS,
-            ).takeIf { moves.isNotEmpty() }
-        },
-    )
+            )
+        }
+        val living = state.pokemon.filterNot { it.fainted }
+        return BattlePublicActionCatalogView(
+            living.map { entry(it, false) }.filter { it.moves.isNotEmpty() },
+            living.filter { it.battlePokemonId in transformedPokemon && it.battlePokemonId in originalMoveIds }
+                .map { entry(it, true) },
+        )
+    }
 
     /** Native Transform has a temporary five-PP pool, except for one-PP moves. */
     internal fun ppCapacity(maximumPp: Int, transformed: Boolean): Int =

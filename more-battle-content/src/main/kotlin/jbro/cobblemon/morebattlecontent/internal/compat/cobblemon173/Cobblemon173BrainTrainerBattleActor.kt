@@ -130,6 +130,8 @@ internal class Cobblemon173BrainTrainerBattleActor(
                 observationAdapter.publicPpSpent(),
                 ownCurrentPp,
                 transformedPokemon = observationAdapter.transformedPokemon(),
+                originalMoveIds = observationAdapter.originalMoveIds(this),
+                originalPpSpent = observationAdapter.originalPpSpent(),
             ),
         )
         val primaryEndpoint = endpoint(primaryBrain, primarySession)

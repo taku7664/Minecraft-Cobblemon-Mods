@@ -512,19 +512,38 @@ class BattlePokemonActionCatalogView(
     }
 }
 
-class BattlePublicActionCatalogView(entries: List<BattlePokemonActionCatalogView>) {
+class BattlePublicActionCatalogView @JvmOverloads constructor(
+    entries: List<BattlePokemonActionCatalogView>,
+    originalEntries: List<BattlePokemonActionCatalogView> = emptyList(),
+) {
+    /** Pre-Transform move pools, restored on departure; these are not currently usable moves. */
+    val originalEntries: List<BattlePokemonActionCatalogView> = Collections.unmodifiableList(ArrayList(originalEntries))
     val entries: List<BattlePokemonActionCatalogView> = Collections.unmodifiableList(ArrayList(entries))
     private val byPokemon: Map<UUID, List<BattlePublicMoveOptionView>> = this.entries.associate {
         it.battlePokemonId to it.moves
     }
 
     init {
+        require(this.originalEntries.map { it.battlePokemonId }.distinct().size == this.originalEntries.size) {
+            "Original action catalog cannot contain duplicate Pokemon identities"
+        }
         require(byPokemon.size == this.entries.size) {
             "Future action catalog cannot contain duplicate Pokemon identities"
         }
     }
 
     fun forPokemon(battlePokemonId: UUID): List<BattlePublicMoveOptionView> = byPokemon[battlePokemonId].orEmpty()
+
+    /** Returns a branch-local catalog; restoring a pool never changes the source or restores twice. */
+    fun afterSwitch(pokemonIds: Set<UUID>): BattlePublicActionCatalogView {
+        val restored = originalEntries.filter { it.battlePokemonId in pokemonIds }
+        if (restored.isEmpty()) return this
+        val restoredIds = restored.mapTo(hashSetOf()) { it.battlePokemonId }
+        return BattlePublicActionCatalogView(
+            entries.filterNot { it.battlePokemonId in restoredIds } + restored,
+            originalEntries.filterNot { it.battlePokemonId in restoredIds },
+        )
+    }
 
     fun isMoveSetComplete(battlePokemonId: UUID): Boolean = entries.firstOrNull {
         it.battlePokemonId == battlePokemonId
