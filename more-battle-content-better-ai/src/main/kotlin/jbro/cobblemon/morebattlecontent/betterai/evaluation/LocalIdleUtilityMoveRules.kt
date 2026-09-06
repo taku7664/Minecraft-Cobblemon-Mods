@@ -29,6 +29,7 @@ internal object LocalIdleUtilityMoveRules {
         val moveId = candidate.moveId?.let(::canonical) ?: return false
         val actor = actor(candidate, context) ?: return false
         val target = opposingActive(context, actor.side).firstOrNull()
+        if (failsForInsufficientHp(candidate, context)) return true
         return when (moveId) {
             in HAZARD_REMOVAL -> noEntryHazardsAnywhere(context)
             in STAT_STAGE_RESET -> nobodyActiveIsBoosted(context)
@@ -36,13 +37,24 @@ internal object LocalIdleUtilityMoveRules {
             in PARTY_STATUS_CURES -> partyOf(context, actor.side).none { it.statusId != null }
             in ITEM_SWAPS -> actor.knownHeldItemId == null
             in FORCED_ROTATIONS -> (context.state.remainingPokemonBySide[opposing(actor.side)] ?: 0) <= 1
-            SUBSTITUTE -> actor.hpFraction <= SUBSTITUTE_HP_COST
-            in HALF_HEALTH_BOOSTS -> actor.hpFraction <= SUBSTITUTE_HP_COST
             LEECH_SEED -> target != null && target.knownTypeIds.any { canonical(it) == "grass" }
             TAUNT -> target?.actionConstraints?.taunted == true
             ENCORE -> target?.actionConstraints?.encoreMoveId != null
             YAWN -> target?.statusId != null
             in HAZARD_LAYERS.keys -> hazardIsFull(context, opposing(actor.side), moveId)
+            else -> false
+        }
+    }
+
+    /** Current public HP requirement only; does not remove legal actions or generalize other idle rules. */
+    fun failsForInsufficientHp(candidate: BattleActionCandidate, context: BattleDecisionContext): Boolean {
+        // A mechanic may heal first or replace the move; its sequence is not described by this rule.
+        if (candidate.mechanic != null) return false
+        val moveId = candidate.moveId?.let(::canonical) ?: return false
+        val actor = actor(candidate, context) ?: return false
+        return when (moveId) {
+            SUBSTITUTE -> actor.hpFraction <= SUBSTITUTE_HP_COST
+            in HALF_HEALTH_BOOSTS -> actor.hpFraction <= HALF_HEALTH_COST
             else -> false
         }
     }
@@ -94,8 +106,9 @@ internal object LocalIdleUtilityMoveRules {
     private const val ENCORE = "encore"
     private const val YAWN = "yawn"
 
-    /** Substitute and the half-health boosts all fail outright at or below a quarter of maximum. */
+    /** Separate requirements: Substitute costs a quarter, Belly Drum/Fillet Away require over half HP. */
     private const val SUBSTITUTE_HP_COST = 0.25
+    private const val HALF_HEALTH_COST = 0.5
 
     private val HAZARD_REMOVAL = setOf("defog", "rapidspin", "mortalspin", "tidyup", "courtchange")
     private val STAT_STAGE_RESET = setOf("haze", "clearsmog", "topsyturvy", "spectralthief")

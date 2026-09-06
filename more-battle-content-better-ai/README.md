@@ -797,3 +797,17 @@ number. Its population interpretation requires independent representative pair
 outcomes; deterministic sampling and team overlap do not establish that assumption.
 These partial-adapter comparisons are preliminary evidence, not automatic policy
 adoption, historical-version comparisons, or proof of in-game battle quality.
+
+The native comparison exposed a concrete low-HP failure: pair 5, game 0, turn 5
+of capture `38003fcc-305d-466c-a5c4-5aa7b45385ff` selected Belly Drum at 22/151 HP;
+the engine emitted `-fail`. `LocalHealthCostFailureTest` retains that decision's
+own-request/public-log input in `oracle/low-hp-belly-drum-input.json`, not the
+opponent's private team definition. The shared local failure check now distinguishes
+Substitute's quarter-HP requirement from Belly Drum/Fillet Away's half-HP requirement
+and passes known current failure into the existing inert-action policy, instead of
+merely assigning zero status utility. Legal candidates remain present; no new
+penalty weight, Router recommendation or hidden-information lookup is introduced.
+Unmodeled mechanic candidates are excluded from this ordinary-move rule because
+their sequence may heal first or transform the move. This does not establish that
+the entire lost match is fixed, model all health-cost callbacks, or address the
+separate repeated-Substitute/public-volatile gaps visible in the same match.

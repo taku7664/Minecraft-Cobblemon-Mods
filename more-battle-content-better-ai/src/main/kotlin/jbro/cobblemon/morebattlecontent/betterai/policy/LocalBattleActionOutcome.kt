@@ -12,6 +12,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyBrief
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalIdleUtilityMoveRules
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalLookaheadStateEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalPublicPositionFacts
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalScorer
@@ -376,7 +377,8 @@ internal object LocalBattleActionOutcomeEvaluator {
     }
 
     private fun isPubliclyInert(candidate: BattleActionCandidate, context: BattleDecisionContext): Boolean =
-        LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) > 0.0 ||
+        LocalIdleUtilityMoveRules.failsForInsufficientHp(candidate, context) ||
+            LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) > 0.0 ||
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) > 0.0 ||
             LocalTacticalSituationalEvaluator.saturatedStatStagePenalty(candidate, context) > 0.0 ||
             LocalTacticalSituationalEvaluator.unmetPublicRequirementPenalty(candidate, context) > 0.0 ||
