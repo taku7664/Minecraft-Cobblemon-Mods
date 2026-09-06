@@ -1,6 +1,9 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
 import jbro.cobblemon.morebattlecontent.api.ai.*
+import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalSituationalEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionPolicy
 import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicSingleTurnProjector
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -34,12 +37,17 @@ class LocalFaintedTargetRetargetTest {
                 targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, target)),
                 moveDetails = BattleMoveCandidateView("normal", BattleMoveDamageCategory.PHYSICAL,
                     40.0, 100.0, 0, 35, if (slot == 0) BattleMoveTargetPattern.SELECTED_OPPONENT else pattern))
-            fun project(secondTarget: Int): Pair<Double, Double> {
+            fun joint(secondTarget: Int): BattleActionCandidate {
                 val parts = listOf(attack(0, targetSlot), attack(1, secondTarget))
-                val joint = BattleActionCandidate("joint", BattleActionKind.COMPOSITE,
+                return BattleActionCandidate("joint-$secondTarget", BattleActionKind.COMPOSITE,
                     componentActionIds = parts.map { it.actionId }, componentActions = parts)
-                val context = BattleDecisionContext(UUID(0, 2), state, listOf(joint), Long.MAX_VALUE)
-                val outcomes = PublicSingleTurnProjector.project(state, joint,
+            }
+            val context = PublicBattleTacticalCalculator.calculate(BattleDecisionContext(UUID(0, 2), state,
+                listOf(joint(targetSlot), joint(1 - targetSlot)), Long.MAX_VALUE))
+            val ranked = LocalBattleActionPolicy.rank(context, null, BattleTrainerProfile.balanced(2))
+            fun project(secondTarget: Int): Pair<Double, Double> {
+                val candidate = context.candidates.single { it.actionId == "joint-$secondTarget" }
+                val outcomes = PublicSingleTurnProjector.project(state, candidate,
                     BattleActionCandidate("wait", BattleActionKind.WAIT), context)
                 assertEquals(1.0, outcomes.sumOf { it.probability * it.orderProbability }, 1e-9)
                 fun hp(id: UUID) = outcomes.sumOf { branch -> branch.probability * branch.orderProbability *
@@ -55,6 +63,19 @@ class LocalFaintedTargetRetargetTest {
             else assertTrue(split.second < 1.0)
             assertEquals(if (pattern == BattleMoveTargetPattern.SCRIPTED || targetHp == 1.0) 1.0 else split.second, focused.second, 1e-9,
                 "A fainted opposing target must not silently discard the second attack")
+            if (targetHp < 1.0 && replacementTypes == setOf("normal") &&
+                pattern == BattleMoveTargetPattern.SELECTED_OPPONENT) {
+                // Baseline evidence, not a frozen expected score or a new scoring contract.
+                ranked.forEach { rank ->
+                    val candidate = rank.outcome.candidate
+                    println("RETARGET_SCORE target=$targetSlot action=${candidate.actionId} " +
+                        "focused=${candidate.actionId == "joint-$targetSlot"} " +
+                        "rank=${rank.comparisonValue} tactical=${rank.outcome.tacticalUtility} " +
+                        "ko=${rank.outcome.knockoutUtility} secureTargets=${rank.outcome.secureStandardKnockouts} " +
+                        "damage=${rank.outcome.expectedDamageFraction} " +
+                        "coordination=${LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context)}")
+                }
+            }
         }
     }
 
