@@ -120,7 +120,15 @@ internal class Cobblemon173BrainTrainerBattleActor(
             candidates = preparation.candidates,
             deadlineEpochMillis = safeDeadline(now),
             memory = tacticalMemory.view(state.turn),
-            publicActionCatalog = Cobblemon173PublicActionCatalog.from(state),
+            publicActionCatalog = Cobblemon173PublicActionCatalog.from(
+                state,
+                observationAdapter.publicMoveUses(),
+                currentRequest.active.orEmpty().mapIndexedNotNull { slot, moveset ->
+                    activePokemon.getOrNull(slot)?.battlePokemon?.uuid?.let { id ->
+                        id to moveset.moves.associate { it.id to it.pp }
+                    }
+                }.toMap(),
+            ),
         )
         val primaryEndpoint = endpoint(primaryBrain, primarySession)
         val localEndpoint = endpoint(localBrain, localSession)

@@ -374,7 +374,7 @@ internal object Cobblemon173ActionCandidateAdapter {
             power = template.power,
             accuracy = publicAccuracy(template.accuracy),
             priority = template.priority,
-            currentPp = 1,
+            currentPp = template.maxPp,
             targetPattern = publicTargetPattern(template.target),
             effects = publicMoveEffects(moveId),
         )

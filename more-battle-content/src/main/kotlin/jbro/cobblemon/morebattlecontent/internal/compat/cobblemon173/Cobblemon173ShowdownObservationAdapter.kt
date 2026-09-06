@@ -59,6 +59,10 @@ internal class Cobblemon173ShowdownObservationAdapter(
         )
     }
 
+    /** Called after snapshot has consumed the public log for this decision. */
+    @Synchronized
+    fun publicMoveUses(): Map<UUID, Map<String, Int>> = observer.publicSnapshot().moveUses
+
     private fun seedActiveOpponents(activeBattle: PokemonBattle) {
         val opponent = activeBattle.actors.firstOrNull { it.uuid == opponentActorId } ?: return
         opponent.activePokemon.forEach { active ->

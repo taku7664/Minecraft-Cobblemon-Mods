@@ -1,0 +1,47 @@
+package jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173
+
+import java.util.UUID
+import jbro.cobblemon.morebattlecontent.api.ai.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+
+class Cobblemon173FuturePpTest {
+    @Test
+    fun `catalog shares PP estimates while refusing actual opponent PP and hidden moves`() {
+        val own = pokemon(BattleSide.ALLY)
+        val opponent = pokemon(BattleSide.OPPONENT)
+        val state = BattleStateView(
+            UUID.randomUUID(), BattleFormat.SINGLE, 20, listOf(own, opponent),
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1),
+            emptyList(), emptyList(),
+        )
+        val catalog = Cobblemon173PublicActionCatalog.from(
+            state,
+            mapOf(own.battlePokemonId to mapOf("recover" to 3), opponent.battlePokemonId to mapOf("recover" to 5)),
+            mapOf(own.battlePokemonId to mapOf("recover" to 0, "hiddenmove" to 9),
+                opponent.battlePokemonId to mapOf("recover" to 1)),
+        ) { BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 8) }
+        val entries = catalog.entries.associateBy { it.battlePokemonId }
+        assertEquals(0, entries.getValue(own.battlePokemonId).moves.single().details.currentPp)
+        assertEquals(3, entries.getValue(opponent.battlePokemonId).moves.single().details.currentPp)
+    }
+
+    private fun pokemon(side: BattleSide) = BattlePokemonStateView(
+        UUID.randomUUID(), side, 0, "cobblemon:alakazam", null, 50, 1.0, null,
+        emptyMap(), setOf("recover"), null, null, false,
+    )
+
+    @Test
+    fun `unknown PP assumes PP Max minus public uses and never goes negative`() {
+        assertEquals(8, Cobblemon173PublicActionCatalog.remainingPp(8, 0, null))
+        assertEquals(5, Cobblemon173PublicActionCatalog.remainingPp(8, 3, null))
+        assertEquals(0, Cobblemon173PublicActionCatalog.remainingPp(8, 10, null))
+    }
+
+    @Test
+    fun `actual current PP takes precedence without subtracting observed uses again`() {
+        assertEquals(2, Cobblemon173PublicActionCatalog.remainingPp(8, 3, 2))
+        assertEquals(0, Cobblemon173PublicActionCatalog.remainingPp(8, 0, 0))
+        assertEquals(8, Cobblemon173PublicActionCatalog.remainingPp(8, 10, 8))
+    }
+}
