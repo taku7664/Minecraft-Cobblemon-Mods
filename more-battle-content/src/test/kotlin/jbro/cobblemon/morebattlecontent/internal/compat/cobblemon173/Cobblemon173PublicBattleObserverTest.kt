@@ -691,6 +691,34 @@ class Cobblemon173PublicBattleObserverTest {
         }
     }
 
+    @Test
+    fun `PP restoration caps at capacity without banking recovery against later uses`() {
+        val observer = Cobblemon173PublicBattleObserver(3)
+        val target = publicPokemon(BattleSide.OPPONENT, 0)
+        fun use(turn: Int) = observer.observe(Cobblemon173PublicObservation.MoveUsed(turn, target, "recover", emptyList()))
+        use(1)
+        observer.observePpRestore(target.battlePokemonId, "recover", 10, 8)
+        assertEquals(0, observer.publicPpSpent()[target.battlePokemonId]?.get("recover"))
+        use(2)
+        assertEquals(1, observer.publicPpSpent()[target.battlePokemonId]?.get("recover"))
+        assertEquals(2, observer.publicSnapshot().moveUses[target.battlePokemonId]?.get("recover"))
+        observer.observePpLoss(target.battlePokemonId, "recover", 10)
+        observer.observePpRestore(target.battlePokemonId, "recover", 3, 8)
+        assertEquals(5, observer.publicPpSpent()[target.battlePokemonId]?.get("recover"))
+        observer.reset()
+        assertTrue(observer.publicPpSpent().isEmpty())
+    }
+
+    @Test
+    fun `Leppa activation names the restored move but item revelation does not`() {
+        fun restored(line: String) = Cobblemon173ShowdownObservationAdapter.leppaRestoredMove(BattleMessage(line))
+        assertEquals("tackle", restored("|-activate|p1a: test|item: Leppa Berry|Tackle|[consumed]"))
+        assertNull(restored("|-enditem|p1a: test|Leppa Berry|[eat]"))
+        assertNull(restored("|-item|p1a: test|Leppa Berry"))
+        assertNull(restored("|-activate|p1a: test|move: Spite|Tackle|4"))
+        assertNull(restored("|-activate|p1a: test|item: Leppa Berry||[consumed]"))
+    }
+
     private fun publicPokemon(side: BattleSide, activeSlot: Int?) = Cobblemon173PublicPokemonSnapshot(
         battlePokemonId = UUID.randomUUID(),
         side = side,

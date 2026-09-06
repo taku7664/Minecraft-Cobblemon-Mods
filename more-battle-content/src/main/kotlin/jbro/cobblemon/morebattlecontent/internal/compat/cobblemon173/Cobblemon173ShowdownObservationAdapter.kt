@@ -158,6 +158,12 @@ internal class Cobblemon173ShowdownObservationAdapter(
                         observer.observePpLoss(target.battlePokemonId, move, amount)
                     }
                 }
+                leppaRestoredMove(message)?.let { move ->
+                    val maximum = Moves.getByName(move)?.maxPp
+                    if (maximum != null) resolvePokemon(activeBattle, message, 0)?.let { target ->
+                        observer.observePpRestore(target.battlePokemonId, move, 10, maximum)
+                    }
+                }
                 observeActionConstraint(activeBattle, message)
                 observeMoveOutcome(activeBattle, message)
             }
@@ -380,6 +386,11 @@ internal class Cobblemon173ShowdownObservationAdapter(
     private enum class ResourceKind { ABILITY, ITEM }
 
     internal companion object {
+        fun leppaRestoredMove(message: BattleMessage): String? =
+            if (message.id == "-activate" && message.argumentAt(1) == "item: Leppa Berry") {
+                effectId(message.argumentAt(2)).takeIf { it.isNotBlank() }
+            } else null
+
         fun spitePpLoss(message: BattleMessage): Pair<String, Int>? {
             if (message.id != "-activate" || message.argumentAt(1) != "move: Spite") return null
             val move = effectId(message.argumentAt(2)).takeIf { it.isNotBlank() } ?: return null

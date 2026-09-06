@@ -30,7 +30,7 @@ internal class Cobblemon173PublicBattleObserver(
     private val publicTypes = Cobblemon173PublicTypeKnowledge()
     private val events = ArrayDeque<BattleObservedEventView>()
     private val moveUses = linkedMapOf<UUID, MutableMap<String, Int>>()
-    private val extraPpLosses = linkedMapOf<UUID, MutableMap<String, Int>>()
+    private val ppSpent = linkedMapOf<UUID, MutableMap<String, Int>>()
     private val faintedOpponents = linkedSetOf<UUID>()
     private var sequence = 0L
     private var currentTurn = 0
@@ -73,6 +73,7 @@ internal class Cobblemon173PublicBattleObserver(
                 val uses = moveUses.getOrPut(actor.battlePokemonId) { linkedMapOf() }
                 uses[observation.moveId] = ((uses[observation.moveId] ?: 0).toLong() + 1)
                     .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+                observePpLoss(actor.battlePokemonId, observation.moveId, 1)
                 observation.targets.forEach(::upsert)
                 pokemon[actor.battlePokemonId] = actor.withKnownMove(observation.moveId)
                 val actionSequence = appendEvent(
@@ -273,22 +274,23 @@ internal class Cobblemon173PublicBattleObserver(
     @Synchronized
     fun observePpLoss(pokemonId: UUID, moveId: String, amount: Int) {
         require(moveId.isNotBlank() && amount > 0)
-        val losses = extraPpLosses.getOrPut(pokemonId) { linkedMapOf() }
+        val losses = ppSpent.getOrPut(pokemonId) { linkedMapOf() }
         losses[moveId] = ((losses[moveId] ?: 0).toLong() + amount)
             .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
     }
 
-    /** Publicly modeled expenditure; use counts remain independently available for auditing. */
+    /** Apply restoration now, so unused recovery cannot cancel a later move's expenditure. */
+    @Synchronized
+    fun observePpRestore(pokemonId: UUID, moveId: String, amount: Int, maximumPp: Int) {
+        require(moveId.isNotBlank() && amount > 0 && maximumPp >= 0)
+        val spent = ppSpent.getOrPut(pokemonId) { linkedMapOf() }
+        spent[moveId] = ((spent[moveId] ?: 0).coerceAtMost(maximumPp) - amount).coerceAtLeast(0)
+    }
+
+    /** Publicly modeled net expenditure; raw use counts remain available for auditing. */
     @Synchronized
     fun publicPpSpent(): Map<UUID, Map<String, Int>> =
-        (moveUses.keys + extraPpLosses.keys).associateWith { id ->
-            val uses = moveUses[id].orEmpty()
-            val losses = extraPpLosses[id].orEmpty()
-            (uses.keys + losses.keys).associateWith { move ->
-                ((uses[move] ?: 0).toLong() + (losses[move] ?: 0))
-                    .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-            }
-        }
+        ppSpent.mapValues { it.value.toMap() }
 
     @Synchronized
     fun publicSnapshot(): Cobblemon173PublicBattleSnapshot = Cobblemon173PublicBattleSnapshot(
@@ -314,7 +316,7 @@ internal class Cobblemon173PublicBattleObserver(
         publicTypes.reset()
         events.clear()
         moveUses.clear()
-        extraPpLosses.clear()
+        ppSpent.clear()
         faintedOpponents.clear()
         sequence = 0
         currentTurn = 0
