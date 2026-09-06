@@ -18,7 +18,7 @@ class EmbeddedPresetAuditTest {
             getAsJsonArray("moves").set(0, com.google.gson.JsonPrimitive("cobblemon:notarealmove"))
         }
         sets.add(broken)
-        val result = EmbeddedPresetAudit.run(directory, sets)
+        val result = EmbeddedPresetAudit.run(directory, sets, teamPairs = 100)
         val rows = result.getAsJsonArray("sets").map { it.asJsonObject }
         assertEquals(sets.size(), rows.size)
         assertEquals(sets.map { it.asJsonObject["set_id"].asString }.toSet(),
@@ -36,6 +36,31 @@ class EmbeddedPresetAuditTest {
         assertTrue(arceus.getAsJsonObject("initialization")["speciesMatches"].asBoolean)
         assertFalse(arceus.getAsJsonObject("initialization")["typesMatch"].asBoolean)
         assertEquals(listOf("Normal"), arceus.getAsJsonObject("initialization").getAsJsonArray("types").map { it.asString })
+        val sampling = result.getAsJsonObject("teamSampling")
+        assertEquals(100, sampling.getAsJsonArray("pairs").size())
+        assertEquals(0, sampling["rejectedTeams"].asInt)
+        val teams = sampling.getAsJsonArray("pairs").flatMap { pair ->
+            listOf(pair.asJsonObject.getAsJsonObject("p1"), pair.asJsonObject.getAsJsonObject("p2"))
+        }
+        val accepted = rows.filter { it["obtainable"].asBoolean }.associateBy { it["setId"].asString }
+        teams.forEach { team ->
+            val ids = team.getAsJsonArray("setIds").map { it.asString }
+            assertEquals(3, ids.size)
+            assertEquals(3, ids.distinct().size)
+            assertTrue(team.getAsJsonArray("problems").isEmpty)
+            assertEquals(3, team["initializedCount"].asInt)
+            ids.forEachIndexed { index, id ->
+                assertEquals(accepted.getValue(id)["engineSet"], team.getAsJsonArray("sets")[index])
+            }
+        }
+        assertEquals(200, teams.map { it["setIds"].toString() }.distinct().size,
+            "This fixed-seed sample must draw fresh teams, not reuse a toy roster")
+        val replay = EmbeddedPresetAudit.run(directory.resolve("replay"), sets, teamPairs = 100)
+        assertEquals(result, replay, "Team sets, validation and battle seeds must replay exactly")
+        val different = EmbeddedPresetAudit.run(directory.resolve("different"), sets, teamPairs = 1, teamSeed = 9)
+        assertEquals(result["catalogSha256"], different["catalogSha256"])
+        assertNotEquals(sampling.getAsJsonArray("pairs")[0],
+            different.getAsJsonObject("teamSampling").getAsJsonArray("pairs")[0])
     }
 
     @Test
@@ -63,5 +88,10 @@ class EmbeddedPresetAuditTest {
         assertTrue(rows[1].getAsJsonArray("obtainableProblems").toString().contains("Wonder Guard"))
         assertEquals(before, sets)
         assertEquals("Wonder Guard", rows[1].getAsJsonObject("engineSet")["ability"].asString)
+        val failure = assertThrows(IllegalStateException::class.java) {
+            EmbeddedPresetAudit.run(directory.resolve("insufficient"), sets, teamPairs = 1)
+        }
+        assertTrue(failure.message!!.contains("Cannot draw three distinct species/items"))
+        assertEquals(before, sets, "Insufficient eligible data must fail, never repair source or duplicate a Pokemon")
     }
 }

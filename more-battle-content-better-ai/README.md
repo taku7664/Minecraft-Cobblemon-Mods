@@ -640,3 +640,25 @@ Forest's Curse/Trick-or-Treat/Soak, and Reflect Type's missing-value event follo
 by the explicit silent type update. Core unit tests
 exercise the parser, knowledge lifetime and own-state assembly separately;
 this is not an end-to-end live Cobblemon adapter or full-preset AI battle test.
+
+### Fresh complete preset team sampling
+
+`auditPresetOracle -PpresetTeamPairs=100 -PpresetTeamSeed=20260906` additionally
+draws 100 fresh 3-vs-3 team pairs from individually Obtainable, successfully
+initialized presets. The evaluation policy adds Species Clause (including forms
+of the same base species) and Item Clause. This is not a change to facility rules.
+Each draw samples sets without replacement within a team; compatible sets are
+accepted in draw order. It is not uniform sampling over all legal team combinations.
+Teams may recur across battles; no fixed toy roster or global exhaustion is used.
+
+Every whole team is checked by the native validator and both sides are initialized
+together. The report retains original complete engine sets, separately normalized
+validator copies, set IDs, sampling seed/algorithm, battle seeds and eligible count.
+Source presets are never repaired. Insufficient compatible data or any team
+validation/initialization failure stops the run rather than silently substituting
+an easier team. The default pair count remains zero; the limit is 1,000 pairs.
+
+The fixed 100-pair regression checks 200 distinct teams, exact replay and a changed
+seed, plus insufficient-pool failure. This prepares reproducible teams; it does
+not execute battle turns, connect the full AI input adapter, demonstrate win rate,
+or validate runtime addons. Team sets and initialization data remain referee-only.

@@ -131,7 +131,9 @@ tasks.register<JavaExec>("auditPresetOracle") {
     workingDir(rootProject.projectDir)
     doFirst {
         setArgs(listOf(providers.gradleProperty("presetAuditOutput").orNull
-            ?: layout.buildDirectory.dir("reports/betterai-presets/${UUID.randomUUID()}").get().asFile.absolutePath))
+            ?: layout.buildDirectory.dir("reports/betterai-presets/${UUID.randomUUID()}").get().asFile.absolutePath,
+            providers.gradleProperty("presetTeamPairs").orNull ?: "0",
+            providers.gradleProperty("presetTeamSeed").orNull ?: "20260906"))
     }
 }
 

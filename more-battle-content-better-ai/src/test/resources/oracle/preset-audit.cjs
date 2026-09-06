@@ -89,7 +89,73 @@ const rows = input.sets.map(raw => {
   }
   return row;
 });
-process.stdout.write(JSON.stringify({ schemaVersion: 1, total: rows.length,
+const sampleTeams = () => {
+  const count = input.teamPairs || 0;
+  const seed = input.teamSeed === undefined ? 20260906 : input.teamSeed;
+  if (!Number.isInteger(count) || count < 0 || count > 1000 || !Number.isInteger(seed)) {
+    throw new Error('Invalid team sampling count or seed');
+  }
+  // Evaluation policy, not the facilities' runtime legality policy.
+  const teamRules = [...ruleset, 'Species Clause', 'Item Clause'];
+  const teamValidator = new TeamValidator(new Format({ id: 'betteraiteamaudit', name: 'Better AI Team Audit',
+    mod: 'cobblemon', gameType: 'singles', ruleset: teamRules }));
+  const pool = rows.filter(row => row.obtainable && row.initialization && !row.initializationError);
+  let state = seed >>> 0;
+  const next = () => {
+    state = (state + 0x6D2B79F5) >>> 0;
+    let value = Math.imul(state ^ state >>> 15, 1 | state);
+    value ^= value + Math.imul(value ^ value >>> 7, 61 | value);
+    return ((value ^ value >>> 14) >>> 0) / 4294967296;
+  };
+  const draw = () => {
+    const available = [...pool];
+    const chosen = [];
+    const species = new Set();
+    const items = new Set();
+    while (available.length && chosen.length < 3) {
+      const index = Math.floor(next() * available.length);
+      const row = available[index];
+      available[index] = available[available.length - 1];
+      available.pop();
+      const base = dex.species.get(row.engineSet.species).baseSpecies;
+      const item = row.engineSet.item;
+      if (species.has(base) || (item && items.has(item))) continue;
+      chosen.push(row);
+      species.add(base);
+      if (item) items.add(item);
+    }
+    if (chosen.length !== 3) throw new Error('Cannot draw three distinct species/items from eligible presets');
+    const sets = chosen.map(row => JSON.parse(JSON.stringify(row.engineSet)));
+    const validatedSets = JSON.parse(JSON.stringify(sets));
+    const problems = teamValidator.validateTeam(validatedSets) || [];
+    return { setIds: chosen.map(row => row.setId), sets, validatedSets, problems };
+  };
+  const pairs = [];
+  for (let index = 0; index < count; index++) {
+    const p1 = draw();
+    const p2 = draw();
+    if (p1.problems.length || p2.problems.length) {
+      throw new Error(`Drawn team failed validation: ${JSON.stringify([p1.problems, p2.problems])}`);
+    }
+    const battleSeed = Array.from({ length: 4 }, () => Math.floor(next() * 65536));
+    const battle = new Battle({ format: initializationFormat, seed: battleSeed });
+    try {
+      for (const [side, team] of [['p1', p1], ['p2', p2]]) {
+        battle.setPlayer(side, { name: side, team: team.sets.map((set, slot) => ({
+          ...JSON.parse(JSON.stringify(set)), uuid: `00000000-0000-0000-0000-${String((side === 'p1' ? 1 : 2) * 100 + slot).padStart(12, '0')}`,
+        })) });
+      }
+      p1.initializedCount = battle.p1.pokemon.length;
+      p2.initializedCount = battle.p2.pokemon.length;
+      if (p1.initializedCount !== 3 || p2.initializedCount !== 3) throw new Error('Incomplete initialized team');
+    } finally { battle.destroy(); }
+    pairs.push({ index, battleSeed, p1, p2 });
+  }
+  return { seed, algorithm: 'MULBERRY32_SEQUENTIAL_SET_DRAW_V1', teamSize: 3,
+    eligibleSets: pool.length, ruleset: teamRules, rejectedTeams: 0, pairs,
+    scope: 'TEAM_VALIDATION_AND_INITIALIZATION_ONLY_NO_TURNS_OR_AI_INPUT' };
+};
+process.stdout.write(JSON.stringify({ schemaVersion: 2, total: rows.length,
   registryCompatible: rows.filter(row => row.registryCompatible).length,
   obtainable: rows.filter(row => row.obtainable).length,
   initialized: rows.filter(row => row.initialization).length,
@@ -99,4 +165,5 @@ process.stdout.write(JSON.stringify({ schemaVersion: 1, total: rows.length,
   initializationFormat,
   auditDefaults: { level: 50, absentIvs: 31, gender: 'FIXED_SPECIES_GENDER_OTHERWISE_M' },
   ruleset, mod: 'cobblemon', generation: dex.gen, nodeVersion: process.version,
-  scope: 'RAW_FACTORY_SET_AUDIT_BASE_GEN9_OBTAINABLE_NOT_RUNTIME_ADDONS_OR_TEAM_LEGALITY', sets: rows }));
+  scope: 'RAW_FACTORY_SET_AUDIT_BASE_GEN9_OBTAINABLE_NOT_RUNTIME_ADDONS_OR_TEAM_LEGALITY',
+  teamSampling: sampleTeams(), sets: rows }));
