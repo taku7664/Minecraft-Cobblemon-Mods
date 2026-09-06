@@ -22,6 +22,12 @@ const team1 = [set('Lead', 'Pikachu', 50, ['thunderbolt', 'quickattack'], 'Stati
 const team2 = [set('Target', 'Magikarp', 5, input.hiddenVariant ? ['splash', 'tackle'] : ['splash'],
   'Swift Swim', input.hiddenVariant ? 'Heavy-Duty Boots' : ''),
   set('Backup', 'Magikarp', 5, ['splash'], 'Swift Swim')];
+if (input.hiddenVariant) {
+  // Keep public HP and observed outcomes fixed while changing unused private stats.
+  team2[0].ivs.atk = 0;
+  team2[0].evs.atk = 252;
+  team2[0].nature = 'Adamant';
+}
 const battle = new Battle({ format, seed });
 // Cobblemon pp_update is not split-private; spectator extraction alone is insufficient.
 const publicEvents = new Set(['gametype', 'player', 'teamsize', 'gen', 'tier', 'start',
@@ -76,11 +82,14 @@ try {
     for (const line of publicLog.filter(line => line.startsWith('|switch|'))) {
       const revealedSpecies = dex.species.get(line.split('|')[3].split(',')[0].trim());
       if (!revealedSpecies.exists) throw new Error('Unknown publicly switched species');
-      publicSpecies[revealedSpecies.id] = { types: revealedSpecies.types.map(type => type.toLowerCase()) };
+      publicSpecies[revealedSpecies.id] = { types: revealedSpecies.types.map(type => type.toLowerCase()),
+        baseStats: revealedSpecies.baseStats };
     }
     decisionInput = { turn: battle.turn,
       own: { speciesId: species.id, level: Number(details.find(part => /^L\d+$/.test(part))?.slice(1) || 100),
         hpFraction: condition[0] / condition[1], fainted: false,
+        stats: { hp: condition[1], atk: ownRequest.stats.atk, def: ownRequest.stats.def,
+          spa: ownRequest.stats.spa, spd: ownRequest.stats.spd, spe: ownRequest.stats.spe },
         types: species.types.map(type => type.toLowerCase()),
         moves: movesRequest.map((move, slot) => {
           const metadata = dex.moves.get(move.id);

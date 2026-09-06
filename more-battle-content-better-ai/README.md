@@ -558,12 +558,21 @@ history with the same engine seed, with a 12-decision safety bound.
 The fixture is level-50 Pikachu against two level-5 Magikarp, not a competitive
 team evaluation. Opponent identity/HP comes from allowed spectator events;
 unrevealed moves, ability, item and stats are not decision inputs. A hidden unused
-move/item variant produces identical decision inputs and chosen actions. Own PP
+move/item/attack-IV/EV/nature variant produces identical decision inputs and chosen actions. Own PP
 comes from the own-side request, not Cobblemon's publicly emitted `pp_update`.
 
-This first adapter supplies no combat-stat ranges or full event/memory catalog,
-so the Brain uses its non-recursive fallback evaluation. It does not validate
-deep search, full legal presets, either-side forced-choice handling, doubles,
+The adapter now supplies exact own stats from the own-side request, opponent
+stat ranges from publicly revealed species base stats through the core's shared
+`BattlePublicStatRanges`, and an own eligible-move catalog. Opponent ranges are
+independent per-stat bounds, not an inferred exact build. The own catalog is
+conservatively incomplete because disabled/exhausted moves are filtered; the
+opponent move catalog remains unknown. A test-only observer delegates unchanged
+to the shipping weighted selector and checks that every decision contains a
+nonzero recursive-search adjustment (the pre-change fixture recorded zero).
+This proves a search contribution reaches selection, not that it changes the
+chosen move or makes the Brain stronger. The fixture still lacks a full public
+event/memory adapter and does not validate deep tactical search, full legal
+presets, either-side forced-choice handling, doubles,
 runtime addons, win rates or gameplay. Replaying from scratch is a bounded smoke
 mechanism, not a performance measurement or the final long-battle transport.
 JSON is Base64/UTF-8 encoded for Windows-safe argument transport, not secrecy.
