@@ -1,0 +1,37 @@
+package jbro.cobblemon.morebattlecontent.betterai
+
+import java.nio.file.Path
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty
+import org.junit.jupiter.api.io.TempDir
+
+@EnabledIfSystemProperty(named = "betterai.oracle", matches = "true")
+class EmbeddedPpTimelineTest {
+    @Test
+    fun `native PP updates distinguish ordinary turns mid turn switches and transformed slots`(@TempDir directory: Path) {
+        val result = EmbeddedShowdownOracle.ppTimeline(directory)
+        val cases = result.getAsJsonArray("cases").associate { it.asJsonObject["id"].asString to it.asJsonObject }
+        assertEquals(setOf("ordinary", "pivot", "transform"), cases.keys)
+        val ordinary = cases.getValue("ordinary")
+        assertEquals("move", ordinary["requestType"].asString)
+        assertEquals(34, ordinary["livePp"].asInt)
+        assertEquals(34, ordinary["publishedPp"].asInt)
+        assertEquals(34, ordinary.getAsJsonArray("requestMoves").single().asJsonObject["pp"].asInt)
+        val pivot = cases.getValue("pivot")
+        assertEquals("switch", pivot["requestType"].asString)
+        assertEquals(19, pivot["livePp"].asInt)
+        assertEquals(20, pivot["publishedPp"].asInt,
+            "The native mid-turn request precedes the next PP publication; do not call the cached value exact-current")
+        assertTrue(pivot["requestMoves"].isJsonNull)
+        val transform = cases.getValue("transform")
+        assertEquals("splash", transform["liveMove"].asString)
+        assertEquals(5, transform["livePp"].asInt)
+        assertEquals(5, transform["publishedPp"].asInt)
+        assertEquals("transform", transform["baseMove"].asString)
+        assertEquals(9, transform["basePp"].asInt)
+        assertEquals("splash", transform.getAsJsonArray("requestMoves").single().asJsonObject["id"].asString)
+        assertEquals(5, transform.getAsJsonArray("requestMoves").single().asJsonObject["pp"].asInt)
+        println("PP_TIMELINE cases=${cases.size} engine=${result["engineSha256"].asString}")
+    }
+}

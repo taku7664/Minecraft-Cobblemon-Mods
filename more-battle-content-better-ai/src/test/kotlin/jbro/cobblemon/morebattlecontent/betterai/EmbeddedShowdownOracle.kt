@@ -39,6 +39,8 @@ internal object EmbeddedShowdownOracle {
 
     fun doublesRetarget(directory: Path): JsonObject = runScript(directory, "/oracle/doubles-retarget.cjs", "")
 
+    fun ppTimeline(directory: Path): JsonObject = runScript(directory, "/oracle/pp-timeline.cjs", "")
+
     fun presetAudit(directory: Path, input: JsonObject): JsonObject {
         Files.createDirectories(directory)
         val inputFile = directory.resolve("preset-input.json").toAbsolutePath()
