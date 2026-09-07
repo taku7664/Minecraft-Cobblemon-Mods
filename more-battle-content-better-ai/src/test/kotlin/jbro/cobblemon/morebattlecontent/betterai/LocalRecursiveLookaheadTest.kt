@@ -27,6 +27,47 @@ import org.junit.jupiter.api.Test
 
 class LocalRecursiveLookaheadTest {
     @Test
+    fun `one priority reservation can hide an unconditional knockout behind a conditional move`() {
+        val initial = state(pokemon(ALLY_ID, BattleSide.ALLY, 0, 0.45, speed = 200),
+            listOf(pokemon(OPPONENT_ID, BattleSide.OPPONENT, 0, 1.0, speed = 50)))
+        val recovery = BattleActionCandidate("recover", BattleActionKind.USE_MOVE, actorSlot = 0,
+            moveSlot = 0, moveId = "recover", targets = listOf(BattleTargetSlot(BattleSide.ALLY, 0)),
+            moveDetails = moveDetails(power = 0.0).copy(damageCategory = BattleMoveDamageCategory.STATUS,
+                targetPattern = BattleMoveTargetPattern.SELF, effects = BattleMoveEffectsView(
+                    coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, scriptedBehavior = false,
+                    effects = listOf(BattleMoveEffectView(BattleMoveEffectKind.HEAL_FRACTION,
+                        BattleMoveEffectTarget.USER, fractionRange = BattleFractionRange(0.5, 0.5))))))
+        val conditional = moveDetails(power = 70.0, type = "dark").copy(priority = 1,
+            effects = BattleMoveEffectsView(coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                effects = emptyList(), scriptedBehavior = true, requirements = listOf(
+                    BattleMoveRequirementView(BattleMoveRequirementKind.TARGET_PENDING_DAMAGING_MOVE))))
+        val templates = mapOf("hit_a" to moveDetails(power = 46.0), "hit_b" to moveDetails(power = 45.0),
+            "suckerpunch" to conditional, "quickattack" to moveDetails(priority = 1, power = 40.0))
+        val source = context(initial, listOf(recovery), BattlePublicActionCatalogView(emptyList(),
+            candidatePools = listOf(BattlePublicMoveCandidatePoolView(OPPONENT_ID, "showdown:test", null,
+                templates.keys, "fixture:competing_priority", templates))))
+        val limited = PublicFutureActionFactory.actions(initial, BattleSide.OPPONENT, source.publicActionCatalog,
+            includeMoveHypotheses = true, hypotheticalMoveLimitPerSlot = 3, reserveHypotheticalPriority = true)
+        assertTrue(limited.any { it.moveId == "suckerpunch" })
+        assertFalse(limited.any { it.moveId == "quickattack" })
+        val boss = BattleTrainerProfile.balanced(5)
+        val profile = boss.copy(difficulty = boss.difficulty.copy(lookaheadPlies = 1))
+        fun evaluate(cap: Int) = LocalRecursiveLookaheadEvaluator.evaluate(listOf(rank(recovery)), source,
+            profile, jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning.CURRENT.copy(
+                lookaheadMoveHypotheses = true, hypotheticalMoveLimitPerSlot = cap,
+                reserveHypotheticalPriority = true), clockMillis = { 0L })
+        val full = evaluate(Int.MAX_VALUE)
+        val capped = evaluate(3)
+        for (result in listOf(full, capped)) {
+            assertEquals(1, result.depthCompleted)
+            assertFalse(result.truncated)
+            assertTrue(result.publicResponseIncomplete)
+        }
+        assertEquals(0.0, full.ranked.single().worstResponseHpRetention, 1e-9)
+        assertTrue(capped.ranked.single().worstResponseHpRetention > 0.0)
+    }
+
+    @Test
     fun `reserved conditional priority hypothesis still requires a pending damaging move`() {
         val initial = state(pokemon(ALLY_ID, BattleSide.ALLY, 0, 0.10, speed = 200),
             listOf(pokemon(OPPONENT_ID, BattleSide.OPPONENT, 0, 1.0, speed = 50)))
