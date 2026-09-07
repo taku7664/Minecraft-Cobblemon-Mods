@@ -4,6 +4,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import java.nio.file.Files
 import java.nio.file.Path
@@ -12,6 +13,8 @@ import kotlin.math.ln
 import kotlin.math.sqrt
 
 internal object EmbeddedPolicyComparison {
+    fun profileForSkill(skill: Int): BattleTrainerProfile = BattleTrainerProfile.balanced(skill)
+
     data class Assignment(val reverseTeams: Boolean, val challengerP1: Boolean)
 
     fun schedule(pairIndex: Int): List<Assignment> {
@@ -34,7 +37,8 @@ internal object EmbeddedPolicyComparison {
     }
 
     fun runPair(engine: Path, pair: JsonObject, directory: Path, pairIndex: Int,
-        challenger: LocalDecisionTuning, defender: LocalDecisionTuning, maxTurns: Int = 200): JsonObject {
+        challenger: LocalDecisionTuning, defender: LocalDecisionTuning, maxTurns: Int = 200,
+        trainerProfile: BattleTrainerProfile = profileForSkill(0)): JsonObject {
         Files.createDirectory(directory)
         val games = JsonArray()
         val outcomes = mutableListOf<String>()
@@ -42,7 +46,7 @@ internal object EmbeddedPolicyComparison {
             val p1 = if (assignment.challengerP1) challenger else defender
             val p2 = if (assignment.challengerP1) defender else challenger
             val result = EmbeddedTeamBattle.run(engine, EmbeddedNativePairs.orient(pair, assignment.reverseTeams),
-                directory.resolve("game-$index"), maxTurns, p1, p2)
+                directory.resolve("game-$index"), maxTurns, p1, p2, trainerProfile)
             val outcome = EmbeddedNativePairs.outcome(result, reverse = !assignment.challengerP1)
             outcomes += outcome
             games.add(JsonObject().apply {
@@ -64,7 +68,7 @@ internal object EmbeddedPolicyComparison {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        require(args.size == 9) { "Expected root, output, pairs, seed, challenger, defender, split, allowHoldout, maxTurns" }
+        require(args.size in 9..10) { "Expected root, output, pairs, seed, challenger, defender, split, allowHoldout, maxTurns, optional skillLevel" }
         val root = Path.of(args[0]).toAbsolutePath()
         val directory = Path.of(args[1]).toAbsolutePath()
         val count = args[2].toInt().also { require(it in 1..1000) }
@@ -73,6 +77,7 @@ internal object EmbeddedPolicyComparison {
         val split = EvaluationSplit.valueOf(args[6])
         require(split != EvaluationSplit.HOLDOUT || args[7] == "true") { "Holdout requires explicit allowHoldout" }
         val maxTurns = args[8].toInt().also { require(it in 1..10000) }
+        val trainerProfile = profileForSkill(args.getOrNull(9)?.toInt() ?: 0)
         val json = GsonBuilder().serializeNulls().create()
         val identity = LocalBaselineProvenance.capture(root)
         Files.createDirectories(directory.parent)
@@ -84,13 +89,14 @@ internal object EmbeddedPolicyComparison {
             add("defender", json.toJsonTree(defender)); addProperty("partition", split.name)
             addProperty("pairs", count); addProperty("samplingSeed", seed); addProperty("maxTurns", maxTurns)
             addProperty("gamesPerPair", 4); add("catalogSha256", audit["catalogSha256"].deepCopy())
+            add("trainerProfile", json.toJsonTree(trainerProfile))
             addProperty("scope", "NATIVE_PARTIAL_ADAPTER_CURRENT_CODE_TUNING_COMPARISON_NOT_HISTORICAL_BINARY")
         }
         Files.writeString(directory.resolve("manifest.json"), manifest.toString(), CREATE_NEW)
         val records = JsonArray()
         audit.getAsJsonObject("teamSampling").getAsJsonArray("pairs").forEachIndexed { index, pair ->
             val record = runPair(directory.resolve("audit/engine"), pair.asJsonObject, directory.resolve("pair-$index"),
-                index, challenger, defender, maxTurns)
+                index, challenger, defender, maxTurns, trainerProfile)
             record.addProperty("pairDirectory", "pair-$index"); records.add(record)
             println("NATIVE_POLICY_PAIR index=$index lower=${record["scoreLower"]} upper=${record["scoreUpper"]}")
         }

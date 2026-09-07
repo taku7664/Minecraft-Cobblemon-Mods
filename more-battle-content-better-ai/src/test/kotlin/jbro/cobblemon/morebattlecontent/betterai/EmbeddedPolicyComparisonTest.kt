@@ -5,6 +5,18 @@ import org.junit.jupiter.api.Test
 
 class EmbeddedPolicyComparisonTest {
     @Test
+    fun `comparison profiles preserve default and support explicit boss without changing personality`() {
+        val default = EmbeddedPolicyComparison.profileForSkill(0)
+        val boss = EmbeddedPolicyComparison.profileForSkill(5)
+        assertEquals(jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerTier.INTRODUCTORY, default.difficulty.tier)
+        assertEquals(jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerTier.BOSS, boss.difficulty.tier)
+        assertEquals(default.personality, boss.personality)
+        assertEquals(5, boss.skillLevel)
+        assertThrows(IllegalArgumentException::class.java) { EmbeddedPolicyComparison.profileForSkill(6) }
+        assertThrows(IllegalArgumentException::class.java) { EmbeddedPolicyComparison.profileForSkill(-1) }
+    }
+
+    @Test
     fun `four games balance challenger team and seat and rotate execution order`() {
         val schedule = EmbeddedPolicyComparison.schedule(0)
         assertEquals(4, schedule.size)

@@ -185,7 +185,8 @@ tasks.register<JavaExec>("compareNativePolicies") {
             providers.gradleProperty("nativeDefender").orNull ?: "LEGACY",
             providers.gradleProperty("nativePairSplit").orNull ?: "TUNING",
             providers.gradleProperty("allowHoldout").orNull ?: "false",
-            providers.gradleProperty("nativeMaxTurns").orNull ?: "200"))
+            providers.gradleProperty("nativeMaxTurns").orNull ?: "200",
+            providers.gradleProperty("nativeSkillLevel").orNull ?: "0"))
     }
 }
 
