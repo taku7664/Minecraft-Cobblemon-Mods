@@ -190,6 +190,22 @@ tasks.register<JavaExec>("compareNativePolicies") {
     }
 }
 
+tasks.register<JavaExec>("replayNativeFirstDecision") {
+    group = "verification"
+    description = "Replays a recorded first request through the real Brain and observes final candidate scores."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.EmbeddedFirstDecisionReplay")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(providers.gradleProperty("replayTrace").get(),
+            providers.gradleProperty("replaySide").get(),
+            providers.gradleProperty("replayBattleId").get(),
+            providers.gradleProperty("nativeSkillLevel").get(),
+            providers.gradleProperty("replayTuning").get()))
+    }
+}
+
 tasks.register<JavaExec>("compareDamageOracle") {
     group = "verification"
     description = "Compares base damage rolls and KO thresholds against embedded Showdown (requires Node.js)."
