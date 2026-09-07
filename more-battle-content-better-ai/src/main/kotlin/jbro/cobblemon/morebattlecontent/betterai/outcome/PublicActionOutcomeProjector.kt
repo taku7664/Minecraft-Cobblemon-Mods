@@ -95,6 +95,9 @@ internal object PublicActionOutcomeProjector {
             null
         }
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()
+        val uncertainTransfer = (expectedDamage ?: 0.0) > 0.0 &&
+            effects.any { it.kind == BattleMoveEffectKind.DRAIN_FRACTION || it.kind == BattleMoveEffectKind.RECOIL_FRACTION } &&
+            !LocalDamageHpTransfer.hasExactMaxHp(actor, target)
         fun expectedTransfer(ratio: Double, hpLimit: Double): Double {
             val fixedHit = adjustedDamage?.takeIf { it.minimum == it.maximum && hitCount == 1.0 }
             return if (fixedHit != null) {
@@ -135,7 +138,8 @@ internal object PublicActionOutcomeProjector {
         }
         val expectedRecoil = actor?.let { (damageRecoil + maxHpRecoil).coerceAtMost(it.hpFraction) }
         return PublicActionOutcomeProjection(
-            coverage = facts?.calculationCoverage ?: BattleCalculationCoverage.UNKNOWN,
+            coverage = if (uncertainTransfer && facts?.calculationCoverage == BattleCalculationCoverage.EXACT)
+                BattleCalculationCoverage.PARTIAL else facts?.calculationCoverage ?: BattleCalculationCoverage.UNKNOWN,
             publiclyNullified = mechanics.publiclyNullified,
             targetHpBefore = targetHp,
             damageOnHitFractionRange = adjustedDamage,
@@ -149,7 +153,7 @@ internal object PublicActionOutcomeProjector {
             },
             switchEntryHpAfter = null,
             opponentActionOrderResolved = facts?.actsFirstProbability == 1.0,
-            unknowns = facts?.unknowns.orEmpty(),
+            unknowns = facts?.unknowns.orEmpty() + if (uncertainTransfer) setOf(BattleCalculationUnknown.MOVE_EFFECTS) else emptySet(),
         )
     }
 

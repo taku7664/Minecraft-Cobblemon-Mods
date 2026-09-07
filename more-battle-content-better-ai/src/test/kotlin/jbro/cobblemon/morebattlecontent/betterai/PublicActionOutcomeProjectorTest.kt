@@ -9,6 +9,19 @@ import org.junit.jupiter.api.Test
 
 class PublicActionOutcomeProjectorTest {
     @Test
+    fun `ranged target HP scales transfer estimate and marks unresolved move effects`() {
+        val action = move(facts = damageFacts(0.1, coverage = BattleCalculationCoverage.EXACT), effects = BattleMoveEffectsView(
+            BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, listOf(BattleMoveEffectView(
+                kind = BattleMoveEffectKind.DRAIN_FRACTION, target = BattleMoveEffectTarget.USER,
+                probability = 1.0, fractionRange = BattleFractionRange(0.5, 0.5))), false))
+        val result = PublicActionOutcomeProjector.project(action, context(action, allyHp = 0.5,
+            allyMaxHp = 235, opponentMaxHpRange = BattleIntegerRange(300, 360)))
+        assertEquals(16.5 / 235, requireNotNull(result.expectedSelfHealingFraction), 1e-12)
+        org.junit.jupiter.api.Assertions.assertTrue(BattleCalculationUnknown.MOVE_EFFECTS in result.unknowns)
+        assertEquals(BattleCalculationCoverage.PARTIAL, result.coverage)
+    }
+
+    @Test
     fun `HP transfer uses actor units and weights rounded on-hit HP by accuracy`() {
         for (kind in listOf(BattleMoveEffectKind.DRAIN_FRACTION, BattleMoveEffectKind.RECOIL_FRACTION)) {
             val action = move(facts = damageFacts(17.0 / 330, accuracy = 0.5),
@@ -183,6 +196,7 @@ class PublicActionOutcomeProjectorTest {
         allyAbility: String? = null,
         allyMaxHp: Int = 200,
         opponentMaxHp: Int = 200,
+        opponentMaxHpRange: BattleIntegerRange? = null,
     ): BattleDecisionContext {
         val state = BattleStateView(
             battleId = UUID.fromString("00000000-0000-0000-0000-000000000001"),
@@ -190,7 +204,7 @@ class PublicActionOutcomeProjectorTest {
             turn = 3,
             pokemon = listOf(
                 pokemon(BattleSide.ALLY, allyHp, 0, allyAbility, allyMaxHp),
-                pokemon(BattleSide.OPPONENT, opponentHp, 0, maxHp = opponentMaxHp),
+                pokemon(BattleSide.OPPONENT, opponentHp, 0, maxHp = opponentMaxHp, maxHpRange = opponentMaxHpRange),
             ),
             field = BattleFieldStateView.empty(),
             remainingPokemonBySide = mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1),
@@ -211,6 +225,7 @@ class PublicActionOutcomeProjectorTest {
         activeSlot: Int,
         ability: String? = null,
         maxHp: Int = 200,
+        maxHpRange: BattleIntegerRange? = null,
     ) = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(),
         side = side,
@@ -230,7 +245,7 @@ class PublicActionOutcomeProjectorTest {
             BattleCombatStatRangesView.exact(maxHp, 100, 100, 100, 100, 100)
         } else {
             BattleCombatStatRangesView(
-                BattleIntegerRange(maxHp, maxHp),
+                maxHpRange ?: BattleIntegerRange(maxHp, maxHp),
                 BattleIntegerRange(100, 100),
                 BattleIntegerRange(100, 100),
                 BattleIntegerRange(100, 100),
@@ -265,13 +280,13 @@ class PublicActionOutcomeProjectorTest {
         facts = facts,
     )
 
-    private fun damageFacts(fraction: Double, accuracy: Double = 1.0) = BattleCandidateFactsView(
+    private fun damageFacts(fraction: Double, accuracy: Double = 1.0, coverage: BattleCalculationCoverage = BattleCalculationCoverage.PARTIAL) = BattleCandidateFactsView(
         baseAccuracyProbability = accuracy,
         typeChartMultiplier = 1.0,
         standardDamageModel = BattleStandardDamageModel.SHOWDOWN_GEN9_BASE_NON_CRITICAL,
         standardDamageFractionRange = BattleDamageFractionRange(fraction, fraction),
         standardDamageRollKoProbabilityRange = BattleFractionRange(1.0, 1.0),
         standardKnockoutAssessment = BattleKnockoutAssessment.GUARANTEED,
-        calculationCoverage = BattleCalculationCoverage.PARTIAL,
+        calculationCoverage = coverage,
     )
 }
