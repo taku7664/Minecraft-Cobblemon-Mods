@@ -7,6 +7,42 @@ class EmbeddedPublicPpTest {
     private val actor = "p2a: opponent"
 
     @Test
+    fun `public event replay restores original PP on departure but not disguise replacement`() {
+        val lines = listOf("|switch|$actor|Ditto, L50|100/100",
+            "|move|$actor|Transform|p1a: own", "|-transform|$actor|p1a: own",
+            "|move|$actor|Recover|$actor", "|replace|$actor|Ditto, L50|100/100")
+        fun replay() = EmbeddedPublicPp().apply { lines.forEach { observe(it) } }
+        val pp = replay()
+        assertEquals(4, pp.remaining(actor, "recover", 8))
+        assertEquals(4, replay().remaining(actor, "recover", 8))
+        pp.observe("|switch|p2a: bench|Pikachu, L50|100/100")
+        assertFalse(pp.isTransformed(actor))
+        pp.observe("|switch|$actor|Ditto, L50|100/100")
+        assertEquals(15, pp.remaining(actor, "transform", 16))
+        assertEquals(8, pp.remaining(actor, "recover", 8))
+        pp.observe("|-transform|$actor|p1a: own")
+        pp.observe("|faint|$actor")
+        assertFalse(pp.isTransformed(actor))
+        assertEquals(15, pp.remaining(actor, "transform", 16))
+    }
+
+    @Test
+    fun `Spite and Leppa public messages change only the named pool in event order`() {
+        val pp = EmbeddedPublicPp()
+        fun observe(line: String) = pp.observe(line, maximumPp = { if (it == "recover") 8 else null })
+        observe("|move|$actor|Recover|$actor")
+        observe("|-activate|$actor|move: Spite|Recover|4")
+        assertEquals(3, pp.remaining(actor, "recover", 8))
+        observe("|-activate|$actor|item: Leppa Berry|Recover")
+        assertEquals(8, pp.remaining(actor, "recover", 8))
+        observe("|move|$actor|Recover|$actor")
+        assertEquals(7, pp.remaining(actor, "recover", 8))
+        observe("|-activate|$actor|move: Spite|Recover|99")
+        assertEquals(7, pp.remaining(actor, "recover", 8))
+        assertEquals(8, pp.remaining("p2a: other", "recover", 8))
+    }
+
+    @Test
     fun `copied PP is temporary and departure restores original spending exactly once`() {
         val pp = EmbeddedPublicPp()
         pp.lose(actor, "recover", 3)

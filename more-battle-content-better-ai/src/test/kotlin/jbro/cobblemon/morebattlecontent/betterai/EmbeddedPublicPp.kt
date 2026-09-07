@@ -7,6 +7,39 @@ internal class EmbeddedPublicPp {
     private val spent = mutableMapOf<Pair<String, String>, Int>()
     private val copied = mutableMapOf<String, MutableMap<Pair<String, String>, Int>>()
     private val lastMoves = mutableMapOf<String, String>()
+    private val active = mutableMapOf<String, String>()
+
+    /** Replayed singles protocol only; metadata callbacks must use public move rules. */
+    fun observe(line: String, pressureLoss: Int = 0, maximumPp: (String) -> Int? = { null }) {
+        val parts = line.split('|')
+        val kind = parts.getOrNull(1) ?: return
+        if (kind == "turn") { lastMoves.clear(); return }
+        val actor = parts.getOrNull(2)?.takeIf { it.matches(Regex("p[12][a-z]?: .+")) } ?: return
+        val side = actor.take(2)
+        val identity = EmbeddedTeamInput.identity(actor)
+        when (kind) {
+            "switch", "drag" -> {
+                active.put(side, actor)?.let(::endTransform)
+                endTransform(actor)
+            }
+            // Illusion disclosure is not departure and must not reset copied PP.
+            "replace" -> active[side] = actor
+            "faint" -> {
+                endTransform(actor)
+                if (active[side]?.let(EmbeddedTeamInput::identity) == identity) active.remove(side)
+            }
+            "-transform" -> beginTransform(actor)
+            "move" -> observeMove(line, pressureLoss)
+            "-activate" -> {
+                val move = parts.getOrNull(4)?.let(::canonical)?.takeIf(String::isNotEmpty) ?: return
+                when (parts.getOrNull(3)) {
+                    "move: Spite" -> parts.getOrNull(5)?.toIntOrNull()?.takeIf { it in 1..4 }
+                        ?.let { lose(actor, move, it) }
+                    "item: Leppa Berry" -> maximumPp(move)?.let { restore(actor, move, 10, it) }
+                }
+            }
+        }
+    }
 
     /** Pressure must be derived by the caller from publicly known targets/abilities at this event. */
     fun observeMove(line: String, pressureLoss: Int = 0) {
