@@ -5,6 +5,14 @@ import org.junit.jupiter.api.Test
 
 class EmbeddedFirstDecisionReplayTest {
     @Test
+    fun `no coverage floor replay arm preserves all other tuning fields`() {
+        val current = EmbeddedFirstDecisionReplay.tuningFor("CURRENT")
+        assertEquals(current.copy(id = "current_no_coverage_floor", lookaheadCoverageFloor = 0.0),
+            EmbeddedFirstDecisionReplay.tuningFor("CURRENT_NO_COVERAGE_FLOOR"))
+        assertEquals(0.35, current.lookaheadCoverageFloor)
+    }
+
+    @Test
     fun `no KO replay arm changes only the KO weight and identity`() {
         val current = EmbeddedFirstDecisionReplay.tuningFor("CURRENT")
         val probe = EmbeddedFirstDecisionReplay.tuningFor("CURRENT_NO_KO_CREDIT")

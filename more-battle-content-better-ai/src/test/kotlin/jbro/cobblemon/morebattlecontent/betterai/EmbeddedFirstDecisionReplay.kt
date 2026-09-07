@@ -17,6 +17,8 @@ internal object EmbeddedFirstDecisionReplay {
     fun tuningFor(name: String): LocalDecisionTuning = when (name) {
         "CURRENT" -> LocalDecisionTuning.CURRENT
         "LEGACY" -> LocalDecisionTuning.LEGACY
+        "CURRENT_NO_COVERAGE_FLOOR" -> LocalDecisionTuning.CURRENT.copy(
+            id = "current_no_coverage_floor", lookaheadCoverageFloor = 0.0)
         "CURRENT_NO_KO_CREDIT" -> LocalDecisionTuning.CURRENT.copy(
             id = "current_no_ko_credit", knockoutMaterialScore = 0.0)
         else -> throw IllegalArgumentException("Unsupported replay tuning: $name")
