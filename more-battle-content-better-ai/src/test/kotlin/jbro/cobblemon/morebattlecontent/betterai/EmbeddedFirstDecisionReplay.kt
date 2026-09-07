@@ -13,6 +13,15 @@ import java.util.concurrent.TimeUnit
 
 /** Fresh-session first-request replay only; does not claim to restore later plan/session history. */
 internal object EmbeddedFirstDecisionReplay {
+    /** Diagnostic ablation only; never exposed as an adopted production tuning. */
+    fun tuningFor(name: String): LocalDecisionTuning = when (name) {
+        "CURRENT" -> LocalDecisionTuning.CURRENT
+        "LEGACY" -> LocalDecisionTuning.LEGACY
+        "CURRENT_NO_KO_CREDIT" -> LocalDecisionTuning.CURRENT.copy(
+            id = "current_no_ko_credit", knockoutMaterialScore = 0.0)
+        else -> throw IllegalArgumentException("Unsupported replay tuning: $name")
+    }
+
     fun firstRequest(lines: Sequence<String>, side: String): JsonObject {
         require(side == "p1" || side == "p2")
         val row = lines.map { JsonParser.parseString(it).asJsonObject }
@@ -26,15 +35,11 @@ internal object EmbeddedFirstDecisionReplay {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        require(args.size == 5) { "Expected trace, side, battle UUID, skill level, CURRENT or LEGACY" }
+        require(args.size == 5) { "Expected trace, side, battle UUID, skill level, replay tuning" }
         val row = Files.newBufferedReader(Path.of(args[0])).use { firstRequest(it.lineSequence(), args[1]) }
         val battleId = UUID.fromString(args[2])
         val profile = EmbeddedPolicyComparison.profileForSkill(args[3].toInt())
-        val tuning = when (args[4]) {
-            "CURRENT" -> LocalDecisionTuning.CURRENT
-            "LEGACY" -> LocalDecisionTuning.LEGACY
-            else -> error("Unsupported tuning")
-        }
+        val tuning = tuningFor(args[4])
         val context = EmbeddedTeamInput.context(row.getAsJsonObject("input"), battleId, 1, 0)
         val observer = LocalDecisionTraceSelector()
         val brain = LocalTacticalBrain(actionSelector = observer, tuning = tuning)
