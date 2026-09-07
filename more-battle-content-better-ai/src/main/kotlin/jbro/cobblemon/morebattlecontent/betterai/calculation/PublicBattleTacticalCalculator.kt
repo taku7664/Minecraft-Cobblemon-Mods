@@ -544,11 +544,12 @@ internal object PublicBattleTacticalCalculator {
 
     private val BURN_STATUS_IDS = setOf("brn", "burn", "burned", "burnt")
 
-    private fun singleOpponentTarget(
+    /** HP of the same primary defender used by standardDamageFractionRange, including redirection. */
+    fun primaryTargetHpFraction(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         actingSide: BattleSide,
-    ): BattlePokemonStateView? = resolvedTargets(candidate, context, actingSide).firstOrNull()
+    ): Double? = resolvedTargets(candidate, context, actingSide).firstOrNull()?.hpFraction
 
     /**
      * Every opposing slot this move hits, in active-slot order.

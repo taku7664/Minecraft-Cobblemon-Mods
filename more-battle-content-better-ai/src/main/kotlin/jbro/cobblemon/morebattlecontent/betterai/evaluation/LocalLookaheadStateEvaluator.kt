@@ -101,8 +101,8 @@ internal object LocalLookaheadStateEvaluator {
         calculationCache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
         shouldContinue: () -> Boolean = { true },
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
-        // Singles leaf value measures realizable HP loss. Exposure/switch callers retain raw
-        // damage pressure; doubles needs a separate per-target/redirection valuation.
+        // Leaf value measures realizable primary-target HP loss. Exposure/switch callers retain
+        // raw damage pressure. This does not turn the existing max pressure into a joint-turn sum.
         capDamageToRemainingHp: Boolean = false,
     ): Double = PublicFutureActionFactory.actions(state, side, source.publicActionCatalog)
         .flatMap { action ->
@@ -127,10 +127,9 @@ internal object LocalLookaheadStateEvaluator {
             if (mechanics.publiclyNullified) return@map 0.0
             val facts = calculated.facts
             val accuracy = facts?.baseAccuracyProbability ?: 0.0
-            val targetHp = if (capDamageToRemainingHp && state.format == BattleFormat.SINGLE) state.pokemon.singleOrNull {
-                it.side == (calculated.targets.singleOrNull()?.side ?: BattleSide.entries.single { other -> other != side }) &&
-                    it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
-            }?.hpFraction else null
+            val targetHp = if (capDamageToRemainingHp) {
+                PublicBattleTacticalCalculator.primaryTargetHpFraction(calculated, calculatedContext, side)
+            } else null
             val expectedDamage = facts?.standardDamageFractionRange?.let { range ->
                 if (targetHp == null) {
                     (range.minimum + range.maximum) / 2.0 * accuracy * mechanics.knownDamageMultiplier
