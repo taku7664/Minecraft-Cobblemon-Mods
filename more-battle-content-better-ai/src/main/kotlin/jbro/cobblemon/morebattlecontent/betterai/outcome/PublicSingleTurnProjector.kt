@@ -124,7 +124,20 @@ internal object PublicSingleTurnProjector {
                                 it.side == pending.side && it.activeSlot == pendingAction.actorSlot && !it.fainted && it.hpFraction > 0.0
                             }?.battlePokemonId
                         },
-                    ).map { outcome ->
+                    ).map { projected ->
+                        // Encore checks the PP available when it resolves, including an earlier
+                        // action in this turn. A failed Encore must not create a future lock either.
+                        val outcome = projected.copy(controlEffects = projected.controlEffects.filter { effect ->
+                            if (effect.kind != RecursiveControlEffectKind.ENCORE) return@filter true
+                            val target = effect.targetPokemonId
+                            val lastMove = branch.lastMoveByPokemon[target] ?: return@filter false
+                            val option = sourceContext.publicActionCatalog.afterSwitch(history.restoredOriginalPokemonIds)
+                                .forPokemon(target).firstOrNull { it.moveId == lastMove } ?: return@filter false
+                            val spent = history.moveUses[jbro.cobblemon.morebattlecontent.betterai.state.RecursiveMoveUseKey(target, lastMove)] ?: 0
+                            val spentThisTurn = if (branch.executedMoveIdsByPokemon[target] == lastMove &&
+                                history.chargingMoveByPokemon[target] != lastMove) 1 else 0
+                            option.details.currentPp - spent - spentThisTurn > 0
+                        })
                         val newlyRedirecting = outcome.executedMoveIdsByPokemon
                             .filterValues { canonicalId(it) in REDIRECTING_MOVE_IDS }
                             .keys
@@ -354,7 +367,7 @@ internal object PublicSingleTurnProjector {
         }
         val requestedAction = forcedMoveIdsByPokemon[actorBeforeTransition.battlePokemonId]
             ?.let { forcedMoveId ->
-                forcedMoveAction(state, side, actorBeforeTransition.battlePokemonId, forcedMoveId, sourceContext)
+                forcedMoveAction(state, side, actorBeforeTransition.battlePokemonId, forcedMoveId, sourceContext, history)
             }
             ?: action
         val effectiveAction = retargetFaintedOpponent(requestedAction, state, side)
@@ -1093,11 +1106,13 @@ internal object PublicSingleTurnProjector {
         actorPokemonId: UUID,
         moveId: String,
         sourceContext: BattleDecisionContext,
+        history: RecursiveActionHistory,
     ): BattleActionCandidate? = PublicFutureActionFactory.primitiveActionsForPokemon(
         state,
         side,
         actorPokemonId,
         sourceContext.publicActionCatalog,
+        history,
     ).firstOrNull { it.kind == BattleActionKind.USE_MOVE && it.moveId == moveId }
 
     private fun applyStatStage(

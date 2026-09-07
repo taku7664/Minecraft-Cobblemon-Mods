@@ -1474,6 +1474,11 @@ class LocalLookaheadEvaluationTest {
         )
 
         assertEquals(listOf("cobblemon:first_move"), nextActions.mapNotNull { it.moveId })
+
+        val lastPpMove = move("first_move", side = BattleSide.OPPONENT, currentPp = 1)
+        val exhausted = PublicSingleTurnProjector.project(initial, encore, lastPpMove,
+            context(initial, listOf(encore), catalog(opponentMoves = listOf(lastPpMove, otherMove)))).first()
+        assertFalse(exhausted.controlEffects.any { it.kind == jbro.cobblemon.morebattlecontent.betterai.mechanics.RecursiveControlEffectKind.ENCORE })
     }
 
     @Test
@@ -1540,6 +1545,19 @@ class LocalLookaheadEvaluationTest {
         assertEquals(1, opponent.statStages["attack"])
         assertEquals(null, opponent.statStages["defence"])
         assertEquals("cobblemon:first_boost", outcome.executedMoveIdsByPokemon[OPPONENT_ID])
+
+        val exhaustedHistory = RecursiveActionHistory(
+            lastMoveByPokemon = mapOf(OPPONENT_ID to requireNotNull(firstMove.moveId)),
+            moveUses = mapOf(jbro.cobblemon.morebattlecontent.betterai.state.RecursiveMoveUseKey(
+                OPPONENT_ID, requireNotNull(firstMove.moveId)) to requireNotNull(firstMove.moveDetails).currentPp),
+        )
+        val exhausted = PublicSingleTurnProjector.project(initial, encore, selectedOther, source, exhaustedHistory).single()
+        assertEquals(selectedOther.moveId, exhausted.executedMoveIdsByPokemon[OPPONENT_ID])
+        assertFalse(exhausted.controlEffects.any { it.kind == jbro.cobblemon.morebattlecontent.betterai.mechanics.RecursiveControlEffectKind.ENCORE })
+        val oneLeftHistory = exhaustedHistory.copy(moveUses = exhaustedHistory.moveUses.mapValues { it.value - 1 })
+        val oneLeft = PublicSingleTurnProjector.project(initial, encore, selectedOther, source, oneLeftHistory).single()
+        assertEquals(firstMove.moveId, oneLeft.executedMoveIdsByPokemon[OPPONENT_ID])
+        assertTrue(oneLeft.controlEffects.any { it.kind == jbro.cobblemon.morebattlecontent.betterai.mechanics.RecursiveControlEffectKind.ENCORE })
     }
 
     @Test
