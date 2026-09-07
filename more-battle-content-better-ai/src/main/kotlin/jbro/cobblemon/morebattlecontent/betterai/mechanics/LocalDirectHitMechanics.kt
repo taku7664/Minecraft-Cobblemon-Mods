@@ -157,12 +157,15 @@ internal object LocalDirectHitMechanics {
             val maxHp = target.combatStats?.maxHp ?: return 0.0
             10.0 / ((maxHp.minimum.toDouble() + maxHp.maximum) / 2.0)
         } else PINCH_BERRY_HEALING[item] ?: return 0.0
-        if (target.hpFraction <= PINCH_BERRY_THRESHOLD) return 0.0
-        if (healthAfterHit > PINCH_BERRY_THRESHOLD) return 0.0
+        val threshold = if (item == "oranberry" || item == "sitrusberry" || canonical(target.knownAbilityId) == "gluttony") {
+            HALF_HP_BERRY_THRESHOLD
+        } else QUARTER_HP_BERRY_THRESHOLD
+        if (target.hpFraction <= threshold) return 0.0
+        if (healthAfterHit > threshold) return 0.0
         return fraction
     }
 
-    /** Berries that restore health the moment it falls to half, by the share of maximum they give back. */
+    /** Fractional recovery amounts; activation thresholds are separate from the amount healed. */
     private val PINCH_BERRY_HEALING = mapOf(
         "sitrusberry" to 0.25,
         "figyberry" to 1.0 / 3.0,
@@ -171,7 +174,8 @@ internal object LocalDirectHitMechanics {
         "aguavberry" to 1.0 / 3.0,
         "iapapaberry" to 1.0 / 3.0,
     )
-    private const val PINCH_BERRY_THRESHOLD = 0.5
+    private const val HALF_HP_BERRY_THRESHOLD = 0.5
+    private const val QUARTER_HP_BERRY_THRESHOLD = 0.25
 
     private fun oneHpFraction(target: BattlePokemonStateView): Double {
         val maxHp = target.combatStats?.maxHp?.maximum?.coerceAtLeast(1) ?: return DEFAULT_ONE_HP_FRACTION

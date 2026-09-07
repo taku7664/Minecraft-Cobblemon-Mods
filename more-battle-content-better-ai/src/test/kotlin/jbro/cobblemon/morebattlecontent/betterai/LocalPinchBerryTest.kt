@@ -18,6 +18,22 @@ import java.util.UUID
  */
 class LocalPinchBerryTest {
     @Test
+    fun `third-healing berries normally trigger at a quarter rather than half`() {
+        for (item in listOf("figyberry", "wikiberry", "magoberry", "aguavberry", "iapapaberry")) {
+            val atHalf = hit(item, 0.8, 0.3)
+            assertEquals(0.5, atHalf.hpFraction, 1e-12, item)
+            assertEquals(item, atHalf.knownHeldItemId, item)
+            val atQuarter = hit(item, 0.4, 0.15)
+            assertEquals(0.25 + 1.0 / 3.0, atQuarter.hpFraction, 1e-12, item)
+            assertEquals(null, atQuarter.knownHeldItemId, item)
+            val gluttony = hitResult(item, 0.8, 0.3, ability = "cobblemon:gluttony")
+                .state.pokemon.single { it.side == BattleSide.OPPONENT }
+            assertEquals(0.5 + 1.0 / 3.0, gluttony.hpFraction, 1e-12, "$item with revealed Gluttony")
+            assertEquals(null, gluttony.knownHeldItemId)
+        }
+    }
+
+    @Test
     fun `oran berry heals ten HP rather than ten percent`() {
         val after = hit(item = "cobblemon:oran_berry", startHp = 0.8, damage = 0.5)
         // The public maximum is 150..170, so the current point projection uses its midpoint 160.
@@ -70,9 +86,9 @@ class LocalPinchBerryTest {
     private fun hit(item: String?, startHp: Double, damage: Double): BattlePokemonStateView =
         hitResult(item, startHp, damage).state.pokemon.single { it.side == BattleSide.OPPONENT }
 
-    private fun hitResult(item: String?, startHp: Double, damage: Double, maxHp: BattleIntegerRange = BattleIntegerRange(150, 170)): LocalAppliedDirectHit {
+    private fun hitResult(item: String?, startHp: Double, damage: Double, maxHp: BattleIntegerRange = BattleIntegerRange(150, 170), ability: String? = null): LocalAppliedDirectHit {
         val ally = mon(BattleSide.ALLY, null, 1.0)
-        val opponent = mon(BattleSide.OPPONENT, item, startHp, maxHp)
+        val opponent = mon(BattleSide.OPPONENT, item, startHp, maxHp, ability)
         val state = BattleStateView(
             battleId = UUID.randomUUID(), format = BattleFormat.SINGLE, turn = 2,
             pokemon = listOf(ally, opponent), field = BattleFieldStateView.empty(),
@@ -90,11 +106,11 @@ class LocalPinchBerryTest {
         return applied
     }
 
-    private fun mon(side: BattleSide, item: String?, hpFraction: Double, maxHp: BattleIntegerRange = BattleIntegerRange(150, 170)) = BattlePokemonStateView(
+    private fun mon(side: BattleSide, item: String?, hpFraction: Double, maxHp: BattleIntegerRange = BattleIntegerRange(150, 170), ability: String? = null) = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(), side = side, activeSlot = 0,
         speciesId = "cobblemon:probe", formId = null, level = 50, hpFraction = hpFraction,
         statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(),
-        knownAbilityId = null, knownHeldItemId = item, fainted = false,
+        knownAbilityId = ability, knownHeldItemId = item, fainted = false,
         knownTypeIds = setOf("normal"),
         combatStats = if (side == BattleSide.ALLY) {
             BattleCombatStatRangesView.exact(160, 120, 100, 100, 100, 100)
