@@ -27,6 +27,47 @@ import org.junit.jupiter.api.Test
 
 class LocalRecursiveLookaheadTest {
     @Test
+    fun `experimental three move cap can omit a lethal priority response`() {
+        val initial = state(pokemon(ALLY_ID, BattleSide.ALLY, 0, 0.10, speed = 200),
+            listOf(pokemon(OPPONENT_ID, BattleSide.OPPONENT, 0, 0.10, speed = 50)))
+        val attack = move("finisher", 0, 200.0)
+        val templates = linkedMapOf(
+            "heavy_a" to moveDetails(power = 150.0),
+            "heavy_b" to moveDetails(power = 140.0),
+            "heavy_c" to moveDetails(power = 130.0),
+            "quickattack" to moveDetails(power = 40.0).copy(priority = 1),
+        )
+        val pool = BattlePublicMoveCandidatePoolView(OPPONENT_ID, "showdown:test", null,
+            templates.keys, "fixture:public_learnset", templates)
+        val source = context(initial, listOf(attack),
+            BattlePublicActionCatalogView(emptyList(), candidatePools = listOf(pool)))
+        fun responses(cap: Int) = PublicFutureActionFactory.actions(initial, BattleSide.OPPONENT,
+            source.publicActionCatalog, includeMoveHypotheses = true, hypotheticalMoveLimitPerSlot = cap,
+            unknownMovePokemonIds = setOf(OPPONENT_ID))
+        assertTrue(responses(Int.MAX_VALUE).any { it.moveId == "quickattack" })
+        assertFalse(responses(3).any { it.moveId == "quickattack" })
+        assertTrue(responses(3).any { "unknown_public_response" in it.tags })
+        val boss = BattleTrainerProfile.balanced(5)
+        val profile = boss.copy(difficulty = boss.difficulty.copy(lookaheadPlies = 1))
+        fun evaluate(cap: Int) = LocalRecursiveLookaheadEvaluator.evaluate(listOf(rank(attack)), source,
+            profile,
+            jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning.CURRENT.copy(
+                lookaheadMoveHypotheses = true, hypotheticalMoveLimitPerSlot = cap), clockMillis = { 0L })
+        val full = evaluate(Int.MAX_VALUE)
+        val capped = evaluate(3)
+        for (result in listOf(full, capped)) {
+            assertEquals(1, result.depthCompleted)
+            assertFalse(result.truncated)
+            assertTrue(result.publicResponseIncomplete)
+        }
+        // Characterizes a rejected-for-default shortcut, not a desired safety guarantee. The
+        // generic unknown response does not reproduce the omitted priority knockout.
+        assertEquals(0.0, full.ranked.single().worstResponseHpRetention, 1e-9)
+        assertEquals(1.0, capped.ranked.single().worstResponseHpRetention, 1e-9)
+        assertTrue(initial.pokemon.single { it.side == BattleSide.OPPONENT }.knownMoveIds.isEmpty())
+    }
+
+    @Test
     fun `experimental learnset response projects an unrevealed attack without marking it observed`() {
         val initial = state(pokemon(ALLY_ID, BattleSide.ALLY, 0, 1.0, speed = 50),
             listOf(pokemon(OPPONENT_ID, BattleSide.OPPONENT, 0, 1.0, speed = 200)))
