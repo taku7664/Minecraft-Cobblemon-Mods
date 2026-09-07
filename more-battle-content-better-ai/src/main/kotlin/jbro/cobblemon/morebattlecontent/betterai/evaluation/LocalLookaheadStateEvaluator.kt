@@ -28,9 +28,9 @@ internal object LocalLookaheadStateEvaluator {
         if (battleEnded(state)) return material
         val pressure =
             attackPressure(state, BattleSide.ALLY, source, calculationCache, shouldContinue, tuning,
-                capDamageToRemainingHp = true) -
+                capDamageToRemainingHp = tuning.capLeafDamageToRemainingHp) -
                 attackPressure(state, BattleSide.OPPONENT, source, calculationCache, shouldContinue, tuning,
-                    capDamageToRemainingHp = true)
+                    capDamageToRemainingHp = tuning.capLeafDamageToRemainingHp)
         val speedControl = when (speedRelation(state)) {
             LocalPublicSpeedRelation.ALLY_FIRST -> tuning.leafSpeedControlValue
             LocalPublicSpeedRelation.OPPONENT_FIRST -> -tuning.leafSpeedControlValue

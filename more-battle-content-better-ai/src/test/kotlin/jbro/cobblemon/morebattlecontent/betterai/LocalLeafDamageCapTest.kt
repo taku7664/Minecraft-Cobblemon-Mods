@@ -12,6 +12,24 @@ import org.junit.jupiter.api.Test
 
 class LocalLeafDamageCapTest {
     @Test
+    fun `uncapped diagnostic arm restores overkill incentive without changing raw exposure`() {
+        val capped = EmbeddedPolicyComparison.tuning("CURRENT")
+        val uncapped = EmbeddedPolicyComparison.tuning("CURRENT_UNCAPPED_LEAF")
+        val ordinary = context(0, 100.0, BattleMoveTargetPattern.SELECTED_OPPONENT)
+        val boosted = context(2, 100.0, BattleMoveTargetPattern.SELECTED_OPPONENT)
+        fun leaf(source: BattleDecisionContext, tuning: LocalDecisionTuning) =
+            LocalLookaheadStateEvaluator.evaluate(source.state, source, tuning = tuning)
+        assertEquals(leaf(ordinary, capped), leaf(boosted, capped), 1e-9)
+        assertTrue(leaf(boosted, uncapped) > leaf(ordinary, uncapped))
+        assertTrue(leaf(ordinary, uncapped) > leaf(ordinary, capped))
+        for (source in listOf(ordinary, boosted)) {
+            assertEquals(LocalLookaheadStateEvaluator.attackPressure(source.state, BattleSide.ALLY, source,
+                tuning = capped), LocalLookaheadStateEvaluator.attackPressure(source.state, BattleSide.ALLY, source,
+                tuning = uncapped), 0.0)
+        }
+    }
+
+    @Test
     fun `doubles leaf caps each candidate at its primary target before accuracy`() {
         for (accuracy in listOf(100.0, 50.0)) {
             for (pattern in listOf(BattleMoveTargetPattern.SELECTED_OPPONENT, BattleMoveTargetPattern.ALL_OPPONENTS)) {

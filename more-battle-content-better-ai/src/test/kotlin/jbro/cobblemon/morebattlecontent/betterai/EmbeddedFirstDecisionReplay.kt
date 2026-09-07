@@ -35,6 +35,7 @@ internal object EmbeddedFirstDecisionReplay {
     fun tuningFor(name: String): LocalDecisionTuning = when (name) {
         "CURRENT" -> LocalDecisionTuning.CURRENT
         "LEGACY" -> LocalDecisionTuning.LEGACY
+        "CURRENT_UNCAPPED_LEAF",
         "CURRENT_TEAM_COVERAGE",
         "CURRENT_PUBLIC_MOVE_HYPOTHESES",
         "CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3",

@@ -6,6 +6,16 @@ import org.junit.jupiter.api.Test
 
 class EmbeddedPolicyComparisonTest {
     @Test
+    fun `uncapped leaf arm changes only the diagnostic flag and identity`() {
+        val current = EmbeddedPolicyComparison.tuning("CURRENT")
+        assertTrue(current.capLeafDamageToRemainingHp)
+        assertTrue(EmbeddedPolicyComparison.tuning("LEGACY").capLeafDamageToRemainingHp)
+        assertTrue(EmbeddedPolicyComparison.tuning("CURRENT_TEAM_COVERAGE").capLeafDamageToRemainingHp)
+        assertEquals(current.copy(id = "current_uncapped_leaf", capLeafDamageToRemainingHp = false),
+            EmbeddedPolicyComparison.tuning("CURRENT_UNCAPPED_LEAF"))
+    }
+
+    @Test
     fun `hypothesis comparison arm changes only the experimental switch and identity`() {
         val current = EmbeddedPolicyComparison.tuning("CURRENT")
         assertEquals(0.0, current.leafTeamCoverageWeight)

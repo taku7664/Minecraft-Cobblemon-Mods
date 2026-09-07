@@ -56,7 +56,7 @@ class EmbeddedFirstDecisionReplayTest {
 
     @Test
     fun `hypothesis replay arms use exactly the paired battle tunings`() {
-        for (name in listOf("CURRENT_TEAM_COVERAGE", "CURRENT_PUBLIC_MOVE_HYPOTHESES", "CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3",
+        for (name in listOf("CURRENT_UNCAPPED_LEAF", "CURRENT_TEAM_COVERAGE", "CURRENT_PUBLIC_MOVE_HYPOTHESES", "CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3",
             "CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY", "CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY_CONDITIONS")) {
             assertEquals(EmbeddedPolicyComparison.tuning(name), EmbeddedFirstDecisionReplay.tuningFor(name))
         }

@@ -21,7 +21,7 @@ package jbro.cobblemon.morebattlecontent.betterai.evaluation
  * Comparing those with one absolute regret gap is what produced resisted-move picks and pointless
  * switches. Keep new weights in board units or do not add them.
  *
- * [LEGACY] reproduces the pre-fix behaviour exactly so the two can be measured head to head.
+ * [LEGACY] retains the earlier tuning weights, not a historical engine implementation.
  */
 internal data class LocalDecisionTuning(
     val id: String,
@@ -75,6 +75,8 @@ internal data class LocalDecisionTuning(
      * worth roughly a third of the health it threatens - a number nothing has ever tested.
      */
     val leafPressureWeight: Double = 0.30,
+    /** Diagnostic ablation only: false restores uncapped leaf pressure within the current engine. */
+    val capLeafDamageToRemainingHp: Boolean = true,
     /** Experimental public team matchup coverage in board units; zero preserves the default leaf. */
     val leafTeamCoverageWeight: Double = 0.0,
     /** Board value of a certain knockout threat in the leaf, beyond the damage it represents. */
