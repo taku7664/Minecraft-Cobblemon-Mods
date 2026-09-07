@@ -2,31 +2,28 @@ package jbro.cobblemon.morebattlecontent.betterai
 
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
-/**
- * An immunity every ordinary member of a species has is public knowledge.
- *
- * Orthworm is the case that produced this. Its pool is Earth Eater plus a hidden Sand Veil, so a rule
- * that only acted on a single candidate found two, concluded nothing, and let trainers fire Earthquake
- * into a Ground absorber turn after turn - healing it. No player reads the position that way: the
- * hidden ability is the exception, not the expectation.
- *
- * The individual's ability stays unknown until revealed. What is used here is the species pool, which
- * is public data, and only its ordinary entries.
- */
+/** Public ability classification does not establish which unrevealed ability is present. */
 class LocalOrdinaryAbilityImmunityTest {
     @Test
-    fun `a ground move is dead against a species whose ordinary ability absorbs ground`() {
+    fun `a possible hidden nonimmune ability keeps base damage unresolved rather than zero`() {
         val facts = factsFor(hiddenSandVeil = true)
+        assertTrue(facts.getValue("earthquake").maximum > 0.0,
+            "Sand Veil remains possible; Earth Eater cannot be promoted to certain immunity")
+    }
+
+    @Test
+    fun `a ground move is dead against a species whose ordinary ability absorbs ground`() {
+        val facts = factsFor(hiddenSandVeil = false)
         assertEquals(
             0.0,
             facts.getValue("earthquake").let { (it.minimum + it.maximum) / 2.0 },
-            "Earth Eater is the only ordinary ability Orthworm has, so Earthquake does nothing. " +
-                "A hidden ability in the pool must not be what keeps the attack looking live.",
+            "All supplied possible abilities absorb Ground in this fixture.",
         )
         assertTrue(
             facts.getValue("ironhead").let { (it.minimum + it.maximum) / 2.0 } > 0.0,
@@ -73,6 +70,9 @@ class LocalOrdinaryAbilityImmunityTest {
             memory = BattleTacticalMemoryView.empty(),
             publicActionCatalog = BattlePublicActionCatalogView(emptyList()),
         )
+        val groundProjection = LocalPublicMechanicsKernel.projectMove(moves.first(), context)
+        assertEquals(!hiddenSandVeil && extraOrdinaryAbility == null, groundProjection.publiclyNullified,
+            "The independent turn-projection path must use all possible abilities too")
         return PublicBattleTacticalCalculator.calculate(context).candidates.associate {
             it.actionId to (it.facts?.standardDamageFractionRange ?: BattleDamageFractionRange(0.0, 0.0))
         }

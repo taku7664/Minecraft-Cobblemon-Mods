@@ -444,46 +444,33 @@ internal object PublicBattleTacticalCalculator {
             attackingTypeId = details.typeId,
             defendingTypeIds = types,
             defenderAbilityId = target.knownAbilityId
-                ?: context?.let { blockingOrdinaryAbility(details.typeId, target, it) },
+                ?: context?.let { blockingPossibleAbility(details.typeId, target, it) },
             ignoreTypeImmunity = ignoresImmunity,
         )
     }
 
-    /**
-     * An immunity every ordinary member of the species has, treated as the fact it is.
-     *
-     * The chart honoured a defensive ability only once the battle had revealed it, which left the
-     * damage facts - the numbers the ranking is built on - reporting a clean hit into an absorber the
-     * species always has. Sap Sipper worked because it had been revealed; Earth Eater did not, so
-     * trainers threw Earthquake into an Orthworm and healed it, turn after turn.
-     *
-     * This does not guess at the individual. The species' ability pool is public data, and when every
-     * ordinary entry in it grants the same immunity there is nothing left to guess: the hidden ability
-     * is the exception, not the expectation, and no player treats it as one. A pool with two ordinary
-     * abilities where only one absorbs stays unresolved, because there the doubt is real.
-     */
-    private fun blockingOrdinaryAbility(
+    /** Do not turn a possible immunity into a fact by discarding hidden ability candidates. */
+    private fun blockingPossibleAbility(
         moveTypeId: String,
         target: BattlePokemonStateView,
         context: BattleDecisionContext,
     ): String? {
-        val ordinary = context.state.inferences.asSequence()
+        val possible = context.state.inferences.asSequence()
             .filter { it.subjectPokemonId == target.battlePokemonId && it.categoryId == ABILITY_CATEGORY }
             .filter { it.confidence != BattleInferenceConfidence.RULED_OUT }
-            .filter { it.abilityAvailability != BattleAbilityAvailability.HIDDEN }
             .mapNotNull(BattleInferenceView::candidateId)
             .distinct()
             .toList()
-        if (ordinary.isEmpty()) return null
+        if (possible.isEmpty()) return null
         val neutral = StandardTypeEffectiveness.multiplier(moveTypeId, target.knownTypeIds)
-        val allBlock = ordinary.all { ability ->
+        val allBlock = possible.all { ability ->
             StandardTypeEffectiveness.multiplierAgainst(
                 attackingTypeId = moveTypeId,
                 defendingTypeIds = target.knownTypeIds,
                 defenderAbilityId = ability,
             ) < neutral
         }
-        return ordinary.first().takeIf { allBlock }
+        return possible.first().takeIf { allBlock }
     }
 
     private const val ABILITY_CATEGORY = "ability"
