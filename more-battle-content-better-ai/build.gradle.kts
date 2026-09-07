@@ -202,7 +202,8 @@ tasks.register<JavaExec>("replayNativeFirstDecision") {
             providers.gradleProperty("replaySide").get(),
             providers.gradleProperty("replayBattleId").get(),
             providers.gradleProperty("nativeSkillLevel").get(),
-            providers.gradleProperty("replayTuning").get()))
+            providers.gradleProperty("replayTuning").get()) +
+            providers.gradleProperty("replaySnapshotIndex").orNull?.let { listOf(it) }.orEmpty())
     }
 }
 

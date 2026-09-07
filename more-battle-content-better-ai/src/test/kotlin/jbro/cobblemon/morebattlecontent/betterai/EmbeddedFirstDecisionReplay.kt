@@ -11,8 +11,15 @@ import java.nio.file.Path
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-/** Fresh-session first-request replay only; does not claim to restore later plan/session history. */
+/** First-request replay by default; explicit snapshots use the native adapter's default memory. */
 internal object EmbeddedFirstDecisionReplay {
+    fun snapshotRequest(lines: Sequence<String>, side: String, index: Int): JsonObject {
+        require(side == "p1" || side == "p2")
+        require(index >= 0)
+        return lines.map { JsonParser.parseString(it).asJsonObject }
+            .filter { it["side"].asString == side }.drop(index).first()
+    }
+
     /** Diagnostic ablation only; never exposed as an adopted production tuning. */
     fun tuningFor(name: String): LocalDecisionTuning = when (name) {
         "CURRENT" -> LocalDecisionTuning.CURRENT
@@ -39,12 +46,20 @@ internal object EmbeddedFirstDecisionReplay {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        require(args.size == 5) { "Expected trace, side, battle UUID, skill level, replay tuning" }
-        val row = Files.newBufferedReader(Path.of(args[0])).use { firstRequest(it.lineSequence(), args[1]) }
+        require(args.size in 5..6) { "Expected trace, side, battle UUID, skill level, replay tuning, optional snapshot index" }
+        val snapshotIndex = args.getOrNull(5)?.toInt()
+        val row = Files.newBufferedReader(Path.of(args[0])).use {
+            if (snapshotIndex == null) firstRequest(it.lineSequence(), args[1])
+            else snapshotRequest(it.lineSequence(), args[1], snapshotIndex)
+        }
         val battleId = UUID.fromString(args[2])
         val profile = EmbeddedPolicyComparison.profileForSkill(args[3].toInt())
         val tuning = tuningFor(args[4])
-        val context = EmbeddedTeamInput.context(row.getAsJsonObject("input"), battleId, 1, 0)
+        // Native input reconstructs public observations from the snapshot and uses default tactical
+        // memory. This is NOT a production-session replay. The request UUID nonce is synthetic here;
+        // LocalTacticalBrain's choice seed uses battle ID, turn and ranks, not that nonce.
+        val turn = row["turn"].asInt
+        val context = EmbeddedTeamInput.context(row.getAsJsonObject("input"), battleId, turn, snapshotIndex ?: 0)
         val observer = LocalDecisionTraceSelector()
         val brain = LocalTacticalBrain(actionSelector = observer, tuning = tuning)
         val session = brain.openSession(BattleBrainOpenContext(battleId, context.state.format, trainerProfile = profile))
@@ -52,7 +67,9 @@ internal object EmbeddedFirstDecisionReplay {
             val decision = brain.decide(session, context).toCompletableFuture().get(25, TimeUnit.SECONDS)
             val trace = observer.latest
             val report = mapOf(
-                "scope" to "FIRST_REQUEST_CURRENT_CODE_REPLAY_NOT_HISTORICAL_BINARY",
+                "scope" to if (snapshotIndex == null) "FIRST_REQUEST_CURRENT_CODE_REPLAY_NOT_HISTORICAL_BINARY"
+                    else "NATIVE_INPUT_SNAPSHOT_DEFAULT_MEMORY_NOT_PRODUCTION_SESSION_REPLAY",
+                "snapshotIndex" to snapshotIndex,
                 "battleId" to battleId.toString(), "profile" to profile, "tuning" to tuning.id,
                 "recordedAction" to row["actionId"].asString, "replayedAction" to decision.actionId,
                 "tags" to decision.tags, "seed" to trace?.seed, "riskBudget" to trace?.mixing?.riskBudget,

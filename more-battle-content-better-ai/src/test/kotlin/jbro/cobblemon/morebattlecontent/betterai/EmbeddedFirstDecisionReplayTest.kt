@@ -5,6 +5,22 @@ import org.junit.jupiter.api.Test
 
 class EmbeddedFirstDecisionReplayTest {
     @Test
+    fun `explicit snapshot selection retains forced request and validates index`() {
+        val first = """{"side":"p2","turn":1,"input":{"request":{}},"actionId":"move 1"}"""
+        val forced = """{"side":"p2","turn":1,"input":{"request":{"forceSwitch":[true]}},"actionId":"switch 3"}"""
+        assertEquals("switch 3", EmbeddedFirstDecisionReplay.snapshotRequest(sequenceOf(first, forced), "p2", 1)["actionId"].asString)
+        assertThrows(IllegalArgumentException::class.java) {
+            EmbeddedFirstDecisionReplay.snapshotRequest(sequenceOf(first), "p2", -1)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            EmbeddedFirstDecisionReplay.snapshotRequest(sequenceOf(first), "other", 0)
+        }
+        assertThrows(NoSuchElementException::class.java) {
+            EmbeddedFirstDecisionReplay.snapshotRequest(sequenceOf(first), "p2", 1)
+        }
+    }
+
+    @Test
     fun `hypothesis replay arms use exactly the paired battle tunings`() {
         for (name in listOf("CURRENT_PUBLIC_MOVE_HYPOTHESES", "CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3")) {
             assertEquals(EmbeddedPolicyComparison.tuning(name), EmbeddedFirstDecisionReplay.tuningFor(name))
