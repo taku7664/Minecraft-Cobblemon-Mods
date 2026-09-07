@@ -49,8 +49,11 @@ internal object EmbeddedFirstDecisionReplay {
                 "tags" to decision.tags, "seed" to trace?.seed, "riskBudget" to trace?.mixing?.riskBudget,
                 "shortlistSize" to trace?.selection?.shortlistSize,
                 "selectionProbability" to trace?.selection?.probability,
+                "publicOpponentMoves" to context.state.pokemon.filter { it.side == BattleSide.OPPONENT }
+                    .associate { it.battlePokemonId.toString() to it.knownMoveIds },
                 "candidates" to trace?.ranked?.map { rank -> mapOf(
                     "actionId" to rank.outcome.candidate.actionId,
+                    "publicCalculationFacts" to rank.outcome.candidate.facts,
                     "tier" to rank.decisionTier, "total" to rank.comparisonValue,
                     "tactical" to rank.outcome.tacticalUtility, "knockout" to rank.outcome.knockoutUtility,
                     "lookahead" to rank.lookaheadUtility,
