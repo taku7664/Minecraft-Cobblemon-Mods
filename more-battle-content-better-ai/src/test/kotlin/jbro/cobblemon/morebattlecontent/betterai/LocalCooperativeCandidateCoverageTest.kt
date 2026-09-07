@@ -6,6 +6,7 @@ import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicSingleTurnProjector
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionPolicy
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalRecursiveLookaheadEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadBudgetPolicy
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -94,6 +95,30 @@ class LocalCooperativeCandidateCoverageTest {
             ranked, calculated, profile, settings, clockMillis = { 0L })
         val narrow = evaluate(tuning)
         val wide = evaluate(tuning.copy(maximumRootCandidates = Int.MAX_VALUE))
+        CooperativeSearchComparison.verifyLeaderRecovery("redirect-$redirectId-$drawerSlot-$stages-$probability", narrow,
+            evaluate(tuning.copy(revalidateUnsearchedRootLeaders = true)), wide)
+        if (redirectId == "splash") {
+            val enabled = tuning.copy(revalidateUnsearchedRootLeaders = true)
+            val budget = LocalLookaheadBudgetPolicy.forTier(profile.difficulty.tier)
+            val interrupted = LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, profile, enabled,
+                clockMillis = { 0L }, budget = budget.copy(nodeLimit = narrow.nodesVisited + 1))
+            assertTrue(interrupted.truncated, "Budget must include the additional leader probe")
+            assertEquals(0, interrupted.depthCompleted)
+            assertEquals(ranked, interrupted.ranked, "Discard the entire unfinished depth, not just the leader")
+            assertTrue(interrupted.responseCoverageByAction.isEmpty())
+            val deeperProfile = profile.copy(difficulty = profile.difficulty.copy(lookaheadPlies = 2, foresightWeight = 0.0))
+            fun deeper(settings: LocalDecisionTuning) = LocalRecursiveLookaheadEvaluator.evaluate(
+                ranked, calculated, deeperProfile, settings, clockMillis = { 0L },
+                budget = budget.copy(nodeLimit = 1_000_000))
+            val repaired = deeper(enabled)
+            val reference = deeper(enabled.copy(maximumRootCandidates = Int.MAX_VALUE))
+            assertEquals(2, repaired.depthCompleted)
+            CooperativeSearchComparison.verifyLeaderRecovery("splash-depth2-zero-future", narrow, repaired, reference)
+            val firstPly = evaluate(enabled).ranked.associateBy { it.outcome.candidate.actionId }
+            for (rank in repaired.ranked.filter { it.outcome.candidate.actionId in narrow.responseCoverageByAction }) {
+                assertEquals(firstPly.getValue(rank.outcome.candidate.actionId).comparisonValue, rank.comparisonValue, 1e-9)
+            }
+        }
         val referenceLoss = CooperativeSearchComparison.verifyAndReport(
             "redirect-$redirectId-$drawerSlot-$stages-$probability", narrow, wide)
         // Characterize the current unsearched-Splash ranking defect; not a desired loss allowance.

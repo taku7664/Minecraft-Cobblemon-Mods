@@ -114,6 +114,8 @@ class LocalProtectAttackCandidateTest {
             ranked, calculated, profile, tuning, clockMillis = { 0L })
         val narrow = evaluate(LocalDecisionTuning.CURRENT)
         val wide = evaluate(LocalDecisionTuning.CURRENT.copy(maximumRootCandidates = Int.MAX_VALUE))
+        CooperativeSearchComparison.verifyLeaderRecovery("protect-$protectionMoveId-$protectorSlot-$attackStat-$mixed-$declared-$probability", narrow,
+            evaluate(LocalDecisionTuning.CURRENT.copy(revalidateUnsearchedRootLeaders = true)), wide)
         assertEquals(0.0, CooperativeSearchComparison.verifyAndReport(
             "protect-$protectionMoveId-$protectorSlot-$attackStat-$mixed-$declared-$probability", narrow, wide), 1e-9)
         assertFalse(narrow.truncated)

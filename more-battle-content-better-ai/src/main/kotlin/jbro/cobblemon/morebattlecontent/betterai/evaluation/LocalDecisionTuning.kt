@@ -77,6 +77,8 @@ internal data class LocalDecisionTuning(
     val leafPressureWeight: Double = 0.30,
     /** Diagnostic ablation only: false restores uncapped leaf pressure within the current engine. */
     val capLeafDamageToRemainingHp: Boolean = true,
+    /** Experimental root-leader validation; does not certify the entire stochastic choice pool. */
+    val revalidateUnsearchedRootLeaders: Boolean = false,
     /** Experimental public team matchup coverage in board units; zero preserves the default leaf. */
     val leafTeamCoverageWeight: Double = 0.0,
     /** Board value of a certain knockout threat in the leaf, beyond the damage it represents. */

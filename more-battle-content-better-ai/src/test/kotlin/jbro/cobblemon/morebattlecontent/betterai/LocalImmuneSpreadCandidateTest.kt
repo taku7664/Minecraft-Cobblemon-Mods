@@ -81,6 +81,8 @@ class LocalImmuneSpreadCandidateTest {
             ranked, calculated, profile, tuning, clockMillis = { 0L })
         val narrow = evaluate(LocalDecisionTuning.CURRENT)
         val wide = evaluate(LocalDecisionTuning.CURRENT.copy(maximumRootCandidates = Int.MAX_VALUE))
+        CooperativeSearchComparison.verifyLeaderRecovery("spread-$spreadSlot-$partnerTypes-$partnerAbility-$opponentCount", narrow,
+            evaluate(LocalDecisionTuning.CURRENT.copy(revalidateUnsearchedRootLeaders = true)), wide)
         val referenceLoss = CooperativeSearchComparison.verifyAndReport(
             "spread-$spreadSlot-$partnerTypes-$partnerAbility-$opponentCount", narrow, wide)
         // Characterize missing-type cases choosing an unsearched joint, not a permitted quality loss.

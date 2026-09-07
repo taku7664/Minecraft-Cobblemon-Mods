@@ -5,6 +5,14 @@ import org.junit.jupiter.api.Assertions.*
 
 /** Fixed-depth ranking comparison, not stochastic final choice, native strength or equal-time performance. */
 internal object CooperativeSearchComparison {
+    fun verifyLeaderRecovery(label: String, original: LocalLookaheadEvaluation,
+        repaired: LocalLookaheadEvaluation, wide: LocalLookaheadEvaluation) {
+        assertEquals(0.0, verifyAndReport("revalidated-$label", repaired, wide), 1e-9)
+        assertTrue(repaired.ranked.first().outcome.candidate.actionId in repaired.responseCoverageByAction,
+            "$label leader must actually be searched")
+        assertTrue(repaired.responseCoverageByAction.keys.containsAll(original.responseCoverageByAction.keys))
+    }
+
     fun verifyAndReport(label: String, narrow: LocalLookaheadEvaluation, wide: LocalLookaheadEvaluation): Double {
         assertFalse(narrow.truncated)
         assertFalse(wide.truncated)

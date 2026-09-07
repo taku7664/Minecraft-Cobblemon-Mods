@@ -140,13 +140,18 @@ internal object LocalRecursiveLookaheadEvaluator {
             // candidates to reach the limit - so this changes nothing outside doubles.
             val searchable = searchableActionIds(ranked, tuning, context)
             val evaluatedCoverage = mutableMapOf<String, LocalLookaheadCoverage>()
-            val evaluated = ranked.map { rank ->
-                val evaluation = if (searchable != null && rank.outcome.candidate.actionId !in searchable) {
-                    null
-                } else {
-                    search.rootActionValue(context.state, rank.outcome.candidate, depth)
+            fun evaluateRank(rank: LocalBattleActionRank): LocalBattleActionRank {
+                val id = rank.outcome.candidate.actionId
+                if (tuning.revalidateUnsearchedRootLeaders && depth > 1 && id !in singlePlyGain) {
+                    // A newly admitted root needs its own immediate-turn baseline. Treating its
+                    // deeper gain as immediate would leak foresight through a zero future weight.
+                    val immediate = search.rootActionValue(context.state, rank.outcome.candidate, 1)
+                        ?: return rank
+                    singlePlyGain[id] = (immediate.value - baseline) * BOARD_TO_SCORE
+                    singlePlyCoverage[id] = search.publicResponseCoverage
                 }
-                if (evaluation == null) rank else {
+                val evaluation = search.rootActionValue(context.state, rank.outcome.candidate, depth)
+                return if (evaluation == null) rank else {
                     // The recursive turn score carries its own knockout value, weighted by the actual
                     // damage-roll KO ratio and execution probability. Remove exactly the knockout
                     // value the root scorer already added, rather than a constant that only matched
@@ -232,12 +237,31 @@ internal object LocalRecursiveLookaheadEvaluator {
                     )
                 }
             }
+            val evaluated = ranked.map { rank ->
+                if (searchable != null && rank.outcome.candidate.actionId !in searchable) rank else evaluateRank(rank)
+            }.toMutableList()
+            var leaderValidated = !tuning.revalidateUnsearchedRootLeaders
+            if (tuning.revalidateUnsearchedRootLeaders) {
+                // Keep every original candidate and cooperation reservation. Validate an unsearched
+                // leader, then reconsider the ranking; never add its adjustment a second time.
+                // This certifies only rank one, not every member of the later stochastic shortlist.
+                while (!search.truncated) {
+                    val leaderId = LocalBattleActionPolicy.sort(evaluated).first().outcome.candidate.actionId
+                    if (leaderId in evaluatedCoverage) {
+                        leaderValidated = true
+                        break
+                    }
+                    val index = ranked.indexOfFirst { it.outcome.candidate.actionId == leaderId }
+                    evaluated[index] = evaluateRank(ranked[index])
+                    if (leaderId !in evaluatedCoverage) break
+                }
+            }
             totalNodes += search.nodesVisited
             totalBranchesPruned += search.branchesPruned
             totalLeafWorkUnits += search.leafWorkUnits
             publicResponseIncomplete = publicResponseIncomplete || search.publicResponseIncomplete
             lastCoverage = search.publicResponseCoverage
-            if (search.truncated) {
+            if (search.truncated || !leaderValidated) {
                 truncated = true
                 break
             }
