@@ -30,6 +30,8 @@ class Cobblemon173FuturePpTest {
         assertEquals(opponent.formId, pool.formId)
         assertEquals("fixture:public_learnset", pool.sourceId)
         assertEquals(setOf("recover", "psychic"), pool.moveIds)
+        assertEquals(6, pool.moveDetails.getValue("recover").currentPp)
+        assertEquals(8, pool.moveDetails.getValue("psychic").currentPp)
         assertEquals(setOf("recover"), opponent.knownMoveIds)
         assertEquals(listOf("recover"), catalog.forPokemon(opponent.battlePokemonId).map { it.moveId })
         assertEquals(6, catalog.forPokemon(opponent.battlePokemonId).single().details.currentPp)

@@ -7,6 +7,22 @@ import org.junit.jupiter.api.Test
 
 class PublicMoveCandidateCatalogTest {
     @Test
+    fun `hypothesis mechanics snapshot only members of the partial pool`() {
+        val detail = BattleMoveCandidateView("electric", BattleMoveDamageCategory.SPECIAL, 90.0, 100.0, 0, 24)
+        val details = mutableMapOf("thunderbolt" to detail)
+        val pool = BattlePublicMoveCandidatePoolView(UUID.randomUUID(), "thundurus", null,
+            setOf("thunderbolt", "protect"), "fixture", details)
+        details.clear()
+        assertEquals(detail, pool.moveDetails["thunderbolt"])
+        assertFalse(pool.moveDetails.containsKey("protect"))
+        assertThrows(UnsupportedOperationException::class.java) { (pool.moveDetails as MutableMap).clear() }
+        assertThrows(IllegalArgumentException::class.java) {
+            BattlePublicMoveCandidatePoolView(UUID.randomUUID(), "thundurus", null, emptySet(),
+                "fixture", mapOf("thunderbolt" to detail))
+        }
+    }
+
+    @Test
     fun `partial candidates are immutable and never become revealed or complete moves`() {
         val id = UUID.randomUUID()
         val moves = mutableSetOf("thunderbolt", "protect")

@@ -58,7 +58,13 @@ internal object Cobblemon173PublicActionCatalog {
                 .mapNotNull { pokemon ->
                     moveKnowledge.possibleMoves(pokemon.speciesId, pokemon.formId)?.let { pool ->
                         BattlePublicMoveCandidatePoolView(pokemon.battlePokemonId, pokemon.speciesId,
-                            pokemon.formId, pool.moveIds, pool.sourceId)
+                            pokemon.formId, pool.moveIds, pool.sourceId,
+                            pool.moveIds.mapNotNull { moveId ->
+                                moveDetails(moveId)?.let { details ->
+                                    moveId to details.copy(currentPp = remainingPp(details.currentPp,
+                                        ppSpent[pokemon.battlePokemonId]?.get(moveId) ?: 0, null))
+                                }
+                            }.toMap())
                     }
                 },
         )
