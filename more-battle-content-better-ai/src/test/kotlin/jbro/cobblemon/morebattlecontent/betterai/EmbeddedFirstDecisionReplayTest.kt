@@ -5,6 +5,17 @@ import org.junit.jupiter.api.Test
 
 class EmbeddedFirstDecisionReplayTest {
     @Test
+    fun `fixed choice seed is optional and preserves signed 64 bit precision`() {
+        assertNull(EmbeddedFirstDecisionReplay.choiceSeedOverride(null))
+        for (seed in listOf(0L, -1L, Long.MIN_VALUE, Long.MAX_VALUE)) {
+            assertEquals(seed, EmbeddedFirstDecisionReplay.choiceSeedOverride(seed.toString()))
+        }
+        for (invalid in listOf("", "bad", "1.5", "9223372036854775808", "-9223372036854775809")) {
+            assertThrows(IllegalArgumentException::class.java) { EmbeddedFirstDecisionReplay.choiceSeedOverride(invalid) }
+        }
+    }
+
+    @Test
     fun `depth probe changes only requested plies not boss tier or other profile fields`() {
         val boss = EmbeddedPolicyComparison.profileForSkill(5)
         assertEquals(boss, EmbeddedFirstDecisionReplay.replayProfile(5, null))

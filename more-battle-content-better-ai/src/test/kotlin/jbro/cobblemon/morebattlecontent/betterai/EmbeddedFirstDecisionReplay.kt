@@ -22,6 +22,8 @@ internal object EmbeddedFirstDecisionReplay {
 
     fun repetitionCount(raw: String?): Int = (raw?.toInt() ?: 1).also { require(it in 1..20) }
 
+    fun choiceSeedOverride(raw: String?): Long? = raw?.toLong()
+
     fun snapshotRequest(lines: Sequence<String>, side: String, index: Int): JsonObject {
         require(side == "p1" || side == "p2")
         require(index >= 0)
@@ -57,7 +59,7 @@ internal object EmbeddedFirstDecisionReplay {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        require(args.size in 5..8) { "Expected trace, side, battle UUID, skill level, replay tuning, optional snapshot index, repetitions and depth" }
+        require(args.size in 5..9) { "Expected trace, side, battle UUID, skill level, replay tuning, optional snapshot index, repetitions, depth and choice seed" }
         val repetitions = repetitionCount(args.getOrNull(6))
         repeat(repetitions) { replay(args, it, repetitions) }
     }
@@ -76,7 +78,8 @@ internal object EmbeddedFirstDecisionReplay {
         // LocalTacticalBrain's choice seed uses battle ID, turn and ranks, not that nonce.
         val turn = row["turn"].asInt
         val context = EmbeddedTeamInput.context(row.getAsJsonObject("input"), battleId, turn, snapshotIndex ?: 0)
-        val observer = LocalDecisionTraceSelector()
+        val choiceSeedOverride = choiceSeedOverride(args.getOrNull(8))
+        val observer = LocalDecisionTraceSelector(choiceSeedOverride)
         val brain = LocalTacticalBrain(actionSelector = observer, tuning = tuning)
         val session = brain.openSession(BattleBrainOpenContext(battleId, context.state.format, trainerProfile = profile))
         try {
@@ -92,7 +95,12 @@ internal object EmbeddedFirstDecisionReplay {
                 "decisionElapsedNanos" to elapsedNanos,
                 "battleId" to battleId.toString(), "profile" to profile, "tuning" to tuning.id,
                 "recordedAction" to row["actionId"].asString, "replayedAction" to decision.actionId,
-                "tags" to decision.tags, "seed" to trace?.seed, "riskBudget" to trace?.mixing?.riskBudget,
+                "tags" to decision.tags, "seed" to trace?.selection?.seed,
+                "choiceSeedMode" to if (choiceSeedOverride == null) "PRODUCTION_DERIVED" else "FIXED_DIAGNOSTIC",
+                // Decimal strings preserve all 64 bits in consumers with floating-point JSON numbers.
+                "derivedChoiceSeed" to trace?.seed?.toString(),
+                "choiceSeedOverride" to choiceSeedOverride?.toString(),
+                "riskBudget" to trace?.mixing?.riskBudget,
                 "shortlistSize" to trace?.selection?.shortlistSize,
                 "selectionProbability" to trace?.selection?.probability,
                 "publicOpponentMoves" to context.state.pokemon.filter { it.side == BattleSide.OPPONENT }

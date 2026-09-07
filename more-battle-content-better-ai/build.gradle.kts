@@ -201,6 +201,10 @@ tasks.register<JavaExec>("replayNativeFirstDecision") {
         val snapshotIndex = providers.gradleProperty("replaySnapshotIndex").orNull
         val repetitions = providers.gradleProperty("replayRepetitions").orNull
         val depth = providers.gradleProperty("replayDepth").orNull
+        val choiceSeed = providers.gradleProperty("replayChoiceSeed").orNull
+        require(choiceSeed == null || (snapshotIndex != null && repetitions != null && depth != null)) {
+            "Fixed choice seed diagnostics require explicit replaySnapshotIndex, replayRepetitions and replayDepth"
+        }
         require(depth == null || (snapshotIndex != null && repetitions != null)) {
             "Depth diagnostics require explicit replaySnapshotIndex and replayRepetitions"
         }
@@ -213,7 +217,7 @@ tasks.register<JavaExec>("replayNativeFirstDecision") {
             providers.gradleProperty("nativeSkillLevel").get(),
             providers.gradleProperty("replayTuning").get()) +
             snapshotIndex?.let { listOf(it) }.orEmpty() + repetitions?.let { listOf(it) }.orEmpty() +
-            depth?.let { listOf(it) }.orEmpty())
+            depth?.let { listOf(it) }.orEmpty() + choiceSeed?.let { listOf(it) }.orEmpty())
     }
 }
 
