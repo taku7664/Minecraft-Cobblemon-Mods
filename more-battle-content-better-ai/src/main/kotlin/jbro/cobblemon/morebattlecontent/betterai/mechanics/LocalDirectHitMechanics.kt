@@ -129,7 +129,7 @@ internal object LocalDirectHitMechanics {
         // this is mostly the trainer learning that it can afford the turn it was refusing to take.
         val berryHealing = pinchBerryHealing(target, hp)
         if (berryHealing > 0.0) {
-            val healed = (hp + berryHealing).coerceAtMost(1.0)
+            val healed = LocalHpArithmetic.change(target, hp, berryHealing).coerceAtMost(1.0)
             return TargetResolution(
                 pokemon = copyPokemon(target, hpFraction = healed, knownHeldItemId = null, fainted = false),
                 directDamageFraction = incomingDamage,
@@ -162,6 +162,11 @@ internal object LocalDirectHitMechanics {
         } else QUARTER_HP_BERRY_THRESHOLD
         if (target.hpFraction <= threshold) return 0.0
         if (healthAfterHit > threshold) return 0.0
+        val maxHp = target.combatStats?.maxHp
+        if (item != "oranberry" && maxHp != null && maxHp.minimum == maxHp.maximum) {
+            // Native heal truncates fractional HP, with a minimum of one for positive healing.
+            return kotlin.math.floor(maxHp.minimum * fraction).coerceAtLeast(1.0) / maxHp.minimum
+        }
         return fraction
     }
 

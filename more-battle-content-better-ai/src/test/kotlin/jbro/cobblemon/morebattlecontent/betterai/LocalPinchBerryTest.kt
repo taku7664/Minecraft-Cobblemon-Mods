@@ -18,6 +18,16 @@ import java.util.UUID
  */
 class LocalPinchBerryTest {
     @Test
+    fun `fractional berries heal integer HP when the public maximum is exact`() {
+        for ((item, healedHp) in mapOf("sitrusberry" to 40, "figyberry" to 54, "oranberry" to 10)) {
+            val result = hitResult(item, 100.0 / 163, 70.0 / 163, BattleIntegerRange(163, 163))
+            val target = result.state.pokemon.single { it.side == BattleSide.OPPONENT }
+            assertEquals((30.0 + healedHp) / 163, target.hpFraction, 1e-12, item)
+            assertEquals(70.0 / 163, result.directDamageFraction, 1e-12)
+        }
+    }
+
+    @Test
     fun `third-healing berries normally trigger at a quarter rather than half`() {
         for (item in listOf("figyberry", "wikiberry", "magoberry", "aguavberry", "iapapaberry")) {
             val atHalf = hit(item, 0.8, 0.3)
