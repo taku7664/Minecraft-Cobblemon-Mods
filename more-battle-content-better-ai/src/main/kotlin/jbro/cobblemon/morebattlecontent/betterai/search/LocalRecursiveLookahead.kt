@@ -703,6 +703,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 incompleteIds,
                 includeMoveHypotheses = tuning.lookaheadMoveHypotheses,
                 hypotheticalMoveLimitPerSlot = tuning.hypotheticalMoveLimitPerSlot,
+                reserveHypotheticalPriority = tuning.reserveHypotheticalPriority,
             )
             if (incompleteIds.isNotEmpty()) {
                 publicResponseIncomplete = true

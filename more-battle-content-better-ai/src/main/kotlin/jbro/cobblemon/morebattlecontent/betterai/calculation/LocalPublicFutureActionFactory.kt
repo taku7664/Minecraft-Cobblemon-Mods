@@ -17,6 +17,7 @@ internal object PublicFutureActionFactory {
         unknownMovePokemonIds: Set<java.util.UUID> = emptySet(),
         includeMoveHypotheses: Boolean = false,
         hypotheticalMoveLimitPerSlot: Int = Int.MAX_VALUE,
+        reserveHypotheticalPriority: Boolean = false,
     ): List<BattleActionCandidate> {
         require(candidateLimitPerSlot > 0)
         require(hypotheticalMoveLimitPerSlot > 0)
@@ -32,6 +33,7 @@ internal object PublicFutureActionFactory {
                 primitiveActions(state, side, pokemon, catalog, history, unknownMovePokemonIds, includeMoveHypotheses),
                 candidateLimitPerSlot,
                 hypotheticalMoveLimitPerSlot,
+                reserveHypotheticalPriority,
             )
         }
         if (bySlot.any(List<BattleActionCandidate>::isEmpty)) return emptyList()
@@ -60,12 +62,22 @@ internal object PublicFutureActionFactory {
         actions: List<BattleActionCandidate>,
         limit: Int,
         hypotheticalMoveLimit: Int,
+        reserveHypotheticalPriority: Boolean,
     ): List<BattleActionCandidate> {
-        val selectedHypotheses = linkedSetOf<String>()
-        val ranked = actions.sortedWith(
+        val ordered = actions.sortedWith(
             compareByDescending<BattleActionCandidate> { primitivePriority(state, side, actor, it) }
                 .thenBy(BattleActionCandidate::actionId),
-        ).filter { action ->
+        )
+        // Reserve one already-executable damaging priority hypothesis. This does not guarantee
+        // coverage of every priority level, target or conditional effect; it remains experimental.
+        val priorityResponse = if (reserveHypotheticalPriority) ordered.firstOrNull {
+            "hypothetical_public_move" in it.tags && it.kind == BattleActionKind.USE_MOVE &&
+                it.moveDetails?.let { details -> details.priority > 0 &&
+                    details.damageCategory != BattleMoveDamageCategory.STATUS } == true
+        } else null
+        val selectedHypotheses = linkedSetOf<String>()
+        priorityResponse?.moveId?.let { selectedHypotheses.add(canonicalId(it)) }
+        val ranked = ordered.filter { action ->
             // A search-cost cap, not a claim that omitted moves are impossible. Keep every target
             // variant of a selected move; known moves, switches and unknown responses do not count.
             if ("hypothetical_public_move" !in action.tags) true
@@ -93,6 +105,7 @@ internal object PublicFutureActionFactory {
             ranked.firstOrNull(predicate)?.let { selected.putIfAbsent(it.actionId, it) }
         }
         reserve { "unknown_public_response" in it.tags }
+        priorityResponse?.let { priority -> reserve { it.actionId == priority.actionId } }
         reserve { it.kind == BattleActionKind.USE_MOVE }
         reserve { it.kind == BattleActionKind.SWITCH }
         ranked.forEach { action ->

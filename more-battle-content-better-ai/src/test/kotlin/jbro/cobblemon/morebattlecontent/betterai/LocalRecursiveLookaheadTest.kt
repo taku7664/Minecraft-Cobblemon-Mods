@@ -49,10 +49,11 @@ class LocalRecursiveLookaheadTest {
         assertTrue(responses(3).any { "unknown_public_response" in it.tags })
         val boss = BattleTrainerProfile.balanced(5)
         val profile = boss.copy(difficulty = boss.difficulty.copy(lookaheadPlies = 1))
-        fun evaluate(cap: Int) = LocalRecursiveLookaheadEvaluator.evaluate(listOf(rank(attack)), source,
+        fun evaluate(cap: Int, reservePriority: Boolean = false) = LocalRecursiveLookaheadEvaluator.evaluate(listOf(rank(attack)), source,
             profile,
             jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning.CURRENT.copy(
-                lookaheadMoveHypotheses = true, hypotheticalMoveLimitPerSlot = cap), clockMillis = { 0L })
+                lookaheadMoveHypotheses = true, hypotheticalMoveLimitPerSlot = cap,
+                reserveHypotheticalPriority = reservePriority), clockMillis = { 0L })
         val full = evaluate(Int.MAX_VALUE)
         val capped = evaluate(3)
         for (result in listOf(full, capped)) {
@@ -64,6 +65,17 @@ class LocalRecursiveLookaheadTest {
         // generic unknown response does not reproduce the omitted priority knockout.
         assertEquals(0.0, full.ranked.single().worstResponseHpRetention, 1e-9)
         assertEquals(1.0, capped.ranked.single().worstResponseHpRetention, 1e-9)
+        val priorityReserved = evaluate(3, reservePriority = true)
+        assertEquals(1, priorityReserved.depthCompleted)
+        assertFalse(priorityReserved.truncated)
+        assertEquals(0.0, priorityReserved.ranked.single().worstResponseHpRetention, 1e-9)
+        val tightlyCapped = PublicFutureActionFactory.actions(initial, BattleSide.OPPONENT,
+            source.publicActionCatalog, candidateLimitPerSlot = 2, hypotheticalMoveLimitPerSlot = 3,
+            includeMoveHypotheses = true, reserveHypotheticalPriority = true,
+            unknownMovePokemonIds = setOf(OPPONENT_ID))
+        assertEquals(2, tightlyCapped.size)
+        assertTrue(tightlyCapped.any { it.moveId == "quickattack" })
+        assertTrue(tightlyCapped.any { "unknown_public_response" in it.tags })
         assertTrue(initial.pokemon.single { it.side == BattleSide.OPPONENT }.knownMoveIds.isEmpty())
     }
 
