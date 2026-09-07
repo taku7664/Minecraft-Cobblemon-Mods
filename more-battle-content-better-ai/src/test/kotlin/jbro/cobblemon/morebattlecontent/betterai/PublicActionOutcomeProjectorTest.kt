@@ -17,6 +17,8 @@ class PublicActionOutcomeProjectorTest {
         val result = PublicActionOutcomeProjector.project(action, context(action, allyHp = 0.5,
             allyMaxHp = 235, opponentMaxHpRange = BattleIntegerRange(300, 360)))
         assertEquals(16.5 / 235, requireNotNull(result.expectedSelfHealingFraction), 1e-12)
+        assertEquals(14.5 / 235, requireNotNull(result.drainOnHitFractionRange).minimum, 1e-12)
+        assertEquals(18.5 / 235, requireNotNull(result.drainOnHitFractionRange).maximum, 1e-12)
         org.junit.jupiter.api.Assertions.assertTrue(BattleCalculationUnknown.MOVE_EFFECTS in result.unknowns)
         assertEquals(BattleCalculationCoverage.PARTIAL, result.coverage)
     }
@@ -32,6 +34,8 @@ class PublicActionOutcomeProjectorTest {
                 context(action, allyHp = 0.5, allyMaxHp = 235, opponentMaxHp = 330))
             val transfer = if (kind == BattleMoveEffectKind.DRAIN_FRACTION) result.expectedSelfHealingFraction else result.expectedSelfRecoilFraction
             assertEquals(4.5 / 235, requireNotNull(transfer), 1e-12, kind.name)
+            val onHit = if (kind == BattleMoveEffectKind.DRAIN_FRACTION) result.drainOnHitFractionRange else result.damageRecoilOnHitFractionRange
+            assertEquals(BattleFractionRange(9.0 / 235, 9.0 / 235), onHit)
             val capped = PublicActionOutcomeProjector.project(action, context(action,
                 allyHp = if (kind == BattleMoveEffectKind.DRAIN_FRACTION) 234.0 / 235 else 1.0 / 235,
                 allyMaxHp = 235, opponentMaxHp = 330))

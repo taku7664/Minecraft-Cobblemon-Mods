@@ -26,6 +26,8 @@ internal data class PublicActionOutcomeProjection(
     val opponentActionOrderResolved: Boolean,
     val unknowns: Set<BattleCalculationUnknown>,
     val components: List<PublicActionOutcomeProjection> = emptyList(),
+    val drainOnHitFractionRange: BattleFractionRange? = null,
+    val damageRecoilOnHitFractionRange: BattleFractionRange? = null,
 )
 
 internal object PublicActionOutcomeProjector {
@@ -95,6 +97,21 @@ internal object PublicActionOutcomeProjector {
             null
         }
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()
+        fun transferBounds(kind: BattleMoveEffectKind, limit: Double): BattleFractionRange? {
+            // A representative multi-hit count is not a bound on its full outcome distribution.
+            val damage = adjustedDamage?.takeIf { hitCount == 1.0 } ?: return null
+            val parts = effects.filter { it.kind == kind && it.target == BattleMoveEffectTarget.USER && it.fractionRange != null }
+                .map { effect ->
+                    val bounds = LocalDamageHpTransfer.bounds(damage, requireNotNull(effect.fractionRange), actor, target, limit)
+                    when {
+                        (effect.probability ?: 1.0) <= 0.0 -> BattleFractionRange(0.0, 0.0)
+                        (effect.probability ?: 1.0) < 1.0 -> BattleFractionRange(0.0, bounds.maximum)
+                        else -> bounds
+                    }
+                }
+            if (parts.isEmpty()) return null
+            return BattleFractionRange(parts.sumOf { it.minimum }.coerceAtMost(limit), parts.sumOf { it.maximum }.coerceAtMost(limit))
+        }
         val uncertainTransfer = (expectedDamage ?: 0.0) > 0.0 &&
             effects.any { it.kind == BattleMoveEffectKind.DRAIN_FRACTION || it.kind == BattleMoveEffectKind.RECOIL_FRACTION } &&
             !LocalDamageHpTransfer.hasExactMaxHp(actor, target)
@@ -154,6 +171,8 @@ internal object PublicActionOutcomeProjector {
             switchEntryHpAfter = null,
             opponentActionOrderResolved = facts?.actsFirstProbability == 1.0,
             unknowns = facts?.unknowns.orEmpty() + if (uncertainTransfer) setOf(BattleCalculationUnknown.MOVE_EFFECTS) else emptySet(),
+            drainOnHitFractionRange = transferBounds(BattleMoveEffectKind.DRAIN_FRACTION, (1.0 - (actor?.hpFraction ?: 0.0)).coerceAtLeast(0.0)),
+            damageRecoilOnHitFractionRange = transferBounds(BattleMoveEffectKind.RECOIL_FRACTION, actor?.hpFraction ?: 1.0),
         )
     }
 
