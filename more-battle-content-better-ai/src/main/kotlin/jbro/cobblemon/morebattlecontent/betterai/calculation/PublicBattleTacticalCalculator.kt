@@ -1,7 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai.calculation
 
 import jbro.cobblemon.morebattlecontent.api.ai.*
-import jbro.cobblemon.morebattlecontent.api.ai.BattleAbilityAvailability
 import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceConfidence
 import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceView
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalDeclaredMultiHit
@@ -633,14 +632,13 @@ internal object PublicBattleTacticalCalculator {
     ): Boolean {
         val revealed = canonical(pokemon.knownAbilityId)
         if (revealed != null) return REDIRECTING_ABILITIES[revealed] == moveType
-        val ordinary = context.state.inferences.asSequence()
+        val possible = context.state.inferences.asSequence()
             .filter { it.subjectPokemonId == pokemon.battlePokemonId && it.categoryId == ABILITY_CATEGORY }
             .filter { it.confidence != BattleInferenceConfidence.RULED_OUT }
-            .filter { it.abilityAvailability != BattleAbilityAvailability.HIDDEN }
             .mapNotNull { canonical(it.candidateId) }
             .distinct()
             .toList()
-        return ordinary.isNotEmpty() && ordinary.all { REDIRECTING_ABILITIES[it] == moveType }
+        return possible.isNotEmpty() && possible.all { REDIRECTING_ABILITIES[it] == moveType }
     }
 
     /** The abilities that take a single-target move of their type away from the slot beside them. */

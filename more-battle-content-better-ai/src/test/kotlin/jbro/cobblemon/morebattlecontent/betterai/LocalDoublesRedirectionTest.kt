@@ -23,6 +23,17 @@ import java.util.UUID
  */
 class LocalDoublesRedirectionTest {
     @Test
+    fun `a possible hidden ability does not guarantee redirection`() {
+        val unresolved = facts(partnerAbility = null, partnerInferredOrdinary = listOf("lightningrod"),
+            partnerInferredHidden = listOf("reckless"), partnerTypes = setOf("ground"))
+        assertEquals(1.0, unresolved?.typeChartMultiplier,
+            "An unrevealed possible Lightning Rod cannot replace the declared target")
+        val revealed = facts(partnerAbility = "lightningrod", partnerInferredOrdinary = listOf("lightningrod"),
+            partnerInferredHidden = listOf("reckless"), partnerTypes = setOf("ground"))
+        assertEquals(0.0, revealed?.typeChartMultiplier)
+    }
+
+    @Test
     fun `a revealed lightning rod pulls the move off its partner`() {
         val plain = facts(partnerAbility = null)
         assertEquals(1.0, plain?.typeChartMultiplier, "Without the Rod the declared target is hit normally.")
@@ -81,13 +92,15 @@ class LocalDoublesRedirectionTest {
     private fun facts(
         partnerAbility: String?,
         partnerInferredOrdinary: List<String> = emptyList(),
+        partnerInferredHidden: List<String> = emptyList(),
+        partnerTypes: Set<String> = setOf("normal"),
         format: BattleFormat = BattleFormat.DOUBLE,
         pattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
         explicitTarget: Boolean = true,
     ): BattleCandidateFactsView? {
         val actor = mon(BattleSide.ALLY, 0, null)
         val declared = mon(BattleSide.OPPONENT, 0, null)
-        val partner = mon(BattleSide.OPPONENT, 1, partnerAbility)
+        val partner = mon(BattleSide.OPPONENT, 1, partnerAbility, partnerTypes)
         val doubles = format == BattleFormat.DOUBLE
         val pokemon = listOf(actor, declared) + if (doubles) listOf(partner) else emptyList()
         val move = BattleActionCandidate(
@@ -106,13 +119,14 @@ class LocalDoublesRedirectionTest {
                 pokemon = pokemon, field = BattleFieldStateView.empty(),
                 remainingPokemonBySide = BattleSide.entries.associateWith { if (doubles) 4 else 3 },
                 observedEvents = emptyList(),
-                inferences = partnerInferredOrdinary.map {
+                inferences = (partnerInferredOrdinary.map { it to BattleAbilityAvailability.REGULAR } +
+                    partnerInferredHidden.map { it to BattleAbilityAvailability.HIDDEN }).map { (id, availability) ->
                     BattleInferenceView(
                         subjectPokemonId = partner.battlePokemonId,
-                        categoryId = "ability", candidateId = it,
+                        categoryId = "ability", candidateId = id,
                         confidence = BattleInferenceConfidence.POSSIBLE,
                         basis = setOf(BattleInferenceBasis.PUBLIC_SPECIES_RULES),
-                        abilityAvailability = BattleAbilityAvailability.REGULAR,
+                        abilityAvailability = availability,
                     )
                 }.filter { doubles },
             ),
@@ -123,12 +137,12 @@ class LocalDoublesRedirectionTest {
         return PublicBattleTacticalCalculator.calculate(context).candidates.single().facts
     }
 
-    private fun mon(side: BattleSide, slot: Int, abilityId: String?) = BattlePokemonStateView(
+    private fun mon(side: BattleSide, slot: Int, abilityId: String?, types: Set<String> = setOf("normal")) = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(), side = side, activeSlot = slot,
         speciesId = "cobblemon:probe_${side.name.lowercase()}_$slot", formId = null, level = 50,
         hpFraction = 1.0, statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(),
         knownAbilityId = abilityId, knownHeldItemId = null, fainted = false,
-        knownTypeIds = setOf("normal"),
+        knownTypeIds = types,
         combatStats = if (side == BattleSide.ALLY) {
             BattleCombatStatRangesView.exact(200, 100, 100, 140, 100, 100)
         } else {
