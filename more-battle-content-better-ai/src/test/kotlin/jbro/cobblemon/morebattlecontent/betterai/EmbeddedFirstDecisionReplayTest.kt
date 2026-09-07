@@ -5,6 +5,17 @@ import org.junit.jupiter.api.Test
 
 class EmbeddedFirstDecisionReplayTest {
     @Test
+    fun `depth probe changes only requested plies not boss tier or other profile fields`() {
+        val boss = EmbeddedPolicyComparison.profileForSkill(5)
+        assertEquals(boss, EmbeddedFirstDecisionReplay.replayProfile(5, null))
+        assertEquals(boss.copy(difficulty = boss.difficulty.copy(lookaheadPlies = 2)),
+            EmbeddedFirstDecisionReplay.replayProfile(5, 2))
+        for (depth in listOf(0, 5)) assertThrows(IllegalArgumentException::class.java) {
+            EmbeddedFirstDecisionReplay.replayProfile(5, depth)
+        }
+    }
+
+    @Test
     fun `repetitions are explicit bounded and default to one`() {
         assertEquals(1, EmbeddedFirstDecisionReplay.repetitionCount(null))
         assertEquals(5, EmbeddedFirstDecisionReplay.repetitionCount("5"))

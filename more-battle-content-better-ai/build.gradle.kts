@@ -200,6 +200,10 @@ tasks.register<JavaExec>("replayNativeFirstDecision") {
     doFirst {
         val snapshotIndex = providers.gradleProperty("replaySnapshotIndex").orNull
         val repetitions = providers.gradleProperty("replayRepetitions").orNull
+        val depth = providers.gradleProperty("replayDepth").orNull
+        require(depth == null || (snapshotIndex != null && repetitions != null)) {
+            "Depth diagnostics require explicit replaySnapshotIndex and replayRepetitions"
+        }
         require(repetitions == null || snapshotIndex != null) {
             "Repeated snapshot diagnostics require an explicit replaySnapshotIndex"
         }
@@ -208,7 +212,8 @@ tasks.register<JavaExec>("replayNativeFirstDecision") {
             providers.gradleProperty("replayBattleId").get(),
             providers.gradleProperty("nativeSkillLevel").get(),
             providers.gradleProperty("replayTuning").get()) +
-            snapshotIndex?.let { listOf(it) }.orEmpty() + repetitions?.let { listOf(it) }.orEmpty())
+            snapshotIndex?.let { listOf(it) }.orEmpty() + repetitions?.let { listOf(it) }.orEmpty() +
+            depth?.let { listOf(it) }.orEmpty())
     }
 }
 

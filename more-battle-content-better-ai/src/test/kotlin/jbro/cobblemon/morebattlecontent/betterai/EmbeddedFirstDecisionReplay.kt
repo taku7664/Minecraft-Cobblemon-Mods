@@ -13,6 +13,13 @@ import java.util.concurrent.TimeUnit
 
 /** First-request replay by default; explicit snapshots use the native adapter's default memory. */
 internal object EmbeddedFirstDecisionReplay {
+    fun replayProfile(skill: Int, depth: Int?): BattleTrainerProfile {
+        val profile = EmbeddedPolicyComparison.profileForSkill(skill)
+        if (depth == null) return profile
+        require(depth in 1..4)
+        return profile.copy(difficulty = profile.difficulty.copy(lookaheadPlies = depth))
+    }
+
     fun repetitionCount(raw: String?): Int = (raw?.toInt() ?: 1).also { require(it in 1..20) }
 
     fun snapshotRequest(lines: Sequence<String>, side: String, index: Int): JsonObject {
@@ -48,7 +55,7 @@ internal object EmbeddedFirstDecisionReplay {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        require(args.size in 5..7) { "Expected trace, side, battle UUID, skill level, replay tuning, optional snapshot index and repetitions" }
+        require(args.size in 5..8) { "Expected trace, side, battle UUID, skill level, replay tuning, optional snapshot index, repetitions and depth" }
         val repetitions = repetitionCount(args.getOrNull(6))
         repeat(repetitions) { replay(args, it, repetitions) }
     }
@@ -60,7 +67,7 @@ internal object EmbeddedFirstDecisionReplay {
             else snapshotRequest(it.lineSequence(), args[1], snapshotIndex)
         }
         val battleId = UUID.fromString(args[2])
-        val profile = EmbeddedPolicyComparison.profileForSkill(args[3].toInt())
+        val profile = replayProfile(args[3].toInt(), args.getOrNull(7)?.toInt())
         val tuning = tuningFor(args[4])
         // Native input reconstructs public observations from the snapshot and uses default tactical
         // memory. This is NOT a production-session replay. The request UUID nonce is synthetic here;
