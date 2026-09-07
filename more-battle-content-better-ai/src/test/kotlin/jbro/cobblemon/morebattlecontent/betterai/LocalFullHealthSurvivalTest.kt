@@ -16,6 +16,19 @@ import java.util.UUID
  */
 class LocalFullHealthSurvivalTest {
     @Test
+    fun `magic room restores knockout chance against sash but not sturdy`() {
+        for (room in listOf("cobblemon:magic_room", "trickroom")) {
+            for (ability in listOf(null, "sturdy")) {
+                val result = knockout(item = "cobblemon:focus_sash", ability = ability, room = room)
+                val survives = room == "trickroom" || ability == "sturdy"
+                assertEquals(if (survives) BattleKnockoutAssessment.IMPOSSIBLE else BattleKnockoutAssessment.GUARANTEED,
+                    result.first, "room=$room ability=$ability")
+                assertEquals(if (survives) 0.0 else 1.0, result.second)
+            }
+        }
+    }
+
+    @Test
     fun `a revealed focus sash removes the knockout but not the damage`() {
         val plain = knockout(item = null, ability = null)
         assertEquals(BattleKnockoutAssessment.GUARANTEED, plain.first, "The hit does kill an ordinary defender.")
@@ -48,6 +61,7 @@ class LocalFullHealthSurvivalTest {
         ability: String?,
         inferredOrdinary: List<String> = emptyList(),
         hpFraction: Double = 1.0,
+        room: String? = null,
     ): Pair<BattleKnockoutAssessment?, Double?> {
         val ally = mon(BattleSide.ALLY, null, null, 1.0)
         val opponent = mon(BattleSide.OPPONENT, item, ability, hpFraction)
@@ -65,7 +79,9 @@ class LocalFullHealthSurvivalTest {
             state = BattleStateView(
                 battleId = UUID.randomUUID(), format = BattleFormat.SINGLE, turn = 2,
                 pokemon = listOf(ally, opponent),
-                field = BattleFieldStateView.empty(),
+                field = BattleFieldStateView(null, null,
+                    room?.let { listOf(BattleTimedEffectView(it, null)) }.orEmpty(),
+                    emptyList(), BattleSide.entries.associateWith { emptyList() }),
                 remainingPokemonBySide = BattleSide.entries.associateWith { 2 },
                 observedEvents = emptyList(),
                 inferences = inferredOrdinary.map {

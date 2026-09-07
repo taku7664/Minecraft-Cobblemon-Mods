@@ -23,7 +23,8 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 internal object LocalFullHealthSurvivalRules {
     fun survivesAnySingleHit(state: BattleStateView, target: BattlePokemonStateView): Boolean {
         if (target.hpFraction < FULL_HEALTH) return false
-        if (canonical(target.knownHeldItemId) == FOCUS_SASH) return true
+        val magicRoomActive = state.field.roomEffects.any { canonical(it.effectId) == "magicroom" }
+        if (!magicRoomActive && canonical(target.knownHeldItemId) == FOCUS_SASH) return true
         val known = canonical(target.knownAbilityId)
         if (known != null) return known == STURDY
         val ordinary = ordinaryAbilities(state, target)
