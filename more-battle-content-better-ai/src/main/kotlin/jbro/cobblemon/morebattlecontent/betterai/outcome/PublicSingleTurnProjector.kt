@@ -24,6 +24,7 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.RecursiveControlEffec
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.RecursiveDelayedStrike
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.copyState
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalEndTurnStateProjector
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalBranchMoveInputs
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalFieldEffectProjector
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalSwitchStateProjector
 import jbro.cobblemon.morebattlecontent.betterai.state.PublicTurnProjection
@@ -1161,9 +1162,10 @@ internal object PublicSingleTurnProjector {
                 tags = generated.tags + "pivot_follow_up",
             )
             val projected = LocalSwitchStateProjector.project(branch.state, side, action)
+            val evaluationSource = LocalBranchMoveInputs.context(sourceContext, projected, history, spendPp = true)
             projected to LocalLookaheadStateEvaluator.evaluate(
-                state = projected,
-                source = sourceContext,
+                state = evaluationSource.state,
+                source = evaluationSource,
                 calculationCache = calculationCache,
                 shouldContinue = shouldContinue,
             )

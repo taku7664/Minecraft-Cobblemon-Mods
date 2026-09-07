@@ -1,5 +1,7 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.copyState
+
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
@@ -1617,6 +1619,30 @@ class LocalLookaheadEvaluationTest {
                 incoming.activeSlot == 0 && incoming.hpFraction < 1.0 &&
                 BattleSide.ALLY in outcome.switchedSides
         })
+    }
+
+    @Test
+    fun `pivot choice does not value an incoming move whose PP was spent`() {
+        val strongId = UUID.fromString("00000000-0000-0000-0000-000000000231")
+        val weakId = UUID.fromString("00000000-0000-0000-0000-000000000232")
+        val base = state(bench = pokemon(strongId, BattleSide.ALLY, 90, activeSlot = null))
+        val initial = base.copyState(pokemon = base.pokemon + pokemon(weakId, BattleSide.ALLY, 90, activeSlot = null))
+        val pivot = move("pivot", category = BattleMoveDamageCategory.STATUS, power = 0.0,
+            targetPattern = BattleMoveTargetPattern.SELF,
+            effects = effects(BattleMoveEffectView(kind = BattleMoveEffectKind.SWITCH_USER,
+                target = BattleMoveEffectTarget.USER, probability = 1.0)))
+        val strong = move("strong", power = 120.0, currentPp = 1)
+        val weak = move("weak", power = 40.0)
+        fun entry(id: UUID, action: BattleActionCandidate) = BattlePokemonActionCatalogView(id,
+            listOf(BattlePublicMoveOptionView(requireNotNull(action.moveId), requireNotNull(action.moveDetails), BattlePublicMoveKnowledge.EXACT_OWN)), true)
+        val publicCatalog = BattlePublicActionCatalogView(listOf(entry(strongId, strong), entry(weakId, weak)))
+        val source = context(initial, listOf(pivot), publicCatalog)
+        fun incoming(history: RecursiveActionHistory) = PublicSingleTurnProjector.project(initial, pivot, wait("idle"), source, history)
+            .single().state.pokemon.single { it.side == BattleSide.ALLY && it.activeSlot == 0 }.battlePokemonId
+        assertEquals(strongId, incoming(RecursiveActionHistory()))
+        val spent = RecursiveActionHistory(moveUses = mapOf(jbro.cobblemon.morebattlecontent.betterai.state.RecursiveMoveUseKey(strongId, requireNotNull(strong.moveId)) to 1))
+        assertEquals(weakId, incoming(spent))
+        assertEquals(strongId, incoming(RecursiveActionHistory()), "sibling branches must retain their PP")
     }
 
     @Test
