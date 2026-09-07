@@ -16,6 +16,17 @@ import java.util.UUID
  */
 class LocalFullHealthSurvivalTest {
     @Test
+    fun `a possible hidden ability prevents inferring guaranteed sturdy survival`() {
+        val unresolved = knockout(item = null, ability = null, inferredOrdinary = listOf("sturdy"),
+            inferredHidden = listOf("weakarmor"))
+        assertEquals(BattleKnockoutAssessment.GUARANTEED, unresolved.first,
+            "Keep the base damage projection instead of asserting unrevealed Sturdy; dynamic modifiers remain unknown")
+        val revealed = knockout(item = null, ability = "sturdy", inferredOrdinary = listOf("sturdy"),
+            inferredHidden = listOf("weakarmor"))
+        assertEquals(BattleKnockoutAssessment.IMPOSSIBLE, revealed.first)
+    }
+
+    @Test
     fun `small projected damage still breaks full health survival`() {
         for (hp in listOf(0.999, 0.9995, 0.999999)) {
             for ((item, ability) in listOf("focussash" to null, null to "sturdy")) {
@@ -72,6 +83,7 @@ class LocalFullHealthSurvivalTest {
         item: String?,
         ability: String?,
         inferredOrdinary: List<String> = emptyList(),
+        inferredHidden: List<String> = emptyList(),
         hpFraction: Double = 1.0,
         room: String? = null,
     ): Pair<BattleKnockoutAssessment?, Double?> {
@@ -96,13 +108,14 @@ class LocalFullHealthSurvivalTest {
                     emptyList(), BattleSide.entries.associateWith { emptyList() }),
                 remainingPokemonBySide = BattleSide.entries.associateWith { 2 },
                 observedEvents = emptyList(),
-                inferences = inferredOrdinary.map {
+                inferences = (inferredOrdinary.map { it to BattleAbilityAvailability.REGULAR } +
+                    inferredHidden.map { it to BattleAbilityAvailability.HIDDEN }).map { (id, availability) ->
                     BattleInferenceView(
                         subjectPokemonId = opponent.battlePokemonId,
-                        categoryId = "ability", candidateId = it,
+                        categoryId = "ability", candidateId = id,
                         confidence = BattleInferenceConfidence.POSSIBLE,
                         basis = setOf(BattleInferenceBasis.PUBLIC_SPECIES_RULES),
-                        abilityAvailability = BattleAbilityAvailability.REGULAR,
+                        abilityAvailability = availability,
                     )
                 },
             ),
