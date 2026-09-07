@@ -3,10 +3,23 @@ package jbro.cobblemon.morebattlecontent.betterai
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadEvaluation
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionMixingContext
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalWeightedActionSelector
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionRank
 import org.junit.jupiter.api.Assertions.*
 
 /** Fixed-depth ranking comparison, not stochastic final choice, native strength or equal-time performance. */
 internal object CooperativeSearchComparison {
+    fun choicePool(ranked: List<LocalBattleActionRank>): Set<String> = LocalWeightedActionSelector()
+        .shortlist(ranked, LocalActionMixingContext.balanced(0.5)).mapTo(linkedSetOf()) { it.outcome.candidate.actionId }
+
+    fun verifyPoolRecovery(label: String, original: LocalLookaheadEvaluation,
+        repaired: LocalLookaheadEvaluation, wide: LocalLookaheadEvaluation) {
+        verifyAndReport("pool-$label", repaired, wide)
+        assertTrue(repaired.responseCoverageByAction.keys.containsAll(choicePool(repaired.ranked)),
+            "$label entire choice pool must be searched")
+        assertTrue(repaired.responseCoverageByAction.keys.containsAll(original.responseCoverageByAction.keys))
+        assertEquals(0, reportWeightedChoices("pool-$label", repaired, wide).unsearchedDraws)
+    }
+
     data class MixingObservation(val completePool: Boolean, val unsearchedDraws: Int,
         val observedUnsearchedMass: Double)
 

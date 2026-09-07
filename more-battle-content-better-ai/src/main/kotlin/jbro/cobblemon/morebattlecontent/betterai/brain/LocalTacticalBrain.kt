@@ -32,6 +32,7 @@ import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionChoiceSeed
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionMixingContext
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionSelector
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionPolicy
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionRank
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleMind
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalRootDecisionPolicy
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalWeightedActionSelector
@@ -106,24 +107,7 @@ internal class LocalTacticalBrain(
                 ),
             )
         }
-        val lookahead = LocalRecursiveLookaheadEvaluator.evaluate(
-            baseRanked,
-            difficultyContext,
-            decidingProfile,
-            tuning,
-            strategy = strategy,
-        )
-        val rootDecision = LocalRootDecisionPolicy.refine(lookahead.ranked, difficultyContext)
-        val ranked = rootDecision.ranked
-        val seed = LocalActionChoiceSeed.derive(
-            battleId = battleId,
-            turn = calculatedContext.state.turn,
-            ranked = ranked,
-        )
-        val selection = actionSelector.choose(
-            ranked,
-            seed,
-            LocalActionMixingContext(
+        fun mixingContext(ranked: List<LocalBattleActionRank>) = LocalActionMixingContext(
                 personality = profile.personality,
                 memory = difficultyContext.memory,
                 style = mind.trainerStyle,
@@ -158,7 +142,30 @@ internal class LocalTacticalBrain(
                     .map { it.outcome.candidate.actionId }
                     .toSet(),
                 tuning = tuning,
-            ),
+            )
+        val lookahead = LocalRecursiveLookaheadEvaluator.evaluate(
+            baseRanked,
+            difficultyContext,
+            decidingProfile,
+            tuning,
+            strategy = strategy,
+            rootChoicePool = if (!tuning.revalidateRootChoicePool) null else { tentative ->
+                val refined = LocalRootDecisionPolicy.refine(tentative, difficultyContext).ranked
+                LocalWeightedActionSelector().shortlist(refined, mixingContext(refined))
+                    .mapTo(linkedSetOf()) { it.outcome.candidate.actionId }
+            },
+        )
+        val rootDecision = LocalRootDecisionPolicy.refine(lookahead.ranked, difficultyContext)
+        val ranked = rootDecision.ranked
+        val seed = LocalActionChoiceSeed.derive(
+            battleId = battleId,
+            turn = calculatedContext.state.turn,
+            ranked = ranked,
+        )
+        val selection = actionSelector.choose(
+            ranked,
+            seed,
+            mixingContext(ranked),
         )
         val selected = selection.rank
         val confidence = (0.35 + selection.probability * 0.6).coerceIn(0.35, 0.99)

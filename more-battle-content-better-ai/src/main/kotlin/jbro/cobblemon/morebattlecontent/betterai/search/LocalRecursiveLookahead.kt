@@ -73,6 +73,8 @@ internal object LocalRecursiveLookaheadEvaluator {
         // Overridable so the cost of a budget can be measured against the decisions it buys, rather
         // than argued about. Production always takes the tier default.
         budget: LocalLookaheadBudget = LocalLookaheadBudgetPolicy.forTier(profile.difficulty.tier),
+        /** Experimental exact pre-weight pool, recomputed after every root adjustment. */
+        rootChoicePool: ((List<LocalBattleActionRank>) -> Set<String>)? = null,
     ): LocalLookaheadEvaluation {
         val requestedDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1)
         val searchStartedAt = clockMillis()
@@ -142,7 +144,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             val evaluatedCoverage = mutableMapOf<String, LocalLookaheadCoverage>()
             fun evaluateRank(rank: LocalBattleActionRank): LocalBattleActionRank {
                 val id = rank.outcome.candidate.actionId
-                if (tuning.revalidateUnsearchedRootLeaders && depth > 1 && id !in singlePlyGain) {
+                if ((tuning.revalidateUnsearchedRootLeaders || rootChoicePool != null) && depth > 1 && id !in singlePlyGain) {
                     // A newly admitted root needs its own immediate-turn baseline. Treating its
                     // deeper gain as immediate would leak foresight through a zero future weight.
                     val immediate = search.rootActionValue(context.state, rank.outcome.candidate, 1)
@@ -240,14 +242,22 @@ internal object LocalRecursiveLookaheadEvaluator {
             val evaluated = ranked.map { rank ->
                 if (searchable != null && rank.outcome.candidate.actionId !in searchable) rank else evaluateRank(rank)
             }.toMutableList()
-            var leaderValidated = !tuning.revalidateUnsearchedRootLeaders
-            if (tuning.revalidateUnsearchedRootLeaders) {
+            var leaderValidated = !tuning.revalidateUnsearchedRootLeaders && rootChoicePool == null
+            if (!leaderValidated) {
                 // Keep every original candidate and cooperation reservation. Validate an unsearched
-                // leader, then reconsider the ranking; never add its adjustment a second time.
-                // This certifies only rank one, not every member of the later stochastic shortlist.
+                // leader or choice-pool member, then reconsider the pool; never add its adjustment twice.
+                // Without a supplied pool, the older experiment certifies only rank one.
                 while (!search.truncated) {
-                    val leaderId = LocalBattleActionPolicy.sort(evaluated).first().outcome.candidate.actionId
-                    if (leaderId in evaluatedCoverage) {
+                    if (clockMillis() >= localDeadline - DEADLINE_MARGIN_MILLIS) break
+                    val ordered = LocalBattleActionPolicy.sort(evaluated)
+                    val requiredIds = rootChoicePool?.invoke(ordered)
+                        ?: setOf(ordered.first().outcome.candidate.actionId)
+                    require(requiredIds.isNotEmpty() && requiredIds.all { id -> ranked.any { it.outcome.candidate.actionId == id } }) {
+                        "Root choice pool must contain existing action IDs"
+                    }
+                    if (clockMillis() >= localDeadline - DEADLINE_MARGIN_MILLIS) break
+                    val leaderId = requiredIds.firstOrNull { it !in evaluatedCoverage }
+                    if (leaderId == null) {
                         leaderValidated = true
                         break
                     }

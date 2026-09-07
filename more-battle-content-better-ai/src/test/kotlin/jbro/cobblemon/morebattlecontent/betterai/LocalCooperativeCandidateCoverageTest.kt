@@ -95,6 +95,9 @@ class LocalCooperativeCandidateCoverageTest {
             ranked, calculated, profile, settings, clockMillis = { 0L })
         val narrow = evaluate(tuning)
         val wide = evaluate(tuning.copy(maximumRootCandidates = Int.MAX_VALUE))
+        CooperativeSearchComparison.verifyPoolRecovery("redirect-$redirectId-$drawerSlot-$stages-$probability", narrow,
+            LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, profile, tuning, clockMillis = { 0L },
+                rootChoicePool = CooperativeSearchComparison::choicePool), wide)
         val mixing = CooperativeSearchComparison.verifyLeaderRecovery("redirect-$redirectId-$drawerSlot-$stages-$probability", narrow,
             evaluate(tuning.copy(revalidateUnsearchedRootLeaders = true)), wide)
         if (redirectId == "followme" && drawerSlot == 0 && expectedCoverage) {
@@ -113,14 +116,30 @@ class LocalCooperativeCandidateCoverageTest {
             assertEquals(0, interrupted.depthCompleted)
             assertEquals(ranked, interrupted.ranked, "Discard the entire unfinished depth, not just the leader")
             assertTrue(interrupted.responseCoverageByAction.isEmpty())
+            val interruptedPool = LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, profile,
+                clockMillis = { 0L }, budget = budget.copy(nodeLimit = narrow.nodesVisited + 1),
+                rootChoicePool = CooperativeSearchComparison::choicePool)
+            assertTrue(interruptedPool.truncated)
+            assertEquals(0, interruptedPool.depthCompleted)
+            assertEquals(ranked, interruptedPool.ranked)
+            assertTrue(interruptedPool.responseCoverageByAction.isEmpty())
+            for (invalidPool in listOf(emptySet(), setOf("not-an-action"))) {
+                assertThrows(IllegalArgumentException::class.java) {
+                    LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, profile, clockMillis = { 0L },
+                        rootChoicePool = { invalidPool })
+                }
+            }
             val deeperProfile = profile.copy(difficulty = profile.difficulty.copy(lookaheadPlies = 2, foresightWeight = 0.0))
-            fun deeper(settings: LocalDecisionTuning) = LocalRecursiveLookaheadEvaluator.evaluate(
+            fun deeper(settings: LocalDecisionTuning, pool: Boolean = false) = LocalRecursiveLookaheadEvaluator.evaluate(
                 ranked, calculated, deeperProfile, settings, clockMillis = { 0L },
-                budget = budget.copy(nodeLimit = 1_000_000))
+                budget = budget.copy(nodeLimit = 1_000_000),
+                rootChoicePool = if (pool) CooperativeSearchComparison::choicePool else null)
             val repaired = deeper(enabled)
             val reference = deeper(enabled.copy(maximumRootCandidates = Int.MAX_VALUE))
             assertEquals(2, repaired.depthCompleted)
             CooperativeSearchComparison.verifyLeaderRecovery("splash-depth2-zero-future", narrow, repaired, reference)
+            CooperativeSearchComparison.verifyPoolRecovery("splash-depth2-zero-future", narrow,
+                deeper(tuning, pool = true), deeper(tuning.copy(maximumRootCandidates = Int.MAX_VALUE), pool = true))
             val firstPly = evaluate(enabled).ranked.associateBy { it.outcome.candidate.actionId }
             for (rank in repaired.ranked.filter { it.outcome.candidate.actionId in narrow.responseCoverageByAction }) {
                 assertEquals(firstPly.getValue(rank.outcome.candidate.actionId).comparisonValue, rank.comparisonValue, 1e-9)

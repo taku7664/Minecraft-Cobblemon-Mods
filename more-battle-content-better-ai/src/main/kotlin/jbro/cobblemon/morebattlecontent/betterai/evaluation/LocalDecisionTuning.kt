@@ -79,6 +79,8 @@ internal data class LocalDecisionTuning(
     val capLeafDamageToRemainingHp: Boolean = true,
     /** Experimental root-leader validation; does not certify the entire stochastic choice pool. */
     val revalidateUnsearchedRootLeaders: Boolean = false,
+    /** Experimental production pre-weight pool validation; requires paired cost/quality assessment. */
+    val revalidateRootChoicePool: Boolean = false,
     /** Experimental public team matchup coverage in board units; zero preserves the default leaf. */
     val leafTeamCoverageWeight: Double = 0.0,
     /** Board value of a certain knockout threat in the leaf, beyond the damage it represents. */

@@ -81,6 +81,9 @@ class LocalImmuneSpreadCandidateTest {
             ranked, calculated, profile, tuning, clockMillis = { 0L })
         val narrow = evaluate(LocalDecisionTuning.CURRENT)
         val wide = evaluate(LocalDecisionTuning.CURRENT.copy(maximumRootCandidates = Int.MAX_VALUE))
+        CooperativeSearchComparison.verifyPoolRecovery("spread-$spreadSlot-$partnerTypes-$partnerAbility-$opponentCount", narrow,
+            LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, profile, clockMillis = { 0L },
+                rootChoicePool = CooperativeSearchComparison::choicePool), wide)
         CooperativeSearchComparison.verifyLeaderRecovery("spread-$spreadSlot-$partnerTypes-$partnerAbility-$opponentCount", narrow,
             evaluate(LocalDecisionTuning.CURRENT.copy(revalidateUnsearchedRootLeaders = true)), wide)
         val referenceLoss = CooperativeSearchComparison.verifyAndReport(
