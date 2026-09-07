@@ -153,7 +153,8 @@ internal object RecursiveHistoryProjector {
         val protectionChains = previous.protectionChainByPokemon.toMutableMap()
         outcome.executedMoveIdsByPokemon.forEach { (actorId, moveId) ->
                 val key = RecursiveMoveUseKey(actorId, moveId)
-                moveUses[key] = (moveUses[key] ?: 0) + 1
+                val paidDuringPreparation = previous.chargingMoveByPokemon[actorId]?.let { sameMove(it, moveId) } == true
+                if (!paidDuringPreparation) moveUses[key] = (moveUses[key] ?: 0) + 1
                 lastMoves[actorId] = moveId
                 val previousStreak = moveStreaks[actorId]
                 moveStreaks[actorId] = RecursiveMoveStreak(

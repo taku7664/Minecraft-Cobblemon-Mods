@@ -242,7 +242,7 @@ class LocalRecursiveLookaheadTest {
                     power = 120.0,
                     accuracy = 100.0,
                     priority = 0,
-                    currentPp = 10,
+                    currentPp = 1,
                     targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
                     effects = BattleMoveEffectsView(
                         coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
@@ -260,14 +260,28 @@ class LocalRecursiveLookaheadTest {
         }
         val wait = BattleActionCandidate("wait", BattleActionKind.WAIT)
 
-        val first = PublicSingleTurnProjector.project(initial, chargeMove, wait, context(initial, listOf(chargeMove))).single()
+        val catalog = BattlePublicActionCatalogView(listOf(BattlePokemonActionCatalogView(ALLY_ID,
+            listOf(BattlePublicMoveOptionView(requireNotNull(chargeMove.moveId), requireNotNull(chargeMove.moveDetails),
+                BattlePublicMoveKnowledge.EXACT_OWN)), true)))
+        val first = PublicSingleTurnProjector.project(initial, chargeMove, wait, context(initial, listOf(chargeMove), catalog)).single()
         val history = RecursiveHistoryProjector.project(RecursiveActionHistory(), initial, first, chargeMove, wait)
-        val second = PublicSingleTurnProjector.project(first.state, chargeMove, wait, context(first.state, listOf(chargeMove)), history)
+        val continuation = PublicFutureActionFactory.actions(first.state, BattleSide.ALLY, catalog, history)
+            .single { it.kind == BattleActionKind.USE_MOVE }
+        assertEquals(0, continuation.moveDetails?.currentPp)
+        val second = PublicSingleTurnProjector.project(first.state, continuation, wait, context(first.state, listOf(continuation), catalog), history)
 
         assertEquals(1.0, first.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }.hpFraction)
         assertEquals("cobblemon:solar_beam", history.chargingMoveByPokemon[ALLY_ID])
         assertEquals(1.0, second.sumOf { it.probability * it.orderProbability }, 1e-9)
         assertTrue(second.all { it.state.pokemon.single { mon -> mon.battlePokemonId == OPPONENT_ID }.hpFraction < 1.0 })
+        second.forEach { outcome ->
+            val after = RecursiveHistoryProjector.project(history, first.state, outcome, continuation, wait)
+            assertEquals(1, after.moveUses[jbro.cobblemon.morebattlecontent.betterai.state.RecursiveMoveUseKey(ALLY_ID, requireNotNull(chargeMove.moveId))])
+            assertFalse(ALLY_ID in after.chargingMoveByPokemon)
+            assertEquals(2, after.moveStreakByPokemon[ALLY_ID]?.count)
+            assertFalse(PublicFutureActionFactory.actions(outcome.state, BattleSide.ALLY, catalog, after)
+                .any { it.kind == BattleActionKind.USE_MOVE })
+        }
     }
 
     @Test

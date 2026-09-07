@@ -159,7 +159,7 @@ internal object PublicFutureActionFactory {
         val moves = currentCatalog.forPokemon(active.battlePokemonId).flatMapIndexed { index, option ->
             val used = history.moveUses[RecursiveMoveUseKey(active.battlePokemonId, option.moveId)] ?: 0
             val remainingPp = (option.details.currentPp - used).coerceAtLeast(0)
-            val legal = remainingPp > 0 &&
+            val legal = (remainingPp > 0 || chargingMoveId == option.moveId) &&
                 (canonicalId(option.moveId) !in FIRST_ENTRY_ONLY_MOVES ||
                     active.battlePokemonId !in history.actedSinceEntryPokemonIds) &&
                 (!taunted || option.details.damageCategory != BattleMoveDamageCategory.STATUS) &&
