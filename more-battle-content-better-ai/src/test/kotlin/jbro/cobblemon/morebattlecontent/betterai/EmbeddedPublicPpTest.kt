@@ -7,6 +7,30 @@ class EmbeddedPublicPpTest {
     private val actor = "p2a: opponent"
 
     @Test
+    fun `copied PP is temporary and departure restores original spending exactly once`() {
+        val pp = EmbeddedPublicPp()
+        pp.lose(actor, "recover", 3)
+        pp.beginTransform(actor)
+        assertTrue(pp.isTransformed(actor))
+        assertEquals(5, pp.remaining(actor, "recover", 8))
+        assertEquals(1, pp.remaining(actor, "revivalblessing", 1))
+        pp.lose(actor, "recover", 2)
+        assertEquals(3, pp.remaining(actor, "recover", 8))
+        pp.restore(actor, "recover", 10, 8)
+        assertEquals(5, pp.remaining(actor, "recover", 8))
+        pp.lose(actor, "recover", 1)
+        pp.endTransform(actor)
+        assertFalse(pp.isTransformed(actor))
+        assertEquals(5, pp.remaining(actor, "recover", 8))
+        pp.lose(actor, "recover", 1)
+        pp.endTransform(actor)
+        assertEquals(4, pp.remaining(actor, "recover", 8))
+        pp.beginTransform(actor)
+        assertEquals(5, pp.remaining(actor, "recover", 8))
+        assertEquals(8, pp.remaining("p2a: other", "recover", 8))
+    }
+
+    @Test
     fun `ordinary use and public Pressure cost consume PP Max estimate once`() {
         val pp = EmbeddedPublicPp()
         pp.observeMove("|move|$actor|Thunderbolt|p1a: own", pressureLoss = 1)

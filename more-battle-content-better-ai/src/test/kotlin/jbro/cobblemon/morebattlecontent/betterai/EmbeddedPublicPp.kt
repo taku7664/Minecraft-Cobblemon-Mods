@@ -5,6 +5,7 @@ import java.util.Locale
 /** Public expenditure ledger for native comparison input. No referee or private opponent state. */
 internal class EmbeddedPublicPp {
     private val spent = mutableMapOf<Pair<String, String>, Int>()
+    private val copied = mutableMapOf<String, MutableMap<Pair<String, String>, Int>>()
     private val lastMoves = mutableMapOf<String, String>()
 
     /** Pressure must be derived by the caller from publicly known targets/abilities at this event. */
@@ -28,21 +29,40 @@ internal class EmbeddedPublicPp {
 
     fun clearLastMove(ident: String) { lastMoves.remove(EmbeddedTeamInput.identity(ident)) }
 
+    /** A successful public Transform creates a fresh copied pool, not a reset of original PP. */
+    fun beginTransform(ident: String) {
+        copied[EmbeddedTeamInput.identity(ident)] = mutableMapOf()
+        clearLastMove(ident)
+    }
+
+    fun endTransform(ident: String) {
+        copied.remove(EmbeddedTeamInput.identity(ident))
+        clearLastMove(ident)
+    }
+
+    fun isTransformed(ident: String) = EmbeddedTeamInput.identity(ident) in copied
+
+    private fun expenditure(ident: String) = copied[EmbeddedTeamInput.identity(ident)] ?: spent
+    private fun capacity(ident: String, maximumPp: Int) =
+        if (!isTransformed(ident) || maximumPp <= 1) maximumPp else 5
+
     fun remaining(ident: String, move: String, maximumPp: Int): Int {
         require(maximumPp >= 0)
-        return (maximumPp - (spent[key(ident, move)] ?: 0)).coerceAtLeast(0)
+        return (capacity(ident, maximumPp) - (expenditure(ident)[key(ident, move)] ?: 0)).coerceAtLeast(0)
     }
 
     fun lose(ident: String, move: String, amount: Int) {
         require(amount > 0)
         val key = key(ident, move)
-        spent[key] = ((spent[key] ?: 0).toLong() + amount).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val losses = expenditure(ident)
+        losses[key] = ((losses[key] ?: 0).toLong() + amount).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
     }
 
     fun restore(ident: String, move: String, amount: Int, maximumPp: Int) {
         require(amount > 0 && maximumPp >= 0)
         val key = key(ident, move)
-        spent[key] = ((spent[key] ?: 0).coerceAtMost(maximumPp) - amount).coerceAtLeast(0)
+        val losses = expenditure(ident)
+        losses[key] = ((losses[key] ?: 0).coerceAtMost(capacity(ident, maximumPp)) - amount).coerceAtLeast(0)
     }
 
     private fun key(ident: String, move: String): Pair<String, String> {
