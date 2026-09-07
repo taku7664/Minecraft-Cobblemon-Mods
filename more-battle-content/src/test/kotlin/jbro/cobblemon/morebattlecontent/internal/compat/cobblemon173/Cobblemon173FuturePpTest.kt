@@ -4,8 +4,57 @@ import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import jbro.cobblemon.morebattlecontent.internal.ai.PublicSpeciesMoveKnowledge
+import jbro.cobblemon.morebattlecontent.internal.ai.PublicSpeciesMovePool
 
 class Cobblemon173FuturePpTest {
+    @Test
+    fun `public learnsets reach the catalog without becoming known moves or changing PP`() {
+        val own = pokemon(BattleSide.ALLY)
+        val opponent = pokemon(BattleSide.OPPONENT)
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 2, listOf(own, opponent),
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1),
+            emptyList(), emptyList())
+        val queries = mutableListOf<Pair<String, String?>>()
+        val catalog = Cobblemon173PublicActionCatalog.from(state,
+            mapOf(opponent.battlePokemonId to mapOf("recover" to 2)), emptyMap(),
+            moveKnowledge = PublicSpeciesMoveKnowledge { species, form ->
+                queries.add(species to form)
+                PublicSpeciesMovePool(setOf("recover", "psychic"), "fixture:public_learnset")
+            },
+        ) { BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 8) }
+        assertEquals(listOf(opponent.speciesId to opponent.formId), queries)
+        val pool = catalog.candidatePools.single()
+        assertEquals(opponent.battlePokemonId, pool.battlePokemonId)
+        assertEquals(opponent.speciesId, pool.speciesId)
+        assertEquals(opponent.formId, pool.formId)
+        assertEquals("fixture:public_learnset", pool.sourceId)
+        assertEquals(setOf("recover", "psychic"), pool.moveIds)
+        assertEquals(setOf("recover"), opponent.knownMoveIds)
+        assertEquals(listOf("recover"), catalog.forPokemon(opponent.battlePokemonId).map { it.moveId })
+        assertEquals(6, catalog.forPokemon(opponent.battlePokemonId).single().details.currentPp)
+        assertEquals(false, catalog.isMoveSetComplete(opponent.battlePokemonId))
+    }
+
+    @Test
+    fun `unavailable and transformed learnsets are not presented as empty known movesets`() {
+        val opponent = pokemon(BattleSide.OPPONENT)
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 2, listOf(opponent),
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 0, BattleSide.OPPONENT to 1),
+            emptyList(), emptyList())
+        fun catalog(transformed: Boolean, pool: PublicSpeciesMovePool?) = Cobblemon173PublicActionCatalog.from(
+            state, emptyMap(), emptyMap(),
+            transformedPokemon = if (transformed) setOf(opponent.battlePokemonId) else emptySet(),
+            moveKnowledge = PublicSpeciesMoveKnowledge { _, _ ->
+                check(!transformed) { "Native species learnset does not describe copied moves" }
+                pool
+            },
+        ) { BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 8) }
+        assertEquals(emptyList<BattlePublicMoveCandidatePoolView>(), catalog(false, null).candidatePools)
+        assertEquals(1, catalog(false, PublicSpeciesMovePool(emptySet(), "fixture")).candidatePools.size)
+        assertEquals(emptyList<BattlePublicMoveCandidatePoolView>(), catalog(true, null).candidatePools)
+    }
+
     @Test
     fun `original catalog restores once without mutating sibling branch or consuming copied PP`() {
         val own = pokemon(BattleSide.ALLY)

@@ -8,6 +8,8 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicMoveKnowledge
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicMoveOptionView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicMoveCandidatePoolView
+import jbro.cobblemon.morebattlecontent.internal.ai.PublicSpeciesMoveKnowledge
 
 /** Builds future-action templates from the same public state given to every Brain. */
 internal object Cobblemon173PublicActionCatalog {
@@ -18,6 +20,7 @@ internal object Cobblemon173PublicActionCatalog {
         transformedPokemon: Set<UUID> = emptySet(),
         originalMoveIds: Map<UUID, Set<String>> = emptyMap(),
         originalPpSpent: Map<UUID, Map<String, Int>> = emptyMap(),
+        moveKnowledge: PublicSpeciesMoveKnowledge = Cobblemon173PublicSpeciesInferenceKnowledge,
         moveDetails: (String) -> BattleMoveCandidateView? = Cobblemon173ActionCandidateAdapter::publicMoveDetails,
     ): BattlePublicActionCatalogView {
         fun entry(pokemon: jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView, original: Boolean): BattlePokemonActionCatalogView {
@@ -50,6 +53,14 @@ internal object Cobblemon173PublicActionCatalog {
             living.map { entry(it, false) }.filter { it.moves.isNotEmpty() },
             living.filter { it.battlePokemonId in transformedPokemon && it.battlePokemonId in originalMoveIds }
                 .map { entry(it, true) },
+            // Transform copies another moveset; the native species learnset cannot describe that pool.
+            living.filter { it.side == BattleSide.OPPONENT && it.battlePokemonId !in transformedPokemon }
+                .mapNotNull { pokemon ->
+                    moveKnowledge.possibleMoves(pokemon.speciesId, pokemon.formId)?.let { pool ->
+                        BattlePublicMoveCandidatePoolView(pokemon.battlePokemonId, pokemon.speciesId,
+                            pokemon.formId, pool.moveIds, pool.sourceId)
+                    }
+                },
         )
     }
 
