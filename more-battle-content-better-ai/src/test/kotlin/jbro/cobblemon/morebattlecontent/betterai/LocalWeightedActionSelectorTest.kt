@@ -22,6 +22,28 @@ class LocalWeightedActionSelectorTest {
     private val selector = LocalWeightedActionSelector()
 
     @Test
+    fun `pool extraction preserves choices probabilities and shortlist sizes`() {
+        val ranked = listOf(rank("attack", 100.0, executableDamageActions = 1),
+            rank("switch", 95.0, kind = BattleActionKind.SWITCH), rank("status", 90.0),
+            rank("inert", 80.0, publiclyInert = true), rank("weak", 20.0, executableDamageActions = 1))
+        val contexts = listOf(mixingContext(),
+            mixingContext(memory = BattleTacticalMemoryView(turnsSinceLastSwitch = 1, switchPressure = 2.0)),
+            mixingContext(riskTolerance = 0.1),
+            mixingContext(riskTolerance = 0.9).copy(decisionShortlistWidth = 2.0, decisionRegretBand = 0.5))
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        for (context in contexts) repeat(1_024) { seed ->
+            val choice = selector.choose(ranked, seed.toLong(), context)
+            val pool = selector.shortlist(ranked, context)
+            assertEquals(choice.shortlistSize, pool.size)
+            assertTrue(choice.rank in pool)
+            digest.update(("${choice.rank.outcome.candidate.actionId}:${choice.seed}:${choice.shortlistSize}:" +
+                "${choice.probability.toBits()}\n").toByteArray(Charsets.UTF_8))
+        }
+        assertEquals("4d0c72062b276a8fed40c0fa8040da039c5bac9e76043f5670e8aa2aaad5ed22",
+            digest.digest().joinToString("") { "%02x".format(it) })
+    }
+
+    @Test
     fun `recent repeated switch pressure excludes exploratory switches when a credible attack exists`() {
         val ranked = listOf(
             rank("attack", 100.0, executableDamageActions = 1),

@@ -62,11 +62,13 @@ internal data class LocalActionMixingContext(
  * public mechanics.
  */
 internal class LocalWeightedActionSelector : LocalActionSelector {
-    override fun choose(
-        ranked: List<LocalBattleActionRank>,
-        seed: Long,
-        context: LocalActionMixingContext,
-    ): LocalActionSelection {
+    private data class ChoicePool(val ranks: List<LocalBattleActionRank>, val bestScore: Double, val allowedGap: Double)
+
+    /** Exact pre-weight pool used by choose; zero-weight/fallback handling may narrow it further. */
+    fun shortlist(ranked: List<LocalBattleActionRank>, context: LocalActionMixingContext): List<LocalBattleActionRank> =
+        preparePool(ranked, context).ranks
+
+    private fun preparePool(ranked: List<LocalBattleActionRank>, context: LocalActionMixingContext): ChoicePool {
         require(ranked.isNotEmpty()) { "Weighted action selection requires at least one ranked action" }
 
         val best = ranked.first()
@@ -116,6 +118,18 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         val shortlist = countShortlist.filter { rank ->
             bestScore - rank.comparisonValue <= absurdGap * conditionalScale(rank, context)
         }.ifEmpty { listOf(countShortlist.first()) }
+        return ChoicePool(shortlist, bestScore, allowedGap)
+    }
+
+    override fun choose(
+        ranked: List<LocalBattleActionRank>,
+        seed: Long,
+        context: LocalActionMixingContext,
+    ): LocalActionSelection {
+        val pool = preparePool(ranked, context)
+        val shortlist = pool.ranks
+        val bestScore = pool.bestScore
+        val allowedGap = pool.allowedGap
         if (shortlist.size == 1) {
             return LocalActionSelection(shortlist.single(), seed, 1, 1.0)
         }
