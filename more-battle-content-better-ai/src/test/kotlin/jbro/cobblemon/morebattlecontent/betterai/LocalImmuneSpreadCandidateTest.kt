@@ -81,6 +81,10 @@ class LocalImmuneSpreadCandidateTest {
             ranked, calculated, profile, tuning, clockMillis = { 0L })
         val narrow = evaluate(LocalDecisionTuning.CURRENT)
         val wide = evaluate(LocalDecisionTuning.CURRENT.copy(maximumRootCandidates = Int.MAX_VALUE))
+        val referenceLoss = CooperativeSearchComparison.verifyAndReport(
+            "spread-$spreadSlot-$partnerTypes-$partnerAbility-$opponentCount", narrow, wide)
+        // Characterize missing-type cases choosing an unsearched joint, not a permitted quality loss.
+        assertEquals(if (partnerTypes.isEmpty()) 12.0 else 0.0, referenceLoss, 1e-9)
         assertEquals(expected, cooperative.actionId in LocalCooperativeRootRetention.select(ranked, calculated))
         assertFalse(narrow.truncated)
         assertFalse(wide.truncated)
