@@ -43,6 +43,8 @@ internal data class LocalDecisionTuning(
      * over the moves that *are* known is still evidence; it is just not the whole picture.
      */
     val lookaheadCoverageFloor: Double = 0.35,
+    /** Experimental public-learnset response search; adoption requires paired validation. */
+    val lookaheadMoveHypotheses: Boolean = false,
     /** When true, coverage decays linearly in revealed fraction instead of quadratically. */
     val lookaheadLinearCoverage: Boolean = true,
     val maximumLookaheadAdjustment: Double = 800.0,

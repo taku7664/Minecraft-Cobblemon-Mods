@@ -21,8 +21,20 @@ internal object LocalOpponentMoveHypotheses {
             val used = history.moveUses.entries.filter {
                 it.key.pokemonId == pokemon.battlePokemonId && canonical(it.key.moveId) == key
             }.sumOf { it.value }
-            key !in known && (key in assumed || occupied.size < 4) && details.currentPp > used
+            key !in known && (key in assumed || occupied.size < 4) &&
+                (details.currentPp > used || history.chargingMoveByPokemon[pokemon.battlePokemonId] == move)
         }
+    }
+
+    fun assumeAction(state: BattleStateView, catalog: BattlePublicActionCatalogView,
+                     history: RecursiveActionHistory, action: BattleActionCandidate): RecursiveActionHistory {
+        if (action.kind == BattleActionKind.COMPOSITE) return action.componentActions.fold(history) { branch, component ->
+            assumeAction(state, catalog, branch, component)
+        }
+        if ("hypothetical_public_move" !in action.tags) return history
+        require(action.kind == BattleActionKind.USE_MOVE)
+        val actor = state.pokemon.single { it.side == BattleSide.OPPONENT && it.activeSlot == action.actorSlot }
+        return assume(actor, catalog, history, requireNotNull(action.moveId))
     }
 
     /** Commit on selection, even if the projected move later fails or is interrupted. */

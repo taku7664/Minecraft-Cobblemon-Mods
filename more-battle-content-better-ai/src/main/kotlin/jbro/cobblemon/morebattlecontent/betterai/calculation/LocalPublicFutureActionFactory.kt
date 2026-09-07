@@ -4,6 +4,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffectiveness
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveMoveUseKey
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalOpponentMoveHypotheses
 
 /** Builds complete public-information turns for one or two active slots. */
 internal object PublicFutureActionFactory {
@@ -14,6 +15,7 @@ internal object PublicFutureActionFactory {
         history: RecursiveActionHistory = RecursiveActionHistory(),
         candidateLimitPerSlot: Int = Int.MAX_VALUE,
         unknownMovePokemonIds: Set<java.util.UUID> = emptySet(),
+        includeMoveHypotheses: Boolean = false,
     ): List<BattleActionCandidate> {
         require(candidateLimitPerSlot > 0)
         val active = state.pokemon.filter {
@@ -25,7 +27,7 @@ internal object PublicFutureActionFactory {
                 state,
                 side,
                 pokemon,
-                primitiveActions(state, side, pokemon, catalog, history, unknownMovePokemonIds),
+                primitiveActions(state, side, pokemon, catalog, history, unknownMovePokemonIds, includeMoveHypotheses),
                 candidateLimitPerSlot,
             )
         }
@@ -144,6 +146,7 @@ internal object PublicFutureActionFactory {
         catalog: BattlePublicActionCatalogView,
         history: RecursiveActionHistory,
         unknownMovePokemonIds: Set<java.util.UUID>,
+        includeMoveHypotheses: Boolean = false,
     ): List<BattleActionCandidate> {
         val actorSlot = requireNotNull(active.activeSlot)
         if (active.actionConstraints.mustRecharge || active.battlePokemonId in history.rechargingPokemonIds) {
@@ -156,7 +159,13 @@ internal object PublicFutureActionFactory {
         val taunted = active.actionConstraints.taunted ||
             (history.tauntTurnsByPokemon[active.battlePokemonId] ?: 0) > 0
         val currentCatalog = catalog.afterSwitch(history.restoredOriginalPokemonIds)
-        val moves = currentCatalog.forPokemon(active.battlePokemonId).flatMapIndexed { index, option ->
+        val knownOptions = currentCatalog.forPokemon(active.battlePokemonId).map {
+            FutureMoveOption(it.moveId, it.details, false)
+        }
+        val hypotheses = if (includeMoveHypotheses) LocalOpponentMoveHypotheses.options(active, currentCatalog, history)
+            .filterKeys { move -> knownOptions.none { canonicalId(it.moveId) == canonicalId(move) } }
+            .map { (move, details) -> FutureMoveOption(move, details, true) } else emptyList()
+        val moves = (knownOptions + hypotheses).flatMapIndexed { index, option ->
             val used = history.moveUses[RecursiveMoveUseKey(active.battlePokemonId, option.moveId)] ?: 0
             val remainingPp = (option.details.currentPp - used).coerceAtLeast(0)
             val legal = (remainingPp > 0 || chargingMoveId == option.moveId) &&
@@ -179,7 +188,8 @@ internal object PublicFutureActionFactory {
                     moveId = option.moveId,
                     targets = targets,
                     moveDetails = option.details.copy(currentPp = remainingPp),
-                    tags = setOf("public_lookahead"),
+                    tags = if (option.hypothetical) setOf("public_lookahead", "hypothetical_public_move")
+                        else setOf("public_lookahead"),
                 )
             }
         }
@@ -207,6 +217,8 @@ internal object PublicFutureActionFactory {
         }
         return moves + unknown + switches
     }
+
+    private data class FutureMoveOption(val moveId: String, val details: BattleMoveCandidateView, val hypothetical: Boolean)
 
     private fun combine(bySlot: List<List<BattleActionCandidate>>): List<BattleActionCandidate> =
         bySlot.fold(listOf(emptyList<BattleActionCandidate>())) { combinations, slotActions ->

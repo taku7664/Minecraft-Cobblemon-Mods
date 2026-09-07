@@ -3,10 +3,37 @@ package jbro.cobblemon.morebattlecontent.betterai
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.state.*
+import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicFutureActionFactory
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class LocalOpponentMoveHypothesesTest {
+    @Test
+    fun `opt-in future actions use marked hypotheses and retain unknown response`() {
+        val ally = BattlePokemonStateView(UUID.randomUUID(), BattleSide.ALLY, 0, "target", null, 50,
+            1.0, null, emptyMap(), emptySet(), null, null, false)
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 1, listOf(ally, pokemon),
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1),
+            emptyList(), emptyList())
+        val root = RecursiveActionHistory(moveUses = mapOf(RecursiveMoveUseKey(id, "d") to 2))
+        fun actions(history: RecursiveActionHistory, enabled: Boolean) = PublicFutureActionFactory.actions(
+            state, BattleSide.OPPONENT, catalog, history, unknownMovePokemonIds = setOf(id),
+            includeMoveHypotheses = enabled)
+        assertFalse(LocalDecisionTuning.CURRENT.lookaheadMoveHypotheses)
+        assertFalse(actions(root, false).any { it.kind == BattleActionKind.USE_MOVE })
+        val enabled = actions(root, true)
+        assertTrue(enabled.any { "unknown_public_response" in it.tags })
+        val move = enabled.single { it.moveId == "d" }
+        assertTrue("hypothetical_public_move" in move.tags)
+        assertEquals(6, move.moveDetails?.currentPp)
+        assertEquals(listOf(BattleTargetSlot(BattleSide.ALLY, 0)), move.targets)
+        val committed = LocalOpponentMoveHypotheses.assumeAction(state, catalog, root, move)
+        assertEquals(setOf("d"), actions(committed, true).mapNotNull { it.moveId }.toSet())
+        assertTrue(root.assumedOpponentMoveIds.isEmpty())
+        assertTrue(catalog.forPokemon(id).isEmpty())
+    }
+
     private val id = UUID.randomUUID()
     private val pokemon = BattlePokemonStateView(id, BattleSide.OPPONENT, 0, "probe", null, 50, 1.0,
         null, emptyMap(), setOf("a", "b", "c"), null, null, false)

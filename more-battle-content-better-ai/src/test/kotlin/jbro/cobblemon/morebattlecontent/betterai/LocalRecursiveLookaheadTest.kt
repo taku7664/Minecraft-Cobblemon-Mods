@@ -27,6 +27,30 @@ import org.junit.jupiter.api.Test
 
 class LocalRecursiveLookaheadTest {
     @Test
+    fun `experimental learnset response projects an unrevealed attack without marking it observed`() {
+        val initial = state(pokemon(ALLY_ID, BattleSide.ALLY, 0, 1.0, speed = 50),
+            listOf(pokemon(OPPONENT_ID, BattleSide.OPPONENT, 0, 1.0, speed = 200)))
+        val attack = move("weak", 0, 20.0)
+        val pool = BattlePublicMoveCandidatePoolView(OPPONENT_ID, "showdown:test", null,
+            setOf("strong"), "fixture:public_learnset", mapOf("strong" to moveDetails(power = 200.0)))
+        val source = context(initial, listOf(attack),
+            BattlePublicActionCatalogView(emptyList(), candidatePools = listOf(pool)))
+        val profile = BattleTrainerProfile.balanced(0, BattleDifficultyProfiles.INTRODUCTORY)
+        fun evaluate(enabled: Boolean) = LocalRecursiveLookaheadEvaluator.evaluate(listOf(rank(attack)), source,
+            profile, jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning.CURRENT.copy(
+                lookaheadMoveHypotheses = enabled), clockMillis = { 0L })
+        val disabled = evaluate(false)
+        val enabled = evaluate(true)
+        assertEquals(1, enabled.depthCompleted)
+        assertFalse(enabled.truncated)
+        assertEquals(1.0, disabled.ranked.single().worstResponseHpRetention, 1e-9)
+        assertEquals(0.0, enabled.ranked.single().worstResponseHpRetention, 1e-9)
+        assertTrue(enabled.publicResponseIncomplete)
+        assertTrue(initial.pokemon.single { it.side == BattleSide.OPPONENT }.knownMoveIds.isEmpty())
+        assertTrue(source.publicActionCatalog.forPokemon(OPPONENT_ID).isEmpty())
+    }
+
+    @Test
     fun `recursive recovery habit uses root memory and keeps low hp survival recovery`() {
         val initial = state(
             ally = pokemon(ALLY_ID, BattleSide.ALLY, 0, 0.89, speed = 100),

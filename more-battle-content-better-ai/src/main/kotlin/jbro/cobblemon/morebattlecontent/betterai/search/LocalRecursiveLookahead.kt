@@ -24,6 +24,7 @@ import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveHistoryProjector
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveSnapshotActionConstraints
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalBranchMoveInputs
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalBranchMoveInputKey
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalOpponentMoveHypotheses
 
 internal data class LocalLookaheadCoverage(val immediate: Double, val future: Double)
 
@@ -51,7 +52,8 @@ internal data class LocalLookaheadEvaluation(
  *
  * One depth consumes every action submitted by both trainers for that turn. The local side
  * maximizes the resulting public board value and the opponent minimizes it. Hidden opponent moves
- * are represented only as unresolved public-response reserve branches.
+ * retain unresolved public-response reserve branches. Experimental learnset hypotheses add explicitly
+ * assumed responses without treating them as observations or increasing revealed-information coverage.
  */
 internal object LocalRecursiveLookaheadEvaluator {
     fun evaluate(
@@ -477,12 +479,14 @@ internal object LocalRecursiveLookaheadEvaluator {
             rootTurn: Boolean,
             turnStartValue: Double,
         ): TurnValue? {
+            val projectedHistory = LocalOpponentMoveHypotheses.assumeAction(
+                state, context.publicActionCatalog, history, opponentAction)
             val projections = PublicSingleTurnProjector.project(
                 initialState = state,
                 allyAction = ownAction,
                 opponentAction = opponentAction,
-                sourceContext = LocalBranchMoveInputs.context(context, state, history),
-                history = history,
+                sourceContext = LocalBranchMoveInputs.context(context, state, projectedHistory),
+                history = projectedHistory,
                 maxChanceBranchesPerMove = chanceBranchesPerMove,
                 calculationCache = actionCalculationCache,
                 shouldContinue = ::projectedWorkAvailable,
@@ -526,7 +530,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                         immediateValue
                     } else {
                         val nextHistory = RecursiveHistoryProjector.project(
-                            previous = history,
+                            previous = projectedHistory,
                             stateBefore = state,
                             outcome = outcome,
                             allyAction = ownAction,
@@ -697,6 +701,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 history,
                 profile.difficulty.doubleCandidateLimitPerSlot,
                 incompleteIds,
+                includeMoveHypotheses = tuning.lookaheadMoveHypotheses,
             )
             if (incompleteIds.isNotEmpty()) {
                 publicResponseIncomplete = true
