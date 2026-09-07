@@ -17,6 +17,8 @@ internal object EmbeddedFirstDecisionReplay {
     fun tuningFor(name: String): LocalDecisionTuning = when (name) {
         "CURRENT" -> LocalDecisionTuning.CURRENT
         "LEGACY" -> LocalDecisionTuning.LEGACY
+        "CURRENT_PUBLIC_MOVE_HYPOTHESES",
+        "CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3" -> EmbeddedPolicyComparison.tuning(name)
         "CURRENT_NO_COVERAGE_FLOOR" -> LocalDecisionTuning.CURRENT.copy(
             id = "current_no_coverage_floor", lookaheadCoverageFloor = 0.0)
         "CURRENT_NO_KO_CREDIT" -> LocalDecisionTuning.CURRENT.copy(

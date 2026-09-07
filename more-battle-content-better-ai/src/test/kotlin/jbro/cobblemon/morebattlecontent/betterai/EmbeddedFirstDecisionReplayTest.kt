@@ -5,6 +5,13 @@ import org.junit.jupiter.api.Test
 
 class EmbeddedFirstDecisionReplayTest {
     @Test
+    fun `hypothesis replay arms use exactly the paired battle tunings`() {
+        for (name in listOf("CURRENT_PUBLIC_MOVE_HYPOTHESES", "CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3")) {
+            assertEquals(EmbeddedPolicyComparison.tuning(name), EmbeddedFirstDecisionReplay.tuningFor(name))
+        }
+    }
+
+    @Test
     fun `no coverage floor replay arm preserves all other tuning fields`() {
         val current = EmbeddedFirstDecisionReplay.tuningFor("CURRENT")
         assertEquals(current.copy(id = "current_no_coverage_floor", lookaheadCoverageFloor = 0.0),
