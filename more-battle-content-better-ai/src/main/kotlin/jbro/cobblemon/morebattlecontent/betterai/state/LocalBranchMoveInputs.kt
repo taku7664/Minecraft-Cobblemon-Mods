@@ -6,6 +6,18 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.copyState
 
 /** Supplies one branch's move pool consistently to projection, leaf evaluation and memoization. */
 internal object LocalBranchMoveInputs {
+    /** Temporary mid-turn view; the end-turn projector still receives the original history. */
+    fun afterExecutedMoves(history: RecursiveActionHistory, executed: Map<UUID, String>): RecursiveActionHistory {
+        if (executed.isEmpty()) return history
+        val uses = history.moveUses.toMutableMap()
+        executed.forEach { (pokemonId, moveId) ->
+            if (history.chargingMoveByPokemon[pokemonId] == moveId) return@forEach
+            val key = RecursiveMoveUseKey(pokemonId, moveId)
+            uses[key] = (uses[key] ?: 0) + 1
+        }
+        return history.copy(moveUses = uses)
+    }
+
     fun key(fingerprint: String, history: RecursiveActionHistory) = LocalBranchMoveInputKey(
         fingerprint, history.restoredOriginalPokemonIds.toSet(), history.moveUses.toMap())
 

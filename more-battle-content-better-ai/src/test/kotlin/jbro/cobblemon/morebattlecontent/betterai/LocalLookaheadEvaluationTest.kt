@@ -1643,6 +1643,26 @@ class LocalLookaheadEvaluationTest {
         val spent = RecursiveActionHistory(moveUses = mapOf(jbro.cobblemon.morebattlecontent.betterai.state.RecursiveMoveUseKey(strongId, requireNotNull(strong.moveId)) to 1))
         assertEquals(weakId, incoming(spent))
         assertEquals(strongId, incoming(RecursiveActionHistory()), "sibling branches must retain their PP")
+
+        val slowBase = state(allySpeed = 80, opponentSpeed = 140,
+            bench = pokemon(strongId, BattleSide.ALLY, 90, activeSlot = null))
+        val slowState = slowBase.copyState(pokemon = slowBase.pokemon +
+            pokemon(weakId, BattleSide.ALLY, 90, activeSlot = null, types = setOf("water")))
+        fun afterOpponentMove(pp: Int): UUID {
+            val fire = move("fire", side = BattleSide.OPPONENT, typeId = "fire", power = 100.0, currentPp = pp)
+            val actions = BattlePublicActionCatalogView(listOf(entry(strongId, move("strong", power = 60.0)),
+                entry(weakId, weak), entry(OPPONENT_ID, fire)))
+            val outcomes = PublicSingleTurnProjector.project(slowState, pivot, fire, context(slowState, listOf(pivot), actions))
+            outcomes.forEach { outcome ->
+                val finalHistory = RecursiveHistoryProjector.project(RecursiveActionHistory(), slowState, outcome, pivot, fire,
+                    publicActionCatalog = actions)
+                assertEquals(1, finalHistory.moveUses[jbro.cobblemon.morebattlecontent.betterai.state.RecursiveMoveUseKey(OPPONENT_ID, requireNotNull(fire.moveId))])
+            }
+            assertEquals(pp, actions.forPokemon(OPPONENT_ID).single().details.currentPp)
+            return outcomes.map { it.state.pokemon.single { mon -> mon.side == BattleSide.ALLY && mon.activeSlot == 0 }.battlePokemonId }.distinct().single()
+        }
+        assertEquals(weakId, afterOpponentMove(2), "remaining fire PP favors the resistant replacement")
+        assertEquals(strongId, afterOpponentMove(1), "fire spent this turn must not remain a future threat")
     }
 
     @Test

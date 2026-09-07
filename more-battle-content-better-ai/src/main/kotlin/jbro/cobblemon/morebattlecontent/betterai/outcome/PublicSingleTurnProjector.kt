@@ -111,7 +111,7 @@ internal object PublicSingleTurnProjector {
                         branch.protectionAttackDrops,
                         branch.tauntedPokemonIds,
                         branch.forcedMoveIdsByPokemon,
-                        history,
+                        LocalBranchMoveInputs.afterExecutedMoves(history, branch.executedMoveIdsByPokemon),
                         maxChanceBranchesPerMove,
                         chanceEffectMode,
                         calculationCache,
@@ -1162,7 +1162,8 @@ internal object PublicSingleTurnProjector {
                 tags = generated.tags + "pivot_follow_up",
             )
             val projected = LocalSwitchStateProjector.project(branch.state, side, action)
-            val evaluationSource = LocalBranchMoveInputs.context(sourceContext, projected, history, spendPp = true)
+            val evaluationHistory = LocalBranchMoveInputs.afterExecutedMoves(history, branch.executedMoveIdsByPokemon)
+            val evaluationSource = LocalBranchMoveInputs.context(sourceContext, projected, evaluationHistory, spendPp = true)
             projected to LocalLookaheadStateEvaluator.evaluate(
                 state = evaluationSource.state,
                 source = evaluationSource,

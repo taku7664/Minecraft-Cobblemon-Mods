@@ -9,6 +9,19 @@ import org.junit.jupiter.api.Test
 
 class LocalBranchMoveInputsTest {
     @Test
+    fun `mid-turn PP view preserves the original history and does not charge continuations`() {
+        val id = UUID.randomUUID()
+        val key = RecursiveMoveUseKey(id, "fly")
+        val prior = RecursiveActionHistory(moveUses = mapOf(key to 1), chargingMoveByPokemon = mapOf(id to "fly"))
+        assertEquals(1, LocalBranchMoveInputs.afterExecutedMoves(prior, mapOf(id to "fly")).moveUses[key])
+        val ordinary = prior.copy(chargingMoveByPokemon = emptyMap())
+        assertEquals(2, LocalBranchMoveInputs.afterExecutedMoves(ordinary, mapOf(id to "fly")).moveUses[key])
+        assertEquals(1, ordinary.moveUses[key])
+        assertEquals(2, LocalBranchMoveInputs.afterExecutedMoves(ordinary, mapOf(id to "fly")).moveUses[key])
+        assertSame(ordinary, LocalBranchMoveInputs.afterExecutedMoves(ordinary, emptyMap()))
+    }
+
+    @Test
     fun `branch input restores known moves and spends PP only for history-free leaf evaluation`() {
         val id = UUID.randomUUID()
         val pokemon = BattlePokemonStateView(id, BattleSide.ALLY, 0, "ditto", null, 50, 1.0, null,
