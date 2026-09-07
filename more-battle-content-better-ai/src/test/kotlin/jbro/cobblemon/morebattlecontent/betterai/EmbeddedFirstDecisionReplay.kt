@@ -13,6 +13,8 @@ import java.util.concurrent.TimeUnit
 
 /** First-request replay by default; explicit snapshots use the native adapter's default memory. */
 internal object EmbeddedFirstDecisionReplay {
+    fun repetitionCount(raw: String?): Int = (raw?.toInt() ?: 1).also { require(it in 1..20) }
+
     fun snapshotRequest(lines: Sequence<String>, side: String, index: Int): JsonObject {
         require(side == "p1" || side == "p2")
         require(index >= 0)
@@ -46,7 +48,12 @@ internal object EmbeddedFirstDecisionReplay {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        require(args.size in 5..6) { "Expected trace, side, battle UUID, skill level, replay tuning, optional snapshot index" }
+        require(args.size in 5..7) { "Expected trace, side, battle UUID, skill level, replay tuning, optional snapshot index and repetitions" }
+        val repetitions = repetitionCount(args.getOrNull(6))
+        repeat(repetitions) { replay(args, it, repetitions) }
+    }
+
+    private fun replay(args: Array<String>, repetition: Int, repetitions: Int) {
         val snapshotIndex = args.getOrNull(5)?.toInt()
         val row = Files.newBufferedReader(Path.of(args[0])).use {
             if (snapshotIndex == null) firstRequest(it.lineSequence(), args[1])
@@ -64,12 +71,16 @@ internal object EmbeddedFirstDecisionReplay {
         val brain = LocalTacticalBrain(actionSelector = observer, tuning = tuning)
         val session = brain.openSession(BattleBrainOpenContext(battleId, context.state.format, trainerProfile = profile))
         try {
+            val started = System.nanoTime()
             val decision = brain.decide(session, context).toCompletableFuture().get(25, TimeUnit.SECONDS)
+            val elapsedNanos = System.nanoTime() - started
             val trace = observer.latest
             val report = mapOf(
                 "scope" to if (snapshotIndex == null) "FIRST_REQUEST_CURRENT_CODE_REPLAY_NOT_HISTORICAL_BINARY"
                     else "NATIVE_INPUT_SNAPSHOT_DEFAULT_MEMORY_NOT_PRODUCTION_SESSION_REPLAY",
                 "snapshotIndex" to snapshotIndex,
+                "repetition" to repetition, "repetitions" to repetitions,
+                "decisionElapsedNanos" to elapsedNanos,
                 "battleId" to battleId.toString(), "profile" to profile, "tuning" to tuning.id,
                 "recordedAction" to row["actionId"].asString, "replayedAction" to decision.actionId,
                 "tags" to decision.tags, "seed" to trace?.seed, "riskBudget" to trace?.mixing?.riskBudget,

@@ -198,12 +198,17 @@ tasks.register<JavaExec>("replayNativeFirstDecision") {
     mainClass.set("jbro.cobblemon.morebattlecontent.betterai.EmbeddedFirstDecisionReplay")
     workingDir(rootProject.projectDir)
     doFirst {
+        val snapshotIndex = providers.gradleProperty("replaySnapshotIndex").orNull
+        val repetitions = providers.gradleProperty("replayRepetitions").orNull
+        require(repetitions == null || snapshotIndex != null) {
+            "Repeated snapshot diagnostics require an explicit replaySnapshotIndex"
+        }
         setArgs(listOf(providers.gradleProperty("replayTrace").get(),
             providers.gradleProperty("replaySide").get(),
             providers.gradleProperty("replayBattleId").get(),
             providers.gradleProperty("nativeSkillLevel").get(),
             providers.gradleProperty("replayTuning").get()) +
-            providers.gradleProperty("replaySnapshotIndex").orNull?.let { listOf(it) }.orEmpty())
+            snapshotIndex?.let { listOf(it) }.orEmpty() + repetitions?.let { listOf(it) }.orEmpty())
     }
 }
 

@@ -5,6 +5,18 @@ import org.junit.jupiter.api.Test
 
 class EmbeddedFirstDecisionReplayTest {
     @Test
+    fun `repetitions are explicit bounded and default to one`() {
+        assertEquals(1, EmbeddedFirstDecisionReplay.repetitionCount(null))
+        assertEquals(5, EmbeddedFirstDecisionReplay.repetitionCount("5"))
+        assertEquals(20, EmbeddedFirstDecisionReplay.repetitionCount("20"))
+        for (invalid in listOf("0", "-1", "21", "bad")) {
+            assertThrows(IllegalArgumentException::class.java) {
+                EmbeddedFirstDecisionReplay.repetitionCount(invalid)
+            }
+        }
+    }
+
+    @Test
     fun `explicit snapshot selection retains forced request and validates index`() {
         val first = """{"side":"p2","turn":1,"input":{"request":{}},"actionId":"move 1"}"""
         val forced = """{"side":"p2","turn":1,"input":{"request":{"forceSwitch":[true]}},"actionId":"switch 3"}"""
