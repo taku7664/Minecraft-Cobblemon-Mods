@@ -21,7 +21,8 @@ internal object EmbeddedTeamInput {
         var status: String?, var active: Boolean = true, var types: Set<String> = emptySet(),
         var added: String? = null, val stages: MutableMap<String, Int> = mutableMapOf(),
         val moves: MutableSet<String> = linkedSetOf(), var ability: String? = null, var item: String? = null,
-        val volatileEffects: MutableSet<String> = linkedSetOf())
+        val volatileEffects: MutableSet<String> = linkedSetOf(), var originalMoves: Set<String>? = null,
+        var gastroAcid: Boolean = false, var abilityEnded: Boolean = false)
 
     fun identity(ident: String): String = ident.take(2) + ":" + ident.substringAfter(':').trim()
     private fun uuid(ident: String) = UUID.nameUUIDFromBytes(identity(ident).toByteArray(Charsets.UTF_8))
@@ -38,6 +39,17 @@ internal object EmbeddedTeamInput {
         fun side(ident: String) = if (ident.startsWith(ownSide)) BattleSide.ALLY else BattleSide.OPPONENT
         val speciesData = input.getAsJsonObject("species")
         val moveData = input.getAsJsonObject("moves")
+        val publicLearnsets = input.getAsJsonObject("publicLearnsets") ?: JsonObject()
+        val ruleMoves = JsonObject().apply {
+            publicLearnsets.entrySet().forEach { (_, pool) ->
+                pool.asJsonObject.getAsJsonObject("moves").entrySet().forEach { (move, data) -> add(move, data) }
+            }
+            moveData.entrySet().forEach { (move, data) -> add(move, data) }
+        }
+        fun maximumPp(move: String): Int? = ruleMoves.getAsJsonObject(move)?.let {
+            it["maxPp"]?.asInt ?: (it["pp"].asInt * 8 / 5)
+        }
+        val pp = EmbeddedPublicPp()
         val seen = linkedMapOf<String, Seen>()
         val constraints = EmbeddedPublicActionConstraints()
         val sizes = mutableMapOf<BattleSide, Int>()
@@ -55,6 +67,14 @@ internal object EmbeddedTeamInput {
             val actor = p.getOrNull(2).orEmpty()
             val key = identity(actor)
             val current = seen[key]
+            val metadata = p.getOrNull(3)?.let(::id)?.let { ruleMoves.getAsJsonObject(it) }
+            val pressureLoss = if (kind == "move") EmbeddedPublicPressure.loss(actor,
+                p.getOrNull(4)?.takeIf(String::isNotBlank),
+                metadata?.get("pressureTarget")?.asString ?: metadata?.get("target")?.asString,
+                seen.values.filter { it.active && it.hp > 0.0 }.map {
+                    EmbeddedPublicPressure.Participant(it.ident, it.ability, it.item, it.gastroAcid || it.abilityEnded)
+                }, preparing = metadata?.get("charge")?.asBoolean == true && "[still]" in p) else 0
+            pp.observe(element.asString, pressureLoss, ::maximumPp)
             fun event(eventKind: BattleObservedEventKind, value: String? = null) {
                 events += BattleObservedEventView(index.toLong() * 2, eventTurn, eventKind,
                     actorPokemonId = current?.let { uuid(it.ident) }, publicValueId = value)
@@ -70,6 +90,10 @@ internal object EmbeddedTeamInput {
                             ?.volatileEffects.orEmpty().toSet()
                     } else emptySet()
                     seen.values.filter { it.ident.take(2) == actor.take(2) }.forEach {
+                        if (kind != "replace") {
+                            it.originalMoves?.let { moves -> it.moves.clear(); it.moves.addAll(moves) }
+                            it.originalMoves = null
+                        }
                         it.active = false; it.stages.clear(); it.added = null; it.types = baseTypes(it.species); it.volatileEffects.clear()
                     }
                     val details = p[3].split(',').map(String::trim)
@@ -77,7 +101,8 @@ internal object EmbeddedTeamInput {
                     val hp = condition(p[4])
                     val entry = Seen(actor, species, details.firstOrNull { it.matches(Regex("L\\d+")) }?.drop(1)?.toInt() ?: 100,
                         hp.first, hp.second, types = baseTypes(species))
-                    current?.let { entry.moves += it.moves; entry.ability = it.ability; entry.item = it.item }
+                    current?.let { entry.moves += it.moves; entry.ability = it.ability; entry.item = it.item
+                        entry.originalMoves = it.originalMoves }
                     entry.volatileEffects += inherited
                     seen[key] = entry
                     events += BattleObservedEventView(index.toLong() * 2, eventTurn, BattleObservedEventKind.SWITCHED, uuid(actor))
@@ -104,7 +129,8 @@ internal object EmbeddedTeamInput {
                 "move" -> current?.let { it.moves += id(p[3]); event(BattleObservedEventKind.MOVE_USED, id(p[3])) }
                 "-status" -> current?.let { it.status = id(p[3]) }
                 "-curestatus" -> current?.let { it.status = null }
-                "-ability" -> current?.let { it.ability = id(p[3]) }
+                "-ability" -> current?.let { it.ability = id(p[3]); it.abilityEnded = false }
+                "-endability" -> current?.let { it.abilityEnded = true }
                 "-item" -> current?.let { it.item = id(p[3]) }
                 "-enditem" -> current?.let { it.item = null }
                 "-boost", "-unboost", "-setboost" -> current?.let {
@@ -115,6 +141,7 @@ internal object EmbeddedTeamInput {
                 "-clearboost" -> current?.stages?.clear()
                 "-clearallboost" -> seen.values.forEach { it.stages.clear() }
                 "-start" -> current?.let {
+                    if (id(p[3]) == "gastroacid") it.gastroAcid = true
                     if (id(p[3]) == "substitute") it.volatileEffects += "substitute"
                     when (p[3]) {
                         "typechange" -> { it.types = p.getOrNull(4)?.takeUnless { value -> value.startsWith('[') || value == "???" }
@@ -123,13 +150,21 @@ internal object EmbeddedTeamInput {
                     }
                 }
                 "-end" -> {
+                    if (id(p[3]) == "gastroacid") current?.gastroAcid = false
+                    if (id(p[3]) == "neutralizinggas") current?.abilityEnded = true
                     if (p[3] == "typeadd") current?.added = null
                     if (id(p[3]) == "substitute") current?.volatileEffects?.remove("substitute")
                 }
                 "detailschange", "-formechange" -> current?.let {
                     it.species = id(p[3].substringBefore(',')); it.types = baseTypes(it.species); it.added = null
                 }
-                "-transform", "-terastallize" -> current?.let { it.types = emptySet(); it.added = null }
+                "-transform" -> current?.let {
+                    if (it.originalMoves == null) it.originalMoves = it.moves.toSet()
+                    val copied = p.getOrNull(3)?.let(::identity)?.let(seen::get)?.moves.orEmpty().toSet()
+                    it.moves.clear(); it.moves.addAll(copied)
+                    it.types = emptySet(); it.added = null
+                }
+                "-terastallize" -> current?.let { it.types = emptySet(); it.added = null }
                 "-weather" -> weather = id(actor).takeUnless { it == "none" }
                 "-fieldstart" -> fields += id(actor)
                 "-fieldend" -> fields -= id(actor)
@@ -178,7 +213,7 @@ internal object EmbeddedTeamInput {
                 knownVolatileEffectIds = if (pokemon.active && pokemon.hp > 0.0) pokemon.volatileEffects else emptySet())
         }
         fun moveDetails(moveId: String, pp: Int): BattleMoveCandidateView {
-            val move = requireNotNull(moveData.getAsJsonObject(moveId)) { "Missing exposed move metadata $moveId" }
+            val move = requireNotNull(ruleMoves.getAsJsonObject(moveId)) { "Missing public move metadata $moveId" }
             val target = when (move["target"].asString) {
                 "self" -> BattleMoveTargetPattern.SELF
                 "all" -> BattleMoveTargetPattern.ALL_ACTIVE
@@ -214,12 +249,26 @@ internal object EmbeddedTeamInput {
             }
         }
         val pokemon = allies + opponents
+        val identById = (own.map { it["ident"].asString } + seen.values.map { it.ident }).associateBy(::uuid)
+        fun remaining(creature: BattlePokemonStateView, move: String): Int {
+            val ident = identById.getValue(creature.battlePokemonId)
+            val actual = if (creature.side == BattleSide.ALLY)
+                input.getAsJsonObject("ownCurrentPp")?.entrySet()
+                    ?.firstOrNull { identity(it.key) == identity(ident) }?.value?.asJsonObject?.get(move)?.asInt else null
+            return actual ?: pp.remaining(ident, move, maximumPp(move) ?: 0)
+        }
         val catalog = BattlePublicActionCatalogView(pokemon.map { creature ->
-            BattlePokemonActionCatalogView(creature.battlePokemonId, creature.knownMoveIds.filter { moveData.has(it) }.map {
-                BattlePublicMoveOptionView(it, moveDetails(it, moveData.getAsJsonObject(it)["pp"].asInt),
+            BattlePokemonActionCatalogView(creature.battlePokemonId, creature.knownMoveIds.filter { ruleMoves.has(it) }.map {
+                BattlePublicMoveOptionView(it, moveDetails(it, remaining(creature, it)),
                     if (creature.side == BattleSide.ALLY) BattlePublicMoveKnowledge.EXACT_OWN else BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
             }, moveSetComplete = false) // PP/Transform/temporary move availability is not a complete future catalog.
-        })
+        }, candidatePools = opponents.filterNot { it.fainted || pp.isTransformed(identById.getValue(it.battlePokemonId)) }
+            .mapNotNull { creature -> publicLearnsets.getAsJsonObject(creature.speciesId)?.let { pool ->
+                require(pool["coverage"].asString == "PARTIAL")
+                val ids = pool.getAsJsonObject("moves").keySet()
+                BattlePublicMoveCandidatePoolView(creature.battlePokemonId, creature.speciesId, creature.formId,
+                    ids, pool["sourceId"].asString, ids.associateWith { moveDetails(it, remaining(creature, it)) })
+            } })
         fun effect(name: String) = BattleTimedEffectView(name, null)
         val field = BattleFieldStateView(weather?.let(::effect), fields.firstOrNull { it.endsWith("terrain") }?.let(::effect),
             fields.filter { it.endsWith("room") }.map(::effect), fields.filterNot { it.endsWith("terrain") || it.endsWith("room") }.map(::effect),

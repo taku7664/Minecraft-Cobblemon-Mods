@@ -60,7 +60,9 @@ const moveInfo = id => {
   if (!move.exists) throw new Error(`Unknown public move ${id}`);
   return { id: move.id, type: move.type.toLowerCase(), category: move.category.toLowerCase(),
     power: move.basePower, accuracy: move.accuracy === true ? 100 : move.accuracy,
-    priority: move.priority, target: move.target, pp: move.pp };
+    priority: move.priority, target: move.target, pp: move.pp,
+    maxPp: move.noPPBoosts ? move.pp : Math.floor(move.pp * 8 / 5),
+    pressureTarget: move.flags.mustpressure ? 'allAdjacentFoes' : move.target, charge: !!move.flags.charge };
 };
 function snapshot() {
   const log = publicLog();
@@ -81,7 +83,7 @@ function snapshot() {
       if (!request.side.pokemon[slot]) throw new Error('Own request roster is incomplete');
       request.side.pokemon[slot].ident = `${side.id}: ${pokemon.uuid}`;
     }
-    const ownTypes = {}, ownAbilities = {}, ownItems = {}, species = {}, moves = {}, publicLearnsets = {};
+    const ownTypes = {}, ownAbilities = {}, ownItems = {}, ownCurrentPp = {}, species = {}, moves = {}, publicLearnsets = {};
     const registerSpecies = name => {
       const value = dex.species.get(name);
       if (!value.exists) throw new Error(`Unknown revealed species ${name}`);
@@ -101,6 +103,7 @@ function snapshot() {
       ownTypes[ident] = pokemon.getTypes().map(type => type.toLowerCase());
       ownAbilities[ident] = pokemon.ability;
       ownItems[ident] = pokemon.item;
+      ownCurrentPp[ident] = Object.fromEntries(pokemon.moveSlots.map(slot => [slot.id, slot.pp]));
     }
     for (const pokemon of request.side.pokemon) {
       registerSpecies(pokemon.details.split(',')[0]);
@@ -113,6 +116,10 @@ function snapshot() {
       }
       if (parts[1] === 'move') {
         const move = moveInfo(parts[3]);
+        moves[move.id] = move;
+      }
+      if (parts[1] === '-activate' && ['item: Leppa Berry', 'move: Spite'].includes(parts[3]) && parts[4]) {
+        const move = moveInfo(parts[4]);
         moves[move.id] = move;
       }
     }
@@ -137,7 +144,7 @@ function snapshot() {
     }
     if (!actions.length) throw new Error(`No exposed legal actions for ${side.id}`);
     requests.push({ side: side.id, request, ownTypes, ownAbilities, ownItems, actions,
-      publicLog: log, species, moves, publicLearnsets });
+      publicLog: log, species, moves, publicLearnsets, ownCurrentPp });
   }
   if (!requests.length) throw new Error('Battle neither ended nor requested input');
   pending = requests;

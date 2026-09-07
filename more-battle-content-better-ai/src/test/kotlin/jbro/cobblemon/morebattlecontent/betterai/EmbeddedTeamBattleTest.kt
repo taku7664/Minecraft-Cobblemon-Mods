@@ -149,6 +149,15 @@ class EmbeddedTeamBattleTest {
             val context = EmbeddedTeamInput.context(request(original, side), UUID(0, 1), original["turn"].asInt, 0)
             assertEquals(3, context.state.pokemon.count { it.side == BattleSide.ALLY })
             assertEquals(1, context.state.pokemon.count { it.side == BattleSide.OPPONENT })
+            val candidatePool = context.publicActionCatalog.candidatePools.single()
+            assertEquals(context.state.pokemon.single { it.side == BattleSide.OPPONENT }.battlePokemonId,
+                candidatePool.battlePokemonId)
+            assertEquals("embedded:cobblemon/gen9_move_pool", candidatePool.sourceId)
+            val rawMoves = pools.getAsJsonObject(candidatePool.speciesId).getAsJsonObject("moves")
+            assertEquals(rawMoves.keySet(), candidatePool.moveIds)
+            candidatePool.moveDetails.forEach { (moveId, details) ->
+                assertEquals(rawMoves.getAsJsonObject(moveId)["maxPp"].asInt, details.currentPp)
+            }
             assertTrue(context.state.pokemon.filter { it.side == BattleSide.OPPONENT }.all {
                 it.combatStats?.knowledge == BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE && it.knownMoveIds.isEmpty()
             })
@@ -160,6 +169,12 @@ class EmbeddedTeamBattleTest {
                 "Native 20-character nickname truncation must not merge UUID identities")
             val moveCandidates = context.candidates.filter { it.kind == BattleActionKind.USE_MOVE }
             assertTrue(moveCandidates.isNotEmpty())
+            val ownActiveId = context.state.pokemon.single { it.side == BattleSide.ALLY && it.activeSlot == 0 }.battlePokemonId
+            moveCandidates.forEach { candidate ->
+                assertEquals(candidate.moveDetails?.currentPp,
+                    context.publicActionCatalog.forPokemon(ownActiveId).single { it.moveId == candidate.moveId }.details.currentPp,
+                    "Own native request PP must override PP Max estimates in future actions")
+            }
             assertTrue(moveCandidates.all { it.moveDetails?.effects?.coverage == BattleMoveEffectCoverage.DECLARATIVE_PARTIAL },
                 "Native candidates must carry the product's partial declarative effect facts")
             assertTrue(context.publicActionCatalog.entries.flatMap { it.moves }.all {
@@ -169,6 +184,23 @@ class EmbeddedTeamBattleTest {
         val observations = request(original, "p1").deepCopy()
         val opponentIdent = observations.getAsJsonArray("publicLog").map { it.asString }
             .first { it.startsWith("|switch|p2a:") }.split('|')[2]
+        val ppProbe = observations.deepCopy()
+        val ownIdent = ppProbe.getAsJsonArray("publicLog").map { it.asString }
+            .first { it.startsWith("|switch|p1a:") }.split('|')[2]
+        val beforePp = EmbeddedTeamInput.context(ppProbe, UUID(0, 1), 1, 0).publicActionCatalog.candidatePools.single()
+        val rawPool = ppProbe.getAsJsonObject("publicLearnsets").getAsJsonObject(beforePp.speciesId).getAsJsonObject("moves")
+        val move = rawPool.entrySet().first { it.value.asJsonObject["target"].asString == "normal" &&
+            it.value.asJsonObject["power"].asDouble > 0 }
+        ppProbe.getAsJsonArray("publicLog").apply {
+            add("|-ability|$ownIdent|Pressure")
+            add("|move|$opponentIdent|${move.key}|$ownIdent")
+        }
+        val afterPp = EmbeddedTeamInput.context(ppProbe, UUID(0, 1), 1, 1)
+        assertEquals(move.value.asJsonObject["maxPp"].asInt - 2,
+            afterPp.publicActionCatalog.candidatePools.single().moveDetails.getValue(move.key).currentPp)
+        assertEquals(setOf(move.key), afterPp.state.pokemon.single { it.side == BattleSide.OPPONENT }.knownMoveIds)
+        ppProbe.getAsJsonArray("publicLog").add("|-transform|$opponentIdent|$ownIdent")
+        assertTrue(EmbeddedTeamInput.context(ppProbe, UUID(0, 1), 1, 2).publicActionCatalog.candidatePools.isEmpty())
         observations.getAsJsonArray("publicLog").apply {
             add("|-start|$opponentIdent|typechange|Water")
             add("|-boost|$opponentIdent|atk|2")
