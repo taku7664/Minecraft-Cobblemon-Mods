@@ -95,8 +95,15 @@ class LocalCooperativeCandidateCoverageTest {
             ranked, calculated, profile, settings, clockMillis = { 0L })
         val narrow = evaluate(tuning)
         val wide = evaluate(tuning.copy(maximumRootCandidates = Int.MAX_VALUE))
-        CooperativeSearchComparison.verifyLeaderRecovery("redirect-$redirectId-$drawerSlot-$stages-$probability", narrow,
+        val mixing = CooperativeSearchComparison.verifyLeaderRecovery("redirect-$redirectId-$drawerSlot-$stages-$probability", narrow,
             evaluate(tuning.copy(revalidateUnsearchedRootLeaders = true)), wide)
+        if (redirectId == "followme" && drawerSlot == 0 && expectedCoverage) {
+            // Counterexample to adopting leader-only validation: a verified rank one does not
+            // prevent the actual selector from overwhelmingly drawing unsearched alternatives.
+            assertTrue(mixing.completePool)
+            assertEquals(934, mixing.unsearchedDraws)
+            assertTrue(mixing.observedUnsearchedMass > 0.9)
+        }
         if (redirectId == "splash") {
             val enabled = tuning.copy(revalidateUnsearchedRootLeaders = true)
             val budget = LocalLookaheadBudgetPolicy.forTier(profile.difficulty.tier)
