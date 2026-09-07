@@ -9,6 +9,9 @@ const dex = Dex.mod('cobblemon');
 dex.includeData(); // getMovePool reads dex.gen before lazily loading species data.
 if (dex.gen !== 9) throw new Error('Public learnset export requires the declared Gen 9 engine');
 const input = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+if (input.battleFormat !== undefined && input.battleFormat !== 'SINGLE') {
+  throw new Error('Native team bridge currently supports singles only');
+}
 if (!Array.isArray(input.battleSeed) || input.battleSeed.length !== 4 ||
     !input.battleSeed.every(value => Number.isInteger(value) && value >= 0 && value <= 65535) ||
     !Number.isInteger(input.maxTurns) || input.maxTurns < 1 || input.maxTurns > 10000) {
@@ -143,7 +146,7 @@ function snapshot() {
       });
     }
     if (!actions.length) throw new Error(`No exposed legal actions for ${side.id}`);
-    requests.push({ side: side.id, request, ownTypes, ownAbilities, ownItems, actions,
+    requests.push({ format: 'SINGLE', side: side.id, request, ownTypes, ownAbilities, ownItems, actions,
       publicLog: log, species, moves, publicLearnsets, ownCurrentPp });
   }
   if (!requests.length) throw new Error('Battle neither ended nor requested input');

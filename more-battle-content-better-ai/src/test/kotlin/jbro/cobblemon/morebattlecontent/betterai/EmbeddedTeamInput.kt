@@ -7,6 +7,7 @@ import java.util.zip.ZipInputStream
 
 /** Test adapter, deliberately separate from privileged team definitions and referee state. */
 internal object EmbeddedTeamInput {
+    private val nonSingleActiveSlot = Regex("^p[12][b-z]:")
     private val declarativeEffects by lazy {
         ZipInputStream(requireNotNull(javaClass.getResourceAsStream("/data/cobblemon/showdown.zip"))).use { zip ->
             while (true) {
@@ -35,6 +36,7 @@ internal object EmbeddedTeamInput {
     }
 
     fun context(input: JsonObject, battleId: UUID, turn: Int, requestNumber: Int): BattleDecisionContext {
+        requireSingleFormat(input)
         val ownSide = input["side"].asString
         fun side(ident: String) = if (ident.startsWith(ownSide)) BattleSide.ALLY else BattleSide.OPPONENT
         val speciesData = input.getAsJsonObject("species")
@@ -279,6 +281,21 @@ internal object EmbeddedTeamInput {
             observedEvents = events.takeLast(64), inferences = emptyList())
         return BattleDecisionContext(UUID.nameUUIDFromBytes("$battleId:$ownSide:$requestNumber".toByteArray()), state,
             candidates, System.currentTimeMillis() + 20000, publicActionCatalog = catalog)
+    }
+
+    private fun requireSingleFormat(input: JsonObject) {
+        val message = "Native team input currently supports singles only"
+        require(input["format"]?.asString.let { it == null || it == "SINGLE" }) { message }
+        input.getAsJsonArray("publicLog")?.forEach { line ->
+            val parts = line.asString.split('|')
+            if (parts.getOrNull(1) == "gametype") require(parts.getOrNull(2) == "singles") { message }
+            require(parts.none { nonSingleActiveSlot.containsMatchIn(it) }) { message }
+        }
+        val request = input.getAsJsonObject("request") ?: return
+        require((request.getAsJsonArray("active")?.size() ?: 0) <= 1) { message }
+        require((request.getAsJsonArray("forceSwitch")?.size() ?: 0) <= 1) { message }
+        val own = request.getAsJsonObject("side")?.getAsJsonArray("pokemon")
+        require((own?.count { it.asJsonObject["active"]?.asBoolean == true } ?: 0) <= 1) { message }
     }
 
     private fun statName(value: String) = when (value) {

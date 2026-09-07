@@ -112,6 +112,9 @@ internal object EmbeddedTeamBattle {
         private val writer: java.io.BufferedWriter
         init {
             require(maxTurns in 1..10000)
+            require(pair["battleFormat"]?.asString.let { it == null || it == "SINGLE" }) {
+                "Native team bridge currently supports singles only"
+            }
             Files.createDirectories(directory)
             val script = directory.resolve("bridge.cjs").toAbsolutePath()
             val input = directory.resolve("referee-input.json").toAbsolutePath()

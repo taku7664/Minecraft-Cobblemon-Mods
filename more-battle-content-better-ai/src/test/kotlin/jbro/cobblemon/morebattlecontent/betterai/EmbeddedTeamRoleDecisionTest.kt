@@ -55,6 +55,11 @@ class EmbeddedTeamRoleDecisionTest {
                     val input = initial.getAsJsonArray("requests").map { it.asJsonObject }
                         .single { it["side"].asString == "p1" }
                     val context = EmbeddedTeamInput.context(input, battleId, initial["turn"].asInt, 0)
+                    assertEquals("SINGLE", input["format"].asString)
+                    assertThrows(IllegalArgumentException::class.java) {
+                        EmbeddedTeamInput.context(input.deepCopy().apply { addProperty("format", "DOUBLE") },
+                            battleId, initial["turn"].asInt, 0)
+                    }
                     val nativeIds = input.getAsJsonArray("actions").map { it.asJsonObject["id"].asString }.toSet()
                     assertEquals(setOf("move 1", "move 2", "move 3", "move 4", "switch 2", "switch 3"), nativeIds)
                     assertEquals(nativeIds, context.candidates.map { it.actionId }.toSet(), "Do not narrow the engine request")
