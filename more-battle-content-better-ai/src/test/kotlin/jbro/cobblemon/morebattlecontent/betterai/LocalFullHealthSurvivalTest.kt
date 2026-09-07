@@ -16,6 +16,18 @@ import java.util.UUID
  */
 class LocalFullHealthSurvivalTest {
     @Test
+    fun `small projected damage still breaks full health survival`() {
+        for (hp in listOf(0.999, 0.9995, 0.999999)) {
+            for ((item, ability) in listOf("focussash" to null, null to "sturdy")) {
+                val result = knockout(item = item, ability = ability, hpFraction = hp)
+                assertEquals(BattleKnockoutAssessment.GUARANTEED, result.first,
+                    "hp=$hp item=$item ability=$ability")
+                assertEquals(1.0, result.second)
+            }
+        }
+    }
+
+    @Test
     fun `magic room restores knockout chance against sash but not sturdy`() {
         for (room in listOf("cobblemon:magic_room", "trickroom")) {
             for (ability in listOf(null, "sturdy")) {

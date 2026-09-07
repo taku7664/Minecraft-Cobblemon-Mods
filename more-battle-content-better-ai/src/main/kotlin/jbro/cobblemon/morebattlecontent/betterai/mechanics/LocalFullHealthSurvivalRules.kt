@@ -50,8 +50,8 @@ internal object LocalFullHealthSurvivalRules {
     private fun canonical(value: String?): String? =
         value?.substringAfter(':')?.lowercase()?.filter(Char::isLetterOrDigit)
 
-    /** Health is reported as a fraction, so full health has to tolerate the rounding it arrives with. */
-    private const val FULL_HEALTH = 0.999
+    /** Match direct-hit projection: tolerate floating-point noise, not actual projected HP loss. */
+    private const val FULL_HEALTH = 1.0 - 1e-9
     private const val FOCUS_SASH = "focussash"
     private const val STURDY = "sturdy"
     private const val ABILITY = "ability"
