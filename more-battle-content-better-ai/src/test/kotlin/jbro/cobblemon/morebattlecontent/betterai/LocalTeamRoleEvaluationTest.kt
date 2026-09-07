@@ -14,6 +14,17 @@ import org.junit.jupiter.api.Test
 /** Controlled tuning cases, not native battle outcomes or proof of an optimal team-role formula. */
 class LocalTeamRoleEvaluationTest {
     @Test
+    fun `missing opponent attack evidence does not spend calculations on virtual entries`() {
+        val state = board(answerSurvives = true)
+        val cache = LocalProjectedActionCalculationCache()
+        var budgetChecks = 0
+        assertEquals(0.0, LocalTeamMatchupCoverage.evaluate(state, context(state, includeFoeMoves = false),
+            cache, { budgetChecks++; true }, LocalDecisionTuning.CURRENT))
+        assertEquals(0, cache.calculationsPerformed)
+        assertEquals(0, budgetChecks)
+    }
+
+    @Test
     fun `coverage is bounded mirrors a plain singles board and ignores doubles`() {
         val ordinary = board(answerSurvives = true)
         val mirrored = board(answerSurvives = true, mirror = true)
@@ -58,12 +69,14 @@ class LocalTeamRoleEvaluationTest {
         val cache = LocalProjectedActionCalculationCache()
         val source = context(state)
         val covered = LocalTeamMatchupCoverage.evaluate(state, source, cache, { true }, LocalDecisionTuning.CURRENT)
+        assertEquals(0.5, covered, 1e-9)
         val calculations = cache.calculationsPerformed
         assertEquals(covered, LocalTeamMatchupCoverage.evaluate(state, source, cache, { true }, LocalDecisionTuning.CURRENT))
         assertEquals(calculations, cache.calculationsPerformed)
         val emptyPp = LocalTeamMatchupCoverage.evaluate(state, context(state, answerPp = 0), cache,
             { true }, LocalDecisionTuning.CURRENT)
         assertTrue(covered > emptyPp)
+        assertEquals(-0.5, emptyPp, 1e-9)
         assertEquals(0.0, LocalTeamMatchupCoverage.evaluate(state, context(state, includeFoeMoves = false), cache,
             { true }, LocalDecisionTuning.CURRENT))
         assertEquals(8, source.publicActionCatalog.forPokemon(ANSWER).single().details.currentPp)

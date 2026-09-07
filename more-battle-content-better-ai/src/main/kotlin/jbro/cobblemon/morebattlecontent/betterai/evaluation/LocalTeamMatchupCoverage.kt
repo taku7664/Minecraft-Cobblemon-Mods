@@ -29,8 +29,15 @@ internal object LocalTeamMatchupCoverage {
         if (state.format != BattleFormat.SINGLE) return 0.0
         val living = state.pokemon.filter { !it.fainted && it.hpFraction > 0.0 }
         if (BattleSide.entries.any { side -> living.count { it.side == side && it.activeSlot != null } != 1 }) return 0.0
-        val allies = living.filter { it.side == BattleSide.ALLY }
-        val foes = living.filter { it.side == BattleSide.OPPONENT }
+        // Entry projection cannot invent a move catalog. Reject impossible-to-evaluate pairs before
+        // allocating virtual switches, but retain original catalogs that a switch might restore.
+        // Do not filter exhausted PP here: a known unusable attack is evidence, not missing data.
+        val evidencedIds = (source.publicActionCatalog.entries + source.publicActionCatalog.originalEntries)
+            .filter { entry -> entry.moves.any { isDamagingTemplate(it) } }
+            .mapTo(hashSetOf()) { it.battlePokemonId }
+        val allies = living.filter { it.side == BattleSide.ALLY && it.battlePokemonId in evidencedIds }
+        val foes = living.filter { it.side == BattleSide.OPPONENT && it.battlePokemonId in evidencedIds }
+        if (allies.isEmpty() || foes.isEmpty()) return 0.0
         val ownAnswers = mutableMapOf<UUID, Double>()
         val enemyAnswers = mutableMapOf<UUID, Double>()
         var complete = true
@@ -49,9 +56,8 @@ internal object LocalTeamMatchupCoverage {
             if (actors.any { it.fainted || it.hpFraction <= 0.0 || it.knownTypeIds.isEmpty() || it.combatStats == null }) continue
             // No known damaging template is missing evidence, not evidence of zero retaliation.
             // An exhausted known move is different: it stays known but produces no attack action.
-            if (actors.any { actor -> position.publicActionCatalog.forPokemon(actor.battlePokemonId).none {
-                    it.details.damageCategory != BattleMoveDamageCategory.STATUS && (it.details.power ?: 0.0) > 0.0
-                } }) continue
+            if (actors.any { actor -> position.publicActionCatalog.forPokemon(actor.battlePokemonId)
+                    .none { isDamagingTemplate(it) } }) continue
             val outgoing = LocalLookaheadStateEvaluator.attackPressure(position.state, BattleSide.ALLY,
                 position, cache, available, damageOnly)
             val incoming = LocalLookaheadStateEvaluator.attackPressure(position.state, BattleSide.OPPONENT,
@@ -95,4 +101,7 @@ internal object LocalTeamMatchupCoverage {
             memory = source.memory, publicActionCatalog = catalog)
 
     private fun Collection<Double>.averageOrZero(): Double = if (isEmpty()) 0.0 else average()
+
+    private fun isDamagingTemplate(move: BattlePublicMoveOptionView): Boolean =
+        move.details.damageCategory != BattleMoveDamageCategory.STATUS && (move.details.power ?: 0.0) > 0.0
 }
