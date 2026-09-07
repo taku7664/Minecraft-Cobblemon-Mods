@@ -27,6 +27,34 @@ import org.junit.jupiter.api.Test
 
 class LocalRecursiveLookaheadTest {
     @Test
+    fun `reserved conditional priority hypothesis still requires a pending damaging move`() {
+        val initial = state(pokemon(ALLY_ID, BattleSide.ALLY, 0, 0.10, speed = 200),
+            listOf(pokemon(OPPONENT_ID, BattleSide.OPPONENT, 0, 1.0, speed = 50)))
+        val attack = move("attack", 0, 200.0)
+        val status = BattleActionCandidate("status", BattleActionKind.USE_MOVE, actorSlot = 0,
+            moveSlot = 1, moveId = "status", targets = listOf(BattleTargetSlot(BattleSide.ALLY, 0)),
+            moveDetails = moveDetails(power = 0.0).copy(damageCategory = BattleMoveDamageCategory.STATUS,
+                targetPattern = BattleMoveTargetPattern.SELF))
+        val conditional = moveDetails(power = 70.0).copy(priority = 1, effects = BattleMoveEffectsView(
+            coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, effects = emptyList(),
+            scriptedBehavior = true, requirements = listOf(
+                BattleMoveRequirementView(BattleMoveRequirementKind.TARGET_PENDING_DAMAGING_MOVE))))
+        val templates = mapOf("heavy" to moveDetails(power = 400.0), "suckerpunch" to conditional)
+        val source = context(initial, listOf(attack, status), BattlePublicActionCatalogView(emptyList(),
+            candidatePools = listOf(BattlePublicMoveCandidatePoolView(OPPONENT_ID, "showdown:test", null,
+                templates.keys, "fixture", templates))))
+        val response = PublicFutureActionFactory.actions(initial, BattleSide.OPPONENT, source.publicActionCatalog,
+            includeMoveHypotheses = true, hypotheticalMoveLimitPerSlot = 1,
+            reserveHypotheticalPriority = true).single()
+        assertEquals("suckerpunch", response.moveId)
+        val againstAttack = PublicSingleTurnProjector.project(initial, attack, response, source)
+        val againstStatus = PublicSingleTurnProjector.project(initial, status, response, source)
+        assertTrue(againstAttack.isNotEmpty() && againstStatus.isNotEmpty())
+        assertTrue(againstAttack.all { outcome -> outcome.state.pokemon.single { it.battlePokemonId == ALLY_ID }.fainted })
+        assertTrue(againstStatus.all { outcome -> outcome.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction == 0.10 })
+    }
+
+    @Test
     fun `experimental three move cap can omit a lethal priority response`() {
         val initial = state(pokemon(ALLY_ID, BattleSide.ALLY, 0, 0.10, speed = 200),
             listOf(pokemon(OPPONENT_ID, BattleSide.OPPONENT, 0, 0.10, speed = 50)))

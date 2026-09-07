@@ -10,6 +10,44 @@ import org.junit.jupiter.api.Test
 
 class LocalOpponentMoveHypothesesTest {
     @Test
+    fun `priority reservation retains targets and respects entry PP and committed slots`() {
+        val allies = (0..1).map { slot -> BattlePokemonStateView(UUID.randomUUID(), BattleSide.ALLY,
+            slot, "target", null, 50, 1.0, null, emptyMap(), emptySet(), null, null, false) }
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.DOUBLE, 1, allies + pokemon,
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to 1),
+            emptyList(), emptyList())
+        val templates = mapOf("slow" to details.copy(power = 400.0),
+            "quickattack" to details.copy(priority = 1),
+            "fakeout" to details.copy(power = 1000.0, priority = 3),
+            "protect" to details.copy(power = 0.0, priority = 4,
+                damageCategory = BattleMoveDamageCategory.STATUS, targetPattern = BattleMoveTargetPattern.SELF))
+        val source = BattlePublicActionCatalogView(emptyList(), candidatePools = listOf(
+            BattlePublicMoveCandidatePoolView(id, "probe", null, templates.keys, "fixture", templates)))
+        fun actions(history: RecursiveActionHistory, reserve: Boolean = true) = PublicFutureActionFactory.actions(
+            state, BattleSide.OPPONENT, source, history, includeMoveHypotheses = true,
+            hypotheticalMoveLimitPerSlot = 1, reserveHypotheticalPriority = reserve,
+            unknownMovePokemonIds = setOf(id))
+        fun assertMove(history: RecursiveActionHistory, expected: String) {
+            val moves = actions(history).filter { it.kind == BattleActionKind.USE_MOVE }
+            assertEquals(listOf(expected, expected), moves.map { it.moveId })
+            assertEquals(setOf(0, 1), moves.flatMap { it.targets }.map { it.slot }.toSet())
+            assertEquals(1, actions(history).count { "unknown_public_response" in it.tags })
+        }
+        assertMove(RecursiveActionHistory(), "fakeout")
+        val acted = RecursiveActionHistory(actedSinceEntryPokemonIds = setOf(id))
+        assertMove(acted, "quickattack")
+        assertEquals(setOf("slow"), actions(acted, reserve = false).mapNotNull { it.moveId }.toSet())
+        val exhausted = acted.copy(moveUses = mapOf(RecursiveMoveUseKey(id, "quickattack") to 8))
+        assertMove(exhausted, "slow")
+        val committed = LocalOpponentMoveHypotheses.assume(pokemon, source, acted, "quickattack")
+            .copy(moveUses = exhausted.moveUses)
+        assertFalse(actions(committed).any { it.kind == BattleActionKind.USE_MOVE })
+        assertEquals(8, source.candidatePools.single().moveDetails.getValue("quickattack").currentPp)
+        assertTrue(source.entries.isEmpty())
+        assertTrue(acted.assumedOpponentMoveIds.isEmpty())
+    }
+
+    @Test
     fun `hypothesis cap counts move IDs not targets and preserves nonhypothetical responses`() {
         val allies = (0..1).map { slot -> BattlePokemonStateView(UUID.randomUUID(), BattleSide.ALLY,
             slot, "target", null, 50, 1.0, null, emptyMap(), emptySet(), null, null, false) }
