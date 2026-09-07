@@ -9,6 +9,25 @@ import org.junit.jupiter.api.Test
 
 class PublicActionOutcomeProjectorTest {
     @Test
+    fun `HP transfer uses actor units and weights rounded on-hit HP by accuracy`() {
+        for (kind in listOf(BattleMoveEffectKind.DRAIN_FRACTION, BattleMoveEffectKind.RECOIL_FRACTION)) {
+            val action = move(facts = damageFacts(17.0 / 330, accuracy = 0.5),
+                effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                    listOf(BattleMoveEffectView(kind = kind, target = BattleMoveEffectTarget.USER,
+                        probability = 1.0, fractionRange = BattleFractionRange(0.5, 0.5))), false))
+            val result = PublicActionOutcomeProjector.project(action,
+                context(action, allyHp = 0.5, allyMaxHp = 235, opponentMaxHp = 330))
+            val transfer = if (kind == BattleMoveEffectKind.DRAIN_FRACTION) result.expectedSelfHealingFraction else result.expectedSelfRecoilFraction
+            assertEquals(4.5 / 235, requireNotNull(transfer), 1e-12, kind.name)
+            val capped = PublicActionOutcomeProjector.project(action, context(action,
+                allyHp = if (kind == BattleMoveEffectKind.DRAIN_FRACTION) 234.0 / 235 else 1.0 / 235,
+                allyMaxHp = 235, opponentMaxHp = 330))
+            val cappedTransfer = if (kind == BattleMoveEffectKind.DRAIN_FRACTION) capped.expectedSelfHealingFraction else capped.expectedSelfRecoilFraction
+            assertEquals(0.5 / 235, requireNotNull(cappedTransfer), 1e-12, "cap on hit before weighting: $kind")
+        }
+    }
+
+    @Test
     fun `damage and recoil are capped by the hp that can actually be removed`() {
         val move = move(
             facts = damageFacts(0.50),
@@ -31,8 +50,8 @@ class PublicActionOutcomeProjectorTest {
         assertEquals(BattleFractionRange(0.10, 0.10), projection.damageOnHitFractionRange)
         assertEquals(0.10, projection.expectedDamageFraction)
         assertEquals(BattleFractionRange(0.0, 0.0), projection.targetHpAfterHitRange)
-        assertEquals(1.0 / 30.0, projection.expectedSelfRecoilFraction!!, 0.000_001)
-        assertEquals(29.0 / 30.0, projection.actorExpectedHpAfterSelfEffects!!, 0.000_001)
+        assertEquals(7.0 / 200.0, projection.expectedSelfRecoilFraction!!, 0.000_001)
+        assertEquals(193.0 / 200.0, projection.actorExpectedHpAfterSelfEffects!!, 0.000_001)
         assertFalse(projection.opponentActionOrderResolved)
     }
 
@@ -162,14 +181,16 @@ class PublicActionOutcomeProjectorTest {
         allyHp: Double = 1.0,
         opponentHp: Double = 1.0,
         allyAbility: String? = null,
+        allyMaxHp: Int = 200,
+        opponentMaxHp: Int = 200,
     ): BattleDecisionContext {
         val state = BattleStateView(
             battleId = UUID.fromString("00000000-0000-0000-0000-000000000001"),
             format = BattleFormat.SINGLE,
             turn = 3,
             pokemon = listOf(
-                pokemon(BattleSide.ALLY, allyHp, 0, allyAbility),
-                pokemon(BattleSide.OPPONENT, opponentHp, 0),
+                pokemon(BattleSide.ALLY, allyHp, 0, allyAbility, allyMaxHp),
+                pokemon(BattleSide.OPPONENT, opponentHp, 0, maxHp = opponentMaxHp),
             ),
             field = BattleFieldStateView.empty(),
             remainingPokemonBySide = mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1),
@@ -189,6 +210,7 @@ class PublicActionOutcomeProjectorTest {
         hp: Double,
         activeSlot: Int,
         ability: String? = null,
+        maxHp: Int = 200,
     ) = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(),
         side = side,
@@ -205,10 +227,10 @@ class PublicActionOutcomeProjectorTest {
         fainted = false,
         knownTypeIds = setOf("normal"),
         combatStats = if (side == BattleSide.ALLY) {
-            BattleCombatStatRangesView.exact(200, 100, 100, 100, 100, 100)
+            BattleCombatStatRangesView.exact(maxHp, 100, 100, 100, 100, 100)
         } else {
             BattleCombatStatRangesView(
-                BattleIntegerRange(200, 200),
+                BattleIntegerRange(maxHp, maxHp),
                 BattleIntegerRange(100, 100),
                 BattleIntegerRange(100, 100),
                 BattleIntegerRange(100, 100),
@@ -243,8 +265,8 @@ class PublicActionOutcomeProjectorTest {
         facts = facts,
     )
 
-    private fun damageFacts(fraction: Double) = BattleCandidateFactsView(
-        baseAccuracyProbability = 1.0,
+    private fun damageFacts(fraction: Double, accuracy: Double = 1.0) = BattleCandidateFactsView(
+        baseAccuracyProbability = accuracy,
         typeChartMultiplier = 1.0,
         standardDamageModel = BattleStandardDamageModel.SHOWDOWN_GEN9_BASE_NON_CRITICAL,
         standardDamageFractionRange = BattleDamageFractionRange(fraction, fraction),

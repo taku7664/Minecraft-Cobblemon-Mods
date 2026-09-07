@@ -5,6 +5,7 @@ import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTactica
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalPublicPositionFacts
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalSituationalEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalDeclaredMultiHit
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalDamageHpTransfer
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalRiskAttitude
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
@@ -94,6 +95,14 @@ internal object PublicActionOutcomeProjector {
             null
         }
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()
+        fun expectedTransfer(ratio: Double, hpLimit: Double): Double {
+            val fixedHit = adjustedDamage?.takeIf { it.minimum == it.maximum && hitCount == 1.0 }
+            return if (fixedHit != null) {
+                LocalDamageHpTransfer.fraction(fixedHit.minimum, ratio, actor, target).coerceAtMost(hpLimit) * accuracy
+            } else {
+                LocalDamageHpTransfer.fraction(expectedDamage ?: 0.0, ratio, actor, target, roundActualHit = false)
+            }
+        }
         val fixedHealing = effects.filter {
             it.kind == BattleMoveEffectKind.HEAL_FRACTION &&
                 it.target == BattleMoveEffectTarget.USER && it.fractionRange != null
@@ -106,14 +115,14 @@ internal object PublicActionOutcomeProjector {
                 it.target == BattleMoveEffectTarget.USER && it.fractionRange != null
         }.sumOf { effect ->
             val range = requireNotNull(effect.fractionRange)
-            (expectedDamage ?: 0.0) * (range.minimum + range.maximum) / 2.0 * (effect.probability ?: 1.0)
+            expectedTransfer((range.minimum + range.maximum) / 2.0, (1.0 - (actor?.hpFraction ?: 0.0)).coerceAtLeast(0.0)) * (effect.probability ?: 1.0)
         }
         val damageRecoil = effects.filter {
             it.kind == BattleMoveEffectKind.RECOIL_FRACTION &&
                 it.target == BattleMoveEffectTarget.USER && it.fractionRange != null
         }.sumOf { effect ->
             val range = requireNotNull(effect.fractionRange)
-            (expectedDamage ?: 0.0) * (range.minimum + range.maximum) / 2.0 * (effect.probability ?: 1.0)
+            expectedTransfer((range.minimum + range.maximum) / 2.0, actor?.hpFraction ?: 1.0) * (effect.probability ?: 1.0)
         }
         val maxHpRecoil = effects.filter {
             it.kind == BattleMoveEffectKind.MAX_HP_RECOIL || it.kind == BattleMoveEffectKind.STRUGGLE_RECOIL
