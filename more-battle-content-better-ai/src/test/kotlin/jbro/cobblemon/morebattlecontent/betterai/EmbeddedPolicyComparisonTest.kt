@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalHypothesisPriorityReservation
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -11,9 +12,12 @@ class EmbeddedPolicyComparisonTest {
             EmbeddedPolicyComparison.tuning("CURRENT_PUBLIC_MOVE_HYPOTHESES"))
         assertFalse(current.lookaheadMoveHypotheses)
         assertEquals(Int.MAX_VALUE, current.hypotheticalMoveLimitPerSlot)
-        assertFalse(current.reserveHypotheticalPriority)
+        assertEquals(LocalHypothesisPriorityReservation.NONE, current.hypotheticalPriorityReservation)
+        assertEquals(current.copy(id = "current_public_move_hypotheses_cap3_priority_conditions", lookaheadMoveHypotheses = true,
+            hypotheticalMoveLimitPerSlot = 3, hypotheticalPriorityReservation = LocalHypothesisPriorityReservation.CONDITION_GROUPS),
+            EmbeddedPolicyComparison.tuning("CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY_CONDITIONS"))
         assertEquals(current.copy(id = "current_public_move_hypotheses_cap3_priority", lookaheadMoveHypotheses = true,
-            hypotheticalMoveLimitPerSlot = 3, reserveHypotheticalPriority = true),
+            hypotheticalMoveLimitPerSlot = 3, hypotheticalPriorityReservation = LocalHypothesisPriorityReservation.SINGLE),
             EmbeddedPolicyComparison.tuning("CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY"))
         assertEquals(current.copy(id = "current_public_move_hypotheses_cap3", lookaheadMoveHypotheses = true,
             hypotheticalMoveLimitPerSlot = 3), EmbeddedPolicyComparison.tuning("CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3"))

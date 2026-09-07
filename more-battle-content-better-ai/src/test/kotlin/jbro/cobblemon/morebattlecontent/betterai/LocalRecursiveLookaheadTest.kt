@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalHypothesisPriorityReservation
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
@@ -47,24 +48,41 @@ class LocalRecursiveLookaheadTest {
             candidatePools = listOf(BattlePublicMoveCandidatePoolView(OPPONENT_ID, "showdown:test", null,
                 templates.keys, "fixture:competing_priority", templates))))
         val limited = PublicFutureActionFactory.actions(initial, BattleSide.OPPONENT, source.publicActionCatalog,
-            includeMoveHypotheses = true, hypotheticalMoveLimitPerSlot = 3, reserveHypotheticalPriority = true)
+            includeMoveHypotheses = true, hypotheticalMoveLimitPerSlot = 3, hypotheticalPriorityReservation = LocalHypothesisPriorityReservation.SINGLE)
         assertTrue(limited.any { it.moveId == "suckerpunch" })
         assertFalse(limited.any { it.moveId == "quickattack" })
+        fun groupedResponses(hypothesisCap: Int, actionCap: Int = Int.MAX_VALUE) =
+            PublicFutureActionFactory.actions(initial, BattleSide.OPPONENT, source.publicActionCatalog,
+                includeMoveHypotheses = true, hypotheticalMoveLimitPerSlot = hypothesisCap,
+                candidateLimitPerSlot = actionCap, unknownMovePokemonIds = setOf(OPPONENT_ID),
+                hypotheticalPriorityReservation = LocalHypothesisPriorityReservation.CONDITION_GROUPS)
+        assertEquals(setOf("suckerpunch"), groupedResponses(1).mapNotNull { it.moveId }.toSet())
+        assertEquals(setOf("suckerpunch", "quickattack"), groupedResponses(2).mapNotNull { it.moveId }.toSet())
+        assertEquals(3, groupedResponses(3).count { "hypothetical_public_move" in it.tags })
+        for (actionCap in 1..3) {
+            val actions = groupedResponses(3, actionCap)
+            assertEquals(actionCap, actions.size)
+            assertTrue(actions.any { "unknown_public_response" in it.tags })
+            assertEquals(setOf("suckerpunch", "quickattack").take(actionCap - 1).toSet(),
+                actions.mapNotNull { it.moveId }.toSet())
+        }
         val boss = BattleTrainerProfile.balanced(5)
         val profile = boss.copy(difficulty = boss.difficulty.copy(lookaheadPlies = 1))
-        fun evaluate(cap: Int) = LocalRecursiveLookaheadEvaluator.evaluate(listOf(rank(recovery)), source,
+        fun evaluate(cap: Int, reservation: LocalHypothesisPriorityReservation = LocalHypothesisPriorityReservation.SINGLE) = LocalRecursiveLookaheadEvaluator.evaluate(listOf(rank(recovery)), source,
             profile, jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning.CURRENT.copy(
                 lookaheadMoveHypotheses = true, hypotheticalMoveLimitPerSlot = cap,
-                reserveHypotheticalPriority = true), clockMillis = { 0L })
+                hypotheticalPriorityReservation = reservation), clockMillis = { 0L })
         val full = evaluate(Int.MAX_VALUE)
         val capped = evaluate(3)
-        for (result in listOf(full, capped)) {
+        val grouped = evaluate(3, LocalHypothesisPriorityReservation.CONDITION_GROUPS)
+        for (result in listOf(full, capped, grouped)) {
             assertEquals(1, result.depthCompleted)
             assertFalse(result.truncated)
             assertTrue(result.publicResponseIncomplete)
         }
         assertEquals(0.0, full.ranked.single().worstResponseHpRetention, 1e-9)
         assertTrue(capped.ranked.single().worstResponseHpRetention > 0.0)
+        assertEquals(0.0, grouped.ranked.single().worstResponseHpRetention, 1e-9)
     }
 
     @Test
@@ -86,7 +104,7 @@ class LocalRecursiveLookaheadTest {
                 templates.keys, "fixture", templates))))
         val response = PublicFutureActionFactory.actions(initial, BattleSide.OPPONENT, source.publicActionCatalog,
             includeMoveHypotheses = true, hypotheticalMoveLimitPerSlot = 1,
-            reserveHypotheticalPriority = true).single()
+            hypotheticalPriorityReservation = LocalHypothesisPriorityReservation.SINGLE).single()
         assertEquals("suckerpunch", response.moveId)
         val againstAttack = PublicSingleTurnProjector.project(initial, attack, response, source)
         val againstStatus = PublicSingleTurnProjector.project(initial, status, response, source)
@@ -122,7 +140,7 @@ class LocalRecursiveLookaheadTest {
             profile,
             jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning.CURRENT.copy(
                 lookaheadMoveHypotheses = true, hypotheticalMoveLimitPerSlot = cap,
-                reserveHypotheticalPriority = reservePriority), clockMillis = { 0L })
+                hypotheticalPriorityReservation = if (reservePriority) LocalHypothesisPriorityReservation.SINGLE else LocalHypothesisPriorityReservation.NONE), clockMillis = { 0L })
         val full = evaluate(Int.MAX_VALUE)
         val capped = evaluate(3)
         for (result in listOf(full, capped)) {
@@ -140,7 +158,7 @@ class LocalRecursiveLookaheadTest {
         assertEquals(0.0, priorityReserved.ranked.single().worstResponseHpRetention, 1e-9)
         val tightlyCapped = PublicFutureActionFactory.actions(initial, BattleSide.OPPONENT,
             source.publicActionCatalog, candidateLimitPerSlot = 2, hypotheticalMoveLimitPerSlot = 3,
-            includeMoveHypotheses = true, reserveHypotheticalPriority = true,
+            includeMoveHypotheses = true, hypotheticalPriorityReservation = LocalHypothesisPriorityReservation.SINGLE,
             unknownMovePokemonIds = setOf(OPPONENT_ID))
         assertEquals(2, tightlyCapped.size)
         assertTrue(tightlyCapped.any { it.moveId == "quickattack" })

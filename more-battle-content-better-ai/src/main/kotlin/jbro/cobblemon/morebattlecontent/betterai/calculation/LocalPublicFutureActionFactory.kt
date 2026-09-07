@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai.calculation
 
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalHypothesisPriorityReservation
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffectiveness
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
@@ -17,7 +18,7 @@ internal object PublicFutureActionFactory {
         unknownMovePokemonIds: Set<java.util.UUID> = emptySet(),
         includeMoveHypotheses: Boolean = false,
         hypotheticalMoveLimitPerSlot: Int = Int.MAX_VALUE,
-        reserveHypotheticalPriority: Boolean = false,
+        hypotheticalPriorityReservation: LocalHypothesisPriorityReservation = LocalHypothesisPriorityReservation.NONE,
     ): List<BattleActionCandidate> {
         require(candidateLimitPerSlot > 0)
         require(hypotheticalMoveLimitPerSlot > 0)
@@ -33,7 +34,7 @@ internal object PublicFutureActionFactory {
                 primitiveActions(state, side, pokemon, catalog, history, unknownMovePokemonIds, includeMoveHypotheses),
                 candidateLimitPerSlot,
                 hypotheticalMoveLimitPerSlot,
-                reserveHypotheticalPriority,
+                hypotheticalPriorityReservation,
             )
         }
         if (bySlot.any(List<BattleActionCandidate>::isEmpty)) return emptyList()
@@ -62,21 +63,28 @@ internal object PublicFutureActionFactory {
         actions: List<BattleActionCandidate>,
         limit: Int,
         hypotheticalMoveLimit: Int,
-        reserveHypotheticalPriority: Boolean,
+        hypotheticalPriorityReservation: LocalHypothesisPriorityReservation,
     ): List<BattleActionCandidate> {
         val ordered = actions.sortedWith(
             compareByDescending<BattleActionCandidate> { primitivePriority(state, side, actor, it) }
                 .thenBy(BattleActionCandidate::actionId),
         )
-        // Reserve one already-executable damaging priority hypothesis. This does not guarantee
-        // coverage of every priority level, target or conditional effect; it remains experimental.
-        val priorityResponse = if (reserveHypotheticalPriority) ordered.firstOrNull {
+        // Generated candidates have passed known PP/entry constraints, not all success conditions.
+        // Group only by declared requirements: missing metadata is not proof of unconditional success.
+        val priorityCandidates = ordered.asSequence().filter {
             "hypothetical_public_move" in it.tags && it.kind == BattleActionKind.USE_MOVE &&
                 it.moveDetails?.let { details -> details.priority > 0 &&
                     details.damageCategory != BattleMoveDamageCategory.STATUS } == true
-        } else null
+        }
+        val priorityResponses = when (hypotheticalPriorityReservation) {
+            LocalHypothesisPriorityReservation.NONE -> emptySequence()
+            LocalHypothesisPriorityReservation.SINGLE -> priorityCandidates.take(1)
+            LocalHypothesisPriorityReservation.CONDITION_GROUPS -> priorityCandidates.distinctBy {
+                it.moveDetails?.effects?.requirements.isNullOrEmpty()
+            }
+        }.take(hypotheticalMoveLimit).toList()
         val selectedHypotheses = linkedSetOf<String>()
-        priorityResponse?.moveId?.let { selectedHypotheses.add(canonicalId(it)) }
+        priorityResponses.forEach { action -> action.moveId?.let { selectedHypotheses.add(canonicalId(it)) } }
         val ranked = ordered.filter { action ->
             // A search-cost cap, not a claim that omitted moves are impossible. Keep every target
             // variant of a selected move; known moves, switches and unknown responses do not count.
@@ -105,7 +113,7 @@ internal object PublicFutureActionFactory {
             ranked.firstOrNull(predicate)?.let { selected.putIfAbsent(it.actionId, it) }
         }
         reserve { "unknown_public_response" in it.tags }
-        priorityResponse?.let { priority -> reserve { it.actionId == priority.actionId } }
+        priorityResponses.forEach { priority -> reserve { it.actionId == priority.actionId } }
         reserve { it.kind == BattleActionKind.USE_MOVE }
         reserve { it.kind == BattleActionKind.SWITCH }
         ranked.forEach { action ->

@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalHypothesisPriorityReservation
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
@@ -40,8 +41,11 @@ internal object EmbeddedPolicyComparison {
             hypotheticalMoveLimitPerSlot = 3)
         "CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY" -> LocalDecisionTuning.CURRENT.copy(
             id = "current_public_move_hypotheses_cap3_priority", lookaheadMoveHypotheses = true,
-            hypotheticalMoveLimitPerSlot = 3, reserveHypotheticalPriority = true)
-        else -> error("Supported arms: CURRENT, LEGACY, CURRENT_PUBLIC_MOVE_HYPOTHESES, CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3 or CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY")
+            hypotheticalMoveLimitPerSlot = 3, hypotheticalPriorityReservation = LocalHypothesisPriorityReservation.SINGLE)
+        "CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY_CONDITIONS" -> LocalDecisionTuning.CURRENT.copy(
+            id = "current_public_move_hypotheses_cap3_priority_conditions", lookaheadMoveHypotheses = true,
+            hypotheticalMoveLimitPerSlot = 3, hypotheticalPriorityReservation = LocalHypothesisPriorityReservation.CONDITION_GROUPS)
+        else -> error("Supported arms: CURRENT, LEGACY, CURRENT_PUBLIC_MOVE_HYPOTHESES, CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3, CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY or CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY_CONDITIONS")
     }
 
     fun runPair(engine: Path, pair: JsonObject, directory: Path, pairIndex: Int,

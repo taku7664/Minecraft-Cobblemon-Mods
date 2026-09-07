@@ -47,8 +47,8 @@ internal data class LocalDecisionTuning(
     val lookaheadMoveHypotheses: Boolean = false,
     /** Distinct hypothetical moves per active slot, before the existing overall action cap. */
     val hypotheticalMoveLimitPerSlot: Int = Int.MAX_VALUE,
-    /** Experimental reservation of one positive-priority damaging hypothesis, within both caps. */
-    val reserveHypotheticalPriority: Boolean = false,
+    /** Experimental positive-priority damaging hypothesis reservation, within both caps. */
+    val hypotheticalPriorityReservation: LocalHypothesisPriorityReservation = LocalHypothesisPriorityReservation.NONE,
     /** When true, coverage decays linearly in revealed fraction instead of quadratically. */
     val lookaheadLinearCoverage: Boolean = true,
     val maximumLookaheadAdjustment: Double = 800.0,

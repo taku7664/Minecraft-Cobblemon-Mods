@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalHypothesisPriorityReservation
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.state.*
@@ -23,25 +24,29 @@ class LocalOpponentMoveHypothesesTest {
                 damageCategory = BattleMoveDamageCategory.STATUS, targetPattern = BattleMoveTargetPattern.SELF))
         val source = BattlePublicActionCatalogView(emptyList(), candidatePools = listOf(
             BattlePublicMoveCandidatePoolView(id, "probe", null, templates.keys, "fixture", templates)))
-        fun actions(history: RecursiveActionHistory, reserve: Boolean = true) = PublicFutureActionFactory.actions(
+        fun actions(history: RecursiveActionHistory,
+            reservation: LocalHypothesisPriorityReservation = LocalHypothesisPriorityReservation.SINGLE) = PublicFutureActionFactory.actions(
             state, BattleSide.OPPONENT, source, history, includeMoveHypotheses = true,
-            hypotheticalMoveLimitPerSlot = 1, reserveHypotheticalPriority = reserve,
+            hypotheticalMoveLimitPerSlot = 1, hypotheticalPriorityReservation = reservation,
             unknownMovePokemonIds = setOf(id))
         fun assertMove(history: RecursiveActionHistory, expected: String) {
-            val moves = actions(history).filter { it.kind == BattleActionKind.USE_MOVE }
-            assertEquals(listOf(expected, expected), moves.map { it.moveId })
-            assertEquals(setOf(0, 1), moves.flatMap { it.targets }.map { it.slot }.toSet())
-            assertEquals(1, actions(history).count { "unknown_public_response" in it.tags })
+            for (reservation in listOf(LocalHypothesisPriorityReservation.SINGLE, LocalHypothesisPriorityReservation.CONDITION_GROUPS)) {
+                val moves = actions(history, reservation).filter { it.kind == BattleActionKind.USE_MOVE }
+                assertEquals(listOf(expected, expected), moves.map { it.moveId })
+                assertEquals(setOf(0, 1), moves.flatMap { it.targets }.map { it.slot }.toSet())
+                assertEquals(1, actions(history, reservation).count { "unknown_public_response" in it.tags })
+            }
         }
         assertMove(RecursiveActionHistory(), "fakeout")
         val acted = RecursiveActionHistory(actedSinceEntryPokemonIds = setOf(id))
         assertMove(acted, "quickattack")
-        assertEquals(setOf("slow"), actions(acted, reserve = false).mapNotNull { it.moveId }.toSet())
+        assertEquals(setOf("slow"), actions(acted, LocalHypothesisPriorityReservation.NONE).mapNotNull { it.moveId }.toSet())
         val exhausted = acted.copy(moveUses = mapOf(RecursiveMoveUseKey(id, "quickattack") to 8))
         assertMove(exhausted, "slow")
         val committed = LocalOpponentMoveHypotheses.assume(pokemon, source, acted, "quickattack")
             .copy(moveUses = exhausted.moveUses)
         assertFalse(actions(committed).any { it.kind == BattleActionKind.USE_MOVE })
+        assertFalse(actions(committed, LocalHypothesisPriorityReservation.CONDITION_GROUPS).any { it.kind == BattleActionKind.USE_MOVE })
         assertEquals(8, source.candidatePools.single().moveDetails.getValue("quickattack").currentPp)
         assertTrue(source.entries.isEmpty())
         assertTrue(acted.assumedOpponentMoveIds.isEmpty())
