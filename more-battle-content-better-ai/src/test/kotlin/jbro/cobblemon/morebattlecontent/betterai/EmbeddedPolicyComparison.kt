@@ -35,7 +35,10 @@ internal object EmbeddedPolicyComparison {
         "LEGACY" -> LocalDecisionTuning.LEGACY
         "CURRENT_PUBLIC_MOVE_HYPOTHESES" -> LocalDecisionTuning.CURRENT.copy(
             id = "current_public_move_hypotheses", lookaheadMoveHypotheses = true)
-        else -> error("Supported arms: CURRENT, LEGACY or CURRENT_PUBLIC_MOVE_HYPOTHESES")
+        "CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3" -> LocalDecisionTuning.CURRENT.copy(
+            id = "current_public_move_hypotheses_cap3", lookaheadMoveHypotheses = true,
+            hypotheticalMoveLimitPerSlot = 3)
+        else -> error("Supported arms: CURRENT, LEGACY, CURRENT_PUBLIC_MOVE_HYPOTHESES or CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3")
     }
 
     fun runPair(engine: Path, pair: JsonObject, directory: Path, pairIndex: Int,

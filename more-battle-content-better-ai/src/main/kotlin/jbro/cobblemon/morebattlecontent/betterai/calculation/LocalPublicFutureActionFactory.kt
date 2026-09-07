@@ -16,8 +16,10 @@ internal object PublicFutureActionFactory {
         candidateLimitPerSlot: Int = Int.MAX_VALUE,
         unknownMovePokemonIds: Set<java.util.UUID> = emptySet(),
         includeMoveHypotheses: Boolean = false,
+        hypotheticalMoveLimitPerSlot: Int = Int.MAX_VALUE,
     ): List<BattleActionCandidate> {
         require(candidateLimitPerSlot > 0)
+        require(hypotheticalMoveLimitPerSlot > 0)
         val active = state.pokemon.filter {
             it.side == side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         }.sortedBy { it.activeSlot }
@@ -29,6 +31,7 @@ internal object PublicFutureActionFactory {
                 pokemon,
                 primitiveActions(state, side, pokemon, catalog, history, unknownMovePokemonIds, includeMoveHypotheses),
                 candidateLimitPerSlot,
+                hypotheticalMoveLimitPerSlot,
             )
         }
         if (bySlot.any(List<BattleActionCandidate>::isEmpty)) return emptyList()
@@ -56,11 +59,22 @@ internal object PublicFutureActionFactory {
         actor: BattlePokemonStateView,
         actions: List<BattleActionCandidate>,
         limit: Int,
+        hypotheticalMoveLimit: Int,
     ): List<BattleActionCandidate> {
+        val selectedHypotheses = linkedSetOf<String>()
         val ranked = actions.sortedWith(
             compareByDescending<BattleActionCandidate> { primitivePriority(state, side, actor, it) }
                 .thenBy(BattleActionCandidate::actionId),
-        )
+        ).filter { action ->
+            // A search-cost cap, not a claim that omitted moves are impossible. Keep every target
+            // variant of a selected move; known moves, switches and unknown responses do not count.
+            if ("hypothetical_public_move" !in action.tags) true
+            else {
+                val move = canonicalId(requireNotNull(action.moveId))
+                move in selectedHypotheses ||
+                    (selectedHypotheses.size < hypotheticalMoveLimit && selectedHypotheses.add(move))
+            }
+        }
         // Ordering is applied even when nothing is trimmed, which it previously was not.
         //
         // The search does not always finish. It stops on a node or time budget, and inside a node it
@@ -72,7 +86,7 @@ internal object PublicFutureActionFactory {
         // Sorting costs nothing when the budget holds: the caller takes a maximum over all of them and
         // order cannot change a maximum. It only matters when the search is cut short, and then it is
         // the difference between examining the plausible moves and examining the first ones.
-        if (actions.size <= limit) return ranked
+        if (ranked.size <= limit) return ranked
         val selected = linkedMapOf<String, BattleActionCandidate>()
         fun reserve(predicate: (BattleActionCandidate) -> Boolean) {
             if (selected.size >= limit) return

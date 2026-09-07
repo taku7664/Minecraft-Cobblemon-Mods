@@ -10,6 +10,10 @@ class EmbeddedPolicyComparisonTest {
         assertEquals(current.copy(id = "current_public_move_hypotheses", lookaheadMoveHypotheses = true),
             EmbeddedPolicyComparison.tuning("CURRENT_PUBLIC_MOVE_HYPOTHESES"))
         assertFalse(current.lookaheadMoveHypotheses)
+        assertEquals(Int.MAX_VALUE, current.hypotheticalMoveLimitPerSlot)
+        assertEquals(current.copy(id = "current_public_move_hypotheses_cap3", lookaheadMoveHypotheses = true,
+            hypotheticalMoveLimitPerSlot = 3), EmbeddedPolicyComparison.tuning("CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3"))
+        assertThrows(IllegalArgumentException::class.java) { current.copy(hypotheticalMoveLimitPerSlot = 0) }
         assertFalse(EmbeddedPolicyComparison.tuning("LEGACY").lookaheadMoveHypotheses)
         assertThrows(IllegalStateException::class.java) { EmbeddedPolicyComparison.tuning("UNKNOWN") }
     }

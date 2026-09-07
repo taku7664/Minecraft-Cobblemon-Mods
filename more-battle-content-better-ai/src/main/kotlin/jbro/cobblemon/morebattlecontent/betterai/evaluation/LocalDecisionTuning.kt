@@ -45,6 +45,8 @@ internal data class LocalDecisionTuning(
     val lookaheadCoverageFloor: Double = 0.35,
     /** Experimental public-learnset response search; adoption requires paired validation. */
     val lookaheadMoveHypotheses: Boolean = false,
+    /** Distinct hypothetical moves per active slot, before the existing overall action cap. */
+    val hypotheticalMoveLimitPerSlot: Int = Int.MAX_VALUE,
     /** When true, coverage decays linearly in revealed fraction instead of quadratically. */
     val lookaheadLinearCoverage: Boolean = true,
     val maximumLookaheadAdjustment: Double = 800.0,
@@ -328,6 +330,7 @@ internal data class LocalDecisionTuning(
 ) {
     init {
         require(lookaheadCoverageFloor in 0.0..1.0)
+        require(hypotheticalMoveLimitPerSlot > 0)
         require(searchAuthority.isFinite() && searchAuthority in 0.0..1.0)
         require(leafPressureWeight.isFinite() && leafPressureWeight >= 0.0)
         require(leafKnockoutPressure.isFinite() && leafKnockoutPressure >= 0.0)

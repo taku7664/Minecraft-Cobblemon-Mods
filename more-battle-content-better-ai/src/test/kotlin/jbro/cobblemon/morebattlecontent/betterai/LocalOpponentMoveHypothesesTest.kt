@@ -10,6 +10,43 @@ import org.junit.jupiter.api.Test
 
 class LocalOpponentMoveHypothesesTest {
     @Test
+    fun `hypothesis cap counts move IDs not targets and preserves nonhypothetical responses`() {
+        val allies = (0..1).map { slot -> BattlePokemonStateView(UUID.randomUUID(), BattleSide.ALLY,
+            slot, "target", null, 50, 1.0, null, emptyMap(), emptySet(), null, null, false) }
+        val bench = BattlePokemonStateView(UUID.randomUUID(), BattleSide.OPPONENT, null,
+            "probe", null, 50, 1.0, null, emptyMap(), emptySet(), null, null, false)
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.DOUBLE, 1, allies + pokemon + bench,
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to 2),
+            emptyList(), emptyList())
+        val source = BattlePublicActionCatalogView(listOf(BattlePokemonActionCatalogView(id,
+            listOf(BattlePublicMoveOptionView("a", details.copy(power = 1.0),
+                BattlePublicMoveKnowledge.PUBLICLY_REVEALED)), moveSetComplete = false)),
+            candidatePools = catalog.candidatePools)
+        fun actions(cap: Int) = PublicFutureActionFactory.actions(state, BattleSide.OPPONENT, source,
+            unknownMovePokemonIds = setOf(id), includeMoveHypotheses = true,
+            hypotheticalMoveLimitPerSlot = cap)
+        fun signatures(actions: List<BattleActionCandidate>) = actions.map {
+            listOf(it.actionId, it.kind, it.actorSlot, it.moveSlot, it.moveId,
+                it.targets.map { target -> target.side to target.slot }, it.switchPokemonId,
+                it.moveDetails, it.tags)
+        }
+        val unlimited = actions(Int.MAX_VALUE)
+        val limited = actions(1)
+        val hypothetical = limited.filter { "hypothetical_public_move" in it.tags }
+        assertEquals(listOf("d", "d"), hypothetical.map { it.moveId })
+        assertEquals(setOf(0, 1), hypothetical.flatMap { it.targets }.map { it.slot }.toSet())
+        assertEquals(signatures(unlimited.filterNot { "hypothetical_public_move" in it.tags }),
+            signatures(limited.filterNot { "hypothetical_public_move" in it.tags }))
+        assertTrue(limited.any { it.kind == BattleActionKind.SWITCH })
+        assertTrue(limited.any { "unknown_public_response" in it.tags })
+        assertEquals(2, limited.count { it.moveId == "a" })
+        assertEquals(signatures(limited), signatures(actions(1)))
+        assertEquals(setOf("d", "e"), source.candidatePools.single().moveIds)
+        assertEquals(signatures(unlimited), signatures(actions(2)))
+        assertThrows(IllegalArgumentException::class.java) { actions(0) }
+    }
+
+    @Test
     fun `double joint hypotheses keep separate fourth slots and PP across the next turn`() {
         val secondId = UUID.randomUUID()
         fun member(memberId: UUID, side: BattleSide, slot: Int) = BattlePokemonStateView(memberId, side,

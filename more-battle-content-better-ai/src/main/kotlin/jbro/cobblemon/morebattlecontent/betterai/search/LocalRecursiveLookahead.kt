@@ -702,6 +702,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 profile.difficulty.doubleCandidateLimitPerSlot,
                 incompleteIds,
                 includeMoveHypotheses = tuning.lookaheadMoveHypotheses,
+                hypotheticalMoveLimitPerSlot = tuning.hypotheticalMoveLimitPerSlot,
             )
             if (incompleteIds.isNotEmpty()) {
                 publicResponseIncomplete = true
