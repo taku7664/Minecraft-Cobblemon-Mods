@@ -32,12 +32,15 @@ class LocalBranchMoveInputsTest {
             BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, pp),
             BattlePublicMoveKnowledge.EXACT_OWN)), true)
         val action = BattleActionCandidate("wait", BattleActionKind.WAIT)
+        val pool = BattlePublicMoveCandidatePoolView(id, "ditto", null, setOf("transform"), "fixture:learnset")
         val source = BattleDecisionContext(UUID.randomUUID(), state, listOf(action), Long.MAX_VALUE,
-            publicActionCatalog = BattlePublicActionCatalogView(listOf(entry("splash", 5)), listOf(entry("recover", 7))))
+            publicActionCatalog = BattlePublicActionCatalogView(listOf(entry("splash", 5)), listOf(entry("recover", 7)), listOf(pool)))
         val history = RecursiveActionHistory(restoredOriginalPokemonIds = setOf(id),
             moveUses = mapOf(RecursiveMoveUseKey(id, "recover") to 5))
         val projected = LocalBranchMoveInputs.context(source, state, history)
         val leaf = LocalBranchMoveInputs.context(source, state, history, spendPp = true)
+        assertSame(pool, projected.publicActionCatalog.candidatePools.single())
+        assertSame(pool, leaf.publicActionCatalog.candidatePools.single())
         assertEquals(setOf("recover"), leaf.state.pokemon.single().knownMoveIds)
         assertEquals(7, projected.publicActionCatalog.forPokemon(id).single().details.currentPp)
         assertEquals(2, leaf.publicActionCatalog.forPokemon(id).single().details.currentPp)

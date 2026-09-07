@@ -515,7 +515,10 @@ class BattlePokemonActionCatalogView(
 class BattlePublicActionCatalogView @JvmOverloads constructor(
     entries: List<BattlePokemonActionCatalogView>,
     originalEntries: List<BattlePokemonActionCatalogView> = emptyList(),
+    candidatePools: List<BattlePublicMoveCandidatePoolView> = emptyList(),
 ) {
+    /** Unconfirmed public learnset candidates, deliberately separate from known action templates. */
+    val candidatePools: List<BattlePublicMoveCandidatePoolView> = Collections.unmodifiableList(ArrayList(candidatePools))
     /** Pre-Transform move pools, restored on departure; these are not currently usable moves. */
     val originalEntries: List<BattlePokemonActionCatalogView> = Collections.unmodifiableList(ArrayList(originalEntries))
     val entries: List<BattlePokemonActionCatalogView> = Collections.unmodifiableList(ArrayList(entries))
@@ -524,6 +527,9 @@ class BattlePublicActionCatalogView @JvmOverloads constructor(
     }
 
     init {
+        require(this.candidatePools.map { it.battlePokemonId }.distinct().size == this.candidatePools.size) {
+            "Public candidate pools cannot contain duplicate Pokemon identities"
+        }
         require(this.originalEntries.map { it.battlePokemonId }.distinct().size == this.originalEntries.size) {
             "Original action catalog cannot contain duplicate Pokemon identities"
         }
@@ -542,6 +548,7 @@ class BattlePublicActionCatalogView @JvmOverloads constructor(
         return BattlePublicActionCatalogView(
             entries.filterNot { it.battlePokemonId in restoredIds } + restored,
             originalEntries.filterNot { it.battlePokemonId in restoredIds },
+            candidatePools,
         )
     }
 
