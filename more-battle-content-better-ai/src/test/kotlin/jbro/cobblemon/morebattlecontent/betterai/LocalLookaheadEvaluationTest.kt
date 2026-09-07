@@ -8,6 +8,8 @@ import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTactica
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicFutureActionFactory
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicMoveOutcomeBranchProjector
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalLookaheadStateEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalBoardMaterial
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalPublicSpeedRelation
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalSituationalEvaluator
@@ -36,6 +38,31 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class LocalLookaheadEvaluationTest {
+    @Test
+    fun `leaf damage stops at remaining HP before accuracy and gives no overkill setup value`() {
+        val tuning = LocalDecisionTuning.CURRENT
+        for (accuracy in listOf(100.0, 50.0)) {
+            val attack = move("overkill", power = 1_000.0, accuracy = accuracy)
+            val moves = catalog(allyMoves = listOf(attack), opponentMoves = emptyList())
+            for (hp in listOf(1.0, 0.25)) {
+                val ordinary = state(opponentHp = hp)
+                val boosted = state(opponentHp = hp, allyStatStages = mapOf("attack" to 2))
+                fun value(board: BattleStateView) = LocalLookaheadStateEvaluator.evaluate(
+                    board, context(board, listOf(attack), moves))
+                assertEquals(LocalBoardMaterial.evaluate(ordinary) +
+                    (hp + tuning.leafKnockoutPressure) * accuracy / 100.0 * tuning.leafPressureWeight,
+                    value(ordinary), 1e-9)
+                assertEquals(value(ordinary), value(boosted), 1e-9,
+                    "Increasing damage beyond the target's HP is not future material gain")
+                assertTrue(LocalLookaheadStateEvaluator.attackPressure(boosted, BattleSide.ALLY,
+                    context(boosted, listOf(attack), moves)) >
+                    LocalLookaheadStateEvaluator.attackPressure(ordinary, BattleSide.ALLY,
+                        context(ordinary, listOf(attack), moves)),
+                    "Raw exposure callers keep their uncapped damage signal")
+            }
+        }
+    }
+
     @Test
     fun `self setup is marked as already boosted from public accumulated stages`() {
         val setup = move(

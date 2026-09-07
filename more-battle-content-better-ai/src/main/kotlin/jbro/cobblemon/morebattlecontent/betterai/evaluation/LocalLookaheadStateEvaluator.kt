@@ -27,8 +27,10 @@ internal object LocalLookaheadStateEvaluator {
         val material = LocalBoardMaterial.evaluate(state)
         if (battleEnded(state)) return material
         val pressure =
-            attackPressure(state, BattleSide.ALLY, source, calculationCache, shouldContinue, tuning) -
-                attackPressure(state, BattleSide.OPPONENT, source, calculationCache, shouldContinue, tuning)
+            attackPressure(state, BattleSide.ALLY, source, calculationCache, shouldContinue, tuning,
+                capDamageToRemainingHp = true) -
+                attackPressure(state, BattleSide.OPPONENT, source, calculationCache, shouldContinue, tuning,
+                    capDamageToRemainingHp = true)
         val speedControl = when (speedRelation(state)) {
             LocalPublicSpeedRelation.ALLY_FIRST -> tuning.leafSpeedControlValue
             LocalPublicSpeedRelation.OPPONENT_FIRST -> -tuning.leafSpeedControlValue
@@ -99,6 +101,9 @@ internal object LocalLookaheadStateEvaluator {
         calculationCache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
         shouldContinue: () -> Boolean = { true },
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+        // Singles leaf value measures realizable HP loss. Exposure/switch callers retain raw
+        // damage pressure; doubles needs a separate per-target/redirection valuation.
+        capDamageToRemainingHp: Boolean = false,
     ): Double = PublicFutureActionFactory.actions(state, side, source.publicActionCatalog)
         .flatMap { action ->
             if (action.kind == BattleActionKind.COMPOSITE) action.componentActions else listOf(action)
@@ -122,8 +127,19 @@ internal object LocalLookaheadStateEvaluator {
             if (mechanics.publiclyNullified) return@map 0.0
             val facts = calculated.facts
             val accuracy = facts?.baseAccuracyProbability ?: 0.0
+            val targetHp = if (capDamageToRemainingHp && state.format == BattleFormat.SINGLE) state.pokemon.singleOrNull {
+                it.side == (calculated.targets.singleOrNull()?.side ?: BattleSide.entries.single { other -> other != side }) &&
+                    it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+            }?.hpFraction else null
             val expectedDamage = facts?.standardDamageFractionRange?.let { range ->
-                (range.minimum + range.maximum) / 2.0 * accuracy * mechanics.knownDamageMultiplier
+                if (targetHp == null) {
+                    (range.minimum + range.maximum) / 2.0 * accuracy * mechanics.knownDamageMultiplier
+                } else {
+                    // Cap before accuracy: inaccurate overkill is not a certain full HP bar.
+                    val minimum = (range.minimum * mechanics.knownDamageMultiplier).coerceAtMost(targetHp)
+                    val maximum = (range.maximum * mechanics.knownDamageMultiplier).coerceAtMost(targetHp)
+                    (minimum + maximum) / 2.0 * accuracy
+                }
             } ?: 0.0
             val knockoutProbability = facts?.standardDamageRollKoProbabilityRange?.let { range ->
                 (range.minimum + range.maximum) / 2.0 * accuracy
