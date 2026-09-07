@@ -8,6 +8,7 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalFullHealthSurviv
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalKnownStatMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalMechanicFormResolution
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveTargets
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicStatusImmunity
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveProjection
@@ -50,7 +51,7 @@ internal object PublicBattleTacticalCalculator {
     ): List<Double>? {
         val details = candidate.moveDetails ?: return null
         val actor = candidate.actorSlot?.let { slot -> active(context, actingSide, slot) }
-        val targets = resolvedTargets(candidate, context, actingSide)
+        val targets = LocalPublicMoveTargets.resolve(candidate, context, actingSide)
         // These rolls feed the search, which applies them to one defender. A spread move is therefore
         // projected against its primary target only: the extra slot is visible to the scorer through
         // `spreadTargets`, but the recursive projection still moves one HP bar per action.
@@ -178,7 +179,7 @@ internal object PublicBattleTacticalCalculator {
         val actor = candidate.actorSlot?.let { slot -> active(context, actingSide, slot) }
         val stab = sameTypeAttackBonus(details, actor, candidate)
             ?.also { basis += BattleCalculationBasis.PUBLIC_TYPES }
-        val targets = resolvedTargets(candidate, context, actingSide)
+        val targets = LocalPublicMoveTargets.resolve(candidate, context, actingSide)
         val target = targets.firstOrNull()
         val spreadMultiplier = if (targets.size > 1) SPREAD_DAMAGE_MULTIPLIER else 1.0
         val typeMultiplier = target?.knownTypeIds?.takeIf { it.isNotEmpty() }?.let {
@@ -479,13 +480,6 @@ internal object PublicBattleTacticalCalculator {
             it.kind == BattleMoveEffectKind.SLOT_CONDITION && canonical(it.valueId) == "futuremove"
         }
 
-    /** Patterns the engine resolves itself, striking every opposing active slot at once. */
-    private val SPREAD_OPPONENT_PATTERNS = setOf(
-        BattleMoveTargetPattern.ALL_OPPONENTS,
-        BattleMoveTargetPattern.ALL_ADJACENT,
-        BattleMoveTargetPattern.ALL_ACTIVE,
-    )
-
     /** Gen 9 reduces a spread move to 0.75x when it actually lands on more than one target. */
     private const val SPREAD_DAMAGE_MULTIPLIER = 0.75
 
@@ -549,110 +543,8 @@ internal object PublicBattleTacticalCalculator {
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         actingSide: BattleSide,
-    ): Double? = resolvedTargets(candidate, context, actingSide).firstOrNull()?.hpFraction
+    ): Double? = LocalPublicMoveTargets.resolve(candidate, context, actingSide).firstOrNull()?.hpFraction
 
-    /**
-     * Every opposing slot this move hits, in active-slot order.
-     *
-     * A spread move never carries an explicit target: the engine offers no target choice for it, so
-     * the adapter builds one candidate with an empty target list. Resolving that by taking the single
-     * active opponent worked in singles and returned nothing in doubles, which skipped the damage
-     * projection entirely and dropped every spread move onto the coarse power-based fallback. The
-     * move's own target pattern is the fact that was being ignored.
-     *
-     * Only opposing slots are resolved. `ALL_ADJACENT` and `ALL_ACTIVE` also strike the ally, but that
-     * is priced separately as collateral rather than as pressure, and folding it in here would put
-     * damage dealt to one's own side into a field that means damage dealt to the opponent's.
-     */
-    private fun resolvedTargets(
-        candidate: BattleActionCandidate,
-        context: BattleDecisionContext,
-        actingSide: BattleSide,
-    ): List<BattlePokemonStateView> {
-        val explicitTarget = candidate.targets.singleOrNull()
-        if (explicitTarget != null) {
-            val declared = active(context, explicitTarget.side, explicitTarget.slot)
-            return listOfNotNull(declared?.let { redirectedAwayFrom(it, candidate, context) ?: it })
-        }
-        val targetSide = if (actingSide == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
-        val activeOpponents = context.state.pokemon
-            .filter { it.side == targetSide && it.activeSlot != null && !it.fainted }
-            .sortedBy { it.activeSlot }
-        val pattern = candidate.moveDetails?.targetPattern
-        if (pattern in SPREAD_OPPONENT_PATTERNS) return activeOpponents
-        // Without an explicit target and without a spread pattern the defender is only determined when
-        // exactly one opponent is on the field; guessing between two would invent a fact.
-        return listOfNotNull(activeOpponents.singleOrNull())
-    }
-
-
-    /**
-     * The slot a publicly known ability pulls this move into instead, or nothing.
-     *
-     * Lightning Rod and Storm Drain were modelled only as absorbers standing on their own slot, which
-     * is the whole of what they do in singles and half of what they do in doubles. The other half is
-     * that they take the move away from the partner: an Electric attack aimed at the slot beside a
-     * Lightning Rod does not hit that slot at all.
-     *
-     * Missing it is not a small mispricing. The AI projected full damage on the declared target,
-     * spent the turn, dealt nothing, and handed the opponent a free Special Attack stage - and would
-     * do it again next turn, because nothing about the failure was in the public state it reads. The
-     * fix belongs here rather than in the damage step, because the question being got wrong is "who
-     * does this move hit", and this is the one function that answers it. Everything downstream - the
-     * type chart, the absorbing-ability check, the knockout - then reads the right defender without
-     * knowing redirection exists.
-     *
-     * The same public standard as every other ability reading: revealed, or the only ordinary ability
-     * the species has. Ability-ignoring attackers are deliberately not exempted. Mold Breaker stops
-     * the absorption, not the redirection, so such a move still gets pulled aside and then lands -
-     * which is exactly what falls out of resolving the target here and letting the kernel decide the
-     * rest.
-     */
-    private fun redirectedAwayFrom(
-        declared: BattlePokemonStateView,
-        candidate: BattleActionCandidate,
-        context: BattleDecisionContext,
-    ): BattlePokemonStateView? {
-        if (context.state.format != BattleFormat.DOUBLE) return null
-        if (candidate.moveDetails?.targetPattern !in REDIRECTABLE_TARGET_PATTERNS) return null
-        val moveType = canonical(candidate.moveDetails?.typeId) ?: return null
-        return context.state.pokemon.firstOrNull { other ->
-            other.side == declared.side &&
-                other.activeSlot != null &&
-                other.battlePokemonId != declared.battlePokemonId &&
-                !other.fainted &&
-                other.hpFraction > 0.0 &&
-                redirectsPublicly(other, context, moveType)
-        }
-    }
-
-    private fun redirectsPublicly(
-        pokemon: BattlePokemonStateView,
-        context: BattleDecisionContext,
-        moveType: String,
-    ): Boolean {
-        val revealed = canonical(pokemon.knownAbilityId)
-        if (revealed != null) return REDIRECTING_ABILITIES[revealed] == moveType
-        val possible = context.state.inferences.asSequence()
-            .filter { it.subjectPokemonId == pokemon.battlePokemonId && it.categoryId == ABILITY_CATEGORY }
-            .filter { it.confidence != BattleInferenceConfidence.RULED_OUT }
-            .mapNotNull { canonical(it.candidateId) }
-            .distinct()
-            .toList()
-        return possible.isNotEmpty() && possible.all { REDIRECTING_ABILITIES[it] == moveType }
-    }
-
-    /** The abilities that take a single-target move of their type away from the slot beside them. */
-    private val REDIRECTING_ABILITIES = mapOf(
-        "lightningrod" to "electric",
-        "stormdrain" to "water",
-    )
-
-    /** Only a move that picks one slot can be pulled to a different one. */
-    private val REDIRECTABLE_TARGET_PATTERNS = setOf(
-        BattleMoveTargetPattern.SELECTED,
-        BattleMoveTargetPattern.SELECTED_OPPONENT,
-    )
 
     private fun active(context: BattleDecisionContext, side: BattleSide, slot: Int): BattlePokemonStateView? =
         context.state.pokemon.firstOrNull {

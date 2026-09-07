@@ -25,7 +25,8 @@ internal object LocalPublicMechanicsKernel {
         if (details.damageCategory == BattleMoveDamageCategory.STATUS) {
             return projectStatusMove(candidate, details, context, actingSide)
         }
-        val target = singleOpponentTarget(candidate, context, actingSide) ?: return LocalPublicMoveProjection.neutral()
+        val target = LocalPublicMoveTargets.resolve(candidate, context, actingSide).firstOrNull()
+            ?: return LocalPublicMoveProjection.neutral()
         val actor = context.state.pokemon.firstOrNull {
             it.side == actingSide && it.activeSlot == candidate.actorSlot && !it.fainted
         }
@@ -107,7 +108,7 @@ internal object LocalPublicMechanicsKernel {
         if (targetStatuses.isEmpty() || targetStatuses.size != declared.size) {
             return LocalPublicMoveProjection.neutral()
         }
-        val target = singleOpponentTarget(candidate, context, actingSide)
+        val target = singleStatusTarget(candidate, context, actingSide)
             ?: return LocalPublicMoveProjection.neutral()
         val types = target.knownTypeIds.mapTo(linkedSetOf(), ::canonical)
         val ability = publicAbility(target, context)
@@ -195,7 +196,8 @@ internal object LocalPublicMechanicsKernel {
         return if (context.state.format == BattleFormat.DOUBLE) DOUBLE_SCREEN_MULTIPLIER else SINGLE_SCREEN_MULTIPLIER
     }
 
-    private fun singleOpponentTarget(
+    // Status effects retain their single-target contract; one immune spread target is not all targets.
+    private fun singleStatusTarget(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         actingSide: BattleSide,
