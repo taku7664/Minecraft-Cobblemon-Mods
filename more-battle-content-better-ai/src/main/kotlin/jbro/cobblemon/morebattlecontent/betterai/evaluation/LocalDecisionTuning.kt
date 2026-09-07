@@ -75,6 +75,8 @@ internal data class LocalDecisionTuning(
      * worth roughly a third of the health it threatens - a number nothing has ever tested.
      */
     val leafPressureWeight: Double = 0.30,
+    /** Experimental public team matchup coverage in board units; zero preserves the default leaf. */
+    val leafTeamCoverageWeight: Double = 0.0,
     /** Board value of a certain knockout threat in the leaf, beyond the damage it represents. */
     val leafKnockoutPressure: Double = 0.35,
     /** Board value of moving first, when the public speed order is resolvable. */
@@ -335,6 +337,7 @@ internal data class LocalDecisionTuning(
         require(hypotheticalMoveLimitPerSlot > 0)
         require(searchAuthority.isFinite() && searchAuthority in 0.0..1.0)
         require(leafPressureWeight.isFinite() && leafPressureWeight >= 0.0)
+        require(leafTeamCoverageWeight.isFinite() && leafTeamCoverageWeight >= 0.0)
         require(leafKnockoutPressure.isFinite() && leafKnockoutPressure >= 0.0)
         require(leafSpeedControlValue.isFinite() && leafSpeedControlValue >= 0.0)
         require(unprojectedPowerPerHpBar > 0.0)

@@ -8,6 +8,9 @@ class EmbeddedPolicyComparisonTest {
     @Test
     fun `hypothesis comparison arm changes only the experimental switch and identity`() {
         val current = EmbeddedPolicyComparison.tuning("CURRENT")
+        assertEquals(0.0, current.leafTeamCoverageWeight)
+        assertEquals(current.copy(id = "current_team_coverage", leafTeamCoverageWeight = 0.25),
+            EmbeddedPolicyComparison.tuning("CURRENT_TEAM_COVERAGE"))
         assertEquals(current.copy(id = "current_public_move_hypotheses", lookaheadMoveHypotheses = true),
             EmbeddedPolicyComparison.tuning("CURRENT_PUBLIC_MOVE_HYPOTHESES"))
         assertFalse(current.lookaheadMoveHypotheses)

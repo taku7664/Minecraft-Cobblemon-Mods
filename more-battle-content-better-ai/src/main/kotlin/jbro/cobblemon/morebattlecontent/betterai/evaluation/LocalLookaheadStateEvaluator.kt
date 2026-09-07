@@ -36,7 +36,11 @@ internal object LocalLookaheadStateEvaluator {
             LocalPublicSpeedRelation.UNAVAILABLE,
             -> 0.0
         }
-        return material + pressure * tuning.leafPressureWeight + speedControl
+        val teamCoverage = if (tuning.leafTeamCoverageWeight == 0.0) 0.0 else {
+            LocalTeamMatchupCoverage.evaluate(state, source, calculationCache, shouldContinue, tuning)
+        }
+        return material + pressure * tuning.leafPressureWeight + speedControl +
+            teamCoverage * tuning.leafTeamCoverageWeight
     }
 
     fun speedRelation(state: BattleStateView): LocalPublicSpeedRelation {
