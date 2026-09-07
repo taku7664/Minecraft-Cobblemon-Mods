@@ -132,6 +132,20 @@ class EmbeddedTeamBattleTest {
         assertEquals(request(original, "p1"), request(variant, "p1"))
         assertNotEquals(request(original, "p2"), request(variant, "p2"))
         for (side in listOf("p1", "p2")) {
+            val raw = request(original, side)
+            assertTrue(raw.has("publicLearnsets"), "Native comparison must export public rule candidates separately")
+            val pools = raw.getAsJsonObject("publicLearnsets")
+            assertEquals(raw.getAsJsonObject("species").keySet(), pools.keySet())
+            assertTrue(pools.entrySet().any { it.value.asJsonObject.getAsJsonObject("moves").size() > 0 })
+            pools.entrySet().forEach { (_, value) ->
+                val pool = value.asJsonObject
+                assertEquals("embedded:cobblemon/gen9_move_pool", pool["sourceId"].asString)
+                assertEquals("PARTIAL", pool["coverage"].asString)
+                pool.getAsJsonObject("moves").entrySet().forEach { (moveId, data) ->
+                    assertEquals(moveId, data.asJsonObject["id"].asString)
+                    assertTrue(data.asJsonObject["pp"].asInt > 0)
+                }
+            }
             val context = EmbeddedTeamInput.context(request(original, side), UUID(0, 1), original["turn"].asInt, 0)
             assertEquals(3, context.state.pokemon.count { it.side == BattleSide.ALLY })
             assertEquals(1, context.state.pokemon.count { it.side == BattleSide.OPPONENT })

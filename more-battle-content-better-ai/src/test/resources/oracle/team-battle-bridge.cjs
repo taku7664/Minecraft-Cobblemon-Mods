@@ -6,6 +6,8 @@ const readline = require('node:readline');
 const { Battle, extractChannelMessages } = require(path.join(process.argv[2], 'sim/battle.js'));
 const { Dex } = require(path.join(process.argv[2], 'sim/dex.js'));
 const dex = Dex.mod('cobblemon');
+dex.includeData(); // getMovePool reads dex.gen before lazily loading species data.
+if (dex.gen !== 9) throw new Error('Public learnset export requires the declared Gen 9 engine');
 const input = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
 if (!Array.isArray(input.battleSeed) || input.battleSeed.length !== 4 ||
     !input.battleSeed.every(value => Number.isInteger(value) && value >= 0 && value <= 65535) ||
@@ -79,11 +81,19 @@ function snapshot() {
       if (!request.side.pokemon[slot]) throw new Error('Own request roster is incomplete');
       request.side.pokemon[slot].ident = `${side.id}: ${pokemon.uuid}`;
     }
-    const ownTypes = {}, ownAbilities = {}, ownItems = {}, species = {}, moves = {};
+    const ownTypes = {}, ownAbilities = {}, ownItems = {}, species = {}, moves = {}, publicLearnsets = {};
     const registerSpecies = name => {
       const value = dex.species.get(name);
       if (!value.exists) throw new Error(`Unknown revealed species ${name}`);
+      if (species[value.id]) return;
       species[value.id] = { types: value.types.map(type => type.toLowerCase()), baseStats: value.baseStats };
+      // Public species rules only: no opponent Pokemon object, move slots or referee team access.
+      // Gen 9 pool is partial and differs from Cobblemon FormData learnsets used by the product.
+      // It does not prove ownership, current legality or compatibility of a four-move combination.
+      publicLearnsets[value.id] = {
+        sourceId: 'embedded:cobblemon/gen9_move_pool', coverage: 'PARTIAL',
+        moves: Object.fromEntries([...dex.species.getMovePool(value.id)].sort().map(id => [id, moveInfo(id)])),
+      };
     };
     for (const [slot, pokemon] of side.pokemon.entries()) {
       const ident = request.side.pokemon[slot]?.ident;
@@ -127,7 +137,7 @@ function snapshot() {
     }
     if (!actions.length) throw new Error(`No exposed legal actions for ${side.id}`);
     requests.push({ side: side.id, request, ownTypes, ownAbilities, ownItems, actions,
-      publicLog: log, species, moves });
+      publicLog: log, species, moves, publicLearnsets });
   }
   if (!requests.length) throw new Error('Battle neither ended nor requested input');
   pending = requests;
