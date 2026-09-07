@@ -30,10 +30,12 @@ internal object EmbeddedPolicyComparison {
         return lower to lower + outcomes.count { it == "INCOMPLETE" } / 4.0
     }
 
-    private fun tuning(name: String) = when (name) {
+    fun tuning(name: String) = when (name) {
         "CURRENT" -> LocalDecisionTuning.CURRENT
         "LEGACY" -> LocalDecisionTuning.LEGACY
-        else -> error("Supported arms: CURRENT or LEGACY")
+        "CURRENT_PUBLIC_MOVE_HYPOTHESES" -> LocalDecisionTuning.CURRENT.copy(
+            id = "current_public_move_hypotheses", lookaheadMoveHypotheses = true)
+        else -> error("Supported arms: CURRENT, LEGACY or CURRENT_PUBLIC_MOVE_HYPOTHESES")
     }
 
     fun runPair(engine: Path, pair: JsonObject, directory: Path, pairIndex: Int,

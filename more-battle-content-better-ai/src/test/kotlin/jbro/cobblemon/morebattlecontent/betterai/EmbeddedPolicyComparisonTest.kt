@@ -5,6 +5,16 @@ import org.junit.jupiter.api.Test
 
 class EmbeddedPolicyComparisonTest {
     @Test
+    fun `hypothesis comparison arm changes only the experimental switch and identity`() {
+        val current = EmbeddedPolicyComparison.tuning("CURRENT")
+        assertEquals(current.copy(id = "current_public_move_hypotheses", lookaheadMoveHypotheses = true),
+            EmbeddedPolicyComparison.tuning("CURRENT_PUBLIC_MOVE_HYPOTHESES"))
+        assertFalse(current.lookaheadMoveHypotheses)
+        assertFalse(EmbeddedPolicyComparison.tuning("LEGACY").lookaheadMoveHypotheses)
+        assertThrows(IllegalStateException::class.java) { EmbeddedPolicyComparison.tuning("UNKNOWN") }
+    }
+
+    @Test
     fun `comparison profiles preserve default and support explicit boss without changing personality`() {
         val default = EmbeddedPolicyComparison.profileForSkill(0)
         val boss = EmbeddedPolicyComparison.profileForSkill(5)
