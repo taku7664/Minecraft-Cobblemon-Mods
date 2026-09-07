@@ -24,6 +24,7 @@ internal object LocalDirectHitMechanics {
             resolveTarget(it, incomingDamageFraction.coerceAtMost(it.hpFraction), ignoreTargetAbility)
         }
         val directDamage = targetResolution?.directDamageFraction ?: 0.0
+        val actor = state.pokemon.firstOrNull { it.battlePokemonId == actorId }
         val fixedHealing = effects.filter {
             it.kind == BattleMoveEffectKind.HEAL_FRACTION &&
                 it.target == BattleMoveEffectTarget.USER && it.fractionRange != null
@@ -31,11 +32,11 @@ internal object LocalDirectHitMechanics {
         val drainHealing = effects.filter {
             it.kind == BattleMoveEffectKind.DRAIN_FRACTION &&
                 it.target == BattleMoveEffectTarget.USER && it.fractionRange != null
-        }.sumOf { directDamage * midpoint(requireNotNull(it.fractionRange)) * (it.probability ?: 1.0) }
+        }.sumOf { LocalDamageHpTransfer.fraction(directDamage, midpoint(requireNotNull(it.fractionRange)), actor, target) * (it.probability ?: 1.0) }
         val damageRecoil = effects.filter {
             it.kind == BattleMoveEffectKind.RECOIL_FRACTION &&
                 it.target == BattleMoveEffectTarget.USER && it.fractionRange != null
-        }.sumOf { directDamage * midpoint(requireNotNull(it.fractionRange)) * (it.probability ?: 1.0) }
+        }.sumOf { LocalDamageHpTransfer.fraction(directDamage, midpoint(requireNotNull(it.fractionRange)), actor, target) * (it.probability ?: 1.0) }
         val maxHpRecoil = effects.filter {
             it.kind == BattleMoveEffectKind.MAX_HP_RECOIL || it.kind == BattleMoveEffectKind.STRUGGLE_RECOIL
         }.sumOf { effect -> effect.fractionRange?.let(::midpoint)?.times(effect.probability ?: 1.0) ?: 0.0 }
