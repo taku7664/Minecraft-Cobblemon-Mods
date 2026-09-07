@@ -150,7 +150,13 @@ internal object LocalDirectHitMechanics {
      */
     private fun pinchBerryHealing(target: BattlePokemonStateView, healthAfterHit: Double): Double {
         if (healthAfterHit <= 0.0) return 0.0
-        val fraction = PINCH_BERRY_HEALING[canonical(target.knownHeldItemId)] ?: return 0.0
+        val item = canonical(target.knownHeldItemId)
+        val fraction = if (item == "oranberry") {
+            // Oran heals ten absolute HP, not ten percent. Missing public HP units cannot
+            // establish the resulting fraction; a public range uses the existing midpoint model.
+            val maxHp = target.combatStats?.maxHp ?: return 0.0
+            10.0 / ((maxHp.minimum.toDouble() + maxHp.maximum) / 2.0)
+        } else PINCH_BERRY_HEALING[item] ?: return 0.0
         if (target.hpFraction <= PINCH_BERRY_THRESHOLD) return 0.0
         if (healthAfterHit > PINCH_BERRY_THRESHOLD) return 0.0
         return fraction
@@ -159,7 +165,6 @@ internal object LocalDirectHitMechanics {
     /** Berries that restore health the moment it falls to half, by the share of maximum they give back. */
     private val PINCH_BERRY_HEALING = mapOf(
         "sitrusberry" to 0.25,
-        "oranberry" to 0.10,
         "figyberry" to 1.0 / 3.0,
         "wikiberry" to 1.0 / 3.0,
         "magoberry" to 1.0 / 3.0,
