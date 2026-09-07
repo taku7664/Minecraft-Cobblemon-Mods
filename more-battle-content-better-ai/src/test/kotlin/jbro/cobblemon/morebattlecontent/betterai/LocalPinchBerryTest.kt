@@ -18,6 +18,23 @@ import java.util.UUID
  */
 class LocalPinchBerryTest {
     @Test
+    fun `magic room prevents berry recovery and consumption but trick room does not`() {
+        fun field(room: String) = BattleFieldStateView(null, null, listOf(BattleTimedEffectView(room, 1)),
+            emptyList(), BattleSide.entries.associateWith { emptyList() })
+        for (item in listOf("oranberry", "sitrusberry", "figyberry", "wikiberry", "magoberry", "aguavberry", "iapapaberry")) {
+            val suppressed = hitResult(item, 0.8, 0.6, field = field("cobblemon:magic_room"))
+            val target = suppressed.state.pokemon.single { it.side == BattleSide.OPPONENT }
+            assertEquals(0.2, target.hpFraction, 1e-12, item)
+            assertEquals(item, target.knownHeldItemId, item)
+            assertEquals(0.6, suppressed.directDamageFraction, 1e-12)
+            val unsuppressed = hitResult(item, 0.8, 0.6, field = field("trickroom"))
+                .state.pokemon.single { it.side == BattleSide.OPPONENT }
+            assertTrue(unsuppressed.hpFraction > 0.2, item)
+            assertEquals(null, unsuppressed.knownHeldItemId, item)
+        }
+    }
+
+    @Test
     fun `fractional berries heal integer HP when the public maximum is exact`() {
         for ((item, healedHp) in mapOf("sitrusberry" to 40, "figyberry" to 54, "oranberry" to 10)) {
             val result = hitResult(item, 100.0 / 163, 70.0 / 163, BattleIntegerRange(163, 163))
@@ -96,12 +113,12 @@ class LocalPinchBerryTest {
     private fun hit(item: String?, startHp: Double, damage: Double): BattlePokemonStateView =
         hitResult(item, startHp, damage).state.pokemon.single { it.side == BattleSide.OPPONENT }
 
-    private fun hitResult(item: String?, startHp: Double, damage: Double, maxHp: BattleIntegerRange = BattleIntegerRange(150, 170), ability: String? = null): LocalAppliedDirectHit {
+    private fun hitResult(item: String?, startHp: Double, damage: Double, maxHp: BattleIntegerRange = BattleIntegerRange(150, 170), ability: String? = null, field: BattleFieldStateView = BattleFieldStateView.empty()): LocalAppliedDirectHit {
         val ally = mon(BattleSide.ALLY, null, 1.0)
         val opponent = mon(BattleSide.OPPONENT, item, startHp, maxHp, ability)
         val state = BattleStateView(
             battleId = UUID.randomUUID(), format = BattleFormat.SINGLE, turn = 2,
-            pokemon = listOf(ally, opponent), field = BattleFieldStateView.empty(),
+            pokemon = listOf(ally, opponent), field = field,
             remainingPokemonBySide = BattleSide.entries.associateWith { 2 },
             observedEvents = emptyList(), inferences = emptyList(),
         )

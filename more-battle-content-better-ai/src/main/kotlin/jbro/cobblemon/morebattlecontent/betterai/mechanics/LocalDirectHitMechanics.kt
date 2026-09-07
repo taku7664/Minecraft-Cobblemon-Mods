@@ -21,7 +21,7 @@ internal object LocalDirectHitMechanics {
     ): LocalAppliedDirectHit {
         val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId }
         val targetResolution = target?.let {
-            resolveTarget(it, incomingDamageFraction.coerceAtMost(it.hpFraction), ignoreTargetAbility)
+            resolveTarget(state, it, incomingDamageFraction.coerceAtMost(it.hpFraction), ignoreTargetAbility)
         }
         val directDamage = targetResolution?.directDamageFraction ?: 0.0
         val actor = state.pokemon.firstOrNull { it.battlePokemonId == actorId }
@@ -81,6 +81,7 @@ internal object LocalDirectHitMechanics {
     }
 
     private fun resolveTarget(
+        state: BattleStateView,
         target: BattlePokemonStateView,
         incomingDamage: Double,
         ignoreTargetAbility: Boolean,
@@ -127,7 +128,7 @@ internal object LocalDirectHitMechanics {
         // on a survivor - but it moves the health a second attack has to get through, and 394 of the
         // battle tower's sets carry one. The AI holds them itself, where the item is never hidden, so
         // this is mostly the trainer learning that it can afford the turn it was refusing to take.
-        val berryHealing = pinchBerryHealing(target, hp)
+        val berryHealing = pinchBerryHealing(state, target, hp)
         if (berryHealing > 0.0) {
             val healed = LocalHpArithmetic.change(target, hp, berryHealing).coerceAtMost(1.0)
             return TargetResolution(
@@ -148,8 +149,13 @@ internal object LocalDirectHitMechanics {
      * is a reaction to being brought low, not a passive heal. Only a revealed item counts, which for
      * the opponent means one that has already been seen to fire.
      */
-    private fun pinchBerryHealing(target: BattlePokemonStateView, healthAfterHit: Double): Double {
+    private fun pinchBerryHealing(
+        state: BattleStateView,
+        target: BattlePokemonStateView,
+        healthAfterHit: Double,
+    ): Double {
         if (healthAfterHit <= 0.0) return 0.0
+        if (state.field.roomEffects.any { canonical(it.effectId) == "magicroom" }) return 0.0
         val item = canonical(target.knownHeldItemId)
         val fraction = if (item == "oranberry") {
             // Oran heals ten absolute HP, not ten percent. Missing public HP units cannot
