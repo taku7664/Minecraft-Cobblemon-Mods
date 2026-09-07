@@ -34,6 +34,8 @@ internal data class RecursiveActionHistory(
     val protectionChainByPokemon: Map<UUID, Int> = emptyMap(),
     val delayedStrikes: List<RecursiveDelayedStrike> = emptyList(),
     val restoredOriginalPokemonIds: Set<UUID> = emptySet(),
+    /** Branch assumptions, never public observations. Persist independently of execution and PP. */
+    val assumedOpponentMoveIds: Map<UUID, Set<String>> = emptyMap(),
 )
 
 internal data class RecursiveMoveUseKey(val pokemonId: UUID, val moveId: String)
@@ -263,6 +265,7 @@ internal object RecursiveHistoryProjector {
             allySwitchedLastTurn = allyAction.kind == BattleActionKind.SWITCH || BattleSide.ALLY in outcome.switchedSides,
             opponentSwitchedLastTurn = opponentAction.kind == BattleActionKind.SWITCH || BattleSide.OPPONENT in outcome.switchedSides,
             moveUses = moveUses,
+            assumedOpponentMoveIds = previous.assumedOpponentMoveIds,
             restoredOriginalPokemonIds = previous.restoredOriginalPokemonIds + newlyRestored,
             rechargingPokemonIds = recharge,
             chargingMoveByPokemon = charging,
