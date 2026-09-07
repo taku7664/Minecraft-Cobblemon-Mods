@@ -143,6 +143,7 @@ internal object RecursiveHistoryProjector {
         allyAction: BattleActionCandidate,
         opponentAction: BattleActionCandidate,
         originalPoolPokemonIds: Set<UUID> = emptySet(),
+        publicActionCatalog: BattlePublicActionCatalogView? = null,
     ): RecursiveActionHistory {
         val actorIds = stateBefore.pokemon.filter {
             it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
@@ -239,6 +240,16 @@ internal object RecursiveHistoryProjector {
         trapped.keys.retainAll(activeIds)
         trapped.entries.removeIf { (_, lock) -> lock.sourcePokemonId !in activeIds }
         encore.keys.retainAll(activeIds)
+        publicActionCatalog?.afterSwitch(previous.restoredOriginalPokemonIds + newlyRestored)?.let { catalog ->
+            encore.entries.removeIf { (pokemonId, lock) ->
+                val option = catalog.forPokemon(pokemonId).firstOrNull { sameMove(it.moveId, lock.moveId) }
+                if (option == null) {
+                    catalog.isMoveSetComplete(pokemonId)
+                } else {
+                    option.details.currentPp <= (moveUses[RecursiveMoveUseKey(pokemonId, option.moveId)] ?: 0)
+                }
+            }
+        }
         recharge.retainAll(activeIds)
         charging.keys.retainAll(activeIds)
         saltCured.retainAll(activeIds)

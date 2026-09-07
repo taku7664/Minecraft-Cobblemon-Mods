@@ -533,6 +533,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                             opponentAction = opponentAction,
                             originalPoolPokemonIds = context.publicActionCatalog.originalEntries
                                 .mapTo(hashSetOf()) { it.battlePokemonId },
+                            publicActionCatalog = context.publicActionCatalog,
                         )
                         val continuationValue = searchState(
                             outcome.state,

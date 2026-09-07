@@ -211,6 +211,7 @@ internal object LocalTacticalScenarioBattle {
                     outcome = outcome,
                     allyAction = cycleCanonical,
                     opponentAction = offenseCanonical,
+                    publicActionCatalog = mechanicsCatalog(),
                 )
                 outcome.executedMoveIdsByPokemon.forEach { (pokemonId, moveId) ->
                     revealedMoveIds.getOrPut(pokemonId, ::linkedSetOf).add(moveId)

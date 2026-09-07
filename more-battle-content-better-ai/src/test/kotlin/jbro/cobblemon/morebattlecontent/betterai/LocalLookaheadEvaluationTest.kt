@@ -1293,6 +1293,26 @@ class LocalLookaheadEvaluationTest {
     }
 
     @Test
+    fun `encore ends after its locked move spends the last PP`() {
+        val initial = state()
+        val locked = move("locked", currentPp = 1, power = 0.0)
+        val other = move("other")
+        val publicCatalog = catalog(allyMoves = listOf(locked, other))
+        val prior = RecursiveActionHistory(encoreByPokemon = mapOf(ALLY_ID to RecursiveEncoreLock(requireNotNull(locked.moveId), 3)))
+        val idle = wait("idle")
+        val outcome = PublicSingleTurnProjector.project(initial, locked, idle,
+            context(initial, listOf(locked), publicCatalog), prior).single()
+        val after = RecursiveHistoryProjector.project(prior, initial, outcome, locked, idle, publicActionCatalog = publicCatalog)
+        assertFalse(ALLY_ID in after.encoreByPokemon)
+        assertEquals(listOf(other.moveId), PublicFutureActionFactory.actions(outcome.state, BattleSide.ALLY, publicCatalog, after).mapNotNull { it.moveId })
+        val replenishedCatalog = catalog(allyMoves = listOf(move("locked", currentPp = 5), other))
+        val later = RecursiveHistoryProjector.project(after, initial, outcome, locked, idle, publicActionCatalog = replenishedCatalog)
+        assertFalse(ALLY_ID in later.encoreByPokemon, "restoring PP must not restore an ended Encore")
+        val notEmpty = RecursiveHistoryProjector.project(prior, initial, outcome, locked, idle, publicActionCatalog = replenishedCatalog)
+        assertTrue(ALLY_ID in notEmpty.encoreByPokemon, "positive remaining PP must keep the lock")
+    }
+
+    @Test
     fun `revealed arena trap removes grounded switches but not flying switches`() {
         val benchId = UUID.fromString("00000000-0000-0000-0000-000000000219")
         val grounded = state(
