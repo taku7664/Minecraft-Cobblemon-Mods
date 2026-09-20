@@ -111,6 +111,7 @@ class RoundedVoxelMesherTest {
                 primitive.kind() == PrimitiveKind.FACE
                     || primitive.kind() == PrimitiveKind.EDGE
                     || primitive.kind() == PrimitiveKind.CONCAVE
+                    || primitive.kind() == PrimitiveKind.CONTACT
             ));
         }
     }
@@ -472,6 +473,11 @@ class RoundedVoxelMesherTest {
         for (Cell cell : solids) {
             MeshPlan plan = mesher.mesh(neighborhoodFor(cell, solids));
             for (MeshPrimitive primitive : plan.primitives()) {
+                // Contact patches intentionally let independently closed blocks meet at a line or point.
+                // Validate the underlying rounded shells here; patch bounds and contact are covered separately.
+                if (primitive.kind() == PrimitiveKind.CONTACT) {
+                    continue;
+                }
                 List<MeshVertex> vertices = primitive.vertices();
                 result.add(new WorldTriangle(
                     PointKey.of(vertices.get(0).position(), cell),

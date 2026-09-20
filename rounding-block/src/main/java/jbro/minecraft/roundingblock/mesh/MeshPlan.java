@@ -16,7 +16,7 @@ public record MeshPlan(List<MeshPrimitive> primitives) {
         }
         List<MeshPrimitive> result = new ArrayList<>(primitives.size());
         for (MeshPrimitive primitive : primitives) {
-            if (primitive.kind() == PrimitiveKind.CONCAVE
+            if ((primitive.kind() == PrimitiveKind.CONCAVE || primitive.kind() == PrimitiveKind.CONTACT)
                 || !occupiesPlanarFaceHalf(primitive, planarFaceBits)) {
                 result.add(primitive);
             }
