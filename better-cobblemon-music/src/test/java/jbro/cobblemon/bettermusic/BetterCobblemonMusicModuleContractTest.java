@@ -45,7 +45,7 @@ final class BetterCobblemonMusicModuleContractTest {
         );
 
         var dependencies = metadata.getAsJsonObject("depends");
-        assertEquals("1.7.3", dependencies.get("cobblemon").getAsString());
+        assertEquals(">=1.8.1 <1.9.0", dependencies.get("cobblemon").getAsString());
         assertFalse(dependencies.has("cobblemon_more_battle_content"));
         assertFalse(dependencies.has("cobblemon_more_battle_content_better_ai"));
         assertFalse(dependencies.has("cobblemon_better_battle_presentation"));

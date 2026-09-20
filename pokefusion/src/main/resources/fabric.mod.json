@@ -13,12 +13,12 @@
     ]
   },
   "depends": {
-    "fabricloader": ">=0.19.3",
+    "fabricloader": ">=0.19.5",
     "fabric-api": "*",
     "fabric-language-kotlin": "*",
     "minecraft": "~1.21.1",
     "java": ">=21",
-    "cobblemon": "1.7.3",
+    "cobblemon": ">=1.8.1 <1.9.0",
     "pokemontoitem": ">=0.2.0"
   }
 }

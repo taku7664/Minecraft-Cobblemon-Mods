@@ -13,10 +13,10 @@ Cobblemon 포켓몬의 종족값, 특성 후보, 기술 습득 목록을 JSON �
 필요한 환경은 다음과 같습니다.
 
 - Minecraft 1.21.1
-- Fabric Loader 0.19.3 이상
+- Fabric Loader 0.19.5 이상
 - Fabric API
-- Fabric Language Kotlin 1.13.11+kotlin.2.3.21 이상
-- Cobblemon 1.7.3 이상
+- Fabric Language Kotlin 1.14.1+kotlin.2.4.20 이상
+- Cobblemon 1.8.1 이상, 1.9 미만
 - Java 21 이상
 
 ## 빠른 사용법

@@ -23,7 +23,7 @@
     "fabric-api": "*",
     "minecraft": "~1.21.1",
     "java": ">=21",
-    "cobblemon": "1.7.3",
-    "mega_showdown": ">=1.9.3+1.7.3+1.21.1"
+    "cobblemon": ">=1.8.1 <1.9.0",
+    "mega_showdown": "1.2.0+1.8.1+1.21.1-release"
   }
 }

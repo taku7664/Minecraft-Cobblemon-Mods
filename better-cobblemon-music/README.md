@@ -6,7 +6,7 @@ Cobblemon의 필드와 전투 음악을 사용자가 직접 바꿀 수 있는 �
 
 - Mod ID: `better_cobblemon_music`
 - 실행 환경: 클라이언트 전용
-- 필요 모드: Fabric API, Cobblemon 1.7.3
+- 필요 모드: Fabric API, Cobblemon 1.8.1
 
 ## 설정 위치
 

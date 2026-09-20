@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.client
 
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.cobblemon.mod.common.client.CobblemonClient
+import com.cobblemon.mod.common.client.gui.ProfileTransformType
 import com.cobblemon.mod.common.client.gui.drawProfilePokemon
 import com.cobblemon.mod.common.client.render.models.blockbench.FloatingState
 import com.cobblemon.mod.common.pokemon.RenderablePokemon
@@ -121,7 +122,7 @@ internal class MbcPokemonPortraitRenderer {
                 state = state,
                 partialTicks = if (animate) partialTick else 0f,
                 scale = pose.scale,
-                applyProfileTransform = pose.applyProfileTransform,
+                profileTransformType = pose.profileTransformType,
             )
         } finally {
             graphics.pose().popPose()
@@ -149,7 +150,7 @@ internal data class TowerPokemonPortraitRenderPose(
     val anchorY: Double,
     val depth: Double,
     val scale: Float,
-    val applyProfileTransform: Boolean,
+    val profileTransformType: ProfileTransformType,
 )
 
 internal object TowerPokemonPortraitRenderSpec {
@@ -158,7 +159,7 @@ internal object TowerPokemonPortraitRenderSpec {
         anchorY = bounds.top - 2.0,
         depth = 0.0,
         scale = (bounds.height * PORTRAIT_SCALE).coerceIn(MIN_SCALE, MAX_SCALE),
-        applyProfileTransform = true,
+        profileTransformType = ProfileTransformType.PROFILE,
     )
 
     private const val PORTRAIT_SCALE = 0.72f

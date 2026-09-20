@@ -2,7 +2,7 @@ import java.util.UUID
 
 plugins {
     kotlin("jvm")
-    id("fabric-loom")
+    id("dev.architectury.loom")
 }
 
 version = property("more_battle_content_better_ai_version")!!

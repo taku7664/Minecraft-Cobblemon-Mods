@@ -32,8 +32,9 @@ class BetterAiModuleContractTest {
         assertEquals("jbro.cobblemon.morebattlecontent.betterai.MoreBattleContentBetterAi", main["value"].asString)
 
         val depends = root.getAsJsonObject("depends")
-        assertEquals(">=1.2.1 <2.0.0", depends["cobblemon_more_battle_content"].asString)
-        assertTrue(depends.has("fabric-language-kotlin"))
+        assertEquals(">=0.19.5", depends["fabricloader"].asString)
+        assertEquals(">=1.14.1+kotlin.2.4.20", depends["fabric-language-kotlin"].asString)
+        assertEquals(">=1.6.21 <2.0.0", depends["cobblemon_more_battle_content"].asString)
 
         assertDoesNotThrow { Class.forName(main["value"].asString) }
     }

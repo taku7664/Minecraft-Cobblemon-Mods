@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.3.21" apply false
-    id("fabric-loom") version "1.17.19" apply false
+    kotlin("jvm") version "2.4.20" apply false
+    id("dev.architectury.loom") version "1.17.493" apply false
 }
 
 allprojects {
@@ -10,5 +10,6 @@ allprojects {
         mavenCentral()
         maven("https://maven.fabricmc.net/")
         maven("https://api.modrinth.com/maven")
+        maven("https://artefacts.cobblemon.com/releases/")
     }
 }

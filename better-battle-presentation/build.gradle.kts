@@ -1,5 +1,5 @@
 plugins {
-    id("fabric-loom")
+    id("dev.architectury.loom")
 }
 
 version = property("better_battle_presentation_version")!!

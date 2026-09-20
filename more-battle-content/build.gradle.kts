@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm")
-    id("fabric-loom")
+    id("dev.architectury.loom")
 }
 
 version = property("more_battle_content_version")!!
@@ -13,7 +13,10 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:${property("fabric_loader_version")}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
-    modImplementation("maven.modrinth:cobblemon:${property("cobblemon_version_id")}")
+    modCompileOnly("com.cobblemon:mod:${property("cobblemon_maven_version")}") {
+        isTransitive = false
+    }
+    modImplementation("com.cobblemon:fabric:${property("cobblemon_maven_version")}")
     // Modrinth display versions are shared by Fabric and NeoForge releases.
     // Pin loader-specific version IDs because Modrinth Maven also omits transitive mod dependencies.
     modRuntimeOnly("maven.modrinth:cobblemon-mega-showdown:${property("mega_showdown_version_id")}")

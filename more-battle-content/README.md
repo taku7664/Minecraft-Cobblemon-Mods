@@ -4,7 +4,7 @@ Adds Battle Tower, Battle Factory, player-versus-player battles, holographic bat
 
 - Mod ID: `cobblemon_more_battle_content`
 - Side: client and server
-- Requires: Fabric API, Fabric Language Kotlin, Cobblemon 1.7.3, and Mega Showdown 1.9.3
+- Requires: Fabric Loader 0.19.5+, Fabric API, Fabric Language Kotlin 1.14.1+kotlin.2.4.20+, Cobblemon 1.8.1, and Mega Showdown 1.2.0 for Cobblemon 1.8.1
 
 ## Build
 

@@ -28,5 +28,7 @@ class PokemonToItemFormatTest {
         val metadata = requireNotNull(javaClass.getResource("/fabric.mod.json")).readText()
 
         assertTrue(metadata.contains("\"pokemontoitem\": \">=${PokemonToItemFormat.TESTED_VERSION}\""))
+        assertTrue(metadata.contains("\"fabricloader\": \">=0.19.5\""))
+        assertTrue(metadata.contains("\"cobblemon\": \">=1.8.1 <1.9.0\""))
     }
 }

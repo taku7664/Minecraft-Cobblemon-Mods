@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 
 class CobblemonCompatibilityContractTest {
     @Test
-    fun `cobblemon 173 form inheritance fields remain available behind the isolated bridge`() {
+    fun `cobblemon 181 form inheritance fields remain available behind the isolated bridge`() {
         val moves = FormData::class.java.getDeclaredField("_moves")
         val abilities = FormData::class.java.getDeclaredField("_abilities")
         val stats = FormData::class.java.getDeclaredField("_baseStats")
@@ -32,7 +32,9 @@ class CobblemonCompatibilityContractTest {
 
         assertEquals("cobblemon_custom_species", metadata.get("id").asString)
         assertEquals("*", metadata.get("environment").asString)
-        assertEquals(">=1.7.3", dependencies.get("cobblemon").asString)
+        assertEquals(">=0.19.5", dependencies.get("fabricloader").asString)
+        assertEquals(">=1.14.1+kotlin.2.4.20", dependencies.get("fabric-language-kotlin").asString)
+        assertEquals(">=1.8.1 <1.9.0", dependencies.get("cobblemon").asString)
         assertTrue(dependencies.keySet().none { it.contains("more_battle_content") })
     }
 }

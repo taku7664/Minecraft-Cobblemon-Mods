@@ -20,7 +20,7 @@
     "fabric-api": "*",
     "minecraft": "~1.21.1",
     "java": ">=21",
-    "cobblemon": "1.7.3"
+    "cobblemon": ">=1.8.1 <1.9.0"
   },
   "suggests": {
     "cobblemon_more_battle_content": "*"

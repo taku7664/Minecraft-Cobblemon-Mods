@@ -4,7 +4,7 @@ Optional server-side tactical AI for Cobblemon: More Battle Content. It keeps ex
 
 - Mod ID: `cobblemon_more_battle_content_better_ai`
 - Side: server only
-- Requires: Cobblemon: More Battle Content
+- Requires: Fabric Loader 0.19.5+, Fabric Language Kotlin 1.14.1+kotlin.2.4.20+, and Cobblemon: More Battle Content 1.6.21+
 
 ## Build
 

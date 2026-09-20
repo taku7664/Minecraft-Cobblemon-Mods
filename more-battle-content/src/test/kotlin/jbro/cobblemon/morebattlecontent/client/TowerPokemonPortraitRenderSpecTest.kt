@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.client
 
+import com.cobblemon.mod.common.client.gui.ProfileTransformType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -10,7 +11,7 @@ class TowerPokemonPortraitRenderSpecTest {
         val bounds = TowerPlayRect(left = 20, top = 30, width = 18, height = 18)
         val pose = TowerPokemonPortraitRenderSpec.forBounds(bounds)
 
-        assertTrue(pose.applyProfileTransform)
+        assertEquals(ProfileTransformType.PROFILE, pose.profileTransformType)
         assertEquals(28.0, pose.anchorY)
         assertEquals(29.0, pose.anchorX)
         assertEquals(0.0, pose.depth)

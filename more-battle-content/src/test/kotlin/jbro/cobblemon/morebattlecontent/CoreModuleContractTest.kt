@@ -27,9 +27,11 @@ class CoreModuleContractTest {
         assertEquals("jbro.cobblemon.morebattlecontent.client.MoreBattleContentClient", client["value"].asString)
 
         val depends = root.getAsJsonObject("depends")
-        assertTrue(depends.has("fabric-language-kotlin"))
-        assertTrue(depends.has("cobblemon"))
-        assertEquals(">=1.9.3+1.7.3+1.21.1", depends["mega_showdown"].asString)
+        assertEquals(">=0.19.5", depends["fabricloader"].asString)
+        assertEquals(">=1.14.1+kotlin.2.4.20", depends["fabric-language-kotlin"].asString)
+        assertEquals(">=1.8.1 <1.9.0", depends["cobblemon"].asString)
+        assertEquals("1.2.0+1.8.1+1.21.1-release", depends["mega_showdown"].asString)
+        assertTrue(root.getAsJsonObject("suggests").has("better_cobblemon_battlecam"))
 
         val mixinConfigName = root.getAsJsonArray("mixins").single().asString
         assertEquals("cobblemon_more_battle_content.mixins.json", mixinConfigName)

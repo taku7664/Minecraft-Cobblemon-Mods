@@ -70,5 +70,6 @@ class Cobblemon173FactoryPokemonFactoryTest {
         0,
         1.0,
         emptyArray(),
+        1.0f,
     ).create()
 }

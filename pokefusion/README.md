@@ -20,4 +20,4 @@
 
 `0`은 모든 플레이어가 사용할 수 있다는 뜻이며 `0~4`만 허용됩니다. 설정 변경은 게임 또는 서버를 다시 시작한 뒤 적용됩니다. 설정 파일이 손상되거나 권한 레벨이 범위를 벗어나면 파일은 덮어쓰지 않고 기본값 `0`으로 실행합니다.
 
-Minecraft 1.21.1, Cobblemon 1.7.3, Fabric Loader 0.19.3 이상, Fabric API, Fabric Language Kotlin과 PokemonToItem 0.2.0 이상이 필요합니다. 직접 검증한 PokemonToItem 버전은 0.2.0이며, 그보다 높은 버전은 같은 `PTI_NBT` 저장 형식을 유지하는 범위에서 허용합니다.
+Minecraft 1.21.1, Cobblemon 1.8.1, Fabric Loader 0.19.5 이상, Fabric API, Fabric Language Kotlin과 PokemonToItem 0.2.0 이상이 필요합니다. 직접 검증한 PokemonToItem 버전은 0.2.0이며, 그보다 높은 버전은 같은 `PTI_NBT` 저장 형식을 유지하는 범위에서 허용합니다.
