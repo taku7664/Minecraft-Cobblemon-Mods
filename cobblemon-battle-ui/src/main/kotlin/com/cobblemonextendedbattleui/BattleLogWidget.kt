@@ -187,7 +187,7 @@ object BattleLogWidget {
 
         val y = (bottomY - safeHeight).coerceIn(0, maxY)
         val x = (PanelConfig.logX ?: defaultX).coerceIn(0, maxX)
-        
+
         widgetX = x
         widgetY = y
         widgetW = width
