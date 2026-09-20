@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "font_glyph_race_fix",
+  "version": "${version}",
+  "name": "Font Glyph Race Fix",
+  "description": "Serializes TrueType glyph measurement and upload to prevent FreeType bitmap-size races.",
+  "authors": ["jbro"],
+  "license": "MIT",
+  "environment": "client",
+  "mixins": [
+    "font_glyph_race_fix.client.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~1.21.1",
+    "java": ">=21"
+  }
+}

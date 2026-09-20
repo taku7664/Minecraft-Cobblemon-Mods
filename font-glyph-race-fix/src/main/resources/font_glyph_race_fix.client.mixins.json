@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "jbro.minecraft.fontglyphracefix.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "TrueTypeGlyphProviderMixin",
+    "TrueTypeGlyphUploadMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

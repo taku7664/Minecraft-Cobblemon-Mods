@@ -15,6 +15,7 @@ include(
     "better-battle-presentation",
     "cobblemon-battle-ui",
     "cobblemon-custom-species",
+    "font-glyph-race-fix",
     "more-battle-content",
     "more-battle-content-better-ai",
     "player-popup-emotes",

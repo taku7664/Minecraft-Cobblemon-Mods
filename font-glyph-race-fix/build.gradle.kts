@@ -1,0 +1,47 @@
+plugins {
+    id("dev.architectury.loom")
+}
+
+version = property("font_glyph_race_fix_version")!!
+group = "jbro.minecraft"
+
+base { archivesName.set("font-glyph-race-fix") }
+
+dependencies {
+    minecraft("com.mojang:minecraft:${property("minecraft_version")}")
+    mappings(loom.officialMojangMappings())
+    modImplementation("net.fabricmc:fabric-loader:${property("fabric_loader_version")}")
+    compileOnly("io.github.llamalad7:mixinextras-fabric:0.5.5")
+
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testRuntimeOnly("org.junit.platform:junit-platform-console-standalone:1.11.4")
+}
+
+val modVersion = version.toString()
+
+tasks.processResources {
+    inputs.property("version", modVersion)
+    filesMatching("fabric.mod.json") { expand("version" to modVersion) }
+}
+
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+    withSourcesJar()
+}
+
+tasks.test { enabled = false }
+
+val unitTest by tasks.registering(JavaExec::class) {
+    group = "verification"
+    description = "Runs Font Glyph Race Fix JUnit tests without the Gradle test worker."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("org.junit.platform.console.ConsoleLauncher")
+    args("execute")
+    sourceSets.test.get().output.classesDirs.files.forEach {
+        args("--scan-class-path=${it.absolutePath}")
+    }
+    args("--fail-if-no-tests", "--details=summary")
+}
+
+tasks.check { dependsOn(unitTest) }
