@@ -15,13 +15,15 @@ class FusionMaterialLogicTest {
     }
 
     @Test
-    fun `material slots grow from one to nine and stay centered`() {
+    fun `material slots stay contiguous and wrap after five inputs`() {
         assertEquals(listOf(31), FusionMaterialLogic.visibleSlots(0))
-        assertEquals(listOf(30, 32), FusionMaterialLogic.visibleSlots(1))
+        assertEquals(listOf(30, 31), FusionMaterialLogic.visibleSlots(1))
         assertEquals(listOf(30, 31, 32), FusionMaterialLogic.visibleSlots(2))
-        assertEquals(listOf(29, 30, 32, 33), FusionMaterialLogic.visibleSlots(3))
-        assertEquals((27..35).toList(), FusionMaterialLogic.visibleSlots(8))
-        assertEquals((27..35).toList(), FusionMaterialLogic.visibleSlots(9))
+        assertEquals((29..32).toList(), FusionMaterialLogic.visibleSlots(3))
+        assertEquals((29..33).toList() + listOf(40), FusionMaterialLogic.visibleSlots(5))
+        assertEquals((29..33).toList() + (39..40).toList(), FusionMaterialLogic.visibleSlots(6))
+        assertEquals((29..33).toList() + (38..41).toList(), FusionMaterialLogic.visibleSlots(8))
+        assertEquals((29..33).toList() + (38..41).toList(), FusionMaterialLogic.visibleSlots(9))
     }
 
     @Test

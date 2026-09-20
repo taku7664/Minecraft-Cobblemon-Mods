@@ -143,13 +143,9 @@ class PokeFusionMenu(
     }
 
     private fun refreshDisplay() {
-        for (slot in 0 until SIZE) {
-            fusionContainer.setItem(slot, named(ItemStack(Items.GRAY_STAINED_GLASS_PANE), " "))
-        }
+        fusionContainer.clearContent()
 
-        fusionContainer.setItem(10, named(ItemStack(Items.BLUE_STAINED_GLASS_PANE), "베이스 포켓몬", ChatFormatting.AQUA))
         fusionContainer.setItem(BASE_SLOT, baseInput.copy())
-        fusionContainer.setItem(22, named(ItemStack(Items.ORANGE_STAINED_GLASS_PANE), "재료 포켓몬 (최대 9마리)", ChatFormatting.GOLD))
 
         val contributions = PokeFusionService.materialContributions(serverPlayer, baseInput, materialInputs)
         val displayedSlots = FusionMaterialLogic.visibleSlots(materialInputs.size)
