@@ -17,6 +17,7 @@ include(
     "cobblemon-custom-species",
     "more-battle-content",
     "more-battle-content-better-ai",
+    "player-popup-emotes",
     "pokefusion",
     "rounding-block",
     "simple-myroom"

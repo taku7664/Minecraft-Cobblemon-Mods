@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "player_popup_emotes",
+  "version": "${version}",
+  "name": "Player Popup Emotes",
+  "description": "Safe radial popup emotes above nearby players.",
+  "authors": ["jbro"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "jbro.cobblemon.popupemotes.PlayerPopupEmotes"
+    ],
+    "client": [
+      "jbro.cobblemon.popupemotes.client.PlayerPopupEmotesClient"
+    ],
+    "modmenu": [
+      "jbro.cobblemon.popupemotes.client.PlayerPopupEmotesModMenu"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "fabric-api": "*",
+    "minecraft": "~1.21.1",
+    "java": ">=21"
+  },
+  "suggests": {
+    "modmenu": "*"
+  }
+}
