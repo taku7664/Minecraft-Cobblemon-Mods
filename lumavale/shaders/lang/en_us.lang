@@ -1,0 +1,24 @@
+profile.SOFT=Soft
+profile.COZY=Cozy
+profile.HIGH=High
+profile.comment=Soft favors performance, Cozy is the intended look, and High uses smoother shadows.
+
+screen.LIGHTING=Lighting
+screen.SHADOWS=Shadows
+screen.COLOR=Color and atmosphere
+screen.FOG=Fog
+
+option.EXPOSURE=Exposure
+option.BLOCKLIGHT_STRENGTH=Warm light strength
+option.NIGHT_BRIGHTNESS=Night brightness
+option.SHADOW_SAMPLES=Shadow samples
+option.SHADOW_SOFTNESS=Shadow softness
+option.shadowMapResolution=Shadow resolution
+option.SATURATION=Saturation
+option.BLOOM_STRENGTH=Bloom strength
+option.FOG_STRENGTH=Atmosphere strength
+option.GROUND_FOG_STRENGTH=Ground mist strength
+option.CAVE_FOG_STRENGTH=Cave fog strength
+option.BIOME_FOG_STRENGTH=Biome color strength
+option.GROUND_FOG_HEIGHT=Ground mist ceiling
+option.GROUND_FOG_SAMPLES=Ground mist quality
