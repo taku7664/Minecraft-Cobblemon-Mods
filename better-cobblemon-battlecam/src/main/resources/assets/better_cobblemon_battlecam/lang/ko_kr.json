@@ -1,0 +1,8 @@
+{
+  "category.better_cobblemon_battlecam": "Better Cobblemon Battlecam",
+  "key.better_cobblemon_battlecam.cycle_mode": "배틀캠 모드 전환",
+  "key.better_cobblemon_battlecam.next_shot": "다음 배틀캠 구도",
+  "key.better_cobblemon_battlecam.previous_shot": "이전 배틀캠 구도",
+  "message.better_cobblemon_battlecam.mode": "배틀캠: %s",
+  "hud.better_cobblemon_battlecam.status": "배틀캠 %s  |  %s/%s %s"
+}

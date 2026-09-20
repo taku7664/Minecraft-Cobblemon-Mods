@@ -10,6 +10,7 @@ pluginManagement {
 rootProject.name = "Cobblemon Mods"
 
 include(
+    "better-cobblemon-battlecam",
     "better-cobblemon-music",
     "better-battle-presentation",
     "cobblemon-battle-ui",

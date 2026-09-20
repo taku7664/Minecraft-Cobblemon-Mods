@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "jbro.cobblemon.battlecam.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "CameraMixin",
+    "GameRendererMixin",
+    "InGameHudMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

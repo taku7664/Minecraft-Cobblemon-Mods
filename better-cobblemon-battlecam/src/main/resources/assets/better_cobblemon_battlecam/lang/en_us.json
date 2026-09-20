@@ -1,0 +1,8 @@
+{
+  "category.better_cobblemon_battlecam": "Better Cobblemon Battlecam",
+  "key.better_cobblemon_battlecam.cycle_mode": "Cycle Battlecam Mode",
+  "key.better_cobblemon_battlecam.next_shot": "Next Battlecam Shot",
+  "key.better_cobblemon_battlecam.previous_shot": "Previous Battlecam Shot",
+  "message.better_cobblemon_battlecam.mode": "Battlecam: %s",
+  "hud.better_cobblemon_battlecam.status": "BATTLECAM %s  |  %s/%s %s"
+}

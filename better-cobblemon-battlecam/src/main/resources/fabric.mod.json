@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "better_cobblemon_battlecam",
+  "version": "${version}",
+  "name": "Better Cobblemon Battlecam",
+  "description": "Client-only cinematic camera controls for spectating Cobblemon battles.",
+  "authors": ["jbro"],
+  "contact": {
+    "sources": "https://github.com/JBRO129/Minecraft-Cobblemon-Mods"
+  },
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["jbro.cobblemon.battlecam.BetterCobblemonBattlecamClient"]
+  },
+  "mixins": ["better_cobblemon_battlecam.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "fabric-api": "*",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-language-kotlin": ">=1.14.1",
+    "cobblemon": ">=1.8.1 <1.9.0"
+  }
+}
