@@ -12,6 +12,7 @@ rootProject.name = "Cobblemon Mods"
 include(
     "better-cobblemon-music",
     "better-battle-presentation",
+    "cobblemon-battle-ui",
     "cobblemon-custom-species",
     "more-battle-content",
     "more-battle-content-better-ai",
