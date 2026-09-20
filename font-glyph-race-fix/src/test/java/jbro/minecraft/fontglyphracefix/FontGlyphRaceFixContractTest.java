@@ -1,7 +1,8 @@
-package jbro.minecraft.fontglyphracefix.mixin;
+package jbro.minecraft.fontglyphracefix;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
@@ -34,6 +35,12 @@ final class FontGlyphRaceFixContractTest {
         }
         assertTrue(mixins.contains("\"TrueTypeGlyphProviderMixin\""));
         assertTrue(mixins.contains("\"TrueTypeGlyphUploadMixin\""));
+        assertNotNull(
+                getClass().getClassLoader().getResource("jbro/minecraft/fontglyphracefix/FontGlyphLock.class"),
+                "shared lock must live outside the package owned by the mixin config");
+        assertNull(
+                getClass().getClassLoader().getResource("jbro/minecraft/fontglyphracefix/mixin/FontGlyphLock.class"),
+                "ordinary support classes must not live inside a package owned by the mixin config");
     }
 
     @Test

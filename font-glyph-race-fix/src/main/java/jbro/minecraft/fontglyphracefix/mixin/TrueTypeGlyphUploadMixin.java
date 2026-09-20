@@ -2,6 +2,7 @@ package jbro.minecraft.fontglyphracefix.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import jbro.minecraft.fontglyphracefix.FontGlyphLock;
 import org.spongepowered.asm.mixin.Mixin;
 
 @Mixin(targets = "com.mojang.blaze3d.font.TrueTypeGlyphProvider$Glyph$1")

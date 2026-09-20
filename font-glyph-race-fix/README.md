@@ -16,4 +16,4 @@ Minecraft 1.21.1 클라이언트에서 TrueType 글꼴의 글리프 측정과 �
 .\gradlew.bat --offline --no-daemon --configure-on-demand :font-glyph-race-fix:build
 ```
 
-산출물은 `font-glyph-race-fix/build/libs/font-glyph-race-fix-1.0.0.jar`입니다.
+산출물은 `font-glyph-race-fix/build/libs/font-glyph-race-fix-1.0.1.jar`입니다.
