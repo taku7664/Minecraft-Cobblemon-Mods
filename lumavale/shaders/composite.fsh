@@ -128,9 +128,7 @@ void main() {
     vec3 groundMistColor = mix(linearFog, toLinear(vec3(0.66, 0.73, 0.74)), 0.18);
 
     if (isSky) {
-        float skyGroundMist = integrateGroundMist(feetPosition, 1.0, rainStrength) * FOG_STRENGTH;
         vec3 skyColor = toLinear(base.rgb) * EXPOSURE;
-        skyColor = mix(skyColor, groundMistColor, skyGroundMist);
         gl_FragData[0] = vec4(skyColor, base.a);
         return;
     }
@@ -138,7 +136,6 @@ void main() {
     vec4 lightData = texture(colortex1, texcoord);
     vec2 lightmap = lightData.rg;
     bool isPrelitCloud = lightData.b > 0.5;
-    float groundMist = integrateGroundMist(feetPosition, lightmap.y, rainStrength) * FOG_STRENGTH;
 
     if (isPrelitCloud) {
         vec3 stableCloudFog = mix(
@@ -148,7 +145,6 @@ void main() {
         );
         vec3 shadedCloud = toLinear(base.rgb) * EXPOSURE;
         shadedCloud = mix(shadedCloud, stableCloudFog, clamp(fogFactor, 0.0, 0.92));
-        shadedCloud = mix(shadedCloud, groundMistColor, groundMist);
         gl_FragData[0] = vec4(shadedCloud, base.a);
         return;
     }
@@ -163,6 +159,7 @@ void main() {
 
     float skyLight = pow(clamp(lightmap.y, 0.0, 1.0), 1.35);
     float blockLight = pow(clamp(lightmap.x, 0.0, 1.0), 1.65);
+    float groundMist = integrateGroundMist(feetPosition, normal, skyLight, rainStrength) * FOG_STRENGTH;
     float shadow = 1.0;
     if (skyLight > 0.015 && wrappedDiffuse > 0.19) {
         shadow = filteredShadow(feetPosition, normalDotLight);

@@ -87,7 +87,7 @@ if (-not (Test-Path -LiteralPath $fogLibraryPath -PathType Leaf)) {
 }
 else {
     $fogLibrarySource = Get-Content -LiteralPath $fogLibraryPath -Raw
-    foreach ($requiredFunction in @("integrateGroundMist", "computeCaveFog", "biomeFogColor")) {
+    foreach ($requiredFunction in @("integrateGroundMist", "groundMistPatch", "computeCaveFog", "biomeFogColor")) {
         if ($fogLibrarySource -notmatch "\b$requiredFunction\s*\(") {
             $errors.Add("Fog library is missing required function: $requiredFunction")
         }
@@ -104,17 +104,29 @@ foreach ($uniformName in @("lumavaleBiomeDry", "lumavaleBiomeRainy", "lumavaleBi
 }
 
 if (Test-Path -LiteralPath $fogLibraryPath -PathType Leaf) {
-    if ($fogLibrarySource -notmatch 'localGroundHeight\s*=\s*min\s*\(') {
-        $errors.Add("Ground mist must follow the local player/visible-ground height instead of a fixed world altitude")
+    if ($fogLibrarySource -notmatch 'surfaceWorldPosition\s*=\s*cameraPosition\s*\+\s*cameraRelativeEnd') {
+        $errors.Add("Ground mist must anchor to the actual visible surface position")
+    }
+    if ($fogLibrarySource -notmatch 'heightAboveSurface\s*=\s*dot\s*\([^;]*worldNormal\s*\)') {
+        $errors.Add("Ground mist height must be measured from the visible surface tangent plane")
     }
     if ($fogLibrarySource -match 'cameraPosition\.y\s*/\s*max\s*\(\s*GROUND_FOG_HEIGHT') {
         $errors.Add("Cave fog must not be disabled above a fixed world altitude")
     }
+    if ($fogLibrarySource -notmatch 'integrateGroundMist\s*\(\s*vec3\s+cameraRelativeEnd\s*,\s*vec3\s+worldNormal') {
+        $errors.Add("Ground mist integration must receive the visible surface normal")
+    }
+    if ($fogLibrarySource -notmatch 'groundFacing\s*=\s*smoothstep\s*\(') {
+        $errors.Add("Ground mist must reject walls and ceilings with an upward-normal mask")
+    }
+}
+if ($compositeSource -match '\bskyGroundMist\b') {
+    $errors.Add("Ground mist must not be drawn across sky pixels as a horizontal fog wall")
 }
 
 $settingsPath = Join-Path $shaderRoot "lib\settings.glsl"
 $settingsSource = Get-Content -LiteralPath $settingsPath -Raw
-foreach ($settingName in @("GROUND_FOG_STRENGTH", "CAVE_FOG_STRENGTH", "BIOME_FOG_STRENGTH", "GROUND_FOG_SAMPLES")) {
+foreach ($settingName in @("GROUND_FOG_STRENGTH", "CAVE_FOG_STRENGTH", "BIOME_FOG_STRENGTH", "GROUND_FOG_COVERAGE", "GROUND_FOG_SAMPLES")) {
     if ($settingsSource -notmatch "(?m)^\s*#define\s+$settingName\b") {
         $errors.Add("Missing fog setting: $settingName")
     }

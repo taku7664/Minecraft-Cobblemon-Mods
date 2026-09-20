@@ -18,6 +18,7 @@ option.SATURATION=채도
 option.BLOOM_STRENGTH=블룸 세기
 option.FOG_STRENGTH=대기 효과 세기
 option.GROUND_FOG_STRENGTH=지면 물안개 세기
+option.GROUND_FOG_COVERAGE=지면 물안개 분포량
 option.CAVE_FOG_STRENGTH=동굴 안개 세기
 option.BIOME_FOG_STRENGTH=생물군계 색상 세기
 option.GROUND_FOG_HEIGHT=지면 물안개 높이

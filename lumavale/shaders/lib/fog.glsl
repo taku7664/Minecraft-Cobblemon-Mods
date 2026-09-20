@@ -46,21 +46,29 @@ vec3 biomeFogColor(vec3 baseFogColor) {
     return mix(baseFogColor, climateFog, clamp(climateWeight * BIOME_FOG_STRENGTH, 0.0, 1.0));
 }
 
-float integrateGroundMist(vec3 cameraRelativeEnd, float skyLight, float rainStrength) {
+float groundMistPatch(vec3 worldPosition) {
+    vec2 wind = vec2(frameTimeCounter * 0.004, frameTimeCounter * -0.0025);
+    float broadNoise = fogValueNoise(worldPosition.xz * 0.018 + wind);
+    float mediumNoise = fogValueNoise(worldPosition.xz * 0.047 - wind * 1.4);
+    float detailNoise = fogValueNoise(worldPosition.xz * 0.110 + wind * 2.1);
+    float patchField = broadNoise * 0.56 + mediumNoise * 0.32 + detailNoise * 0.12;
+    float patchStart = 1.0 - GROUND_FOG_COVERAGE;
+    return smoothstep(patchStart, min(patchStart + 0.16, 0.98), patchField);
+}
+
+float integrateGroundMist(vec3 cameraRelativeEnd, vec3 worldNormal, float skyLight, float rainStrength) {
     float fullRayLength = length(cameraRelativeEnd);
-    float rayLength = min(fullRayLength, 160.0);
-    if (rayLength < 0.01 || GROUND_FOG_STRENGTH <= 0.0001) {
+    float groundFacing = smoothstep(0.28, 0.78, worldNormal.y);
+    if (fullRayLength < 2.0 || groundFacing <= 0.0001 || GROUND_FOG_STRENGTH <= 0.0001) {
         return 0.0;
     }
 
     vec3 rayDirection = cameraRelativeEnd / max(fullRayLength, 0.0001);
-    float stepLength = rayLength / float(GROUND_FOG_SAMPLES);
+    float marchLength = min(fullRayLength, 20.0);
+    float marchStart = fullRayLength - marchLength;
+    float stepLength = marchLength / float(GROUND_FOG_SAMPLES);
     float opticalDepth = 0.0;
-    float localGroundHeight = min(
-        cameraPosition.y - 1.62,
-        cameraPosition.y + cameraRelativeEnd.y
-    );
-    float fogCeiling = localGroundHeight + GROUND_FOG_HEIGHT;
+    vec3 surfaceWorldPosition = cameraPosition + cameraRelativeEnd;
     float outdoorFactor = smoothstep(0.08, 0.72, max(skyLight, lumavaleSkyExposure));
     float climateWeight = lumavaleBiomeDry + lumavaleBiomeRainy + lumavaleBiomeSnowy;
     float climateDensity =
@@ -71,24 +79,28 @@ float integrateGroundMist(vec3 cameraRelativeEnd, float skyLight, float rainStre
     climateDensity = mix(1.0, climateDensity, clamp(climateWeight, 0.0, 1.0));
 
     for (int sampleIndex = 0; sampleIndex < GROUND_FOG_SAMPLES; ++sampleIndex) {
-        float sampleDistance = (float(sampleIndex) + 0.5) * stepLength;
+        float sampleDistance = marchStart + (float(sampleIndex) + 0.5) * stepLength;
         vec3 sampleWorldPosition = cameraPosition + rayDirection * sampleDistance;
-        float heightDensity = 1.0 - smoothstep(
-            fogCeiling - 0.8,
-            fogCeiling + 2.2,
-            sampleWorldPosition.y
-        );
-
-        vec2 wind = vec2(frameTimeCounter * 0.010, frameTimeCounter * -0.006);
-        float broadNoise = fogValueNoise(sampleWorldPosition.xz * 0.021 + wind);
-        float detailNoise = fogValueNoise(sampleWorldPosition.xz * 0.057 - wind * 1.7);
-        float shapedNoise = smoothstep(0.24, 0.86, broadNoise * 0.72 + detailNoise * 0.28);
-        float density = heightDensity * mix(0.24, 1.0, shapedNoise);
-        density *= outdoorFactor * climateDensity * mix(1.0, 1.22, rainStrength);
-        opticalDepth += density * stepLength * 0.020;
+        float heightAboveSurface = dot(sampleWorldPosition - surfaceWorldPosition, worldNormal);
+        float heightDensity = smoothstep(-0.18, 0.04, heightAboveSurface) *
+            (1.0 - smoothstep(
+                GROUND_FOG_HEIGHT * 0.55,
+                GROUND_FOG_HEIGHT,
+                heightAboveSurface
+            ));
+        float patchDensity = groundMistPatch(sampleWorldPosition);
+        float density = heightDensity * patchDensity;
+        density *= groundFacing * outdoorFactor * climateDensity;
+        density *= mix(1.0, 1.22, rainStrength);
+        opticalDepth += density * stepLength * 0.055;
     }
 
-    return clamp(1.0 - exp(-opticalDepth * GROUND_FOG_STRENGTH), 0.0, 0.86);
+    float distanceVisibility = smoothstep(4.0, 14.0, fullRayLength);
+    return clamp(
+        (1.0 - exp(-opticalDepth * GROUND_FOG_STRENGTH)) * distanceVisibility,
+        0.0,
+        0.72
+    );
 }
 
 float computeCaveFog(float distanceFromCamera, float pixelSkyLight) {
