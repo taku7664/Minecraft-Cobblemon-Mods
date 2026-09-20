@@ -25,6 +25,13 @@ class DiagonalContactPatchMesherTest {
         assertTrue(positions(patches).stream().anyMatch(position ->
             near(position.x(), 1.0) && near(position.z(), 1.0)
         ));
+        assertTrue(positions(patches).stream().anyMatch(position ->
+            near(position.x(), 1.0) && near(position.y(), 0.5) && near(position.z(), 1.0)
+        ), "patches must cover the middle of the shared edge");
+        double radius = 3.0 / 32.0;
+        assertTrue(positions(patches).stream().allMatch(position ->
+            position.x() >= 1.0 - radius - EPSILON && position.z() >= 1.0 - radius - EPSILON
+        ), "patches may extend along the shared edge, but not sideways into the empty quadrants");
         assertAxisAligned(patches);
     }
 
@@ -42,6 +49,12 @@ class DiagonalContactPatchMesherTest {
         assertTrue(positions(patches).stream().anyMatch(position ->
             near(position.x(), 1.0) && near(position.y(), 1.0) && near(position.z(), 1.0)
         ));
+        double radius = 3.0 / 32.0;
+        assertTrue(positions(patches).stream().allMatch(position ->
+            position.x() >= 1.0 - radius - EPSILON
+                && position.y() >= 1.0 - radius - EPSILON
+                && position.z() >= 1.0 - radius - EPSILON
+        ), "corner-only patches must remain local to the original corner");
         assertAxisAligned(patches);
     }
 

@@ -77,7 +77,14 @@ final class DiagonalContactPatchMesher {
     }
 
     private double tangentDistance(int mask, int currentOctant, int axis) {
-        return occupied(mask, currentOctant ^ (1 << axis)) ? HALF_EXTENT : radius;
+        int disconnected = mask & ~faceConnectedComponent(mask, currentOctant);
+        int currentSide = (currentOctant >> axis) & 1;
+        for (int octant = 0; octant < 8; octant++) {
+            if (occupied(disconnected, octant) && ((octant >> axis) & 1) == currentSide) {
+                return HALF_EXTENT;
+            }
+        }
+        return radius;
     }
 
     private static double inwardDirection(int octant, int axis) {
@@ -123,7 +130,12 @@ final class DiagonalContactPatchMesher {
         if (Integer.bitCount(mask) < 2) {
             return false;
         }
-        int visited = Integer.lowestOneBit(mask);
+        int firstOctant = Integer.numberOfTrailingZeros(mask);
+        return faceConnectedComponent(mask, firstOctant) != mask;
+    }
+
+    private static int faceConnectedComponent(int mask, int startOctant) {
+        int visited = 1 << startOctant;
         int frontier = visited;
         while (frontier != 0) {
             int bit = Integer.lowestOneBit(frontier);
@@ -137,7 +149,7 @@ final class DiagonalContactPatchMesher {
                 }
             }
         }
-        return visited != mask;
+        return visited;
     }
 
     private static boolean occupied(int mask, int octant) {
