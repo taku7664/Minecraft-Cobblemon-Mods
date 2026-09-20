@@ -7,6 +7,7 @@ package jbro.minecraft.roundingblock.mesh;
  */
 public record VerticalVoxelNeighborhood(long bits) {
     private static final long VALID_BITS = (1L << 54) - 1L;
+    public static final VerticalVoxelNeighborhood EMPTY = new VerticalVoxelNeighborhood(0L);
 
     public VerticalVoxelNeighborhood {
         if ((bits & ~VALID_BITS) != 0L) {
@@ -42,7 +43,7 @@ public record VerticalVoxelNeighborhood(long bits) {
     }
 
     public static VerticalVoxelNeighborhood empty() {
-        return new VerticalVoxelNeighborhood(0L);
+        return EMPTY;
     }
 
     public static Builder builder() {

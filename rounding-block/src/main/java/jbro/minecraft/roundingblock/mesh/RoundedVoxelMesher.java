@@ -11,20 +11,35 @@ import java.util.List;
  * edge or vertex is never independently capped by neighboring blocks.</p>
  */
 public final class RoundedVoxelMesher {
-    private static final BevelTemplateLibrary TEMPLATES = new BevelTemplateLibrary();
     private static final double HALF_HEIGHT = 0.5;
-    private static final BevelTemplateLibrary HALF_HEIGHT_TEMPLATES = new BevelTemplateLibrary(HALF_HEIGHT);
-    private static final DiagonalContactBridgeMesher DIAGONAL_CONTACT_BRIDGES =
-        new DiagonalContactBridgeMesher(3.0 / 32.0, 3);
+    private static final double MICRO_SIZE = 0.5;
+    private final TemplateSet templates;
+    private final DiagonalContactBridgeMesher diagonalContactBridges;
+
+    public RoundedVoxelMesher() {
+        this.templates = DefaultTemplates.INSTANCE;
+        this.diagonalContactBridges = new DiagonalContactBridgeMesher(
+            BevelTemplateLibrary.DEFAULT_RADIUS,
+            BevelTemplateLibrary.DEFAULT_SEGMENTS
+        );
+    }
+
+    public RoundedVoxelMesher(double radius, int segments) {
+        this.templates = radius == BevelTemplateLibrary.DEFAULT_RADIUS
+            && segments == BevelTemplateLibrary.DEFAULT_SEGMENTS
+            ? DefaultTemplates.INSTANCE
+            : createTemplates(radius, segments);
+        this.diagonalContactBridges = new DiagonalContactBridgeMesher(radius, segments);
+    }
 
     public MeshPlan mesh(VoxelNeighborhood neighborhood) {
         if (!neighborhood.occupied(0, 0, 0)) {
             return new MeshPlan(List.of());
         }
         List<MeshPrimitive> output = new ArrayList<>();
-        emitCell(neighborhood::occupied, 0, 1.0, TEMPLATES, output);
-        output.addAll(DIAGONAL_CONTACT_BRIDGES.mesh(neighborhood).primitives());
-        return new MeshPlan(output);
+        emitCell(neighborhood::occupied, 0, 0, 0, 1.0, 1.0, 1.0, templates.full(), output);
+        output.addAll(diagonalContactBridges.mesh(neighborhood).primitives());
+        return new MeshPlan(output).compactCoplanarFaces();
     }
 
     public MeshPlan mesh(VerticalVoxelNeighborhood neighborhood) {
@@ -34,16 +49,43 @@ public final class RoundedVoxelMesher {
         List<MeshPrimitive> output = new ArrayList<>();
         for (int halfY = 0; halfY <= 1; halfY++) {
             if (neighborhood.occupied(0, halfY, 0)) {
-                emitCell(neighborhood::occupied, halfY, HALF_HEIGHT, HALF_HEIGHT_TEMPLATES, output);
+                emitCell(
+                    neighborhood::occupied, 0, halfY, 0,
+                    1.0, HALF_HEIGHT, 1.0, templates.halfHeight(), output
+                );
             }
         }
-        return new MeshPlan(output);
+        return new MeshPlan(output).compactCoplanarFaces();
+    }
+
+    public MeshPlan mesh(MicroVoxelNeighborhood neighborhood) {
+        if (!neighborhood.hasOccupiedCenterCell()) {
+            return new MeshPlan(List.of());
+        }
+        List<MeshPrimitive> output = new ArrayList<>();
+        for (int z = 0; z <= 1; z++) {
+            for (int y = 0; y <= 1; y++) {
+                for (int x = 0; x <= 1; x++) {
+                    if (neighborhood.occupied(x, y, z)) {
+                        emitCell(
+                            neighborhood::occupied, x, y, z,
+                            MICRO_SIZE, MICRO_SIZE, MICRO_SIZE, templates.micro(), output
+                        );
+                    }
+                }
+            }
+        }
+        return new MeshPlan(output).compactCoplanarFaces();
     }
 
     private static void emitCell(
         Occupancy occupancy,
+        int cellX,
         int cellY,
+        int cellZ,
+        double cellWidth,
         double cellHeight,
+        double cellDepth,
         BevelTemplateLibrary templates,
         List<MeshPrimitive> output
     ) {
@@ -51,9 +93,13 @@ public final class RoundedVoxelMesher {
             int cornerX = corner & 1;
             int cornerY = (corner >> 1) & 1;
             int cornerZ = (corner >> 2) & 1;
-            int mask = vertexMask(occupancy, cornerX, cellY + cornerY, cornerZ);
+            int mask = vertexMask(occupancy, cellX + cornerX, cellY + cornerY, cellZ + cornerZ);
             int currentOctant = (1 - cornerX) | ((1 - cornerY) << 1) | ((1 - cornerZ) << 2);
-            Vec3 translation = new Vec3(cornerX, (cellY + cornerY) * cellHeight, cornerZ);
+            Vec3 translation = new Vec3(
+                (cellX + cornerX) * cellWidth,
+                (cellY + cornerY) * cellHeight,
+                (cellZ + cornerZ) * cellDepth
+            );
             for (BevelTemplateLibrary.RegionPrimitive region : templates.partitionedTemplate(mask)) {
                 MeshPrimitive primitive = region.primitive();
                 boolean solidRegion = (mask & (1 << region.octant())) != 0;
@@ -117,6 +163,28 @@ public final class RoundedVoxelMesher {
 
     private static MeshPrimitive withKind(MeshPrimitive primitive, PrimitiveKind kind) {
         return new MeshPrimitive(kind, primitive.materialFace(), primitive.vertices());
+    }
+
+    private static TemplateSet createTemplates(double radius, int segments) {
+        return new TemplateSet(
+            new BevelTemplateLibrary(radius, segments, 1.0, 1.0, 1.0),
+            new BevelTemplateLibrary(radius, segments, 1.0, HALF_HEIGHT, 1.0),
+            new BevelTemplateLibrary(radius, segments, MICRO_SIZE, MICRO_SIZE, MICRO_SIZE)
+        );
+    }
+
+    private static final class DefaultTemplates {
+        private static final TemplateSet INSTANCE = createTemplates(
+            BevelTemplateLibrary.DEFAULT_RADIUS,
+            BevelTemplateLibrary.DEFAULT_SEGMENTS
+        );
+    }
+
+    private record TemplateSet(
+        BevelTemplateLibrary full,
+        BevelTemplateLibrary halfHeight,
+        BevelTemplateLibrary micro
+    ) {
     }
 
     @FunctionalInterface

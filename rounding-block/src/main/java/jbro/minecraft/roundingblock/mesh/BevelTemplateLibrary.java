@@ -2,8 +2,6 @@ package jbro.minecraft.roundingblock.mesh;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Generates a compact surface-net template for each lattice-vertex occupancy.
@@ -15,8 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * retaining the same continuous density field and smooth normals.</p>
  */
 final class BevelTemplateLibrary {
-    private static final double RADIUS = 3.0 / 32.0;
-    private static final int SEGMENTS = 3;
+    static final double DEFAULT_RADIUS = 3.0 / 32.0;
+    static final int DEFAULT_SEGMENTS = 3;
     private static final double ISO_LEVEL = 0.5001;
     private static final double EPSILON = 1.0e-9;
     private static final double MINIMUM_EDGE = 1.0e-8;
@@ -26,19 +24,50 @@ final class BevelTemplateLibrary {
         {0, 4}, {1, 5}, {2, 6}, {3, 7}
     };
 
-    private final Map<Integer, List<MeshPrimitive>> cache = new ConcurrentHashMap<>();
-    private final Map<Integer, List<RegionPrimitive>> partitionCache = new ConcurrentHashMap<>();
-    private final double cellHeight;
+    private final List<MeshPrimitive>[] templates;
+    private final List<RegionPrimitive>[] partitionedTemplates;
+    private final double[] cellSizes;
+    private final double radius;
+    private final int segments;
 
     BevelTemplateLibrary() {
-        this(1.0);
+        this(DEFAULT_RADIUS, DEFAULT_SEGMENTS, 1.0, 1.0, 1.0);
     }
 
     BevelTemplateLibrary(double cellHeight) {
-        if (cellHeight <= 2.0 * RADIUS) {
-            throw new IllegalArgumentException("Cell height must be wider than the bevel diameter");
+        this(DEFAULT_RADIUS, DEFAULT_SEGMENTS, 1.0, cellHeight, 1.0);
+    }
+
+    @SuppressWarnings("unchecked")
+    BevelTemplateLibrary(
+        double radius,
+        int segments,
+        double cellWidth,
+        double cellHeight,
+        double cellDepth
+    ) {
+        if (!Double.isFinite(radius) || radius <= 0.0) {
+            throw new IllegalArgumentException("Radius must be finite and positive");
         }
-        this.cellHeight = cellHeight;
+        if (segments <= 0) {
+            throw new IllegalArgumentException("Segments must be positive");
+        }
+        this.radius = radius;
+        this.segments = segments;
+        this.cellSizes = new double[]{cellWidth, cellHeight, cellDepth};
+        for (double cellSize : cellSizes) {
+            if (cellSize <= 2.0 * radius) {
+                throw new IllegalArgumentException("Cell extent must be wider than the bevel diameter");
+            }
+        }
+        this.templates = (List<MeshPrimitive>[]) new List<?>[256];
+        this.partitionedTemplates = (List<RegionPrimitive>[]) new List<?>[256];
+        for (int mask = 0; mask <= 255; mask++) {
+            templates[mask] = mask == 0 || mask == 255 ? List.of() : generate(mask);
+        }
+        for (int mask = 0; mask <= 255; mask++) {
+            partitionedTemplates[mask] = partition(mask, templates[mask]);
+        }
     }
 
     List<MeshPrimitive> template(int mask) {
@@ -48,11 +77,23 @@ final class BevelTemplateLibrary {
         if (mask == 0 || mask == 255) {
             return List.of();
         }
-        return cache.computeIfAbsent(mask, this::generate);
+        return templates[mask];
     }
 
     List<RegionPrimitive> partitionedTemplate(int mask) {
-        return partitionCache.computeIfAbsent(mask, ignored -> partition(mask, template(mask)));
+        if (mask < 0 || mask > 255) {
+            throw new IllegalArgumentException("Invalid bevel template mask=" + mask);
+        }
+        return partitionedTemplates[mask];
+    }
+
+    boolean isFullyPrepared() {
+        for (int mask = 0; mask <= 255; mask++) {
+            if (templates[mask] == null || partitionedTemplates[mask] == null) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static List<RegionPrimitive> partition(int mask, List<MeshPrimitive> primitives) {
@@ -161,19 +202,19 @@ final class BevelTemplateLibrary {
     }
 
     private double[] axisCoordinates(int axis) {
-        double halfExtent = axis == 1 ? cellHeight * 0.5 : 0.5;
-        double[] result = new double[2 * SEGMENTS + 5];
-        result[0] = -halfExtent - RADIUS;
+        double halfExtent = cellSizes[axis] * 0.5;
+        double[] result = new double[2 * segments + 5];
+        result[0] = -halfExtent - radius;
         result[1] = -halfExtent;
-        for (int index = 0; index <= 2 * SEGMENTS; index++) {
-            result[index + 2] = -RADIUS + 2.0 * RADIUS * index / (2.0 * SEGMENTS);
+        for (int index = 0; index <= 2 * segments; index++) {
+            result[index + 2] = -radius + 2.0 * radius * index / (2.0 * segments);
         }
         result[result.length - 2] = halfExtent;
-        result[result.length - 1] = halfExtent + RADIUS;
+        result[result.length - 1] = halfExtent + radius;
         return result;
     }
 
-    private static MeshVertex cellVertex(int mask, Sample[][][] samples, int x, int y, int z) {
+    private MeshVertex cellVertex(int mask, Sample[][][] samples, int x, int y, int z) {
         Sample[] corners = new Sample[8];
         boolean inside = false;
         boolean outside = false;
@@ -301,7 +342,7 @@ final class BevelTemplateLibrary {
     private void clipToTemplateCell(MeshPrimitive primitive, List<MeshPrimitive> output) {
         List<MeshVertex> polygon = new ArrayList<>(primitive.vertices());
         for (int axis = 0; axis < 3; axis++) {
-            double halfExtent = axis == 1 ? cellHeight * 0.5 : 0.5;
+            double halfExtent = cellSizes[axis] * 0.5;
             polygon = clip(polygon, axis, -halfExtent, true);
             polygon = clip(polygon, axis, halfExtent, false);
         }
@@ -376,11 +417,11 @@ final class BevelTemplateLibrary {
         output.add(new MeshPrimitive(flat ? PrimitiveKind.FACE : PrimitiveKind.EDGE, material, oriented));
     }
 
-    private static Sample sample(int mask, Vec3 position) {
+    private Sample sample(int mask, Vec3 position) {
         return smoothSample(mask, position);
     }
 
-    private static Sample smoothSample(int mask, Vec3 position) {
+    private Sample smoothSample(int mask, Vec3 position) {
         AxisWeight x = weight(position.x());
         AxisWeight y = weight(position.y());
         AxisWeight z = weight(position.z());
@@ -406,17 +447,17 @@ final class BevelTemplateLibrary {
         return new Sample(position, density, new Vec3(-gradientX, -gradientY, -gradientZ));
     }
 
-    private static AxisWeight weight(double coordinate) {
-        if (coordinate <= -RADIUS) {
+    private AxisWeight weight(double coordinate) {
+        if (coordinate <= -radius) {
             return new AxisWeight(0.0, 0.0);
         }
-        if (coordinate >= RADIUS) {
+        if (coordinate >= radius) {
             return new AxisWeight(1.0, 0.0);
         }
-        double angle = Math.PI * coordinate / (2.0 * RADIUS);
+        double angle = Math.PI * coordinate / (2.0 * radius);
         return new AxisWeight(
             0.5 + 0.5 * Math.sin(angle),
-            Math.PI * Math.cos(angle) / (4.0 * RADIUS)
+            Math.PI * Math.cos(angle) / (4.0 * radius)
         );
     }
 

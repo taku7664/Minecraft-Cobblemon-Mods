@@ -15,12 +15,36 @@ import java.util.TreeMap;
 import org.junit.jupiter.api.Test;
 
 class RoundedVoxelMesherTest {
+    @Test
+    void higherConfiguredSegmentCountProducesMoreCurvedPrimitives() {
+        VoxelNeighborhood isolated = VoxelNeighborhood.builder().occupy(0, 0, 0).build();
+
+        int defaultCount = new RoundedVoxelMesher(3.0 / 32.0, 3).mesh(isolated).primitives().size();
+        int smootherCount = new RoundedVoxelMesher(3.0 / 32.0, 6).mesh(isolated).primitives().size();
+
+        assertTrue(smootherCount > defaultCount);
+    }
+
     private static final double EPSILON = 1.0e-6;
     private static final double POINT_SCALE = 1_000_000.0;
 
     @Test
+    void bevelTemplatesAreFullyPreparedBeforeWorldMeshing() {
+        assertTrue(new BevelTemplateLibrary().isFullyPrepared());
+    }
+
+    @Test
     void allLatticeVertexOccupanciesAssembleWithoutCracksOrDuplicateTriangles() {
-        RoundedVoxelMesher mesher = new RoundedVoxelMesher();
+        assertAllLatticeVertexOccupancies(new RoundedVoxelMesher());
+    }
+
+    @Test
+    void configuredQualityBoundsPreserveClosedTopology() {
+        assertAllLatticeVertexOccupancies(new RoundedVoxelMesher(0.015625, 1));
+        assertAllLatticeVertexOccupancies(new RoundedVoxelMesher(0.21875, 8));
+    }
+
+    private static void assertAllLatticeVertexOccupancies(RoundedVoxelMesher mesher) {
 
         for (int mask = 1; mask < 255; mask++) {
             int testedMask = mask;
@@ -140,12 +164,45 @@ class RoundedVoxelMesherTest {
         );
 
         assertFalse(plan.primitives().isEmpty());
+        assertEquals(
+            6,
+            plan.primitives().stream().filter(p -> p.kind() == PrimitiveKind.FACE).count(),
+            "an isolated rounded cube needs one compact planar center per side"
+        );
         assertTrue(
-            plan.primitives().size() <= 640,
+            plan.primitives().size() <= 400,
             () -> "isolated block triangle budget exceeded: " + plan.primitives().size()
                 + " flat=" + plan.primitives().stream().filter(p -> p.kind() == PrimitiveKind.FACE).count()
                 + " curved=" + plan.primitives().stream().filter(p -> p.kind() == PrimitiveKind.EDGE).count()
         );
+    }
+
+    @Test
+    void adjacentCoplanarFaceRectanglesCompactWithoutTouchingCurves() {
+        MeshPrimitive left = rectangularFace(CubeFace.UP, 0.0, 0.5, 0.0, 1.0);
+        MeshPrimitive right = rectangularFace(CubeFace.UP, 0.5, 1.0, 0.0, 1.0);
+        MeshPrimitive curved = new MeshPrimitive(
+            PrimitiveKind.EDGE,
+            CubeFace.UP,
+            List.of(
+                new MeshVertex(new Vec3(0.0, 1.0, 0.0), CubeFace.UP.normal()),
+                new MeshVertex(new Vec3(0.5, 0.9, 0.0), new Vec3(0.0, 1.0, -0.1).normalize()),
+                new MeshVertex(new Vec3(0.5, 0.9, 0.5), new Vec3(0.0, 1.0, -0.1).normalize()),
+                new MeshVertex(new Vec3(0.0, 1.0, 0.5), CubeFace.UP.normal())
+            )
+        );
+
+        MeshPlan compacted = new MeshPlan(List.of(left, right, curved)).compactCoplanarFaces();
+
+        assertEquals(2, compacted.primitives().size());
+        assertEquals(1, compacted.primitives().stream().filter(p -> p.kind() == PrimitiveKind.FACE).count());
+        assertTrue(compacted.primitives().contains(curved), "curved geometry must remain byte-for-byte unchanged");
+        MeshPrimitive merged = compacted.primitives().stream()
+            .filter(p -> p.kind() == PrimitiveKind.FACE)
+            .findFirst()
+            .orElseThrow();
+        assertTrue(merged.vertices().stream().anyMatch(v -> v.position().x() == 0.0));
+        assertTrue(merged.vertices().stream().anyMatch(v -> v.position().x() == 1.0));
     }
 
     @Test
@@ -513,6 +570,35 @@ class RoundedVoxelMesherTest {
                 .withComponent(uAxis, coordinates[0])
                 .withComponent(vAxis, coordinates[1]);
             vertices.add(new MeshVertex(position, normal));
+        }
+        return new MeshPrimitive(PrimitiveKind.FACE, face, vertices);
+    }
+
+    private static MeshPrimitive rectangularFace(
+        CubeFace face,
+        double uMin,
+        double uMax,
+        double vMin,
+        double vMax
+    ) {
+        int uAxis = (face.axis() + 1) % 3;
+        int vAxis = (face.axis() + 2) % 3;
+        double fixed = face.sign() > 0 ? 1.0 : 0.0;
+        Vec3 normal = face.normal();
+        List<MeshVertex> vertices = new ArrayList<>();
+        for (double[] coordinates : new double[][]{
+            {uMin, vMin}, {uMax, vMin}, {uMax, vMax}, {uMin, vMax}
+        }) {
+            Vec3 position = Vec3.ZERO
+                .withComponent(face.axis(), fixed)
+                .withComponent(uAxis, coordinates[0])
+                .withComponent(vAxis, coordinates[1]);
+            vertices.add(new MeshVertex(position, normal));
+        }
+        Vec3 geometricNormal = vertices.get(1).position().subtract(vertices.get(0).position())
+            .cross(vertices.get(2).position().subtract(vertices.get(0).position()));
+        if (geometricNormal.dot(normal) < 0.0) {
+            java.util.Collections.reverse(vertices);
         }
         return new MeshPrimitive(PrimitiveKind.FACE, face, vertices);
     }

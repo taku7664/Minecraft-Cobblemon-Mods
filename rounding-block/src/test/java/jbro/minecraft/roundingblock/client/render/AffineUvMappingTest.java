@@ -17,5 +17,8 @@ class AffineUvMappingTest {
         AffineUvMapping.Uv center = mapping.map(0.5, 0.5);
         assertEquals(0.625f, center.u(), 1.0e-6f);
         assertEquals(0.375f, center.v(), 1.0e-6f);
+        long packed = mapping.pack(0.5, 0.5);
+        assertEquals(Float.floatToRawIntBits(center.u()), (int) (packed >>> 32));
+        assertEquals(Float.floatToRawIntBits(center.v()), (int) packed);
     }
 }

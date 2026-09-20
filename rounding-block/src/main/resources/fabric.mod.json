@@ -3,7 +3,7 @@
   "id": "rounding_block",
   "version": "${version}",
   "name": "Rounding-Block",
-  "description": "Rounds only the exposed edges of full cube blocks while preserving Minecraft's block grid.",
+  "description": "Rounds exposed block edges and fills water contacts while preserving Minecraft's block grid.",
   "authors": ["jbro"],
   "license": "MIT",
   "environment": "client",

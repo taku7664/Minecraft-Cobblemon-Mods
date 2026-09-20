@@ -51,6 +51,13 @@ record AffineUvMapping(double u0, double uA, double uB, double v0, double vA, do
         return new Uv((float) (u0 + uA * a + uB * b), (float) (v0 + vA * a + vB * b));
     }
 
+    long pack(double a, double b) {
+        float u = (float) (u0 + uA * a + uB * b);
+        float v = (float) (v0 + vA * a + vB * b);
+        return (Integer.toUnsignedLong(Float.floatToRawIntBits(u)) << 32)
+            | Integer.toUnsignedLong(Float.floatToRawIntBits(v));
+    }
+
     private boolean matches(double[] a, double[] b, float[] u, float[] v) {
         for (int i = 0; i < 4; i++) {
             Uv mapped = map(a[i], b[i]);

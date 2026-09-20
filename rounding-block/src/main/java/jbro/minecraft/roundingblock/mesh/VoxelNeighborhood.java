@@ -3,6 +3,8 @@ package jbro.minecraft.roundingblock.mesh;
 /** Immutable occupancy snapshot for the 3x3x3 blocks around one rendered block. */
 public record VoxelNeighborhood(int bits) {
     private static final int VALID_BITS = (1 << 27) - 1;
+    private static final CubeFace[] FACES = CubeFace.values();
+    private static final int[][] AXIS_LAYER_MASKS = createAxisLayerMasks();
 
     public VoxelNeighborhood {
         if ((bits & ~VALID_BITS) != 0) {
@@ -32,23 +34,13 @@ public record VoxelNeighborhood(int bits) {
      * needs no bevel geometry in the center block.
      */
     public boolean isAxisAlignedLayered() {
-        for (int axis = 0; axis < 3; axis++) {
+        for (int[] axisMasks : AXIS_LAYER_MASKS) {
             boolean layered = true;
-            for (int coordinate = -1; coordinate <= 1 && layered; coordinate++) {
-                Boolean expected = null;
-                for (int first = -1; first <= 1 && layered; first++) {
-                    for (int second = -1; second <= 1; second++) {
-                        int x = axis == 0 ? coordinate : first;
-                        int y = axis == 1 ? coordinate : axis == 0 ? first : second;
-                        int z = axis == 2 ? coordinate : second;
-                        boolean value = occupied(x, y, z);
-                        if (expected == null) {
-                            expected = value;
-                        } else if (value != expected) {
-                            layered = false;
-                            break;
-                        }
-                    }
+            for (int layerMask : axisMasks) {
+                int occupiedLayer = bits & layerMask;
+                if (occupiedLayer != 0 && occupiedLayer != layerMask) {
+                    layered = false;
+                    break;
                 }
             }
             if (layered) {
@@ -70,7 +62,7 @@ public record VoxelNeighborhood(int bits) {
         }
         boolean exposed = false;
         for (int axis = 0; axis < 3; axis++) {
-            for (int sign : new int[]{-1, 1}) {
+            for (int sign = -1; sign <= 1; sign += 2) {
                 if (occupiedAt(axis, sign, 0, 0)) {
                     continue;
                 }
@@ -86,7 +78,7 @@ public record VoxelNeighborhood(int bits) {
     /** Bit set of exposed faces that can be rendered by the original cube model. */
     public int planarFaceBits() {
         int result = 0;
-        for (CubeFace face : CubeFace.values()) {
+        for (CubeFace face : FACES) {
             if (!occupiedAt(face.axis(), face.sign(), 0, 0)
                 && isPlanarFace(face.axis(), face.sign())) {
                 result |= 1 << face.ordinal();
@@ -119,6 +111,25 @@ public record VoxelNeighborhood(int bits) {
             throw new IllegalArgumentException("Neighborhood coordinate outside -1..1: " + x + "," + y + "," + z);
         }
         return 1 << ((x + 1) + 3 * (y + 1) + 9 * (z + 1));
+    }
+
+    private static int[][] createAxisLayerMasks() {
+        int[][] masks = new int[3][3];
+        for (int axis = 0; axis < 3; axis++) {
+            for (int coordinate = -1; coordinate <= 1; coordinate++) {
+                int mask = 0;
+                for (int first = -1; first <= 1; first++) {
+                    for (int second = -1; second <= 1; second++) {
+                        int x = axis == 0 ? coordinate : first;
+                        int y = axis == 1 ? coordinate : axis == 0 ? first : second;
+                        int z = axis == 2 ? coordinate : second;
+                        mask |= bit(x, y, z);
+                    }
+                }
+                masks[axis][coordinate + 1] = mask;
+            }
+        }
+        return masks;
     }
 
     public static final class Builder {
