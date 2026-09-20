@@ -69,6 +69,7 @@ WIP-*.md
 **/WIP-*.md
 
 # Temporary agent and editor files
+.codex-worktrees/
 .codex-tmp/
 .codex/
 .claude/
