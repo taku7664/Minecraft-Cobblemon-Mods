@@ -48,15 +48,44 @@ final class DefaultMusicConfigResourceTest {
         assertTrack(config, "cobblemon:mewtwo", "battle/legendary/frlg_mewtwo_battle.ogg");
         assertTrack(config, "cobblemon:raikou", "battle/legendary/hgss_raikou_battle.ogg");
         assertTrack(config, "cobblemon:rayquaza", "battle/legendary/rse_super_ancient_pokemon_battle.ogg");
+        assertTrack(config, "cobblemon:rayquaza#mega", "battle/legendary/oras_mega_rayquaza_battle.ogg");
         assertTrack(config, "cobblemon:cresselia", "battle/wild/sinnoh_wild_pokemon_battle.ogg");
+        assertTrack(config, "cobblemon:shaymin", "battle/wild/sinnoh_wild_pokemon_battle.ogg");
         assertTrack(config, "cobblemon:kyurem", "battle/legendary/bw_kyurem_battle.ogg");
+        assertTrack(config, "cobblemon:reshiram", "battle/legendary/bw_reshiram_zekrom_battle.ogg");
+        assertTrack(config, "cobblemon:zekrom", "battle/legendary/bw_reshiram_zekrom_battle.ogg");
+        assertEquals(
+            java.util.Set.of("cobblemon:reshiram", "cobblemon:zekrom"),
+            pokemonRule(config, "cobblemon:reshiram").species()
+        );
         assertTrack(config, "cobblemon:xerneas", "battle/legendary/xy_xerneas_yveltal_zygarde_battle.ogg");
         assertTrack(config, "cobblemon:tapukoko", "battle/legendary/sm_tapu_battle.ogg");
         assertTrack(config, "cobblemon:zacian", "battle/legendary/swsh_zacian_zamazenta_battle.ogg");
         assertTrack(config, "cobblemon:wochien", "battle/legendary/sv_treasures_of_ruin_battle.ogg");
         assertTrack(config, "cobblemon:necrozma#ultra", "battle/legendary/usum_ultra_necrozma_battle.ogg");
         assertTrack(config, "cobblemon:terapagos#stellar", "battle/legendary/sv_stellar_terapagos_battle.ogg");
+        assertTrack(config, "cobblemon:eternatus#eternamax", "battle/legendary/swsh_decisive_eternatus_battle.ogg");
         assertTrack(config, "cobblemon:kubfu", "battle/legendary/generic_legendary_battle.ogg");
+        for (String species : java.util.List.of(
+            "cobblemon:jirachi",
+            "cobblemon:manaphy",
+            "cobblemon:phione",
+            "cobblemon:keldeo",
+            "cobblemon:meloetta",
+            "cobblemon:genesect",
+            "cobblemon:diancie",
+            "cobblemon:hoopa",
+            "cobblemon:volcanion",
+            "cobblemon:cosmog",
+            "cobblemon:cosmoem",
+            "cobblemon:magearna",
+            "cobblemon:marshadow",
+            "cobblemon:zeraora",
+            "cobblemon:typenull",
+            "cobblemon:silvally"
+        )) {
+            assertTrack(config, species, "battle/legendary/generic_legendary_battle.ogg");
+        }
         assertEquals(
             pokemonRule(config, "cobblemon:groudon").playlist().tracks(),
             pokemonRule(config, "cobblemon:rayquaza").playlist().tracks()

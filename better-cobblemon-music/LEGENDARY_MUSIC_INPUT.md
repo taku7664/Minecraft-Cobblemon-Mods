@@ -28,38 +28,38 @@ better-cobblemon-music/music-input/
 
 ## 필요한 파일
 
-총 48개입니다. `교체`는 개발 클라에 같은 이름의 구 파일이 있지만 새 원본을 받아 바꿀 항목이고, `필요`는 현재 목표 이름의 파일이 없는 항목입니다.
+총 49개입니다. `교체`는 개발 클라에 같은 이름의 구 파일이 있지만 새 원본을 받아 바꿀 항목이고, `필요`는 현재 목표 이름의 파일이 없는 항목입니다. 원작에서 전투 조우가 없어 전용 전투곡도 없는 포켓몬은 `generic_legendary_battle.ogg`를 명시적인 대체곡으로 사용합니다.
 
-### 전설·환상 전용 44개
+### 전설·환상 전용 45개
 
 | 상태 | 목표 파일명 | 적용 대상 |
 |---|---|---|
 | 필요 | `b2w2_black_white_kyurem_battle.ogg` | 블랙큐레무, 화이트큐레무 |
 | 필요 | `bw_kyurem_battle.ogg` | 큐레무 |
-| 필요 | `bw_legendary_pokemon_battle.ogg` | 비크티니, 성검사, 토네로스·볼트로스·랜드로스, 케르디오, 메로엣타, 게노세크트 |
-| 필요 | `bw_reshiram_battle.ogg` | 레시라무 |
-| 필요 | `bw_zekrom_battle.ogg` | 제크로무 |
+| 필요 | `bw_legendary_pokemon_battle.ogg` | 비크티니, 성검사, 토네로스·볼트로스·랜드로스 |
+| 필요 | `bw_reshiram_zekrom_battle.ogg` | 레시라무, 제크로무 |
 | 교체 | `dppt_arceus_battle.ogg` | 아르세우스 |
 | 교체 | `dppt_azelf_mesprit_uxie_battle.ogg` | 유크시, 엠라이트, 아그놈 |
 | 필요 | `dppt_dialga_palkia_battle.ogg` | 디아루가, 펄기아 |
 | 교체 | `dppt_giratina_battle.ogg` | 기라티나 |
-| 필요 | `dppt_legendary_pokemon_battle.ogg` | 히드런, 레지기가스, 다크라이, 쉐이미 |
+| 필요 | `dppt_legendary_pokemon_battle.ogg` | 히드런, 레지기가스, 다크라이 |
 | 필요 | `emerald_mew_battle.ogg` | 뮤 |
 | 필요 | `frlg_deoxys_battle.ogg` | 테오키스 |
 | 필요 | `frlg_legendary_pokemon_battle.ogg` | 관동 삼새 |
 | 필요 | `frlg_mewtwo_battle.ogg` | 뮤츠 |
-| 필요 | `generic_legendary_battle.ogg` | 우라오스 계열, 자루도 및 미지정 전설 대체곡 |
+| 필요 | `generic_legendary_battle.ogg` | 지라치, 마나피, 피오네, 케르디오, 메로엣타, 게노세크트, 디안시, 후파, 볼케니온, 코스모그, 코스모움, 마기아나, 마샤도, 제라오라, 타입:널, 실버디, 치고마, 우라오스, 자루도 및 미지정 전설 대체곡 |
 | 교체 | `hgss_entei_battle.ogg` | 앤테이 |
 | 교체 | `hgss_ho-oh_battle.ogg` | 칠색조 |
 | 교체 | `hgss_lugia_battle.ogg` | 루기아 |
 | 필요 | `hgss_raikou_battle.ogg` | 라이코 |
 | 교체 | `hgss_suicune_battle.ogg` | 스이쿤 |
+| 필요 | `oras_mega_rayquaza_battle.ogg` | 메가레쿠쟈 |
 | 필요 | `oras_primal_reversion_battle.ogg` | 원시그란돈, 원시가이오가 |
 | 필요 | `pla_origin_dialga_palkia_battle.ogg` | 오리진 디아루가·펄기아 |
 | 필요 | `pla_origin_giratina_battle.ogg` | 오리진 기라티나 |
 | 교체 | `rse_regirock_regice_registeel_battle.ogg` | 레지락, 레지아이스, 레지스틸 |
 | 필요 | `rse_super_ancient_pokemon_battle.ogg` | 그란돈, 가이오가, 레쿠쟈 |
-| 필요 | `sm_solgaleo_lunala_necrozma_battle.ogg` | 솔가레오, 루나아라, 네크로즈마 및 알로라 환상 계열 |
+| 필요 | `sm_solgaleo_lunala_necrozma_battle.ogg` | 솔가레오, 루나아라, 네크로즈마 |
 | 필요 | `sm_tapu_battle.ogg` | 카푸 4종 |
 | 필요 | `sv_koraidon_miraidon_battle.ogg` | 코라이돈, 미라이돈 |
 | 필요 | `sv_loyal_three_battle.ogg` | 조타구, 이야후, 기로치 |
@@ -69,6 +69,7 @@ better-cobblemon-music/music-input/
 | 필요 | `sv_terapagos_battle.ogg` | 테라파고스 |
 | 필요 | `sv_treasures_of_ruin_battle.ogg` | 총지엔, 파오젠, 딩루, 위유이 |
 | 필요 | `swsh_calyrex_battle.ogg` | 버드렉스 |
+| 필요 | `swsh_decisive_eternatus_battle.ogg` | 무한다이맥스 무한다이노 |
 | 필요 | `swsh_eternatus_battle.ogg` | 무한다이노 |
 | 필요 | `swsh_galarian_legendary_birds_battle.ogg` | 가라르 삼새 |
 | 필요 | `swsh_glastrier_spectrier_battle.ogg` | 블리자포스, 레이스포스 |
@@ -77,9 +78,9 @@ better-cobblemon-music/music-input/
 | 필요 | `swsh_zacian_zamazenta_battle.ogg` | 자시안, 자마젠타 |
 | 필요 | `usum_dusk_mane_dawn_wings_necrozma_battle.ogg` | 황혼의 갈기·새벽의 날개 네크로즈마 |
 | 필요 | `usum_ultra_necrozma_battle.ogg` | 울트라네크로즈마 |
-| 필요 | `xy_xerneas_yveltal_zygarde_battle.ogg` | 제르네아스, 이벨타르, 지가르데 및 칼로스 환상 계열 |
+| 필요 | `xy_xerneas_yveltal_zygarde_battle.ogg` | 제르네아스, 이벨타르, 지가르데 |
 
-위 44개 파일은 모두 `music-input/battle/legendary/`에 넣습니다.
+위 45개 파일은 모두 `music-input/battle/legendary/`에 넣습니다.
 
 ### 울트라비스트 1개
 
@@ -93,9 +94,9 @@ better-cobblemon-music/music-input/
 
 | 상태 | 목표 파일명 | 적용 대상 |
 |---|---|---|
-| 필요 | `hoenn_wild_pokemon_battle.ogg` | 라티아스, 라티오스, 지라치 |
+| 필요 | `hoenn_wild_pokemon_battle.ogg` | 라티아스, 라티오스 |
 | 교체 | `johto_wild_pokemon_battle.ogg` | 세레비 |
-| 필요 | `sinnoh_wild_pokemon_battle.ogg` | 크레세리아, 마나피, 피오네 |
+| 필요 | `sinnoh_wild_pokemon_battle.ogg` | 크레세리아, 쉐이미 |
 
 이 3개 파일은 `music-input/battle/wild/`에 넣습니다.
 
@@ -108,8 +109,7 @@ music-input/
    │  ├─ b2w2_black_white_kyurem_battle.ogg
    │  ├─ bw_kyurem_battle.ogg
    │  ├─ bw_legendary_pokemon_battle.ogg
-   │  ├─ bw_reshiram_battle.ogg
-   │  ├─ bw_zekrom_battle.ogg
+   │  ├─ bw_reshiram_zekrom_battle.ogg
    │  ├─ dppt_arceus_battle.ogg
    │  ├─ dppt_azelf_mesprit_uxie_battle.ogg
    │  ├─ dppt_dialga_palkia_battle.ogg
@@ -125,6 +125,7 @@ music-input/
    │  ├─ hgss_lugia_battle.ogg
    │  ├─ hgss_raikou_battle.ogg
    │  ├─ hgss_suicune_battle.ogg
+   │  ├─ oras_mega_rayquaza_battle.ogg
    │  ├─ oras_primal_reversion_battle.ogg
    │  ├─ pla_origin_dialga_palkia_battle.ogg
    │  ├─ pla_origin_giratina_battle.ogg
@@ -140,6 +141,7 @@ music-input/
    │  ├─ sv_terapagos_battle.ogg
    │  ├─ sv_treasures_of_ruin_battle.ogg
    │  ├─ swsh_calyrex_battle.ogg
+   │  ├─ swsh_decisive_eternatus_battle.ogg
    │  ├─ swsh_eternatus_battle.ogg
    │  ├─ swsh_galarian_legendary_birds_battle.ogg
    │  ├─ swsh_glastrier_spectrier_battle.ogg

@@ -90,6 +90,11 @@
         "tracks": ["battle/legendary/oras_primal_reversion_battle.ogg"]
       },
       {
+        "species": ["rayquaza#mega"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/oras_mega_rayquaza_battle.ogg"]
+      },
+      {
         "species": ["dialga#origin", "palkia#origin"],
         "only": ["wild"],
         "tracks": ["battle/legendary/pla_origin_dialga_palkia_battle.ogg"]
@@ -123,6 +128,11 @@
         "species": ["terapagos#stellar"],
         "only": ["wild"],
         "tracks": ["battle/legendary/sv_stellar_terapagos_battle.ogg"]
+      },
+      {
+        "species": ["eternatus#eternamax"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/swsh_decisive_eternatus_battle.ogg"]
       },
       {
         "species": ["articuno", "zapdos", "moltres"],
@@ -180,7 +190,7 @@
         "tracks": ["battle/legendary/rse_regirock_regice_registeel_battle.ogg"]
       },
       {
-        "species": ["latias", "latios", "jirachi"],
+        "species": ["latias", "latios"],
         "only": ["wild"],
         "tracks": ["battle/wild/hoenn_wild_pokemon_battle.ogg"]
       },
@@ -210,24 +220,19 @@
         "tracks": ["battle/legendary/dppt_giratina_battle.ogg"]
       },
       {
-        "species": ["heatran", "regigigas", "darkrai", "shaymin"],
+        "species": ["heatran", "regigigas", "darkrai"],
         "only": ["wild"],
         "tracks": ["battle/legendary/dppt_legendary_pokemon_battle.ogg"]
       },
       {
-        "species": ["cresselia", "manaphy", "phione"],
+        "species": ["cresselia", "shaymin"],
         "only": ["wild"],
         "tracks": ["battle/wild/sinnoh_wild_pokemon_battle.ogg"]
       },
       {
-        "species": ["reshiram"],
+        "species": ["reshiram", "zekrom"],
         "only": ["wild"],
-        "tracks": ["battle/legendary/bw_reshiram_battle.ogg"]
-      },
-      {
-        "species": ["zekrom"],
-        "only": ["wild"],
-        "tracks": ["battle/legendary/bw_zekrom_battle.ogg"]
+        "tracks": ["battle/legendary/bw_reshiram_zekrom_battle.ogg"]
       },
       {
         "species": ["kyurem"],
@@ -235,17 +240,17 @@
         "tracks": ["battle/legendary/bw_kyurem_battle.ogg"]
       },
       {
-        "species": ["victini", "cobalion", "terrakion", "virizion", "tornadus", "thundurus", "landorus", "keldeo", "meloetta", "genesect"],
+        "species": ["victini", "cobalion", "terrakion", "virizion", "tornadus", "thundurus", "landorus"],
         "only": ["wild"],
         "tracks": ["battle/legendary/bw_legendary_pokemon_battle.ogg"]
       },
       {
-        "species": ["xerneas", "yveltal", "zygarde", "diancie", "hoopa", "volcanion"],
+        "species": ["xerneas", "yveltal", "zygarde"],
         "only": ["wild"],
         "tracks": ["battle/legendary/xy_xerneas_yveltal_zygarde_battle.ogg"]
       },
       {
-        "species": ["solgaleo", "lunala", "necrozma", "cosmog", "cosmoem", "magearna", "marshadow", "zeraora", "typenull", "silvally"],
+        "species": ["solgaleo", "lunala", "necrozma"],
         "only": ["wild"],
         "tracks": ["battle/legendary/sm_solgaleo_lunala_necrozma_battle.ogg"]
       },
@@ -280,11 +285,6 @@
         "tracks": ["battle/legendary/swsh_glastrier_spectrier_battle.ogg"]
       },
       {
-        "species": ["kubfu", "urshifu", "zarude"],
-        "only": ["wild"],
-        "tracks": ["battle/legendary/generic_legendary_battle.ogg"]
-      },
-      {
         "species": ["koraidon", "miraidon"],
         "only": ["wild"],
         "tracks": ["battle/legendary/sv_koraidon_miraidon_battle.ogg"]
@@ -313,6 +313,11 @@
         "species": ["pecharunt"],
         "only": ["wild"],
         "tracks": ["battle/legendary/sv_pecharunt_battle.ogg"]
+      },
+      {
+        "species": ["jirachi", "manaphy", "phione", "keldeo", "meloetta", "genesect", "diancie", "hoopa", "volcanion", "cosmog", "cosmoem", "magearna", "marshadow", "zeraora", "typenull", "silvally", "kubfu", "urshifu", "zarude"],
+        "only": ["wild"],
+        "tracks": ["battle/legendary/generic_legendary_battle.ogg"]
       }
     ]
   }
