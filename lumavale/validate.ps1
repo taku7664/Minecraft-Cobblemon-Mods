@@ -97,9 +97,18 @@ if ($compositeSource -notmatch '#include\s+"/lib/fog\.glsl"') {
     $errors.Add("Composite must include the shared volumetric fog library")
 }
 
-foreach ($uniformName in @("lumavaleBiomeDry", "lumavaleBiomeRainy", "lumavaleBiomeSnowy", "lumavaleSkyExposure")) {
+foreach ($uniformName in @("lumavaleBiomeDry", "lumavaleBiomeRainy", "lumavaleBiomeSnowy", "lumavaleSkyExposure", "lumavaleCaveFactor")) {
     if ($propertiesSource -notmatch "(?m)^\s*uniform\.float\.$uniformName\s*=") {
         $errors.Add("Missing smoothed Iris fog uniform: $uniformName")
+    }
+}
+
+if (Test-Path -LiteralPath $fogLibraryPath -PathType Leaf) {
+    if ($fogLibrarySource -notmatch 'localGroundHeight\s*=\s*min\s*\(') {
+        $errors.Add("Ground mist must follow the local player/visible-ground height instead of a fixed world altitude")
+    }
+    if ($fogLibrarySource -match 'cameraPosition\.y\s*/\s*max\s*\(\s*GROUND_FOG_HEIGHT') {
+        $errors.Add("Cave fog must not be disabled above a fixed world altitude")
     }
 }
 
@@ -118,6 +127,14 @@ foreach ($settingName in @("GROUND_FOG_STRENGTH", "CAVE_FOG_STRENGTH", "BIOME_FO
             $errors.Add("Fog setting is missing $locale localization: $settingName")
         }
     }
+}
+
+$groundFogHeightMatch = [regex]::Match(
+    $settingsSource,
+    '(?m)^\s*#define\s+GROUND_FOG_HEIGHT\s+([0-9]+(?:\.[0-9]+)?)'
+)
+if (-not $groundFogHeightMatch.Success -or [double]$groundFogHeightMatch.Groups[1].Value -gt 8.0) {
+    $errors.Add("GROUND_FOG_HEIGHT must be a local layer thickness of 8 blocks or less")
 }
 
 $cloudFragmentPath = Join-Path $shaderRoot "gbuffers_clouds.fsh"

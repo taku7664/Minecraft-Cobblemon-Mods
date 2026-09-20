@@ -20,5 +20,5 @@ option.FOG_STRENGTH=Atmosphere strength
 option.GROUND_FOG_STRENGTH=Ground mist strength
 option.CAVE_FOG_STRENGTH=Cave fog strength
 option.BIOME_FOG_STRENGTH=Biome color strength
-option.GROUND_FOG_HEIGHT=Ground mist ceiling
+option.GROUND_FOG_HEIGHT=Ground mist height
 option.GROUND_FOG_SAMPLES=Ground mist quality

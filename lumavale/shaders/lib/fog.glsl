@@ -7,6 +7,7 @@ uniform float lumavaleBiomeDry;
 uniform float lumavaleBiomeRainy;
 uniform float lumavaleBiomeSnowy;
 uniform float lumavaleSkyExposure;
+uniform float lumavaleCaveFactor;
 
 float fogHash12(vec2 value) {
     vec3 p = fract(vec3(value.xyx) * 0.1031);
@@ -55,6 +56,11 @@ float integrateGroundMist(vec3 cameraRelativeEnd, float skyLight, float rainStre
     vec3 rayDirection = cameraRelativeEnd / max(fullRayLength, 0.0001);
     float stepLength = rayLength / float(GROUND_FOG_SAMPLES);
     float opticalDepth = 0.0;
+    float localGroundHeight = min(
+        cameraPosition.y - 1.62,
+        cameraPosition.y + cameraRelativeEnd.y
+    );
+    float fogCeiling = localGroundHeight + GROUND_FOG_HEIGHT;
     float outdoorFactor = smoothstep(0.08, 0.72, max(skyLight, lumavaleSkyExposure));
     float climateWeight = lumavaleBiomeDry + lumavaleBiomeRainy + lumavaleBiomeSnowy;
     float climateDensity =
@@ -68,8 +74,8 @@ float integrateGroundMist(vec3 cameraRelativeEnd, float skyLight, float rainStre
         float sampleDistance = (float(sampleIndex) + 0.5) * stepLength;
         vec3 sampleWorldPosition = cameraPosition + rayDirection * sampleDistance;
         float heightDensity = 1.0 - smoothstep(
-            GROUND_FOG_HEIGHT - 4.0,
-            GROUND_FOG_HEIGHT + 10.0,
+            fogCeiling - 0.8,
+            fogCeiling + 2.2,
             sampleWorldPosition.y
         );
 
@@ -86,9 +92,7 @@ float integrateGroundMist(vec3 cameraRelativeEnd, float skyLight, float rainStre
 }
 
 float computeCaveFog(float distanceFromCamera, float pixelSkyLight) {
-    float undergroundFactor = clamp(1.0 - cameraPosition.y / max(GROUND_FOG_HEIGHT, 1.0), 0.0, 1.0);
-    float cameraOcclusion = 1.0 - clamp(lumavaleSkyExposure, 0.0, 1.0);
-    float caveFactor = min(undergroundFactor, cameraOcclusion);
+    float caveFactor = clamp(lumavaleCaveFactor, 0.0, 1.0);
     float openingRelief = mix(1.0, 0.30, pow(clamp(pixelSkyLight, 0.0, 1.0), 2.0));
     float distanceFog = 1.0 - exp(-distanceFromCamera * 0.030);
     return clamp(distanceFog * caveFactor * openingRelief * CAVE_FOG_STRENGTH, 0.0, 0.88);
