@@ -14,6 +14,8 @@ public final class RoundedVoxelMesher {
     private static final BevelTemplateLibrary TEMPLATES = new BevelTemplateLibrary();
     private static final double HALF_HEIGHT = 0.5;
     private static final BevelTemplateLibrary HALF_HEIGHT_TEMPLATES = new BevelTemplateLibrary(HALF_HEIGHT);
+    private static final DiagonalContactBridgeMesher DIAGONAL_CONTACT_BRIDGES =
+        new DiagonalContactBridgeMesher(3.0 / 32.0, 3);
 
     public MeshPlan mesh(VoxelNeighborhood neighborhood) {
         if (!neighborhood.occupied(0, 0, 0)) {
@@ -21,6 +23,7 @@ public final class RoundedVoxelMesher {
         }
         List<MeshPrimitive> output = new ArrayList<>();
         emitCell(neighborhood::occupied, 0, 1.0, TEMPLATES, output);
+        output.addAll(DIAGONAL_CONTACT_BRIDGES.mesh(neighborhood).primitives());
         return new MeshPlan(output);
     }
 
