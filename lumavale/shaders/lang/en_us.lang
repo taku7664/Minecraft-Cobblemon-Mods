@@ -6,7 +6,6 @@ profile.comment=Soft favors performance, Cozy is the intended look, and High use
 screen.LIGHTING=Lighting
 screen.SHADOWS=Shadows
 screen.COLOR=Color and atmosphere
-screen.FOG=Fog
 
 option.EXPOSURE=Exposure
 option.BLOCKLIGHT_STRENGTH=Warm light strength
@@ -17,9 +16,3 @@ option.shadowMapResolution=Shadow resolution
 option.SATURATION=Saturation
 option.BLOOM_STRENGTH=Bloom strength
 option.FOG_STRENGTH=Atmosphere strength
-option.GROUND_FOG_STRENGTH=Ground mist strength
-option.GROUND_FOG_COVERAGE=Ground mist coverage
-option.CAVE_FOG_STRENGTH=Cave fog strength
-option.BIOME_FOG_STRENGTH=Biome color strength
-option.GROUND_FOG_HEIGHT=Ground mist height
-option.GROUND_FOG_SAMPLES=Ground mist quality

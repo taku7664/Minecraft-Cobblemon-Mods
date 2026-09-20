@@ -6,7 +6,6 @@ profile.comment=가벼움은 성능을 우선하고, 포근함은 기본 분위�
 screen.LIGHTING=조명
 screen.SHADOWS=그림자
 screen.COLOR=색감과 대기
-screen.FOG=안개
 
 option.EXPOSURE=노출
 option.BLOCKLIGHT_STRENGTH=따뜻한 광원 세기
@@ -17,9 +16,3 @@ option.shadowMapResolution=그림자 해상도
 option.SATURATION=채도
 option.BLOOM_STRENGTH=블룸 세기
 option.FOG_STRENGTH=대기 효과 세기
-option.GROUND_FOG_STRENGTH=지면 물안개 세기
-option.GROUND_FOG_COVERAGE=지면 물안개 분포량
-option.CAVE_FOG_STRENGTH=동굴 안개 세기
-option.BIOME_FOG_STRENGTH=생물군계 색상 세기
-option.GROUND_FOG_HEIGHT=지면 물안개 높이
-option.GROUND_FOG_SAMPLES=물안개 품질

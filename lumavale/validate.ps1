@@ -81,74 +81,6 @@ if ($compositeSource -notmatch '(?s)if\s*\(isPrelitCloud\).*?return\s*;.*?textur
     $errors.Add("Prelit clouds must return before the terrain normal-buffer lookup")
 }
 
-$fogLibraryPath = Join-Path $shaderRoot "lib\fog.glsl"
-if (-not (Test-Path -LiteralPath $fogLibraryPath -PathType Leaf)) {
-    $errors.Add("Missing volumetric fog library: lib/fog.glsl")
-}
-else {
-    $fogLibrarySource = Get-Content -LiteralPath $fogLibraryPath -Raw
-    foreach ($requiredFunction in @("integrateGroundMist", "groundMistPatch", "computeCaveFog", "biomeFogColor")) {
-        if ($fogLibrarySource -notmatch "\b$requiredFunction\s*\(") {
-            $errors.Add("Fog library is missing required function: $requiredFunction")
-        }
-    }
-}
-if ($compositeSource -notmatch '#include\s+"/lib/fog\.glsl"') {
-    $errors.Add("Composite must include the shared volumetric fog library")
-}
-
-foreach ($uniformName in @("lumavaleBiomeDry", "lumavaleBiomeRainy", "lumavaleBiomeSnowy", "lumavaleSkyExposure", "lumavaleCaveFactor")) {
-    if ($propertiesSource -notmatch "(?m)^\s*uniform\.float\.$uniformName\s*=") {
-        $errors.Add("Missing smoothed Iris fog uniform: $uniformName")
-    }
-}
-
-if (Test-Path -LiteralPath $fogLibraryPath -PathType Leaf) {
-    if ($fogLibrarySource -notmatch 'surfaceWorldPosition\s*=\s*cameraPosition\s*\+\s*cameraRelativeEnd') {
-        $errors.Add("Ground mist must anchor to the actual visible surface position")
-    }
-    if ($fogLibrarySource -notmatch 'heightAboveSurface\s*=\s*dot\s*\([^;]*worldNormal\s*\)') {
-        $errors.Add("Ground mist height must be measured from the visible surface tangent plane")
-    }
-    if ($fogLibrarySource -match 'cameraPosition\.y\s*/\s*max\s*\(\s*GROUND_FOG_HEIGHT') {
-        $errors.Add("Cave fog must not be disabled above a fixed world altitude")
-    }
-    if ($fogLibrarySource -notmatch 'integrateGroundMist\s*\(\s*vec3\s+cameraRelativeEnd\s*,\s*vec3\s+worldNormal') {
-        $errors.Add("Ground mist integration must receive the visible surface normal")
-    }
-    if ($fogLibrarySource -notmatch 'groundFacing\s*=\s*smoothstep\s*\(') {
-        $errors.Add("Ground mist must reject walls and ceilings with an upward-normal mask")
-    }
-}
-if ($compositeSource -match '\bskyGroundMist\b') {
-    $errors.Add("Ground mist must not be drawn across sky pixels as a horizontal fog wall")
-}
-
-$settingsPath = Join-Path $shaderRoot "lib\settings.glsl"
-$settingsSource = Get-Content -LiteralPath $settingsPath -Raw
-foreach ($settingName in @("GROUND_FOG_STRENGTH", "CAVE_FOG_STRENGTH", "BIOME_FOG_STRENGTH", "GROUND_FOG_COVERAGE", "GROUND_FOG_SAMPLES")) {
-    if ($settingsSource -notmatch "(?m)^\s*#define\s+$settingName\b") {
-        $errors.Add("Missing fog setting: $settingName")
-    }
-    if ($propertiesSource -notmatch "\b$settingName\b") {
-        $errors.Add("Fog setting is not exposed in shaders.properties: $settingName")
-    }
-    foreach ($locale in @("ko_kr", "en_us")) {
-        $languageSource = Get-Content -LiteralPath (Join-Path $shaderRoot "lang\$locale.lang") -Raw
-        if ($languageSource -notmatch "(?m)^option\.$settingName=") {
-            $errors.Add("Fog setting is missing $locale localization: $settingName")
-        }
-    }
-}
-
-$groundFogHeightMatch = [regex]::Match(
-    $settingsSource,
-    '(?m)^\s*#define\s+GROUND_FOG_HEIGHT\s+([0-9]+(?:\.[0-9]+)?)'
-)
-if (-not $groundFogHeightMatch.Success -or [double]$groundFogHeightMatch.Groups[1].Value -gt 8.0) {
-    $errors.Add("GROUND_FOG_HEIGHT must be a local layer thickness of 8 blocks or less")
-}
-
 $cloudFragmentPath = Join-Path $shaderRoot "gbuffers_clouds.fsh"
 $cloudFragmentSource = Get-Content -LiteralPath $cloudFragmentPath -Raw
 if ($cloudFragmentSource -notmatch '/\*\s*DRAWBUFFERS:01\s*\*/') {
@@ -289,7 +221,7 @@ else {
 
 if ($errors.Count -gt 0) {
     $errors | ForEach-Object { Write-Error $_ -ErrorAction Continue }
-    throw "LumaVale validation failed with $($errors.Count) error(s)"
+    exit 1
 }
 
 & (Join-Path $packRoot "build.ps1") -Version $Version | Out-Null

@@ -3,7 +3,6 @@
 #include "/lib/settings.glsl"
 #include "/lib/distort.glsl"
 #include "/lib/color.glsl"
-#include "/lib/fog.glsl"
 
 uniform sampler2D colortex0;
 uniform sampler2D colortex1;
@@ -112,30 +111,21 @@ vec3 daylightColor(float elevation) {
 void main() {
     vec4 base = texture(colortex0, texcoord);
     float depth = texture(depthtex0, texcoord).r;
-    bool isSky = depth >= 0.999999;
-    vec3 feetPosition = reconstructFeetPosition(min(depth, 0.999999));
-    if (isSky) {
-        feetPosition = normalize(feetPosition) * far * 0.95;
-    }
-
-    float solarElevation = sin(sunAngle * TAU);
-    float dayAmount = smoothstep(-0.08, 0.08, solarElevation);
-    float distanceFromCamera = length(feetPosition);
-    float fogFactor = smoothstep(far * 0.38, far * 0.94, distanceFromCamera) * FOG_STRENGTH;
-    fogFactor *= mix(0.82, 1.18, rainStrength);
-
-    vec3 linearFog = biomeFogColor(toLinear(fogColor) * mix(0.72, 1.0, dayAmount));
-    vec3 groundMistColor = mix(linearFog, toLinear(vec3(0.66, 0.73, 0.74)), 0.18);
-
-    if (isSky) {
-        vec3 skyColor = toLinear(base.rgb) * EXPOSURE;
-        gl_FragData[0] = vec4(skyColor, base.a);
+    if (depth >= 0.999999) {
+        gl_FragData[0] = vec4(toLinear(base.rgb) * EXPOSURE, base.a);
         return;
     }
 
     vec4 lightData = texture(colortex1, texcoord);
     vec2 lightmap = lightData.rg;
     bool isPrelitCloud = lightData.b > 0.5;
+    vec3 feetPosition = reconstructFeetPosition(depth);
+
+    float solarElevation = sin(sunAngle * TAU);
+    float dayAmount = smoothstep(-0.08, 0.08, solarElevation);
+    float distanceFromCamera = length(feetPosition);
+    float fogFactor = smoothstep(far * 0.38, far * 0.94, distanceFromCamera) * FOG_STRENGTH;
+    fogFactor *= mix(0.82, 1.18, rainStrength);
 
     if (isPrelitCloud) {
         vec3 stableCloudFog = mix(
@@ -159,7 +149,6 @@ void main() {
 
     float skyLight = pow(clamp(lightmap.y, 0.0, 1.0), 1.35);
     float blockLight = pow(clamp(lightmap.x, 0.0, 1.0), 1.65);
-    float groundMist = integrateGroundMist(feetPosition, normal, skyLight, rainStrength) * FOG_STRENGTH;
     float shadow = 1.0;
     if (skyLight > 0.015 && wrappedDiffuse > 0.19) {
         shadow = filteredShadow(feetPosition, normalDotLight);
@@ -184,16 +173,8 @@ void main() {
     lighting += warmBlockLight;
 
     vec3 shaded = toLinear(base.rgb) * lighting * EXPOSURE;
+    vec3 linearFog = toLinear(fogColor) * mix(0.72, 1.0, dayAmount);
     shaded = mix(shaded, linearFog, clamp(fogFactor, 0.0, 0.92));
-    shaded = mix(shaded, groundMistColor, groundMist);
-
-    float caveFog = computeCaveFog(distanceFromCamera, skyLight) * FOG_STRENGTH;
-    vec3 caveFogColor = mix(
-        toLinear(vec3(0.105, 0.135, 0.17)),
-        toLinear(vec3(0.20, 0.16, 0.12)),
-        blockLight * 0.22
-    );
-    shaded = mix(shaded, caveFogColor, caveFog);
 
     gl_FragData[0] = vec4(shaded, base.a);
 }
