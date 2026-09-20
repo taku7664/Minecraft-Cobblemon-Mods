@@ -16,6 +16,12 @@ class RoundingBlockModuleContractTest {
             String json = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
             assertTrue(json.contains("\"environment\": \"client\""));
             assertTrue(json.contains("\"fabric-api\": \"*\""));
+            assertTrue(json.contains("\"modmenu\""), "Mod Menu must discover the config screen entrypoint");
+            assertTrue(
+                json.contains("jbro.minecraft.roundingblock.client.settings.RoundingBlockModMenu"),
+                "Mod Menu entrypoint must name the Rounding-Block config screen factory"
+            );
+            assertTrue(json.contains("\"cloth-config\": \"*\""), "Cloth Config must be declared as optional");
             assertFalse(json.toLowerCase().contains("iris"));
             assertFalse(json.toLowerCase().contains("sodium"));
         }

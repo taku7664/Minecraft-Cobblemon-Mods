@@ -10,6 +10,9 @@
   "entrypoints": {
     "client": [
       "jbro.minecraft.roundingblock.client.RoundingBlockClient"
+    ],
+    "modmenu": [
+      "jbro.minecraft.roundingblock.client.settings.RoundingBlockModMenu"
     ]
   },
   "depends": {
@@ -17,5 +20,9 @@
     "fabric-api": "*",
     "minecraft": "~1.21.1",
     "java": ">=21"
+  },
+  "suggests": {
+    "modmenu": "*",
+    "cloth-config": "*"
   }
 }
