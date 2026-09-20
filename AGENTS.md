@@ -10,6 +10,11 @@
 - Every source, configuration, documentation, build, or deployment change MUST be committed and pushed as its own logical unit.
 - Do not combine unrelated work in one commit. Verify the exact staged file set before every commit and verify the remote is synchronized after every push.
 
+## Mod implementation
+
+- Every mod source and resource change MUST account for localization and MUST follow a consistent project structure across modules.
+- When a feature requires or reasonably benefits from user configuration or editing, the mod MUST provide a `modmenu` entrypoint in `fabric.mod.json` and MUST implement the corresponding configuration screen.
+
 ## BattleCam port
 
 - Port the Cobblemon 1.8.1 BattleCam replacement as `better-cobblemon-battlecam`.
