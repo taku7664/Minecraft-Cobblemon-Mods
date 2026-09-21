@@ -81,7 +81,7 @@ public final class GeneratedMusicResourcePack {
                 throw new IOException("Configured music path escapes the generated resource pack: " + relativeTrack);
             }
             Files.createDirectories(target.getParent());
-            replaceWithLinkOrCopy(source, target);
+            copyTrack(source, target);
             sounds.add(soundPath, streamingSound(soundPath));
         }
 
@@ -144,12 +144,8 @@ public final class GeneratedMusicResourcePack {
             """;
     }
 
-    private static void replaceWithLinkOrCopy(Path source, Path target) throws IOException {
-        try {
-            Files.createLink(target, source);
-        } catch (UnsupportedOperationException | IOException linkFailure) {
-            Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-        }
+    private static void copyTrack(Path source, Path target) throws IOException {
+        Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
     }
 
     private static void writeUtf8(Path target, String content) throws IOException {

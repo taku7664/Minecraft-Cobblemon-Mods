@@ -40,6 +40,10 @@ final class BetterCobblemonMusicModuleContractTest {
             metadata.getAsJsonObject("entrypoints").getAsJsonArray("client").get(0).getAsString()
         );
         assertEquals(
+            "jbro.cobblemon.bettermusic.client.BetterMusicModMenu",
+            metadata.getAsJsonObject("entrypoints").getAsJsonArray("modmenu").get(0).getAsString()
+        );
+        assertEquals(
             "better_cobblemon_music.mixins.json",
             metadata.getAsJsonArray("mixins").get(0).getAsString()
         );
@@ -55,6 +59,8 @@ final class BetterCobblemonMusicModuleContractTest {
             "*",
             metadata.getAsJsonObject("suggests").get("cobblemon_more_battle_content").getAsString()
         );
+        assertEquals("*", metadata.getAsJsonObject("suggests").get("modmenu").getAsString());
+        assertEquals("*", metadata.getAsJsonObject("suggests").get("cloth-config").getAsString());
 
         var serialized = metadata.toString();
         assertFalse(serialized.contains("CobbleServer"));

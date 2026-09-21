@@ -2,6 +2,11 @@ plugins {
     id("dev.architectury.loom")
 }
 
+repositories {
+    maven("https://maven.terraformersmc.com/releases/")
+    maven("https://maven.shedaniel.me/")
+}
+
 version = property("better_cobblemon_music_version")!!
 
 group = "jbro.cobblemon"
@@ -14,6 +19,8 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:${property("fabric_loader_version")}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
     modImplementation("maven.modrinth:cobblemon:${property("cobblemon_version_id")}")
+    modCompileOnly("com.terraformersmc:modmenu:11.0.3")
+    modCompileOnly("me.shedaniel.cloth:cloth-config-fabric:15.0.140")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("com.google.code.gson:gson:2.11.0")

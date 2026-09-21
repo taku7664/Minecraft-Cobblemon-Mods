@@ -82,6 +82,29 @@ final class GeneratedMusicResourcePackTest {
     }
 
     @Test
+    void publishedTracksAreSnapshotsRatherThanHardLinksToEditableSourceFiles() throws Exception {
+        Path config = temporaryDirectory.resolve("config");
+        Path source = config.resolve("music/field/forest.ogg");
+        Files.createDirectories(source.getParent());
+        byte[] publishedBytes = validOgg((byte) 1);
+        byte[] editedBytes = validOgg((byte) 2);
+        Files.write(source, publishedBytes);
+        var pack = new GeneratedMusicResourcePack(config, temporaryDirectory.resolve("resourcepacks"));
+
+        pack.generate(snapshot(List.of("field/forest.ogg")));
+        Path generated = pack.packDirectory().resolve(
+            "assets/better_cobblemon_music/sounds/custom/field/forest.ogg"
+        );
+        Files.write(source, editedBytes);
+
+        assertEquals(
+            java.util.Arrays.toString(publishedBytes),
+            java.util.Arrays.toString(Files.readAllBytes(generated)),
+            "editing a source OGG must not mutate the already-published resource pack"
+        );
+    }
+
+    @Test
     void rejectsAFileThatOnlyHasAnOggExtensionWithoutPublishingIt() throws Exception {
         Path config = temporaryDirectory.resolve("config");
         Path music = config.resolve("music");
@@ -155,10 +178,14 @@ final class GeneratedMusicResourcePackTest {
     }
 
     private static byte[] validOgg() {
+        return validOgg((byte) 1);
+    }
+
+    private static byte[] validOgg(byte serial) {
         return new byte[] {
             'O', 'g', 'g', 'S', 0, 2, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
-            1, 0, 0, 0, 0, 0, 0, 0,
+            serial, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 1, 7,
             1, 'v', 'o', 'r', 'b', 'i', 's'
         };

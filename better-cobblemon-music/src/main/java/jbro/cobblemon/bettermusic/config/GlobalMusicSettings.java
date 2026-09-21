@@ -1,0 +1,28 @@
+package jbro.cobblemon.bettermusic.config;
+
+import java.util.Objects;
+
+public record GlobalMusicSettings(
+    double scanIntervalSeconds,
+    double fieldChangeDelaySeconds,
+    double betweenTracksSeconds,
+    double fadeInSeconds,
+    double fadeOutSeconds,
+    PlaylistDefinition.Selection selection,
+    double volume
+) {
+    public GlobalMusicSettings {
+        new PlaybackSettings(
+            scanIntervalSeconds,
+            fieldChangeDelaySeconds,
+            betweenTracksSeconds,
+            fadeInSeconds,
+            fadeOutSeconds,
+            PlaybackSettings.MissingCueBehavior.KEEP_ORIGINAL
+        );
+        Objects.requireNonNull(selection, "selection");
+        if (!Double.isFinite(volume) || volume < 0.0) {
+            throw new IllegalArgumentException("volume must be finite and non-negative");
+        }
+    }
+}
