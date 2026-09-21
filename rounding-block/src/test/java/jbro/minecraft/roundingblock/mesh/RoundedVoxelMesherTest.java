@@ -44,6 +44,59 @@ class RoundedVoxelMesherTest {
         assertAllLatticeVertexOccupancies(new RoundedVoxelMesher(0.21875, 8));
     }
 
+    @Test
+    void diagonalEdgeContactAddsANarrowCurvedFillet() {
+        MeshPlan plan = new RoundedVoxelMesher().mesh(VoxelNeighborhood.builder()
+            .occupy(0, 0, 0)
+            .occupy(1, 0, 1)
+            .build());
+
+        assertTrue(plan.primitives().stream().anyMatch(primitive ->
+            primitive.kind() == PrimitiveKind.CONTACT
+        ), "a diagonal edge needs a narrow fillet because the base rounded surface stops short");
+        assertTrue(plan.primitives().stream().flatMap(primitive -> primitive.vertices().stream()).anyMatch(vertex ->
+            Math.abs(vertex.position().x() - 1.0) < 0.03
+                && Math.abs(vertex.position().z() - 1.0) < 0.03
+                && Math.abs(vertex.normal().x()) > 0.1
+                && Math.abs(vertex.normal().z()) > 0.1
+        ), "the rounded surface itself must converge on the shared diagonal edge");
+    }
+
+    @Test
+    void diagonalVertexContactAddsANarrowCurvedTip() {
+        MeshPlan plan = new RoundedVoxelMesher().mesh(VoxelNeighborhood.builder()
+            .occupy(0, 0, 0)
+            .occupy(1, 1, 1)
+            .build());
+
+        assertTrue(plan.primitives().stream().anyMatch(primitive ->
+            primitive.kind() == PrimitiveKind.CONTACT
+        ), "a diagonal vertex needs a narrow curved tip because the base rounded surface stops short");
+        assertTrue(plan.primitives().stream().flatMap(primitive -> primitive.vertices().stream()).anyMatch(vertex ->
+            Math.abs(vertex.position().x() - 1.0) < 0.04
+                && Math.abs(vertex.position().y() - 1.0) < 0.04
+                && Math.abs(vertex.position().z() - 1.0) < 0.04
+        ), "the rounded surface itself must converge on the shared diagonal vertex");
+    }
+
+    @Test
+    void threeBlockDiagonalCornerUsesOnlyItsNarrowEdgeFillet() {
+        MeshPlan plan = new RoundedVoxelMesher().mesh(VoxelNeighborhood.builder()
+            .occupy(0, 0, 0)
+            .occupy(0, -1, 1)
+            .occupy(1, -1, 1)
+            .build());
+
+        assertTrue(plan.primitives().stream().anyMatch(primitive ->
+            primitive.kind() == PrimitiveKind.CONTACT
+        ), "the three-block contact needs a narrow edge fillet without a duplicate vertex star");
+        assertTrue(plan.primitives().stream().flatMap(primitive -> primitive.vertices().stream()).anyMatch(vertex ->
+            Math.abs(vertex.position().x() - 1.0) < 0.04
+                && Math.abs(vertex.position().y()) < 0.04
+                && Math.abs(vertex.position().z() - 1.0) < 0.04
+        ), "the continuous surface must reach the shared three-block corner");
+    }
+
     private static void assertAllLatticeVertexOccupancies(RoundedVoxelMesher mesher) {
 
         for (int mask = 1; mask < 255; mask++) {

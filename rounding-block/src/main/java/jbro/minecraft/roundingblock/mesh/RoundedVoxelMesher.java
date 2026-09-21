@@ -14,13 +14,11 @@ public final class RoundedVoxelMesher {
     private static final double HALF_HEIGHT = 0.5;
     private static final double MICRO_SIZE = 0.5;
     private final TemplateSet templates;
-    private final DiagonalContactPatchMesher diagonalContactPatches;
-    private final DiagonalContactEndpointMesher diagonalVertexContacts;
+    private final DiagonalContactFilletMesher diagonalContacts;
 
     public RoundedVoxelMesher() {
         this.templates = DefaultTemplates.INSTANCE;
-        this.diagonalContactPatches = new DiagonalContactPatchMesher(BevelTemplateLibrary.DEFAULT_RADIUS);
-        this.diagonalVertexContacts = new DiagonalContactEndpointMesher(
+        this.diagonalContacts = new DiagonalContactFilletMesher(
             BevelTemplateLibrary.DEFAULT_RADIUS,
             BevelTemplateLibrary.DEFAULT_SEGMENTS
         );
@@ -31,8 +29,7 @@ public final class RoundedVoxelMesher {
             && segments == BevelTemplateLibrary.DEFAULT_SEGMENTS
             ? DefaultTemplates.INSTANCE
             : createTemplates(radius, segments);
-        this.diagonalContactPatches = new DiagonalContactPatchMesher(radius);
-        this.diagonalVertexContacts = new DiagonalContactEndpointMesher(radius, segments);
+        this.diagonalContacts = new DiagonalContactFilletMesher(radius, segments);
     }
 
     public MeshPlan mesh(VoxelNeighborhood neighborhood) {
@@ -41,8 +38,7 @@ public final class RoundedVoxelMesher {
         }
         List<MeshPrimitive> output = new ArrayList<>();
         emitCell(neighborhood::occupied, 0, 0, 0, 1.0, 1.0, 1.0, templates.full(), output);
-        output.addAll(diagonalContactPatches.mesh(neighborhood).primitives());
-        output.addAll(diagonalVertexContacts.mesh(neighborhood).primitives());
+        output.addAll(diagonalContacts.mesh(neighborhood).primitives());
         return new MeshPlan(output).compactCoplanarFaces();
     }
 
