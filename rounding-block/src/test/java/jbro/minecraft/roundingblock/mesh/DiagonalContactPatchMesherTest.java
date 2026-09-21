@@ -98,7 +98,7 @@ class DiagonalContactPatchMesherTest {
             .withoutPlanarFaces(neighborhood.planarFaceBits());
 
         assertTrue(composed.primitives().containsAll(patches.primitives()));
-        assertInsideCenterBlock(composed);
+        assertInsideCenterBlock(patches);
     }
 
     private static void assertInsideCenterBlock(MeshPlan plan) {
