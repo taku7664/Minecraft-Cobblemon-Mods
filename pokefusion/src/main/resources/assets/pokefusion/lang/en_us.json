@@ -22,7 +22,7 @@
   "message.pokefusion.invalid_item": "Only PokeToItem Pokemon items can be inserted.",
   "message.pokefusion.store_result_failed": "The result could not be stored safely, so the fusion was cancelled. Input items were not consumed.",
   "message.pokefusion.completed": "Pokemon fusion completed.",
-  "message.pokefusion.delivery_incomplete": "Some result items could not fit in your inventory. Press the fusion button to try again.",
+  "message.pokefusion.delivery_incomplete": "Some result items could not be added to your inventory or dropped. Press the fusion button to try again.",
   "message.pokefusion.store_input_failed": "Fusion stopped because the input items could not be stored safely.",
   "message.pokefusion.failure.missing_input": "Insert a base Pokemon and material Pokemon.",
   "message.pokefusion.failure.invalid_item": "This is not a valid PokeToItem Pokemon item.",

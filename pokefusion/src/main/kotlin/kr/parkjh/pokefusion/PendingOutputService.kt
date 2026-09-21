@@ -48,7 +48,11 @@ object PendingOutputService {
             },
             grant = { candidate ->
                 player.inventory.add(candidate)
-                candidate.takeUnless(ItemStack::isEmpty)
+                when {
+                    candidate.isEmpty -> null
+                    player.drop(candidate, false) != null -> null
+                    else -> candidate
+                }
             }
         )
     }
