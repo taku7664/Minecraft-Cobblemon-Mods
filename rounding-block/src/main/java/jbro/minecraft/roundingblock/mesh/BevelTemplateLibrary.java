@@ -17,6 +17,8 @@ final class BevelTemplateLibrary {
     static final double DEFAULT_RADIUS = 3.0 / 32.0;
     static final int DEFAULT_SEGMENTS = 3;
     private static final double ISO_LEVEL = 0.5001;
+    private static final double EDGE_COUPLING = 1.0;
+    private static final double VERTEX_MARGIN = 0.05;
     private static final double EPSILON = 1.0e-9;
     private static final double MINIMUM_EDGE = 1.0e-8;
     private static final int[][] CUBE_EDGES = {
@@ -214,6 +216,13 @@ final class BevelTemplateLibrary {
         result[1] = -halfExtent;
         for (int index = 0; index <= 2 * segments; index++) {
             result[index + 2] = -radius + 2.0 * radius * index / (2.0 * segments);
+        }
+        if (segments > 1) {
+            // Keep the shared grid size unchanged while resolving the narrow
+            // diagonal neck on both sides of every template boundary.
+            double nearCenter = radius / (4.0 * segments);
+            result[segments + 1] = -nearCenter;
+            result[segments + 3] = nearCenter;
         }
         result[result.length - 2] = halfExtent;
         result[result.length - 1] = halfExtent + radius;
@@ -541,7 +550,143 @@ final class BevelTemplateLibrary {
             gradientY += wx * y.derivative(positiveY) * wz;
             gradientZ += wx * wy * z.derivative(positiveZ);
         }
+        Bridge bridge = diagonalBridge(mask, x, y, z);
+        density += bridge.density();
+        gradientX += bridge.gradient().x();
+        gradientY += bridge.gradient().y();
+        gradientZ += bridge.gradient().z();
         return new Sample(position, density, new Vec3(-gradientX, -gradientY, -gradientZ));
+    }
+
+    private static Bridge diagonalBridge(int mask, AxisWeight x, AxisWeight y, AxisWeight z) {
+        AxisWeight[] weights = {x, y, z};
+        AxisBump[] bumps = {AxisBump.of(x), AxisBump.of(y), AxisBump.of(z)};
+        double centerNeed = Math.max(0.0, ISO_LEVEL + VERTEX_MARGIN - Integer.bitCount(mask) / 8.0);
+        Bridge combined = new Bridge(0.0, Vec3.ZERO);
+        for (int first = 0; first < 8; first++) {
+            if ((mask & (1 << first)) == 0) {
+                continue;
+            }
+            for (int second = first + 1; second < 8; second++) {
+                if ((mask & (1 << second)) == 0) {
+                    continue;
+                }
+                int changedAxes = first ^ second;
+                int distance = Integer.bitCount(changedAxes);
+                Bridge candidate;
+                if (distance == 2) {
+                    int sharedAxis = Integer.numberOfTrailingZeros(~changedAxes & 0b111);
+                    // This predicate is local to the physical edge. Using the
+                    // whole mask here makes adjacent templates disagree when
+                    // one has an unrelated face-connected route.
+                    if (!isDiagonalSlice(mask, first, second, sharedAxis)) {
+                        continue;
+                    }
+                    boolean positiveSide = (first & (1 << sharedAxis)) != 0;
+                    double side = weights[sharedAxis].value(positiveSide);
+                    double gate;
+                    double gateDerivative;
+                    if (side <= 0.5) {
+                        gate = 0.0;
+                        gateDerivative = 0.0;
+                    } else {
+                        double amount = 2.0 * side - 1.0;
+                        gate = amount * amount * (3.0 - 2.0 * amount);
+                        gateDerivative = 12.0 * amount * (1.0 - amount)
+                            * weights[sharedAxis].derivative(positiveSide);
+                    }
+                    Contribution firstContribution = contribution(first, weights);
+                    Contribution secondContribution = contribution(second, weights);
+                    double sum = firstContribution.density() + secondContribution.density();
+                    if (sum <= EPSILON) {
+                        continue;
+                    }
+                    double harmonic = 2.0 * firstContribution.density() * secondContribution.density() / sum;
+                    double denominator = sum * sum;
+                    Vec3 harmonicGradient = firstContribution.gradient().multiply(
+                        2.0 * secondContribution.density() * secondContribution.density() / denominator
+                    ).add(secondContribution.gradient().multiply(
+                        2.0 * firstContribution.density() * firstContribution.density() / denominator
+                    ));
+                    candidate = new Bridge(
+                        EDGE_COUPLING * harmonic * gate,
+                        harmonicGradient.multiply(EDGE_COUPLING * gate).add(
+                            Vec3.ZERO.withComponent(sharedAxis, EDGE_COUPLING * harmonic * gateDerivative)
+                        )
+                    );
+                } else if (distance == 3 && !faceConnected(mask, first, second)) {
+                    double bx = bumps[0].value();
+                    double by = bumps[1].value();
+                    double bz = bumps[2].value();
+                    double vertexNeed = centerNeed * 1.05;
+                    candidate = new Bridge(
+                        vertexNeed * bx * by * bz,
+                        new Vec3(
+                            vertexNeed * bumps[0].derivative() * by * bz,
+                            vertexNeed * bx * bumps[1].derivative() * bz,
+                            vertexNeed * bx * by * bumps[2].derivative()
+                        )
+                    );
+                } else {
+                    continue;
+                }
+                combined = new Bridge(
+                    combined.density() + candidate.density(),
+                    combined.gradient().add(candidate.gradient())
+                );
+            }
+        }
+        return combined;
+    }
+
+    private static Contribution contribution(int octant, AxisWeight[] weights) {
+        double[] values = new double[3];
+        double[] derivatives = new double[3];
+        for (int axis = 0; axis < 3; axis++) {
+            boolean positiveSide = (octant & (1 << axis)) != 0;
+            values[axis] = weights[axis].value(positiveSide);
+            derivatives[axis] = weights[axis].derivative(positiveSide);
+        }
+        return new Contribution(
+            values[0] * values[1] * values[2],
+            new Vec3(
+                derivatives[0] * values[1] * values[2],
+                values[0] * derivatives[1] * values[2],
+                values[0] * values[1] * derivatives[2]
+            )
+        );
+    }
+
+    private static boolean isDiagonalSlice(int mask, int first, int second, int sharedAxis) {
+        boolean positiveSide = (first & (1 << sharedAxis)) != 0;
+        int sliceMask = 0;
+        for (int octant = 0; octant < 8; octant++) {
+            if (((octant & (1 << sharedAxis)) != 0) == positiveSide) {
+                sliceMask |= 1 << octant;
+            }
+        }
+        return (mask & sliceMask) == ((1 << first) | (1 << second));
+    }
+
+    private static boolean faceConnected(int mask, int first, int target) {
+        int visited = 1 << first;
+        int frontier = visited;
+        while (frontier != 0) {
+            int octant = Integer.numberOfTrailingZeros(frontier);
+            frontier &= ~(1 << octant);
+            if (octant == target) {
+                return true;
+            }
+            for (int axis = 0; axis < 3; axis++) {
+                int neighbor = octant ^ (1 << axis);
+                int neighborBit = 1 << neighbor;
+                if ((mask & neighborBit) != 0 && (visited & neighborBit) == 0) {
+                    visited |= neighborBit;
+                    frontier |= neighborBit;
+                }
+            }
+        }
+        return false;
     }
 
     private AxisWeight weight(double coordinate) {
@@ -583,6 +728,22 @@ final class BevelTemplateLibrary {
         private double derivative(boolean positiveSide) {
             return positiveSide ? positiveDerivative : -positiveDerivative;
         }
+    }
+
+    private record AxisBump(double value, double derivative) {
+        private static AxisBump of(AxisWeight weight) {
+            return new AxisBump(
+                4.0 * weight.positive() * (1.0 - weight.positive()),
+                4.0 * weight.positiveDerivative() * (1.0 - 2.0 * weight.positive())
+            );
+        }
+
+    }
+
+    private record Contribution(double density, Vec3 gradient) {
+    }
+
+    private record Bridge(double density, Vec3 gradient) {
     }
 
     private record Sample(Vec3 position, double density, Vec3 outward) {
