@@ -49,6 +49,9 @@ $propertiesSource = Get-Content -LiteralPath $propertiesPath -Raw
 if ($propertiesSource -match '(?m)^\s*clouds\s*=\s*(default|true|false)\s*$') {
     $errors.Add("Unsupported clouds value; use fast, fancy, off, or omit the directive")
 }
+if ($propertiesSource -notmatch '(?m)^\s*size\.buffer\.colortex3\s*=\s*0\.5\s+0\.5\s*$') {
+    $errors.Add("Bloom buffer colortex3 must render at half resolution")
+}
 
 $compositePath = Join-Path $shaderRoot "composite.fsh"
 $compositeSource = Get-Content -LiteralPath $compositePath -Raw
@@ -88,6 +91,47 @@ if ($cloudFragmentSource -notmatch '/\*\s*DRAWBUFFERS:01\s*\*/') {
 }
 if ($cloudFragmentSource -match 'gl_FragData\s*\[\s*2\s*\]') {
     $errors.Add("Prelit clouds must not write the unused terrain normal buffer")
+}
+
+$bloomFragmentPath = Join-Path $shaderRoot "composite1.fsh"
+if (-not (Test-Path -LiteralPath $bloomFragmentPath -PathType Leaf)) {
+    $errors.Add("Missing half-resolution bloom pass: composite1.fsh")
+}
+else {
+    $bloomFragmentSource = Get-Content -LiteralPath $bloomFragmentPath -Raw
+    if ($bloomFragmentSource -notmatch '/\*\s*DRAWBUFFERS:3\s*\*/') {
+        $errors.Add("Bloom pass must write only to colortex3")
+    }
+    if ($bloomFragmentSource -notmatch 'const\s+int\s+colortex3Format\s*=\s*R11F_G11F_B10F\s*;') {
+        $errors.Add("Bloom buffer must use the compact HDR R11F_G11F_B10F format")
+    }
+    if ($bloomFragmentSource -notmatch 'texture\s*\(\s*colortex0\s*,') {
+        $errors.Add("Bloom pass must source the lit scene from colortex0")
+    }
+}
+
+$finalFragmentSource = Get-Content -LiteralPath (Join-Path $shaderRoot "final.fsh") -Raw
+if ($finalFragmentSource -notmatch 'texture\s*\(\s*colortex3\s*,') {
+    $errors.Add("Final pass must composite the half-resolution bloom buffer")
+}
+if ($finalFragmentSource -match 'for\s*\(') {
+    $errors.Add("Final pass must not perform a full-resolution bloom sampling loop")
+}
+
+foreach ($skyProgram in @("gbuffers_skybasic", "gbuffers_skytextured")) {
+    $skyFragmentSource = Get-Content -LiteralPath (Join-Path $shaderRoot "$skyProgram.fsh") -Raw
+    if ($skyFragmentSource -notmatch '/\*\s*DRAWBUFFERS:0\s*\*/') {
+        $errors.Add("Sky pass must write only the scene color buffer: $skyProgram.fsh")
+    }
+    if ($skyFragmentSource -match 'gl_FragData\s*\[\s*[12]\s*\]') {
+        $errors.Add("Sky pass must not write unused light or normal buffers: $skyProgram.fsh")
+    }
+
+    $skyVertexSource = Get-Content -LiteralPath (Join-Path $shaderRoot "$skyProgram.vsh") -Raw
+    if ($skyVertexSource -match '#include\s+"/program/gbuffer_' -or
+        $skyVertexSource -match '\b(?:gbufferModelViewInverse|lightcoord|worldNormal)\b') {
+        $errors.Add("Sky vertex pass must not calculate unused lighting data: $skyProgram.vsh")
+    }
 }
 
 $texturedVertexPath = Join-Path $shaderRoot "program\gbuffer_textured.vsh"

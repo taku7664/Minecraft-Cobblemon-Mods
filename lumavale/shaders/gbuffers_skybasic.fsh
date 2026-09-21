@@ -1,2 +1,12 @@
 #version 330 compatibility
-#include "/program/gbuffer_basic.fsh"
+
+in vec4 vertexColor;
+
+/* DRAWBUFFERS:0 */
+
+void main() {
+    if (vertexColor.a <= 0.001) {
+        discard;
+    }
+    gl_FragData[0] = vertexColor;
+}
