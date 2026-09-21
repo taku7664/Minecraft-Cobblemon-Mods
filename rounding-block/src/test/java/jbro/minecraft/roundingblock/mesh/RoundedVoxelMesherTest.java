@@ -45,15 +45,12 @@ class RoundedVoxelMesherTest {
     }
 
     @Test
-    void diagonalEdgeContactAddsANarrowCurvedFillet() {
+    void diagonalEdgeContactIsPartOfTheClosedRoundedSurface() {
         MeshPlan plan = new RoundedVoxelMesher().mesh(VoxelNeighborhood.builder()
             .occupy(0, 0, 0)
             .occupy(1, 0, 1)
             .build());
 
-        assertTrue(plan.primitives().stream().anyMatch(primitive ->
-            primitive.kind() == PrimitiveKind.CONTACT
-        ), "a diagonal edge needs a narrow fillet because the base rounded surface stops short");
         assertTrue(plan.primitives().stream().flatMap(primitive -> primitive.vertices().stream()).anyMatch(vertex ->
             Math.abs(vertex.position().x() - 1.0) < 0.03
                 && Math.abs(vertex.position().z() - 1.0) < 0.03
@@ -63,15 +60,12 @@ class RoundedVoxelMesherTest {
     }
 
     @Test
-    void diagonalVertexContactAddsANarrowCurvedTip() {
+    void diagonalVertexContactIsPartOfTheClosedRoundedSurface() {
         MeshPlan plan = new RoundedVoxelMesher().mesh(VoxelNeighborhood.builder()
             .occupy(0, 0, 0)
             .occupy(1, 1, 1)
             .build());
 
-        assertTrue(plan.primitives().stream().anyMatch(primitive ->
-            primitive.kind() == PrimitiveKind.CONTACT
-        ), "a diagonal vertex needs a narrow curved tip because the base rounded surface stops short");
         assertTrue(plan.primitives().stream().flatMap(primitive -> primitive.vertices().stream()).anyMatch(vertex ->
             Math.abs(vertex.position().x() - 1.0) < 0.04
                 && Math.abs(vertex.position().y() - 1.0) < 0.04
@@ -80,16 +74,13 @@ class RoundedVoxelMesherTest {
     }
 
     @Test
-    void threeBlockDiagonalCornerUsesOnlyItsNarrowEdgeFillet() {
+    void threeBlockDiagonalCornerUsesOneClosedRoundedSurface() {
         MeshPlan plan = new RoundedVoxelMesher().mesh(VoxelNeighborhood.builder()
             .occupy(0, 0, 0)
             .occupy(0, -1, 1)
             .occupy(1, -1, 1)
             .build());
 
-        assertTrue(plan.primitives().stream().anyMatch(primitive ->
-            primitive.kind() == PrimitiveKind.CONTACT
-        ), "the three-block contact needs a narrow edge fillet without a duplicate vertex star");
         assertTrue(plan.primitives().stream().flatMap(primitive -> primitive.vertices().stream()).anyMatch(vertex ->
             Math.abs(vertex.position().x() - 1.0) < 0.04
                 && Math.abs(vertex.position().y()) < 0.04
@@ -164,7 +155,6 @@ class RoundedVoxelMesherTest {
                 primitive.kind() == PrimitiveKind.FACE
                     || primitive.kind() == PrimitiveKind.EDGE
                     || primitive.kind() == PrimitiveKind.CONCAVE
-                    || primitive.kind() == PrimitiveKind.CONTACT
             ));
         }
     }
@@ -526,11 +516,6 @@ class RoundedVoxelMesherTest {
         for (Cell cell : solids) {
             MeshPlan plan = mesher.mesh(neighborhoodFor(cell, solids));
             for (MeshPrimitive primitive : plan.primitives()) {
-                // Contact patches intentionally let independently closed blocks meet at a line or point.
-                // Validate the underlying rounded shells here; patch bounds and contact are covered separately.
-                if (primitive.kind() == PrimitiveKind.CONTACT) {
-                    continue;
-                }
                 List<MeshVertex> vertices = primitive.vertices();
                 result.add(new WorldTriangle(
                     PointKey.of(vertices.get(0).position(), cell),

@@ -8,9 +8,10 @@ import java.util.List;
  *
  * <p>The old implementation split every sampling cube into six tetrahedra and
  * then clipped every triangle into eight octants. That multiplied even planar
- * areas into thousands of GPU quads per block. Surface nets emit at most one
- * vertex per active sampling cell and one quad per crossed sampling edge while
- * retaining the same continuous density field and smooth normals.</p>
+ * areas into thousands of GPU quads per block. Surface nets emit one quad per
+ * crossed sampling edge while retaining the same continuous density field and
+ * smooth normals. Ambiguous cells keep separate vertices for separate surface
+ * sheets so diagonal contacts cannot collapse into a non-manifold star.</p>
  */
 final class BevelTemplateLibrary {
     static final double DEFAULT_RADIUS = 3.0 / 32.0;
@@ -22,6 +23,11 @@ final class BevelTemplateLibrary {
         {0, 1}, {2, 3}, {4, 5}, {6, 7},
         {0, 2}, {1, 3}, {4, 6}, {5, 7},
         {0, 4}, {1, 5}, {2, 6}, {3, 7}
+    };
+    private static final int[][] CUBE_FACES = {
+        {0, 1, 3, 2}, {4, 5, 7, 6},
+        {0, 1, 5, 4}, {2, 3, 7, 6},
+        {0, 2, 6, 4}, {1, 3, 7, 5}
     };
 
     private final List<MeshPrimitive>[] templates;
@@ -181,18 +187,18 @@ final class BevelTemplateLibrary {
             }
         }
 
-        MeshVertex[][][] cellVertices = new MeshVertex[cellCount][cellCount][cellCount];
+        CellSurface[][][] cellSurfaces = new CellSurface[cellCount][cellCount][cellCount];
         for (int x = 0; x < cellCount; x++) {
             for (int y = 0; y < cellCount; y++) {
                 for (int z = 0; z < cellCount; z++) {
-                    cellVertices[x][y][z] = cellVertex(mask, samples, x, y, z);
+                    cellSurfaces[x][y][z] = cellSurface(mask, samples, x, y, z);
                 }
             }
         }
 
         List<MeshPrimitive> untrimmed = new ArrayList<>();
         for (int axis = 0; axis < 3; axis++) {
-            emitCrossedEdges(samples, cellVertices, axis, untrimmed);
+            emitCrossedEdges(samples, cellSurfaces, axis, untrimmed);
         }
         List<MeshPrimitive> result = new ArrayList<>();
         for (MeshPrimitive primitive : untrimmed) {
@@ -214,7 +220,7 @@ final class BevelTemplateLibrary {
         return result;
     }
 
-    private MeshVertex cellVertex(int mask, Sample[][][] samples, int x, int y, int z) {
+    private CellSurface cellSurface(int mask, Sample[][][] samples, int x, int y, int z) {
         Sample[] corners = new Sample[8];
         boolean inside = false;
         boolean outside = false;
@@ -231,11 +237,12 @@ final class BevelTemplateLibrary {
             return null;
         }
 
-        Vec3 positionSum = Vec3.ZERO;
-        Vec3 crossingNormalSum = Vec3.ZERO;
-        Vec3 firstCrossingNormal = null;
-        int crossings = 0;
-        for (int[] edge : CUBE_EDGES) {
+        boolean[] crossed = new boolean[CUBE_EDGES.length];
+        Vec3[] crossingPositions = new Vec3[CUBE_EDGES.length];
+        Vec3[] crossingNormals = new Vec3[CUBE_EDGES.length];
+        int[] parents = new int[CUBE_EDGES.length];
+        for (int edgeIndex = 0; edgeIndex < CUBE_EDGES.length; edgeIndex++) {
+            int[] edge = CUBE_EDGES[edgeIndex];
             Sample first = corners[edge[0]];
             Sample second = corners[edge[1]];
             boolean firstInside = first.density() > ISO_LEVEL;
@@ -243,27 +250,105 @@ final class BevelTemplateLibrary {
                 continue;
             }
             double amount = (ISO_LEVEL - first.density()) / (second.density() - first.density());
-            positionSum = positionSum.add(interpolate(first.position(), second.position(), amount));
-            Vec3 edgeOutward = second.position().subtract(first.position())
+            crossed[edgeIndex] = true;
+            parents[edgeIndex] = edgeIndex;
+            crossingPositions[edgeIndex] = interpolate(first.position(), second.position(), amount);
+            crossingNormals[edgeIndex] = second.position().subtract(first.position())
                 .multiply(firstInside ? 1.0 : -1.0)
                 .normalize();
-            crossingNormalSum = crossingNormalSum.add(edgeOutward);
-            if (firstCrossingNormal == null) {
-                firstCrossingNormal = edgeOutward;
+        }
+
+        for (int[] face : CUBE_FACES) {
+            int[] faceEdges = new int[4];
+            int crossingCount = 0;
+            for (int index = 0; index < 4; index++) {
+                int edgeIndex = localEdgeIndex(face[index], face[(index + 1) % 4]);
+                if (crossed[edgeIndex]) {
+                    faceEdges[crossingCount++] = edgeIndex;
+                }
             }
-            crossings++;
+            if (crossingCount == 2) {
+                union(parents, faceEdges[0], faceEdges[1]);
+            } else if (crossingCount == 4) {
+                // Pair around outside corners: diagonal solids stay connected without
+                // collapsing both surface sheets into a single non-manifold vertex.
+                for (int index = 0; index < 4; index++) {
+                    int corner = face[index];
+                    if (corners[corner].density() <= ISO_LEVEL) {
+                        int previousEdge = localEdgeIndex(face[(index + 3) % 4], corner);
+                        int nextEdge = localEdgeIndex(corner, face[(index + 1) % 4]);
+                        union(parents, previousEdge, nextEdge);
+                    }
+                }
+            }
         }
-        if (crossings == 0) {
-            return null;
+
+        MeshVertex[] componentVertices = new MeshVertex[CUBE_EDGES.length];
+        for (int edgeIndex = 0; edgeIndex < CUBE_EDGES.length; edgeIndex++) {
+            if (!crossed[edgeIndex] || find(parents, edgeIndex) != edgeIndex) {
+                continue;
+            }
+            Vec3 positionSum = Vec3.ZERO;
+            Vec3 normalSum = Vec3.ZERO;
+            Vec3 fallbackNormal = null;
+            int crossingCount = 0;
+            for (int candidate = 0; candidate < CUBE_EDGES.length; candidate++) {
+                if (crossed[candidate] && find(parents, candidate) == edgeIndex) {
+                    positionSum = positionSum.add(crossingPositions[candidate]);
+                    normalSum = normalSum.add(crossingNormals[candidate]);
+                    fallbackNormal = crossingNormals[candidate];
+                    crossingCount++;
+                }
+            }
+            Vec3 position = positionSum.multiply(1.0 / crossingCount);
+            Vec3 normal = sample(mask, position).outward();
+            if (normal.length() <= EPSILON) {
+                normal = normalSum.length() > EPSILON ? normalSum : fallbackNormal;
+            }
+            normal = normal.normalize();
+            position = snapAxisAlignedPosition(position, normal);
+            componentVertices[edgeIndex] = new MeshVertex(position, normal);
         }
-        Vec3 position = positionSum.multiply(1.0 / crossings);
-        Vec3 normal = sample(mask, position).outward();
-        if (normal.length() <= EPSILON) {
-            normal = crossingNormalSum.length() > EPSILON ? crossingNormalSum : firstCrossingNormal;
+
+        MeshVertex[] edgeVertices = new MeshVertex[CUBE_EDGES.length];
+        for (int edgeIndex = 0; edgeIndex < CUBE_EDGES.length; edgeIndex++) {
+            if (crossed[edgeIndex]) {
+                edgeVertices[edgeIndex] = componentVertices[find(parents, edgeIndex)];
+            }
         }
-        normal = normal.normalize();
-        position = snapAxisAlignedPosition(position, normal);
-        return new MeshVertex(position, normal);
+        return new CellSurface(edgeVertices);
+    }
+
+    private static int find(int[] parents, int value) {
+        int root = value;
+        while (parents[root] != root) {
+            root = parents[root];
+        }
+        while (parents[value] != value) {
+            int next = parents[value];
+            parents[value] = root;
+            value = next;
+        }
+        return root;
+    }
+
+    private static void union(int[] parents, int first, int second) {
+        int firstRoot = find(parents, first);
+        int secondRoot = find(parents, second);
+        if (firstRoot != secondRoot) {
+            parents[secondRoot] = firstRoot;
+        }
+    }
+
+    private static int localEdgeIndex(int firstCorner, int secondCorner) {
+        for (int edgeIndex = 0; edgeIndex < CUBE_EDGES.length; edgeIndex++) {
+            int[] edge = CUBE_EDGES[edgeIndex];
+            if ((edge[0] == firstCorner && edge[1] == secondCorner)
+                || (edge[0] == secondCorner && edge[1] == firstCorner)) {
+                return edgeIndex;
+            }
+        }
+        throw new IllegalArgumentException("Corners do not form a cube edge");
     }
 
     private static Vec3 snapAxisAlignedPosition(Vec3 position, Vec3 normal) {
@@ -277,7 +362,7 @@ final class BevelTemplateLibrary {
 
     private static void emitCrossedEdges(
         Sample[][][] samples,
-        MeshVertex[][][] cells,
+        CellSurface[][][] cells,
         int axis,
         List<MeshPrimitive> output
     ) {
@@ -309,7 +394,13 @@ final class BevelTemplateLibrary {
                     List<MeshVertex> vertices = new ArrayList<>(4);
                     boolean complete = true;
                     for (int[] index : indices) {
-                        MeshVertex vertex = cells[index[0]][index[1]][index[2]];
+                        CellSurface surface = cells[index[0]][index[1]][index[2]];
+                        int firstCorner = (edge[0] - index[0])
+                            | ((edge[1] - index[1]) << 1)
+                            | ((edge[2] - index[2]) << 2);
+                        int secondCorner = firstCorner | (1 << axis);
+                        int localEdge = localEdgeIndex(firstCorner, secondCorner);
+                        MeshVertex vertex = surface == null ? null : surface.vertexForEdge(localEdge);
                         if (vertex == null) {
                             complete = false;
                             break;
@@ -321,6 +412,12 @@ final class BevelTemplateLibrary {
                     }
                 }
             }
+        }
+    }
+
+    private record CellSurface(MeshVertex[] edgeVertices) {
+        MeshVertex vertexForEdge(int edgeIndex) {
+            return edgeVertices[edgeIndex];
         }
     }
 
