@@ -41,19 +41,16 @@ object PendingOutputService {
     fun deliver(player: ServerPlayer): Int {
         val state = prepare(player) ?: return 0
         if (state.pendingOutputs.isEmpty()) return 0
-        val remaining = mutableListOf<ItemStack>()
-        var delivered = 0
-        for (original in state.pendingOutputs) {
-            val candidate = original.copy()
-            player.inventory.add(candidate)
-            if (candidate.isEmpty || player.drop(candidate, false) != null) {
-                delivered++
-            } else {
-                remaining += candidate
+        return PendingDeliveryQueue.deliver(
+            pending = state.pendingOutputs.map(ItemStack::copy),
+            checkpoint = { remaining ->
+                PokeFusionPlayerStorage.store(player, state.withPending(remaining))
+            },
+            grant = { candidate ->
+                player.inventory.add(candidate)
+                candidate.takeUnless(ItemStack::isEmpty)
             }
-        }
-        PokeFusionPlayerStorage.store(player, state.withPending(remaining))
-        return delivered
+        )
     }
 
     fun recoverAfterJoin(player: ServerPlayer): Int {
