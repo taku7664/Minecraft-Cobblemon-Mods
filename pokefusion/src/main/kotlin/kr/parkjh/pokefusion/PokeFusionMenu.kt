@@ -136,7 +136,7 @@ class PokeFusionMenu(
     private fun acceptPokemon(stack: ItemStack): Boolean {
         if (PokeFusionService.isPokemonItem(stack)) return true
         serverPlayer.displayClientMessage(
-            Component.literal("PokeToItem 포켓몬 아이템만 넣을 수 있습니다.").withStyle(ChatFormatting.RED),
+            Component.translatable("message.pokefusion.invalid_item").withStyle(ChatFormatting.RED),
             false
         )
         return false
@@ -165,17 +165,17 @@ class PokeFusionMenu(
 
     private fun refreshPreview() {
         if (!storageAvailable) {
-            fusionContainer.setItem(PREVIEW_SLOT, named(ItemStack(Items.BARRIER), "저장 데이터 오류", ChatFormatting.RED))
-            fusionContainer.setItem(CONFIRM_SLOT, named(ItemStack(Items.GRAY_DYE), "합성할 수 없음", ChatFormatting.GRAY))
+            fusionContainer.setItem(PREVIEW_SLOT, named(ItemStack(Items.BARRIER), "item.pokefusion.storage_error", ChatFormatting.RED))
+            fusionContainer.setItem(CONFIRM_SLOT, named(ItemStack(Items.GRAY_DYE), "item.pokefusion.cannot_fuse", ChatFormatting.GRAY))
             return
         }
         val pendingCount = PendingOutputService.count(serverPlayer)
         if (pendingCount > 0) {
             fusionContainer.setItem(
                 PREVIEW_SLOT,
-                named(ItemStack(Items.CHEST), "받지 못한 결과 ${pendingCount}개", ChatFormatting.YELLOW)
+                named(ItemStack(Items.CHEST), "item.pokefusion.pending_results", ChatFormatting.YELLOW, pendingCount)
             )
-            fusionContainer.setItem(CONFIRM_SLOT, named(ItemStack(Items.LIME_DYE), "결과 다시 받기", ChatFormatting.GREEN))
+            fusionContainer.setItem(CONFIRM_SLOT, named(ItemStack(Items.LIME_DYE), "item.pokefusion.retry_results", ChatFormatting.GREEN))
             return
         }
         when (val result = PokeFusionService.createResult(serverPlayer, baseInput, materialInputs)) {
@@ -184,14 +184,14 @@ class PokeFusionMenu(
                 val oldLore = preview.get(DataComponents.LORE)?.lines() ?: emptyList()
                 preview.set(
                     DataComponents.LORE,
-                    ItemLore(oldLore + Component.literal("합성 결과 미리보기").withStyle(ChatFormatting.GREEN))
+                    ItemLore(oldLore + Component.translatable("item.pokefusion.preview").withStyle(ChatFormatting.GREEN))
                 )
                 fusionContainer.setItem(PREVIEW_SLOT, preview)
-                fusionContainer.setItem(CONFIRM_SLOT, named(ItemStack(Items.LIME_DYE), "합성 확정", ChatFormatting.GREEN))
+                fusionContainer.setItem(CONFIRM_SLOT, named(ItemStack(Items.LIME_DYE), "item.pokefusion.confirm", ChatFormatting.GREEN))
             }
             is PokeFusionService.Result.Failure -> {
                 fusionContainer.setItem(PREVIEW_SLOT, statusItem(result.reason))
-                fusionContainer.setItem(CONFIRM_SLOT, named(ItemStack(Items.GRAY_DYE), "합성할 수 없음", ChatFormatting.GRAY))
+                fusionContainer.setItem(CONFIRM_SLOT, named(ItemStack(Items.GRAY_DYE), "item.pokefusion.cannot_fuse", ChatFormatting.GRAY))
             }
         }
     }
@@ -211,7 +211,7 @@ class PokeFusionMenu(
                 } catch (exception: Exception) {
                     LOGGER.error("Pokefusion 결과를 저장하지 못해 합성을 취소했습니다.", exception)
                     serverPlayer.displayClientMessage(
-                        Component.literal("결과를 안전하게 저장하지 못해 합성을 취소했습니다. 입력 아이템은 소모되지 않았습니다.")
+                        Component.translatable("message.pokefusion.store_result_failed")
                             .withStyle(ChatFormatting.RED),
                         false
                     )
@@ -224,7 +224,7 @@ class PokeFusionMenu(
                 deliverPendingOutputs()
                 if (PendingOutputService.count(serverPlayer) == 0) {
                     serverPlayer.displayClientMessage(
-                        Component.literal("포켓몬 합성이 완료되었습니다.").withStyle(ChatFormatting.GREEN),
+                        Component.translatable("message.pokefusion.completed").withStyle(ChatFormatting.GREEN),
                         false
                     )
                 }
@@ -252,7 +252,7 @@ class PokeFusionMenu(
         }
         if (PendingOutputService.count(serverPlayer) > 0) {
             serverPlayer.displayClientMessage(
-                Component.literal("결과 아이템 일부를 지급하지 못했습니다. 합성 버튼을 눌러 다시 받아주세요.")
+                Component.translatable("message.pokefusion.delivery_incomplete")
                     .withStyle(ChatFormatting.RED),
                 false
             )
@@ -276,38 +276,43 @@ class PokeFusionMenu(
 
     private fun showStorageFailure() {
         serverPlayer.displayClientMessage(
-            Component.literal("입력 아이템을 안전하게 저장하지 못해 합성을 중단했습니다.").withStyle(ChatFormatting.RED),
+            Component.translatable("message.pokefusion.store_input_failed").withStyle(ChatFormatting.RED),
             false
         )
     }
 
     private fun statusItem(reason: PokeFusionService.ValidationFailure): ItemStack {
-        val message = when (reason) {
-            PokeFusionService.ValidationFailure.MISSING_INPUT -> "베이스와 재료를 넣어주세요"
-            PokeFusionService.ValidationFailure.INVALID_ITEM -> "올바른 포켓몬 아이템이 아닙니다"
-            PokeFusionService.ValidationFailure.DIFFERENT_EVOLUTION_FAMILY -> "같은 진화 계보끼리만 합성할 수 있습니다"
-            PokeFusionService.ValidationFailure.DIFFERENT_FORM -> "같은 폼끼리만 합성할 수 있습니다"
-            PokeFusionService.ValidationFailure.PROCESSING_ERROR -> "합성 처리 중 오류가 발생했습니다"
-        }
-        return named(ItemStack(Items.BARRIER), message, ChatFormatting.RED)
+        return named(ItemStack(Items.BARRIER), failureKey("item", reason), ChatFormatting.RED)
     }
 
     private fun showFailure(reason: PokeFusionService.ValidationFailure) {
-        val message = when (reason) {
-            PokeFusionService.ValidationFailure.MISSING_INPUT -> "베이스와 재료 포켓몬을 넣어주세요."
-            PokeFusionService.ValidationFailure.INVALID_ITEM -> "올바른 PokeToItem 포켓몬 아이템이 아닙니다."
-            PokeFusionService.ValidationFailure.DIFFERENT_EVOLUTION_FAMILY -> "같은 진화 계보끼리만 합성할 수 있습니다."
-            PokeFusionService.ValidationFailure.DIFFERENT_FORM -> "같은 폼끼리만 합성할 수 있습니다."
-            PokeFusionService.ValidationFailure.PROCESSING_ERROR -> "합성 처리 중 오류가 발생했습니다. 입력 아이템은 소모되지 않았습니다."
-        }
-        serverPlayer.displayClientMessage(Component.literal(message).withStyle(ChatFormatting.RED), false)
+        serverPlayer.displayClientMessage(
+            Component.translatable(failureKey("message", reason)).withStyle(ChatFormatting.RED),
+            false
+        )
     }
 
-    private fun named(stack: ItemStack, name: String, color: ChatFormatting? = null): ItemStack {
-        var component = Component.literal(name)
+    private fun named(
+        stack: ItemStack,
+        translationKey: String,
+        color: ChatFormatting? = null,
+        vararg arguments: Any
+    ): ItemStack {
+        var component = Component.translatable(translationKey, *arguments)
         if (color != null) component = component.withStyle(color)
         stack.set(DataComponents.CUSTOM_NAME, component)
         return stack
+    }
+
+    private fun failureKey(prefix: String, reason: PokeFusionService.ValidationFailure): String {
+        val suffix = when (reason) {
+            PokeFusionService.ValidationFailure.MISSING_INPUT -> "missing_input"
+            PokeFusionService.ValidationFailure.INVALID_ITEM -> "invalid_item"
+            PokeFusionService.ValidationFailure.DIFFERENT_EVOLUTION_FAMILY -> "different_family"
+            PokeFusionService.ValidationFailure.DIFFERENT_FORM -> "different_form"
+            PokeFusionService.ValidationFailure.PROCESSING_ERROR -> "processing_error"
+        }
+        return "$prefix.pokefusion.failure.$suffix"
     }
 
     companion object {

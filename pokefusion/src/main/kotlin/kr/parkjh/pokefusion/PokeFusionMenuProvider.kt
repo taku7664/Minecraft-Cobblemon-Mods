@@ -12,5 +12,5 @@ class PokeFusionMenuProvider(private val serverPlayer: ServerPlayer) : MenuProvi
         return PokeFusionMenu(syncId, inventory, serverPlayer)
     }
 
-    override fun getDisplayName(): Component = Component.literal("포켓몬 합성")
+    override fun getDisplayName(): Component = Component.translatable("container.pokefusion.title")
 }

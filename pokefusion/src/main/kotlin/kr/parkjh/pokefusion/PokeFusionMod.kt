@@ -12,7 +12,7 @@ import net.minecraft.commands.Commands
 class PokeFusionMod : ModInitializer {
     override fun onInitialize() {
         PokeFusionPlayerStorage.initialize()
-        val config = PokeFusionConfigStore(FabricLoader.getInstance().configDir).load()
+        PokeFusionConfigManager.initialize(FabricLoader.getInstance().configDir)
         ServerLifecycleEvents.SERVER_STARTED.register {
             PokeFusionService.refreshEvolutionFamilies()
         }
@@ -26,15 +26,15 @@ class PokeFusionMod : ModInitializer {
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
             if (handler.player.containerMenu is PokeFusionMenu) handler.player.doCloseContainer()
         }
-        CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> registerCommand(dispatcher, config) }
+        CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> registerCommand(dispatcher) }
     }
 
-    private fun registerCommand(dispatcher: CommandDispatcher<CommandSourceStack>, config: PokeFusionConfig) {
+    private fun registerCommand(dispatcher: CommandDispatcher<CommandSourceStack>) {
         dispatcher.register(
             Commands.literal("pokefusion")
                 .executes { context ->
-                    if (!context.source.hasPermission(config.commandPermissionLevel)) {
-                        context.source.sendFailure(net.minecraft.network.chat.Component.literal("이 명령어를 사용할 권한이 없습니다."))
+                    if (!context.source.hasPermission(PokeFusionConfigManager.current().commandPermissionLevel)) {
+                        context.source.sendFailure(net.minecraft.network.chat.Component.translatable("message.pokefusion.no_permission"))
                         0
                     } else {
                         val player = context.source.playerOrException

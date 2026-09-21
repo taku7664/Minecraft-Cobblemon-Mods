@@ -3,6 +3,10 @@ plugins {
     id("dev.architectury.loom")
 }
 
+repositories {
+    maven("https://maven.terraformersmc.com/releases/")
+}
+
 version = property("pokefusion_version")!!
 
 base { archivesName.set("PokemonFusion-fabric") }
@@ -14,8 +18,10 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
     modImplementation("maven.modrinth:cobblemon:${property("cobblemon_version_id")}")
+    modCompileOnly("com.terraformersmc:modmenu:11.0.3")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testImplementation("com.google.code.gson:gson:2.11.0")
     testRuntimeOnly("org.junit.platform:junit-platform-console-standalone:1.11.4")
 }
 

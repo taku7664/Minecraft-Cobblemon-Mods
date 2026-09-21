@@ -28,30 +28,61 @@ class PokeFusionConfigStoreTest {
     }
 
     @Test
-    fun `out of range permission falls back without overwriting user file`() {
+    fun `out of range permission fails closed without overwriting user file`() {
         val path = directory.resolve("pokefusion.json")
         val invalid = """{"commandPermissionLevel":9}"""
         Files.writeString(path, invalid)
 
-        assertEquals(0, PokeFusionConfigStore(directory).load().commandPermissionLevel)
+        assertEquals(4, PokeFusionConfigStore(directory).load().commandPermissionLevel)
         assertEquals(invalid, Files.readString(path))
     }
 
     @Test
-    fun `malformed config falls back without overwriting user file`() {
+    fun `malformed config fails closed without overwriting user file`() {
         val path = directory.resolve("pokefusion.json")
         val malformed = "{broken"
         Files.writeString(path, malformed)
 
-        assertEquals(0, PokeFusionConfigStore(directory).load().commandPermissionLevel)
+        assertEquals(4, PokeFusionConfigStore(directory).load().commandPermissionLevel)
         assertEquals(malformed, Files.readString(path))
     }
 
     @Test
-    fun `unwritable config location keeps public command access`() {
+    fun `missing permission field fails closed`() {
+        Files.writeString(directory.resolve("pokefusion.json"), "{}")
+
+        assertEquals(4, PokeFusionConfigStore(directory).load().commandPermissionLevel)
+    }
+
+    @Test
+    fun `non numeric permission field fails closed`() {
+        Files.writeString(directory.resolve("pokefusion.json"), """{"commandPermissionLevel":"0"}""")
+
+        assertEquals(4, PokeFusionConfigStore(directory).load().commandPermissionLevel)
+    }
+
+    @Test
+    fun `fractional permission level fails closed instead of truncating`() {
+        Files.writeString(directory.resolve("pokefusion.json"), """{"commandPermissionLevel":0.5}""")
+
+        assertEquals(4, PokeFusionConfigStore(directory).load().commandPermissionLevel)
+    }
+
+    @Test
+    fun `unreadable config location fails closed`() {
         val occupiedPath = directory.resolve("not-a-directory")
         Files.writeString(occupiedPath, "occupied")
 
-        assertEquals(0, PokeFusionConfigStore(occupiedPath).load().commandPermissionLevel)
+        assertEquals(4, PokeFusionConfigStore(occupiedPath).load().commandPermissionLevel)
+    }
+
+    @Test
+    fun `saved permission level is written atomically and can be reloaded`() {
+        val store = PokeFusionConfigStore(directory)
+
+        store.save(PokeFusionConfig(commandPermissionLevel = 3))
+
+        assertEquals(3, store.load().commandPermissionLevel)
+        assertTrue(Files.readString(directory.resolve("pokefusion.json")).contains("\"commandPermissionLevel\": 3"))
     }
 }
