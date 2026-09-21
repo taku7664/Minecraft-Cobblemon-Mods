@@ -83,6 +83,10 @@ public final class PokeFusionCobblemonBridge {
         return pokemon.getForm().getName();
     }
 
+    public static EvolutionNode evolutionNode(Pokemon pokemon) {
+        return node(pokemon.getSpecies(), pokemon.getForm());
+    }
+
     public static List<EvolutionEdge> evolutionEdges() {
         List<EvolutionEdge> edges = new ArrayList<>();
         for (Species species : PokemonSpecies.getSpecies()) {
@@ -95,8 +99,8 @@ public final class PokeFusionCobblemonBridge {
             for (FormData form : forms.values()) {
                 if (form.getPreEvolution() != null) {
                     edges.add(new EvolutionEdge(
-                        species.getResourceIdentifier(),
-                        form.getPreEvolution().getSpecies().getResourceIdentifier()
+                        node(species, form),
+                        node(form.getPreEvolution().getSpecies(), form.getPreEvolution().getForm())
                     ));
                 }
                 for (Evolution evolution : form.getEvolutions()) {
@@ -106,9 +110,13 @@ public final class PokeFusionCobblemonBridge {
                     }
                     Species resultSpecies = PokemonSpecies.getByName(resultSpeciesName);
                     if (resultSpecies != null) {
+                        FormData resultForm = resolveForm(resultSpecies, evolution.getResult().getForm());
+                        if (resultForm == null) {
+                            continue;
+                        }
                         edges.add(new EvolutionEdge(
-                            species.getResourceIdentifier(),
-                            resultSpecies.getResourceIdentifier()
+                            node(species, form),
+                            node(resultSpecies, resultForm)
                         ));
                     }
                 }
@@ -121,6 +129,25 @@ public final class PokeFusionCobblemonBridge {
         return PokemonSpecies.getSpecies().size();
     }
 
-    public record EvolutionEdge(ResourceLocation first, ResourceLocation second) {
+    private static FormData resolveForm(Species species, String showdownFormId) {
+        if (showdownFormId == null || showdownFormId.isBlank()) {
+            return species.getStandardForm();
+        }
+        for (FormData form : species.getForms()) {
+            if (form.formOnlyShowdownId().equalsIgnoreCase(showdownFormId)) {
+                return form;
+            }
+        }
+        return null;
+    }
+
+    private static EvolutionNode node(Species species, FormData form) {
+        return new EvolutionNode(species.getResourceIdentifier().toString(), form.showdownId());
+    }
+
+    public record EvolutionNode(String speciesId, String formId) {
+    }
+
+    public record EvolutionEdge(EvolutionNode first, EvolutionNode second) {
     }
 }

@@ -23,4 +23,18 @@ class EvolutionFamilyIndexTest {
 
         assertFalse(index.connected("a", "x"))
     }
+
+    @Test
+    fun `regional branches in the same species family stay disconnected`() {
+        val index = EvolutionFamilyIndex<PokeFusionCobblemonBridge.EvolutionNode>()
+        val rattata = PokeFusionCobblemonBridge.EvolutionNode("cobblemon:rattata", "rattata")
+        val raticate = PokeFusionCobblemonBridge.EvolutionNode("cobblemon:raticate", "raticate")
+        val alolanRattata = PokeFusionCobblemonBridge.EvolutionNode("cobblemon:rattata", "rattata-alola")
+        val alolanRaticate = PokeFusionCobblemonBridge.EvolutionNode("cobblemon:raticate", "raticate-alola")
+        index.replace(listOf(rattata to raticate, alolanRattata to alolanRaticate))
+
+        assertTrue(index.connected(rattata, raticate))
+        assertTrue(index.connected(alolanRattata, alolanRaticate))
+        assertFalse(index.connected(alolanRattata, raticate))
+    }
 }

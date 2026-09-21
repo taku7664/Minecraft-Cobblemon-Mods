@@ -5,7 +5,6 @@ import net.minecraft.ChatFormatting
 import net.minecraft.core.component.DataComponents
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.chat.Component
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.component.CustomData
@@ -13,7 +12,8 @@ import net.minecraft.world.item.component.ItemLore
 import org.slf4j.LoggerFactory
 
 object PokeFusionService {
-    private val evolutionFamilies = EvolutionFamilyIndex<ResourceLocation>()
+    private val evolutionFamilies = EvolutionFamilyIndex<PokeFusionCobblemonBridge.EvolutionNode>()
+    private val speciesFamilies = EvolutionFamilyIndex<String>()
 
     enum class ValidationFailure {
         MISSING_INPUT,
@@ -83,11 +83,15 @@ object PokeFusionService {
         for (material in materials) {
             val baseSpecies = PokeFusionCobblemonBridge.speciesId(base)
             val materialSpecies = PokeFusionCobblemonBridge.speciesId(material)
-            val sameSpecies = baseSpecies == materialSpecies
-            if (sameSpecies && PokeFusionCobblemonBridge.formName(base) != PokeFusionCobblemonBridge.formName(material)) {
+            val baseNode = PokeFusionCobblemonBridge.evolutionNode(base)
+            val materialNode = PokeFusionCobblemonBridge.evolutionNode(material)
+            if (baseSpecies == materialSpecies && baseNode != materialNode) {
                 return ValidationFailure.DIFFERENT_FORM
             }
-            if (!sameSpecies && !evolutionFamilies.connected(baseSpecies, materialSpecies)) {
+            if (!evolutionFamilies.connected(baseNode, materialNode)) {
+                if (speciesFamilies.connected(baseNode.speciesId(), materialNode.speciesId())) {
+                    return ValidationFailure.DIFFERENT_FORM
+                }
                 return ValidationFailure.DIFFERENT_EVOLUTION_FAMILY
             }
         }
@@ -97,6 +101,7 @@ object PokeFusionService {
     fun refreshEvolutionFamilies() {
         val edges = PokeFusionCobblemonBridge.evolutionEdges().map { it.first() to it.second() }
         evolutionFamilies.replace(edges)
+        speciesFamilies.replace(edges.map { it.first.speciesId() to it.second.speciesId() })
         LOGGER.info(
             "Pokefusion 진화 계보를 갱신했습니다: 종 {}개, 연결 {}개",
             PokeFusionCobblemonBridge.speciesCount(),
