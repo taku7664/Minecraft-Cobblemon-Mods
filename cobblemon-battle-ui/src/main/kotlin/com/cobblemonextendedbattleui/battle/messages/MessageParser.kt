@@ -68,7 +68,7 @@ object MessageParser {
                 val content = arg.content
                 if (content is TranslatableTextContent) {
                     if (content.key == "cobblemon.battle.owned_pokemon" && content.args.size >= 2) {
-                        return argToString(content.args[1])
+                        return canonicalOwnedPokemonName(content.args[0], content.args[1])
                     }
                     if (content.key.startsWith("cobblemon.species.") && content.key.endsWith(".name")) {
                         return arg.string
@@ -78,7 +78,7 @@ object MessageParser {
             }
             is TranslatableTextContent -> {
                 if (arg.key == "cobblemon.battle.owned_pokemon" && arg.args.size >= 2) {
-                    return argToString(arg.args[1])
+                    return canonicalOwnedPokemonName(arg.args[0], arg.args[1])
                 }
                 return Text.translatable(arg.key, *arg.args).string
             }
@@ -86,6 +86,10 @@ object MessageParser {
             else -> return arg.toString()
         }
     }
+
+    /** Keeps structured owner data without depending on the active language's possessive grammar. */
+    private fun canonicalOwnedPokemonName(ownerArg: Any, pokemonArg: Any): String =
+        "${argToString(ownerArg)}'s ${argToString(pokemonArg)}"
 
     /**
      * Extract the translation key from an argument if it's a TranslatableTextContent.

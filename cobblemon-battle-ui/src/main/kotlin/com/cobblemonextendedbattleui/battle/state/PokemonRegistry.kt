@@ -136,12 +136,12 @@ object PokemonRegistry {
             val allyName = allyPlayerName
             val oppName = opponentPlayerName
 
-            if (allyName != null && (ownerName == allyName || ownerName.contains(allyName) || allyName.contains(ownerName))) {
+            if (allyName != null && ownerName == allyName) {
                 ownerDeterminedSide = true
                 CobblemonExtendedBattleUI.LOGGER.debug(
                     "PokemonRegistry: Owner '$ownerName' matched ally player '$allyName'"
                 )
-            } else if (oppName != null && (ownerName == oppName || ownerName.contains(oppName) || oppName.contains(ownerName))) {
+            } else if (oppName != null && ownerName == oppName) {
                 ownerDeterminedSide = false
                 CobblemonExtendedBattleUI.LOGGER.debug(
                     "PokemonRegistry: Owner '$ownerName' matched opponent player '$oppName'"

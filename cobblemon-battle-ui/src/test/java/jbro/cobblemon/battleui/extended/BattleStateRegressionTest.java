@@ -56,6 +56,40 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void ownedPokemonArgumentKeepsItsOwnerForMirrorMatchResolution() {
+        UUID ally = UUID.randomUUID();
+        UUID opponent = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.setPlayerNames("Alice", "Bob");
+        PokemonRegistry.INSTANCE.registerPokemon(ally, "Eevee", true);
+        PokemonRegistry.INSTANCE.registerPokemon(opponent, "Eevee", false);
+
+        String opponentReference = MessageParser.INSTANCE.extractPokemonName(
+            Text.translatable("cobblemon.battle.owned_pokemon", "Bob", "Eevee")
+        );
+        String allyReference = MessageParser.INSTANCE.extractPokemonName(
+            Text.translatable("cobblemon.battle.owned_pokemon", "Alice", "Eevee")
+        );
+
+        assertEquals(opponent, PokemonRegistry.INSTANCE.resolvePokemonUuid(opponentReference, null));
+        assertEquals(ally, PokemonRegistry.INSTANCE.resolvePokemonUuid(allyReference, null));
+    }
+
+    @Test
+    void ownerResolutionDoesNotUseSubstringMatches() {
+        UUID ally = UUID.randomUUID();
+        UUID opponent = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.setPlayerNames("Al", "Alice");
+        PokemonRegistry.INSTANCE.registerPokemon(ally, "Eevee", true);
+        PokemonRegistry.INSTANCE.registerPokemon(opponent, "Eevee", false);
+
+        String opponentReference = MessageParser.INSTANCE.extractPokemonName(
+            Text.translatable("cobblemon.battle.owned_pokemon", "Alice", "Eevee")
+        );
+
+        assertEquals(opponent, PokemonRegistry.INSTANCE.resolvePokemonUuid(opponentReference, null));
+    }
+
+    @Test
     void stealEatRemovesTheVictimsItemNotTheUsers() {
         UUID victim = UUID.randomUUID();
         UUID user = UUID.randomUUID();
