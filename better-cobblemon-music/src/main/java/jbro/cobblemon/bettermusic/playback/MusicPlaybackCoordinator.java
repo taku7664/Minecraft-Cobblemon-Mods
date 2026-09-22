@@ -41,10 +41,6 @@ public final class MusicPlaybackCoordinator {
         return Optional.of(transition);
     }
 
-    public Optional<Selection> current() {
-        return current;
-    }
-
     private void updateStableFieldCue(double nowSeconds, Optional<String> detectedCue) {
         if (detectedCue.isEmpty()) {
             pendingFieldCue = null;

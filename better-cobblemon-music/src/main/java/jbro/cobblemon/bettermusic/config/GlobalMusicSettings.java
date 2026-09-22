@@ -17,12 +17,11 @@ public record GlobalMusicSettings(
             fieldChangeDelaySeconds,
             betweenTracksSeconds,
             fadeInSeconds,
-            fadeOutSeconds,
-            PlaybackSettings.MissingCueBehavior.KEEP_ORIGINAL
+            fadeOutSeconds
         );
         Objects.requireNonNull(selection, "selection");
-        if (!Double.isFinite(volume) || volume < 0.0) {
-            throw new IllegalArgumentException("volume must be finite and non-negative");
+        if (!Double.isFinite(volume) || volume < 0.0 || volume > Float.MAX_VALUE) {
+            throw new IllegalArgumentException("volume must be a non-negative finite float");
         }
     }
 }

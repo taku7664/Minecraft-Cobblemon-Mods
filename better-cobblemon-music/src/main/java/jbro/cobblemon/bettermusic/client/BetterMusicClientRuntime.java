@@ -84,9 +84,7 @@ public final class BetterMusicClientRuntime {
             backend = new MinecraftMusicBackend(client.getSoundManager());
         }
         if (player == null) {
-            player = new FadingMusicPlayer(backend, latest.playback().betweenTracksSeconds());
-        } else {
-            player.setBetweenTracksSeconds(latest.playback().betweenTracksSeconds());
+            player = new FadingMusicPlayer(backend);
         }
         snapshot = latest;
         coordinator = new MusicPlaybackCoordinator(latest.playback());

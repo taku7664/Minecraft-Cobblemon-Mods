@@ -12,8 +12,8 @@ public record PlaylistDefinition(
 ) {
     public PlaylistDefinition {
         Objects.requireNonNull(selection, "selection");
-        if (!Double.isFinite(volume) || volume < 0.0) {
-            throw new IllegalArgumentException("volume must be finite and non-negative");
+        if (!Double.isFinite(volume) || volume < 0.0 || volume > Float.MAX_VALUE) {
+            throw new IllegalArgumentException("volume must be a non-negative finite float");
         }
         if (!Double.isFinite(betweenTracksSeconds) || betweenTracksSeconds < 0.0) {
             throw new IllegalArgumentException("betweenTracksSeconds must be finite and non-negative");

@@ -19,7 +19,7 @@ public final class GlobalMusicSettingsStore {
 
     public static GlobalMusicSettings load(Path configFile) throws IOException {
         String json = Files.readString(requireConfigFile(configFile), StandardCharsets.UTF_8);
-        MusicConfig config = MusicConfigParser.parse(new StringReader(json));
+        BetterMusicConfigSnapshot config = MusicConfigParser.parse(new StringReader(json));
         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
         PlaybackSettings playback = config.playback();
         return new GlobalMusicSettings(

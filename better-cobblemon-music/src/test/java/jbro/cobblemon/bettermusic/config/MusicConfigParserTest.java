@@ -130,6 +130,19 @@ final class MusicConfigParserTest {
     }
 
     @Test
+    void rejectsVolumesThatOverflowMinecraftsFloatSoundVolume() {
+        String oversizedVolume = minimalConfig("\"field/plains.ogg\"")
+            .replace("\"volume\": 1.0", "\"volume\": 1e100");
+
+        var exception = assertThrows(ConfigValidationException.class, () ->
+            MusicConfigParser.parse(new StringReader(oversizedVolume))
+        );
+
+        assertTrue(exception.getMessage().contains("$.volume"));
+        assertTrue(exception.getMessage().contains("finite float"));
+    }
+
+    @Test
     void parsesStringArrayAndAdvancedPlaylistFormsWithoutCueIndirection() {
         var config = MusicConfigParser.parse(new StringReader("""
             {

@@ -26,7 +26,7 @@ public final class MusicConfigParser {
     private MusicConfigParser() {
     }
 
-    public static MusicConfig parse(Reader reader) {
+    public static BetterMusicConfigSnapshot parse(Reader reader) {
         JsonObject root = root(reader);
         rejectUnknown(root, "$", Set.of(
             "schemaVersion",
@@ -51,7 +51,7 @@ public final class MusicConfigParser {
         double fadeIn = nonNegativeNumber(root, "fadeInSeconds", "$.fadeInSeconds");
         double fadeOut = nonNegativeNumber(root, "fadeOutSeconds", "$.fadeOutSeconds");
         var defaultSelection = selection(root, "selection", "$.selection");
-        double defaultVolume = nonNegativeNumber(root, "volume", "$.volume");
+        double defaultVolume = volume(root, "volume", "$.volume");
         var defaults = new PlaylistDefaults(defaultSelection, defaultVolume, betweenTracks);
 
         var playback = new PlaybackSettings(
@@ -59,10 +59,9 @@ public final class MusicConfigParser {
             fieldDelay,
             betweenTracks,
             fadeIn,
-            fadeOut,
-            PlaybackSettings.MissingCueBehavior.KEEP_ORIGINAL
+            fadeOut
         );
-        return new MusicConfig(
+        return new BetterMusicConfigSnapshot(
             playback,
             parseField(object(root, "field", "$.field"), defaults, schemaVersion),
             parseBattle(object(root, "battle", "$.battle"), defaults)
@@ -265,7 +264,7 @@ public final class MusicConfigParser {
             ? selection(object, "selection", path + ".selection")
             : defaults.selection;
         double volume = object.has("volume")
-            ? nonNegativeNumber(object, "volume", path + ".volume")
+            ? volume(object, "volume", path + ".volume")
             : defaults.volume;
         double betweenTracks = object.has("betweenTracksSeconds")
             ? nonNegativeNumber(object, "betweenTracksSeconds", path + ".betweenTracksSeconds")
@@ -449,6 +448,14 @@ public final class MusicConfigParser {
         double value = number(object, key, path);
         if (value < 0.0) {
             throw error(path, "must be non-negative");
+        }
+        return value;
+    }
+
+    private static double volume(JsonObject object, String key, String path) {
+        double value = nonNegativeNumber(object, key, path);
+        if (value > Float.MAX_VALUE) {
+            throw error(path, "must fit in a finite float sound volume");
         }
         return value;
     }

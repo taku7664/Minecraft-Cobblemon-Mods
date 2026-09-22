@@ -14,7 +14,7 @@ final class DefaultMusicConfigResourceTest {
             "/assets/better_cobblemon_music/config_defaults/music.json"
         );
         assertNotNull(stream);
-        MusicConfig config;
+        BetterMusicConfigSnapshot config;
         try (var reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
             config = MusicConfigParser.parse(reader);
         }
@@ -91,14 +91,17 @@ final class DefaultMusicConfigResourceTest {
         assertTrack(config, "cobblemon:latios", "battle/wild/hoenn_wild_pokemon_battle.ogg");
     }
 
-    private static BattleMusicConfig.PokemonRule pokemonRule(MusicConfig config, String species) {
+    private static BattleMusicConfig.PokemonRule pokemonRule(
+        BetterMusicConfigSnapshot config,
+        String species
+    ) {
         return config.battle().pokemon().stream()
             .filter(rule -> rule.species().contains(species))
             .findFirst()
             .orElseThrow();
     }
 
-    private static void assertTrack(MusicConfig config, String species, String track) {
+    private static void assertTrack(BetterMusicConfigSnapshot config, String species, String track) {
         assertEquals(java.util.List.of(track), pokemonRule(config, species).playlist().tracks(), species);
     }
 }

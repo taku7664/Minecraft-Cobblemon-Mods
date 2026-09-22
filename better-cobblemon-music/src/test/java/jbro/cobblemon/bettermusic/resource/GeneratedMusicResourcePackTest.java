@@ -31,7 +31,7 @@ final class GeneratedMusicResourcePackTest {
         Files.write(music.resolve("field/forest.ogg"), validOgg());
         var pack = new GeneratedMusicResourcePack(config, temporaryDirectory.resolve("resourcepacks"));
 
-        var result = pack.generate(snapshot(List.of("field/forest.ogg", "field/missing.ogg")));
+        var result = generate(pack, snapshot(List.of("field/forest.ogg", "field/missing.ogg")));
 
         assertEquals(List.of("field/missing.ogg"), result.missingTracks());
         Path root = pack.packDirectory();
@@ -66,7 +66,7 @@ final class GeneratedMusicResourcePackTest {
             List.of("battle/content_only.ogg")
         );
 
-        var result = pack.generate(snapshot(
+        var result = generate(pack, snapshot(
             List.of("battle/missing_default.ogg"),
             Map.of("example:content", contentPlaylist)
         ));
@@ -91,7 +91,7 @@ final class GeneratedMusicResourcePackTest {
         Files.write(source, publishedBytes);
         var pack = new GeneratedMusicResourcePack(config, temporaryDirectory.resolve("resourcepacks"));
 
-        pack.generate(snapshot(List.of("field/forest.ogg")));
+        generate(pack, snapshot(List.of("field/forest.ogg")));
         Path generated = pack.packDirectory().resolve(
             "assets/better_cobblemon_music/sounds/custom/field/forest.ogg"
         );
@@ -129,7 +129,7 @@ final class GeneratedMusicResourcePackTest {
         Files.write(music.resolve("field/old.ogg"), validOgg());
         Files.write(music.resolve("field/fake.ogg"), new byte[] {1, 2, 3});
         var pack = new GeneratedMusicResourcePack(config, temporaryDirectory.resolve("resourcepacks"));
-        pack.generate(snapshot(List.of("field/old.ogg")));
+        generate(pack, snapshot(List.of("field/old.ogg")));
 
         assertThrows(
             java.io.IOException.class,
@@ -152,7 +152,7 @@ final class GeneratedMusicResourcePackTest {
         Files.write(music.resolve("field/old.ogg"), validOgg());
         Files.write(music.resolve("field/new.ogg"), validOgg());
         var pack = new GeneratedMusicResourcePack(config, temporaryDirectory.resolve("resourcepacks"));
-        pack.generate(snapshot(List.of("field/old.ogg")));
+        generate(pack, snapshot(List.of("field/old.ogg")));
 
         try (var prepared = pack.prepare(snapshot(List.of("field/new.ogg")))) {
             assertTrue(Files.exists(pack.packDirectory().resolve(
@@ -181,6 +181,16 @@ final class GeneratedMusicResourcePackTest {
         return validOgg((byte) 1);
     }
 
+    private static GeneratedMusicResourcePack.GenerationResult generate(
+        GeneratedMusicResourcePack pack,
+        BetterMusicConfigSnapshot snapshot
+    ) throws Exception {
+        try (var prepared = pack.prepare(snapshot); var published = prepared.publish()) {
+            published.commit();
+            return prepared.result();
+        }
+    }
+
     private static byte[] validOgg(byte serial) {
         return new byte[] {
             'O', 'g', 'g', 'S', 0, 2, 0, 0,
@@ -201,7 +211,7 @@ final class GeneratedMusicResourcePackTest {
     ) {
         var playlist = new PlaylistDefinition(PlaylistDefinition.Selection.SHUFFLE, 1.0, 0.0, tracks);
         var playback = new PlaybackSettings(
-            1.0, 4.0, 0.0, 1.0, 1.0, PlaybackSettings.MissingCueBehavior.KEEP_ORIGINAL
+            1.0, 4.0, 0.0, 1.0, 1.0
         );
         var field = new FieldMusicConfig(playlist, Map.of(), Map.of(), Map.of(), Optional.empty());
         var battle = new BattleMusicConfig(

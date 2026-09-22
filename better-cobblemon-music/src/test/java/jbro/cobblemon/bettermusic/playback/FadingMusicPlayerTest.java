@@ -1,7 +1,6 @@
 package jbro.cobblemon.bettermusic.playback;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -13,16 +12,16 @@ final class FadingMusicPlayerTest {
     @Test
     void crossFadeUsesTheCurrentOutgoingVolumeAndTheConfiguredTargetVolume() {
         var backend = new FakeBackend();
-        var player = new FadingMusicPlayer(backend, 0.0);
+        var player = new FadingMusicPlayer(backend);
         var forest = new FadingMusicPlayer.Track("example:forest", 0.8);
         var desert = new FadingMusicPlayer.Track("example:desert", 0.6);
 
-        player.transition(0.0, Optional.of(forest), 2.0, 2.0);
+        player.transitionSource(0.0, Optional.of(source(forest, 0.0)), 2.0, 2.0);
         assertEquals(0.0, backend.handles.get(0).volume, 0.0001);
         player.tick(1.0);
         assertEquals(0.4, backend.handles.get(0).volume, 0.0001);
 
-        player.transition(1.0, Optional.of(desert), 2.0, 2.0);
+        player.transitionSource(1.0, Optional.of(source(desert, 0.0)), 2.0, 2.0);
         assertEquals(0.0, backend.handles.get(1).volume, 0.0001);
         player.tick(2.0);
         assertEquals(0.2, backend.handles.get(0).volume, 0.0001);
@@ -37,9 +36,9 @@ final class FadingMusicPlayerTest {
     @Test
     void naturalTrackEndWaitsBeforeStartingTheSameCueAgain() {
         var backend = new FakeBackend();
-        var player = new FadingMusicPlayer(backend, 2.0);
+        var player = new FadingMusicPlayer(backend);
         var track = new FadingMusicPlayer.Track("example:forest", 1.0);
-        player.transition(0.0, Optional.of(track), 0.0, 0.0);
+        player.transitionSource(0.0, Optional.of(source(track, 2.0)), 0.0, 0.0);
         backend.handles.get(0).playing = false;
 
         player.tick(5.0);
@@ -54,7 +53,7 @@ final class FadingMusicPlayerTest {
     @Test
     void naturalTrackEndRequestsTheNextTrackFromTheActivePlaylist() {
         var backend = new FakeBackend();
-        var player = new FadingMusicPlayer(backend, 99.0);
+        var player = new FadingMusicPlayer(backend);
         var tracks = List.of(
             new FadingMusicPlayer.Track("example:first", 1.0),
             new FadingMusicPlayer.Track("example:second", 0.8)
@@ -85,27 +84,21 @@ final class FadingMusicPlayerTest {
         assertEquals(0.8, backend.handles.get(1).volume, 0.0001);
     }
 
-    @Test
-    void immediateStopReleasesEveryHandleAndMusicOwnership() {
-        var backend = new FakeBackend();
-        var player = new FadingMusicPlayer(backend, 0.0);
-        player.transition(
-            0.0,
-            Optional.of(new FadingMusicPlayer.Track("example:first", 1.0)),
-            1.0,
-            1.0
-        );
-        player.transition(
-            0.5,
-            Optional.of(new FadingMusicPlayer.Track("example:second", 1.0)),
-            1.0,
-            1.0
-        );
+    private static FadingMusicPlayer.TrackSource source(
+        FadingMusicPlayer.Track track,
+        double betweenTracksSeconds
+    ) {
+        return new FadingMusicPlayer.TrackSource() {
+            @Override
+            public FadingMusicPlayer.Track nextTrack() {
+                return track;
+            }
 
-        player.stopImmediately();
-
-        assertTrue(backend.handles.stream().allMatch(handle -> handle.stopped));
-        assertFalse(player.ownsMusic());
+            @Override
+            public double betweenTracksSeconds() {
+                return betweenTracksSeconds;
+            }
+        };
     }
 
     private static final class FakeBackend implements FadingMusicPlayer.Backend {

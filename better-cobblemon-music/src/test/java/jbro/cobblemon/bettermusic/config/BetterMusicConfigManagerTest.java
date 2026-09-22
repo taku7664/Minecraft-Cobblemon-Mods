@@ -53,12 +53,13 @@ final class BetterMusicConfigManagerTest {
 
     @Test
     void invalidReloadRetainsTheExactLastGoodSnapshot() throws Exception {
-        var manager = new BetterMusicConfigManager(temporaryDirectory.resolve("config"));
+        Path configDirectory = temporaryDirectory.resolve("config");
+        var manager = new BetterMusicConfigManager(configDirectory);
         assertEquals(BetterMusicConfigManager.Outcome.APPLIED, manager.initialize().outcome());
         var lastGood = manager.activeSnapshot().orElseThrow();
 
         Files.writeString(
-            manager.configDirectory().resolve("music.json"),
+            configDirectory.resolve("music.json"),
             "{\"schemaVersion\":1}",
             StandardCharsets.UTF_8
         );
@@ -83,16 +84,16 @@ final class BetterMusicConfigManagerTest {
         assertEquals(BetterMusicConfigManager.Outcome.FALLBACK_TO_BUNDLED, result.outcome());
         assertEquals(1.0, manager.activeSnapshot().orElseThrow().playback().scanIntervalSeconds());
         assertEquals("{\"schemaVersion\":1}", Files.readString(music));
-        assertFalse(result.success());
     }
 
     @Test
     void successfulReloadAtomicallyReplacesTheSnapshot() throws Exception {
-        var manager = new BetterMusicConfigManager(temporaryDirectory.resolve("config"));
+        Path configDirectory = temporaryDirectory.resolve("config");
+        var manager = new BetterMusicConfigManager(configDirectory);
         manager.initialize();
         var before = manager.activeSnapshot().orElseThrow();
         Files.writeString(
-            manager.configDirectory().resolve("music.json"),
+            configDirectory.resolve("music.json"),
             musicJson(3.0),
             StandardCharsets.UTF_8
         );
@@ -102,16 +103,16 @@ final class BetterMusicConfigManagerTest {
         assertEquals(BetterMusicConfigManager.Outcome.APPLIED, result.outcome());
         assertEquals(3.0, manager.activeSnapshot().orElseThrow().playback().scanIntervalSeconds());
         assertFalse(before == manager.activeSnapshot().orElseThrow());
-        assertTrue(result.success());
     }
 
     @Test
     void preparedReloadDoesNotPublishUntilExplicitlyActivated() throws Exception {
-        var manager = new BetterMusicConfigManager(temporaryDirectory.resolve("config"));
+        Path configDirectory = temporaryDirectory.resolve("config");
+        var manager = new BetterMusicConfigManager(configDirectory);
         manager.initialize();
         var before = manager.activeSnapshot().orElseThrow();
         Files.writeString(
-            manager.configDirectory().resolve("music.json"),
+            configDirectory.resolve("music.json"),
             musicJson(3.0),
             StandardCharsets.UTF_8
         );

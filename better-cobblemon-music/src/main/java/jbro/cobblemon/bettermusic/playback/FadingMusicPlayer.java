@@ -7,43 +7,14 @@ public final class FadingMusicPlayer {
     private static final double STARTUP_GRACE_SECONDS = 0.1;
 
     private final Backend backend;
-    private double betweenTracksSeconds;
     private Optional<TrackSource> desiredSource = Optional.empty();
     private ActiveTrack active;
     private ActiveTrack outgoing;
     private double restartAtSeconds = Double.POSITIVE_INFINITY;
     private double lastTimeSeconds = Double.NEGATIVE_INFINITY;
 
-    public FadingMusicPlayer(Backend backend, double betweenTracksSeconds) {
+    public FadingMusicPlayer(Backend backend) {
         this.backend = Objects.requireNonNull(backend, "backend");
-        requireDuration(betweenTracksSeconds, "betweenTracksSeconds");
-        this.betweenTracksSeconds = betweenTracksSeconds;
-    }
-
-    public void setBetweenTracksSeconds(double betweenTracksSeconds) {
-        requireDuration(betweenTracksSeconds, "betweenTracksSeconds");
-        this.betweenTracksSeconds = betweenTracksSeconds;
-    }
-
-    public void transition(
-        double nowSeconds,
-        Optional<Track> target,
-        double fadeOutSeconds,
-        double fadeInSeconds
-    ) {
-        target = Objects.requireNonNull(target, "target");
-        Optional<TrackSource> source = target.map(track -> new TrackSource() {
-            @Override
-            public Track nextTrack() {
-                return track;
-            }
-
-            @Override
-            public double betweenTracksSeconds() {
-                return betweenTracksSeconds;
-            }
-        });
-        transitionSource(nowSeconds, source, fadeOutSeconds, fadeInSeconds);
     }
 
     public void transitionSource(
@@ -93,16 +64,6 @@ public final class FadingMusicPlayer {
 
     public boolean ownsMusic() {
         return desiredSource.isPresent() || active != null || outgoing != null;
-    }
-
-    public void stopImmediately() {
-        if (active != null) {
-            backend.stop(active.handle);
-            active = null;
-        }
-        stopOutgoing();
-        desiredSource = Optional.empty();
-        restartAtSeconds = Double.POSITIVE_INFINITY;
     }
 
     private void startTrack(Track track, double nowSeconds, double fadeInSeconds) {
@@ -195,8 +156,8 @@ public final class FadingMusicPlayer {
             if (sound.isBlank()) {
                 throw new IllegalArgumentException("sound must not be blank");
             }
-            if (!Double.isFinite(volume) || volume < 0.0) {
-                throw new IllegalArgumentException("volume must be finite and non-negative");
+            if (!Double.isFinite(volume) || volume < 0.0 || volume > Float.MAX_VALUE) {
+                throw new IllegalArgumentException("volume must be a non-negative finite float");
             }
         }
     }

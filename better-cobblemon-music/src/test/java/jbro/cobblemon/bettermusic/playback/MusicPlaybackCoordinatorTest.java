@@ -13,8 +13,7 @@ final class MusicPlaybackCoordinatorTest {
         4.0,
         0.0,
         1.0,
-        1.0,
-        PlaybackSettings.MissingCueBehavior.FALLBACK
+        1.0
     );
 
     @Test

@@ -39,13 +39,6 @@ public final class GeneratedMusicResourcePack {
             .resolveSibling("." + DIRECTORY_NAME + "_staging");
     }
 
-    public GenerationResult generate(BetterMusicConfigSnapshot snapshot) throws IOException {
-        try (PreparedPack prepared = prepare(snapshot); PublishedPack published = prepared.publish()) {
-            published.commit();
-            return prepared.result();
-        }
-    }
-
     public PreparedPack prepare(BetterMusicConfigSnapshot snapshot) throws IOException {
         Objects.requireNonNull(snapshot, "snapshot");
         Files.createDirectories(stagingRoot);

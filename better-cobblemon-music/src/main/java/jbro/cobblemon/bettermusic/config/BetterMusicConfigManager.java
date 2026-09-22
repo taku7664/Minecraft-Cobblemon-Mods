@@ -83,10 +83,6 @@ public final class BetterMusicConfigManager {
         return Optional.ofNullable(activeSnapshot);
     }
 
-    public Path configDirectory() {
-        return configDirectory;
-    }
-
     private ReloadResult activateBundledFallback(String userConfigFailure) {
         try {
             activeSnapshot = loadBundledDefaults();
@@ -104,15 +100,11 @@ public final class BetterMusicConfigManager {
     }
 
     private BetterMusicConfigSnapshot loadFromDirectory() throws ConfigReadException {
-        return snapshot(withFileReader(CONFIG_FILE, MusicConfigParser::parse));
+        return withFileReader(CONFIG_FILE, MusicConfigParser::parse);
     }
 
     private BetterMusicConfigSnapshot loadBundledDefaults() throws ConfigReadException {
-        return snapshot(withBundledReader(CONFIG_FILE, MusicConfigParser::parse));
-    }
-
-    private static BetterMusicConfigSnapshot snapshot(MusicConfig config) {
-        return new BetterMusicConfigSnapshot(config.playback(), config.field(), config.battle());
+        return withBundledReader(CONFIG_FILE, MusicConfigParser::parse);
     }
 
     private <T> T withFileReader(String fileName, ReaderParser<T> parser) throws ConfigReadException {
@@ -200,10 +192,6 @@ public final class BetterMusicConfigManager {
         public ReloadResult {
             Objects.requireNonNull(outcome, "outcome");
             Objects.requireNonNull(message, "message");
-        }
-
-        public boolean success() {
-            return outcome == Outcome.APPLIED;
         }
     }
 
