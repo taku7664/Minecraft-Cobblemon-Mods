@@ -17,14 +17,14 @@ internal class BattleRecordSavedData(
     fun all(category: BattleRecordCategory? = null): List<BattleRecordStats> = store.all(category)
 
     fun recordOutcome(key: BattleRecordKey, outcome: BattleRecordOutcome): BattleRecordStats =
-        ifAvailable(key) { store.recordOutcome(key, outcome).also { setDirty() } }
+        mutate { store.recordOutcome(key, outcome).also { setDirty() } }
 
     fun recordCompletedBattle(completion: BattleRecordCompletion): BattleRecordStats =
-        ifAvailable(completion.key) { store.recordCompletedBattle(completion).also { setDirty() } }
+        mutate { store.recordCompletedBattle(completion).also { setDirty() } }
 
     fun recordCompletedBattles(completions: List<BattleRecordCompletion>): List<BattleRecordStats> {
         require(completions.isNotEmpty()) { "At least one battle record completion is required" }
-        if (!isAvailable) return completions.map { store.get(it.key) }
+        requireAvailable()
         return store.recordCompletedBattles(completions).also { setDirty() }
     }
 
@@ -32,20 +32,20 @@ internal class BattleRecordSavedData(
         key: BattleRecordKey,
         metricId: BattleRecordMetricId,
         value: Long,
-    ): BattleRecordStats = ifAvailable(key) { store.setProgressMetric(key, metricId, value).also { setDirty() } }
+    ): BattleRecordStats = mutate { store.setProgressMetric(key, metricId, value).also { setDirty() } }
 
     fun setCurrentWinStreak(key: BattleRecordKey, value: Int): BattleRecordStats =
-        ifAvailable(key) { store.setCurrentWinStreak(key, value).also { setDirty() } }
+        mutate { store.setCurrentWinStreak(key, value).also { setDirty() } }
 
     fun resetWinStreak(key: BattleRecordKey, resetBest: Boolean): BattleRecordStats =
-        ifAvailable(key) { store.resetWinStreak(key, resetBest).also { setDirty() } }
+        mutate { store.resetWinStreak(key, resetBest).also { setDirty() } }
 
     fun setProgressAndBestMetric(
         key: BattleRecordKey,
         progressMetricId: BattleRecordMetricId,
         bestMetricId: BattleRecordMetricId,
         value: Long,
-    ): BattleRecordStats = ifAvailable(key) {
+    ): BattleRecordStats = mutate {
         store.setProgressAndBestMetric(key, progressMetricId, bestMetricId, value).also { setDirty() }
     }
 
@@ -54,7 +54,7 @@ internal class BattleRecordSavedData(
         progressMetricId: BattleRecordMetricId,
         bestMetricId: BattleRecordMetricId,
         resetBest: Boolean,
-    ): BattleRecordStats = ifAvailable(key) {
+    ): BattleRecordStats = mutate {
         store.resetProgressAndBestMetric(key, progressMetricId, bestMetricId, resetBest).also { setDirty() }
     }
 
@@ -63,7 +63,7 @@ internal class BattleRecordSavedData(
         metricId: BattleRecordMetricId,
         candidate: Long,
     ): BattleRecordStats {
-        if (!isAvailable) return store.get(key)
+        requireAvailable()
         val before = store.get(key)
         val after = store.submitBestMetric(key, metricId, candidate)
         if (after != before) setDirty()
@@ -75,10 +75,14 @@ internal class BattleRecordSavedData(
 
     internal fun preservedTagForTest(): CompoundTag = checkNotNull(preservedTag).copy()
 
-    private inline fun ifAvailable(
-        key: BattleRecordKey,
-        mutation: () -> BattleRecordStats,
-    ): BattleRecordStats = if (isAvailable) mutation() else store.get(key)
+    private inline fun mutate(mutation: () -> BattleRecordStats): BattleRecordStats {
+        requireAvailable()
+        return mutation()
+    }
+
+    private fun requireAvailable() {
+        check(isAvailable) { "Battle record storage is unavailable" }
+    }
 
     companion object {
         const val FILE_ID = "cobblemon_more_battle_content_records"

@@ -255,17 +255,55 @@ class BattleRecordStoreTest {
     }
 
     @Test
-    fun `unsupported saved data disables records without becoming dirty or overwriting it`() {
+    fun `unsupported saved data rejects every record mutation without overwriting it`() {
         val unsupported = net.minecraft.nbt.CompoundTag().also { tag ->
             tag.putInt("SchemaVersion", 999)
         }
 
         val data = BattleRecordSavedData.loadForTest(unsupported)
-        val after = data.recordOutcome(towerSingles, BattleRecordOutcome.WIN)
+
+        val mutations: List<() -> Unit> = listOf(
+            { data.recordOutcome(towerSingles, BattleRecordOutcome.WIN) },
+            {
+                data.recordCompletedBattle(
+                    BattleRecordCompletion(towerSingles, BattleRecordOutcome.WIN),
+                )
+            },
+            {
+                data.recordCompletedBattles(
+                    listOf(BattleRecordCompletion(towerSingles, BattleRecordOutcome.WIN)),
+                )
+            },
+            { data.setProgressMetric(towerSingles, BattleRecordMetrics.CURRENT_FLOOR, 1) },
+            { data.setCurrentWinStreak(towerSingles, 1) },
+            { data.resetWinStreak(towerSingles, resetBest = false) },
+            {
+                data.setProgressAndBestMetric(
+                    towerSingles,
+                    BattleRecordMetrics.CURRENT_FLOOR,
+                    BattleRecordMetrics.HIGHEST_FLOOR,
+                    1,
+                )
+            },
+            {
+                data.resetProgressAndBestMetric(
+                    towerSingles,
+                    BattleRecordMetrics.CURRENT_FLOOR,
+                    BattleRecordMetrics.HIGHEST_FLOOR,
+                    resetBest = false,
+                )
+            },
+            { data.submitBestMetric(towerSingles, BattleRecordMetrics.BEST_SCORE, 1) },
+        )
+
+        mutations.forEach { mutation ->
+            val failure = assertThrows<IllegalStateException> { mutation() }
+            assertEquals("Battle record storage is unavailable", failure.message)
+        }
 
         assertFalse(data.isAvailable)
         assertFalse(data.isDirty)
-        assertEquals(0, after.totalWins)
+        assertEquals(BattleRecordStats(towerSingles), data.get(towerSingles))
         assertEquals(999, data.preservedTagForTest().getInt("SchemaVersion"))
     }
 
