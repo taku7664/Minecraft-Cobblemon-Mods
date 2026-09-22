@@ -209,6 +209,97 @@ class LocalDynamicTurnOrderTest {
         }
     }
 
+    @Test
+    fun `quash makes its pending target act last`() {
+        val state = BattleStateView(
+            battleId = UUID.randomUUID(),
+            format = BattleFormat.DOUBLE,
+            turn = 1,
+            pokemon = listOf(
+                pokemon(RAIN_SETTER, BattleSide.ALLY, 0, speed = 200),
+                pokemon(SWIMMER, BattleSide.ALLY, 1, speed = 100),
+                pokemon(FAST_FOE, BattleSide.OPPONENT, 0, speed = 150),
+                pokemon(SLOW_FOE, BattleSide.OPPONENT, 1, speed = 50),
+            ),
+            field = BattleFieldStateView.empty(),
+            remainingPokemonBySide = BattleSide.entries.associateWith { 2 },
+            observedEvents = emptyList(),
+            inferences = emptyList(),
+        )
+        val quash = queueMove("quash", BattleSide.OPPONENT, 0, BattleMoveTargetPattern.SELECTED_OPPONENT)
+        val allyJoint = joint("ally", quash, statusMove("ally_wait", 1))
+        val opponentJoint = joint(
+            "opponent",
+            statusMove("fast_foe_wait", 0),
+            statusMove("slow_foe_wait", 1),
+        )
+        val context = BattleDecisionContext(
+            requestId = UUID.randomUUID(),
+            state = state,
+            candidates = listOf(allyJoint),
+            deadlineEpochMillis = Long.MAX_VALUE,
+        )
+
+        val outcomes = PublicSingleTurnProjector.project(state, allyJoint, opponentJoint, context)
+
+        assertEquals(1.0, outcomes.sumOf { it.probability * it.orderProbability }, 1e-9)
+        assertTrue(outcomes.isNotEmpty())
+        outcomes.forEach { outcome ->
+            assertEquals(
+                listOf(RAIN_SETTER, SWIMMER, SLOW_FOE, FAST_FOE),
+                outcome.actionOrderPokemonIds,
+            )
+        }
+    }
+
+    @Test
+    fun `quash only postpones its target on the hit branch`() {
+        val state = BattleStateView(
+            battleId = UUID.randomUUID(),
+            format = BattleFormat.DOUBLE,
+            turn = 1,
+            pokemon = listOf(
+                pokemon(RAIN_SETTER, BattleSide.ALLY, 0, speed = 200),
+                pokemon(SWIMMER, BattleSide.ALLY, 1, speed = 100),
+                pokemon(FAST_FOE, BattleSide.OPPONENT, 0, speed = 150),
+                pokemon(SLOW_FOE, BattleSide.OPPONENT, 1, speed = 50),
+            ),
+            field = BattleFieldStateView.empty(),
+            remainingPokemonBySide = BattleSide.entries.associateWith { 2 },
+            observedEvents = emptyList(),
+            inferences = emptyList(),
+        )
+        val quash = queueMove(
+            "quash",
+            BattleSide.OPPONENT,
+            0,
+            BattleMoveTargetPattern.SELECTED_OPPONENT,
+            accuracy = 50.0,
+        )
+        val allyJoint = joint("ally", quash, statusMove("ally_wait", 1))
+        val opponentJoint = joint(
+            "opponent",
+            statusMove("fast_foe_wait", 0),
+            statusMove("slow_foe_wait", 1),
+        )
+        val context = BattleDecisionContext(
+            requestId = UUID.randomUUID(),
+            state = state,
+            candidates = listOf(allyJoint),
+            deadlineEpochMillis = Long.MAX_VALUE,
+        )
+
+        val outcomes = PublicSingleTurnProjector.project(state, allyJoint, opponentJoint, context)
+        val postponed = listOf(RAIN_SETTER, SWIMMER, SLOW_FOE, FAST_FOE)
+        val unchanged = listOf(RAIN_SETTER, FAST_FOE, SWIMMER, SLOW_FOE)
+
+        assertEquals(1.0, outcomes.sumOf { it.probability * it.orderProbability }, 1e-9)
+        assertEquals(0.5, outcomes.filter { it.actionOrderPokemonIds == postponed }
+            .sumOf { it.probability * it.orderProbability }, 1e-9)
+        assertEquals(0.5, outcomes.filter { it.actionOrderPokemonIds == unchanged }
+            .sumOf { it.probability * it.orderProbability }, 1e-9)
+    }
+
     private fun statusMove(
         id: String,
         actorSlot: Int,
@@ -232,21 +323,34 @@ class LocalDynamicTurnOrderTest {
         ),
     )
 
-    private fun afterYouMove() = BattleActionCandidate(
-        actionId = "afteryou",
+    private fun afterYouMove() = queueMove(
+        id = "afteryou",
+        targetSide = BattleSide.ALLY,
+        targetSlot = 1,
+        targetPattern = BattleMoveTargetPattern.SELECTED_ALLY,
+    )
+
+    private fun queueMove(
+        id: String,
+        targetSide: BattleSide,
+        targetSlot: Int,
+        targetPattern: BattleMoveTargetPattern,
+        accuracy: Double = 100.0,
+    ) = BattleActionCandidate(
+        actionId = id,
         kind = BattleActionKind.USE_MOVE,
         actorSlot = 0,
         moveSlot = 0,
-        moveId = "afteryou",
-        targets = listOf(BattleTargetSlot(BattleSide.ALLY, 1)),
+        moveId = id,
+        targets = listOf(BattleTargetSlot(targetSide, targetSlot)),
         moveDetails = BattleMoveCandidateView(
-            typeId = "normal",
+            typeId = if (id == "quash") "dark" else "normal",
             damageCategory = BattleMoveDamageCategory.STATUS,
             power = 0.0,
-            accuracy = 100.0,
+            accuracy = accuracy,
             priority = 0,
             currentPp = 10,
-            targetPattern = BattleMoveTargetPattern.SELECTED_ALLY,
+            targetPattern = targetPattern,
             effects = BattleMoveEffectsView(
                 coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
                 effects = emptyList(),

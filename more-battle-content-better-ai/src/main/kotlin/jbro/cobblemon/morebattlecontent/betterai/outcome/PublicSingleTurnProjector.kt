@@ -103,7 +103,9 @@ internal object PublicSingleTurnProjector {
                 val nextChoices = current.promotedNextAction
                     ?.takeIf { it in current.remaining }
                     ?.let { listOf(WeightedNextAction(it, 1.0)) }
-                    ?: nextActionChoices(sourceContext.state, current.branch.state, current.remaining)
+                    ?: current.remaining.filterNot { it in current.postponedActions }
+                        .ifEmpty { current.remaining }
+                        .let { nextActionChoices(sourceContext.state, current.branch.state, it) }
                 nextChoices.flatMap { next ->
                     val remaining = current.remaining.toMutableList().also { it.remove(next.action) }
                     applyScheduledAction(
@@ -123,6 +125,8 @@ internal object PublicSingleTurnProjector {
                             order = current.order + next.action,
                             orderProbability = current.orderProbability * next.probability,
                             promotedNextAction = promotedAfterYouAction(next.action, remaining, projected),
+                            postponedActions = (current.postponedActions - next.action) +
+                                listOfNotNull(postponedByQuashAction(next.action, remaining, projected)),
                         )
                     }
                 }
@@ -299,6 +303,8 @@ internal object PublicSingleTurnProjector {
                 branch.protectionResultsByPokemon + outcome.protectionResultsByPokemon,
                 branch.redirectingPokemonIds + newlyRedirecting,
                 directDamage = branch.directDamage + outcome.directDamage,
+                successfulQueueControlMoveIdsByPokemon = branch.successfulQueueControlMoveIdsByPokemon +
+                    outcome.successfulQueueControlMoveIdsByPokemon,
             )
         }.let { projected ->
             // mergeBranches normalizes its input to one. This merge is conditional on a single
@@ -789,6 +795,10 @@ internal object PublicSingleTurnProjector {
                         executedMoveIdsByPokemon = effectiveAction.moveId?.let {
                             mapOf(actor.battlePokemonId to it)
                         }.orEmpty(),
+                        successfulQueueControlMoveIdsByPokemon = effectiveAction.moveId
+                            ?.takeIf { canonicalId(it) in QUEUE_CONTROL_MOVE_IDS }
+                            ?.let { mapOf(actor.battlePokemonId to it) }
+                            .orEmpty(),
                     )
                 }.map { effectOutcome ->
                     effectOutcome.copy(
@@ -1407,6 +1417,7 @@ internal object PublicSingleTurnProjector {
                 it.lastMoveByPokemon,
                 it.executedMoveIdsByPokemon,
                 it.protectionResultsByPokemon,
+                it.successfulQueueControlMoveIdsByPokemon,
             )
         }.values.map { identical ->
             val probability = identical.sumOf(WeightedState::probability)
@@ -1432,6 +1443,7 @@ internal object PublicSingleTurnProjector {
                 // the whole reason a positional constructor call is a bad place to add a field.
                 identical.first().redirectingPokemonIds,
                 directDamage = LocalDirectDamageLedger.weighted(identical.map { it.probability to it.directDamage }),
+                successfulQueueControlMoveIdsByPokemon = identical.first().successfulQueueControlMoveIdsByPokemon,
             )
         }.sortedByDescending(WeightedState::probability)
         val total = merged.sumOf(WeightedState::probability)
@@ -1516,10 +1528,24 @@ internal object PublicSingleTurnProjector {
         executed: TurnPrimitiveAction,
         remaining: List<TurnPrimitiveAction>,
         outcome: WeightedState,
+    ): TurnPrimitiveAction? = successfulQueueControlTarget(executed, remaining, outcome, AFTER_YOU)
+
+    /** Quash changes the target move's queue order from the normal move order to 201. */
+    private fun postponedByQuashAction(
+        executed: TurnPrimitiveAction,
+        remaining: List<TurnPrimitiveAction>,
+        outcome: WeightedState,
+    ): TurnPrimitiveAction? = successfulQueueControlTarget(executed, remaining, outcome, QUASH)
+
+    private fun successfulQueueControlTarget(
+        executed: TurnPrimitiveAction,
+        remaining: List<TurnPrimitiveAction>,
+        outcome: WeightedState,
+        moveId: String,
     ): TurnPrimitiveAction? {
-        if (canonicalId(executed.action.moveId) != AFTER_YOU) return null
+        if (canonicalId(executed.action.moveId) != moveId) return null
         val actorId = executed.actorPokemonId ?: return null
-        if (canonicalId(outcome.executedMoveIdsByPokemon[actorId]) != AFTER_YOU) return null
+        if (canonicalId(outcome.successfulQueueControlMoveIdsByPokemon[actorId]) != moveId) return null
         val target = executed.action.targets.singleOrNull() ?: return null
         val pending = remaining.singleOrNull {
             it.side == target.side && it.action.actorSlot == target.slot
@@ -1739,6 +1765,7 @@ internal object PublicSingleTurnProjector {
         val order: List<TurnPrimitiveAction> = emptyList(),
         val orderProbability: Double = 1.0,
         val promotedNextAction: TurnPrimitiveAction? = null,
+        val postponedActions: Set<TurnPrimitiveAction> = emptySet(),
     )
 
     private data class WeightedState(
@@ -1768,6 +1795,8 @@ internal object PublicSingleTurnProjector {
          */
         val redirectingPokemonIds: Set<UUID> = emptySet(),
         val directDamage: LocalDirectDamageLedger = LocalDirectDamageLedger.EMPTY,
+        /** Moves that reached their target, distinct from misses, protection, and public nullification. */
+        val successfulQueueControlMoveIdsByPokemon: Map<UUID, String> = emptyMap(),
     )
 
     private fun weightedExpectedScoreAdjustment(
@@ -1786,6 +1815,8 @@ internal object PublicSingleTurnProjector {
     private const val FREEZE_THAW_PROBABILITY = 0.20
     private const val FUTURE_MOVE_DELAY_TURNS = 2
     private const val AFTER_YOU = "afteryou"
+    private const val QUASH = "quash"
+    private val QUEUE_CONTROL_MOVE_IDS = setOf(AFTER_YOU, QUASH)
     private val PARALYSIS_IDS = setOf("par", "paralysis", "paralyzed", "paralysed")
     private val SLEEP_IDS = setOf("slp", "sleep", "asleep")
     private val FREEZE_IDS = setOf("frz", "freeze", "frozen")
