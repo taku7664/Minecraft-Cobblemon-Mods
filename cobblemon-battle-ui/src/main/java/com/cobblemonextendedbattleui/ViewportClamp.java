@@ -12,4 +12,21 @@ public final class ViewportClamp {
         }
         return Math.max(leadingMargin, Math.min(value, maximum));
     }
+
+    public static int resolve(
+        Integer customValue,
+        int defaultValue,
+        int leadingMargin,
+        int viewportSize,
+        int contentSize,
+        int trailingMargin
+    ) {
+        return clamp(
+            customValue != null ? customValue : defaultValue,
+            leadingMargin,
+            viewportSize,
+            contentSize,
+            trailingMargin
+        );
+    }
 }

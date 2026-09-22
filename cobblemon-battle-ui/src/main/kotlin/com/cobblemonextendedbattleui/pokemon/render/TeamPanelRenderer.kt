@@ -2,6 +2,7 @@ package jbro.cobblemon.battleui.extended.pokemon.render
 
 import com.cobblemon.mod.common.client.render.drawScaledText
 import jbro.cobblemon.battleui.extended.PanelConfig
+import jbro.cobblemon.battleui.extended.TeamPanelLayout
 import jbro.cobblemon.battleui.extended.UIUtils
 import jbro.cobblemon.battleui.extended.ViewportClamp
 import jbro.cobblemon.battleui.extended.pokemon.tooltip.TooltipBoundsData
@@ -15,8 +16,6 @@ import net.minecraft.text.Text
 object TeamPanelRenderer {
 
     // Background panel settings
-    private const val PANEL_PADDING_V = 2
-    private const val PANEL_PADDING_H = 5
     private const val PANEL_CORNER = 3
     private val PANEL_BG = color(15, 20, 25, 180)
     private val PANEL_BORDER = color(60, 70, 85, 200)
@@ -29,18 +28,9 @@ object TeamPanelRenderer {
      * Calculate panel dimensions based on team size and current orientation/scale.
      */
     fun calculatePanelDimensions(teamSize: Int, modelSize: Int, modelSpacing: Int): Pair<Int, Int> {
-        if (teamSize <= 0) return Pair(0, 0)
-
         val isVertical = PanelConfig.teamIndicatorOrientation == PanelConfig.TeamIndicatorOrientation.VERTICAL
-        return if (isVertical) {
-            val panelWidth = modelSize + PANEL_PADDING_H * 2
-            val panelHeight = teamSize * modelSize + (teamSize - 1) * modelSpacing + PANEL_PADDING_V * 2
-            Pair(panelWidth, panelHeight)
-        } else {
-            val panelWidth = teamSize * modelSize + (teamSize - 1) * modelSpacing + PANEL_PADDING_H * 2
-            val panelHeight = modelSize + PANEL_PADDING_V * 2
-            Pair(panelWidth, panelHeight)
-        }
+        val layout = TeamPanelLayout.calculate(teamSize, modelSize, modelSpacing, isVertical)
+        return Pair(layout.panelWidth, layout.panelHeight)
     }
 
     /**
@@ -59,8 +49,8 @@ object TeamPanelRenderer {
 
         val (panelWidth, panelHeight) = calculatePanelDimensions(teamSize, modelSize, modelSpacing)
 
-        val panelX = x - PANEL_PADDING_H
-        val panelY = y - PANEL_PADDING_V
+        val panelX = x - TeamPanelLayout.HORIZONTAL_PADDING
+        val panelY = y - TeamPanelLayout.VERTICAL_PADDING
 
         val bg = applyOpacity(PANEL_BG)
         val border = applyOpacity(PANEL_BORDER)
@@ -112,8 +102,8 @@ object TeamPanelRenderer {
         if (teamSize <= 0) return
 
         val (panelWidth, panelHeight) = calculatePanelDimensions(teamSize, modelSize, modelSpacing)
-        val panelX = x - PANEL_PADDING_H
-        val panelY = y - PANEL_PADDING_V
+        val panelX = x - TeamPanelLayout.HORIZONTAL_PADDING
+        val panelY = y - TeamPanelLayout.VERTICAL_PADDING
         val border = applyOpacity(PANEL_BORDER)
 
         val matrices = context.matrices

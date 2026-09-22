@@ -58,10 +58,6 @@ object TeamIndicatorUI {
     private val modelSize: Int get() = (BASE_MODEL_SIZE * PanelConfig.teamIndicatorScale).toInt()
     private val modelSpacing: Int get() = (BASE_MODEL_SPACING * PanelConfig.teamIndicatorScale).toInt()
 
-    // Panel padding (used for bounds calculations; rendering delegated to TeamPanelRenderer)
-    private const val PANEL_PADDING_V = 2
-    private const val PANEL_PADDING_H = 5
-
     private var isMinimised: Boolean = false
 
     /**
@@ -142,9 +138,11 @@ object TeamIndicatorUI {
     private var dragStartMouseY = 0
     private var dragStartPanelX = 0
     private var dragStartPanelY = 0
+    private var dragPanelLayout: TeamPanelLayout? = null
     // For Alt+drag mirrored movement - store the OTHER panel's starting position
     private var dragStartOtherPanelX = 0
     private var dragStartOtherPanelY = 0
+    private var dragOtherPanelLayout: TeamPanelLayout? = null
 
     // Click/double-click detection
     private var lastClickTime = 0L
@@ -214,14 +212,20 @@ object TeamIndicatorUI {
         pendingTransforms.clear()
         previouslyActiveUuids.clear()
         PokemonModelRenderer.clearFloatingStates()
+        clearFrameInteractionBounds()
+        wasIncreaseFontKeyPressed = false
+        wasDecreaseFontKeyPressed = false
+        lastBattleId = null
+    }
+
+    private fun clearFrameInteractionBounds() {
         pokeballBounds.clear()
         hoveredPokeball = null
         tooltipBounds = null
         leftTeamPanelBounds = null
         rightTeamPanelBounds = null
-        wasIncreaseFontKeyPressed = false
-        wasDecreaseFontKeyPressed = false
-        lastBattleId = null
+        leftHelpIconBounds = null
+        rightHelpIconBounds = null
     }
 
     /**
@@ -485,6 +489,7 @@ object TeamIndicatorUI {
     }
 
     fun render(context: DrawContext) {
+        clearFrameInteractionBounds()
         val battle = CobblemonClient.battle ?: return
 
         // Track minimized state - render greyed out instead of hiding
@@ -495,9 +500,6 @@ object TeamIndicatorUI {
             clear()
             lastBattleId = battle.battleId
         }
-
-        // Clear pokeball bounds for this frame
-        pokeballBounds.clear()
 
         val mc = MinecraftClient.getInstance()
         val screenWidth = mc.window.scaledWidth
@@ -561,8 +563,8 @@ object TeamIndicatorUI {
         val playerOnRight = playerActor != null && rightSide.actors.any { it.uuid == playerUUID }
 
         // Get team sizes for position calculations
-        val leftTeamSize = if (playerOnLeft) playerActor!!.pokemon.size else trackedSide1Pokemon.size
-        val rightTeamSize = if (playerOnRight) playerActor!!.pokemon.size else trackedSide2Pokemon.size
+        val leftTeamSize = if (playerOnLeft) playerActor.pokemon.size else trackedSide1Pokemon.size
+        val rightTeamSize = if (playerOnRight) playerActor.pokemon.size else trackedSide2Pokemon.size
 
         // Calculate positions for left and right teams
         val (leftX, leftFinalY) = getTeamPosition(
@@ -581,8 +583,10 @@ object TeamIndicatorUI {
         // Render LEFT side - player's team if they're on left, otherwise tracked
         if (playerOnLeft) {
             // Player is on left - use battle actor's pokemon list for authoritative data
-            val playerTeam = playerActor!!.pokemon
-            renderBattleTeam(context, leftX, leftFinalY, playerTeam, isLeftSide = true)
+            val playerTeam = playerActor.pokemon
+            if (playerTeam.isNotEmpty()) {
+                renderBattleTeam(context, leftX, leftFinalY, playerTeam, isLeftSide = true)
+            }
         } else {
             // Left side is opponent or we're spectating - use tracked Pokemon from battle data
             val leftTeam = trackedSide1Pokemon.values.toList()
@@ -594,8 +598,10 @@ object TeamIndicatorUI {
         // Render RIGHT side - player's team if they're on right, otherwise tracked
         if (playerOnRight) {
             // Player is on right - use battle actor's pokemon list for authoritative data
-            val playerTeam = playerActor!!.pokemon
-            renderBattleTeam(context, rightX, rightFinalY, playerTeam, isLeftSide = false)
+            val playerTeam = playerActor.pokemon
+            if (playerTeam.isNotEmpty()) {
+                renderBattleTeam(context, rightX, rightFinalY, playerTeam, isLeftSide = false)
+            }
         } else {
             // Right side is opponent or we're spectating - use tracked Pokemon from battle data
             val rightTeam = trackedSide2Pokemon.values.toList()
@@ -694,8 +700,9 @@ object TeamIndicatorUI {
                 // Continue dragging - allow positioning to screen edges
                 val deltaX = mouseX - dragStartMouseX
                 val deltaY = mouseY - dragStartMouseY
-                val newX = ViewportClamp.clamp(dragStartPanelX + deltaX, 0, mc.window.scaledWidth, modelSize, 0)
-                val newY = ViewportClamp.clamp(dragStartPanelY + deltaY, 0, mc.window.scaledHeight, modelSize, 0)
+                val draggedLayout = dragPanelLayout ?: return
+                val newX = draggedLayout.resolveX(dragStartPanelX + deltaX, dragStartPanelX, mc.window.scaledWidth)
+                val newY = draggedLayout.resolveY(dragStartPanelY + deltaY, dragStartPanelY, mc.window.scaledHeight)
 
                 if (draggingLeftSide) {
                     PanelConfig.setTeamIndicatorLeftPosition(newX, newY)
@@ -708,18 +715,30 @@ object TeamIndicatorUI {
                 if (isAltDown) {
                     // Mirrored X: if we move right (+deltaX), other panel moves left (-deltaX)
                     // Same Y: both panels move in the same vertical direction
-                    val mirroredX = ViewportClamp.clamp(dragStartOtherPanelX - deltaX, 0, mc.window.scaledWidth, modelSize, 0)
-                    val sameY = ViewportClamp.clamp(dragStartOtherPanelY + deltaY, 0, mc.window.scaledHeight, modelSize, 0)
+                    dragOtherPanelLayout?.let { otherLayout ->
+                        val mirroredX = otherLayout.resolveX(
+                            dragStartOtherPanelX - deltaX,
+                            dragStartOtherPanelX,
+                            mc.window.scaledWidth
+                        )
+                        val sameY = otherLayout.resolveY(
+                            dragStartOtherPanelY + deltaY,
+                            dragStartOtherPanelY,
+                            mc.window.scaledHeight
+                        )
 
-                    if (draggingLeftSide) {
-                        PanelConfig.setTeamIndicatorRightPosition(mirroredX, sameY)
-                    } else {
-                        PanelConfig.setTeamIndicatorLeftPosition(mirroredX, sameY)
+                        if (draggingLeftSide) {
+                            PanelConfig.setTeamIndicatorRightPosition(mirroredX, sameY)
+                        } else {
+                            PanelConfig.setTeamIndicatorLeftPosition(mirroredX, sameY)
+                        }
                     }
                 }
             } else {
                 // Mouse released - end drag
                 isDragging = false
+                dragPanelLayout = null
+                dragOtherPanelLayout = null
                 PanelConfig.save()
             }
             wasMouseButtonDown = isMouseDown
@@ -727,6 +746,8 @@ object TeamIndicatorUI {
         } else if (isDragging && !repositioningEnabled) {
             // Repositioning was disabled mid-drag, cancel it
             isDragging = false
+            dragPanelLayout = null
+            dragOtherPanelLayout = null
         }
 
         // Check if mouse is over either panel
@@ -789,13 +810,16 @@ object TeamIndicatorUI {
 
                     // Get current panel position as drag start
                     val bounds = if (hoveredSide) leftTeamPanelBounds else rightTeamPanelBounds
-                    dragStartPanelX = bounds?.x?.plus(PANEL_PADDING_H) ?: mouseX
-                    dragStartPanelY = bounds?.y?.plus(PANEL_PADDING_V) ?: mouseY
+                    dragStartPanelX = bounds?.x?.plus(TeamPanelLayout.HORIZONTAL_PADDING) ?: mouseX
+                    dragStartPanelY = bounds?.y?.plus(TeamPanelLayout.VERTICAL_PADDING) ?: mouseY
+                    dragPanelLayout = bounds?.let { TeamPanelLayout.fromPanelSize(it.width, it.height) }
 
                     // Also store the OTHER panel's position for Alt+drag mirrored movement
                     val otherBounds = if (hoveredSide) rightTeamPanelBounds else leftTeamPanelBounds
-                    dragStartOtherPanelX = otherBounds?.x?.plus(PANEL_PADDING_H) ?: (mc.window.scaledWidth - mouseX)
-                    dragStartOtherPanelY = otherBounds?.y?.plus(PANEL_PADDING_V) ?: mouseY
+                    dragStartOtherPanelX = otherBounds?.x?.plus(TeamPanelLayout.HORIZONTAL_PADDING)
+                        ?: (mc.window.scaledWidth - mouseX)
+                    dragStartOtherPanelY = otherBounds?.y?.plus(TeamPanelLayout.VERTICAL_PADDING) ?: mouseY
+                    dragOtherPanelLayout = otherBounds?.let { TeamPanelLayout.fromPanelSize(it.width, it.height) }
 
                     // Record click for double-click detection
                     lastClickTime = currentTime
@@ -909,32 +933,19 @@ object TeamIndicatorUI {
 
         // Calculate default position based on orientation
         val isVertical = PanelConfig.teamIndicatorOrientation == PanelConfig.TeamIndicatorOrientation.VERTICAL
-        val panelWidth = if (isVertical) modelSize else teamSize * modelSize + (teamSize - 1).coerceAtLeast(0) * modelSpacing
-        val panelHeight = if (isVertical) teamSize * modelSize + (teamSize - 1).coerceAtLeast(0) * modelSpacing else modelSize
-
-        if (customX != null && customY != null) {
-            val screenHeight = MinecraftClient.getInstance().window.scaledHeight
-            return Pair(
-                ViewportClamp.clamp(customX, 0, screenWidth, panelWidth, 0),
-                ViewportClamp.clamp(customY, 0, screenHeight, panelHeight, 0)
-            )
-        }
+        val layout = TeamPanelLayout.calculate(teamSize, modelSize, modelSpacing, isVertical)
 
         val defaultX = if (isLeftSide) {
             HORIZONTAL_INSET
         } else {
-            // Right side: align to right edge
-            if (isVertical) {
-                // For vertical, panel is narrow (single column)
-                screenWidth - HORIZONTAL_INSET - modelSize
-            } else {
-                // For horizontal, calculate full width
-                val teamWidth = teamSize * modelSize + (teamSize - 1) * modelSpacing
-                screenWidth - HORIZONTAL_INSET - teamWidth
-            }
+            screenWidth - HORIZONTAL_INSET - layout.modelWidth
         }
+        val screenHeight = MinecraftClient.getInstance().window.scaledHeight
 
-        return Pair(customX ?: defaultX, customY ?: defaultY)
+        return Pair(
+            layout.resolveX(customX, defaultX, screenWidth),
+            layout.resolveY(customY, defaultY, screenHeight)
+        )
     }
 
     /**
@@ -1075,7 +1086,12 @@ object TeamIndicatorUI {
 
         // Track panel bounds for input handling
         val (panelWidth, panelHeight) = calculatePanelDimensions(team.size)
-        val bounds = TooltipBoundsData(startX - PANEL_PADDING_H, startY - PANEL_PADDING_V, panelWidth, panelHeight)
+        val bounds = TooltipBoundsData(
+            startX - TeamPanelLayout.HORIZONTAL_PADDING,
+            startY - TeamPanelLayout.VERTICAL_PADDING,
+            panelWidth,
+            panelHeight
+        )
         if (isLeftSide) leftTeamPanelBounds = bounds else rightTeamPanelBounds = bounds
 
         val isVertical = PanelConfig.teamIndicatorOrientation == PanelConfig.TeamIndicatorOrientation.VERTICAL
@@ -1145,7 +1161,12 @@ object TeamIndicatorUI {
 
         // Track panel bounds for input handling
         val (panelWidth, panelHeight) = calculatePanelDimensions(team.size)
-        val bounds = TooltipBoundsData(startX - PANEL_PADDING_H, startY - PANEL_PADDING_V, panelWidth, panelHeight)
+        val bounds = TooltipBoundsData(
+            startX - TeamPanelLayout.HORIZONTAL_PADDING,
+            startY - TeamPanelLayout.VERTICAL_PADDING,
+            panelWidth,
+            panelHeight
+        )
         if (isLeftSide) leftTeamPanelBounds = bounds else rightTeamPanelBounds = bounds
 
         val isVertical = PanelConfig.teamIndicatorOrientation == PanelConfig.TeamIndicatorOrientation.VERTICAL

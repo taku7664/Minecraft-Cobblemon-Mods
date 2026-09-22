@@ -29,6 +29,28 @@ final class BattleUiAuditContractTest {
     }
 
     @Test
+    void emptyTeamsNeverCreatePanelsOrHelpIcons() throws Exception {
+        String indicators = read("src/main/kotlin/com/cobblemonextendedbattleui/TeamIndicatorUI.kt");
+        assertEquals(2, indicators.split("if \\(playerTeam\\.isNotEmpty\\(\\)\\)", -1).length - 1);
+    }
+
+    @Test
+    void teamInteractionBoundsAreClearedBeforeEveryRenderExit() throws Exception {
+        String indicators = read("src/main/kotlin/com/cobblemonextendedbattleui/TeamIndicatorUI.kt");
+        int renderStart = indicators.indexOf("fun render(context: DrawContext)");
+        int battleLookup = indicators.indexOf("val battle = CobblemonClient.battle ?: return", renderStart);
+        int boundsClear = indicators.indexOf("clearFrameInteractionBounds()", renderStart);
+
+        assertTrue(renderStart >= 0);
+        assertTrue(boundsClear > renderStart);
+        assertTrue(boundsClear < battleLookup, "Stale hit boxes must clear even when rendering exits early");
+        assertTrue(indicators.contains("leftTeamPanelBounds = null"));
+        assertTrue(indicators.contains("rightTeamPanelBounds = null"));
+        assertTrue(indicators.contains("leftHelpIconBounds = null"));
+        assertTrue(indicators.contains("rightHelpIconBounds = null"));
+    }
+
+    @Test
     void generalBattleCommandsReflowDuringRendering() throws Exception {
         String navigation = read(
             "src/main/java/com/cobblemonextendedbattleui/mixin/BattleGuiNavigationMixin.java"
