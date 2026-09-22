@@ -164,7 +164,9 @@ internal object LocalDirectHitMechanics {
             val maxHp = target.combatStats?.maxHp ?: return 0.0
             10.0 / ((maxHp.minimum.toDouble() + maxHp.maximum) / 2.0)
         } else PINCH_BERRY_HEALING[item] ?: return 0.0
-        val threshold = if (item == "oranberry" || item == "sitrusberry" || canonical(target.knownAbilityId) == "gluttony") {
+        val threshold = if (item == "oranberry" || item == "sitrusberry" ||
+            LocalPublicAbilityState.effectiveKnownAbility(state, target) == "gluttony"
+        ) {
             HALF_HP_BERRY_THRESHOLD
         } else QUARTER_HP_BERRY_THRESHOLD
         if (target.hpFraction <= threshold) return 0.0

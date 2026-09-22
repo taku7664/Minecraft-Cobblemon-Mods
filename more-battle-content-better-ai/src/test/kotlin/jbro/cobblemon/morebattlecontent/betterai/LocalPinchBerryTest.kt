@@ -61,6 +61,20 @@ class LocalPinchBerryTest {
     }
 
     @Test
+    fun `neutralizing gas restores the ordinary pinch berry threshold`() {
+        val result = hitResult(
+            item = "figyberry",
+            startHp = 0.8,
+            damage = 0.3,
+            ability = "gluttony",
+            neutralizingGas = true,
+        ).state.pokemon.single { it.side == BattleSide.OPPONENT && it.activeSlot == 0 }
+
+        assertEquals(0.5, result.hpFraction, 1e-12)
+        assertEquals("figyberry", result.knownHeldItemId)
+    }
+
+    @Test
     fun `oran berry heals ten HP rather than ten percent`() {
         val after = hit(item = "cobblemon:oran_berry", startHp = 0.8, damage = 0.5)
         // The public maximum is 150..170, so the current point projection uses its midpoint 160.
@@ -113,12 +127,13 @@ class LocalPinchBerryTest {
     private fun hit(item: String?, startHp: Double, damage: Double): BattlePokemonStateView =
         hitResult(item, startHp, damage).state.pokemon.single { it.side == BattleSide.OPPONENT }
 
-    private fun hitResult(item: String?, startHp: Double, damage: Double, maxHp: BattleIntegerRange = BattleIntegerRange(150, 170), ability: String? = null, field: BattleFieldStateView = BattleFieldStateView.empty()): LocalAppliedDirectHit {
+    private fun hitResult(item: String?, startHp: Double, damage: Double, maxHp: BattleIntegerRange = BattleIntegerRange(150, 170), ability: String? = null, field: BattleFieldStateView = BattleFieldStateView.empty(), neutralizingGas: Boolean = false): LocalAppliedDirectHit {
         val ally = mon(BattleSide.ALLY, null, 1.0)
         val opponent = mon(BattleSide.OPPONENT, item, startHp, maxHp, ability)
+        val gas = mon(BattleSide.ALLY, null, 1.0, ability = "neutralizinggas", activeSlot = 1)
         val state = BattleStateView(
-            battleId = UUID.randomUUID(), format = BattleFormat.SINGLE, turn = 2,
-            pokemon = listOf(ally, opponent), field = field,
+            battleId = UUID.randomUUID(), format = if (neutralizingGas) BattleFormat.DOUBLE else BattleFormat.SINGLE, turn = 2,
+            pokemon = listOf(ally, opponent) + listOfNotNull(gas.takeIf { neutralizingGas }), field = field,
             remainingPokemonBySide = BattleSide.entries.associateWith { 2 },
             observedEvents = emptyList(), inferences = emptyList(),
         )
@@ -133,8 +148,8 @@ class LocalPinchBerryTest {
         return applied
     }
 
-    private fun mon(side: BattleSide, item: String?, hpFraction: Double, maxHp: BattleIntegerRange = BattleIntegerRange(150, 170), ability: String? = null) = BattlePokemonStateView(
-        battlePokemonId = UUID.randomUUID(), side = side, activeSlot = 0,
+    private fun mon(side: BattleSide, item: String?, hpFraction: Double, maxHp: BattleIntegerRange = BattleIntegerRange(150, 170), ability: String? = null, activeSlot: Int = 0) = BattlePokemonStateView(
+        battlePokemonId = UUID.randomUUID(), side = side, activeSlot = activeSlot,
         speciesId = "cobblemon:probe", formId = null, level = 50, hpFraction = hpFraction,
         statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(),
         knownAbilityId = ability, knownHeldItemId = item, fainted = false,
