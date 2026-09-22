@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalScorer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -207,18 +208,91 @@ class PublicBattleTacticalCalculatorTest {
 
     @Test
     fun `unavailable cumulative inputs do not publish a false exact rage fist range`() {
-        val facts = requireNotNull(
-            PublicBattleTacticalCalculator.calculate(
-                context(
-                    setOf("normal"), true, moveId = "ragefist", moveType = "ghost",
-                    damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 50.0,
-                ),
-            ).candidates.single().facts,
+        val calculated = PublicBattleTacticalCalculator.calculate(
+            context(
+                setOf("normal"), true, moveId = "ragefist", moveType = "ghost",
+                damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 50.0,
+            ),
         )
+        val facts = requireNotNull(calculated.candidates.single().facts)
 
         assertNull(facts.standardDamageFractionRange)
         assertNull(facts.standardKnockoutAssessment)
         assertTrue(BattleCalculationUnknown.DAMAGE_ENGINE in facts.unknowns)
+        assertEquals(0.0, LocalTacticalScorer.unprojectedPressureOf(calculated.candidates.single(), calculated))
+    }
+
+    @Test
+    fun `psyshock uses defence and wonder room swaps the defensive stats`() {
+        val targetStats = BattleCombatStatRangesView(
+            BattleIntegerRange(200, 200), BattleIntegerRange(100, 100), BattleIntegerRange(50, 50),
+            BattleIntegerRange(100, 100), BattleIntegerRange(300, 300), BattleIntegerRange(100, 100),
+            BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
+        )
+        val special = damage(context(
+            setOf("normal"), true, moveType = "psychic", opponentCombatStats = targetStats,
+        ))
+        val psyshockEffects = BattleMoveEffectsView(
+            BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+            emptyList(),
+            scriptedBehavior = false,
+            mechanicFlags = setOf("override_defensive_stat:defence"),
+        )
+        val psyshock = damage(context(
+            setOf("normal"), true, moveId = "psyshock", moveType = "psychic",
+            effects = psyshockEffects, opponentCombatStats = targetStats,
+        ))
+        val specialInWonderRoom = damage(context(
+            setOf("normal"), true, moveType = "psychic", opponentCombatStats = targetStats, room = "wonderroom",
+        ))
+        val psyshockInWonderRoom = damage(context(
+            setOf("normal"), true, moveId = "psyshock", moveType = "psychic",
+            effects = psyshockEffects, opponentCombatStats = targetStats, room = "wonderroom",
+        ))
+
+        assertTrue(psyshock.minimum > special.minimum * 4.0)
+        assertTrue(specialInWonderRoom.minimum > psyshockInWonderRoom.minimum * 4.0)
+
+        val defensiveAttacker = BattleCombatStatRangesView.exact(200, 100, 50, 100, 300, 100)
+        val bodyPress = damage(context(
+            setOf("normal"), true, moveId = "bodypress", moveType = "fighting",
+            damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 80.0, allyStats = defensiveAttacker,
+        ))
+        val bodyPressInWonderRoom = damage(context(
+            setOf("normal"), true, moveId = "bodypress", moveType = "fighting",
+            damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 80.0, allyStats = defensiveAttacker,
+            room = "wonderroom",
+        ))
+        assertTrue(bodyPressInWonderRoom.minimum > bodyPress.minimum * 4.0)
+    }
+
+    @Test
+    fun `magic room suppresses public choice item damage`() {
+        val ordinary = damage(context(setOf("normal"), true))
+        val specs = damage(context(setOf("normal"), true, allyItem = "choicespecs"))
+        val specsInMagicRoom = damage(context(
+            setOf("normal"), true, allyItem = "choicespecs", room = "magicroom",
+        ))
+
+        assertTrue(specs.minimum > ordinary.minimum * 1.4)
+        assertEquals(ordinary, specsInMagicRoom)
+    }
+
+    @Test
+    fun `declarative dynamic damage flags cannot fall back to template power`() {
+        val effects = BattleMoveEffectsView(
+            BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+            emptyList(),
+            scriptedBehavior = true,
+            mechanicFlags = setOf("dynamic_base_power"),
+        )
+        val calculated = PublicBattleTacticalCalculator.calculate(context(
+            setOf("normal"), true, moveId = "customcallback", effects = effects, power = 120.0,
+        ))
+        val candidate = calculated.candidates.single()
+
+        assertNull(candidate.facts?.standardDamageFractionRange)
+        assertEquals(0.0, LocalTacticalScorer.unprojectedPressureOf(candidate, calculated))
     }
 
     @Test
@@ -404,6 +478,10 @@ class PublicBattleTacticalCalculatorTest {
         opponentStatus: String? = null,
         opponentHp: Double = 1.0,
         allyAbility: String? = null,
+        allyItem: String? = null,
+        opponentItem: String? = null,
+        opponentCombatStats: BattleCombatStatRangesView = opponentStats(),
+        room: String? = null,
     ): BattleDecisionContext {
         val ally = UUID.randomUUID()
         val opponent = UUID.randomUUID()
@@ -422,18 +500,26 @@ class PublicBattleTacticalCalculatorTest {
                         allyStages,
                         statusId = allyStatus,
                         knownAbilityId = allyAbility,
+                        knownHeldItemId = allyItem,
                     ),
                     pokemon(
                         opponent,
                         BattleSide.OPPONENT,
                         opponentTypes,
-                        opponentStats().takeIf { withCombatStats },
+                        opponentCombatStats.takeIf { withCombatStats },
                         opponentStages,
                         statusId = opponentStatus,
                         hpFraction = opponentHp,
+                        knownHeldItemId = opponentItem,
                     ),
                 ),
-                field = BattleFieldStateView.empty(),
+                field = BattleFieldStateView(
+                    weather = null,
+                    terrain = null,
+                    roomEffects = room?.let { listOf(BattleTimedEffectView(it, 3)) }.orEmpty(),
+                    globalEffects = emptyList(),
+                    sideConditions = BattleSide.entries.associateWith { emptyList() },
+                ),
                 remainingPokemonBySide = mapOf(BattleSide.ALLY to 3, BattleSide.OPPONENT to 3),
                 observedEvents = emptyList(),
                 inferences = emptyList(),
@@ -472,6 +558,7 @@ class PublicBattleTacticalCalculatorTest {
         statusId: String? = null,
         hpFraction: Double = 1.0,
         knownAbilityId: String? = null,
+        knownHeldItemId: String? = null,
     ) = BattlePokemonStateView(
         battlePokemonId = id,
         side = side,
@@ -484,7 +571,7 @@ class PublicBattleTacticalCalculatorTest {
         statStages = statStages,
         knownMoveIds = emptySet(),
         knownAbilityId = knownAbilityId,
-        knownHeldItemId = null,
+        knownHeldItemId = knownHeldItemId,
         fainted = false,
         knownTypeIds = types,
         combatStats = combatStats,

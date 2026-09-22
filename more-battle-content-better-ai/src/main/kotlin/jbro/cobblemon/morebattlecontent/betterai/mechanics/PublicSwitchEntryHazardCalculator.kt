@@ -3,17 +3,36 @@ package jbro.cobblemon.morebattlecontent.betterai.mechanics
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFieldStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
+import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 
 /** Calculates only publicly determined HP loss on switch-in. Non-HP entry effects stay unresolved. */
 internal object PublicSwitchEntryHazardCalculator {
     fun hpLoss(
+        state: BattleStateView,
+        enteringSide: BattleSide,
+        pokemon: BattlePokemonStateView,
+    ): Double? = hpLoss(
+        state.field,
+        enteringSide,
+        pokemon,
+        itemsActive = !LocalPublicFieldMechanics.magicRoomActive(state),
+    )
+
+    fun hpLoss(
         field: BattleFieldStateView,
         enteringSide: BattleSide,
         pokemon: BattlePokemonStateView,
+    ): Double? = hpLoss(field, enteringSide, pokemon, itemsActive = true)
+
+    private fun hpLoss(
+        field: BattleFieldStateView,
+        enteringSide: BattleSide,
+        pokemon: BattlePokemonStateView,
+        itemsActive: Boolean,
     ): Double? {
         val hazards = field.sideConditions.getValue(enteringSide)
         if (hazards.isEmpty()) return 0.0
-        val item = canonical(pokemon.knownHeldItemId)
+        val item = canonical(pokemon.knownHeldItemId).takeIf { itemsActive }
         val ability = canonical(pokemon.knownAbilityId)
         if (item == HEAVY_DUTY_BOOTS || ability == MAGIC_GUARD) return 0.0
 

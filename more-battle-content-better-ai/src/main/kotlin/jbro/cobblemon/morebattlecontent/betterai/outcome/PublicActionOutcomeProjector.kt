@@ -61,9 +61,9 @@ internal object PublicActionOutcomeProjector {
         val accuracy = LocalPublicAccuracy.probability(candidate, context, actingSide)
         val targetHp = target?.hpFraction
         val hitCount = if (LocalDeclaredMultiHit.usesPerHitAccuracy(candidate)) {
-            LocalDeclaredMultiHit.expectedCount(candidate, accuracy)
+            LocalDeclaredMultiHit.expectedCount(candidate, accuracy, context.state)
         } else {
-            LocalDeclaredMultiHit.representativeCount(candidate, actor).toDouble()
+            LocalDeclaredMultiHit.representativeCount(candidate, actor, context.state).toDouble()
         }
         val standardAdjustedDamage = facts?.standardDamageFractionRange?.let { damage ->
             BattleFractionRange(

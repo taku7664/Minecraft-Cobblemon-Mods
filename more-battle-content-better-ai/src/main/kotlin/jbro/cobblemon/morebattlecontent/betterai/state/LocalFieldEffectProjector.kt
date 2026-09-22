@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai.state
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalSideConditionRules
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.copyState
 
 /** Projects declarative public field effects whose duration rules are stable in Gen 9. */
@@ -48,7 +49,11 @@ internal object LocalFieldEffectProjector {
         } else {
             durationEffect(
                 effectId,
-                sideDuration(canonical, state.pokemon.firstOrNull { it.battlePokemonId == actorPokemonId }),
+                sideDuration(
+                    canonical,
+                    state.pokemon.firstOrNull { it.battlePokemonId == actorPokemonId },
+                    !LocalPublicFieldMechanics.magicRoomActive(state),
+                ),
             ) ?: return state
         }
         val nextConditions = state.field.sideConditions.toMutableMap().also { bySide ->
@@ -77,7 +82,9 @@ internal object LocalFieldEffectProjector {
         val canonical = LocalSideConditionRules.canonical(effectId)
         if (canonical !in WEATHER_IDS) return state
         val actor = state.pokemon.firstOrNull { it.battlePokemonId == actorPokemonId }
-        val duration = extendableDuration(actor, weatherExtender(canonical), 5, 8)
+        val duration = extendableDuration(
+            actor, weatherExtender(canonical), 5, 8, !LocalPublicFieldMechanics.magicRoomActive(state),
+        )
         return copyState(state, copyField(state.field, weather = durationEffect(effectId, duration)))
     }
 
@@ -90,7 +97,9 @@ internal object LocalFieldEffectProjector {
         val canonical = LocalSideConditionRules.canonical(effectId)
         if (canonical !in TERRAIN_IDS) return state
         val actor = state.pokemon.firstOrNull { it.battlePokemonId == actorPokemonId }
-        val duration = extendableDuration(actor, "terrainextender", 5, 8)
+        val duration = extendableDuration(
+            actor, "terrainextender", 5, 8, !LocalPublicFieldMechanics.magicRoomActive(state),
+        )
         return copyState(state, copyField(state.field, terrain = durationEffect(effectId, duration)))
     }
 
@@ -116,10 +125,14 @@ internal object LocalFieldEffectProjector {
         }
     }
 
-    private fun sideDuration(canonical: String, actor: BattlePokemonStateView?): BattleIntegerRange? = when (canonical) {
-        "reflect", "lightscreen", "auroraveil" -> extendableDuration(actor, "lightclay", 5, 8)
-        "tailwind" -> knownOrRangedDuration(actor, 4, 6)
-        "safeguard" -> knownOrRangedDuration(actor, 5, 7)
+    private fun sideDuration(
+        canonical: String,
+        actor: BattlePokemonStateView?,
+        itemsActive: Boolean,
+    ): BattleIntegerRange? = when (canonical) {
+        "reflect", "lightscreen", "auroraveil" -> extendableDuration(actor, "lightclay", 5, 8, itemsActive)
+        "tailwind" -> knownOrRangedDuration(actor, 4, 6, itemsActive)
+        "safeguard" -> knownOrRangedDuration(actor, 5, 7, itemsActive)
         "mist", "luckychant" -> BattleIntegerRange(5, 5)
         "firepledge", "grasspledge", "waterpledge",
         "gmaxcannonade", "gmaxvinelash", "gmaxvolcalith", "gmaxwildfire" -> BattleIntegerRange(4, 4)
@@ -132,8 +145,10 @@ internal object LocalFieldEffectProjector {
         extenderItem: String?,
         baseTurns: Int,
         extendedTurns: Int,
+        itemsActive: Boolean,
     ): BattleIntegerRange {
-        val heldItem = canonical(actor?.knownHeldItemId)
+        if (!itemsActive) return BattleIntegerRange(baseTurns, baseTurns)
+        val heldItem = canonical(actor?.knownHeldItemId).takeIf { itemsActive }
         return when {
             extenderItem != null && heldItem == extenderItem -> BattleIntegerRange(extendedTurns, extendedTurns)
             heldItem != null || actor?.combatStats?.knowledge == BattleCombatStatKnowledge.EXACT_OWN ->
@@ -146,8 +161,10 @@ internal object LocalFieldEffectProjector {
         actor: BattlePokemonStateView?,
         baseTurns: Int,
         publicMaximum: Int,
+        itemsActive: Boolean,
     ): BattleIntegerRange = if (
-        actor?.knownHeldItemId != null || actor?.combatStats?.knowledge == BattleCombatStatKnowledge.EXACT_OWN
+        !itemsActive || actor?.knownHeldItemId != null ||
+            actor?.combatStats?.knowledge == BattleCombatStatKnowledge.EXACT_OWN
     ) {
         BattleIntegerRange(baseTurns, baseTurns)
     } else {

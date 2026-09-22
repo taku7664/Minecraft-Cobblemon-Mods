@@ -1,28 +1,34 @@
 package jbro.cobblemon.morebattlecontent.betterai.mechanics
 
+import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveCandidateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 
 /** Move-specific damage inputs that are completely determined by the public battle state. */
 internal object LocalPublicMoveDamageInputs {
-    enum class OffensiveStat { ATTACK, DEFENCE, SPECIAL_ATTACK }
+    enum class CombatStat { ATTACK, DEFENCE, SPECIAL_ATTACK, SPECIAL_DEFENCE }
 
     data class Resolution(
         val power: Int,
         val offensivePokemon: BattlePokemonStateView,
-        val offensiveStat: OffensiveStat,
+        val offensiveStat: CombatStat,
         val offensiveStage: Int,
+        val defensiveStat: CombatStat,
+        val defensiveStage: Int,
     )
 
     fun resolve(
-        moveId: String?,
-        templatePower: Double,
+        candidate: BattleActionCandidate,
         actor: BattlePokemonStateView,
         target: BattlePokemonStateView,
-        special: Boolean,
+        state: BattleStateView,
     ): Resolution? {
-        val id = canonical(moveId)
-        if (id in UNRESOLVED_DYNAMIC_POWER_MOVES) return null
-        val wholePower = templatePower.toInt().takeIf { it > 0 && it.toDouble() == templatePower } ?: return null
+        val details = candidate.moveDetails ?: return null
+        val id = canonical(candidate.moveId)
+        if (isUnresolvedDynamicDamage(candidate)) return null
+        val wholePower = details.power.toInt().takeIf { it > 0 && it.toDouble() == details.power } ?: return null
         val power = when (id) {
             "storedpower", "powertrip" -> wholePower + 20 * actor.positiveBoosts()
             "facade" -> if (actor.statusId != null) wholePower * 2 else wholePower
@@ -34,20 +40,69 @@ internal object LocalPublicMoveDamageInputs {
             else -> wholePower
         }
         val offensivePokemon = if (id == "foulplay") target else actor
-        val offensiveStat = when {
-            id == "bodypress" -> OffensiveStat.DEFENCE
-            special -> OffensiveStat.SPECIAL_ATTACK
-            else -> OffensiveStat.ATTACK
+        val offensiveStat = (
+            overrideStat(details, "override_offensive_stat") ?: when {
+                id == "bodypress" -> CombatStat.DEFENCE
+                details.damageCategory == BattleMoveDamageCategory.SPECIAL -> CombatStat.SPECIAL_ATTACK
+                else -> CombatStat.ATTACK
+            }
+            ).swapDefencesIfWonderRoom(state)
+        val defensiveStat = (
+            overrideStat(details, "override_defensive_stat") ?: when (details.damageCategory) {
+                BattleMoveDamageCategory.PHYSICAL -> CombatStat.DEFENCE
+                BattleMoveDamageCategory.SPECIAL -> CombatStat.SPECIAL_DEFENCE
+                BattleMoveDamageCategory.STATUS -> return null
+            }
+            ).swapDefencesIfWonderRoom(state)
+        return Resolution(
+            power = power,
+            offensivePokemon = offensivePokemon,
+            offensiveStat = offensiveStat,
+            offensiveStage = offensivePokemon.stage(offensiveStat),
+            defensiveStat = defensiveStat,
+            defensiveStage = target.stage(defensiveStat),
+        )
+    }
+
+    /** True when the public model knows the template value is not the move's resolved damage input. */
+    fun isUnresolvedDynamicDamage(candidate: BattleActionCandidate): Boolean {
+        val id = canonical(candidate.moveId)
+        if (id in PUBLICLY_RESOLVED_DYNAMIC_MOVES) return false
+        if (id in LEGACY_UNRESOLVED_DYNAMIC_MOVES) return true
+        val flags = candidate.moveDetails?.effects?.mechanicFlags.orEmpty()
+        return flags.any { it in DYNAMIC_DAMAGE_FLAGS }
+    }
+
+    private fun overrideStat(details: BattleMoveCandidateView, prefix: String): CombatStat? =
+        details.effects?.mechanicFlags.orEmpty().firstNotNullOfOrNull { flag ->
+            if (!flag.startsWith("$prefix:")) null else when (flag.substringAfter(':')) {
+                "attack" -> CombatStat.ATTACK
+                "defence" -> CombatStat.DEFENCE
+                "special_attack" -> CombatStat.SPECIAL_ATTACK
+                "special_defence" -> CombatStat.SPECIAL_DEFENCE
+                else -> null
+            }
         }
-        val stage = when (offensiveStat) {
-            OffensiveStat.ATTACK -> offensivePokemon.stage("attack", "atk")
-            OffensiveStat.DEFENCE -> offensivePokemon.stage("defence", "defense", "def")
-            OffensiveStat.SPECIAL_ATTACK -> offensivePokemon.stage("special_attack", "specialattack", "spa")
+
+    private fun CombatStat.swapDefencesIfWonderRoom(state: BattleStateView): CombatStat {
+        if (!LocalPublicFieldMechanics.wonderRoomActive(state)) return this
+        return when (this) {
+            CombatStat.DEFENCE -> CombatStat.SPECIAL_DEFENCE
+            CombatStat.SPECIAL_DEFENCE -> CombatStat.DEFENCE
+            else -> this
         }
-        return Resolution(power, offensivePokemon, offensiveStat, stage)
     }
 
     private fun BattlePokemonStateView.positiveBoosts(): Int = statStages.values.sumOf { it.coerceAtLeast(0) }
+
+    private fun BattlePokemonStateView.stage(stat: CombatStat): Int = when (stat) {
+        CombatStat.ATTACK -> stage("attack", "atk")
+        CombatStat.DEFENCE -> stage("defence", "defense", "def")
+        CombatStat.SPECIAL_ATTACK -> stage("special_attack", "specialattack", "spa")
+        CombatStat.SPECIAL_DEFENCE -> stage(
+            "special_defence", "special_defense", "specialdefence", "specialdefense", "spd",
+        )
+    }
 
     private fun BattlePokemonStateView.stage(vararg aliases: String): Int = statStages.entries
         .firstOrNull { (key, _) -> canonical(key) in aliases }
@@ -65,12 +120,21 @@ internal object LocalPublicMoveDamageInputs {
     private val PARALYSIS_STATUSES = setOf("par", "paralysis", "paralyzed", "paralysed")
     private val SLEEP_STATUSES = setOf("slp", "sleep", "asleep")
 
-    /** Public state does not currently carry the input needed to choose one exact power. */
-    private val UNRESOLVED_DYNAMIC_POWER_MOVES = setOf(
-        "assurance", "avalanche", "boltbeak", "crushgrip", "echoedvoice", "electroball",
-        "eruption", "fishiousrend", "flail", "frustration", "furycutter", "gyroball",
+    private val DYNAMIC_DAMAGE_FLAGS = setOf(
+        "dynamic_base_power", "dynamic_move_type", "dynamic_damage_category", "dynamic_damage_value",
+    )
+    private val PUBLICLY_RESOLVED_DYNAMIC_MOVES = setOf(
+        "storedpower", "powertrip", "facade", "hex", "infernalparade", "brine", "venoshock",
+        "barbbarrage", "smellingsalts", "wakeupslap",
+    )
+
+    /** Fallback for synthetic/older candidates that predate declarative callback flags. */
+    private val LEGACY_UNRESOLVED_DYNAMIC_MOVES = setOf(
+        "acrobatics", "assurance", "avalanche", "boltbeak", "crushgrip", "echoedvoice", "electroball",
+        "eruption", "expandingforce", "fishiousrend", "flail", "frustration", "furycutter", "gyroball",
         "heatcrash", "heavyslam", "iceball", "lastrespects", "lowkick", "magnitude", "payback",
-        "present", "punishment", "ragefist", "return", "reversal", "revenge", "rollout",
-        "round", "stompingtantrum", "trumpcard", "waterspout", "wringout",
+        "present", "punishment", "ragefist", "return", "reversal", "revenge", "risingvoltage", "rollout",
+        "round", "shellsidearm", "stompingtantrum", "terrainpulse", "trumpcard", "waterspout",
+        "weatherball", "wringout",
     )
 }

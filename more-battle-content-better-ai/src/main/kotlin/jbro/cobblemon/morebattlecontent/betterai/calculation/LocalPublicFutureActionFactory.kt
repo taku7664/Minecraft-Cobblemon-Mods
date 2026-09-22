@@ -2,6 +2,8 @@ package jbro.cobblemon.morebattlecontent.betterai.calculation
 
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalHypothesisPriorityReservation
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveDamageInputs
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffectiveness
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
@@ -147,6 +149,8 @@ internal object PublicFutureActionFactory {
                         else -> 0.0
                     }
                 }
+            } else if (LocalPublicMoveDamageInputs.isUnresolvedDynamicDamage(action)) {
+                LocalPublicTurnOrder.effectivePriority(state, side, action) * 5.0
             } else {
                 val stab = if (actor.knownTypeIds.any { canonicalId(it) == canonicalId(details.typeId) }) 1.5 else 1.0
                 val explicitTargets = action.targets.mapNotNull { target ->
@@ -240,7 +244,7 @@ internal object PublicFutureActionFactory {
         }
         val trapped = active.actionConstraints.trapped ||
             (history.trappedByPokemon[active.battlePokemonId]?.remainingTurns ?: 0) > 0 ||
-            opposingActive.any { trappedByKnownAbility(active, it) }
+            opposingActive.any { trappedByKnownAbility(state, active, it) }
         val switches = if (trapped || chargingMoveId != null) emptyList() else state.pokemon.filter {
             it.side == side && it.activeSlot == null && !it.fainted && it.hpFraction > 0.0
         }.map { bench ->
@@ -314,13 +318,17 @@ internal object PublicFutureActionFactory {
         tags = setOf("public_lookahead", reason),
     )
 
-    private fun trappedByKnownAbility(active: BattlePokemonStateView, opponent: BattlePokemonStateView): Boolean {
+    private fun trappedByKnownAbility(
+        state: BattleStateView,
+        active: BattlePokemonStateView,
+        opponent: BattlePokemonStateView,
+    ): Boolean {
         if ("ghost" in active.knownTypeIds.map(::canonicalId)) return false
         return when (canonicalId(opponent.knownAbilityId)) {
             "shadowtag" -> canonicalId(active.knownAbilityId) != "shadowtag"
             "arenatrap" -> "flying" !in active.knownTypeIds.map(::canonicalId) &&
                 canonicalId(active.knownAbilityId) != "levitate" &&
-                canonicalId(active.knownHeldItemId) != "airballoon"
+                (LocalPublicFieldMechanics.magicRoomActive(state) || canonicalId(active.knownHeldItemId) != "airballoon")
             "magnetpull" -> "steel" in active.knownTypeIds.map(::canonicalId)
             else -> false
         }

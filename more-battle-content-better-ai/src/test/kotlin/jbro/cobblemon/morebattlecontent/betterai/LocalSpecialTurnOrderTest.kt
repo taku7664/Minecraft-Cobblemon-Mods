@@ -260,6 +260,10 @@ class LocalSpecialTurnOrderTest {
         assertTrue(LocalPublicMechanicsKernel.projectMove(
             sleepPowder, context(state(opponentItem = "safetygoggles"), sleepPowder),
         ).publiclyNullified)
+        assertFalse(LocalPublicMechanicsKernel.projectMove(
+            sleepPowder,
+            context(state(opponentItem = "safetygoggles", room = "magicroom"), sleepPowder),
+        ).publiclyNullified)
     }
 
     @Test
@@ -272,6 +276,53 @@ class LocalSpecialTurnOrderTest {
         )
 
         assertTrue(galeWings > ordinary)
+    }
+
+    @Test
+    fun `weather speed abilities reverse again under trick room and respect weather suppression`() {
+        val attack = move("surf", "water", BattleMoveDamageCategory.SPECIAL)
+        val rain = state(allyAbility = "swiftswim", weather = "raindance")
+
+        assertEquals(1.0, LocalPublicTurnOrder.actsFirstProbability(
+            rain, BattleSide.ALLY, attack, BattleSide.OPPONENT, attack,
+        ))
+        assertEquals(0.0, LocalPublicTurnOrder.actsFirstProbability(
+            state(allyAbility = "swiftswim", weather = "raindance", room = "trickroom"),
+            BattleSide.ALLY, attack, BattleSide.OPPONENT, attack,
+        ))
+        assertEquals(0.0, LocalPublicTurnOrder.actsFirstProbability(
+            state(allyAbility = "swiftswim", opponentAbility = "cloudnine", weather = "raindance"),
+            BattleSide.ALLY, attack, BattleSide.OPPONENT, attack,
+        ))
+        listOf(
+            Triple("chlorophyll", "sunnyday", null),
+            Triple("sandrush", "sandstorm", null),
+            Triple("slushrush", "snow", null),
+            Triple("surgesurfer", null, "electricterrain"),
+        ).forEach { (ability, weather, terrain) ->
+            val fieldState = state(allyAbility = ability, weather = weather, terrain = terrain)
+            val ally = fieldState.pokemon.first { it.side == BattleSide.ALLY }
+            assertEquals(160 to 160, LocalPublicTurnOrder.effectiveSpeed(fieldState, ally), ability)
+        }
+    }
+
+    @Test
+    fun `magic room suppresses item based order and grounding`() {
+        val attack = move("tackle", "normal", BattleMoveDamageCategory.PHYSICAL)
+        val magic = state(allyItem = "quickclaw", room = "magicroom")
+
+        assertEquals(0.0, LocalPublicTurnOrder.fractionalPriorityChance(magic, BattleSide.ALLY, attack))
+        assertFalse(LocalPublicTurnOrder.alwaysLastWithinPriority(
+            state(allyItem = "laggingtail", room = "magicroom"), BattleSide.ALLY, attack,
+        ))
+        val balloon = state(allyItem = "airballoon")
+        assertFalse(LocalPublicTurnOrder.grounded(
+            balloon, balloon.pokemon.first { it.side == BattleSide.ALLY },
+        ))
+        val balloonInMagic = state(allyItem = "airballoon", room = "magicroom")
+        assertTrue(LocalPublicTurnOrder.grounded(
+            balloonInMagic, balloonInMagic.pokemon.first { it.side == BattleSide.ALLY },
+        ))
     }
 
     private fun effects(kind: BattleMoveEffectKind) = BattleMoveEffectsView(
@@ -336,6 +387,7 @@ class LocalSpecialTurnOrderTest {
         opponentTypes: Set<String> = setOf("normal"),
         terrain: String? = null,
         room: String? = null,
+        weather: String? = null,
     ) = BattleStateView(
         battleId = UUID.randomUUID(),
         format = BattleFormat.SINGLE,
@@ -345,7 +397,7 @@ class LocalSpecialTurnOrderTest {
             mon(BattleSide.OPPONENT, opponentAbility, opponentItem, 1.0, opponentTypes, 120),
         ),
         field = BattleFieldStateView(
-            weather = null,
+            weather = weather?.let { BattleTimedEffectView(it, 3) },
             terrain = terrain?.let { BattleTimedEffectView(it, 3) },
             roomEffects = room?.let { listOf(BattleTimedEffectView(it, 3)) }.orEmpty(),
             globalEffects = emptyList(),

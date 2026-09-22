@@ -21,6 +21,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
 import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveDamageInputs
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionSelector
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalWeightedActionSelector
 import kotlin.math.roundToInt
@@ -265,7 +266,7 @@ class LocalTacticalVirtualBattleTest {
                         targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
                     ),
                 )
-            }
+            }.filterNot(LocalPublicMoveDamageInputs::isUnresolvedDynamicDamage)
             return moves + switches
         }
 

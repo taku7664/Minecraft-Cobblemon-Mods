@@ -26,7 +26,9 @@ internal object LocalContactAfterHitMechanics {
             ?: return listOf(LocalContactAfterHitBranch(state, 1.0))
         val indirectImmune = canonical(actor.knownAbilityId) == "magicguard"
         val contactDamage = if (indirectImmune) 0.0 else {
-            (if (canonical(target.knownHeldItemId) == "rockyhelmet") 1.0 / 6.0 else 0.0) +
+            (if (!LocalPublicFieldMechanics.magicRoomActive(state) &&
+                canonical(target.knownHeldItemId) == "rockyhelmet"
+            ) 1.0 / 6.0 else 0.0) +
                 (if (canonical(target.knownAbilityId) in CONTACT_DAMAGE_ABILITIES) 1.0 / 8.0 else 0.0)
         }
         val damaged = if (contactDamage > 0.0) {

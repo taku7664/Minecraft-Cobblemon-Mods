@@ -1485,7 +1485,7 @@ internal object PublicSingleTurnProjector {
         val actor = state.pokemon.firstOrNull {
             it.side == ordered.side && it.activeSlot == ordered.action.actorSlot && !it.fainted && it.hpFraction > 0.0
         } ?: return null
-        val speed = actor.combatStats?.speed?.let { LocalKnownStatMechanics.speed(it, actor) } ?: return null
+        val speed = actor.combatStats?.speed?.let { LocalKnownStatMechanics.speed(it, actor, state) } ?: return null
         val stage = actor.statStages.entries.firstOrNull {
             canonicalId(it.key) in SPEED_ALIASES
         }?.value?.coerceIn(-6, 6) ?: 0

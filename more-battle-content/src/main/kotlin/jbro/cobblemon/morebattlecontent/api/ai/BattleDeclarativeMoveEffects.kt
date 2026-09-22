@@ -185,8 +185,35 @@ object BattleDeclarativeMoveEffects {
                 addAll(flags.filterValues(::flagEnabled).keys)
                 if (usesSharedStallCheck) add(STALLING_MOVE_FLAG)
                 if (advancesSharedStallCounter) add(STALL_COUNTER_ADVANCE_FLAG)
+                canonicalStat(properties["overrideDefensiveStat"])?.let {
+                    add("override_defensive_stat:$it")
+                }
+                canonicalStat(properties["overrideOffensiveStat"])?.let {
+                    add("override_offensive_stat:$it")
+                }
+                if (properties["basePowerCallback"] != null || properties["onBasePower"] != null ||
+                    callbackAssigns(properties, "basePower")
+                ) add("dynamic_base_power")
+                if (properties["onModifyType"] != null || callbackAssigns(properties, "type")) {
+                    add("dynamic_move_type")
+                }
+                if (callbackAssigns(properties, "category")) add("dynamic_damage_category")
+                if (properties["damageCallback"] != null) add("dynamic_damage_value")
             },
         )
+    }
+
+    private fun callbackAssigns(properties: Map<String, String>, field: String): Boolean =
+        properties.asSequence()
+            .filter { (key, _) -> key.startsWith("on") || key.endsWith("Callback") }
+            .any { (_, value) -> Regex("""\b(?:move\.)?$field\b""").containsMatchIn(value) }
+
+    private fun canonicalStat(raw: String?): String? = when (stringValue(raw)) {
+        "atk", "attack" -> "attack"
+        "def", "defense", "defence" -> "defence"
+        "spa", "specialattack" -> "special_attack"
+        "spd", "specialdefense", "specialdefence" -> "special_defence"
+        else -> null
     }
 
     private fun addBooleanEffect(

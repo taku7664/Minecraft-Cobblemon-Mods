@@ -63,7 +63,7 @@ internal object PublicBattleTacticalCalculator {
         val mechanics = LocalPublicMechanicsKernel.projectMove(candidate, context, actingSide)
         declaredDamageRollFractions(candidate, actor, target, mechanics)?.let { return it }
         val projection =
-            standardDamageProjection(candidate, details, actor, target, stab, typeMultiplier, spreadMultiplier)
+            standardDamageProjection(candidate, details, actor, target, stab, typeMultiplier, context.state, spreadMultiplier)
                 ?: return null
         val maxHp = target?.combatStats?.maxHp ?: return null
         val (rolls, denominator) = if (actingSide == BattleSide.ALLY) {
@@ -72,7 +72,7 @@ internal object PublicBattleTacticalCalculator {
             projection.maximumHypothesisRolls to maxHp.minimum
         }
         val hitCount = if (LocalDeclaredMultiHit.usesPerHitAccuracy(candidate)) 1 else {
-            LocalDeclaredMultiHit.representativeCount(candidate, actor)
+            LocalDeclaredMultiHit.representativeCount(candidate, actor, context.state)
         }
         return rolls.map { damage ->
             (damage.toDouble() / denominator * hitCount * mechanics.knownDamageMultiplier)
@@ -148,7 +148,7 @@ internal object PublicBattleTacticalCalculator {
                 }
             }
             val entryHpLoss = target?.let {
-                PublicSwitchEntryHazardCalculator.hpLoss(context.state.field, actingSide, it)
+                PublicSwitchEntryHazardCalculator.hpLoss(context.state, actingSide, it)
             }
             return BattleCandidateFactsView(
                 switchEntryHpLossFraction = entryHpLoss,
@@ -193,7 +193,7 @@ internal object PublicBattleTacticalCalculator {
             if (typeMultiplier == null) unknowns += BattleCalculationUnknown.TARGET_TYPES
         }
         val rawProjection =
-            standardDamageProjection(candidate, details, actor, target, stab, typeMultiplier, spreadMultiplier)
+            standardDamageProjection(candidate, details, actor, target, stab, typeMultiplier, context.state, spreadMultiplier)
         // A Focus Sash or Sturdy at full health turns a knockout the rolls call guaranteed into a
         // survivor on one health. The projector has always known that; the facts the ranking is built
         // from did not, so the layer that decides was the one working from the wrong premise. A move
@@ -260,7 +260,7 @@ internal object PublicBattleTacticalCalculator {
             calculationCoverage = BattleCalculationCoverage.PARTIAL,
             unknowns = unknowns,
             basis = basis,
-            spreadTargets = spreadTargetFacts(candidate, details, actor, stab, targets, spreadMultiplier),
+            spreadTargets = spreadTargetFacts(candidate, details, actor, stab, targets, context.state, spreadMultiplier),
         )
     }
 
@@ -276,6 +276,7 @@ internal object PublicBattleTacticalCalculator {
         actor: BattlePokemonStateView?,
         stab: Double?,
         targets: List<BattlePokemonStateView>,
+        state: BattleStateView,
         spreadMultiplier: Double,
     ): List<BattleSpreadTargetFactsView> {
         if (targets.size < 2) return emptyList()
@@ -284,7 +285,7 @@ internal object PublicBattleTacticalCalculator {
             val typeMultiplier = each.knownTypeIds.takeIf { it.isNotEmpty() }
                 ?.let { publicTypeMultiplier(details, each) }
             val projection =
-                standardDamageProjection(candidate, details, actor, each, stab, typeMultiplier, spreadMultiplier)
+                standardDamageProjection(candidate, details, actor, each, stab, typeMultiplier, state, spreadMultiplier)
             BattleSpreadTargetFactsView(
                 side = each.side,
                 slot = slot,
@@ -303,6 +304,7 @@ internal object PublicBattleTacticalCalculator {
         target: BattlePokemonStateView?,
         stab: Double?,
         typeMultiplier: Double?,
+        state: BattleStateView,
         spreadMultiplier: Double = 1.0,
     ): ShowdownStandardDamageProjectionResult? {
         if (details.damageCategory == BattleMoveDamageCategory.STATUS || isDelayedSlotDamage(details)) return null
@@ -336,11 +338,10 @@ internal object PublicBattleTacticalCalculator {
         val actorStats = mechanicStats ?: actor.combatStats ?: return null
         val targetStats = target?.combatStats ?: return null
         val moveInputs = LocalPublicMoveDamageInputs.resolve(
-            candidate.moveId,
-            details.power,
+            candidate,
             actor,
             target,
-            details.damageCategory == BattleMoveDamageCategory.SPECIAL,
+            state,
         ) ?: return null
         val effectivePower = LocalKnownStatMechanics.effectivePower(moveInputs.power, actor)
         val knownStab = stab ?: return null
@@ -351,29 +352,25 @@ internal object PublicBattleTacticalCalculator {
             targetStats
         }
         val attack = when (moveInputs.offensiveStat) {
-            LocalPublicMoveDamageInputs.OffensiveStat.ATTACK ->
+            LocalPublicMoveDamageInputs.CombatStat.ATTACK ->
                 offensiveStats.attack
-            LocalPublicMoveDamageInputs.OffensiveStat.DEFENCE ->
+            LocalPublicMoveDamageInputs.CombatStat.DEFENCE ->
                 offensiveStats.defence
-            LocalPublicMoveDamageInputs.OffensiveStat.SPECIAL_ATTACK ->
+            LocalPublicMoveDamageInputs.CombatStat.SPECIAL_ATTACK ->
                 offensiveStats.specialAttack
+            LocalPublicMoveDamageInputs.CombatStat.SPECIAL_DEFENCE ->
+                offensiveStats.specialDefence
         }
-        val defence = when (details.damageCategory) {
-            BattleMoveDamageCategory.PHYSICAL -> targetStats.defence
-            BattleMoveDamageCategory.SPECIAL -> targetStats.specialDefence
-            BattleMoveDamageCategory.STATUS -> return null
+        val defence = when (moveInputs.defensiveStat) {
+            LocalPublicMoveDamageInputs.CombatStat.DEFENCE -> targetStats.defence
+            LocalPublicMoveDamageInputs.CombatStat.SPECIAL_DEFENCE -> targetStats.specialDefence
+            else -> return null
         }
         val effects = details.effects?.effects.orEmpty()
         val guaranteedCritical = effects.any { it.kind == BattleMoveEffectKind.ALWAYS_CRITICAL }
         val stealsStages = effects.any { it.kind == BattleMoveEffectKind.STEALS_STAT_STAGES }
         val attackStage = moveInputs.offensiveStage
-        val defenceStage = when (details.damageCategory) {
-            BattleMoveDamageCategory.PHYSICAL -> target.stage("defence", "defense", "def")
-            BattleMoveDamageCategory.SPECIAL -> target.stage(
-                "special_defence", "special_defense", "specialdefence", "specialdefense", "spd",
-            )
-            BattleMoveDamageCategory.STATUS -> 0
-        }
+        val defenceStage = moveInputs.defensiveStage
         val stolenAttackStage = if (stealsStages) {
             when (details.damageCategory) {
                 BattleMoveDamageCategory.PHYSICAL -> target.stage("attack", "atk").coerceAtLeast(0)
@@ -393,11 +390,12 @@ internal object PublicBattleTacticalCalculator {
         return ShowdownStandardDamageProjection.project(
             level = level,
             power = effectivePower,
-            attack = publicOffensiveStat(stagedAttack, candidate.moveId, details, actor, moveInputs),
+            attack = publicOffensiveStat(stagedAttack, candidate.moveId, details, actor, moveInputs, state),
             defence = LocalKnownStatMechanics.defence(
                 applyStage(defence, effectiveDefenceStage),
-                details.damageCategory,
+                moveInputs.defensiveStat,
                 target,
+                state,
             ),
             targetMaxHp = targetStats.maxHp,
             targetHpFraction = target.hpFraction,
@@ -409,7 +407,7 @@ internal object PublicBattleTacticalCalculator {
             spreadMultiplier = spreadMultiplier,
             // Life Orb and Expert Belt scale the finished damage rather than a stat, so they arrive
             // here alongside the spread reduction instead of inside the attack range.
-            itemDamageMultiplier = LocalKnownStatMechanics.damageMultiplier(actor, knownTypeMultiplier),
+            itemDamageMultiplier = LocalKnownStatMechanics.damageMultiplier(actor, knownTypeMultiplier, state),
         )
     }
 
@@ -520,7 +518,7 @@ internal object PublicBattleTacticalCalculator {
         if (category != BattleMoveDamageCategory.PHYSICAL) return attack
         val status = canonical(actor.statusId)
         val ability = canonical(actor.knownAbilityId)
-        val usesActorsAttack = inputs.offensiveStat == LocalPublicMoveDamageInputs.OffensiveStat.ATTACK &&
+        val usesActorsAttack = inputs.offensiveStat == LocalPublicMoveDamageInputs.CombatStat.ATTACK &&
             inputs.offensivePokemon.battlePokemonId == actor.battlePokemonId
         val multiplier = when {
             status != null && ability == "guts" && usesActorsAttack -> 1.5
@@ -541,10 +539,23 @@ internal object PublicBattleTacticalCalculator {
         details: BattleMoveCandidateView,
         actor: BattlePokemonStateView,
         inputs: LocalPublicMoveDamageInputs.Resolution,
+        state: BattleStateView,
     ): BattleIntegerRange {
         val statusModified = publicStatusModifiedAttack(value, moveId, details.damageCategory, actor, inputs)
-        if (inputs.offensiveStat == LocalPublicMoveDamageInputs.OffensiveStat.DEFENCE) return statusModified
-        return LocalKnownStatMechanics.attack(statusModified, details.damageCategory, inputs.offensivePokemon)
+        if (inputs.offensiveStat in DEFENSIVE_OFFENSIVE_STATS) {
+            return LocalKnownStatMechanics.offensiveDefence(
+                statusModified,
+                inputs.offensiveStat,
+                inputs.offensivePokemon,
+                state,
+            )
+        }
+        return LocalKnownStatMechanics.attack(
+            statusModified,
+            details.damageCategory,
+            inputs.offensivePokemon,
+            state,
+        )
     }
 
     private fun canonical(value: String?): String? = value
@@ -570,6 +581,10 @@ internal object PublicBattleTacticalCalculator {
     }.coerceAtLeast(1)
 
     private val BURN_STATUS_IDS = setOf("brn", "burn", "burned", "burnt")
+    private val DEFENSIVE_OFFENSIVE_STATS = setOf(
+        LocalPublicMoveDamageInputs.CombatStat.DEFENCE,
+        LocalPublicMoveDamageInputs.CombatStat.SPECIAL_DEFENCE,
+    )
 
     /** HP of the same primary defender used by standardDamageFractionRange, including redirection. */
     fun primaryTargetHpFraction(

@@ -176,6 +176,30 @@ class Cobblemon173ShowdownMoveEffectsTest {
     }
 
     @Test
+    fun `damage callback families are exposed without executing showdown scripts`() {
+        listOf("psyshock", "psystrike", "secretsword").forEach { moveId ->
+            assertTrue(
+                "override_defensive_stat:defence" in
+                    requireNotNull(Cobblemon173ShowdownMoveEffects.resolve(moveId)).mechanicFlags,
+                moveId,
+            )
+        }
+        listOf("ragefist", "weatherball", "acrobatics", "risingvoltage", "expandingforce").forEach { moveId ->
+            assertTrue(
+                "dynamic_base_power" in requireNotNull(Cobblemon173ShowdownMoveEffects.resolve(moveId)).mechanicFlags,
+                moveId,
+            )
+        }
+        assertTrue(
+            "dynamic_move_type" in requireNotNull(Cobblemon173ShowdownMoveEffects.resolve("weatherball")).mechanicFlags,
+        )
+        assertTrue(
+            "dynamic_damage_category" in
+                requireNotNull(Cobblemon173ShowdownMoveEffects.resolve("shellsidearm")).mechanicFlags,
+        )
+    }
+
+    @Test
     fun `simple showdown mechanic flags are not silently discarded`() {
         val cases = mapOf(
             "fissure" to BattleMoveEffectKind.ONE_HIT_KO,

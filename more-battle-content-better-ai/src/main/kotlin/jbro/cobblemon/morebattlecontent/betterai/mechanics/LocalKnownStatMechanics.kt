@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai.mechanics
 import jbro.cobblemon.morebattlecontent.api.ai.BattleIntegerRange
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 
 /** Applies deterministic power and stat modifiers whose item or ability is public. */
 internal object LocalKnownStatMechanics {
@@ -28,7 +29,11 @@ internal object LocalKnownStatMechanics {
         value: BattleIntegerRange,
         category: BattleMoveDamageCategory,
         actor: BattlePokemonStateView,
-    ): BattleIntegerRange = scale(value, attackMultiplier(category, actor))
+        state: BattleStateView,
+    ): BattleIntegerRange = scale(
+        value,
+        if (LocalPublicFieldMechanics.magicRoomActive(state)) 1.0 else attackMultiplier(category, actor),
+    )
 
     private fun attackMultiplier(
         category: BattleMoveDamageCategory,
@@ -42,16 +47,29 @@ internal object LocalKnownStatMechanics {
 
     fun defence(
         value: BattleIntegerRange,
-        category: BattleMoveDamageCategory,
+        stat: LocalPublicMoveDamageInputs.CombatStat,
         target: BattlePokemonStateView,
-    ): BattleIntegerRange = scale(value, defenceMultiplier(category, target))
+        state: BattleStateView,
+    ): BattleIntegerRange = scale(
+        value,
+        if (LocalPublicFieldMechanics.magicRoomActive(state)) 1.0 else defenceMultiplier(stat, target),
+    )
+
+    fun offensiveDefence(
+        value: BattleIntegerRange,
+        stat: LocalPublicMoveDamageInputs.CombatStat,
+        pokemon: BattlePokemonStateView,
+        state: BattleStateView,
+    ): BattleIntegerRange = defence(value, stat, pokemon, state)
 
     private fun defenceMultiplier(
-        category: BattleMoveDamageCategory,
+        stat: LocalPublicMoveDamageInputs.CombatStat,
         target: BattlePokemonStateView,
     ): Double {
         val item = canonical(target.knownHeldItemId)
-        val vest = if (category == BattleMoveDamageCategory.SPECIAL && item == "assaultvest") 1.5 else 1.0
+        val vest = if (
+            stat == LocalPublicMoveDamageInputs.CombatStat.SPECIAL_DEFENCE && item == "assaultvest"
+        ) 1.5 else 1.0
         // Eviolite needs to know the holder can still evolve, which the public state does not say. It
         // is left out rather than guessed: over-stating a defence makes the AI decline attacks that
         // would have worked, which is the more damaging way to be wrong.
@@ -64,7 +82,11 @@ internal object LocalKnownStatMechanics {
      * Life Orb and Expert Belt scale the finished damage rather than a stat, so they are returned
      * separately and applied where the projection lands.
      */
-    fun damageMultiplier(actor: BattlePokemonStateView, typeChartMultiplier: Double?): Double =
+    fun damageMultiplier(
+        actor: BattlePokemonStateView,
+        typeChartMultiplier: Double?,
+        state: BattleStateView,
+    ): Double = if (LocalPublicFieldMechanics.magicRoomActive(state)) 1.0 else
         when (canonical(actor.knownHeldItemId)) {
             "lifeorb" -> 1.3
             "expertbelt" -> if ((typeChartMultiplier ?: 1.0) > 1.0) 1.2 else 1.0
@@ -72,8 +94,16 @@ internal object LocalKnownStatMechanics {
         }
 
     /** Speed after a Choice Scarf, which is public once the item has been seen. */
-    fun speed(value: BattleIntegerRange, pokemon: BattlePokemonStateView): BattleIntegerRange =
-        scale(value, if (canonical(pokemon.knownHeldItemId) == "choicescarf") 1.5 else 1.0)
+    fun speed(
+        value: BattleIntegerRange,
+        pokemon: BattlePokemonStateView,
+        state: BattleStateView,
+    ): BattleIntegerRange = scale(
+        value,
+        if (!LocalPublicFieldMechanics.magicRoomActive(state) &&
+            canonical(pokemon.knownHeldItemId) == "choicescarf"
+        ) 1.5 else 1.0,
+    )
 
     private fun scale(value: BattleIntegerRange, multiplier: Double) = BattleIntegerRange(
         minimum = (value.minimum * multiplier).toInt().coerceAtLeast(1),

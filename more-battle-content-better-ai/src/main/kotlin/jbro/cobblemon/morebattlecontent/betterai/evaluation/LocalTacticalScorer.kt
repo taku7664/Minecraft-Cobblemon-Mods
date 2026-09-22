@@ -16,6 +16,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyBrief
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyObjective
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveDamageInputs
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalRiskAttitude
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffectiveness
@@ -245,6 +246,7 @@ internal object LocalTacticalScorer {
         facts: BattleCandidateFactsView?,
         tuning: LocalDecisionTuning,
     ): Double {
+        if (LocalPublicMoveDamageInputs.isUnresolvedDynamicDamage(candidate)) return 0.0
         val sameTypeBonus = facts?.baseSameTypeAttackBonus ?: publicSameTypeBonus(candidate, context)
         val typeMultiplier = facts?.typeChartMultiplier ?: publicTypeMultiplier(candidate, context)
         if (tuning.legacyRawPowerFallback) {

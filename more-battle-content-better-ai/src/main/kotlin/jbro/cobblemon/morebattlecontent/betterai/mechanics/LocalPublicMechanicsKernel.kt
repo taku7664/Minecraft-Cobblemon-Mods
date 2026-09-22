@@ -50,7 +50,9 @@ internal object LocalPublicMechanicsKernel {
             return projectStatusMove(candidate, details, context, actingSide, ignoresAbility)
         }
         val moveType = canonical(details.typeId)
-        val actorItem = canonicalOrNull(actor?.knownHeldItemId)
+        val actorItem = actor?.knownHeldItemId
+            ?.takeUnless { LocalPublicFieldMechanics.magicRoomActive(context.state) }
+            ?.let(::canonicalOrNull)
         val targetAbility = publicAbility(target, context)
         val ignoresTypeImmunity = details.effects?.effects.orEmpty().any {
             it.kind == BattleMoveEffectKind.IGNORE_TYPE_IMMUNITY
@@ -125,7 +127,9 @@ internal object LocalPublicMechanicsKernel {
         }
         if (POWDER_FLAG !in details.effects?.mechanicFlags.orEmpty()) return false
         val ability = publicAbility(target, context)
-        val item = canonicalOrNull(target.knownHeldItemId)
+        val item = target.knownHeldItemId
+            ?.takeUnless { LocalPublicFieldMechanics.magicRoomActive(context.state) }
+            ?.let(::canonicalOrNull)
         return GRASS in types || item == SAFETY_GOGGLES || !ignoresAbility && ability == OVERCOAT
     }
 
@@ -212,8 +216,8 @@ internal object LocalPublicMechanicsKernel {
         actorItem: String?,
         context: BattleDecisionContext,
     ): Double {
-        if (actorItem == UTILITY_UMBRELLA || weatherSuppressed(context)) return 1.0
-        return when (canonicalOrNull(context.state.field.weather?.effectId)) {
+        if (actorItem == UTILITY_UMBRELLA) return 1.0
+        return when (LocalPublicFieldMechanics.effectiveWeatherId(context.state)) {
             in HEAVY_RAIN_WEATHER -> when (moveType) {
                 WATER -> 1.5
                 FIRE -> 0.0
@@ -236,10 +240,6 @@ internal object LocalPublicMechanicsKernel {
             }
             else -> 1.0
         }
-    }
-
-    private fun weatherSuppressed(context: BattleDecisionContext): Boolean = context.state.pokemon.any {
-        it.activeSlot != null && !it.fainted && canonicalOrNull(it.knownAbilityId) in WEATHER_SUPPRESSION_ABILITIES
     }
 
     private fun screenDamageMultiplier(
@@ -335,7 +335,6 @@ internal object LocalPublicMechanicsKernel {
         BattleMoveTargetPattern.ALL_ADJACENT,
     )
     private val TARGET_ALL_PRIORITY_BLOCK_EXCEPTIONS = setOf("perishsong", "flowershield", "rototiller")
-    private val WEATHER_SUPPRESSION_ABILITIES = setOf("airlock", "cloudnine")
     private val RAIN_WEATHER = setOf("rain", "raindance")
     private val SUN_WEATHER = setOf("sun", "sunnyday")
     private val HEAVY_RAIN_WEATHER = setOf("heavyrain", "primordialsea")

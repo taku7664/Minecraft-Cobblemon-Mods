@@ -56,7 +56,9 @@ internal object LocalPublicTurnOrder {
             if (canonical(actor.knownAbilityId.orEmpty()) == QUICK_DRAW &&
                 action.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS
             ) add(QUICK_DRAW_CHANCE)
-            if (canonical(actor.knownHeldItemId.orEmpty()) == QUICK_CLAW) add(QUICK_CLAW_CHANCE)
+            if (!LocalPublicFieldMechanics.magicRoomActive(state) &&
+                canonical(actor.knownHeldItemId.orEmpty()) == QUICK_CLAW
+            ) add(QUICK_CLAW_CHANCE)
         }
         return 1.0 - chances.fold(1.0) { none, chance -> none * (1.0 - chance) }
     }
@@ -71,7 +73,7 @@ internal object LocalPublicTurnOrder {
         val item = canonical(actor.knownHeldItemId.orEmpty())
         return ability == STALL ||
             ability == MYCELIUM_MIGHT && action.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS ||
-            item in ALWAYS_LAST_ITEMS
+            !LocalPublicFieldMechanics.magicRoomActive(state) && item in ALWAYS_LAST_ITEMS
     }
 
     /** Action-aware ordering used by recursive turn projection. */
@@ -153,10 +155,22 @@ internal object LocalPublicTurnOrder {
     }
 
     fun effectiveSpeed(state: BattleStateView, pokemon: BattlePokemonStateView): Pair<Int, Int>? {
-        val speed = pokemon.combatStats?.speed?.let { LocalKnownStatMechanics.speed(it, pokemon) } ?: return null
+        val speed = pokemon.combatStats?.speed?.let { LocalKnownStatMechanics.speed(it, pokemon, state) } ?: return null
         val stage = pokemon.statStages.entries
             .firstOrNull { canonical(it.key) in SPEED_ALIASES }?.value?.coerceIn(-6, 6) ?: 0
-        val paralysis = if (canonical(pokemon.statusId.orEmpty()) in PARALYSIS_IDS) 0.5 else 1.0
+        val ability = canonical(pokemon.knownAbilityId.orEmpty())
+        val statused = pokemon.statusId != null
+        val paralysis = if (canonical(pokemon.statusId.orEmpty()) in PARALYSIS_IDS && ability != QUICK_FEET) 0.5 else 1.0
+        val weather = LocalPublicFieldMechanics.effectiveWeatherId(state)
+        val abilityMultiplier = when {
+            ability == QUICK_FEET && statused -> 1.5
+            ability == SWIFT_SWIM && weather in RAIN_WEATHERS -> 2.0
+            ability == CHLOROPHYLL && weather in SUN_WEATHERS -> 2.0
+            ability == SAND_RUSH && weather == SANDSTORM -> 2.0
+            ability == SLUSH_RUSH && weather in SNOW_WEATHERS -> 2.0
+            ability == SURGE_SURFER && LocalPublicFieldMechanics.terrainId(state) == ELECTRIC_TERRAIN -> 2.0
+            else -> 1.0
+        }
         val tailwind = if (
             state.field.sideConditions.getValue(pokemon.side).any {
                 val remaining = it.remainingTurns
@@ -167,7 +181,7 @@ internal object LocalPublicTurnOrder {
         } else {
             1.0
         }
-        val multiplier = paralysis * tailwind
+        val multiplier = paralysis * abilityMultiplier * tailwind
         return (applyStage(speed.minimum, stage) * multiplier).toInt().coerceAtLeast(1) to
             (applyStage(speed.maximum, stage) * multiplier).toInt().coerceAtLeast(1)
     }
@@ -175,10 +189,11 @@ internal object LocalPublicTurnOrder {
     fun grounded(state: BattleStateView, pokemon: BattlePokemonStateView): Boolean {
         val volatiles = pokemon.knownVolatileEffectIds.mapTo(hashSetOf(), ::canonical)
         if (gravityActive(state) || volatiles.any { it in FORCED_GROUNDED_VOLATILES }) return true
-        if (canonical(pokemon.knownHeldItemId.orEmpty()) == IRON_BALL) return true
+        val itemsActive = !LocalPublicFieldMechanics.magicRoomActive(state)
+        if (itemsActive && canonical(pokemon.knownHeldItemId.orEmpty()) == IRON_BALL) return true
         if (pokemon.knownTypeIds.any { canonical(it) == FLYING }) return false
         if (canonical(pokemon.knownAbilityId.orEmpty()) == LEVITATE) return false
-        if (canonical(pokemon.knownHeldItemId.orEmpty()) == AIR_BALLOON) return false
+        if (itemsActive && canonical(pokemon.knownHeldItemId.orEmpty()) == AIR_BALLOON) return false
         return true
     }
 
@@ -200,12 +215,7 @@ internal object LocalPublicTurnOrder {
         val firstSpeed = effectiveSpeed(state, first) ?: return null
         val secondSpeed = effectiveSpeed(state, second) ?: return null
         val faster = uniformGreaterProbability(firstSpeed, secondSpeed)
-        return if (trickRoomActive(state)) 1.0 - faster else faster
-    }
-
-    private fun trickRoomActive(state: BattleStateView): Boolean = state.field.roomEffects.any {
-        val remaining = it.remainingTurns
-        canonical(it.effectId) == TRICK_ROOM && (remaining == null || remaining > 0)
+        return if (LocalPublicFieldMechanics.trickRoomActive(state)) 1.0 - faster else faster
     }
 
     private fun grassyTerrainActive(state: BattleStateView): Boolean =
@@ -230,7 +240,6 @@ internal object LocalPublicTurnOrder {
         value.substringAfter(':').lowercase().filter { it.isLetterOrDigit() }
 
     private const val TAILWIND = "tailwind"
-    private const val TRICK_ROOM = "trickroom"
     private const val PRANKSTER = "prankster"
     private const val GALE_WINGS = "galewings"
     private const val TRIAGE = "triage"
@@ -245,10 +254,21 @@ internal object LocalPublicTurnOrder {
     private const val IRON_BALL = "ironball"
     private const val AIR_BALLOON = "airballoon"
     private const val LEVITATE = "levitate"
+    private const val SWIFT_SWIM = "swiftswim"
+    private const val CHLOROPHYLL = "chlorophyll"
+    private const val SAND_RUSH = "sandrush"
+    private const val SLUSH_RUSH = "slushrush"
+    private const val SURGE_SURFER = "surgesurfer"
+    private const val QUICK_FEET = "quickfeet"
+    private const val SANDSTORM = "sandstorm"
+    private const val ELECTRIC_TERRAIN = "electricterrain"
     private const val QUICK_DRAW_CHANCE = 0.3
     private const val QUICK_CLAW_CHANCE = 0.2
     private val ALWAYS_LAST_ITEMS = setOf("laggingtail", "fullincense")
     private val FORCED_GROUNDED_VOLATILES = setOf("ingrain", "smackdown", "thousandarrows")
     private val SPEED_ALIASES = setOf("speed", "spe")
     private val PARALYSIS_IDS = setOf("par", "paralysis", "paralyzed", "paralysed")
+    private val RAIN_WEATHERS = setOf("raindance", "rain", "primordialsea", "heavyrain")
+    private val SUN_WEATHERS = setOf("sunnyday", "sun", "desolateland", "harshsunshine")
+    private val SNOW_WEATHERS = setOf("hail", "snow", "snowscape")
 }

@@ -83,7 +83,7 @@ internal object LocalRootDecisionPolicy {
 
             val vetoes = linkedSetOf<LocalSwitchVetoReason>()
             val reentryLoss = PublicSwitchEntryHazardCalculator.hpLoss(
-                context.state.field,
+                context.state,
                 BattleSide.ALLY,
                 active,
             )
