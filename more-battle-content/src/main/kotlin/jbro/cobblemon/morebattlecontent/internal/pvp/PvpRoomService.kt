@@ -56,7 +56,13 @@ internal data class PvpRoomView(
             leftPlayerId?.let(::add)
             rightPlayerId?.let(::add)
             addAll(spectatorIds)
-        }
+    }
+}
+
+internal fun PvpRoomView.leaveRequestError(playerId: UUID): PvpRoomError? = when {
+    playerId !in memberIds -> PvpRoomError.NOT_MEMBER
+    phase != PvpRoomPhase.LOBBY && playerId !in spectatorIds -> PvpRoomError.INVALID_PHASE
+    else -> null
 }
 
 internal enum class PvpRoomError {

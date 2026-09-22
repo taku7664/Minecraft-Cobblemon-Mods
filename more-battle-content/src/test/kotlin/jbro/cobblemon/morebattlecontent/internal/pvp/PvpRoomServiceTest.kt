@@ -77,6 +77,26 @@ class PvpRoomServiceTest {
     }
 
     @Test
+    fun `only spectators can request leave after team preview starts`() {
+        val rooms = PvpRoomService { roomId }
+        rooms.create(host, settings(PvpRoomVisibility.PUBLIC))
+        rooms.join(roomId, guest)
+        rooms.join(roomId, spectator)
+        rooms.claimSeat(roomId, host, PvpRoomSide.LEFT)
+        rooms.claimSeat(roomId, guest, PvpRoomSide.RIGHT)
+        rooms.startPreview(roomId, host)
+        val preview = requireNotNull(rooms.get(roomId))
+
+        assertEquals(PvpRoomError.INVALID_PHASE, preview.leaveRequestError(host))
+        assertNull(preview.leaveRequestError(spectator))
+
+        rooms.markActive(roomId)
+        val active = requireNotNull(rooms.get(roomId))
+        assertEquals(PvpRoomError.INVALID_PHASE, active.leaveRequestError(guest))
+        assertNull(active.leaveRequestError(spectator))
+    }
+
+    @Test
     fun `disconnect releases an active spectator room index so they can rejoin`() {
         val rooms = PvpRoomService { roomId }
         rooms.create(host, settings(PvpRoomVisibility.PUBLIC))

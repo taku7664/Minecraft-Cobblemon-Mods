@@ -38,6 +38,7 @@ import jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomBattlePlacement
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomMutation
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomService
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomView
+import jbro.cobblemon.morebattlecontent.internal.pvp.leaveRequestError
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpSelectionMutation
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpSessionService
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpTeamRegistrationMutation
@@ -458,18 +459,31 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             is PvpRoomIntent.Join -> joinRoom(player, intent)
             is PvpRoomIntent.Leave -> {
                 val current = rooms.get(intent.roomId)
-                if (current == null || player.uuid !in current.memberIds) {
+                if (current == null) {
                     rejectRoom(player, intent.requestId, PvpRoomError.NOT_MEMBER)
-                } else {
-                    if (current.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.ACTIVE &&
-                        player.uuid in current.spectatorIds
-                    ) {
-                        lounge.removeSpectator(current.roomId, player.uuid)
-                    }
-                    val remaining = rooms.leave(intent.roomId, player.uuid)
-                    if (remaining != null) pushRoomToMembers(remaining, null)
-                    sendRoomList(player, intent.requestId)
+                    return
                 }
+                val error = current.leaveRequestError(player.uuid)
+                if (error != null) {
+                    rejectRoom(player, intent.requestId, error)
+                    return
+                }
+                if (current.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.ACTIVE &&
+                    player.uuid in current.spectatorIds
+                ) {
+                    when (exitSpectator(player)) {
+                        PvpSpectatorExitResult.ACCEPTED ->
+                            sendRoomListSafely(player, intent.requestId, "spectator room leave response")
+                        PvpSpectatorExitResult.INVALID_STATE ->
+                            rejectRoom(player, intent.requestId, PvpRoomError.INVALID_PHASE)
+                        PvpSpectatorExitResult.INTERNAL_FAILURE ->
+                            rejectRoom(player, intent.requestId, PvpRoomError.INVALID_PHASE)
+                    }
+                    return
+                }
+                val remaining = rooms.leave(intent.roomId, player.uuid)
+                if (remaining != null) pushRoomToMembers(remaining, null)
+                sendRoomListSafely(player, intent.requestId, "room leave response")
             }
             is PvpRoomIntent.ClaimSeat ->
                 applyRoomMutation(player, intent.requestId, rooms.claimSeat(intent.roomId, player.uuid, intent.side), pushAll = true)
@@ -647,6 +661,15 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     private fun sendRoomList(player: ServerPlayer, requestId: UUID?) {
         val summaries = rooms.visibleRoomsFor(player.uuid).map(::summaryView)
         ServerPlayNetworking.send(player, PvpRoomListStatePayload(requestId, summaries))
+    }
+
+    private fun sendRoomListSafely(player: ServerPlayer, requestId: UUID?, operation: String) {
+        runManagedCleanupActionsSafely(
+            reportFailure = { failure ->
+                MoreBattleContent.LOGGER.error("PvP $operation failed for ${player.uuid}", failure)
+            },
+            { sendRoomList(player, requestId) },
+        )
     }
 
     private fun sendRoom(player: ServerPlayer, room: PvpRoomView, requestId: UUID?, reopen: Boolean = false) {
