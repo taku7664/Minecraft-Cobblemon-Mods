@@ -326,17 +326,16 @@ object MoveTooltipRenderer {
         // ── Power + modifiers ──
         var powerText = "--"
         if (template.power > 0) {
-            var basePower = template.power.toInt()
+            val basePower = template.power.toInt()
             val dynamicPowerInfo = getDynamicPowerInfo(template)
-            if (dynamicPowerInfo != null) basePower = dynamicPowerInfo.power
-
-            val displayBasePower = template.power.toInt()
-            powerText = if (dynamicPowerInfo != null && basePower != displayBasePower) {
-                "$displayBasePower \u2192 $basePower"
-            } else {
-                "$basePower"
+            powerText = when {
+                dynamicPowerInfo == null -> "$basePower"
+                dynamicPowerInfo.minimum != dynamicPowerInfo.maximum ->
+                    "${dynamicPowerInfo.minimum}\u2013${dynamicPowerInfo.maximum}"
+                dynamicPowerInfo.minimum != basePower ->
+                    "$basePower \u2192 ${dynamicPowerInfo.minimum}"
+                else -> "$basePower"
             }
-
         }
 
         // ── Accuracy ──
@@ -644,7 +643,7 @@ object MoveTooltipRenderer {
     // Dynamic move calculations (Hex, Weather Ball)
     // ═══════════════════════════════════════════════════════════════
 
-    private data class DynamicPowerInfo(val power: Int)
+    private data class DynamicPowerInfo(val minimum: Int, val maximum: Int)
 
     private fun getWeatherBallEffectiveType(template: MoveTemplate): ElementalType? {
         if (template.name.lowercase() != "weatherball") return null
@@ -669,16 +668,21 @@ object MoveTooltipRenderer {
         val playerUUID = MinecraftClient.getInstance().player?.uuid ?: return null
         val playerSide = battle.side1.actors.any { it.uuid == playerUUID }
         val opponentSide = if (playerSide) battle.side2 else battle.side1
-        val opponentHasStatus = opponentSide.activeClientBattlePokemon
+        val boostedTargets = opponentSide.activeClientBattlePokemon
             .mapNotNull { it.battlePokemon }
-            .any { it.status != null }
-        return if (opponentHasStatus) DynamicPowerInfo(basePower * 2) else null
+            .map { opponent ->
+                opponent.status != null || BattleStateTracker.getRevealedAbility(opponent.uuid)
+                    ?.replace(" ", "")
+                    ?.equals("comatose", ignoreCase = true) == true
+            }
+        val range = TargetDependentPowerPreview.hex(basePower, boostedTargets) ?: return null
+        return DynamicPowerInfo(range.minimum(), range.maximum())
     }
 
     private fun getWeatherBallDynamicPower(template: MoveTemplate): DynamicPowerInfo? {
         val basePower = template.power.toInt()
         val weather = BattleStateTracker.weather ?: return null
-        return DynamicPowerInfo(basePower * 2)
+        return DynamicPowerInfo(basePower * 2, basePower * 2)
     }
 
     // ═══════════════════════════════════════════════════════════════
