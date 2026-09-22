@@ -109,6 +109,108 @@ class LocalActsBeforeTargetPowerProjectionTest {
     }
 
     @Test
+    fun `avalanche doubles only after its target directly damaged the user`() {
+        val boosted = project(
+            state(allySpeed = 120, opponentSpeed = 80),
+            attack("avalanche", "ice", actorSlot = 0, targetSlot = 0, power = 60.0, priority = -4),
+            attack("opponent_attack", "normal", actorSlot = 0, targetSlot = 0, targetSide = BattleSide.ALLY),
+        )
+        val ordinary = project(
+            state(allySpeed = 120, opponentSpeed = 80),
+            attack("ice_attack", "ice", actorSlot = 0, targetSlot = 0, power = 60.0, priority = -4),
+            attack("opponent_attack", "normal", actorSlot = 0, targetSlot = 0, targetSide = BattleSide.ALLY),
+        )
+
+        assertTrue(damage(boosted, ALLY, OPPONENT) > damage(ordinary, ALLY, OPPONENT) * 1.8)
+    }
+
+    @Test
+    fun `revenge uses the same direct attacker requirement`() {
+        val boosted = project(
+            state(allySpeed = 120, opponentSpeed = 80),
+            attack("revenge", "fighting", actorSlot = 0, targetSlot = 0, power = 60.0, priority = -4),
+            attack("opponent_attack", "normal", actorSlot = 0, targetSlot = 0, targetSide = BattleSide.ALLY),
+        )
+        val ordinary = project(
+            state(allySpeed = 120, opponentSpeed = 80),
+            attack("fighting_attack", "fighting", actorSlot = 0, targetSlot = 0, power = 60.0, priority = -4),
+            attack("opponent_attack", "normal", actorSlot = 0, targetSlot = 0, targetSide = BattleSide.ALLY),
+        )
+
+        assertTrue(damage(boosted, ALLY, OPPONENT) > damage(ordinary, ALLY, OPPONENT) * 1.8)
+    }
+
+    @Test
+    fun `damage from the target's partner does not boost avalanche`() {
+        val initial = doubleState()
+        val avalanche = project(
+            initial,
+            joint(
+                "avalanche_pair",
+                attack("avalanche", "ice", actorSlot = 0, targetSlot = 0, power = 60.0, priority = -4),
+                wait("ally_wait", actorSlot = 1, targetSide = BattleSide.ALLY),
+            ),
+            joint(
+                "partner_attack_pair",
+                wait("target_wait", actorSlot = 0, targetSide = BattleSide.OPPONENT),
+                attack(
+                    "partner_attack", "normal", actorSlot = 1, targetSlot = 0,
+                    targetSide = BattleSide.ALLY,
+                ),
+            ),
+        )
+        val ordinary = project(
+            initial,
+            joint(
+                "ordinary_pair",
+                attack("ice_attack", "ice", actorSlot = 0, targetSlot = 0, power = 60.0, priority = -4),
+                wait("ally_wait", actorSlot = 1, targetSide = BattleSide.ALLY),
+            ),
+            joint(
+                "partner_attack_pair",
+                wait("target_wait", actorSlot = 0, targetSide = BattleSide.OPPONENT),
+                attack(
+                    "partner_attack", "normal", actorSlot = 1, targetSlot = 0,
+                    targetSide = BattleSide.ALLY,
+                ),
+            ),
+        )
+
+        val avalancheDamage = damage(avalanche, ALLY, OPPONENT)
+        val ordinaryDamage = damage(ordinary, ALLY, OPPONENT)
+        assertTrue(avalancheDamage > ordinaryDamage * 0.9)
+        assertTrue(avalancheDamage < ordinaryDamage * 1.1)
+    }
+
+    @Test
+    fun `follow me does not inherit damage dealt by the declared avalanche target`() {
+        val initial = doubleState()
+        val avalanche = project(
+            initial,
+            joint(
+                "avalanche_pair",
+                attack("avalanche", "ice", actorSlot = 0, targetSlot = 0, power = 60.0, priority = -4),
+                wait("ally_wait", actorSlot = 1, targetSide = BattleSide.ALLY),
+            ),
+            redirectingOpponentPair(),
+        )
+        val ordinary = project(
+            initial,
+            joint(
+                "ordinary_pair",
+                attack("ice_attack", "ice", actorSlot = 0, targetSlot = 0, power = 60.0, priority = -4),
+                wait("ally_wait", actorSlot = 1, targetSide = BattleSide.ALLY),
+            ),
+            redirectingOpponentPair(),
+        )
+
+        val avalancheDamage = damage(avalanche, ALLY, OPPONENT_PARTNER)
+        val ordinaryDamage = damage(ordinary, ALLY, OPPONENT_PARTNER)
+        assertTrue(avalancheDamage > ordinaryDamage * 0.9)
+        assertTrue(avalancheDamage < ordinaryDamage * 1.1)
+    }
+
+    @Test
     fun `fishious rend doubles only while the target still has a queued action`() {
         val boosted = project(
             state(allySpeed = 120, opponentSpeed = 80),
@@ -246,6 +348,7 @@ class LocalActsBeforeTargetPowerProjectionTest {
         targetSlot: Int,
         targetSide: BattleSide = BattleSide.OPPONENT,
         power: Double = 85.0,
+        priority: Int = 0,
     ) = BattleActionCandidate(
         actionId = id,
         kind = BattleActionKind.USE_MOVE,
@@ -258,7 +361,7 @@ class LocalActsBeforeTargetPowerProjectionTest {
             damageCategory = BattleMoveDamageCategory.PHYSICAL,
             power = power,
             accuracy = 100.0,
-            priority = 0,
+            priority = priority,
             currentPp = 10,
             targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
             effects = BattleMoveEffectsView(
@@ -450,6 +553,8 @@ class LocalActsBeforeTargetPowerProjectionTest {
         val OPPONENT: UUID = UUID.fromString("00000000-0000-0000-0000-00000000c603")
         val OPPONENT_PARTNER: UUID = UUID.fromString("00000000-0000-0000-0000-00000000c604")
         val OPPONENT_BENCH: UUID = UUID.fromString("00000000-0000-0000-0000-00000000c605")
-        val DYNAMIC_TURN_ORDER_POWER_MOVES = setOf("fishiousrend", "boltbeak", "payback")
+        val DYNAMIC_TURN_ORDER_POWER_MOVES = setOf(
+            "fishiousrend", "boltbeak", "payback", "avalanche", "revenge",
+        )
     }
 }

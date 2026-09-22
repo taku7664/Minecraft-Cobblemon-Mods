@@ -18,6 +18,7 @@ internal object LocalKnownStatMechanics {
             ROUND_POWER_DOUBLED_TAG in action.tags ||
             ACTS_BEFORE_TARGET_POWER_DOUBLED_TAG in action.tags ||
             TARGET_ALREADY_ACTED_POWER_DOUBLED_TAG in action.tags ||
+            DAMAGED_BY_TARGET_POWER_DOUBLED_TAG in action.tags ||
             DAMAGED_TARGET_POWER_DOUBLED_TAG in action.tags
         ) basePower * 2 else basePower
         val technician = if (
@@ -37,6 +38,7 @@ internal object LocalKnownStatMechanics {
     const val ROUND_POWER_DOUBLED_TAG = "better_ai:round_power_doubled"
     const val ACTS_BEFORE_TARGET_POWER_DOUBLED_TAG = "better_ai:acts_before_target_power_doubled"
     const val TARGET_ALREADY_ACTED_POWER_DOUBLED_TAG = "better_ai:target_already_acted_power_doubled"
+    const val DAMAGED_BY_TARGET_POWER_DOUBLED_TAG = "better_ai:damaged_by_target_power_doubled"
     const val DAMAGED_TARGET_POWER_DOUBLED_TAG = "better_ai:damaged_target_power_doubled"
 
     /**

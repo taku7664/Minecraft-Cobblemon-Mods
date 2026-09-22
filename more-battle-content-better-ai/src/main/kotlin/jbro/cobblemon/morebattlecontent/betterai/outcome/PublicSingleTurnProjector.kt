@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai.outcome
 import java.util.IdentityHashMap
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalDirectDamageLedger
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalDirectDamageRecipient
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicFutureActionFactory
@@ -137,6 +138,9 @@ internal object PublicSingleTurnProjector {
                         state = current.branch.state,
                         remaining = remaining,
                         newlySwitchedPokemonIds = current.newlySwitchedPokemonIds,
+                    ).withDamagedByTargetPowerDoubled(
+                        state = current.branch.state,
+                        directDamage = current.branch.directDamage,
                     ).withDamagedTargetPowerDoubled(
                         state = current.branch.state,
                         damagedPokemonIds = current.damagedPokemonIds,
@@ -1804,6 +1808,20 @@ internal object PublicSingleTurnProjector {
         return copy(action = action.withAddedTag(LocalKnownStatMechanics.TARGET_ALREADY_ACTED_POWER_DOUBLED_TAG))
     }
 
+    private fun TurnPrimitiveAction.withDamagedByTargetPowerDoubled(
+        state: BattleStateView,
+        directDamage: LocalDirectDamageLedger,
+    ): TurnPrimitiveAction {
+        if (canonicalId(action.moveId) !in DAMAGED_BY_TARGET_POWER_MOVES) return this
+        val actorId = actorPokemonId ?: return this
+        val targetSlot = action.targets.singleOrNull() ?: return this
+        val targetId = state.pokemon.singleOrNull {
+            it.side == targetSlot.side && it.activeSlot == targetSlot.slot && !it.fainted && it.hpFraction > 0.0
+        }?.battlePokemonId ?: return this
+        if ((directDamage.amounts[LocalDirectDamageRecipient(targetId, actorId)] ?: 0.0) <= 0.0) return this
+        return copy(action = action.withAddedTag(LocalKnownStatMechanics.DAMAGED_BY_TARGET_POWER_DOUBLED_TAG))
+    }
+
     private fun BattleActionCandidate.withAddedTag(tag: String) = BattleActionCandidate(
         actionId = actionId,
         kind = kind,
@@ -2129,6 +2147,7 @@ internal object PublicSingleTurnProjector {
     private const val HELPING_HAND_MULTIPLIER = 1.5
     private val QUEUE_CONTROL_MOVE_IDS = setOf(AFTER_YOU, QUASH)
     private val ACTS_BEFORE_TARGET_POWER_MOVES = setOf("fishiousrend", "boltbeak")
+    private val DAMAGED_BY_TARGET_POWER_MOVES = setOf("avalanche", "revenge")
     private val PARALYSIS_IDS = setOf("par", "paralysis", "paralyzed", "paralysed")
     private val SLEEP_IDS = setOf("slp", "sleep", "asleep")
     private val FREEZE_IDS = setOf("frz", "freeze", "frozen")
