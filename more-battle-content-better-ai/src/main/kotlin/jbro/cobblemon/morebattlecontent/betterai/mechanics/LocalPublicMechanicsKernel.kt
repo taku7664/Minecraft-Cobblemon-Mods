@@ -6,6 +6,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
 import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceConfidence
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveTargetPattern
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 
@@ -22,20 +23,28 @@ internal object LocalPublicMechanicsKernel {
         actingSide: BattleSide = BattleSide.ALLY,
     ): LocalPublicMoveProjection {
         val details = candidate.moveDetails ?: return LocalPublicMoveProjection.neutral()
-        if (details.damageCategory == BattleMoveDamageCategory.STATUS) {
-            return projectStatusMove(candidate, details, context, actingSide)
-        }
         val target = LocalPublicMoveTargets.resolve(candidate, context, actingSide).firstOrNull()
             ?: return LocalPublicMoveProjection.neutral()
         val actor = context.state.pokemon.firstOrNull {
             it.side == actingSide && it.activeSlot == candidate.actorSlot && !it.fainted
         }
-        val moveType = canonical(details.typeId)
         val actorAbility = canonicalOrNull(actor?.knownAbilityId)
+        val ignoresAbility = actorAbility in ABILITY_IGNORING_ABILITIES ||
+            actorAbility == MYCELIUM_MIGHT && details.damageCategory == BattleMoveDamageCategory.STATUS ||
+            details.effects?.effects?.any { it.kind == BattleMoveEffectKind.IGNORE_ABILITY } == true
+        if (priorityMoveBlocked(candidate, context, actingSide, target, ignoresAbility)) {
+            return LocalPublicMoveProjection(
+                knownDamageMultiplier = 0.0,
+                targetHpFraction = target.hpFraction,
+                publiclyNullified = true,
+            )
+        }
+        if (details.damageCategory == BattleMoveDamageCategory.STATUS) {
+            return projectStatusMove(candidate, details, context, actingSide, ignoresAbility)
+        }
+        val moveType = canonical(details.typeId)
         val actorItem = canonicalOrNull(actor?.knownHeldItemId)
         val targetAbility = publicAbility(target, context)
-        val ignoresAbility = actorAbility in ABILITY_IGNORING_ABILITIES ||
-            details.effects?.effects?.any { it.kind == BattleMoveEffectKind.IGNORE_ABILITY } == true
         val ignoresTypeImmunity = details.effects?.effects.orEmpty().any {
             it.kind == BattleMoveEffectKind.IGNORE_TYPE_IMMUNITY
         }
@@ -93,11 +102,37 @@ internal object LocalPublicMechanicsKernel {
         )
     }
 
+    private fun priorityMoveBlocked(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        actingSide: BattleSide,
+        target: BattlePokemonStateView,
+        ignoresAbility: Boolean,
+    ): Boolean {
+        if (target.side == actingSide) return false
+        if (LocalPublicTurnOrder.effectivePriority(context.state, actingSide, candidate) <= 0) return false
+        val moveId = canonicalOrNull(candidate.moveId)
+        val pattern = candidate.moveDetails?.targetPattern
+        val explicitlyHostile = candidate.targets.any { it.side != actingSide }
+        val targetsOpponents = explicitlyHostile || pattern in HOSTILE_TARGET_PATTERNS ||
+            pattern == BattleMoveTargetPattern.ALL_ACTIVE &&
+            moveId in TARGET_ALL_PRIORITY_BLOCK_EXCEPTIONS
+        if (!targetsOpponents) return false
+        val psychicTerrain = canonicalOrNull(context.state.field.terrain?.effectId) == PSYCHIC_TERRAIN
+        if (psychicTerrain && LocalPublicTurnOrder.grounded(context.state, target)) return true
+        if (ignoresAbility) return false
+        return context.state.pokemon.any {
+            it.side == target.side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 &&
+                publicAbility(it, context) in PRIORITY_BLOCKING_ABILITIES
+        }
+    }
+
     private fun projectStatusMove(
         candidate: BattleActionCandidate,
         details: jbro.cobblemon.morebattlecontent.api.ai.BattleMoveCandidateView,
         context: BattleDecisionContext,
         actingSide: BattleSide,
+        ignoresAbility: Boolean,
     ): LocalPublicMoveProjection {
         val declared = details.effects?.effects.orEmpty().filter { (it.probability ?: 1.0) > 0.0 }
         val targetStatuses = declared.filter {
@@ -116,12 +151,14 @@ internal object LocalPublicMechanicsKernel {
         val nullified = targetStatuses.all { effect ->
             val status = canonical(requireNotNull(effect.valueId))
             target.statusId != null || when {
-                status in POISON_STATUSES -> POISON in types || STEEL in types || ability == "immunity"
-                status in BURN_STATUSES -> FIRE in types || ability == "waterveil" || ability == "waterbubble"
-                status in PARALYSIS_STATUSES -> ELECTRIC in types || ability == "limber" ||
+                status in POISON_STATUSES -> POISON in types || STEEL in types ||
+                    !ignoresAbility && ability == "immunity"
+                status in BURN_STATUSES -> FIRE in types ||
+                    !ignoresAbility && (ability == "waterveil" || ability == "waterbubble")
+                status in PARALYSIS_STATUSES -> ELECTRIC in types || !ignoresAbility && ability == "limber" ||
                     moveId == "thunderwave" && GROUND in types
-                status in SLEEP_STATUSES -> ability in SLEEP_IMMUNITY_ABILITIES
-                status in FREEZE_STATUSES -> ICE in types || ability == "magmaarmor"
+                status in SLEEP_STATUSES -> !ignoresAbility && ability in SLEEP_IMMUNITY_ABILITIES
+                status in FREEZE_STATUSES -> ICE in types || !ignoresAbility && ability == "magmaarmor"
                 else -> false
             }
         }
@@ -255,6 +292,17 @@ internal object LocalPublicMechanicsKernel {
         GRASS to setOf("sapsipper"),
     )
     private val ABILITY_IGNORING_ABILITIES = setOf("moldbreaker", "teravolt", "turboblaze")
+    private const val MYCELIUM_MIGHT = "myceliummight"
+    private val PRIORITY_BLOCKING_ABILITIES = setOf("armortail", "queenlymajesty", "dazzling")
+    private const val PSYCHIC_TERRAIN = "psychicterrain"
+    private val HOSTILE_TARGET_PATTERNS = setOf(
+        BattleMoveTargetPattern.SELECTED,
+        BattleMoveTargetPattern.SELECTED_OPPONENT,
+        BattleMoveTargetPattern.RANDOM_OPPONENT,
+        BattleMoveTargetPattern.ALL_OPPONENTS,
+        BattleMoveTargetPattern.ALL_ADJACENT,
+    )
+    private val TARGET_ALL_PRIORITY_BLOCK_EXCEPTIONS = setOf("perishsong", "flowershield", "rototiller")
     private val WEATHER_SUPPRESSION_ABILITIES = setOf("airlock", "cloudnine")
     private val RAIN_WEATHER = setOf("rain", "raindance")
     private val SUN_WEATHER = setOf("sun", "sunnyday")

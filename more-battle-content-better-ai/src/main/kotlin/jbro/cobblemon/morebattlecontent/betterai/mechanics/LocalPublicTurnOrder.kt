@@ -1,5 +1,8 @@
 package jbro.cobblemon.morebattlecontent.betterai.mechanics
 
+import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
@@ -18,6 +21,107 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
  * split evenly, matching the coin flip the engine performs.
  */
 internal object LocalPublicTurnOrder {
+    /** Priority after deterministic, publicly known move and ability modifiers. */
+    fun effectivePriority(
+        state: BattleStateView,
+        side: BattleSide,
+        action: BattleActionCandidate,
+    ): Int {
+        val details = action.moveDetails ?: return 0
+        val actor = active(state, side, action.actorSlot)
+        val ability = canonical(actor?.knownAbilityId.orEmpty())
+        val moveId = canonical(action.moveId.orEmpty())
+        val healingMove = details.effects?.effects.orEmpty().any {
+            it.kind == BattleMoveEffectKind.HEAL_FRACTION || it.kind == BattleMoveEffectKind.DRAIN_FRACTION
+        }
+        val modifier = when {
+            ability == PRANKSTER && details.damageCategory == BattleMoveDamageCategory.STATUS -> 1
+            ability == GALE_WINGS && actor?.hpFraction == 1.0 && canonical(details.typeId) == FLYING -> 1
+            ability == TRIAGE && healingMove -> 3
+            moveId == GRASSY_GLIDE && grassyTerrainActive(state) && actor?.let { grounded(state, it) } == true -> 1
+            else -> 0
+        }
+        return details.priority + modifier
+    }
+
+    /** Public chance to jump to the front of the current priority bracket. */
+    fun fractionalPriorityChance(
+        state: BattleStateView,
+        side: BattleSide,
+        action: BattleActionCandidate,
+    ): Double {
+        if (alwaysLastWithinPriority(state, side, action)) return 0.0
+        val actor = active(state, side, action.actorSlot) ?: return 0.0
+        val chances = buildList {
+            if (canonical(actor.knownAbilityId.orEmpty()) == QUICK_DRAW &&
+                action.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS
+            ) add(QUICK_DRAW_CHANCE)
+            if (canonical(actor.knownHeldItemId.orEmpty()) == QUICK_CLAW) add(QUICK_CLAW_CHANCE)
+        }
+        return 1.0 - chances.fold(1.0) { none, chance -> none * (1.0 - chance) }
+    }
+
+    fun alwaysLastWithinPriority(
+        state: BattleStateView,
+        side: BattleSide,
+        action: BattleActionCandidate,
+    ): Boolean {
+        val actor = active(state, side, action.actorSlot) ?: return false
+        val ability = canonical(actor.knownAbilityId.orEmpty())
+        val item = canonical(actor.knownHeldItemId.orEmpty())
+        return ability == STALL ||
+            ability == MYCELIUM_MIGHT && action.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS ||
+            item in ALWAYS_LAST_ITEMS
+    }
+
+    /** Action-aware ordering used by recursive turn projection. */
+    fun actsFirstProbability(
+        state: BattleStateView,
+        firstSide: BattleSide,
+        firstAction: BattleActionCandidate,
+        secondSide: BattleSide,
+        secondAction: BattleActionCandidate,
+    ): Double? {
+        val firstPriority = effectivePriority(state, firstSide, firstAction)
+        val secondPriority = effectivePriority(state, secondSide, secondAction)
+        if (firstPriority != secondPriority) return if (firstPriority > secondPriority) 1.0 else 0.0
+        val first = active(state, firstSide, firstAction.actorSlot) ?: return null
+        val second = active(state, secondSide, secondAction.actorSlot) ?: return null
+        val speedProbability = speedOrderProbability(state, first, second) ?: return null
+        val firstDistribution = fractionalPriorityDistribution(state, firstSide, firstAction)
+        val secondDistribution = fractionalPriorityDistribution(state, secondSide, secondAction)
+        return firstDistribution.sumOf { (firstFraction, firstChance) ->
+            secondDistribution.sumOf { (secondFraction, secondChance) ->
+                val orderChance = when {
+                    firstFraction > secondFraction -> 1.0
+                    firstFraction < secondFraction -> 0.0
+                    else -> speedProbability
+                }
+                firstChance * secondChance * orderChance
+            }
+        }
+    }
+
+    /** Action-aware comparison against an otherwise ordinary priority-zero reply. */
+    fun actsFirstProbability(
+        state: BattleStateView,
+        actorSide: BattleSide,
+        actorSlot: Int?,
+        actorAction: BattleActionCandidate,
+        opponentPriority: Int,
+    ): Double? {
+        val priority = effectivePriority(state, actorSide, actorAction)
+        if (priority != opponentPriority) return if (priority > opponentPriority) 1.0 else 0.0
+        val actor = active(state, actorSide, actorSlot) ?: return null
+        val opponent = state.pokemon.firstOrNull {
+            it.side != actorSide && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+        } ?: return null
+        val speedProbability = speedOrderProbability(state, actor, opponent) ?: return null
+        if (alwaysLastWithinPriority(state, actorSide, actorAction)) return 0.0
+        val quickChance = fractionalPriorityChance(state, actorSide, actorAction)
+        return quickChance + (1.0 - quickChance) * speedProbability
+    }
+
     fun actsFirstProbability(
         state: BattleStateView,
         actorSide: BattleSide,
@@ -30,10 +134,7 @@ internal object LocalPublicTurnOrder {
         val opponent = state.pokemon.firstOrNull {
             it.side != actorSide && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         } ?: return null
-        val actorSpeed = effectiveSpeed(state, actor) ?: return null
-        val opponentSpeed = effectiveSpeed(state, opponent) ?: return null
-        val faster = uniformGreaterProbability(actorSpeed, opponentSpeed)
-        return if (trickRoomActive(state)) 1.0 - faster else faster
+        return speedOrderProbability(state, actor, opponent)
     }
 
     /** P(a > b) plus half of P(a == b), for two independent uniform integer ranges. */
@@ -71,9 +172,48 @@ internal object LocalPublicTurnOrder {
             (applyStage(speed.maximum, stage) * multiplier).toInt().coerceAtLeast(1)
     }
 
+    fun grounded(state: BattleStateView, pokemon: BattlePokemonStateView): Boolean {
+        val volatiles = pokemon.knownVolatileEffectIds.mapTo(hashSetOf(), ::canonical)
+        if (gravityActive(state) || volatiles.any { it in FORCED_GROUNDED_VOLATILES }) return true
+        if (canonical(pokemon.knownHeldItemId.orEmpty()) == IRON_BALL) return true
+        if (pokemon.knownTypeIds.any { canonical(it) == FLYING }) return false
+        if (canonical(pokemon.knownAbilityId.orEmpty()) == LEVITATE) return false
+        if (canonical(pokemon.knownHeldItemId.orEmpty()) == AIR_BALLOON) return false
+        return true
+    }
+
+    private fun fractionalPriorityDistribution(
+        state: BattleStateView,
+        side: BattleSide,
+        action: BattleActionCandidate,
+    ): List<Pair<Int, Double>> {
+        if (alwaysLastWithinPriority(state, side, action)) return listOf(-1 to 1.0)
+        val chance = fractionalPriorityChance(state, side, action)
+        return if (chance > 0.0) listOf(1 to chance, 0 to 1.0 - chance) else listOf(0 to 1.0)
+    }
+
+    private fun speedOrderProbability(
+        state: BattleStateView,
+        first: BattlePokemonStateView,
+        second: BattlePokemonStateView,
+    ): Double? {
+        val firstSpeed = effectiveSpeed(state, first) ?: return null
+        val secondSpeed = effectiveSpeed(state, second) ?: return null
+        val faster = uniformGreaterProbability(firstSpeed, secondSpeed)
+        return if (trickRoomActive(state)) 1.0 - faster else faster
+    }
+
     private fun trickRoomActive(state: BattleStateView): Boolean = state.field.roomEffects.any {
         val remaining = it.remainingTurns
         canonical(it.effectId) == TRICK_ROOM && (remaining == null || remaining > 0)
+    }
+
+    private fun grassyTerrainActive(state: BattleStateView): Boolean =
+        canonical(state.field.terrain?.effectId.orEmpty()) == GRASSY_TERRAIN
+
+    private fun gravityActive(state: BattleStateView): Boolean = state.field.globalEffects.any {
+        val remaining = it.remainingTurns
+        canonical(it.effectId) == GRAVITY && (remaining == null || remaining > 0)
     }
 
     private fun active(state: BattleStateView, side: BattleSide, slot: Int?): BattlePokemonStateView? =
@@ -91,6 +231,24 @@ internal object LocalPublicTurnOrder {
 
     private const val TAILWIND = "tailwind"
     private const val TRICK_ROOM = "trickroom"
+    private const val PRANKSTER = "prankster"
+    private const val GALE_WINGS = "galewings"
+    private const val TRIAGE = "triage"
+    private const val QUICK_DRAW = "quickdraw"
+    private const val STALL = "stall"
+    private const val MYCELIUM_MIGHT = "myceliummight"
+    private const val QUICK_CLAW = "quickclaw"
+    private const val GRASSY_GLIDE = "grassyglide"
+    private const val GRASSY_TERRAIN = "grassyterrain"
+    private const val FLYING = "flying"
+    private const val GRAVITY = "gravity"
+    private const val IRON_BALL = "ironball"
+    private const val AIR_BALLOON = "airballoon"
+    private const val LEVITATE = "levitate"
+    private const val QUICK_DRAW_CHANCE = 0.3
+    private const val QUICK_CLAW_CHANCE = 0.2
+    private val ALWAYS_LAST_ITEMS = setOf("laggingtail", "fullincense")
+    private val FORCED_GROUNDED_VOLATILES = setOf("ingrain", "smackdown", "thousandarrows")
     private val SPEED_ALIASES = setOf("speed", "spe")
     private val PARALYSIS_IDS = setOf("par", "paralysis", "paralyzed", "paralysed")
 }

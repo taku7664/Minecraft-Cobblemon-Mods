@@ -197,10 +197,17 @@ internal object LocalTacticalSituationalEvaluator {
                 }
                 BattleMoveEffectKind.WEATHER -> activeEffectBlocksRefresh(context.state.field.weather, effectId)
                 BattleMoveEffectKind.TERRAIN -> activeEffectBlocksRefresh(context.state.field.terrain, effectId)
-                BattleMoveEffectKind.FIELD_CONDITION ->
-                    (context.state.field.roomEffects + context.state.field.globalEffects).any {
-                        activeEffectBlocksRefresh(it, effectId)
+                BattleMoveEffectKind.FIELD_CONDITION -> {
+                    // Rooms are toggles: using the same room while it is active removes it. Treating
+                    // that as a redundant refresh made every deliberate Trick Room reversal inert.
+                    if (canonicalEffectId(effectId) in TOGGLE_ROOM_EFFECTS) {
+                        false
+                    } else {
+                        (context.state.field.roomEffects + context.state.field.globalEffects).any {
+                            activeEffectBlocksRefresh(it, effectId)
+                        }
                     }
+                }
                 else -> false
             }
         }
@@ -631,6 +638,7 @@ internal object LocalTacticalSituationalEvaluator {
     private const val CRITICAL_SETUP_HP_FRACTION = 0.25
     private const val MAXIMUM_SETUP_STAGE_BUDGET = 4
     private const val CERTAIN_ACCURACY = 0.999
+    private val TOGGLE_ROOM_EFFECTS = setOf("trickroom", "wonderroom", "magicroom")
     
     /** How sure the knockout has to be of landing first before a second attack counts as redundant. */
     private const val SECURED_BEFORE_TARGET_ACTS = 0.8

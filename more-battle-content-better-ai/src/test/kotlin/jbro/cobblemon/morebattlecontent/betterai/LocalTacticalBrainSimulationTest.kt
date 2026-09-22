@@ -1528,7 +1528,7 @@ class LocalTacticalBrainSimulationTest {
     }
 
     @Test
-    fun `active weather terrain and room are not selected again`() {
+    fun `active weather and terrain are not selected again`() {
         val chip = move("small_damage", power = 40.0, facts = damageFacts(0.15))
         val cases = listOf(
             Triple(
@@ -1540,11 +1540,6 @@ class LocalTacticalBrainSimulationTest {
                 effectMove("reset_grassy_terrain", BattleMoveEffectKind.TERRAIN, "grassyterrain"),
                 field(terrainId = "grassyterrain"),
                 "terrain",
-            ),
-            Triple(
-                effectMove("reset_trick_room", BattleMoveEffectKind.FIELD_CONDITION, "trickroom"),
-                field(roomEffectId = "trickroom"),
-                "room",
             ),
         )
 

@@ -16,6 +16,7 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalDirectHitMechani
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalKnownStatMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalObservedActionOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalProjectedActionCalculationCache
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicStatusImmunity
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStanceChangeStateProjector
@@ -1407,32 +1408,13 @@ internal object PublicSingleTurnProjector {
         state: BattleStateView,
         first: TurnPrimitiveAction,
         second: TurnPrimitiveAction,
-    ): Double? {
-        val firstSpeed = actionSpeedRange(state, first) ?: return null
-        val secondSpeed = actionSpeedRange(state, second) ?: return null
-        val trickRoom = state.field.roomEffects.any { effect ->
-            val remainingTurns = effect.remainingTurns
-            canonicalId(effect.effectId) == "trickroom" && (remainingTurns == null || remainingTurns > 0)
-        }
-        val probability = uniformGreaterProbability(firstSpeed, secondSpeed)
-        return if (trickRoom) 1.0 - probability else probability
-    }
-
-    /** P(a > b) plus half of P(a == b), for two independent uniform integer ranges. */
-    private fun uniformGreaterProbability(a: Pair<Int, Int>, b: Pair<Int, Int>): Double {
-        val aValues = (a.second - a.first + 1).toLong()
-        val bValues = (b.second - b.first + 1).toLong()
-        if (aValues <= 0L || bValues <= 0L) return 0.5
-        var greater = 0L
-        var equal = 0L
-        // Counted over b, so the cost is the width of one range rather than the product of both.
-        for (bValue in b.first..b.second) {
-            greater += (a.second.toLong() - maxOf(a.first, bValue + 1) + 1).coerceAtLeast(0L)
-            if (bValue in a.first..a.second) equal++
-        }
-        val total = (aValues * bValues).toDouble()
-        return (greater + equal / 2.0) / total
-    }
+    ): Double? = LocalPublicTurnOrder.actsFirstProbability(
+        state = state,
+        firstSide = first.side,
+        firstAction = first.action,
+        secondSide = second.side,
+        secondAction = second.action,
+    )
 
     private fun definiteOrder(
         observedState: BattleStateView,
@@ -1440,10 +1422,22 @@ internal object PublicSingleTurnProjector {
         first: TurnPrimitiveAction,
         second: TurnPrimitiveAction,
     ): Pair<TurnPrimitiveAction, TurnPrimitiveAction>? {
-        val firstPriority = effectivePriority(state, first.side, first.action)
-        val secondPriority = effectivePriority(state, second.side, second.action)
+        val firstPriority = LocalPublicTurnOrder.effectivePriority(state, first.side, first.action)
+        val secondPriority = LocalPublicTurnOrder.effectivePriority(state, second.side, second.action)
         if (firstPriority != secondPriority) {
             return if (firstPriority > secondPriority) first to second else second to first
+        }
+        val specialFractionalOrder =
+            LocalPublicTurnOrder.alwaysLastWithinPriority(state, first.side, first.action) ||
+                LocalPublicTurnOrder.alwaysLastWithinPriority(state, second.side, second.action) ||
+                LocalPublicTurnOrder.fractionalPriorityChance(state, first.side, first.action) > 0.0 ||
+                LocalPublicTurnOrder.fractionalPriorityChance(state, second.side, second.action) > 0.0
+        if (specialFractionalOrder) {
+            return when (actsFirstProbability(state, first, second)) {
+                1.0 -> first to second
+                0.0 -> second to first
+                else -> null
+            }
         }
         val trickRoom = state.field.roomEffects.any { effect ->
             val remainingTurns = effect.remainingTurns
@@ -1511,20 +1505,6 @@ internal object PublicSingleTurnProjector {
     } else {
         value * 2 / (2 - stage)
     }.coerceAtLeast(1)
-
-    private fun effectivePriority(
-        state: BattleStateView,
-        side: BattleSide,
-        action: BattleActionCandidate,
-    ): Int {
-        val base = action.moveDetails?.priority ?: 0
-        val actor = state.pokemon.singleOrNull {
-            it.side == side && it.activeSlot == action.actorSlot && !it.fainted && it.hpFraction > 0.0
-        }
-        val prankster = canonicalId(actor?.knownAbilityId) == "prankster" &&
-            action.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS
-        return base + if (prankster) 1 else 0
-    }
 
     private fun canonicalId(value: String?): String? = value
         ?.substringAfter(':')

@@ -239,7 +239,7 @@ internal object PublicBattleTacticalCalculator {
                 state = context.state,
                 actorSide = actingSide,
                 actorSlot = candidate.actorSlot,
-                actorPriority = details.priority,
+                actorAction = candidate,
                 opponentPriority = 0,
             ),
             standardDamageModel = projection?.let { BattleStandardDamageModel.SHOWDOWN_GEN9_BASE_NON_CRITICAL },
