@@ -51,39 +51,42 @@ internal class BattleBrainDecisionCoordinator(
             remainingMillis,
             TimeUnit.MILLISECONDS,
         )
+        fun failBrain(throwable: Throwable) {
+            if (result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))) {
+                timeout.cancel(false)
+                reportBrainFailure(context, throwable)
+            }
+        }
         try {
             brainExecutor.execute {
-                val decisionStage = try {
-                    endpoint.brain.decide(endpoint.session(), context)
+                try {
+                    val decisionFuture = endpoint.brain.decide(endpoint.session(), context).toCompletableFuture()
+                    pendingDecision.set(decisionFuture)
+                    if (result.isDone) {
+                        decisionFuture.cancel(true)
+                        return@execute
+                    }
+                    decisionFuture.whenComplete { decision, throwable ->
+                        if (result.isDone) return@whenComplete
+                        try {
+                            val failed = throwable != null || decision == null
+                            val attempt = if (failed) {
+                                BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE)
+                            } else {
+                                validate(context, decision)
+                            }
+                            if (result.complete(attempt)) timeout.cancel(false)
+                            if (failed) throwable?.let { reportBrainFailure(context, it) }
+                        } catch (exception: Exception) {
+                            failBrain(exception)
+                        } catch (error: LinkageError) {
+                            failBrain(error)
+                        }
+                    }
                 } catch (exception: Exception) {
-                    if (result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))) {
-                        timeout.cancel(false)
-                    }
-                    reportBrainFailure(context, exception)
-                    return@execute
+                    failBrain(exception)
                 } catch (error: LinkageError) {
-                    if (result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))) {
-                        timeout.cancel(false)
-                    }
-                    reportBrainFailure(context, error)
-                    return@execute
-                }
-                val decisionFuture = decisionStage.toCompletableFuture()
-                pendingDecision.set(decisionFuture)
-                if (result.isDone) {
-                    decisionFuture.cancel(true)
-                    return@execute
-                }
-                decisionFuture.whenComplete { decision, throwable ->
-                    if (result.isDone) return@whenComplete
-                    val failed = throwable != null || decision == null
-                    val attempt = if (failed) {
-                        BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE)
-                    } else {
-                        validate(context, decision)
-                    }
-                    if (result.complete(attempt)) timeout.cancel(false)
-                    if (failed) throwable?.let { reportBrainFailure(context, it) }
+                    failBrain(error)
                 }
             }
         } catch (exception: Exception) {

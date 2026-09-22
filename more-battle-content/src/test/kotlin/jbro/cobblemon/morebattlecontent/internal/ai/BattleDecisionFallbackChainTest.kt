@@ -222,6 +222,34 @@ class BattleDecisionFallbackChainTest {
     }
 
     @Test
+    fun `unsupported completion stage conversion fails immediately instead of consuming the deadline`() {
+        val context = context(System.currentTimeMillis() + 5_000L)
+        val coordinator = BattleBrainDecisionCoordinator(
+            scheduler = scheduler,
+            brainExecutor = brainExecutor,
+            maximumDecisionMillis = 500L,
+        )
+        val unsupported = object : CompletionStage<BattleDecision> by CompletableFuture.completedFuture(
+            decision(context, "move:0"),
+        ) {
+            override fun toCompletableFuture(): CompletableFuture<BattleDecision> =
+                throw UnsupportedOperationException("conversion unavailable")
+        }
+        val startedAt = System.nanoTime()
+
+        val result = BattleDecisionFallbackChain(coordinator).decide(
+            primary = null,
+            local = endpoint { unsupported },
+            context = context,
+        ).toCompletableFuture().get(1, TimeUnit.SECONDS)
+        val elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)
+
+        assertTrue(elapsedMillis < 200L, "completion conversion failure took ${elapsedMillis}ms")
+        assertEquals(BattleDecisionSource.BASELINE_REQUIRED, result.source)
+        assertEquals(BattleDecisionFailureReason.BRAIN_FAILURE, result.failures.single().reason)
+    }
+
+    @Test
     fun `late primary completion cannot replace baseline result`() {
         val context = context(System.currentTimeMillis() + 5_000L)
         val pending = CompletableFuture<BattleDecision>()
