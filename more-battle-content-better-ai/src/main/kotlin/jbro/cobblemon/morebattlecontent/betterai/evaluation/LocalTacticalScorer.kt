@@ -17,6 +17,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyBrief
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyObjective
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveDamageInputs
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
@@ -542,7 +543,7 @@ internal object LocalTacticalScorer {
                 StandardTypeEffectiveness.multiplierAgainst(
                     attackingTypeId = moveType,
                     defendingTypeIds = target.knownTypeIds,
-                    defenderAbilityId = target.knownAbilityId,
+                    defenderAbilityId = LocalPublicAbilityState.effectiveKnownAbility(context.state, target),
                     moveId = candidate.moveId,
                 )
             }

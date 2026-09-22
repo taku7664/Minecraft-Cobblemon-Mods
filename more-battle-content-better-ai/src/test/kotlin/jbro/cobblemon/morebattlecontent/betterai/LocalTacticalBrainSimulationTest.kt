@@ -33,6 +33,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveTargetPattern
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanIntent
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanUpdateOperation
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
@@ -648,6 +649,25 @@ class LocalTacticalBrainSimulationTest {
                 opponentAbilityId = "cobblemon:levitate",
             ).actionId,
         )
+    }
+
+    @Test
+    fun `neutralizing gas restores ground pressure against revealed levitate`() {
+        val ground = move("ground", power = 100.0, typeId = "ground")
+        val ordinary = contextOf(
+            candidates = listOf(ground),
+            opponentTypes = setOf("electric"),
+            opponentAbilityId = "cobblemon:levitate",
+        )
+        val gas = contextOf(
+            candidates = listOf(ground),
+            allyAbilityId = "cobblemon:neutralizinggas",
+            opponentTypes = setOf("electric"),
+            opponentAbilityId = "cobblemon:levitate",
+        )
+
+        assertEquals(0.0, LocalTacticalScorer.unprojectedPressureOf(ground, ordinary), 1e-12)
+        assertTrue(LocalTacticalScorer.unprojectedPressureOf(ground, gas) > 0.0)
     }
 
     @Test
