@@ -4,6 +4,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveCandidateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 
 /** Move-specific damage inputs that are completely determined by the public battle state. */
@@ -32,6 +33,7 @@ internal object LocalPublicMoveDamageInputs {
         val dynamicPower = speedRatioPower(id, actor, target, state)
             ?: hpDependentPowers(id, actor, wholePower)
             ?: targetHpDependentPowers(id, target)
+            ?: ppDependentPower(id, actor, details.currentPp)
         val fixedPower = when (id) {
             "acrobatics" -> wholePower?.let { if (actor.knownHeldItemId == null) it * 2 else it }
             "expandingforce" -> wholePower?.let {
@@ -61,7 +63,8 @@ internal object LocalPublicMoveDamageInputs {
             else -> wholePower
         }
         val powers = dynamicPower ?: when (id) {
-            in SPEED_RATIO_MOVES, in HP_DEPENDENT_MOVES, in TARGET_HP_DEPENDENT_MOVES -> return null
+            in SPEED_RATIO_MOVES, in HP_DEPENDENT_MOVES, in TARGET_HP_DEPENDENT_MOVES,
+            in PP_DEPENDENT_MOVES -> return null
             else -> fixedPower?.let(::setOf) ?: return null
         }
         val offensivePokemon = if (id == "foulplay") target else actor
@@ -219,6 +222,23 @@ internal object LocalPublicMoveDamageInputs {
         return (scaledPower / 100L).coerceAtLeast(1L).toInt()
     }
 
+    private fun ppDependentPower(
+        id: String,
+        actor: BattlePokemonStateView,
+        currentPp: Int,
+    ): Set<Int>? {
+        if (id !in PP_DEPENDENT_MOVES || actor.side != BattleSide.ALLY || currentPp <= 0) return null
+        val ppAfterUse = currentPp - 1
+        val power = when (ppAfterUse) {
+            0 -> 200
+            1 -> 80
+            2 -> 60
+            3 -> 50
+            else -> 40
+        }
+        return setOf(power)
+    }
+
     private fun BattlePokemonStateView.stage(stat: CombatStat): Int = when (stat) {
         CombatStat.ATTACK -> stage("attack", "atk")
         CombatStat.DEFENCE -> stage("defence", "defense", "def")
@@ -250,7 +270,7 @@ internal object LocalPublicMoveDamageInputs {
     private val PUBLICLY_RESOLVED_DYNAMIC_MOVES = setOf(
         "acrobatics", "expandingforce", "risingvoltage", "eruption", "waterspout",
         "dragonenergy", "flail", "reversal", "crushgrip", "wringout", "storedpower",
-        "powertrip", "punishment", "facade", "hex",
+        "powertrip", "punishment", "trumpcard", "facade", "hex",
         "infernalparade", "brine", "venoshock",
         "barbbarrage", "smellingsalts", "wakeupslap", "round", "fishiousrend", "boltbeak",
         "assurance", "payback", "avalanche", "revenge", "electroball", "gyroball",
@@ -261,6 +281,7 @@ internal object LocalPublicMoveDamageInputs {
         "eruption", "waterspout", "dragonenergy", "flail", "reversal",
     )
     private val TARGET_HP_DEPENDENT_MOVES = setOf("crushgrip", "wringout")
+    private val PP_DEPENDENT_MOVES = setOf("trumpcard")
     private val ELECTRO_BALL_POWERS = listOf(40, 60, 80, 120, 150)
 
     /** Fallback for synthetic/older candidates that predate declarative callback flags. */
