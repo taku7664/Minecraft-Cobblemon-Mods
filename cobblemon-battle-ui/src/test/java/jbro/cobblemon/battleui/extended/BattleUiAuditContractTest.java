@@ -93,8 +93,9 @@ final class BattleUiAuditContractTest {
         assertTrue(panel.contains("ActiveSlotTracker<UUID>"));
         assertFalse(interceptor.contains("StateUpdater.clearPokemonState"));
         assertFalse(updater.contains("fun clearPokemonState"));
+        assertTrue(keys.contains("cobblemon.battle.formechange.default.temporary.end\""));
         assertTrue(keys.contains("cobblemon.battle.formechange.default.temporary.ended"));
-        assertFalse(keys.contains("cobblemon.battle.formechange.default.temporary.end\""));
+        assertTrue(interceptor.contains("key in TranslationKeys.FORMECHANGE_ENDED_KEYS"));
     }
 
     @Test
@@ -179,7 +180,8 @@ final class BattleUiAuditContractTest {
         Set<String> missing = new HashSet<>();
         while (matcher.find()) {
             String key = matcher.group(1);
-            if (!cobblemonEnglish.has(key)) {
+            if (!cobblemonEnglish.has(key) &&
+                !TranslationKeys.INSTANCE.getRUNTIME_ONLY_BATTLE_KEYS().contains(key)) {
                 missing.add(key);
             }
         }

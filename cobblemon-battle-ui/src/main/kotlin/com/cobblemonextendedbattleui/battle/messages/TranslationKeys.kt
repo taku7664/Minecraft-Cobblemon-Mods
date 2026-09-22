@@ -290,7 +290,10 @@ object TranslationKeys {
 
     const val FORMECHANGE_PERMANENT_KEY = "cobblemon.battle.formechange.default.permanent"
     const val FORMECHANGE_TEMPORARY_KEY = "cobblemon.battle.formechange.default.temporary"
-    const val FORMECHANGE_ENDED_KEY = "cobblemon.battle.formechange.default.temporary.ended"
+    private const val FORMECHANGE_RUNTIME_END_KEY = "cobblemon.battle.formechange.default.temporary.end"
+    private const val FORMECHANGE_RESOURCE_ENDED_KEY = "cobblemon.battle.formechange.default.temporary.ended"
+    val FORMECHANGE_ENDED_KEYS = setOf(FORMECHANGE_RUNTIME_END_KEY, FORMECHANGE_RESOURCE_ENDED_KEY)
+    val RUNTIME_ONLY_BATTLE_KEYS = setOf(FORMECHANGE_RUNTIME_END_KEY)
     const val MEGA_FORMECHANGE_KEY = "cobblemon.battle.formechange.mega"
     const val MEGA_EVOLVED_KEY = "cobblemon.battle.mega"
 

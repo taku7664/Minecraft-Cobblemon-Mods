@@ -378,7 +378,7 @@ object BattleMessageInterceptor {
                 BattleStateTracker.updateTypesForFormChange(pokemonName, speciesId, formName)
             }
 
-            if (key == TranslationKeys.FORMECHANGE_ENDED_KEY && args.isNotEmpty()) {
+            if (key in TranslationKeys.FORMECHANGE_ENDED_KEYS && args.isNotEmpty()) {
                 val pokemonName = MessageParser.extractPokemonName(args[0])
                 BattleStateTracker.clearCurrentForm(pokemonName)
                 BattleStateTracker.restoreOriginalTypes(pokemonName)
