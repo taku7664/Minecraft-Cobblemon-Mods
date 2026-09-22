@@ -103,6 +103,21 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void lifeOrbRevealUsesTheCobblemonItemTranslation() {
+        UUID uuid = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(uuid, "Lucario", false);
+
+        StateUpdater.INSTANCE.extractLifeOrbReveal(new Object[] {"Lucario"});
+
+        assertEquals("item.cobblemon.life_orb", TranslationKeys.LIFE_ORB_ITEM_KEY);
+        assertEquals(
+            Text.translatable("item.cobblemon.life_orb").getString(),
+            AbilityItemTracker.INSTANCE.getItem(uuid).getName()
+        );
+        assertEquals(ItemStatus.HELD, AbilityItemTracker.INSTANCE.getItem(uuid).getStatus());
+    }
+
+    @Test
     void transformClearsTheOldAbilityWhenTheCopiedAbilityIsUnknown() {
         UUID transformer = UUID.randomUUID();
         AbilityItemTracker.INSTANCE.setRevealedAbility(transformer, "Imposter");

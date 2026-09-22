@@ -126,6 +126,7 @@ object TranslationKeys {
     const val TERASTALLIZE_KEY = "cobblemon.battle.terastallize"
     const val FRISK_KEY = "cobblemon.battle.item.frisk"
     const val LIFE_ORB_KEY = "cobblemon.battle.damage.lifeorb"
+    const val LIFE_ORB_ITEM_KEY = "item.cobblemon.life_orb"
     const val THIEF_KEY = "cobblemon.battle.item.thief"
     const val BESTOW_KEY = "cobblemon.battle.item.bestow"
 

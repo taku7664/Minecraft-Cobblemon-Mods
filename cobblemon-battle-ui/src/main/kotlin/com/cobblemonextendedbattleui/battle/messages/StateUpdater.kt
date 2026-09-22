@@ -181,7 +181,8 @@ object StateUpdater {
         if (args.isEmpty()) return
         val pokemonName = MessageParser.extractPokemonName(args[0])
         CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: Life Orb revealed for $pokemonName")
-        BattleStateTracker.setItem(pokemonName, "Life Orb", ItemStatus.HELD)
+        val itemName = Text.translatable(TranslationKeys.LIFE_ORB_ITEM_KEY).string
+        BattleStateTracker.setItem(pokemonName, itemName, ItemStatus.HELD)
     }
 
     fun extractFriskItem(args: Array<out Any>) {
