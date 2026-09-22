@@ -35,9 +35,19 @@ internal fun runManagedCleanupActionsSafely(
     try {
         runManagedCleanupActions(*actions)
     } catch (failure: RuntimeException) {
-        reportFailure(failure)
+        reportManagedCleanupFailureSafely(failure, reportFailure)
     } catch (failure: LinkageError) {
+        reportManagedCleanupFailureSafely(failure, reportFailure)
+    }
+}
+
+private fun reportManagedCleanupFailureSafely(failure: Throwable, reportFailure: (Throwable) -> Unit) {
+    try {
         reportFailure(failure)
+    } catch (_: RuntimeException) {
+        // Failure reporting cannot interrupt the surrounding lifecycle boundary.
+    } catch (_: LinkageError) {
+        // Compatibility reporters are best-effort during cleanup.
     }
 }
 

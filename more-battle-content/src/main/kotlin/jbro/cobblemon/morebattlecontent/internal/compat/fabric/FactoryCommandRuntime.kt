@@ -12,6 +12,7 @@ import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon17
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173FactoryPveBattleRuntime
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173ManagedBattleTermination
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173BattleForfeit
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupActionsSafely
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryBattleCompletionService
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryBattleRecordService
@@ -120,16 +121,16 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
         ServerPlayConnectionEvents.DISCONNECT.register { handler, server ->
             val playerId = handler.player.uuid
             dispatchToServerThread(server.isSameThread, { action -> server.execute(action) }) {
-                try {
-                    play.disconnect(playerId, Cobblemon173ManagedBattleTermination::end)
-                } catch (exception: RuntimeException) {
-                    jbro.cobblemon.morebattlecontent.MoreBattleContent.LOGGER.error(
-                        "Battle Factory disconnect settlement failed for $playerId",
-                        exception,
-                    )
-                } finally {
-                    onlinePlayers.remove(playerId)
-                }
+                runManagedCleanupActionsSafely(
+                    reportFailure = { failure ->
+                        jbro.cobblemon.morebattlecontent.MoreBattleContent.LOGGER.error(
+                            "Battle Factory disconnect cleanup failed for $playerId",
+                            failure,
+                        )
+                    },
+                    { play.disconnect(playerId, Cobblemon173ManagedBattleTermination::end) },
+                    { onlinePlayers.remove(playerId) },
+                )
             }
         }
     }

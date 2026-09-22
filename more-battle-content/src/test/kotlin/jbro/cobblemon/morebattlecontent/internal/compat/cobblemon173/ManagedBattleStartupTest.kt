@@ -139,4 +139,20 @@ class ManagedBattleStartupTest {
         assertSame(first, reported)
         assertEquals(listOf(second), reported?.suppressed?.toList())
     }
+
+    @Test
+    fun `safe cleanup reporter failure cannot escape its lifecycle boundary`() {
+        val events = ArrayList<String>()
+
+        runManagedCleanupActionsSafely(
+            reportFailure = {
+                events += "report"
+                throw NoSuchMethodError("logger API drift")
+            },
+            { throw IllegalStateException("cleanup failed") },
+            { events += "last-cleanup" },
+        )
+
+        assertEquals(listOf("last-cleanup", "report"), events)
+    }
 }
