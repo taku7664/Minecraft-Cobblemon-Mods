@@ -32,6 +32,16 @@ internal object LocalPublicMoveDamageInputs {
         val wholePower = details.power.toInt().takeIf { it > 0 && it.toDouble() == details.power }
         val fixedPower = when (id) {
             "acrobatics" -> wholePower?.let { if (actor.knownHeldItemId == null) it * 2 else it }
+            "expandingforce" -> wholePower?.let {
+                if (LocalPublicFieldMechanics.terrainId(state) == "psychicterrain" &&
+                    LocalPublicTurnOrder.grounded(state, actor)
+                ) it * 3 / 2 else it
+            }
+            "risingvoltage" -> wholePower?.let {
+                if (LocalPublicFieldMechanics.terrainId(state) == "electricterrain" &&
+                    LocalPublicTurnOrder.grounded(state, target)
+                ) it * 2 else it
+            }
             "storedpower", "powertrip" -> wholePower?.plus(20 * actor.positiveBoosts())
             "facade" -> wholePower?.let { if (actor.statusId != null) it * 2 else it }
             "hex", "infernalparade" -> wholePower?.let { if (target.statusId != null) it * 2 else it }
@@ -184,7 +194,8 @@ internal object LocalPublicMoveDamageInputs {
         "dynamic_base_power", "dynamic_move_type", "dynamic_damage_category", "dynamic_damage_value",
     )
     private val PUBLICLY_RESOLVED_DYNAMIC_MOVES = setOf(
-        "acrobatics", "storedpower", "powertrip", "facade", "hex", "infernalparade", "brine", "venoshock",
+        "acrobatics", "expandingforce", "risingvoltage", "storedpower", "powertrip", "facade",
+        "hex", "infernalparade", "brine", "venoshock",
         "barbbarrage", "smellingsalts", "wakeupslap", "round", "fishiousrend", "boltbeak",
         "assurance", "payback", "avalanche", "revenge", "electroball", "gyroball",
     )

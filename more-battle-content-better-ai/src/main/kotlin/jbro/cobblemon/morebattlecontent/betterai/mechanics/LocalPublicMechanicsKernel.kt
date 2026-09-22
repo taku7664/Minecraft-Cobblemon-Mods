@@ -130,6 +130,13 @@ internal object LocalPublicMechanicsKernel {
                 publiclyNullified = true,
             )
         }
+        val terrainMultiplier = terrainDamageMultiplier(
+            moveId = canonicalOrNull(candidate.moveId),
+            moveType = moveType,
+            actor = actor,
+            target = target,
+            context = context,
+        )
         val screenMultiplier = if (details.effects?.effects.orEmpty().any {
             it.kind == BattleMoveEffectKind.ALWAYS_CRITICAL
         }) 1.0 else screenDamageMultiplier(
@@ -140,7 +147,7 @@ internal object LocalPublicMechanicsKernel {
             targetSide = if (actingSide == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY,
         )
         return LocalPublicMoveProjection(
-            knownDamageMultiplier = abilityMultiplier * weatherMultiplier * screenMultiplier,
+            knownDamageMultiplier = abilityMultiplier * weatherMultiplier * terrainMultiplier * screenMultiplier,
             targetHpFraction = target.hpFraction,
             publiclyNullified = false,
         )
@@ -293,6 +300,40 @@ internal object LocalPublicMechanicsKernel {
         }
     }
 
+    private fun terrainDamageMultiplier(
+        moveId: String?,
+        moveType: String,
+        actor: BattlePokemonStateView?,
+        target: BattlePokemonStateView,
+        context: BattleDecisionContext,
+    ): Double {
+        val actorGrounded = actor?.let { LocalPublicTurnOrder.grounded(context.state, it) } == true
+        val targetGrounded = LocalPublicTurnOrder.grounded(context.state, target)
+        val actorSemiInvulnerable = actor?.isSemiInvulnerable() == true
+        val targetSemiInvulnerable = target.isSemiInvulnerable()
+        return when (LocalPublicFieldMechanics.terrainId(context.state)) {
+            ELECTRIC_TERRAIN -> if (
+                moveType == ELECTRIC && actorGrounded && !actorSemiInvulnerable
+            ) TERRAIN_TYPE_BOOST else 1.0
+            GRASSY_TERRAIN -> when {
+                moveId in GRASSY_TERRAIN_WEAKENED_MOVES && targetGrounded && !targetSemiInvulnerable -> 0.5
+                moveType == GRASS && actorGrounded -> TERRAIN_TYPE_BOOST
+                else -> 1.0
+            }
+            PSYCHIC_TERRAIN -> if (
+                moveType == PSYCHIC && actorGrounded && !actorSemiInvulnerable
+            ) TERRAIN_TYPE_BOOST else 1.0
+            MISTY_TERRAIN -> if (
+                moveType == DRAGON && targetGrounded && !targetSemiInvulnerable
+            ) 0.5 else 1.0
+            else -> 1.0
+        }
+    }
+
+    private fun BattlePokemonStateView.isSemiInvulnerable(): Boolean = knownVolatileEffectIds.any {
+        canonical(it) in SEMI_INVULNERABLE_VOLATILES
+    }
+
     private fun screenDamageMultiplier(
         category: BattleMoveDamageCategory,
         actorAbility: String?,
@@ -388,6 +429,14 @@ internal object LocalPublicMechanicsKernel {
     private const val OVERCOAT = "overcoat"
     private val PRIORITY_BLOCKING_ABILITIES = setOf("armortail", "queenlymajesty", "dazzling")
     private const val PSYCHIC_TERRAIN = "psychicterrain"
+    private const val ELECTRIC_TERRAIN = "electricterrain"
+    private const val GRASSY_TERRAIN = "grassyterrain"
+    private const val MISTY_TERRAIN = "mistyterrain"
+    private const val TERRAIN_TYPE_BOOST = 5325.0 / 4096.0
+    private val GRASSY_TERRAIN_WEAKENED_MOVES = setOf("earthquake", "bulldoze", "magnitude")
+    private val SEMI_INVULNERABLE_VOLATILES = setOf(
+        "bounce", "dig", "dive", "fly", "phantomforce", "shadowforce", "skydrop",
+    )
     private val HOSTILE_TARGET_PATTERNS = setOf(
         BattleMoveTargetPattern.SELECTED,
         BattleMoveTargetPattern.SELECTED_OPPONENT,
@@ -416,6 +465,8 @@ internal object LocalPublicMechanicsKernel {
     private const val DARK = "dark"
     private const val ICE = "ice"
     private const val GHOST = "ghost"
+    private const val DRAGON = "dragon"
+    private const val PSYCHIC = "psychic"
     private const val POISON = "poison"
     private const val STEEL = "steel"
     private const val WONDER_GUARD = "wonderguard"
