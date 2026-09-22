@@ -51,6 +51,22 @@ final class BattleUiAuditContractTest {
     }
 
     @Test
+    void temporaryActiveSlotGapsNeverGuessThatAPokemonFainted() throws Exception {
+        String indicators = read("src/main/kotlin/com/cobblemonextendedbattleui/TeamIndicatorUI.kt");
+        String health = read(
+            "src/main/java/com/cobblemonextendedbattleui/mixin/BattleHealthChangeHandlerMixin.java"
+        );
+        String updater = read(
+            "src/main/kotlin/com/cobblemonextendedbattleui/battle/messages/StateUpdater.kt"
+        );
+
+        assertFalse(indicators.contains("previouslyActiveUuids"));
+        assertFalse(indicators.contains("disappeared with no replacement"));
+        assertTrue(health.contains("if (newPercent <= 0 && needsKOTracking)"));
+        assertTrue(updater.contains("TeamIndicatorUI.markPokemonAsKO(pokemonName)"));
+    }
+
+    @Test
     void generalBattleCommandsReflowDuringRendering() throws Exception {
         String navigation = read(
             "src/main/java/com/cobblemonextendedbattleui/mixin/BattleGuiNavigationMixin.java"

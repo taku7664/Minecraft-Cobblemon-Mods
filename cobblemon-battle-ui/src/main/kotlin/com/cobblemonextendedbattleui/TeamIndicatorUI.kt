@@ -96,10 +96,6 @@ object TeamIndicatorUI {
     // (handles Impostor ability where transform happens immediately on switch-in)
     private val pendingTransforms = ConcurrentHashMap.newKeySet<UUID>()
 
-    // Track which Pokemon were active last frame (for detecting disappeared/KO'd Pokemon)
-    // Maps: isLeftSide -> Set of UUIDs that were in activePokemon
-    private val previouslyActiveUuids = ConcurrentHashMap<Boolean, MutableSet<UUID>>()
-
     private var lastBattleId: UUID? = null
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -210,7 +206,6 @@ object TeamIndicatorUI {
         trackedSide2Pokemon.clear()
         knockedOutPokemon.clear()
         pendingTransforms.clear()
-        previouslyActiveUuids.clear()
         PokemonModelRenderer.clearFloatingStates()
         clearFrameInteractionBounds()
         wasIncreaseFontKeyPressed = false
@@ -836,65 +831,19 @@ object TeamIndicatorUI {
         }
     }
 
-    /**
-     * Update tracked Pokemon for a battle side (used for opponent and spectator views).
-     * Also detects Pokemon that disappeared from activePokemon without a switch message,
-     * indicating they were KO'd (e.g., by Perish Song, Memento, Explosion).
-     */
+    /** Update tracked Pokemon for a battle side (used for opponent and spectator views). */
     private fun updateTrackedPokemonForSide(
         side: ClientBattleSide,
         tracked: ConcurrentHashMap<UUID, TrackedPokemon>,
         isLeftSide: Boolean,
         isPlayerSide: Boolean = isLeftSide  // Default: left side is player's side (unless spectating)
     ) {
-        val currentlyActiveUuids = mutableSetOf<UUID>()
-
         for (actor in side.actors) {
             for (activePokemon in actor.activePokemon) {
                 val battlePokemon = activePokemon.battlePokemon ?: continue
-                currentlyActiveUuids.add(battlePokemon.uuid)
                 updateTrackedPokemonInMap(battlePokemon, tracked, isPlayerSide, actor.displayName.string)
             }
         }
-
-        // Check for Pokemon that were active last frame but aren't anymore
-        val previousActive = previouslyActiveUuids[isLeftSide]
-        if (previousActive != null) {
-            // Key insight: if a Pokemon left AND a new Pokemon appeared on this side,
-            // it was a switch (or faint + replacement). If a Pokemon left but no new
-            // one appeared, it was a KO with no replacement available.
-            //
-            // We do NOT check switchMessageReceived here because of a race condition:
-            // the battle state (activePokemon) can update before the switch message is processed.
-            // The presence of a new Pokemon on the same side is sufficient evidence of a switch.
-            val newPokemonAppearedOnThisSide = currentlyActiveUuids.any { it !in previousActive }
-
-            for (uuid in previousActive) {
-                if (uuid !in currentlyActiveUuids) {
-                    // Pokemon left the active slot on this side
-                    if (newPokemonAppearedOnThisSide) {
-                        // A new Pokemon appeared on this side - the old one was replaced
-                        // Don't auto-mark as KO; if it fainted, the faint message handles it
-                        CobblemonExtendedBattleUI.LOGGER.debug(
-                            "TeamIndicatorUI: Pokemon $uuid left active (replaced by new Pokemon on ${if (isLeftSide) "left" else "right"} side)"
-                        )
-                    } else if (!isPokemonKO(uuid)) {
-                        // No new Pokemon appeared - this was a KO with no replacement
-                        // (last Pokemon fainted, or self-KO move like Explosion/Memento)
-                        val pokemon = tracked[uuid]
-                        if (pokemon != null && !pokemon.isKO) {
-                            CobblemonExtendedBattleUI.LOGGER.debug(
-                                "TeamIndicatorUI: Pokemon $uuid disappeared with no replacement - marking as KO"
-                            )
-                            markPokemonAsKO(uuid)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Update tracking for next frame
-        previouslyActiveUuids[isLeftSide] = currentlyActiveUuids
     }
 
     private fun calculateIndicatorY(activeCount: Int): Int {
