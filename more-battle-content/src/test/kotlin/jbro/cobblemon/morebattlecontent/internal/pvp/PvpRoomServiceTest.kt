@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class PvpRoomServiceTest {
     private val host = id(1)
@@ -74,6 +75,21 @@ class PvpRoomServiceTest {
         assertEquals(PvpRoomPhase.ACTIVE, joined.room.phase)
         assertEquals(listOf(spectator), joined.room.spectatorIds)
         assertTrue(rooms.publicRooms().any { it.roomId == roomId && it.phase == PvpRoomPhase.ACTIVE })
+    }
+
+    @Test
+    fun `room views expose an immutable spectator snapshot`() {
+        val rooms = PvpRoomService { roomId }
+        rooms.create(host, settings(PvpRoomVisibility.PUBLIC))
+        rooms.claimSeat(roomId, host, PvpRoomSide.LEFT)
+        rooms.join(roomId, spectator)
+        val view = requireNotNull(rooms.get(roomId))
+
+        assertThrows<UnsupportedOperationException> {
+            (view.spectatorIds as MutableList<UUID>).clear()
+        }
+        assertEquals(listOf(spectator), view.spectatorIds)
+        assertEquals(setOf(host, spectator), view.memberIds)
     }
 
     @Test

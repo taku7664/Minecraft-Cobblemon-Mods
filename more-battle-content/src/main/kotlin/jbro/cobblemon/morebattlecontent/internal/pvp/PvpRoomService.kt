@@ -49,8 +49,6 @@ internal data class PvpRoomView(
     val rightPlayerId: UUID?,
     val spectatorIds: List<UUID>,
 ) {
-    val immutableSpectatorIds: List<UUID> = Collections.unmodifiableList(ArrayList(spectatorIds))
-
     val memberIds: Set<UUID>
         get() = buildSet {
             leftPlayerId?.let(::add)
@@ -318,7 +316,9 @@ internal class PvpRoomService(
             phase = phase,
             leftPlayerId = leftPlayerId,
             rightPlayerId = rightPlayerId,
-            spectatorIds = members.keys.filter { it != leftPlayerId && it != rightPlayerId },
+            spectatorIds = Collections.unmodifiableList(
+                members.keys.filter { it != leftPlayerId && it != rightPlayerId },
+            ),
         )
     }
 }
