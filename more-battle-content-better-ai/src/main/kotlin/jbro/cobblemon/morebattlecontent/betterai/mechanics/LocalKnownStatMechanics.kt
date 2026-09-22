@@ -14,10 +14,11 @@ internal object LocalKnownStatMechanics {
         state: BattleStateView,
         action: BattleActionCandidate,
     ): Int {
+        val resolvedBasePower = if (ROUND_POWER_DOUBLED_TAG in action.tags) basePower * 2 else basePower
         val technician = if (
-            LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "technician" && basePower <= 60
+            LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "technician" && resolvedBasePower <= 60
         ) 1.5 else 1.0
-        return (basePower * technician * turnPowerMultiplier(action)).toInt().coerceAtLeast(1)
+        return (resolvedBasePower * technician * turnPowerMultiplier(action)).toInt().coerceAtLeast(1)
     }
 
     fun turnPowerMultiplier(action: BattleActionCandidate): Double = action.tags
@@ -28,6 +29,7 @@ internal object LocalKnownStatMechanics {
         ?: 1.0
 
     const val TURN_POWER_MULTIPLIER_TAG_PREFIX = "better_ai:turn_power_multiplier="
+    const val ROUND_POWER_DOUBLED_TAG = "better_ai:round_power_doubled"
 
     /**
      * The attacking stat after items the battle has made public.

@@ -102,9 +102,10 @@ internal object PublicSingleTurnProjector {
             if (!shouldContinue()) return emptyList()
             scheduled = scheduled.flatMap { current ->
                 if (current.remaining.isEmpty()) return@flatMap listOf(current)
-                val nextChoices = current.promotedNextAction
-                    ?.takeIf { it in current.remaining }
-                    ?.let { listOf(WeightedNextAction(it, 1.0)) }
+                val promoted = current.promotedNextActions.filter { it in current.remaining }
+                val nextChoices = promoted
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { nextActionChoices(sourceContext.state, current.branch.state, it) }
                     ?: current.remaining.filterNot { it in current.postponedActions }
                         .ifEmpty { current.remaining }
                         .let { nextActionChoices(sourceContext.state, current.branch.state, it) }
@@ -113,9 +114,14 @@ internal object PublicSingleTurnProjector {
                     val powerMultiplier = next.action.actorPokemonId
                         ?.let(current.turnPowerMultipliersByPokemon::get)
                         ?: 1.0
+                    val effectiveNext = if (next.action.actorPokemonId in current.roundBoostedPokemonIds) {
+                        next.action.withRoundPowerDoubled()
+                    } else {
+                        next.action
+                    }
                     applyScheduledAction(
                         branch = current.branch,
-                        ordered = next.action.withTurnPowerMultiplier(powerMultiplier),
+                        ordered = effectiveNext.withTurnPowerMultiplier(powerMultiplier),
                         pending = remaining,
                         sourceContext = sourceContext,
                         history = history,
@@ -129,12 +135,18 @@ internal object PublicSingleTurnProjector {
                             current.turnPowerMultipliersByPokemon - it
                         } ?: current.turnPowerMultipliersByPokemon
                         val helpedId = successfulHelpingHandTarget(next.action, reboundRemaining, projected)?.actorPokemonId
+                        val roundFollowers = successfulRoundFollowers(next.action, reboundRemaining, projected)
                         ScheduledTurnBranch(
                             branch = projected,
                             remaining = reboundRemaining,
                             order = current.order + next.action,
                             orderProbability = current.orderProbability * next.probability,
-                            promotedNextAction = promotedAfterYouAction(next.action, reboundRemaining, projected),
+                            promotedNextActions = listOfNotNull(
+                                promotedAfterYouAction(next.action, reboundRemaining, projected),
+                            ).toSet() + roundFollowers,
+                            roundBoostedPokemonIds = roundFollowers.mapNotNullTo(linkedSetOf()) {
+                                it.actorPokemonId
+                            },
                             postponedActions = current.postponedActions
                                 .filterNot { it == next.action }
                                 .mapNotNull { postponed ->
@@ -1581,6 +1593,29 @@ internal object PublicSingleTurnProjector {
         outcome: WeightedState,
     ): TurnPrimitiveAction? = successfulQueueControlTarget(executed, remaining, outcome, AFTER_YOU)
 
+    /**
+     * A Round that really started causes the next pending Round to run immediately at doubled base
+     * power. All pending Round actions are candidates here because hidden Speed ranges can leave their
+     * relative queue order uncertain; [nextActionChoices] keeps that uncertainty instead of inventing
+     * one ordering. Only the selected candidate is boosted, and it must itself execute to continue the
+     * chain.
+     */
+    private fun successfulRoundFollowers(
+        executed: TurnPrimitiveAction,
+        remaining: List<TurnPrimitiveAction>,
+        outcome: WeightedState,
+    ): Set<TurnPrimitiveAction> {
+        if (canonicalId(executed.action.moveId) != ROUND) return emptySet()
+        val actorId = executed.actorPokemonId ?: return emptySet()
+        if (canonicalId(outcome.executedMoveIdsByPokemon[actorId]) != ROUND) return emptySet()
+        val activePokemonIds = outcome.state.pokemon.filterTo(linkedSetOf()) {
+            it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+        }.mapTo(linkedSetOf()) { it.battlePokemonId }
+        return remaining.filterTo(linkedSetOf()) {
+            canonicalId(it.action.moveId) == ROUND && it.actorPokemonId in activePokemonIds
+        }
+    }
+
     /** Quash changes the target move's queue order from the normal move order to 201. */
     private fun postponedByQuashAction(
         executed: TurnPrimitiveAction,
@@ -1696,6 +1731,24 @@ internal object PublicSingleTurnProjector {
             ),
         )
     }
+
+    private fun TurnPrimitiveAction.withRoundPowerDoubled(): TurnPrimitiveAction = copy(
+        action = BattleActionCandidate(
+            actionId = action.actionId,
+            kind = action.kind,
+            actorSlot = action.actorSlot,
+            moveSlot = action.moveSlot,
+            moveId = action.moveId,
+            targets = action.targets,
+            switchPokemonId = action.switchPokemonId,
+            componentActionIds = action.componentActionIds,
+            componentActions = action.componentActions,
+            mechanic = action.mechanic,
+            moveDetails = action.moveDetails,
+            facts = null,
+            tags = action.tags + LocalKnownStatMechanics.ROUND_POWER_DOUBLED_TAG,
+        ),
+    )
 
     private fun successfulQueueControlTarget(
         executed: TurnPrimitiveAction,
@@ -1924,7 +1977,8 @@ internal object PublicSingleTurnProjector {
         val remaining: List<TurnPrimitiveAction>,
         val order: List<TurnPrimitiveAction> = emptyList(),
         val orderProbability: Double = 1.0,
-        val promotedNextAction: TurnPrimitiveAction? = null,
+        val promotedNextActions: Set<TurnPrimitiveAction> = emptySet(),
+        val roundBoostedPokemonIds: Set<UUID> = emptySet(),
         val postponedActions: Set<TurnPrimitiveAction> = emptySet(),
         val turnPowerMultipliersByPokemon: Map<UUID, Double> = emptyMap(),
     )
@@ -1979,6 +2033,7 @@ internal object PublicSingleTurnProjector {
     private const val AFTER_YOU = "afteryou"
     private const val QUASH = "quash"
     private const val HELPING_HAND = "helpinghand"
+    private const val ROUND = "round"
     private const val ALLY_SWITCH = "allyswitch"
     private const val MAT_BLOCK = "matblock"
     private const val HELPING_HAND_MULTIPLIER = 1.5
