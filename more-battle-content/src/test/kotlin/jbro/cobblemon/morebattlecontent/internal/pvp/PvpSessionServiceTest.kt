@@ -5,6 +5,7 @@ import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordStore
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -257,7 +258,7 @@ class PvpSessionServiceTest {
 
     @Test
     fun `snapshot cleanup failure cannot leave a cancelled battle active or block a rematch`() {
-        val snapshots = RecordingSnapshots(discardFailurePlayer = first)
+        val snapshots = RecordingSnapshots(discardFailure = first to IllegalStateException("snapshot store unavailable"))
         val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
         ready(service)
         service.select(matchId, second, ids(second, 4))
@@ -274,6 +275,25 @@ class PvpSessionServiceTest {
             service.invite(PvpChallengeRequest(matchId, second, first, PvpBattleFormat.SINGLE)) is
                 PvpChallengeMutationResult.Applied,
         )
+    }
+
+    @Test
+    fun `snapshot compatibility failure cannot skip the other player cleanup`() {
+        val failure = NoSuchMethodError("snapshot API drift")
+        val snapshots = RecordingSnapshots(discardFailure = first to failure)
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.ready(matchId, second))
+
+        val thrown = assertThrows(NoSuchMethodError::class.java) {
+            service.cancelBattle(matchId, battleId)
+        }
+
+        assertSame(failure, thrown)
+        assertNull(service.challenge(matchId))
+        assertNull(service.battleIdFor(matchId))
+        assertEquals(setOf(first, second), snapshots.discarded)
     }
 
     @Test
@@ -334,7 +354,7 @@ class PvpSessionServiceTest {
 
     private class RecordingSnapshots(
         private val rejectedPlayer: UUID? = null,
-        private val discardFailurePlayer: UUID? = null,
+        private val discardFailure: Pair<UUID, Throwable>? = null,
     ) : PvpSessionSnapshots<String>, PvpBattleTeamMaterializer<String> {
         val captured = LinkedHashSet<UUID>()
         val discarded = LinkedHashSet<UUID>()
@@ -354,7 +374,7 @@ class PvpSessionServiceTest {
 
         override fun discard(playerId: UUID) {
             discarded += playerId
-            if (playerId == discardFailurePlayer) error("snapshot store unavailable")
+            discardFailure?.takeIf { it.first == playerId }?.second?.let { throw it }
         }
     }
 }

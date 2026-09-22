@@ -360,12 +360,16 @@ internal class PvpSessionService<P>(
         timers.remove(matchId)
         matches.remove(matchId)
 
-        var failure: Exception? = null
+        var failure: Throwable? = null
         fun attempt(action: () -> Unit) {
             try {
                 action()
             } catch (error: Exception) {
-                if (failure == null) failure = error else failure.addSuppressed(error)
+                val original = failure
+                if (original == null) failure = error else if (original !== error) original.addSuppressed(error)
+            } catch (error: LinkageError) {
+                val original = failure
+                if (original == null) failure = error else if (original !== error) original.addSuppressed(error)
             }
         }
 
