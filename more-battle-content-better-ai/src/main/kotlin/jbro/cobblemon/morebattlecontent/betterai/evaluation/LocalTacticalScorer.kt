@@ -17,6 +17,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyBrief
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyObjective
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveDamageInputs
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalRiskAttitude
@@ -607,7 +608,12 @@ internal object LocalTacticalScorer {
             val multiplier = if (target.knownTypeIds.isEmpty()) {
                 1.0
             } else {
-                StandardTypeEffectiveness.multiplier(details.typeId, target.knownTypeIds)
+                LocalPublicMechanicsKernel.publicDamageMultiplierAgainst(
+                    candidate,
+                    context,
+                    BattleSide.ALLY,
+                    target,
+                )
             }
             if (tuning.legacyRawPowerFallback) {
                 effectivePower * sameTypeBonus * multiplier

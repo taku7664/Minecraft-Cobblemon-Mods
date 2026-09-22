@@ -47,6 +47,13 @@ class LocalDoublesAllyCollateralTest {
     }
 
     @Test
+    fun `public ally abilities prevent collateral when their mechanics do`() {
+        val flying = quakeScore(context(allyTypes = setOf("flying")))
+        assertEquals(flying, quakeScore(context(allyTypes = setOf("normal"), allyAbility = "levitate")), 1e-9)
+        assertEquals(flying, quakeScore(context(allyTypes = setOf("normal"), allyAbility = "telepathy")), 1e-9)
+    }
+
+    @Test
     fun `the charge does not swamp the attack it is attached to`() {
         val grounded = LocalDecisionInstrumentation.inspect(context(allyTypes = setOf("normal")))
         val quake = requireNotNull(grounded.candidates.single { it.actionId == "earthquake" })
@@ -66,9 +73,12 @@ class LocalDoublesAllyCollateralTest {
         )
     }
 
-    private fun context(allyTypes: Set<String>): BattleDecisionContext {
+    private fun quakeScore(context: BattleDecisionContext): Double = LocalDecisionInstrumentation.inspect(context)
+        .candidates.single { it.actionId == "earthquake" }.comparisonValue
+
+    private fun context(allyTypes: Set<String>, allyAbility: String? = null): BattleDecisionContext {
         val actor = mon(BattleSide.ALLY, 0, setOf("ground"))
-        val partner = mon(BattleSide.ALLY, 1, allyTypes)
+        val partner = mon(BattleSide.ALLY, 1, allyTypes, allyAbility)
         val opponents = listOf(mon(BattleSide.OPPONENT, 0, setOf("normal")), mon(BattleSide.OPPONENT, 1, setOf("normal")))
         return BattleDecisionContext(
             requestId = UUID.randomUUID(),
@@ -105,11 +115,11 @@ class LocalDoublesAllyCollateralTest {
         ),
     )
 
-    private fun mon(side: BattleSide, slot: Int, types: Set<String>) = BattlePokemonStateView(
+    private fun mon(side: BattleSide, slot: Int, types: Set<String>, ability: String? = null) = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(), side = side, activeSlot = slot,
         speciesId = "cobblemon:probe_${side.name.lowercase()}_$slot", formId = null, level = 50,
         hpFraction = 1.0, statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(),
-        knownAbilityId = null, knownHeldItemId = null, fainted = false, knownTypeIds = types,
+        knownAbilityId = ability, knownHeldItemId = null, fainted = false, knownTypeIds = types,
         combatStats = if (side == BattleSide.ALLY) {
             BattleCombatStatRangesView.exact(200, 140, 100, 100, 100, 100)
         } else {

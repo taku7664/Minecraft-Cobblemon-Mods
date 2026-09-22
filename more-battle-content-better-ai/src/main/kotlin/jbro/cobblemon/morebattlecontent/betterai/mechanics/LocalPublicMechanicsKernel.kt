@@ -17,6 +17,40 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
  * base model into a final damage claim, and it never reads unrevealed opponent state.
  */
 internal object LocalPublicMechanicsKernel {
+    fun publicDamageMultiplierAgainst(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        actingSide: BattleSide,
+        target: BattlePokemonStateView,
+    ): Double {
+        val details = candidate.moveDetails ?: return 1.0
+        val actor = context.state.pokemon.firstOrNull {
+            it.side == actingSide && it.activeSlot == candidate.actorSlot && !it.fainted
+        }
+        val ignoresAbility = LocalPublicAbilityMechanics.ignoresTargetAbility(
+            candidate, actor, target, context.state,
+        )
+        if (specialTargetImmunity(
+                candidate, context, actingSide, target,
+                canonicalOrNull(actor?.knownAbilityId), ignoresAbility,
+            )
+        ) return 0.0
+        val ignoresTypeImmunity = details.effects?.effects.orEmpty().any {
+            it.kind == BattleMoveEffectKind.IGNORE_TYPE_IMMUNITY
+        }
+        val base = StandardTypeEffectiveness.multiplierAgainst(
+            details.typeId,
+            target.knownTypeIds,
+            publicAbility(target, context),
+            ignoreTypeImmunity = ignoresTypeImmunity,
+            applyAbilities = !ignoresAbility,
+            moveId = candidate.moveId,
+        )
+        return if (ignoresAbility) base else base * abilityDamageMultiplier(
+            canonical(details.typeId), publicAbility(target, context),
+        )
+    }
+
     fun projectMove(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
@@ -122,14 +156,30 @@ internal object LocalPublicMechanicsKernel {
         actorAbility: String?,
         ignoresAbility: Boolean,
     ): Boolean {
-        if (target.side == actingSide || !targetsOpponent(candidate, actingSide)) return false
         val details = candidate.moveDetails ?: return false
         val types = target.knownTypeIds.mapTo(linkedSetOf(), ::canonical)
-        if (actorAbility == PRANKSTER && details.damageCategory == BattleMoveDamageCategory.STATUS && DARK in types) {
+        val ability = publicAbility(target, context)
+        val flags = details.effects?.mechanicFlags.orEmpty().mapTo(hashSetOf(), ::canonical)
+        if (!ignoresAbility && when (ability) {
+                WIND_RIDER -> WIND_FLAG in flags
+                BULLETPROOF -> BULLET_FLAG in flags
+                SOUNDPROOF -> SOUND_FLAG in flags
+                TELEPATHY -> target.side == actingSide && details.damageCategory != BattleMoveDamageCategory.STATUS
+                else -> false
+            }
+        ) return true
+        if (!ignoresAbility && target.side != actingSide &&
+            details.damageCategory == BattleMoveDamageCategory.STATUS
+        ) {
+            if (ability == GOOD_AS_GOLD) return true
+            if (ability == MAGIC_BOUNCE && REFLECTABLE_FLAG in flags) return true
+        }
+        if (target.side != actingSide && targetsOpponent(candidate, actingSide) &&
+            actorAbility == PRANKSTER && details.damageCategory == BattleMoveDamageCategory.STATUS && DARK in types
+        ) {
             return true
         }
         if (POWDER_FLAG !in details.effects?.mechanicFlags.orEmpty()) return false
-        val ability = publicAbility(target, context)
         val item = target.knownHeldItemId
             ?.takeUnless { LocalPublicFieldMechanics.magicRoomActive(context.state) }
             ?.let(::canonicalOrNull)
@@ -324,6 +374,16 @@ internal object LocalPublicMechanicsKernel {
     )
     private const val PRANKSTER = "prankster"
     private const val POWDER_FLAG = "powder"
+    private const val WIND_FLAG = "wind"
+    private const val BULLET_FLAG = "bullet"
+    private const val SOUND_FLAG = "sound"
+    private const val WIND_RIDER = "windrider"
+    private const val BULLETPROOF = "bulletproof"
+    private const val SOUNDPROOF = "soundproof"
+    private const val TELEPATHY = "telepathy"
+    private const val GOOD_AS_GOLD = "goodasgold"
+    private const val MAGIC_BOUNCE = "magicbounce"
+    private const val REFLECTABLE_FLAG = "reflectable"
     private const val SAFETY_GOGGLES = "safetygoggles"
     private const val OVERCOAT = "overcoat"
     private val PRIORITY_BLOCKING_ABILITIES = setOf("armortail", "queenlymajesty", "dazzling")

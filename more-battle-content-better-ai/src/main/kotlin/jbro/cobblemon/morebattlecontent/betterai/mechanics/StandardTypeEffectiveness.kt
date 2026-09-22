@@ -79,7 +79,6 @@ internal object StandardTypeEffectiveness {
         "motordrive" to setOf("electric"),
         "sapsipper" to setOf("grass"),
         "eartheater" to setOf("ground"),
-        "windrider" to setOf("flying"),
     )
 
     private val ATTACK_MULTIPLIERS: Map<String, Map<String, Double>> = mapOf(
