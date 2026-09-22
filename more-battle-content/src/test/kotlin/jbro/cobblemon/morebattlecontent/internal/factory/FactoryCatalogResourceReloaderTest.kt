@@ -44,6 +44,30 @@ class FactoryCatalogResourceReloaderTest {
         assertSame(before, store.snapshot())
     }
 
+    @Test
+    fun `linkage failure closes earlier readers and preserves its cause`() {
+        val store = FactoryCatalogStore()
+        val reloader = FactoryCatalogResourceReloader(store)
+        reloader.reload(bundledResources())
+        val before = store.snapshot()
+        val first = TrackingReader(Files.readString(resourceFiles(TRAINER_DIRECTORY).first()))
+        val failure = NoSuchMethodError("resource API drift")
+
+        val outcome = reloader.reload(
+            FactoryCatalogResourceBundle(
+                trainers = listOf(
+                    CatalogResourceInput("first.json") { first },
+                    CatalogResourceInput("broken.json") { throw failure },
+                ),
+                rentalSets = resourceInputs(RENTAL_SET_DIRECTORY),
+            ),
+        ) as FactoryCatalogReloadOutcome.ReadFailed
+
+        assertSame(failure, outcome.cause)
+        assertTrue(first.closed)
+        assertSame(before, store.snapshot())
+    }
+
     private fun bundledResources() = FactoryCatalogResourceBundle(
         trainers = resourceInputs(TRAINER_DIRECTORY),
         rentalSets = resourceInputs(RENTAL_SET_DIRECTORY),

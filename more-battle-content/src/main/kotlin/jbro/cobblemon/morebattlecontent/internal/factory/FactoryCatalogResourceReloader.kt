@@ -8,7 +8,7 @@ internal sealed interface FactoryCatalogReloadOutcome {
     data class Applied(val catalog: FactoryCatalog) : FactoryCatalogReloadOutcome
     data object MissingResource : FactoryCatalogReloadOutcome
     data class Rejected(val issues: List<FactoryCatalogIssue>) : FactoryCatalogReloadOutcome
-    data class ReadFailed(val cause: Exception) : FactoryCatalogReloadOutcome
+    data class ReadFailed(val cause: Throwable) : FactoryCatalogReloadOutcome
 }
 
 internal data class FactoryCatalogResourceBundle(
@@ -34,6 +34,8 @@ internal class FactoryCatalogResourceReloader(
             }
         } catch (exception: Exception) {
             FactoryCatalogReloadOutcome.ReadFailed(exception)
+        } catch (error: LinkageError) {
+            FactoryCatalogReloadOutcome.ReadFailed(error)
         } finally {
             closeCatalogResourcesSafely(readers)
         }
@@ -50,6 +52,8 @@ internal class FactoryCatalogResourceReloader(
             }
         } catch (exception: Exception) {
             FactoryCatalogReloadOutcome.ReadFailed(exception)
+        } catch (error: LinkageError) {
+            FactoryCatalogReloadOutcome.ReadFailed(error)
         } finally {
             closeCatalogResourcesSafely(readers.map { it.second })
         }
@@ -60,6 +64,8 @@ internal class FactoryCatalogResourceReloader(
             openReader()
         } catch (exception: Exception) {
             return FactoryCatalogReloadOutcome.ReadFailed(exception)
+        } catch (error: LinkageError) {
+            return FactoryCatalogReloadOutcome.ReadFailed(error)
         } ?: return FactoryCatalogReloadOutcome.MissingResource
 
         return try {
@@ -71,6 +77,8 @@ internal class FactoryCatalogResourceReloader(
             }
         } catch (exception: Exception) {
             FactoryCatalogReloadOutcome.ReadFailed(exception)
+        } catch (error: LinkageError) {
+            FactoryCatalogReloadOutcome.ReadFailed(error)
         }
     }
 }

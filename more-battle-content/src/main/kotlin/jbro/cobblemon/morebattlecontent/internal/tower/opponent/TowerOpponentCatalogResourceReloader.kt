@@ -8,7 +8,7 @@ internal sealed interface TowerOpponentCatalogReloadOutcome {
     data class Applied(val catalog: TowerOpponentCatalog) : TowerOpponentCatalogReloadOutcome
     data class Rejected(val issues: List<TowerOpponentCatalogIssue>) : TowerOpponentCatalogReloadOutcome
     data object MissingResource : TowerOpponentCatalogReloadOutcome
-    data class ReadFailed(val cause: Exception) : TowerOpponentCatalogReloadOutcome
+    data class ReadFailed(val cause: Throwable) : TowerOpponentCatalogReloadOutcome
 }
 
 internal data class TowerOpponentCatalogResourceBundle(
@@ -45,6 +45,8 @@ internal class TowerOpponentCatalogResourceReloader(
             }
         } catch (error: Exception) {
             TowerOpponentCatalogReloadOutcome.ReadFailed(error)
+        } catch (error: LinkageError) {
+            TowerOpponentCatalogReloadOutcome.ReadFailed(error)
         } finally {
             closeCatalogResourcesSafely(readers)
         }
@@ -61,6 +63,8 @@ internal class TowerOpponentCatalogResourceReloader(
             }
         } catch (error: Exception) {
             TowerOpponentCatalogReloadOutcome.ReadFailed(error)
+        } catch (error: LinkageError) {
+            TowerOpponentCatalogReloadOutcome.ReadFailed(error)
         } finally {
             closeCatalogResourcesSafely(readers.map { it.second })
         }
@@ -71,11 +75,15 @@ internal class TowerOpponentCatalogResourceReloader(
             openReader()
         } catch (error: Exception) {
             return TowerOpponentCatalogReloadOutcome.ReadFailed(error)
+        } catch (error: LinkageError) {
+            return TowerOpponentCatalogReloadOutcome.ReadFailed(error)
         } ?: return TowerOpponentCatalogReloadOutcome.MissingResource
 
         val result = try {
             reader.use(store::reload)
         } catch (error: Exception) {
+            return TowerOpponentCatalogReloadOutcome.ReadFailed(error)
+        } catch (error: LinkageError) {
             return TowerOpponentCatalogReloadOutcome.ReadFailed(error)
         }
         return when (result) {
