@@ -148,8 +148,9 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             try {
                 handleIntent(player, payload.intent)
             } catch (exception: RuntimeException) {
-                MoreBattleContent.LOGGER.error("PvP selection request failed for ${player.uuid}", exception)
-                reject(player, payload.intent, "screen.${MoreBattleContent.MOD_ID}.pvp.error.internal_failure")
+                rejectFailedSelectionRequest(player, payload.intent, exception)
+            } catch (error: LinkageError) {
+                rejectFailedSelectionRequest(player, payload.intent, error)
             }
         }
         ServerPlayNetworking.registerGlobalReceiver(PvpRoomIntentPayload.TYPE) { payload, context ->
@@ -158,8 +159,9 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             try {
                 handleRoomIntent(player, payload.intent)
             } catch (exception: RuntimeException) {
-                MoreBattleContent.LOGGER.error("PvP room request failed for ${player.uuid}", exception)
-                rejectRoom(player, payload.intent.requestId, PvpRoomError.INVALID_PHASE)
+                rejectFailedRoomRequest(player, payload.intent.requestId, exception)
+            } catch (error: LinkageError) {
+                rejectFailedRoomRequest(player, payload.intent.requestId, error)
             }
         }
         ServerPlayNetworking.registerGlobalReceiver(PvpLoungeExitPayload.TYPE) { _, context ->
@@ -783,6 +785,26 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         reportManagedCleanupFailureSafely(failure) {
             MoreBattleContent.LOGGER.error(message, it)
         }
+    }
+
+    private fun rejectFailedSelectionRequest(
+        player: ServerPlayer,
+        intent: PvpSelectionIntent,
+        failure: Throwable,
+    ) {
+        runManagedCleanupActionsSafely(
+            reportFailure = {},
+            { MoreBattleContent.LOGGER.error("PvP selection request failed for ${player.uuid}", failure) },
+            { reject(player, intent, "screen.${MoreBattleContent.MOD_ID}.pvp.error.internal_failure") },
+        )
+    }
+
+    private fun rejectFailedRoomRequest(player: ServerPlayer, requestId: UUID, failure: Throwable) {
+        runManagedCleanupActionsSafely(
+            reportFailure = {},
+            { MoreBattleContent.LOGGER.error("PvP room request failed for ${player.uuid}", failure) },
+            { rejectRoom(player, requestId, PvpRoomError.INVALID_PHASE) },
+        )
     }
 
     private enum class PvpSpectatorExitResult {
