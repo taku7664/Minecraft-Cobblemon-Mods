@@ -35,6 +35,24 @@ class MbcClientSessionResetTest {
     }
 
     @Test
+    fun `compatibility and reporter failures cannot block later resets`() {
+        val registry = ClientSessionResetRegistry()
+        val calls = mutableListOf<String>()
+        val failures = mutableListOf<String>()
+        registry.add("compatibility") { throw NoSuchMethodError("client API drift") }
+        registry.add("runtime") { error("reset failed") }
+        registry.add("healthy") { calls += "healthy" }
+
+        registry.resetAll { name, _ ->
+            failures += name
+            if (name == "compatibility") throw NoSuchMethodError("logger API drift")
+        }
+
+        assertEquals(listOf("compatibility", "runtime"), failures)
+        assertEquals(listOf("healthy"), calls)
+    }
+
+    @Test
     fun `all server scoped client state uses the shared reset boundary`() {
         val root = Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/client")
         val initializer = Files.readString(root.resolve("MoreBattleContentClient.kt"))

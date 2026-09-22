@@ -13,13 +13,29 @@ internal class ClientSessionResetRegistry {
         entries += Entry(name, reset)
     }
 
-    fun resetAll(onFailure: (String, RuntimeException) -> Unit) {
+    fun resetAll(onFailure: (String, Throwable) -> Unit) {
         entries.forEach { entry ->
             try {
                 entry.reset()
             } catch (exception: RuntimeException) {
-                onFailure(entry.name, exception)
+                reportFailureSafely(entry.name, exception, onFailure)
+            } catch (error: LinkageError) {
+                reportFailureSafely(entry.name, error, onFailure)
             }
+        }
+    }
+
+    private fun reportFailureSafely(
+        name: String,
+        failure: Throwable,
+        onFailure: (String, Throwable) -> Unit,
+    ) {
+        try {
+            onFailure(name, failure)
+        } catch (_: RuntimeException) {
+            // A broken reporter cannot leave later client state uncleared.
+        } catch (_: LinkageError) {
+            // Optional client integrations may fail while reporting their own reset failure.
         }
     }
 
