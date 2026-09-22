@@ -5,6 +5,8 @@ import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointApplyResult
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointAtomicApplier
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointRequest
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointService
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.reportManagedCleanupFailureSafely
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupActionsSafely
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.BattlePointShopCatalogResources
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.MinecraftBattlePointShopDelivery
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryBattleFormat
@@ -37,19 +39,30 @@ internal object ShopPlayNetworking {
     }
 
     fun open(player: ServerPlayer): Boolean {
-        if (!ServerPlayNetworking.canSend(player, ShopStatePayload.TYPE)) return false
-        sendState(player, null)
-        sendLeaderboard(player)
-        return true
+        return try {
+            if (!ServerPlayNetworking.canSend(player, ShopStatePayload.TYPE)) {
+                false
+            } else {
+                sendState(player, null)
+                sendLeaderboardSafely(player)
+                true
+            }
+        } catch (failure: RuntimeException) {
+            reportOpenFailure(player, failure)
+            false
+        } catch (failure: LinkageError) {
+            reportOpenFailure(player, failure)
+            false
+        }
     }
 
     private fun purchase(player: ServerPlayer, payload: ShopPurchasePayload) {
-        val service = BattlePointShopService(
-            catalog = BattlePointShopCatalogResources.store::snapshot,
-            battlePoints = ServerBattlePointAtomicApplier(player),
-            delivery = MinecraftBattlePointShopDelivery(player.server),
-        )
         val result = try {
+            val service = BattlePointShopService(
+                catalog = BattlePointShopCatalogResources.store::snapshot,
+                battlePoints = ServerBattlePointAtomicApplier(player),
+                delivery = MinecraftBattlePointShopDelivery(player.server),
+            )
             service.purchase(
                 BattlePointShopPurchaseRequest(
                     purchaseId = payload.purchaseId,
@@ -59,12 +72,18 @@ internal object ShopPlayNetworking {
                     lines = payload.lines,
                 ),
             )
-        } catch (exception: RuntimeException) {
-            MoreBattleContent.LOGGER.error("BP shop purchase failed for ${player.uuid}", exception)
-            BattlePointShopPurchaseResult(BattlePointShopPurchaseStatus.DELIVERY_FAILED)
+        } catch (failure: RuntimeException) {
+            failedPurchaseResult(player, failure)
+        } catch (failure: LinkageError) {
+            failedPurchaseResult(player, failure)
         }
-        sendState(player, result.status)
-        BattleHubNetworking.sendHeader(player)
+        runManagedCleanupActionsSafely(
+            reportFailure = { failure ->
+                MoreBattleContent.LOGGER.error("BP shop purchase response failed for ${player.uuid}", failure)
+            },
+            { sendState(player, result.status) },
+            { BattleHubNetworking.sendHeader(player) },
+        )
     }
 
     private fun sendState(player: ServerPlayer, result: BattlePointShopPurchaseStatus?): Boolean {
@@ -76,35 +95,65 @@ internal object ShopPlayNetworking {
         return true
     }
 
-    private fun sendLeaderboard(player: ServerPlayer) {
+    private fun sendLeaderboardSafely(player: ServerPlayer) {
+        runManagedCleanupActionsSafely(
+            reportFailure = { failure ->
+                MoreBattleContent.LOGGER.error("BP shop leaderboard response failed for ${player.uuid}", failure)
+            },
+            {
+                if (ServerPlayNetworking.canSend(player, HomeLeaderboardStatePayload.TYPE)) {
+                    val entries = leaderboardEntrySource(player)
+                    ServerPlayNetworking.send(
+                        player,
+                        HomeLeaderboardStatePayload(
+                            singles = entries(TowerRecordContract.CONTENT_ID, TowerBattleFormat.SINGLE.recordId, HomeLeaderboardRanking.TOWER),
+                            doubles = entries(TowerRecordContract.CONTENT_ID, TowerBattleFormat.DOUBLE.recordId, HomeLeaderboardRanking.TOWER),
+                        ),
+                    )
+                }
+            },
+            {
+                if (ServerPlayNetworking.canSend(player, HomeLeaderboardCatalogPayload.TYPE)) {
+                    val entries = leaderboardEntrySource(player)
+                    val boards = homeLeaderboardBoardSpecs().map { spec ->
+                        HomeLeaderboardBoard(
+                            spec.contentId,
+                            spec.formatId,
+                            entries(spec.contentId, spec.formatId, spec.ranking),
+                        )
+                    }
+                    ServerPlayNetworking.send(player, HomeLeaderboardCatalogPayload(boards))
+                }
+            },
+        )
+    }
+
+    private fun leaderboardEntrySource(
+        player: ServerPlayer,
+    ): (String, String, HomeLeaderboardRanking) -> List<HomeLeaderboardEntry> {
         val server = player.server
         val onlineNames = server.playerList.players.associate { it.uuid to it.scoreboardName }
         fun name(playerId: java.util.UUID): String? =
             onlineNames[playerId] ?: server.profileCache?.get(playerId)?.orElse(null)?.name
-        fun entries(contentId: String, formatId: String, ranking: HomeLeaderboardRanking): List<HomeLeaderboardEntry> =
+        return { contentId, formatId, ranking ->
             HomeLeaderboard.project(
                 BattleRecordService.all(server, BattleRecordCategory(contentId, formatId)),
                 ranking,
                 ::name,
             )
-        if (ServerPlayNetworking.canSend(player, HomeLeaderboardStatePayload.TYPE)) {
-            ServerPlayNetworking.send(
-                player,
-                HomeLeaderboardStatePayload(
-                    singles = entries(TowerRecordContract.CONTENT_ID, TowerBattleFormat.SINGLE.recordId, HomeLeaderboardRanking.TOWER),
-                    doubles = entries(TowerRecordContract.CONTENT_ID, TowerBattleFormat.DOUBLE.recordId, HomeLeaderboardRanking.TOWER),
-                ),
-            )
         }
-        if (ServerPlayNetworking.canSend(player, HomeLeaderboardCatalogPayload.TYPE)) {
-            val boards = homeLeaderboardBoardSpecs().map { spec ->
-                HomeLeaderboardBoard(
-                    spec.contentId,
-                    spec.formatId,
-                    entries(spec.contentId, spec.formatId, spec.ranking),
-                )
-            }
-            ServerPlayNetworking.send(player, HomeLeaderboardCatalogPayload(boards))
+    }
+
+    private fun failedPurchaseResult(player: ServerPlayer, failure: Throwable): BattlePointShopPurchaseResult {
+        reportManagedCleanupFailureSafely(failure) {
+            MoreBattleContent.LOGGER.error("BP shop purchase failed for ${player.uuid}", it)
+        }
+        return BattlePointShopPurchaseResult(BattlePointShopPurchaseStatus.DELIVERY_FAILED)
+    }
+
+    private fun reportOpenFailure(player: ServerPlayer, failure: Throwable) {
+        reportManagedCleanupFailureSafely(failure) {
+            MoreBattleContent.LOGGER.error("BP shop could not be opened for ${player.uuid}", it)
         }
     }
 
