@@ -21,6 +21,21 @@ class CompatibilityCallTest {
     }
 
     @Test
+    fun `malformed public observations can use the compatibility boundary without escaping`() {
+        var laterObservationConsumed = false
+
+        listOf<() -> Unit>(
+            { throw IllegalArgumentException("malformed line") },
+            { throw NoSuchMethodError("message API drift") },
+            { laterObservationConsumed = true },
+        ).forEach { observation ->
+            compatibilityCallOrNull(observation)
+        }
+
+        assertEquals(true, laterObservationConsumed)
+    }
+
+    @Test
     fun `fatal reflected target is rethrown without its wrapper`() {
         val fatal = AssertionError("fatal target")
 

@@ -101,7 +101,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
     private fun consume(activeBattle: PokemonBattle, raw: String) {
         raw.lineSequence().filter { it.startsWith('|') }.forEach { line ->
             val message = compatibilityCallOrNull { BattleMessage(line) } ?: return@forEach
-            try {
+            compatibilityCallOrNull {
                 if (message.id == "turn") {
                     observer.closeActionWindow()
                     observedTurn = publicTurn(message.argumentAt(0), activeBattle.turn, observedTurn)
@@ -111,8 +111,6 @@ internal class Cobblemon173ShowdownObservationAdapter(
                 if (message.id == "upkeep") observer.closeActionWindow()
                 consumeMessage(activeBattle, message)
                 revealOptionalSource(activeBattle, message)
-            } catch (_: RuntimeException) {
-                // Unknown or malformed public protocol lines must not block the NPC turn.
             }
         }
     }
