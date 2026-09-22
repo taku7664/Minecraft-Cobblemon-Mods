@@ -30,7 +30,7 @@ internal class PvpRoomBattlePlacement(
         }
 
         override fun rollback() {
-            lounge.rollbackPreparation(roomId)
+            lounge.finish(roomId)
         }
     }
 

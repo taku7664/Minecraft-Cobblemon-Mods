@@ -51,29 +51,35 @@ internal class PvpLoungeCoordinator(
         val players = listOf(left, right) + room.spectatorIds
         if (players.distinct().size != players.size || players.any { it in returns }) return false
         val lease = arenas.acquire(room.roomId)
-        if (!gateway.ensureArena(lease)) {
-            arenas.release(room.roomId)
-            return false
-        }
         val captured = LinkedHashMap<UUID, PvpReturnPoint>()
-        players.forEach { playerId ->
-            val point = gateway.capture(playerId) ?: return rollbackCaptured(room.roomId, captured)
-            captured[playerId] = point
-        }
-        returns.putAll(captured)
-        if (!gateway.moveCompetitor(left, lease, PvpRoomSide.LEFT) ||
-            !gateway.moveCompetitor(right, lease, PvpRoomSide.RIGHT)
-        ) {
+        try {
+            if (!gateway.ensureArena(lease)) {
+                arenas.release(room.roomId)
+                return false
+            }
+            players.forEach { playerId ->
+                val point = gateway.capture(playerId) ?: return rollbackCaptured(room.roomId, captured)
+                captured[playerId] = point
+            }
+            returns.putAll(captured)
+            if (!gateway.moveCompetitor(left, lease, PvpRoomSide.LEFT) ||
+                !gateway.moveCompetitor(right, lease, PvpRoomSide.RIGHT)
+            ) {
+                return rollbackCaptured(room.roomId, captured)
+            }
+            preparations[room.roomId] = Preparation(
+                lease = lease,
+                leftPlayerId = left,
+                rightPlayerId = right,
+                spectators = room.spectatorIds.toMutableSet(),
+                capturedPlayerIds = captured.keys.toSet(),
+            )
+            return true
+        } catch (failure: Throwable) {
+            if (failure !is RuntimeException && failure !is LinkageError) throw failure
+            MoreBattleContent.LOGGER.error("PvP lounge preparation failed for room ${room.roomId}", failure)
             return rollbackCaptured(room.roomId, captured)
         }
-        preparations[room.roomId] = Preparation(
-            lease = lease,
-            leftPlayerId = left,
-            rightPlayerId = right,
-            spectators = room.spectatorIds.toMutableSet(),
-            capturedPlayerIds = captured.keys.toSet(),
-        )
-        return true
     }
 
     @Synchronized
@@ -218,6 +224,7 @@ internal class PvpLoungeCoordinator(
     }
 
     private fun rollbackCaptured(roomId: UUID, captured: Map<UUID, PvpReturnPoint>): Boolean {
+        captured.forEach { (playerId, point) -> returns.putIfAbsent(playerId, point) }
         captured.forEach { (playerId, point) ->
             if (restorePoint(playerId, point)) returns.remove(playerId)
         }
@@ -230,6 +237,9 @@ internal class PvpLoungeCoordinator(
     } catch (exception: RuntimeException) {
         MoreBattleContent.LOGGER.error("PvP lounge restore failed for $playerId", exception)
         false
+    } catch (error: LinkageError) {
+        MoreBattleContent.LOGGER.error("PvP lounge restore failed for $playerId", error)
+        false
     }
 
     private fun runGatewayCleanup(action: String, playerId: UUID, cleanup: () -> Unit) {
@@ -237,6 +247,8 @@ internal class PvpLoungeCoordinator(
             cleanup()
         } catch (exception: RuntimeException) {
             MoreBattleContent.LOGGER.error("Could not $action for $playerId", exception)
+        } catch (error: LinkageError) {
+            MoreBattleContent.LOGGER.error("Could not $action for $playerId", error)
         }
     }
 

@@ -92,37 +92,101 @@ internal class PvpBattleLauncher<P>(
         }
         val result = try {
             runtime.start(PvpPreparedBattle(request, first.members, second.members))
-        } catch (exception: RuntimeException) {
-            preparedPlacement.rollback()
-            throw exception
+        } catch (failure: RuntimeException) {
+            rollbackAfterRuntimeFailure(preparedPlacement, failure)
+        } catch (failure: LinkageError) {
+            rollbackAfterRuntimeFailure(preparedPlacement, failure)
         }
         if (result !is PvpBattleLaunchResult.Started) {
             preparedPlacement.rollback()
             return result
         }
+        var activationFailure: Throwable? = null
         val activated = try {
             preparedPlacement.activate(result.battleId)
-        } catch (exception: RuntimeException) {
-            diagnostics(
-                "match ${request.matchId}: lounge placement threw while activating battle " +
-                    "${result.battleId}: ${exception.message}",
-            )
+        } catch (failure: Throwable) {
+            if (failure !is RuntimeException && failure !is LinkageError) throw failure
+            activationFailure = failure
             false
         }
         if (activated) return result
-        diagnostics(
-            "match ${request.matchId}: lounge placement could not be activated for battle " +
-                "${result.battleId}; aborting the battle",
-        )
+        val failureMessage = activationFailure?.let { failure ->
+            "match ${request.matchId}: lounge placement threw while activating battle " +
+                "${result.battleId}: ${failure.message}; aborting the battle"
+        } ?: "match ${request.matchId}: lounge placement could not be activated for battle " +
+            "${result.battleId}; aborting the battle"
         try {
-            abortBattle(result.battleId)
+            cleanupAfterActivationFailure(
+                preparedPlacement = preparedPlacement,
+                activationFailure = activationFailure,
+                abortBattle = { abortBattle(result.battleId) },
+            )
         } finally {
-            preparedPlacement.rollback()
+            reportDiagnosticsSafely(diagnostics, failureMessage)
         }
         return PvpBattleLaunchResult.Unavailable
     }
 
     private companion object {
+        fun rollbackAfterRuntimeFailure(
+            preparedPlacement: PvpPreparedBattlePlacement,
+            failure: Throwable,
+        ): Nothing {
+            try {
+                preparedPlacement.rollback()
+            } catch (rollbackFailure: RuntimeException) {
+                if (failure !== rollbackFailure) failure.addSuppressed(rollbackFailure)
+            } catch (rollbackFailure: LinkageError) {
+                if (failure !== rollbackFailure) failure.addSuppressed(rollbackFailure)
+            }
+            throw failure
+        }
+
+        fun cleanupAfterActivationFailure(
+            preparedPlacement: PvpPreparedBattlePlacement,
+            activationFailure: Throwable?,
+            abortBattle: () -> Unit,
+        ) {
+            var failure = activationFailure
+            var cleanupFailed = false
+
+            fun recordCleanupFailure(cleanupFailure: Throwable) {
+                cleanupFailed = true
+                val original = failure
+                if (original == null) {
+                    failure = cleanupFailure
+                } else if (original !== cleanupFailure) {
+                    original.addSuppressed(cleanupFailure)
+                }
+            }
+
+            try {
+                abortBattle()
+            } catch (cleanupFailure: RuntimeException) {
+                recordCleanupFailure(cleanupFailure)
+            } catch (cleanupFailure: LinkageError) {
+                recordCleanupFailure(cleanupFailure)
+            }
+            try {
+                preparedPlacement.rollback()
+            } catch (cleanupFailure: RuntimeException) {
+                recordCleanupFailure(cleanupFailure)
+            } catch (cleanupFailure: LinkageError) {
+                recordCleanupFailure(cleanupFailure)
+            }
+            if (cleanupFailed) throw checkNotNull(failure)
+        }
+
+        fun reportDiagnosticsSafely(diagnostics: (String) -> Unit, message: String) {
+            try {
+                diagnostics(message)
+            } catch (_: RuntimeException) {
+                // Diagnostics must never prevent or replace battle cleanup.
+            } catch (_: LinkageError) {
+                // Compatibility diagnostics are best-effort at this boundary.
+            }
+        }
+
         fun PvpRegisteredBattleTeamResult<*>.describe(): String = when (this) {
             is PvpRegisteredBattleTeamResult.Created -> "created"
             PvpRegisteredBattleTeamResult.NoSnapshot -> "no registered team snapshot is stored"

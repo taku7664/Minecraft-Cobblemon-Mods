@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.internal.pvp
 
 import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -45,6 +46,22 @@ class PvpRoomBattlePlacementTest {
         assertNull(prepared)
         assertNull(lounge.leaseFor(roomId))
         assertEquals(PvpRoomPhase.TEAM_PREVIEW, rooms.get(roomId)?.phase)
+    }
+
+    @Test
+    fun `rollback closes a placement that was partially promoted to an active lounge`() {
+        val rooms = previewRoom()
+        val pool = PvpArenaPool()
+        val lounge = PvpLoungeCoordinator(pool, RecordingGateway())
+        val prepared = requireNotNull(PvpRoomBattlePlacement(rooms, lounge).prepare(request()))
+
+        assertTrue(prepared.activate(UUID(0, 900)))
+        prepared.rollback()
+
+        assertTrue(lounge.activeRoomIds().isEmpty())
+        assertTrue(lounge.pendingReturnPlayerIds().isEmpty())
+        assertNull(pool.leaseFor(roomId))
+        assertFalse(lounge.finish(roomId))
     }
 
     private fun previewRoom(): PvpRoomService = PvpRoomService { roomId }.also { rooms ->

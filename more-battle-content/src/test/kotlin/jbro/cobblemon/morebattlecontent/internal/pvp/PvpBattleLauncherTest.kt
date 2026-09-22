@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.internal.pvp
 import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -164,6 +165,83 @@ class PvpBattleLauncherTest {
     }
 
     @Test
+    fun `placement activation linkage failure cannot leave a started battle alive`() {
+        val battleId = UUID.fromString("99999999-9999-9999-9999-999999999999")
+        val events = ArrayList<String>()
+        val launcher = PvpBattleLauncher(
+            materialize = { playerId, _ -> PvpRegisteredBattleTeamResult.Created(listOf("copy-$playerId")) },
+            runtime = PvpBattleRuntime { PvpBattleLaunchResult.Started(battleId) },
+            placement = PvpBattlePlacement {
+                object : PvpPreparedBattlePlacement {
+                    override fun activate(startedBattleId: UUID): Boolean {
+                        events += "activate"
+                        throw NoSuchMethodError("placement API drift")
+                    }
+
+                    override fun rollback() {
+                        events += "rollback"
+                    }
+                }
+            },
+            abortBattle = { startedBattleId -> events += "abort-$startedBattleId" },
+        )
+
+        assertEquals(PvpBattleLaunchResult.Unavailable, launcher.launch(request()))
+        assertEquals(listOf("activate", "abort-$battleId", "rollback"), events)
+    }
+
+    @Test
+    fun `activation cleanup failures preserve the activation failure`() {
+        val battleId = UUID.fromString("99999999-9999-9999-9999-999999999999")
+        val activationFailure = IllegalStateException("activate")
+        val abortFailure = IllegalArgumentException("abort")
+        val rollbackFailure = UnsupportedOperationException("rollback")
+        val launcher = PvpBattleLauncher(
+            materialize = { playerId, _ -> PvpRegisteredBattleTeamResult.Created(listOf("copy-$playerId")) },
+            runtime = PvpBattleRuntime { PvpBattleLaunchResult.Started(battleId) },
+            placement = PvpBattlePlacement {
+                object : PvpPreparedBattlePlacement {
+                    override fun activate(startedBattleId: UUID): Boolean = throw activationFailure
+
+                    override fun rollback() {
+                        throw rollbackFailure
+                    }
+                }
+            },
+            abortBattle = { throw abortFailure },
+        )
+
+        val thrown = assertThrows(IllegalStateException::class.java) { launcher.launch(request()) }
+
+        assertEquals(activationFailure, thrown)
+        assertEquals(listOf(abortFailure, rollbackFailure), thrown.suppressed.toList())
+    }
+
+    @Test
+    fun `diagnostics failure cannot skip activation cleanup`() {
+        val battleId = UUID.fromString("99999999-9999-9999-9999-999999999999")
+        val events = ArrayList<String>()
+        val launcher = PvpBattleLauncher(
+            materialize = { playerId, _ -> PvpRegisteredBattleTeamResult.Created(listOf("copy-$playerId")) },
+            runtime = PvpBattleRuntime { PvpBattleLaunchResult.Started(battleId) },
+            placement = PvpBattlePlacement {
+                object : PvpPreparedBattlePlacement {
+                    override fun activate(startedBattleId: UUID): Boolean = false
+
+                    override fun rollback() {
+                        events += "rollback"
+                    }
+                }
+            },
+            abortBattle = { startedBattleId -> events += "abort-$startedBattleId" },
+            diagnostics = { throw IllegalStateException("diagnostics") },
+        )
+
+        assertEquals(PvpBattleLaunchResult.Unavailable, launcher.launch(request()))
+        assertEquals(listOf("abort-$battleId", "rollback"), events)
+    }
+
+    @Test
     fun `failed placement preparation prevents battle creation`() {
         var runtimeCalled = false
         val launcher = PvpBattleLauncher(
@@ -177,6 +255,52 @@ class PvpBattleLauncherTest {
 
         assertEquals(PvpBattleLaunchResult.Unavailable, launcher.launch(request()))
         assertFalse(runtimeCalled)
+    }
+
+    @Test
+    fun `runtime linkage failure rolls prepared placement back`() {
+        val events = ArrayList<String>()
+        val failure = NoSuchMethodError("Cobblemon API drift")
+        val launcher = PvpBattleLauncher(
+            materialize = { playerId, _ -> PvpRegisteredBattleTeamResult.Created(listOf("copy-$playerId")) },
+            runtime = PvpBattleRuntime { throw failure },
+            placement = PvpBattlePlacement {
+                object : PvpPreparedBattlePlacement {
+                    override fun activate(startedBattleId: UUID): Boolean = true
+
+                    override fun rollback() {
+                        events += "rollback"
+                    }
+                }
+            },
+        )
+
+        assertEquals(failure, assertThrows(NoSuchMethodError::class.java) { launcher.launch(request()) })
+        assertEquals(listOf("rollback"), events)
+    }
+
+    @Test
+    fun `placement rollback failure cannot hide the runtime failure`() {
+        val runtimeFailure = IllegalStateException("runtime")
+        val rollbackFailure = IllegalArgumentException("rollback")
+        val launcher = PvpBattleLauncher(
+            materialize = { playerId, _ -> PvpRegisteredBattleTeamResult.Created(listOf("copy-$playerId")) },
+            runtime = PvpBattleRuntime { throw runtimeFailure },
+            placement = PvpBattlePlacement {
+                object : PvpPreparedBattlePlacement {
+                    override fun activate(startedBattleId: UUID): Boolean = true
+
+                    override fun rollback() {
+                        throw rollbackFailure
+                    }
+                }
+            },
+        )
+
+        val thrown = assertThrows(IllegalStateException::class.java) { launcher.launch(request()) }
+
+        assertEquals(runtimeFailure, thrown)
+        assertEquals(listOf(rollbackFailure), thrown.suppressed.toList())
     }
 
     private fun request(): PvpBattleLaunchRequest = PvpBattleLaunchRequest(

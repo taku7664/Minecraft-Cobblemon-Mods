@@ -70,28 +70,54 @@ internal class Cobblemon173PvpBattleRuntime(
         firstActor.canDynamax = PvpBattleMechanic.DYNAMAX in mechanics
         secondActor.canDynamax = PvpBattleMechanic.DYNAMAX in mechanics
         val actorIds = setOf(firstActor.uuid, secondActor.uuid)
-        Cobblemon173BattleRuleHooks.beginRegistrationMultiple(
-            ManagedBattleContentIds.PVP,
-            mechanics.mapTo(LinkedHashSet()) { mechanic ->
-                when (mechanic) {
-                    PvpBattleMechanic.MEGA -> TowerSubmittedMechanic.MEGA
-                    PvpBattleMechanic.DYNAMAX -> TowerSubmittedMechanic.DYNAMAX
-                    PvpBattleMechanic.TERA -> TowerSubmittedMechanic.TERA
-                    PvpBattleMechanic.Z_MOVE -> TowerSubmittedMechanic.Z_MOVE
-                }
-            },
-            actorIds,
-        )
+        try {
+            protectManagedBattleStartup(
+                releasePendingRegistration = { Cobblemon173BattleRuleHooks.finishRegistration(null) },
+                terminateBattle = {},
+            ) {
+                Cobblemon173BattleRuleHooks.beginRegistrationMultiple(
+                    ManagedBattleContentIds.PVP,
+                    mechanics.mapTo(LinkedHashSet()) { mechanic ->
+                        when (mechanic) {
+                            PvpBattleMechanic.MEGA -> TowerSubmittedMechanic.MEGA
+                            PvpBattleMechanic.DYNAMAX -> TowerSubmittedMechanic.DYNAMAX
+                            PvpBattleMechanic.TERA -> TowerSubmittedMechanic.TERA
+                            PvpBattleMechanic.Z_MOVE -> TowerSubmittedMechanic.Z_MOVE
+                        }
+                    },
+                    actorIds,
+                )
+            }
+        } catch (failure: RuntimeException) {
+            MoreBattleContent.LOGGER.error("PvP rule registration failed for match {}", request.matchId, failure)
+            return PvpBattleLaunchResult.Unavailable
+        } catch (failure: LinkageError) {
+            MoreBattleContent.LOGGER.error("PvP rule registration failed for match {}", request.matchId, failure)
+            return PvpBattleLaunchResult.Unavailable
+        }
+        val terminatePartialBattle = {
+            val partialBattles = listOf(first.uuid, second.uuid)
+                .mapNotNull(BattleRegistry::getBattleByParticipatingPlayerId)
+                .distinctBy { partial -> partial.battleId }
+            partialBattles.forEach { partial -> partial.end() }
+        }
         val result = try {
-            BattleRegistry.startBattle(
-                request.format.toCobblemonFormat(),
-                BattleSide(firstActor),
-                BattleSide(secondActor),
-                true,
-            )
-        } catch (exception: RuntimeException) {
-            Cobblemon173BattleRuleHooks.finishRegistration(null)
-            MoreBattleContent.LOGGER.error("PvP battle creation failed for match {}", request.matchId, exception)
+            protectManagedBattleStartup(
+                releasePendingRegistration = { Cobblemon173BattleRuleHooks.finishRegistration(null) },
+                terminateBattle = terminatePartialBattle,
+            ) {
+                BattleRegistry.startBattle(
+                    request.format.toCobblemonFormat(),
+                    BattleSide(firstActor),
+                    BattleSide(secondActor),
+                    true,
+                )
+            }
+        } catch (failure: RuntimeException) {
+            MoreBattleContent.LOGGER.error("PvP battle creation failed for match {}", request.matchId, failure)
+            return PvpBattleLaunchResult.Unavailable
+        } catch (failure: LinkageError) {
+            MoreBattleContent.LOGGER.error("PvP battle creation failed for match {}", request.matchId, failure)
             return PvpBattleLaunchResult.Unavailable
         }
         if (result !is SuccessfulBattleStart) {
@@ -103,40 +129,64 @@ internal class Cobblemon173PvpBattleRuntime(
             )
             return PvpBattleLaunchResult.Unavailable
         }
-        val battle = result.battle
-        Cobblemon173ManagedPlayerBattleParticipants.attachBattleStores(
-            battle,
-            listOf(firstParticipant, secondParticipant),
-        )
-        if (!Cobblemon173BattleRuleHooks.finishRegistration(battle.battleId)) {
-            MoreBattleContent.LOGGER.error(
-                "PvP rules did not attach before battle {} started; ending the unprotected battle",
-                battle.battleId,
-            )
-            battle.end()
+        val battle = try {
+            protectManagedBattleStartup(
+                releasePendingRegistration = { Cobblemon173BattleRuleHooks.finishRegistration(null) },
+                terminateBattle = terminatePartialBattle,
+            ) {
+                result.battle
+            }
+        } catch (failure: RuntimeException) {
+            MoreBattleContent.LOGGER.error("PvP battle result failed for match {}", request.matchId, failure)
+            return PvpBattleLaunchResult.Unavailable
+        } catch (failure: LinkageError) {
+            MoreBattleContent.LOGGER.error("PvP battle result failed for match {}", request.matchId, failure)
             return PvpBattleLaunchResult.Unavailable
         }
-        Cobblemon173InitialTurnDiagnostics.watch("PvP", battle)
-        battle.onEndHandlers += { ended ->
-            Cobblemon173BattleRuleHooks.unregister(ended.battleId)
-            try {
-                when {
-                    firstActor in ended.winners && secondActor in ended.losers ->
-                        completion(first.server, request.matchId, first.uuid, second.uuid, ended.battleId)
-                    secondActor in ended.winners && firstActor in ended.losers ->
-                        completion(first.server, request.matchId, second.uuid, first.uuid, ended.battleId)
-                    else -> cancellation(first.server, request.matchId, ended.battleId)
-                }
-            } catch (exception: RuntimeException) {
-                MoreBattleContent.LOGGER.error(
-                    "PvP completion failed for match {} and battle {}",
-                    request.matchId,
-                    ended.battleId,
-                    exception,
+        return protectManagedBattleStartup(
+            releasePendingRegistration = {
+                runManagedCleanupActions(
+                    { Cobblemon173BattleRuleHooks.finishRegistration(null) },
+                    { Cobblemon173BattleRuleHooks.unregister(battle.battleId) },
                 )
+            },
+            terminateBattle = battle::end,
+        ) {
+            Cobblemon173ManagedPlayerBattleParticipants.attachBattleStores(
+                battle,
+                listOf(firstParticipant, secondParticipant),
+            )
+            if (!Cobblemon173BattleRuleHooks.finishRegistration(battle.battleId)) {
+                MoreBattleContent.LOGGER.error(
+                    "PvP rules did not attach before battle {} started; ending the unprotected battle",
+                    battle.battleId,
+                )
+                battle.end()
+                PvpBattleLaunchResult.Unavailable
+            } else {
+                Cobblemon173InitialTurnDiagnostics.watch("PvP", battle)
+                battle.onEndHandlers += { ended ->
+                    Cobblemon173BattleRuleHooks.unregister(ended.battleId)
+                    try {
+                        when {
+                            firstActor in ended.winners && secondActor in ended.losers ->
+                                completion(first.server, request.matchId, first.uuid, second.uuid, ended.battleId)
+                            secondActor in ended.winners && firstActor in ended.losers ->
+                                completion(first.server, request.matchId, second.uuid, first.uuid, ended.battleId)
+                            else -> cancellation(first.server, request.matchId, ended.battleId)
+                        }
+                    } catch (exception: RuntimeException) {
+                        MoreBattleContent.LOGGER.error(
+                            "PvP completion failed for match {} and battle {}",
+                            request.matchId,
+                            ended.battleId,
+                            exception,
+                        )
+                    }
+                }
+                PvpBattleLaunchResult.Started(battle.battleId)
             }
         }
-        return PvpBattleLaunchResult.Started(battle.battleId)
     }
 
     private fun PvpBattleFormat.toCobblemonFormat(): CobblemonBattleFormat = when (this) {

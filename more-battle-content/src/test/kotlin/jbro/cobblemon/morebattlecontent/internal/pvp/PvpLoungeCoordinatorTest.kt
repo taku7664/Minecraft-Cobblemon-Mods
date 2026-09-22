@@ -142,6 +142,54 @@ class PvpLoungeCoordinatorTest {
     }
 
     @Test
+    fun `prepare exception restores captured players and releases the arena`() {
+        val gateway = RecordingGateway().apply {
+            competitorFailure = right to NoSuchMethodError("gateway API drift")
+        }
+        val pool = PvpArenaPool()
+        val coordinator = PvpLoungeCoordinator(pool, gateway)
+
+        assertFalse(coordinator.prepare(room(phase = PvpRoomPhase.TEAM_PREVIEW)))
+
+        assertEquals(setOf(left, right, viewer), gateway.restored.toSet())
+        assertNull(pool.leaseFor(roomId))
+        assertTrue(coordinator.pendingReturnPlayerIds().isEmpty())
+    }
+
+    @Test
+    fun `prepare rollback keeps a failed restore queued for retry`() {
+        val gateway = RecordingGateway().apply {
+            competitorFailure = right to IllegalStateException("move failed")
+            unavailableForRestore += left
+        }
+        val pool = PvpArenaPool()
+        val coordinator = PvpLoungeCoordinator(pool, gateway)
+
+        assertFalse(coordinator.prepare(room(phase = PvpRoomPhase.TEAM_PREVIEW)))
+
+        assertEquals(setOf(left), coordinator.pendingReturnPlayerIds())
+        assertNull(pool.leaseFor(roomId))
+        gateway.unavailableForRestore.clear()
+        assertTrue(coordinator.restorePending(left))
+        assertTrue(coordinator.pendingReturnPlayerIds().isEmpty())
+    }
+
+    @Test
+    fun `finish linkage failure cannot block player restore or arena release`() {
+        val gateway = RecordingGateway()
+        val pool = PvpArenaPool()
+        val coordinator = PvpLoungeCoordinator(pool, gateway)
+        assertTrue(coordinator.start(room(), UUID(0, 900)))
+        gateway.hideFailure = NoSuchMethodError("hologram API drift")
+
+        assertTrue(coordinator.finish(roomId))
+
+        assertEquals(setOf(left, right, viewer), gateway.restored.toSet())
+        assertTrue(coordinator.pendingReturnPlayerIds().isEmpty())
+        assertNull(pool.leaseFor(roomId))
+    }
+
+    @Test
     fun `available pending returns are restored only when the server tick sees the player online`() {
         val gateway = RecordingGateway().apply { unavailableForRestore += setOf(left, right, viewer) }
         val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
@@ -212,13 +260,18 @@ class PvpLoungeCoordinatorTest {
         val restored = ArrayList<UUID>()
         val unavailableForRestore = LinkedHashSet<UUID>()
         var failDisconnect = false
+        var competitorFailure: Pair<UUID, Throwable>? = null
+        var hideFailure: Throwable? = null
 
         override fun ensureArena(lease: PvpArenaLease): Boolean = true.also { ensured += lease }
 
         override fun capture(playerId: UUID) = PvpReturnPoint("minecraft:overworld", playerId.leastSignificantBits.toDouble(), 64.0, 0.0, 0f, 0f, "survival")
 
-        override fun moveCompetitor(playerId: UUID, lease: PvpArenaLease, side: PvpRoomSide): Boolean =
-            true.also { competitors += playerId to side }
+        override fun moveCompetitor(playerId: UUID, lease: PvpArenaLease, side: PvpRoomSide): Boolean {
+            competitorFailure?.takeIf { it.first == playerId }?.second?.let { throw it }
+            competitors += playerId to side
+            return true
+        }
 
         override fun moveSpectator(playerId: UUID, lease: PvpArenaLease): Boolean =
             true.also { spectators += playerId }
@@ -230,6 +283,7 @@ class PvpLoungeCoordinatorTest {
         }
 
         override fun hideArenaHologram(playerId: UUID, battleId: UUID) {
+            hideFailure?.let { throw it }
             hiddenArenaHolograms += playerId to battleId
         }
 

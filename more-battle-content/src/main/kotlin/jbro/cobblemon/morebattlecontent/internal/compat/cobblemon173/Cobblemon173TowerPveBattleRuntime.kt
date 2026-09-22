@@ -103,24 +103,54 @@ internal class Cobblemon173TowerPveBattleRuntime(
             return TowerBattleLaunchResult.Unavailable
         }
 
-        Cobblemon173BattleRuleHooks.beginRegistration(ManagedBattleContentIds.BATTLE_TOWER, prepared.mechanic, actorIds)
+        try {
+            protectManagedBattleStartup(
+                releasePendingRegistration = ownerRegistration::close,
+                terminateBattle = {},
+            ) {
+                Cobblemon173BattleRuleHooks.beginRegistration(
+                    ManagedBattleContentIds.BATTLE_TOWER,
+                    prepared.mechanic,
+                    actorIds,
+                )
+            }
+        } catch (failure: RuntimeException) {
+            MoreBattleContent.LOGGER.error("Battle Tower rule registration failed for {}", player.uuid, failure)
+            return TowerBattleLaunchResult.Unavailable
+        } catch (failure: LinkageError) {
+            MoreBattleContent.LOGGER.error("Battle Tower rule registration failed for {}", player.uuid, failure)
+            return TowerBattleLaunchResult.Unavailable
+        }
         val result = try {
-            BattleRegistry.startBattle(
-                prepared.request.progress.format.toCobblemonFormat(),
-                BattleSide(playerActor),
-                BattleSide(trainerActor),
-                true,
-            )
-        } catch (exception: RuntimeException) {
-            Cobblemon173BattleRuleHooks.finishRegistration(null)
-            ownerRegistration.close()
-            MoreBattleContent.LOGGER.error("Battle Tower battle creation failed for {}", player.uuid, exception)
+            protectManagedBattleStartup(
+                releasePendingRegistration = {
+                    runManagedCleanupActions(
+                        { Cobblemon173BattleRuleHooks.finishRegistration(null) },
+                        ownerRegistration::close,
+                    )
+                },
+                terminateBattle = { BattleRegistry.getBattleByParticipatingPlayerId(player.uuid)?.end() },
+            ) {
+                BattleRegistry.startBattle(
+                    prepared.request.progress.format.toCobblemonFormat(),
+                    BattleSide(playerActor),
+                    BattleSide(trainerActor),
+                    true,
+                )
+            }
+        } catch (failure: RuntimeException) {
+            MoreBattleContent.LOGGER.error("Battle Tower battle creation failed for {}", player.uuid, failure)
+            return TowerBattleLaunchResult.Unavailable
+        } catch (failure: LinkageError) {
+            MoreBattleContent.LOGGER.error("Battle Tower battle creation failed for {}", player.uuid, failure)
             return TowerBattleLaunchResult.Unavailable
         }
 
         if (result !is SuccessfulBattleStart) {
-            Cobblemon173BattleRuleHooks.finishRegistration(null)
-            ownerRegistration.close()
+            runManagedCleanupActions(
+                { Cobblemon173BattleRuleHooks.finishRegistration(null) },
+                ownerRegistration::close,
+            )
             MoreBattleContent.LOGGER.error(
                 "Battle Tower start was refused by Cobblemon for player {}: {}",
                 player.uuid,
@@ -128,56 +158,86 @@ internal class Cobblemon173TowerPveBattleRuntime(
             )
             return TowerBattleLaunchResult.Unavailable
         }
-        val battle = result.battle
-        battle.onEndHandlers += { ownerRegistration.close() }
-        Cobblemon173ManagedPlayerBattleParticipants.attachBattleStores(battle, listOf(playerParticipant))
-        if (!Cobblemon173BattleRuleHooks.finishRegistration(battle.battleId)) {
-            MoreBattleContent.LOGGER.error(
-                "Battle Tower rules did not attach before battle {} started; ending the unprotected battle",
-                battle.battleId,
-            )
-            battle.end()
+        val battle = try {
+            protectManagedBattleStartup(
+                releasePendingRegistration = {
+                    runManagedCleanupActions(
+                        { Cobblemon173BattleRuleHooks.finishRegistration(null) },
+                        ownerRegistration::close,
+                    )
+                },
+                terminateBattle = { BattleRegistry.getBattleByParticipatingPlayerId(player.uuid)?.end() },
+            ) {
+                result.battle
+            }
+        } catch (failure: RuntimeException) {
+            MoreBattleContent.LOGGER.error("Battle Tower battle result failed for {}", player.uuid, failure)
+            return TowerBattleLaunchResult.Unavailable
+        } catch (failure: LinkageError) {
+            MoreBattleContent.LOGGER.error("Battle Tower battle result failed for {}", player.uuid, failure)
             return TowerBattleLaunchResult.Unavailable
         }
-        Cobblemon173InitialTurnDiagnostics.watch("Battle Tower", battle)
-
-        battle.onEndHandlers += { ended ->
-            Cobblemon173BattleRuleHooks.unregister(ended.battleId)
-            ShadowTrainerProjectionNetworking.hide(player, ended.battleId)
-            BattleArenaHologramNetworking.hide(player, ended.battleId)
-            val outcome = when (playerActor) {
-                in ended.winners -> TowerBattleOutcome.WIN
-                in ended.losers -> TowerBattleOutcome.LOSS
-                else -> null
-            }
-            trainerActor.closeBrains(
-                BattleBrainCloseResult(
-                    outcome = when (outcome) {
-                        TowerBattleOutcome.WIN -> BattleBrainCloseOutcome.DEFEAT
-                        TowerBattleOutcome.LOSS -> BattleBrainCloseOutcome.VICTORY
-                        null -> BattleBrainCloseOutcome.NO_CONTEST
-                    },
-                    turns = ended.turn,
-                ),
-            )
-            try {
-                if (outcome == null) {
-                    sessionCancellation(player.server, player.uuid, ended.battleId)
-                } else {
-                    sessionCompletion(player.server, player.uuid, ended.battleId, outcome)
-                }
-            } catch (exception: RuntimeException) {
-                MoreBattleContent.LOGGER.error(
-                    "Battle Tower completion failed for player {} and battle {}",
-                    player.uuid,
-                    ended.battleId,
-                    exception,
+        return protectManagedBattleStartup(
+            releasePendingRegistration = {
+                runManagedCleanupActions(
+                    { Cobblemon173BattleRuleHooks.finishRegistration(null) },
+                    { Cobblemon173BattleRuleHooks.unregister(battle.battleId) },
+                    ownerRegistration::close,
                 )
+            },
+            terminateBattle = battle::end,
+        ) {
+            battle.onEndHandlers += { ownerRegistration.close() }
+            Cobblemon173ManagedPlayerBattleParticipants.attachBattleStores(battle, listOf(playerParticipant))
+            if (!Cobblemon173BattleRuleHooks.finishRegistration(battle.battleId)) {
+                MoreBattleContent.LOGGER.error(
+                    "Battle Tower rules did not attach before battle {} started; ending the unprotected battle",
+                    battle.battleId,
+                )
+                battle.end()
+                TowerBattleLaunchResult.Unavailable
+            } else {
+                Cobblemon173InitialTurnDiagnostics.watch("Battle Tower", battle)
+
+                battle.onEndHandlers += { ended ->
+                    Cobblemon173BattleRuleHooks.unregister(ended.battleId)
+                    ShadowTrainerProjectionNetworking.hide(player, ended.battleId)
+                    BattleArenaHologramNetworking.hide(player, ended.battleId)
+                    val outcome = when (playerActor) {
+                        in ended.winners -> TowerBattleOutcome.WIN
+                        in ended.losers -> TowerBattleOutcome.LOSS
+                        else -> null
+                    }
+                    trainerActor.closeBrains(
+                        BattleBrainCloseResult(
+                            outcome = when (outcome) {
+                                TowerBattleOutcome.WIN -> BattleBrainCloseOutcome.DEFEAT
+                                TowerBattleOutcome.LOSS -> BattleBrainCloseOutcome.VICTORY
+                                null -> BattleBrainCloseOutcome.NO_CONTEST
+                            },
+                            turns = ended.turn,
+                        ),
+                    )
+                    try {
+                        if (outcome == null) {
+                            sessionCancellation(player.server, player.uuid, ended.battleId)
+                        } else {
+                            sessionCompletion(player.server, player.uuid, ended.battleId, outcome)
+                        }
+                    } catch (exception: RuntimeException) {
+                        MoreBattleContent.LOGGER.error(
+                            "Battle Tower completion failed for player {} and battle {}",
+                            player.uuid,
+                            ended.battleId,
+                            exception,
+                        )
+                    }
+                }
+                ShadowTrainerProjectionNetworking.show(player, battle.battleId, trainerActor.initialPos)
+                BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)
+                TowerBattleLaunchResult.Started(battle.battleId)
             }
         }
-        ShadowTrainerProjectionNetworking.show(player, battle.battleId, trainerActor.initialPos)
-        BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)
-        return TowerBattleLaunchResult.Started(battle.battleId)
     }
 
     private fun TowerBattleFormat.toCobblemonFormat(): CobblemonBattleFormat = when (this) {
