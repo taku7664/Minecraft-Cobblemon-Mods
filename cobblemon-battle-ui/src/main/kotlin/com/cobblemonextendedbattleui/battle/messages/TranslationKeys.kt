@@ -305,7 +305,12 @@ object TranslationKeys {
     private const val FORMECHANGE_RUNTIME_END_KEY = "cobblemon.battle.formechange.default.temporary.end"
     private const val FORMECHANGE_RESOURCE_ENDED_KEY = "cobblemon.battle.formechange.default.temporary.ended"
     val FORMECHANGE_ENDED_KEYS = setOf(FORMECHANGE_RUNTIME_END_KEY, FORMECHANGE_RESOURCE_ENDED_KEY)
-    val RUNTIME_ONLY_BATTLE_KEYS = setOf(FORMECHANGE_RUNTIME_END_KEY)
+    val RUNTIME_ONLY_BATTLE_KEYS = setOf(
+        FORMECHANGE_RUNTIME_END_KEY,
+        "cobblemon.battle.end.magmastorm",
+        "cobblemon.battle.end.snaptrap",
+        "cobblemon.battle.end.thundercage"
+    )
     const val MEGA_FORMECHANGE_KEY = "cobblemon.battle.formechange.mega"
     const val MEGA_EVOLVED_KEY = "cobblemon.battle.mega"
 
@@ -400,6 +405,9 @@ object TranslationKeys {
         "cobblemon.battle.end.whirlpool" to VolatileStatus.BOUND,
         "cobblemon.battle.end.sandtomb" to VolatileStatus.BOUND,
         "cobblemon.battle.end.clamp" to VolatileStatus.BOUND,
-        "cobblemon.battle.end.infestation" to VolatileStatus.BOUND
+        "cobblemon.battle.end.infestation" to VolatileStatus.BOUND,
+        "cobblemon.battle.end.magmastorm" to VolatileStatus.BOUND,
+        "cobblemon.battle.end.snaptrap" to VolatileStatus.BOUND,
+        "cobblemon.battle.end.thundercage" to VolatileStatus.BOUND
     )
 }

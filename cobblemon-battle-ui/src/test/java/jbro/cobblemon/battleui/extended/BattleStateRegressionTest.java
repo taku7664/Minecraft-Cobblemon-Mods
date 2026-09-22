@@ -169,6 +169,25 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void everyTrackedBindingMoveClearsWhenItsShowdownEffectEnds() {
+        UUID uuid = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(uuid, "Victim", false);
+
+        for (String moveId : List.of("magmastorm", "snaptrap", "thundercage")) {
+            BattleMessageInterceptor.INSTANCE.processMessages(List.of(
+                Text.translatable("cobblemon.battle.activate." + moveId, "Victim", "Source")
+            ));
+            assertTrue(VolatileStatusTracker.INSTANCE.getVolatileStatuses(uuid).stream()
+                .anyMatch(state -> state.getType() == BattleStateTracker.VolatileStatus.BOUND));
+
+            BattleMessageInterceptor.INSTANCE.processMessages(List.of(
+                Text.translatable("cobblemon.battle.end." + moveId, "Victim")
+            ));
+            assertTrue(VolatileStatusTracker.INSTANCE.getVolatileStatuses(uuid).isEmpty());
+        }
+    }
+
+    @Test
     void lifeOrbRevealUsesTheCobblemonItemTranslation() {
         UUID uuid = UUID.randomUUID();
         PokemonRegistry.INSTANCE.registerPokemon(uuid, "Lucario", false);
