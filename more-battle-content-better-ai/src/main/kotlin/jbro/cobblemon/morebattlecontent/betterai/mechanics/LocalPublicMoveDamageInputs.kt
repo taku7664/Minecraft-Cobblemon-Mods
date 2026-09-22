@@ -28,8 +28,9 @@ internal object LocalPublicMoveDamageInputs {
         val details = candidate.moveDetails ?: return null
         val id = canonical(candidate.moveId)
         if (isUnresolvedDynamicDamage(candidate)) return null
-        val dynamicPower = speedRatioPower(id, actor, target, state)
         val wholePower = details.power.toInt().takeIf { it > 0 && it.toDouble() == details.power }
+        val dynamicPower = speedRatioPower(id, actor, target, state)
+            ?: hpDependentPowers(id, actor, wholePower)
         val fixedPower = when (id) {
             "acrobatics" -> wholePower?.let { if (actor.knownHeldItemId == null) it * 2 else it }
             "expandingforce" -> wholePower?.let {
@@ -57,7 +58,10 @@ internal object LocalPublicMoveDamageInputs {
             }
             else -> wholePower
         }
-        val powers = dynamicPower ?: fixedPower?.let(::setOf) ?: return null
+        val powers = dynamicPower ?: when (id) {
+            in SPEED_RATIO_MOVES, in HP_DEPENDENT_MOVES -> return null
+            else -> fixedPower?.let(::setOf) ?: return null
+        }
         val offensivePokemon = if (id == "foulplay") target else actor
         val offensiveStat = (
             overrideStat(details, "override_offensive_stat") ?: when {
@@ -165,6 +169,38 @@ internal object LocalPublicMoveDamageInputs {
     private fun gyroBallPower(actorSpeed: Int, targetSpeed: Int): Int =
         ((25L * targetSpeed) / actorSpeed + 1L).coerceAtMost(150L).toInt()
 
+    private fun hpDependentPowers(
+        id: String,
+        actor: BattlePokemonStateView,
+        printedPower: Int?,
+    ): Set<Int>? {
+        if (id !in HP_DEPENDENT_MOVES) return null
+        val hypotheses = LocalHpArithmetic.exactHpHypotheses(actor)
+        if (hypotheses.isEmpty()) return null
+        return hypotheses.mapTo(linkedSetOf()) { hp ->
+            when (id) {
+                "eruption", "waterspout", "dragonenergy" -> {
+                    val base = printedPower ?: return null
+                    ((base.toLong() * hp.current) / hp.maximum).coerceAtLeast(1L).toInt()
+                }
+                "flail", "reversal" -> flailPower(hp.current, hp.maximum)
+                else -> error("Unhandled HP-dependent move: $id")
+            }
+        }
+    }
+
+    private fun flailPower(currentHp: Int, maximumHp: Int): Int {
+        val ratio = ((currentHp.toLong() * 48L) / maximumHp).coerceAtLeast(1L)
+        return when {
+            ratio < 2L -> 200
+            ratio < 5L -> 150
+            ratio < 10L -> 100
+            ratio < 17L -> 80
+            ratio < 33L -> 40
+            else -> 20
+        }
+    }
+
     private fun BattlePokemonStateView.stage(stat: CombatStat): Int = when (stat) {
         CombatStat.ATTACK -> stage("attack", "atk")
         CombatStat.DEFENCE -> stage("defence", "defense", "def")
@@ -194,13 +230,17 @@ internal object LocalPublicMoveDamageInputs {
         "dynamic_base_power", "dynamic_move_type", "dynamic_damage_category", "dynamic_damage_value",
     )
     private val PUBLICLY_RESOLVED_DYNAMIC_MOVES = setOf(
-        "acrobatics", "expandingforce", "risingvoltage", "storedpower", "powertrip", "facade",
-        "hex", "infernalparade", "brine", "venoshock",
+        "acrobatics", "expandingforce", "risingvoltage", "eruption", "waterspout",
+        "dragonenergy", "flail", "reversal", "storedpower", "powertrip", "facade", "hex",
+        "infernalparade", "brine", "venoshock",
         "barbbarrage", "smellingsalts", "wakeupslap", "round", "fishiousrend", "boltbeak",
         "assurance", "payback", "avalanche", "revenge", "electroball", "gyroball",
     )
 
     private val SPEED_RATIO_MOVES = setOf("electroball", "gyroball")
+    private val HP_DEPENDENT_MOVES = setOf(
+        "eruption", "waterspout", "dragonenergy", "flail", "reversal",
+    )
     private val ELECTRO_BALL_POWERS = listOf(40, 60, 80, 120, 150)
 
     /** Fallback for synthetic/older candidates that predate declarative callback flags. */
