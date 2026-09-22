@@ -12,6 +12,7 @@ import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon17
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173PvpRegisteredTeamSnapshotStore
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173PvpTeamFactory
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173PvpTurnHooks
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.reportManagedCleanupFailureSafely
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupActions
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupActionsSafely
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupForEachSafely
@@ -164,25 +165,50 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             val player = context.player()
             onlinePlayers[player.uuid] = player
             val result = try {
-                val accepted = exitSpectator(player)
-                PvpLoungeExitResultPayload(
-                    accepted = accepted,
-                    messageKey = if (accepted) null else "screen.${MoreBattleContent.MOD_ID}.pvp.error.invalid_state",
-                )
+                when (exitSpectator(player)) {
+                    PvpSpectatorExitResult.ACCEPTED -> PvpLoungeExitResultPayload(accepted = true, messageKey = null)
+                    PvpSpectatorExitResult.INVALID_STATE -> PvpLoungeExitResultPayload(
+                        accepted = false,
+                        messageKey = "screen.${MoreBattleContent.MOD_ID}.pvp.error.invalid_state",
+                    )
+                    PvpSpectatorExitResult.INTERNAL_FAILURE -> PvpLoungeExitResultPayload(
+                        accepted = false,
+                        messageKey = "screen.${MoreBattleContent.MOD_ID}.pvp.error.internal_failure",
+                    )
+                }
             } catch (exception: RuntimeException) {
-                MoreBattleContent.LOGGER.error("PvP spectator exit failed for ${player.uuid}", exception)
+                reportPvpFailureSafely("PvP spectator exit failed for ${player.uuid}", exception)
+                PvpLoungeExitResultPayload(
+                    accepted = false,
+                    messageKey = "screen.${MoreBattleContent.MOD_ID}.pvp.error.internal_failure",
+                )
+            } catch (error: LinkageError) {
+                reportPvpFailureSafely("PvP spectator exit failed for ${player.uuid}", error)
                 PvpLoungeExitResultPayload(
                     accepted = false,
                     messageKey = "screen.${MoreBattleContent.MOD_ID}.pvp.error.internal_failure",
                 )
             }
-            if (ServerPlayNetworking.canSend(player, PvpLoungeExitResultPayload.TYPE)) {
-                ServerPlayNetworking.send(player, result)
-            }
+            runManagedCleanupActionsSafely(
+                reportFailure = { failure ->
+                    MoreBattleContent.LOGGER.error("PvP spectator exit response failed for ${player.uuid}", failure)
+                },
+                {
+                    if (ServerPlayNetworking.canSend(player, PvpLoungeExitResultPayload.TYPE)) {
+                        ServerPlayNetworking.send(player, result)
+                    }
+                },
+            )
         }
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
-            onlinePlayers[handler.player.uuid] = handler.player
-            rescueStrandedLoungePlayer(handler.player)
+            val player = handler.player
+            runManagedCleanupActionsSafely(
+                reportFailure = { failure ->
+                    MoreBattleContent.LOGGER.error("PvP join recovery failed for ${player.uuid}", failure)
+                },
+                { onlinePlayers[player.uuid] = player },
+                { rescueStrandedLoungePlayer(player) },
+            )
         }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
             val playerId = handler.player.uuid
@@ -680,37 +706,64 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         ServerPlayNetworking.send(player, PvpSelectionStatePayload(null, state))
     }
 
-    private fun exitSpectator(player: ServerPlayer): Boolean {
+    private fun exitSpectator(player: ServerPlayer): PvpSpectatorExitResult {
         val room = rooms.roomFor(player.uuid)
         if (room == null) {
             recoverUntrackedSpectator(player)
-            return true
+            return PvpSpectatorExitResult.ACCEPTED
         }
-        if (player.uuid !in room.spectatorIds) return false
+        if (player.uuid !in room.spectatorIds) return PvpSpectatorExitResult.INVALID_STATE
 
         var remaining: PvpRoomView? = null
-        try {
-            if (room.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.ACTIVE &&
-                !lounge.removeSpectator(room.roomId, player.uuid)
-            ) {
-                recoverUntrackedSpectator(player)
-            }
-        } catch (exception: RuntimeException) {
-            MoreBattleContent.LOGGER.error("PvP lounge cleanup failed for ${player.uuid}", exception)
-        } finally {
-            remaining = rooms.leave(room.roomId, player.uuid)
-        }
-        remaining?.let { updatedRoom ->
-            try {
-                pushRoomToMembers(updatedRoom, null)
-                if (updatedRoom.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.TEAM_PREVIEW) {
-                    pushSpectatorPreview(updatedRoom)
+        var roomLeaveCompleted = false
+        var stateCleanupFailed = false
+        runManagedCleanupActionsSafely(
+            reportFailure = { failure ->
+                stateCleanupFailed = true
+                MoreBattleContent.LOGGER.error("PvP spectator exit cleanup failed for ${player.uuid}", failure)
+            },
+            {
+                if (room.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.ACTIVE &&
+                    !lounge.removeSpectator(room.roomId, player.uuid)
+                ) {
+                    recoverUntrackedSpectator(player)
                 }
-            } catch (exception: RuntimeException) {
-                MoreBattleContent.LOGGER.error("PvP spectator exit room update failed for ${player.uuid}", exception)
-            }
+            },
+            {
+                remaining = rooms.leave(room.roomId, player.uuid)
+                roomLeaveCompleted = true
+            },
+        )
+        runManagedCleanupActionsSafely(
+            reportFailure = { failure ->
+                MoreBattleContent.LOGGER.error("PvP spectator exit notification failed for ${player.uuid}", failure)
+            },
+            {
+                remaining?.let { updatedRoom ->
+                    pushRoomToMembers(updatedRoom, null)
+                    if (updatedRoom.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.TEAM_PREVIEW) {
+                        pushSpectatorPreview(updatedRoom)
+                    }
+                }
+            },
+        )
+        return if (roomLeaveCompleted && !stateCleanupFailed) {
+            PvpSpectatorExitResult.ACCEPTED
+        } else {
+            PvpSpectatorExitResult.INTERNAL_FAILURE
         }
-        return true
+    }
+
+    private fun reportPvpFailureSafely(message: String, failure: Throwable) {
+        reportManagedCleanupFailureSafely(failure) {
+            MoreBattleContent.LOGGER.error(message, it)
+        }
+    }
+
+    private enum class PvpSpectatorExitResult {
+        ACCEPTED,
+        INVALID_STATE,
+        INTERNAL_FAILURE,
     }
 
     private fun recoverUntrackedSpectator(player: ServerPlayer) {
