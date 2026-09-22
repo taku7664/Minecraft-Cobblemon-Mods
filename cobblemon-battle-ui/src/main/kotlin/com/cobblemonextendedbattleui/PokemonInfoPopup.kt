@@ -509,7 +509,8 @@ object PokemonInfoPopup {
 
             if (i < moves.size) {
                 val move = moves[i]
-                val normalized = move.name.lowercase().replace(" ", "").replace("-", "")
+                val normalized = move.id
+                    ?: move.name.lowercase().replace(" ", "").replace("-", "")
                 val template = Moves.getByName(normalized)
                     ?: Moves.getByName(move.name.lowercase())
                 val moveColor = template?.let { UIUtils.getTypeColor(it.elementalType) }

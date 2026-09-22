@@ -24,6 +24,7 @@ data class PokeballBounds(
 /** Move information. PP is present only for the player's authoritative move set. */
 data class MoveInfo(
     val name: String,
+    val id: String? = null,
     val currentPp: Int? = null,
     val maxPp: Int? = null
 )

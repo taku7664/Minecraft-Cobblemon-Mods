@@ -13,14 +13,19 @@ object MoveTracker {
         revealedMoves.clear()
     }
 
-    fun addRevealedMove(pokemonName: String, moveName: String, preferAlly: Boolean? = null) {
+    fun addRevealedMove(pokemonName: String, moveId: String, preferAlly: Boolean? = null) {
         val uuid = PokemonRegistry.resolvePokemonUuid(pokemonName, preferAlly) ?: run {
             CobblemonExtendedBattleUI.LOGGER.debug("MoveTracker: Unknown Pokemon '$pokemonName' for move tracking")
             return
         }
         val moves = revealedMoves.computeIfAbsent(uuid) { ConcurrentHashMap.newKeySet() }
-        if (moves.add(moveName)) {
-            CobblemonExtendedBattleUI.LOGGER.debug("MoveTracker: $pokemonName revealed move '$moveName'")
+        val normalizedId = moveId
+            .substringAfterLast(':')
+            .substringAfterLast('.')
+            .lowercase()
+            .filter(Char::isLetterOrDigit)
+        if (moves.add(normalizedId)) {
+            CobblemonExtendedBattleUI.LOGGER.debug("MoveTracker: $pokemonName revealed move '$normalizedId'")
         }
 
     }

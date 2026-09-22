@@ -141,6 +141,36 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void revealedMoveUsesItsStableIdWithoutTrackingOpponentPp() {
+        UUID attacker = UUID.randomUUID();
+        UUID target = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(attacker, "Pikachu", false);
+        PokemonRegistry.INSTANCE.registerPokemon(target, "Eevee", true);
+
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Text.translatable(
+            "cobblemon.battle.used_move_on",
+            "Pikachu",
+            Text.translatable("cobblemon.move.thunderbolt"),
+            "Eevee"
+        )));
+
+        assertEquals(Set.of("thunderbolt"), BattleStateTracker.INSTANCE.getRevealedMoves(attacker));
+    }
+
+    @Test
+    void courtChangeRevealUsesItsStableMoveId() {
+        UUID attacker = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(attacker, "Cinderace", false);
+
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Text.translatable(
+            TranslationKeys.COURT_CHANGE_KEY,
+            "Cinderace"
+        )));
+
+        assertEquals(Set.of("courtchange"), BattleStateTracker.INSTANCE.getRevealedMoves(attacker));
+    }
+
+    @Test
     void perishSongOnlyMarksTheProvidedActivePokemon() {
         UUID active = UUID.randomUUID();
         UUID benched = UUID.randomUUID();

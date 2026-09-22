@@ -131,6 +131,19 @@ object MessageParser {
             .filter(Char::isLetterOrDigit)
     }
 
+    /** Returns a locale-independent Cobblemon move ID when the argument carries a move key. */
+    fun extractMoveId(arg: Any): String {
+        val key = argToTranslationKey(arg)
+        if (key != null && key.startsWith("cobblemon.move.")) {
+            return key.removePrefix("cobblemon.move.")
+        }
+        return argToString(arg)
+            .substringAfterLast(':')
+            .substringAfterLast('.')
+            .lowercase(Locale.ROOT)
+            .filter(Char::isLetterOrDigit)
+    }
+
     /**
      * Resolve a BattleStat from a stat argument using a 3-strategy approach:
      * 1. Translation key matching (language-independent)

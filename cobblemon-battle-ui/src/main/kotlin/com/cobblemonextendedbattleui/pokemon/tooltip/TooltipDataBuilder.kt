@@ -3,6 +3,7 @@ package jbro.cobblemon.battleui.extended.pokemon.tooltip
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.cobblemon.mod.common.api.pokemon.status.Status
 import com.cobblemon.mod.common.api.pokemon.status.Statuses
+import com.cobblemon.mod.common.api.moves.Moves
 import com.cobblemon.mod.common.api.types.ElementalTypes
 import com.cobblemon.mod.common.api.types.tera.TeraTypes
 import com.cobblemon.mod.common.client.CobblemonClient
@@ -20,6 +21,12 @@ import java.util.UUID
  * tracked Pokemon, and battle Pokemon data.
  */
 object TooltipDataBuilder {
+
+    fun formatMoveName(moveId: String): String {
+        val translated = Text.translatable("cobblemon.move.$moveId").string
+        if (!translated.startsWith("cobblemon.")) return translated
+        return Moves.getByName(moveId)?.displayName?.string ?: moveId
+    }
 
     /** Resolve the authoritative Cobblemon translation before using a mechanical fallback. */
     fun formatAbilityName(abilityId: String): String {
@@ -112,7 +119,7 @@ object TooltipDataBuilder {
 
         if (isPlayerPokemon && battlePokemon != null) {
             moves = battlePokemon.moveSet.getMoves().map {
-                MoveInfo(it.displayName.string, currentPp = it.currentPp, maxPp = it.maxPp)
+                MoveInfo(it.displayName.string, id = it.name, currentPp = it.currentPp, maxPp = it.maxPp)
             }
 
             val heldItem = battlePokemon.heldItem()
@@ -163,7 +170,9 @@ object TooltipDataBuilder {
             }
             possibleAbilities = null
         } else {
-            moves = BattleStateTracker.getRevealedMoves(uuid).map(::MoveInfo)
+            moves = BattleStateTracker.getRevealedMoves(uuid).map { moveId ->
+                MoveInfo(formatMoveName(moveId), id = moveId)
+            }
             item = BattleStateTracker.getItem(uuid)
             actualSpeed = null
             actualDefence = null

@@ -53,11 +53,12 @@ object BattleMessageInterceptor {
                 val user = MessageParser.extractPokemonName(args[0])
                 val moveName = MessageParser.argToString(args[1])
                 val moveKey = MessageParser.argToTranslationKey(args[1])
+                val moveId = MessageParser.extractMoveId(args[1])
                 val target = MessageParser.extractPokemonName(args[2])
                 MessageParser.trackMove(user, moveName, moveKey, target)
                 CobblemonExtendedBattleUI.LOGGER.debug("BattleMessageInterceptor: Move tracked - $user used $moveName (key=$moveKey) on $target")
 
-                BattleStateTracker.addRevealedMove(user, moveName)
+                BattleStateTracker.addRevealedMove(user, moveId)
 
                 if (MessageParser.isMove(TranslationKeys.SPECTRAL_THIEF_KEYS, TranslationKeys.SPECTRAL_THIEF_NAME)) {
                     BattleStateTracker.stealPositiveStats(user, target)
@@ -69,10 +70,11 @@ object BattleMessageInterceptor {
                 val user = MessageParser.extractPokemonName(args[0])
                 val moveName = MessageParser.argToString(args[1])
                 val moveKey = MessageParser.argToTranslationKey(args[1])
+                val moveId = MessageParser.extractMoveId(args[1])
                 MessageParser.trackMove(user, moveName, moveKey, null)
                 CobblemonExtendedBattleUI.LOGGER.debug("BattleMessageInterceptor: Self-move tracked - $user used $moveName (key=$moveKey)")
 
-                BattleStateTracker.addRevealedMove(user, moveName)
+                BattleStateTracker.addRevealedMove(user, moveId)
 
                 if (MessageParser.isMove(TranslationKeys.BATON_PASS_KEYS, TranslationKeys.BATON_PASS_NAME)) {
                     BattleStateTracker.markBatonPassUsed(user)
@@ -234,7 +236,7 @@ object BattleMessageInterceptor {
                 BattleStateTracker.swapSideConditions()
                 if (args.isNotEmpty()) {
                     val pokemonName = MessageParser.extractPokemonName(args[0])
-                    BattleStateTracker.addRevealedMove(pokemonName, "Court Change")
+                    BattleStateTracker.addRevealedMove(pokemonName, "courtchange")
                 }
             }
 
