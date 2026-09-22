@@ -32,6 +32,7 @@ import jbro.cobblemon.morebattlecontent.betterai.state.LocalFieldEffectProjector
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalSwitchStateProjector
 import jbro.cobblemon.morebattlecontent.betterai.state.PublicTurnProjection
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
+import kotlin.math.pow
 import kotlin.math.roundToInt
 
 /**
@@ -122,18 +123,24 @@ internal object PublicSingleTurnProjector {
                         calculationCache = calculationCache,
                         shouldContinue = shouldContinue,
                     ).map { projected ->
+                        val reboundRemaining = rebindPendingActors(remaining, projected.state)
                         val remainingPowerMultipliers = next.action.actorPokemonId?.let {
                             current.turnPowerMultipliersByPokemon - it
                         } ?: current.turnPowerMultipliersByPokemon
-                        val helpedId = successfulHelpingHandTarget(next.action, remaining, projected)?.actorPokemonId
+                        val helpedId = successfulHelpingHandTarget(next.action, reboundRemaining, projected)?.actorPokemonId
                         ScheduledTurnBranch(
                             branch = projected,
-                            remaining = remaining,
+                            remaining = reboundRemaining,
                             order = current.order + next.action,
                             orderProbability = current.orderProbability * next.probability,
-                            promotedNextAction = promotedAfterYouAction(next.action, remaining, projected),
-                            postponedActions = (current.postponedActions - next.action) +
-                                listOfNotNull(postponedByQuashAction(next.action, remaining, projected)),
+                            promotedNextAction = promotedAfterYouAction(next.action, reboundRemaining, projected),
+                            postponedActions = current.postponedActions
+                                .filterNot { it == next.action }
+                                .mapNotNull { postponed ->
+                                    reboundRemaining.singleOrNull { it.actorPokemonId == postponed.actorPokemonId }
+                                }.toSet() + listOfNotNull(
+                                postponedByQuashAction(next.action, reboundRemaining, projected),
+                            ),
                             turnPowerMultipliersByPokemon = if (helpedId == null) {
                                 remainingPowerMultipliers
                             } else {
@@ -187,6 +194,7 @@ internal object PublicSingleTurnProjector {
                     badPoisonTurns,
                     outcome.expectedScoreAdjustment,
                     outcome.protectionResultsByPokemon,
+                    outcome.allySwitchResultsByPokemon,
                     stateBeforeResidual = outcome.state,
                     directDamage = outcome.directDamage,
                 )
@@ -204,6 +212,7 @@ internal object PublicSingleTurnProjector {
                 projection.executedMoveIdsByPokemon,
                 projection.badPoisonTurnsByPokemon,
                 projection.protectionResultsByPokemon,
+                projection.allySwitchResultsByPokemon,
             )
         }
             .values
@@ -315,6 +324,7 @@ internal object PublicSingleTurnProjector {
                 branch.executedMoveIdsByPokemon + outcome.executedMoveIdsByPokemon,
                 branch.expectedScoreAdjustment + outcome.expectedScoreAdjustment,
                 branch.protectionResultsByPokemon + outcome.protectionResultsByPokemon,
+                branch.allySwitchResultsByPokemon + outcome.allySwitchResultsByPokemon,
                 branch.redirectingPokemonIds + newlyRedirecting,
                 directDamage = branch.directDamage + outcome.directDamage,
                 successfulQueueControlMoveIdsByPokemon = branch.successfulQueueControlMoveIdsByPokemon +
@@ -524,6 +534,9 @@ internal object PublicSingleTurnProjector {
                     executedMoveIdsByPokemon = mapOf(actor.battlePokemonId to moveId),
                 ),
             )
+        }
+        if (canonicalId(moveId) == ALLY_SWITCH) {
+            return allySwitchOutcomes(projectedFormState, side, actor, moveId, history)
         }
         val slotCondition = effects.singleOrNull { it.kind == BattleMoveEffectKind.SLOT_CONDITION }
         if (canonicalId(slotCondition?.valueId) == "revivalblessing") {
@@ -1431,6 +1444,7 @@ internal object PublicSingleTurnProjector {
                 it.lastMoveByPokemon,
                 it.executedMoveIdsByPokemon,
                 it.protectionResultsByPokemon,
+                it.allySwitchResultsByPokemon,
                 it.successfulQueueControlMoveIdsByPokemon,
             )
         }.values.map { identical ->
@@ -1452,6 +1466,7 @@ internal object PublicSingleTurnProjector {
                     probability,
                 ),
                 identical.first().protectionResultsByPokemon,
+                identical.first().allySwitchResultsByPokemon,
                 // Merged branches are identical turns, so they share whatever has drawn this turn's
                 // attacks. Rebuilding the state without this silently reset it to nobody, which is
                 // the whole reason a positional constructor call is a bad place to add a field.
@@ -1569,6 +1584,71 @@ internal object PublicSingleTurnProjector {
             it.side == pending.side && it.activeSlot == pending.action.actorSlot
         }
         return pending.takeIf { targetPokemon != null && !targetPokemon.fainted && targetPokemon.hpFraction > 0.0 }
+    }
+
+    private fun allySwitchOutcomes(
+        state: BattleStateView,
+        side: BattleSide,
+        actor: BattlePokemonStateView,
+        moveId: String,
+        history: RecursiveActionHistory,
+    ): List<WeightedState> {
+        val actorSlot = actor.activeSlot
+        val partner = state.pokemon.singleOrNull {
+            it.side == side && it.activeSlot != null && it.activeSlot != actorSlot && !it.fainted && it.hpFraction > 0.0
+        }
+        if (state.format != BattleFormat.DOUBLE || actorSlot == null || partner?.activeSlot == null) {
+            return listOf(
+                WeightedState(
+                    state = state,
+                    probability = 1.0,
+                    executedSides = setOf(side),
+                    executedMoveIdsByPokemon = mapOf(actor.battlePokemonId to moveId),
+                    allySwitchResultsByPokemon = mapOf(actor.battlePokemonId to false),
+                ),
+            )
+        }
+        val successProbability = 1.0 / 3.0.pow(history.allySwitchChainByPokemon[actor.battlePokemonId] ?: 0)
+        val partnerSlot = requireNotNull(partner.activeSlot)
+        val swapped = state.copyState(
+            pokemon = state.pokemon.map { pokemon ->
+                when (pokemon.battlePokemonId) {
+                    actor.battlePokemonId -> pokemon.copyState(activeSlot = partnerSlot)
+                    partner.battlePokemonId -> pokemon.copyState(activeSlot = actorSlot)
+                    else -> pokemon
+                }
+            },
+        )
+        val success = WeightedState(
+            state = swapped,
+            probability = successProbability,
+            executedSides = setOf(side),
+            executedMoveIdsByPokemon = mapOf(actor.battlePokemonId to moveId),
+            allySwitchResultsByPokemon = mapOf(actor.battlePokemonId to true),
+        )
+        if (successProbability >= CERTAIN_PROBABILITY) return listOf(success)
+        return listOf(
+            success,
+            WeightedState(
+                state = state,
+                probability = 1.0 - successProbability,
+                executedSides = setOf(side),
+                executedMoveIdsByPokemon = mapOf(actor.battlePokemonId to moveId),
+                allySwitchResultsByPokemon = mapOf(actor.battlePokemonId to false),
+            ),
+        )
+    }
+
+    private fun rebindPendingActors(
+        remaining: List<TurnPrimitiveAction>,
+        state: BattleStateView,
+    ): List<TurnPrimitiveAction> = remaining.map { pending ->
+        val slot = pending.actorPokemonId?.let { id ->
+            state.pokemon.singleOrNull { it.battlePokemonId == id }?.activeSlot
+        }
+        if (slot == null || slot == pending.action.actorSlot) pending else pending.copy(
+            action = pending.action.withActorSlot(slot),
+        )
     }
 
     private fun TurnPrimitiveAction.withTurnPowerMultiplier(multiplier: Double): TurnPrimitiveAction {
@@ -1841,6 +1921,7 @@ internal object PublicSingleTurnProjector {
         val executedMoveIdsByPokemon: Map<UUID, String> = emptyMap(),
         val expectedScoreAdjustment: Double = 0.0,
         val protectionResultsByPokemon: Map<UUID, Boolean> = emptyMap(),
+        val allySwitchResultsByPokemon: Map<UUID, Boolean> = emptyMap(),
         /**
          * Who has drawn this turn's single-target attacks onto themselves.
          *
@@ -1876,6 +1957,7 @@ internal object PublicSingleTurnProjector {
     private const val AFTER_YOU = "afteryou"
     private const val QUASH = "quash"
     private const val HELPING_HAND = "helpinghand"
+    private const val ALLY_SWITCH = "allyswitch"
     private const val HELPING_HAND_MULTIPLIER = 1.5
     private val QUEUE_CONTROL_MOVE_IDS = setOf(AFTER_YOU, QUASH)
     private val PARALYSIS_IDS = setOf("par", "paralysis", "paralyzed", "paralysed")
@@ -1938,6 +2020,32 @@ private fun BattleActionCandidate.withoutFacts() = BattleActionCandidate(
     facts = null,
     tags = tags,
 )
+
+private fun BattleActionCandidate.withActorSlot(slot: Int): BattleActionCandidate {
+    val previousSlot = actorSlot
+    val selfFollowsActor = moveDetails?.targetPattern == BattleMoveTargetPattern.SELF ||
+        moveDetails?.targetPattern == BattleMoveTargetPattern.SELECTED_ALLY_OR_SELF
+    val reboundTargets = if (selfFollowsActor && previousSlot != null) {
+        targets.map { target -> if (target.slot == previousSlot) BattleTargetSlot(target.side, slot) else target }
+    } else {
+        targets
+    }
+    return BattleActionCandidate(
+        actionId = actionId,
+        kind = kind,
+        actorSlot = slot,
+        moveSlot = moveSlot,
+        moveId = moveId,
+        targets = reboundTargets,
+        switchPokemonId = switchPokemonId,
+        componentActionIds = componentActionIds,
+        componentActions = componentActions,
+        mechanic = mechanic,
+        moveDetails = moveDetails,
+        facts = null,
+        tags = tags,
+    )
+}
 
 private fun BattleMoveCandidateView.forDelayedImpact(): BattleMoveCandidateView {
     val original = effects ?: return this

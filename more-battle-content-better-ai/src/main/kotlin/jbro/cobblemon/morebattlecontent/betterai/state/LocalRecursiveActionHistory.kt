@@ -32,6 +32,7 @@ internal data class RecursiveActionHistory(
     val badPoisonTurnsByPokemon: Map<UUID, Int> = emptyMap(),
     val saltCuredPokemonIds: Set<UUID> = emptySet(),
     val protectionChainByPokemon: Map<UUID, Int> = emptyMap(),
+    val allySwitchChainByPokemon: Map<UUID, Int> = emptyMap(),
     val delayedStrikes: List<RecursiveDelayedStrike> = emptyList(),
     val restoredOriginalPokemonIds: Set<UUID> = emptySet(),
     /** Branch assumptions, never public observations. Persist independently of execution and PP. */
@@ -97,7 +98,40 @@ internal object RecursiveSnapshotActionConstraints {
             moveStreakByPokemon = publicMoveStreaks,
             badPoisonTurnsByPokemon = LocalBadPoisonCounter.seed(state),
             protectionChainByPokemon = publicProtectionChains,
+            allySwitchChainByPokemon = active.mapNotNull { pokemon ->
+                consecutiveSuccessfulAllySwitches(state, pokemon.battlePokemonId)
+                    .takeIf { it > 0 }
+                    ?.let { pokemon.battlePokemonId to it }
+            }.toMap(),
         )
+    }
+
+    private fun consecutiveSuccessfulAllySwitches(state: BattleStateView, pokemonId: UUID): Int {
+        var consecutive = 0
+        val lastEntrySequence = state.observedEvents.asSequence()
+            .filter { it.kind == BattleObservedEventKind.SWITCHED && it.actorPokemonId == pokemonId }
+            .maxOfOrNull { it.sequence }
+            ?: Long.MIN_VALUE
+        state.observedEvents.asSequence()
+            .filter { it.sequence > lastEntrySequence }
+            .sortedBy { it.sequence }
+            .forEach { event ->
+                val outcome = event.moveOutcome
+                when {
+                    event.kind == BattleObservedEventKind.MOVE_USED && event.actorPokemonId == pokemonId -> {
+                        consecutive = if (canonicalId(event.publicValueId.orEmpty()) == ALLY_SWITCH) {
+                            consecutive + 1
+                        } else {
+                            0
+                        }
+                    }
+                    event.kind == BattleObservedEventKind.MOVE_OUTCOME &&
+                        (event.actorPokemonId == pokemonId || pokemonId in event.targetPokemonIds) &&
+                        outcome?.kind == BattleMoveOutcomeKind.FAILED &&
+                        canonicalId(outcome.moveId.orEmpty()) == ALLY_SWITCH -> consecutive = 0
+                }
+            }
+        return consecutive
     }
 
     private fun publicMoveStreak(state: BattleStateView, pokemonId: UUID): RecursiveMoveStreak? {
@@ -135,6 +169,7 @@ internal object RecursiveSnapshotActionConstraints {
 
     private const val MAXIMUM_SNAPSHOT_CONTROL_TURNS = 3
     private const val MAXIMUM_SNAPSHOT_TRAP_TURNS = 5
+    private const val ALLY_SWITCH = "allyswitch"
 }
 
 internal object RecursiveHistoryProjector {
@@ -154,6 +189,7 @@ internal object RecursiveHistoryProjector {
         val lastMoves = previous.lastMoveByPokemon.toMutableMap()
         val moveStreaks = previous.moveStreakByPokemon.toMutableMap()
         val protectionChains = previous.protectionChainByPokemon.toMutableMap()
+        val allySwitchChains = previous.allySwitchChainByPokemon.toMutableMap()
         outcome.executedMoveIdsByPokemon.forEach { (actorId, moveId) ->
                 val key = RecursiveMoveUseKey(actorId, moveId)
                 val paidDuringPreparation = previous.chargingMoveByPokemon[actorId]?.let { sameMove(it, moveId) } == true
@@ -173,6 +209,10 @@ internal object RecursiveHistoryProjector {
             when (outcome.protectionResultsByPokemon[actorId]) {
                 true -> protectionChains[actorId] = (previous.protectionChainByPokemon[actorId] ?: 0) + 1
                 false, null -> protectionChains.remove(actorId)
+            }
+            when (outcome.allySwitchResultsByPokemon[actorId]) {
+                true -> allySwitchChains[actorId] = (previous.allySwitchChainByPokemon[actorId] ?: 0) + 1
+                false, null -> allySwitchChains.remove(actorId)
             }
         }
 
@@ -258,6 +298,7 @@ internal object RecursiveHistoryProjector {
         lastMoves.keys.retainAll(activeIds)
         moveStreaks.keys.retainAll(activeIds)
         protectionChains.keys.retainAll(activeIds)
+        allySwitchChains.keys.retainAll(activeIds)
         val actedSinceEntry = (previous.actedSinceEntryPokemonIds + outcome.executedMoveIdsByPokemon.keys)
             .filterTo(linkedSetOf()) { it in activeIds }
 
@@ -278,6 +319,7 @@ internal object RecursiveHistoryProjector {
             badPoisonTurnsByPokemon = outcome.badPoisonTurnsByPokemon,
             saltCuredPokemonIds = saltCured,
             protectionChainByPokemon = protectionChains,
+            allySwitchChainByPokemon = allySwitchChains,
             delayedStrikes = delayedStrikes,
         )
     }

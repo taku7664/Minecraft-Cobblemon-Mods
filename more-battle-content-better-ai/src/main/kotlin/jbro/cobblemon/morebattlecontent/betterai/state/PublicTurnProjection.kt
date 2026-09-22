@@ -34,6 +34,7 @@ internal data class PublicTurnProjection(
     val badPoisonTurnsByPokemon: Map<UUID, Int> = emptyMap(),
     val expectedScoreAdjustment: Double = 0.0,
     val protectionResultsByPokemon: Map<UUID, Boolean> = emptyMap(),
+    val allySwitchResultsByPokemon: Map<UUID, Boolean> = emptyMap(),
     /**
      * State before deterministic end-of-turn effects and the turn increment. Includes completed
      * actions AND delayed strikes due this turn; its HP delta is not current-action damage alone.
