@@ -27,6 +27,8 @@ object ChampionsBattleInfoOverlay {
     private const val FIELD_W = 280
     private const val PANEL_Y = 62
     private const val PANEL_H = 344
+    private const val MAX_ACTIVE_PER_SIDE = 3
+    private const val COMPACT_CONDITIONS_MIN_HEIGHT = 136
 
     private val STAT_ORDER = listOf(
         BattleStateTracker.BattleStat.ATTACK,
@@ -151,7 +153,7 @@ object ChampionsBattleInfoOverlay {
             return
         }
 
-        val shown = entries.take(2)
+        val shown = entries.take(MAX_ACTIVE_PER_SIDE)
         val cardTop = PANEL_Y + 46
         val availableHeight = PANEL_H - 56
         val gap = 8
@@ -186,7 +188,7 @@ object ChampionsBattleInfoOverlay {
 
         if (height >= 200) {
             drawDetailedConditions(context, entry, x, y, width)
-        } else {
+        } else if (height >= COMPACT_CONDITIONS_MIN_HEIGHT) {
             drawCompactConditions(context, entry, x, y, width)
         }
     }

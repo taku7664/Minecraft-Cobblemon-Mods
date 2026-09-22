@@ -20,6 +20,9 @@ final class ChampionsActiveLayoutContractTest {
         assertTrue(source.contains("drawSidePanel(context, activeAllies, SIDE_X_LEFT, false)"));
         assertTrue(source.contains("drawEffectsPanel(context, FIELD_X)"));
         assertTrue(source.contains("drawSidePanel(context, activeOpponents, SIDE_X_RIGHT, true)"));
+        assertTrue(source.contains("private const val MAX_ACTIVE_PER_SIDE = 3"));
+        assertTrue(source.contains("val shown = entries.take(MAX_ACTIVE_PER_SIDE)"));
+        assertTrue(source.contains("else if (height >= COMPACT_CONDITIONS_MIN_HEIGHT)"));
 
         assertFalse(source.contains("drawPublicInfo("));
         assertFalse(source.contains("PokemonModelRenderer"));
