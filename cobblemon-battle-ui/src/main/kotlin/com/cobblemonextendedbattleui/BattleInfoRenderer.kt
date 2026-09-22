@@ -26,8 +26,11 @@ object BattleInfoRenderer {
             }
         }
 
-        if (PanelConfig.enableBattleInfoPanelEffective) {
-            BattleInfoPanel.update()
+        if (PanelConfig.needsBattleStateTracking()) {
+            BattleInfoPanel.update(syncOverlay = PanelConfig.enableBattleInfoPanelEffective)
+        }
+        if (PanelConfig.enableTeamIndicatorsEffective) {
+            TeamIndicatorUI.render(context)
         }
         if (PanelConfig.enableBattleLogEffective) {
             BattleLogWidget.render(context)

@@ -17,7 +17,7 @@ final class ChampionsOverlayRenderOrderContractTest {
             "src/main/java/com/cobblemonextendedbattleui/mixin/BattleGuiNavigationMixin.java"
         ));
 
-        int updateStart = panel.indexOf("fun update() {");
+        int updateStart = panel.indexOf("fun update(syncOverlay: Boolean = true) {");
         int foregroundStart = panel.indexOf("fun renderForeground(context: DrawContext) {");
         assertTrue(updateStart >= 0);
         assertTrue(foregroundStart > updateStart);

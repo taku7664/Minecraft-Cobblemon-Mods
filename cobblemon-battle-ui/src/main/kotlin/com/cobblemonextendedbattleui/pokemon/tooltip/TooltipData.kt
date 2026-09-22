@@ -21,16 +21,11 @@ data class PokeballBounds(
     val isPlayerPokemon: Boolean
 )
 
-/**
- * Move information including PP (for player's Pokemon) or estimated (for opponent).
- */
+/** Move information. PP is present only for the player's authoritative move set. */
 data class MoveInfo(
     val name: String,
     val currentPp: Int? = null,
-    val maxPp: Int? = null,
-    val estimatedRemaining: Int? = null,
-    val estimatedMax: Int? = null,
-    val usageCount: Int? = null
+    val maxPp: Int? = null
 )
 
 /**

@@ -105,26 +105,6 @@ object SpeedCalculator {
     // Effective Speed Calculations
     // ═════════════════════════════════════════════════════════════════════════
 
-    fun calculateEffectiveSpeed(
-        baseSpeed: Int,
-        speedStage: Int,
-        abilityName: String?,
-        status: Status?,
-        itemName: String?,
-        itemConsumed: Boolean
-    ): Int {
-        val weather = BattleStateTracker.weather?.type
-        val terrain = BattleStateTracker.terrain?.type
-        val hasStatus = status != null
-
-        val stageMultiplier = StatCalculator.getStageMultiplier(speedStage)
-        val abilityMultiplier = getAbilitySpeedMultiplier(abilityName, weather, terrain, hasStatus, itemConsumed)
-        val statusMultiplier = getStatusSpeedMultiplier(status, abilityName)
-        val itemMultiplier = if (!itemConsumed) StatCalculator.getItemSpeedMultiplier(itemName) else 1.0
-
-        return (baseSpeed * stageMultiplier * abilityMultiplier * statusMultiplier * itemMultiplier).toInt()
-    }
-
     fun calculateOpponentSpeedRange(
         uuid: UUID,
         pokemonId: Identifier,
@@ -150,7 +130,7 @@ object SpeedCalculator {
         val stageMultiplier = StatCalculator.getStageMultiplier(speedStage)
         val statusMultiplier = getStatusSpeedMultiplier(status, null)
 
-        val itemName = if (!itemConsumed) knownItem?.name else null
+        val itemName = if (!itemConsumed) knownItem.name else null
         val itemMultiplier = if (itemName != null) StatCalculator.getItemSpeedMultiplier(itemName) else 1.0
 
         val minSpeed = (minBaseStat * stageMultiplier * statusMultiplier * itemMultiplier).toInt()
@@ -189,19 +169,19 @@ object SpeedCalculator {
                     val activeConditions = mutableListOf<String>()
                     val normalizedAbilities = species.abilities.mapNotNull { StatCalculator.normalizeAbilityName(it.template.name) }
                     if (weather == BattleStateTracker.Weather.SUN && "chlorophyll" in normalizedAbilities) {
-                        activeConditions.add("Chlorophyll")
+                        activeConditions.add(formatAbilityName("chlorophyll"))
                     }
                     if (weather == BattleStateTracker.Weather.RAIN && "swiftswim" in normalizedAbilities) {
-                        activeConditions.add("Swift Swim")
+                        activeConditions.add(formatAbilityName("swiftswim"))
                     }
                     if (weather == BattleStateTracker.Weather.SANDSTORM && "sandrush" in normalizedAbilities) {
-                        activeConditions.add("Sand Rush")
+                        activeConditions.add(formatAbilityName("sandrush"))
                     }
                     if ((weather == BattleStateTracker.Weather.SNOW || weather == BattleStateTracker.Weather.HAIL) && "slushrush" in normalizedAbilities) {
-                        activeConditions.add("Slush Rush")
+                        activeConditions.add(formatAbilityName("slushrush"))
                     }
                     if (terrain == BattleStateTracker.Terrain.ELECTRIC && "surgesurfer" in normalizedAbilities) {
-                        activeConditions.add("Surge Surfer")
+                        activeConditions.add(formatAbilityName("surgesurfer"))
                     }
                     if (activeConditions.isNotEmpty()) activeConditions.joinToString("/") + "?" else null
                 }

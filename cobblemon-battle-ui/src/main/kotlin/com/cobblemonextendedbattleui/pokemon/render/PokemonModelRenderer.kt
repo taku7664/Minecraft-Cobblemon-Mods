@@ -156,7 +156,7 @@ object PokemonModelRenderer {
                 return
             }
         } catch (e: Exception) {
-            CobblemonExtendedBattleUI.LOGGER.debug("Failed to render Pokemon model: ${e.message}")
+            CobblemonExtendedBattleUI.LOGGER.debug("Failed to render Pokemon model; using fallback", e)
             matrixStack.pop()
             drawPokeballFallback(context, x, y, modelSize, isKO, status, applyOpacity, teamIndicatorScale)
             return

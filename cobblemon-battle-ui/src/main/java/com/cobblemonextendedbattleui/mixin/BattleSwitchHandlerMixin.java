@@ -11,6 +11,7 @@ import com.cobblemon.mod.common.client.net.battle.BattleSwitchPokemonHandler;
 import com.cobblemon.mod.common.net.messages.client.battle.BattleSwitchPokemonPacket;
 import com.cobblemon.mod.common.net.messages.client.battle.BattleInitializePacket;
 import jbro.cobblemon.battleui.extended.BattleStateTracker;
+import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUI;
 import jbro.cobblemon.battleui.extended.DamageTracker;
 import jbro.cobblemon.battleui.extended.PanelConfig;
 import net.minecraft.client.MinecraftClient;
@@ -52,11 +53,13 @@ public class BattleSwitchHandlerMixin {
                 String name = newPokemon.getDisplayName() != null ? newPokemon.getDisplayName().getString() : "Unknown";
 
                 // Determine if this Pokemon is ally or opponent by checking the pnx actor
-                boolean isAlly = determineIfAlly(packet, client);
-                BattleStateTracker.INSTANCE.registerPokemon(uuid, name, isAlly);
+                Boolean isAlly = determineIfAlly(packet, client);
+                if (isAlly != null) {
+                    BattleStateTracker.INSTANCE.registerPokemon(uuid, name, isAlly);
+                }
             }
         } catch (Exception e) {
-            // Silent fail to avoid breaking gameplay
+            CobblemonExtendedBattleUI.INSTANCE.getLOGGER().warn("Failed to update Battle UI switch state", e);
         }
     }
 
@@ -64,13 +67,13 @@ public class BattleSwitchHandlerMixin {
      * Determine if the switching Pokemon is on the ally or opponent side.
      * Uses battle.getPokemonFromPNX() to find the side, then compares with player's side.
      */
-    private boolean determineIfAlly(BattleSwitchPokemonPacket packet, MinecraftClient client) {
+    private Boolean determineIfAlly(BattleSwitchPokemonPacket packet, MinecraftClient client) {
         try {
             ClientBattle battle = CobblemonClient.INSTANCE.getBattle();
-            if (battle == null) return true;
+            if (battle == null) return null;
 
             UUID playerUUID = client.getSession().getUuidOrNull();
-            if (playerUUID == null) return true;
+            if (playerUUID == null) return null;
 
             // Check if player is in side1 or side2
             boolean playerInSide1 = battle.getSide1().getActors().stream()
@@ -81,18 +84,18 @@ public class BattleSwitchHandlerMixin {
             // Determine which side the switch is on by checking if the actor is in side1
             String pnx = packet.getPnx();
             var result = battle.getPokemonFromPNX(pnx);
-            if (result == null) return true;
+            if (result == null) return null;
 
             var actor = result.getFirst();
-            if (actor == null) return true;
+            if (actor == null) return null;
 
             UUID actorUuid = actor.getUuid();
             boolean switchInSide1 = battle.getSide1().getActors().stream()
                     .anyMatch(a -> actorUuid.equals(a.getUuid()));
 
-            // Spectators: treat side1 as ally
+            // Spectators: Cobblemon renders side2 on the left, matching BattleOverlay.
             if (!playerInSide1 && !playerInSide2) {
-                return switchInSide1; // side1 is "ally" for spectators
+                return !switchInSide1; // side2 is on the left for spectators
             }
 
             // If player is in side1, side1 switches are ally
@@ -103,7 +106,8 @@ public class BattleSwitchHandlerMixin {
                 return !switchInSide1;
             }
         } catch (Exception e) {
-            return true; // Default to ally on error
+            CobblemonExtendedBattleUI.INSTANCE.getLOGGER().warn("Could not determine the side of a switched Pokemon", e);
+            return null;
         }
     }
 }

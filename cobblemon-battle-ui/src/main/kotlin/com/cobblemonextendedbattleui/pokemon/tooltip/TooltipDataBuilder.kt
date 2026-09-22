@@ -1,6 +1,5 @@
 package jbro.cobblemon.battleui.extended.pokemon.tooltip
 
-import com.cobblemon.mod.common.api.moves.Moves
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.cobblemon.mod.common.api.pokemon.status.Status
 import com.cobblemon.mod.common.api.pokemon.status.Statuses
@@ -22,109 +21,11 @@ import java.util.UUID
  */
 object TooltipDataBuilder {
 
-    // Ability ID -> Display Name lookup for compound words that can't be split programmatically
-    private val ABILITY_DISPLAY_NAMES = mapOf(
-        "earlybird" to "Early Bird",
-        "flashfire" to "Flash Fire",
-        "swiftswim" to "Swift Swim",
-        "chlorophyll" to "Chlorophyll",
-        "sandveil" to "Sand Veil",
-        "sandrush" to "Sand Rush",
-        "sandstream" to "Sand Stream",
-        "sandforce" to "Sand Force",
-        "slushrush" to "Slush Rush",
-        "snowcloak" to "Snow Cloak",
-        "snowwarning" to "Snow Warning",
-        "icebody" to "Ice Body",
-        "iceface" to "Ice Face",
-        "icescales" to "Ice Scales",
-        "dryskin" to "Dry Skin",
-        "roughskin" to "Rough Skin",
-        "ironfist" to "Iron Fist",
-        "ironbarbs" to "Iron Barbs",
-        "moldbreaker" to "Mold Breaker",
-        "toughclaws" to "Tough Claws",
-        "strongjaw" to "Strong Jaw",
-        "hugepower" to "Huge Power",
-        "purepower" to "Pure Power",
-        "hustle" to "Hustle",
-        "guts" to "Guts",
-        "sheerforce" to "Sheer Force",
-        "technician" to "Technician",
-        "skilllink" to "Skill Link",
-        "serenegrace" to "Serene Grace",
-        "superluck" to "Super Luck",
-        "sniper" to "Sniper",
-        "infiltrator" to "Infiltrator",
-        "scrappy" to "Scrappy",
-        "noguard" to "No Guard",
-        "compoundeyes" to "Compound Eyes",
-        "keeneye" to "Keen Eye",
-        "wonderguard" to "Wonder Guard",
-        "multiscale" to "Multiscale",
-        "solidrock" to "Solid Rock",
-        "filter" to "Filter",
-        "thickfat" to "Thick Fat",
-        "furcoat" to "Fur Coat",
-        "fluffy" to "Fluffy",
-        "battlearmor" to "Battle Armor",
-        "shellarmor" to "Shell Armor",
-        "magicguard" to "Magic Guard",
-        "magicbounce" to "Magic Bounce",
-        "naturalcure" to "Natural Cure",
-        "regenerator" to "Regenerator",
-        "poisonheal" to "Poison Heal",
-        "immunity" to "Immunity",
-        "limber" to "Limber",
-        "owntempo" to "Own Tempo",
-        "innerfocus" to "Inner Focus",
-        "steadfast" to "Steadfast",
-        "contrary" to "Contrary",
-        "defiant" to "Defiant",
-        "competitive" to "Competitive",
-        "speedboost" to "Speed Boost",
-        "moxie" to "Moxie",
-        "beastboost" to "Beast Boost",
-        "intimidate" to "Intimidate",
-        "pressure" to "Pressure",
-        "unnerve" to "Unnerve",
-        "unaware" to "Unaware",
-        "oblivious" to "Oblivious",
-        "trace" to "Trace",
-        "imposter" to "Imposter",
-        "prankster" to "Prankster",
-        "protean" to "Protean",
-        "libero" to "Libero",
-        "levitate" to "Levitate",
-        "sturdy" to "Sturdy",
-        "anticipation" to "Anticipation",
-        "forewarn" to "Forewarn",
-        "frisk" to "Frisk",
-        "pickup" to "Pickup",
-        "harvest" to "Harvest",
-        "runaway" to "Run Away",
-        "quickfeet" to "Quick Feet",
-        "unburden" to "Unburden",
-        "shadowtag" to "Shadow Tag",
-        "arenatrap" to "Arena Trap",
-        "magnetpull" to "Magnet Pull",
-        "stickyhold" to "Sticky Hold",
-        "suctioncups" to "Suction Cups",
-        "waterveil" to "Water Veil",
-        "waterabsorb" to "Water Absorb",
-        "waterbubble" to "Water Bubble",
-        "raindish" to "Rain Dish",
-        "drizzle" to "Drizzle",
-        "drought" to "Drought",
-        "solarpower" to "Solar Power"
-    )
-
-    /**
-     * Format an ability ID into a proper display name.
-     * Uses lookup table for compound words, falls back to formatting for unknown abilities.
-     */
+    /** Resolve the authoritative Cobblemon translation before using a mechanical fallback. */
     fun formatAbilityName(abilityId: String): String {
-        ABILITY_DISPLAY_NAMES[abilityId.lowercase()]?.let { return it }
+        val normalizedId = abilityId.lowercase().replace(" ", "").replace("_", "").replace("-", "")
+        val translated = Text.translatable("cobblemon.ability.$normalizedId").string
+        if (!translated.startsWith("cobblemon.")) return translated
 
         return abilityId
             .replace("_", " ")
@@ -182,7 +83,7 @@ object TooltipDataBuilder {
         val name = battlePokemon?.getDisplayName()?.string
             ?: getPokemonNameFromUuid(uuid)
             ?: trackedPokemon?.displayName
-            ?: "Unknown"
+            ?: Text.translatable("cobblemon_battle_ui.champions.unknown").string
 
         val hpPercent = trackedPokemon?.hpPercent
             ?: battlePokemon?.let {
@@ -210,13 +111,8 @@ object TooltipDataBuilder {
         val possibleAbilities: List<String>?
 
         if (isPlayerPokemon && battlePokemon != null) {
-            val trackedMoves = BattleStateTracker.getTrackedMoves(uuid)
-            moves = if (trackedMoves != null) {
-                trackedMoves.map { MoveInfo(it.name, currentPp = it.currentPp, maxPp = it.maxPp) }
-            } else {
-                battlePokemon.moveSet.getMoves().map {
-                    MoveInfo(it.displayName.string, currentPp = it.currentPp, maxPp = it.maxPp)
-                }
+            moves = battlePokemon.moveSet.getMoves().map {
+                MoveInfo(it.displayName.string, currentPp = it.currentPp, maxPp = it.maxPp)
             }
 
             val heldItem = battlePokemon.heldItem()
@@ -267,18 +163,7 @@ object TooltipDataBuilder {
             }
             possibleAbilities = null
         } else {
-            moves = BattleStateTracker.getRevealedMoves(uuid).map { moveName ->
-                val usageCount = BattleStateTracker.getMoveUsageCount(uuid, moveName)
-                val basePp = Moves.getByName(moveName.lowercase().replace(" ", ""))?.pp
-                    ?: Moves.getByName(moveName)?.pp
-                if (basePp != null) {
-                    val estimatedMax = basePp * 8 / 5
-                    val estimatedRemaining = (estimatedMax - usageCount).coerceAtLeast(0)
-                    MoveInfo(moveName, estimatedRemaining = estimatedRemaining, estimatedMax = estimatedMax)
-                } else {
-                    MoveInfo(moveName, usageCount = usageCount)
-                }
-            }
+            moves = BattleStateTracker.getRevealedMoves(uuid).map(::MoveInfo)
             item = BattleStateTracker.getItem(uuid)
             actualSpeed = null
             actualDefence = null

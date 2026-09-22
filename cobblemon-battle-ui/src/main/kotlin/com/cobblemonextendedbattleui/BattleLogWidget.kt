@@ -190,8 +190,8 @@ object BattleLogWidget {
 
         widgetX = x
         widgetY = y
-        widgetW = width
-        widgetH = height
+        widgetW = safeWidth
+        widgetH = safeHeight
 
         // Apply opacity for minimized state (greys out like Cobblemon's BattleOverlay)
         // Must enable blending for texture alpha to work correctly
@@ -201,17 +201,17 @@ object BattleLogWidget {
         RenderSystem.setShaderColor(1f, 1f, 1f, opacity)
 
         // Render frame using 9-slice with Cobblemon textures
-        renderFrame9Slice(context, x, y, width, height, isExpanded)
+        renderFrame9Slice(context, x, y, safeWidth, safeHeight, isExpanded)
         // Flush texture batch before any fill operations
         context.draw()
         headerEndY = y + HEADER_HEIGHT
 
         // Always render the same content - "collapsed" is just a smaller preset size
-        renderContent(context, x, y, width, height)
+        renderContent(context, x, y, safeWidth, safeHeight)
 
         // Resize handles only when expanded and not minimized (minimized = read-only)
         if (!isMinimised && isExpanded && (interaction.hoveredZone != UIUtils.ResizeZone.NONE || interaction.isResizing)) {
-            renderResizeHandles(context, x, y, width, height)
+            renderResizeHandles(context, x, y, safeWidth, safeHeight)
         }
 
         // Reset shader color to default
@@ -665,7 +665,8 @@ object BattleLogWidget {
         if (entries.isEmpty()) {
             val emptyY = startY + 4
             if (emptyY >= scissorMinY && emptyY <= scissorMaxY) {
-                drawText(context, "No battle messages", textX.toFloat(), emptyY.toFloat(), TEXT_DIM, 0.7f * PanelConfig.logFontScale)
+                drawText(context, Text.translatable("cobblemon_battle_ui.log.empty").string,
+                    textX.toFloat(), emptyY.toFloat(), TEXT_DIM, 0.7f * PanelConfig.logFontScale)
             }
             return
         }
@@ -710,7 +711,7 @@ object BattleLogWidget {
         val fontScale = 0.6f * PanelConfig.logFontScale
 
         // No background - just subtle lines and text that blend with the texture
-        val turnText = "Turn $turn"
+        val turnText = Text.translatable("cobblemon_battle_ui.log.turn", turn).string
         val mc = MinecraftClient.getInstance()
         val actualTextWidth = (mc.textRenderer.getWidth(turnText) * fontScale).toInt()
         val gap = 6  // Gap between line and text

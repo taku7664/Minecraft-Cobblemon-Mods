@@ -49,14 +49,14 @@ object BattleMessageInterceptor {
 
             // Track move usage with target: [user, moveName, target]
             if (key == "cobblemon.battle.used_move_on" && args.size >= 3) {
-                val user = MessageParser.argToString(args[0])
+                val user = MessageParser.extractPokemonName(args[0])
                 val moveName = MessageParser.argToString(args[1])
                 val moveKey = MessageParser.argToTranslationKey(args[1])
-                val target = MessageParser.argToString(args[2])
+                val target = MessageParser.extractPokemonName(args[2])
                 MessageParser.trackMove(user, moveName, moveKey, target)
                 CobblemonExtendedBattleUI.LOGGER.debug("BattleMessageInterceptor: Move tracked - $user used $moveName (key=$moveKey) on $target")
 
-                BattleStateTracker.addRevealedMove(user, moveName, target)
+                BattleStateTracker.addRevealedMove(user, moveName)
 
                 if (MessageParser.isMove(TranslationKeys.SPECTRAL_THIEF_KEYS, TranslationKeys.SPECTRAL_THIEF_NAME)) {
                     BattleStateTracker.stealPositiveStats(user, target)
@@ -65,25 +65,17 @@ object BattleMessageInterceptor {
 
             // Track move usage without target (self-targeting): [user, moveName]
             if (key == "cobblemon.battle.used_move" && args.size >= 2) {
-                val user = MessageParser.argToString(args[0])
+                val user = MessageParser.extractPokemonName(args[0])
                 val moveName = MessageParser.argToString(args[1])
                 val moveKey = MessageParser.argToTranslationKey(args[1])
                 MessageParser.trackMove(user, moveName, moveKey, null)
                 CobblemonExtendedBattleUI.LOGGER.debug("BattleMessageInterceptor: Self-move tracked - $user used $moveName (key=$moveKey)")
 
-                BattleStateTracker.addRevealedMove(user, moveName, null)
+                BattleStateTracker.addRevealedMove(user, moveName)
 
                 if (MessageParser.isMove(TranslationKeys.BATON_PASS_KEYS, TranslationKeys.BATON_PASS_NAME)) {
                     BattleStateTracker.markBatonPassUsed(user)
                 }
-            }
-
-            // Pressure ability
-            if (key == TranslationKeys.PRESSURE_KEY && args.isNotEmpty()) {
-                val pokemonName = MessageParser.argToString(args[0])
-                BattleStateTracker.registerPressure(pokemonName)
-                BattleStateTracker.setRevealedAbility(pokemonName, "Pressure")
-                CobblemonExtendedBattleUI.LOGGER.debug("BattleMessageInterceptor: Pressure registered for $pokemonName")
             }
 
             // ═══════════════════════════════════════════════════════════════════
@@ -91,46 +83,46 @@ object BattleMessageInterceptor {
             // ═══════════════════════════════════════════════════════════════════
 
             if (key == TranslationKeys.ABILITY_GENERIC_KEY && args.size >= 2) {
-                val pokemonName = MessageParser.argToString(args[0])
+                val pokemonName = MessageParser.extractPokemonName(args[0])
                 val abilityName = MessageParser.argToString(args[1])
                 BattleStateTracker.setRevealedAbility(pokemonName, abilityName)
             }
 
             TranslationKeys.ABILITY_SINGLE_ARG_KEYS[key]?.let { abilityName ->
                 if (args.isNotEmpty()) {
-                    val pokemonName = MessageParser.argToString(args[0])
+                    val pokemonName = MessageParser.extractPokemonName(args[0])
                     BattleStateTracker.setRevealedAbility(pokemonName, abilityName)
                 }
             }
 
             if (key == TranslationKeys.ABILITY_TRACE_KEY && args.size >= 3) {
-                val tracerName = MessageParser.argToString(args[0])
-                val targetName = MessageParser.argToString(args[1])
+                val tracerName = MessageParser.extractPokemonName(args[0])
+                val targetName = MessageParser.extractPokemonName(args[1])
                 val copiedAbility = MessageParser.argToString(args[2])
                 BattleStateTracker.setRevealedAbility(tracerName, "Trace")
                 BattleStateTracker.setRevealedAbility(targetName, copiedAbility)
             }
 
             if (key == TranslationKeys.ABILITY_RECEIVER_KEY && args.size >= 2) {
-                val pokemonName = MessageParser.argToString(args[0])
+                val pokemonName = MessageParser.extractPokemonName(args[0])
                 val abilityName = MessageParser.argToString(args[1])
                 BattleStateTracker.setRevealedAbility(pokemonName, abilityName)
             }
 
             if (key == TranslationKeys.ABILITY_REPLACE_KEY && args.size >= 2) {
-                val pokemonName = MessageParser.argToString(args[0])
+                val pokemonName = MessageParser.extractPokemonName(args[0])
                 val newAbility = MessageParser.argToString(args[1])
                 BattleStateTracker.setRevealedAbility(pokemonName, newAbility)
             }
 
             if (key == TranslationKeys.ABILITY_MAGICBOUNCE_KEY && args.isNotEmpty()) {
-                val pokemonName = MessageParser.argToString(args[0])
+                val pokemonName = MessageParser.extractPokemonName(args[0])
                 BattleStateTracker.setRevealedAbility(pokemonName, "Magic Bounce")
             }
 
             TranslationKeys.ABILITY_START_KEYS[key]?.let { abilityName ->
                 if (args.isNotEmpty()) {
-                    val pokemonName = MessageParser.argToString(args[0])
+                    val pokemonName = MessageParser.extractPokemonName(args[0])
                     BattleStateTracker.setRevealedAbility(pokemonName, abilityName)
                 }
             }
@@ -240,14 +232,14 @@ object BattleMessageInterceptor {
             if (key == TranslationKeys.COURT_CHANGE_KEY) {
                 BattleStateTracker.swapSideConditions()
                 if (args.isNotEmpty()) {
-                    val pokemonName = MessageParser.argToString(args[0])
-                    BattleStateTracker.addRevealedMove(pokemonName, "Court Change", null)
+                    val pokemonName = MessageParser.extractPokemonName(args[0])
+                    BattleStateTracker.addRevealedMove(pokemonName, "Court Change")
                 }
             }
 
             // Terastallization
             if (key == TranslationKeys.TERASTALLIZE_KEY && args.size >= 2) {
-                val pokemonName = MessageParser.argToString(args[0])
+                val pokemonName = MessageParser.extractPokemonName(args[0])
                 val teraType = MessageParser.argToString(args[1])
                 BattleStateTracker.setTerastallized(pokemonName, teraType)
                 CobblemonExtendedBattleUI.LOGGER.debug("BattleMessageInterceptor: $pokemonName Terastallized into $teraType type")
@@ -363,7 +355,7 @@ object BattleMessageInterceptor {
             // ═══════════════════════════════════════════════════════════════════
 
             if (key == TranslationKeys.FORMECHANGE_PERMANENT_KEY && args.size >= 2) {
-                val pokemonName = MessageParser.argToString(args[0])
+                val pokemonName = MessageParser.extractPokemonName(args[0])
                 val formName = MessageParser.argToString(args[1])
                 BattleStateTracker.setCurrentForm(pokemonName, formName, isMega = false, isTemporary = false)
                 val speciesId = BattleStateTracker.getSpeciesIdByName(pokemonName)
@@ -371,7 +363,7 @@ object BattleMessageInterceptor {
             }
 
             if (key == TranslationKeys.FORMECHANGE_TEMPORARY_KEY && args.size >= 2) {
-                val pokemonName = MessageParser.argToString(args[0])
+                val pokemonName = MessageParser.extractPokemonName(args[0])
                 val formName = MessageParser.argToString(args[1])
                 BattleStateTracker.setCurrentForm(pokemonName, formName, isMega = false, isTemporary = true)
                 val speciesId = BattleStateTracker.getSpeciesIdByName(pokemonName)
@@ -379,13 +371,13 @@ object BattleMessageInterceptor {
             }
 
             if (key == TranslationKeys.FORMECHANGE_ENDED_KEY && args.isNotEmpty()) {
-                val pokemonName = MessageParser.argToString(args[0])
+                val pokemonName = MessageParser.extractPokemonName(args[0])
                 BattleStateTracker.clearCurrentForm(pokemonName)
                 BattleStateTracker.restoreOriginalTypes(pokemonName)
             }
 
             if ((key == TranslationKeys.MEGA_FORMECHANGE_KEY || key == TranslationKeys.MEGA_EVOLVED_KEY) && args.isNotEmpty()) {
-                val pokemonName = MessageParser.argToString(args[0])
+                val pokemonName = MessageParser.extractPokemonName(args[0])
                 BattleStateTracker.setCurrentForm(pokemonName, "Mega", isMega = true, isTemporary = false)
                 val speciesId = BattleStateTracker.getSpeciesIdByName(pokemonName)
                 BattleStateTracker.updateTypesForFormChange(pokemonName, speciesId, "Mega")
@@ -393,7 +385,7 @@ object BattleMessageInterceptor {
 
             TranslationKeys.SPECIAL_FORMECHANGE_KEYS[key]?.let { formName ->
                 if (args.isNotEmpty()) {
-                    val pokemonName = MessageParser.argToString(args[0])
+                    val pokemonName = MessageParser.extractPokemonName(args[0])
                     BattleStateTracker.setCurrentForm(pokemonName, formName, isMega = false, isTemporary = true)
                     val speciesId = BattleStateTracker.getSpeciesIdByName(pokemonName)
                     BattleStateTracker.updateTypesForFormChange(pokemonName, speciesId, formName)
@@ -402,7 +394,7 @@ object BattleMessageInterceptor {
 
             TranslationKeys.SPECIAL_FORMECHANGE_END_KEYS[key]?.let { revertFormName ->
                 if (args.isNotEmpty()) {
-                    val pokemonName = MessageParser.argToString(args[0])
+                    val pokemonName = MessageParser.extractPokemonName(args[0])
                     BattleStateTracker.clearCurrentForm(pokemonName)
                     BattleStateTracker.restoreOriginalTypes(pokemonName)
                     CobblemonExtendedBattleUI.LOGGER.debug("BattleMessageInterceptor: $pokemonName reverted to $revertFormName")
@@ -410,12 +402,12 @@ object BattleMessageInterceptor {
             }
 
             if (key == TranslationKeys.DYNAMAX_KEY && args.isNotEmpty()) {
-                val pokemonName = MessageParser.argToString(args[0])
+                val pokemonName = MessageParser.extractPokemonName(args[0])
                 BattleStateTracker.setCurrentForm(pokemonName, "Dynamax", isMega = false, isTemporary = true)
             }
 
             if (key == TranslationKeys.GIGANTAMAX_KEY && args.isNotEmpty()) {
-                val pokemonName = MessageParser.argToString(args[0])
+                val pokemonName = MessageParser.extractPokemonName(args[0])
                 BattleStateTracker.setCurrentForm(pokemonName, "Gigantamax", isMega = false, isTemporary = true)
             }
 
@@ -424,27 +416,27 @@ object BattleMessageInterceptor {
             // ═══════════════════════════════════════════════════════════════════
 
             if (key in TranslationKeys.TYPE_CHANGE_KEYS && args.size >= 2) {
-                val targetName = MessageParser.argToString(args[0])
+                val targetName = MessageParser.extractPokemonName(args[0])
                 val newType = MessageParser.argToString(args[1])
                 BattleStateTracker.setTypeReplacement(targetName, newType, null, null)
                 CobblemonExtendedBattleUI.LOGGER.debug("BattleMessageInterceptor: $targetName type changed to $newType")
             }
 
             if (key in TranslationKeys.TYPE_ADD_KEYS && args.size >= 2) {
-                val targetName = MessageParser.argToString(args[0])
+                val targetName = MessageParser.extractPokemonName(args[0])
                 val addedType = MessageParser.argToString(args[1])
                 BattleStateTracker.addType(targetName, addedType, null)
                 CobblemonExtendedBattleUI.LOGGER.debug("BattleMessageInterceptor: $targetName gained $addedType type")
             }
 
             if (key in TranslationKeys.BURN_UP_KEYS && args.isNotEmpty()) {
-                val pokemonName = MessageParser.argToString(args[0])
+                val pokemonName = MessageParser.extractPokemonName(args[0])
                 CobblemonExtendedBattleUI.LOGGER.debug("BattleMessageInterceptor: Burn Up detected for '$pokemonName'")
                 BattleStateTracker.loseType(pokemonName, "Fire", null)
             }
 
             if (key in TranslationKeys.DOUBLE_SHOCK_KEYS && args.isNotEmpty()) {
-                val pokemonName = MessageParser.argToString(args[0])
+                val pokemonName = MessageParser.extractPokemonName(args[0])
                 CobblemonExtendedBattleUI.LOGGER.debug("BattleMessageInterceptor: Double Shock detected for '$pokemonName'")
                 BattleStateTracker.loseType(pokemonName, "Electric", null)
             }
@@ -457,8 +449,7 @@ object BattleMessageInterceptor {
                 StateUpdater.markPokemonFainted(args)
                 return
             }
-            if (key == TranslationKeys.SWITCH_KEY || key == TranslationKeys.DRAG_KEY ||
-                key == TranslationKeys.SENDOUT_KEY || key == TranslationKeys.REPLACE_KEY) {
+            if (key in TranslationKeys.SWITCH_KEYS) {
                 StateUpdater.clearPokemonState(args)
                 return
             }

@@ -33,13 +33,19 @@
 
   "cobblemon_battle_ui.config.title": "Cobblemon Extended Battle UI Settings",
   "cobblemon_battle_ui.config.category.features": "Features",
+  "cobblemon_battle_ui.config.category.sizing": "UI Size",
   "cobblemon_battle_ui.config.category.tooltipOptions": "Tooltip Options",
+  "cobblemon_battle_ui.config.cloth_missing": "Install Cloth Config to edit these settings in game.",
 
   "cobblemon_battle_ui.config.enableTeamIndicators": "Team Indicators",
   "cobblemon_battle_ui.config.enableTeamIndicators.tooltip": "Show Pokemon team indicators under health bars during battle",
 
   "cobblemon_battle_ui.config.teamIndicatorRepositioning": "Team Indicator Repositioning",
   "cobblemon_battle_ui.config.teamIndicatorRepositioning.tooltip": "Allow dragging team indicators to reposition them. When disabled, indicators stay in their default positions.",
+  "cobblemon_battle_ui.config.teamIndicatorOrientation": "Team Indicator Orientation",
+  "cobblemon_battle_ui.config.orientation.horizontal": "Horizontal",
+  "cobblemon_battle_ui.config.orientation.vertical": "Vertical",
+  "cobblemon_battle_ui.config.teamIndicatorScale": "Team Indicator Scale",
 
   "cobblemon_battle_ui.config.enableBattleInfoPanel": "Battle Info Panel",
   "cobblemon_battle_ui.config.enableBattleInfoPanel.tooltip": "Show panel with weather, terrain, field conditions, and stat stages",
@@ -52,6 +58,9 @@
 
   "cobblemon_battle_ui.config.enableMoveTooltips": "Move Tooltips",
   "cobblemon_battle_ui.config.enableMoveTooltips.tooltip": "Show tooltips with type effectiveness when hovering over moves. Disable if using Cobblemon Move Inspector.",
+  "cobblemon_battle_ui.config.logFontScale": "Battle Log Text Scale",
+  "cobblemon_battle_ui.config.tooltipFontScale": "Pokemon Tooltip Text Scale",
+  "cobblemon_battle_ui.config.moveTooltipFontScale": "Move Tooltip Text Scale",
 
   "cobblemon_battle_ui.config.showTeraType": "Show Tera Type",
   "cobblemon_battle_ui.config.showTeraType.tooltip": "Display Tera Type in Pokemon tooltips when known",
@@ -63,7 +72,26 @@
   "cobblemon_battle_ui.config.showOpponentSpeedRange.tooltip": "Show estimated min–max Speed next to the Speed row for opponent Pokemon. The Speed label and stage are always shown; only the range numbers are hidden when this is off. Independent of Show Stat Values.",
 
   "cobblemon_battle_ui.config.showBaseCritRate": "Show Base Crit Rate",
-  "cobblemon_battle_ui.config.showBaseCritRate.tooltip": "Always show crit rate in move tooltips. When disabled, only shows crit rate for high-crit moves or when boosted by items/abilities.",
+  "cobblemon_battle_ui.config.showBaseCritRate.tooltip": "Show the move's base critical-hit rate. When disabled, only high-critical-hit-ratio moves show it.",
+
+  "cobblemon_battle_ui.move.power": "Power",
+  "cobblemon_battle_ui.move.pp": "PP",
+  "cobblemon_battle_ui.move.accuracy": "Accuracy",
+  "cobblemon_battle_ui.move.crit": "Critical Hit",
+  "cobblemon_battle_ui.move.effect": "Effect Chance",
+  "cobblemon_battle_ui.move.priority": "Priority",
+  "cobblemon_battle_ui.move.priority.fast": "Fast",
+  "cobblemon_battle_ui.move.priority.slow": "Slow",
+
+  "cobblemon_battle_ui.log.damage_percent": "  → %s%% damage to %s",
+  "cobblemon_battle_ui.log.healing_percent": "  → +%s%% healing to %s",
+  "cobblemon_battle_ui.log.empty": "No battle messages",
+  "cobblemon_battle_ui.log.turn": "Turn %s",
+  "cobblemon_battle_ui.controls.flip": "Flip",
+  "cobblemon_battle_ui.controls.move": "Move",
+  "cobblemon_battle_ui.controls.reset": "Reset",
+  "cobblemon_battle_ui.controls.scale": "Scale",
+  "cobblemon_battle_ui.controls.both": "Both",
 
   "cobblemon_battle_ui.stat.attack": "Attack",
   "cobblemon_battle_ui.stat.attack.abbr": "Atk",

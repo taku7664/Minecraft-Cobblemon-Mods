@@ -117,7 +117,6 @@ object TranslationKeys {
     // Ability Keys
     // ═════════════════════════════════════════════════════════════════════════
 
-    const val PRESSURE_KEY = "cobblemon.battle.ability.pressure"
     const val ABILITY_GENERIC_KEY = "cobblemon.battle.ability.generic"
 
     val ABILITY_SINGLE_ARG_KEYS = mapOf(
@@ -311,10 +310,12 @@ object TranslationKeys {
 
     const val TURN_KEY = "cobblemon.battle.turn"
     const val FAINT_KEY = "cobblemon.battle.fainted"
-    const val SWITCH_KEY = "cobblemon.battle.switch"
-    const val DRAG_KEY = "cobblemon.battle.drag"
-    const val SENDOUT_KEY = "cobblemon.battle.sendout"
-    const val REPLACE_KEY = "cobblemon.battle.replace"
+    val SWITCH_KEYS = setOf(
+        "cobblemon.battle.switch.self",
+        "cobblemon.battle.switch.other",
+        "cobblemon.battle.switch.other.nickname",
+        "cobblemon.battle.dragged_out"
+    )
     const val PERISH_SONG_FIELD_KEY = "cobblemon.battle.fieldactivate.perishsong"
     const val TRANSFORM_KEY = "cobblemon.battle.transform"
 
@@ -324,7 +325,7 @@ object TranslationKeys {
 
     const val FORMECHANGE_PERMANENT_KEY = "cobblemon.battle.formechange.default.permanent"
     const val FORMECHANGE_TEMPORARY_KEY = "cobblemon.battle.formechange.default.temporary"
-    const val FORMECHANGE_ENDED_KEY = "cobblemon.battle.formechange.default.temporary.end"
+    const val FORMECHANGE_ENDED_KEY = "cobblemon.battle.formechange.default.temporary.ended"
     const val MEGA_FORMECHANGE_KEY = "cobblemon.battle.formechange.mega"
     const val MEGA_EVOLVED_KEY = "cobblemon.battle.mega"
 

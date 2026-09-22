@@ -1,6 +1,5 @@
 package jbro.cobblemon.battleui.extended
 
-import com.cobblemon.mod.common.CobblemonItemComponents
 import com.cobblemon.mod.common.api.moves.MoveTemplate
 import com.cobblemon.mod.common.api.moves.categories.DamageCategories
 import com.cobblemon.mod.common.api.types.ElementalType
@@ -15,8 +14,6 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.util.InputUtil
-import net.minecraft.item.ItemStack
-import net.minecraft.registry.Registries
 import net.minecraft.text.Text
 
 import org.lwjgl.glfw.GLFW
@@ -160,17 +157,17 @@ object MoveTooltipRenderer {
         // Header: 1 line (name + type · category)
         val headerCellH = vPad + lineH
 
-        // Power row: full-width, with modifier text inline
+        // Power row: full-width
         val powerCellH = vPad + lineH
 
         // Detail grid: remaining stats in 2-column layout, filled left-to-right
         val detailItems = mutableListOf(
-            StatEntry("PP", data.ppText, data.ppColor),
-            StatEntry("Accuracy", data.accuracyText, COLOR_ACCURACY)
+            StatEntry(Text.translatable("cobblemon_battle_ui.move.pp").string, data.ppText, data.ppColor),
+            StatEntry(Text.translatable("cobblemon_battle_ui.move.accuracy").string, data.accuracyText, COLOR_ACCURACY)
         )
-        if (data.critText != null) detailItems.add(StatEntry("Crit", data.critText, COLOR_CRIT))
-        if (data.effectText != null) detailItems.add(StatEntry("Effect", data.effectText, COLOR_EFFECT))
-        if (data.priorityText != null) detailItems.add(StatEntry("Priority", data.priorityText, data.priorityColor))
+        if (data.critText != null) detailItems.add(StatEntry(Text.translatable("cobblemon_battle_ui.move.crit").string, data.critText, COLOR_CRIT))
+        if (data.effectText != null) detailItems.add(StatEntry(Text.translatable("cobblemon_battle_ui.move.effect").string, data.effectText, COLOR_EFFECT))
+        if (data.priorityText != null) detailItems.add(StatEntry(Text.translatable("cobblemon_battle_ui.move.priority").string, data.priorityText, data.priorityColor))
         // Odd count: first item full-width, rest paired. Even: all paired.
         val hasHead = detailItems.size % 2 == 1
         val headCellH = if (hasHead) vPad + lineH else 0
@@ -201,8 +198,8 @@ object MoveTooltipRenderer {
         var px = move.x.toInt() + (move.width / 2) - (tooltipWidth / 2)
         var py = move.y.toInt() - totalHeight - 4
         if (py < 4) py = move.y.toInt() + move.height + 4
-        px = px.coerceIn(4, screenWidth - tooltipWidth - 4)
-        py = py.coerceIn(4, screenHeight - totalHeight - 4)
+        px = ViewportClamp.clamp(px, 4, screenWidth, tooltipWidth, 4)
+        py = ViewportClamp.clamp(py, 4, screenHeight, totalHeight, 4)
 
         // ── Render ──
         context.matrices.push()
@@ -231,13 +228,10 @@ object MoveTooltipRenderer {
         // Power row (full-width)
         drawCell(context, cellX, curY, contentWidth, powerCellH)
         val powerY = (curY + UIUtils.CELL_VPAD_TOP).toFloat()
-        draw(context, "Power", (cellX + UIUtils.CELL_PAD).toFloat(), powerY, TOOLTIP_LABEL, fontScale)
-        val powerLabelW = tr.getWidth("Power") * fontScale
+        val powerLabel = Text.translatable("cobblemon_battle_ui.move.power").string
+        draw(context, powerLabel, (cellX + UIUtils.CELL_PAD).toFloat(), powerY, TOOLTIP_LABEL, fontScale)
+        val powerLabelW = tr.getWidth(powerLabel) * fontScale
         draw(context, "  ${data.powerText}", (cellX + UIUtils.CELL_PAD) + powerLabelW, powerY, COLOR_POWER, fontScale)
-        if (data.modifierText != null) {
-            drawRightAligned(context, data.modifierText, cellX + contentWidth - UIUtils.CELL_PAD,
-                powerY, SUPER_EFFECTIVE_2X, fontScale, tr)
-        }
         curY += powerCellH + UIUtils.CELL_GAP
 
         // Detail grid: odd → head full-width + paired rows; even → all paired
@@ -312,8 +306,7 @@ object MoveTooltipRenderer {
         val critText: String?,
         val effectText: String?,
         val priorityText: String?,
-        val priorityColor: Int,
-        val modifierText: String?
+        val priorityColor: Int
     )
 
     private fun computeMoveData(move: MoveTileBounds): MoveData {
@@ -321,7 +314,6 @@ object MoveTooltipRenderer {
 
         val effectiveType = getMoveEffectiveType(move)
         val weatherBallType = getWeatherBallEffectiveType(template)
-        val playerAbility = getPlayerPokemonAbility()
         val displayType = weatherBallType ?: effectiveType
         val typeColor = UIUtils.getTypeColor(displayType)
 
@@ -333,26 +325,10 @@ object MoveTooltipRenderer {
 
         // ── Power + modifiers ──
         var powerText = "--"
-        var modifierText: String? = null
-
         if (template.power > 0) {
             var basePower = template.power.toInt()
-            val playerTypes = getPlayerPokemonTypes()
             val dynamicPowerInfo = getDynamicPowerInfo(template)
             if (dynamicPowerInfo != null) basePower = dynamicPowerInfo.power
-
-            val stabCheckType = weatherBallType ?: effectiveType
-            val hasStab = playerTypes.any { it.name == stabCheckType.name }
-            val hasSheerForce = playerAbility == "sheerforce" &&
-                template.effectChances.isNotEmpty() && template.effectChances[0] > 0
-            val itemBoost = getHeldItemPowerBoost(stabCheckType.name)
-
-            var effectivePower = basePower.toDouble()
-            val modifiers = mutableListOf<String>()
-            if (dynamicPowerInfo?.reason != null) modifiers.add(dynamicPowerInfo.reason)
-            if (hasStab) { effectivePower *= 1.5; modifiers.add("STAB") }
-            if (hasSheerForce) { effectivePower *= 1.3; modifiers.add("Sheer Force") }
-            if (itemBoost != null) { effectivePower *= itemBoost.multiplier; modifiers.add(itemBoost.displayName) }
 
             val displayBasePower = template.power.toInt()
             powerText = if (dynamicPowerInfo != null && basePower != displayBasePower) {
@@ -361,9 +337,6 @@ object MoveTooltipRenderer {
                 "$basePower"
             }
 
-            if (modifiers.isNotEmpty()) {
-                modifierText = "${modifiers.joinToString(" + ")} \u2192 ${effectivePower.toInt()}"
-            }
         }
 
         // ── Accuracy ──
@@ -377,21 +350,9 @@ object MoveTooltipRenderer {
         var critText: String? = null
         if (template.power > 0) {
             val baseCritRatio = template.critRatio
-            val hasSuperLuck = playerAbility == "superluck"
-            val heldItemId = getPlayerPokemonHeldItemId()
-            val hasCritItem = heldItemId == "cobblemon:scope_lens" || heldItemId == "cobblemon:razor_claw"
-            var critBonus = 0
-            if (hasSuperLuck) critBonus++
-            if (hasCritItem) critBonus++
-            val shouldShowCrit = PanelConfig.showBaseCritRateEffective || baseCritRatio > 1.0 || critBonus > 0
+            val shouldShowCrit = PanelConfig.showBaseCritRateEffective || baseCritRatio > 1.0
             if (shouldShowCrit) {
-                val basePct = critRatioToPercent(baseCritRatio)
-                if (critBonus > 0) {
-                    val effectiveCritRatio = (baseCritRatio + critBonus).coerceAtMost(4.0)
-                    critText = "$basePct \u2192 ${critRatioToPercent(effectiveCritRatio)}"
-                } else {
-                    critText = basePct
-                }
+                critText = critRatioToPercent(baseCritRatio)
             }
         }
 
@@ -399,14 +360,7 @@ object MoveTooltipRenderer {
         var effectText: String? = null
         if (template.effectChances.isNotEmpty() && template.effectChances[0] > 0) {
             val baseEffect = template.effectChances[0]
-            effectText = when (playerAbility) {
-                "sheerforce" -> "N/A (Sheer Force)"
-                "serenegrace" -> {
-                    val doubled = (baseEffect * 2).coerceAtMost(100.0).toInt()
-                    "${baseEffect.toInt()}% \u2192 $doubled%"
-                }
-                else -> "${baseEffect.toInt()}%"
-            }
+            effectText = "${baseEffect.toInt()}%"
         }
 
         // ── Priority ──
@@ -414,7 +368,12 @@ object MoveTooltipRenderer {
         var priorityColor = COLOR_PRIORITY_POSITIVE
         if (template.priority != 0) {
             val sign = if (template.priority > 0) "+" else ""
-            val label = if (template.priority > 0) "Fast" else "Slow"
+            val labelKey = if (template.priority > 0) {
+                "cobblemon_battle_ui.move.priority.fast"
+            } else {
+                "cobblemon_battle_ui.move.priority.slow"
+            }
+            val label = Text.translatable(labelKey).string
             priorityText = "$sign${template.priority} ($label)"
             priorityColor = if (template.priority > 0) COLOR_PRIORITY_POSITIVE else COLOR_PRIORITY_NEGATIVE
         }
@@ -432,8 +391,7 @@ object MoveTooltipRenderer {
             critText = critText,
             effectText = effectText,
             priorityText = priorityText,
-            priorityColor = priorityColor,
-            modifierText = modifierText
+            priorityColor = priorityColor
         )
     }
 
@@ -628,46 +586,6 @@ object MoveTooltipRenderer {
         else -> "4.17%"
     }
 
-    private fun getPlayerPokemonTypes(): List<ElementalType> {
-        val pokemonUuid = activePokemonUuid ?: return emptyList()
-        val battle = CobblemonClient.battle ?: return emptyList()
-        val playerUUID = MinecraftClient.getInstance().player?.uuid ?: return emptyList()
-        val playerSide = if (battle.side1.actors.any { it.uuid == playerUUID }) battle.side1 else battle.side2
-        val clientBattlePokemon = playerSide.activeClientBattlePokemon
-            .firstOrNull { it.battlePokemon?.uuid == pokemonUuid }?.battlePokemon
-
-        val types = mutableListOf<ElementalType>()
-
-        val dynamicTypes = BattleStateTracker.getDynamicTypes(pokemonUuid)
-        if (dynamicTypes != null) {
-            dynamicTypes.primaryType?.let { typeName ->
-                ElementalTypes.get(typeName.lowercase())?.let { types.add(it) }
-            }
-            dynamicTypes.secondaryType?.let { typeName ->
-                ElementalTypes.get(typeName.lowercase())?.let { types.add(it) }
-            }
-            for (addedType in dynamicTypes.addedTypes) {
-                ElementalTypes.get(addedType.lowercase())?.let { types.add(it) }
-            }
-        } else if (clientBattlePokemon != null) {
-            val species = clientBattlePokemon.species
-            val aspects = clientBattlePokemon.state.currentAspects
-            val form = species.getForm(aspects)
-            form.primaryType?.let { types.add(it) }
-            form.secondaryType?.let { types.add(it) }
-        }
-
-        val teraType = BattleStateTracker.getTeraType(pokemonUuid)
-        if (teraType != null) {
-            val teraElementalType = ElementalTypes.get(teraType.lowercase())
-            if (teraElementalType != null && !types.contains(teraElementalType)) {
-                types.add(teraElementalType)
-            }
-        }
-
-        return types
-    }
-
     private fun getMoveEffectiveType(move: MoveTileBounds): ElementalType {
         val playerPokemon = getPlayerPartyPokemon()
         return if (playerPokemon != null) {
@@ -709,51 +627,6 @@ object MoveTooltipRenderer {
         return listOfNotNull(form.primaryType, form.secondaryType)
     }
 
-    private fun getPlayerPokemonAbility(): String? {
-        val partyPokemon = getPlayerPartyPokemon() ?: return null
-        return partyPokemon.ability.name
-    }
-
-    private fun getPlayerPokemonHeldItemId(): String? {
-        val heldItem = getPlayerPokemonHeldItemStack() ?: return null
-        return heldItem.item.toString()
-    }
-
-    private fun getPlayerPokemonHeldItemShowdownName(): String? {
-        val heldItem = getPlayerPokemonHeldItemStack() ?: return null
-        val heldItemEffect = heldItem.get(CobblemonItemComponents.HELD_ITEM_EFFECT)
-        if (heldItemEffect != null) {
-            if (heldItemEffect.consumed) return null
-            return heldItemEffect.showdownId
-        }
-        val registryPath = Registries.ITEM.getId(heldItem.item).path
-        return registryPath.replace("_", "")
-    }
-
-    private fun getPlayerPokemonHeldItemStack(): ItemStack? {
-        val uuid = activePokemonUuid ?: return null
-
-        val trackedItem = BattleStateTracker.getItem(uuid)
-        if (trackedItem != null && trackedItem.status != BattleStateTracker.ItemStatus.HELD) {
-            return null
-        }
-
-        val partyPokemon = CobblemonClient.storage.party.findByUUID(uuid) ?: return null
-        val heldItem = partyPokemon.heldItem()
-        if (heldItem.isEmpty) return null
-        return heldItem
-    }
-
-    private fun getHeldItemPowerBoost(moveType: String): ItemPowerBoostParser.ItemPowerBoost? {
-        val heldItemName = getPlayerPokemonHeldItemShowdownName() ?: return null
-        val boost = ItemPowerBoostParser.getBoostForItem(heldItemName) ?: return null
-        return when {
-            boost.boostedType == null -> boost
-            boost.boostedType.equals(moveType, ignoreCase = true) -> boost
-            else -> null
-        }
-    }
-
     private fun getPlayerPartyPokemon(): Pokemon? {
         val uuid = activePokemonUuid ?: return getPlayerPartyPokemonFallback()
         return CobblemonClient.storage.party.findByUUID(uuid)
@@ -771,7 +644,7 @@ object MoveTooltipRenderer {
     // Dynamic move calculations (Hex, Weather Ball)
     // ═══════════════════════════════════════════════════════════════
 
-    private data class DynamicPowerInfo(val power: Int, val reason: String?)
+    private data class DynamicPowerInfo(val power: Int)
 
     private fun getWeatherBallEffectiveType(template: MoveTemplate): ElementalType? {
         if (template.name.lowercase() != "weatherball") return null
@@ -799,20 +672,13 @@ object MoveTooltipRenderer {
         val opponentHasStatus = opponentSide.activeClientBattlePokemon
             .mapNotNull { it.battlePokemon }
             .any { it.status != null }
-        return if (opponentHasStatus) DynamicPowerInfo(basePower * 2, "Status") else null
+        return if (opponentHasStatus) DynamicPowerInfo(basePower * 2) else null
     }
 
     private fun getWeatherBallDynamicPower(template: MoveTemplate): DynamicPowerInfo? {
         val basePower = template.power.toInt()
         val weather = BattleStateTracker.weather ?: return null
-        val weatherName = when (weather.type) {
-            BattleStateTracker.Weather.RAIN -> "Rain"
-            BattleStateTracker.Weather.SUN -> "Sun"
-            BattleStateTracker.Weather.SANDSTORM -> "Sandstorm"
-            BattleStateTracker.Weather.HAIL -> "Hail"
-            BattleStateTracker.Weather.SNOW -> "Snow"
-        }
-        return DynamicPowerInfo(basePower * 2, weatherName)
+        return DynamicPowerInfo(basePower * 2)
     }
 
     // ═══════════════════════════════════════════════════════════════

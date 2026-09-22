@@ -1,7 +1,6 @@
 package jbro.cobblemon.battleui.extended.pokemon.stats
 
-import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
-import net.minecraft.util.Identifier
+import net.minecraft.text.Text
 
 /**
  * Pure stat calculation utilities shared by speed calculator, tooltip builder,
@@ -40,74 +39,36 @@ object StatCalculator {
     /**
      * Normalize ability name for comparison (lowercase, no spaces/underscores).
      */
-    fun normalizeAbilityName(name: String?): String? =
-        name?.lowercase()?.replace(" ", "")?.replace("_", "")
-
-    /**
-     * Check if a Pokemon can still evolve (for Eviolite eligibility).
-     */
-    fun canPokemonEvolve(pokemonId: Identifier?): Boolean {
-        if (pokemonId == null) return false
-        val species = PokemonSpecies.getByIdentifier(pokemonId) ?: return false
-        return species.evolutions.isNotEmpty()
-    }
+    fun normalizeAbilityName(name: String?): String? = normalizeKnownName(
+        name,
+        setOf("chlorophyll", "swiftswim", "sandrush", "slushrush", "surgesurfer", "quickfeet", "unburden"),
+        "cobblemon.ability."
+    )
 
     // ═════════════════════════════════════════════════════════════════════════
     // Item-based Stat Multipliers
     // ═════════════════════════════════════════════════════════════════════════
 
     fun getItemSpeedMultiplier(itemName: String?): Double {
-        if (itemName == null) return 1.0
-        val normalizedItem = itemName.lowercase().replace(" ", "").replace("_", "")
+        val normalizedItem = normalizeKnownName(
+            itemName, setOf("choice_scarf", "iron_ball"), "item.cobblemon."
+        ) ?: return 1.0
         return when (normalizedItem) {
-            "choicescarf" -> 1.5
-            "ironball" -> 0.5
+            "choice_scarf" -> 1.5
+            "iron_ball" -> 0.5
             else -> 1.0
         }
     }
 
-    fun getItemAttackMultiplier(itemName: String?, speciesName: String?): Double {
-        if (itemName == null) return 1.0
-        val normalizedItem = itemName.lowercase().replace(" ", "").replace("_", "")
-        val species = speciesName?.lowercase()?.replace(" ", "")?.replace("-", "") ?: ""
-        return when {
-            normalizedItem == "choiceband" -> 1.5
-            normalizedItem == "thickclub" && species in listOf("cubone", "marowak", "marowakalola") -> 2.0
-            normalizedItem == "lightball" && species.startsWith("pikachu") -> 2.0
-            else -> 1.0
+    private fun normalizeKnownName(name: String?, ids: Set<String>, translationPrefix: String): String? {
+        if (name == null) return null
+        val compact = name.lowercase().filter(Char::isLetterOrDigit)
+        for (id in ids) {
+            if (compact == id.filter(Char::isLetterOrDigit)) return id
+            val translated = Text.translatable("$translationPrefix$id").string
+            if (!translated.startsWith(translationPrefix) &&
+                compact == translated.lowercase().filter(Char::isLetterOrDigit)) return id
         }
-    }
-
-    fun getItemSpecialAttackMultiplier(itemName: String?, speciesName: String?): Double {
-        if (itemName == null) return 1.0
-        val normalizedItem = itemName.lowercase().replace(" ", "").replace("_", "")
-        val species = speciesName?.lowercase()?.replace(" ", "")?.replace("-", "") ?: ""
-        return when {
-            normalizedItem == "choicespecs" -> 1.5
-            normalizedItem == "lightball" && species.startsWith("pikachu") -> 2.0
-            normalizedItem == "deepseatooth" && species == "clamperl" -> 2.0
-            else -> 1.0
-        }
-    }
-
-    fun getItemDefenseMultiplier(itemName: String?, canEvolve: Boolean): Double {
-        if (itemName == null) return 1.0
-        val normalizedItem = itemName.lowercase().replace(" ", "").replace("_", "")
-        return when {
-            normalizedItem == "eviolite" && canEvolve -> 1.5
-            else -> 1.0
-        }
-    }
-
-    fun getItemSpecialDefenseMultiplier(itemName: String?, speciesName: String?, canEvolve: Boolean): Double {
-        if (itemName == null) return 1.0
-        val normalizedItem = itemName.lowercase().replace(" ", "").replace("_", "")
-        val species = speciesName?.lowercase()?.replace(" ", "")?.replace("-", "") ?: ""
-        return when {
-            normalizedItem == "assaultvest" -> 1.5
-            normalizedItem == "eviolite" && canEvolve -> 1.5
-            normalizedItem == "deepseascale" && species == "clamperl" -> 2.0
-            else -> 1.0
-        }
+        return compact
     }
 }

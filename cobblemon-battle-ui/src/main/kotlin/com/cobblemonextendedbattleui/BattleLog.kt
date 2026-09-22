@@ -14,14 +14,14 @@ object BattleLog {
      * Categories for battle log entries.
      * Used for filtering the log display.
      */
-    enum class EntryType(val displayName: String, val icon: String) {
-        TURN("Turn", ""),           // Turn markers (always shown)
-        MOVE("Moves", "\u2694"),     // Move usage, effectiveness, crits, misses
-        HP("HP", "\u2665"),          // Damage, faints
-        HEALING("Healing", "\u2764"), // HP recovery
-        EFFECT("Effects", "\u2728"), // Stat changes, status, volatiles
-        FIELD("Field", "\u2600"),    // Weather, terrain, screens, hazards
-        OTHER("Other", "\u2022")     // Anything else
+    enum class EntryType(val icon: String) {
+        TURN(""),           // Turn markers (always shown)
+        MOVE("\u2694"),     // Move usage, effectiveness, crits, misses
+        HP("\u2665"),       // Damage, faints
+        HEALING("\u2764"),  // HP recovery
+        EFFECT("\u2728"),   // Stat changes, status, volatiles
+        FIELD("\u2600"),    // Weather, terrain, screens, hazards
+        OTHER("\u2022")     // Anything else
     }
 
     /**
@@ -78,18 +78,24 @@ object BattleLog {
 
     // Move-related keys (attacks, effectiveness, accuracy)
     private val MOVE_KEYS = setOf(
-        "cobblemon.battle.used",
-        "cobblemon.battle.supereffective",
+        "cobblemon.battle.used_move",
+        "cobblemon.battle.used_move_on",
+        "cobblemon.battle.superEffective",
+        "cobblemon.battle.superEffective_spread",
         "cobblemon.battle.resisted",
+        "cobblemon.battle.resisted_spread",
         "cobblemon.battle.immune",
-        "cobblemon.battle.miss",
+        "cobblemon.battle.missed",
         "cobblemon.battle.crit",
+        "cobblemon.battle.crit_spread",
         "cobblemon.battle.fail",
         "cobblemon.battle.ohko",
-        "cobblemon.battle.hitcount",
+        "cobblemon.battle.hit_count",
+        "cobblemon.battle.hit_count_singular",
         "cobblemon.battle.charge",
         "cobblemon.battle.prepare",
-        "cobblemon.battle.mustrecharge",
+        "cobblemon.battle.cant.recharge",
+        "cobblemon.battle.recharge",
         "cobblemon.battle.cant",
         "cobblemon.battle.notarget",
         "cobblemon.battle.blocked"

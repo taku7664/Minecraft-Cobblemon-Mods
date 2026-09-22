@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.cobblemon.mod.common.client.net.battle.BattleInitializeHandler;
 import com.cobblemon.mod.common.net.messages.client.battle.BattleInitializePacket;
 import jbro.cobblemon.battleui.extended.BattleStateTracker;
+import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUI;
 import jbro.cobblemon.battleui.extended.DamageTracker;
 import jbro.cobblemon.battleui.extended.PanelConfig;
 import net.minecraft.client.MinecraftClient;
@@ -66,7 +67,7 @@ public class BattleInitializeHandlerMixin {
             initializePokemonFromSide(packet.getSide1(), side1IsAlly, needsStateTracking, needsDamageTracking);
             initializePokemonFromSide(packet.getSide2(), !side1IsAlly, needsStateTracking, needsDamageTracking);
         } catch (Exception e) {
-            // Silent fail to avoid breaking gameplay
+            CobblemonExtendedBattleUI.INSTANCE.getLOGGER().warn("Failed to initialize Battle UI state", e);
         }
     }
 

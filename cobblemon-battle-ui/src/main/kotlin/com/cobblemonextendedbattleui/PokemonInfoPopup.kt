@@ -397,7 +397,7 @@ object PokemonInfoPopup {
                 data.isPlayerPokemon && PanelConfig.showStatRangesEffective -> {
                     val actualValue = getActualStat(data, stat)
                     if (actualValue != null) {
-                        val effective = calculateEffectiveStat(actualValue, stat, stage, data)
+                        val effective = calculateEffectiveStat(actualValue, stage)
                         if (effective != actualValue) {
                             val effectiveText = "$effective"
                             val effectiveW = tr.getWidth(effectiveText) * fontScale
@@ -580,37 +580,10 @@ object PokemonInfoPopup {
         else -> null
     }
 
-    private fun calculateEffectiveStat(
-        baseStat: Int,
-        stat: BattleStateTracker.BattleStat,
-        stage: Int,
-        data: TooltipData
-    ): Int {
-        // Speed has its own comprehensive calculation (ability, status, item modifiers)
-        if (stat == BattleStateTracker.BattleStat.SPEED) {
-            return TeamIndicatorUI.calculateEffectiveSpeed(
-                baseStat, stage, data.abilityName,
-                data.statusCondition,
-                if (data.item?.status == BattleStateTracker.ItemStatus.HELD) data.item.name else null,
-                data.item?.status != BattleStateTracker.ItemStatus.HELD
-            )
-        }
-
-        val stageMult = TeamIndicatorUI.getStageMultiplier(stage)
-        val itemName = if (data.item?.status == BattleStateTracker.ItemStatus.HELD) data.item.name else null
-        val canEvolve = TeamIndicatorUI.canPokemonEvolve(data.pokemonId)
-        val itemMult = when (stat) {
-            BattleStateTracker.BattleStat.ATTACK ->
-                TeamIndicatorUI.getItemAttackMultiplier(itemName, data.speciesName)
-            BattleStateTracker.BattleStat.DEFENSE ->
-                TeamIndicatorUI.getItemDefenseMultiplier(itemName, canEvolve)
-            BattleStateTracker.BattleStat.SPECIAL_ATTACK ->
-                TeamIndicatorUI.getItemSpecialAttackMultiplier(itemName, data.speciesName)
-            BattleStateTracker.BattleStat.SPECIAL_DEFENSE ->
-                TeamIndicatorUI.getItemSpecialDefenseMultiplier(itemName, data.speciesName, canEvolve)
-            else -> 1.0
-        }
-        return (baseStat * stageMult * itemMult).toInt()
+    private fun calculateEffectiveStat(baseStat: Int, stage: Int): Int {
+        // Only apply the authoritative battle stage here. Ability/item effects are not complete
+        // enough to present as an exact in-battle stat.
+        return (baseStat * TeamIndicatorUI.getStageMultiplier(stage)).toInt()
     }
 
     private fun formatStage(stage: Int): String = when {
@@ -626,21 +599,12 @@ object PokemonInfoPopup {
     }
 
     private fun buildPpText(move: MoveInfo, isPlayer: Boolean): String? =
-        if (isPlayer) {
-            if (move.currentPp != null && move.maxPp != null) "(${move.currentPp}/${move.maxPp})" else null
-        } else when {
-            move.estimatedRemaining != null && move.estimatedMax != null ->
-                "(~${move.estimatedRemaining}/${move.estimatedMax})"
-            move.usageCount != null -> "\u00d7${move.usageCount}"
-            else -> null
-        }
+        if (isPlayer && move.currentPp != null && move.maxPp != null) "(${move.currentPp}/${move.maxPp})" else null
 
     private fun getPpColor(move: MoveInfo, isPlayer: Boolean): Int {
         val ratio = when {
             isPlayer && move.currentPp != null && move.maxPp != null ->
                 move.currentPp.toFloat() / move.maxPp.coerceAtLeast(1)
-            !isPlayer && move.estimatedRemaining != null && move.estimatedMax != null ->
-                move.estimatedRemaining.toFloat() / move.estimatedMax.coerceAtLeast(1)
             else -> 1f
         }
         return if (ratio <= 0.25f) TeamIndicatorUI.TOOLTIP_PP_LOW else TeamIndicatorUI.TOOLTIP_PP

@@ -3,6 +3,7 @@ package jbro.cobblemon.battleui.extended.pokemon.render
 import com.cobblemon.mod.common.client.render.drawScaledText
 import jbro.cobblemon.battleui.extended.PanelConfig
 import jbro.cobblemon.battleui.extended.UIUtils
+import jbro.cobblemon.battleui.extended.ViewportClamp
 import jbro.cobblemon.battleui.extended.pokemon.tooltip.TooltipBoundsData
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
@@ -221,17 +222,17 @@ object TeamPanelRenderer {
         val screenHeight = mc.window.scaledHeight
 
         val hints = buildList {
-            add(Pair("Shift+Click", ": Flip"))
+            add(Pair("Shift+Click", ": ${Text.translatable("cobblemon_battle_ui.controls.flip").string}"))
             add(Pair("  \u2022  ", ""))
             if (repositioningEnabled) {
-                add(Pair("Drag", ": Move"))
+                add(Pair("Drag", ": ${Text.translatable("cobblemon_battle_ui.controls.move").string}"))
                 add(Pair("  \u2022  ", ""))
-                add(Pair("Dbl-Click", ": Reset"))
+                add(Pair("Dbl-Click", ": ${Text.translatable("cobblemon_battle_ui.controls.reset").string}"))
                 add(Pair("  \u2022  ", ""))
             }
-            add(Pair("Ctrl+Scroll", ": Scale"))
+            add(Pair("Ctrl+Scroll", ": ${Text.translatable("cobblemon_battle_ui.controls.scale").string}"))
             add(Pair("  \u2022  ", ""))
-            add(Pair("Alt", ": Both"))
+            add(Pair("Alt", ": ${Text.translatable("cobblemon_battle_ui.controls.both").string}"))
         }
 
         val hintScale = 0.7f
@@ -242,10 +243,11 @@ object TeamPanelRenderer {
         var hintX = panelBounds.x + (panelBounds.width / 2) - (hintWidth / 2)
         var hintY = panelBounds.y + panelBounds.height + 2
 
-        hintX = hintX.coerceIn(2, screenWidth - hintWidth - 2)
+        hintX = ViewportClamp.clamp(hintX, 2, screenWidth, hintWidth, 2)
         if (hintY + hintHeight > screenHeight - 2) {
             hintY = panelBounds.y - hintHeight - 2
         }
+        hintY = ViewportClamp.clamp(hintY, 2, screenHeight, hintHeight, 2)
 
         val bgColor = color(15, 20, 25, 200)
         val borderColor = color(50, 60, 70, 200)

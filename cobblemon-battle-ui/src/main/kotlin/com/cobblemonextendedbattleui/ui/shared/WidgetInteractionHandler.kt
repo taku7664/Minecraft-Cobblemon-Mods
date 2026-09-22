@@ -1,5 +1,6 @@
 package jbro.cobblemon.battleui.extended.ui.shared
 
+import jbro.cobblemon.battleui.extended.ViewportClamp
 import jbro.cobblemon.battleui.extended.UIUtils
 
 /**
@@ -74,8 +75,8 @@ class WidgetInteractionHandler(
             hasDragged = true
         }
 
-        val newX = (mouseX - dragOffsetX).coerceIn(0, screenWidth - widgetW)
-        val newY = (mouseY - dragOffsetY).coerceIn(0, screenHeight - widgetH)
+        val newX = ViewportClamp.clamp(mouseX - dragOffsetX, 0, screenWidth, widgetW, 0)
+        val newY = ViewportClamp.clamp(mouseY - dragOffsetY, 0, screenHeight, widgetH, 0)
         return Pair(newX, newY)
     }
 

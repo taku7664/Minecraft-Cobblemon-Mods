@@ -149,13 +149,9 @@ object MessageParser {
     private fun getStatFromTranslatedName(translatedName: String): BattleStat? {
         val lowerName = translatedName.lowercase()
         for ((key, stat) in TranslationKeys.COBBLEMON_STAT_KEYS) {
-            try {
-                val translated = Text.translatable(key).string.lowercase()
-                if (translated == lowerName) {
-                    return stat
-                }
-            } catch (_: Exception) {
-                // Key might not exist, skip
+            val translated = Text.translatable(key).string.lowercase()
+            if (translated == lowerName) {
+                return stat
             }
         }
         return null

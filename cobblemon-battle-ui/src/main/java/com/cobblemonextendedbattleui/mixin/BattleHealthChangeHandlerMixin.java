@@ -11,6 +11,7 @@ import com.cobblemon.mod.common.client.battle.ClientBattlePokemon;
 import com.cobblemon.mod.common.client.net.battle.BattleHealthChangeHandler;
 import com.cobblemon.mod.common.net.messages.client.battle.BattleHealthChangePacket;
 import jbro.cobblemon.battleui.extended.DamageTracker;
+import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUI;
 import jbro.cobblemon.battleui.extended.TeamIndicatorUI;
 import jbro.cobblemon.battleui.extended.BattleStateTracker;
 import jbro.cobblemon.battleui.extended.PanelConfig;
@@ -47,6 +48,7 @@ public class BattleHealthChangeHandlerMixin {
         try {
             String pnx = packet.getPnx();
             var result = battle.getPokemonFromPNX(pnx);
+            if (result == null || result.getSecond() == null) return;
             var activePokemon = result.getSecond();
             ClientBattlePokemon pokemon = activePokemon.getBattlePokemon();
 
@@ -97,7 +99,7 @@ public class BattleHealthChangeHandlerMixin {
                 }
             }
         } catch (Exception e) {
-            // Silent fail to avoid breaking gameplay
+            CobblemonExtendedBattleUI.INSTANCE.getLOGGER().warn("Failed to update Battle UI health state", e);
         }
     }
 }

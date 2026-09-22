@@ -179,16 +179,8 @@ object TeamIndicatorUI {
     // Ability name formatting (used internally and by tooltip builder)
     private fun formatAbilityName(abilityId: String): String = TooltipDataBuilder.formatAbilityName(abilityId)
 
-    // Stat/Speed calculation delegations for PokemonInfoPopup
+    // Stat stage calculation delegation for PokemonInfoPopup
     internal fun getStageMultiplier(stage: Int): Double = jbro.cobblemon.battleui.extended.pokemon.stats.StatCalculator.getStageMultiplier(stage)
-    internal fun canPokemonEvolve(pokemonId: Identifier?): Boolean = jbro.cobblemon.battleui.extended.pokemon.stats.StatCalculator.canPokemonEvolve(pokemonId)
-    internal fun getItemAttackMultiplier(itemName: String?, speciesName: String?): Double = jbro.cobblemon.battleui.extended.pokemon.stats.StatCalculator.getItemAttackMultiplier(itemName, speciesName)
-    internal fun getItemSpecialAttackMultiplier(itemName: String?, speciesName: String?): Double = jbro.cobblemon.battleui.extended.pokemon.stats.StatCalculator.getItemSpecialAttackMultiplier(itemName, speciesName)
-    internal fun getItemDefenseMultiplier(itemName: String?, canEvolve: Boolean): Double = jbro.cobblemon.battleui.extended.pokemon.stats.StatCalculator.getItemDefenseMultiplier(itemName, canEvolve)
-    internal fun getItemSpecialDefenseMultiplier(itemName: String?, speciesName: String?, canEvolve: Boolean): Double = jbro.cobblemon.battleui.extended.pokemon.stats.StatCalculator.getItemSpecialDefenseMultiplier(itemName, speciesName, canEvolve)
-
-    internal fun calculateEffectiveSpeed(baseSpeed: Int, speedStage: Int, abilityName: String?, status: Status?, itemName: String?, itemConsumed: Boolean): Int =
-        jbro.cobblemon.battleui.extended.pokemon.stats.SpeedCalculator.calculateEffectiveSpeed(baseSpeed, speedStage, abilityName, status, itemName, itemConsumed)
 
     internal data class SpeedRangeResult(
         val minSpeed: Int,
@@ -679,16 +671,6 @@ object TeamIndicatorUI {
         val playerActor = battle.side1.actors.find { it.uuid == playerUUID }
             ?: battle.side2.actors.find { it.uuid == playerUUID }
 
-        // Initialize PP tracking for all player's Pokemon (idempotent - only initializes once)
-        playerActor?.pokemon?.forEach { pokemon ->
-            BattleStateTracker.initializeMoves(
-                pokemon.uuid,
-                pokemon.moveSet.getMoves().map {
-                    BattleStateTracker.TrackedMove(it.displayName.string, it.currentPp, it.maxPp)
-                }
-            )
-        }
-
         // Determine if player is on the left or right side
         val playerOnLeft = playerActor != null && leftSide.actors.any { it.uuid == playerUUID }
         val playerOnRight = playerActor != null && rightSide.actors.any { it.uuid == playerUUID }
@@ -827,8 +809,8 @@ object TeamIndicatorUI {
                 // Continue dragging - allow positioning to screen edges
                 val deltaX = mouseX - dragStartMouseX
                 val deltaY = mouseY - dragStartMouseY
-                val newX = (dragStartPanelX + deltaX).coerceIn(0, mc.window.scaledWidth - modelSize)
-                val newY = (dragStartPanelY + deltaY).coerceIn(0, mc.window.scaledHeight - modelSize)
+                val newX = ViewportClamp.clamp(dragStartPanelX + deltaX, 0, mc.window.scaledWidth, modelSize, 0)
+                val newY = ViewportClamp.clamp(dragStartPanelY + deltaY, 0, mc.window.scaledHeight, modelSize, 0)
 
                 if (draggingLeftSide) {
                     PanelConfig.setTeamIndicatorLeftPosition(newX, newY)
@@ -841,8 +823,8 @@ object TeamIndicatorUI {
                 if (isAltDown) {
                     // Mirrored X: if we move right (+deltaX), other panel moves left (-deltaX)
                     // Same Y: both panels move in the same vertical direction
-                    val mirroredX = (dragStartOtherPanelX - deltaX).coerceIn(0, mc.window.scaledWidth - modelSize)
-                    val sameY = (dragStartOtherPanelY + deltaY).coerceIn(0, mc.window.scaledHeight - modelSize)
+                    val mirroredX = ViewportClamp.clamp(dragStartOtherPanelX - deltaX, 0, mc.window.scaledWidth, modelSize, 0)
+                    val sameY = ViewportClamp.clamp(dragStartOtherPanelY + deltaY, 0, mc.window.scaledHeight, modelSize, 0)
 
                     if (draggingLeftSide) {
                         PanelConfig.setTeamIndicatorRightPosition(mirroredX, sameY)
@@ -1040,12 +1022,18 @@ object TeamIndicatorUI {
         val customX = if (isLeftSide) PanelConfig.teamIndicatorLeftX else PanelConfig.teamIndicatorRightX
         val customY = if (isLeftSide) PanelConfig.teamIndicatorLeftY else PanelConfig.teamIndicatorRightY
 
-        if (customX != null && customY != null) {
-            return Pair(customX, customY)
-        }
-
         // Calculate default position based on orientation
         val isVertical = PanelConfig.teamIndicatorOrientation == PanelConfig.TeamIndicatorOrientation.VERTICAL
+        val panelWidth = if (isVertical) modelSize else teamSize * modelSize + (teamSize - 1).coerceAtLeast(0) * modelSpacing
+        val panelHeight = if (isVertical) teamSize * modelSize + (teamSize - 1).coerceAtLeast(0) * modelSpacing else modelSize
+
+        if (customX != null && customY != null) {
+            val screenHeight = MinecraftClient.getInstance().window.scaledHeight
+            return Pair(
+                ViewportClamp.clamp(customX, 0, screenWidth, panelWidth, 0),
+                ViewportClamp.clamp(customY, 0, screenHeight, panelHeight, 0)
+            )
+        }
 
         val defaultX = if (isLeftSide) {
             HORIZONTAL_INSET

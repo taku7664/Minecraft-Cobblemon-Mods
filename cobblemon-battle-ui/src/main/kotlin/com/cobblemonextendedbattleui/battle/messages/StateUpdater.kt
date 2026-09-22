@@ -48,7 +48,7 @@ object StateUpdater {
     fun extractSetBoost(args: Array<out Any>) {
         if (args.isEmpty()) return
 
-        val pokemonName = MessageParser.argToString(args[0])
+        val pokemonName = MessageParser.extractPokemonName(args[0])
         CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: $pokemonName Attack set to +6 (Belly Drum/Anger Point)")
         BattleStateTracker.setStatStage(pokemonName, BattleStat.ATTACK, 6)
     }
@@ -56,7 +56,7 @@ object StateUpdater {
     fun extractClearBoost(args: Array<out Any>) {
         if (args.isEmpty()) return
 
-        val pokemonName = MessageParser.argToString(args[0])
+        val pokemonName = MessageParser.extractPokemonName(args[0])
         CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: Clearing all stats for $pokemonName")
         BattleStateTracker.clearPokemonStatsByName(pokemonName)
     }
@@ -65,7 +65,7 @@ object StateUpdater {
     fun extractInvertBoost(args: Array<out Any>) {
         if (args.isEmpty()) return
 
-        val pokemonName = MessageParser.argToString(args[0])
+        val pokemonName = MessageParser.extractPokemonName(args[0])
         CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: Inverting stats for $pokemonName")
         BattleStateTracker.invertStats(pokemonName)
     }
@@ -77,11 +77,11 @@ object StateUpdater {
             return
         }
 
-        val pokemon1 = MessageParser.argToString(args[0])
+        val pokemon1 = MessageParser.extractPokemonName(args[0])
         val pokemon2: String
 
         if (args.size >= 2) {
-            pokemon2 = MessageParser.argToString(args[1])
+            pokemon2 = MessageParser.extractPokemonName(args[1])
         } else {
             pokemon2 = MessageParser.lastMoveTarget ?: run {
                 CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: SwapBoostAllStats no target tracked for $pokemon1")
@@ -100,11 +100,11 @@ object StateUpdater {
             return
         }
 
-        val pokemon1 = MessageParser.argToString(args[0])
+        val pokemon1 = MessageParser.extractPokemonName(args[0])
         val pokemon2: String
 
         if (args.size >= 2) {
-            pokemon2 = MessageParser.argToString(args[1])
+            pokemon2 = MessageParser.extractPokemonName(args[1])
         } else {
             pokemon2 = MessageParser.lastMoveTarget ?: run {
                 CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: SwapBoostSpecific no target tracked for $pokemon1")
@@ -123,8 +123,8 @@ object StateUpdater {
             return
         }
 
-        val copier = MessageParser.argToString(args[0])
-        val source = MessageParser.argToString(args[1])
+        val copier = MessageParser.extractPokemonName(args[0])
+        val source = MessageParser.extractPokemonName(args[1])
 
         CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: $copier copies stats from $source")
         BattleStateTracker.copyStats(source, copier)
@@ -136,7 +136,7 @@ object StateUpdater {
             return
         }
 
-        val pokemonName = MessageParser.argToString(args[0])
+        val pokemonName = MessageParser.extractPokemonName(args[0])
         CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: Volatile start - $pokemonName gained ${volatileStatus.displayName}")
         BattleStateTracker.setVolatileStatus(pokemonName, volatileStatus)
     }
@@ -147,7 +147,7 @@ object StateUpdater {
             return
         }
 
-        val pokemonName = MessageParser.argToString(args[0])
+        val pokemonName = MessageParser.extractPokemonName(args[0])
         CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: Volatile end - $pokemonName lost ${volatileStatus.displayName}")
         BattleStateTracker.clearVolatileStatus(pokemonName, volatileStatus)
     }
@@ -158,71 +158,71 @@ object StateUpdater {
 
     fun extractItemReveal(args: Array<out Any>) {
         if (args.size < 2) return
-        val pokemonName = MessageParser.argToString(args[0])
+        val pokemonName = MessageParser.extractPokemonName(args[0])
         val itemName = MessageParser.argToString(args[1])
         BattleStateTracker.setItem(pokemonName, itemName, ItemStatus.HELD)
     }
 
     fun extractTrickItem(args: Array<out Any>) {
         if (args.size < 2) return
-        val pokemonName = MessageParser.argToString(args[0])
+        val pokemonName = MessageParser.extractPokemonName(args[0])
         val itemName = MessageParser.argToString(args[1])
         BattleStateTracker.receiveItemViaTrick(pokemonName, itemName)
     }
 
     fun extractTrickActivation(args: Array<out Any>) {
         if (args.isEmpty()) return
-        val userName = MessageParser.argToString(args[0])
+        val userName = MessageParser.extractPokemonName(args[0])
         CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: $userName used Trick/Switcheroo")
         BattleStateTracker.markItemSwapped(userName)
     }
 
     fun extractLifeOrbReveal(args: Array<out Any>) {
         if (args.isEmpty()) return
-        val pokemonName = MessageParser.argToString(args[0])
+        val pokemonName = MessageParser.extractPokemonName(args[0])
         CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: Life Orb revealed for $pokemonName")
         BattleStateTracker.setItem(pokemonName, "Life Orb", ItemStatus.HELD)
     }
 
     fun extractFriskItem(args: Array<out Any>) {
         if (args.size < 2) return
-        val targetPokemon = MessageParser.argToString(args[0])
+        val targetPokemon = MessageParser.extractPokemonName(args[0])
         val itemName = MessageParser.argToString(args[1])
         BattleStateTracker.setItem(targetPokemon, itemName, ItemStatus.HELD)
     }
 
     fun extractThiefItem(args: Array<out Any>) {
         if (args.size < 3) return
-        val thiefPokemon = MessageParser.argToString(args[0])
+        val thiefPokemon = MessageParser.extractPokemonName(args[0])
         val itemName = MessageParser.argToString(args[1])
-        val victimPokemon = MessageParser.argToString(args[2])
+        val victimPokemon = MessageParser.extractPokemonName(args[2])
         BattleStateTracker.transferItem(victimPokemon, thiefPokemon, itemName)
     }
 
     fun extractBestowItem(args: Array<out Any>) {
         if (args.size < 3) return
-        val receiverPokemon = MessageParser.argToString(args[0])
+        val receiverPokemon = MessageParser.extractPokemonName(args[0])
         val itemName = MessageParser.argToString(args[1])
-        val giverPokemon = MessageParser.argToString(args[2])
+        val giverPokemon = MessageParser.extractPokemonName(args[2])
         BattleStateTracker.transferItem(giverPokemon, receiverPokemon, itemName)
     }
 
     fun extractItemConsumed(args: Array<out Any>) {
         if (args.size < 2) return
-        val pokemonName = MessageParser.argToString(args[0])
+        val pokemonName = MessageParser.extractPokemonName(args[0])
         val itemName = MessageParser.argToString(args[1])
         BattleStateTracker.setItem(pokemonName, itemName, ItemStatus.CONSUMED)
     }
 
     fun extractItemConsumedSingleArg(args: Array<out Any>, itemName: String) {
         if (args.isEmpty()) return
-        val pokemonName = MessageParser.argToString(args[0])
+        val pokemonName = MessageParser.extractPokemonName(args[0])
         BattleStateTracker.setItem(pokemonName, itemName, ItemStatus.CONSUMED)
     }
 
     fun extractBerryFromKey(key: String, args: Array<out Any>) {
         if (args.isEmpty()) return
-        val pokemonName = MessageParser.argToString(args[0])
+        val pokemonName = MessageParser.extractPokemonName(args[0])
         val berryId = key.substringAfterLast(".")
         val berryName = berryId
             .replace("berry", " Berry")
@@ -232,7 +232,7 @@ object StateUpdater {
 
     fun extractKnockOff(args: Array<out Any>) {
         if (args.size < 2) return
-        val targetPokemon = MessageParser.argToString(args[0])
+        val targetPokemon = MessageParser.extractPokemonName(args[0])
         val itemName = MessageParser.argToString(args[1])
         BattleStateTracker.setItem(targetPokemon, itemName, ItemStatus.KNOCKED_OFF)
     }
@@ -240,20 +240,20 @@ object StateUpdater {
     fun extractStealEat(args: Array<out Any>) {
         if (args.size < 3) return
         val itemName = MessageParser.argToString(args[1])
-        val targetPokemon = MessageParser.argToString(args[2])
+        val targetPokemon = MessageParser.extractPokemonName(args[2])
         BattleStateTracker.setItem(targetPokemon, itemName, ItemStatus.STOLEN)
     }
 
     fun extractCorrosiveGas(args: Array<out Any>) {
         if (args.size < 2) return
-        val targetPokemon = MessageParser.argToString(args[0])
+        val targetPokemon = MessageParser.extractPokemonName(args[0])
         val itemName = MessageParser.argToString(args[1])
         BattleStateTracker.setItem(targetPokemon, itemName, ItemStatus.CONSUMED)
     }
 
     fun extractHealingItem(args: Array<out Any>) {
         if (args.size < 2) return
-        val pokemonName = MessageParser.argToString(args[0])
+        val pokemonName = MessageParser.extractPokemonName(args[0])
         val itemName = MessageParser.argToString(args[1])
         val status = if (itemName.lowercase().contains("berry")) {
             ItemStatus.CONSUMED
@@ -270,7 +270,7 @@ object StateUpdater {
     fun markPokemonFainted(args: Array<out Any>) {
         if (args.isEmpty()) return
 
-        val pokemonName = MessageParser.argToString(args[0])
+        val pokemonName = MessageParser.extractPokemonName(args[0])
         CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: Pokemon fainted - $pokemonName")
 
         BattleStateTracker.markAsKO(pokemonName)
@@ -282,7 +282,7 @@ object StateUpdater {
     fun clearPokemonState(args: Array<out Any>) {
         if (args.isEmpty()) return
 
-        val pokemonName = MessageParser.argToString(args[0])
+        val pokemonName = MessageParser.extractPokemonName(args[0])
         CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: Switch/drag detected for '$pokemonName' - clearing transform and form state")
 
         BattleStateTracker.clearPokemonStatsByName(pokemonName)
@@ -299,8 +299,8 @@ object StateUpdater {
             return
         }
 
-        val transformerName = MessageParser.argToString(args[0])
-        val targetName = MessageParser.argToString(args[1])
+        val transformerName = MessageParser.extractPokemonName(args[0])
+        val targetName = MessageParser.extractPokemonName(args[1])
 
         CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: Transform detected - '$transformerName' transformed into '$targetName'")
 

@@ -17,7 +17,7 @@ final class Cobblemon181MetadataContractTest {
             var dependencies = metadata.getAsJsonObject("depends");
 
             assertEquals(">=0.19.5", dependencies.get("fabricloader").getAsString());
-            assertEquals(">=1.8.1 <1.9.0", dependencies.get("cobblemon").getAsString());
+            assertEquals("=1.8.1", dependencies.get("cobblemon").getAsString());
         }
     }
 }

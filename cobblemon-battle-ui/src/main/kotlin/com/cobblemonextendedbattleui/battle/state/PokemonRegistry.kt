@@ -3,6 +3,7 @@ package jbro.cobblemon.battleui.extended.battle.state
 import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUI
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * Tracks UUID-to-name mappings, ally/opponent designation, KO status,
@@ -14,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
 object PokemonRegistry {
 
     // Maps lowercase name -> list of (UUID, isAlly) pairs to handle mirror matches
-    private val nameToUuids = ConcurrentHashMap<String, MutableList<Pair<UUID, Boolean>>>()
+    private val nameToUuids = ConcurrentHashMap<String, CopyOnWriteArrayList<Pair<UUID, Boolean>>>()
     private val uuidIsAlly = ConcurrentHashMap<UUID, Boolean>()
 
     // Player names for each side to disambiguate owner prefixes
@@ -44,7 +45,7 @@ object PokemonRegistry {
 
     fun registerPokemon(uuid: UUID, name: String, isAlly: Boolean) {
         val lowerName = name.lowercase()
-        val uuidList = nameToUuids.computeIfAbsent(lowerName) { mutableListOf() }
+        val uuidList = nameToUuids.computeIfAbsent(lowerName) { CopyOnWriteArrayList() }
 
         val existingEntry = uuidList.find { it.first == uuid }
         if (existingEntry == null) {
@@ -182,10 +183,11 @@ object PokemonRegistry {
                 }
             }
 
-            CobblemonExtendedBattleUI.LOGGER.debug(
-                "PokemonRegistry: Ambiguous Pokemon '$pokemonName' in mirror match, using first registered"
+            CobblemonExtendedBattleUI.LOGGER.warn(
+                "PokemonRegistry: Ambiguous Pokemon '{}' in mirror match; ignoring the update instead of guessing a side",
+                pokemonName
             )
-            return uuidList[0].first
+            return null
         }
 
         return null

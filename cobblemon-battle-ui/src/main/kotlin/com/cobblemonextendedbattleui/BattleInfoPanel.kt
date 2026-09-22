@@ -44,7 +44,7 @@ object BattleInfoPanel {
     fun onScroll(mouseX: Double, mouseY: Double, deltaY: Double): Boolean = false
 
     /** Updates battle state during the HUD pass without drawing the modal. */
-    fun update() {
+    fun update(syncOverlay: Boolean = true) {
         val battle = CobblemonClient.battle
         if (battle == null) {
             if (wasInBattle) clearOnBattleExit()
@@ -59,7 +59,11 @@ object BattleInfoPanel {
             return
         }
 
-        handleToggleInput(MinecraftClient.getInstance())
+        if (syncOverlay) {
+            handleToggleInput(MinecraftClient.getInstance())
+        } else {
+            isExpanded = false
+        }
 
         val mc = MinecraftClient.getInstance()
         val playerUuid = mc.player?.uuid ?: return
@@ -89,7 +93,9 @@ object BattleInfoPanel {
         allyActive.forEach { BattleStateTracker.applyBatonPassIfPending(it.uuid) }
         opponentActive.forEach { BattleStateTracker.applyBatonPassIfPending(it.uuid) }
 
-        ChampionsBattleInfoOverlay.sync(playerSide, opponentSide, playerUuid, isSpectating)
+        if (syncOverlay) {
+            ChampionsBattleInfoOverlay.sync(playerSide, opponentSide, playerUuid, isSpectating)
+        }
     }
 
     /** Drawn from BattleGUI.render RETURN so the modal owns the final GUI layer. */

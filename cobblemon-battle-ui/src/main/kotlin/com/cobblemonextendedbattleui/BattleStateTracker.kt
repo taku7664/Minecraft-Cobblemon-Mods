@@ -5,7 +5,6 @@ import jbro.cobblemon.battleui.extended.battle.state.*
 import net.minecraft.text.Text
 import net.minecraft.util.Identifier
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Facade for all battle state tracking. Delegates to focused sub-trackers
@@ -170,15 +169,6 @@ object BattleStateTracker {
         val revealTurn: Int,
         var removalTurn: Int? = null
     )
-
-    class TrackedMove(val name: String, initialPp: Int, val maxPp: Int) {
-        private val _currentPp = AtomicInteger(initialPp)
-        val currentPp: Int get() = _currentPp.get()
-
-        fun decrementPp(amount: Int = 1): Int {
-            return _currentPp.updateAndGet { current -> (current - amount).coerceAtLeast(0) }
-        }
-    }
 
     data class BatonPassData(
         val stats: Map<BattleStat, Int>,
@@ -377,14 +367,8 @@ object BattleStateTracker {
     // Moves & PP (delegates to MoveTracker)
     // ═══════════════════════════════════════════════════════════════════════════
 
-    fun initializeMoves(uuid: UUID, moves: List<TrackedMove>) = MoveTracker.initializeMoves(uuid, moves)
-    fun decrementPP(uuid: UUID, moveName: String, targetName: String? = null) = MoveTracker.decrementPP(uuid, moveName, targetName)
-    fun registerPressure(pokemonName: String) = MoveTracker.registerPressure(pokemonName)
-    fun hasPressure(uuid: UUID): Boolean = MoveTracker.hasPressure(uuid)
-    fun getTrackedMoves(uuid: UUID): List<TrackedMove>? = MoveTracker.getTrackedMoves(uuid)
-    fun addRevealedMove(pokemonName: String, moveName: String, targetName: String? = null, preferAlly: Boolean? = null) = MoveTracker.addRevealedMove(pokemonName, moveName, targetName, preferAlly)
+    fun addRevealedMove(pokemonName: String, moveName: String, preferAlly: Boolean? = null) = MoveTracker.addRevealedMove(pokemonName, moveName, preferAlly)
     fun getRevealedMoves(uuid: UUID): Set<String> = MoveTracker.getRevealedMoves(uuid)
-    fun getMoveUsageCount(uuid: UUID, moveName: String): Int = MoveTracker.getMoveUsageCount(uuid, moveName)
 
     // ═══════════════════════════════════════════════════════════════════════════
     // Baton Pass (coordinates between StatTracker and VolatileStatusTracker)
