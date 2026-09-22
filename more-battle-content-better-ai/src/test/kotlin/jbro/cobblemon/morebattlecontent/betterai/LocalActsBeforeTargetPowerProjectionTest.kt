@@ -10,6 +10,105 @@ import org.junit.jupiter.api.Test
 
 class LocalActsBeforeTargetPowerProjectionTest {
     @Test
+    fun `payback doubles only after its target has finished acting`() {
+        val boosted = project(
+            state(allySpeed = 40, opponentSpeed = 80),
+            attack("payback", "dark", actorSlot = 0, targetSlot = 0, power = 50.0),
+            attack("opponent_attack", "normal", actorSlot = 0, targetSlot = 0, targetSide = BattleSide.ALLY),
+        )
+        val ordinary = project(
+            state(allySpeed = 40, opponentSpeed = 80),
+            attack("dark_attack", "dark", actorSlot = 0, targetSlot = 0, power = 50.0),
+            attack("opponent_attack", "normal", actorSlot = 0, targetSlot = 0, targetSide = BattleSide.ALLY),
+        )
+
+        assertTrue(damage(boosted, ALLY, OPPONENT) > damage(ordinary, ALLY, OPPONENT) * 1.8)
+    }
+
+    @Test
+    fun `payback stays at base power while its target still has a queued action`() {
+        val payback = project(
+            state(allySpeed = 120, opponentSpeed = 80),
+            attack("payback", "dark", actorSlot = 0, targetSlot = 0, power = 50.0),
+            attack("opponent_attack", "normal", actorSlot = 0, targetSlot = 0, targetSide = BattleSide.ALLY),
+        )
+        val ordinary = project(
+            state(allySpeed = 120, opponentSpeed = 80),
+            attack("dark_attack", "dark", actorSlot = 0, targetSlot = 0, power = 50.0),
+            attack("opponent_attack", "normal", actorSlot = 0, targetSlot = 0, targetSide = BattleSide.ALLY),
+        )
+
+        val paybackDamage = damage(payback, ALLY, OPPONENT)
+        val ordinaryDamage = damage(ordinary, ALLY, OPPONENT)
+        assertTrue(paybackDamage > ordinaryDamage * 0.9)
+        assertTrue(paybackDamage < ordinaryDamage * 1.1)
+    }
+
+    @Test
+    fun `trick room can make a fast payback act after its slower target and double`() {
+        val ordinary = project(
+            state(allySpeed = 120, opponentSpeed = 80),
+            attack("payback", "dark", actorSlot = 0, targetSlot = 0, power = 50.0),
+            attack("opponent_attack", "normal", actorSlot = 0, targetSlot = 0, targetSide = BattleSide.ALLY),
+        )
+        val underTrickRoom = project(
+            state(allySpeed = 120, opponentSpeed = 80, trickRoom = true),
+            attack("payback", "dark", actorSlot = 0, targetSlot = 0, power = 50.0),
+            attack("opponent_attack", "normal", actorSlot = 0, targetSlot = 0, targetSide = BattleSide.ALLY),
+        )
+
+        assertTrue(damage(underTrickRoom, ALLY, OPPONENT) > damage(ordinary, ALLY, OPPONENT) * 1.8)
+    }
+
+    @Test
+    fun `payback does not double against a target that switched in`() {
+        val initial = state(allySpeed = 40, opponentSpeed = 80, opponentBench = true)
+        val payback = project(
+            initial,
+            attack("payback", "dark", actorSlot = 0, targetSlot = 0, power = 50.0),
+            switch("opponent_switch", OPPONENT_BENCH),
+        )
+        val ordinary = project(
+            initial,
+            attack("dark_attack", "dark", actorSlot = 0, targetSlot = 0, power = 50.0),
+            switch("opponent_switch", OPPONENT_BENCH),
+        )
+
+        val paybackDamage = damage(payback, ALLY, OPPONENT_BENCH)
+        val ordinaryDamage = damage(ordinary, ALLY, OPPONENT_BENCH)
+        assertTrue(paybackDamage > ordinaryDamage * 0.9)
+        assertTrue(paybackDamage < ordinaryDamage * 1.1)
+    }
+
+    @Test
+    fun `follow me lets payback use the redirector that already acted`() {
+        val initial = doubleState()
+        val payback = project(
+            initial,
+            joint(
+                "payback_pair",
+                attack("payback", "dark", actorSlot = 0, targetSlot = 0, power = 50.0),
+                wait("ally_wait", actorSlot = 1, targetSide = BattleSide.ALLY),
+            ),
+            redirectingOpponentPair(),
+        )
+        val ordinary = project(
+            initial,
+            joint(
+                "ordinary_pair",
+                attack("dark_attack", "dark", actorSlot = 0, targetSlot = 0, power = 50.0),
+                wait("ally_wait", actorSlot = 1, targetSide = BattleSide.ALLY),
+            ),
+            redirectingOpponentPair(),
+        )
+
+        assertTrue(
+            damage(payback, ALLY, OPPONENT_PARTNER) >
+                damage(ordinary, ALLY, OPPONENT_PARTNER) * 1.8,
+        )
+    }
+
+    @Test
     fun `fishious rend doubles only while the target still has a queued action`() {
         val boosted = project(
             state(allySpeed = 120, opponentSpeed = 80),
@@ -146,6 +245,7 @@ class LocalActsBeforeTargetPowerProjectionTest {
         actorSlot: Int,
         targetSlot: Int,
         targetSide: BattleSide = BattleSide.OPPONENT,
+        power: Double = 85.0,
     ) = BattleActionCandidate(
         actionId = id,
         kind = BattleActionKind.USE_MOVE,
@@ -156,7 +256,7 @@ class LocalActsBeforeTargetPowerProjectionTest {
         moveDetails = BattleMoveCandidateView(
             typeId = type,
             damageCategory = BattleMoveDamageCategory.PHYSICAL,
-            power = 85.0,
+            power = power,
             accuracy = 100.0,
             priority = 0,
             currentPp = 10,
@@ -164,8 +264,12 @@ class LocalActsBeforeTargetPowerProjectionTest {
             effects = BattleMoveEffectsView(
                 BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
                 emptyList(),
-                scriptedBehavior = id in ACTS_BEFORE_TARGET_MOVES,
-                mechanicFlags = if (id in ACTS_BEFORE_TARGET_MOVES) setOf("dynamic_base_power", "protect") else setOf("protect"),
+                scriptedBehavior = id in DYNAMIC_TURN_ORDER_POWER_MOVES,
+                mechanicFlags = if (id in DYNAMIC_TURN_ORDER_POWER_MOVES) {
+                    setOf("dynamic_base_power", "protect")
+                } else {
+                    setOf("protect")
+                },
             ),
         ),
     )
@@ -346,6 +450,6 @@ class LocalActsBeforeTargetPowerProjectionTest {
         val OPPONENT: UUID = UUID.fromString("00000000-0000-0000-0000-00000000c603")
         val OPPONENT_PARTNER: UUID = UUID.fromString("00000000-0000-0000-0000-00000000c604")
         val OPPONENT_BENCH: UUID = UUID.fromString("00000000-0000-0000-0000-00000000c605")
-        val ACTS_BEFORE_TARGET_MOVES = setOf("fishiousrend", "boltbeak")
+        val DYNAMIC_TURN_ORDER_POWER_MOVES = setOf("fishiousrend", "boltbeak", "payback")
     }
 }

@@ -133,6 +133,10 @@ internal object PublicSingleTurnProjector {
                         state = current.branch.state,
                         remaining = remaining,
                         newlySwitchedPokemonIds = current.newlySwitchedPokemonIds,
+                    ).withTargetAlreadyActedPowerDoubled(
+                        state = current.branch.state,
+                        remaining = remaining,
+                        newlySwitchedPokemonIds = current.newlySwitchedPokemonIds,
                     ).withDamagedTargetPowerDoubled(
                         state = current.branch.state,
                         damagedPokemonIds = current.damagedPokemonIds,
@@ -1784,6 +1788,20 @@ internal object PublicSingleTurnProjector {
         }?.battlePokemonId ?: return this
         if (targetId !in damagedPokemonIds) return this
         return copy(action = action.withAddedTag(LocalKnownStatMechanics.DAMAGED_TARGET_POWER_DOUBLED_TAG))
+    }
+
+    private fun TurnPrimitiveAction.withTargetAlreadyActedPowerDoubled(
+        state: BattleStateView,
+        remaining: List<TurnPrimitiveAction>,
+        newlySwitchedPokemonIds: Set<UUID>,
+    ): TurnPrimitiveAction {
+        if (canonicalId(action.moveId) != "payback") return this
+        val targetSlot = action.targets.singleOrNull() ?: return this
+        val targetId = state.pokemon.singleOrNull {
+            it.side == targetSlot.side && it.activeSlot == targetSlot.slot && !it.fainted && it.hpFraction > 0.0
+        }?.battlePokemonId ?: return this
+        if (targetId in newlySwitchedPokemonIds || remaining.any { it.actorPokemonId == targetId }) return this
+        return copy(action = action.withAddedTag(LocalKnownStatMechanics.TARGET_ALREADY_ACTED_POWER_DOUBLED_TAG))
     }
 
     private fun BattleActionCandidate.withAddedTag(tag: String) = BattleActionCandidate(
