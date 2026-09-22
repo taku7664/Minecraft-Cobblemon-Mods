@@ -300,10 +300,99 @@ class LocalDynamicTurnOrderTest {
             .sumOf { it.probability * it.orderProbability }, 1e-9)
     }
 
+    @Test
+    fun `helping hand boosts the pending ally attack`() {
+        val state = BattleStateView(
+            battleId = UUID.randomUUID(),
+            format = BattleFormat.DOUBLE,
+            turn = 1,
+            pokemon = listOf(
+                pokemon(RAIN_SETTER, BattleSide.ALLY, 0, speed = 200),
+                pokemon(SWIMMER, BattleSide.ALLY, 1, speed = 80, ability = "technician"),
+                pokemon(FAST_FOE, BattleSide.OPPONENT, 0, speed = 130),
+                pokemon(SLOW_FOE, BattleSide.OPPONENT, 1, speed = 110),
+            ),
+            field = BattleFieldStateView.empty(),
+            remainingPokemonBySide = BattleSide.entries.associateWith { 2 },
+            observedEvents = emptyList(),
+            inferences = emptyList(),
+        )
+        val boostedJoint = joint(
+            "boosted",
+            helpingHandMove(),
+            damageMove("ally_strike", actorSlot = 1, power = 60.0),
+        )
+        val plainJoint = joint(
+            "plain",
+            priorityStatusMove("ally_cheer", actorSlot = 0),
+            damageMove("ally_strike", actorSlot = 1, power = 60.0),
+        )
+        val referenceJoint = joint(
+            "reference",
+            priorityStatusMove("ally_cheer", actorSlot = 0),
+            damageMove("ally_strike", actorSlot = 1, power = 135.0),
+        )
+        val opponentJoint = joint(
+            "opponent",
+            statusMove("fast_foe_wait", 0),
+            statusMove("slow_foe_wait", 1),
+        )
+
+        fun expectedTargetHp(allyJoint: BattleActionCandidate): Double {
+            val context = BattleDecisionContext(
+                requestId = UUID.randomUUID(),
+                state = state,
+                candidates = listOf(allyJoint),
+                deadlineEpochMillis = Long.MAX_VALUE,
+            )
+            return PublicSingleTurnProjector.project(state, allyJoint, opponentJoint, context).sumOf { outcome ->
+                val targetHp = outcome.state.pokemon.single { it.battlePokemonId == FAST_FOE }.hpFraction
+                outcome.probability * outcome.orderProbability * targetHp
+            }
+        }
+
+        val boostedHp = expectedTargetHp(boostedJoint)
+        assertTrue(boostedHp < expectedTargetHp(plainJoint))
+        assertEquals(expectedTargetHp(referenceJoint), boostedHp, 1e-9)
+    }
+
+    @Test
+    fun `helping hand does not boost when its user cannot act`() {
+        val state = BattleStateView(
+            battleId = UUID.randomUUID(),
+            format = BattleFormat.DOUBLE,
+            turn = 1,
+            pokemon = listOf(
+                pokemon(RAIN_SETTER, BattleSide.ALLY, 0, speed = 200, status = "slp"),
+                pokemon(SWIMMER, BattleSide.ALLY, 1, speed = 80),
+                pokemon(FAST_FOE, BattleSide.OPPONENT, 0, speed = 130),
+                pokemon(SLOW_FOE, BattleSide.OPPONENT, 1, speed = 110),
+            ),
+            field = BattleFieldStateView.empty(),
+            remainingPokemonBySide = BattleSide.entries.associateWith { 2 },
+            observedEvents = emptyList(),
+            inferences = emptyList(),
+        )
+        val attempted = joint("attempted", helpingHandMove(), damageMove("ally_strike", actorSlot = 1))
+        val plain = joint("plain", priorityStatusMove("ally_cheer", actorSlot = 0), damageMove("ally_strike", actorSlot = 1))
+        val opponent = joint("opponent", statusMove("foe_wait", 0), statusMove("other_foe_wait", 1))
+
+        fun expectedTargetHp(allyJoint: BattleActionCandidate): Double {
+            val context = BattleDecisionContext(UUID.randomUUID(), state, listOf(allyJoint), Long.MAX_VALUE)
+            return PublicSingleTurnProjector.project(state, allyJoint, opponent, context).sumOf { outcome ->
+                outcome.probability * outcome.orderProbability *
+                    outcome.state.pokemon.single { it.battlePokemonId == FAST_FOE }.hpFraction
+            }
+        }
+
+        assertEquals(expectedTargetHp(plain), expectedTargetHp(attempted), 1e-9)
+    }
+
     private fun statusMove(
         id: String,
         actorSlot: Int,
         effects: BattleMoveEffectsView? = null,
+        priority: Int = 0,
     ) = BattleActionCandidate(
         actionId = id,
         kind = BattleActionKind.USE_MOVE,
@@ -316,7 +405,7 @@ class LocalDynamicTurnOrderTest {
             damageCategory = BattleMoveDamageCategory.STATUS,
             power = 0.0,
             accuracy = 100.0,
-            priority = 0,
+            priority = priority,
             currentPp = 10,
             targetPattern = BattleMoveTargetPattern.SELF,
             effects = effects,
@@ -328,6 +417,54 @@ class LocalDynamicTurnOrderTest {
         targetSide = BattleSide.ALLY,
         targetSlot = 1,
         targetPattern = BattleMoveTargetPattern.SELECTED_ALLY,
+    )
+
+    private fun helpingHandMove() = BattleActionCandidate(
+        actionId = "helpinghand",
+        kind = BattleActionKind.USE_MOVE,
+        actorSlot = 0,
+        moveSlot = 0,
+        moveId = "helpinghand",
+        targets = listOf(BattleTargetSlot(BattleSide.ALLY, 1)),
+        moveDetails = BattleMoveCandidateView(
+            typeId = "normal",
+            damageCategory = BattleMoveDamageCategory.STATUS,
+            power = 0.0,
+            accuracy = 100.0,
+            priority = 5,
+            currentPp = 10,
+            targetPattern = BattleMoveTargetPattern.SELECTED_ALLY,
+            effects = BattleMoveEffectsView(
+                coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                effects = emptyList(),
+                scriptedBehavior = true,
+            ),
+        ),
+    )
+
+    private fun priorityStatusMove(id: String, actorSlot: Int) = statusMove(id, actorSlot, priority = 5)
+
+    private fun damageMove(id: String, actorSlot: Int, power: Double = 80.0) = BattleActionCandidate(
+        actionId = id,
+        kind = BattleActionKind.USE_MOVE,
+        actorSlot = actorSlot,
+        moveSlot = 0,
+        moveId = id,
+        targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
+        moveDetails = BattleMoveCandidateView(
+            typeId = "normal",
+            damageCategory = BattleMoveDamageCategory.PHYSICAL,
+            power = power,
+            accuracy = 100.0,
+            priority = 0,
+            currentPp = 10,
+            targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
+            effects = BattleMoveEffectsView(
+                coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                effects = emptyList(),
+                scriptedBehavior = false,
+            ),
+        ),
     )
 
     private fun queueMove(

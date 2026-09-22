@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai.mechanics
 
+import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleIntegerRange
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
@@ -7,12 +8,26 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 
 /** Applies deterministic power and stat modifiers whose item or ability is public. */
 internal object LocalKnownStatMechanics {
-    fun effectivePower(basePower: Int, actor: BattlePokemonStateView, state: BattleStateView): Int {
-        if (LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "technician" && basePower <= 60) {
-            return (basePower * 1.5).toInt().coerceAtLeast(1)
-        }
-        return basePower
+    fun effectivePower(
+        basePower: Int,
+        actor: BattlePokemonStateView,
+        state: BattleStateView,
+        action: BattleActionCandidate,
+    ): Int {
+        val technician = if (
+            LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "technician" && basePower <= 60
+        ) 1.5 else 1.0
+        return (basePower * technician * turnPowerMultiplier(action)).toInt().coerceAtLeast(1)
     }
+
+    fun turnPowerMultiplier(action: BattleActionCandidate): Double = action.tags
+        .firstOrNull { it.startsWith(TURN_POWER_MULTIPLIER_TAG_PREFIX) }
+        ?.substringAfter(TURN_POWER_MULTIPLIER_TAG_PREFIX)
+        ?.toDoubleOrNull()
+        ?.takeIf { it.isFinite() && it >= 1.0 }
+        ?: 1.0
+
+    const val TURN_POWER_MULTIPLIER_TAG_PREFIX = "better_ai:turn_power_multiplier="
 
     /**
      * The attacking stat after items the battle has made public.

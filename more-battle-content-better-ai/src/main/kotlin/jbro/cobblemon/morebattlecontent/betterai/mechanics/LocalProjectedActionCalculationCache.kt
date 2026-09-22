@@ -59,6 +59,7 @@ internal class LocalProjectedActionCalculationCache(
             switchPokemonId = action.switchPokemonId,
             mechanicId = action.mechanic?.mechanicId,
             moveDetails = action.moveDetails,
+            tags = action.tags,
             catalog = catalog?.let { source -> catalogKeys.getOrPut(source) {
                 fun entries(values: List<jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonActionCatalogView>) =
                     values.map { CatalogEntryKey(it.battlePokemonId, it.moves, it.moveSetComplete) }
@@ -84,6 +85,7 @@ internal class LocalProjectedActionCalculationCache(
         val switchPokemonId: UUID?,
         val mechanicId: String?,
         val moveDetails: BattleMoveCandidateView?,
+        val tags: Set<String>,
         val catalog: CatalogKey?,
     )
     private data class CatalogEntryKey(val id: UUID, val moves: List<BattlePublicMoveOptionView>, val complete: Boolean)

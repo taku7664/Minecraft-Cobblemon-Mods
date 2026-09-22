@@ -108,9 +108,12 @@ internal object PublicSingleTurnProjector {
                         .let { nextActionChoices(sourceContext.state, current.branch.state, it) }
                 nextChoices.flatMap { next ->
                     val remaining = current.remaining.toMutableList().also { it.remove(next.action) }
+                    val powerMultiplier = next.action.actorPokemonId
+                        ?.let(current.turnPowerMultipliersByPokemon::get)
+                        ?: 1.0
                     applyScheduledAction(
                         branch = current.branch,
-                        ordered = next.action,
+                        ordered = next.action.withTurnPowerMultiplier(powerMultiplier),
                         pending = remaining,
                         sourceContext = sourceContext,
                         history = history,
@@ -119,6 +122,10 @@ internal object PublicSingleTurnProjector {
                         calculationCache = calculationCache,
                         shouldContinue = shouldContinue,
                     ).map { projected ->
+                        val remainingPowerMultipliers = next.action.actorPokemonId?.let {
+                            current.turnPowerMultipliersByPokemon - it
+                        } ?: current.turnPowerMultipliersByPokemon
+                        val helpedId = successfulHelpingHandTarget(next.action, remaining, projected)?.actorPokemonId
                         ScheduledTurnBranch(
                             branch = projected,
                             remaining = remaining,
@@ -127,6 +134,13 @@ internal object PublicSingleTurnProjector {
                             promotedNextAction = promotedAfterYouAction(next.action, remaining, projected),
                             postponedActions = (current.postponedActions - next.action) +
                                 listOfNotNull(postponedByQuashAction(next.action, remaining, projected)),
+                            turnPowerMultipliersByPokemon = if (helpedId == null) {
+                                remainingPowerMultipliers
+                            } else {
+                                remainingPowerMultipliers + (
+                                    helpedId to (remainingPowerMultipliers[helpedId] ?: 1.0) * HELPING_HAND_MULTIPLIER
+                                )
+                            },
                         )
                     }
                 }
@@ -1537,6 +1551,50 @@ internal object PublicSingleTurnProjector {
         outcome: WeightedState,
     ): TurnPrimitiveAction? = successfulQueueControlTarget(executed, remaining, outcome, QUASH)
 
+    /** Helping Hand only exists until its still-pending target attempts this turn's move. */
+    private fun successfulHelpingHandTarget(
+        executed: TurnPrimitiveAction,
+        remaining: List<TurnPrimitiveAction>,
+        outcome: WeightedState,
+    ): TurnPrimitiveAction? {
+        if (canonicalId(executed.action.moveId) != HELPING_HAND) return null
+        val actorId = executed.actorPokemonId ?: return null
+        if (canonicalId(outcome.executedMoveIdsByPokemon[actorId]) != HELPING_HAND) return null
+        val target = executed.action.targets.singleOrNull() ?: return null
+        if (target.side != executed.side || target.slot == executed.action.actorSlot) return null
+        val pending = remaining.singleOrNull {
+            it.side == target.side && it.action.actorSlot == target.slot
+        } ?: return null
+        val targetPokemon = outcome.state.pokemon.singleOrNull {
+            it.side == pending.side && it.activeSlot == pending.action.actorSlot
+        }
+        return pending.takeIf { targetPokemon != null && !targetPokemon.fainted && targetPokemon.hpFraction > 0.0 }
+    }
+
+    private fun TurnPrimitiveAction.withTurnPowerMultiplier(multiplier: Double): TurnPrimitiveAction {
+        if (multiplier == 1.0 || action.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS) return this
+        val multiplierTag = LocalKnownStatMechanics.TURN_POWER_MULTIPLIER_TAG_PREFIX + multiplier
+        return copy(
+            action = BattleActionCandidate(
+                actionId = action.actionId,
+                kind = action.kind,
+                actorSlot = action.actorSlot,
+                moveSlot = action.moveSlot,
+                moveId = action.moveId,
+                targets = action.targets,
+                switchPokemonId = action.switchPokemonId,
+                componentActionIds = action.componentActionIds,
+                componentActions = action.componentActions,
+                mechanic = action.mechanic,
+                moveDetails = action.moveDetails,
+                facts = null,
+                tags = action.tags.filterNot {
+                    it.startsWith(LocalKnownStatMechanics.TURN_POWER_MULTIPLIER_TAG_PREFIX)
+                }.toSet() + multiplierTag,
+            ),
+        )
+    }
+
     private fun successfulQueueControlTarget(
         executed: TurnPrimitiveAction,
         remaining: List<TurnPrimitiveAction>,
@@ -1766,6 +1824,7 @@ internal object PublicSingleTurnProjector {
         val orderProbability: Double = 1.0,
         val promotedNextAction: TurnPrimitiveAction? = null,
         val postponedActions: Set<TurnPrimitiveAction> = emptySet(),
+        val turnPowerMultipliersByPokemon: Map<UUID, Double> = emptyMap(),
     )
 
     private data class WeightedState(
@@ -1816,6 +1875,8 @@ internal object PublicSingleTurnProjector {
     private const val FUTURE_MOVE_DELAY_TURNS = 2
     private const val AFTER_YOU = "afteryou"
     private const val QUASH = "quash"
+    private const val HELPING_HAND = "helpinghand"
+    private const val HELPING_HAND_MULTIPLIER = 1.5
     private val QUEUE_CONTROL_MOVE_IDS = setOf(AFTER_YOU, QUASH)
     private val PARALYSIS_IDS = setOf("par", "paralysis", "paralyzed", "paralysed")
     private val SLEEP_IDS = setOf("slp", "sleep", "asleep")
