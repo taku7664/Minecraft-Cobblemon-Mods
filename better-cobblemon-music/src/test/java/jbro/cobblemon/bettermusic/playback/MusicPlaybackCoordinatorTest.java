@@ -54,15 +54,15 @@ final class MusicPlaybackCoordinatorTest {
         var battle = coordinator.update(5.0, new MusicPlaybackCoordinator.Input(
             Optional.of("field.forest"),
             true,
-            Optional.of("battle.gym")
+            Optional.of("battle.trainer")
         )).orElseThrow();
         assertEquals(selection(MusicPlaybackCoordinator.Mode.FIELD, "field.forest"), battle.from().orElseThrow());
-        assertEquals(selection(MusicPlaybackCoordinator.Mode.BATTLE, "battle.gym"), battle.to().orElseThrow());
+        assertEquals(selection(MusicPlaybackCoordinator.Mode.BATTLE, "battle.trainer"), battle.to().orElseThrow());
 
         assertTrue(coordinator.update(5.5, new MusicPlaybackCoordinator.Input(
             Optional.of("field.forest"),
             true,
-            Optional.of("battle.gym")
+            Optional.of("battle.trainer")
         )).isEmpty());
 
         var useOriginal = coordinator.update(6.0, new MusicPlaybackCoordinator.Input(
@@ -70,7 +70,7 @@ final class MusicPlaybackCoordinatorTest {
             true,
             Optional.empty()
         )).orElseThrow();
-        assertEquals(selection(MusicPlaybackCoordinator.Mode.BATTLE, "battle.gym"), useOriginal.from().orElseThrow());
+        assertEquals(selection(MusicPlaybackCoordinator.Mode.BATTLE, "battle.trainer"), useOriginal.from().orElseThrow());
         assertTrue(useOriginal.to().isEmpty());
 
         var resumeField = coordinator.update(7.0, MusicPlaybackCoordinator.Input.field("field.forest"))

@@ -47,7 +47,7 @@ public final class BetterMusicClientRuntime {
     public BetterMusicClientRuntime(BetterMusicConfigManager configManager, Logger logger) {
         this.configManager = java.util.Objects.requireNonNull(configManager, "configManager");
         this.logger = java.util.Objects.requireNonNull(logger, "logger");
-        this.battleSampler = new Cobblemon173BattleMusicSampler(logger);
+        this.battleSampler = new Cobblemon173BattleMusicSampler();
     }
 
     public void register() {

@@ -37,10 +37,6 @@ final class DefaultMusicConfigResourceTest {
             java.util.List.of("battle/legendary/generic_legendary_battle.ogg"),
             config.battle().legendary().orElseThrow().tracks()
         );
-        assertEquals(3, config.battle().roles().get("gym").tracks().size());
-        assertEquals(1, config.battle().roles().get("rival").tracks().size());
-        assertEquals(1, config.battle().roles().get("elite").tracks().size());
-        assertEquals(1, config.battle().roles().get("champion").tracks().size());
         assertEquals(
             java.util.Set.of("cobblemon:hooh"),
             pokemonRule(config, "cobblemon:hooh").species()

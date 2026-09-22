@@ -66,16 +66,6 @@
         "battle/pvp/xy_elite_four_battle.ogg"
       ]
     },
-    "roles": {
-      "champion": "battle/champion/oras_champion_battle.ogg",
-      "elite": "battle/elite/unova_elite_four_battle.ogg",
-      "gym": [
-        "battle/gym/galar_gym_leader_battle.ogg",
-        "battle/gym/oras_gym_leader_battle.ogg",
-        "battle/gym/unova_gym_leader_battle.ogg"
-      ],
-      "rival": "battle/rival/unova_rival_battle.ogg"
-    },
     "legendary": "battle/legendary/generic_legendary_battle.ogg",
     "ultraBeast": "battle/ultra_beast/sm_ultra_beast_battle.ogg",
     "pokemon": [

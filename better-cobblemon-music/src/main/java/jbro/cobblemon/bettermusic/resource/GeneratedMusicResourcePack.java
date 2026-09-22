@@ -111,7 +111,6 @@ public final class GeneratedMusicResourcePack {
         add(result, battle.trainer());
         add(result, battle.pvp());
         battle.content().values().forEach(playlist -> add(result, playlist));
-        battle.roles().values().forEach(playlist -> add(result, playlist));
         battle.legendary().ifPresent(playlist -> add(result, playlist));
         battle.ultraBeast().ifPresent(playlist -> add(result, playlist));
         battle.pokemon().forEach(rule -> add(result, rule.playlist()));

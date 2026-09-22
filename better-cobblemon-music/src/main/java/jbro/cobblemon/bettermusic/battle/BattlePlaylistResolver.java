@@ -6,9 +6,6 @@ import jbro.cobblemon.bettermusic.config.BattleMusicConfig;
 import jbro.cobblemon.bettermusic.config.PlaylistDefinition;
 
 public final class BattlePlaylistResolver {
-    private static final java.util.List<String> ROLE_PRIORITY = java.util.List.of(
-        "champion", "elite", "gym", "rival"
-    );
     private final BattleMusicConfig config;
 
     public BattlePlaylistResolver(BattleMusicConfig config) {
@@ -41,12 +38,6 @@ public final class BattlePlaylistResolver {
         }
 
         if (context.type() == BattleMusicConfig.BattleType.TRAINER) {
-            for (String role : ROLE_PRIORITY) {
-                PlaylistDefinition playlist = config.roles().get(role);
-                if (playlist != null && context.trainerRoles().contains(role)) {
-                    return withBaseFallback(context, new Selection("battle.role:" + role, playlist));
-                }
-            }
             return baseSelection(context.type());
         }
 

@@ -76,8 +76,10 @@ Mod Menu와 Cloth Config가 필요하며, 둘이 없어도 JSON 설정과 모드
 ### 선곡 순서
 
 - 필드: 차원 → 정확한 바이옴 → 지하 → 바이옴 태그 → `biomePathContains` → 기본곡
-- 전투: 포켓몬 규칙 → 콘텐츠 ID → RCT 역할 → 야생 특수 분류 → 야생·트레이너·PvP 기본곡
-- RCT 역할 키: `champion`, `elite`, `gym`, `rival`
+- 전투: 포켓몬 규칙 → 콘텐츠 ID → 야생 특수 분류 → 야생·트레이너·PvP 기본곡
+
+RCT 트레이너 역할별 선곡은 지원하지 않습니다. NPC 상대는 모두 `battle.trainer`를 사용합니다.
+이전 설정의 `battle.roles` 또는 `battle.gym` 항목은 제거한 뒤 다시 불러와야 합니다.
 
 스키마 2의 `biomeTags`와 `biomePathContains`는 배열에 먼저 적은 항목이 우선합니다. `frozen_river`처럼 구체적인 조건을 `river`보다 앞에 적어 주세요. 스키마 1에서는 기존 객체의 키 순서를 그대로 유지합니다.
 

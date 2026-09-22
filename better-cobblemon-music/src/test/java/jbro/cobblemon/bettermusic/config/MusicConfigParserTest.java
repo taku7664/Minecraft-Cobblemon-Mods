@@ -167,10 +167,6 @@ final class MusicConfigParserTest {
                     "battle/tower_2.ogg"
                   ]
                 },
-                "roles": {
-                  "gym": ["battle/gym_1.ogg", "battle/gym_2.ogg"],
-                  "champion": "battle/champion.ogg"
-                },
                 "pokemon": [
                   {
                     "species": ["uxie", "mesprit", "azelf"],
@@ -193,11 +189,6 @@ final class MusicConfigParserTest {
         assertEquals(
             java.util.List.of("battle/tower_1.ogg", "battle/tower_2.ogg"),
             config.battle().content().get("cobblemon_more_battle_content:battle_tower").tracks()
-        );
-        assertEquals(2, config.battle().roles().get("gym").tracks().size());
-        assertEquals(
-            java.util.List.of("battle/champion.ogg"),
-            config.battle().roles().get("champion").tracks()
         );
         assertEquals(
             java.util.Set.of("cobblemon:uxie", "cobblemon:mesprit", "cobblemon:azelf"),
@@ -263,28 +254,6 @@ final class MusicConfigParserTest {
     }
 
     @Test
-    void acceptsLegacyGymAsARoleButRejectsAnAmbiguousDuplicate() {
-        var legacy = MusicConfigParser.parse(new StringReader(
-            minimalConfig("\"field/plains.ogg\"").replace(
-                "\"pokemon\": []",
-                "\"gym\": \"battle/gym.ogg\", \"pokemon\": []"
-            )
-        ));
-        assertEquals(java.util.List.of("battle/gym.ogg"), legacy.battle().roles().get("gym").tracks());
-
-        var exception = assertThrows(ConfigValidationException.class, () ->
-            MusicConfigParser.parse(new StringReader(
-                minimalConfig("\"field/plains.ogg\"").replace(
-                    "\"pokemon\": []",
-                    "\"gym\": \"battle/legacy.ogg\", "
-                        + "\"roles\": {\"gym\": \"battle/new.ogg\"}, \"pokemon\": []"
-                )
-            ))
-        );
-        assertTrue(exception.getMessage().contains("$.battle.roles.gym"));
-    }
-
-    @Test
     void rejectsTrackPathsThatCannotBecomeMinecraftResourceIds() {
         var exception = assertThrows(ConfigValidationException.class, () ->
             MusicConfigParser.parse(new StringReader(minimalConfig("\"field/My Song.ogg\"")))
@@ -310,18 +279,28 @@ final class MusicConfigParserTest {
     }
 
     @Test
-    void rejectsTrainerRoleKeysThatNoRuntimeAdapterCanProduce() {
-        var exception = assertThrows(ConfigValidationException.class, () ->
+    void rejectsRemovedTrainerRoleConfiguration() {
+        var rolesException = assertThrows(ConfigValidationException.class, () ->
             MusicConfigParser.parse(new StringReader(
                 minimalConfig("\"field/plains.ogg\"").replace(
                     "\"pokemon\": []",
-                    "\"roles\": {\"boss\": \"battle/boss.ogg\"}, \"pokemon\": []"
+                    "\"roles\": {\"champion\": \"battle/champion.ogg\"}, \"pokemon\": []"
                 )
             ))
         );
+        assertTrue(rolesException.getMessage().contains("$.battle.roles"));
+        assertTrue(rolesException.getMessage().contains("unknown property"));
 
-        assertTrue(exception.getMessage().contains("$.battle.roles['boss']"));
-        assertTrue(exception.getMessage().contains("champion, elite, gym, or rival"));
+        var gymException = assertThrows(ConfigValidationException.class, () ->
+            MusicConfigParser.parse(new StringReader(
+                minimalConfig("\"field/plains.ogg\"").replace(
+                    "\"pokemon\": []",
+                    "\"gym\": \"battle/gym.ogg\", \"pokemon\": []"
+                )
+            ))
+        );
+        assertTrue(gymException.getMessage().contains("$.battle.gym"));
+        assertTrue(gymException.getMessage().contains("unknown property"));
     }
 
     private static String minimalConfig(String defaultPlaylistJson) {

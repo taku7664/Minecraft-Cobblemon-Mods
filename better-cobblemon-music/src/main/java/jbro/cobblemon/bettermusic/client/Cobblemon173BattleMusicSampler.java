@@ -17,15 +17,8 @@ import jbro.cobblemon.bettermusic.battle.BattleOpponentSideSelector;
 import jbro.cobblemon.bettermusic.config.BattleMusicConfig;
 import jbro.cobblemon.bettermusic.api.BattleMusicContentProviders;
 import net.minecraft.client.Minecraft;
-import org.slf4j.Logger;
 
 public final class Cobblemon173BattleMusicSampler {
-    private final RctTrainerRoleAdapter rctRoles;
-
-    public Cobblemon173BattleMusicSampler(Logger logger) {
-        this.rctRoles = new RctTrainerRoleAdapter(logger);
-    }
-
     public Optional<BattleMusicContext> sample(Minecraft client) {
         if (client.player == null) {
             return Optional.empty();
@@ -59,7 +52,6 @@ public final class Cobblemon173BattleMusicSampler {
         }
 
         Set<String> species = new LinkedHashSet<>();
-        Set<String> trainerRoles = new LinkedHashSet<>();
         Set<BattleMusicContext.Label> labels = new LinkedHashSet<>();
         boolean wild = false;
         boolean npc = false;
@@ -67,9 +59,6 @@ public final class Cobblemon173BattleMusicSampler {
             for (ClientBattleActor actor : side.getActors()) {
                 wild |= actor.getType() == ActorType.WILD;
                 npc |= actor.getType() == ActorType.NPC;
-                if (actor.getType() == ActorType.NPC) {
-                    rctRoles.resolve(client, actor).ifPresent(trainerRoles::add);
-                }
             }
         }
 
@@ -85,7 +74,6 @@ public final class Cobblemon173BattleMusicSampler {
         return Optional.of(new BattleMusicContext(
             type,
             species,
-            trainerRoles,
             labels,
             BattleMusicContentProviders.global().resolve(battle.getBattleId())
         ));

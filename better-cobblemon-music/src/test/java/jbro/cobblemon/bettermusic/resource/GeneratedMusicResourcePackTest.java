@@ -207,7 +207,7 @@ final class GeneratedMusicResourcePackTest {
         var battle = new BattleMusicConfig(
             playlist, playlist, playlist,
             content,
-            Map.of("champion", playlist), Optional.empty(), Optional.empty(),
+            Optional.empty(), Optional.empty(),
             List.of()
         );
         return new BetterMusicConfigSnapshot(playback, field, battle);

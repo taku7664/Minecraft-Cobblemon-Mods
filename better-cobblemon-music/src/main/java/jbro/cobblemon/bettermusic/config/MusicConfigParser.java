@@ -21,7 +21,6 @@ public final class MusicConfigParser {
     private static final Pattern BARE_SPECIES = Pattern.compile("[a-z0-9_.-]+");
     private static final Pattern PATH_TOKEN = Pattern.compile("[a-z0-9_./-]+");
     private static final Pattern MUSIC_RESOURCE_PATH = Pattern.compile("[a-z0-9_./-]+\\.ogg");
-    private static final Set<String> SUPPORTED_TRAINER_ROLES = Set.of("champion", "elite", "gym", "rival");
     private static final double MIN_SCAN_INTERVAL_SECONDS = 0.25;
 
     private MusicConfigParser() {
@@ -157,7 +156,7 @@ public final class MusicConfigParser {
 
     private static BattleMusicConfig parseBattle(JsonObject object, PlaylistDefaults defaults) {
         rejectUnknown(object, "$.battle", Set.of(
-            "wild", "trainer", "pvp", "content", "gym", "roles",
+            "wild", "trainer", "pvp", "content",
             "legendary", "ultraBeast", "pokemon"
         ));
         var wild = playlist(required(object, "wild", "$.battle.wild"), "$.battle.wild", defaults);
@@ -171,44 +170,16 @@ public final class MusicConfigParser {
                 KeyKind.RESOURCE
             )
             : Map.<String, PlaylistDefinition>of();
-        var roles = parseRoles(object, defaults);
         var pokemon = parsePokemon(array(object, "pokemon", "$.battle.pokemon"), defaults);
         return new BattleMusicConfig(
             wild,
             trainer,
             pvp,
             content,
-            roles,
             optionalPlaylist(object, "legendary", "$.battle.legendary", defaults),
             optionalPlaylist(object, "ultraBeast", "$.battle.ultraBeast", defaults),
             pokemon
         );
-    }
-
-    private static Map<String, PlaylistDefinition> parseRoles(JsonObject battle, PlaylistDefaults defaults) {
-        Map<String, PlaylistDefinition> roles = battle.has("roles")
-            ? new LinkedHashMap<>(playlistMap(
-                asObject(battle.get("roles"), "$.battle.roles"),
-                "$.battle.roles",
-                defaults,
-                KeyKind.ROLE_ID
-            ))
-            : new LinkedHashMap<>();
-        for (String role : roles.keySet()) {
-            if (!SUPPORTED_TRAINER_ROLES.contains(role)) {
-                throw error(
-                    "$.battle.roles['" + role + "']",
-                    "must be champion, elite, gym, or rival"
-                );
-            }
-        }
-        if (battle.has("gym")) {
-            if (roles.containsKey("gym")) {
-                throw error("$.battle.roles.gym", "duplicates the legacy $.battle.gym playlist");
-            }
-            roles.put("gym", playlist(battle.get("gym"), "$.battle.gym", defaults));
-        }
-        return Map.copyOf(roles);
     }
 
     private static List<BattleMusicConfig.PokemonRule> parsePokemon(
@@ -410,7 +381,6 @@ public final class MusicConfigParser {
                 ? RESOURCE_ID.matcher(key.substring(1)).matches()
                 : RESOURCE_ID.matcher(key).matches();
             case PATH_TOKEN -> PATH_TOKEN.matcher(key).matches();
-            case ROLE_ID -> BARE_SPECIES.matcher(key).matches();
         };
         if (!valid) {
             throw error(path, "invalid " + kind.description);
@@ -525,8 +495,7 @@ public final class MusicConfigParser {
     private enum KeyKind {
         RESOURCE("resource id"),
         BIOME_SELECTOR("biome id or #tag"),
-        PATH_TOKEN("biome path fragment"),
-        ROLE_ID("trainer role id");
+        PATH_TOKEN("biome path fragment");
 
         private final String description;
 
