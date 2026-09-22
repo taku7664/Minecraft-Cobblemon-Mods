@@ -274,15 +274,43 @@ internal object ShadowTerrainHologramRenderer {
         ) return
 
         destroyTargets()
-        backgroundTarget = TextureTarget(width, height, false, Minecraft.ON_OSX).apply {
-            setFilterMode(GL11.GL_NEAREST)
+        val created = mutableListOf<TextureTarget>()
+        try {
+            val nextBackground = createTarget(width, height, useDepth = false).also(created::add)
+            val nextTerrain = createTarget(width, height, useDepth = true).also(created::add)
+            val nextFinalScene = createTarget(width, height, useDepth = true).also(created::add)
+            backgroundTarget = nextBackground
+            terrainTarget = nextTerrain
+            finalSceneTarget = nextFinalScene
+        } catch (failure: RuntimeException) {
+            releaseCreatedTargets(created)
+            throw failure
+        } catch (failure: LinkageError) {
+            releaseCreatedTargets(created)
+            throw failure
         }
-        terrainTarget = TextureTarget(width, height, true, Minecraft.ON_OSX).apply {
-            setFilterMode(GL11.GL_NEAREST)
+    }
+
+    private fun createTarget(width: Int, height: Int, useDepth: Boolean): TextureTarget {
+        val target = TextureTarget(width, height, useDepth, Minecraft.ON_OSX)
+        try {
+            target.setFilterMode(GL11.GL_NEAREST)
+            return target
+        } catch (failure: RuntimeException) {
+            releaseCreatedTargets(listOf(target))
+            throw failure
+        } catch (failure: LinkageError) {
+            releaseCreatedTargets(listOf(target))
+            throw failure
         }
-        finalSceneTarget = TextureTarget(width, height, true, Minecraft.ON_OSX).apply {
-            setFilterMode(GL11.GL_NEAREST)
-        }
+    }
+
+    private fun releaseCreatedTargets(targets: Iterable<TextureTarget>) {
+        releaseOptionalClientResourcesSafely(
+            resources = targets,
+            release = TextureTarget::destroyBuffers,
+            reportFailure = { warnOnce("Failed to release a partial terrain hologram framebuffer", it) },
+        )
     }
 
     private fun copyFramebuffer(source: FramebufferBindings, destination: TextureTarget, mask: Int) {
@@ -362,11 +390,7 @@ internal object ShadowTerrainHologramRenderer {
         backgroundTarget = null
         terrainTarget = null
         finalSceneTarget = null
-        releaseOptionalClientResourcesSafely(
-            resources = targets,
-            release = TextureTarget::destroyBuffers,
-            reportFailure = { warnOnce("Failed to release a terrain hologram framebuffer", it) },
-        )
+        releaseCreatedTargets(targets)
     }
 
     private fun warnOnce(message: String, failure: Throwable) {
