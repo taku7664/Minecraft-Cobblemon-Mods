@@ -355,7 +355,7 @@ internal object PublicBattleTacticalCalculator {
             target,
             state,
         ) ?: return null
-        val effectivePower = LocalKnownStatMechanics.effectivePower(moveInputs.power, actor, state, candidate)
+        val effectivePower = LocalKnownStatMechanics.effectivePower(moveInputs.powers, actor, state, candidate)
         val knownStab = stab ?: return null
         val knownTypeMultiplier = typeMultiplier ?: return null
         val offensiveStats = if (moveInputs.offensivePokemon.battlePokemonId == actor.battlePokemonId) {

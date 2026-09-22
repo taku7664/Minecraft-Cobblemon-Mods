@@ -11,7 +11,7 @@ internal object LocalPublicMoveDamageInputs {
     enum class CombatStat { ATTACK, DEFENCE, SPECIAL_ATTACK, SPECIAL_DEFENCE }
 
     data class Resolution(
-        val power: Int,
+        val powers: Set<Int>,
         val offensivePokemon: BattlePokemonStateView,
         val offensiveStat: CombatStat,
         val offensiveStage: Int,
@@ -28,17 +28,25 @@ internal object LocalPublicMoveDamageInputs {
         val details = candidate.moveDetails ?: return null
         val id = canonical(candidate.moveId)
         if (isUnresolvedDynamicDamage(candidate)) return null
-        val wholePower = details.power.toInt().takeIf { it > 0 && it.toDouble() == details.power } ?: return null
-        val power = when (id) {
-            "storedpower", "powertrip" -> wholePower + 20 * actor.positiveBoosts()
-            "facade" -> if (actor.statusId != null) wholePower * 2 else wholePower
-            "hex", "infernalparade" -> if (target.statusId != null) wholePower * 2 else wholePower
-            "brine" -> if (target.hpFraction <= 0.5) wholePower * 2 else wholePower
-            "venoshock", "barbbarrage" -> if (canonical(target.statusId) in POISON_STATUSES) wholePower * 2 else wholePower
-            "smellingsalts" -> if (canonical(target.statusId) in PARALYSIS_STATUSES) wholePower * 2 else wholePower
-            "wakeupslap" -> if (canonical(target.statusId) in SLEEP_STATUSES) wholePower * 2 else wholePower
+        val dynamicPower = speedRatioPower(id, actor, target, state)
+        val wholePower = details.power.toInt().takeIf { it > 0 && it.toDouble() == details.power }
+        val fixedPower = when (id) {
+            "storedpower", "powertrip" -> wholePower?.plus(20 * actor.positiveBoosts())
+            "facade" -> wholePower?.let { if (actor.statusId != null) it * 2 else it }
+            "hex", "infernalparade" -> wholePower?.let { if (target.statusId != null) it * 2 else it }
+            "brine" -> wholePower?.let { if (target.hpFraction <= 0.5) it * 2 else it }
+            "venoshock", "barbbarrage" -> wholePower?.let {
+                if (canonical(target.statusId) in POISON_STATUSES) it * 2 else it
+            }
+            "smellingsalts" -> wholePower?.let {
+                if (canonical(target.statusId) in PARALYSIS_STATUSES) it * 2 else it
+            }
+            "wakeupslap" -> wholePower?.let {
+                if (canonical(target.statusId) in SLEEP_STATUSES) it * 2 else it
+            }
             else -> wholePower
         }
+        val powers = dynamicPower ?: fixedPower?.let(::setOf) ?: return null
         val offensivePokemon = if (id == "foulplay") target else actor
         val offensiveStat = (
             overrideStat(details, "override_offensive_stat") ?: when {
@@ -55,7 +63,7 @@ internal object LocalPublicMoveDamageInputs {
             }
             ).swapDefencesIfWonderRoom(state)
         return Resolution(
-            power = power,
+            powers = powers,
             offensivePokemon = offensivePokemon,
             offensiveStat = offensiveStat,
             offensiveStage = offensivePokemon.stage(offensiveStat),
@@ -95,6 +103,57 @@ internal object LocalPublicMoveDamageInputs {
 
     private fun BattlePokemonStateView.positiveBoosts(): Int = statStages.values.sumOf { it.coerceAtLeast(0) }
 
+    /**
+     * Public callback powers derived from current Speed.
+     *
+     * [LocalPublicTurnOrder.effectiveSpeed] mirrors Showdown's `getStat('spe')`: stages and public
+     * Speed modifiers are included, while Trick Room is deliberately applied only by the action-order
+     * comparison. That distinction is load-bearing for Electro Ball and Gyro Ball.
+     */
+    private fun speedRatioPower(
+        id: String,
+        actor: BattlePokemonStateView,
+        target: BattlePokemonStateView,
+        state: BattleStateView,
+    ): Set<Int>? {
+        if (id !in SPEED_RATIO_MOVES) return null
+        val actorSpeed = LocalPublicTurnOrder.effectiveSpeed(state, actor) ?: return null
+        val targetSpeed = LocalPublicTurnOrder.effectiveSpeed(state, target) ?: return null
+        return when (id) {
+            "electroball" -> electroBallPowers(
+                minimum = electroBallPower(actorSpeed.first, targetSpeed.second),
+                maximum = electroBallPower(actorSpeed.second, targetSpeed.first),
+            )
+            "gyroball" -> boundarySensitivePowers(
+                minimum = gyroBallPower(actorSpeed.second, targetSpeed.first),
+                maximum = gyroBallPower(actorSpeed.first, targetSpeed.second),
+            )
+            else -> null
+        }
+    }
+
+    private fun electroBallPowers(minimum: Int, maximum: Int): Set<Int> =
+        ELECTRO_BALL_POWERS.filterTo(linkedSetOf()) { it in minimum..maximum }
+
+    /** Endpoints plus Technician's only discontinuity are sufficient for damage-range extrema. */
+    private fun boundarySensitivePowers(minimum: Int, maximum: Int): Set<Int> = buildSet {
+        add(minimum)
+        add(maximum)
+        if (60 in minimum..maximum) add(60)
+        if (61 in minimum..maximum) add(61)
+    }
+
+    private fun electroBallPower(actorSpeed: Int, targetSpeed: Int): Int = when {
+        actorSpeed / targetSpeed >= 4 -> 150
+        actorSpeed / targetSpeed == 3 -> 120
+        actorSpeed / targetSpeed == 2 -> 80
+        actorSpeed / targetSpeed == 1 -> 60
+        else -> 40
+    }
+
+    private fun gyroBallPower(actorSpeed: Int, targetSpeed: Int): Int =
+        ((25L * targetSpeed) / actorSpeed + 1L).coerceAtMost(150L).toInt()
+
     private fun BattlePokemonStateView.stage(stat: CombatStat): Int = when (stat) {
         CombatStat.ATTACK -> stage("attack", "atk")
         CombatStat.DEFENCE -> stage("defence", "defense", "def")
@@ -126,8 +185,11 @@ internal object LocalPublicMoveDamageInputs {
     private val PUBLICLY_RESOLVED_DYNAMIC_MOVES = setOf(
         "storedpower", "powertrip", "facade", "hex", "infernalparade", "brine", "venoshock",
         "barbbarrage", "smellingsalts", "wakeupslap", "round", "fishiousrend", "boltbeak",
-        "assurance", "payback", "avalanche", "revenge",
+        "assurance", "payback", "avalanche", "revenge", "electroball", "gyroball",
     )
+
+    private val SPEED_RATIO_MOVES = setOf("electroball", "gyroball")
+    private val ELECTRO_BALL_POWERS = listOf(40, 60, 80, 120, 150)
 
     /** Fallback for synthetic/older candidates that predate declarative callback flags. */
     private val LEGACY_UNRESOLVED_DYNAMIC_MOVES = setOf(

@@ -63,6 +63,32 @@ internal object ShowdownStandardDamageProjection {
         stab: Double,
         typeMultiplier: Double,
         guaranteedCritical: Boolean = false,
+        spreadMultiplier: Double = 1.0,
+        itemDamageMultiplier: Double = 1.0,
+    ): ShowdownStandardDamageProjectionResult = project(
+        level = level,
+        power = BattleIntegerRange(power, power),
+        attack = attack,
+        defence = defence,
+        targetMaxHp = targetMaxHp,
+        targetHpFraction = targetHpFraction,
+        stab = stab,
+        typeMultiplier = typeMultiplier,
+        guaranteedCritical = guaranteedCritical,
+        spreadMultiplier = spreadMultiplier,
+        itemDamageMultiplier = itemDamageMultiplier,
+    )
+
+    fun project(
+        level: Int,
+        power: BattleIntegerRange,
+        attack: BattleIntegerRange,
+        defence: BattleIntegerRange,
+        targetMaxHp: BattleIntegerRange,
+        targetHpFraction: Double,
+        stab: Double,
+        typeMultiplier: Double,
+        guaranteedCritical: Boolean = false,
         /**
          * Gen 9 reduction for a move that actually lands on more than one target.
          *
@@ -74,7 +100,7 @@ internal object ShowdownStandardDamageProjection {
         itemDamageMultiplier: Double = 1.0,
     ): ShowdownStandardDamageProjectionResult {
         require(level > 0)
-        require(power > 0)
+        require(power.minimum > 0 && power.maximum >= power.minimum)
         require(targetHpFraction.isFinite() && targetHpFraction in 0.0..1.0)
         // 2.0 is the Terastallized case, where the move matches both the original type and the Tera
         // type. Showdown treats it as its own modifier rather than a second application of the 1.5.
@@ -83,11 +109,11 @@ internal object ShowdownStandardDamageProjection {
         require(spreadMultiplier == 1.0 || spreadMultiplier == 0.75)
 
         val minimumRolls = rolls(
-            level, power, attack.minimum, defence.maximum, stab, typeMultiplier, guaranteedCritical,
+            level, power.minimum, attack.minimum, defence.maximum, stab, typeMultiplier, guaranteedCritical,
             spreadMultiplier, itemDamageMultiplier,
         )
         val maximumRolls = rolls(
-            level, power, attack.maximum, defence.minimum, stab, typeMultiplier, guaranteedCritical,
+            level, power.maximum, attack.maximum, defence.minimum, stab, typeMultiplier, guaranteedCritical,
             spreadMultiplier, itemDamageMultiplier,
         )
         val minimumDamage = minimumRolls.min()

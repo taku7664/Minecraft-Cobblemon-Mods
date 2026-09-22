@@ -9,22 +9,29 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 /** Applies deterministic power and stat modifiers whose item or ability is public. */
 internal object LocalKnownStatMechanics {
     fun effectivePower(
-        basePower: Int,
+        basePowers: Set<Int>,
         actor: BattlePokemonStateView,
         state: BattleStateView,
         action: BattleActionCandidate,
-    ): Int {
-        val resolvedBasePower = if (
+    ): BattleIntegerRange {
+        require(basePowers.isNotEmpty())
+        val doubled = (
             ROUND_POWER_DOUBLED_TAG in action.tags ||
             ACTS_BEFORE_TARGET_POWER_DOUBLED_TAG in action.tags ||
             TARGET_ALREADY_ACTED_POWER_DOUBLED_TAG in action.tags ||
             DAMAGED_BY_TARGET_POWER_DOUBLED_TAG in action.tags ||
             DAMAGED_TARGET_POWER_DOUBLED_TAG in action.tags
-        ) basePower * 2 else basePower
-        val technician = if (
-            LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "technician" && resolvedBasePower <= 60
-        ) 1.5 else 1.0
-        return (resolvedBasePower * technician * turnPowerMultiplier(action)).toInt().coerceAtLeast(1)
+        )
+        val doublingMultiplier = if (doubled) 2 else 1
+        val technician = LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "technician"
+        val turnMultiplier = turnPowerMultiplier(action)
+        fun resolve(value: Int): Int {
+            val resolvedBasePower = value * doublingMultiplier
+            val technicianMultiplier = if (technician && resolvedBasePower <= 60) 1.5 else 1.0
+            return (resolvedBasePower * technicianMultiplier * turnMultiplier).toInt().coerceAtLeast(1)
+        }
+        val candidates = basePowers.map(::resolve)
+        return BattleIntegerRange(candidates.min(), candidates.max())
     }
 
     fun turnPowerMultiplier(action: BattleActionCandidate): Double = action.tags
