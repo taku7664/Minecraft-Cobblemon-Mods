@@ -17,8 +17,8 @@ class ShadowHologramRenderIsolationTest {
         )
         val objectBody = networking.substringAfter("internal object ShadowTrainerProjectionNetworking")
 
-        assertTrue(objectBody.substringAfter("fun show").substringBefore("fun hide").contains("catch (exception: RuntimeException)"))
-        assertTrue(objectBody.substringAfter("fun hide").contains("catch (exception: RuntimeException)"))
+        assertTrue(objectBody.substringAfter("fun show").substringBefore("fun hide").contains("runOptionalProjectionSend"))
+        assertTrue(objectBody.substringAfter("fun hide").contains("runOptionalProjectionSend"))
         assertTrue(objectBody.contains("continuing without the optional effect"))
         assertTrue(objectBody.contains("core battle cleanup will continue"))
     }

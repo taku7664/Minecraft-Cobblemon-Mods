@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.internal.shadow
 
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
+import jbro.cobblemon.morebattlecontent.internal.presentation.runOptionalProjectionSend
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.network.RegistryFriendlyByteBuf
@@ -100,45 +101,51 @@ internal object ShadowTrainerProjectionNetworking {
     }
 
     fun show(player: ServerPlayer, battleId: UUID, position: Vec3) {
-        try {
-            if (!ServerPlayNetworking.canSend(player, ShowShadowTrainerPayload.TYPE)) return
-            ServerPlayNetworking.send(
-                player,
-                ShowShadowTrainerPayload(
-                    ShadowTrainerProjection(
-                        battleId = battleId,
-                        profileId = player.gameProfile.id,
-                        profileName = player.gameProfile.name,
-                        x = position.x,
-                        y = position.y,
-                        z = position.z,
-                        yaw = player.yRot + HALF_TURN_DEGREES,
+        runOptionalProjectionSend(
+            action = {
+                if (!ServerPlayNetworking.canSend(player, ShowShadowTrainerPayload.TYPE)) return
+                ServerPlayNetworking.send(
+                    player,
+                    ShowShadowTrainerPayload(
+                        ShadowTrainerProjection(
+                            battleId = battleId,
+                            profileId = player.gameProfile.id,
+                            profileName = player.gameProfile.name,
+                            x = position.x,
+                            y = position.y,
+                            z = position.z,
+                            yaw = player.yRot + HALF_TURN_DEGREES,
+                        ),
                     ),
-                ),
-            )
-        } catch (exception: RuntimeException) {
-            MoreBattleContent.LOGGER.warn(
-                "Trainer hologram show failed for player {} and battle {}; continuing without the optional effect",
-                player.uuid,
-                battleId,
-                exception,
-            )
-        }
+                )
+            },
+            reportFailure = { failure ->
+                MoreBattleContent.LOGGER.warn(
+                    "Trainer hologram show failed for player {} and battle {}; continuing without the optional effect",
+                    player.uuid,
+                    battleId,
+                    failure,
+                )
+            },
+        )
     }
 
     fun hide(player: ServerPlayer, battleId: UUID) {
-        try {
-            if (ServerPlayNetworking.canSend(player, HideShadowTrainerPayload.TYPE)) {
-                ServerPlayNetworking.send(player, HideShadowTrainerPayload(battleId))
-            }
-        } catch (exception: RuntimeException) {
-            MoreBattleContent.LOGGER.warn(
-                "Trainer hologram hide failed for player {} and battle {}; core battle cleanup will continue",
-                player.uuid,
-                battleId,
-                exception,
-            )
-        }
+        runOptionalProjectionSend(
+            action = {
+                if (ServerPlayNetworking.canSend(player, HideShadowTrainerPayload.TYPE)) {
+                    ServerPlayNetworking.send(player, HideShadowTrainerPayload(battleId))
+                }
+            },
+            reportFailure = { failure ->
+                MoreBattleContent.LOGGER.warn(
+                    "Trainer hologram hide failed for player {} and battle {}; core battle cleanup will continue",
+                    player.uuid,
+                    battleId,
+                    failure,
+                )
+            },
+        )
     }
 }
 

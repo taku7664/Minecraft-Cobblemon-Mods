@@ -126,33 +126,39 @@ internal object BattleArenaHologramNetworking {
     }
 
     fun show(player: ServerPlayer, projection: BattleArenaHologramProjection) {
-        try {
-            if (ServerPlayNetworking.canSend(player, ShowBattleArenaHologramPayload.TYPE)) {
-                ServerPlayNetworking.send(player, ShowBattleArenaHologramPayload(projection))
-            }
-        } catch (exception: RuntimeException) {
-            MoreBattleContent.LOGGER.warn(
-                "Arena hologram show failed for player {} and battle {}; continuing without the optional effect",
-                player.uuid,
-                projection.battleId,
-                exception,
-            )
-        }
+        runOptionalProjectionSend(
+            action = {
+                if (ServerPlayNetworking.canSend(player, ShowBattleArenaHologramPayload.TYPE)) {
+                    ServerPlayNetworking.send(player, ShowBattleArenaHologramPayload(projection))
+                }
+            },
+            reportFailure = { failure ->
+                MoreBattleContent.LOGGER.warn(
+                    "Arena hologram show failed for player {} and battle {}; continuing without the optional effect",
+                    player.uuid,
+                    projection.battleId,
+                    failure,
+                )
+            },
+        )
     }
 
     fun hide(player: ServerPlayer, battleId: UUID) {
-        try {
-            if (ServerPlayNetworking.canSend(player, HideBattleArenaHologramPayload.TYPE)) {
-                ServerPlayNetworking.send(player, HideBattleArenaHologramPayload(battleId))
-            }
-        } catch (exception: RuntimeException) {
-            MoreBattleContent.LOGGER.warn(
-                "Arena hologram hide failed for player {} and battle {}; client disconnect cleanup remains available",
-                player.uuid,
-                battleId,
-                exception,
-            )
-        }
+        runOptionalProjectionSend(
+            action = {
+                if (ServerPlayNetworking.canSend(player, HideBattleArenaHologramPayload.TYPE)) {
+                    ServerPlayNetworking.send(player, HideBattleArenaHologramPayload(battleId))
+                }
+            },
+            reportFailure = { failure ->
+                MoreBattleContent.LOGGER.warn(
+                    "Arena hologram hide failed for player {} and battle {}; client disconnect cleanup remains available",
+                    player.uuid,
+                    battleId,
+                    failure,
+                )
+            },
+        )
     }
 }
 
