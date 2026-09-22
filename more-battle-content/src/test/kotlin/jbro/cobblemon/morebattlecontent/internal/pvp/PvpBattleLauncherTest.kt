@@ -191,6 +191,54 @@ class PvpBattleLauncherTest {
     }
 
     @Test
+    fun `fatal placement activation failure still ends the battle and rolls placement back`() {
+        val battleId = UUID.fromString("99999999-9999-9999-9999-999999999999")
+        val failure = AssertionError("fatal activation")
+        val events = ArrayList<String>()
+        val launcher = PvpBattleLauncher(
+            materialize = { playerId, _ -> PvpRegisteredBattleTeamResult.Created(listOf("copy-$playerId")) },
+            runtime = PvpBattleRuntime { PvpBattleLaunchResult.Started(battleId) },
+            placement = PvpBattlePlacement {
+                object : PvpPreparedBattlePlacement {
+                    override fun activate(startedBattleId: UUID): Boolean = throw failure
+
+                    override fun rollback() {
+                        events += "rollback"
+                    }
+                }
+            },
+            abortBattle = { startedBattleId -> events += "abort-$startedBattleId" },
+        )
+
+        assertEquals(failure, assertThrows(AssertionError::class.java) { launcher.launch(request()) })
+        assertEquals(listOf("abort-$battleId", "rollback"), events)
+    }
+
+    @Test
+    fun `fatal abort failure cannot skip placement rollback`() {
+        val battleId = UUID.fromString("99999999-9999-9999-9999-999999999999")
+        val failure = AssertionError("fatal abort")
+        val events = ArrayList<String>()
+        val launcher = PvpBattleLauncher(
+            materialize = { playerId, _ -> PvpRegisteredBattleTeamResult.Created(listOf("copy-$playerId")) },
+            runtime = PvpBattleRuntime { PvpBattleLaunchResult.Started(battleId) },
+            placement = PvpBattlePlacement {
+                object : PvpPreparedBattlePlacement {
+                    override fun activate(startedBattleId: UUID): Boolean = false
+
+                    override fun rollback() {
+                        events += "rollback"
+                    }
+                }
+            },
+            abortBattle = { throw failure },
+        )
+
+        assertEquals(failure, assertThrows(AssertionError::class.java) { launcher.launch(request()) })
+        assertEquals(listOf("rollback"), events)
+    }
+
+    @Test
     fun `activation cleanup failures preserve the activation failure`() {
         val battleId = UUID.fromString("99999999-9999-9999-9999-999999999999")
         val activationFailure = IllegalStateException("activate")
@@ -242,6 +290,31 @@ class PvpBattleLauncherTest {
     }
 
     @Test
+    fun `fatal diagnostics failure cannot replace activation and cleanup failures`() {
+        val battleId = UUID.fromString("99999999-9999-9999-9999-999999999999")
+        val activationFailure = IllegalStateException("activate")
+        val abortFailure = IllegalArgumentException("abort")
+        val diagnosticsFailure = AssertionError("diagnostics")
+        val launcher = PvpBattleLauncher(
+            materialize = { playerId, _ -> PvpRegisteredBattleTeamResult.Created(listOf("copy-$playerId")) },
+            runtime = PvpBattleRuntime { PvpBattleLaunchResult.Started(battleId) },
+            placement = PvpBattlePlacement {
+                object : PvpPreparedBattlePlacement {
+                    override fun activate(startedBattleId: UUID): Boolean = throw activationFailure
+                    override fun rollback() = Unit
+                }
+            },
+            abortBattle = { throw abortFailure },
+            diagnostics = { throw diagnosticsFailure },
+        )
+
+        val thrown = assertThrows(IllegalStateException::class.java) { launcher.launch(request()) }
+
+        assertEquals(activationFailure, thrown)
+        assertEquals(listOf(abortFailure, diagnosticsFailure), thrown.suppressed.toList())
+    }
+
+    @Test
     fun `failed placement preparation prevents battle creation`() {
         var runtimeCalled = false
         val launcher = PvpBattleLauncher(
@@ -276,6 +349,28 @@ class PvpBattleLauncherTest {
         )
 
         assertEquals(failure, assertThrows(NoSuchMethodError::class.java) { launcher.launch(request()) })
+        assertEquals(listOf("rollback"), events)
+    }
+
+    @Test
+    fun `fatal runtime failure rolls prepared placement back before propagating`() {
+        val events = ArrayList<String>()
+        val failure = AssertionError("fatal runtime")
+        val launcher = PvpBattleLauncher(
+            materialize = { playerId, _ -> PvpRegisteredBattleTeamResult.Created(listOf("copy-$playerId")) },
+            runtime = PvpBattleRuntime { throw failure },
+            placement = PvpBattlePlacement {
+                object : PvpPreparedBattlePlacement {
+                    override fun activate(startedBattleId: UUID): Boolean = true
+
+                    override fun rollback() {
+                        events += "rollback"
+                    }
+                }
+            },
+        )
+
+        assertEquals(failure, assertThrows(AssertionError::class.java) { launcher.launch(request()) })
         assertEquals(listOf("rollback"), events)
     }
 

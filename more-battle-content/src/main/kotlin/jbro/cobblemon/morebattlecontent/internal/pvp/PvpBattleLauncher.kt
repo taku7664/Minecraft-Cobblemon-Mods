@@ -92,9 +92,7 @@ internal class PvpBattleLauncher<P>(
         }
         val result = try {
             runtime.start(PvpPreparedBattle(request, first.members, second.members))
-        } catch (failure: RuntimeException) {
-            rollbackAfterRuntimeFailure(preparedPlacement, failure)
-        } catch (failure: LinkageError) {
+        } catch (failure: Throwable) {
             rollbackAfterRuntimeFailure(preparedPlacement, failure)
         }
         if (result !is PvpBattleLaunchResult.Started) {
@@ -105,7 +103,6 @@ internal class PvpBattleLauncher<P>(
         val activated = try {
             preparedPlacement.activate(result.battleId)
         } catch (failure: Throwable) {
-            if (failure !is RuntimeException && failure !is LinkageError) throw failure
             activationFailure = failure
             false
         }
@@ -115,15 +112,23 @@ internal class PvpBattleLauncher<P>(
                 "${result.battleId}: ${failure.message}; aborting the battle"
         } ?: "match ${request.matchId}: lounge placement could not be activated for battle " +
             "${result.battleId}; aborting the battle"
-        try {
+        val cleanupFailure = try {
             cleanupAfterActivationFailure(
                 preparedPlacement = preparedPlacement,
                 activationFailure = activationFailure,
                 abortBattle = { abortBattle(result.battleId) },
             )
-        } finally {
-            reportDiagnosticsSafely(diagnostics, failureMessage)
+            null
+        } catch (failure: Throwable) {
+            failure
         }
+        val fatalActivationFailure = activationFailure?.takeUnless { failure ->
+            failure is RuntimeException || failure is LinkageError
+        }
+        val primaryFailure = cleanupFailure ?: fatalActivationFailure
+        reportDiagnosticsSafely(diagnostics, failureMessage, primaryFailure)
+        cleanupFailure?.let { throw it }
+        fatalActivationFailure?.let { throw it }
         return PvpBattleLaunchResult.Unavailable
     }
 
@@ -134,9 +139,7 @@ internal class PvpBattleLauncher<P>(
         ): Nothing {
             try {
                 preparedPlacement.rollback()
-            } catch (rollbackFailure: RuntimeException) {
-                if (failure !== rollbackFailure) failure.addSuppressed(rollbackFailure)
-            } catch (rollbackFailure: LinkageError) {
+            } catch (rollbackFailure: Throwable) {
                 if (failure !== rollbackFailure) failure.addSuppressed(rollbackFailure)
             }
             throw failure
@@ -162,28 +165,31 @@ internal class PvpBattleLauncher<P>(
 
             try {
                 abortBattle()
-            } catch (cleanupFailure: RuntimeException) {
-                recordCleanupFailure(cleanupFailure)
-            } catch (cleanupFailure: LinkageError) {
+            } catch (cleanupFailure: Throwable) {
                 recordCleanupFailure(cleanupFailure)
             }
             try {
                 preparedPlacement.rollback()
-            } catch (cleanupFailure: RuntimeException) {
-                recordCleanupFailure(cleanupFailure)
-            } catch (cleanupFailure: LinkageError) {
+            } catch (cleanupFailure: Throwable) {
                 recordCleanupFailure(cleanupFailure)
             }
             if (cleanupFailed) throw checkNotNull(failure)
         }
 
-        fun reportDiagnosticsSafely(diagnostics: (String) -> Unit, message: String) {
+        fun reportDiagnosticsSafely(
+            diagnostics: (String) -> Unit,
+            message: String,
+            primaryFailure: Throwable?,
+        ) {
             try {
                 diagnostics(message)
             } catch (_: RuntimeException) {
                 // Diagnostics must never prevent or replace battle cleanup.
             } catch (_: LinkageError) {
                 // Compatibility diagnostics are best-effort at this boundary.
+            } catch (failure: Throwable) {
+                if (primaryFailure == null) throw failure
+                if (primaryFailure !== failure) primaryFailure.addSuppressed(failure)
             }
         }
 
