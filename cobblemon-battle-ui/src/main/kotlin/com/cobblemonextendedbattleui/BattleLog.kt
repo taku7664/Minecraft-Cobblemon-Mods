@@ -92,20 +92,26 @@ object BattleLog {
         "cobblemon.battle.ohko",
         "cobblemon.battle.hit_count",
         "cobblemon.battle.hit_count_singular",
-        "cobblemon.battle.charge",
-        "cobblemon.battle.prepare",
         "cobblemon.battle.cant.recharge",
         "cobblemon.battle.recharge",
-        "cobblemon.battle.cant",
         "cobblemon.battle.notarget",
         "cobblemon.battle.blocked"
     )
+
+    private val MOVE_KEY_PREFIXES = listOf(
+        "cobblemon.battle.prepare.",
+        "cobblemon.battle.cant.",
+        "cobblemon.battle.fail.",
+        "cobblemon.battle.block."
+    )
+
+    private val HEALING_KEYS = setOf("cobblemon.battle.heal")
+    private val HEALING_KEY_PREFIXES = listOf("cobblemon.battle.heal.")
 
     // HP-related keys (damage, healing, fainting)
     private val HP_KEYS = setOf(
         "cobblemon.battle.damage",
         "cobblemon.battle.fainted",
-        "cobblemon.battle.heal",
         "cobblemon.battle.sethp",
         "cobblemon.battle.recoil",
         "cobblemon.battle.drain",
@@ -113,6 +119,11 @@ object BattleLog {
         "cobblemon.battle.blacksludge",
         "cobblemon.battle.shellbell",
         "cobblemon.battle.poisonheal"
+    )
+
+    private val HP_KEY_PREFIXES = listOf(
+        "cobblemon.battle.damage.",
+        "cobblemon.battle.sethp."
     )
 
     // Effect-related keys (stats, status, volatiles)
@@ -128,15 +139,24 @@ object BattleLog {
         "cobblemon.battle.end",    // Volatile status end
         "cobblemon.battle.ability",
         "cobblemon.battle.transform",
+        "cobblemon.battle.formechange",
         "cobblemon.battle.mega",
         "cobblemon.battle.zmove",
-        "cobblemon.battle.terastallize"
+        "cobblemon.battle.zpower",
+        "cobblemon.battle.terastallize",
+        "cobblemon.battle.swapboost",
+        "cobblemon.battle.copyboost",
+        "cobblemon.battle.clearallboost",
+        "cobblemon.battle.clearallnegativeboost",
+        "cobblemon.battle.singleturn",
+        "cobblemon.battle.singlemove"
     )
 
     // Field-related keys (weather, terrain, side conditions)
     private val FIELD_KEY_PREFIXES = listOf(
         "cobblemon.battle.weather",
         "cobblemon.battle.terrain",
+        "cobblemon.battle.fieldactivate",
         "cobblemon.battle.fieldstart",
         "cobblemon.battle.fieldend",
         "cobblemon.battle.sidestart",
@@ -147,11 +167,10 @@ object BattleLog {
     private const val TURN_KEY = "cobblemon.battle.turn"
 
     // Switch-related (categorize as HP since it's about Pokemon state)
-    private val SWITCH_KEYS = setOf(
-        "cobblemon.battle.switch",
-        "cobblemon.battle.drag",
-        "cobblemon.battle.replace",
-        "cobblemon.battle.sendout"
+    private val SWITCH_KEYS = setOf("cobblemon.battle.dragged_out")
+    private val SWITCH_KEY_PREFIXES = listOf(
+        "cobblemon.battle.switch.",
+        "cobblemon.battle.withdraw."
     )
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -339,11 +358,22 @@ object BattleLog {
             // Exact match for moves
             key in MOVE_KEYS -> EntryType.MOVE
 
+            MOVE_KEY_PREFIXES.any { key.startsWith(it) } -> EntryType.MOVE
+
+            // Healing has its own filter and must be checked before generic HP families
+            key in HEALING_KEYS -> EntryType.HEALING
+
+            HEALING_KEY_PREFIXES.any { key.startsWith(it) } -> EntryType.HEALING
+
             // Exact match for HP
             key in HP_KEYS -> EntryType.HP
 
+            HP_KEY_PREFIXES.any { key.startsWith(it) } -> EntryType.HP
+
             // Switch is like HP (Pokemon state change)
             key in SWITCH_KEYS -> EntryType.HP
+
+            SWITCH_KEY_PREFIXES.any { key.startsWith(it) } -> EntryType.HP
 
             // Prefix match for effects
             EFFECT_KEY_PREFIXES.any { key.startsWith(it) } -> EntryType.EFFECT
