@@ -81,6 +81,147 @@ class PublicBattleTacticalCalculatorTest {
     }
 
     @Test
+    fun `body press uses the users defence and defence stage as its offensive stat`() {
+        val weakAttack = BattleCombatStatRangesView.exact(200, 40, 240, 80, 120, 100)
+        val neutral = damage(
+            context(
+                setOf("normal"), true, moveId = "bodypress", moveType = "fighting",
+                damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 80.0, allyStats = weakAttack,
+            ),
+        )
+        val boosted = damage(
+            context(
+                setOf("normal"), true, moveId = "bodypress", moveType = "fighting",
+                damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 80.0, allyStats = weakAttack,
+                allyStages = mapOf("defense" to 2),
+            ),
+        )
+        val ordinary = damage(
+            context(
+                setOf("normal"), true, moveId = "tackle", moveType = "normal",
+                damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 80.0, allyStats = weakAttack,
+            ),
+        )
+        val poisonedGuts = damage(
+            context(
+                setOf("normal"), true, moveId = "bodypress", moveType = "fighting",
+                damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 80.0, allyStats = weakAttack,
+                allyStatus = "psn", allyAbility = "guts",
+            ),
+        )
+
+        assertTrue(neutral.minimum > ordinary.minimum * 4.0)
+        assertTrue(boosted.minimum > neutral.minimum * 1.9)
+        assertEquals(neutral, poisonedGuts)
+    }
+
+    @Test
+    fun `foul play uses the targets attack and attack stage`() {
+        val weakActor = BattleCombatStatRangesView.exact(200, 30, 120, 80, 120, 100)
+        val neutral = damage(
+            context(
+                setOf("normal"), true, moveId = "foulplay", moveType = "dark",
+                damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 95.0, allyStats = weakActor,
+            ),
+        )
+        val boostedTarget = damage(
+            context(
+                setOf("normal"), true, moveId = "foulplay", moveType = "dark",
+                damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 95.0, allyStats = weakActor,
+                opponentStages = mapOf("attack" to 2),
+            ),
+        )
+        val ordinary = damage(
+            context(
+                setOf("normal"), true, moveId = "bite", moveType = "dark",
+                damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 95.0, allyStats = weakActor,
+            ),
+        )
+
+        assertTrue(neutral.minimum > ordinary.minimum * 2.5)
+        assertTrue(boostedTarget.minimum > neutral.minimum * 1.9)
+    }
+
+    @Test
+    fun `stored power resolves its public positive stat stages into base power`() {
+        val neutral = damage(
+            context(
+                setOf("normal"), true, moveId = "storedpower", moveType = "psychic",
+                damageCategory = BattleMoveDamageCategory.SPECIAL, power = 20.0,
+            ),
+        )
+        val boosted = damage(
+            context(
+                setOf("normal"), true, moveId = "storedpower", moveType = "psychic",
+                damageCategory = BattleMoveDamageCategory.SPECIAL, power = 20.0,
+                allyStages = mapOf("special_attack" to 2, "special_defense" to 1, "speed" to -1),
+            ),
+        )
+
+        assertTrue(boosted.minimum > neutral.minimum * 4.5)
+    }
+
+    @Test
+    fun `public status and hp conditions resolve conditional base power`() {
+        val facadePlain = damage(
+            context(
+                setOf("normal"), true, moveId = "facade", moveType = "normal",
+                damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 70.0,
+            ),
+        )
+        val facadeStatused = damage(
+            context(
+                setOf("normal"), true, moveId = "facade", moveType = "normal",
+                damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 70.0, allyStatus = "brn",
+            ),
+        )
+        val hexPlain = damage(
+            context(
+                setOf("fire"), true, moveId = "hex", moveType = "ghost",
+                damageCategory = BattleMoveDamageCategory.SPECIAL, power = 65.0,
+            ),
+        )
+        val hexStatused = damage(
+            context(
+                setOf("fire"), true, moveId = "hex", moveType = "ghost",
+                damageCategory = BattleMoveDamageCategory.SPECIAL, power = 65.0, opponentStatus = "par",
+            ),
+        )
+        val brinePlain = damage(
+            context(
+                setOf("normal"), true, moveId = "brine", moveType = "water",
+                damageCategory = BattleMoveDamageCategory.SPECIAL, power = 65.0,
+            ),
+        )
+        val brineWeakened = damage(
+            context(
+                setOf("normal"), true, moveId = "brine", moveType = "water",
+                damageCategory = BattleMoveDamageCategory.SPECIAL, power = 65.0, opponentHp = 0.5,
+            ),
+        )
+
+        assertTrue(facadeStatused.minimum > facadePlain.minimum * 1.9)
+        assertTrue(hexStatused.minimum > hexPlain.minimum * 1.9)
+        assertTrue(brineWeakened.minimum > brinePlain.minimum * 1.9)
+    }
+
+    @Test
+    fun `unavailable cumulative inputs do not publish a false exact rage fist range`() {
+        val facts = requireNotNull(
+            PublicBattleTacticalCalculator.calculate(
+                context(
+                    setOf("normal"), true, moveId = "ragefist", moveType = "ghost",
+                    damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 50.0,
+                ),
+            ).candidates.single().facts,
+        )
+
+        assertNull(facts.standardDamageFractionRange)
+        assertNull(facts.standardKnockoutAssessment)
+        assertTrue(BattleCalculationUnknown.DAMAGE_ENGINE in facts.unknowns)
+    }
+
+    @Test
     fun `unresolved mechanics stay unprojected while spread moves use their explicit public target`() {
         val mechanicFacts = requireNotNull(
             PublicBattleTacticalCalculator.calculate(
@@ -256,6 +397,13 @@ class PublicBattleTacticalCalculatorTest {
         moveType: String = "fire",
         damageCategory: BattleMoveDamageCategory = BattleMoveDamageCategory.SPECIAL,
         opponentStages: Map<String, Int> = emptyMap(),
+        moveId: String = "flamethrower",
+        power: Double = 90.0,
+        allyStats: BattleCombatStatRangesView = ownStats(),
+        allyStatus: String? = null,
+        opponentStatus: String? = null,
+        opponentHp: Double = 1.0,
+        allyAbility: String? = null,
     ): BattleDecisionContext {
         val ally = UUID.randomUUID()
         val opponent = UUID.randomUUID()
@@ -270,8 +418,10 @@ class PublicBattleTacticalCalculatorTest {
                         ally,
                         BattleSide.ALLY,
                         setOf("fire"),
-                        ownStats().takeIf { withCombatStats },
+                        allyStats.takeIf { withCombatStats },
                         allyStages,
+                        statusId = allyStatus,
+                        knownAbilityId = allyAbility,
                     ),
                     pokemon(
                         opponent,
@@ -279,6 +429,8 @@ class PublicBattleTacticalCalculatorTest {
                         opponentTypes,
                         opponentStats().takeIf { withCombatStats },
                         opponentStages,
+                        statusId = opponentStatus,
+                        hpFraction = opponentHp,
                     ),
                 ),
                 field = BattleFieldStateView.empty(),
@@ -292,13 +444,13 @@ class PublicBattleTacticalCalculatorTest {
                     kind = BattleActionKind.USE_MOVE,
                     actorSlot = 0,
                     moveSlot = 0,
-                    moveId = "cobblemon:flamethrower",
+                    moveId = "cobblemon:$moveId",
                     targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
                     mechanic = mechanic,
                     moveDetails = BattleMoveCandidateView(
                         typeId = moveType,
                         damageCategory = damageCategory,
-                        power = 90.0,
+                        power = power,
                         accuracy = 80.0,
                         priority = 0,
                         currentPp = 10,
@@ -317,6 +469,9 @@ class PublicBattleTacticalCalculatorTest {
         types: Set<String>,
         combatStats: BattleCombatStatRangesView?,
         statStages: Map<String, Int> = emptyMap(),
+        statusId: String? = null,
+        hpFraction: Double = 1.0,
+        knownAbilityId: String? = null,
     ) = BattlePokemonStateView(
         battlePokemonId = id,
         side = side,
@@ -324,11 +479,11 @@ class PublicBattleTacticalCalculatorTest {
         speciesId = "showdown:test",
         formId = null,
         level = 50,
-        hpFraction = 1.0,
-        statusId = null,
+        hpFraction = hpFraction,
+        statusId = statusId,
         statStages = statStages,
         knownMoveIds = emptySet(),
-        knownAbilityId = null,
+        knownAbilityId = knownAbilityId,
         knownHeldItemId = null,
         fainted = false,
         knownTypeIds = types,
@@ -345,6 +500,10 @@ class PublicBattleTacticalCalculatorTest {
         specialDefence = BattleIntegerRange(100, 170),
         speed = BattleIntegerRange(90, 160),
         knowledge = BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
+    )
+
+    private fun damage(context: BattleDecisionContext) = requireNotNull(
+        PublicBattleTacticalCalculator.calculate(context).candidates.single().facts?.standardDamageFractionRange,
     )
 
     private fun singleEffect(kind: BattleMoveEffectKind) = BattleMoveEffectsView(

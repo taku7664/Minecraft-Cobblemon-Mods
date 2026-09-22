@@ -33,7 +33,7 @@ internal object LocalPublicTurnOrder {
         val moveId = canonical(action.moveId.orEmpty())
         val healingMove = details.effects?.effects.orEmpty().any {
             it.kind == BattleMoveEffectKind.HEAL_FRACTION || it.kind == BattleMoveEffectKind.DRAIN_FRACTION
-        }
+        } || "heal" in details.effects?.mechanicFlags.orEmpty()
         val modifier = when {
             ability == PRANKSTER && details.damageCategory == BattleMoveDamageCategory.STATUS -> 1
             ability == GALE_WINGS && actor?.hpFraction == 1.0 && canonical(details.typeId) == FLYING -> 1

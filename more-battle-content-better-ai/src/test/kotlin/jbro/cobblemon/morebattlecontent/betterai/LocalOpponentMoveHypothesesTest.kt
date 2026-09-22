@@ -11,6 +11,31 @@ import org.junit.jupiter.api.Test
 
 class LocalOpponentMoveHypothesesTest {
     @Test
+    fun `dynamic ability priority is retained under a hypothetical move cap`() {
+        val ally = BattlePokemonStateView(UUID.randomUUID(), BattleSide.ALLY, 0, "target", null, 50,
+            1.0, null, emptyMap(), emptySet(), null, null, false, setOf("normal"))
+        val galeWings = BattlePokemonStateView(UUID.randomUUID(), BattleSide.OPPONENT, 0, "talonflame", null, 50,
+            1.0, null, emptyMap(), emptySet(), "galewings", null, false, setOf("fire", "flying"))
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 1, listOf(ally, galeWings),
+            BattleFieldStateView.empty(), BattleSide.entries.associateWith { 1 }, emptyList(), emptyList())
+        val flying = details.copy(typeId = "flying", power = 60.0, priority = 0)
+        val slow = details.copy(typeId = "normal", power = 400.0, priority = 0)
+        val source = BattlePublicActionCatalogView(emptyList(), candidatePools = listOf(
+            BattlePublicMoveCandidatePoolView(galeWings.battlePokemonId, "talonflame", null,
+                setOf("airslash", "hyperbeam"), "fixture", mapOf("airslash" to flying, "hyperbeam" to slow))))
+
+        val actions = PublicFutureActionFactory.actions(
+            state, BattleSide.OPPONENT, source,
+            includeMoveHypotheses = true,
+            hypotheticalMoveLimitPerSlot = 1,
+            hypotheticalPriorityReservation = LocalHypothesisPriorityReservation.SINGLE,
+            unknownMovePokemonIds = setOf(galeWings.battlePokemonId),
+        )
+
+        assertEquals(setOf("airslash"), actions.filter { it.kind == BattleActionKind.USE_MOVE }.mapNotNull { it.moveId }.toSet())
+    }
+
+    @Test
     fun `priority reservation retains targets and respects entry PP and committed slots`() {
         val allies = (0..1).map { slot -> BattlePokemonStateView(UUID.randomUUID(), BattleSide.ALLY,
             slot, "target", null, 50, 1.0, null, emptyMap(), emptySet(), null, null, false) }

@@ -165,11 +165,12 @@ internal object LocalTacticalScorer {
         } else {
             unprojectedPressure(candidate, context, details, facts, tuning)
         }
+        val effectivePriority = LocalPublicTurnOrder.effectivePriority(context.state, BattleSide.ALLY, candidate)
         val priorityBonus = when {
-            details.priority <= 0 -> details.priority * 2.0
-            opponentActiveHp(context) <= CRITICAL_HP -> details.priority * 25.0
-            allyActiveHp(context) <= CRITICAL_HP -> details.priority * 8.0
-            else -> details.priority * 2.0
+            effectivePriority <= 0 -> effectivePriority * 2.0
+            opponentActiveHp(context) <= CRITICAL_HP -> effectivePriority * 25.0
+            allyActiveHp(context) <= CRITICAL_HP -> effectivePriority * 8.0
+            else -> effectivePriority * 2.0
         }
         val knockoutBonus = LocalTacticalSituationalEvaluator.knockoutAdjustment(candidate, accuracy, tuning, context)
         // A spread move's other targets. Zero for every single-target move, so this changes nothing

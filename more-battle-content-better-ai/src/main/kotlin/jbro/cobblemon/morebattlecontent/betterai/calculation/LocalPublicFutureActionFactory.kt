@@ -1,7 +1,8 @@
 package jbro.cobblemon.morebattlecontent.betterai.calculation
 
-import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalHypothesisPriorityReservation
 import jbro.cobblemon.morebattlecontent.api.ai.*
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalHypothesisPriorityReservation
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffectiveness
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveMoveUseKey
@@ -73,7 +74,7 @@ internal object PublicFutureActionFactory {
         // Group only by declared requirements: missing metadata is not proof of unconditional success.
         val priorityCandidates = ordered.asSequence().filter {
             "hypothetical_public_move" in it.tags && it.kind == BattleActionKind.USE_MOVE &&
-                it.moveDetails?.let { details -> details.priority > 0 &&
+                it.moveDetails?.let { details -> LocalPublicTurnOrder.effectivePriority(state, side, it) > 0 &&
                     details.damageCategory != BattleMoveDamageCategory.STATUS } == true
         }
         val priorityResponses = when (hypotheticalPriorityReservation) {
@@ -162,7 +163,8 @@ internal object PublicFutureActionFactory {
                     if (target.knownTypeIds.isEmpty()) 1.0
                     else StandardTypeEffectiveness.multiplier(details.typeId, target.knownTypeIds)
                 } ?: 1.0
-                details.power * details.accuracy / 100.0 * stab * matchup + details.priority * 5.0
+                details.power * details.accuracy / 100.0 * stab * matchup +
+                    LocalPublicTurnOrder.effectivePriority(state, side, action) * 5.0
             }
         }
         BattleActionKind.SWITCH -> action.switchPokemonId?.let { id ->

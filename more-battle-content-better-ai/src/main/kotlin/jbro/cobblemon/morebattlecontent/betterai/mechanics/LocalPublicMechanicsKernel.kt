@@ -32,6 +32,13 @@ internal object LocalPublicMechanicsKernel {
         val ignoresAbility = actorAbility in ABILITY_IGNORING_ABILITIES ||
             actorAbility == MYCELIUM_MIGHT && details.damageCategory == BattleMoveDamageCategory.STATUS ||
             details.effects?.effects?.any { it.kind == BattleMoveEffectKind.IGNORE_ABILITY } == true
+        if (specialTargetImmunity(candidate, context, actingSide, target, actorAbility, ignoresAbility)) {
+            return LocalPublicMoveProjection(
+                knownDamageMultiplier = 0.0,
+                targetHpFraction = target.hpFraction,
+                publiclyNullified = true,
+            )
+        }
         if (priorityMoveBlocked(candidate, context, actingSide, target, ignoresAbility)) {
             return LocalPublicMoveProjection(
                 knownDamageMultiplier = 0.0,
@@ -102,6 +109,26 @@ internal object LocalPublicMechanicsKernel {
         )
     }
 
+    private fun specialTargetImmunity(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        actingSide: BattleSide,
+        target: BattlePokemonStateView,
+        actorAbility: String?,
+        ignoresAbility: Boolean,
+    ): Boolean {
+        if (target.side == actingSide || !targetsOpponent(candidate, actingSide)) return false
+        val details = candidate.moveDetails ?: return false
+        val types = target.knownTypeIds.mapTo(linkedSetOf(), ::canonical)
+        if (actorAbility == PRANKSTER && details.damageCategory == BattleMoveDamageCategory.STATUS && DARK in types) {
+            return true
+        }
+        if (POWDER_FLAG !in details.effects?.mechanicFlags.orEmpty()) return false
+        val ability = publicAbility(target, context)
+        val item = canonicalOrNull(target.knownHeldItemId)
+        return GRASS in types || item == SAFETY_GOGGLES || !ignoresAbility && ability == OVERCOAT
+    }
+
     private fun priorityMoveBlocked(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
@@ -111,13 +138,7 @@ internal object LocalPublicMechanicsKernel {
     ): Boolean {
         if (target.side == actingSide) return false
         if (LocalPublicTurnOrder.effectivePriority(context.state, actingSide, candidate) <= 0) return false
-        val moveId = canonicalOrNull(candidate.moveId)
-        val pattern = candidate.moveDetails?.targetPattern
-        val explicitlyHostile = candidate.targets.any { it.side != actingSide }
-        val targetsOpponents = explicitlyHostile || pattern in HOSTILE_TARGET_PATTERNS ||
-            pattern == BattleMoveTargetPattern.ALL_ACTIVE &&
-            moveId in TARGET_ALL_PRIORITY_BLOCK_EXCEPTIONS
-        if (!targetsOpponents) return false
+        if (!targetsOpponent(candidate, actingSide)) return false
         val psychicTerrain = canonicalOrNull(context.state.field.terrain?.effectId) == PSYCHIC_TERRAIN
         if (psychicTerrain && LocalPublicTurnOrder.grounded(context.state, target)) return true
         if (ignoresAbility) return false
@@ -125,6 +146,13 @@ internal object LocalPublicMechanicsKernel {
             it.side == target.side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 &&
                 publicAbility(it, context) in PRIORITY_BLOCKING_ABILITIES
         }
+    }
+
+    private fun targetsOpponent(candidate: BattleActionCandidate, actingSide: BattleSide): Boolean {
+        val moveId = canonicalOrNull(candidate.moveId)
+        val pattern = candidate.moveDetails?.targetPattern
+        return candidate.targets.any { it.side != actingSide } || pattern in HOSTILE_TARGET_PATTERNS ||
+            pattern == BattleMoveTargetPattern.ALL_ACTIVE && moveId in TARGET_ALL_PRIORITY_BLOCK_EXCEPTIONS
     }
 
     private fun projectStatusMove(
@@ -293,6 +321,10 @@ internal object LocalPublicMechanicsKernel {
     )
     private val ABILITY_IGNORING_ABILITIES = setOf("moldbreaker", "teravolt", "turboblaze")
     private const val MYCELIUM_MIGHT = "myceliummight"
+    private const val PRANKSTER = "prankster"
+    private const val POWDER_FLAG = "powder"
+    private const val SAFETY_GOGGLES = "safetygoggles"
+    private const val OVERCOAT = "overcoat"
     private val PRIORITY_BLOCKING_ABILITIES = setOf("armortail", "queenlymajesty", "dazzling")
     private const val PSYCHIC_TERRAIN = "psychicterrain"
     private val HOSTILE_TARGET_PATTERNS = setOf(
@@ -321,6 +353,7 @@ internal object LocalPublicMechanicsKernel {
     private const val WATER = "water"
     private const val ELECTRIC = "electric"
     private const val GRASS = "grass"
+    private const val DARK = "dark"
     private const val ICE = "ice"
     private const val GHOST = "ghost"
     private const val POISON = "poison"

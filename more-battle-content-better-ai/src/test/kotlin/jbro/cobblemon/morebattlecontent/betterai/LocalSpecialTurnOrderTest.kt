@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalSituationalEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
@@ -79,6 +80,25 @@ class LocalSpecialTurnOrderTest {
                 state(terrain = "grassyterrain"),
                 BattleSide.ALLY,
                 grassyGlide,
+            ),
+        )
+        val strengthSap = move(
+            "strengthsap",
+            "grass",
+            BattleMoveDamageCategory.STATUS,
+            effects = BattleMoveEffectsView(
+                BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                emptyList(),
+                scriptedBehavior = true,
+                mechanicFlags = setOf("heal"),
+            ),
+        )
+        assertEquals(
+            3,
+            LocalPublicTurnOrder.effectivePriority(
+                state(allyAbility = "triage"),
+                BattleSide.ALLY,
+                strengthSap,
             ),
         )
     }
@@ -191,6 +211,69 @@ class LocalSpecialTurnOrderTest {
         )
     }
 
+    @Test
+    fun `prankster status moves fail against opposing dark types`() {
+        val thunderWave = move(
+            "thunderwave", "electric", BattleMoveDamageCategory.STATUS,
+            effects = statusEffects("par"),
+        )
+
+        assertTrue(
+            LocalPublicMechanicsKernel.projectMove(
+                thunderWave,
+                context(state(allyAbility = "prankster", opponentTypes = setOf("dark")), thunderWave),
+            ).publiclyNullified,
+        )
+        assertEquals(
+            null,
+            PublicBattleTacticalCalculator.calculate(
+                context(state(allyAbility = "prankster", opponentTypes = setOf("dark")), thunderWave),
+            ).candidates.single().facts?.statusEffectProbability,
+        )
+        assertFalse(
+            LocalPublicMechanicsKernel.projectMove(
+                thunderWave,
+                context(state(opponentTypes = setOf("dark")), thunderWave),
+            ).publiclyNullified,
+        )
+    }
+
+    @Test
+    fun `powder moves respect grass overcoat and safety goggles immunity`() {
+        val sleepPowder = move(
+            "sleeppowder", "grass", BattleMoveDamageCategory.STATUS,
+            effects = statusEffects("slp", setOf("powder")),
+        )
+
+        assertTrue(LocalPublicMechanicsKernel.projectMove(
+            sleepPowder, context(state(opponentTypes = setOf("grass")), sleepPowder),
+        ).publiclyNullified)
+        assertEquals(
+            null,
+            PublicBattleTacticalCalculator.calculate(
+                context(state(opponentTypes = setOf("grass")), sleepPowder),
+            ).candidates.single().facts?.statusEffectProbability,
+        )
+        assertTrue(LocalPublicMechanicsKernel.projectMove(
+            sleepPowder, context(state(opponentAbility = "overcoat"), sleepPowder),
+        ).publiclyNullified)
+        assertTrue(LocalPublicMechanicsKernel.projectMove(
+            sleepPowder, context(state(opponentItem = "safetygoggles"), sleepPowder),
+        ).publiclyNullified)
+    }
+
+    @Test
+    fun `root score uses effective rather than template priority`() {
+        val braveBird = move("bravebird", "flying", BattleMoveDamageCategory.PHYSICAL)
+        val ordinary = LocalTacticalScorer.score(braveBird, context(state(), braveBird))
+        val galeWings = LocalTacticalScorer.score(
+            braveBird,
+            context(state(allyAbility = "galewings"), braveBird),
+        )
+
+        assertTrue(galeWings > ordinary)
+    }
+
     private fun effects(kind: BattleMoveEffectKind) = BattleMoveEffectsView(
         coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
         effects = listOf(
@@ -203,7 +286,7 @@ class LocalSpecialTurnOrderTest {
         scriptedBehavior = false,
     )
 
-    private fun statusEffects(statusId: String) = BattleMoveEffectsView(
+    private fun statusEffects(statusId: String, flags: Set<String> = emptySet()) = BattleMoveEffectsView(
         coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
         effects = listOf(
             BattleMoveEffectView(
@@ -214,6 +297,7 @@ class LocalSpecialTurnOrderTest {
             ),
         ),
         scriptedBehavior = false,
+        mechanicFlags = flags,
     )
 
     private fun move(
@@ -248,6 +332,7 @@ class LocalSpecialTurnOrderTest {
         allyItem: String? = null,
         allyHp: Double = 1.0,
         opponentAbility: String? = null,
+        opponentItem: String? = null,
         opponentTypes: Set<String> = setOf("normal"),
         terrain: String? = null,
         room: String? = null,
@@ -257,7 +342,7 @@ class LocalSpecialTurnOrderTest {
         turn = 2,
         pokemon = listOf(
             mon(BattleSide.ALLY, allyAbility, allyItem, allyHp, setOf("normal"), 80),
-            mon(BattleSide.OPPONENT, opponentAbility, null, 1.0, opponentTypes, 120),
+            mon(BattleSide.OPPONENT, opponentAbility, opponentItem, 1.0, opponentTypes, 120),
         ),
         field = BattleFieldStateView(
             weather = null,
