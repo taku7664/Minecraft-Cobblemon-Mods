@@ -249,8 +249,7 @@ object PanelConfig {
                 showOpponentSpeedRange = showOpponentSpeedRange,
                 showBaseCritRate = showBaseCritRate
             )
-            configFile.parentFile?.mkdirs()
-            configFile.writeText(gson.toJson(data))
+            AtomicTextFileWriter.write(configFile.toPath(), gson.toJson(data))
             CobblemonExtendedBattleUI.LOGGER.debug("PanelConfig: Saved config")
         } catch (e: Exception) {
             CobblemonExtendedBattleUI.LOGGER.warn("PanelConfig: Failed to save config: ${e.message}")
