@@ -63,7 +63,7 @@ internal class PvpSessionService<P>(
     private val snapshots: PvpSessionSnapshots<P>,
     private val launcher: PvpBattleLauncher<P>,
     private val rules: PvpRulesPreset = PvpRulesPreset.champions(),
-    private val currentTimeMillis: () -> Long = System::currentTimeMillis,
+    private val timeSource: PvpTimeSource = SystemPvpTimeSource,
 ) {
     private val challenges = PvpChallengeService()
     private val matches = LinkedHashMap<UUID, PvpMatchSession>()
@@ -88,7 +88,7 @@ internal class PvpSessionService<P>(
             timers[matchId] = PvpMatchTimer(
                 setOf(request.challengerId, request.opponentId),
                 rules,
-                currentTimeMillis,
+                timeSource,
             ).also(PvpMatchTimer::beginEntrySelection)
         }
         return result

@@ -2,6 +2,18 @@ package jbro.cobblemon.morebattlecontent.internal.pvp
 
 import java.util.Collections
 import java.util.UUID
+import java.util.concurrent.TimeUnit
+
+internal interface PvpTimeSource {
+    fun epochMillis(): Long
+    fun monotonicMillis(): Long
+}
+
+internal object SystemPvpTimeSource : PvpTimeSource {
+    override fun epochMillis(): Long = System.currentTimeMillis()
+
+    override fun monotonicMillis(): Long = TimeUnit.NANOSECONDS.toMillis(System.nanoTime())
+}
 
 internal enum class PvpTimedSubmissionStatus {
     ACCEPTED,
@@ -15,13 +27,14 @@ internal enum class PvpTimedSubmissionStatus {
 internal class PvpMatchTimer(
     participants: Set<UUID>,
     private val rules: PvpRulesPreset,
-    private val currentTimeMillis: () -> Long = System::currentTimeMillis,
+    private val timeSource: PvpTimeSource = SystemPvpTimeSource,
 ) {
     private val participants = Collections.unmodifiableSet(LinkedHashSet(participants))
     private val remainingPersonalMillis = participants.associateWith {
         Math.multiplyExact(rules.totalBattleSecondsPerPlayer.toLong(), MILLIS_PER_SECOND)
     }.toMutableMap()
-    private var entryDeadlineMillis: Long? = null
+    private var entryDeadlineEpochMillis: Long? = null
+    private var entryStartedMonotonicMillis: Long? = null
     private val entrySubmissions = LinkedHashSet<UUID>()
     private var turn: TurnClock? = null
 
@@ -31,24 +44,27 @@ internal class PvpMatchTimer(
 
     @Synchronized
     fun beginEntrySelection() {
-        check(entryDeadlineMillis == null) { "PvP entry selection has already started" }
-        entryDeadlineMillis = deadlineAfter(rules.entrySelectionSeconds)
+        check(entryDeadlineEpochMillis == null) { "PvP entry selection has already started" }
+        val deadlineEpochMillis = deadlineAfterEpoch(rules.entrySelectionSeconds)
+        val startedMonotonicMillis = monotonicNow()
+        entryDeadlineEpochMillis = deadlineEpochMillis
+        entryStartedMonotonicMillis = startedMonotonicMillis
     }
 
     @Synchronized
     fun submitEntrySelection(playerId: UUID): PvpTimedSubmissionStatus {
         requireParticipant(playerId)
         if (playerId in entrySubmissions) return PvpTimedSubmissionStatus.ALREADY_SUBMITTED
-        val deadline = entryDeadlineMillis ?: return PvpTimedSubmissionStatus.NOT_STARTED
-        if (now() >= deadline) return PvpTimedSubmissionStatus.TIMED_OUT
+        if (entryStartedMonotonicMillis == null) return PvpTimedSubmissionStatus.NOT_STARTED
+        if (entrySelectionTimedOut()) return PvpTimedSubmissionStatus.TIMED_OUT
         entrySubmissions += playerId
         return PvpTimedSubmissionStatus.ACCEPTED
     }
 
     @Synchronized
     fun entrySelectionTimeouts(): Set<UUID> {
-        val deadline = entryDeadlineMillis ?: return emptySet()
-        return if (now() >= deadline) {
+        if (entryStartedMonotonicMillis == null) return emptySet()
+        return if (entrySelectionTimedOut()) {
             Collections.unmodifiableSet(LinkedHashSet(participants - entrySubmissions))
         } else {
             emptySet()
@@ -63,7 +79,7 @@ internal class PvpMatchTimer(
     }
 
     @Synchronized
-    fun entryDeadlineMillis(): Long? = entryDeadlineMillis
+    fun entryDeadlineMillis(): Long? = entryDeadlineEpochMillis
 
     @Synchronized
     fun beginTurn(turnId: Long, requiredPlayers: Set<UUID>) {
@@ -77,7 +93,7 @@ internal class PvpMatchTimer(
                 "The previous PvP turn still has unresolved choices"
             }
         }
-        turn = TurnClock(turnId, now(), LinkedHashSet(requiredPlayers))
+        turn = TurnClock(turnId, monotonicNow(), LinkedHashSet(requiredPlayers))
     }
 
     @Synchronized
@@ -134,18 +150,26 @@ internal class PvpMatchTimer(
         remainingPersonalMillis[playerId] = (remaining - elapsedMillis).coerceAtLeast(0)
     }
 
-    private fun deadlineAfter(seconds: Int): Long = Math.addExact(
-        now(),
+    private fun deadlineAfterEpoch(seconds: Int): Long = Math.addExact(
+        epochNow(),
         Math.multiplyExact(seconds.toLong(), MILLIS_PER_SECOND),
     )
 
+    private fun entrySelectionTimedOut(): Boolean =
+        elapsedSince(checkNotNull(entryStartedMonotonicMillis)) >=
+            Math.multiplyExact(rules.entrySelectionSeconds.toLong(), MILLIS_PER_SECOND)
+
     private fun elapsedSince(startedAtMillis: Long): Long {
-        val current = now()
+        val current = monotonicNow()
         check(current >= startedAtMillis) { "PvP monotonic time moved backwards" }
         return current - startedAtMillis
     }
 
-    private fun now(): Long = currentTimeMillis().also { require(it >= 0) { "PvP monotonic time must be non-negative" } }
+    private fun epochNow(): Long = timeSource.epochMillis().also {
+        require(it >= 0) { "PvP epoch time must be non-negative" }
+    }
+
+    private fun monotonicNow(): Long = timeSource.monotonicMillis()
 
     private fun requireParticipant(playerId: UUID) {
         require(playerId in participants) { "Player is not part of this PvP timer" }

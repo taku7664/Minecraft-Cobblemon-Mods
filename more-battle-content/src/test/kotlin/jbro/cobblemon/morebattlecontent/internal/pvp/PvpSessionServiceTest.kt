@@ -120,7 +120,10 @@ class PvpSessionServiceTest {
                 prepared = battle
                 PvpBattleLaunchResult.Started(battleId)
             }),
-            currentTimeMillis = { now },
+            timeSource = object : PvpTimeSource {
+                override fun epochMillis(): Long = now
+                override fun monotonicMillis(): Long = now
+            },
         )
         service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
         service.accept(matchId, second)
