@@ -11,6 +11,7 @@
   "cobblemon_battle_ui.champions.normal": "정상",
   "cobblemon_battle_ui.champions.stat_changes": "능력 변화",
   "cobblemon_battle_ui.champions.effects": "효과 및 필드 상태",
+  "cobblemon_battle_ui.champions.more_effects": "+%s개 효과 더 있음",
   "cobblemon_battle_ui.champions.public_info": "공개 정보",
   "cobblemon_battle_ui.champions.moves": "기술",
   "cobblemon_battle_ui.champions.unknown": "미공개",

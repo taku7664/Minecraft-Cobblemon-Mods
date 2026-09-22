@@ -285,7 +285,8 @@ object ChampionsBattleInfoOverlay {
             return
         }
 
-        effects.take(8).forEachIndexed { index, effect ->
+        val effectWindow = EffectListLayout.window(effects.size)
+        effects.take(effectWindow.visibleEffectCount).forEachIndexed { index, effect ->
             val rowY = PANEL_Y + 48 + index * 36
             val rowColor = if (effect.opponent) color(72, 21, 57, 228) else color(25, 30, 92, 232)
             context.fill(x + 10, rowY, x + FIELD_W - 10, rowY + 31, rowColor)
@@ -293,6 +294,20 @@ object ChampionsBattleInfoOverlay {
             drawText(context, effect.group, x + 21, rowY + 6, TEXT_LABEL, 0.85f)
             drawText(context, trim(effect.name, 142), x + 88, rowY + 6, WHITE, 1.0f)
             effect.turns?.let { drawTextRight(context, it, x + FIELD_W - 19, rowY + 7, WHITE, 0.9f) }
+        }
+
+        if (effectWindow.hiddenEffectCount > 0) {
+            val rowY = PANEL_Y + 48 + effectWindow.visibleEffectCount * 36
+            context.fill(x + 10, rowY, x + FIELD_W - 10, rowY + 31, color(25, 30, 92, 232))
+            context.fill(x + 10, rowY, x + 13, rowY + 31, VIOLET_EDGE)
+            drawTextCentered(
+                context,
+                tr("cobblemon_battle_ui.champions.more_effects", effectWindow.hiddenEffectCount),
+                x + FIELD_W / 2,
+                rowY + 7,
+                TEXT_DIM,
+                0.95f
+            )
         }
     }
 

@@ -11,6 +11,7 @@
   "cobblemon_battle_ui.champions.normal": "Normal",
   "cobblemon_battle_ui.champions.stat_changes": "STAT CHANGES",
   "cobblemon_battle_ui.champions.effects": "EFFECTS & FIELD CONDITIONS",
+  "cobblemon_battle_ui.champions.more_effects": "+%s more effects",
   "cobblemon_battle_ui.champions.public_info": "KNOWN INFORMATION",
   "cobblemon_battle_ui.champions.moves": "MOVES",
   "cobblemon_battle_ui.champions.unknown": "Unknown",
