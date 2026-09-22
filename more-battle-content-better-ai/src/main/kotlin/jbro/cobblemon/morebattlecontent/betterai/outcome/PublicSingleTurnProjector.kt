@@ -88,6 +88,7 @@ internal object PublicSingleTurnProjector {
         }
 
         val moveActions = turnActions.filter { it.action.kind == BattleActionKind.USE_MOVE }
+        val initiallyActivePokemonIds = activePokemonIds(initialState)
         var scheduled = listOf(
             ScheduledTurnBranch(
                 branch = WeightedState(
@@ -96,6 +97,7 @@ internal object PublicSingleTurnProjector {
                     lastMoveByPokemon = history.lastMoveByPokemon,
                 ),
                 remaining = moveActions,
+                newlySwitchedPokemonIds = activePokemonIds(switchedState) - initiallyActivePokemonIds,
             ),
         )
         while (scheduled.any { it.remaining.isNotEmpty() }) {
@@ -114,11 +116,23 @@ internal object PublicSingleTurnProjector {
                     val powerMultiplier = next.action.actorPokemonId
                         ?.let(current.turnPowerMultipliersByPokemon::get)
                         ?: 1.0
-                    val effectiveNext = if (next.action.actorPokemonId in current.roundBoostedPokemonIds) {
+                    var effectiveNext = if (next.action.actorPokemonId in current.roundBoostedPokemonIds) {
                         next.action.withRoundPowerDoubled()
                     } else {
                         next.action
                     }
+                    effectiveNext = effectiveNext.copy(
+                        action = drawnAsideBy(
+                            effectiveNext.action,
+                            current.branch.state,
+                            effectiveNext.side,
+                            current.branch.redirectingPokemonIds,
+                        ),
+                    ).withActsBeforeTargetPowerDoubled(
+                        state = current.branch.state,
+                        remaining = remaining,
+                        newlySwitchedPokemonIds = current.newlySwitchedPokemonIds,
+                    )
                     applyScheduledAction(
                         branch = current.branch,
                         ordered = effectiveNext.withTurnPowerMultiplier(powerMultiplier),
@@ -147,6 +161,8 @@ internal object PublicSingleTurnProjector {
                             roundBoostedPokemonIds = roundFollowers.mapNotNullTo(linkedSetOf()) {
                                 it.actorPokemonId
                             },
+                            newlySwitchedPokemonIds = current.newlySwitchedPokemonIds +
+                                (activePokemonIds(projected.state) - activePokemonIds(current.branch.state)),
                             postponedActions = current.postponedActions
                                 .filterNot { it == next.action }
                                 .mapNotNull { postponed ->
@@ -1733,22 +1749,43 @@ internal object PublicSingleTurnProjector {
     }
 
     private fun TurnPrimitiveAction.withRoundPowerDoubled(): TurnPrimitiveAction = copy(
-        action = BattleActionCandidate(
-            actionId = action.actionId,
-            kind = action.kind,
-            actorSlot = action.actorSlot,
-            moveSlot = action.moveSlot,
-            moveId = action.moveId,
-            targets = action.targets,
-            switchPokemonId = action.switchPokemonId,
-            componentActionIds = action.componentActionIds,
-            componentActions = action.componentActions,
-            mechanic = action.mechanic,
-            moveDetails = action.moveDetails,
-            facts = null,
-            tags = action.tags + LocalKnownStatMechanics.ROUND_POWER_DOUBLED_TAG,
-        ),
+        action = action.withAddedTag(LocalKnownStatMechanics.ROUND_POWER_DOUBLED_TAG),
     )
+
+    private fun TurnPrimitiveAction.withActsBeforeTargetPowerDoubled(
+        state: BattleStateView,
+        remaining: List<TurnPrimitiveAction>,
+        newlySwitchedPokemonIds: Set<UUID>,
+    ): TurnPrimitiveAction {
+        if (canonicalId(action.moveId) !in ACTS_BEFORE_TARGET_POWER_MOVES) return this
+        val targetSlot = action.targets.singleOrNull() ?: return this
+        val target = state.pokemon.singleOrNull {
+            it.side == targetSlot.side && it.activeSlot == targetSlot.slot && !it.fainted && it.hpFraction > 0.0
+        } ?: return this
+        val targetWillMove = remaining.any { it.actorPokemonId == target.battlePokemonId }
+        if (!targetWillMove && target.battlePokemonId !in newlySwitchedPokemonIds) return this
+        return copy(action = action.withAddedTag(LocalKnownStatMechanics.ACTS_BEFORE_TARGET_POWER_DOUBLED_TAG))
+    }
+
+    private fun BattleActionCandidate.withAddedTag(tag: String) = BattleActionCandidate(
+        actionId = actionId,
+        kind = kind,
+        actorSlot = actorSlot,
+        moveSlot = moveSlot,
+        moveId = moveId,
+        targets = targets,
+        switchPokemonId = switchPokemonId,
+        componentActionIds = componentActionIds,
+        componentActions = componentActions,
+        mechanic = mechanic,
+        moveDetails = moveDetails,
+        facts = null,
+        tags = tags + tag,
+    )
+
+    private fun activePokemonIds(state: BattleStateView): Set<UUID> = state.pokemon.mapNotNullTo(linkedSetOf()) {
+        it.battlePokemonId.takeIf { _ -> it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+    }
 
     private fun successfulQueueControlTarget(
         executed: TurnPrimitiveAction,
@@ -1979,6 +2016,7 @@ internal object PublicSingleTurnProjector {
         val orderProbability: Double = 1.0,
         val promotedNextActions: Set<TurnPrimitiveAction> = emptySet(),
         val roundBoostedPokemonIds: Set<UUID> = emptySet(),
+        val newlySwitchedPokemonIds: Set<UUID> = emptySet(),
         val postponedActions: Set<TurnPrimitiveAction> = emptySet(),
         val turnPowerMultipliersByPokemon: Map<UUID, Double> = emptyMap(),
     )
@@ -2038,6 +2076,7 @@ internal object PublicSingleTurnProjector {
     private const val MAT_BLOCK = "matblock"
     private const val HELPING_HAND_MULTIPLIER = 1.5
     private val QUEUE_CONTROL_MOVE_IDS = setOf(AFTER_YOU, QUASH)
+    private val ACTS_BEFORE_TARGET_POWER_MOVES = setOf("fishiousrend", "boltbeak")
     private val PARALYSIS_IDS = setOf("par", "paralysis", "paralyzed", "paralysed")
     private val SLEEP_IDS = setOf("slp", "sleep", "asleep")
     private val FREEZE_IDS = setOf("frz", "freeze", "frozen")
