@@ -83,6 +83,42 @@ class BattleContentApplicationServiceTest {
     }
 
     @Test
+    fun `compatibility linkage failures use the same stable content error`() {
+        val failure = NoSuchMethodError("Cobblemon API drift")
+        val failed = object : BattleContentApplication {
+            override val descriptor = BattleContentDescriptor(
+                BattleContentId("battle_tower"),
+                listOf(BattleFormatId("single")),
+            )
+
+            override fun status(context: BattleApplicationRequestContext): BattleContentStatus = throw failure
+            override fun start(context: BattleApplicationRequestContext, formatId: BattleFormatId): BattleContentStatus =
+                throw failure
+            override fun resume(context: BattleApplicationRequestContext): BattleContentStatus = throw failure
+            override fun abandon(context: BattleApplicationRequestContext): BattleContentStatus = throw failure
+        }
+        var reported: Throwable? = null
+        val service = DefaultBattleContentApplicationService(listOf(failed)) { _, exception -> reported = exception }
+
+        val result = service.status(context, BattleContentId("battle_tower"))
+
+        assertEquals(BattleApplicationResult.Rejected(BattleApplicationError.CONTENT_FAILURE), result)
+        assertSame(failure, reported)
+    }
+
+    @Test
+    fun `failure reporter cannot replace the stable content error`() {
+        val failed = RecordingContent("battle_tower", setOf("single"), fail = true)
+        val service = DefaultBattleContentApplicationService(listOf(failed)) { _, _ ->
+            throw NoSuchMethodError("logger API drift")
+        }
+
+        val result = service.status(context, BattleContentId("battle_tower"))
+
+        assertEquals(BattleApplicationResult.Rejected(BattleApplicationError.CONTENT_FAILURE), result)
+    }
+
+    @Test
     fun `duplicate content ids and invalid ids are rejected at construction`() {
         assertThrows<IllegalArgumentException> {
             DefaultBattleContentApplicationService(

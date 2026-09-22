@@ -130,7 +130,7 @@ internal interface BattleContentApplication {
 
 internal class DefaultBattleContentApplicationService(
     contentApplications: Collection<BattleContentApplication>,
-    private val reportFailure: (BattleContentId, RuntimeException) -> Unit = { contentId, exception ->
+    private val reportFailure: (BattleContentId, Throwable) -> Unit = { contentId, exception ->
         MoreBattleContent.LOGGER.error("Battle content operation failed for ${contentId.value}", exception)
     },
 ) {
@@ -200,8 +200,21 @@ internal class DefaultBattleContentApplicationService(
     ): BattleApplicationResult<BattleContentStatus> = try {
         BattleApplicationResult.Success(operation())
     } catch (exception: RuntimeException) {
-        reportFailure(contentId, exception)
+        reportSafely(contentId, exception)
         BattleApplicationResult.Rejected(BattleApplicationError.CONTENT_FAILURE)
+    } catch (error: LinkageError) {
+        reportSafely(contentId, error)
+        BattleApplicationResult.Rejected(BattleApplicationError.CONTENT_FAILURE)
+    }
+
+    private fun reportSafely(contentId: BattleContentId, failure: Throwable) {
+        try {
+            reportFailure(contentId, failure)
+        } catch (_: RuntimeException) {
+            // Failure reporting cannot replace the stable application error returned to the caller.
+        } catch (_: LinkageError) {
+            // Logging and compatibility reporters are best-effort at this boundary.
+        }
     }
 }
 
