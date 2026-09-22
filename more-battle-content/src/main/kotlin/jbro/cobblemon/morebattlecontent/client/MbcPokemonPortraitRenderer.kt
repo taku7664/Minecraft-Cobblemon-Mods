@@ -13,6 +13,14 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
 import org.joml.Quaternionf
 
+internal inline fun <T> portraitLookupOrNull(action: () -> T): T? = try {
+    action()
+} catch (_: RuntimeException) {
+    null
+} catch (_: LinkageError) {
+    null
+}
+
 internal data class MbcPokemonPortraitIdentity(
     val stateKey: String,
     val speciesId: String,
@@ -54,9 +62,9 @@ internal class MbcPokemonPortraitRenderer {
         partialTick: Float,
         animate: Boolean,
     ) {
-        val currentPartyPokemon = runCatching {
+        val currentPartyPokemon = portraitLookupOrNull {
             CobblemonClient.storage.party.findByUUID(pokemon.pokemonId)
-        }.getOrNull()
+        }
         val renderable = currentPartyPokemon?.asRenderablePokemon()
             ?: renderablePokemon(pokemon.speciesId, null)
             ?: return
@@ -77,9 +85,9 @@ internal class MbcPokemonPortraitRenderer {
         partialTick: Float,
         animate: Boolean,
     ) {
-        val currentPartyPokemon = runCatching {
+        val currentPartyPokemon = portraitLookupOrNull {
             CobblemonClient.storage.party.findByUUID(pokemonId)
-        }.getOrNull()
+        }
         val renderable = currentPartyPokemon?.asRenderablePokemon()
             ?: renderablePokemon(speciesId, formId)
             ?: return
@@ -131,9 +139,9 @@ internal class MbcPokemonPortraitRenderer {
     }
 
     private fun renderablePokemon(speciesId: String, formId: String?): RenderablePokemon? {
-        val species = runCatching {
+        val species = portraitLookupOrNull {
             PokemonSpecies.getByIdentifier(ResourceLocation.parse(speciesId))
-        }.getOrNull() ?: return null
+        } ?: return null
         // Live Pokemon report their form as Cobblemon names it ("Normal"), while catalog data uses
         // lower case, so the base form is matched without regard to case.
         val aspects = if (formId.isNullOrBlank() || formId.equals("normal", ignoreCase = true)) {
