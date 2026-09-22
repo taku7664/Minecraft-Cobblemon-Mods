@@ -12,6 +12,8 @@ import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon17
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173PvpRegisteredTeamSnapshotStore
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173PvpTeamFactory
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173PvpTurnHooks
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupActions
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupActionsSafely
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpArenaPool
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpBattleCompletionSink
@@ -183,80 +185,108 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
             val playerId = handler.player.uuid
-            onlinePlayers.remove(playerId)
-            val room = rooms.roomFor(playerId)
+            var room: PvpRoomView? = null
             var remaining: PvpRoomView? = null
-            try {
-                val challenge = sessions.challengeFor(playerId)
-                if (challenge?.phase in setOf(PvpChallengePhase.PENDING, PvpChallengePhase.TEAM_REGISTRATION)) {
-                    sessions.cancel(challenge!!.request.challengeId, playerId)
-                    retryableMatches.remove(challenge.request.challengeId)
-                    notifyClosed(challenge.request, "screen.${MoreBattleContent.MOD_ID}.pvp.closed.disconnected")
-                    finishRoom(challenge.request.challengeId)
-                }
-                if (challenge?.phase == PvpChallengePhase.ACTIVE) {
-                    val matchId = challenge.request.challengeId
-                    if (matchId in pendingCompletions) {
-                        // The Cobblemon battle already ended; preserve its unsettled result even if a
-                        // participant disconnects while record storage is temporarily unavailable.
-                        processPendingCompletions(handler.player.server, force = true)
-                    } else {
-                        try {
-                            sessions.disconnectActiveBattle(playerId, Cobblemon173ManagedBattleTermination::end)
-                        } finally {
-                            retryableMatches.remove(matchId)
-                            finishRoom(matchId)
+            runManagedCleanupActionsSafely(
+                reportFailure = { failure ->
+                    MoreBattleContent.LOGGER.error("PvP disconnect cleanup failed for $playerId", failure)
+                },
+                { onlinePlayers.remove(playerId) },
+                { room = rooms.roomFor(playerId) },
+                {
+                    val challenge = sessions.challengeFor(playerId)
+                    if (challenge != null &&
+                        challenge.phase in setOf(PvpChallengePhase.PENDING, PvpChallengePhase.TEAM_REGISTRATION)
+                    ) {
+                        val matchId = challenge.request.challengeId
+                        runManagedCleanupActions(
+                            { sessions.cancel(matchId, playerId) },
+                            { retryableMatches.remove(matchId) },
+                            {
+                                notifyClosed(
+                                    challenge.request,
+                                    "screen.${MoreBattleContent.MOD_ID}.pvp.closed.disconnected",
+                                )
+                            },
+                            { finishRoom(matchId) },
+                        )
+                    }
+                    if (challenge != null && challenge.phase == PvpChallengePhase.ACTIVE) {
+                        val matchId = challenge.request.challengeId
+                        if (matchId in pendingCompletions) {
+                            // The Cobblemon battle already ended; preserve its unsettled result even if a
+                            // participant disconnects while record storage is temporarily unavailable.
+                            processPendingCompletions(handler.player.server, force = true)
+                        } else {
+                            runManagedCleanupActions(
+                                {
+                                    sessions.disconnectActiveBattle(
+                                        playerId,
+                                        Cobblemon173ManagedBattleTermination::end,
+                                    )
+                                },
+                                { retryableMatches.remove(matchId) },
+                                { finishRoom(matchId) },
+                            )
                         }
                     }
-                }
-                if (room?.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.ACTIVE &&
-                    playerId in room.spectatorIds
-                ) {
-                    lounge.disconnectSpectator(room.roomId, playerId)
-                }
-            } catch (exception: RuntimeException) {
-                MoreBattleContent.LOGGER.error("PvP disconnect cleanup failed for $playerId", exception)
-            } finally {
-                remaining = rooms.disconnect(playerId)
-            }
-            remaining?.let { updatedRoom ->
-                try {
-                    pushRoomToMembers(updatedRoom, null)
-                    if (updatedRoom.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.TEAM_PREVIEW) {
-                        pushSpectatorPreview(updatedRoom)
+                },
+                {
+                    val disconnectedRoom = room
+                    if (disconnectedRoom?.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.ACTIVE &&
+                        playerId in disconnectedRoom.spectatorIds
+                    ) {
+                        lounge.disconnectSpectator(disconnectedRoom.roomId, playerId)
                     }
-                } catch (exception: RuntimeException) {
-                    MoreBattleContent.LOGGER.error("PvP disconnect room update failed for $playerId", exception)
-                }
-            }
+                },
+                { remaining = rooms.disconnect(playerId) },
+                {
+                    remaining?.let { updatedRoom ->
+                        pushRoomToMembers(updatedRoom, null)
+                        if (updatedRoom.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.TEAM_PREVIEW) {
+                            pushSpectatorPreview(updatedRoom)
+                        }
+                    }
+                },
+            )
         }
         ServerLifecycleEvents.SERVER_STARTING.register { server -> currentServer = server }
         ServerLifecycleEvents.SERVER_STOPPING.register { server ->
-            processPendingCompletions(server, force = true)
-            sessions.activeBattles().values.toSet().forEach { battleId ->
-                runCatching { Cobblemon173ManagedBattleTermination.end(battleId) }
-                    .onFailure { exception ->
-                        MoreBattleContent.LOGGER.error("PvP battle $battleId could not be terminated during server shutdown", exception)
+            runManagedCleanupActionsSafely(
+                reportFailure = { failure ->
+                    MoreBattleContent.LOGGER.error("PvP server shutdown cleanup failed", failure)
+                },
+                { processPendingCompletions(server, force = true) },
+                {
+                    sessions.activeBattles().values.toSet().forEach { battleId ->
+                        runManagedCleanupActionsSafely(
+                            reportFailure = { failure ->
+                                MoreBattleContent.LOGGER.error(
+                                    "PvP battle $battleId could not be terminated during server shutdown",
+                                    failure,
+                                )
+                            },
+                            { Cobblemon173ManagedBattleTermination.end(battleId) },
+                        )
                     }
-            }
-            runCatching(lounge::shutdown).onFailure { exception ->
-                MoreBattleContent.LOGGER.error("PvP lounge shutdown cleanup failed", exception)
-            }
-            runCatching(sessions::clear).onFailure { exception ->
-                MoreBattleContent.LOGGER.error("PvP session shutdown cleanup failed", exception)
-            }
-            rooms.clear()
-            retryableMatches.clear()
-            if (pendingCompletions.size() > 0) {
-                MoreBattleContent.LOGGER.error(
-                    "Discarding {} PvP completion retries because the server is stopping and record storage is still unavailable",
-                    pendingCompletions.size(),
-                )
-            }
-            pendingCompletions.clear()
-            turnHooks.clear()
-            onlinePlayers.clear()
-            if (currentServer === server) currentServer = null
+                },
+                lounge::shutdown,
+                sessions::clear,
+                rooms::clear,
+                retryableMatches::clear,
+                {
+                    if (pendingCompletions.size() > 0) {
+                        MoreBattleContent.LOGGER.error(
+                            "Discarding {} PvP completion retries because the server is stopping and record storage is still unavailable",
+                            pendingCompletions.size(),
+                        )
+                    }
+                },
+                pendingCompletions::clear,
+                turnHooks::clear,
+                onlinePlayers::clear,
+                { if (currentServer === server) currentServer = null },
+            )
         }
         ServerTickEvents.END_SERVER_TICK.register { server ->
             currentServer = server
@@ -680,19 +710,24 @@ internal object PvpPlayNetworking : PvpCommandBackend {
      * for a rematch. Only a room that no longer exists falls back to the room list.
      */
     private fun finishRoom(roomId: UUID) {
-        try {
-            lounge.finish(roomId)
-        } catch (exception: RuntimeException) {
-            MoreBattleContent.LOGGER.error("PvP lounge finish failed for room $roomId", exception)
-        }
-        val room = rooms.finishMatch(roomId)
-        if (room == null) {
-            rooms.close(roomId)?.memberIds?.forEach { memberId ->
-                onlinePlayers[memberId]?.let { sendRoomList(it, null) }
-            }
-            return
-        }
-        pushRoomToMembers(room, null, reopen = true)
+        var room: PvpRoomView? = null
+        runManagedCleanupActionsSafely(
+            reportFailure = { failure ->
+                MoreBattleContent.LOGGER.error("PvP room finish cleanup failed for room $roomId", failure)
+            },
+            { lounge.finish(roomId) },
+            { room = rooms.finishMatch(roomId) },
+            {
+                val finishedRoom = room
+                if (finishedRoom == null) {
+                    rooms.close(roomId)?.memberIds?.forEach { memberId ->
+                        onlinePlayers[memberId]?.let { sendRoomList(it, null) }
+                    }
+                } else {
+                    pushRoomToMembers(finishedRoom, null, reopen = true)
+                }
+            },
+        )
     }
 
     private fun summaryView(room: PvpRoomView) = PvpRoomSummaryView(
