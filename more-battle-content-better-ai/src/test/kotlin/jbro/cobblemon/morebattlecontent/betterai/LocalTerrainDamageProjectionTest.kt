@@ -94,6 +94,42 @@ class LocalTerrainDamageProjectionTest {
         )
     }
 
+    @Test
+    fun `misty explosion gains power only for a grounded actor in misty terrain`() {
+        val ordinary = state()
+        assertEquals(
+            damage(ordinary, move("fixed_100", power = 100, type = "fairy")),
+            damage(ordinary, move("mistyexplosion", power = 100, type = "fairy", dynamic = true)),
+        )
+
+        val grounded = state(terrain = "mistyterrain")
+        assertEquals(
+            damage(grounded, move("fixed_150", power = 150, type = "fairy")),
+            damage(grounded, move("mistyexplosion", power = 100, type = "fairy", dynamic = true)),
+        )
+
+        val airborne = state(terrain = "mistyterrain", allyTypes = setOf("flying"))
+        assertEquals(
+            damage(airborne, move("fixed_100", power = 100, type = "fairy")),
+            damage(airborne, move("mistyexplosion", power = 100, type = "fairy", dynamic = true)),
+        )
+    }
+
+    @Test
+    fun `psyblade gains power in electric terrain even when the actor is airborne`() {
+        val ordinary = state()
+        assertEquals(
+            damage(ordinary, move("fixed_80", power = 80, type = "psychic", category = BattleMoveDamageCategory.PHYSICAL)),
+            damage(ordinary, move("psyblade", power = 80, type = "psychic", dynamic = true, category = BattleMoveDamageCategory.PHYSICAL)),
+        )
+
+        val airborne = state(terrain = "electricterrain", allyTypes = setOf("flying"))
+        assertEquals(
+            damage(airborne, move("fixed_120", power = 120, type = "psychic", category = BattleMoveDamageCategory.PHYSICAL)),
+            damage(airborne, move("psyblade", power = 80, type = "psychic", dynamic = true, category = BattleMoveDamageCategory.PHYSICAL)),
+        )
+    }
+
     private fun damage(state: BattleStateView, action: BattleActionCandidate): BattleDamageFractionRange {
         val calculated = PublicBattleTacticalCalculator.calculate(
             BattleDecisionContext(REQUEST_ID, state, listOf(action), Long.MAX_VALUE),
@@ -113,6 +149,7 @@ class LocalTerrainDamageProjectionTest {
         power: Int,
         type: String,
         dynamic: Boolean = false,
+        category: BattleMoveDamageCategory = BattleMoveDamageCategory.SPECIAL,
     ) = BattleActionCandidate(
         actionId = id,
         kind = BattleActionKind.USE_MOVE,
@@ -122,7 +159,7 @@ class LocalTerrainDamageProjectionTest {
         targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
         moveDetails = BattleMoveCandidateView(
             typeId = type,
-            damageCategory = BattleMoveDamageCategory.SPECIAL,
+            damageCategory = category,
             power = power.toDouble(),
             accuracy = 100.0,
             priority = 0,

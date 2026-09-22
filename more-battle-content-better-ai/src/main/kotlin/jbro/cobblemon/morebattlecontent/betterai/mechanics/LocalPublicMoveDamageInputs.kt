@@ -54,6 +54,14 @@ internal object LocalPublicMoveDamageInputs {
                     LocalPublicTurnOrder.grounded(state, target)
                 ) it * 2 else it
             }
+            "mistyexplosion" -> wholePower?.let {
+                if (LocalPublicFieldMechanics.terrainId(state) == "mistyterrain" &&
+                    LocalPublicTurnOrder.grounded(state, actor)
+                ) it * 3 / 2 else it
+            }
+            "psyblade" -> wholePower?.let {
+                if (LocalPublicFieldMechanics.terrainId(state) == "electricterrain") it * 3 / 2 else it
+            }
             "storedpower", "powertrip" -> wholePower?.plus(20 * actor.positiveBoosts())
             "punishment" -> (60 + 20 * target.positiveBoosts()).coerceAtMost(200)
             "facade" -> wholePower?.let { if (actor.statusId != null) it * 2 else it }
@@ -311,7 +319,8 @@ internal object LocalPublicMoveDamageInputs {
     private val PUBLICLY_RESOLVED_DYNAMIC_MOVES = setOf(
         "acrobatics", "expandingforce", "risingvoltage", "eruption", "waterspout",
         "dragonenergy", "flail", "reversal", "crushgrip", "wringout", "storedpower",
-        "powertrip", "punishment", "trumpcard", "weatherball", "terrainpulse", "facade", "hex",
+        "powertrip", "punishment", "trumpcard", "weatherball", "terrainpulse", "mistyexplosion",
+        "psyblade", "facade", "hex",
         "infernalparade", "brine", "venoshock",
         "barbbarrage", "smellingsalts", "wakeupslap", "round", "fishiousrend", "boltbeak",
         "assurance", "payback", "avalanche", "revenge", "electroball", "gyroball",
