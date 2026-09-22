@@ -21,9 +21,9 @@ public final class BattleMenuLayout {
             throw new IllegalArgumentException("Button dimensions, gap, and count must be non-negative");
         }
 
-        int x = screenWidth - rightMargin - buttonWidth;
+        int x = Math.max(0, screenWidth - rightMargin - buttonWidth);
         int totalHeight = count == 0 ? 0 : count * buttonHeight + (count - 1) * gap;
-        int firstY = screenHeight - bottomMargin - totalHeight;
+        int firstY = Math.max(0, screenHeight - bottomMargin - totalHeight);
         List<UiRect> result = new ArrayList<>(count);
         for (int index = 0; index < count; index++) {
             result.add(new UiRect(x, firstY + index * (buttonHeight + gap), buttonWidth, buttonHeight));

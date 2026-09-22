@@ -28,6 +28,18 @@ final class BattleUiAuditContractTest {
     }
 
     @Test
+    void generalBattleCommandsReflowDuringRendering() throws Exception {
+        String navigation = read(
+            "src/main/java/com/cobblemonextendedbattleui/mixin/BattleGuiNavigationMixin.java"
+        );
+        int reflow = navigation.indexOf("BattleCommandLayout.place(");
+        int hoverTest = navigation.indexOf(".isHovered(mouseX, mouseY)");
+        assertTrue(reflow >= 0);
+        assertTrue(hoverTest >= 0);
+        assertTrue(reflow < hoverTest, "Commands must reflow before hover/focus ownership is evaluated");
+    }
+
+    @Test
     void spectatorSideMatchesCobblemonOverlayOnEveryPath() throws Exception {
         String switchMixin = read("src/main/java/com/cobblemonextendedbattleui/mixin/BattleSwitchHandlerMixin.java");
         assertTrue(switchMixin.contains("return !switchInSide1; // side2 is on the left for spectators"));

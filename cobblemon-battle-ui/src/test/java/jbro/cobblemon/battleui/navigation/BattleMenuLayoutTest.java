@@ -29,4 +29,11 @@ class BattleMenuLayoutTest {
                 new UiRect(216, 146, 92, 24)
         ), moves);
     }
+
+    @Test
+    void keepsTheLeadingButtonCornerVisibleInASmallViewport() {
+        List<UiRect> buttons = BattleMenuLayout.vertical(80, 60, 88, 20, 4, 12, 10, 4);
+
+        assertEquals(new UiRect(0, 0, 88, 20), buttons.getFirst());
+    }
 }

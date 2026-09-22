@@ -99,6 +99,12 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
         }
 
         List<BattleOptionTile> tiles = selection.getTiles();
+        MinecraftClient client = MinecraftClient.getInstance();
+        BattleCommandLayout.place(
+                tiles,
+                client.getWindow().getScaledWidth(),
+                client.getWindow().getScaledHeight()
+        );
         int hoveredIndex = -1;
         for (int index = 0; index < tiles.size(); index++) {
             if (tiles.get(index).isHovered(mouseX, mouseY)) {
