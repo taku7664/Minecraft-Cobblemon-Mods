@@ -38,4 +38,36 @@ class ManagedBattleTerminationTest {
         assertSame(settlementFailure, thrown)
         assertEquals(listOf(terminationFailure), thrown.suppressed.toList())
     }
+
+    @Test
+    fun `fatal settlement failure is not intercepted to run termination`() {
+        val fatal = AssertionError("fatal settlement")
+        var terminated = false
+
+        val thrown = assertThrows(AssertionError::class.java) {
+            settleBeforeTerminatingBattle(
+                battleId,
+                settle = { throw fatal },
+                terminate = { terminated = true },
+            )
+        }
+
+        assertSame(fatal, thrown)
+        assertEquals(false, terminated)
+    }
+
+    @Test
+    fun `fatal termination failure is not hidden behind ordinary settlement failure`() {
+        val fatal = AssertionError("fatal termination")
+
+        val thrown = assertThrows(AssertionError::class.java) {
+            settleBeforeTerminatingBattle(
+                battleId,
+                settle = { throw IllegalStateException("record unavailable") },
+                terminate = { throw fatal },
+            )
+        }
+
+        assertSame(fatal, thrown)
+    }
 }

@@ -16,15 +16,25 @@ internal inline fun settleBeforeTerminatingBattle(
 ) {
     try {
         settle(battleId)
-    } catch (settlementFailure: Throwable) {
-        try {
-            terminate(battleId)
-        } catch (terminationFailure: Throwable) {
-            if (terminationFailure !== settlementFailure) {
-                settlementFailure.addSuppressed(terminationFailure)
-            }
-        }
-        throw settlementFailure
+    } catch (settlementFailure: RuntimeException) {
+        terminateAfterSettlementFailure(battleId, settlementFailure, terminate)
+    } catch (settlementFailure: LinkageError) {
+        terminateAfterSettlementFailure(battleId, settlementFailure, terminate)
     }
     terminate(battleId)
+}
+
+private inline fun terminateAfterSettlementFailure(
+    battleId: UUID,
+    settlementFailure: Throwable,
+    terminate: (UUID) -> Unit,
+): Nothing {
+    try {
+        terminate(battleId)
+    } catch (terminationFailure: RuntimeException) {
+        if (terminationFailure !== settlementFailure) settlementFailure.addSuppressed(terminationFailure)
+    } catch (terminationFailure: LinkageError) {
+        if (terminationFailure !== settlementFailure) settlementFailure.addSuppressed(terminationFailure)
+    }
+    throw settlementFailure
 }
