@@ -253,11 +253,11 @@ internal object LocalTacticalScorer {
         val sameTypeBonus = facts?.baseSameTypeAttackBonus ?: publicSameTypeBonus(candidate, context)
         val typeMultiplier = facts?.typeChartMultiplier ?: publicTypeMultiplier(candidate, context)
         val accuracy = LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY)
+        val effectivePower = LocalPublicAccuracy.weightedPower(details, accuracy)
         if (tuning.legacyRawPowerFallback) {
             // Preserve the established operation order for deterministic tie-breaking.
-            return details.power * accuracy * sameTypeBonus * typeMultiplier
+            return effectivePower * sameTypeBonus * typeMultiplier
         }
-        val effectivePower = details.power * accuracy
         val hpFraction = effectivePower / tuning.unprojectedPowerPerHpBar * sameTypeBonus * typeMultiplier
         return hpFraction.coerceIn(0.0, 1.5) * tuning.boardToScore
     }
@@ -597,7 +597,10 @@ internal object LocalTacticalScorer {
             }
             else -> emptyList()
         }
-        val effectivePower = details.power * LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY)
+        val effectivePower = LocalPublicAccuracy.weightedPower(
+            details,
+            LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY),
+        )
         val sameTypeBonus = publicSameTypeBonus(candidate, context)
         val doomedDiscount = { ally: BattlePokemonStateView -> doomedAllyDiscount(ally, context, tuning) }
         return targets.sumOf { target ->

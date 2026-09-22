@@ -72,6 +72,23 @@ internal object LocalPublicAccuracy {
         return (base * multiplier).coerceIn(0.0, 1.0)
     }
 
+    /**
+     * Power weighted by resolved accuracy without perturbing the established unmodified tie-break.
+     *
+     * Whole-number power and accuracy keep the exact `power * accuracy / 100` operation order. A
+     * public modifier then scales that baseline, so equal printed products remain exactly equal when
+     * no modifier applies.
+     */
+    fun weightedPower(details: BattleMoveCandidateView, effectiveAccuracy: Double): Double {
+        val printedAccuracy = details.accuracy / 100.0
+        val printedWeightedPower = details.power * details.accuracy / 100.0
+        return if (printedAccuracy > 0.0) {
+            printedWeightedPower * (effectiveAccuracy / printedAccuracy)
+        } else {
+            details.power * effectiveAccuracy
+        }
+    }
+
     private fun BattlePokemonStateView.stage(vararg aliases: String): Int = statStages.entries.firstOrNull {
         canonical(it.key) in aliases
     }?.value?.coerceIn(-6, 6) ?: 0

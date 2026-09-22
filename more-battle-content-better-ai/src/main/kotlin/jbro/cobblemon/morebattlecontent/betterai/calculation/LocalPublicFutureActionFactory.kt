@@ -168,7 +168,10 @@ internal object PublicFutureActionFactory {
                     if (target.knownTypeIds.isEmpty()) 1.0
                     else StandardTypeEffectiveness.multiplier(details.typeId, target.knownTypeIds)
                 } ?: 1.0
-                details.power * LocalPublicAccuracy.probability(action, state, side) * stab * matchup +
+                LocalPublicAccuracy.weightedPower(
+                    details,
+                    LocalPublicAccuracy.probability(action, state, side),
+                ) * stab * matchup +
                     LocalPublicTurnOrder.effectivePriority(state, side, action) * 5.0
             }
         }
