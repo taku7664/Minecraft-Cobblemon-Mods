@@ -88,50 +88,22 @@ public final class RoundedVoxelMesher {
             int cornerZ = (corner >> 2) & 1;
             int mask = vertexMask(occupancy, cellX + cornerX, cellY + cornerY, cellZ + cornerZ);
             int currentOctant = (1 - cornerX) | ((1 - cornerY) << 1) | ((1 - cornerZ) << 2);
-            List<BevelTemplateLibrary.RegionPrimitive> regions = templates.partitionedTemplate(mask);
-            if (regions.isEmpty()) {
+            List<MeshPrimitive> primitives = templates.ownedTemplate(mask, currentOctant);
+            if (primitives.isEmpty()) {
                 continue;
             }
-            Vec3 translation = new Vec3(
-                (cellX + cornerX) * cellWidth,
-                (cellY + cornerY) * cellHeight,
-                (cellZ + cornerZ) * cellDepth
-            );
-            for (BevelTemplateLibrary.RegionPrimitive region : regions) {
-                MeshPrimitive primitive = region.primitive();
-                boolean solidRegion = (mask & (1 << region.octant())) != 0;
-                int owner = solidRegion
-                    ? region.octant()
-                    : concaveOwner(mask, region.octant(), primitive.materialFace());
-                if (owner == currentOctant) {
-                    PrimitiveKind kind = solidRegion ? primitive.kind() : PrimitiveKind.CONCAVE;
-                    output.add(translate(primitive, translation, kind));
-                }
-            }
-        }
-    }
-
-    private static int concaveOwner(int mask, int surfaceOctant, CubeFace materialFace) {
-        int inwardBit = materialFace.sign() > 0 ? 0 : 1;
-        int bestOctant = -1;
-        int bestScore = Integer.MAX_VALUE;
-        for (int candidate = 0; candidate < 8; candidate++) {
-            if ((mask & (1 << candidate)) == 0) {
+            double translationX = cellX * cellWidth;
+            double translationY = cellY * cellHeight;
+            double translationZ = cellZ * cellDepth;
+            if (translationX == 0.0 && translationY == 0.0 && translationZ == 0.0) {
+                output.addAll(primitives);
                 continue;
             }
-            int candidateAxisBit = (candidate >> materialFace.axis()) & 1;
-            int axisPenalty = candidateAxisBit == inwardBit ? 0 : 1;
-            int distance = Integer.bitCount(candidate ^ surfaceOctant);
-            int score = axisPenalty * 100 + distance * 10 + candidate;
-            if (score < bestScore) {
-                bestScore = score;
-                bestOctant = candidate;
+            Vec3 translation = new Vec3(translationX, translationY, translationZ);
+            for (MeshPrimitive primitive : primitives) {
+                output.add(translate(primitive, translation, primitive.kind()));
             }
         }
-        if (bestOctant < 0) {
-            throw new IllegalStateException("Concave surface has no solid owner for mask " + mask);
-        }
-        return bestOctant;
     }
 
     private static int vertexMask(Occupancy occupancy, int cornerX, int cornerY, int cornerZ) {

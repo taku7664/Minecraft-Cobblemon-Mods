@@ -39,7 +39,10 @@ class RoundedVoxelMesherTest {
             1.0
         );
         for (int mask = 0; mask <= 255; mask++) {
-            assertNotNull(library.partitionedTemplate(mask), "mask=" + mask);
+            for (int owner = 0; owner < 8; owner++) {
+                List<MeshPrimitive> prepared = library.ownedTemplate(mask, owner);
+                assertNotNull(prepared, "mask=" + mask + " owner=" + owner);
+            }
         }
     }
 
@@ -257,6 +260,30 @@ class RoundedVoxelMesherTest {
             .orElseThrow();
         assertTrue(merged.vertices().stream().anyMatch(v -> v.position().x() == 0.0));
         assertTrue(merged.vertices().stream().anyMatch(v -> v.position().x() == 1.0));
+    }
+
+    @Test
+    void adjacentCurvedQuadsCompactAlongAnExactlyLinearStrip() {
+        MeshPrimitive first = curvedStrip(0.0, 0.5, false);
+        MeshPrimitive second = curvedStrip(0.5, 1.0, false);
+
+        MeshPlan compacted = new MeshPlan(List.of(first, second)).compactLinearStrips();
+
+        assertEquals(1, compacted.primitives().size());
+        MeshPrimitive merged = compacted.primitives().getFirst();
+        assertEquals(PrimitiveKind.EDGE, merged.kind());
+        assertTrue(merged.vertices().stream().anyMatch(v -> v.position().z() == 0.0));
+        assertTrue(merged.vertices().stream().anyMatch(v -> v.position().z() == 1.0));
+    }
+
+    @Test
+    void curvedQuadsKeepTheirSubdivisionWhenSharedNormalsAreNotLinear() {
+        MeshPrimitive first = curvedStrip(0.0, 0.5, true);
+        MeshPrimitive second = curvedStrip(0.5, 1.0, true);
+
+        MeshPlan compacted = new MeshPlan(List.of(first, second)).compactLinearStrips();
+
+        assertEquals(2, compacted.primitives().size());
     }
 
     @Test
@@ -655,6 +682,28 @@ class RoundedVoxelMesherTest {
             java.util.Collections.reverse(vertices);
         }
         return new MeshPrimitive(PrimitiveKind.FACE, face, vertices);
+    }
+
+    private static MeshPrimitive curvedStrip(double zMin, double zMax, boolean bendMiddleNormal) {
+        Vec3 leftMinNormal = stripNormal(false, zMin, bendMiddleNormal);
+        Vec3 leftMaxNormal = stripNormal(false, zMax, bendMiddleNormal);
+        Vec3 rightMinNormal = stripNormal(true, zMin, bendMiddleNormal);
+        Vec3 rightMaxNormal = stripNormal(true, zMax, bendMiddleNormal);
+        return new MeshPrimitive(
+            PrimitiveKind.EDGE,
+            CubeFace.UP,
+            List.of(
+                new MeshVertex(new Vec3(0.0, 1.0, zMin), leftMinNormal),
+                new MeshVertex(new Vec3(0.0, 1.0, zMax), leftMaxNormal),
+                new MeshVertex(new Vec3(0.2, 0.95, zMax), rightMaxNormal),
+                new MeshVertex(new Vec3(0.2, 0.95, zMin), rightMinNormal)
+            )
+        );
+    }
+
+    private static Vec3 stripNormal(boolean right, double z, boolean bendMiddleNormal) {
+        double zComponent = bendMiddleNormal && z == 0.5 ? 0.05 : 0.0;
+        return new Vec3(right ? 0.2 : 0.0, 1.0, zComponent).normalize();
     }
 
     private static VoxelNeighborhood neighborhoodFor(Cell center, Set<Cell> solids) {

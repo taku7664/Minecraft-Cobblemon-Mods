@@ -32,7 +32,7 @@ final class BevelTemplateLibrary {
         {0, 2, 6, 4}, {1, 3, 7, 5}
     };
 
-    private final List<RegionPrimitive>[] partitionedTemplates;
+    private final List<MeshPrimitive>[][] ownedTemplates;
     private final double[] cellSizes;
     private final double radius;
     private final int segments;
@@ -59,32 +59,110 @@ final class BevelTemplateLibrary {
                 throw new IllegalArgumentException("Cell extent must be wider than the bevel diameter");
             }
         }
-        this.partitionedTemplates = (List<RegionPrimitive>[]) new List<?>[256];
+        this.ownedTemplates = (List<MeshPrimitive>[][]) new List<?>[256][8];
         for (int mask = 0; mask <= 255; mask++) {
             List<MeshPrimitive> generated = mask == 0 || mask == 255 ? List.of() : generate(mask);
-            partitionedTemplates[mask] = partition(mask, generated);
+            indexOwners(mask, partition(mask, generated));
         }
     }
 
-    List<RegionPrimitive> partitionedTemplate(int mask) {
-        if (mask < 0 || mask > 255) {
-            throw new IllegalArgumentException("Invalid bevel template mask=" + mask);
+    List<MeshPrimitive> ownedTemplate(int mask, int owner) {
+        if (mask < 0 || mask > 255 || owner < 0 || owner > 7) {
+            throw new IllegalArgumentException("Invalid bevel template mask=" + mask + " owner=" + owner);
         }
-        return partitionedTemplates[mask];
+        return ownedTemplates[mask][owner];
+    }
+
+    private void indexOwners(int mask, List<RegionPrimitive> regions) {
+        @SuppressWarnings("unchecked")
+        List<MeshPrimitive>[] byOwner = (List<MeshPrimitive>[]) new List<?>[8];
+        for (int owner = 0; owner < byOwner.length; owner++) {
+            byOwner[owner] = new ArrayList<>();
+        }
+        for (RegionPrimitive region : regions) {
+            MeshPrimitive primitive = region.primitive();
+            boolean solidRegion = (mask & (1 << region.octant())) != 0;
+            int owner = solidRegion
+                ? region.octant()
+                : concaveOwner(mask, region.octant(), primitive.materialFace());
+            byOwner[owner].add(solidRegion
+                ? primitive
+                : new MeshPrimitive(PrimitiveKind.CONCAVE, primitive.materialFace(), primitive.vertices()));
+        }
+        for (int owner = 0; owner < byOwner.length; owner++) {
+            List<MeshPrimitive> compacted = new MeshPlan(byOwner[owner]).compactLinearStrips().primitives();
+            ownedTemplates[mask][owner] = localizeToOwnerCell(owner, compacted);
+        }
+    }
+
+    private List<MeshPrimitive> localizeToOwnerCell(int owner, List<MeshPrimitive> primitives) {
+        if (primitives.isEmpty()) {
+            return List.of();
+        }
+        Vec3 translation = new Vec3(
+            (1 - (owner & 1)) * cellSizes[0],
+            (1 - ((owner >> 1) & 1)) * cellSizes[1],
+            (1 - ((owner >> 2) & 1)) * cellSizes[2]
+        );
+        if (translation.x() == 0.0 && translation.y() == 0.0 && translation.z() == 0.0) {
+            return List.copyOf(primitives);
+        }
+        List<MeshPrimitive> localized = new ArrayList<>(primitives.size());
+        for (MeshPrimitive primitive : primitives) {
+            List<MeshVertex> vertices = new ArrayList<>(primitive.vertices().size());
+            for (MeshVertex vertex : primitive.vertices()) {
+                vertices.add(new MeshVertex(vertex.position().add(translation), vertex.normal()));
+            }
+            localized.add(new MeshPrimitive(primitive.kind(), primitive.materialFace(), vertices));
+        }
+        return List.copyOf(localized);
     }
 
     private static List<RegionPrimitive> partition(int mask, List<MeshPrimitive> primitives) {
-        List<RegionPrimitive> result = new ArrayList<>();
+        @SuppressWarnings("unchecked")
+        List<MeshPrimitive>[] byRegion = (List<MeshPrimitive>[]) new List<?>[8];
+        for (int octant = 0; octant < byRegion.length; octant++) {
+            byRegion[octant] = new ArrayList<>();
+        }
         for (MeshPrimitive primitive : primitives) {
             for (int octant = 0; octant < 8; octant++) {
                 for (MeshPrimitive clipped : clipToOctant(primitive, octant)) {
                     if (canonicalRegion(mask, clipped) == octant) {
-                        result.add(new RegionPrimitive(octant, clipped));
+                        byRegion[octant].add(clipped);
                     }
                 }
             }
         }
+        List<RegionPrimitive> result = new ArrayList<>();
+        for (int octant = 0; octant < byRegion.length; octant++) {
+            for (MeshPrimitive primitive : byRegion[octant]) {
+                result.add(new RegionPrimitive(octant, primitive));
+            }
+        }
         return List.copyOf(result);
+    }
+
+    private static int concaveOwner(int mask, int surfaceOctant, CubeFace materialFace) {
+        int inwardBit = materialFace.sign() > 0 ? 0 : 1;
+        int bestOctant = -1;
+        int bestScore = Integer.MAX_VALUE;
+        for (int candidate = 0; candidate < 8; candidate++) {
+            if ((mask & (1 << candidate)) == 0) {
+                continue;
+            }
+            int candidateAxisBit = (candidate >> materialFace.axis()) & 1;
+            int axisPenalty = candidateAxisBit == inwardBit ? 0 : 1;
+            int distance = Integer.bitCount(candidate ^ surfaceOctant);
+            int score = axisPenalty * 100 + distance * 10 + candidate;
+            if (score < bestScore) {
+                bestScore = score;
+                bestOctant = candidate;
+            }
+        }
+        if (bestOctant < 0) {
+            throw new IllegalStateException("Concave surface has no solid owner for mask " + mask);
+        }
+        return bestOctant;
     }
 
     static List<MeshPrimitive> clipToOctant(MeshPrimitive primitive, int octant) {

@@ -34,6 +34,11 @@ public record VoxelNeighborhood(int bits) {
      * needs no bevel geometry in the center block.
      */
     public boolean isAxisAlignedLayered() {
+        return isAxisAlignedLayered(bits);
+    }
+
+    public static boolean isAxisAlignedLayered(int bits) {
+        validateBits(bits);
         for (int[] axisMasks : AXIS_LAYER_MASKS) {
             boolean layered = true;
             for (int layerMask : axisMasks) {
@@ -77,10 +82,15 @@ public record VoxelNeighborhood(int bits) {
 
     /** Bit set of exposed faces that can be rendered by the original cube model. */
     public int planarFaceBits() {
+        return planarFaceBits(bits);
+    }
+
+    public static int planarFaceBits(int bits) {
+        validateBits(bits);
         int result = 0;
         for (CubeFace face : FACES) {
-            if (!occupiedAt(face.axis(), face.sign(), 0, 0)
-                && isPlanarFace(face.axis(), face.sign())) {
+            if (!occupiedAt(bits, face.axis(), face.sign(), 0, 0)
+                && isPlanarFace(bits, face.axis(), face.sign())) {
                 result |= 1 << face.ordinal();
             }
         }
@@ -88,10 +98,14 @@ public record VoxelNeighborhood(int bits) {
     }
 
     private boolean isPlanarFace(int axis, int sign) {
+        return isPlanarFace(bits, axis, sign);
+    }
+
+    private static boolean isPlanarFace(int bits, int axis, int sign) {
         for (int first = -1; first <= 1; first++) {
             for (int second = -1; second <= 1; second++) {
-                if (!occupiedAt(axis, 0, first, second)
-                    || occupiedAt(axis, sign, first, second)) {
+                if (!occupiedAt(bits, axis, 0, first, second)
+                    || occupiedAt(bits, axis, sign, first, second)) {
                     return false;
                 }
             }
@@ -100,10 +114,20 @@ public record VoxelNeighborhood(int bits) {
     }
 
     private boolean occupiedAt(int axis, int coordinate, int first, int second) {
+        return occupiedAt(bits, axis, coordinate, first, second);
+    }
+
+    private static boolean occupiedAt(int bits, int axis, int coordinate, int first, int second) {
         int x = axis == 0 ? coordinate : first;
         int y = axis == 1 ? coordinate : axis == 0 ? first : second;
         int z = axis == 2 ? coordinate : second;
-        return occupied(x, y, z);
+        return (bits & bit(x, y, z)) != 0;
+    }
+
+    private static void validateBits(int bits) {
+        if ((bits & ~VALID_BITS) != 0) {
+            throw new IllegalArgumentException("Voxel neighborhood uses exactly 27 bits");
+        }
     }
 
     private static int bit(int x, int y, int z) {
