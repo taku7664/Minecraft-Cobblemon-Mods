@@ -33,7 +33,8 @@ internal object LocalDeclaredMultiHit {
             .firstOrNull { it.kind == BattleMoveEffectKind.MULTI_HIT }
             ?.amountRange
             ?: return 1
-        val ability = canonical(actor?.knownAbilityId)
+        val ability = if (state == null) canonical(actor?.knownAbilityId) else
+            LocalPublicAbilityState.effectiveKnownAbility(state, actor)
         val item = canonical(actor?.knownHeldItemId)
         return when {
             ability == "skilllink" -> range.maximum

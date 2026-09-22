@@ -7,8 +7,8 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 
 /** Applies deterministic power and stat modifiers whose item or ability is public. */
 internal object LocalKnownStatMechanics {
-    fun effectivePower(basePower: Int, actor: BattlePokemonStateView): Int {
-        if (canonical(actor.knownAbilityId) == "technician" && basePower <= 60) {
+    fun effectivePower(basePower: Int, actor: BattlePokemonStateView, state: BattleStateView): Int {
+        if (LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "technician" && basePower <= 60) {
             return (basePower * 1.5).toInt().coerceAtLeast(1)
         }
         return basePower
@@ -37,7 +37,8 @@ internal object LocalKnownStatMechanics {
             attackItemMultiplier(category, actor)
         }
         val abilityMultiplier = if (
-            category == BattleMoveDamageCategory.PHYSICAL && canonical(actor.knownAbilityId) == "hustle"
+            category == BattleMoveDamageCategory.PHYSICAL &&
+                LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "hustle"
         ) 1.5 else 1.0
         return scale(value, itemMultiplier * abilityMultiplier)
     }

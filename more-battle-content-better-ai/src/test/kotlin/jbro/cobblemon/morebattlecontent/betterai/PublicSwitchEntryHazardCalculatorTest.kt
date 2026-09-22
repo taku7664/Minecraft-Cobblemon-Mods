@@ -39,6 +39,24 @@ class PublicSwitchEntryHazardCalculatorTest {
         assertEquals(0.0, requireNotNull(boots.candidates.single().facts?.switchEntryHpLossFraction), 1e-9)
     }
 
+    @Test
+    fun `neutralizing gas suppresses magic guard against entry hazards`() {
+        val benchId = UUID.fromString("00000000-0000-0000-0000-000000000404")
+        val rocks = listOf(BattleTimedEffectView("stealthrock", null))
+        val protected = PublicBattleTacticalCalculator.calculate(
+            context(state(benchId, setOf("normal"), rocks, ability = "magicguard"), switch(benchId)),
+        )
+        val suppressed = PublicBattleTacticalCalculator.calculate(
+            context(
+                state(benchId, setOf("normal"), rocks, ability = "magicguard", neutralizingGas = true),
+                switch(benchId),
+            ),
+        )
+
+        assertEquals(0.0, requireNotNull(protected.candidates.single().facts?.switchEntryHpLossFraction), 1e-9)
+        assertEquals(0.125, requireNotNull(suppressed.candidates.single().facts?.switchEntryHpLossFraction), 1e-9)
+    }
+
     private fun context(state: BattleStateView, candidate: BattleActionCandidate) = BattleDecisionContext(
         requestId = UUID.fromString("00000000-0000-0000-0000-000000000499"),
         state = state,
@@ -58,6 +76,8 @@ class PublicSwitchEntryHazardCalculatorTest {
         benchTypes: Set<String>,
         conditions: List<BattleTimedEffectView>,
         item: String? = null,
+        ability: String? = null,
+        neutralizingGas: Boolean = false,
     ): BattleStateView {
         val allyId = UUID.fromString("00000000-0000-0000-0000-000000000400")
         val opponentId = UUID.fromString("00000000-0000-0000-0000-000000000403")
@@ -67,6 +87,7 @@ class PublicSwitchEntryHazardCalculatorTest {
             activeSlot: Int?,
             types: Set<String>,
             heldItem: String? = null,
+            knownAbility: String? = null,
         ) = BattlePokemonStateView(
             battlePokemonId = id,
             side = side,
@@ -78,7 +99,7 @@ class PublicSwitchEntryHazardCalculatorTest {
             statusId = null,
             statStages = emptyMap(),
             knownMoveIds = emptySet(),
-            knownAbilityId = null,
+            knownAbilityId = knownAbility,
             knownHeldItemId = heldItem,
             fainted = false,
             knownTypeIds = types,
@@ -86,12 +107,20 @@ class PublicSwitchEntryHazardCalculatorTest {
         )
         return BattleStateView(
             battleId = UUID.fromString("00000000-0000-0000-0000-000000000498"),
-            format = BattleFormat.SINGLE,
+            format = if (neutralizingGas) BattleFormat.DOUBLE else BattleFormat.SINGLE,
             turn = 1,
             pokemon = listOf(
                 pokemon(allyId, BattleSide.ALLY, 0, setOf("water")),
-                pokemon(benchId, BattleSide.ALLY, null, benchTypes, item),
+                pokemon(benchId, BattleSide.ALLY, null, benchTypes, item, ability),
                 pokemon(opponentId, BattleSide.OPPONENT, 0, setOf("rock")),
+            ) + listOfNotNull(
+                pokemon(
+                    UUID.fromString("00000000-0000-0000-0000-000000000405"),
+                    BattleSide.OPPONENT,
+                    1,
+                    setOf("poison"),
+                    knownAbility = "neutralizinggas",
+                ).takeIf { neutralizingGas },
             ),
             field = BattleFieldStateView(
                 weather = null,

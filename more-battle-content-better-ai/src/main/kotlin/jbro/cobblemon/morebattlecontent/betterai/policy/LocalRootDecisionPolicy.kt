@@ -87,7 +87,7 @@ internal object LocalRootDecisionPolicy {
                 BattleSide.ALLY,
                 active,
             )
-            val projectedReentryHp = LocalSwitchStateProjector.projectedSwitchOutHp(active)
+            val projectedReentryHp = LocalSwitchStateProjector.projectedSwitchOutHp(context.state, active)
             if (reentryLoss != null && reentryLoss > 0.0 && projectedReentryHp <= reentryLoss + HP_EPSILON) {
                 vetoes += LocalSwitchVetoReason.FATAL_REENTRY
             }

@@ -9,11 +9,12 @@ internal object LocalPublicStatusImmunity {
         if (target.statusId != null) return true
         val status = canonical(statusId)
         val types = target.knownTypeIds.mapTo(hashSetOf(), ::canonical)
-        val ability = canonical(target.knownAbilityId) ?: state.inferences.asSequence()
+        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, target) ?: state.inferences.asSequence()
             .filter { it.subjectPokemonId == target.battlePokemonId && canonical(it.categoryId) == "ability" }
             .mapNotNull { canonical(it.candidateId) }
             .distinct()
             .singleOrNull()
+            ?.takeIf { LocalPublicAbilityState.isActive(state, target, it) }
         return when (status) {
             "psn", "poison", "poisoned", "tox", "toxic", "badlypoisoned" ->
                 "poison" in types || "steel" in types || ability == "immunity"

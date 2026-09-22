@@ -4,6 +4,7 @@ import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityState
 
 /** Applies deterministic non-HP hazards to the public state after a switch. */
 internal object LocalSwitchEntryEffectProjector {
@@ -11,23 +12,24 @@ internal object LocalSwitchEntryEffectProjector {
         val incoming = state.pokemon.firstOrNull {
             it.battlePokemonId == incomingPokemonId && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         } ?: return state
-        if (!LocalPublicFieldMechanics.magicRoomActive(state) &&
-            canonical(incoming.knownHeldItemId) == HEAVY_DUTY_BOOTS
-        ) return state
         if (!LocalPublicTurnOrder.grounded(state, incoming)) return state
 
         val hazards = state.field.sideConditions.getValue(incoming.side)
         val toxicSpikes = hazards.firstOrNull { canonical(it.effectId) == TOXIC_SPIKES }
         val types = incoming.knownTypeIds.mapTo(hashSetOf(), ::canonical)
+        val itemsActive = !LocalPublicFieldMechanics.magicRoomActive(state)
+        val item = canonical(incoming.knownHeldItemId).takeIf { itemsActive }
         var nextField = state.field
         var nextIncoming = incoming
+        var reflectedTargetId: UUID? = null
         if (toxicSpikes != null && POISON in types) {
             nextField = copyField(
                 state.field,
                 state.field.sideConditions + (incoming.side to hazards.filterNot { canonical(it.effectId) == TOXIC_SPIKES }),
             )
-        } else if (toxicSpikes != null && incoming.statusId == null && STEEL !in types &&
-            canonical(incoming.knownAbilityId) !in POISON_IMMUNITY_ABILITIES
+        } else if (item != HEAVY_DUTY_BOOTS && toxicSpikes != null && incoming.statusId == null &&
+            STEEL !in types && !statusBlockedByField(state, incoming) &&
+            LocalPublicAbilityState.effectiveKnownAbility(state, incoming) !in POISON_IMMUNITY_ABILITIES
         ) {
             nextIncoming = copyPokemon(
                 nextIncoming,
@@ -35,20 +37,40 @@ internal object LocalSwitchEntryEffectProjector {
             )
         }
 
-        if (hazards.any { canonical(it.effectId) == STICKY_WEB }) {
-            nextIncoming = applyStickyWeb(nextIncoming)
+        if (item != HEAVY_DUTY_BOOTS && hazards.any { canonical(it.effectId) == STICKY_WEB }) {
+            val ability = LocalPublicAbilityState.effectiveKnownAbility(state, nextIncoming)
+            if (ability == MIRROR_ARMOR) {
+                reflectedTargetId = state.pokemon.firstOrNull {
+                    it.side != incoming.side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+                }?.battlePokemonId
+            } else if (item != CLEAR_AMULET) {
+                nextIncoming = applyStickyWeb(nextIncoming, ability)
+            }
         }
-        if (nextIncoming == incoming && nextField === state.field) return state
+        if (nextIncoming == incoming && nextField === state.field && reflectedTargetId == null) return state
         return copyState(
             state,
-            state.pokemon.map { if (it.battlePokemonId == incomingPokemonId) nextIncoming else it },
+            state.pokemon.map {
+                when (it.battlePokemonId) {
+                    incomingPokemonId -> nextIncoming
+                    reflectedTargetId -> changeStage(it, SPEED, -1)
+                    else -> it
+                }
+            },
             nextField,
         )
     }
 
-    private fun applyStickyWeb(pokemon: BattlePokemonStateView): BattlePokemonStateView = when (
-        canonical(pokemon.knownAbilityId)
-    ) {
+    private fun statusBlockedByField(state: BattleStateView, pokemon: BattlePokemonStateView): Boolean {
+        val mistyTerrain = canonical(state.field.terrain?.effectId) == MISTY_TERRAIN
+        val safeguard = state.field.sideConditions.getValue(pokemon.side).any {
+            val remaining = it.remainingTurns
+            canonical(it.effectId) == SAFEGUARD && (remaining == null || remaining > 0)
+        }
+        return mistyTerrain && LocalPublicTurnOrder.grounded(state, pokemon) || safeguard
+    }
+
+    private fun applyStickyWeb(pokemon: BattlePokemonStateView, ability: String?): BattlePokemonStateView = when (ability) {
         in STAT_DROP_IMMUNITIES -> pokemon
         CONTRARY -> changeStage(pokemon, SPEED, 1)
         DEFIANT -> changeStage(changeStage(pokemon, SPEED, -1), ATTACK, 2)
@@ -90,6 +112,7 @@ internal object LocalSwitchEntryEffectProjector {
         .lowercase().filter(Char::isLetterOrDigit)
 
     private const val HEAVY_DUTY_BOOTS = "heavydutyboots"
+    private const val CLEAR_AMULET = "clearamulet"
     private const val STICKY_WEB = "stickyweb"
     private const val TOXIC_SPIKES = "toxicspikes"
     private const val POISON = "poison"
@@ -102,6 +125,9 @@ internal object LocalSwitchEntryEffectProjector {
     private const val CONTRARY = "contrary"
     private const val DEFIANT = "defiant"
     private const val COMPETITIVE = "competitive"
+    private const val MIRROR_ARMOR = "mirrorarmor"
+    private const val MISTY_TERRAIN = "mistyterrain"
+    private const val SAFEGUARD = "safeguard"
     private val POISON_IMMUNITY_ABILITIES = setOf("immunity", "pastelveil")
     private val STAT_DROP_IMMUNITIES = setOf("clearbody", "fullmetalbody", "whitesmoke")
     private val STAT_ALIASES = mapOf(

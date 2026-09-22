@@ -91,6 +91,18 @@ class LocalFullHealthSurvivalTest {
         )
     }
 
+    @Test
+    fun `neutralizing gas suppresses sturdy unless ability shield protects it`() {
+        assertEquals(
+            BattleKnockoutAssessment.GUARANTEED,
+            knockout(item = null, ability = "sturdy", neutralizingGas = true).first,
+        )
+        assertEquals(
+            BattleKnockoutAssessment.IMPOSSIBLE,
+            knockout(item = "abilityshield", ability = "sturdy", neutralizingGas = true).first,
+        )
+    }
+
     private fun knockout(
         item: String?,
         ability: String?,
@@ -99,9 +111,12 @@ class LocalFullHealthSurvivalTest {
         hpFraction: Double = 1.0,
         room: String? = null,
         actorAbility: String? = null,
+        neutralizingGas: Boolean = false,
     ): Pair<BattleKnockoutAssessment?, Double?> {
         val ally = mon(BattleSide.ALLY, null, actorAbility, 1.0)
         val opponent = mon(BattleSide.OPPONENT, item, ability, hpFraction)
+        val gasPartner = mon(BattleSide.ALLY, null, "neutralizinggas", 1.0, activeSlot = 1)
+        val opponentPartner = mon(BattleSide.OPPONENT, null, null, 1.0, activeSlot = 1)
         val move = BattleActionCandidate(
             actionId = "bigmove", kind = BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
             moveId = "cobblemon:bigmove", targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
@@ -114,8 +129,9 @@ class LocalFullHealthSurvivalTest {
         val context = BattleDecisionContext(
             requestId = UUID.randomUUID(),
             state = BattleStateView(
-                battleId = UUID.randomUUID(), format = BattleFormat.SINGLE, turn = 2,
-                pokemon = listOf(ally, opponent),
+                battleId = UUID.randomUUID(), format = if (neutralizingGas) BattleFormat.DOUBLE else BattleFormat.SINGLE,
+                turn = 2,
+                pokemon = if (neutralizingGas) listOf(ally, gasPartner, opponent, opponentPartner) else listOf(ally, opponent),
                 field = BattleFieldStateView(null, null,
                     room?.let { listOf(BattleTimedEffectView(it, null)) }.orEmpty(),
                     emptyList(), BattleSide.entries.associateWith { emptyList() }),
@@ -140,9 +156,15 @@ class LocalFullHealthSurvivalTest {
         return facts?.standardKnockoutAssessment to facts?.standardDamageRollKoProbabilityRange?.maximum
     }
 
-    private fun mon(side: BattleSide, item: String?, ability: String?, hpFraction: Double) =
+    private fun mon(
+        side: BattleSide,
+        item: String?,
+        ability: String?,
+        hpFraction: Double,
+        activeSlot: Int = 0,
+    ) =
         BattlePokemonStateView(
-            battlePokemonId = UUID.randomUUID(), side = side, activeSlot = 0,
+            battlePokemonId = UUID.randomUUID(), side = side, activeSlot = activeSlot,
             speciesId = "cobblemon:probe", formId = null, level = 50, hpFraction = hpFraction,
             statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(),
             knownAbilityId = ability, knownHeldItemId = item, fainted = false,

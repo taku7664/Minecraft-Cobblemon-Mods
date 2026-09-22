@@ -17,6 +17,7 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalKnownStatMechani
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalObservedActionOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityMechanics
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicStatusImmunity
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
@@ -610,7 +611,7 @@ internal object PublicSingleTurnProjector {
         val reflectedByMagicBounce = target != null && target.side != side &&
             calculatedAction.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS &&
             "reflectable" in calculatedAction.moveDetails?.effects?.mechanicFlags.orEmpty() &&
-            canonicalId(target.knownAbilityId) == "magicbounce" &&
+            LocalPublicAbilityState.effectiveKnownAbility(projectedFormState, target) == "magicbounce" &&
             !LocalPublicAbilityMechanics.ignoresTargetAbility(
                 calculatedAction,
                 actor,
@@ -785,7 +786,9 @@ internal object PublicSingleTurnProjector {
     ): BattleStateView {
         if (effects.none { it.kind == BattleMoveEffectKind.CRASH_RECOIL }) return state
         val actor = state.pokemon.singleOrNull { it.battlePokemonId == actorPokemonId } ?: return state
-        if (canonicalId(actor.knownAbilityId) == "magicguard" || actor.fainted || actor.hpFraction <= 0.0) return state
+        if (LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "magicguard" ||
+            actor.fainted || actor.hpFraction <= 0.0
+        ) return state
         val hp = (actor.hpFraction - 0.5).coerceAtLeast(0.0)
         return state.copyState(
             pokemon = state.pokemon.map { pokemon ->
@@ -872,7 +875,9 @@ internal object PublicSingleTurnProjector {
         val target = outcome.state.pokemon.singleOrNull { it.battlePokemonId == targetId }
             ?: return listOf(outcome)
         val slot = target.activeSlot ?: return listOf(outcome)
-        if (target.fainted || target.hpFraction <= 0.0 || canonicalId(target.knownAbilityId) in FORCED_SWITCH_IMMUNITIES) {
+        if (target.fainted || target.hpFraction <= 0.0 ||
+            LocalPublicAbilityState.effectiveKnownAbility(outcome.state, target) in FORCED_SWITCH_IMMUNITIES
+        ) {
             return listOf(outcome)
         }
         val reserves = outcome.state.pokemon.filter {

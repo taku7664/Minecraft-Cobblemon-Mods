@@ -39,13 +39,14 @@ internal object LocalPublicMoveTargets {
 
     private fun redirectsPublicly(pokemon: BattlePokemonStateView, context: BattleDecisionContext,
         type: String): Boolean {
-        val revealed = canonical(pokemon.knownAbilityId)
+        val revealed = LocalPublicAbilityState.effectiveKnownAbility(context.state, pokemon)
         if (revealed != null) return REDIRECTING_ABILITIES[revealed] == type
         val possible = context.state.inferences.asSequence()
             .filter { it.subjectPokemonId == pokemon.battlePokemonId && it.categoryId == "ability" }
             .filter { it.confidence != BattleInferenceConfidence.RULED_OUT }
             .mapNotNull { canonical(it.candidateId) }.distinct().toList()
-        return possible.isNotEmpty() && possible.all { REDIRECTING_ABILITIES[it] == type }
+        return LocalPublicAbilityState.isActive(context.state, pokemon, "levitate") &&
+            possible.isNotEmpty() && possible.all { REDIRECTING_ABILITIES[it] == type }
     }
 
     private fun canonical(value: String?): String? = value?.substringAfter(':')?.lowercase()?.filter(Char::isLetterOrDigit)

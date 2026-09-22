@@ -29,7 +29,7 @@ internal object LocalPublicTurnOrder {
     ): Int {
         val details = action.moveDetails ?: return 0
         val actor = active(state, side, action.actorSlot)
-        val ability = canonical(actor?.knownAbilityId.orEmpty())
+        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, actor).orEmpty()
         val moveId = canonical(action.moveId.orEmpty())
         val healingMove = details.effects?.effects.orEmpty().any {
             it.kind == BattleMoveEffectKind.HEAL_FRACTION || it.kind == BattleMoveEffectKind.DRAIN_FRACTION
@@ -53,7 +53,7 @@ internal object LocalPublicTurnOrder {
         if (alwaysLastWithinPriority(state, side, action)) return 0.0
         val actor = active(state, side, action.actorSlot) ?: return 0.0
         val chances = buildList {
-            if (canonical(actor.knownAbilityId.orEmpty()) == QUICK_DRAW &&
+            if (LocalPublicAbilityState.effectiveKnownAbility(state, actor) == QUICK_DRAW &&
                 action.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS
             ) add(QUICK_DRAW_CHANCE)
             if (!LocalPublicFieldMechanics.magicRoomActive(state) &&
@@ -69,7 +69,7 @@ internal object LocalPublicTurnOrder {
         action: BattleActionCandidate,
     ): Boolean {
         val actor = active(state, side, action.actorSlot) ?: return false
-        val ability = canonical(actor.knownAbilityId.orEmpty())
+        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, actor).orEmpty()
         val item = canonical(actor.knownHeldItemId.orEmpty())
         return ability == STALL ||
             ability == MYCELIUM_MIGHT && action.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS ||
@@ -158,7 +158,7 @@ internal object LocalPublicTurnOrder {
         val speed = pokemon.combatStats?.speed?.let { LocalKnownStatMechanics.speed(it, pokemon, state) } ?: return null
         val stage = pokemon.statStages.entries
             .firstOrNull { canonical(it.key) in SPEED_ALIASES }?.value?.coerceIn(-6, 6) ?: 0
-        val ability = canonical(pokemon.knownAbilityId.orEmpty())
+        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, pokemon).orEmpty()
         val statused = pokemon.statusId != null
         val paralysis = if (canonical(pokemon.statusId.orEmpty()) in PARALYSIS_IDS && ability != QUICK_FEET) 0.5 else 1.0
         val weather = LocalPublicFieldMechanics.effectiveWeatherId(state)
@@ -192,7 +192,7 @@ internal object LocalPublicTurnOrder {
         val itemsActive = !LocalPublicFieldMechanics.magicRoomActive(state)
         if (itemsActive && canonical(pokemon.knownHeldItemId.orEmpty()) == IRON_BALL) return true
         if (pokemon.knownTypeIds.any { canonical(it) == FLYING }) return false
-        if (canonical(pokemon.knownAbilityId.orEmpty()) == LEVITATE) return false
+        if (LocalPublicAbilityState.effectiveKnownAbility(state, pokemon) == LEVITATE) return false
         if (itemsActive && canonical(pokemon.knownHeldItemId.orEmpty()) == AIR_BALLOON) return false
         return true
     }

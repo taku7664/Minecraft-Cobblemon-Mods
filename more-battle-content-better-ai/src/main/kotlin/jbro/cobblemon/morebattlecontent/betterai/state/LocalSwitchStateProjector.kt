@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.betterai.state
 
 import jbro.cobblemon.morebattlecontent.api.ai.*
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityState
 
 /** Applies the public, event-free part of a single switch for scoring and recursive projection. */
 internal object LocalSwitchStateProjector {
@@ -19,7 +20,7 @@ internal object LocalSwitchStateProjector {
                 pokemon.side == side && pokemon.activeSlot == slot ->
                     pokemon.copyForSwitch(
                         activeSlot = null,
-                        hpFraction = projectedSwitchOutHp(pokemon),
+                        hpFraction = projectedSwitchOutHp(state, pokemon),
                         statStages = emptyMap(),
                         formState = pokemon.stanceResetForm(),
                     )
@@ -58,8 +59,8 @@ internal object LocalSwitchStateProjector {
         return LocalEntryAbilityProjector.project(afterHazards, incomingId)
     }
 
-    fun projectedSwitchOutHp(pokemon: BattlePokemonStateView): Double =
-        if (canonical(pokemon.knownAbilityId) == "regenerator") {
+    fun projectedSwitchOutHp(state: BattleStateView, pokemon: BattlePokemonStateView): Double =
+        if (LocalPublicAbilityState.effectiveKnownAbility(state, pokemon) == "regenerator") {
             (pokemon.hpFraction + 1.0 / 3.0).coerceAtMost(1.0)
         } else {
             pokemon.hpFraction

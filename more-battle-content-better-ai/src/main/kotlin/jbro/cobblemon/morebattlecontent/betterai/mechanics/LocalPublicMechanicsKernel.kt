@@ -32,7 +32,7 @@ internal object LocalPublicMechanicsKernel {
         )
         if (specialTargetImmunity(
                 candidate, context, actingSide, target,
-                canonicalOrNull(actor?.knownAbilityId), ignoresAbility,
+                actor, LocalPublicAbilityState.effectiveKnownAbility(context.state, actor), ignoresAbility,
             )
         ) return 0.0
         val ignoresTypeImmunity = details.effects?.effects.orEmpty().any {
@@ -62,14 +62,14 @@ internal object LocalPublicMechanicsKernel {
         val actor = context.state.pokemon.firstOrNull {
             it.side == actingSide && it.activeSlot == candidate.actorSlot && !it.fainted
         }
-        val actorAbility = canonicalOrNull(actor?.knownAbilityId)
+        val actorAbility = LocalPublicAbilityState.effectiveKnownAbility(context.state, actor)
         val ignoresAbility = LocalPublicAbilityMechanics.ignoresTargetAbility(
             candidate,
             actor,
             target,
             context.state,
         )
-        if (specialTargetImmunity(candidate, context, actingSide, target, actorAbility, ignoresAbility)) {
+        if (specialTargetImmunity(candidate, context, actingSide, target, actor, actorAbility, ignoresAbility)) {
             return LocalPublicMoveProjection(
                 knownDamageMultiplier = 0.0,
                 targetHpFraction = target.hpFraction,
@@ -153,6 +153,7 @@ internal object LocalPublicMechanicsKernel {
         context: BattleDecisionContext,
         actingSide: BattleSide,
         target: BattlePokemonStateView,
+        actor: BattlePokemonStateView?,
         actorAbility: String?,
         ignoresAbility: Boolean,
     ): Boolean {
@@ -163,7 +164,8 @@ internal object LocalPublicMechanicsKernel {
         if (!ignoresAbility && when (ability) {
                 WIND_RIDER -> WIND_FLAG in flags
                 BULLETPROOF -> BULLET_FLAG in flags
-                SOUNDPROOF -> SOUND_FLAG in flags
+                SOUNDPROOF -> SOUND_FLAG in flags &&
+                    target.battlePokemonId != actor?.battlePokemonId
                 TELEPATHY -> target.side == actingSide && details.damageCategory != BattleMoveDamageCategory.STATUS
                 else -> false
             }
@@ -335,12 +337,13 @@ internal object LocalPublicMechanicsKernel {
     private fun publicAbility(
         target: BattlePokemonStateView,
         context: BattleDecisionContext,
-    ): String? = canonicalOrNull(target.knownAbilityId) ?: context.state.inferences.asSequence()
+    ): String? = LocalPublicAbilityState.effectiveKnownAbility(context.state, target) ?: context.state.inferences.asSequence()
         .filter { it.subjectPokemonId == target.battlePokemonId && it.categoryId == ABILITY_INFERENCE_CATEGORY }
         .filter { it.confidence != BattleInferenceConfidence.RULED_OUT }
         .mapNotNull { it.candidateId?.let(::canonical) }
         .distinct()
         .singleOrNull()
+        ?.takeIf { LocalPublicAbilityState.isActive(context.state, target, it) }
 
     /** All remaining public candidates must block; hidden classification is not exclusion evidence. */
     private fun possibleAbilitiesAllBlock(
@@ -349,6 +352,7 @@ internal object LocalPublicMechanicsKernel {
         moveType: String,
     ): Boolean {
         if (target.knownAbilityId != null) return false
+        if (!LocalPublicAbilityState.isActive(context.state, target, "levitate")) return false
         val blocking = TYPE_IMMUNITY_ABILITIES[moveType].orEmpty()
         if (blocking.isEmpty()) return false
         val possible = context.state.inferences.asSequence()

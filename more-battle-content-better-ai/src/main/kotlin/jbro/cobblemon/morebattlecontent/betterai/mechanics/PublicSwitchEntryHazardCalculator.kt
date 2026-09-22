@@ -17,6 +17,7 @@ internal object PublicSwitchEntryHazardCalculator {
         pokemon,
         itemsActive = !LocalPublicFieldMechanics.magicRoomActive(state),
         grounded = LocalPublicTurnOrder.grounded(state, pokemon),
+        ability = LocalPublicAbilityState.effectiveKnownAbility(state, pokemon),
     )
 
     fun hpLoss(
@@ -29,6 +30,7 @@ internal object PublicSwitchEntryHazardCalculator {
         pokemon,
         itemsActive = true,
         grounded = isGrounded(pokemon, canonical(pokemon.knownHeldItemId), canonical(pokemon.knownAbilityId)),
+        ability = canonical(pokemon.knownAbilityId),
     )
 
     private fun hpLoss(
@@ -37,11 +39,11 @@ internal object PublicSwitchEntryHazardCalculator {
         pokemon: BattlePokemonStateView,
         itemsActive: Boolean,
         grounded: Boolean,
+        ability: String?,
     ): Double? {
         val hazards = field.sideConditions.getValue(enteringSide)
         if (hazards.isEmpty()) return 0.0
         val item = canonical(pokemon.knownHeldItemId).takeIf { itemsActive }
-        val ability = canonical(pokemon.knownAbilityId)
         if (item == HEAVY_DUTY_BOOTS || ability == MAGIC_GUARD) return 0.0
 
         var loss = 0.0

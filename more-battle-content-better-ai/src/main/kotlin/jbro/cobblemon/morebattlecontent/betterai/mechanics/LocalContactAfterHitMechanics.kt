@@ -24,12 +24,14 @@ internal object LocalContactAfterHitMechanics {
             ?: return listOf(LocalContactAfterHitBranch(state, 1.0))
         val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId }
             ?: return listOf(LocalContactAfterHitBranch(state, 1.0))
-        val indirectImmune = canonical(actor.knownAbilityId) == "magicguard"
+        val indirectImmune = LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "magicguard"
         val contactDamage = if (indirectImmune) 0.0 else {
             (if (!LocalPublicFieldMechanics.magicRoomActive(state) &&
                 canonical(target.knownHeldItemId) == "rockyhelmet"
             ) 1.0 / 6.0 else 0.0) +
-                (if (canonical(target.knownAbilityId) in CONTACT_DAMAGE_ABILITIES) 1.0 / 8.0 else 0.0)
+                (if (LocalPublicAbilityState.effectiveKnownAbility(state, target) in CONTACT_DAMAGE_ABILITIES) {
+                    1.0 / 8.0
+                } else 0.0)
         }
         val damaged = if (contactDamage > 0.0) {
             updateActor(state, actorId) { current ->
@@ -39,7 +41,7 @@ internal object LocalContactAfterHitMechanics {
         } else {
             state
         }
-        if (!canFlameBodyBurn(actor, target)) return listOf(LocalContactAfterHitBranch(damaged, 1.0))
+        if (!canFlameBodyBurn(state, actor, target)) return listOf(LocalContactAfterHitBranch(damaged, 1.0))
         val burned = updateActor(damaged, actorId) { current -> copyPokemon(current, statusId = "cobblemon:burn") }
         return listOf(
             LocalContactAfterHitBranch(damaged, 0.70),
@@ -47,8 +49,12 @@ internal object LocalContactAfterHitMechanics {
         )
     }
 
-    private fun canFlameBodyBurn(actor: BattlePokemonStateView, target: BattlePokemonStateView): Boolean =
-        canonical(target.knownAbilityId) == "flamebody" &&
+    private fun canFlameBodyBurn(
+        state: BattleStateView,
+        actor: BattlePokemonStateView,
+        target: BattlePokemonStateView,
+    ): Boolean =
+        LocalPublicAbilityState.effectiveKnownAbility(state, target) == "flamebody" &&
             actor.statusId == null &&
             actor.knownTypeIds.none { canonical(it) == "fire" }
 

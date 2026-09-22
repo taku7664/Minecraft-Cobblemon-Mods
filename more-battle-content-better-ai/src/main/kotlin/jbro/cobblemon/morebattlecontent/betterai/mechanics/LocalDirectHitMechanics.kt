@@ -87,7 +87,7 @@ internal object LocalDirectHitMechanics {
         ignoreTargetAbility: Boolean,
     ): TargetResolution {
         val disguiseReady = !ignoreTargetAbility &&
-            canonical(target.knownAbilityId) == "disguise" &&
+            LocalPublicAbilityState.effectiveKnownAbility(state, target) == "disguise" &&
             canonical(target.speciesId) in MIMIKYU_SPECIES &&
             !canonical(target.formId).orEmpty().contains("busted") &&
             incomingDamage > 0.0
@@ -106,7 +106,8 @@ internal object LocalDirectHitMechanics {
 
         val sashReady = !magicRoomActive(state) && canonical(target.knownHeldItemId) == "focussash" &&
             target.hpFraction >= FULL_HP_EPSILON && incomingDamage >= target.hpFraction
-        val sturdyReady = !ignoreTargetAbility && canonical(target.knownAbilityId) == "sturdy" &&
+        val sturdyReady = !ignoreTargetAbility &&
+            LocalPublicAbilityState.effectiveKnownAbility(state, target) == "sturdy" &&
             target.hpFraction >= FULL_HP_EPSILON && incomingDamage >= target.hpFraction
         if (sturdyReady || sashReady) {
             val oneHp = oneHpFraction(target)

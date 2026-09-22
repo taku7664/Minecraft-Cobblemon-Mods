@@ -1362,6 +1362,29 @@ class LocalLookaheadEvaluationTest {
     }
 
     @Test
+    fun `neutralizing gas restores switches blocked by arena trap`() {
+        val benchId = UUID.fromString("00000000-0000-0000-0000-000000000220")
+        val gasId = UUID.fromString("00000000-0000-0000-0000-000000000221")
+        val gas = pokemon(
+            gasId,
+            BattleSide.OPPONENT,
+            speed = 80,
+            activeSlot = 1,
+            knownAbility = "cobblemon:neutralizinggas",
+        )
+        val trapped = state(
+            format = BattleFormat.DOUBLE,
+            opponentAbility = "cobblemon:arenatrap",
+            bench = pokemon(benchId, BattleSide.ALLY, speed = 90, activeSlot = null),
+            extraPokemon = listOf(gas),
+        )
+
+        val actions = PublicFutureActionFactory.actions(trapped, BattleSide.ALLY, catalog())
+
+        assertTrue(actions.any { it.kind == BattleActionKind.SWITCH })
+    }
+
+    @Test
     fun `successful recharge move forces the same actor to wait next turn`() {
         val initial = state()
         val hyperBeam = move(
@@ -2146,6 +2169,7 @@ class LocalLookaheadEvaluationTest {
     )
 
     private fun state(
+        format: BattleFormat = BattleFormat.SINGLE,
         turn: Int = 1,
         allySpeed: Int = 100,
         opponentSpeed: Int = 100,
@@ -2166,9 +2190,10 @@ class LocalLookaheadEvaluationTest {
         allyCombatStats: BattleCombatStatRangesView? = null,
         allyStatStages: Map<String, Int> = emptyMap(),
         field: BattleFieldStateView = BattleFieldStateView.empty(),
+        extraPokemon: List<BattlePokemonStateView> = emptyList(),
     ) = BattleStateView(
         battleId = BATTLE_ID,
-        format = BattleFormat.SINGLE,
+        format = format,
         turn = turn,
         pokemon = listOfNotNull(
             pokemon(
@@ -2196,7 +2221,7 @@ class LocalLookaheadEvaluationTest {
             ),
             bench,
             opponentBench,
-        ),
+        ) + extraPokemon,
         field = field,
         remainingPokemonBySide = mapOf(
             BattleSide.ALLY to if (bench == null) 1 else 2,

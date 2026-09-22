@@ -34,8 +34,8 @@ internal object LocalPublicAccuracy {
                 it.side == targetSide && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
             }
         }
-        val actorAbility = canonical(actor.knownAbilityId)
-        val targetAbility = canonical(target?.knownAbilityId)
+        val actorAbility = LocalPublicAbilityState.effectiveKnownAbility(state, actor).orEmpty()
+        val targetAbility = LocalPublicAbilityState.effectiveKnownAbility(state, target).orEmpty()
         if (actorAbility == NO_GUARD || targetAbility == NO_GUARD) return 1.0
         val ignoresTargetAbility = LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, actor, target, state)
 

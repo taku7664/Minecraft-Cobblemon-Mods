@@ -14,7 +14,7 @@ internal object LocalPublicFieldMechanics {
     fun effectiveWeatherId(state: BattleStateView): String? {
         val weatherSuppressed = state.pokemon.any { pokemon ->
             pokemon.activeSlot != null && !pokemon.fainted && pokemon.hpFraction > 0.0 &&
-                canonical(pokemon.knownAbilityId) in WEATHER_SUPPRESSING_ABILITIES
+                LocalPublicAbilityState.effectiveKnownAbility(state, pokemon) in WEATHER_SUPPRESSING_ABILITIES
         }
         if (weatherSuppressed) return null
         return state.field.weather?.takeIf(::active)?.effectId?.let(::canonical)

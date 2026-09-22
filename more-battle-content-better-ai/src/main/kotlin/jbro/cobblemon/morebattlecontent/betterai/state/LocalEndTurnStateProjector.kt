@@ -4,6 +4,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalBadPoisonCounter
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalHpArithmetic
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicFieldMechanics
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityState
 
 /** Applies public, deterministic end-of-turn mechanics used by recursive search. */
 internal object LocalEndTurnStateProjector {
@@ -17,11 +18,11 @@ internal object LocalEndTurnStateProjector {
         val itemsActive = !LocalPublicFieldMechanics.magicRoomActive(state)
         val sandActive = canonical(nextField.weather?.effectId) == "sandstorm" && state.pokemon.none {
             it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 &&
-                canonical(it.knownAbilityId) in WEATHER_SUPPRESSION_ABILITIES
+                LocalPublicAbilityState.effectiveKnownAbility(state, it) in WEATHER_SUPPRESSION_ABILITIES
         }
         val next = state.pokemon.map { pokemon ->
             if (pokemon.activeSlot == null || pokemon.fainted || pokemon.hpFraction <= 0.0) return@map pokemon
-            val ability = canonical(pokemon.knownAbilityId)
+            val ability = LocalPublicAbilityState.effectiveKnownAbility(state, pokemon)
             val stages = if (ability == "speedboost") {
                 pokemon.statStages.toMutableMap().also { current ->
                     val speedKey = current.keys.firstOrNull { canonical(it) in SPEED_IDS } ?: "speed"

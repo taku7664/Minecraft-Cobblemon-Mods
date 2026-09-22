@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai.calculation
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalHypothesisPriorityReservation
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveDamageInputs
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
@@ -328,11 +329,9 @@ internal object PublicFutureActionFactory {
         opponent: BattlePokemonStateView,
     ): Boolean {
         if ("ghost" in active.knownTypeIds.map(::canonicalId)) return false
-        return when (canonicalId(opponent.knownAbilityId)) {
-            "shadowtag" -> canonicalId(active.knownAbilityId) != "shadowtag"
-            "arenatrap" -> "flying" !in active.knownTypeIds.map(::canonicalId) &&
-                canonicalId(active.knownAbilityId) != "levitate" &&
-                (LocalPublicFieldMechanics.magicRoomActive(state) || canonicalId(active.knownHeldItemId) != "airballoon")
+        return when (LocalPublicAbilityState.effectiveKnownAbility(state, opponent)) {
+            "shadowtag" -> LocalPublicAbilityState.effectiveKnownAbility(state, active) != "shadowtag"
+            "arenatrap" -> LocalPublicTurnOrder.grounded(state, active)
             "magnetpull" -> "steel" in active.knownTypeIds.map(::canonicalId)
             else -> false
         }

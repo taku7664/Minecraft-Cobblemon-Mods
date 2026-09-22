@@ -3,6 +3,8 @@ package jbro.cobblemon.morebattlecontent.betterai.state
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.copyState
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityState
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicFieldMechanics
 
 /** Applies deterministic, publicly known ability effects caused by entering battle. */
 internal object LocalEntryAbilityProjector {
@@ -10,8 +12,8 @@ internal object LocalEntryAbilityProjector {
         val incoming = state.pokemon.firstOrNull {
             it.battlePokemonId == incomingPokemonId && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         } ?: return state
-        val ability = canonical(incoming.knownAbilityId)
-        val fieldState = projectField(state, ability)
+        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, incoming)
+        val fieldState = projectField(state, incoming, ability)
         if (ability != "intimidate") return fieldState
 
         var reflectedDrops = 0
@@ -19,7 +21,7 @@ internal object LocalEntryAbilityProjector {
             if (pokemon.side == incoming.side || pokemon.activeSlot == null || pokemon.fainted || pokemon.hpFraction <= 0.0) {
                 return@map pokemon
             }
-            when (canonical(pokemon.knownAbilityId)) {
+            when (LocalPublicAbilityState.effectiveKnownAbility(fieldState, pokemon)) {
                 in INTIMIDATE_IMMUNITIES -> pokemon
                 "mirrorarmor" -> {
                     reflectedDrops++
@@ -41,13 +43,26 @@ internal object LocalEntryAbilityProjector {
         return copyState(fieldState, next)
     }
 
-    private fun projectField(state: BattleStateView, ability: String?): BattleStateView {
-        val weather = ENTRY_WEATHER[ability]
+    private fun projectField(
+        state: BattleStateView,
+        incoming: BattlePokemonStateView,
+        ability: String?,
+    ): BattleStateView {
+        val requestedWeather = ENTRY_WEATHER[ability]
+        val currentWeather = canonical(state.field.weather?.effectId)
+        val weather = requestedWeather?.takeUnless {
+            currentWeather in STRONG_WEATHERS && it !in STRONG_WEATHERS
+        }
         val terrain = ENTRY_TERRAIN[ability]
         if (weather == null && terrain == null) return state
+        val item = incoming.knownHeldItemId
+            ?.takeUnless { LocalPublicFieldMechanics.magicRoomActive(state) }
+            ?.let(::canonical)
+        val weatherTurns = if (WEATHER_EXTENDERS[weather] == item) EXTENDED_FIELD_TURNS else ENTRY_FIELD_TURNS
+        val terrainTurns = if (item == TERRAIN_EXTENDER) EXTENDED_FIELD_TURNS else ENTRY_FIELD_TURNS
         val field = BattleFieldStateView(
-            weather = weather?.let { BattleTimedEffectView(it, ENTRY_FIELD_TURNS) } ?: state.field.weather,
-            terrain = terrain?.let { BattleTimedEffectView(it, ENTRY_FIELD_TURNS) } ?: state.field.terrain,
+            weather = weather?.let { BattleTimedEffectView(it, weatherTurns) } ?: state.field.weather,
+            terrain = terrain?.let { BattleTimedEffectView(it, terrainTurns) } ?: state.field.terrain,
             roomEffects = state.field.roomEffects,
             globalEffects = state.field.globalEffects,
             sideConditions = state.field.sideConditions,
@@ -130,4 +145,13 @@ internal object LocalEntryAbilityProjector {
         "hadronengine" to "electricterrain",
     )
     private const val ENTRY_FIELD_TURNS = 5
+    private const val EXTENDED_FIELD_TURNS = 8
+    private const val TERRAIN_EXTENDER = "terrainextender"
+    private val STRONG_WEATHERS = setOf("desolateland", "primordialsea", "deltastream")
+    private val WEATHER_EXTENDERS = mapOf(
+        "raindance" to "damprock",
+        "sunnyday" to "heatrock",
+        "sandstorm" to "smoothrock",
+        "snow" to "icyrock",
+    )
 }

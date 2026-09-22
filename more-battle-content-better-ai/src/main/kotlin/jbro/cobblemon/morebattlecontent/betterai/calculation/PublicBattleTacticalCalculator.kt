@@ -8,6 +8,7 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalFullHealthSurviv
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalKnownStatMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalMechanicFormResolution
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityMechanics
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveDamageInputs
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveTargets
@@ -62,7 +63,7 @@ internal object PublicBattleTacticalCalculator {
         val stab = sameTypeAttackBonus(details, actor, candidate)
         val typeMultiplier = publicTypeMultiplier(candidate.moveId, details, target, context)
         val mechanics = LocalPublicMechanicsKernel.projectMove(candidate, context, actingSide)
-        declaredDamageRollFractions(candidate, actor, target, mechanics)?.let { return it }
+        declaredDamageRollFractions(candidate, actor, target, mechanics, context.state)?.let { return it }
         val projection =
             standardDamageProjection(candidate, details, actor, target, stab, typeMultiplier, context.state, spreadMultiplier)
                 ?: return null
@@ -87,6 +88,7 @@ internal object PublicBattleTacticalCalculator {
         actor: BattlePokemonStateView?,
         target: BattlePokemonStateView?,
         mechanics: LocalPublicMoveProjection,
+        state: BattleStateView,
     ): List<Double>? {
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()
         val targetHp = target?.hpFraction ?: return null
@@ -95,7 +97,7 @@ internal object PublicBattleTacticalCalculator {
             val actorLevel = actor?.level
             val targetLevel = target.level
             val levelBlocked = actorLevel != null && targetLevel != null && targetLevel > actorLevel
-            val sturdyBlocked = canonical(target.knownAbilityId) == "sturdy"
+            val sturdyBlocked = LocalPublicAbilityState.effectiveKnownAbility(state, target) == "sturdy"
             return listOf(if (levelBlocked || sturdyBlocked) 0.0 else targetHp)
         }
         val maxHp = target.combatStats?.maxHp ?: return null
@@ -353,7 +355,7 @@ internal object PublicBattleTacticalCalculator {
             target,
             state,
         ) ?: return null
-        val effectivePower = LocalKnownStatMechanics.effectivePower(moveInputs.power, actor)
+        val effectivePower = LocalKnownStatMechanics.effectivePower(moveInputs.power, actor, state)
         val knownStab = stab ?: return null
         val knownTypeMultiplier = typeMultiplier ?: return null
         val offensiveStats = if (moveInputs.offensivePokemon.battlePokemonId == actor.battlePokemonId) {
@@ -381,8 +383,8 @@ internal object PublicBattleTacticalCalculator {
         val stealsStages = effects.any { it.kind == BattleMoveEffectKind.STEALS_STAT_STAGES }
         val attackStage = moveInputs.offensiveStage
         val defenceStage = moveInputs.defensiveStage
-        val actorAbility = canonical(actor.knownAbilityId)
-        val targetAbility = canonical(target.knownAbilityId)
+        val actorAbility = LocalPublicAbilityState.effectiveKnownAbility(state, actor)
+        val targetAbility = LocalPublicAbilityState.effectiveKnownAbility(state, target)
         val ignoresTargetAbility = LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, actor, target, state)
         val defenderUnaware = targetAbility == UNAWARE && !ignoresTargetAbility
         val attackerUnaware = actorAbility == UNAWARE
@@ -482,8 +484,12 @@ internal object PublicBattleTacticalCalculator {
         return StandardTypeEffectiveness.multiplierAgainst(
             attackingTypeId = details.typeId,
             defendingTypeIds = types,
-            defenderAbilityId = target.knownAbilityId
-                ?: context?.let { blockingPossibleAbility(details.typeId, target, it) },
+            defenderAbilityId = if (context == null) {
+                target.knownAbilityId
+            } else {
+                LocalPublicAbilityState.effectiveKnownAbility(context.state, target)
+                    ?: blockingPossibleAbility(details.typeId, target, context)
+            },
             ignoreTypeImmunity = ignoresImmunity,
             moveId = moveId,
         )
@@ -495,6 +501,7 @@ internal object PublicBattleTacticalCalculator {
         target: BattlePokemonStateView,
         context: BattleDecisionContext,
     ): String? {
+        if (!LocalPublicAbilityState.isActive(context.state, target, "levitate")) return null
         val possible = context.state.inferences.asSequence()
             .filter { it.subjectPokemonId == target.battlePokemonId && it.categoryId == ABILITY_CATEGORY }
             .filter { it.confidence != BattleInferenceConfidence.RULED_OUT }
@@ -541,10 +548,11 @@ internal object PublicBattleTacticalCalculator {
         category: BattleMoveDamageCategory,
         actor: BattlePokemonStateView,
         inputs: LocalPublicMoveDamageInputs.Resolution,
+        state: BattleStateView,
     ): BattleIntegerRange {
         if (category != BattleMoveDamageCategory.PHYSICAL) return attack
         val status = canonical(actor.statusId)
-        val ability = canonical(actor.knownAbilityId)
+        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, actor)
         val usesActorsAttack = inputs.offensiveStat == LocalPublicMoveDamageInputs.CombatStat.ATTACK &&
             inputs.offensivePokemon.battlePokemonId == actor.battlePokemonId
         val multiplier = when {
@@ -568,7 +576,7 @@ internal object PublicBattleTacticalCalculator {
         inputs: LocalPublicMoveDamageInputs.Resolution,
         state: BattleStateView,
     ): BattleIntegerRange {
-        val statusModified = publicStatusModifiedAttack(value, moveId, details.damageCategory, actor, inputs)
+        val statusModified = publicStatusModifiedAttack(value, moveId, details.damageCategory, actor, inputs, state)
         if (inputs.offensiveStat in DEFENSIVE_OFFENSIVE_STATS) {
             return LocalKnownStatMechanics.offensiveDefence(
                 statusModified,

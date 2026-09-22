@@ -18,7 +18,7 @@ internal object LocalPublicAbilityMechanics {
             !LocalPublicFieldMechanics.magicRoomActive(state)
         if (abilityShieldActive) return false
 
-        val actorAbility = canonical(actor?.knownAbilityId)
+        val actorAbility = LocalPublicAbilityState.effectiveKnownAbility(state, actor)
         return actorAbility in ABILITY_IGNORING_ABILITIES ||
             actorAbility == MYCELIUM_MIGHT &&
                 candidate.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS ||

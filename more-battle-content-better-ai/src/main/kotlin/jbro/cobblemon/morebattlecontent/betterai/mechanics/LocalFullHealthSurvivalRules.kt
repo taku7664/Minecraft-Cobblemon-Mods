@@ -29,7 +29,7 @@ internal object LocalFullHealthSurvivalRules {
         val magicRoomActive = state.field.roomEffects.any { canonical(it.effectId) == "magicroom" }
         if (!magicRoomActive && canonical(target.knownHeldItemId) == FOCUS_SASH) return true
         if (ignoreTargetAbility) return false
-        val known = canonical(target.knownAbilityId)
+        val known = LocalPublicAbilityState.effectiveKnownAbility(state, target)
         if (known != null) return known == STURDY
         val possible = possibleAbilities(state, target)
         return possible.isNotEmpty() && possible.all { it == STURDY }
@@ -37,6 +37,7 @@ internal object LocalFullHealthSurvivalRules {
 
     /** Hidden is a species classification, not evidence that a candidate is impossible. */
     private fun possibleAbilities(state: BattleStateView, target: BattlePokemonStateView): List<String> =
+        if (!LocalPublicAbilityState.isActive(state, target, STURDY)) emptyList() else
         state.inferences.asSequence()
             .filter { it.subjectPokemonId == target.battlePokemonId && canonical(it.categoryId) == ABILITY }
             .filter { it.confidence != BattleInferenceConfidence.RULED_OUT }
