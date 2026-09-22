@@ -39,6 +39,23 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void trickMarksTheTargetsOldItemWhenTheUserStartedEmptyHanded() {
+        UUID user = UUID.randomUUID();
+        UUID target = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(user, "User", true);
+        PokemonRegistry.INSTANCE.registerPokemon(target, "Target", false);
+        AbilityItemTracker.INSTANCE.setItem("Target", "Leftovers", ItemStatus.HELD, 2, false);
+
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Text.translatable(
+            "cobblemon.battle.activate.trick", "User", "Target", "UNKNOWN"
+        )));
+        StateUpdater.INSTANCE.extractTrickItem(new Object[] {"User", "Leftovers"});
+
+        assertEquals(ItemStatus.HELD, AbilityItemTracker.INSTANCE.getItem(user).getStatus());
+        assertEquals(ItemStatus.SWAPPED, AbilityItemTracker.INSTANCE.getItem(target).getStatus());
+    }
+
+    @Test
     void itemEatMessageIsClassifiedAsConsumption() {
         assertFalse(TranslationKeys.INSTANCE.getITEM_REVEAL_KEYS().contains("cobblemon.battle.item.eat"));
         assertTrue(TranslationKeys.INSTANCE.getITEM_CONSUMED_KEYS().contains("cobblemon.battle.item.eat"));

@@ -173,8 +173,12 @@ object StateUpdater {
     fun extractTrickActivation(args: Array<out Any>) {
         if (args.isEmpty()) return
         val userName = MessageParser.extractPokemonName(args[0])
-        CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: $userName used Trick/Switcheroo")
+        val targetName = args.getOrNull(1)?.let(MessageParser::extractPokemonName)
+        CobblemonExtendedBattleUI.LOGGER.debug(
+            "StateUpdater: $userName used Trick/Switcheroo${targetName?.let { " on $it" }.orEmpty()}"
+        )
         BattleStateTracker.markItemSwapped(userName)
+        targetName?.let(BattleStateTracker::markItemSwapped)
     }
 
     fun extractLifeOrbReveal(args: Array<out Any>) {
