@@ -20,10 +20,15 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
  * be the only remaining ability candidate, including publicly possible hidden abilities.
  */
 internal object LocalFullHealthSurvivalRules {
-    fun survivesAnySingleHit(state: BattleStateView, target: BattlePokemonStateView): Boolean {
+    fun survivesAnySingleHit(
+        state: BattleStateView,
+        target: BattlePokemonStateView,
+        ignoreTargetAbility: Boolean = false,
+    ): Boolean {
         if (target.hpFraction < FULL_HEALTH) return false
         val magicRoomActive = state.field.roomEffects.any { canonical(it.effectId) == "magicroom" }
         if (!magicRoomActive && canonical(target.knownHeldItemId) == FOCUS_SASH) return true
+        if (ignoreTargetAbility) return false
         val known = canonical(target.knownAbilityId)
         if (known != null) return known == STURDY
         val possible = possibleAbilities(state, target)

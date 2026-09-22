@@ -79,6 +79,18 @@ class LocalFullHealthSurvivalTest {
         )
     }
 
+    @Test
+    fun `mold breaker bypasses sturdy but still permits a focus sash`() {
+        assertEquals(
+            BattleKnockoutAssessment.GUARANTEED,
+            knockout(item = null, ability = "sturdy", actorAbility = "moldbreaker").first,
+        )
+        assertEquals(
+            BattleKnockoutAssessment.IMPOSSIBLE,
+            knockout(item = "focussash", ability = "sturdy", actorAbility = "moldbreaker").first,
+        )
+    }
+
     private fun knockout(
         item: String?,
         ability: String?,
@@ -86,8 +98,9 @@ class LocalFullHealthSurvivalTest {
         inferredHidden: List<String> = emptyList(),
         hpFraction: Double = 1.0,
         room: String? = null,
+        actorAbility: String? = null,
     ): Pair<BattleKnockoutAssessment?, Double?> {
-        val ally = mon(BattleSide.ALLY, null, null, 1.0)
+        val ally = mon(BattleSide.ALLY, null, actorAbility, 1.0)
         val opponent = mon(BattleSide.OPPONENT, item, ability, hpFraction)
         val move = BattleActionCandidate(
             actionId = "bigmove", kind = BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,

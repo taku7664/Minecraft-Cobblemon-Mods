@@ -202,7 +202,16 @@ internal object PublicBattleTacticalCalculator {
         // first.
         val survivesOneHit = target != null &&
             LocalDeclaredMultiHit.maximumCount(candidate) <= 1 &&
-            LocalFullHealthSurvivalRules.survivesAnySingleHit(context.state, target)
+            LocalFullHealthSurvivalRules.survivesAnySingleHit(
+                context.state,
+                target,
+                ignoreTargetAbility = LocalPublicAbilityMechanics.ignoresTargetAbility(
+                    candidate,
+                    actor,
+                    target,
+                    context.state,
+                ),
+            )
         val projection = if (survivesOneHit) rawProjection?.withoutKnockout(target) else rawProjection
         if (details.damageCategory != BattleMoveDamageCategory.STATUS && projection == null) {
             if (actor?.combatStats == null) unknowns += BattleCalculationUnknown.ATTACKER_OFFENSIVE_STATS
