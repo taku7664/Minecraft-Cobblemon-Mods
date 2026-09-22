@@ -88,20 +88,24 @@ public final class RoundedVoxelMesher {
             int cornerZ = (corner >> 2) & 1;
             int mask = vertexMask(occupancy, cellX + cornerX, cellY + cornerY, cellZ + cornerZ);
             int currentOctant = (1 - cornerX) | ((1 - cornerY) << 1) | ((1 - cornerZ) << 2);
+            List<BevelTemplateLibrary.RegionPrimitive> regions = templates.partitionedTemplate(mask);
+            if (regions.isEmpty()) {
+                continue;
+            }
             Vec3 translation = new Vec3(
                 (cellX + cornerX) * cellWidth,
                 (cellY + cornerY) * cellHeight,
                 (cellZ + cornerZ) * cellDepth
             );
-            for (BevelTemplateLibrary.RegionPrimitive region : templates.partitionedTemplate(mask)) {
+            for (BevelTemplateLibrary.RegionPrimitive region : regions) {
                 MeshPrimitive primitive = region.primitive();
                 boolean solidRegion = (mask & (1 << region.octant())) != 0;
                 int owner = solidRegion
                     ? region.octant()
                     : concaveOwner(mask, region.octant(), primitive.materialFace());
                 if (owner == currentOctant) {
-                    MeshPrimitive tagged = solidRegion ? primitive : withKind(primitive, PrimitiveKind.CONCAVE);
-                    output.add(translate(tagged, translation));
+                    PrimitiveKind kind = solidRegion ? primitive.kind() : PrimitiveKind.CONCAVE;
+                    output.add(translate(primitive, translation, kind));
                 }
             }
         }
@@ -146,16 +150,16 @@ public final class RoundedVoxelMesher {
         return mask;
     }
 
-    private static MeshPrimitive translate(MeshPrimitive primitive, Vec3 translation) {
+    private static MeshPrimitive translate(
+        MeshPrimitive primitive,
+        Vec3 translation,
+        PrimitiveKind kind
+    ) {
         List<MeshVertex> vertices = new ArrayList<>(primitive.vertices().size());
         for (MeshVertex vertex : primitive.vertices()) {
             vertices.add(new MeshVertex(vertex.position().add(translation), vertex.normal()));
         }
-        return new MeshPrimitive(primitive.kind(), primitive.materialFace(), vertices);
-    }
-
-    private static MeshPrimitive withKind(MeshPrimitive primitive, PrimitiveKind kind) {
-        return new MeshPrimitive(kind, primitive.materialFace(), primitive.vertices());
+        return new MeshPrimitive(kind, primitive.materialFace(), vertices);
     }
 
     private static TemplateSet createTemplates(double radius, int segments) {

@@ -2,6 +2,7 @@ package jbro.minecraft.roundingblock.mesh;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -30,7 +31,16 @@ class RoundedVoxelMesherTest {
 
     @Test
     void bevelTemplatesAreFullyPreparedBeforeWorldMeshing() {
-        assertTrue(new BevelTemplateLibrary().isFullyPrepared());
+        BevelTemplateLibrary library = new BevelTemplateLibrary(
+            BevelTemplateLibrary.DEFAULT_RADIUS,
+            BevelTemplateLibrary.DEFAULT_SEGMENTS,
+            1.0,
+            1.0,
+            1.0
+        );
+        for (int mask = 0; mask <= 255; mask++) {
+            assertNotNull(library.partitionedTemplate(mask), "mask=" + mask);
+        }
     }
 
     @Test

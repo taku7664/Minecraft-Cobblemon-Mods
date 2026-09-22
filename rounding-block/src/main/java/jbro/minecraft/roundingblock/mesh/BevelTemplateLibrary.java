@@ -32,19 +32,10 @@ final class BevelTemplateLibrary {
         {0, 2, 6, 4}, {1, 3, 7, 5}
     };
 
-    private final List<MeshPrimitive>[] templates;
     private final List<RegionPrimitive>[] partitionedTemplates;
     private final double[] cellSizes;
     private final double radius;
     private final int segments;
-
-    BevelTemplateLibrary() {
-        this(DEFAULT_RADIUS, DEFAULT_SEGMENTS, 1.0, 1.0, 1.0);
-    }
-
-    BevelTemplateLibrary(double cellHeight) {
-        this(DEFAULT_RADIUS, DEFAULT_SEGMENTS, 1.0, cellHeight, 1.0);
-    }
 
     @SuppressWarnings("unchecked")
     BevelTemplateLibrary(
@@ -68,24 +59,11 @@ final class BevelTemplateLibrary {
                 throw new IllegalArgumentException("Cell extent must be wider than the bevel diameter");
             }
         }
-        this.templates = (List<MeshPrimitive>[]) new List<?>[256];
         this.partitionedTemplates = (List<RegionPrimitive>[]) new List<?>[256];
         for (int mask = 0; mask <= 255; mask++) {
-            templates[mask] = mask == 0 || mask == 255 ? List.of() : generate(mask);
+            List<MeshPrimitive> generated = mask == 0 || mask == 255 ? List.of() : generate(mask);
+            partitionedTemplates[mask] = partition(mask, generated);
         }
-        for (int mask = 0; mask <= 255; mask++) {
-            partitionedTemplates[mask] = partition(mask, templates[mask]);
-        }
-    }
-
-    List<MeshPrimitive> template(int mask) {
-        if (mask < 0 || mask > 255) {
-            throw new IllegalArgumentException("Invalid bevel template mask=" + mask);
-        }
-        if (mask == 0 || mask == 255) {
-            return List.of();
-        }
-        return templates[mask];
     }
 
     List<RegionPrimitive> partitionedTemplate(int mask) {
@@ -93,15 +71,6 @@ final class BevelTemplateLibrary {
             throw new IllegalArgumentException("Invalid bevel template mask=" + mask);
         }
         return partitionedTemplates[mask];
-    }
-
-    boolean isFullyPrepared() {
-        for (int mask = 0; mask <= 255; mask++) {
-            if (templates[mask] == null || partitionedTemplates[mask] == null) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private static List<RegionPrimitive> partition(int mask, List<MeshPrimitive> primitives) {
@@ -175,6 +144,8 @@ final class BevelTemplateLibrary {
     }
 
     private List<MeshPrimitive> generate(int mask) {
+        DiagonalTopology diagonalTopology = diagonalTopology(mask);
+        double[] diagonalBridge = new double[4];
         double[][] coordinates = {axisCoordinates(0), axisCoordinates(1), axisCoordinates(2)};
         int sampleCount = coordinates[0].length;
         int cellCount = sampleCount - 1;
@@ -182,7 +153,7 @@ final class BevelTemplateLibrary {
         for (int x = 0; x < sampleCount; x++) {
             for (int y = 0; y < sampleCount; y++) {
                 for (int z = 0; z < sampleCount; z++) {
-                    samples[x][y][z] = sample(mask, new Vec3(
+                    samples[x][y][z] = sample(mask, diagonalTopology, diagonalBridge, new Vec3(
                         coordinates[0][x], coordinates[1][y], coordinates[2][z]
                     ));
                 }
@@ -193,7 +164,9 @@ final class BevelTemplateLibrary {
         for (int x = 0; x < cellCount; x++) {
             for (int y = 0; y < cellCount; y++) {
                 for (int z = 0; z < cellCount; z++) {
-                    cellSurfaces[x][y][z] = cellSurface(mask, samples, x, y, z);
+                    cellSurfaces[x][y][z] = cellSurface(
+                        mask, diagonalTopology, diagonalBridge, samples, x, y, z
+                    );
                 }
             }
         }
@@ -229,7 +202,15 @@ final class BevelTemplateLibrary {
         return result;
     }
 
-    private CellSurface cellSurface(int mask, Sample[][][] samples, int x, int y, int z) {
+    private CellSurface cellSurface(
+        int mask,
+        DiagonalTopology diagonalTopology,
+        double[] diagonalBridge,
+        Sample[][][] samples,
+        int x,
+        int y,
+        int z
+    ) {
         Sample[] corners = new Sample[8];
         boolean inside = false;
         boolean outside = false;
@@ -310,7 +291,7 @@ final class BevelTemplateLibrary {
                 }
             }
             Vec3 position = positionSum.multiply(1.0 / crossingCount);
-            Vec3 normal = sample(mask, position).outward();
+            Vec3 normal = sample(mask, diagonalTopology, diagonalBridge, position).outward();
             if (normal.length() <= EPSILON) {
                 normal = normalSum.length() > EPSILON ? normalSum : fallbackNormal;
             }
@@ -523,11 +504,21 @@ final class BevelTemplateLibrary {
         output.add(new MeshPrimitive(flat ? PrimitiveKind.FACE : PrimitiveKind.EDGE, material, oriented));
     }
 
-    private Sample sample(int mask, Vec3 position) {
-        return smoothSample(mask, position);
+    private Sample sample(
+        int mask,
+        DiagonalTopology diagonalTopology,
+        double[] diagonalBridge,
+        Vec3 position
+    ) {
+        return smoothSample(mask, diagonalTopology, diagonalBridge, position);
     }
 
-    private Sample smoothSample(int mask, Vec3 position) {
+    private Sample smoothSample(
+        int mask,
+        DiagonalTopology diagonalTopology,
+        double[] diagonalBridge,
+        Vec3 position
+    ) {
         AxisWeight x = weight(position.x());
         AxisWeight y = weight(position.y());
         AxisWeight z = weight(position.z());
@@ -550,19 +541,119 @@ final class BevelTemplateLibrary {
             gradientY += wx * y.derivative(positiveY) * wz;
             gradientZ += wx * wy * z.derivative(positiveZ);
         }
-        Bridge bridge = diagonalBridge(mask, x, y, z);
-        density += bridge.density();
-        gradientX += bridge.gradient().x();
-        gradientY += bridge.gradient().y();
-        gradientZ += bridge.gradient().z();
+        if (!diagonalTopology.connections().isEmpty()) {
+            diagonalBridge(diagonalTopology, x, y, z, diagonalBridge);
+            density += diagonalBridge[0];
+            gradientX += diagonalBridge[1];
+            gradientY += diagonalBridge[2];
+            gradientZ += diagonalBridge[3];
+        }
         return new Sample(position, density, new Vec3(-gradientX, -gradientY, -gradientZ));
     }
 
-    private static Bridge diagonalBridge(int mask, AxisWeight x, AxisWeight y, AxisWeight z) {
-        AxisWeight[] weights = {x, y, z};
-        AxisBump[] bumps = {AxisBump.of(x), AxisBump.of(y), AxisBump.of(z)};
-        double centerNeed = Math.max(0.0, ISO_LEVEL + VERTEX_MARGIN - Integer.bitCount(mask) / 8.0);
-        Bridge combined = new Bridge(0.0, Vec3.ZERO);
+    private static void diagonalBridge(
+        DiagonalTopology topology,
+        AxisWeight x,
+        AxisWeight y,
+        AxisWeight z,
+        double[] result
+    ) {
+        double density = 0.0;
+        double gradientX = 0.0;
+        double gradientY = 0.0;
+        double gradientZ = 0.0;
+        double vertexDensity = 0.0;
+        double vertexGradientX = 0.0;
+        double vertexGradientY = 0.0;
+        double vertexGradientZ = 0.0;
+        if (topology.hasVertex()) {
+            double bx = 4.0 * x.positive() * (1.0 - x.positive());
+            double by = 4.0 * y.positive() * (1.0 - y.positive());
+            double bz = 4.0 * z.positive() * (1.0 - z.positive());
+            double bumpDerivativeX = 4.0 * x.positiveDerivative() * (1.0 - 2.0 * x.positive());
+            double bumpDerivativeY = 4.0 * y.positiveDerivative() * (1.0 - 2.0 * y.positive());
+            double bumpDerivativeZ = 4.0 * z.positiveDerivative() * (1.0 - 2.0 * z.positive());
+            vertexDensity = topology.vertexNeed() * bx * by * bz;
+            vertexGradientX = topology.vertexNeed() * bumpDerivativeX * by * bz;
+            vertexGradientY = topology.vertexNeed() * bx * bumpDerivativeY * bz;
+            vertexGradientZ = topology.vertexNeed() * bx * by * bumpDerivativeZ;
+        }
+        for (DiagonalConnection connection : topology.connections()) {
+            int sharedAxis = connection.sharedAxis();
+            if (sharedAxis < 0) {
+                density += vertexDensity;
+                gradientX += vertexGradientX;
+                gradientY += vertexGradientY;
+                gradientZ += vertexGradientZ;
+                continue;
+            }
+            int first = connection.first();
+            int second = connection.second();
+            boolean positiveSide = connection.positiveSide();
+            AxisWeight sharedWeight = sharedAxis == 0 ? x : sharedAxis == 1 ? y : z;
+            double side = sharedWeight.value(positiveSide);
+            if (side <= 0.5) {
+                continue;
+            }
+
+            double amount = 2.0 * side - 1.0;
+            double gate = amount * amount * (3.0 - 2.0 * amount);
+            double gateDerivative = 12.0 * amount * (1.0 - amount)
+                * sharedWeight.derivative(positiveSide);
+
+            double firstX = x.value((first & 1) != 0);
+            double firstY = y.value((first & 2) != 0);
+            double firstZ = z.value((first & 4) != 0);
+            double firstDensity = firstX * firstY * firstZ;
+            double firstGradientX = x.derivative((first & 1) != 0) * firstY * firstZ;
+            double firstGradientY = firstX * y.derivative((first & 2) != 0) * firstZ;
+            double firstGradientZ = firstX * firstY * z.derivative((first & 4) != 0);
+
+            double secondX = x.value((second & 1) != 0);
+            double secondY = y.value((second & 2) != 0);
+            double secondZ = z.value((second & 4) != 0);
+            double secondDensity = secondX * secondY * secondZ;
+            double secondGradientX = x.derivative((second & 1) != 0) * secondY * secondZ;
+            double secondGradientY = secondX * y.derivative((second & 2) != 0) * secondZ;
+            double secondGradientZ = secondX * secondY * z.derivative((second & 4) != 0);
+
+            double sum = firstDensity + secondDensity;
+            if (sum <= EPSILON) {
+                continue;
+            }
+            double harmonic = 2.0 * firstDensity * secondDensity / sum;
+            double denominator = sum * sum;
+            double firstScale = 2.0 * secondDensity * secondDensity / denominator;
+            double secondScale = 2.0 * firstDensity * firstDensity / denominator;
+            double candidateDensity = EDGE_COUPLING * harmonic * gate;
+            double candidateGradientX = EDGE_COUPLING * gate
+                * (firstGradientX * firstScale + secondGradientX * secondScale);
+            double candidateGradientY = EDGE_COUPLING * gate
+                * (firstGradientY * firstScale + secondGradientY * secondScale);
+            double candidateGradientZ = EDGE_COUPLING * gate
+                * (firstGradientZ * firstScale + secondGradientZ * secondScale);
+            if (sharedAxis == 0) {
+                candidateGradientX += EDGE_COUPLING * harmonic * gateDerivative;
+            } else if (sharedAxis == 1) {
+                candidateGradientY += EDGE_COUPLING * harmonic * gateDerivative;
+            } else {
+                candidateGradientZ += EDGE_COUPLING * harmonic * gateDerivative;
+            }
+            density += candidateDensity;
+            gradientX += candidateGradientX;
+            gradientY += candidateGradientY;
+            gradientZ += candidateGradientZ;
+        }
+
+        result[0] = density;
+        result[1] = gradientX;
+        result[2] = gradientY;
+        result[3] = gradientZ;
+    }
+
+    private static DiagonalTopology diagonalTopology(int mask) {
+        List<DiagonalConnection> connections = new ArrayList<>();
+        boolean hasVertex = false;
         for (int first = 0; first < 8; first++) {
             if ((mask & (1 << first)) == 0) {
                 continue;
@@ -573,88 +664,30 @@ final class BevelTemplateLibrary {
                 }
                 int changedAxes = first ^ second;
                 int distance = Integer.bitCount(changedAxes);
-                Bridge candidate;
                 if (distance == 2) {
                     int sharedAxis = Integer.numberOfTrailingZeros(~changedAxes & 0b111);
                     // This predicate is local to the physical edge. Using the
                     // whole mask here makes adjacent templates disagree when
                     // one has an unrelated face-connected route.
-                    if (!isDiagonalSlice(mask, first, second, sharedAxis)) {
-                        continue;
+                    if (isDiagonalSlice(mask, first, second, sharedAxis)) {
+                        connections.add(new DiagonalConnection(
+                            first,
+                            second,
+                            sharedAxis,
+                            (first & (1 << sharedAxis)) != 0
+                        ));
                     }
-                    boolean positiveSide = (first & (1 << sharedAxis)) != 0;
-                    double side = weights[sharedAxis].value(positiveSide);
-                    double gate;
-                    double gateDerivative;
-                    if (side <= 0.5) {
-                        gate = 0.0;
-                        gateDerivative = 0.0;
-                    } else {
-                        double amount = 2.0 * side - 1.0;
-                        gate = amount * amount * (3.0 - 2.0 * amount);
-                        gateDerivative = 12.0 * amount * (1.0 - amount)
-                            * weights[sharedAxis].derivative(positiveSide);
-                    }
-                    Contribution firstContribution = contribution(first, weights);
-                    Contribution secondContribution = contribution(second, weights);
-                    double sum = firstContribution.density() + secondContribution.density();
-                    if (sum <= EPSILON) {
-                        continue;
-                    }
-                    double harmonic = 2.0 * firstContribution.density() * secondContribution.density() / sum;
-                    double denominator = sum * sum;
-                    Vec3 harmonicGradient = firstContribution.gradient().multiply(
-                        2.0 * secondContribution.density() * secondContribution.density() / denominator
-                    ).add(secondContribution.gradient().multiply(
-                        2.0 * firstContribution.density() * firstContribution.density() / denominator
-                    ));
-                    candidate = new Bridge(
-                        EDGE_COUPLING * harmonic * gate,
-                        harmonicGradient.multiply(EDGE_COUPLING * gate).add(
-                            Vec3.ZERO.withComponent(sharedAxis, EDGE_COUPLING * harmonic * gateDerivative)
-                        )
-                    );
                 } else if (distance == 3 && !faceConnected(mask, first, second)) {
-                    double bx = bumps[0].value();
-                    double by = bumps[1].value();
-                    double bz = bumps[2].value();
-                    double vertexNeed = centerNeed * 1.05;
-                    candidate = new Bridge(
-                        vertexNeed * bx * by * bz,
-                        new Vec3(
-                            vertexNeed * bumps[0].derivative() * by * bz,
-                            vertexNeed * bx * bumps[1].derivative() * bz,
-                            vertexNeed * bx * by * bumps[2].derivative()
-                        )
-                    );
-                } else {
-                    continue;
+                    connections.add(new DiagonalConnection(first, second, -1, false));
+                    hasVertex = true;
                 }
-                combined = new Bridge(
-                    combined.density() + candidate.density(),
-                    combined.gradient().add(candidate.gradient())
-                );
             }
         }
-        return combined;
-    }
-
-    private static Contribution contribution(int octant, AxisWeight[] weights) {
-        double[] values = new double[3];
-        double[] derivatives = new double[3];
-        for (int axis = 0; axis < 3; axis++) {
-            boolean positiveSide = (octant & (1 << axis)) != 0;
-            values[axis] = weights[axis].value(positiveSide);
-            derivatives[axis] = weights[axis].derivative(positiveSide);
-        }
-        return new Contribution(
-            values[0] * values[1] * values[2],
-            new Vec3(
-                derivatives[0] * values[1] * values[2],
-                values[0] * derivatives[1] * values[2],
-                values[0] * values[1] * derivatives[2]
-            )
-        );
+        double vertexNeed = Math.max(
+            0.0,
+            ISO_LEVEL + VERTEX_MARGIN - Integer.bitCount(mask) / 8.0
+        ) * 1.05;
+        return new DiagonalTopology(List.copyOf(connections), hasVertex, vertexNeed);
     }
 
     private static boolean isDiagonalSlice(int mask, int first, int second, int sharedAxis) {
@@ -730,20 +763,14 @@ final class BevelTemplateLibrary {
         }
     }
 
-    private record AxisBump(double value, double derivative) {
-        private static AxisBump of(AxisWeight weight) {
-            return new AxisBump(
-                4.0 * weight.positive() * (1.0 - weight.positive()),
-                4.0 * weight.positiveDerivative() * (1.0 - 2.0 * weight.positive())
-            );
-        }
-
+    private record DiagonalConnection(int first, int second, int sharedAxis, boolean positiveSide) {
     }
 
-    private record Contribution(double density, Vec3 gradient) {
-    }
-
-    private record Bridge(double density, Vec3 gradient) {
+    private record DiagonalTopology(
+        List<DiagonalConnection> connections,
+        boolean hasVertex,
+        double vertexNeed
+    ) {
     }
 
     private record Sample(Vec3 position, double density, Vec3 outward) {
