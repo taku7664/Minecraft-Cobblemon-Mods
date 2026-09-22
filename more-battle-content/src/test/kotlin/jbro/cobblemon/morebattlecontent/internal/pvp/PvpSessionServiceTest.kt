@@ -257,6 +257,25 @@ class PvpSessionServiceTest {
     }
 
     @Test
+    fun `snapshot compatibility failure cannot skip another player during server shutdown`() {
+        val failure = NoSuchMethodError("snapshot API drift")
+        val snapshots = RecordingSnapshots(discardFailure = first to failure)
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        service.ready(matchId, second)
+
+        val thrown = assertThrows(NoSuchMethodError::class.java) {
+            service.clear()
+        }
+
+        assertSame(failure, thrown)
+        assertTrue(service.activeBattles().isEmpty())
+        assertNull(service.challengeFor(first))
+        assertEquals(setOf(first, second), snapshots.discarded)
+    }
+
+    @Test
     fun `snapshot cleanup failure cannot leave a cancelled battle active or block a rematch`() {
         val snapshots = RecordingSnapshots(discardFailure = first to IllegalStateException("snapshot store unavailable"))
         val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }

@@ -248,15 +248,11 @@ internal class PvpSessionService<P>(
         matches.clear()
         challenges.clear()
 
-        var failure: Exception? = null
-        participantIds.forEach { playerId ->
-            try {
-                snapshots.discard(playerId)
-            } catch (exception: Exception) {
-                if (failure == null) failure = exception else failure.addSuppressed(exception)
-            }
-        }
-        failure?.let { throw it }
+        runCleanupActions(
+            *participantIds.map { playerId ->
+                { snapshots.discard(playerId) }
+            }.toTypedArray(),
+        )
     }
 
     @Synchronized
@@ -360,8 +356,16 @@ internal class PvpSessionService<P>(
         timers.remove(matchId)
         matches.remove(matchId)
 
+        runCleanupActions(
+            { challenges.discard(matchId) },
+            { snapshots.discard(challengerId) },
+            { snapshots.discard(opponentId) },
+        )
+    }
+
+    private fun runCleanupActions(vararg actions: () -> Unit) {
         var failure: Throwable? = null
-        fun attempt(action: () -> Unit) {
+        actions.forEach { action ->
             try {
                 action()
             } catch (error: Exception) {
@@ -372,10 +376,6 @@ internal class PvpSessionService<P>(
                 if (original == null) failure = error else if (original !== error) original.addSuppressed(error)
             }
         }
-
-        attempt { challenges.discard(matchId) }
-        attempt { snapshots.discard(challengerId) }
-        attempt { snapshots.discard(opponentId) }
         failure?.let { throw it }
     }
 }
