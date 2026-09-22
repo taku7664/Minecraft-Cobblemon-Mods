@@ -54,7 +54,7 @@ internal fun <T> runManagedCleanupForEachSafely(
     }
 }
 
-private fun reportManagedCleanupFailureSafely(failure: Throwable, reportFailure: (Throwable) -> Unit) {
+internal fun reportManagedCleanupFailureSafely(failure: Throwable, reportFailure: (Throwable) -> Unit) {
     try {
         reportFailure(failure)
     } catch (_: RuntimeException) {

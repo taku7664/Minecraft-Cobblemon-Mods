@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.internal.pvp
 
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.reportManagedCleanupFailureSafely
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupActionsSafely
 
 internal data class PvpReturnPoint(
@@ -77,10 +78,10 @@ internal class PvpLoungeCoordinator(
                 capturedPlayerIds = captured.keys.toSet(),
             )
             return true
-        } catch (failure: Throwable) {
-            if (failure !is RuntimeException && failure !is LinkageError) throw failure
-            MoreBattleContent.LOGGER.error("PvP lounge preparation failed for room ${room.roomId}", failure)
-            return rollbackCaptured(room.roomId, captured)
+        } catch (failure: RuntimeException) {
+            return rollbackFailedPreparation(room.roomId, captured, failure)
+        } catch (failure: LinkageError) {
+            return rollbackFailedPreparation(room.roomId, captured, failure)
         }
     }
 
@@ -174,10 +175,10 @@ internal class PvpLoungeCoordinator(
         val point = try {
             gateway.capture(playerId)
         } catch (failure: RuntimeException) {
-            MoreBattleContent.LOGGER.error("Could not capture PvP spectator return point for $playerId", failure)
+            reportLoungeFailureSafely("Could not capture PvP spectator return point for $playerId", failure)
             return false
         } catch (failure: LinkageError) {
-            MoreBattleContent.LOGGER.error("Could not capture PvP spectator return point for $playerId", failure)
+            reportLoungeFailureSafely("Could not capture PvP spectator return point for $playerId", failure)
             return false
         } ?: return false
         returns[playerId] = point
@@ -193,11 +194,13 @@ internal class PvpLoungeCoordinator(
             if (!gateway.spectate(playerId, targetId)) return rollbackSpectatorAdmission(playerId, session, point)
             if (sessions[roomId] !== session) return rollbackSpectatorAdmission(playerId, session, point)
         } catch (failure: RuntimeException) {
-            MoreBattleContent.LOGGER.error("PvP spectator admission failed for $playerId", failure)
-            return rollbackSpectatorAdmission(playerId, session, point)
+            val rolledBack = rollbackSpectatorAdmission(playerId, session, point)
+            reportLoungeFailureSafely("PvP spectator admission failed for $playerId", failure)
+            return rolledBack
         } catch (failure: LinkageError) {
-            MoreBattleContent.LOGGER.error("PvP spectator admission failed for $playerId", failure)
-            return rollbackSpectatorAdmission(playerId, session, point)
+            val rolledBack = rollbackSpectatorAdmission(playerId, session, point)
+            reportLoungeFailureSafely("PvP spectator admission failed for $playerId", failure)
+            return rolledBack
         }
         session.spectators += playerId
         val perspective = if (targetId == session.rightPlayerId) PvpRoomSide.RIGHT else PvpRoomSide.LEFT
@@ -330,6 +333,16 @@ internal class PvpLoungeCoordinator(
         return false
     }
 
+    private fun rollbackFailedPreparation(
+        roomId: UUID,
+        captured: Map<UUID, PvpReturnPoint>,
+        failure: Throwable,
+    ): Boolean {
+        val rolledBack = rollbackCaptured(roomId, captured)
+        reportLoungeFailureSafely("PvP lounge preparation failed for room $roomId", failure)
+        return rolledBack
+    }
+
     private fun rollbackSpectatorAdmission(playerId: UUID, session: Session, point: PvpReturnPoint): Boolean {
         val stopped = tryGatewayCleanup("stop partial battle spectating", playerId) {
             gateway.stopSpectating(playerId, session.battleId)
@@ -356,6 +369,12 @@ internal class PvpLoungeCoordinator(
 
     private fun runGatewayCleanup(action: String, playerId: UUID, cleanup: () -> Unit) {
         tryGatewayCleanup(action, playerId, cleanup)
+    }
+
+    private fun reportLoungeFailureSafely(message: String, failure: Throwable) {
+        reportManagedCleanupFailureSafely(failure) { reported ->
+            MoreBattleContent.LOGGER.error(message, reported)
+        }
     }
 
     private fun tryGatewayCleanup(action: String, playerId: UUID, cleanup: () -> Unit): Boolean {
