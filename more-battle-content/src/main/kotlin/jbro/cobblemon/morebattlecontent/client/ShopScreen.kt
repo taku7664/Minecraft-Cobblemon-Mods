@@ -41,7 +41,7 @@ internal class ShopScreen(
     private var leaderboardScrollOffset = 0
     private var dragTarget: ScrollTarget? = null
     private var dragGrabOffset = 0
-    private var pending = false
+    private val purchaseRequest = PendingClientRequest()
     private var resultFeedback = initialState?.result
 
     override fun init() = buildWidgets()
@@ -174,7 +174,7 @@ internal class ShopScreen(
         }
         state = payload
         purchaseSelection.retain(payload.entries.mapTo(hashSetOf(), ShopEntryView::entryId))
-        pending = false
+        purchaseRequest.reset()
         resultFeedback = payload.result
         MbcBattleHubClientState.update(payload.balanceBp)
         val layout = ShopScreenLayout.calculate(frameLayout().content)
@@ -252,16 +252,16 @@ internal class ShopScreen(
         }
         addRenderableWidget(
             MbcStyledButton(layout.decrement, Component.literal("−"), MbcButtonTone.NEUTRAL) { changeSelected(-1) }
-                .also { it.active = purchaseSelection.quantity > 1 && !pending },
+                .also { it.active = purchaseSelection.quantity > 1 && !purchaseRequest.isPending },
         )
         addRenderableWidget(
             MbcStyledButton(layout.increment, Component.literal("+"), MbcButtonTone.PRIMARY) { changeSelected(1) }
-                .also { it.active = canIncrement() && !pending },
+                .also { it.active = canIncrement() && !purchaseRequest.isPending },
         )
         addRenderableWidget(
             MbcStyledButton(layout.purchase, Component.translatable(shopKey("purchase")), MbcButtonTone.SECONDARY) {
                 state?.let(::purchase)
-            }.also { it.active = current?.let(::canPurchase) == true && !pending },
+            }.also { it.active = current?.let(::canPurchase) == true && !purchaseRequest.isPending },
         )
     }
 
@@ -532,17 +532,18 @@ internal class ShopScreen(
 
     private fun purchase(current: ShopStatePayload) {
         val lines = purchaseSelection.lines()
-        if (lines.isEmpty() || pending || !canPurchase(current)) return
-        pending = true
-        resultFeedback = null
-        ShopPlayClientNetworking.purchase(
-            ShopPurchasePayload(
-                purchaseId = UUID.randomUUID(),
-                catalogId = current.catalogId,
-                catalogRevision = current.catalogRevision,
-                lines = lines,
-            ),
-        )
+        if (lines.isEmpty() || purchaseRequest.isPending || !canPurchase(current)) return
+        purchaseRequest.send {
+            resultFeedback = null
+            ShopPlayClientNetworking.purchase(
+                ShopPurchasePayload(
+                    purchaseId = UUID.randomUUID(),
+                    catalogId = current.catalogId,
+                    catalogRevision = current.catalogRevision,
+                    lines = lines,
+                ),
+            )
+        }
         rebuild()
     }
 

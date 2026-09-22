@@ -20,7 +20,7 @@ import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 
 internal object PvpPlayClientNetworking {
-    private val loungeExitRequest = PvpLoungeExitRequestState()
+    private val loungeExitRequest = PendingClientRequest()
 
     fun register() {
         ClientPlayNetworking.registerGlobalReceiver(PvpLoungeSpectatorStatePayload.TYPE) { payload, context ->

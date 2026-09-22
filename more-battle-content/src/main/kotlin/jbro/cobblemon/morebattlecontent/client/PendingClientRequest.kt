@@ -1,11 +1,12 @@
 package jbro.cobblemon.morebattlecontent.client
 
-internal class PvpLoungeExitRequestState {
-    private var pending = false
+internal class PendingClientRequest {
+    var isPending = false
+        private set
 
     fun begin(): Boolean {
-        if (pending) return false
-        pending = true
+        if (isPending) return false
+        isPending = true
         return true
     }
 
@@ -21,12 +22,12 @@ internal class PvpLoungeExitRequestState {
     }
 
     fun complete(accepted: Boolean): Boolean {
-        if (!pending) return false
-        pending = false
+        if (!isPending) return false
+        isPending = false
         return accepted
     }
 
     fun reset() {
-        pending = false
+        isPending = false
     }
 }
