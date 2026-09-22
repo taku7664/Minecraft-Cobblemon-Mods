@@ -544,6 +544,7 @@ internal object LocalTacticalScorer {
                     attackingTypeId = moveType,
                     defendingTypeIds = target.knownTypeIds,
                     defenderAbilityId = target.knownAbilityId,
+                    moveId = candidate.moveId,
                 )
             }
         }

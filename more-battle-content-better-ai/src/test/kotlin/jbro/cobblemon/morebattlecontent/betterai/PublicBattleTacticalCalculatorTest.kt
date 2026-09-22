@@ -378,6 +378,34 @@ class PublicBattleTacticalCalculatorTest {
     }
 
     @Test
+    fun `freeze dry is super effective against water instead of using the ordinary ice chart`() {
+        val ordinaryIce = PublicBattleTacticalCalculator.calculate(
+            context(
+                opponentTypes = setOf("water"),
+                withCombatStats = true,
+                moveId = "icebeam",
+                moveType = "ice",
+                power = 70.0,
+            ),
+        ).candidates.single()
+        val freezeDry = PublicBattleTacticalCalculator.calculate(
+            context(
+                opponentTypes = setOf("water"),
+                withCombatStats = true,
+                moveId = "freezedry",
+                moveType = "ice",
+                power = 70.0,
+            ),
+        ).candidates.single()
+
+        assertEquals(0.5, ordinaryIce.facts?.typeChartMultiplier)
+        assertEquals(2.0, freezeDry.facts?.typeChartMultiplier)
+        val ordinaryDamage = requireNotNull(ordinaryIce.facts?.standardDamageFractionRange)
+        val freezeDryDamage = requireNotNull(freezeDry.facts?.standardDamageFractionRange)
+        assertTrue(freezeDryDamage.minimum > ordinaryDamage.minimum * 3.9)
+    }
+
+    @Test
     fun `always critical ignores harmful offensive and helpful defensive stages and gains crit damage`() {
         val ordinary = requireNotNull(
             PublicBattleTacticalCalculator.calculate(

@@ -59,7 +59,7 @@ internal object PublicBattleTacticalCalculator {
         val target = targets.firstOrNull()
         val spreadMultiplier = if (targets.size > 1) SPREAD_DAMAGE_MULTIPLIER else 1.0
         val stab = sameTypeAttackBonus(details, actor, candidate)
-        val typeMultiplier = publicTypeMultiplier(details, target, context)
+        val typeMultiplier = publicTypeMultiplier(candidate.moveId, details, target, context)
         val mechanics = LocalPublicMechanicsKernel.projectMove(candidate, context, actingSide)
         declaredDamageRollFractions(candidate, actor, target, mechanics)?.let { return it }
         val projection =
@@ -186,7 +186,7 @@ internal object PublicBattleTacticalCalculator {
         val spreadMultiplier = if (targets.size > 1) SPREAD_DAMAGE_MULTIPLIER else 1.0
         val typeMultiplier = target?.knownTypeIds?.takeIf { it.isNotEmpty() }?.let {
             basis += BattleCalculationBasis.PUBLIC_TYPES
-            publicTypeMultiplier(details, target, context)
+            publicTypeMultiplier(candidate.moveId, details, target, context)
         }
         if (details.damageCategory != BattleMoveDamageCategory.STATUS) {
             unknowns += BattleCalculationUnknown.DYNAMIC_DAMAGE_MODIFIERS
@@ -283,7 +283,7 @@ internal object PublicBattleTacticalCalculator {
         return targets.mapNotNull { each ->
             val slot = each.activeSlot ?: return@mapNotNull null
             val typeMultiplier = each.knownTypeIds.takeIf { it.isNotEmpty() }
-                ?.let { publicTypeMultiplier(details, each) }
+                ?.let { publicTypeMultiplier(candidate.moveId, details, each) }
             val projection =
                 standardDamageProjection(candidate, details, actor, each, stab, typeMultiplier, state, spreadMultiplier)
             BattleSpreadTargetFactsView(
@@ -443,6 +443,7 @@ internal object PublicBattleTacticalCalculator {
     }
 
     private fun publicTypeMultiplier(
+        moveId: String?,
         details: BattleMoveCandidateView,
         target: BattlePokemonStateView?,
         context: BattleDecisionContext? = null,
@@ -459,6 +460,7 @@ internal object PublicBattleTacticalCalculator {
             defenderAbilityId = target.knownAbilityId
                 ?: context?.let { blockingPossibleAbility(details.typeId, target, it) },
             ignoreTypeImmunity = ignoresImmunity,
+            moveId = moveId,
         )
     }
 

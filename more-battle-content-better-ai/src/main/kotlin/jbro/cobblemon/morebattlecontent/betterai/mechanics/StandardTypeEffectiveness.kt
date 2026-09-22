@@ -6,9 +6,27 @@ internal object StandardTypeEffectiveness {
         defendingTypeIds: Set<String>,
         ignoreTypeImmunity: Boolean = false,
     ): Double {
-        val chart = ATTACK_MULTIPLIERS[attackingTypeId.lowercase()] ?: return 1.0
+        val chart = ATTACK_MULTIPLIERS[canonical(attackingTypeId)] ?: return 1.0
         return defendingTypeIds.fold(1.0) { result, defendingTypeId ->
-            val contribution = chart[defendingTypeId.lowercase()] ?: 1.0
+            val contribution = chart[canonical(defendingTypeId)] ?: 1.0
+            result * if (ignoreTypeImmunity && contribution == 0.0) 1.0 else contribution
+        }
+    }
+
+    /** Move-specific chart overrides that Showdown exposes through `onEffectiveness`. */
+    fun multiplierForMove(
+        moveId: String?,
+        attackingTypeId: String,
+        defendingTypeIds: Set<String>,
+        ignoreTypeImmunity: Boolean = false,
+    ): Double {
+        if (canonical(moveId) != FREEZE_DRY || canonical(attackingTypeId) != "ice") {
+            return multiplier(attackingTypeId, defendingTypeIds, ignoreTypeImmunity)
+        }
+        val chart = ATTACK_MULTIPLIERS.getValue("ice")
+        return defendingTypeIds.fold(1.0) { result, defendingTypeId ->
+            val defendingType = canonical(defendingTypeId)
+            val contribution = if (defendingType == "water") 2.0 else chart[defendingType] ?: 1.0
             result * if (ignoreTypeImmunity && contribution == 0.0) 1.0 else contribution
         }
     }
@@ -30,8 +48,9 @@ internal object StandardTypeEffectiveness {
         defenderAbilityId: String?,
         ignoreTypeImmunity: Boolean = false,
         applyAbilities: Boolean = true,
+        moveId: String? = null,
     ): Double {
-        val base = multiplier(attackingTypeId, defendingTypeIds, ignoreTypeImmunity)
+        val base = multiplierForMove(moveId, attackingTypeId, defendingTypeIds, ignoreTypeImmunity)
         if (!applyAbilities) return base
         val ability = canonical(defenderAbilityId) ?: return base
         val moveType = attackingTypeId.substringAfter(':').lowercase()
@@ -45,6 +64,8 @@ internal object StandardTypeEffectiveness {
         ?.lowercase()
         ?.filter(Char::isLetterOrDigit)
         ?.takeIf(String::isNotEmpty)
+
+    private const val FREEZE_DRY = "freezedry"
 
     /** Revealed abilities that nullify a whole attacking type. */
     private val ABSORBING_ABILITIES: Map<String, Set<String>> = mapOf(
