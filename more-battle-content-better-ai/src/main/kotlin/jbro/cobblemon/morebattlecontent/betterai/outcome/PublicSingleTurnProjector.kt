@@ -20,7 +20,6 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityMec
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityState
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicStatusImmunity
-import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalSideGuardRules
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStanceChangeStateProjector
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.RecursiveControlEffect
@@ -668,24 +667,12 @@ internal object PublicSingleTurnProjector {
                 1.0
             }
             val successResult = if (usesSharedStallCheck) mapOf(actor.battlePokemonId to true) else emptyMap()
-            // Mat Block is marked as a stalling move to share Protect's success counter, but its
-            // side condition—not a personal Protect volatile—is what determines which hits fail.
-            val isMatBlock = canonicalId(calculatedAction.moveId) == MAT_BLOCK
-            val successfulProtectionState = effects.asSequence()
-                .filter { it.kind == BattleMoveEffectKind.SIDE_CONDITION }
-                .fold(projectedFormState) { current, effect ->
-                    LocalFieldEffectProjector.apply(current, side, effect, actor.battlePokemonId)
-                }
             val success = WeightedState(
-                state = successfulProtectionState,
+                state = projectedFormState,
                 probability = successProbability,
                 executedSides = setOf(side),
-                protectedPokemonIds = if (isMatBlock) emptySet() else setOf(actor.battlePokemonId),
-                protectionAttackDrops = if (!isMatBlock && contactDrop > 0) {
-                    mapOf(actor.battlePokemonId to contactDrop)
-                } else {
-                    emptyMap()
-                },
+                protectedPokemonIds = setOf(actor.battlePokemonId),
+                protectionAttackDrops = if (contactDrop > 0) mapOf(actor.battlePokemonId to contactDrop) else emptyMap(),
                 executedMoveIdsByPokemon = mapOf(actor.battlePokemonId to requireNotNull(effectiveAction.moveId)),
                 protectionResultsByPokemon = successResult,
             )
@@ -703,9 +690,6 @@ internal object PublicSingleTurnProjector {
         }
         val targetIsProtected = target?.battlePokemonId in protectedPokemonIds
         val breaksProtection = effects.any { it.kind == BattleMoveEffectKind.BREAKS_PROTECTION }
-        val blockedBySideGuard = target?.let {
-            LocalSideGuardRules.blocks(projectedFormState, side, calculatedAction, it.side)
-        } == true
         val reflectedByMagicBounce = target != null && target.side != side &&
             calculatedAction.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS &&
             "reflectable" in calculatedAction.moveDetails?.effects?.mechanicFlags.orEmpty() &&
@@ -744,7 +728,7 @@ internal object PublicSingleTurnProjector {
                 }
             }
         }
-        if (projection.publiclyNullified || (targetIsProtected && !breaksProtection) || blockedBySideGuard) {
+        if (projection.publiclyNullified || (targetIsProtected && !breaksProtection)) {
             val contact = "contact" in calculatedAction.moveDetails?.effects?.mechanicFlags.orEmpty()
             val attackDrop = target?.battlePokemonId?.let(protectionAttackDrops::get) ?: 0
             val protectionState = if (targetIsProtected && contact && attackDrop > 0) {
@@ -1077,13 +1061,7 @@ internal object PublicSingleTurnProjector {
                 val breaksProtection = calculatedAction.moveDetails?.effects?.effects.orEmpty().any {
                     it.kind == BattleMoveEffectKind.BREAKS_PROTECTION
                 }
-                val blockedBySideGuard = LocalSideGuardRules.blocks(
-                    branch.state,
-                    side,
-                    originalAction,
-                    currentTarget.side,
-                )
-                if ((targetIsProtected && !breaksProtection) || blockedBySideGuard) {
+                if (targetIsProtected && !breaksProtection) {
                     val contact = "contact" in calculatedAction.moveDetails?.effects?.mechanicFlags.orEmpty()
                     val attackDrop = protectionAttackDrops[currentTarget.battlePokemonId] ?: 0
                     val blockedState = if (contact && attackDrop > 0) {
@@ -1980,7 +1958,6 @@ internal object PublicSingleTurnProjector {
     private const val QUASH = "quash"
     private const val HELPING_HAND = "helpinghand"
     private const val ALLY_SWITCH = "allyswitch"
-    private const val MAT_BLOCK = "matblock"
     private const val HELPING_HAND_MULTIPLIER = 1.5
     private val QUEUE_CONTROL_MOVE_IDS = setOf(AFTER_YOU, QUASH)
     private val PARALYSIS_IDS = setOf("par", "paralysis", "paralyzed", "paralysed")
