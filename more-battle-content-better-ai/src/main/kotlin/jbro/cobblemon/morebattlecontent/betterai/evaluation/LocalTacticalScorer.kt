@@ -17,6 +17,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyBrief
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyObjective
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveDamageInputs
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalRiskAttitude
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffectiveness
@@ -62,7 +63,9 @@ internal object LocalTacticalScorer {
         if (candidate.kind != BattleActionKind.USE_MOVE) return 0.0
         val details = candidate.moveDetails ?: return 0.0
         if (details.damageCategory == BattleMoveDamageCategory.STATUS) return 0.0
-        val accuracy = candidate.facts?.baseAccuracyProbability ?: details.accuracy / 100.0
+        val accuracy = context?.let { LocalPublicAccuracy.probability(candidate, it, BattleSide.ALLY) }
+            ?: candidate.facts?.baseAccuracyProbability
+            ?: details.accuracy / 100.0
         return LocalTacticalSituationalEvaluator.knockoutAdjustment(candidate, accuracy, tuning, context)
     }
 
@@ -147,7 +150,7 @@ internal object LocalTacticalScorer {
                 strategyMoveAdjustment(candidate, context, strategy)
         val facts = candidate.facts
         val damageRange = facts?.standardDamageFractionRange
-        val accuracy = facts?.baseAccuracyProbability ?: details.accuracy / 100.0
+        val accuracy = LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY)
         val pressure = if (details.damageCategory == BattleMoveDamageCategory.STATUS) {
             LocalTacticalSituationalEvaluator.statusPressure(candidate, context, accuracy)
         } else if (damageRange != null) {
@@ -249,17 +252,12 @@ internal object LocalTacticalScorer {
         if (LocalPublicMoveDamageInputs.isUnresolvedDynamicDamage(candidate)) return 0.0
         val sameTypeBonus = facts?.baseSameTypeAttackBonus ?: publicSameTypeBonus(candidate, context)
         val typeMultiplier = facts?.typeChartMultiplier ?: publicTypeMultiplier(candidate, context)
+        val accuracy = LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY)
         if (tuning.legacyRawPowerFallback) {
             // Preserve the established operation order for deterministic tie-breaking.
-            // The published value is the same base accuracy fact, not a resolved hit chance.
-            return (details.power * details.accuracy / 100.0) * sameTypeBonus * typeMultiplier
+            return details.power * accuracy * sameTypeBonus * typeMultiplier
         }
-        // Keep the legacy operation order. `power * accuracy / 100.0` is exact for whole-numbered
-        // power and accuracy, so two moves with the same product compare exactly equal and the
-        // deterministic actionId tie-break decides. Pre-dividing accuracy instead - `power * (acc/100)`
-        // - leaves a one-ULP difference that silently reorders equal moves, which is what the original
-        // comment on this branch was protecting against. Only the divisor is new.
-        val effectivePower = details.power * details.accuracy / 100.0
+        val effectivePower = details.power * accuracy
         val hpFraction = effectivePower / tuning.unprojectedPowerPerHpBar * sameTypeBonus * typeMultiplier
         return hpFraction.coerceIn(0.0, 1.5) * tuning.boardToScore
     }
@@ -599,7 +597,7 @@ internal object LocalTacticalScorer {
             }
             else -> emptyList()
         }
-        val effectivePower = details.power * details.accuracy / 100.0
+        val effectivePower = details.power * LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY)
         val sameTypeBonus = publicSameTypeBonus(candidate, context)
         val doomedDiscount = { ally: BattlePokemonStateView -> doomedAllyDiscount(ally, context, tuning) }
         return targets.sumOf { target ->

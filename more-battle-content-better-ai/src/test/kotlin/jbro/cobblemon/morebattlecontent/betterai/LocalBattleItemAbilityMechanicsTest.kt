@@ -3,7 +3,9 @@ package jbro.cobblemon.morebattlecontent.betterai
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicSingleTurnProjector
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionOutcomeEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalEndTurnStateProjector
 import jbro.cobblemon.morebattlecontent.betterai.state.PublicTurnProjection
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -183,6 +185,113 @@ class LocalBattleItemAbilityMechanicsTest {
 
         assertEquals(0.5, outcome.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction, 1e-9)
     }
+
+    @Test
+    fun `no guard makes the public hit chance certain in every scoring layer`() {
+        val initial = state(allyAbility = "cobblemon:no_guard")
+        val action = move("dynamic_punch", power = 100.0, accuracy = 50.0)
+        val calculatedContext = calculatedContext(initial, action)
+        val calculated = calculatedContext.candidates.single()
+
+        assertEquals(0.50, requireNotNull(calculated.facts?.baseAccuracyProbability), 1e-9)
+        assertEquals(1.0, LocalPublicAccuracy.probability(calculated, calculatedContext, BattleSide.ALLY), 1e-9)
+        assertEquals(
+            1.0,
+            requireNotNull(
+                LocalBattleActionOutcomeEvaluator.evaluate(
+                    calculated,
+                    calculatedContext,
+                    strategy = null,
+                    profile = BattleTrainerProfile.balanced(),
+                ).effectiveAccuracyProbability,
+            ),
+            1e-9,
+        )
+        assertEquals(
+            1.0,
+            effectiveAccuracy(state(opponentAbility = "cobblemon:no_guard"), action),
+            1e-9,
+        )
+    }
+
+    @Test
+    fun `compound eyes and hustle change public accuracy by showdown fixed modifiers`() {
+        val seventy = move("seventy", power = 80.0, accuracy = 70.0)
+        val compoundEyes = effectiveAccuracy(state(allyAbility = "cobblemon:compound_eyes"), seventy)
+        val hustlePhysical = effectiveAccuracy(
+            state(allyAbility = "cobblemon:hustle"),
+            move("physical", power = 80.0, accuracy = 100.0),
+        )
+        val hustleSpecial = effectiveAccuracy(
+            state(allyAbility = "cobblemon:hustle"),
+            move("special", power = 80.0, category = BattleMoveDamageCategory.SPECIAL, accuracy = 100.0),
+        )
+
+        assertEquals(0.70 * 5325.0 / 4096.0, compoundEyes, 1e-9)
+        assertEquals(3277.0 / 4096.0, hustlePhysical, 1e-9)
+        assertEquals(1.0, hustleSpecial, 1e-9)
+    }
+
+    @Test
+    fun `weather resolves thunder hurricane and blizzard accuracy before score`() {
+        val rain = weather("cobblemon:rain")
+        val sun = weather("cobblemon:sunny_day")
+        val snow = weather("cobblemon:snow")
+
+        assertEquals(1.0, effectiveAccuracy(state(field = rain), move("thunder", 110.0, accuracy = 70.0)), 1e-9)
+        assertEquals(1.0, effectiveAccuracy(state(field = rain), move("hurricane", 110.0, accuracy = 70.0)), 1e-9)
+        assertEquals(0.5, effectiveAccuracy(state(field = sun), move("thunder", 110.0, accuracy = 70.0)), 1e-9)
+        assertEquals(1.0, effectiveAccuracy(state(field = snow), move("blizzard", 110.0, accuracy = 70.0)), 1e-9)
+    }
+
+    @Test
+    fun `hustle attack boost remains active inside magic room`() {
+        val physical = move("physical", power = 80.0)
+        val plain = damageRange(state(), physical)
+        val hustle = damageRange(state(allyAbility = "cobblemon:hustle"), physical)
+        val hustleMagicRoom = damageRange(
+            state(
+                allyAbility = "cobblemon:hustle",
+                field = BattleFieldStateView(
+                    weather = null,
+                    terrain = null,
+                    roomEffects = listOf(BattleTimedEffectView("cobblemon:magic_room", 3)),
+                    globalEffects = emptyList(),
+                    sideConditions = BattleSide.entries.associateWith { emptyList() },
+                ),
+            ),
+            physical,
+        )
+
+        assertTrue(hustle.minimum > plain.minimum)
+        assertEquals(hustle, hustleMagicRoom)
+    }
+
+    private fun effectiveAccuracy(state: BattleStateView, action: BattleActionCandidate): Double {
+        val calculated = calculatedContext(state, action)
+        return LocalPublicAccuracy.probability(calculated.candidates.single(), calculated, BattleSide.ALLY)
+    }
+
+    private fun calculatedContext(state: BattleStateView, action: BattleActionCandidate): BattleDecisionContext {
+        val raw = context(state, action)
+        val calculated = PublicBattleTacticalCalculator.calculate(raw).candidates.single()
+        return BattleDecisionContext(
+            requestId = raw.requestId,
+            state = raw.state,
+            candidates = listOf(calculated),
+            deadlineEpochMillis = raw.deadlineEpochMillis,
+            memory = raw.memory,
+            publicActionCatalog = raw.publicActionCatalog,
+        )
+    }
+
+    private fun weather(id: String) = BattleFieldStateView(
+        weather = BattleTimedEffectView(id, 3),
+        terrain = null,
+        roomEffects = emptyList(),
+        globalEffects = emptyList(),
+        sideConditions = BattleSide.entries.associateWith { emptyList() },
+    )
 
     private fun damageRange(state: BattleStateView, action: BattleActionCandidate): BattleDamageFractionRange =
         requireNotNull(PublicBattleTacticalCalculator.calculate(context(state, action)).candidates.single()

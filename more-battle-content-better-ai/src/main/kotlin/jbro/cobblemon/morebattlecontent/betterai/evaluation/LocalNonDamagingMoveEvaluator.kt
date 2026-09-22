@@ -45,7 +45,16 @@ internal object LocalNonDamagingMoveEvaluator {
             selectedTargetSetupPressure(effects, selectedTarget, accuracy),
         ).maxOrNull()
         val target = selectedTarget?.takeIf { it.side == BattleSide.OPPONENT }
-        val statusProbability = candidate.facts?.statusEffectProbability
+        val baseAccuracy = candidate.facts?.baseAccuracyProbability
+            ?: candidate.moveDetails?.accuracy?.div(100.0)
+            ?: 1.0
+        val statusProbability = candidate.facts?.statusEffectProbability?.let { baseProbability ->
+            if (baseAccuracy > 0.0) {
+                (baseProbability / baseAccuracy * accuracy).coerceIn(0.0, 1.0)
+            } else {
+                0.0
+            }
+        }
         val status = when {
             declaresMajorStatus && target?.statusId != null -> 0.0
             statusProbability != null -> {

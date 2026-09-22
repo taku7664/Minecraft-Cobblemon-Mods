@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai.evaluation
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicFutureActionFactory
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
@@ -126,7 +127,7 @@ internal object LocalLookaheadStateEvaluator {
             val mechanics = LocalPublicMechanicsKernel.projectMove(calculated, calculatedContext, side)
             if (mechanics.publiclyNullified) return@map 0.0
             val facts = calculated.facts
-            val accuracy = facts?.baseAccuracyProbability ?: 0.0
+            val accuracy = LocalPublicAccuracy.probability(calculated, calculatedContext, side)
             val targetHp = if (capDamageToRemainingHp) {
                 PublicBattleTacticalCalculator.primaryTargetHpFraction(calculated, calculatedContext, side)
             } else null

@@ -18,6 +18,7 @@ import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalPublicPositionF
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalSituationalEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicActionOutcomeProjection
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalRiskAttitude
 import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicActionOutcomeProjector
 
@@ -39,6 +40,8 @@ internal data class LocalBattleActionOutcome(
     val currentDefensiveExposure: Double?,
     val resultingDefensiveExposure: Double?,
     val survivalPositionImprovement: Double?,
+    /** Public hit probability after known stages, ability and weather modifiers. */
+    val effectiveAccuracyProbability: Double? = null,
     /**
      * Knockout material already baked into [tacticalUtility].
      *
@@ -230,7 +233,7 @@ internal object LocalBattleActionOutcomeEvaluator {
     ): LocalBattleActionOutcome {
         val facts = candidate.facts
         val details = candidate.moveDetails
-        val accuracy = facts?.baseAccuracyProbability ?: details?.accuracy?.div(100.0) ?: 0.0
+        val accuracy = LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY)
         val damageRange = facts?.standardDamageFractionRange
         // How this trainer expects the dice to fall. The projector and the cancellation below have to
         // read the same attitude, or the scorer's pressure stops cancelling and the move is paid for
@@ -281,6 +284,7 @@ internal object LocalBattleActionOutcomeEvaluator {
             currentDefensiveExposure = null,
             resultingDefensiveExposure = null,
             survivalPositionImprovement = null,
+            effectiveAccuracyProbability = accuracy,
             knockoutUtility = LocalTacticalScorer.knockoutUtility(candidate, tuning, context),
         )
     }

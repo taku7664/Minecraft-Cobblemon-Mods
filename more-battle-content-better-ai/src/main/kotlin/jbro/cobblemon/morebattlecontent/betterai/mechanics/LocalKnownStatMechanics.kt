@@ -30,12 +30,19 @@ internal object LocalKnownStatMechanics {
         category: BattleMoveDamageCategory,
         actor: BattlePokemonStateView,
         state: BattleStateView,
-    ): BattleIntegerRange = scale(
-        value,
-        if (LocalPublicFieldMechanics.magicRoomActive(state)) 1.0 else attackMultiplier(category, actor),
-    )
+    ): BattleIntegerRange {
+        val itemMultiplier = if (LocalPublicFieldMechanics.magicRoomActive(state)) {
+            1.0
+        } else {
+            attackItemMultiplier(category, actor)
+        }
+        val abilityMultiplier = if (
+            category == BattleMoveDamageCategory.PHYSICAL && canonical(actor.knownAbilityId) == "hustle"
+        ) 1.5 else 1.0
+        return scale(value, itemMultiplier * abilityMultiplier)
+    }
 
-    private fun attackMultiplier(
+    private fun attackItemMultiplier(
         category: BattleMoveDamageCategory,
         actor: BattlePokemonStateView,
     ): Double = when (canonical(actor.knownHeldItemId)) {

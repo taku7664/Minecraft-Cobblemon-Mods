@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai.policy
 import java.util.SplittableRandom
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
 import kotlin.math.roundToInt
 
 /** Battle-long psychology derived only from trainer identity, public state, and committed memory. */
@@ -114,7 +115,7 @@ internal object LocalBattleMind {
         if (opponentHp != null && opponentHp <= LOW_HP_THRESHOLD) add(BattleSituation.LOW_HP)
         if (opponents.any { it.statStages.values.any { stage -> stage > 0 } }) add(BattleSituation.AFTER_SETUP)
         val atomic = ownAction.atomicActions()
-        if (atomic.any(::credibleKnockoutThreat)) add(BattleSituation.UNDER_KO_THREAT)
+        if (atomic.any { credibleKnockoutThreat(it, state) }) add(BattleSituation.UNDER_KO_THREAT)
         if (atomic.any { (it.facts?.actsFirstProbability ?: 0.0) >= FASTER_PROBABILITY_THRESHOLD }) {
             add(BattleSituation.FASTER)
         }
@@ -272,13 +273,11 @@ internal object LocalBattleMind {
         } == true
     }
 
-    private fun credibleKnockoutThreat(action: BattleActionCandidate): Boolean {
+    private fun credibleKnockoutThreat(action: BattleActionCandidate, state: BattleStateView): Boolean {
         val facts = action.facts ?: return false
         val rollFloor = facts.standardDamageRollKoProbabilityRange?.minimum
             ?: if (facts.standardKnockoutAssessment == BattleKnockoutAssessment.GUARANTEED) 1.0 else 0.0
-        val accuracy = facts.baseAccuracyProbability
-            ?: action.moveDetails?.accuracy?.div(100.0)
-            ?: 1.0
+        val accuracy = LocalPublicAccuracy.probability(action, state, BattleSide.ALLY)
         return rollFloor * accuracy >= MINIMUM_CREDIBLE_KO_PROBABILITY
     }
 

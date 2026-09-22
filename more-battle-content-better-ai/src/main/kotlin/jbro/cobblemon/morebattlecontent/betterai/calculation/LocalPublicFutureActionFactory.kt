@@ -5,6 +5,7 @@ import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalHypothesisPrior
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveDamageInputs
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffectiveness
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveMoveUseKey
@@ -167,7 +168,7 @@ internal object PublicFutureActionFactory {
                     if (target.knownTypeIds.isEmpty()) 1.0
                     else StandardTypeEffectiveness.multiplier(details.typeId, target.knownTypeIds)
                 } ?: 1.0
-                details.power * details.accuracy / 100.0 * stab * matchup +
+                details.power * LocalPublicAccuracy.probability(action, state, side) * stab * matchup +
                     LocalPublicTurnOrder.effectivePriority(state, side, action) * 5.0
             }
         }

@@ -352,11 +352,14 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
     }
 
     private fun riskMultiplier(rank: LocalBattleActionRank, riskTolerance: Double): Double {
-        val candidate = rank.outcome.candidate
-        val atomic = candidate.componentActions.ifEmpty { listOf(candidate) }
-        val risk = atomic.map { action ->
+        val atomic = rank.outcome.componentOutcomes.ifEmpty { listOf(rank.outcome) }
+        val risk = atomic.map { outcome ->
+            val action = outcome.candidate
             val accuracyRisk = 1.0 - (
-                action.facts?.baseAccuracyProbability ?: action.moveDetails?.accuracy?.div(100.0) ?: 1.0
+                outcome.effectiveAccuracyProbability
+                    ?: action.facts?.baseAccuracyProbability
+                    ?: action.moveDetails?.accuracy?.div(100.0)
+                    ?: 1.0
             ).coerceIn(0.0, 1.0)
             val damageSpread = action.facts?.standardDamageFractionRange?.let { range ->
                 (range.maximum - range.minimum).coerceIn(0.0, 1.0)
