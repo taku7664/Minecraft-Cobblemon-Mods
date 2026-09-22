@@ -52,20 +52,30 @@ internal object PublicBattleTacticalCalculator {
         context: BattleDecisionContext,
         actingSide: BattleSide,
     ): List<Double>? {
-        val details = candidate.moveDetails ?: return null
-        val actor = candidate.actorSlot?.let { slot -> active(context, actingSide, slot) }
-        val targets = LocalPublicMoveTargets.resolve(candidate, context, actingSide)
+        val resolvedCandidate = resolveDynamicMove(candidate, context, actingSide)
+        val details = resolvedCandidate.moveDetails ?: return null
+        val actor = resolvedCandidate.actorSlot?.let { slot -> active(context, actingSide, slot) }
+        val targets = LocalPublicMoveTargets.resolve(resolvedCandidate, context, actingSide)
         // These rolls feed the search, which applies them to one defender. A spread move is therefore
         // projected against its primary target only: the extra slot is visible to the scorer through
         // `spreadTargets`, but the recursive projection still moves one HP bar per action.
         val target = targets.firstOrNull()
         val spreadMultiplier = if (targets.size > 1) SPREAD_DAMAGE_MULTIPLIER else 1.0
-        val stab = sameTypeAttackBonus(details, actor, candidate)
-        val typeMultiplier = publicTypeMultiplier(candidate.moveId, details, target, context)
-        val mechanics = LocalPublicMechanicsKernel.projectMove(candidate, context, actingSide)
-        declaredDamageRollFractions(candidate, actor, target, mechanics, context.state)?.let { return it }
+        val stab = sameTypeAttackBonus(details, actor, resolvedCandidate)
+        val typeMultiplier = publicTypeMultiplier(resolvedCandidate.moveId, details, target, context)
+        val mechanics = LocalPublicMechanicsKernel.projectMove(resolvedCandidate, context, actingSide)
+        declaredDamageRollFractions(resolvedCandidate, actor, target, mechanics, context.state)?.let { return it }
         val projection =
-            standardDamageProjection(candidate, details, actor, target, stab, typeMultiplier, context.state, spreadMultiplier)
+            standardDamageProjection(
+                resolvedCandidate,
+                details,
+                actor,
+                target,
+                stab,
+                typeMultiplier,
+                context.state,
+                spreadMultiplier,
+            )
                 ?: return null
         val maxHp = target?.combatStats?.maxHp ?: return null
         val (rolls, denominator) = if (actingSide == BattleSide.ALLY) {
@@ -73,8 +83,8 @@ internal object PublicBattleTacticalCalculator {
         } else {
             projection.maximumHypothesisRolls to maxHp.minimum
         }
-        val hitCount = if (LocalDeclaredMultiHit.usesPerHitAccuracy(candidate)) 1 else {
-            LocalDeclaredMultiHit.representativeCount(candidate, actor, context.state)
+        val hitCount = if (LocalDeclaredMultiHit.usesPerHitAccuracy(resolvedCandidate)) 1 else {
+            LocalDeclaredMultiHit.representativeCount(resolvedCandidate, actor, context.state)
         }
         return rolls.map { damage ->
             (damage.toDouble() / denominator * hitCount * mechanics.knownDamageMultiplier)
@@ -135,7 +145,8 @@ internal object PublicBattleTacticalCalculator {
             return candidate.copyWith(componentActions = components)
         }
         if (candidate.facts != null) return candidate
-        return candidate.copyWith(facts = facts(candidate, context, actingSide))
+        val resolvedCandidate = resolveDynamicMove(candidate, context, actingSide)
+        return resolvedCandidate.copyWith(facts = facts(resolvedCandidate, context, actingSide))
     }
 
     private fun facts(
@@ -633,7 +644,23 @@ internal object PublicBattleTacticalCalculator {
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         actingSide: BattleSide,
-    ): Double? = LocalPublicMoveTargets.resolve(candidate, context, actingSide).firstOrNull()?.hpFraction
+    ): Double? = LocalPublicMoveTargets.resolve(
+        resolveDynamicMove(candidate, context, actingSide),
+        context,
+        actingSide,
+    ).firstOrNull()?.hpFraction
+
+    private fun resolveDynamicMove(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        actingSide: BattleSide,
+    ): BattleActionCandidate {
+        val details = candidate.moveDetails ?: return candidate
+        val actor = candidate.actorSlot?.let { active(context, actingSide, it) } ?: return candidate
+        val typeId = LocalPublicMoveDamageInputs.resolvedTypeId(candidate, actor, context.state) ?: return candidate
+        if (typeId == details.typeId) return candidate
+        return candidate.copyWith(moveDetails = details.copy(typeId = typeId))
+    }
 
 
     private fun active(context: BattleDecisionContext, side: BattleSide, slot: Int): BattlePokemonStateView? =
@@ -643,6 +670,7 @@ internal object PublicBattleTacticalCalculator {
 
     private fun BattleActionCandidate.copyWith(
         componentActions: List<BattleActionCandidate> = this.componentActions,
+        moveDetails: BattleMoveCandidateView? = this.moveDetails,
         facts: BattleCandidateFactsView? = this.facts,
     ) = BattleActionCandidate(
         actionId = actionId,

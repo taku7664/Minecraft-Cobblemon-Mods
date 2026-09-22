@@ -36,6 +36,14 @@ internal object LocalPublicMoveDamageInputs {
             ?: ppDependentPower(id, actor, details.currentPp)
         val fixedPower = when (id) {
             "acrobatics" -> wholePower?.let { if (actor.knownHeldItemId == null) it * 2 else it }
+            "weatherball" -> wholePower?.let {
+                if (weatherBallWeather(actor, state) != null) it * 2 else it
+            }
+            "terrainpulse" -> wholePower?.let {
+                if (LocalPublicFieldMechanics.terrainId(state) != null &&
+                    LocalPublicTurnOrder.grounded(state, actor)
+                ) it * 2 else it
+            }
             "expandingforce" -> wholePower?.let {
                 if (LocalPublicFieldMechanics.terrainId(state) == "psychicterrain" &&
                     LocalPublicTurnOrder.grounded(state, actor)
@@ -90,6 +98,30 @@ internal object LocalPublicMoveDamageInputs {
             defensiveStat = defensiveStat,
             defensiveStage = target.stage(defensiveStat),
         )
+    }
+
+    /** Resolves a move type callback only when every input is already public. */
+    fun resolvedTypeId(
+        candidate: BattleActionCandidate,
+        actor: BattlePokemonStateView,
+        state: BattleStateView,
+    ): String? {
+        val details = candidate.moveDetails ?: return null
+        return when (canonical(candidate.moveId)) {
+            "weatherball" -> when (weatherBallWeather(actor, state)) {
+                in FIRE_WEATHER -> "fire"
+                in WATER_WEATHER -> "water"
+                in ROCK_WEATHER -> "rock"
+                in ICE_WEATHER -> "ice"
+                else -> details.typeId
+            }
+            "terrainpulse" -> if (LocalPublicTurnOrder.grounded(state, actor)) {
+                TERRAIN_TYPES[LocalPublicFieldMechanics.terrainId(state)] ?: details.typeId
+            } else {
+                details.typeId
+            }
+            else -> details.typeId
+        }
     }
 
     /** True when the public model knows the template value is not the move's resolved damage input. */
@@ -239,6 +271,15 @@ internal object LocalPublicMoveDamageInputs {
         return setOf(power)
     }
 
+    private fun weatherBallWeather(
+        actor: BattlePokemonStateView,
+        state: BattleStateView,
+    ): String? {
+        val weather = LocalPublicFieldMechanics.effectiveWeatherId(state) ?: return null
+        val umbrellaActive = LocalPublicItemState.activeItemId(state, actor) == "utilityumbrella"
+        return weather.takeUnless { umbrellaActive && it in UMBRELLA_SUPPRESSED_WEATHER }
+    }
+
     private fun BattlePokemonStateView.stage(stat: CombatStat): Int = when (stat) {
         CombatStat.ATTACK -> stage("attack", "atk")
         CombatStat.DEFENCE -> stage("defence", "defense", "def")
@@ -270,7 +311,7 @@ internal object LocalPublicMoveDamageInputs {
     private val PUBLICLY_RESOLVED_DYNAMIC_MOVES = setOf(
         "acrobatics", "expandingforce", "risingvoltage", "eruption", "waterspout",
         "dragonenergy", "flail", "reversal", "crushgrip", "wringout", "storedpower",
-        "powertrip", "punishment", "trumpcard", "facade", "hex",
+        "powertrip", "punishment", "trumpcard", "weatherball", "terrainpulse", "facade", "hex",
         "infernalparade", "brine", "venoshock",
         "barbbarrage", "smellingsalts", "wakeupslap", "round", "fishiousrend", "boltbeak",
         "assurance", "payback", "avalanche", "revenge", "electroball", "gyroball",
@@ -283,6 +324,17 @@ internal object LocalPublicMoveDamageInputs {
     private val TARGET_HP_DEPENDENT_MOVES = setOf("crushgrip", "wringout")
     private val PP_DEPENDENT_MOVES = setOf("trumpcard")
     private val ELECTRO_BALL_POWERS = listOf(40, 60, 80, 120, 150)
+    private val FIRE_WEATHER = setOf("sun", "sunnyday", "harshsunlight", "desolateland")
+    private val WATER_WEATHER = setOf("rain", "raindance", "heavyrain", "primordialsea")
+    private val ROCK_WEATHER = setOf("sand", "sandstorm")
+    private val ICE_WEATHER = setOf("hail", "snow", "snowscape")
+    private val UMBRELLA_SUPPRESSED_WEATHER = FIRE_WEATHER + WATER_WEATHER
+    private val TERRAIN_TYPES = mapOf(
+        "electricterrain" to "electric",
+        "grassyterrain" to "grass",
+        "mistyterrain" to "fairy",
+        "psychicterrain" to "psychic",
+    )
 
     /** Fallback for synthetic/older candidates that predate declarative callback flags. */
     private val LEGACY_UNRESOLVED_DYNAMIC_MOVES = setOf(
