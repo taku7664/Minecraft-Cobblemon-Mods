@@ -78,9 +78,7 @@ object TranslationKeys {
     // ═════════════════════════════════════════════════════════════════════════
 
     val BATON_PASS_KEYS = setOf("cobblemon.move.batonpass")
-    val SPECTRAL_THIEF_KEYS = setOf("cobblemon.move.spectralthief")
     const val BATON_PASS_NAME = "baton pass"
-    const val SPECTRAL_THIEF_NAME = "spectral thief"
 
     // ═════════════════════════════════════════════════════════════════════════
     // Ability Keys

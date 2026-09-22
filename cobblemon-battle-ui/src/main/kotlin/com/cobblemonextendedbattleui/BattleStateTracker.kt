@@ -257,6 +257,7 @@ object BattleStateTracker {
 
     fun applyStatChange(pokemonName: String, stat: BattleStat, stages: Int, preferAlly: Boolean? = null) = StatTracker.applyStatChange(pokemonName, stat, stages, preferAlly)
     fun setStatStage(pokemonName: String, stat: BattleStat, stage: Int, preferAlly: Boolean? = null) = StatTracker.setStatStage(pokemonName, stat, stage, preferAlly)
+    fun setStatStage(uuid: UUID, stat: BattleStat, stage: Int) = StatTracker.setStatStage(uuid, stat, stage)
     fun clearPokemonStats(uuid: UUID) = StatTracker.clearPokemonStats(uuid)
     fun clearPokemonStatsByName(pokemonName: String, preferAlly: Boolean? = null) = StatTracker.clearPokemonStatsByName(pokemonName, preferAlly)
     fun clearAllStatsForAll() = StatTracker.clearAllStatsForAll()
@@ -264,7 +265,7 @@ object BattleStateTracker {
     fun copyStats(sourceName: String, targetName: String, sourceIsAlly: Boolean? = null, targetIsAlly: Boolean? = null) = StatTracker.copyStats(sourceName, targetName, sourceIsAlly, targetIsAlly)
     fun swapStats(pokemon1Name: String, pokemon2Name: String, pokemon1IsAlly: Boolean? = null, pokemon2IsAlly: Boolean? = null) = StatTracker.swapStats(pokemon1Name, pokemon2Name, pokemon1IsAlly, pokemon2IsAlly)
     fun swapSpecificStats(pokemon1Name: String, pokemon2Name: String, statsToSwap: List<BattleStat>, pokemon1IsAlly: Boolean? = null, pokemon2IsAlly: Boolean? = null) = StatTracker.swapSpecificStats(pokemon1Name, pokemon2Name, statsToSwap, pokemon1IsAlly, pokemon2IsAlly)
-    fun stealPositiveStats(userPokemonName: String, targetPokemonName: String, userIsAlly: Boolean? = null, targetIsAlly: Boolean? = null) = StatTracker.stealPositiveStats(userPokemonName, targetPokemonName, userIsAlly, targetIsAlly)
+    fun clearPositiveStats(uuid: UUID) = StatTracker.clearPositiveStats(uuid)
     fun getStatChanges(uuid: UUID): Map<BattleStat, Int> = StatTracker.getStatChanges(uuid)
     fun getStatFromName(name: String): BattleStat? = StatTracker.getStatFromName(name)
 

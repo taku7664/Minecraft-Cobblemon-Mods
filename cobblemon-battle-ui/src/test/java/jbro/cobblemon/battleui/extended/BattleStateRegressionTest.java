@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 import jbro.cobblemon.battleui.extended.BattleStateTracker.ItemStatus;
 import jbro.cobblemon.battleui.extended.battle.messages.MessageParser;
+import jbro.cobblemon.battleui.extended.battle.messages.RawProtocolStateUpdater;
 import jbro.cobblemon.battleui.extended.battle.messages.StateUpdater;
 import jbro.cobblemon.battleui.extended.battle.messages.TranslationKeys;
 import jbro.cobblemon.battleui.extended.battle.state.AbilityItemTracker;
@@ -305,6 +306,64 @@ final class BattleStateRegressionTest {
         )));
 
         assertEquals(Set.of("thunderbolt"), BattleStateTracker.INSTANCE.getRevealedMoves(attacker));
+    }
+
+    @Test
+    void spectralThiefDoesNotMoveBoostsUntilShowdownConfirmsTheHit() {
+        UUID user = UUID.randomUUID();
+        UUID target = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(user, "Marshadow", true);
+        PokemonRegistry.INSTANCE.registerPokemon(target, "Eevee", false);
+        BattleStateTracker.INSTANCE.setStatStage("Eevee", BattleStateTracker.BattleStat.ATTACK, 2, false);
+
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Text.translatable(
+            "cobblemon.battle.used_move_on",
+            "Marshadow",
+            Text.translatable("cobblemon.move.spectralthief"),
+            "Eevee"
+        )));
+
+        assertEquals(2, BattleStateTracker.INSTANCE.getStatChanges(target).get(BattleStateTracker.BattleStat.ATTACK));
+        assertFalse(BattleStateTracker.INSTANCE.getStatChanges(user).containsKey(BattleStateTracker.BattleStat.ATTACK));
+    }
+
+    @Test
+    void spectralThiefSuccessUsesTheRawTargetSlotInsteadOfAnAmbiguousName() {
+        UUID user = UUID.randomUUID();
+        UUID targetA = UUID.randomUUID();
+        UUID targetB = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(user, "Marshadow", true);
+        PokemonRegistry.INSTANCE.registerPokemon(targetA, "Eevee", false);
+        PokemonRegistry.INSTANCE.registerPokemon(targetB, "Eevee", false);
+        BattleStateTracker.INSTANCE.setStatStage(targetA, BattleStateTracker.BattleStat.ATTACK, 1);
+        BattleStateTracker.INSTANCE.setStatStage(targetB, BattleStateTracker.BattleStat.ATTACK, 2);
+        BattleStateTracker.INSTANCE.setStatStage(targetB, BattleStateTracker.BattleStat.DEFENSE, -1);
+
+        MessageParser.INSTANCE.trackMove("Marshadow", "Spectral Thief", "cobblemon.move.spectralthief", "Stale Target");
+        boolean handled = RawProtocolStateUpdater.INSTANCE.process(
+            "|-clearpositiveboost|p2b: Eevee|p1a: Marshadow|move: Spectral Thief",
+            pnx -> "p2a".equals(pnx) ? targetA : "p2b".equals(pnx) ? targetB : null
+        );
+
+        assertTrue(handled);
+        assertEquals(1, BattleStateTracker.INSTANCE.getStatChanges(targetA).get(BattleStateTracker.BattleStat.ATTACK));
+        assertFalse(BattleStateTracker.INSTANCE.getStatChanges(targetB).containsKey(BattleStateTracker.BattleStat.ATTACK));
+        assertEquals(-1, BattleStateTracker.INSTANCE.getStatChanges(targetB).get(BattleStateTracker.BattleStat.DEFENSE));
+        assertFalse(BattleStateTracker.INSTANCE.getStatChanges(user).containsKey(BattleStateTracker.BattleStat.ATTACK));
+    }
+
+    @Test
+    void rawClearPositiveBoostFromAnotherEffectIsIgnored() {
+        UUID target = UUID.randomUUID();
+        BattleStateTracker.INSTANCE.setStatStage(target, BattleStateTracker.BattleStat.ATTACK, 2);
+
+        boolean handled = RawProtocolStateUpdater.INSTANCE.process(
+            "|-clearpositiveboost|p2a: Eevee|p1a: User|move: Future Move",
+            pnx -> target
+        );
+
+        assertFalse(handled);
+        assertEquals(2, BattleStateTracker.INSTANCE.getStatChanges(target).get(BattleStateTracker.BattleStat.ATTACK));
     }
 
     @Test

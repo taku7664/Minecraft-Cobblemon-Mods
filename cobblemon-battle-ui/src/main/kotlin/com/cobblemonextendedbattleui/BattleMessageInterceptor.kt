@@ -2,6 +2,7 @@ package jbro.cobblemon.battleui.extended
 
 import com.cobblemon.mod.common.client.CobblemonClient
 import jbro.cobblemon.battleui.extended.battle.messages.MessageParser
+import jbro.cobblemon.battleui.extended.battle.messages.RawProtocolStateUpdater
 import jbro.cobblemon.battleui.extended.battle.messages.StateUpdater
 import jbro.cobblemon.battleui.extended.battle.messages.TranslationKeys
 import net.minecraft.text.Text
@@ -29,6 +30,17 @@ object BattleMessageInterceptor {
 
     private fun processComponent(text: Text) {
         val contents = text.content
+
+        if (contents !is TranslatableTextContent && RawProtocolStateUpdater.process(text.string) { pnx ->
+                CobblemonClient.battle
+                    ?.getPokemonFromPNX(pnx)
+                    ?.second
+                    ?.battlePokemon
+                    ?.uuid
+            }
+        ) {
+            return
+        }
 
         if (contents is TranslatableTextContent) {
             val key = contents.key
@@ -59,10 +71,6 @@ object BattleMessageInterceptor {
                 CobblemonExtendedBattleUI.LOGGER.debug("BattleMessageInterceptor: Move tracked - $user used $moveName (key=$moveKey) on $target")
 
                 BattleStateTracker.addRevealedMove(user, moveId)
-
-                if (MessageParser.isMove(TranslationKeys.SPECTRAL_THIEF_KEYS, TranslationKeys.SPECTRAL_THIEF_NAME)) {
-                    BattleStateTracker.stealPositiveStats(user, target)
-                }
             }
 
             // Track move usage without target (self-targeting): [user, moveName]

@@ -33,9 +33,13 @@ object StatTracker {
 
     fun setStatStage(pokemonName: String, stat: BattleStat, stage: Int, preferAlly: Boolean? = null) {
         val uuid = PokemonRegistry.resolvePokemonUuid(pokemonName, preferAlly) ?: return
+        setStatStage(uuid, stat, stage)
+        CobblemonExtendedBattleUI.LOGGER.debug("StatTracker: $pokemonName ${stat.abbr} set to $stage")
+    }
+
+    fun setStatStage(uuid: UUID, stat: BattleStat, stage: Int) {
         val pokemonStats = statChanges.computeIfAbsent(uuid) { ConcurrentHashMap() }
         pokemonStats[stat] = stage.coerceIn(-6, 6)
-        CobblemonExtendedBattleUI.LOGGER.debug("StatTracker: $pokemonName ${stat.abbr} set to $stage")
     }
 
     fun clearPokemonStats(uuid: UUID) {
@@ -112,37 +116,12 @@ object StatTracker {
         CobblemonExtendedBattleUI.LOGGER.debug("StatTracker: Swapped ${statsToSwap.map { it.abbr }} between $pokemon1Name and $pokemon2Name")
     }
 
-    fun stealPositiveStats(
-        userPokemonName: String, targetPokemonName: String,
-        userIsAlly: Boolean? = null, targetIsAlly: Boolean? = null
-    ) {
-        val userUuid = PokemonRegistry.resolvePokemonUuid(userPokemonName, userIsAlly) ?: run {
-            CobblemonExtendedBattleUI.LOGGER.debug("StatTracker: Unknown user '$userPokemonName' for Spectral Thief")
-            return
-        }
-        val targetUuid = PokemonRegistry.resolvePokemonUuid(targetPokemonName, targetIsAlly) ?: run {
-            CobblemonExtendedBattleUI.LOGGER.debug("StatTracker: Unknown target '$targetPokemonName' for Spectral Thief")
-            return
-        }
-
-        val targetStats = statChanges[targetUuid] ?: return
-        val userStats = statChanges.computeIfAbsent(userUuid) { ConcurrentHashMap() }
-
-        var stolenCount = 0
+    fun clearPositiveStats(uuid: UUID) {
+        val pokemonStats = statChanges[uuid] ?: return
         for (stat in BattleStat.entries) {
-            val targetValue = targetStats[stat] ?: 0
-            if (targetValue > 0) {
-                val userValue = userStats[stat] ?: 0
-                userStats[stat] = (userValue + targetValue).coerceIn(-6, 6)
-                targetStats[stat] = 0
-                stolenCount++
+            if ((pokemonStats[stat] ?: 0) > 0) {
+                pokemonStats[stat] = 0
             }
-        }
-
-        if (stolenCount > 0) {
-            CobblemonExtendedBattleUI.LOGGER.debug(
-                "StatTracker: $userPokemonName stole $stolenCount stat boosts from $targetPokemonName via Spectral Thief"
-            )
         }
     }
 
