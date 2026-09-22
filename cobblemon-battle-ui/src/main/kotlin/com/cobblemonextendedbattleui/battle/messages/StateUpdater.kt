@@ -214,19 +214,23 @@ object StateUpdater {
         BattleStateTracker.setItem(pokemonName, itemName, ItemStatus.CONSUMED)
     }
 
-    fun extractItemConsumedSingleArg(args: Array<out Any>, itemName: String) {
+    fun extractItemSingleArg(
+        args: Array<out Any>,
+        itemTranslationKey: String,
+        status: ItemStatus
+    ) {
         if (args.isEmpty()) return
         val pokemonName = MessageParser.extractPokemonName(args[0])
-        BattleStateTracker.setItem(pokemonName, itemName, ItemStatus.CONSUMED)
+        val itemName = Text.translatable(itemTranslationKey).string
+        BattleStateTracker.setItem(pokemonName, itemName, status)
     }
 
     fun extractBerryFromKey(key: String, args: Array<out Any>) {
         if (args.isEmpty()) return
         val pokemonName = MessageParser.extractPokemonName(args[0])
         val berryId = key.substringAfterLast(".")
-        val berryName = berryId
-            .replace("berry", " Berry")
-            .replaceFirstChar { it.uppercase() }
+        val itemId = berryId.removeSuffix("berry") + "_berry"
+        val berryName = Text.translatable("item.cobblemon.$itemId").string
         BattleStateTracker.setItem(pokemonName, berryName, ItemStatus.CONSUMED)
     }
 

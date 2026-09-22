@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import jbro.cobblemon.battleui.extended.battle.messages.TranslationKeys;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -133,7 +134,7 @@ final class BattleUiAuditContractTest {
             "src/main/kotlin/com/cobblemonextendedbattleui/battle/messages/TranslationKeys.kt"
         );
         var matcher = Pattern.compile(
-            "\\\"(cobblemon\\.(?:battle|move|stat)\\.[A-Za-z0-9_.-]+)\\\""
+            "\\\"(cobblemon\\.(?:battle|move|stat)\\.[A-Za-z0-9_.-]+|item\\.cobblemon\\.[A-Za-z0-9_.-]+)\\\""
         ).matcher(constants);
         Set<String> missing = new HashSet<>();
         while (matcher.find()) {
@@ -144,6 +145,15 @@ final class BattleUiAuditContractTest {
         }
 
         assertEquals(Set.of(), missing);
+
+        for (String eventKey : TranslationKeys.INSTANCE.getBERRY_DAMAGE_KEYS()) {
+            String berryId = eventKey.substring(eventKey.lastIndexOf('.') + 1);
+            String itemId = berryId.substring(0, berryId.length() - "berry".length()) + "_berry";
+            assertTrue(
+                cobblemonEnglish.has("item.cobblemon." + itemId),
+                "Missing item translation for " + eventKey
+            );
+        }
     }
 
     @Test

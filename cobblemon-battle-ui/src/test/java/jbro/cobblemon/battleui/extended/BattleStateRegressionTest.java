@@ -11,6 +11,7 @@ import java.util.UUID;
 import jbro.cobblemon.battleui.extended.BattleStateTracker.ItemStatus;
 import jbro.cobblemon.battleui.extended.battle.messages.MessageParser;
 import jbro.cobblemon.battleui.extended.battle.messages.StateUpdater;
+import jbro.cobblemon.battleui.extended.battle.messages.TranslationKeys;
 import jbro.cobblemon.battleui.extended.battle.state.AbilityItemTracker;
 import jbro.cobblemon.battleui.extended.battle.state.FormTracker;
 import jbro.cobblemon.battleui.extended.battle.state.PokemonRegistry;
@@ -44,6 +45,60 @@ final class BattleStateRegressionTest {
 
         StateUpdater.INSTANCE.extractHealingItem(new Object[] {"Tropius", "자뭉열매"});
 
+        assertEquals(ItemStatus.CONSUMED, AbilityItemTracker.INSTANCE.getItem(uuid).getStatus());
+    }
+
+    @Test
+    void focusBandActivationDoesNotConsumeTheItem() {
+        UUID uuid = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(uuid, "Lucario", false);
+        var event = TranslationKeys.INSTANCE.getITEM_SINGLE_ARG_EVENTS()
+            .get("cobblemon.battle.enditem.focusband");
+        assertNotNull(event);
+
+        StateUpdater.INSTANCE.extractItemSingleArg(
+            new Object[] {"Lucario"}, event.getFirst(), event.getSecond()
+        );
+
+        assertEquals(
+            Text.translatable("item.cobblemon.focus_band").getString(),
+            AbilityItemTracker.INSTANCE.getItem(uuid).getName()
+        );
+        assertEquals(ItemStatus.HELD, AbilityItemTracker.INSTANCE.getItem(uuid).getStatus());
+    }
+
+    @Test
+    void focusSashEventConsumesTheTranslatedItem() {
+        UUID uuid = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(uuid, "Lucario", false);
+        var event = TranslationKeys.INSTANCE.getITEM_SINGLE_ARG_EVENTS()
+            .get("cobblemon.battle.enditem.focussash");
+        assertNotNull(event);
+
+        StateUpdater.INSTANCE.extractItemSingleArg(
+            new Object[] {"Lucario"}, event.getFirst(), event.getSecond()
+        );
+
+        assertEquals(
+            Text.translatable("item.cobblemon.focus_sash").getString(),
+            AbilityItemTracker.INSTANCE.getItem(uuid).getName()
+        );
+        assertEquals(ItemStatus.CONSUMED, AbilityItemTracker.INSTANCE.getItem(uuid).getStatus());
+    }
+
+    @Test
+    void resistanceBerryUsesTheCobblemonItemTranslation() {
+        UUID uuid = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(uuid, "Tropius", false);
+
+        StateUpdater.INSTANCE.extractBerryFromKey(
+            "cobblemon.battle.enditem.occaberry", new Object[] {"Tropius"}
+        );
+
+        assertEquals(
+            Text.translatable("item.cobblemon.occa_berry").getString(),
+            AbilityItemTracker.INSTANCE.getItem(uuid).getName()
+        );
         assertEquals(ItemStatus.CONSUMED, AbilityItemTracker.INSTANCE.getItem(uuid).getStatus());
     }
 

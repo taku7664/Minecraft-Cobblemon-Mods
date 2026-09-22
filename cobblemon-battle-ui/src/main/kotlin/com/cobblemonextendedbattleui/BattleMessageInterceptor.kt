@@ -304,8 +304,8 @@ object BattleMessageInterceptor {
                 return
             }
 
-            TranslationKeys.ITEM_CONSUMED_SINGLE_ARG_KEYS[key]?.let { itemName ->
-                StateUpdater.extractItemConsumedSingleArg(args, itemName)
+            TranslationKeys.ITEM_SINGLE_ARG_EVENTS[key]?.let { (itemTranslationKey, status) ->
+                StateUpdater.extractItemSingleArg(args, itemTranslationKey, status)
                 return
             }
 

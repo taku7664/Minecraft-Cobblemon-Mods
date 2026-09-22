@@ -2,6 +2,7 @@ package jbro.cobblemon.battleui.extended.battle.messages
 
 import jbro.cobblemon.battleui.extended.BattleStateTracker.BattleStat
 import jbro.cobblemon.battleui.extended.BattleStateTracker.FieldCondition
+import jbro.cobblemon.battleui.extended.BattleStateTracker.ItemStatus
 import jbro.cobblemon.battleui.extended.BattleStateTracker.SideCondition
 import jbro.cobblemon.battleui.extended.BattleStateTracker.Terrain
 import jbro.cobblemon.battleui.extended.BattleStateTracker.VolatileStatus
@@ -147,9 +148,11 @@ object TranslationKeys {
         "cobblemon.battle.enditem.redcard"
     )
 
-    val ITEM_CONSUMED_SINGLE_ARG_KEYS = mapOf(
-        "cobblemon.battle.enditem.focussash" to "Focus Sash",
-        "cobblemon.battle.enditem.focusband" to "Focus Band"
+    val ITEM_SINGLE_ARG_EVENTS = mapOf(
+        "cobblemon.battle.enditem.focussash" to
+            Pair("item.cobblemon.focus_sash", ItemStatus.CONSUMED),
+        "cobblemon.battle.enditem.focusband" to
+            Pair("item.cobblemon.focus_band", ItemStatus.HELD)
     )
 
     val BERRY_DAMAGE_KEYS = setOf(
