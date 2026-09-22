@@ -291,14 +291,14 @@ internal object Cobblemon173ActionCandidateAdapter {
     }
 
     /** Cobblemon publishes this JVM method as Kotlin-internal, so the version adapter contains the reflection. */
-    private fun hasRuntimeMoveOverride(canonicalId: String): Boolean = runCatching {
+    private fun hasRuntimeMoveOverride(canonicalId: String): Boolean = compatibilityCallOrNull {
         val movesClass = Moves::class.java
         val instance = movesClass.getField("INSTANCE").get(null)
         val scripts = movesClass.getMethod("getMoveScripts\$common").invoke(instance) as Map<*, *>
         scripts.keys.filterIsInstance<String>().any { scriptId ->
                 scriptId.lowercase().filter(Char::isLetterOrDigit) == canonicalId
         }
-    }.getOrDefault(true)
+    } ?: true
 
     /**
      * The actor's types once the mechanic resolves, for the mechanics that change them.
@@ -313,9 +313,9 @@ internal object Cobblemon173ActionCandidateAdapter {
     ): Set<String> = if (gimmick != ShowdownMoveset.Gimmick.TERASTALLIZATION) {
         emptySet()
     } else {
-        runCatching {
+        compatibilityCallOrNull {
             active.battlePokemon?.effectedPokemon?.teraType?.let { setOf(it.name) }
-        }.getOrNull().orEmpty()
+        }.orEmpty()
     }
 
     /**
@@ -336,7 +336,7 @@ internal object Cobblemon173ActionCandidateAdapter {
     ): BattleCombatStatRangesView? {
         if (gimmick != ShowdownMoveset.Gimmick.DYNAMAX) return null
         val pokemon = active.battlePokemon?.effectedPokemon ?: return null
-        return runCatching {
+        return compatibilityCallOrNull {
             Cobblemon173PublicStatHypothesis.exactOwn(
                 maxHp = pokemon.maxHealth * 2,
                 attack = pokemon.attack,
@@ -345,7 +345,7 @@ internal object Cobblemon173ActionCandidateAdapter {
                 specialDefence = pokemon.specialDefence,
                 speed = pokemon.speed,
             )
-        }.getOrNull()
+        }
     }
 
     private fun mechanicId(gimmick: ShowdownMoveset.Gimmick): String = when (gimmick) {

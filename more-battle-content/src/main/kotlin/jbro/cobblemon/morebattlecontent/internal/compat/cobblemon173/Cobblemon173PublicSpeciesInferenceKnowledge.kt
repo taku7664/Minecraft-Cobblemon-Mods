@@ -13,7 +13,7 @@ import net.minecraft.resources.ResourceLocation
 
 /** Resolves rule pools from the publicly presented species/form, never a live Pokemon's set. */
 internal object Cobblemon173PublicSpeciesInferenceKnowledge : PublicSpeciesInferenceKnowledge, PublicSpeciesMoveKnowledge {
-    override fun possibleAbilities(speciesId: String, formId: String?): List<PublicAbilityPossibility>? = runCatching {
+    override fun possibleAbilities(speciesId: String, formId: String?): List<PublicAbilityPossibility>? = compatibilityCallOrNull {
         val form = publicForm(speciesId, formId) ?: return null
         form.abilities.mapNotNull { potential ->
             val abilityId = potential.template.name.lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
@@ -28,15 +28,15 @@ internal object Cobblemon173PublicSpeciesInferenceKnowledge : PublicSpeciesInfer
                 )
             }
         }.distinct()
-    }.getOrNull()
+    }
 
-    override fun possibleMoves(speciesId: String, formId: String?): PublicSpeciesMovePool? = runCatching {
+    override fun possibleMoves(speciesId: String, formId: String?): PublicSpeciesMovePool? = compatibilityCallOrNull {
         val form = publicForm(speciesId, formId) ?: return null
         PublicSpeciesMovePool(
             form.moves.getAllLegalMoves().map { canonical(it.name) }.filter(String::isNotBlank).toSet(),
             "cobblemon:1.7.3/form_learnset/all_legal_moves",
         )
-    }.getOrNull()
+    }
 
     private fun publicForm(speciesId: String, formId: String?): FormData? {
         val directSpecies = ResourceLocation.tryParse(speciesId)?.let(PokemonSpecies::getByIdentifier)

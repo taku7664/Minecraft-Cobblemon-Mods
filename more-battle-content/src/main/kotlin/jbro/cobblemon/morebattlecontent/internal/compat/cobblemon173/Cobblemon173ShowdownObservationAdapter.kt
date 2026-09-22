@@ -81,8 +81,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
         val opponent = activeBattle.actors.firstOrNull { it.uuid == opponentActorId } ?: return
         opponent.activePokemon.forEach { active ->
             val battlePokemon = active.battlePokemon ?: return@forEach
-            runCatching { battlePokemon.toPublicSnapshot() }
-                .getOrNull()
+            compatibilityCallOrNull { battlePokemon.toPublicSnapshot() }
                 ?.let(observer::observeActivePresence)
         }
     }
@@ -101,7 +100,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
 
     private fun consume(activeBattle: PokemonBattle, raw: String) {
         raw.lineSequence().filter { it.startsWith('|') }.forEach { line ->
-            val message = runCatching { BattleMessage(line) }.getOrNull() ?: return@forEach
+            val message = compatibilityCallOrNull { BattleMessage(line) } ?: return@forEach
             try {
                 if (message.id == "turn") {
                     observer.closeActionWindow()
@@ -318,9 +317,9 @@ internal class Cobblemon173ShowdownObservationAdapter(
             Effect.Type.ITEM -> ResourceKind.ITEM
             else -> return
         }
-        val owner = runCatching {
+        val owner = compatibilityCallOrNull {
             message.battlePokemonFromOptional(activeBattle, "of") ?: message.battlePokemon(0, activeBattle)
-        }.getOrNull() ?: return
+        } ?: return
         val pokemon = owner.toPublicSnapshot()
         when (kind) {
             ResourceKind.ABILITY -> observer.observe(
@@ -337,9 +336,9 @@ internal class Cobblemon173ShowdownObservationAdapter(
         activeBattle: PokemonBattle,
         message: BattleMessage,
         argument: Int,
-    ): Cobblemon173PublicPokemonSnapshot? = runCatching {
+    ): Cobblemon173PublicPokemonSnapshot? = compatibilityCallOrNull {
         message.battlePokemon(argument, activeBattle)?.toPublicSnapshot()
-    }.getOrNull()
+    }
 
     private fun BattlePokemon.toPublicSnapshot(): Cobblemon173PublicPokemonSnapshot {
         val activeSlot = actor.activePokemon.indexOfFirst { it.battlePokemon?.uuid == uuid }.takeIf { it >= 0 }
@@ -500,7 +499,7 @@ internal class Cobblemon173ShowdownObservationAdapter(
         fun effectId(raw: String?): String {
             val value = raw.orEmpty()
             if (value.isBlank()) return ""
-            return runCatching { Effect.Companion.parse(value)?.id }.getOrNull()
+            return compatibilityCallOrNull { Effect.Companion.parse(value)?.id }
                 ?.takeIf(String::isNotBlank)
                 ?: value.substringAfter(": ", value)
                     .lowercase(Locale.ROOT)

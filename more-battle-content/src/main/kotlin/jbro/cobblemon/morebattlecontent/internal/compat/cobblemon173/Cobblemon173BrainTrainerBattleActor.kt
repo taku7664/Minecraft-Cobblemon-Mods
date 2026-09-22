@@ -362,7 +362,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
     private fun logFailure(operation: String, throwable: Throwable) {
         MoreBattleContent.LOGGER.error(
             "Battle {} {} failed: {}",
-            runCatching { battle.battleId }.getOrNull(),
+            compatibilityCallOrNull { battle.battleId },
             operation,
             throwable.javaClass.name,
         )

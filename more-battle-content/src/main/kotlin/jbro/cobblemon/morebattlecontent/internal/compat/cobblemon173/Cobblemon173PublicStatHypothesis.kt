@@ -7,7 +7,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicStatRanges
 
 /** Builds combat-stat facts without accepting opponent IVs, EVs, nature, item, or ability. */
 internal object Cobblemon173PublicStatHypothesis {
-    fun fromForm(level: Int, form: FormData): BattleCombatStatRangesView? = runCatching {
+    fun fromForm(level: Int, form: FormData): BattleCombatStatRangesView? = compatibilityCallOrNull {
         fromBaseStats(
             level = level,
             hp = requireNotNull(form.baseStats[Stats.HP]),
@@ -17,7 +17,7 @@ internal object Cobblemon173PublicStatHypothesis {
             specialDefence = requireNotNull(form.baseStats[Stats.SPECIAL_DEFENCE]),
             speed = requireNotNull(form.baseStats[Stats.SPEED]),
         )
-    }.getOrNull()
+    }
 
     fun fromBaseStats(
         level: Int,

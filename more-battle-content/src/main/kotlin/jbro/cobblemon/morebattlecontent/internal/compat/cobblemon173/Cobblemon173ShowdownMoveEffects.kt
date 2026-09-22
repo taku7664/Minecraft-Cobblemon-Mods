@@ -7,12 +7,12 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectsView
 /** Reads the exact Pokemon Showdown move bundle shipped inside Cobblemon 1.7.3. */
 internal object Cobblemon173ShowdownMoveEffects {
     private val effectsByMoveId: Map<String, BattleMoveEffectsView> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        runCatching {
+        compatibilityCallOrNull {
             val source = requireNotNull(showdownMovesSource()) {
                 "Cobblemon 1.7.3 Showdown move data is unavailable"
             }
             ShowdownDeclarativeMoveParser.parse(source)
-        }.getOrDefault(emptyMap())
+        } ?: emptyMap()
     }
 
     fun resolve(moveId: String): BattleMoveEffectsView? = effectsByMoveId[canonicalMoveId(moveId)]
