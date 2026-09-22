@@ -391,6 +391,28 @@ class LocalSpecialTurnOrderTest {
         ))
     }
 
+    @Test
+    fun `klutz suppresses item based order grounding and powder immunity`() {
+        val attack = move("tackle", "normal", BattleMoveDamageCategory.PHYSICAL)
+        val quickClaw = state(allyAbility = "klutz", allyItem = "quickclaw")
+        val laggingTail = state(allyAbility = "klutz", allyItem = "laggingtail")
+        val balloon = state(allyAbility = "klutz", allyItem = "airballoon")
+        val sleepPowder = move(
+            "sleeppowder", "grass", BattleMoveDamageCategory.STATUS,
+            effects = statusEffects("slp", setOf("powder")),
+        )
+
+        assertEquals(0.0, LocalPublicTurnOrder.fractionalPriorityChance(quickClaw, BattleSide.ALLY, attack))
+        assertFalse(LocalPublicTurnOrder.alwaysLastWithinPriority(laggingTail, BattleSide.ALLY, attack))
+        assertTrue(LocalPublicTurnOrder.grounded(
+            balloon, balloon.pokemon.first { it.side == BattleSide.ALLY },
+        ))
+        assertFalse(LocalPublicMechanicsKernel.projectMove(
+            sleepPowder,
+            context(state(opponentAbility = "klutz", opponentItem = "safetygoggles"), sleepPowder),
+        ).publiclyNullified)
+    }
+
     private fun effects(kind: BattleMoveEffectKind) = BattleMoveEffectsView(
         coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
         effects = listOf(

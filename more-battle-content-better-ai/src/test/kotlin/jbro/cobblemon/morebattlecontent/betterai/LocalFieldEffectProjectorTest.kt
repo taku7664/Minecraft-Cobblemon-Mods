@@ -129,6 +129,27 @@ class LocalFieldEffectProjectorTest {
     }
 
     @Test
+    fun `klutz suppresses a known duration extender and removes hidden extender uncertainty`() {
+        val reflect = sideCondition("cobblemon:reflect", BattleMoveEffectTarget.USER_SIDE)
+        val ownKlutz = state(pokemon = listOf(pokemon(item = "cobblemon:light_clay", ability = "klutz")))
+        val ownScreen = LocalFieldEffectProjector.apply(ownKlutz, BattleSide.ALLY, reflect, ACTOR_ID)
+
+        val opponentId = UUID.fromString("00000000-0000-0000-0000-000000000504")
+        val unknownOpponentItem = state(
+            pokemon = listOf(pokemon(opponentId, BattleSide.OPPONENT, item = null, ability = "klutz")),
+        )
+        val opposingScreen = LocalFieldEffectProjector.apply(
+            unknownOpponentItem,
+            BattleSide.OPPONENT,
+            reflect,
+            opponentId,
+        )
+
+        assertEquals(5, ownScreen.field.sideConditions.getValue(BattleSide.ALLY).single().remainingTurns)
+        assertEquals(5, opposingScreen.field.sideConditions.getValue(BattleSide.OPPONENT).single().remainingTurns)
+    }
+
+    @Test
     fun `using an active room move toggles that room off`() {
         val trickRoom = fieldEffect(BattleMoveEffectKind.FIELD_CONDITION, "trickroom")
         val initial = state(
@@ -168,6 +189,7 @@ class LocalFieldEffectProjectorTest {
         id: UUID = ACTOR_ID,
         side: BattleSide = BattleSide.ALLY,
         item: String? = null,
+        ability: String? = null,
     ) = BattlePokemonStateView(
         battlePokemonId = id,
         side = side,
@@ -179,7 +201,7 @@ class LocalFieldEffectProjectorTest {
         statusId = null,
         statStages = emptyMap(),
         knownMoveIds = emptySet(),
-        knownAbilityId = null,
+        knownAbilityId = ability,
         knownHeldItemId = item,
         fainted = false,
         combatStats = if (side == BattleSide.ALLY) {

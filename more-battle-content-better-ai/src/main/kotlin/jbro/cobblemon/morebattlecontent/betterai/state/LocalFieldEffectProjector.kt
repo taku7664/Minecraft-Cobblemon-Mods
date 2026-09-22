@@ -4,6 +4,8 @@ import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalSideConditionRules
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicFieldMechanics
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityState
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicItemState
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.copyState
 
 /** Projects declarative public field effects whose duration rules are stable in Gen 9. */
@@ -49,11 +51,7 @@ internal object LocalFieldEffectProjector {
         } else {
             durationEffect(
                 effectId,
-                sideDuration(
-                    canonical,
-                    state.pokemon.firstOrNull { it.battlePokemonId == actorPokemonId },
-                    !LocalPublicFieldMechanics.magicRoomActive(state),
-                ),
+                sideDuration(state, canonical, state.pokemon.firstOrNull { it.battlePokemonId == actorPokemonId }),
             ) ?: return state
         }
         val nextConditions = state.field.sideConditions.toMutableMap().also { bySide ->
@@ -83,7 +81,8 @@ internal object LocalFieldEffectProjector {
         if (canonical !in WEATHER_IDS) return state
         val actor = state.pokemon.firstOrNull { it.battlePokemonId == actorPokemonId }
         val duration = extendableDuration(
-            actor, weatherExtender(canonical), 5, 8, !LocalPublicFieldMechanics.magicRoomActive(state),
+            actor, weatherExtender(canonical), 5, 8,
+            LocalPublicItemState.activeItemId(state, actor), durationItemsPossible(state, actor),
         )
         return copyState(state, copyField(state.field, weather = durationEffect(effectId, duration)))
     }
@@ -98,7 +97,8 @@ internal object LocalFieldEffectProjector {
         if (canonical !in TERRAIN_IDS) return state
         val actor = state.pokemon.firstOrNull { it.battlePokemonId == actorPokemonId }
         val duration = extendableDuration(
-            actor, "terrainextender", 5, 8, !LocalPublicFieldMechanics.magicRoomActive(state),
+            actor, "terrainextender", 5, 8,
+            LocalPublicItemState.activeItemId(state, actor), durationItemsPossible(state, actor),
         )
         return copyState(state, copyField(state.field, terrain = durationEffect(effectId, duration)))
     }
@@ -126,13 +126,16 @@ internal object LocalFieldEffectProjector {
     }
 
     private fun sideDuration(
+        state: BattleStateView,
         canonical: String,
         actor: BattlePokemonStateView?,
-        itemsActive: Boolean,
     ): BattleIntegerRange? = when (canonical) {
-        "reflect", "lightscreen", "auroraveil" -> extendableDuration(actor, "lightclay", 5, 8, itemsActive)
-        "tailwind" -> knownOrRangedDuration(actor, 4, 6, itemsActive)
-        "safeguard" -> knownOrRangedDuration(actor, 5, 7, itemsActive)
+        "reflect", "lightscreen", "auroraveil" -> extendableDuration(
+            actor, "lightclay", 5, 8,
+            LocalPublicItemState.activeItemId(state, actor), durationItemsPossible(state, actor),
+        )
+        "tailwind" -> knownOrRangedDuration(state, actor, 4, 6)
+        "safeguard" -> knownOrRangedDuration(state, actor, 5, 7)
         "mist", "luckychant" -> BattleIntegerRange(5, 5)
         "firepledge", "grasspledge", "waterpledge",
         "gmaxcannonade", "gmaxvinelash", "gmaxvolcalith", "gmaxwildfire" -> BattleIntegerRange(4, 4)
@@ -145,31 +148,37 @@ internal object LocalFieldEffectProjector {
         extenderItem: String?,
         baseTurns: Int,
         extendedTurns: Int,
-        itemsActive: Boolean,
+        activeItem: String?,
+        itemsPossible: Boolean,
     ): BattleIntegerRange {
-        if (!itemsActive) return BattleIntegerRange(baseTurns, baseTurns)
-        val heldItem = canonical(actor?.knownHeldItemId).takeIf { itemsActive }
+        if (!itemsPossible) return BattleIntegerRange(baseTurns, baseTurns)
         return when {
-            extenderItem != null && heldItem == extenderItem -> BattleIntegerRange(extendedTurns, extendedTurns)
-            heldItem != null || actor?.combatStats?.knowledge == BattleCombatStatKnowledge.EXACT_OWN ->
+            extenderItem != null && activeItem == extenderItem -> BattleIntegerRange(extendedTurns, extendedTurns)
+            actor?.knownHeldItemId != null || actor?.combatStats?.knowledge == BattleCombatStatKnowledge.EXACT_OWN ->
                 BattleIntegerRange(baseTurns, baseTurns)
             else -> BattleIntegerRange(baseTurns, extendedTurns)
         }
     }
 
     private fun knownOrRangedDuration(
+        state: BattleStateView,
         actor: BattlePokemonStateView?,
         baseTurns: Int,
         publicMaximum: Int,
-        itemsActive: Boolean,
     ): BattleIntegerRange = if (
-        !itemsActive || actor?.knownHeldItemId != null ||
+        LocalPublicFieldMechanics.magicRoomActive(state) ||
+            LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "klutz" ||
+            actor?.knownHeldItemId != null ||
             actor?.combatStats?.knowledge == BattleCombatStatKnowledge.EXACT_OWN
     ) {
         BattleIntegerRange(baseTurns, baseTurns)
     } else {
         BattleIntegerRange(baseTurns, publicMaximum)
     }
+
+    private fun durationItemsPossible(state: BattleStateView, actor: BattlePokemonStateView?): Boolean =
+        !LocalPublicFieldMechanics.magicRoomActive(state) &&
+            LocalPublicAbilityState.effectiveKnownAbility(state, actor) != "klutz"
 
     private fun durationEffect(effectId: String, duration: BattleIntegerRange?): BattleTimedEffectView? = when {
         duration == null -> null

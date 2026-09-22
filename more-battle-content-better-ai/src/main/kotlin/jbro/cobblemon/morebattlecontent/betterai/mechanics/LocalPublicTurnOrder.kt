@@ -58,8 +58,7 @@ internal object LocalPublicTurnOrder {
             if (ability == QUICK_DRAW &&
                 action.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS
             ) add(QUICK_DRAW_CHANCE)
-            if (!LocalPublicFieldMechanics.magicRoomActive(state) &&
-                canonical(actor.knownHeldItemId.orEmpty()) == QUICK_CLAW && !myceliumStatus
+            if (LocalPublicItemState.activeItemId(state, actor) == QUICK_CLAW && !myceliumStatus
             ) add(QUICK_CLAW_CHANCE)
         }
         return 1.0 - chances.fold(1.0) { none, chance -> none * (1.0 - chance) }
@@ -72,10 +71,10 @@ internal object LocalPublicTurnOrder {
     ): Boolean {
         val actor = active(state, side, action.actorSlot) ?: return false
         val ability = LocalPublicAbilityState.effectiveKnownAbility(state, actor).orEmpty()
-        val item = canonical(actor.knownHeldItemId.orEmpty())
+        val item = LocalPublicItemState.activeItemId(state, actor)
         return ability == STALL ||
             ability == MYCELIUM_MIGHT && action.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS ||
-            !LocalPublicFieldMechanics.magicRoomActive(state) && item in ALWAYS_LAST_ITEMS
+            item in ALWAYS_LAST_ITEMS
     }
 
     /** Action-aware ordering used by recursive turn projection. */
@@ -195,11 +194,11 @@ internal object LocalPublicTurnOrder {
     fun grounded(state: BattleStateView, pokemon: BattlePokemonStateView): Boolean {
         val volatiles = pokemon.knownVolatileEffectIds.mapTo(hashSetOf(), ::canonical)
         if (gravityActive(state) || volatiles.any { it in FORCED_GROUNDED_VOLATILES }) return true
-        val itemsActive = !LocalPublicFieldMechanics.magicRoomActive(state)
-        if (itemsActive && canonical(pokemon.knownHeldItemId.orEmpty()) == IRON_BALL) return true
+        val item = LocalPublicItemState.activeItemId(state, pokemon)
+        if (item == IRON_BALL) return true
         if (pokemon.knownTypeIds.any { canonical(it) == FLYING }) return false
         if (LocalPublicAbilityState.effectiveKnownAbility(state, pokemon) == LEVITATE) return false
-        if (itemsActive && canonical(pokemon.knownHeldItemId.orEmpty()) == AIR_BALLOON) return false
+        if (item == AIR_BALLOON) return false
         return true
     }
 

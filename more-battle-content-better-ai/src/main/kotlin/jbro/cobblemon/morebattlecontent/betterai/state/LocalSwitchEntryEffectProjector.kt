@@ -2,9 +2,9 @@ package jbro.cobblemon.morebattlecontent.betterai.state
 
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
-import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityState
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicItemState
 
 /** Applies deterministic non-HP hazards to the public state after a switch. */
 internal object LocalSwitchEntryEffectProjector {
@@ -17,8 +17,7 @@ internal object LocalSwitchEntryEffectProjector {
         val hazards = state.field.sideConditions.getValue(incoming.side)
         val toxicSpikes = hazards.firstOrNull { canonical(it.effectId) == TOXIC_SPIKES }
         val types = incoming.knownTypeIds.mapTo(hashSetOf(), ::canonical)
-        val itemsActive = !LocalPublicFieldMechanics.magicRoomActive(state)
-        val item = canonical(incoming.knownHeldItemId).takeIf { itemsActive }
+        val item = LocalPublicItemState.activeItemId(state, incoming)
         var nextField = state.field
         var nextIncoming = incoming
         var reflectedTargetId: UUID? = null

@@ -17,6 +17,7 @@ import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTactica
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicFieldMechanics
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicItemState
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalSideConditionRules
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
 
@@ -360,8 +361,7 @@ internal object LocalTacticalSituationalEvaluator {
     ): Double {
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()
         val actor = actor(candidate, context)
-        val chargeSkippedByItem = !LocalPublicFieldMechanics.magicRoomActive(context.state) &&
-            actor?.knownHeldItemId?.let(::canonicalEffectId) == "powerherb"
+        val chargeSkippedByItem = LocalPublicItemState.activeItemId(context.state, actor) == "powerherb"
         val chargeSkippedByWeather = LocalPublicFieldMechanics.effectiveWeatherId(context.state)?.let { weatherId ->
             effects.any {
                 it.kind == BattleMoveEffectKind.CHARGE_SKIP_WEATHER && sameEffect(it.valueId, weatherId)

@@ -4,7 +4,7 @@ import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.copyState
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityState
-import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicFieldMechanics
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicItemState
 
 /** Applies deterministic, publicly known ability effects caused by entering battle. */
 internal object LocalEntryAbilityProjector {
@@ -55,9 +55,7 @@ internal object LocalEntryAbilityProjector {
         }
         val terrain = ENTRY_TERRAIN[ability]
         if (weather == null && terrain == null) return state
-        val item = incoming.knownHeldItemId
-            ?.takeUnless { LocalPublicFieldMechanics.magicRoomActive(state) }
-            ?.let(::canonical)
+        val item = LocalPublicItemState.activeItemId(state, incoming)
         val weatherTurns = if (WEATHER_EXTENDERS[weather] == item) EXTENDED_FIELD_TURNS else ENTRY_FIELD_TURNS
         val terrainTurns = if (item == TERRAIN_EXTENDER) EXTENDED_FIELD_TURNS else ENTRY_FIELD_TURNS
         val field = BattleFieldStateView(

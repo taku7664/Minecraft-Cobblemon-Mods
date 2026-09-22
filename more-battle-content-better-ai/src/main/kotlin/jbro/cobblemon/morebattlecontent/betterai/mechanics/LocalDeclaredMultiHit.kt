@@ -35,10 +35,10 @@ internal object LocalDeclaredMultiHit {
             ?: return 1
         val ability = if (state == null) canonical(actor?.knownAbilityId) else
             LocalPublicAbilityState.effectiveKnownAbility(state, actor)
-        val item = canonical(actor?.knownHeldItemId)
+        val item = if (state == null) canonical(actor?.knownHeldItemId) else LocalPublicItemState.activeItemId(state, actor)
         return when {
             ability == "skilllink" -> range.maximum
-            item == "loadeddice" && state?.let(LocalPublicFieldMechanics::magicRoomActive) != true && range.maximum >= 4 ->
+            item == "loadeddice" && range.maximum >= 4 ->
                 maxOf(range.minimum, range.maximum - 1)
             else -> ((range.minimum + range.maximum) / 2).coerceIn(range.minimum, range.maximum)
         }

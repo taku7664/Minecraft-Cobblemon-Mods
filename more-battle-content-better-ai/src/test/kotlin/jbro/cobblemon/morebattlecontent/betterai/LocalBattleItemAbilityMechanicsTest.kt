@@ -64,6 +64,20 @@ class LocalBattleItemAbilityMechanicsTest {
     }
 
     @Test
+    fun `klutz suppresses focus sash without consuming it`() {
+        val initial = state(
+            opponentAbility = "cobblemon:klutz",
+            opponentItem = "cobblemon:focus_sash",
+        )
+
+        val outcome = turn(initial, move("knockout", power = 1_000.0)).single()
+        val target = outcome.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }
+
+        assertEquals(0.0, target.hpFraction, 1e-9)
+        assertEquals("cobblemon:focus_sash", target.knownHeldItemId)
+    }
+
+    @Test
     fun `disguise blocks only the first damaging hit and changes to busted form`() {
         val initial = state(
             opponentAbility = "cobblemon:disguise",
@@ -109,12 +123,45 @@ class LocalBattleItemAbilityMechanicsTest {
     }
 
     @Test
+    fun `klutz suppresses assault vest damage reduction`() {
+        val specialMove = move("special", power = 90.0, category = BattleMoveDamageCategory.SPECIAL)
+
+        val plain = damageRange(state(), specialMove)
+        val klutzVest = damageRange(
+            state(opponentAbility = "cobblemon:klutz", opponentItem = "cobblemon:assault_vest"),
+            specialMove,
+        )
+
+        assertEquals(plain, klutzVest)
+    }
+
+    @Test
     fun `leftovers heals one sixteenth rounded down to integer HP`() {
         val projected = LocalEndTurnStateProjector.project(
             state(allyHp = 0.5, allyItem = "cobblemon:leftovers"),
         )
 
         assertEquals(112.0 / 200.0, projected.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction, 1e-9)
+    }
+
+    @Test
+    fun `klutz suppresses leftovers and rocky helmet`() {
+        val leftovers = LocalEndTurnStateProjector.project(
+            state(
+                allyHp = 0.5,
+                allyAbility = "cobblemon:klutz",
+                allyItem = "cobblemon:leftovers",
+            ),
+        )
+        val helmet = turn(
+            state(opponentAbility = "cobblemon:klutz", opponentItem = "cobblemon:rocky_helmet"),
+            move("contact", power = 40.0, contact = true),
+        )
+
+        assertEquals(0.5, leftovers.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction, 1e-9)
+        assertTrue(helmet.all { outcome ->
+            outcome.state.pokemon.single { it.battlePokemonId == ALLY_ID }.hpFraction == 1.0
+        })
     }
 
     @Test

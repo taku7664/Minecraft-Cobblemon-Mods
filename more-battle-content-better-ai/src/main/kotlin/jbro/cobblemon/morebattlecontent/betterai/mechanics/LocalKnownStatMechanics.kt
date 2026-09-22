@@ -65,11 +65,7 @@ internal object LocalKnownStatMechanics {
         actor: BattlePokemonStateView,
         state: BattleStateView,
     ): BattleIntegerRange {
-        val itemMultiplier = if (LocalPublicFieldMechanics.magicRoomActive(state)) {
-            1.0
-        } else {
-            attackItemMultiplier(category, actor)
-        }
+        val itemMultiplier = attackItemMultiplier(category, actor, LocalPublicItemState.activeItemId(state, actor))
         val abilityMultiplier = if (
             category == BattleMoveDamageCategory.PHYSICAL &&
                 LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "hustle"
@@ -80,7 +76,8 @@ internal object LocalKnownStatMechanics {
     private fun attackItemMultiplier(
         category: BattleMoveDamageCategory,
         actor: BattlePokemonStateView,
-    ): Double = when (canonical(actor.knownHeldItemId)) {
+        item: String?,
+    ): Double = when (item) {
         "choiceband" -> if (category == BattleMoveDamageCategory.PHYSICAL) 1.5 else 1.0
         "choicespecs" -> if (category == BattleMoveDamageCategory.SPECIAL) 1.5 else 1.0
         "lightball" -> if (canonical(actor.speciesId) == "pikachu") 2.0 else 1.0
@@ -92,10 +89,7 @@ internal object LocalKnownStatMechanics {
         stat: LocalPublicMoveDamageInputs.CombatStat,
         target: BattlePokemonStateView,
         state: BattleStateView,
-    ): BattleIntegerRange = scale(
-        value,
-        if (LocalPublicFieldMechanics.magicRoomActive(state)) 1.0 else defenceMultiplier(stat, target),
-    )
+    ): BattleIntegerRange = scale(value, defenceMultiplier(stat, LocalPublicItemState.activeItemId(state, target)))
 
     fun offensiveDefence(
         value: BattleIntegerRange,
@@ -106,9 +100,8 @@ internal object LocalKnownStatMechanics {
 
     private fun defenceMultiplier(
         stat: LocalPublicMoveDamageInputs.CombatStat,
-        target: BattlePokemonStateView,
+        item: String?,
     ): Double {
-        val item = canonical(target.knownHeldItemId)
         val vest = if (
             stat == LocalPublicMoveDamageInputs.CombatStat.SPECIAL_DEFENCE && item == "assaultvest"
         ) 1.5 else 1.0
@@ -128,8 +121,7 @@ internal object LocalKnownStatMechanics {
         actor: BattlePokemonStateView,
         typeChartMultiplier: Double?,
         state: BattleStateView,
-    ): Double = if (LocalPublicFieldMechanics.magicRoomActive(state)) 1.0 else
-        when (canonical(actor.knownHeldItemId)) {
+    ): Double = when (LocalPublicItemState.activeItemId(state, actor)) {
             "lifeorb" -> 1.3
             "expertbelt" -> if ((typeChartMultiplier ?: 1.0) > 1.0) 1.2 else 1.0
             else -> 1.0
@@ -141,11 +133,8 @@ internal object LocalKnownStatMechanics {
         pokemon: BattlePokemonStateView,
         state: BattleStateView,
     ): BattleIntegerRange {
-        val item = canonical(pokemon.knownHeldItemId)
-        val ignoredByKlutz = LocalPublicAbilityState.effectiveKnownAbility(state, pokemon) == "klutz" &&
-            item !in KLUTZ_PROOF_SPEED_ITEMS
+        val item = LocalPublicItemState.activeItemId(state, pokemon)
         val multiplier = when {
-            LocalPublicFieldMechanics.magicRoomActive(state) || ignoredByKlutz -> 1.0
             item == "choicescarf" -> 1.5
             item in HALF_SPEED_ITEMS -> 0.5
             else -> 1.0
@@ -167,5 +156,4 @@ internal object LocalKnownStatMechanics {
         "ironball", "machobrace", "poweranklet", "powerband", "powerbelt",
         "powerbracer", "powerlens", "powerweight",
     )
-    private val KLUTZ_PROOF_SPEED_ITEMS = HALF_SPEED_ITEMS - "ironball"
 }

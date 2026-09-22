@@ -104,7 +104,7 @@ internal object LocalDirectHitMechanics {
             )
         }
 
-        val sashReady = !magicRoomActive(state) && canonical(target.knownHeldItemId) == "focussash" &&
+        val sashReady = LocalPublicItemState.activeItemId(state, target) == "focussash" &&
             target.hpFraction >= FULL_HP_EPSILON && incomingDamage >= target.hpFraction
         val sturdyReady = !ignoreTargetAbility &&
             LocalPublicAbilityState.effectiveKnownAbility(state, target) == "sturdy" &&
@@ -156,8 +156,7 @@ internal object LocalDirectHitMechanics {
         healthAfterHit: Double,
     ): Double {
         if (healthAfterHit <= 0.0) return 0.0
-        if (magicRoomActive(state)) return 0.0
-        val item = canonical(target.knownHeldItemId)
+        val item = LocalPublicItemState.activeItemId(state, target)
         val fraction = if (item == "oranberry") {
             // Oran heals ten absolute HP, not ten percent. Missing public HP units cannot
             // establish the resulting fraction; a public range uses the existing midpoint model.
@@ -178,9 +177,6 @@ internal object LocalDirectHitMechanics {
         }
         return fraction
     }
-
-    private fun magicRoomActive(state: BattleStateView): Boolean =
-        state.field.roomEffects.any { canonical(it.effectId) == "magicroom" }
 
     /** Fractional recovery amounts; activation thresholds are separate from the amount healed. */
     private val PINCH_BERRY_HEALING = mapOf(

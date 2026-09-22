@@ -87,9 +87,7 @@ internal object LocalPublicMechanicsKernel {
             return projectStatusMove(candidate, details, context, actingSide, ignoresAbility)
         }
         val moveType = canonical(details.typeId)
-        val actorItem = actor?.knownHeldItemId
-            ?.takeUnless { LocalPublicFieldMechanics.magicRoomActive(context.state) }
-            ?.let(::canonicalOrNull)
+        val actorItem = LocalPublicItemState.activeItemId(context.state, actor)
         val targetAbility = publicAbility(target, context)
         val ignoresTypeImmunity = details.effects?.effects.orEmpty().any {
             it.kind == BattleMoveEffectKind.IGNORE_TYPE_IMMUNITY
@@ -182,9 +180,7 @@ internal object LocalPublicMechanicsKernel {
             return true
         }
         if (POWDER_FLAG !in details.effects?.mechanicFlags.orEmpty()) return false
-        val item = target.knownHeldItemId
-            ?.takeUnless { LocalPublicFieldMechanics.magicRoomActive(context.state) }
-            ?.let(::canonicalOrNull)
+        val item = LocalPublicItemState.activeItemId(context.state, target)
         return GRASS in types || item == SAFETY_GOGGLES || !ignoresAbility && ability == OVERCOAT
     }
 

@@ -41,7 +41,7 @@ internal object LocalPublicAccuracy {
 
         val moveId = canonical(candidate.moveId)
         val weather = LocalPublicFieldMechanics.effectiveWeatherId(state)
-        val targetIgnoresWeather = canonical(target?.knownHeldItemId) == UTILITY_UMBRELLA
+        val targetIgnoresWeather = LocalPublicItemState.activeItemId(state, target) == UTILITY_UMBRELLA
         when {
             moveId == BLIZZARD && weather in SNOW_WEATHER -> return 1.0
             moveId in RAIN_ACCURATE_MOVES && !targetIgnoresWeather && weather in RAIN_WEATHER -> return 1.0

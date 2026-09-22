@@ -40,6 +40,26 @@ class PublicSwitchEntryHazardCalculatorTest {
     }
 
     @Test
+    fun `klutz suppresses heavy duty boots against entry hazards`() {
+        val benchId = UUID.fromString("00000000-0000-0000-0000-000000000406")
+        val hazards = listOf(BattleTimedEffectView("spikes", null, stacks = 3))
+        val calculated = PublicBattleTacticalCalculator.calculate(
+            context(
+                state(
+                    benchId,
+                    setOf("normal"),
+                    hazards,
+                    item = "cobblemon:heavydutyboots",
+                    ability = "cobblemon:klutz",
+                ),
+                switch(benchId),
+            ),
+        )
+
+        assertEquals(0.25, requireNotNull(calculated.candidates.single().facts?.switchEntryHpLossFraction), 1e-9)
+    }
+
+    @Test
     fun `neutralizing gas suppresses magic guard against entry hazards`() {
         val benchId = UUID.fromString("00000000-0000-0000-0000-000000000404")
         val rocks = listOf(BattleTimedEffectView("stealthrock", null))

@@ -26,8 +26,7 @@ internal object LocalFullHealthSurvivalRules {
         ignoreTargetAbility: Boolean = false,
     ): Boolean {
         if (target.hpFraction < FULL_HEALTH) return false
-        val magicRoomActive = state.field.roomEffects.any { canonical(it.effectId) == "magicroom" }
-        if (!magicRoomActive && canonical(target.knownHeldItemId) == FOCUS_SASH) return true
+        if (LocalPublicItemState.activeItemId(state, target) == FOCUS_SASH) return true
         if (ignoreTargetAbility) return false
         val known = LocalPublicAbilityState.effectiveKnownAbility(state, target)
         if (known != null) return known == STURDY

@@ -5,6 +5,7 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalBadPoisonCounter
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalHpArithmetic
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityState
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicItemState
 
 /** Applies public, deterministic end-of-turn mechanics used by recursive search. */
 internal object LocalEndTurnStateProjector {
@@ -15,7 +16,6 @@ internal object LocalEndTurnStateProjector {
     ): BattleStateView {
         // Weather expires before its residual callback. Unknown durations retain the existing estimate.
         val nextField = decrementField(state.field)
-        val itemsActive = !LocalPublicFieldMechanics.magicRoomActive(state)
         val sandActive = canonical(nextField.weather?.effectId) == "sandstorm" && state.pokemon.none {
             it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 &&
                 LocalPublicAbilityState.effectiveKnownAbility(state, it) in WEATHER_SUPPRESSION_ABILITIES
@@ -23,6 +23,7 @@ internal object LocalEndTurnStateProjector {
         val next = state.pokemon.map { pokemon ->
             if (pokemon.activeSlot == null || pokemon.fainted || pokemon.hpFraction <= 0.0) return@map pokemon
             val ability = LocalPublicAbilityState.effectiveKnownAbility(state, pokemon)
+            val item = LocalPublicItemState.activeItemId(state, pokemon)
             val stages = if (ability == "speedboost") {
                 pokemon.statStages.toMutableMap().also { current ->
                     val speedKey = current.keys.firstOrNull { canonical(it) in SPEED_IDS } ?: "speed"
@@ -39,11 +40,11 @@ internal object LocalEndTurnStateProjector {
             }
             // Native event order: weather (1), item healing (5), poison/burn (9/10), Salt Cure (13).
             if (sandActive && ability !in SAND_IMMUNE_ABILITIES &&
-                (!itemsActive || canonical(pokemon.knownHeldItemId) != "safetygoggles") &&
+                item != "safetygoggles" &&
                 pokemon.knownTypeIds.none { canonical(it) in SAND_IMMUNE_TYPES }) {
                 apply(-hpFractionTick(pokemon, 16))
             }
-            if (itemsActive && canonical(pokemon.knownHeldItemId) == "leftovers") apply(hpFractionTick(pokemon, 16))
+            if (item == "leftovers") apply(hpFractionTick(pokemon, 16))
             if (poisonHeal) {
                 apply(hpFractionTick(pokemon, 8))
             } else if (ability != "magicguard") {
