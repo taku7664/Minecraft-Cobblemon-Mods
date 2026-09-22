@@ -89,6 +89,8 @@ final class BattleUiAuditContractTest {
         assertFalse(indicators.contains("findTrackedPokemonByName"));
         assertTrue(indicators.contains("BattleStateTracker.getRevealedAbility(targetUuid)"));
         assertTrue(indicators.contains("playerActor.pokemon.find { it.uuid == targetUuid }"));
+        assertTrue(indicators.contains("targetAbility = rawAbilityId"));
+        assertFalse(indicators.contains("targetAbility = formatAbilityName(rawAbilityId)"));
         assertTrue(indicators.contains("replaceAbilityForTransform(transformerUuid, targetAbility)"));
         assertTrue(staleAbilityClear >= 0);
         assertTrue(targetLookup >= 0);
@@ -152,6 +154,17 @@ final class BattleUiAuditContractTest {
             assertTrue(
                 cobblemonEnglish.has("item.cobblemon." + itemId),
                 "Missing item translation for " + eventKey
+            );
+        }
+
+        Set<String> fixedAbilityIds = new HashSet<>(
+            TranslationKeys.INSTANCE.getABILITY_SINGLE_ARG_KEYS().values()
+        );
+        fixedAbilityIds.addAll(TranslationKeys.INSTANCE.getABILITY_START_KEYS().values());
+        for (String abilityId : fixedAbilityIds) {
+            assertTrue(
+                cobblemonEnglish.has("cobblemon.ability." + abilityId),
+                "Missing ability translation for " + abilityId
             );
         }
     }

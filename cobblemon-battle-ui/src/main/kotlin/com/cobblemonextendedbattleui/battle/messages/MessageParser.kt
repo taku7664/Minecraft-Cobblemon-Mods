@@ -119,6 +119,18 @@ object MessageParser {
         return argToString(arg).lowercase(Locale.ROOT)
     }
 
+    /** Returns a locale-independent Cobblemon ability ID when the argument carries an ability key. */
+    fun extractAbilityId(arg: Any): String {
+        val key = argToTranslationKey(arg)
+        if (key != null && key.startsWith("cobblemon.ability.")) {
+            return key.removePrefix("cobblemon.ability.").removeSuffix(".desc")
+        }
+        return argToString(arg)
+            .substringAfterLast(':')
+            .lowercase(Locale.ROOT)
+            .filter(Char::isLetterOrDigit)
+    }
+
     /**
      * Resolve a BattleStat from a stat argument using a 3-strategy approach:
      * 1. Translation key matching (language-independent)

@@ -22,19 +22,20 @@ object AbilityItemTracker {
 
     // ── Ability Tracking ─────────────────────────────────────────────────────
 
-    fun setRevealedAbility(pokemonName: String, abilityName: String, preferAlly: Boolean? = null) {
+    fun setRevealedAbility(pokemonName: String, abilityId: String, preferAlly: Boolean? = null) {
         val uuid = PokemonRegistry.resolvePokemonUuid(pokemonName, preferAlly) ?: run {
             CobblemonExtendedBattleUI.LOGGER.debug("AbilityItemTracker: Unknown Pokemon '$pokemonName' for ability tracking")
             return
         }
-        setRevealedAbility(uuid, abilityName)
-        CobblemonExtendedBattleUI.LOGGER.debug("AbilityItemTracker: $pokemonName ability revealed: $abilityName")
+        setRevealedAbility(uuid, abilityId)
+        CobblemonExtendedBattleUI.LOGGER.debug("AbilityItemTracker: $pokemonName ability revealed: $abilityId")
     }
 
-    fun setRevealedAbility(uuid: UUID, abilityName: String) {
-        val normalizedName = abilityName.split(" ", "_", "-")
-            .joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
-        revealedAbilities[uuid] = normalizedName
+    fun setRevealedAbility(uuid: UUID, abilityId: String) {
+        revealedAbilities[uuid] = abilityId
+            .substringAfterLast(':')
+            .lowercase()
+            .filter(Char::isLetterOrDigit)
     }
 
     fun getRevealedAbility(uuid: UUID): String? = revealedAbilities[uuid]

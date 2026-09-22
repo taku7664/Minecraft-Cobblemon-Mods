@@ -89,9 +89,9 @@ object TranslationKeys {
     const val ABILITY_GENERIC_KEY = "cobblemon.battle.ability.generic"
 
     val ABILITY_SINGLE_ARG_KEYS = mapOf(
-        "cobblemon.battle.ability.sturdy" to "Sturdy",
-        "cobblemon.battle.ability.unnerve" to "Unnerve",
-        "cobblemon.battle.ability.anticipation" to "Anticipation"
+        "cobblemon.battle.ability.sturdy" to "sturdy",
+        "cobblemon.battle.ability.unnerve" to "unnerve",
+        "cobblemon.battle.ability.anticipation" to "anticipation"
     )
 
     const val ABILITY_TRACE_KEY = "cobblemon.battle.ability.trace"
@@ -100,7 +100,7 @@ object TranslationKeys {
     const val ABILITY_MAGICBOUNCE_KEY = "cobblemon.battle.ability.magicbounce"
 
     val ABILITY_START_KEYS = mapOf(
-        "cobblemon.battle.start.flashfire" to "Flash Fire"
+        "cobblemon.battle.start.flashfire" to "flashfire"
     )
 
     // ═════════════════════════════════════════════════════════════════════════

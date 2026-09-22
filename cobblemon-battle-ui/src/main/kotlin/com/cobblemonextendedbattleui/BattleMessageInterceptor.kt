@@ -85,46 +85,46 @@ object BattleMessageInterceptor {
 
             if (key == TranslationKeys.ABILITY_GENERIC_KEY && args.size >= 2) {
                 val pokemonName = MessageParser.extractPokemonName(args[0])
-                val abilityName = MessageParser.argToString(args[1])
-                BattleStateTracker.setRevealedAbility(pokemonName, abilityName)
+                val abilityId = MessageParser.extractAbilityId(args[1])
+                BattleStateTracker.setRevealedAbility(pokemonName, abilityId)
             }
 
-            TranslationKeys.ABILITY_SINGLE_ARG_KEYS[key]?.let { abilityName ->
+            TranslationKeys.ABILITY_SINGLE_ARG_KEYS[key]?.let { abilityId ->
                 if (args.isNotEmpty()) {
                     val pokemonName = MessageParser.extractPokemonName(args[0])
-                    BattleStateTracker.setRevealedAbility(pokemonName, abilityName)
+                    BattleStateTracker.setRevealedAbility(pokemonName, abilityId)
                 }
             }
 
             if (key == TranslationKeys.ABILITY_TRACE_KEY && args.size >= 3) {
                 val tracerName = MessageParser.extractPokemonName(args[0])
                 val targetName = MessageParser.extractPokemonName(args[1])
-                val copiedAbility = MessageParser.argToString(args[2])
-                BattleStateTracker.setRevealedAbility(tracerName, "Trace")
-                BattleStateTracker.setRevealedAbility(targetName, copiedAbility)
+                val copiedAbilityId = MessageParser.extractAbilityId(args[2])
+                BattleStateTracker.setRevealedAbility(tracerName, copiedAbilityId)
+                BattleStateTracker.setRevealedAbility(targetName, copiedAbilityId)
             }
 
             if (key == TranslationKeys.ABILITY_RECEIVER_KEY && args.size >= 2) {
                 val pokemonName = MessageParser.extractPokemonName(args[0])
-                val abilityName = MessageParser.argToString(args[1])
-                BattleStateTracker.setRevealedAbility(pokemonName, abilityName)
+                val abilityId = MessageParser.extractAbilityId(args[1])
+                BattleStateTracker.setRevealedAbility(pokemonName, abilityId)
             }
 
             if (key == TranslationKeys.ABILITY_REPLACE_KEY && args.size >= 2) {
                 val pokemonName = MessageParser.extractPokemonName(args[0])
-                val newAbility = MessageParser.argToString(args[1])
-                BattleStateTracker.setRevealedAbility(pokemonName, newAbility)
+                val newAbilityId = MessageParser.extractAbilityId(args[1])
+                BattleStateTracker.setRevealedAbility(pokemonName, newAbilityId)
             }
 
             if (key == TranslationKeys.ABILITY_MAGICBOUNCE_KEY && args.isNotEmpty()) {
                 val pokemonName = MessageParser.extractPokemonName(args[0])
-                BattleStateTracker.setRevealedAbility(pokemonName, "Magic Bounce")
+                BattleStateTracker.setRevealedAbility(pokemonName, "magicbounce")
             }
 
-            TranslationKeys.ABILITY_START_KEYS[key]?.let { abilityName ->
+            TranslationKeys.ABILITY_START_KEYS[key]?.let { abilityId ->
                 if (args.isNotEmpty()) {
                     val pokemonName = MessageParser.extractPokemonName(args[0])
-                    BattleStateTracker.setRevealedAbility(pokemonName, abilityName)
+                    BattleStateTracker.setRevealedAbility(pokemonName, abilityId)
                 }
             }
 

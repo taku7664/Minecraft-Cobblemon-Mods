@@ -443,10 +443,10 @@ object TeamIndicatorUI {
                 if (playerActor != null) {
                     val pokemon = playerActor.pokemon.find { it.uuid == targetUuid }
                     if (pokemon != null) {
-                        val rawAbilityName = pokemon.ability.name
-                        targetAbility = formatAbilityName(rawAbilityName)
+                        val rawAbilityId = pokemon.ability.name
+                        targetAbility = rawAbilityId
                         CobblemonExtendedBattleUI.LOGGER.debug(
-                            "TeamIndicatorUI: Got target ability from player's team: '$rawAbilityName' -> '$targetAbility'"
+                            "TeamIndicatorUI: Got target ability ID from player's team: '$rawAbilityId'"
                         )
                     }
                 }

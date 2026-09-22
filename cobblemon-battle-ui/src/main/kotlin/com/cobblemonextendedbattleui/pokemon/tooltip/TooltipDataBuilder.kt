@@ -151,7 +151,7 @@ object TooltipDataBuilder {
             val copiedAbility = if (isTransformed) BattleStateTracker.getRevealedAbility(uuid) else null
 
             if (copiedAbility != null) {
-                abilityName = copiedAbility
+                abilityName = formatAbilityName(copiedAbility)
             } else {
                 val rawAbilityName = battlePokemon.ability.name
                 val translatedAbility = Text.translatable("cobblemon.ability.$rawAbilityName").string
@@ -172,7 +172,7 @@ object TooltipDataBuilder {
             actualSpecialAttack = null
             val revealedAbility = BattleStateTracker.getRevealedAbility(uuid)
             if (revealedAbility != null) {
-                abilityName = revealedAbility
+                abilityName = formatAbilityName(revealedAbility)
                 possibleAbilities = null
             } else {
                 abilityName = null

@@ -119,7 +119,25 @@ final class BattleStateRegressionTest {
 
         AbilityItemTracker.INSTANCE.replaceAbilityForTransform(transformer, "Flash Fire");
 
-        assertEquals("Flash Fire", AbilityItemTracker.INSTANCE.getRevealedAbility(transformer));
+        assertEquals("flashfire", AbilityItemTracker.INSTANCE.getRevealedAbility(transformer));
+    }
+
+    @Test
+    void traceRecordsTheCopiedAbilityForBothPokemonUsingItsStableId() {
+        UUID tracer = UUID.randomUUID();
+        UUID target = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(tracer, "Gardevoir", true);
+        PokemonRegistry.INSTANCE.registerPokemon(target, "Floatzel", false);
+
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Text.translatable(
+            TranslationKeys.ABILITY_TRACE_KEY,
+            "Gardevoir",
+            "Floatzel",
+            Text.translatable("cobblemon.ability.swiftswim")
+        )));
+
+        assertEquals("swiftswim", AbilityItemTracker.INSTANCE.getRevealedAbility(tracer));
+        assertEquals("swiftswim", AbilityItemTracker.INSTANCE.getRevealedAbility(target));
     }
 
     @Test
@@ -140,6 +158,14 @@ final class BattleStateRegressionTest {
     @Test
     void typeTranslationKeyProducesStableInternalId() {
         assertEquals("fire", MessageParser.INSTANCE.extractTypeId(Text.translatable("cobblemon.type.fire")));
+    }
+
+    @Test
+    void abilityTranslationKeyProducesStableInternalId() {
+        assertEquals(
+            "swiftswim",
+            MessageParser.INSTANCE.extractAbilityId(Text.translatable("cobblemon.ability.swiftswim"))
+        );
     }
 
     @Test
