@@ -12,6 +12,7 @@ import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon17
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173OpponentPokemonPropertiesFactory
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173TowerPveBattleRuntime
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173ManagedBattleTermination
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.reportManagedCleanupFailureSafely
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupActionsSafely
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.TowerOpponentCatalogResources
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.dispatchToServerThread
@@ -91,31 +92,32 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         ServerPlayNetworking.registerGlobalReceiver(TowerPlayIntentPayload.TYPE) { payload, context ->
             val player = context.player()
             onlinePlayers[player.uuid] = player
-            try {
+            val result = try {
                 val currentParty = if (payload.intent is jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayIntent.LockTeam) {
                     Cobblemon173TowerPlayOpenRequestFactory.readParty(player)
                 } else {
                     null
                 }
-                when (val result = sessions.mutate(player.uuid, payload.intent, currentParty)) {
+                sessions.mutate(player.uuid, payload.intent, currentParty)
+            } catch (exception: RuntimeException) {
+                rejectFailedMutation(player, payload.intent.requestId, payload.intent.expectedRevision, exception)
+                return@registerGlobalReceiver
+            } catch (error: LinkageError) {
+                rejectFailedMutation(player, payload.intent.requestId, payload.intent.expectedRevision, error)
+                return@registerGlobalReceiver
+            }
+            try {
+                when (result) {
                     is TowerPlayMutationResult.Accepted ->
                         ServerPlayNetworking.send(player, TowerPlayStatePayload(result.requestId, result.state))
 
                     is TowerPlayMutationResult.Rejected ->
                         ServerPlayNetworking.send(player, TowerPlayRejectedPayload(result))
                 }
-            } catch (exception: RuntimeException) {
-                MoreBattleContent.LOGGER.error("Battle Tower screen mutation failed for ${player.uuid}", exception)
-                ServerPlayNetworking.send(
-                    player,
-                    TowerPlayRejectedPayload(
-                        TowerPlayMutationResult.Rejected(
-                            payload.intent.requestId,
-                            sessions.current(player.uuid)?.revision ?: payload.intent.expectedRevision,
-                            "screen.${MoreBattleContent.MOD_ID}.tower.error.internal_failure",
-                        ),
-                    ),
-                )
+            } catch (failure: RuntimeException) {
+                reportMutationResponseFailure(player, failure)
+            } catch (failure: LinkageError) {
+                reportMutationResponseFailure(player, failure)
             }
         }
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
@@ -166,8 +168,49 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
             ServerPlayNetworking.send(player, TowerPlayStatePayload(null, state))
             true
         } catch (exception: RuntimeException) {
-            MoreBattleContent.LOGGER.error("Battle Tower screen could not be opened for ${player.uuid}", exception)
+            reportOpenFailure(player, exception)
             false
+        } catch (error: LinkageError) {
+            reportOpenFailure(player, error)
+            false
+        }
+    }
+
+    private fun rejectFailedMutation(
+        player: ServerPlayer,
+        requestId: java.util.UUID,
+        expectedRevision: Long,
+        failure: Throwable,
+    ) {
+        runManagedCleanupActionsSafely(
+            reportFailure = {},
+            {
+                MoreBattleContent.LOGGER.error("Battle Tower screen mutation failed for ${player.uuid}", failure)
+            },
+            {
+                ServerPlayNetworking.send(
+                    player,
+                    TowerPlayRejectedPayload(
+                        TowerPlayMutationResult.Rejected(
+                            requestId,
+                            expectedRevision,
+                            "screen.${MoreBattleContent.MOD_ID}.tower.error.internal_failure",
+                        ),
+                    ),
+                )
+            },
+        )
+    }
+
+    private fun reportOpenFailure(player: ServerPlayer, failure: Throwable) {
+        reportManagedCleanupFailureSafely(failure) {
+            MoreBattleContent.LOGGER.error("Battle Tower screen could not be opened for ${player.uuid}", it)
+        }
+    }
+
+    private fun reportMutationResponseFailure(player: ServerPlayer, failure: Throwable) {
+        reportManagedCleanupFailureSafely(failure) {
+            MoreBattleContent.LOGGER.error("Battle Tower screen response failed for ${player.uuid}", it)
         }
     }
 

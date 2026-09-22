@@ -2,6 +2,8 @@ package jbro.cobblemon.morebattlecontent.internal.factory.network
 
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
 import jbro.cobblemon.morebattlecontent.internal.command.FactoryCommandBackend
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.reportManagedCleanupFailureSafely
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupActionsSafely
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryPlayError
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryPlayResult
 import jbro.cobblemon.morebattlecontent.internal.factory.ui.FactoryPlayIntent
@@ -20,33 +22,87 @@ internal object FactoryPlayNetworking {
         PayloadTypeRegistry.playC2S().register(FactoryPlayIntentPayload.TYPE, FactoryPlayIntentPayload.CODEC)
         ServerPlayNetworking.registerGlobalReceiver(FactoryPlayIntentPayload.TYPE) { payload, context ->
             val player = context.player()
-            try {
-                respond(player, payload.intent.requestId, handle(player, payload.intent))
+            val result = try {
+                handle(player, payload.intent)
             } catch (exception: RuntimeException) {
-                MoreBattleContent.LOGGER.error("Battle Factory screen mutation failed for ${player.uuid}", exception)
-                ServerPlayNetworking.send(
-                    player,
-                    FactoryPlayRejectedPayload(payload.intent.requestId, FactoryPlayError.BATTLE_UNAVAILABLE),
-                )
+                rejectFailedMutation(player, payload.intent.requestId, exception)
+                return@registerGlobalReceiver
+            } catch (error: LinkageError) {
+                rejectFailedMutation(player, payload.intent.requestId, error)
+                return@registerGlobalReceiver
+            }
+            try {
+                respond(player, payload.intent.requestId, result)
+            } catch (failure: RuntimeException) {
+                reportMutationResponseFailure(player, failure)
+            } catch (failure: LinkageError) {
+                reportMutationResponseFailure(player, failure)
             }
         }
     }
 
     fun open(player: ServerPlayer): Boolean {
         if (!ServerPlayNetworking.canSend(player, FactoryPlayStatePayload.TYPE)) return false
-        val result = backend.status(player)
-        if (result !is FactoryPlayResult.Accepted) return false
-        BattleHubNetworking.sendHeader(player)
-        ServerPlayNetworking.send(player, FactoryPlayStatePayload(null, result.view))
-        return true
+        return try {
+            val result = backend.status(player)
+            if (result !is FactoryPlayResult.Accepted) return false
+            BattleHubNetworking.sendHeader(player)
+            ServerPlayNetworking.send(player, FactoryPlayStatePayload(null, result.view))
+            true
+        } catch (failure: RuntimeException) {
+            reportOpenFailure(player, failure)
+            false
+        } catch (failure: LinkageError) {
+            reportOpenFailure(player, failure)
+            false
+        }
     }
 
     fun push(player: ServerPlayer) {
         if (!ServerPlayNetworking.canSend(player, FactoryPlayStatePayload.TYPE)) return
-        val result = backend.status(player)
-        if (result is FactoryPlayResult.Accepted) {
-            BattleHubNetworking.sendHeader(player)
-            ServerPlayNetworking.send(player, FactoryPlayStatePayload(null, result.view))
+        try {
+            val result = backend.status(player)
+            if (result is FactoryPlayResult.Accepted) {
+                BattleHubNetworking.sendHeader(player)
+                ServerPlayNetworking.send(player, FactoryPlayStatePayload(null, result.view))
+            }
+        } catch (failure: RuntimeException) {
+            reportPushFailure(player, failure)
+        } catch (failure: LinkageError) {
+            reportPushFailure(player, failure)
+        }
+    }
+
+    private fun rejectFailedMutation(player: ServerPlayer, requestId: java.util.UUID, failure: Throwable) {
+        runManagedCleanupActionsSafely(
+            reportFailure = {},
+            {
+                MoreBattleContent.LOGGER.error("Battle Factory screen mutation failed for ${player.uuid}", failure)
+            },
+            {
+                ServerPlayNetworking.send(
+                    player,
+                    FactoryPlayRejectedPayload(requestId, FactoryPlayError.BATTLE_UNAVAILABLE),
+                )
+            },
+        )
+    }
+
+    private fun reportOpenFailure(player: ServerPlayer, failure: Throwable) {
+        reportManagedCleanupFailureSafely(failure) {
+            MoreBattleContent.LOGGER.error("Battle Factory screen could not be opened for ${player.uuid}", it)
+        }
+    }
+
+    private fun reportPushFailure(player: ServerPlayer, failure: Throwable) {
+        reportManagedCleanupFailureSafely(failure) {
+            MoreBattleContent.LOGGER.error("Battle Factory screen update failed for ${player.uuid}", it)
+        }
+    }
+
+    private fun reportMutationResponseFailure(player: ServerPlayer, failure: Throwable) {
+        reportManagedCleanupFailureSafely(failure) {
+            MoreBattleContent.LOGGER.error("Battle Factory screen response failed for ${player.uuid}", it)
         }
     }
 
