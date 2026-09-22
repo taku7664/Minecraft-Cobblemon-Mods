@@ -49,6 +49,8 @@ private data class TurnPrimitiveAction(
 
 private data class WeightedOrder(val actions: List<TurnPrimitiveAction>, val probability: Double)
 
+private data class WeightedNextAction(val action: TurnPrimitiveAction, val probability: Double)
+
 internal enum class ChanceEffectProjectionMode {
     EXPECTED_SCORE,
     BRANCH_STATE,
@@ -84,95 +86,45 @@ internal object PublicSingleTurnProjector {
         }
 
         val moveActions = turnActions.filter { it.action.kind == BattleActionKind.USE_MOVE }
-        val orders = when (moveActions.size) {
-            0 -> listOf(WeightedOrder(emptyList(), 1.0))
-            1 -> listOf(WeightedOrder(moveActions, 1.0))
-            // The decision state is passed alongside the projected one because an action-order
-            // observation only describes the speed conditions it was seen under, and those are the
-            // conditions of the state the inferences were drawn from.
-            else -> possibleOrders(sourceContext.state, switchedState, moveActions)
-        }
-        return orders.flatMap { weightedOrder ->
-            val order = weightedOrder.actions
-            if (!shouldContinue()) return emptyList()
-            var branches = listOf(
-                WeightedState(
+        var scheduled = listOf(
+            ScheduledTurnBranch(
+                branch = WeightedState(
                     state = switchedState,
                     probability = 1.0,
                     lastMoveByPokemon = history.lastMoveByPokemon,
                 ),
-            )
-            order.forEachIndexed { actionIndex, ordered ->
-                branches = branches.flatMap { branch ->
-                    if (!shouldContinue()) return emptyList()
-                    applyMove(
-                        branch.state,
-                        ordered.side,
-                        drawnAsideBy(ordered.action, branch.state, ordered.side, branch.redirectingPokemonIds),
-                        sourceContext,
-                        branch.protectedPokemonIds,
-                        branch.protectionAttackDrops,
-                        branch.tauntedPokemonIds,
-                        branch.forcedMoveIdsByPokemon,
-                        LocalBranchMoveInputs.afterExecutedMoves(history, branch.executedMoveIdsByPokemon),
-                        maxChanceBranchesPerMove,
-                        chanceEffectMode,
-                        calculationCache,
-                        shouldContinue,
-                        pendingDamagingMovePokemonIds = order.drop(actionIndex + 1).mapNotNullTo(linkedSetOf()) { pending ->
-                            val pendingAction = pending.action
-                            if (pendingAction.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS) {
-                                return@mapNotNullTo null
-                            }
-                            branch.state.pokemon.singleOrNull {
-                                it.side == pending.side && it.activeSlot == pendingAction.actorSlot && !it.fainted && it.hpFraction > 0.0
-                            }?.battlePokemonId
-                        },
+                remaining = moveActions,
+            ),
+        )
+        while (scheduled.any { it.remaining.isNotEmpty() }) {
+            if (!shouldContinue()) return emptyList()
+            scheduled = scheduled.flatMap { current ->
+                if (current.remaining.isEmpty()) return@flatMap listOf(current)
+                nextActionChoices(sourceContext.state, current.branch.state, current.remaining).flatMap { next ->
+                    val remaining = current.remaining.toMutableList().also { it.remove(next.action) }
+                    applyScheduledAction(
+                        branch = current.branch,
+                        ordered = next.action,
+                        pending = remaining,
+                        sourceContext = sourceContext,
+                        history = history,
+                        maxChanceBranchesPerMove = maxChanceBranchesPerMove,
+                        chanceEffectMode = chanceEffectMode,
+                        calculationCache = calculationCache,
+                        shouldContinue = shouldContinue,
                     ).map { projected ->
-                        // Encore checks the PP available when it resolves, including an earlier
-                        // action in this turn. A failed Encore must not create a future lock either.
-                        val outcome = projected.copy(controlEffects = projected.controlEffects.filter { effect ->
-                            if (effect.kind != RecursiveControlEffectKind.ENCORE) return@filter true
-                            val target = effect.targetPokemonId
-                            val lastMove = branch.lastMoveByPokemon[target] ?: return@filter false
-                            val option = sourceContext.publicActionCatalog.afterSwitch(history.restoredOriginalPokemonIds)
-                                .forPokemon(target).firstOrNull { it.moveId == lastMove } ?: return@filter false
-                            val spent = history.moveUses[jbro.cobblemon.morebattlecontent.betterai.state.RecursiveMoveUseKey(target, lastMove)] ?: 0
-                            val spentThisTurn = if (branch.executedMoveIdsByPokemon[target] == lastMove &&
-                                history.chargingMoveByPokemon[target] != lastMove) 1 else 0
-                            option.details.currentPp - spent - spentThisTurn > 0
-                        })
-                        val newlyRedirecting = outcome.executedMoveIdsByPokemon
-                            .filterValues { canonicalId(it) in REDIRECTING_MOVE_IDS }
-                            .keys
-                        val newlyTaunted = outcome.controlEffects.filter {
-                            it.kind == RecursiveControlEffectKind.TAUNT
-                        }.mapTo(linkedSetOf()) { it.targetPokemonId }
-                        val newlyForced = outcome.controlEffects.filter {
-                            it.kind == RecursiveControlEffectKind.ENCORE && it.targetPokemonId !in outcome.executedMoveIdsByPokemon
-                        }.mapNotNull { effect ->
-                            branch.lastMoveByPokemon[effect.targetPokemonId]?.let { effect.targetPokemonId to it }
-                        }.toMap()
-                        WeightedState(
-                            outcome.state,
-                            branch.probability * outcome.probability,
-                            branch.executedSides + outcome.executedSides,
-                            branch.protectedPokemonIds + outcome.protectedPokemonIds,
-                            branch.controlEffects + outcome.controlEffects,
-                            branch.switchedSides + outcome.switchedSides,
-                            branch.protectionAttackDrops + outcome.protectionAttackDrops,
-                            branch.tauntedPokemonIds + outcome.tauntedPokemonIds + newlyTaunted,
-                            branch.forcedMoveIdsByPokemon + outcome.forcedMoveIdsByPokemon + newlyForced,
-                            branch.lastMoveByPokemon + outcome.executedMoveIdsByPokemon,
-                            branch.executedMoveIdsByPokemon + outcome.executedMoveIdsByPokemon,
-                            branch.expectedScoreAdjustment + outcome.expectedScoreAdjustment,
-                            branch.protectionResultsByPokemon + outcome.protectionResultsByPokemon,
-                            branch.redirectingPokemonIds + newlyRedirecting,
-                            directDamage = branch.directDamage + outcome.directDamage,
+                        ScheduledTurnBranch(
+                            branch = projected,
+                            remaining = remaining,
+                            order = current.order + next.action,
+                            orderProbability = current.orderProbability * next.probability,
                         )
                     }
-                }.let { mergeBranches(it, maxChanceBranchesPerMove) }
+                }
             }
+        }
+        return scheduled.flatMap { completed ->
+            var branches = listOf(completed.branch)
             history.delayedStrikes.filter { it.remainingTurns == 1 }.forEach { strike ->
                 branches = branches.flatMap { branch ->
                     resolveDelayedStrike(branch.state, strike, sourceContext).map { resolved ->
@@ -201,10 +153,10 @@ internal object PublicSingleTurnProjector {
                             saltCuredPokemonIds,
                         ),
                     ),
-                    order.map(TurnPrimitiveAction::side),
-                    order.mapNotNull(TurnPrimitiveAction::actorPokemonId),
+                    completed.order.map(TurnPrimitiveAction::side),
+                    completed.order.mapNotNull(TurnPrimitiveAction::actorPokemonId),
                     outcome.probability,
-                    weightedOrder.probability,
+                    completed.orderProbability,
                     outcome.executedSides,
                     outcome.controlEffects,
                     outcome.switchedSides,
@@ -258,6 +210,98 @@ internal object PublicSingleTurnProjector {
                 }?.battlePokemonId
             }
             TurnPrimitiveAction(side, action, actorId)
+        }
+    }
+
+    private fun applyScheduledAction(
+        branch: WeightedState,
+        ordered: TurnPrimitiveAction,
+        pending: List<TurnPrimitiveAction>,
+        sourceContext: BattleDecisionContext,
+        history: RecursiveActionHistory,
+        maxChanceBranchesPerMove: Int,
+        chanceEffectMode: ChanceEffectProjectionMode,
+        calculationCache: LocalProjectedActionCalculationCache,
+        shouldContinue: () -> Boolean,
+    ): List<WeightedState> {
+        if (!shouldContinue()) return emptyList()
+        return applyMove(
+            branch.state,
+            ordered.side,
+            drawnAsideBy(ordered.action, branch.state, ordered.side, branch.redirectingPokemonIds),
+            sourceContext,
+            branch.protectedPokemonIds,
+            branch.protectionAttackDrops,
+            branch.tauntedPokemonIds,
+            branch.forcedMoveIdsByPokemon,
+            LocalBranchMoveInputs.afterExecutedMoves(history, branch.executedMoveIdsByPokemon),
+            maxChanceBranchesPerMove,
+            chanceEffectMode,
+            calculationCache,
+            shouldContinue,
+            pendingDamagingMovePokemonIds = pending.mapNotNullTo(linkedSetOf()) { pendingAction ->
+                val action = pendingAction.action
+                if (action.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS) {
+                    return@mapNotNullTo null
+                }
+                branch.state.pokemon.singleOrNull {
+                    it.side == pendingAction.side && it.activeSlot == action.actorSlot &&
+                        !it.fainted && it.hpFraction > 0.0
+                }?.battlePokemonId
+            },
+        ).map { projected ->
+            // Encore checks the PP available when it resolves, including an earlier action in this
+            // turn. A failed Encore must not create a future lock either.
+            val outcome = projected.copy(controlEffects = projected.controlEffects.filter { effect ->
+                if (effect.kind != RecursiveControlEffectKind.ENCORE) return@filter true
+                val target = effect.targetPokemonId
+                val lastMove = branch.lastMoveByPokemon[target] ?: return@filter false
+                val option = sourceContext.publicActionCatalog.afterSwitch(history.restoredOriginalPokemonIds)
+                    .forPokemon(target).firstOrNull { it.moveId == lastMove } ?: return@filter false
+                val spent = history.moveUses[
+                    jbro.cobblemon.morebattlecontent.betterai.state.RecursiveMoveUseKey(target, lastMove)
+                ] ?: 0
+                val spentThisTurn = if (branch.executedMoveIdsByPokemon[target] == lastMove &&
+                    history.chargingMoveByPokemon[target] != lastMove
+                ) 1 else 0
+                option.details.currentPp - spent - spentThisTurn > 0
+            })
+            val newlyRedirecting = outcome.executedMoveIdsByPokemon
+                .filterValues { canonicalId(it) in REDIRECTING_MOVE_IDS }
+                .keys
+            val newlyTaunted = outcome.controlEffects.filter {
+                it.kind == RecursiveControlEffectKind.TAUNT
+            }.mapTo(linkedSetOf()) { it.targetPokemonId }
+            val newlyForced = outcome.controlEffects.filter {
+                it.kind == RecursiveControlEffectKind.ENCORE &&
+                    it.targetPokemonId !in outcome.executedMoveIdsByPokemon
+            }.mapNotNull { effect ->
+                branch.lastMoveByPokemon[effect.targetPokemonId]?.let { effect.targetPokemonId to it }
+            }.toMap()
+            WeightedState(
+                outcome.state,
+                branch.probability * outcome.probability,
+                branch.executedSides + outcome.executedSides,
+                branch.protectedPokemonIds + outcome.protectedPokemonIds,
+                branch.controlEffects + outcome.controlEffects,
+                branch.switchedSides + outcome.switchedSides,
+                branch.protectionAttackDrops + outcome.protectionAttackDrops,
+                branch.tauntedPokemonIds + outcome.tauntedPokemonIds + newlyTaunted,
+                branch.forcedMoveIdsByPokemon + outcome.forcedMoveIdsByPokemon + newlyForced,
+                branch.lastMoveByPokemon + outcome.executedMoveIdsByPokemon,
+                branch.executedMoveIdsByPokemon + outcome.executedMoveIdsByPokemon,
+                branch.expectedScoreAdjustment + outcome.expectedScoreAdjustment,
+                branch.protectionResultsByPokemon + outcome.protectionResultsByPokemon,
+                branch.redirectingPokemonIds + newlyRedirecting,
+                directDamage = branch.directDamage + outcome.directDamage,
+            )
+        }.let { projected ->
+            // mergeBranches normalizes its input to one. This merge is conditional on a single
+            // already-weighted scheduler branch, so restore that parent's chance mass afterwards;
+            // otherwise each remaining action inflates every surviving branch back to one.
+            mergeBranches(projected, maxChanceBranchesPerMove).map { merged ->
+                merged.copy(probability = merged.probability * branch.probability)
+            }
         }
     }
 
@@ -1440,6 +1484,25 @@ internal object PublicSingleTurnProjector {
     }
 
     /**
+     * Picks only the next action from the current public state.
+     *
+     * Gen 8+ updates every active Pokemon's Speed and re-sorts the remaining queue after each
+     * action. Keeping the whole initial permutation would therefore preserve an order that stopped
+     * being true as soon as weather, terrain, Tailwind, Trick Room, status, or Speed stages changed.
+     */
+    private fun nextActionChoices(
+        observedState: BattleStateView,
+        state: BattleStateView,
+        actions: List<TurnPrimitiveAction>,
+    ): List<WeightedNextAction> {
+        if (actions.isEmpty()) return emptyList()
+        if (actions.size == 1) return listOf(WeightedNextAction(actions.single(), 1.0))
+        return possibleOrders(observedState, state, actions)
+            .groupBy { it.actions.first() }
+            .map { (action, orders) -> WeightedNextAction(action, orders.sumOf(WeightedOrder::probability)) }
+    }
+
+    /**
      * How likely the first action is to resolve first, given only what is public about both Speeds.
      *
      * Reached only when the ranges overlap, so neither side is provably faster. The old reading called
@@ -1536,33 +1599,13 @@ internal object PublicSingleTurnProjector {
         val actor = state.pokemon.firstOrNull {
             it.side == ordered.side && it.activeSlot == ordered.action.actorSlot && !it.fainted && it.hpFraction > 0.0
         } ?: return null
-        val speed = actor.combatStats?.speed?.let { LocalKnownStatMechanics.speed(it, actor, state) } ?: return null
-        val stage = actor.statStages.entries.firstOrNull {
-            canonicalId(it.key) in SPEED_ALIASES
-        }?.value?.coerceIn(-6, 6) ?: 0
-        val paralysis = if (canonicalId(actor.statusId) in PARALYSIS_IDS) 0.5 else 1.0
-        val tailwind = if (state.field.sideConditions.getValue(ordered.side).any {
-                val remainingTurns = it.remainingTurns
-                canonicalId(it.effectId) == "tailwind" && (remainingTurns == null || remainingTurns > 0)
-            }
-        ) 2.0 else 1.0
-        val multiplier = paralysis * tailwind
-        return (applySpeedStage(speed.minimum, stage) * multiplier).toInt().coerceAtLeast(1) to
-            (applySpeedStage(speed.maximum, stage) * multiplier).toInt().coerceAtLeast(1)
+        return LocalPublicTurnOrder.effectiveSpeed(state, actor)
     }
-
-    private fun applySpeedStage(value: Int, stage: Int): Int = if (stage >= 0) {
-        value * (2 + stage) / 2
-    } else {
-        value * 2 / (2 - stage)
-    }.coerceAtLeast(1)
 
     private fun canonicalId(value: String?): String? = value
         ?.substringAfter(':')
         ?.lowercase()
         ?.filter(Char::isLetterOrDigit)
-
-    private val SPEED_ALIASES = setOf("speed", "spe")
 
     private fun actionContext(
         state: BattleStateView,
@@ -1660,6 +1703,13 @@ internal object PublicSingleTurnProjector {
     private val REDIRECTABLE_TARGET_PATTERNS = setOf(
         BattleMoveTargetPattern.SELECTED,
         BattleMoveTargetPattern.SELECTED_OPPONENT,
+    )
+
+    private data class ScheduledTurnBranch(
+        val branch: WeightedState,
+        val remaining: List<TurnPrimitiveAction>,
+        val order: List<TurnPrimitiveAction> = emptyList(),
+        val orderProbability: Double = 1.0,
     )
 
     private data class WeightedState(
