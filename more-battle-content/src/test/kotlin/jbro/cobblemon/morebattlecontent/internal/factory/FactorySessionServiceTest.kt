@@ -92,7 +92,26 @@ class FactorySessionServiceTest {
         })
 
         assertEquals(listOf(BattleRecordOutcome.LOSS), outcomes)
-        assertEquals(listOf("terminate-$battleId", "record"), lifecycle)
+        assertEquals(listOf("record", "terminate-$battleId"), lifecycle)
+        assertEquals(null, active.snapshot(playerId))
+    }
+
+    @Test
+    fun `disconnect records a loss when battle termination synchronously reports no contest`() {
+        val outcomes = ArrayList<BattleRecordOutcome>()
+        val active = service { completion ->
+            outcomes += completion.outcome
+            BattleRecordStats(completion.key)
+        }
+        val started = active.start(playerId, team(), FactoryLevelMode.LEVEL_50) {}
+            as FactorySessionStartResult.Started
+        active.beginBattle(playerId, opponent(), "trainer.factory", 3, strategyBrief())
+
+        assertTrue(active.disconnect(playerId) { terminatedBattleId ->
+            active.cancelBattle(playerId, started.runId, terminatedBattleId)
+        })
+
+        assertEquals(listOf(BattleRecordOutcome.LOSS), outcomes)
         assertEquals(null, active.snapshot(playerId))
     }
 

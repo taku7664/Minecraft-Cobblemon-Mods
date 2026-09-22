@@ -23,6 +23,7 @@ import jbro.cobblemon.morebattlecontent.internal.tower.TowerSelectedTeam
 import jbro.cobblemon.morebattlecontent.internal.tower.UnavailableTowerBattleLauncher
 import jbro.cobblemon.morebattlecontent.internal.tower.UnavailableTowerRegisteredTeamSnapshots
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleTacticalRunMemoryStore
+import jbro.cobblemon.morebattlecontent.internal.battle.settleBeforeTerminatingBattle
 
 internal class TowerPlayOpenRequest(
     party: Collection<TowerPlayPartySlot>,
@@ -295,11 +296,11 @@ internal class TowerPlaySessionService(
         val session = sessions[playerId] ?: return false
         try {
             session.activeBattleId?.let { battleId ->
-                try {
-                    terminateBattle(battleId)
-                } finally {
-                    finishBattle(playerId, battleId, TowerBattleOutcome.LOSS, completionSink)
-                }
+                settleBeforeTerminatingBattle(
+                    battleId,
+                    settle = { finishBattle(playerId, it, TowerBattleOutcome.LOSS, completionSink) },
+                    terminate = terminateBattle,
+                )
             }
         } finally {
             registeredTeamSnapshots.discard(playerId)

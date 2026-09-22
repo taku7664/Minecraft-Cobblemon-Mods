@@ -378,7 +378,32 @@ class TowerPlayBattleLaunchTest {
         }))
 
         assertEquals(1, recorded.size)
-        assertEquals(listOf("terminate-$battleId", "record"), lifecycle)
+        assertEquals(listOf("record", "terminate-$battleId"), lifecycle)
+        assertEquals(TowerBattleOutcome.LOSS, recorded.single().outcome)
+        assertEquals(0, recorded.single().after.currentWinStreak)
+        assertEquals(null, service.current(playerId))
+    }
+
+    @Test
+    fun `disconnect records a loss when battle termination synchronously reports no contest`() {
+        val recorded = ArrayList<TowerProgressUpdate>()
+        val service = TowerPlaySessionService(
+            entryContextIdFactory = { contextId },
+            battleLauncher = TowerBattleLauncher { TowerBattleLaunchResult.Started(battleId) },
+            registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
+            battleCompletionSink = { _, update -> recorded += update },
+        )
+        val locked = lockFirstThree(service, currentWinStreak = 7)
+        service.mutate(
+            playerId,
+            TowerPlayIntent.Start(UUID(0, 36), contextId, locked.revision),
+        ) as TowerPlayMutationResult.Accepted
+
+        assertTrue(service.disconnect(playerId, terminateBattle = { terminatedBattleId ->
+            service.cancelBattle(playerId, terminatedBattleId)
+        }))
+
+        assertEquals(1, recorded.size)
         assertEquals(TowerBattleOutcome.LOSS, recorded.single().outcome)
         assertEquals(0, recorded.single().after.currentWinStreak)
         assertEquals(null, service.current(playerId))

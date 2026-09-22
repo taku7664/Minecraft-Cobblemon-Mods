@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.internal.factory
 import java.util.Collections
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyBrief
+import jbro.cobblemon.morebattlecontent.internal.battle.settleBeforeTerminatingBattle
 
 internal class FactorySessionSnapshot(
     val runId: UUID,
@@ -161,11 +162,11 @@ internal class FactorySessionService(
         val session = sessions[playerId] ?: return false
         try {
             session.activeBattleId?.let { battleId ->
-                try {
-                    terminateBattle(battleId)
-                } finally {
-                    completions.completeLoss(playerId, session, battleId)
-                }
+                settleBeforeTerminatingBattle(
+                    battleId,
+                    settle = { completions.completeLoss(playerId, session, it) },
+                    terminate = terminateBattle,
+                )
             }
         } finally {
             sessions.remove(playerId)
