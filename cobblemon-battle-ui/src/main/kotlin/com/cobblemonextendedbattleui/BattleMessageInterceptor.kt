@@ -1,5 +1,6 @@
 package jbro.cobblemon.battleui.extended
 
+import com.cobblemon.mod.common.client.CobblemonClient
 import jbro.cobblemon.battleui.extended.battle.messages.MessageParser
 import jbro.cobblemon.battleui.extended.battle.messages.StateUpdater
 import jbro.cobblemon.battleui.extended.battle.messages.TranslationKeys
@@ -240,7 +241,7 @@ object BattleMessageInterceptor {
             // Terastallization
             if (key == TranslationKeys.TERASTALLIZE_KEY && args.size >= 2) {
                 val pokemonName = MessageParser.extractPokemonName(args[0])
-                val teraType = MessageParser.argToString(args[1])
+                val teraType = MessageParser.extractTypeId(args[1])
                 BattleStateTracker.setTerastallized(pokemonName, teraType)
                 CobblemonExtendedBattleUI.LOGGER.debug("BattleMessageInterceptor: $pokemonName Terastallized into $teraType type")
             }
@@ -340,7 +341,12 @@ object BattleMessageInterceptor {
 
             // Perish Song
             if (key == TranslationKeys.PERISH_SONG_FIELD_KEY) {
-                BattleStateTracker.applyPerishSongToAll()
+                val activePokemon = CobblemonClient.battle?.let { battle ->
+                    (battle.side1.activeClientBattlePokemon + battle.side2.activeClientBattlePokemon)
+                        .mapNotNull { it.battlePokemon?.uuid }
+                        .toSet()
+                }.orEmpty()
+                BattleStateTracker.applyPerishSongTo(activePokemon)
                 return
             }
 
@@ -417,14 +423,14 @@ object BattleMessageInterceptor {
 
             if (key in TranslationKeys.TYPE_CHANGE_KEYS && args.size >= 2) {
                 val targetName = MessageParser.extractPokemonName(args[0])
-                val newType = MessageParser.argToString(args[1])
+                val newType = MessageParser.extractTypeId(args[1])
                 BattleStateTracker.setTypeReplacement(targetName, newType, null, null)
                 CobblemonExtendedBattleUI.LOGGER.debug("BattleMessageInterceptor: $targetName type changed to $newType")
             }
 
             if (key in TranslationKeys.TYPE_ADD_KEYS && args.size >= 2) {
                 val targetName = MessageParser.extractPokemonName(args[0])
-                val addedType = MessageParser.argToString(args[1])
+                val addedType = MessageParser.extractTypeId(args[1])
                 BattleStateTracker.addType(targetName, addedType, null)
                 CobblemonExtendedBattleUI.LOGGER.debug("BattleMessageInterceptor: $targetName gained $addedType type")
             }
@@ -447,10 +453,6 @@ object BattleMessageInterceptor {
 
             if (key == TranslationKeys.FAINT_KEY) {
                 StateUpdater.markPokemonFainted(args)
-                return
-            }
-            if (key in TranslationKeys.SWITCH_KEYS) {
-                StateUpdater.clearPokemonState(args)
                 return
             }
         }

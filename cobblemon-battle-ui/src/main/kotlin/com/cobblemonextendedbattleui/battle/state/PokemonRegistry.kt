@@ -104,11 +104,6 @@ object PokemonRegistry {
         }
     }
 
-    fun clearTransformStatusByName(pokemonName: String, preferAlly: Boolean? = null) {
-        val uuid = resolvePokemonUuid(pokemonName, preferAlly) ?: return
-        clearTransformStatus(uuid)
-    }
-
     // ── Name → UUID Resolution ───────────────────────────────────────────────
 
     /**
@@ -193,14 +188,4 @@ object PokemonRegistry {
         return null
     }
 
-    /**
-     * Iterate over all registered UUIDs. Used by Perish Song (applies to all active Pokemon).
-     */
-    fun forEachRegistered(action: (uuid: UUID) -> Unit) {
-        for ((_, uuidList) in nameToUuids) {
-            for ((uuid, _) in uuidList) {
-                action(uuid)
-            }
-        }
-    }
 }

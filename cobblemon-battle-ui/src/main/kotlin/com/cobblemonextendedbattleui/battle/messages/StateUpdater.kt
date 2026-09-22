@@ -240,7 +240,7 @@ object StateUpdater {
     fun extractStealEat(args: Array<out Any>) {
         if (args.size < 3) return
         val itemName = MessageParser.argToString(args[1])
-        val targetPokemon = MessageParser.extractPokemonName(args[2])
+        val targetPokemon = MessageParser.extractPokemonName(args[0])
         BattleStateTracker.setItem(targetPokemon, itemName, ItemStatus.STOLEN)
     }
 
@@ -248,7 +248,7 @@ object StateUpdater {
         if (args.size < 2) return
         val targetPokemon = MessageParser.extractPokemonName(args[0])
         val itemName = MessageParser.argToString(args[1])
-        BattleStateTracker.setItem(targetPokemon, itemName, ItemStatus.CONSUMED)
+        BattleStateTracker.setItem(targetPokemon, itemName, ItemStatus.DESTROYED)
     }
 
     fun extractHealingItem(args: Array<out Any>) {
@@ -277,20 +277,6 @@ object StateUpdater {
         TeamIndicatorUI.markPokemonAsKO(pokemonName)
         BattleStateTracker.clearPokemonStatsByName(pokemonName)
         BattleStateTracker.clearPokemonVolatilesByName(pokemonName)
-    }
-
-    fun clearPokemonState(args: Array<out Any>) {
-        if (args.isEmpty()) return
-
-        val pokemonName = MessageParser.extractPokemonName(args[0])
-        CobblemonExtendedBattleUI.LOGGER.debug("StateUpdater: Switch/drag detected for '$pokemonName' - clearing transform and form state")
-
-        BattleStateTracker.clearPokemonStatsByName(pokemonName)
-        BattleStateTracker.clearPokemonVolatilesByName(pokemonName)
-        BattleStateTracker.clearTransformStatusByName(pokemonName)
-        TeamIndicatorUI.clearTransformStatus(pokemonName)
-        BattleStateTracker.restoreOriginalTypes(pokemonName)
-        BattleStateTracker.clearCurrentForm(pokemonName)
     }
 
     fun markPokemonTransformed(args: Array<out Any>) {

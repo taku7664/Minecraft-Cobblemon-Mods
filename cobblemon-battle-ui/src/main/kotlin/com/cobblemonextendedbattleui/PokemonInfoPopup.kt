@@ -322,6 +322,7 @@ object PokemonInfoPopup {
                 BattleStateTracker.ItemStatus.STOLEN -> " " + Text.translatable("cobblemon_battle_ui.item.stolen").string
                 BattleStateTracker.ItemStatus.SWAPPED -> " " + Text.translatable("cobblemon_battle_ui.item.swapped").string
                 BattleStateTracker.ItemStatus.CONSUMED -> " " + Text.translatable("cobblemon_battle_ui.item.consumed").string
+                BattleStateTracker.ItemStatus.DESTROYED -> " " + Text.translatable("cobblemon_battle_ui.item.destroyed").string
             }
             val itemText = data.item.name + itemSuffix
             val sepW = tr.getWidth(sep) * fontScale

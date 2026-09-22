@@ -176,6 +176,7 @@
   "cobblemon_battle_ui.item.stolen": "(빼앗김)",
   "cobblemon_battle_ui.item.swapped": "(교환됨)",
   "cobblemon_battle_ui.item.consumed": "(사용됨)",
+  "cobblemon_battle_ui.item.destroyed": "(파괴됨)",
   "cobblemon_battle_ui.status.poisoned": "독",
   "cobblemon_battle_ui.status.badly_poisoned": "맹독",
   "cobblemon_battle_ui.status.burned": "화상",

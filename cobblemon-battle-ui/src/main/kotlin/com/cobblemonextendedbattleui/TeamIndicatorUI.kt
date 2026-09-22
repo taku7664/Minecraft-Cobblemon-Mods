@@ -531,71 +531,12 @@ object TeamIndicatorUI {
         }
     }
 
-    /**
-     * Fully reset a transformed Pokemon back to its original state (on switch-out).
-     * Restores: species, aspects, form, and clears copied ability.
-     */
-    fun clearTransformStatus(pokemonName: String) {
-        CobblemonExtendedBattleUI.LOGGER.debug("TeamIndicatorUI: clearTransformStatus called for '$pokemonName'")
-
-        // Try to find UUID via BattleStateTracker first
-        var uuid = BattleStateTracker.getPokemonUuid(pokemonName)
-        var tracked: TrackedPokemon? = null
-
-        if (uuid != null) {
-            tracked = trackedSide1Pokemon[uuid] ?: trackedSide2Pokemon[uuid]
-        }
-
-        // Fallback: search tracked maps directly by display name
-        // This handles cases where name format doesn't match registration
-        if (tracked == null) {
-            CobblemonExtendedBattleUI.LOGGER.debug("TeamIndicatorUI: UUID lookup failed, trying direct name search for '$pokemonName'")
-            val foundByName = findTrackedPokemonByName(pokemonName)
-            if (foundByName != null) {
-                tracked = foundByName
-                uuid = foundByName.uuid
-                CobblemonExtendedBattleUI.LOGGER.debug("TeamIndicatorUI: Found by name search: UUID=$uuid")
-            }
-        }
-
-        if (uuid == null || tracked == null) {
-            CobblemonExtendedBattleUI.LOGGER.debug("TeamIndicatorUI: Failed to find Pokemon '$pokemonName' for transform reset")
-            return
-        }
-
-        // Remove from pending if queued
+    /** Fully resets a transformed Pokemon when its exact active slot is vacated. */
+    fun clearTransformStatus(uuid: UUID) {
+        val tracked = trackedSide1Pokemon[uuid] ?: trackedSide2Pokemon[uuid]
         pendingTransforms.remove(uuid)
-
-        CobblemonExtendedBattleUI.LOGGER.debug("TeamIndicatorUI: Found UUID $uuid, isTransformed=${tracked.isTransformed}")
-
-        if (tracked.isTransformed) {
-            // Restore original species identifier
-            tracked.originalSpeciesIdentifier?.let { originalId ->
-                tracked.speciesIdentifier = originalId
-                // Restore form from original species
-                tracked.form = PokemonSpecies.getByIdentifier(originalId)?.standardForm
-            }
-            // Restore original aspects
-            tracked.aspects = tracked.originalAspects
-            // Restore original display name if we have it (for Ditto, show "Ditto" not the transformed name)
-            tracked.displayName = tracked.originalSpeciesIdentifier?.let {
-                PokemonSpecies.getByIdentifier(it)?.name ?: tracked.displayName
-            }
-            tracked.isTransformed = false
-
-            // Clear the copied ability (it was the target's ability, not ours)
-            BattleStateTracker.clearRevealedAbility(uuid)
-
-            // Also clear dynamic types (Transform copies types)
-            BattleStateTracker.clearDynamicTypes(uuid)
-
-            CobblemonExtendedBattleUI.LOGGER.debug(
-                "TeamIndicatorUI: Reset transformed $pokemonName back to ${tracked.originalSpeciesIdentifier}"
-            )
-        } else {
-            CobblemonExtendedBattleUI.LOGGER.debug(
-                "TeamIndicatorUI: $pokemonName not transformed, skipping reset"
-            )
+        if (tracked?.isTransformed == true) {
+            resetTransformedPokemon(tracked)
         }
     }
 

@@ -1,6 +1,9 @@
 package jbro.cobblemon.battleui.extended
 
 import com.cobblemon.mod.common.client.CobblemonClient
+import com.cobblemon.mod.common.client.battle.ClientBattlePokemon
+import com.cobblemon.mod.common.client.battle.ClientBattleSide
+import jbro.cobblemon.battleui.extended.state.ActiveSlotTracker
 import jbro.cobblemon.battleui.extended.ui.champions.ChampionsBattleInfoOverlay
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
@@ -19,7 +22,9 @@ object BattleInfoPanel {
 
     private var wasToggleKeyPressed = false
     private var wasInBattle = false
-    private var previouslyActiveUUIDs: Set<UUID> = emptySet()
+    private var trackedBattleId: UUID? = null
+    private val activeSlots = ActiveSlotTracker<UUID>()
+    private val pendingBatonPassBySlot = mutableMapOf<String, BattleStateTracker.BatonPassData>()
 
     fun initialize() {
         PanelConfig.load()
@@ -36,7 +41,9 @@ object BattleInfoPanel {
         ChampionsBattleInfoOverlay.handleKeyPressed(keyCode, scanCode)
 
     fun clearBattleState() {
-        previouslyActiveUUIDs = emptySet()
+        trackedBattleId = null
+        activeSlots.clear()
+        pendingBatonPassBySlot.clear()
         ChampionsBattleInfoOverlay.clear()
     }
 
@@ -52,6 +59,11 @@ object BattleInfoPanel {
         }
 
         wasInBattle = true
+        if (trackedBattleId != battle.battleId) {
+            trackedBattleId = battle.battleId
+            activeSlots.clear()
+            pendingBatonPassBySlot.clear()
+        }
         BattleStateTracker.checkBattleChanged(battle.battleId)
 
         if (battle.minimised) {
@@ -83,15 +95,14 @@ object BattleInfoPanel {
             opponentSide.actors.firstOrNull()?.displayName?.string.orEmpty()
         )
 
-        val allyActive = playerSide.activeClientBattlePokemon.mapNotNull { it.battlePokemon }
-        val opponentActive = opponentSide.activeClientBattlePokemon.mapNotNull { it.battlePokemon }
-        val activeUuids = (allyActive + opponentActive).map { it.uuid }.toSet()
-        clearSwitchedPokemonState(activeUuids)
+        val allySlots = collectActiveSlots(playerSide)
+        val opponentSlots = collectActiveSlots(opponentSide)
+        val allyActive = allySlots.map { it.second }
+        val opponentActive = opponentSlots.map { it.second }
+        handleActiveSlotChanges((allySlots + opponentSlots).associate { it.first to it.second.uuid })
 
         allyActive.forEach { registerActivePokemon(it.uuid, it.displayName.string, it.properties.species, true) }
         opponentActive.forEach { registerActivePokemon(it.uuid, it.displayName.string, it.properties.species, false) }
-        allyActive.forEach { BattleStateTracker.applyBatonPassIfPending(it.uuid) }
-        opponentActive.forEach { BattleStateTracker.applyBatonPassIfPending(it.uuid) }
 
         if (syncOverlay) {
             ChampionsBattleInfoOverlay.sync(playerSide, opponentSide, playerUuid, isSpectating)
@@ -112,16 +123,27 @@ object BattleInfoPanel {
         wasToggleKeyPressed = down
     }
 
-    private fun clearSwitchedPokemonState(currentActiveUuids: Set<UUID>) {
-        previouslyActiveUUIDs.filterNot(currentActiveUuids::contains).forEach { uuid ->
-            if (!BattleStateTracker.prepareBatonPassIfUsed(uuid)) {
-                BattleStateTracker.clearPokemonStats(uuid)
-                BattleStateTracker.clearPokemonVolatiles(uuid)
+    private fun handleActiveSlotChanges(currentSlots: Map<String, UUID>) {
+        activeSlots.update(currentSlots).forEach { change ->
+            change.outgoing()?.let { outgoing ->
+                BattleStateTracker.clearPokemonAfterSwitch(outgoing)?.let { batonData ->
+                    pendingBatonPassBySlot[change.slot()] = batonData
+                }
+                TeamIndicatorUI.clearTransformStatus(outgoing)
             }
-            BattleStateTracker.restoreOriginalTypes(uuid)
+            change.incoming()?.let { incoming ->
+                pendingBatonPassBySlot.remove(change.slot())?.let { batonData ->
+                    BattleStateTracker.applyBatonPass(incoming, batonData)
+                }
+            }
         }
-        previouslyActiveUUIDs = currentActiveUuids
     }
+
+    private fun collectActiveSlots(side: ClientBattleSide): List<Pair<String, ClientBattlePokemon>> =
+        side.activeClientBattlePokemon.mapNotNull { active ->
+            val pokemon = active.battlePokemon ?: return@mapNotNull null
+            active.getPNX() to pokemon
+        }
 
     private fun registerActivePokemon(uuid: UUID, displayName: String, speciesName: String?, isAlly: Boolean) {
         BattleStateTracker.registerPokemon(uuid, displayName, isAlly)

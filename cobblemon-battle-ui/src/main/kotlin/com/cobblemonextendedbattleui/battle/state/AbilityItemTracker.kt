@@ -63,12 +63,13 @@ object AbilityItemTracker {
 
         when (status) {
             ItemStatus.HELD -> {
-                if (existingItem == null) {
+                if (existingItem == null || existingItem.status != ItemStatus.HELD || existingItem.name != itemName) {
                     pokemonItems[uuid] = TrackedItem(itemName, status, effectiveTurn)
                     CobblemonExtendedBattleUI.LOGGER.debug("AbilityItemTracker: $pokemonName revealed item $itemName")
                 }
             }
-            ItemStatus.KNOCKED_OFF, ItemStatus.STOLEN, ItemStatus.SWAPPED, ItemStatus.CONSUMED -> {
+            ItemStatus.KNOCKED_OFF, ItemStatus.STOLEN, ItemStatus.SWAPPED,
+            ItemStatus.CONSUMED, ItemStatus.DESTROYED -> {
                 pokemonItems[uuid] = TrackedItem(
                     itemName,
                     status,

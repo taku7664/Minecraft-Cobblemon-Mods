@@ -160,7 +160,8 @@ object BattleStateTracker {
         KNOCKED_OFF("knocked off"),
         STOLEN("stolen"),
         SWAPPED("swapped"),
-        CONSUMED("used")
+        CONSUMED("used"),
+        DESTROYED("destroyed")
     }
 
     data class TrackedItem(
@@ -217,7 +218,6 @@ object BattleStateTracker {
         FormTracker.clear()
         AbilityItemTracker.clear()
         MoveTracker.clear()
-        pendingBatonPass.clear()
         batonPassUsers.clear()
         BattleMessageInterceptor.clearMoveTracking()
         CobblemonExtendedBattleUI.LOGGER.debug("BattleStateTracker: Cleared all state")
@@ -245,7 +245,6 @@ object BattleStateTracker {
     fun markAsTransformed(uuid: UUID) = PokemonRegistry.markAsTransformed(uuid)
     fun isTransformed(uuid: UUID): Boolean = PokemonRegistry.isTransformed(uuid)
     fun clearTransformStatus(uuid: UUID) = PokemonRegistry.clearTransformStatus(uuid)
-    fun clearTransformStatusByName(pokemonName: String, preferAlly: Boolean? = null) = PokemonRegistry.clearTransformStatusByName(pokemonName, preferAlly)
 
     // ═══════════════════════════════════════════════════════════════════════════
     // Stat Changes (delegates to StatTracker)
@@ -314,7 +313,7 @@ object BattleStateTracker {
     fun clearPokemonVolatilesByName(pokemonName: String, preferAlly: Boolean? = null) = VolatileStatusTracker.clearPokemonVolatilesByName(pokemonName, preferAlly)
     fun getVolatileStatuses(uuid: UUID): Set<VolatileStatusState> = VolatileStatusTracker.getVolatileStatuses(uuid)
     fun getVolatileTurnsRemaining(state: VolatileStatusState): String? = VolatileStatusTracker.getVolatileTurnsRemaining(state, currentTurn)
-    fun applyPerishSongToAll() = VolatileStatusTracker.applyPerishSongToAll(currentTurn)
+    fun applyPerishSongTo(activePokemon: Set<UUID>) = VolatileStatusTracker.applyPerishSongTo(activePokemon, currentTurn)
 
     // ═══════════════════════════════════════════════════════════════════════════
     // Dynamic Types (delegates to TypeTracker)
@@ -385,7 +384,6 @@ object BattleStateTracker {
         VolatileStatus.HEAL_BLOCK
     )
 
-    private val pendingBatonPass = java.util.concurrent.ConcurrentHashMap<Boolean, BatonPassData>()
     private val batonPassUsers = java.util.concurrent.ConcurrentHashMap.newKeySet<UUID>()
 
     fun markBatonPassUsed(pokemonName: String, preferAlly: Boolean? = null) {
@@ -394,33 +392,29 @@ object BattleStateTracker {
         CobblemonExtendedBattleUI.LOGGER.debug("BattleStateTracker: $pokemonName used Baton Pass")
     }
 
-    fun prepareBatonPassIfUsed(uuid: UUID): Boolean {
-        if (!batonPassUsers.remove(uuid)) return false
-
-        val isAlly = PokemonRegistry.isPokemonAlly(uuid)
+    private fun takeBatonPassData(uuid: UUID): BatonPassData? {
+        if (!batonPassUsers.remove(uuid)) return null
         val stats = StatTracker.getRawStats(uuid) ?: emptyMap()
         val volatiles = VolatileStatusTracker.getRawVolatiles(uuid)
             ?.filter { it.type in BATON_PASS_VOLATILES }
             ?.toSet() ?: emptySet()
-
-        if (stats.isNotEmpty() || volatiles.isNotEmpty()) {
-            pendingBatonPass[isAlly] = BatonPassData(stats, volatiles)
-            CobblemonExtendedBattleUI.LOGGER.debug(
-                "BattleStateTracker: Prepared Baton Pass data for ${if (isAlly) "ally" else "opponent"} side: " +
-                "${stats.size} stats, ${volatiles.size} volatiles"
-            )
-        }
-
-        StatTracker.clearPokemonStats(uuid)
-        VolatileStatusTracker.clearPokemonVolatiles(uuid)
-
-        return true
+        return BatonPassData(stats, volatiles)
     }
 
-    fun applyBatonPassIfPending(uuid: UUID) {
-        val isAlly = PokemonRegistry.isPokemonAlly(uuid)
-        val batonData = pendingBatonPass.remove(isAlly) ?: return
+    fun clearPokemonAfterSwitch(uuid: UUID): BatonPassData? {
+        val batonData = takeBatonPassData(uuid)
+        val wasTransformed = PokemonRegistry.isTransformed(uuid)
+        StatTracker.clearPokemonStats(uuid)
+        VolatileStatusTracker.clearPokemonVolatiles(uuid)
+        PokemonRegistry.clearTransformStatus(uuid)
+        if (wasTransformed) {
+            AbilityItemTracker.clearRevealedAbility(uuid)
+        }
+        FormTracker.handleSwitchOut(uuid)
+        return batonData
+    }
 
+    fun applyBatonPass(uuid: UUID, batonData: BatonPassData) {
         if (batonData.stats.isNotEmpty()) {
             StatTracker.applyBatonPassStats(uuid, batonData.stats)
         }
@@ -434,6 +428,4 @@ object BattleStateTracker {
             "${batonData.stats.size} stats, ${batonData.volatiles.size} volatiles"
         )
     }
-
-    fun hasPendingBatonPass(isAlly: Boolean): Boolean = pendingBatonPass.containsKey(isAlly)
 }

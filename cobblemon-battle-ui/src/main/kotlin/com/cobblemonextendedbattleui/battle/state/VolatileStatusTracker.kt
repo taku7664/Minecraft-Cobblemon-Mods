@@ -76,11 +76,11 @@ object VolatileStatusTracker {
         }
     }
 
-    fun applyPerishSongToAll(currentTurn: Int) {
+    fun applyPerishSongTo(activePokemon: Set<UUID>, currentTurn: Int) {
         val effectiveStartTurn = maxOf(1, currentTurn)
         var count = 0
 
-        PokemonRegistry.forEachRegistered { uuid ->
+        activePokemon.forEach { uuid ->
             val statuses = volatileStatuses.computeIfAbsent(uuid) { ConcurrentHashMap.newKeySet() }
             if (statuses.none { it.type == VolatileStatus.PERISH_SONG }) {
                 statuses.add(VolatileStatusState(VolatileStatus.PERISH_SONG, effectiveStartTurn))
@@ -88,7 +88,7 @@ object VolatileStatusTracker {
             }
         }
 
-        CobblemonExtendedBattleUI.LOGGER.debug("VolatileStatusTracker: Perish Song applied to $count Pokemon")
+        CobblemonExtendedBattleUI.LOGGER.debug("VolatileStatusTracker: Perish Song applied to $count active Pokemon")
     }
 
     /** Get raw volatile set for Baton Pass filtering. */

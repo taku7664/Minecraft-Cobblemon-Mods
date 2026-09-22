@@ -310,12 +310,6 @@ object TranslationKeys {
 
     const val TURN_KEY = "cobblemon.battle.turn"
     const val FAINT_KEY = "cobblemon.battle.fainted"
-    val SWITCH_KEYS = setOf(
-        "cobblemon.battle.switch.self",
-        "cobblemon.battle.switch.other",
-        "cobblemon.battle.switch.other.nickname",
-        "cobblemon.battle.dragged_out"
-    )
     const val PERISH_SONG_FIELD_KEY = "cobblemon.battle.fieldactivate.perishsong"
     const val TRANSFORM_KEY = "cobblemon.battle.transform"
 

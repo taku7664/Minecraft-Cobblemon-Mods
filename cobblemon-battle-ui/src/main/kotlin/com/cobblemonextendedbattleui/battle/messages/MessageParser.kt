@@ -4,6 +4,7 @@ import jbro.cobblemon.battleui.extended.BattleStateTracker.BattleStat
 import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUI
 import net.minecraft.text.Text
 import net.minecraft.text.TranslatableTextContent
+import java.util.Locale
 
 /**
  * Argument extraction utilities, move context tracking, and stat resolution
@@ -103,6 +104,15 @@ object MessageParser {
             is TranslatableTextContent -> arg.key
             else -> null
         }
+    }
+
+    /** Returns a locale-independent Cobblemon type ID when the argument carries a type key. */
+    fun extractTypeId(arg: Any): String {
+        val key = argToTranslationKey(arg)
+        if (key != null && key.startsWith("cobblemon.type.")) {
+            return key.removePrefix("cobblemon.type.").removeSuffix(".name")
+        }
+        return argToString(arg).lowercase(Locale.ROOT)
     }
 
     /**

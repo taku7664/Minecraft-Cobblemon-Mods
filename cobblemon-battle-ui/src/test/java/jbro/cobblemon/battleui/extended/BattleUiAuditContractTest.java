@@ -30,11 +30,14 @@ final class BattleUiAuditContractTest {
     }
 
     @Test
-    void cobblemon181MessageKeysUseTheCurrentNames() throws Exception {
+    void switchStateUsesActiveSlotsInsteadOfMessageArgumentOrder() throws Exception {
+        String panel = read("src/main/kotlin/com/cobblemonextendedbattleui/BattleInfoPanel.kt");
+        String interceptor = read("src/main/kotlin/com/cobblemonextendedbattleui/BattleMessageInterceptor.kt");
+        String updater = read("src/main/kotlin/com/cobblemonextendedbattleui/battle/messages/StateUpdater.kt");
         String keys = read("src/main/kotlin/com/cobblemonextendedbattleui/battle/messages/TranslationKeys.kt");
-        assertTrue(keys.contains("cobblemon.battle.switch.self"));
-        assertTrue(keys.contains("cobblemon.battle.switch.other"));
-        assertTrue(keys.contains("cobblemon.battle.dragged_out"));
+        assertTrue(panel.contains("ActiveSlotTracker<UUID>"));
+        assertFalse(interceptor.contains("StateUpdater.clearPokemonState"));
+        assertFalse(updater.contains("fun clearPokemonState"));
         assertTrue(keys.contains("cobblemon.battle.formechange.default.temporary.ended"));
         assertFalse(keys.contains("cobblemon.battle.formechange.default.temporary.end\""));
     }

@@ -191,6 +191,7 @@
   "cobblemon_battle_ui.item.stolen": "(stolen)",
   "cobblemon_battle_ui.item.swapped": "(swap)",
   "cobblemon_battle_ui.item.consumed": "(used)",
+  "cobblemon_battle_ui.item.destroyed": "(destroyed)",
 
   "cobblemon_battle_ui.status.poisoned": "Poisoned",
   "cobblemon_battle_ui.status.badly_poisoned": "Badly Poisoned",

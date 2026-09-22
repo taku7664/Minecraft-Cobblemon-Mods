@@ -60,9 +60,43 @@ object FormTracker {
 
     fun clearCurrentForm(pokemonName: String, preferAlly: Boolean? = null) {
         val uuid = PokemonRegistry.resolvePokemonUuid(pokemonName, preferAlly) ?: return
-        if (pokemonForms.remove(uuid) != null) {
+        if (clearCurrentForm(uuid)) {
             CobblemonExtendedBattleUI.LOGGER.debug("FormTracker: $pokemonName reverted to base form")
         }
+    }
+
+    fun clearCurrentForm(uuid: UUID): Boolean = pokemonForms.remove(uuid) != null
+
+    /** Clears switch-reset forms while preserving permanent forms such as Mega Evolution. */
+    fun handleSwitchOut(uuid: UUID) {
+        val state = pokemonForms[uuid]
+        if (state == null) {
+            TypeTracker.restoreOriginalTypes(uuid)
+            return
+        }
+        if (state.isTemporary) {
+            pokemonForms.remove(uuid)
+            TypeTracker.restoreOriginalTypes(uuid)
+            return
+        }
+
+        val species = pokemonSpeciesIds[uuid]?.let { PokemonSpecies.getByIdentifier(it) }
+        if (species == null) {
+            TypeTracker.restoreOriginalTypes(uuid)
+            return
+        }
+
+        val standardForm = species.standardForm
+        val persistentForm = formNameToAspects(state.currentForm)
+            .asSequence()
+            .map { aspect -> species.getForm(setOf(aspect)) }
+            .firstOrNull { it != standardForm }
+            ?: standardForm
+        TypeTracker.initializeDynamicTypes(
+            uuid,
+            persistentForm.primaryType.name,
+            persistentForm.secondaryType?.name
+        )
     }
 
     fun getCurrentForm(uuid: UUID): FormState? = pokemonForms[uuid]
