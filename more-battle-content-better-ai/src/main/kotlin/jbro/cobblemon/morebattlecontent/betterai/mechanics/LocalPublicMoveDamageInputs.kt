@@ -126,11 +126,12 @@ internal object LocalPublicMoveDamageInputs {
     private val PUBLICLY_RESOLVED_DYNAMIC_MOVES = setOf(
         "storedpower", "powertrip", "facade", "hex", "infernalparade", "brine", "venoshock",
         "barbbarrage", "smellingsalts", "wakeupslap", "round", "fishiousrend", "boltbeak",
+        "assurance",
     )
 
     /** Fallback for synthetic/older candidates that predate declarative callback flags. */
     private val LEGACY_UNRESOLVED_DYNAMIC_MOVES = setOf(
-        "acrobatics", "assurance", "avalanche", "crushgrip", "echoedvoice", "electroball",
+        "acrobatics", "avalanche", "crushgrip", "echoedvoice", "electroball",
         "eruption", "expandingforce", "flail", "frustration", "furycutter", "gyroball",
         "heatcrash", "heavyslam", "iceball", "lastrespects", "lowkick", "magnitude", "payback",
         "present", "punishment", "ragefist", "return", "reversal", "revenge", "risingvoltage", "rollout",

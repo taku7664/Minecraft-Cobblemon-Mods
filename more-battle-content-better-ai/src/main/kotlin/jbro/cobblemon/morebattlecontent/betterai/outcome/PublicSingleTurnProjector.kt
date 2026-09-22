@@ -98,6 +98,7 @@ internal object PublicSingleTurnProjector {
                 ),
                 remaining = moveActions,
                 newlySwitchedPokemonIds = activePokemonIds(switchedState) - initiallyActivePokemonIds,
+                damagedPokemonIds = pokemonWhoseHpDropped(initialState, switchedState),
             ),
         )
         while (scheduled.any { it.remaining.isNotEmpty() }) {
@@ -132,6 +133,9 @@ internal object PublicSingleTurnProjector {
                         state = current.branch.state,
                         remaining = remaining,
                         newlySwitchedPokemonIds = current.newlySwitchedPokemonIds,
+                    ).withDamagedTargetPowerDoubled(
+                        state = current.branch.state,
+                        damagedPokemonIds = current.damagedPokemonIds,
                     )
                     applyScheduledAction(
                         branch = current.branch,
@@ -163,6 +167,8 @@ internal object PublicSingleTurnProjector {
                             },
                             newlySwitchedPokemonIds = current.newlySwitchedPokemonIds +
                                 (activePokemonIds(projected.state) - activePokemonIds(current.branch.state)),
+                            damagedPokemonIds = current.damagedPokemonIds +
+                                pokemonDamagedBetween(current.branch, projected),
                             postponedActions = current.postponedActions
                                 .filterNot { it == next.action }
                                 .mapNotNull { postponed ->
@@ -1767,6 +1773,19 @@ internal object PublicSingleTurnProjector {
         return copy(action = action.withAddedTag(LocalKnownStatMechanics.ACTS_BEFORE_TARGET_POWER_DOUBLED_TAG))
     }
 
+    private fun TurnPrimitiveAction.withDamagedTargetPowerDoubled(
+        state: BattleStateView,
+        damagedPokemonIds: Set<UUID>,
+    ): TurnPrimitiveAction {
+        if (canonicalId(action.moveId) != "assurance") return this
+        val targetSlot = action.targets.singleOrNull() ?: return this
+        val targetId = state.pokemon.singleOrNull {
+            it.side == targetSlot.side && it.activeSlot == targetSlot.slot && !it.fainted && it.hpFraction > 0.0
+        }?.battlePokemonId ?: return this
+        if (targetId !in damagedPokemonIds) return this
+        return copy(action = action.withAddedTag(LocalKnownStatMechanics.DAMAGED_TARGET_POWER_DOUBLED_TAG))
+    }
+
     private fun BattleActionCandidate.withAddedTag(tag: String) = BattleActionCandidate(
         actionId = actionId,
         kind = kind,
@@ -1785,6 +1804,20 @@ internal object PublicSingleTurnProjector {
 
     private fun activePokemonIds(state: BattleStateView): Set<UUID> = state.pokemon.mapNotNullTo(linkedSetOf()) {
         it.battlePokemonId.takeIf { _ -> it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
+    }
+
+    private fun pokemonWhoseHpDropped(before: BattleStateView, after: BattleStateView): Set<UUID> {
+        val beforeHpById = before.pokemon.associate { it.battlePokemonId to it.hpFraction }
+        return after.pokemon.mapNotNullTo(linkedSetOf()) { pokemon ->
+            pokemon.battlePokemonId.takeIf { pokemon.hpFraction < (beforeHpById[it] ?: pokemon.hpFraction) }
+        }
+    }
+
+    private fun pokemonDamagedBetween(before: WeightedState, after: WeightedState): Set<UUID> {
+        val directDamageTargets = after.directDamage.amounts.mapNotNullTo(linkedSetOf()) { (recipient, damage) ->
+            recipient.targetId.takeIf { damage > (before.directDamage.amounts[recipient] ?: 0.0) }
+        }
+        return directDamageTargets + pokemonWhoseHpDropped(before.state, after.state)
     }
 
     private fun successfulQueueControlTarget(
@@ -2017,6 +2050,7 @@ internal object PublicSingleTurnProjector {
         val promotedNextActions: Set<TurnPrimitiveAction> = emptySet(),
         val roundBoostedPokemonIds: Set<UUID> = emptySet(),
         val newlySwitchedPokemonIds: Set<UUID> = emptySet(),
+        val damagedPokemonIds: Set<UUID> = emptySet(),
         val postponedActions: Set<TurnPrimitiveAction> = emptySet(),
         val turnPowerMultipliersByPokemon: Map<UUID, Double> = emptyMap(),
     )
