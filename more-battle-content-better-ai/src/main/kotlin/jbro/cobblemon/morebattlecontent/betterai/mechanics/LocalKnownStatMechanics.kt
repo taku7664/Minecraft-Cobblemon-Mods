@@ -135,17 +135,23 @@ internal object LocalKnownStatMechanics {
             else -> 1.0
         }
 
-    /** Speed after a Choice Scarf, which is public once the item has been seen. */
+    /** Speed after deterministic modifiers from a publicly known held item. */
     fun speed(
         value: BattleIntegerRange,
         pokemon: BattlePokemonStateView,
         state: BattleStateView,
-    ): BattleIntegerRange = scale(
-        value,
-        if (!LocalPublicFieldMechanics.magicRoomActive(state) &&
-            canonical(pokemon.knownHeldItemId) == "choicescarf"
-        ) 1.5 else 1.0,
-    )
+    ): BattleIntegerRange {
+        val item = canonical(pokemon.knownHeldItemId)
+        val ignoredByKlutz = LocalPublicAbilityState.effectiveKnownAbility(state, pokemon) == "klutz" &&
+            item !in KLUTZ_PROOF_SPEED_ITEMS
+        val multiplier = when {
+            LocalPublicFieldMechanics.magicRoomActive(state) || ignoredByKlutz -> 1.0
+            item == "choicescarf" -> 1.5
+            item in HALF_SPEED_ITEMS -> 0.5
+            else -> 1.0
+        }
+        return scale(value, multiplier)
+    }
 
     private fun scale(value: BattleIntegerRange, multiplier: Double) = BattleIntegerRange(
         minimum = (value.minimum * multiplier).toInt().coerceAtLeast(1),
@@ -156,4 +162,10 @@ internal object LocalKnownStatMechanics {
         ?.substringAfter(':')
         ?.lowercase()
         ?.filter(Char::isLetterOrDigit)
+
+    private val HALF_SPEED_ITEMS = setOf(
+        "ironball", "machobrace", "poweranklet", "powerband", "powerbelt",
+        "powerbracer", "powerlens", "powerweight",
+    )
+    private val KLUTZ_PROOF_SPEED_ITEMS = HALF_SPEED_ITEMS - "ironball"
 }

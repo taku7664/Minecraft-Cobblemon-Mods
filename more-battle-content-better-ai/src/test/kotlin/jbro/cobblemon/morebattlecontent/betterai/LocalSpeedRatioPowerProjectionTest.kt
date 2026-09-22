@@ -75,6 +75,62 @@ class LocalSpeedRatioPowerProjectionTest {
         }
     }
 
+    @Test
+    fun `iron ball changes speed-ratio power from the modified speed`() {
+        val ironBallState = state(
+            allySpeed = 100..100,
+            opponentSpeed = 100..100,
+            allyItem = "ironball",
+        )
+
+        assertEquals(
+            damage(ironBallState, fixedPower(40)),
+            damage(ironBallState, speedMove("electroball")),
+        )
+        assertEquals(
+            damage(ironBallState, fixedPower(51)),
+            damage(ironBallState, speedMove("gyroball")),
+        )
+    }
+
+    @Test
+    fun `public speed items respect klutz and magic room`() {
+        val trainingItems = setOf(
+            "machobrace", "poweranklet", "powerband", "powerbelt",
+            "powerbracer", "powerlens", "powerweight",
+        )
+        trainingItems.forEach { item ->
+            assertEquals(50 to 50, effectiveAllySpeed(state(
+                allySpeed = 100..100,
+                opponentSpeed = 100..100,
+                allyAbility = "klutz",
+                allyItem = item,
+            )), item)
+        }
+        for (item in listOf("choicescarf", "ironball")) {
+            assertEquals(100 to 100, effectiveAllySpeed(state(
+                allySpeed = 100..100,
+                opponentSpeed = 100..100,
+                allyAbility = "klutz",
+                allyItem = item,
+            )), item)
+        }
+        for (item in trainingItems + setOf("choicescarf", "ironball")) {
+            assertEquals(100 to 100, effectiveAllySpeed(state(
+                allySpeed = 100..100,
+                opponentSpeed = 100..100,
+                allyItem = item,
+                magicRoom = true,
+            )), "magic room $item")
+        }
+    }
+
+    private fun effectiveAllySpeed(state: BattleStateView): Pair<Int, Int>? =
+        jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder.effectiveSpeed(
+            state,
+            state.pokemon.single { it.side == BattleSide.ALLY },
+        )
+
     private fun damage(state: BattleStateView, action: BattleActionCandidate): BattleDamageFractionRange {
         val calculated = PublicBattleTacticalCalculator.calculate(
             BattleDecisionContext(REQUEST_ID, state, listOf(action), Long.MAX_VALUE),
@@ -117,18 +173,30 @@ class LocalSpeedRatioPowerProjectionTest {
         opponentSpeed: IntRange,
         trickRoom: Boolean = false,
         allyAbility: String? = null,
+        allyItem: String? = null,
+        magicRoom: Boolean = false,
     ) = BattleStateView(
         battleId = BATTLE_ID,
         format = BattleFormat.SINGLE,
         turn = 1,
         pokemon = listOf(
-            pokemon(ALLY_ID, BattleSide.ALLY, allySpeed, BattleCombatStatKnowledge.EXACT_OWN, allyAbility),
+            pokemon(
+                ALLY_ID,
+                BattleSide.ALLY,
+                allySpeed,
+                BattleCombatStatKnowledge.EXACT_OWN,
+                allyAbility,
+                allyItem,
+            ),
             pokemon(OPPONENT_ID, BattleSide.OPPONENT, opponentSpeed, BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE),
         ),
         field = BattleFieldStateView(
             weather = null,
             terrain = null,
-            roomEffects = if (trickRoom) listOf(BattleTimedEffectView("cobblemon:trick_room", 3)) else emptyList(),
+            roomEffects = buildList {
+                if (trickRoom) add(BattleTimedEffectView("cobblemon:trick_room", 3))
+                if (magicRoom) add(BattleTimedEffectView("cobblemon:magic_room", 3))
+            },
             globalEffects = emptyList(),
             sideConditions = BattleSide.entries.associateWith { emptyList() },
         ),
@@ -143,6 +211,7 @@ class LocalSpeedRatioPowerProjectionTest {
         speed: IntRange,
         knowledge: BattleCombatStatKnowledge,
         ability: String? = null,
+        item: String? = null,
     ) = BattlePokemonStateView(
         battlePokemonId = id,
         side = side,
@@ -155,7 +224,7 @@ class LocalSpeedRatioPowerProjectionTest {
         statStages = emptyMap(),
         knownMoveIds = emptySet(),
         knownAbilityId = ability,
-        knownHeldItemId = null,
+        knownHeldItemId = item,
         fainted = false,
         knownTypeIds = setOf("normal"),
         combatStats = BattleCombatStatRangesView(
