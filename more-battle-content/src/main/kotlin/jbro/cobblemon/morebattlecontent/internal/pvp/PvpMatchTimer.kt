@@ -104,7 +104,23 @@ internal class PvpMatchTimer(
                 "The previous PvP turn still has unresolved choices"
             }
         }
-        turn = TurnClock(turnId, monotonicNow(), LinkedHashSet(requiredPlayers))
+        val startedAtMillis = monotonicNow()
+        turn = TurnClock(
+            turnId = turnId,
+            requiredPlayers = LinkedHashSet(requiredPlayers),
+            startedAtMillisByPlayer = requiredPlayers.associateWithTo(LinkedHashMap()) { startedAtMillis },
+        )
+    }
+
+    @Synchronized
+    fun requireTurnChoice(turnId: Long, playerId: UUID) {
+        requireParticipant(playerId)
+        val active = requireNotNull(turn) { "PvP turn has not started" }
+        require(active.turnId == turnId) { "PvP turn ID does not match the active turn" }
+        if (playerId in active.requiredPlayers) return
+        check(playerId !in active.resolvedPlayers()) { "A resolved player cannot be required again in the same PvP turn" }
+        active.requiredPlayers += playerId
+        active.startedAtMillisByPlayer[playerId] = monotonicNow()
     }
 
     @Synchronized
@@ -121,7 +137,8 @@ internal class PvpMatchTimer(
             active != null &&
             playerId in active.requiredPlayers &&
             playerId !in active.resolvedPlayers() &&
-            elapsedBetween(active.startedAtMillis, submission.receivedAtMonotonicMillis) < allowedMillis(playerId)
+            elapsedBetween(active.startedAtMillisByPlayer.getValue(playerId), submission.receivedAtMonotonicMillis) <
+            allowedMillis(playerId)
         ) {
             active.pendingSubmissions.getOrPut(playerId, ::LinkedHashSet) += submission
         }
@@ -149,7 +166,10 @@ internal class PvpMatchTimer(
             return PvpTimedSubmissionStatus.TIMED_OUT
         }
 
-        val elapsed = elapsedBetween(active.startedAtMillis, submission.receivedAtMonotonicMillis)
+        val elapsed = elapsedBetween(
+            active.startedAtMillisByPlayer.getValue(submission.playerId),
+            submission.receivedAtMonotonicMillis,
+        )
         val allowed = allowedMillis(submission.playerId)
         if (elapsed >= allowed) {
             if (!active.pendingSubmissions[submission.playerId].isNullOrEmpty()) {
@@ -162,6 +182,19 @@ internal class PvpMatchTimer(
         consume(submission.playerId, elapsed)
         active.submittedPlayers += submission.playerId
         return PvpTimedSubmissionStatus.ACCEPTED
+    }
+
+    @Synchronized
+    fun submissionTimedOut(submission: PvpTurnSubmission): Boolean {
+        require(submission.timerIdentity === identity) { "PvP turn submission belongs to another timer" }
+        requireParticipant(submission.playerId)
+        val active = turn ?: return false
+        if (submission.turnId != active.turnId || submission.turnIdentity !== active.identity) return false
+        if (submission.playerId !in active.requiredPlayers || submission.playerId in active.resolvedPlayers()) return false
+        return elapsedBetween(
+            active.startedAtMillisByPlayer.getValue(submission.playerId),
+            submission.receivedAtMonotonicMillis,
+        ) >= allowedMillis(submission.playerId)
     }
 
     @Synchronized
@@ -180,7 +213,6 @@ internal class PvpMatchTimer(
     fun turnTimeouts(turnId: Long): Set<UUID> {
         val active = turn ?: return emptySet()
         if (turnId != active.turnId) return emptySet()
-        val elapsed = elapsedSince(active.startedAtMillis)
         val newlyTimedOut = LinkedHashSet<UUID>()
         active.requiredPlayers.forEach { playerId ->
             if (
@@ -189,7 +221,7 @@ internal class PvpMatchTimer(
                 active.pendingSubmissions[playerId].isNullOrEmpty()
             ) {
                 val allowed = allowedMillis(playerId)
-                if (elapsed >= allowed) {
+                if (elapsedSince(active.startedAtMillisByPlayer.getValue(playerId)) >= allowed) {
                     consume(playerId, allowed)
                     active.timedOutPlayers += playerId
                     newlyTimedOut += playerId
@@ -251,8 +283,8 @@ internal class PvpMatchTimer(
 
     private class TurnClock(
         val turnId: Long,
-        val startedAtMillis: Long,
-        val requiredPlayers: Set<UUID>,
+        val requiredPlayers: MutableSet<UUID>,
+        val startedAtMillisByPlayer: MutableMap<UUID, Long>,
         val identity: Any = Any(),
         val submittedPlayers: MutableSet<UUID> = LinkedHashSet(),
         val timedOutPlayers: MutableSet<UUID> = LinkedHashSet(),

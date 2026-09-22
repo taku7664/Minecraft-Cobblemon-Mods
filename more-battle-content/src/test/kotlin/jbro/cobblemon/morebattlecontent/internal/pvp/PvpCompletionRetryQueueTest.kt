@@ -4,6 +4,7 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
 
 class PvpCompletionRetryQueueTest {
@@ -31,5 +32,19 @@ class PvpCompletionRetryQueueTest {
         assertEquals(2, attempts)
         assertFalse(pending.matchId in queue)
         assertEquals(0, queue.size())
+    }
+
+    @Test
+    fun `linkage failure becomes a retryable settlement failure`() {
+        val failure = NoSuchMethodError("record API drift")
+        var reported: Throwable? = null
+
+        val settled = attemptPvpCompletionSettlement(
+            settle = { throw failure },
+            reportFailure = { reported = it },
+        )
+
+        assertFalse(settled)
+        assertSame(failure, reported)
     }
 }

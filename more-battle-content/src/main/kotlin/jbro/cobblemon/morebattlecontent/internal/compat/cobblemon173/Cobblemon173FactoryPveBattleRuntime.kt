@@ -131,7 +131,7 @@ internal class Cobblemon173FactoryPveBattleRuntime(
                         ownerRegistration::close,
                     )
                 },
-                terminateBattle = { BattleRegistry.getBattleByParticipatingPlayerId(player.uuid)?.end() },
+                terminateBattle = { Cobblemon173ManagedBattleTermination.endParticipatingPlayer(player.uuid) },
             ) {
                 BattleRegistry.startBattle(
                     prepared.request.playerTeam.format.toCobblemonFormat(),
@@ -167,7 +167,7 @@ internal class Cobblemon173FactoryPveBattleRuntime(
                         ownerRegistration::close,
                     )
                 },
-                terminateBattle = { BattleRegistry.getBattleByParticipatingPlayerId(player.uuid)?.end() },
+                terminateBattle = { Cobblemon173ManagedBattleTermination.endParticipatingPlayer(player.uuid) },
             ) {
                 result.battle
             }
@@ -186,59 +186,76 @@ internal class Cobblemon173FactoryPveBattleRuntime(
                     ownerRegistration::close,
                 )
             },
-            terminateBattle = battle::end,
+            terminateBattle = { Cobblemon173ManagedBattleTermination.end(battle.battleId) },
         ) {
-            battle.onEndHandlers += { ownerRegistration.close() }
+            battle.onEndHandlers += { ended ->
+                runManagedCleanupActionsSafely(
+                    reportFailure = { failure ->
+                        MoreBattleContent.LOGGER.error(
+                            "Battle Factory owner release failed for player {} and battle {}",
+                            player.uuid,
+                            ended.battleId,
+                            failure,
+                        )
+                    },
+                    ownerRegistration::close,
+                )
+            }
             Cobblemon173ManagedPlayerBattleParticipants.attachBattleStores(battle, listOf(playerParticipant))
             if (!Cobblemon173BattleRuleHooks.finishRegistration(battle.battleId)) {
                 MoreBattleContent.LOGGER.error(
                     "Battle Factory rules did not attach before battle {} started; ending the unprotected battle",
                     battle.battleId,
                 )
-                battle.end()
+                Cobblemon173ManagedBattleTermination.end(battle.battleId)
                 FactoryBattleLaunchResult.Unavailable
             } else {
                 observationAdapter.attach(battle)
                 Cobblemon173InitialTurnDiagnostics.watch("Battle Factory", battle)
 
                 battle.onEndHandlers += { ended ->
-                    Cobblemon173BattleRuleHooks.unregister(ended.battleId)
-                    ShadowTrainerProjectionNetworking.hide(player, ended.battleId)
-                    BattleArenaHologramNetworking.hide(player, ended.battleId)
                     val playerWon = playerActor in ended.winners
                     val playerLost = playerActor in ended.losers
-                    trainerActor.closeBrains(
-                        BattleBrainCloseResult(
-                            outcome = when {
-                                playerWon -> BattleBrainCloseOutcome.DEFEAT
-                                playerLost -> BattleBrainCloseOutcome.VICTORY
-                                else -> BattleBrainCloseOutcome.NO_CONTEST
-                            },
-                            turns = ended.turn,
-                        ),
-                    )
-                    try {
-                        when {
-                            playerWon -> victory(
-                                player.server,
+                    runManagedCleanupActionsSafely(
+                        reportFailure = { failure ->
+                            MoreBattleContent.LOGGER.error(
+                                "Battle Factory end cleanup failed for player {} and battle {}",
                                 player.uuid,
-                                prepared.request.runId,
                                 ended.battleId,
-                                prepared.request.opponentTeam,
-                                observations(prepared, playerActor, observationAdapter),
+                                failure,
                             )
+                        },
+                        { Cobblemon173BattleRuleHooks.unregister(ended.battleId) },
+                        { ShadowTrainerProjectionNetworking.hide(player, ended.battleId) },
+                        { BattleArenaHologramNetworking.hide(player, ended.battleId) },
+                        {
+                            trainerActor.closeBrains(
+                                BattleBrainCloseResult(
+                                    outcome = when {
+                                        playerWon -> BattleBrainCloseOutcome.DEFEAT
+                                        playerLost -> BattleBrainCloseOutcome.VICTORY
+                                        else -> BattleBrainCloseOutcome.NO_CONTEST
+                                    },
+                                    turns = ended.turn,
+                                ),
+                            )
+                        },
+                        {
+                            when {
+                                playerWon -> victory(
+                                    player.server,
+                                    player.uuid,
+                                    prepared.request.runId,
+                                    ended.battleId,
+                                    prepared.request.opponentTeam,
+                                    observations(prepared, playerActor, observationAdapter),
+                                )
 
-                            playerLost -> loss(player.server, player.uuid, prepared.request.runId, ended.battleId)
-                            else -> cancellation(player.server, player.uuid, prepared.request.runId, ended.battleId)
-                        }
-                    } catch (exception: RuntimeException) {
-                        MoreBattleContent.LOGGER.error(
-                            "Battle Factory completion failed for player {} and battle {}",
-                            player.uuid,
-                            ended.battleId,
-                            exception,
-                        )
-                    }
+                                playerLost -> loss(player.server, player.uuid, prepared.request.runId, ended.battleId)
+                                else -> cancellation(player.server, player.uuid, prepared.request.runId, ended.battleId)
+                            }
+                        },
+                    )
                 }
                 ShadowTrainerProjectionNetworking.show(player, battle.battleId, trainerActor.initialPos)
                 BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)

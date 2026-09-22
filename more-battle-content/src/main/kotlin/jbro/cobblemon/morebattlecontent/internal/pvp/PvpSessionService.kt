@@ -229,6 +229,12 @@ internal class PvpSessionService<P>(
     fun battleIdFor(matchId: UUID): UUID? = activeBattleIds[matchId]
 
     @Synchronized
+    fun timerForBattle(battleId: UUID): PvpMatchTimer? {
+        val matchId = activeBattleIds.entries.firstOrNull { it.value == battleId }?.key ?: return null
+        return timers[matchId]
+    }
+
+    @Synchronized
     fun activeBattles(): Map<UUID, UUID> = LinkedHashMap(activeBattleIds)
 
     /** Drops every server-owned session after callers have attempted to terminate its live battles. */

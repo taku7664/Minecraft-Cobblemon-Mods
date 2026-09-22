@@ -12,6 +12,19 @@ internal data class PendingPvpCompletion(
     val nextAttemptEpochMillis: Long = 0L,
 )
 
+internal fun attemptPvpCompletionSettlement(
+    settle: () -> Boolean,
+    reportFailure: (Throwable) -> Unit,
+): Boolean = try {
+    settle()
+} catch (failure: RuntimeException) {
+    reportFailure(failure)
+    false
+} catch (failure: LinkageError) {
+    reportFailure(failure)
+    false
+}
+
 /** Keeps a finished PvP result retryable while its paired persistent record is unavailable. */
 internal class PvpCompletionRetryQueue(
     private val currentTimeMillis: () -> Long = System::currentTimeMillis,

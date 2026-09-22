@@ -28,6 +28,19 @@ internal fun runManagedCleanupActions(vararg actions: () -> Unit) {
     failure?.let { throw it }
 }
 
+internal fun runManagedCleanupActionsSafely(
+    reportFailure: (Throwable) -> Unit,
+    vararg actions: () -> Unit,
+) {
+    try {
+        runManagedCleanupActions(*actions)
+    } catch (failure: RuntimeException) {
+        reportFailure(failure)
+    } catch (failure: LinkageError) {
+        reportFailure(failure)
+    }
+}
+
 private fun abortFailedManagedBattleStartup(
     failure: Throwable,
     releasePendingRegistration: () -> Unit,
@@ -50,6 +63,6 @@ private fun abortFailedManagedBattleStartup(
     throw failure
 }
 
-private fun Throwable.suppressDistinct(other: Throwable) {
+internal fun Throwable.suppressDistinct(other: Throwable) {
     if (this !== other) addSuppressed(other)
 }

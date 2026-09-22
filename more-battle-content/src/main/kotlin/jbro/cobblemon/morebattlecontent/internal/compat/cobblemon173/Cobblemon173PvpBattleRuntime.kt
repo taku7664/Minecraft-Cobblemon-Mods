@@ -99,7 +99,7 @@ internal class Cobblemon173PvpBattleRuntime(
             val partialBattles = listOf(first.uuid, second.uuid)
                 .mapNotNull(BattleRegistry::getBattleByParticipatingPlayerId)
                 .distinctBy { partial -> partial.battleId }
-            partialBattles.forEach { partial -> partial.end() }
+            partialBattles.forEach { partial -> Cobblemon173ManagedBattleTermination.end(partial.battleId) }
         }
         val result = try {
             protectManagedBattleStartup(
@@ -150,7 +150,7 @@ internal class Cobblemon173PvpBattleRuntime(
                     { Cobblemon173BattleRuleHooks.unregister(battle.battleId) },
                 )
             },
-            terminateBattle = battle::end,
+            terminateBattle = { Cobblemon173ManagedBattleTermination.end(battle.battleId) },
         ) {
             Cobblemon173ManagedPlayerBattleParticipants.attachBattleStores(
                 battle,
@@ -161,28 +161,31 @@ internal class Cobblemon173PvpBattleRuntime(
                     "PvP rules did not attach before battle {} started; ending the unprotected battle",
                     battle.battleId,
                 )
-                battle.end()
+                Cobblemon173ManagedBattleTermination.end(battle.battleId)
                 PvpBattleLaunchResult.Unavailable
             } else {
                 Cobblemon173InitialTurnDiagnostics.watch("PvP", battle)
                 battle.onEndHandlers += { ended ->
-                    Cobblemon173BattleRuleHooks.unregister(ended.battleId)
-                    try {
-                        when {
-                            firstActor in ended.winners && secondActor in ended.losers ->
-                                completion(first.server, request.matchId, first.uuid, second.uuid, ended.battleId)
-                            secondActor in ended.winners && firstActor in ended.losers ->
-                                completion(first.server, request.matchId, second.uuid, first.uuid, ended.battleId)
-                            else -> cancellation(first.server, request.matchId, ended.battleId)
-                        }
-                    } catch (exception: RuntimeException) {
-                        MoreBattleContent.LOGGER.error(
-                            "PvP completion failed for match {} and battle {}",
-                            request.matchId,
-                            ended.battleId,
-                            exception,
-                        )
-                    }
+                    runManagedCleanupActionsSafely(
+                        reportFailure = { failure ->
+                            MoreBattleContent.LOGGER.error(
+                                "PvP end cleanup failed for match {} and battle {}",
+                                request.matchId,
+                                ended.battleId,
+                                failure,
+                            )
+                        },
+                        { Cobblemon173BattleRuleHooks.unregister(ended.battleId) },
+                        {
+                            when {
+                                firstActor in ended.winners && secondActor in ended.losers ->
+                                    completion(first.server, request.matchId, first.uuid, second.uuid, ended.battleId)
+                                secondActor in ended.winners && firstActor in ended.losers ->
+                                    completion(first.server, request.matchId, second.uuid, first.uuid, ended.battleId)
+                                else -> cancellation(first.server, request.matchId, ended.battleId)
+                            }
+                        },
+                    )
                 }
                 PvpBattleLaunchResult.Started(battle.battleId)
             }

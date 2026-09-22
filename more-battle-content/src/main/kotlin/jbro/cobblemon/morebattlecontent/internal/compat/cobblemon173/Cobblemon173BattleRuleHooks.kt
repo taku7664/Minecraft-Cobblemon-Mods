@@ -62,7 +62,11 @@ internal object Cobblemon173BattleRuleHooks {
 
     fun unregister(battleId: UUID): Boolean = registry.unregister(battleId)
 
+    @JvmStatic
     fun isRegisteredBattle(battleId: UUID): Boolean = registry.isRegistered(battleId)
+
+    @JvmStatic
+    fun abortFailedBattle(battleId: UUID) = Cobblemon173ManagedBattleTermination.end(battleId)
 
     @JvmStatic
     fun shouldSuppressExperience(battleId: UUID): Boolean = registry.isRegistered(battleId)

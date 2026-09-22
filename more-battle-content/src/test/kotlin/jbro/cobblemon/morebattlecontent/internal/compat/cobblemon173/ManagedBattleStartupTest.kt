@@ -120,4 +120,23 @@ class ManagedBattleStartupTest {
         assertEquals(emptyList<Throwable>(), thrown.suppressed.toList())
         assertEquals(listOf("last"), events)
     }
+
+    @Test
+    fun `safe cleanup reports combined failure without escaping the end handler`() {
+        val first = IllegalStateException("first")
+        val second = NoSuchMethodError("second")
+        val events = ArrayList<String>()
+        var reported: Throwable? = null
+
+        runManagedCleanupActionsSafely(
+            reportFailure = { reported = it },
+            { throw first },
+            { events += "middle" },
+            { throw second },
+        )
+
+        assertEquals(listOf("middle"), events)
+        assertSame(first, reported)
+        assertEquals(listOf(second), reported?.suppressed?.toList())
+    }
 }

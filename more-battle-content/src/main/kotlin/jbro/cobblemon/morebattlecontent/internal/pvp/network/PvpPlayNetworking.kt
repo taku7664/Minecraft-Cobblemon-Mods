@@ -11,6 +11,7 @@ import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon17
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173PvpLoungeGateway
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173PvpRegisteredTeamSnapshotStore
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173PvpTeamFactory
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173PvpTurnHooks
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpArenaPool
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpBattleCompletionSink
@@ -23,6 +24,7 @@ import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengePhase
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengeRequest
 import jbro.cobblemon.morebattlecontent.internal.pvp.PendingPvpCompletion
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpCompletionRetryQueue
+import jbro.cobblemon.morebattlecontent.internal.pvp.attemptPvpCompletionSettlement
 import jbro.cobblemon.morebattlecontent.internal.pvp.PVP_COMPLETION_RETRY_MILLIS
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpMatchPhase
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpLoungeCoordinator
@@ -36,6 +38,7 @@ import jbro.cobblemon.morebattlecontent.internal.pvp.PvpSelectionMutation
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpSessionService
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpTeamRegistrationMutation
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpTeamRegistrationResult
+import jbro.cobblemon.morebattlecontent.internal.pvp.PvpTurnCapture
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionIntent
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionOpponentSlot
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionPartySlot
@@ -49,6 +52,8 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import com.cobblemon.mod.common.battles.BattleRegistry
+import com.cobblemon.mod.common.api.battles.model.PokemonBattle
+import com.cobblemon.mod.common.api.battles.model.actor.BattleActor
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
@@ -87,7 +92,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             materialize = snapshots,
             runtime = runtime,
             placement = PvpRoomBattlePlacement(rooms, lounge),
-            abortBattle = { battleId -> BattleRegistry.getBattle(battleId)?.end() },
+            abortBattle = Cobblemon173ManagedBattleTermination::end,
             diagnostics = { reason -> MoreBattleContent.LOGGER.error("PvP launch failed: {}", reason) },
         )
     }
@@ -97,6 +102,26 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             launcher = launcher,
         )
     }
+    private val turnHooks by lazy { Cobblemon173PvpTurnHooks(sessions::timerForBattle) }
+
+    @JvmStatic
+    fun observeBattleTurn(battle: PokemonBattle) = turnHooks.observe(battle)
+
+    @JvmStatic
+    fun captureBattleTurn(actor: BattleActor): PvpTurnCapture? = turnHooks.capture(actor)
+
+    @JvmStatic
+    fun acceptBattleTurn(capture: PvpTurnCapture) = turnHooks.accept(capture)
+
+    @JvmStatic
+    fun rejectBattleTurn(capture: PvpTurnCapture) = turnHooks.reject(capture)
+
+    @JvmStatic
+    fun resolveTimedOutBattleTurn(actor: BattleActor, capture: PvpTurnCapture) =
+        turnHooks.resolveTimedOut(actor, capture)
+
+    @JvmStatic
+    fun forgetBattleTurn(battleId: UUID) = turnHooks.forget(battleId)
 
     fun registerServer() {
         sessions
@@ -229,12 +254,14 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                 )
             }
             pendingCompletions.clear()
+            turnHooks.clear()
             onlinePlayers.clear()
             if (currentServer === server) currentServer = null
         }
         ServerTickEvents.END_SERVER_TICK.register { server ->
             currentServer = server
             processEntryTimeouts()
+            turnHooks.processTimeouts()
             processPendingCompletions(server)
             lounge.restoreAvailable(onlinePlayers::containsKey)
             loungeGateway.enforceSpectatorAnchors()
@@ -866,36 +893,39 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         }
     }
 
-    private fun settleCompletion(server: MinecraftServer, pending: PendingPvpCompletion): Boolean = try {
-        val accepted = sessions.completeBattle(
-            pending.matchId,
-            pending.battleId,
-            pending.winnerId,
-            pending.loserId,
-            PvpBattleCompletionSink { winnerId, loserId, format ->
-                PvpBattleRecordService { completions ->
-                    BattleRecordService.recordCompletedBattles(server, completions)
-                }.recordResult(winnerId, loserId, format)
+    private fun settleCompletion(server: MinecraftServer, pending: PendingPvpCompletion): Boolean =
+        attemptPvpCompletionSettlement(
+            settle = {
+                val accepted = sessions.completeBattle(
+                    pending.matchId,
+                    pending.battleId,
+                    pending.winnerId,
+                    pending.loserId,
+                    PvpBattleCompletionSink { winnerId, loserId, format ->
+                        PvpBattleRecordService { completions ->
+                            BattleRecordService.recordCompletedBattles(server, completions)
+                        }.recordResult(winnerId, loserId, format)
+                    },
+                )
+                if (!accepted) {
+                    MoreBattleContent.LOGGER.warn(
+                        "Dropping stale PvP completion retry for match {} and battle {}",
+                        pending.matchId,
+                        pending.battleId,
+                    )
+                }
+                true
+            },
+            reportFailure = { failure ->
+                MoreBattleContent.LOGGER.error(
+                    "PvP record settlement failed for match {} and battle {}; retrying in {} ms",
+                    pending.matchId,
+                    pending.battleId,
+                    PVP_COMPLETION_RETRY_MILLIS,
+                    failure,
+                )
             },
         )
-        if (!accepted) {
-            MoreBattleContent.LOGGER.warn(
-                "Dropping stale PvP completion retry for match {} and battle {}",
-                pending.matchId,
-                pending.battleId,
-            )
-        }
-        true
-    } catch (exception: RuntimeException) {
-        MoreBattleContent.LOGGER.error(
-            "PvP record settlement failed for match {} and battle {}; retrying in {} ms",
-            pending.matchId,
-            pending.battleId,
-            PVP_COMPLETION_RETRY_MILLIS,
-            exception,
-        )
-        false
-    }
 
     private fun pushActiveRoomToSpectators(matchId: UUID) {
         rooms.get(matchId)

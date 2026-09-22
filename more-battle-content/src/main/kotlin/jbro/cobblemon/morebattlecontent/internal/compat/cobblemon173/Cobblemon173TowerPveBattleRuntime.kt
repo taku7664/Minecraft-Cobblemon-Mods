@@ -129,7 +129,7 @@ internal class Cobblemon173TowerPveBattleRuntime(
                         ownerRegistration::close,
                     )
                 },
-                terminateBattle = { BattleRegistry.getBattleByParticipatingPlayerId(player.uuid)?.end() },
+                terminateBattle = { Cobblemon173ManagedBattleTermination.endParticipatingPlayer(player.uuid) },
             ) {
                 BattleRegistry.startBattle(
                     prepared.request.progress.format.toCobblemonFormat(),
@@ -166,7 +166,7 @@ internal class Cobblemon173TowerPveBattleRuntime(
                         ownerRegistration::close,
                     )
                 },
-                terminateBattle = { BattleRegistry.getBattleByParticipatingPlayerId(player.uuid)?.end() },
+                terminateBattle = { Cobblemon173ManagedBattleTermination.endParticipatingPlayer(player.uuid) },
             ) {
                 result.battle
             }
@@ -185,53 +185,70 @@ internal class Cobblemon173TowerPveBattleRuntime(
                     ownerRegistration::close,
                 )
             },
-            terminateBattle = battle::end,
+            terminateBattle = { Cobblemon173ManagedBattleTermination.end(battle.battleId) },
         ) {
-            battle.onEndHandlers += { ownerRegistration.close() }
+            battle.onEndHandlers += { ended ->
+                runManagedCleanupActionsSafely(
+                    reportFailure = { failure ->
+                        MoreBattleContent.LOGGER.error(
+                            "Battle Tower owner release failed for player {} and battle {}",
+                            player.uuid,
+                            ended.battleId,
+                            failure,
+                        )
+                    },
+                    ownerRegistration::close,
+                )
+            }
             Cobblemon173ManagedPlayerBattleParticipants.attachBattleStores(battle, listOf(playerParticipant))
             if (!Cobblemon173BattleRuleHooks.finishRegistration(battle.battleId)) {
                 MoreBattleContent.LOGGER.error(
                     "Battle Tower rules did not attach before battle {} started; ending the unprotected battle",
                     battle.battleId,
                 )
-                battle.end()
+                Cobblemon173ManagedBattleTermination.end(battle.battleId)
                 TowerBattleLaunchResult.Unavailable
             } else {
                 Cobblemon173InitialTurnDiagnostics.watch("Battle Tower", battle)
 
                 battle.onEndHandlers += { ended ->
-                    Cobblemon173BattleRuleHooks.unregister(ended.battleId)
-                    ShadowTrainerProjectionNetworking.hide(player, ended.battleId)
-                    BattleArenaHologramNetworking.hide(player, ended.battleId)
                     val outcome = when (playerActor) {
                         in ended.winners -> TowerBattleOutcome.WIN
                         in ended.losers -> TowerBattleOutcome.LOSS
                         else -> null
                     }
-                    trainerActor.closeBrains(
-                        BattleBrainCloseResult(
-                            outcome = when (outcome) {
-                                TowerBattleOutcome.WIN -> BattleBrainCloseOutcome.DEFEAT
-                                TowerBattleOutcome.LOSS -> BattleBrainCloseOutcome.VICTORY
-                                null -> BattleBrainCloseOutcome.NO_CONTEST
-                            },
-                            turns = ended.turn,
-                        ),
+                    runManagedCleanupActionsSafely(
+                        reportFailure = { failure ->
+                            MoreBattleContent.LOGGER.error(
+                                "Battle Tower end cleanup failed for player {} and battle {}",
+                                player.uuid,
+                                ended.battleId,
+                                failure,
+                            )
+                        },
+                        { Cobblemon173BattleRuleHooks.unregister(ended.battleId) },
+                        { ShadowTrainerProjectionNetworking.hide(player, ended.battleId) },
+                        { BattleArenaHologramNetworking.hide(player, ended.battleId) },
+                        {
+                            trainerActor.closeBrains(
+                                BattleBrainCloseResult(
+                                    outcome = when (outcome) {
+                                        TowerBattleOutcome.WIN -> BattleBrainCloseOutcome.DEFEAT
+                                        TowerBattleOutcome.LOSS -> BattleBrainCloseOutcome.VICTORY
+                                        null -> BattleBrainCloseOutcome.NO_CONTEST
+                                    },
+                                    turns = ended.turn,
+                                ),
+                            )
+                        },
+                        {
+                            if (outcome == null) {
+                                sessionCancellation(player.server, player.uuid, ended.battleId)
+                            } else {
+                                sessionCompletion(player.server, player.uuid, ended.battleId, outcome)
+                            }
+                        },
                     )
-                    try {
-                        if (outcome == null) {
-                            sessionCancellation(player.server, player.uuid, ended.battleId)
-                        } else {
-                            sessionCompletion(player.server, player.uuid, ended.battleId, outcome)
-                        }
-                    } catch (exception: RuntimeException) {
-                        MoreBattleContent.LOGGER.error(
-                            "Battle Tower completion failed for player {} and battle {}",
-                            player.uuid,
-                            ended.battleId,
-                            exception,
-                        )
-                    }
                 }
                 ShadowTrainerProjectionNetworking.show(player, battle.battleId, trainerActor.initialPos)
                 BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)
