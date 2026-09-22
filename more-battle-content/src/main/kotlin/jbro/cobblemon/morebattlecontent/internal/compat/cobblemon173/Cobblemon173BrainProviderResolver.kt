@@ -29,26 +29,32 @@ internal object Cobblemon173BrainProviderResolver {
             )
         }
         val provider = providers.firstOrNull() ?: return null
-        return try {
-            provider.factory.create()
-        } catch (exception: RuntimeException) {
-            MoreBattleContent.LOGGER.error("Battle Brain provider {} could not be created", provider.id, exception)
-            null
-        }
+        return compatibilityCallOrElse(
+            fallback = { failure ->
+                reportManagedCleanupFailureSafely(failure) {
+                    MoreBattleContent.LOGGER.error("Battle Brain provider {} could not be created", provider.id, it)
+                }
+                null
+            },
+            action = provider.factory::create,
+        )
     }
 
     private fun isEligible(
         provider: BattleBrainProvider,
         context: BattleBrainSelectionContext,
-    ): Boolean = try {
-        provider.isEligible(context)
-    } catch (exception: RuntimeException) {
-        MoreBattleContent.LOGGER.error(
-            "Battle Brain provider {} eligibility check failed for content {}",
-            provider.id,
-            context.contentId,
-            exception,
-        )
-        false
-    }
+    ): Boolean = compatibilityCallOrElse(
+        fallback = { failure ->
+            reportManagedCleanupFailureSafely(failure) {
+                MoreBattleContent.LOGGER.error(
+                    "Battle Brain provider {} eligibility check failed for content {}",
+                    provider.id,
+                    context.contentId,
+                    it,
+                )
+            }
+            false
+        },
+        action = { provider.isEligible(context) },
+    )
 }

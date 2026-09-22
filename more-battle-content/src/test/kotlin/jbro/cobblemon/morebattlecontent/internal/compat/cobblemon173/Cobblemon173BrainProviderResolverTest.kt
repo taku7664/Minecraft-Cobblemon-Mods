@@ -68,6 +68,48 @@ class Cobblemon173BrainProviderResolverTest {
         )
     }
 
+    @Test
+    fun `resolver fails closed when provider compatibility APIs drift`() {
+        val policyFailure = BattleBrainRegistry.create().also { registry ->
+            registry.register(
+                BattleBrainProvider(
+                    id = BrainId("example:drifted_policy"),
+                    capabilities = setOf(BrainCapability.SINGLE),
+                    factory = BattleBrainFactory(::StubBrain),
+                    role = BattleBrainProviderRole.PRIMARY,
+                    selectionPolicy = BattleBrainSelectionPolicy { throw NoSuchMethodError("policy API drift") },
+                ),
+            )
+        }
+        val factoryFailure = BattleBrainRegistry.create().also { registry ->
+            registry.register(
+                BattleBrainProvider(
+                    id = BrainId("example:drifted_factory"),
+                    capabilities = setOf(BrainCapability.SINGLE),
+                    factory = BattleBrainFactory { throw NoSuchMethodError("factory API drift") },
+                    role = BattleBrainProviderRole.PRIMARY,
+                ),
+            )
+        }
+
+        assertNull(
+            Cobblemon173BrainProviderResolver.create(
+                policyFailure,
+                BrainCapability.SINGLE,
+                BattleBrainProviderRole.PRIMARY,
+                selection(BattleEncounterRole.BOSS),
+            ),
+        )
+        assertNull(
+            Cobblemon173BrainProviderResolver.create(
+                factoryFailure,
+                BrainCapability.SINGLE,
+                BattleBrainProviderRole.PRIMARY,
+                selection(BattleEncounterRole.BOSS),
+            ),
+        )
+    }
+
     private fun selection(role: BattleEncounterRole) = BattleBrainSelectionContext(
         BattleBrainContentIds.BATTLE_TOWER,
         role,

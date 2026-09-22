@@ -35,4 +35,42 @@ class CompatibilityCallTest {
     fun `successful compatibility value is preserved`() {
         assertEquals("available", compatibilityCallOrNull { "available" })
     }
+
+    @Test
+    fun `fallback receives ordinary and linkage failures by identity`() {
+        val ordinary = IOException("read failed")
+        val linkage = NoSuchMethodError("API drift")
+
+        assertSame(ordinary, compatibilityCallOrElse({ it }) { throw ordinary })
+        assertSame(linkage, compatibilityCallOrElse({ it }) { throw linkage })
+    }
+
+    @Test
+    fun `fallback receives an unwrapped reflective compatibility failure`() {
+        val linkage = NoSuchMethodError("reflected API drift")
+
+        assertSame(
+            linkage,
+            compatibilityCallOrElse({ it }) { throw InvocationTargetException(linkage) },
+        )
+    }
+
+    @Test
+    fun `fallback cannot hide a non-linkage fatal error`() {
+        val fatal = AssertionError("fatal")
+        var fallbackCalled = false
+
+        val thrown = assertThrows(AssertionError::class.java) {
+            compatibilityCallOrElse(
+                fallback = {
+                    fallbackCalled = true
+                    it
+                },
+                action = { throw fatal },
+            )
+        }
+
+        assertSame(fatal, thrown)
+        assertEquals(false, fallbackCalled)
+    }
 }

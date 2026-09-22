@@ -2,17 +2,23 @@ package jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173
 
 import java.lang.reflect.InvocationTargetException
 
-internal inline fun <T> compatibilityCallOrNull(action: () -> T): T? = try {
+internal inline fun <T> compatibilityCallOrElse(
+    fallback: (Throwable) -> T,
+    action: () -> T,
+): T = try {
     action()
 } catch (failure: InvocationTargetException) {
     when (val cause = failure.targetException) {
-        is Exception -> null
-        is LinkageError -> null
+        is Exception -> fallback(cause)
+        is LinkageError -> fallback(cause)
         is Error -> throw cause
-        else -> null
+        else -> fallback(cause)
     }
-} catch (_: Exception) {
-    null
-} catch (_: LinkageError) {
-    null
+} catch (failure: Exception) {
+    fallback(failure)
+} catch (failure: LinkageError) {
+    fallback(failure)
 }
+
+internal inline fun <T> compatibilityCallOrNull(action: () -> T): T? =
+    compatibilityCallOrElse(fallback = { null }, action = action)

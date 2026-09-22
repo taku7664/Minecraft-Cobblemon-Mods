@@ -14,17 +14,23 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
 internal object Cobblemon173RemoteSpectate : SpectateCommandBackend {
-    override fun spectate(viewer: ServerPlayer, target: ServerPlayer): RemoteSpectateResult = try {
-        RemoteSpectateService(CobblemonGateway(viewer.server)).spectate(viewer.uuid, target.uuid)
-    } catch (exception: RuntimeException) {
-        MoreBattleContent.LOGGER.error(
-            "Remote spectating failed for viewer {} and target {}",
-            viewer.uuid,
-            target.uuid,
-            exception,
+    override fun spectate(viewer: ServerPlayer, target: ServerPlayer): RemoteSpectateResult =
+        compatibilityCallOrElse(
+            fallback = { failure ->
+                reportManagedCleanupFailureSafely(failure) {
+                    MoreBattleContent.LOGGER.error(
+                        "Remote spectating failed for viewer {} and target {}",
+                        viewer.uuid,
+                        target.uuid,
+                        it,
+                    )
+                }
+                RemoteSpectateResult.BATTLE_UNAVAILABLE
+            },
+            action = {
+                RemoteSpectateService(CobblemonGateway(viewer.server)).spectate(viewer.uuid, target.uuid)
+            },
         )
-        RemoteSpectateResult.BATTLE_UNAVAILABLE
-    }
 
     private class CobblemonGateway(
         private val server: MinecraftServer,

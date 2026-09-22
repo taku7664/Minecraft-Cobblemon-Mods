@@ -25,11 +25,13 @@ import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 
 /** Contains every direct Cobblemon 1.7.3 action-request dependency used by the public Brain boundary. */
 internal object Cobblemon173ActionCandidateAdapter {
-    fun prepare(actor: BattleActor, mechanicPolicy: Cobblemon173MechanicPolicy): Cobblemon173ActionPreparation = try {
-        prepareValidated(actor, mechanicPolicy)
-    } catch (_: RuntimeException) {
-        Cobblemon173ActionPreparation.failed(Cobblemon173ActionPreparationStatus.INVALID_REQUEST)
-    }
+    fun prepare(actor: BattleActor, mechanicPolicy: Cobblemon173MechanicPolicy): Cobblemon173ActionPreparation =
+        compatibilityCallOrElse(
+            fallback = {
+                Cobblemon173ActionPreparation.failed(Cobblemon173ActionPreparationStatus.INVALID_REQUEST)
+            },
+            action = { prepareValidated(actor, mechanicPolicy) },
+        )
 
     private fun prepareValidated(
         actor: BattleActor,
