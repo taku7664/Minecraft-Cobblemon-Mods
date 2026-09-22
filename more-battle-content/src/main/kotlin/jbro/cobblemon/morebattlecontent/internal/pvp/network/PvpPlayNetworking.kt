@@ -14,6 +14,7 @@ import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon17
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173PvpTurnHooks
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupActions
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupActionsSafely
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupForEachSafely
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpArenaPool
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpBattleCompletionSink
@@ -620,16 +621,29 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     }
 
     private fun pushRoomToMembers(room: PvpRoomView, requestId: UUID?, reopen: Boolean = false) {
-        room.memberIds.forEach { memberId -> onlinePlayers[memberId]?.let { sendRoom(it, room, requestId, reopen) } }
+        notifyOnlinePlayers(room.memberIds, "room update") { player -> sendRoom(player, room, requestId, reopen) }
     }
 
     private fun pushRoomToSpectators(room: PvpRoomView, requestId: UUID?) {
-        room.spectatorIds.forEach { memberId -> onlinePlayers[memberId]?.let { sendRoom(it, room, requestId) } }
+        notifyOnlinePlayers(room.spectatorIds, "spectator room update") { player -> sendRoom(player, room, requestId) }
     }
 
     private fun pushSpectatorPreview(room: PvpRoomView) {
-        room.spectatorIds.forEach { spectatorId ->
-            onlinePlayers[spectatorId]?.let { sendSpectatorPreview(it, room) }
+        notifyOnlinePlayers(room.spectatorIds, "spectator preview") { player -> sendSpectatorPreview(player, room) }
+    }
+
+    private fun notifyOnlinePlayers(
+        playerIds: Iterable<UUID>,
+        notification: String,
+        send: (ServerPlayer) -> Unit,
+    ) {
+        runManagedCleanupForEachSafely(
+            items = playerIds,
+            reportFailure = { playerId, failure ->
+                MoreBattleContent.LOGGER.error("PvP $notification failed for $playerId", failure)
+            },
+        ) { playerId ->
+            onlinePlayers[playerId]?.let(send)
         }
     }
 
@@ -720,8 +734,8 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             {
                 val finishedRoom = room
                 if (finishedRoom == null) {
-                    rooms.close(roomId)?.memberIds?.forEach { memberId ->
-                        onlinePlayers[memberId]?.let { sendRoomList(it, null) }
+                    rooms.close(roomId)?.memberIds?.let { memberIds ->
+                        notifyOnlinePlayers(memberIds, "room list refresh") { player -> sendRoomList(player, null) }
                     }
                 } else {
                     pushRoomToMembers(finishedRoom, null, reopen = true)
@@ -890,23 +904,27 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     }
 
     private fun notifyClosed(request: PvpChallengeRequest, messageKey: String) {
-        listOf(request.challengerId, request.opponentId).forEach { playerId ->
-            onlinePlayers[playerId]?.let { player ->
-                if (ServerPlayNetworking.canSend(player, PvpSelectionClosedPayload.TYPE)) {
-                    ServerPlayNetworking.send(player, PvpSelectionClosedPayload(request.challengeId, messageKey))
-                }
+        notifyOnlinePlayers(listOf(request.challengerId, request.opponentId), "selection close") { player ->
+            if (ServerPlayNetworking.canSend(player, PvpSelectionClosedPayload.TYPE)) {
+                ServerPlayNetworking.send(player, PvpSelectionClosedPayload(request.challengeId, messageKey))
             }
         }
     }
 
     private fun sendStateToBoth(request: PvpChallengeRequest) {
-        onlinePlayers[request.challengerId]?.let { sendState(it, null) }
-        onlinePlayers[request.opponentId]?.let { sendState(it, null) }
+        notifyOnlinePlayers(listOf(request.challengerId, request.opponentId), "selection state") { player ->
+            sendState(player, null)
+        }
     }
 
     private fun processEntryTimeouts() {
-        sessions.expireEntrySelections().forEach { resolution ->
-            val request = sessions.challenge(resolution.matchId)?.request ?: return@forEach
+        runManagedCleanupForEachSafely(
+            items = sessions.expireEntrySelections(),
+            reportFailure = { resolution, failure ->
+                MoreBattleContent.LOGGER.error("PvP entry timeout cleanup failed for ${resolution.matchId}", failure)
+            },
+        ) { resolution ->
+            val request = sessions.challenge(resolution.matchId)?.request ?: return@runManagedCleanupForEachSafely
             when (resolution.launchResult) {
                 PvpSelectionMutation.BATTLE_STARTED -> {
                     retryableMatches.remove(resolution.matchId)

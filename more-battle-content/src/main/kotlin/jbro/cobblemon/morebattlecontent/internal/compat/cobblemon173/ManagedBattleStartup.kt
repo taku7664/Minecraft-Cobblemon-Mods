@@ -41,6 +41,19 @@ internal fun runManagedCleanupActionsSafely(
     }
 }
 
+internal fun <T> runManagedCleanupForEachSafely(
+    items: Iterable<T>,
+    reportFailure: (T, Throwable) -> Unit,
+    action: (T) -> Unit,
+) {
+    items.forEach { item ->
+        runManagedCleanupActionsSafely(
+            reportFailure = { failure -> reportFailure(item, failure) },
+            { action(item) },
+        )
+    }
+}
+
 private fun reportManagedCleanupFailureSafely(failure: Throwable, reportFailure: (Throwable) -> Unit) {
     try {
         reportFailure(failure)

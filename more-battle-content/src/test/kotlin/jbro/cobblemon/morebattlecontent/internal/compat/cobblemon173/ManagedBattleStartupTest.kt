@@ -155,4 +155,27 @@ class ManagedBattleStartupTest {
 
         assertEquals(listOf("last-cleanup", "report"), events)
     }
+
+    @Test
+    fun `safe item actions continue after action and reporter compatibility failures`() {
+        val visited = ArrayList<Int>()
+        val reported = ArrayList<Int>()
+
+        runManagedCleanupForEachSafely(
+            items = listOf(1, 2, 3),
+            reportFailure = { item, _ ->
+                reported += item
+                if (item == 1) throw NoSuchMethodError("logger API drift")
+            },
+        ) { item ->
+            visited += item
+            when (item) {
+                1 -> throw IllegalStateException("first send failed")
+                2 -> throw NoSuchMethodError("second send API drift")
+            }
+        }
+
+        assertEquals(listOf(1, 2, 3), visited)
+        assertEquals(listOf(1, 2), reported)
+    }
 }
