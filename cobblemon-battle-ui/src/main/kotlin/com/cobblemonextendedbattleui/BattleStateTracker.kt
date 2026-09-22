@@ -364,6 +364,7 @@ object BattleStateTracker {
     fun setItem(pokemonName: String, itemName: String, status: ItemStatus, preferAlly: Boolean? = null) = AbilityItemTracker.setItem(pokemonName, itemName, status, currentTurn, preferAlly)
     fun getItem(uuid: UUID): TrackedItem? = AbilityItemTracker.getItem(uuid)
     fun getItemByName(pokemonName: String, preferAlly: Boolean? = null): TrackedItem? = AbilityItemTracker.getItemByName(pokemonName, preferAlly)
+    fun revealHealingItem(pokemonName: String, itemName: String, preferAlly: Boolean? = null) = AbilityItemTracker.revealHealingItem(pokemonName, itemName, currentTurn, preferAlly)
     fun transferItem(fromPokemon: String, toPokemon: String, itemName: String, fromIsAlly: Boolean? = null, toIsAlly: Boolean? = null) = AbilityItemTracker.transferItem(fromPokemon, toPokemon, itemName, currentTurn, fromIsAlly, toIsAlly)
     fun receiveItemViaTrick(pokemonName: String, newItemName: String, preferAlly: Boolean? = null) = AbilityItemTracker.receiveItemViaTrick(pokemonName, newItemName, currentTurn, preferAlly)
     fun markItemSwapped(pokemonName: String, preferAlly: Boolean? = null) = AbilityItemTracker.markItemSwapped(pokemonName, currentTurn, preferAlly)

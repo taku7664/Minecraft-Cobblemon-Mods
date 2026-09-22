@@ -255,12 +255,7 @@ object StateUpdater {
         if (args.size < 2) return
         val pokemonName = MessageParser.extractPokemonName(args[0])
         val itemName = MessageParser.argToString(args[1])
-        val status = if (itemName.lowercase().contains("berry")) {
-            ItemStatus.CONSUMED
-        } else {
-            ItemStatus.HELD
-        }
-        BattleStateTracker.setItem(pokemonName, itemName, status)
+        BattleStateTracker.revealHealingItem(pokemonName, itemName)
     }
 
     // ═════════════════════════════════════════════════════════════════════════

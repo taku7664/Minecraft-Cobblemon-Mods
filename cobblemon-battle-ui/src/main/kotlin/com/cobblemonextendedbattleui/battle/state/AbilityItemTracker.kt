@@ -97,6 +97,28 @@ object AbilityItemTracker {
         return pokemonItems[uuid]
     }
 
+    /**
+     * A heal message reveals the source item but does not say whether it is still held.
+     * Preserve an already observed removal event for the same item; Harvest and Recycle
+     * continue to use [setItem] because those messages explicitly restore possession.
+     */
+    fun revealHealingItem(
+        pokemonName: String,
+        itemName: String,
+        currentTurn: Int,
+        preferAlly: Boolean? = null
+    ) {
+        val uuid = PokemonRegistry.resolvePokemonUuid(pokemonName, preferAlly) ?: return
+        val existingItem = pokemonItems[uuid]
+        if (existingItem != null &&
+            existingItem.status != ItemStatus.HELD &&
+            existingItem.name.equals(itemName, ignoreCase = true)
+        ) {
+            return
+        }
+        setItem(pokemonName, itemName, ItemStatus.HELD, currentTurn, preferAlly)
+    }
+
     fun transferItem(fromPokemon: String, toPokemon: String, itemName: String, currentTurn: Int, fromIsAlly: Boolean? = null, toIsAlly: Boolean? = null) {
         val fromUuid = PokemonRegistry.resolvePokemonUuid(fromPokemon, fromIsAlly)
         val toUuid = PokemonRegistry.resolvePokemonUuid(toPokemon, toIsAlly)

@@ -37,6 +37,17 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void localizedHealingMessageDoesNotRestoreAnAlreadyConsumedBerry() {
+        UUID uuid = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(uuid, "Tropius", false);
+        AbilityItemTracker.INSTANCE.setItem("Tropius", "자뭉열매", ItemStatus.CONSUMED, 2, false);
+
+        StateUpdater.INSTANCE.extractHealingItem(new Object[] {"Tropius", "자뭉열매"});
+
+        assertEquals(ItemStatus.CONSUMED, AbilityItemTracker.INSTANCE.getItem(uuid).getStatus());
+    }
+
+    @Test
     void transformClearsTheOldAbilityWhenTheCopiedAbilityIsUnknown() {
         UUID transformer = UUID.randomUUID();
         AbilityItemTracker.INSTANCE.setRevealedAbility(transformer, "Imposter");
