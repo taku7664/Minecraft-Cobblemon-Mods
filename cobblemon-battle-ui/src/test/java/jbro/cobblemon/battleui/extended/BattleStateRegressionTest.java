@@ -206,6 +206,25 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void nightmareClearsWhenSleepEndsOrIsReapplied() {
+        UUID uuid = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(uuid, "Victim", false);
+
+        for (String sleepKey : List.of("cobblemon.status.sleep.cure", "cobblemon.status.sleep.apply")) {
+            BattleMessageInterceptor.INSTANCE.processMessages(List.of(
+                Text.translatable("cobblemon.battle.start.nightmare", "Victim")
+            ));
+            assertTrue(VolatileStatusTracker.INSTANCE.getVolatileStatuses(uuid).stream()
+                .anyMatch(state -> state.getType() == BattleStateTracker.VolatileStatus.NIGHTMARE));
+
+            BattleMessageInterceptor.INSTANCE.processMessages(List.of(
+                Text.translatable(sleepKey, "Victim")
+            ));
+            assertTrue(VolatileStatusTracker.INSTANCE.getVolatileStatuses(uuid).isEmpty());
+        }
+    }
+
+    @Test
     void dynamaxAndGigantamaxFormsClearWhenDynamaxEnds() {
         UUID uuid = UUID.randomUUID();
         PokemonRegistry.INSTANCE.registerPokemon(uuid, "Pokemon", false);

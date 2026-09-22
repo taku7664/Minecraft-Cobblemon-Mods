@@ -294,6 +294,7 @@ object TranslationKeys {
     const val PERISH_SONG_FIELD_KEY = "cobblemon.battle.fieldactivate.perishsong"
     const val TRANSFORM_KEY = "cobblemon.battle.transform"
     const val DROWSY_END_KEY = "cobblemon.status.sleep.apply"
+    val NIGHTMARE_CLEAR_KEYS = setOf(DROWSY_END_KEY, "cobblemon.status.sleep.cure")
 
     // ═════════════════════════════════════════════════════════════════════════
     // Form Change Keys

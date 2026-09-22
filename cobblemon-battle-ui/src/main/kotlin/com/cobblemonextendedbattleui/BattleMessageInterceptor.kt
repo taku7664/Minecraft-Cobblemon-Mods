@@ -273,6 +273,11 @@ object BattleMessageInterceptor {
                 return
             }
 
+            if (key in TranslationKeys.NIGHTMARE_CLEAR_KEYS) {
+                StateUpdater.extractVolatileStatusEnd(args, BattleStateTracker.VolatileStatus.NIGHTMARE)
+                if (key != TranslationKeys.DROWSY_END_KEY) return
+            }
+
             if (key == TranslationKeys.DROWSY_END_KEY) {
                 StateUpdater.extractVolatileStatusEnd(args, BattleStateTracker.VolatileStatus.DROWSY)
                 return
