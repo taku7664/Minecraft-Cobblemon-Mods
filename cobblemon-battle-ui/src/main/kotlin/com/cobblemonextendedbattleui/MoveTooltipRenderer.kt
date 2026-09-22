@@ -627,16 +627,8 @@ object MoveTooltipRenderer {
     }
 
     private fun getPlayerPartyPokemon(): Pokemon? {
-        val uuid = activePokemonUuid ?: return getPlayerPartyPokemonFallback()
+        val uuid = activePokemonUuid ?: return null
         return CobblemonClient.storage.party.findByUUID(uuid)
-    }
-
-    private fun getPlayerPartyPokemonFallback(): Pokemon? {
-        val battle = CobblemonClient.battle ?: return null
-        val playerUUID = MinecraftClient.getInstance().player?.uuid ?: return null
-        val playerSide = if (battle.side1.actors.any { it.uuid == playerUUID }) battle.side1 else battle.side2
-        val battlePokemon = playerSide.activeClientBattlePokemon.firstOrNull()?.battlePokemon ?: return null
-        return CobblemonClient.storage.party.findByUUID(battlePokemon.uuid)
     }
 
     // ═══════════════════════════════════════════════════════════════

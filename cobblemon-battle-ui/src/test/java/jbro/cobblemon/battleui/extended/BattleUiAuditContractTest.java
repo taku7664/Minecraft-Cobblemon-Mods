@@ -70,6 +70,13 @@ final class BattleUiAuditContractTest {
     }
 
     @Test
+    void moveTooltipNeverGuessesTheActingPokemonFromTheFirstBattleSlot() throws Exception {
+        String tooltip = read("src/main/kotlin/com/cobblemonextendedbattleui/MoveTooltipRenderer.kt");
+        assertFalse(tooltip.contains("getPlayerPartyPokemonFallback"));
+        assertFalse(tooltip.contains("activeClientBattlePokemon.firstOrNull()"));
+    }
+
+    @Test
     void transformAbilityUsesOnlyOwnedOrRevealedInformation() throws Exception {
         String indicators = read("src/main/kotlin/com/cobblemonextendedbattleui/TeamIndicatorUI.kt");
         int staleAbilityClear = indicators.indexOf(
