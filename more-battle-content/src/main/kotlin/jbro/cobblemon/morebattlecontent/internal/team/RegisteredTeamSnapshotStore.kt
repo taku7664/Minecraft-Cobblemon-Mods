@@ -6,8 +6,9 @@ import java.util.UUID
 internal sealed interface TeamSnapshotCaptureResult {
     data object Stored : TeamSnapshotCaptureResult
     data object SourceUnavailable : TeamSnapshotCaptureResult
+    data class CaptureFailed(val cause: Throwable) : TeamSnapshotCaptureResult
     data class RegistrationMismatch(val memberId: UUID) : TeamSnapshotCaptureResult
-    data class SnapshotFailed(val memberId: UUID, val cause: RuntimeException) : TeamSnapshotCaptureResult
+    data class SnapshotFailed(val memberId: UUID, val cause: Throwable) : TeamSnapshotCaptureResult
 }
 
 internal sealed interface TeamSnapshotMaterializationResult<out B> {
@@ -16,8 +17,9 @@ internal sealed interface TeamSnapshotMaterializationResult<out B> {
     }
 
     data object NoSnapshot : TeamSnapshotMaterializationResult<Nothing>
+    data class MaterializationFailed(val cause: Throwable) : TeamSnapshotMaterializationResult<Nothing>
     data class SnapshotMismatch(val memberId: UUID) : TeamSnapshotMaterializationResult<Nothing>
-    data class CopyFailed(val memberId: UUID, val cause: RuntimeException) : TeamSnapshotMaterializationResult<Nothing>
+    data class CopyFailed(val memberId: UUID, val cause: Throwable) : TeamSnapshotMaterializationResult<Nothing>
 }
 
 internal class RegisteredTeamSnapshotStore<S, R, T, B>(
@@ -32,10 +34,22 @@ internal class RegisteredTeamSnapshotStore<S, R, T, B>(
 
     @Synchronized
     fun snapshot(playerId: UUID, members: List<R>): TeamSnapshotCaptureResult {
-        val sources = sourcesFor(playerId) ?: return TeamSnapshotCaptureResult.SourceUnavailable
+        val sources = try {
+            sourcesFor(playerId)
+        } catch (failure: RuntimeException) {
+            return TeamSnapshotCaptureResult.CaptureFailed(failure)
+        } catch (failure: LinkageError) {
+            return TeamSnapshotCaptureResult.CaptureFailed(failure)
+        } ?: return TeamSnapshotCaptureResult.SourceUnavailable
         val sourcesById = LinkedHashMap<UUID, S>()
         for (source in sources) {
-            val memberId = memberIdOf(registrationOf(source))
+            val memberId = try {
+                memberIdOf(registrationOf(source))
+            } catch (failure: RuntimeException) {
+                return TeamSnapshotCaptureResult.CaptureFailed(failure)
+            } catch (failure: LinkageError) {
+                return TeamSnapshotCaptureResult.CaptureFailed(failure)
+            }
             if (sourcesById.put(memberId, source) != null) {
                 return TeamSnapshotCaptureResult.RegistrationMismatch(memberId)
             }
@@ -43,16 +57,32 @@ internal class RegisteredTeamSnapshotStore<S, R, T, B>(
         val registrations = LinkedHashMap<UUID, R>()
         val storedMembers = LinkedHashMap<UUID, T>()
         for (registration in members) {
-            val memberId = memberIdOf(registration)
+            val memberId = try {
+                memberIdOf(registration)
+            } catch (failure: RuntimeException) {
+                return TeamSnapshotCaptureResult.CaptureFailed(failure)
+            } catch (failure: LinkageError) {
+                return TeamSnapshotCaptureResult.CaptureFailed(failure)
+            }
             val source = sourcesById[memberId]
                 ?: return TeamSnapshotCaptureResult.RegistrationMismatch(memberId)
-            if (registrationOf(source) != registration) {
+            val currentRegistration = try {
+                registrationOf(source)
+            } catch (failure: RuntimeException) {
+                return TeamSnapshotCaptureResult.SnapshotFailed(memberId, failure)
+            } catch (failure: LinkageError) {
+                return TeamSnapshotCaptureResult.SnapshotFailed(memberId, failure)
+            }
+            if (currentRegistration != registration) {
                 return TeamSnapshotCaptureResult.RegistrationMismatch(memberId)
             }
             val snapshot = try {
-                snapshotOf(source, battleLevelOf(registration))
+                val battleLevel = battleLevelOf(registration)
+                snapshotOf(source, battleLevel)
             } catch (exception: RuntimeException) {
                 return TeamSnapshotCaptureResult.SnapshotFailed(memberId, exception)
+            } catch (error: LinkageError) {
+                return TeamSnapshotCaptureResult.SnapshotFailed(memberId, error)
             }
             registrations[memberId] = registration
             storedMembers[memberId] = snapshot
@@ -69,7 +99,13 @@ internal class RegisteredTeamSnapshotStore<S, R, T, B>(
         val snapshot = snapshots[playerId] ?: return TeamSnapshotMaterializationResult.NoSnapshot
         val copies = ArrayList<B>(members.size)
         for (registration in members) {
-            val memberId = memberIdOf(registration)
+            val memberId = try {
+                memberIdOf(registration)
+            } catch (failure: RuntimeException) {
+                return TeamSnapshotMaterializationResult.MaterializationFailed(failure)
+            } catch (failure: LinkageError) {
+                return TeamSnapshotMaterializationResult.MaterializationFailed(failure)
+            }
             if (snapshot.registrationsById[memberId] != registration) {
                 return TeamSnapshotMaterializationResult.SnapshotMismatch(memberId)
             }
@@ -79,6 +115,8 @@ internal class RegisteredTeamSnapshotStore<S, R, T, B>(
                 copies += battleCopyOf(stored)
             } catch (exception: RuntimeException) {
                 return TeamSnapshotMaterializationResult.CopyFailed(memberId, exception)
+            } catch (error: LinkageError) {
+                return TeamSnapshotMaterializationResult.CopyFailed(memberId, error)
             }
         }
         return TeamSnapshotMaterializationResult.Created(copies)

@@ -170,6 +170,20 @@ class TowerPveBattleLauncherTest {
         assertEquals(0, starts)
     }
 
+    @Test
+    fun `diagnostics failure cannot replace an unavailable player team`() {
+        val launcher = TowerPveBattleLauncher<String, String>(
+            registeredTeamMaterializer = { _, _ -> TowerRegisteredBattleTeamResult.NoSnapshot },
+            catalogSource = { catalog(MajorBattleMechanic.MEGA) },
+            opponentMemberFactory = { it.setId },
+            runtime = TowerPveBattleRuntime { TowerBattleLaunchResult.Started(battleId) },
+            random = FixedRandom,
+            diagnostics = { throw NoSuchMethodError("diagnostics API drift") },
+        )
+
+        assertEquals(TowerBattleLaunchResult.Unavailable, launcher.launch(request(MajorBattleMechanic.MEGA)))
+    }
+
     private fun request(
         mechanic: MajorBattleMechanic,
         progress: TowerProgress = TowerProgress.initial(TowerBattleFormat.SINGLE),

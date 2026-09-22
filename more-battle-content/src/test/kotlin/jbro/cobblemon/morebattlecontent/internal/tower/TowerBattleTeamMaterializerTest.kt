@@ -80,6 +80,47 @@ class TowerBattleTeamMaterializerTest {
         assertEquals(sources[1].id, (result as TowerBattleTeamMaterialization.CloneFailed).pokemonId)
     }
 
+    @Test
+    fun `clone linkage failure is reported without returning a partial team`() {
+        val sources = validSources()
+        val selection = selectedTeam(sources, listOf(0, 1, 2))
+        val failure = NoSuchMethodError("pokemon copy API drift")
+        val materializer = TowerBattleTeamMaterializer<Source, Clone>(Source::registration) { source, level ->
+            if (source == sources[1]) throw failure
+            Clone(source.id, level)
+        }
+
+        val result = materializer.materialize(selection, sources) as TowerBattleTeamMaterialization.CloneFailed
+
+        assertEquals(sources[1].id, result.pokemonId)
+        assertEquals(failure, result.cause)
+    }
+
+    @Test
+    fun `source registration linkage failure is reported before cloning`() {
+        val sources = validSources()
+        val failure = NoSuchMethodError("registration API drift")
+        var cloneCalls = 0
+        val materializer = TowerBattleTeamMaterializer<Source, Clone>(
+            registrationOf = {
+                if (it == sources[1]) throw failure
+                it.registration()
+            },
+            cloneForBattle = { source, level ->
+                cloneCalls++
+                Clone(source.id, level)
+            },
+        )
+
+        val result = materializer.materialize(
+            selectedTeam(sources, listOf(0, 1, 2)),
+            sources,
+        ) as TowerBattleTeamMaterialization.SourceFailed
+
+        assertEquals(failure, result.cause)
+        assertEquals(0, cloneCalls)
+    }
+
     private fun materializer() = TowerBattleTeamMaterializer<Source, Clone>(Source::registration) { source, level ->
         Clone(source.id, level)
     }

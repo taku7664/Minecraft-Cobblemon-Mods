@@ -34,6 +34,18 @@ class TowerOpponentBattleTeamMaterializerTest {
         assertEquals(listOf("first", "second"), calls)
     }
 
+    @Test
+    fun `creation linkage failure is reported without returning a partial team`() {
+        val failure = NoSuchMethodError("pokemon factory API drift")
+        val materializer = TowerOpponentBattleTeamMaterializer<String> { throw failure }
+
+        val result = materializer.materialize(listOf(pokemonSet("first"))) as
+            TowerOpponentBattleTeamMaterialization.CreationFailed
+
+        assertEquals("first", result.setId)
+        assertEquals(failure, result.cause)
+    }
+
     private fun pokemonSet(id: String) = TowerPokemonSet(
         setId = id,
         setTier = 1,

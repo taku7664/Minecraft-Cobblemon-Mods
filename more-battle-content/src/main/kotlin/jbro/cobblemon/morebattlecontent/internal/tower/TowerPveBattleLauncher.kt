@@ -60,11 +60,11 @@ internal class TowerPveBattleLauncher<P, O>(
     override fun launch(request: TowerBattleLaunchRequest): TowerBattleLaunchResult {
         val playerTeam = registeredTeamMaterializer(request.playerId, request.selection)
         if (playerTeam !is TowerRegisteredBattleTeamResult.Created) {
-            diagnostics("registered team could not be materialized for ${request.playerId}: ${playerTeam.describe()}")
+            reportSafely("registered team could not be materialized for ${request.playerId}: ${playerTeam.describe()}")
             return TowerBattleLaunchResult.Unavailable
         }
         val catalog = catalogSource() ?: run {
-            diagnostics("the Battle Tower opponent catalog is not loaded; check the earlier catalog reload errors")
+            reportSafely("the Battle Tower opponent catalog is not loaded; check the earlier catalog reload errors")
             return TowerBattleLaunchResult.Unavailable
         }
         val opponentKind = TowerProgression.nextOpponent(request.progress)
@@ -78,7 +78,7 @@ internal class TowerPveBattleLauncher<P, O>(
             request.legendaryClassAllowed,
         )
         if (opponent !is TowerOpponentSelectionResult.Selected) {
-            diagnostics(
+            reportSafely(
                 "no opponent could be selected for stage ${request.progress.nextStage}, format " +
                     "${request.progress.format}, kind $opponentKind, mechanic ${request.mechanic}, " +
                     "legendaryClassAllowed=${request.legendaryClassAllowed}: ${opponent.describe()}",
@@ -87,7 +87,7 @@ internal class TowerPveBattleLauncher<P, O>(
         }
         val opponentTeam = opponentMaterializer.materialize(opponent.team)
         if (opponentTeam !is TowerOpponentBattleTeamMaterialization.Created) {
-            diagnostics("opponent team ${opponent.profile.profileId} could not be materialized")
+            reportSafely("opponent team ${opponent.profile.profileId} could not be materialized")
             return TowerBattleLaunchResult.Unavailable
         }
         val result = runtime.start(
@@ -116,6 +116,16 @@ internal class TowerPveBattleLauncher<P, O>(
         recentSpecies.forget(playerId)
     }
 
+    private fun reportSafely(message: String) {
+        try {
+            diagnostics(message)
+        } catch (_: RuntimeException) {
+            // Diagnostics cannot replace a contained launch failure.
+        } catch (_: LinkageError) {
+            // Compatibility diagnostics are best-effort at this boundary.
+        }
+    }
+
     private companion object {
         const val RECENT_PROFILE_LIMIT = 3
         const val RECENT_SPECIES_LIMIT = 24
@@ -123,6 +133,8 @@ internal class TowerPveBattleLauncher<P, O>(
         fun TowerRegisteredBattleTeamResult<*>.describe(): String = when (this) {
             is TowerRegisteredBattleTeamResult.Created -> "created"
             TowerRegisteredBattleTeamResult.NoSnapshot -> "no registered team snapshot is stored"
+            is TowerRegisteredBattleTeamResult.MaterializationFailed ->
+                "the registered team could not be read: ${cause.message}"
             is TowerRegisteredBattleTeamResult.SnapshotMismatch ->
                 "the snapshot no longer matches Pokemon $pokemonId"
             is TowerRegisteredBattleTeamResult.CopyFailed ->

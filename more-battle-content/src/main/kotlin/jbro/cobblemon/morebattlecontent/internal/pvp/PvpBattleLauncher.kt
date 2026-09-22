@@ -72,22 +72,28 @@ internal class PvpBattleLauncher<P>(
     fun launch(request: PvpBattleLaunchRequest): PvpBattleLaunchResult {
         val first = materialize.materialize(request.firstPlayerId, request.firstSelection)
         if (first !is PvpRegisteredBattleTeamResult.Created) {
-            diagnostics(
+            reportDiagnosticsSafely(diagnostics,
                 "match ${request.matchId}: the team of ${request.firstPlayerId} could not be " +
                     "materialized: ${first.describe()}",
+                null,
             )
             return PvpBattleLaunchResult.Unavailable
         }
         val second = materialize.materialize(request.secondPlayerId, request.secondSelection)
         if (second !is PvpRegisteredBattleTeamResult.Created) {
-            diagnostics(
+            reportDiagnosticsSafely(diagnostics,
                 "match ${request.matchId}: the team of ${request.secondPlayerId} could not be " +
                     "materialized: ${second.describe()}",
+                null,
             )
             return PvpBattleLaunchResult.Unavailable
         }
         val preparedPlacement = placement.prepare(request) ?: run {
-            diagnostics("match ${request.matchId}: no lounge placement could be prepared")
+            reportDiagnosticsSafely(
+                diagnostics,
+                "match ${request.matchId}: no lounge placement could be prepared",
+                null,
+            )
             return PvpBattleLaunchResult.Unavailable
         }
         val result = try {
@@ -196,6 +202,8 @@ internal class PvpBattleLauncher<P>(
         fun PvpRegisteredBattleTeamResult<*>.describe(): String = when (this) {
             is PvpRegisteredBattleTeamResult.Created -> "created"
             PvpRegisteredBattleTeamResult.NoSnapshot -> "no registered team snapshot is stored"
+            is PvpRegisteredBattleTeamResult.MaterializationFailed ->
+                "the registered team could not be read: ${cause.message}"
             is PvpRegisteredBattleTeamResult.SnapshotMismatch ->
                 "the snapshot no longer matches Pokemon $pokemonId"
             is PvpRegisteredBattleTeamResult.CopyFailed ->

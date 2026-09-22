@@ -94,6 +94,43 @@ class FactoryPveBattleLauncherTest {
     }
 
     @Test
+    fun `materialization linkage failures prevent partial battle start`() {
+        var starts = 0
+        val playerFailure = FactoryPveBattleLauncher(
+            playerMemberFactory = { _, _ -> throw NoSuchMethodError("player rental API drift") },
+            opponentMemberFactory = { set, _ -> set.setId },
+            runtime = FactoryPveBattleRuntime {
+                starts++
+                FactoryBattleLaunchResult.Started(battleId)
+            },
+        )
+        val opponentFailure = FactoryPveBattleLauncher(
+            playerMemberFactory = { set, _ -> set.setId },
+            opponentMemberFactory = { _, _ -> throw NoSuchMethodError("opponent rental API drift") },
+            runtime = FactoryPveBattleRuntime {
+                starts++
+                FactoryBattleLaunchResult.Started(battleId)
+            },
+        )
+
+        assertEquals(FactoryBattleLaunchResult.Unavailable, playerFailure.launch(request()))
+        assertEquals(FactoryBattleLaunchResult.Unavailable, opponentFailure.launch(request()))
+        assertEquals(0, starts)
+    }
+
+    @Test
+    fun `diagnostics failure cannot replace a materialization failure`() {
+        val launcher = FactoryPveBattleLauncher(
+            playerMemberFactory = { _, _ -> throw NoSuchMethodError("player rental API drift") },
+            opponentMemberFactory = { set, _ -> set.setId },
+            runtime = FactoryPveBattleRuntime { FactoryBattleLaunchResult.Started(battleId) },
+            diagnostics = { throw NoSuchMethodError("diagnostics API drift") },
+        )
+
+        assertEquals(FactoryBattleLaunchResult.Unavailable, launcher.launch(request()))
+    }
+
+    @Test
     fun `run service marks active only after a successful launch and preserves ready state on failure`() {
         val session = session()
         val successful = FactoryRunBattleService(

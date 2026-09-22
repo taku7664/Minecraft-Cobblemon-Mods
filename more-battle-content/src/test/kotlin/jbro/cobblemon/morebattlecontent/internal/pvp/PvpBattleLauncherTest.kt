@@ -54,6 +54,17 @@ class PvpBattleLauncherTest {
     }
 
     @Test
+    fun `diagnostics failure cannot replace an unavailable player team`() {
+        val launcher = PvpBattleLauncher<String>(
+            materialize = { _, _ -> PvpRegisteredBattleTeamResult.NoSnapshot },
+            runtime = PvpBattleRuntime { PvpBattleLaunchResult.Unavailable },
+            diagnostics = { throw NoSuchMethodError("diagnostics API drift") },
+        )
+
+        assertEquals(PvpBattleLaunchResult.Unavailable, launcher.launch(request()))
+    }
+
+    @Test
     fun `prepared teams detach mutable materializer collections`() {
         val request = request()
         val firstCopies = mutableListOf("first")

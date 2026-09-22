@@ -9,7 +9,7 @@ import jbro.cobblemon.morebattlecontent.internal.team.TeamSnapshotMaterializatio
 internal sealed interface TowerRegisteredTeamSnapshotResult {
     data object Stored : TowerRegisteredTeamSnapshotResult
     data object SourceUnavailable : TowerRegisteredTeamSnapshotResult
-    data class Rejected(val reason: String) : TowerRegisteredTeamSnapshotResult {
+    data class Rejected(val reason: String, val cause: Throwable? = null) : TowerRegisteredTeamSnapshotResult {
         init {
             require(reason.isNotBlank()) { "Snapshot rejection reason cannot be blank" }
         }
@@ -22,8 +22,9 @@ internal sealed interface TowerRegisteredBattleTeamResult<out T> {
     }
 
     data object NoSnapshot : TowerRegisteredBattleTeamResult<Nothing>
+    data class MaterializationFailed(val cause: Throwable) : TowerRegisteredBattleTeamResult<Nothing>
     data class SnapshotMismatch(val pokemonId: UUID) : TowerRegisteredBattleTeamResult<Nothing>
-    data class CopyFailed(val pokemonId: UUID, val cause: RuntimeException) : TowerRegisteredBattleTeamResult<Nothing>
+    data class CopyFailed(val pokemonId: UUID, val cause: Throwable) : TowerRegisteredBattleTeamResult<Nothing>
 }
 
 internal interface TowerRegisteredTeamSnapshots {
@@ -58,10 +59,12 @@ internal class TowerRegisteredTeamSnapshotStore<S, T, B>(
         return when (val result = delegate.snapshot(playerId, team.members)) {
             TeamSnapshotCaptureResult.Stored -> TowerRegisteredTeamSnapshotResult.Stored
             TeamSnapshotCaptureResult.SourceUnavailable -> TowerRegisteredTeamSnapshotResult.SourceUnavailable
+            is TeamSnapshotCaptureResult.CaptureFailed ->
+                TowerRegisteredTeamSnapshotResult.Rejected("CaptureFailed", result.cause)
             is TeamSnapshotCaptureResult.RegistrationMismatch ->
                 TowerRegisteredTeamSnapshotResult.Rejected("SnapshotMismatch:${result.memberId}")
             is TeamSnapshotCaptureResult.SnapshotFailed ->
-                TowerRegisteredTeamSnapshotResult.Rejected("SnapshotFailed:${result.memberId}")
+                TowerRegisteredTeamSnapshotResult.Rejected("SnapshotFailed:${result.memberId}", result.cause)
         }
     }
 
@@ -72,6 +75,8 @@ internal class TowerRegisteredTeamSnapshotStore<S, T, B>(
     ): TowerRegisteredBattleTeamResult<B> {
         return when (val result = delegate.materialize(playerId, selection.members)) {
             TeamSnapshotMaterializationResult.NoSnapshot -> TowerRegisteredBattleTeamResult.NoSnapshot
+            is TeamSnapshotMaterializationResult.MaterializationFailed ->
+                TowerRegisteredBattleTeamResult.MaterializationFailed(result.cause)
             is TeamSnapshotMaterializationResult.SnapshotMismatch ->
                 TowerRegisteredBattleTeamResult.SnapshotMismatch(result.memberId)
             is TeamSnapshotMaterializationResult.CopyFailed ->

@@ -9,7 +9,7 @@ internal sealed interface TowerOpponentBattleTeamMaterialization<out T> {
 
     data class CreationFailed(
         val setId: String,
-        val cause: RuntimeException,
+        val cause: Throwable,
     ) : TowerOpponentBattleTeamMaterialization<Nothing>
 }
 
@@ -22,6 +22,8 @@ internal class TowerOpponentBattleTeamMaterializer<T>(
             val member = try {
                 createMember(set)
             } catch (cause: RuntimeException) {
+                return TowerOpponentBattleTeamMaterialization.CreationFailed(set.setId, cause)
+            } catch (cause: LinkageError) {
                 return TowerOpponentBattleTeamMaterialization.CreationFailed(set.setId, cause)
             }
             members.add(member)

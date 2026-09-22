@@ -44,6 +44,17 @@ class TowerRegisteredTeamSnapshotStoreTest {
     }
 
     @Test
+    fun `source lookup linkage failure preserves its cause`() {
+        val failure = NoSuchMethodError("party storage API drift")
+        val store = store { throw failure }
+
+        val result = store.snapshot(playerId, acceptedTeam(registrations())) as
+            TowerRegisteredTeamSnapshotResult.Rejected
+
+        assertEquals(failure, result.cause)
+    }
+
+    @Test
     fun `discard removes the in-memory snapshot`() {
         val registered = acceptedTeam(registrations())
         val selected = acceptedSelection(registered, TowerBattleFormat.SINGLE, listOf(1, 2, 3))
@@ -53,6 +64,50 @@ class TowerRegisteredTeamSnapshotStoreTest {
         store.discard(playerId)
 
         assertEquals(TowerRegisteredBattleTeamResult.NoSnapshot, store.materialize(playerId, selected))
+    }
+
+    @Test
+    fun `snapshot linkage failure is rejected without replacing the previous snapshot`() {
+        val registered = acceptedTeam(registrations())
+        val selected = acceptedSelection(registered, TowerBattleFormat.SINGLE, listOf(1, 2, 3))
+        var failSnapshot = false
+        val store = TowerRegisteredTeamSnapshotStore(
+            sourcesFor = { registrations().map(::Source) },
+            registrationOf = Source::registration,
+            snapshotOf = { source, battleLevel ->
+                if (failSnapshot) throw NoSuchMethodError("snapshot API drift")
+                Snapshot(source.registration.pokemonId, source.registration.speciesId, battleLevel)
+            },
+            battleCopyOf = { snapshot -> BattleCopy(snapshot.pokemonId, snapshot.speciesId, snapshot.level) },
+        )
+        assertEquals(TowerRegisteredTeamSnapshotResult.Stored, store.snapshot(playerId, registered))
+
+        failSnapshot = true
+
+        val rejected = store.snapshot(playerId, registered) as TowerRegisteredTeamSnapshotResult.Rejected
+        assertEquals("snapshot API drift", rejected.cause?.message)
+        assertTrue(store.materialize(playerId, selected) is TowerRegisteredBattleTeamResult.Created)
+    }
+
+    @Test
+    fun `battle copy linkage failure is returned with its member identity`() {
+        val registered = acceptedTeam(registrations())
+        val selected = acceptedSelection(registered, TowerBattleFormat.SINGLE, listOf(1, 2, 3))
+        val failure = NoSuchMethodError("battle copy API drift")
+        val store = TowerRegisteredTeamSnapshotStore(
+            sourcesFor = { registrations().map(::Source) },
+            registrationOf = Source::registration,
+            snapshotOf = { source, battleLevel ->
+                Snapshot(source.registration.pokemonId, source.registration.speciesId, battleLevel)
+            },
+            battleCopyOf = { throw failure },
+        )
+        assertEquals(TowerRegisteredTeamSnapshotResult.Stored, store.snapshot(playerId, registered))
+
+        val result = store.materialize(playerId, selected) as TowerRegisteredBattleTeamResult.CopyFailed
+
+        assertEquals(selected.members.first().pokemonId, result.pokemonId)
+        assertEquals(failure, result.cause)
     }
 
     private fun store(sources: (UUID) -> Collection<Source>?) = TowerRegisteredTeamSnapshotStore(

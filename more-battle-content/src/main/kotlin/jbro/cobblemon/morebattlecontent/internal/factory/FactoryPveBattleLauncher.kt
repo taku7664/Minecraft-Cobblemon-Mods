@@ -78,7 +78,7 @@ internal class FactoryPveBattleLauncher<M>(
     override fun launch(request: FactoryBattleLaunchRequest): FactoryBattleLaunchResult {
         val playerMembers = materialize(request.playerTeam.sets, request.levelMode, playerMemberFactory)
             ?: run {
-                diagnostics("the rental team of ${request.playerId} could not be materialized")
+                reportSafely("the rental team of ${request.playerId} could not be materialized")
                 return FactoryBattleLaunchResult.Unavailable
             }
         val opponentMembers = LinkedHashMap<UUID, M>()
@@ -86,9 +86,15 @@ internal class FactoryPveBattleLauncher<M>(
             val member = try {
                 opponentMemberFactory(set, request.levelMode)
             } catch (exception: RuntimeException) {
-                diagnostics(
+                reportSafely(
                     "opponent rental ${set.setId} could not be materialized for ${request.playerId}: " +
                         "${exception.message}",
+                )
+                return FactoryBattleLaunchResult.Unavailable
+            } catch (error: LinkageError) {
+                reportSafely(
+                    "opponent rental ${set.setId} could not be materialized for ${request.playerId}: " +
+                        "${error.message}",
                 )
                 return FactoryBattleLaunchResult.Unavailable
             }
@@ -119,10 +125,22 @@ internal class FactoryPveBattleLauncher<M>(
                 factory(set, levelMode)
             } catch (_: RuntimeException) {
                 return null
+            } catch (_: LinkageError) {
+                return null
             }
             members += member
         }
         return members
+    }
+
+    private fun reportSafely(message: String) {
+        try {
+            diagnostics(message)
+        } catch (_: RuntimeException) {
+            // Diagnostics cannot turn a contained materialization failure into a launch failure.
+        } catch (_: LinkageError) {
+            // Compatibility diagnostics are best-effort at this boundary.
+        }
     }
 }
 

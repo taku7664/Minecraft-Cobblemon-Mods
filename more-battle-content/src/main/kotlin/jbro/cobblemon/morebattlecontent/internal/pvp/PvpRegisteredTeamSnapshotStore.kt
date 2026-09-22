@@ -9,7 +9,8 @@ import jbro.cobblemon.morebattlecontent.internal.team.TeamSnapshotMaterializatio
 internal sealed interface PvpRegisteredTeamSnapshotResult {
     data object Stored : PvpRegisteredTeamSnapshotResult
     data object SourceUnavailable : PvpRegisteredTeamSnapshotResult
-    data class Rejected(val pokemonId: UUID, val cause: RuntimeException? = null) : PvpRegisteredTeamSnapshotResult
+    data class Failed(val cause: Throwable) : PvpRegisteredTeamSnapshotResult
+    data class Rejected(val pokemonId: UUID, val cause: Throwable? = null) : PvpRegisteredTeamSnapshotResult
 }
 
 internal sealed interface PvpRegisteredBattleTeamResult<out B> {
@@ -18,8 +19,9 @@ internal sealed interface PvpRegisteredBattleTeamResult<out B> {
     }
 
     data object NoSnapshot : PvpRegisteredBattleTeamResult<Nothing>
+    data class MaterializationFailed(val cause: Throwable) : PvpRegisteredBattleTeamResult<Nothing>
     data class SnapshotMismatch(val pokemonId: UUID) : PvpRegisteredBattleTeamResult<Nothing>
-    data class CopyFailed(val pokemonId: UUID, val cause: RuntimeException) : PvpRegisteredBattleTeamResult<Nothing>
+    data class CopyFailed(val pokemonId: UUID, val cause: Throwable) : PvpRegisteredBattleTeamResult<Nothing>
 }
 
 internal class PvpRegisteredTeamSnapshotStore<S, T, B>(
@@ -41,6 +43,7 @@ internal class PvpRegisteredTeamSnapshotStore<S, T, B>(
         when (val result = delegate.snapshot(playerId, team.members)) {
             TeamSnapshotCaptureResult.Stored -> PvpRegisteredTeamSnapshotResult.Stored
             TeamSnapshotCaptureResult.SourceUnavailable -> PvpRegisteredTeamSnapshotResult.SourceUnavailable
+            is TeamSnapshotCaptureResult.CaptureFailed -> PvpRegisteredTeamSnapshotResult.Failed(result.cause)
             is TeamSnapshotCaptureResult.RegistrationMismatch ->
                 PvpRegisteredTeamSnapshotResult.Rejected(result.memberId)
             is TeamSnapshotCaptureResult.SnapshotFailed ->
@@ -50,6 +53,8 @@ internal class PvpRegisteredTeamSnapshotStore<S, T, B>(
     fun materialize(playerId: UUID, team: PvpSelectedTeam): PvpRegisteredBattleTeamResult<B> =
         when (val result = delegate.materialize(playerId, team.members)) {
             TeamSnapshotMaterializationResult.NoSnapshot -> PvpRegisteredBattleTeamResult.NoSnapshot
+            is TeamSnapshotMaterializationResult.MaterializationFailed ->
+                PvpRegisteredBattleTeamResult.MaterializationFailed(result.cause)
             is TeamSnapshotMaterializationResult.SnapshotMismatch ->
                 PvpRegisteredBattleTeamResult.SnapshotMismatch(result.memberId)
             is TeamSnapshotMaterializationResult.CopyFailed ->

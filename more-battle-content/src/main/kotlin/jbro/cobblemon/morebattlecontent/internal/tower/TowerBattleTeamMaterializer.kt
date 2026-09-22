@@ -10,8 +10,9 @@ internal sealed interface TowerBattleTeamMaterialization<out T> {
 
     data class MissingSource(val pokemonId: UUID) : TowerBattleTeamMaterialization<Nothing>
     data class DuplicateSource(val pokemonId: UUID) : TowerBattleTeamMaterialization<Nothing>
+    data class SourceFailed(val cause: Throwable) : TowerBattleTeamMaterialization<Nothing>
     data class SourceChanged(val pokemonId: UUID) : TowerBattleTeamMaterialization<Nothing>
-    data class CloneFailed(val pokemonId: UUID, val cause: RuntimeException) : TowerBattleTeamMaterialization<Nothing>
+    data class CloneFailed(val pokemonId: UUID, val cause: Throwable) : TowerBattleTeamMaterialization<Nothing>
 }
 
 internal class TowerBattleTeamMaterializer<S, T>(
@@ -29,7 +30,13 @@ internal class TowerBattleTeamMaterializer<S, T>(
     ): TowerBattleTeamMaterialization<T> {
         val sourcesById = LinkedHashMap<UUID, S>()
         currentSources.forEach { source ->
-            val id = registrationOf(source).pokemonId
+            val id = try {
+                registrationOf(source).pokemonId
+            } catch (failure: RuntimeException) {
+                return TowerBattleTeamMaterialization.SourceFailed(failure)
+            } catch (failure: LinkageError) {
+                return TowerBattleTeamMaterialization.SourceFailed(failure)
+            }
             if (sourcesById.putIfAbsent(id, source) != null) {
                 return TowerBattleTeamMaterialization.DuplicateSource(id)
             }
@@ -39,7 +46,14 @@ internal class TowerBattleTeamMaterializer<S, T>(
         registrations.forEach { selected ->
             val source = sourcesById[selected.pokemonId]
                 ?: return TowerBattleTeamMaterialization.MissingSource(selected.pokemonId)
-            if (registrationOf(source) != selected) {
+            val currentRegistration = try {
+                registrationOf(source)
+            } catch (failure: RuntimeException) {
+                return TowerBattleTeamMaterialization.SourceFailed(failure)
+            } catch (failure: LinkageError) {
+                return TowerBattleTeamMaterialization.SourceFailed(failure)
+            }
+            if (currentRegistration != selected) {
                 return TowerBattleTeamMaterialization.SourceChanged(selected.pokemonId)
             }
             orderedSources += source
@@ -52,6 +66,8 @@ internal class TowerBattleTeamMaterializer<S, T>(
                 clones += cloneForBattle(source, selected.battleLevel)
             } catch (exception: RuntimeException) {
                 return TowerBattleTeamMaterialization.CloneFailed(selected.pokemonId, exception)
+            } catch (error: LinkageError) {
+                return TowerBattleTeamMaterialization.CloneFailed(selected.pokemonId, error)
             }
         }
         return TowerBattleTeamMaterialization.Created(clones)
