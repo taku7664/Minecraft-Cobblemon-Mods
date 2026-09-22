@@ -181,6 +181,21 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void receiverMessageDoesNotAssignTheCopiedAbilityToTheFaintedDonor() {
+        UUID donor = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(donor, "Tropius", false);
+        AbilityItemTracker.INSTANCE.setRevealedAbility(donor, "chlorophyll");
+
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(Text.translatable(
+            TranslationKeys.ABILITY_RECEIVER_KEY,
+            "Tropius",
+            Text.translatable("cobblemon.ability.swiftswim")
+        )));
+
+        assertEquals("chlorophyll", AbilityItemTracker.INSTANCE.getRevealedAbility(donor));
+    }
+
+    @Test
     void revealedMoveUsesItsStableIdWithoutTrackingOpponentPp() {
         UUID attacker = UUID.randomUUID();
         UUID target = UUID.randomUUID();

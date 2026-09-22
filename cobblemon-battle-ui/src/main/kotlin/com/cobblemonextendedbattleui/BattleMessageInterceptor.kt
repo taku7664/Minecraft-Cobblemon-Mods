@@ -106,10 +106,13 @@ object BattleMessageInterceptor {
                 BattleStateTracker.setRevealedAbility(targetName, copiedAbilityId)
             }
 
-            if (key == TranslationKeys.ABILITY_RECEIVER_KEY && args.size >= 2) {
-                val pokemonName = MessageParser.extractPokemonName(args[0])
-                val abilityId = MessageParser.extractAbilityId(args[1])
-                BattleStateTracker.setRevealedAbility(pokemonName, abilityId)
+            if (key == TranslationKeys.ABILITY_RECEIVER_KEY) {
+                // Cobblemon renders the [of] Pokemon (the fainted ability donor) as arg 0.
+                // The actual Receiver/Power of Alchemy holder is not retained in this Text,
+                // so assigning the copied ability here would corrupt the donor's state.
+                CobblemonExtendedBattleUI.LOGGER.debug(
+                    "BattleMessageInterceptor: Receiver event omitted the receiving Pokemon; leaving ability ownership unchanged"
+                )
             }
 
             if (key == TranslationKeys.ABILITY_REPLACE_KEY && args.size >= 2) {
