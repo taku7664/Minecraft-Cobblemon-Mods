@@ -190,9 +190,9 @@ object PanelConfig {
                 // Battle log widget settings
                 logX = data.logX
                 logY = data.logY
-                logWidth = data.logWidth
-                logHeight = data.logHeight
-                logFontScale = data.logFontScale.coerceIn(MIN_FONT_SCALE, MAX_FONT_SCALE)
+                logWidth = UiConfigSanitizer.optionalDimension(data.logWidth, MIN_LOG_WIDTH, MAX_LOG_WIDTH)
+                logHeight = UiConfigSanitizer.optionalDimension(data.logHeight, MIN_LOG_HEIGHT, MAX_LOG_HEIGHT)
+                logFontScale = sanitizeScale(data.logFontScale)
                 logExpanded = data.logExpanded
                 // Team indicator settings
                 teamIndicatorOrientation = try {
@@ -200,15 +200,15 @@ object PanelConfig {
                 } catch (e: IllegalArgumentException) {
                     TeamIndicatorOrientation.HORIZONTAL
                 }
-                teamIndicatorScale = data.teamIndicatorScale.coerceIn(MIN_FONT_SCALE, MAX_FONT_SCALE)
+                teamIndicatorScale = sanitizeScale(data.teamIndicatorScale)
                 teamIndicatorLeftX = data.teamIndicatorLeftX
                 teamIndicatorLeftY = data.teamIndicatorLeftY
                 teamIndicatorRightX = data.teamIndicatorRightX
                 teamIndicatorRightY = data.teamIndicatorRightY
                 teamIndicatorRepositioningEnabled = data.teamIndicatorRepositioningEnabled
                 // Tooltip settings
-                tooltipFontScale = data.tooltipFontScale.coerceIn(MIN_FONT_SCALE, MAX_FONT_SCALE)
-                moveTooltipFontScale = data.moveTooltipFontScale.coerceIn(MIN_FONT_SCALE, MAX_FONT_SCALE)
+                tooltipFontScale = sanitizeScale(data.tooltipFontScale)
+                moveTooltipFontScale = sanitizeScale(data.moveTooltipFontScale)
                 // Tooltip display options
                 showTeraType = data.showTeraType
                 showStatRanges = data.showStatRanges
@@ -267,32 +267,32 @@ object PanelConfig {
     }
 
     fun setLogDimensions(width: Int?, height: Int?) {
-        logWidth = width?.coerceIn(MIN_LOG_WIDTH, MAX_LOG_WIDTH)
-        logHeight = height?.coerceIn(MIN_LOG_HEIGHT, MAX_LOG_HEIGHT)
+        logWidth = UiConfigSanitizer.optionalDimension(width, MIN_LOG_WIDTH, MAX_LOG_WIDTH)
+        logHeight = UiConfigSanitizer.optionalDimension(height, MIN_LOG_HEIGHT, MAX_LOG_HEIGHT)
     }
 
     fun adjustLogFontScale(delta: Float) {
-        logFontScale = (logFontScale + delta).coerceIn(MIN_FONT_SCALE, MAX_FONT_SCALE)
+        logFontScale = sanitizeScale(logFontScale + delta)
     }
 
     fun setLogFontScale(value: Float) {
-        logFontScale = value.coerceIn(MIN_FONT_SCALE, MAX_FONT_SCALE)
+        logFontScale = sanitizeScale(value)
     }
 
     fun adjustTooltipFontScale(delta: Float) {
-        tooltipFontScale = (tooltipFontScale + delta).coerceIn(MIN_FONT_SCALE, MAX_FONT_SCALE)
+        tooltipFontScale = sanitizeScale(tooltipFontScale + delta)
     }
 
     fun setTooltipFontScale(value: Float) {
-        tooltipFontScale = value.coerceIn(MIN_FONT_SCALE, MAX_FONT_SCALE)
+        tooltipFontScale = sanitizeScale(value)
     }
 
     fun adjustMoveTooltipFontScale(delta: Float) {
-        moveTooltipFontScale = (moveTooltipFontScale + delta).coerceIn(MIN_FONT_SCALE, MAX_FONT_SCALE)
+        moveTooltipFontScale = sanitizeScale(moveTooltipFontScale + delta)
     }
 
     fun setMoveTooltipFontScale(value: Float) {
-        moveTooltipFontScale = value.coerceIn(MIN_FONT_SCALE, MAX_FONT_SCALE)
+        moveTooltipFontScale = sanitizeScale(value)
     }
 
     fun setLogExpanded(expanded: Boolean) {
@@ -315,12 +315,15 @@ object PanelConfig {
     }
 
     fun adjustTeamIndicatorScale(delta: Float) {
-        teamIndicatorScale = (teamIndicatorScale + delta).coerceIn(MIN_FONT_SCALE, MAX_FONT_SCALE)
+        teamIndicatorScale = sanitizeScale(teamIndicatorScale + delta)
     }
 
     fun setTeamIndicatorScale(value: Float) {
-        teamIndicatorScale = value.coerceIn(MIN_FONT_SCALE, MAX_FONT_SCALE)
+        teamIndicatorScale = sanitizeScale(value)
     }
+
+    private fun sanitizeScale(value: Float): Float =
+        UiConfigSanitizer.scale(value, MIN_FONT_SCALE, MAX_FONT_SCALE, 1.0f)
 
     fun setTeamIndicatorLeftPosition(x: Int?, y: Int?) {
         teamIndicatorLeftX = x
