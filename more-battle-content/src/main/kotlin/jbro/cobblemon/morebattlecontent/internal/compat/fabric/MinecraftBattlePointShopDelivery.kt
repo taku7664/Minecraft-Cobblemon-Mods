@@ -4,6 +4,7 @@ import java.util.UUID
 import jbro.cobblemon.morebattlecontent.internal.bp.shop.BattlePointShopDelivery
 import jbro.cobblemon.morebattlecontent.internal.bp.shop.BattlePointShopDeliveryPlan
 import jbro.cobblemon.morebattlecontent.internal.bp.shop.BattlePointShopGrant
+import jbro.cobblemon.morebattlecontent.internal.bp.shop.RestorableBattlePointShopDeliveryPlan
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
@@ -22,35 +23,23 @@ internal class MinecraftBattlePointShopDelivery(
         }
         if (!canFit(inventory.items.map(ItemStack::copy), resolved)) return null
         val snapshot = inventory.items.map(ItemStack::copy)
-        return object : BattlePointShopDeliveryPlan {
-            private var committed = false
-
-            override fun commit(): Boolean {
-                if (committed) return true
+        val restore = {
+            snapshot.forEachIndexed { index, stack -> inventory.items[index] = stack.copy() }
+            inventory.setChanged()
+            player.containerMenu.broadcastChanges()
+        }
+        return RestorableBattlePointShopDeliveryPlan(
+            commitAction = commit@{
                 for (grant in resolved) {
                     val remaining = grant.copy()
-                    if (!inventory.add(remaining) || !remaining.isEmpty) {
-                        restore()
-                        return false
-                    }
+                    if (!inventory.add(remaining) || !remaining.isEmpty) return@commit false
                 }
                 inventory.setChanged()
                 player.containerMenu.broadcastChanges()
-                committed = true
-                return true
-            }
-
-            override fun rollback() {
-                if (committed) restore()
-                committed = false
-            }
-
-            private fun restore() {
-                snapshot.forEachIndexed { index, stack -> inventory.items[index] = stack.copy() }
-                inventory.setChanged()
-                player.containerMenu.broadcastChanges()
-            }
-        }
+                true
+            },
+            rollbackAction = restore,
+        )
     }
 
     private fun canFit(initialSlots: List<ItemStack>, grants: List<ItemStack>): Boolean {

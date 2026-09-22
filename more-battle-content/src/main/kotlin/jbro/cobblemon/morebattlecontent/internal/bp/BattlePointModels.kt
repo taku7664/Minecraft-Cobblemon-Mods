@@ -144,6 +144,7 @@ internal enum class BattlePointApplyStatus {
     TRANSACTION_CONFLICT,
     INSUFFICIENT_FUNDS,
     BALANCE_OVERFLOW,
+    IN_PROGRESS,
     COMMIT_REJECTED,
     UNAVAILABLE,
 }

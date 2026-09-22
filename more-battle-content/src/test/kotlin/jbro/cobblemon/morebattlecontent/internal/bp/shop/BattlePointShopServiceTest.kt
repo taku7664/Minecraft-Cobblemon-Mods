@@ -8,6 +8,7 @@ import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointStore
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class BattlePointShopServiceTest {
     private val playerId = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
@@ -92,6 +93,53 @@ class BattlePointShopServiceTest {
     }
 
     @Test
+    fun `linkage failure during delivery rolls back and leaves purchase retryable`() {
+        val store = fundedStore(100)
+        val delivery = RecordingDelivery(commitFailure = LinkageError("inventory API drift"))
+        val service = service(store, delivery)
+
+        val failed = service.purchase(request())
+        delivery.commitFailure = null
+        val retry = service.purchase(request())
+
+        assertEquals(BattlePointShopPurchaseStatus.DELIVERY_FAILED, failed.status)
+        assertEquals(BattlePointShopPurchaseStatus.APPLIED, retry.status)
+        assertEquals(1, delivery.rollbackCalls)
+        assertEquals(75, store.balance(playerId))
+        assertEquals(2, store.history(playerId, 10).size)
+    }
+
+    @Test
+    fun `linkage failure while preparing delivery is contained without touching BP`() {
+        val store = fundedStore(100)
+        val delivery = RecordingDelivery(prepareFailure = LinkageError("inventory API drift"))
+
+        val result = service(store, delivery).purchase(request())
+
+        assertEquals(BattlePointShopPurchaseStatus.DELIVERY_FAILED, result.status)
+        assertEquals(0, delivery.rollbackCalls)
+        assertEquals(100, store.balance(playerId))
+        assertEquals(1, store.history(playerId, 10).size)
+    }
+
+    @Test
+    fun `restorable delivery plan rolls back mutation when commit throws before completion`() {
+        var deliveredItems = 0
+        val plan = RestorableBattlePointShopDeliveryPlan(
+            commitAction = {
+                deliveredItems = 1
+                throw LinkageError("inventory notification API drift")
+            },
+            rollbackAction = { deliveredItems = 0 },
+        )
+
+        assertThrows<LinkageError> { plan.commit() }
+        plan.rollback()
+
+        assertEquals(0, deliveredItems)
+    }
+
+    @Test
     fun `cost and item-count overflow are rejected`() {
         val hugeCatalog = catalog(
             limits = BattlePointShopLimits(2, Int.MAX_VALUE, Int.MAX_VALUE),
@@ -142,6 +190,8 @@ class BattlePointShopServiceTest {
 
     private class RecordingDelivery(
         private val commitResult: Boolean = true,
+        private val prepareFailure: Throwable? = null,
+        var commitFailure: Throwable? = null,
     ) : BattlePointShopDelivery {
         var prepareCalls = 0
         var rollbackCalls = 0
@@ -149,9 +199,13 @@ class BattlePointShopServiceTest {
 
         override fun prepare(playerId: UUID, grants: List<BattlePointShopGrant>): BattlePointShopDeliveryPlan? {
             prepareCalls++
+            prepareFailure?.let { throw it }
             lastGrants = grants
             return object : BattlePointShopDeliveryPlan {
-                override fun commit(): Boolean = commitResult
+                override fun commit(): Boolean {
+                    commitFailure?.let { throw it }
+                    return commitResult
+                }
                 override fun rollback() {
                     rollbackCalls++
                 }

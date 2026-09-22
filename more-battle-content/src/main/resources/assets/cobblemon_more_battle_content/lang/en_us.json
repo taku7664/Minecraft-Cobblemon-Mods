@@ -157,6 +157,7 @@
   "screen.cobblemon_more_battle_content.shop.result.cart_overflow": "The quantity or price exceeds the shop limit.",
   "screen.cobblemon_more_battle_content.shop.result.insufficient_funds": "You do not have enough BP.",
   "screen.cobblemon_more_battle_content.shop.result.transaction_conflict": "A conflicting purchase used the same transaction ID.",
+  "screen.cobblemon_more_battle_content.shop.result.purchase_in_progress": "Another BP operation is in progress. Try again shortly.",
   "screen.cobblemon_more_battle_content.shop.result.inventory_rejected": "There is not enough inventory space.",
   "screen.cobblemon_more_battle_content.shop.result.delivery_failed": "The items could not be delivered.",
   "screen.cobblemon_more_battle_content.shop.result.bp_unavailable": "BP data is unavailable.",

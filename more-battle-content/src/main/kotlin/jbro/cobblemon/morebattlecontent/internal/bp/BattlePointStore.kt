@@ -7,6 +7,7 @@ internal class BattlePointStore(
     private val currentTimeMillis: () -> Long = System::currentTimeMillis,
 ) : BattlePointAtomicApplier {
     private val accounts = LinkedHashMap<UUID, MutableAccount>()
+    private val pendingTransactionsByPlayer = HashMap<UUID, PendingTransaction>()
 
     init {
         initialAccounts.forEach { account ->
@@ -30,30 +31,79 @@ internal class BattlePointStore(
     @Synchronized
     fun apply(request: BattlePointRequest): BattlePointApplyResult = applyAtomically(request) { true }
 
-    @Synchronized
     override fun applyAtomically(
         request: BattlePointRequest,
         commit: () -> Boolean,
     ): BattlePointApplyResult {
+        val preparation = synchronized(this) { prepareTransaction(request) }
+        if (preparation is TransactionPreparation.Rejected) return preparation.result
+        val pending = (preparation as TransactionPreparation.Prepared).pending
+
+        var finalized = false
+        try {
+            val committed = commit()
+            return synchronized(this) {
+                check(pendingTransactionsByPlayer[request.playerId] === pending) {
+                    "Battle Point transaction reservation was lost for ${request.playerId}"
+                }
+                pendingTransactionsByPlayer.remove(request.playerId)
+                finalized = true
+                if (!committed) {
+                    BattlePointApplyResult(BattlePointApplyStatus.COMMIT_REJECTED, pending.transaction.balanceBefore)
+                } else {
+                    record(pending.transaction)
+                    BattlePointApplyResult(
+                        BattlePointApplyStatus.APPLIED,
+                        pending.transaction.balanceAfter,
+                        pending.transaction,
+                    )
+                }
+            }
+        } finally {
+            if (!finalized) {
+                synchronized(this) {
+                    pendingTransactionsByPlayer.remove(request.playerId, pending)
+                }
+            }
+        }
+    }
+
+    private fun prepareTransaction(request: BattlePointRequest): TransactionPreparation {
         val account = accounts[request.playerId]
         val existing = account?.transactionsById?.get(request.transactionId)
         if (existing != null) {
-            return if (existing.matches(request)) {
+            val result = if (existing.matches(request)) {
                 BattlePointApplyResult(BattlePointApplyStatus.ALREADY_APPLIED, existing.balanceAfter, existing)
             } else {
                 BattlePointApplyResult(BattlePointApplyStatus.TRANSACTION_CONFLICT, account.balance)
             }
+            return TransactionPreparation.Rejected(result)
+        }
+
+        pendingTransactionsByPlayer[request.playerId]?.let { pending ->
+            val status = if (pending.transaction.transactionId == request.transactionId &&
+                !pending.transaction.matches(request)
+            ) {
+                BattlePointApplyStatus.TRANSACTION_CONFLICT
+            } else {
+                BattlePointApplyStatus.IN_PROGRESS
+            }
+            return TransactionPreparation.Rejected(
+                BattlePointApplyResult(status, account?.balance ?: 0L),
+            )
         }
 
         val balanceBefore = account?.balance ?: 0L
         val balanceAfter = calculateBalance(balanceBefore, request.operation)
-            ?: return BattlePointApplyResult(
-                if (request.operation is BattlePointOperation.ContentReward || request.operation is BattlePointOperation.AdminAdd) {
-                    BattlePointApplyStatus.BALANCE_OVERFLOW
-                } else {
-                    BattlePointApplyStatus.INSUFFICIENT_FUNDS
-                },
-                balanceBefore,
+            ?: return TransactionPreparation.Rejected(
+                BattlePointApplyResult(
+                    if (request.operation is BattlePointOperation.ContentReward || request.operation is BattlePointOperation.AdminAdd) {
+                        BattlePointApplyStatus.BALANCE_OVERFLOW
+                    } else {
+                        BattlePointApplyStatus.INSUFFICIENT_FUNDS
+                    },
+                    balanceBefore,
+                ),
             )
         val recordedAt = currentTimeMillis()
         require(recordedAt >= 0) { "Battle Point transaction time must be non-negative" }
@@ -68,14 +118,19 @@ internal class BattlePointStore(
             reason = request.reason,
             recordedAtEpochMillis = recordedAt,
         )
-        if (!commit()) {
-            return BattlePointApplyResult(BattlePointApplyStatus.COMMIT_REJECTED, balanceBefore)
+        val pending = PendingTransaction(transaction)
+        pendingTransactionsByPlayer[request.playerId] = pending
+        return TransactionPreparation.Prepared(pending)
+    }
+
+    private fun record(transaction: BattlePointTransaction) {
+        val target = accounts[transaction.playerId] ?: MutableAccount().also { accounts[transaction.playerId] = it }
+        check(target.balance == transaction.balanceBefore) {
+            "Battle Point balance changed while transaction was reserved for ${transaction.playerId}"
         }
-        val target = account ?: MutableAccount().also { accounts[request.playerId] = it }
-        target.balance = balanceAfter
+        target.balance = transaction.balanceAfter
         target.transactions += transaction
         target.transactionsById[transaction.transactionId] = transaction
-        return BattlePointApplyResult(BattlePointApplyStatus.APPLIED, balanceAfter, transaction)
     }
 
     @Synchronized
@@ -121,4 +176,11 @@ internal class BattlePointStore(
         val transactions: MutableList<BattlePointTransaction> = mutableListOf(),
         val transactionsById: MutableMap<UUID, BattlePointTransaction> = LinkedHashMap(),
     )
+
+    private class PendingTransaction(val transaction: BattlePointTransaction)
+
+    private sealed interface TransactionPreparation {
+        data class Prepared(val pending: PendingTransaction) : TransactionPreparation
+        data class Rejected(val result: BattlePointApplyResult) : TransactionPreparation
+    }
 }

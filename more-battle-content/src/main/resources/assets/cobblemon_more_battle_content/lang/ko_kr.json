@@ -157,6 +157,7 @@
   "screen.cobblemon_more_battle_content.shop.result.cart_overflow": "구매 수량 또는 금액이 한도를 넘었습니다.",
   "screen.cobblemon_more_battle_content.shop.result.insufficient_funds": "BP가 부족합니다.",
   "screen.cobblemon_more_battle_content.shop.result.transaction_conflict": "같은 구매 번호의 내용이 달라 처리하지 못했습니다.",
+  "screen.cobblemon_more_battle_content.shop.result.purchase_in_progress": "다른 BP 처리가 진행 중입니다. 잠시 후 다시 시도해 주세요.",
   "screen.cobblemon_more_battle_content.shop.result.inventory_rejected": "인벤토리 공간이 부족합니다.",
   "screen.cobblemon_more_battle_content.shop.result.delivery_failed": "아이템 지급에 실패했습니다.",
   "screen.cobblemon_more_battle_content.shop.result.bp_unavailable": "BP 데이터를 사용할 수 없습니다.",

@@ -1,6 +1,9 @@
 package jbro.cobblemon.morebattlecontent.internal.bp
 
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -83,6 +86,88 @@ class BattlePointStoreTest {
         assertEquals(30, rejected.balance)
         assertEquals(30, store.balance(playerId))
         assertEquals(1, store.history(playerId, 10).size)
+    }
+
+    @Test
+    fun `atomic commit callback does not block another player account`() {
+        val store = BattlePointStore { 1_000L }
+        store.apply(request("11111111-1111-1111-1111-111111111111", BattlePointOperation.ContentReward(30)))
+        val purchase = request("22222222-2222-2222-2222-222222222222", BattlePointOperation.ShopPurchase(12))
+        val commitEntered = CountDownLatch(1)
+        val releaseCommit = CountDownLatch(1)
+        val executor = Executors.newFixedThreadPool(2)
+
+        try {
+            val purchaseResult = executor.submit<BattlePointApplyResult> {
+                store.applyAtomically(purchase) {
+                    commitEntered.countDown()
+                    releaseCommit.await(5, TimeUnit.SECONDS)
+                }
+            }
+            assertTrue(commitEntered.await(1, TimeUnit.SECONDS))
+
+            val unrelatedResult = executor.submit<BattlePointApplyResult> {
+                store.apply(
+                    BattlePointRequest(
+                        UUID.fromString("33333333-3333-3333-3333-333333333333"),
+                        otherPlayerId,
+                        BattlePointOperation.ContentReward(5),
+                        source,
+                        "other_player_reward",
+                    ),
+                )
+            }
+            assertEquals(BattlePointApplyStatus.APPLIED, unrelatedResult.get(1, TimeUnit.SECONDS).status)
+            assertEquals(5, store.balance(otherPlayerId))
+
+            releaseCommit.countDown()
+            assertEquals(BattlePointApplyStatus.APPLIED, purchaseResult.get(1, TimeUnit.SECONDS).status)
+        } finally {
+            releaseCommit.countDown()
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `same account reentry is rejected until the reserved transaction finishes`() {
+        val store = BattlePointStore { 1_000L }
+        store.apply(request("11111111-1111-1111-1111-111111111111", BattlePointOperation.ContentReward(30)))
+        val firstPurchase = request("22222222-2222-2222-2222-222222222222", BattlePointOperation.ShopPurchase(12))
+        val nextPurchase = request("33333333-3333-3333-3333-333333333333", BattlePointOperation.ShopPurchase(1))
+        var nestedCommitCalls = 0
+
+        val first = store.applyAtomically(firstPurchase) {
+            val nested = store.applyAtomically(nextPurchase) {
+                nestedCommitCalls++
+                true
+            }
+            assertEquals(BattlePointApplyStatus.IN_PROGRESS, nested.status)
+            true
+        }
+        val retry = store.applyAtomically(nextPurchase) {
+            nestedCommitCalls++
+            true
+        }
+
+        assertEquals(BattlePointApplyStatus.APPLIED, first.status)
+        assertEquals(BattlePointApplyStatus.APPLIED, retry.status)
+        assertEquals(1, nestedCommitCalls)
+        assertEquals(17, store.balance(playerId))
+    }
+
+    @Test
+    fun `callback exception releases the account reservation`() {
+        val store = BattlePointStore { 1_000L }
+        store.apply(request("11111111-1111-1111-1111-111111111111", BattlePointOperation.ContentReward(30)))
+        val purchase = request("22222222-2222-2222-2222-222222222222", BattlePointOperation.ShopPurchase(12))
+
+        assertThrows<IllegalStateException> {
+            store.applyAtomically(purchase) { throw IllegalStateException("delivery failed") }
+        }
+        val retry = store.applyAtomically(purchase) { true }
+
+        assertEquals(BattlePointApplyStatus.APPLIED, retry.status)
+        assertEquals(18, store.balance(playerId))
     }
 
     @Test

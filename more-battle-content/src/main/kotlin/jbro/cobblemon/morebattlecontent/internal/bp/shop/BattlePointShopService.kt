@@ -38,6 +38,27 @@ internal interface BattlePointShopDeliveryPlan {
     fun rollback()
 }
 
+internal class RestorableBattlePointShopDeliveryPlan(
+    private val commitAction: () -> Boolean,
+    private val rollbackAction: () -> Unit,
+) : BattlePointShopDeliveryPlan {
+    private var committed = false
+    private var deliveryAttempted = false
+
+    override fun commit(): Boolean {
+        if (committed) return true
+        deliveryAttempted = true
+        return commitAction().also { committed = it }
+    }
+
+    override fun rollback() {
+        if (!committed && !deliveryAttempted) return
+        rollbackAction()
+        committed = false
+        deliveryAttempted = false
+    }
+}
+
 internal enum class BattlePointShopPurchaseStatus {
     APPLIED,
     ALREADY_APPLIED,
@@ -48,6 +69,7 @@ internal enum class BattlePointShopPurchaseStatus {
     CART_OVERFLOW,
     INSUFFICIENT_FUNDS,
     TRANSACTION_CONFLICT,
+    PURCHASE_IN_PROGRESS,
     INVENTORY_REJECTED,
     DELIVERY_FAILED,
     BP_UNAVAILABLE,
@@ -88,29 +110,38 @@ internal class BattlePointShopService(
             plan = try {
                 delivery.prepare(request.playerId, resolved.grants)
             } catch (_: RuntimeException) {
+                deliveryState = DeliveryState.PREPARE_FAILED
+                null
+            } catch (_: LinkageError) {
+                deliveryState = DeliveryState.PREPARE_FAILED
                 null
             }
             if (plan == null) {
-                deliveryState = DeliveryState.PREPARE_REJECTED
+                if (deliveryState == DeliveryState.NOT_ATTEMPTED) {
+                    deliveryState = DeliveryState.PREPARE_REJECTED
+                }
                 false
             } else {
                 val committed = try {
                     requireNotNull(plan).commit()
                 } catch (_: RuntimeException) {
                     false
+                } catch (_: LinkageError) {
+                    false
+                }
+                if (!committed) {
+                    rollbackSafely(requireNotNull(plan))
                 }
                 deliveryState = if (committed) DeliveryState.COMMITTED else DeliveryState.COMMIT_FAILED
                 committed
             }
         }
 
-        if (bpResult.status == BattlePointApplyStatus.COMMIT_REJECTED && plan != null) {
-            requireNotNull(plan).rollback()
-        }
         val status = when (bpResult.status) {
             BattlePointApplyStatus.APPLIED -> BattlePointShopPurchaseStatus.APPLIED
             BattlePointApplyStatus.ALREADY_APPLIED -> BattlePointShopPurchaseStatus.ALREADY_APPLIED
             BattlePointApplyStatus.TRANSACTION_CONFLICT -> BattlePointShopPurchaseStatus.TRANSACTION_CONFLICT
+            BattlePointApplyStatus.IN_PROGRESS -> BattlePointShopPurchaseStatus.PURCHASE_IN_PROGRESS
             BattlePointApplyStatus.INSUFFICIENT_FUNDS -> BattlePointShopPurchaseStatus.INSUFFICIENT_FUNDS
             BattlePointApplyStatus.COMMIT_REJECTED -> when (deliveryState) {
                 DeliveryState.PREPARE_REJECTED -> BattlePointShopPurchaseStatus.INVENTORY_REJECTED
@@ -120,6 +151,16 @@ internal class BattlePointShopService(
             BattlePointApplyStatus.BALANCE_OVERFLOW -> BattlePointShopPurchaseStatus.CART_OVERFLOW
         }
         return BattlePointShopPurchaseResult(status, resolved.totalCostBp, bpResult.balance)
+    }
+
+    private fun rollbackSafely(plan: BattlePointShopDeliveryPlan) {
+        try {
+            plan.rollback()
+        } catch (_: RuntimeException) {
+            // The purchase still fails; the packet handler must remain able to report it.
+        } catch (_: LinkageError) {
+            // The purchase still fails; the packet handler must remain able to report it.
+        }
     }
 
     private fun resolveCart(catalog: BattlePointShopCatalog, lines: List<BattlePointShopCartLine>): CartResolution {
@@ -172,6 +213,7 @@ internal class BattlePointShopService(
     private enum class DeliveryState {
         NOT_ATTEMPTED,
         PREPARE_REJECTED,
+        PREPARE_FAILED,
         COMMITTED,
         COMMIT_FAILED,
     }
