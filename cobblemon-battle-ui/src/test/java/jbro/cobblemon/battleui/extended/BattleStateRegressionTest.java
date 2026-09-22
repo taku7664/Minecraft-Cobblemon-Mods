@@ -205,6 +205,24 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void dynamaxAndGigantamaxFormsClearWhenDynamaxEnds() {
+        UUID uuid = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(uuid, "Pokemon", false);
+
+        for (String startKey : List.of(TranslationKeys.DYNAMAX_KEY, TranslationKeys.GIGANTAMAX_KEY)) {
+            BattleMessageInterceptor.INSTANCE.processMessages(List.of(
+                Text.translatable(startKey, "Pokemon")
+            ));
+            assertNotNull(FormTracker.INSTANCE.getCurrentForm(uuid));
+
+            BattleMessageInterceptor.INSTANCE.processMessages(List.of(
+                Text.translatable("cobblemon.battle.end.dynamax", "Pokemon")
+            ));
+            assertEquals(null, FormTracker.INSTANCE.getCurrentForm(uuid));
+        }
+    }
+
+    @Test
     void lifeOrbRevealUsesTheCobblemonItemTranslation() {
         UUID uuid = UUID.randomUUID();
         PokemonRegistry.INSTANCE.registerPokemon(uuid, "Lucario", false);

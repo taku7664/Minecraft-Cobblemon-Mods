@@ -432,6 +432,12 @@ object BattleMessageInterceptor {
                 BattleStateTracker.setCurrentForm(pokemonName, "Gigantamax", isMega = false, isTemporary = true)
             }
 
+            if (key == TranslationKeys.DYNAMAX_END_KEY && args.isNotEmpty()) {
+                val pokemonName = MessageParser.extractPokemonName(args[0])
+                BattleStateTracker.clearCurrentForm(pokemonName)
+                return
+            }
+
             // ═══════════════════════════════════════════════════════════════════
             // Type Modification Moves
             // ═══════════════════════════════════════════════════════════════════

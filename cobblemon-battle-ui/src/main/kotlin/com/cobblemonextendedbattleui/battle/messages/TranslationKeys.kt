@@ -328,6 +328,7 @@ object TranslationKeys {
 
     const val DYNAMAX_KEY = "cobblemon.battle.start.dynamax"
     const val GIGANTAMAX_KEY = "cobblemon.battle.start.gmax"
+    const val DYNAMAX_END_KEY = "cobblemon.battle.end.dynamax"
 
     // ═════════════════════════════════════════════════════════════════════════
     // Type Modification Move Keys
