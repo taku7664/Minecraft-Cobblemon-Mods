@@ -4,10 +4,35 @@ import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
+import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicActionOutcomeProjector
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class LocalPublicTargetAgreementTest {
+    @Test
+    fun `defensive ability reduction is applied once outside the plain type chart`() {
+        fun projection(ability: String?): Pair<BattleCandidateFactsView, Double> {
+            val source = context(
+                "fire",
+                BattleMoveTargetPattern.SELECTED_OPPONENT,
+                primaryAbility = ability,
+                primaryHp = 1.0,
+            )
+            val calculated = PublicBattleTacticalCalculator.calculate(source)
+            val candidate = calculated.candidates.single()
+            return requireNotNull(candidate.facts) to requireNotNull(
+                PublicActionOutcomeProjector.project(candidate, calculated).expectedDamageFraction,
+            )
+        }
+
+        val (plainFacts, plainDamage) = projection(null)
+        val (thickFatFacts, thickFatDamage) = projection("thickfat")
+
+        assertEquals(1.0, plainFacts.typeChartMultiplier)
+        assertEquals(1.0, thickFatFacts.typeChartMultiplier, "Thick Fat is not part of the type chart.")
+        assertEquals(plainDamage * 0.5, thickFatDamage, 1e-9)
+    }
+
     @Test
     fun `spread primary target receives weather and its own defensive modifier`() {
         for ((ability, multiplier) in listOf(null to 1.5, "thickfat" to 0.75)) {
@@ -43,10 +68,11 @@ class LocalPublicTargetAgreementTest {
 
     private fun context(type: String, pattern: BattleMoveTargetPattern, weather: String? = null,
         primaryAbility: String? = null, otherAbility: String? = null,
-        explicit: Boolean = pattern == BattleMoveTargetPattern.SELECTED_OPPONENT): BattleDecisionContext {
+        explicit: Boolean = pattern == BattleMoveTargetPattern.SELECTED_OPPONENT,
+        primaryHp: Double = 0.25): BattleDecisionContext {
         val state = BattleStateView(UUID(0, 850), BattleFormat.DOUBLE, 1,
             listOf(mon(1, BattleSide.ALLY, 0, 1.0, null), mon(2, BattleSide.ALLY, 1, 1.0, null),
-                mon(4, BattleSide.OPPONENT, 1, 0.75, otherAbility), mon(3, BattleSide.OPPONENT, 0, 0.25, primaryAbility)),
+                mon(4, BattleSide.OPPONENT, 1, 0.75, otherAbility), mon(3, BattleSide.OPPONENT, 0, primaryHp, primaryAbility)),
             BattleFieldStateView(weather?.let { BattleTimedEffectView(it, 3) }, null, emptyList(), emptyList(),
                 BattleSide.entries.associateWith { emptyList() }),
             BattleSide.entries.associateWith { 2 }, emptyList(), emptyList())

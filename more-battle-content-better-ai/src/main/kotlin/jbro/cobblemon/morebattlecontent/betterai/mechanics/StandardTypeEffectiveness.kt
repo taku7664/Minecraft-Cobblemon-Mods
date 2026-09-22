@@ -14,15 +14,15 @@ internal object StandardTypeEffectiveness {
     }
 
     /**
-     * Type-chart multiplier adjusted by a defensive ability that is already public.
+     * Type-chart multiplier adjusted only for a public ability that nullifies the hit.
      *
      * Only abilities the defender has actually revealed are applied, so this stays inside the fair
      * information policy: `knownAbilityId` is null until the battle exposes it. Without this the AI
      * happily aims Ground moves at a revealed Levitate and Fire moves at a revealed Flash Fire,
      * because the raw chart says they connect.
      *
-     * The result is still one of the discrete multipliers the Showdown projection accepts, so callers
-     * can hand it straight to [ShowdownStandardDamageProjection].
+     * Damage-reducing abilities stay out of this value. They are final damage modifiers, not type
+     * chart cells, and [LocalPublicMechanicsKernel] applies them exactly once after base damage.
      */
     fun multiplierAgainst(
         attackingTypeId: String,
@@ -37,23 +37,14 @@ internal object StandardTypeEffectiveness {
         val moveType = attackingTypeId.substringAfter(':').lowercase()
         if (!ignoreTypeImmunity && ABSORBING_ABILITIES[ability]?.contains(moveType) == true) return 0.0
         if (ability == "wonderguard" && base < 2.0) return 0.0
-        val halving = HALVING_ABILITIES[ability]
-        if (halving != null && moveType in halving) return quantise(base * 0.5)
         return base
     }
-
-    private fun quantise(value: Double): Double = SUPPORTED_MULTIPLIERS.minByOrNull {
-        kotlin.math.abs(it - value)
-    } ?: value
 
     private fun canonical(value: String?): String? = value
         ?.substringAfter(':')
         ?.lowercase()
         ?.filter(Char::isLetterOrDigit)
         ?.takeIf(String::isNotEmpty)
-
-    /** Multipliers [ShowdownStandardDamageProjection.project] accepts. */
-    private val SUPPORTED_MULTIPLIERS = listOf(0.0, 0.25, 0.5, 1.0, 2.0, 4.0)
 
     /** Revealed abilities that nullify a whole attacking type. */
     private val ABSORBING_ABILITIES: Map<String, Set<String>> = mapOf(
@@ -68,14 +59,6 @@ internal object StandardTypeEffectiveness {
         "sapsipper" to setOf("grass"),
         "eartheater" to setOf("ground"),
         "windrider" to setOf("flying"),
-    )
-
-    /** Revealed abilities that halve a whole attacking type. */
-    private val HALVING_ABILITIES: Map<String, Set<String>> = mapOf(
-        "thickfat" to setOf("fire", "ice"),
-        "heatproof" to setOf("fire"),
-        "waterbubble" to setOf("fire"),
-        "purifyingsalt" to setOf("ghost"),
     )
 
     private val ATTACK_MULTIPLIERS: Map<String, Map<String, Double>> = mapOf(
