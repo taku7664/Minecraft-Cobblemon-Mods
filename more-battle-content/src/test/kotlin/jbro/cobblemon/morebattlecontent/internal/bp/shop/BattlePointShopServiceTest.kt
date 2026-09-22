@@ -140,6 +140,22 @@ class BattlePointShopServiceTest {
     }
 
     @Test
+    fun `fatal delivery failure rolls inventory back and leaves BP reservation retryable`() {
+        val store = fundedStore(100)
+        val failure = AssertionError("fatal inventory failure")
+        val delivery = RecordingDelivery(commitFailure = failure)
+        val service = service(store, delivery)
+
+        assertEquals(failure, assertThrows<AssertionError> { service.purchase(request()) })
+        assertEquals(1, delivery.rollbackCalls)
+        assertEquals(100, store.balance(playerId))
+
+        delivery.commitFailure = null
+        assertEquals(BattlePointShopPurchaseStatus.APPLIED, service.purchase(request()).status)
+        assertEquals(75, store.balance(playerId))
+    }
+
+    @Test
     fun `cost and item-count overflow are rejected`() {
         val hugeCatalog = catalog(
             limits = BattlePointShopLimits(2, Int.MAX_VALUE, Int.MAX_VALUE),

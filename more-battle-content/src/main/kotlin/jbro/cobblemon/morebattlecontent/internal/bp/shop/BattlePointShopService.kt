@@ -122,15 +122,18 @@ internal class BattlePointShopService(
                 }
                 false
             } else {
+                val preparedPlan = requireNotNull(plan)
                 val committed = try {
-                    requireNotNull(plan).commit()
+                    preparedPlan.commit()
                 } catch (_: RuntimeException) {
                     false
                 } catch (_: LinkageError) {
                     false
+                } catch (failure: Throwable) {
+                    rollbackAfterFatalCommitFailure(preparedPlan, failure)
                 }
                 if (!committed) {
-                    rollbackSafely(requireNotNull(plan))
+                    rollbackSafely(preparedPlan)
                 }
                 deliveryState = if (committed) DeliveryState.COMMITTED else DeliveryState.COMMIT_FAILED
                 committed
@@ -161,6 +164,15 @@ internal class BattlePointShopService(
         } catch (_: LinkageError) {
             // The purchase still fails; the packet handler must remain able to report it.
         }
+    }
+
+    private fun rollbackAfterFatalCommitFailure(plan: BattlePointShopDeliveryPlan, failure: Throwable): Nothing {
+        try {
+            plan.rollback()
+        } catch (rollbackFailure: Throwable) {
+            if (failure !== rollbackFailure) failure.addSuppressed(rollbackFailure)
+        }
+        throw failure
     }
 
     private fun resolveCart(catalog: BattlePointShopCatalog, lines: List<BattlePointShopCartLine>): CartResolution {
