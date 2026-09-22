@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.internal.record
 
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
+import jbro.cobblemon.morebattlecontent.internal.persistence.loadSavedDataSafely
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.MinecraftServer
@@ -92,17 +93,19 @@ internal class BattleRecordSavedData(
 
         internal fun loadForTest(tag: CompoundTag): BattleRecordSavedData = loadSafely(tag, false)
 
-        private fun loadSafely(tag: CompoundTag, logFailure: Boolean): BattleRecordSavedData = try {
-            BattleRecordSavedData(BattleRecordStore(BattleRecordNbtCodec.decode(tag)))
-        } catch (exception: RuntimeException) {
-            if (logFailure) {
-                MoreBattleContent.LOGGER.error(
-                    "Battle record data could not be loaded; record writes are disabled so the original file is preserved",
-                    exception,
-                )
-            }
-            BattleRecordSavedData(isAvailable = false, preservedTag = tag.copy())
-        }
+        private fun loadSafely(tag: CompoundTag, logFailure: Boolean): BattleRecordSavedData =
+            loadSavedDataSafely(
+                load = { BattleRecordSavedData(BattleRecordStore(BattleRecordNbtCodec.decode(tag))) },
+                reportFailure = { failure ->
+                    if (logFailure) {
+                        MoreBattleContent.LOGGER.error(
+                            "Battle record data could not be loaded; record writes are disabled so the original file is preserved",
+                            failure,
+                        )
+                    }
+                },
+                unavailable = { BattleRecordSavedData(isAvailable = false, preservedTag = tag.copy()) },
+            )
     }
 }
 

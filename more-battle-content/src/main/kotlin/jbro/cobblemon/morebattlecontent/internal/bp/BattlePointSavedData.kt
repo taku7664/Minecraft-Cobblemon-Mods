@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.internal.bp
 
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
+import jbro.cobblemon.morebattlecontent.internal.persistence.loadSavedDataSafely
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.MinecraftServer
@@ -48,17 +49,19 @@ internal class BattlePointSavedData(
 
         internal fun loadForTest(tag: CompoundTag): BattlePointSavedData = loadSafely(tag, false)
 
-        private fun loadSafely(tag: CompoundTag, logFailure: Boolean): BattlePointSavedData = try {
-            BattlePointSavedData(BattlePointStore(BattlePointNbtCodec.decode(tag)))
-        } catch (exception: RuntimeException) {
-            if (logFailure) {
-                MoreBattleContent.LOGGER.error(
-                    "Battle Point data could not be loaded; BP writes are disabled so the original file is preserved",
-                    exception,
-                )
-            }
-            BattlePointSavedData(isAvailable = false, preservedTag = tag.copy())
-        }
+        private fun loadSafely(tag: CompoundTag, logFailure: Boolean): BattlePointSavedData =
+            loadSavedDataSafely(
+                load = { BattlePointSavedData(BattlePointStore(BattlePointNbtCodec.decode(tag))) },
+                reportFailure = { failure ->
+                    if (logFailure) {
+                        MoreBattleContent.LOGGER.error(
+                            "Battle Point data could not be loaded; BP writes are disabled so the original file is preserved",
+                            failure,
+                        )
+                    }
+                },
+                unavailable = { BattlePointSavedData(isAvailable = false, preservedTag = tag.copy()) },
+            )
     }
 }
 
