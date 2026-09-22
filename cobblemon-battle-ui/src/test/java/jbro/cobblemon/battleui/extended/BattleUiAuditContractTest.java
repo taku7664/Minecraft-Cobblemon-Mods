@@ -6,9 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
@@ -59,6 +63,33 @@ final class BattleUiAuditContractTest {
         assertTrue(log.contains("cobblemon.battle.used_move"));
         assertTrue(log.contains("cobblemon.battle.superEffective"));
         assertFalse(log.contains("cobblemon.battle.supereffective"));
+    }
+
+    @Test
+    void parserConstantsOnlyReferenceCobblemon181TranslationKeys() throws Exception {
+        JsonObject cobblemonEnglish;
+        try (var stream = getClass().getResourceAsStream("/assets/cobblemon/lang/en_us.json")) {
+            assertTrue(stream != null, "Cobblemon language resource must be on the test classpath");
+            cobblemonEnglish = JsonParser.parseReader(
+                new InputStreamReader(stream, StandardCharsets.UTF_8)
+            ).getAsJsonObject();
+        }
+
+        String constants = read(
+            "src/main/kotlin/com/cobblemonextendedbattleui/battle/messages/TranslationKeys.kt"
+        );
+        var matcher = Pattern.compile(
+            "\\\"(cobblemon\\.(?:battle|move|stat)\\.[A-Za-z0-9_.-]+)\\\""
+        ).matcher(constants);
+        Set<String> missing = new HashSet<>();
+        while (matcher.find()) {
+            String key = matcher.group(1);
+            if (!cobblemonEnglish.has(key)) {
+                missing.add(key);
+            }
+        }
+
+        assertEquals(Set.of(), missing);
     }
 
     @Test

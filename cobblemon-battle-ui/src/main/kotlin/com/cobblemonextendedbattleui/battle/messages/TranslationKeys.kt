@@ -42,33 +42,7 @@ object TranslationKeys {
         "cobblemon.stat.special_defence.name" to BattleStat.SPECIAL_DEFENSE,
         "cobblemon.stat.speed.name" to BattleStat.SPEED,
         "cobblemon.stat.accuracy.name" to BattleStat.ACCURACY,
-        "cobblemon.stat.evasion.name" to BattleStat.EVASION,
-        // Alternative spellings with .name suffix
-        "cobblemon.stat.defense.name" to BattleStat.DEFENSE,
-        "cobblemon.stat.special_defense.name" to BattleStat.SPECIAL_DEFENSE,
-        "cobblemon.stat.evasiveness.name" to BattleStat.EVASION,
-        // Without .name suffix (fallback variants)
-        "cobblemon.stat.attack" to BattleStat.ATTACK,
-        "cobblemon.stat.atk" to BattleStat.ATTACK,
-        "cobblemon.stat.defense" to BattleStat.DEFENSE,
-        "cobblemon.stat.defence" to BattleStat.DEFENSE,
-        "cobblemon.stat.def" to BattleStat.DEFENSE,
-        "cobblemon.stat.special_attack" to BattleStat.SPECIAL_ATTACK,
-        "cobblemon.stat.specialattack" to BattleStat.SPECIAL_ATTACK,
-        "cobblemon.stat.spa" to BattleStat.SPECIAL_ATTACK,
-        "cobblemon.stat.sp_atk" to BattleStat.SPECIAL_ATTACK,
-        "cobblemon.stat.special_defense" to BattleStat.SPECIAL_DEFENSE,
-        "cobblemon.stat.specialdefense" to BattleStat.SPECIAL_DEFENSE,
-        "cobblemon.stat.special_defence" to BattleStat.SPECIAL_DEFENSE,
-        "cobblemon.stat.spd" to BattleStat.SPECIAL_DEFENSE,
-        "cobblemon.stat.sp_def" to BattleStat.SPECIAL_DEFENSE,
-        "cobblemon.stat.speed" to BattleStat.SPEED,
-        "cobblemon.stat.spe" to BattleStat.SPEED,
-        "cobblemon.stat.accuracy" to BattleStat.ACCURACY,
-        "cobblemon.stat.acc" to BattleStat.ACCURACY,
-        "cobblemon.stat.evasion" to BattleStat.EVASION,
-        "cobblemon.stat.evasiveness" to BattleStat.EVASION,
-        "cobblemon.stat.eva" to BattleStat.EVASION
+        "cobblemon.stat.evasion.name" to BattleStat.EVASION
     )
 
     // Fallback: Maps displayed stat names to BattleStat enum (English only, for compatibility)
@@ -102,14 +76,8 @@ object TranslationKeys {
     // Move Keys for Special Handling
     // ═════════════════════════════════════════════════════════════════════════
 
-    val BATON_PASS_KEYS = setOf(
-        "cobblemon.move.batonpass",
-        "cobblemon.move.baton_pass"
-    )
-    val SPECTRAL_THIEF_KEYS = setOf(
-        "cobblemon.move.spectralthief",
-        "cobblemon.move.spectral_thief"
-    )
+    val BATON_PASS_KEYS = setOf("cobblemon.move.batonpass")
+    val SPECTRAL_THIEF_KEYS = setOf("cobblemon.move.spectralthief")
     const val BATON_PASS_NAME = "baton pass"
     const val SPECTRAL_THIEF_NAME = "spectral thief"
 
@@ -122,8 +90,7 @@ object TranslationKeys {
     val ABILITY_SINGLE_ARG_KEYS = mapOf(
         "cobblemon.battle.ability.sturdy" to "Sturdy",
         "cobblemon.battle.ability.unnerve" to "Unnerve",
-        "cobblemon.battle.ability.anticipation" to "Anticipation",
-        "cobblemon.battle.ability.intimidate" to "Intimidate"
+        "cobblemon.battle.ability.anticipation" to "Anticipation"
     )
 
     const val ABILITY_TRACE_KEY = "cobblemon.battle.ability.trace"
@@ -342,30 +309,19 @@ object TranslationKeys {
     // ═════════════════════════════════════════════════════════════════════════
 
     val TYPE_CHANGE_KEYS = setOf(
-        "cobblemon.battle.typechange",
-        "cobblemon.battle.typechange.soak",
         "cobblemon.battle.start.typechange"
     )
 
     val TYPE_ADD_KEYS = setOf(
-        "cobblemon.battle.typeadd",
-        "cobblemon.battle.typeadd.trickortreat",
-        "cobblemon.battle.typeadd.forestscurse",
         "cobblemon.battle.start.typeadd"
     )
 
     val BURN_UP_KEYS = setOf(
-        "cobblemon.battle.start.burnup",
-        "cobblemon.battle.start.typechange.burnup",
-        "cobblemon.battle.typechange.burnup",
-        "cobblemon.battle.burnup"
+        "cobblemon.battle.start.burnup"
     )
 
     val DOUBLE_SHOCK_KEYS = setOf(
-        "cobblemon.battle.start.doubleshock",
-        "cobblemon.battle.start.typechange.doubleshock",
-        "cobblemon.battle.typechange.doubleshock",
-        "cobblemon.battle.doubleshock"
+        "cobblemon.battle.start.doubleshock"
     )
 
     // ═════════════════════════════════════════════════════════════════════════
