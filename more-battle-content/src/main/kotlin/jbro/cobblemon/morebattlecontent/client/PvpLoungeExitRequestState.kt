@@ -9,6 +9,17 @@ internal class PvpLoungeExitRequestState {
         return true
     }
 
+    fun send(action: () -> Unit): Boolean {
+        if (!begin()) return false
+        try {
+            action()
+        } catch (failure: Throwable) {
+            reset()
+            throw failure
+        }
+        return true
+    }
+
     fun complete(accepted: Boolean): Boolean {
         if (!pending) return false
         pending = false

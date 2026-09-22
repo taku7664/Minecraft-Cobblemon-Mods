@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class PvpRoomNavigationContractTest {
     @Test
@@ -51,5 +52,20 @@ class PvpRoomNavigationContractTest {
 
         assertEquals(requestId, intent.requestId)
         assertEquals(roomId, intent.roomId)
+    }
+
+    @Test
+    fun `failed tracked room send removes its open marker`() {
+        val requestId = UUID.randomUUID()
+        val pending = hashSetOf<UUID>()
+        val failure = AssertionError("network send failed")
+
+        assertEquals(
+            failure,
+            assertThrows<AssertionError> {
+                PvpRoomNavigationContract.sendTrackedOpenRequest(requestId, pending) { throw failure }
+            },
+        )
+        assertFalse(requestId in pending)
     }
 }

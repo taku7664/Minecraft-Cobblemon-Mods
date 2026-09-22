@@ -142,16 +142,32 @@ internal object PvpPlayClientNetworking {
     fun send(payload: PvpSelectionIntentPayload) = ClientPlayNetworking.send(payload)
 
     fun exitLoungeSpectator() {
-        if (!loungeExitRequest.begin()) return
-        PvpLoungeSpectatorControls.setExitPending(true)
-        ClientPlayNetworking.send(PvpLoungeExitPayload)
+        try {
+            loungeExitRequest.send {
+                PvpLoungeSpectatorControls.setExitPending(true)
+                ClientPlayNetworking.send(PvpLoungeExitPayload)
+            }
+        } catch (failure: Throwable) {
+            try {
+                PvpLoungeSpectatorControls.setExitPending(false)
+            } catch (cleanupFailure: Throwable) {
+                if (failure !== cleanupFailure) failure.addSuppressed(cleanupFailure)
+            }
+            throw failure
+        }
     }
 
     fun resetLoungeExitRequest() = loungeExitRequest.reset()
 
     fun send(payload: PvpRoomIntentPayload) {
         if (payload.intent is PvpRoomIntent.Create || payload.intent is PvpRoomIntent.Join) {
-            PvpRoomClientState.pendingOpenRequests += payload.intent.requestId
+            PvpRoomNavigationContract.sendTrackedOpenRequest(
+                payload.intent.requestId,
+                PvpRoomClientState.pendingOpenRequests,
+            ) {
+                ClientPlayNetworking.send(payload)
+            }
+            return
         }
         ClientPlayNetworking.send(payload)
     }

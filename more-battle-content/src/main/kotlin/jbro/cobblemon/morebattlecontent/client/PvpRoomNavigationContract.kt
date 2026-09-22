@@ -13,6 +13,16 @@ internal object PvpRoomNavigationContract {
      */
     fun openIntent(requestId: UUID, roomId: UUID): PvpRoomIntent.Join = PvpRoomIntent.Join(requestId, roomId)
 
+    fun sendTrackedOpenRequest(requestId: UUID, pendingRequestIds: MutableSet<UUID>, send: () -> Unit) {
+        pendingRequestIds += requestId
+        try {
+            send()
+        } catch (failure: Throwable) {
+            pendingRequestIds.remove(requestId)
+            throw failure
+        }
+    }
+
     fun shouldOpenFromRoomList(requestId: UUID?, pendingRequestIds: MutableSet<UUID>): Boolean =
         requestId != null && pendingRequestIds.remove(requestId)
 
