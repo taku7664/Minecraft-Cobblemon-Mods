@@ -426,7 +426,7 @@ object BattleStateTracker {
         }
 
         if (batonData.volatiles.isNotEmpty()) {
-            VolatileStatusTracker.applyBatonPassVolatiles(uuid, batonData.volatiles, currentTurn)
+            VolatileStatusTracker.applyBatonPassVolatiles(uuid, batonData.volatiles)
         }
 
         CobblemonExtendedBattleUI.LOGGER.debug(

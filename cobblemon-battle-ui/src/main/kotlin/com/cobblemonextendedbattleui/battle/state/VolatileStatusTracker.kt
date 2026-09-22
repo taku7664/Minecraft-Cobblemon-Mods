@@ -96,11 +96,11 @@ object VolatileStatusTracker {
         volatileStatuses[uuid]?.toSet()
 
     /** Apply volatiles from Baton Pass. */
-    fun applyBatonPassVolatiles(uuid: UUID, volatiles: Set<VolatileStatusState>, currentTurn: Int) {
+    fun applyBatonPassVolatiles(uuid: UUID, volatiles: Set<VolatileStatusState>) {
         val statuses = volatileStatuses.computeIfAbsent(uuid) { ConcurrentHashMap.newKeySet() }
-        val effectiveStartTurn = maxOf(1, currentTurn)
         for (volatileState in volatiles) {
-            statuses.add(VolatileStatusState(volatileState.type, effectiveStartTurn))
+            statuses.removeIf { it.type == volatileState.type }
+            statuses.add(volatileState)
         }
     }
 }

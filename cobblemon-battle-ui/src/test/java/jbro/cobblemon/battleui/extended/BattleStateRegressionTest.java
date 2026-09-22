@@ -197,6 +197,30 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void batonPassPreservesRemainingVolatileDuration() {
+        UUID passer = UUID.randomUUID();
+        UUID receiver = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(passer, "Passer", true);
+        PokemonRegistry.INSTANCE.registerPokemon(receiver, "Receiver", true);
+        BattleStateTracker.INSTANCE.setTurn(2);
+        BattleStateTracker.INSTANCE.setVolatileStatus(
+            "Passer", BattleStateTracker.VolatileStatus.CONFUSION, true
+        );
+        BattleStateTracker.INSTANCE.markBatonPassUsed("Passer", true);
+
+        BattleStateTracker.INSTANCE.setTurn(4);
+        var batonData = BattleStateTracker.INSTANCE.clearPokemonAfterSwitch(passer);
+        assertNotNull(batonData);
+        BattleStateTracker.INSTANCE.applyBatonPass(receiver, batonData);
+
+        var confusion = BattleStateTracker.INSTANCE.getVolatileStatuses(receiver).stream()
+            .filter(state -> state.getType() == BattleStateTracker.VolatileStatus.CONFUSION)
+            .findFirst()
+            .orElseThrow();
+        assertEquals("2", BattleStateTracker.INSTANCE.getVolatileTurnsRemaining(confusion));
+    }
+
+    @Test
     void switchClearsTemporaryFormsButKeepsPermanentForms() {
         UUID temporary = UUID.randomUUID();
         UUID permanent = UUID.randomUUID();
