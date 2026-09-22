@@ -829,7 +829,7 @@ object TeamIndicatorUI {
             for (activePokemon in actor.activePokemon) {
                 val battlePokemon = activePokemon.battlePokemon ?: continue
                 currentlyActiveUuids.add(battlePokemon.uuid)
-                updateTrackedPokemonInMap(battlePokemon, tracked, isPlayerSide)
+                updateTrackedPokemonInMap(battlePokemon, tracked, isPlayerSide, actor.displayName.string)
             }
         }
 
@@ -945,7 +945,8 @@ object TeamIndicatorUI {
     private fun updateTrackedPokemonInMap(
         battlePokemon: ClientBattlePokemon,
         targetMap: ConcurrentHashMap<UUID, TrackedPokemon>,
-        isAlly: Boolean = true
+        isAlly: Boolean = true,
+        ownerName: String? = null
     ) {
         val uuid = battlePokemon.uuid
         // For opponent Pokemon, hpValue is already a 0.0-1.0 percentage (isHpFlat = false)
@@ -981,11 +982,11 @@ object TeamIndicatorUI {
         // Register Pokemon with BattleStateTracker for name-to-UUID resolution
         // This is needed for Terastallization tracking and other message-based updates
         if (displayName.isNotEmpty()) {
-            BattleStateTracker.registerPokemon(uuid, displayName, isAlly)
+            BattleStateTracker.registerPokemon(uuid, displayName, isAlly, ownerName)
         }
         // Also register under species name for robust lookup (messages may use either)
         if (speciesName != null) {
-            BattleStateTracker.registerPokemon(uuid, speciesName, isAlly)
+            BattleStateTracker.registerPokemon(uuid, speciesName, isAlly, ownerName)
         }
 
         // Check if this Pokemon has a pending transform (Impostor triggered before tracking)

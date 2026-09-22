@@ -14,6 +14,8 @@ import jbro.cobblemon.battleui.extended.PanelConfig;
 import net.minecraft.client.MinecraftClient;
 
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Intercepts battle initialization to pre-populate HP baselines and register Pokemon.
@@ -51,14 +53,14 @@ public class BattleInitializeHandlerMixin {
             if (needsStateTracking) {
                 BattleStateTracker.INSTANCE.setSpectating(isSpectating);
 
-                String side1PlayerName = getFirstActorName(packet.getSide1());
-                String side2PlayerName = getFirstActorName(packet.getSide2());
+                List<String> side1PlayerNames = getActorNames(packet.getSide1());
+                List<String> side2PlayerNames = getActorNames(packet.getSide2());
 
-                if (side1PlayerName != null && side2PlayerName != null) {
+                if (!side1PlayerNames.isEmpty() && !side2PlayerNames.isEmpty()) {
                     if (side1IsAlly) {
-                        BattleStateTracker.INSTANCE.setPlayerNames(side1PlayerName, side2PlayerName);
+                        BattleStateTracker.INSTANCE.setPlayerNames(side1PlayerNames, side2PlayerNames);
                     } else {
-                        BattleStateTracker.INSTANCE.setPlayerNames(side2PlayerName, side1PlayerName);
+                        BattleStateTracker.INSTANCE.setPlayerNames(side2PlayerNames, side1PlayerNames);
                     }
                 }
             }
@@ -81,14 +83,15 @@ public class BattleInitializeHandlerMixin {
         return false;
     }
 
-    private String getFirstActorName(BattleInitializePacket.BattleSideDTO side) {
-        if (side == null) return null;
+    private List<String> getActorNames(BattleInitializePacket.BattleSideDTO side) {
+        List<String> names = new ArrayList<>();
+        if (side == null) return names;
         for (BattleInitializePacket.BattleActorDTO actor : side.getActors()) {
             if (actor != null && actor.getDisplayName() != null) {
-                return actor.getDisplayName().getString();
+                names.add(actor.getDisplayName().getString());
             }
         }
-        return null;
+        return names;
     }
 
     private void initializePokemonFromSide(BattleInitializePacket.BattleSideDTO side, boolean isAlly,
@@ -97,6 +100,7 @@ public class BattleInitializeHandlerMixin {
 
         for (BattleInitializePacket.BattleActorDTO actor : side.getActors()) {
             if (actor == null) continue;
+            String ownerName = actor.getDisplayName() != null ? actor.getDisplayName().getString() : null;
 
             for (BattleInitializePacket.ActiveBattlePokemonDTO pokemon : actor.getActivePokemon()) {
                 if (pokemon == null) continue;
@@ -114,7 +118,7 @@ public class BattleInitializeHandlerMixin {
                 // Register Pokemon with BattleStateTracker only if panel/tooltips need it
                 if (needsStateTracking) {
                     String name = pokemon.getDisplayName() != null ? pokemon.getDisplayName().getString() : "Unknown";
-                    BattleStateTracker.INSTANCE.registerPokemon(uuid, name, isAlly);
+                    BattleStateTracker.INSTANCE.registerPokemon(uuid, name, isAlly, ownerName);
                 }
             }
         }

@@ -55,7 +55,7 @@ public class BattleSwitchHandlerMixin {
                 // Determine if this Pokemon is ally or opponent by checking the pnx actor
                 Boolean isAlly = determineIfAlly(packet, client);
                 if (isAlly != null) {
-                    BattleStateTracker.INSTANCE.registerPokemon(uuid, name, isAlly);
+                    BattleStateTracker.INSTANCE.registerPokemon(uuid, name, isAlly, determineOwnerName(packet));
                 }
             }
         } catch (Exception e) {
@@ -109,5 +109,13 @@ public class BattleSwitchHandlerMixin {
             CobblemonExtendedBattleUI.INSTANCE.getLOGGER().warn("Could not determine the side of a switched Pokemon", e);
             return null;
         }
+    }
+
+    private String determineOwnerName(BattleSwitchPokemonPacket packet) {
+        ClientBattle battle = CobblemonClient.INSTANCE.getBattle();
+        if (battle == null) return null;
+        var result = battle.getPokemonFromPNX(packet.getPnx());
+        if (result == null || result.getFirst() == null || result.getFirst().getDisplayName() == null) return null;
+        return result.getFirst().getDisplayName().getString();
     }
 }

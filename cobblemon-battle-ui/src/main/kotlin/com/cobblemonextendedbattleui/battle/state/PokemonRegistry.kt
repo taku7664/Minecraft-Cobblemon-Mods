@@ -18,9 +18,10 @@ object PokemonRegistry {
     private val nameToUuids = ConcurrentHashMap<String, CopyOnWriteArrayList<Pair<UUID, Boolean>>>()
     private val uuidIsAlly = ConcurrentHashMap<UUID, Boolean>()
 
-    // Player names for each side to disambiguate owner prefixes
-    private var allyPlayerName: String? = null
-    private var opponentPlayerName: String? = null
+    // Actor names and per-Pokemon owners disambiguate multi battles and mirror teams.
+    private var allyPlayerNames: Set<String> = emptySet()
+    private var opponentPlayerNames: Set<String> = emptySet()
+    private val uuidOwnerNames = ConcurrentHashMap<UUID, String>()
 
     // KO tracking — persists after faint, only cleared on battle end
     private val knockedOutPokemon = ConcurrentHashMap.newKeySet<UUID>()
@@ -31,19 +32,30 @@ object PokemonRegistry {
     fun clear() {
         nameToUuids.clear()
         uuidIsAlly.clear()
-        allyPlayerName = null
-        opponentPlayerName = null
+        allyPlayerNames = emptySet()
+        opponentPlayerNames = emptySet()
+        uuidOwnerNames.clear()
         knockedOutPokemon.clear()
         transformedPokemon.clear()
     }
 
     fun setPlayerNames(allyName: String, opponentName: String) {
-        allyPlayerName = allyName.lowercase()
-        opponentPlayerName = opponentName.lowercase()
-        CobblemonExtendedBattleUI.LOGGER.debug("PokemonRegistry: Player names set - Ally: $allyName, Opponent: $opponentName")
+        setPlayerNames(listOf(allyName), listOf(opponentName))
+    }
+
+    fun setPlayerNames(allyNames: Collection<String>, opponentNames: Collection<String>) {
+        allyPlayerNames = allyNames.mapNotNull(::normalizeOwnerName).toSet()
+        opponentPlayerNames = opponentNames.mapNotNull(::normalizeOwnerName).toSet()
+        CobblemonExtendedBattleUI.LOGGER.debug(
+            "PokemonRegistry: Player names set - Ally: $allyNames, Opponent: $opponentNames"
+        )
     }
 
     fun registerPokemon(uuid: UUID, name: String, isAlly: Boolean) {
+        registerPokemon(uuid, name, isAlly, null)
+    }
+
+    fun registerPokemon(uuid: UUID, name: String, isAlly: Boolean, ownerName: String?) {
         val lowerName = name.lowercase()
         val uuidList = nameToUuids.computeIfAbsent(lowerName) { CopyOnWriteArrayList() }
 
@@ -57,6 +69,7 @@ object PokemonRegistry {
         }
 
         uuidIsAlly[uuid] = isAlly
+        normalizeOwnerName(ownerName)?.let { uuidOwnerNames[uuid] = it }
     }
 
     fun isPokemonAlly(uuid: UUID): Boolean = uuidIsAlly[uuid] ?: false
@@ -111,7 +124,7 @@ object PokemonRegistry {
      * 1. Owner prefix (e.g., "Player123's Togekiss")
      * 2. "opposing" or "the opposing" prefix (indicates opponent's Pokemon)
      * 3. preferAlly hint
-     * 4. First registered (fallback)
+     * Ambiguous matches are ignored instead of choosing the first registration.
      */
     fun resolvePokemonUuid(pokemonName: String, preferAlly: Boolean? = null): UUID? {
         var lookupName = pokemonName.lowercase()
@@ -133,18 +146,15 @@ object PokemonRegistry {
             val ownerName = pokemonName.substringBefore("'s ").lowercase()
             val strippedName = pokemonName.substringAfter("'s ").lowercase()
 
-            val allyName = allyPlayerName
-            val oppName = opponentPlayerName
-
-            if (allyName != null && ownerName == allyName) {
+            if (ownerName in allyPlayerNames) {
                 ownerDeterminedSide = true
                 CobblemonExtendedBattleUI.LOGGER.debug(
-                    "PokemonRegistry: Owner '$ownerName' matched ally player '$allyName'"
+                    "PokemonRegistry: Owner '$ownerName' matched an ally actor"
                 )
-            } else if (oppName != null && ownerName == oppName) {
+            } else if (ownerName in opponentPlayerNames) {
                 ownerDeterminedSide = false
                 CobblemonExtendedBattleUI.LOGGER.debug(
-                    "PokemonRegistry: Owner '$ownerName' matched opponent player '$oppName'"
+                    "PokemonRegistry: Owner '$ownerName' matched an opponent actor"
                 )
             }
 
@@ -160,6 +170,24 @@ object PokemonRegistry {
             return null
         }
 
+        val ownerName = pokemonName.takeIf { it.contains("'s ") }
+            ?.substringBefore("'s ")
+            ?.let(::normalizeOwnerName)
+        if (ownerName != null) {
+            val ownerMatches = uuidList.filter { uuidOwnerNames[it.first] == ownerName }
+            if (ownerMatches.size == 1) return ownerMatches.single().first
+            if (ownerMatches.size > 1) {
+                CobblemonExtendedBattleUI.LOGGER.warn(
+                    "PokemonRegistry: Owner-qualified Pokemon '{}' still matched multiple UUIDs; ignoring update",
+                    pokemonName
+                )
+            }
+            CobblemonExtendedBattleUI.LOGGER.debug(
+                "PokemonRegistry: No exact owner match for '$pokemonName'; ignoring update"
+            )
+            return null
+        }
+
         if (uuidList.size == 1) {
             return uuidList[0].first
         }
@@ -168,13 +196,13 @@ object PokemonRegistry {
             val targetIsAlly = ownerDeterminedSide ?: preferAlly
 
             if (targetIsAlly != null) {
-                val match = uuidList.find { it.second == targetIsAlly }
-                if (match != null) {
+                val matches = uuidList.filter { it.second == targetIsAlly }
+                if (matches.size == 1) {
                     val method = if (ownerDeterminedSide != null) "owner name" else "preferAlly hint"
                     CobblemonExtendedBattleUI.LOGGER.debug(
                         "PokemonRegistry: Resolved '$pokemonName' to ${if (targetIsAlly) "ally" else "opponent"} via $method"
                     )
-                    return match.first
+                    return matches.single().first
                 }
             }
 
@@ -187,5 +215,8 @@ object PokemonRegistry {
 
         return null
     }
+
+    private fun normalizeOwnerName(name: String?): String? =
+        name?.trim()?.takeIf { it.isNotEmpty() }?.lowercase()
 
 }

@@ -88,6 +88,23 @@ final class BattleUiAuditContractTest {
     }
 
     @Test
+    void everyRuntimeRegistrationPathPreservesActorOwnership() throws Exception {
+        String initialization = read(
+            "src/main/java/com/cobblemonextendedbattleui/mixin/BattleInitializeHandlerMixin.java"
+        );
+        String switching = read(
+            "src/main/java/com/cobblemonextendedbattleui/mixin/BattleSwitchHandlerMixin.java"
+        );
+        String panel = read("src/main/kotlin/com/cobblemonextendedbattleui/BattleInfoPanel.kt");
+        String indicators = read("src/main/kotlin/com/cobblemonextendedbattleui/TeamIndicatorUI.kt");
+
+        assertTrue(initialization.contains("registerPokemon(uuid, name, isAlly, ownerName)"));
+        assertTrue(switching.contains("registerPokemon(uuid, name, isAlly, determineOwnerName(packet))"));
+        assertTrue(panel.contains("registerActivePokemon(it.second, true, it.third)"));
+        assertTrue(indicators.contains("isPlayerSide, actor.displayName.string"));
+    }
+
+    @Test
     void battleLogUsesCobblemon181MoveKeys() throws Exception {
         String log = read("src/main/kotlin/com/cobblemonextendedbattleui/BattleLog.kt");
         assertTrue(log.contains("cobblemon.battle.used_move"));

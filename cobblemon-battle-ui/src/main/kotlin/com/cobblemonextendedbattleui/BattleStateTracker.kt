@@ -228,8 +228,13 @@ object BattleStateTracker {
     // ═══════════════════════════════════════════════════════════════════════════
 
     fun setPlayerNames(allyName: String, opponentName: String) = PokemonRegistry.setPlayerNames(allyName, opponentName)
+    fun setPlayerNames(allyNames: Collection<String>, opponentNames: Collection<String>) = PokemonRegistry.setPlayerNames(allyNames, opponentNames)
     fun registerPokemon(uuid: UUID, name: String, isAlly: Boolean) {
         PokemonRegistry.registerPokemon(uuid, name, isAlly)
+        VolatileStatusTracker.ensureInitialized(uuid)
+    }
+    fun registerPokemon(uuid: UUID, name: String, isAlly: Boolean, ownerName: String?) {
+        PokemonRegistry.registerPokemon(uuid, name, isAlly, ownerName)
         VolatileStatusTracker.ensureInitialized(uuid)
     }
     fun isPokemonAlly(uuid: UUID): Boolean = PokemonRegistry.isPokemonAlly(uuid)

@@ -91,18 +91,16 @@ object BattleInfoPanel {
 
         BattleStateTracker.setSpectating(isSpectating)
         BattleStateTracker.setPlayerNames(
-            playerSide.actors.firstOrNull()?.displayName?.string.orEmpty(),
-            opponentSide.actors.firstOrNull()?.displayName?.string.orEmpty()
+            playerSide.actors.map { it.displayName.string },
+            opponentSide.actors.map { it.displayName.string }
         )
 
         val allySlots = collectActiveSlots(playerSide)
         val opponentSlots = collectActiveSlots(opponentSide)
-        val allyActive = allySlots.map { it.second }
-        val opponentActive = opponentSlots.map { it.second }
         handleActiveSlotChanges((allySlots + opponentSlots).associate { it.first to it.second.uuid })
 
-        allyActive.forEach { registerActivePokemon(it.uuid, it.displayName.string, it.properties.species, true) }
-        opponentActive.forEach { registerActivePokemon(it.uuid, it.displayName.string, it.properties.species, false) }
+        allySlots.forEach { registerActivePokemon(it.second, true, it.third) }
+        opponentSlots.forEach { registerActivePokemon(it.second, false, it.third) }
 
         if (syncOverlay) {
             ChampionsBattleInfoOverlay.sync(playerSide, opponentSide, playerUuid, isSpectating)
@@ -139,16 +137,20 @@ object BattleInfoPanel {
         }
     }
 
-    private fun collectActiveSlots(side: ClientBattleSide): List<Pair<String, ClientBattlePokemon>> =
-        side.activeClientBattlePokemon.mapNotNull { active ->
-            val pokemon = active.battlePokemon ?: return@mapNotNull null
-            active.getPNX() to pokemon
+    private fun collectActiveSlots(side: ClientBattleSide): List<Triple<String, ClientBattlePokemon, String>> =
+        side.actors.flatMap { actor ->
+            actor.activePokemon.mapNotNull { active ->
+                val pokemon = active.battlePokemon ?: return@mapNotNull null
+                Triple(active.getPNX(), pokemon, actor.displayName.string)
+            }
         }
 
-    private fun registerActivePokemon(uuid: UUID, displayName: String, speciesName: String?, isAlly: Boolean) {
-        BattleStateTracker.registerPokemon(uuid, displayName, isAlly)
+    private fun registerActivePokemon(pokemon: ClientBattlePokemon, isAlly: Boolean, ownerName: String) {
+        val uuid = pokemon.uuid
+        BattleStateTracker.registerPokemon(uuid, pokemon.displayName.string, isAlly, ownerName)
+        val speciesName = pokemon.properties.species
         speciesName?.let {
-            BattleStateTracker.registerPokemon(uuid, it, isAlly)
+            BattleStateTracker.registerPokemon(uuid, it, isAlly, ownerName)
             BattleStateTracker.registerSpeciesId(uuid, Identifier.of("cobblemon", it))
         }
     }

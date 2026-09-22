@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import jbro.cobblemon.battleui.extended.BattleStateTracker.ItemStatus;
@@ -80,8 +81,8 @@ final class BattleStateRegressionTest {
         UUID ally = UUID.randomUUID();
         UUID opponent = UUID.randomUUID();
         PokemonRegistry.INSTANCE.setPlayerNames("Alice", "Bob");
-        PokemonRegistry.INSTANCE.registerPokemon(ally, "Eevee", true);
-        PokemonRegistry.INSTANCE.registerPokemon(opponent, "Eevee", false);
+        PokemonRegistry.INSTANCE.registerPokemon(ally, "Eevee", true, "Alice");
+        PokemonRegistry.INSTANCE.registerPokemon(opponent, "Eevee", false, "Bob");
 
         String opponentReference = MessageParser.INSTANCE.extractPokemonName(
             Text.translatable("cobblemon.battle.owned_pokemon", "Bob", "Eevee")
@@ -99,14 +100,55 @@ final class BattleStateRegressionTest {
         UUID ally = UUID.randomUUID();
         UUID opponent = UUID.randomUUID();
         PokemonRegistry.INSTANCE.setPlayerNames("Al", "Alice");
-        PokemonRegistry.INSTANCE.registerPokemon(ally, "Eevee", true);
-        PokemonRegistry.INSTANCE.registerPokemon(opponent, "Eevee", false);
+        PokemonRegistry.INSTANCE.registerPokemon(ally, "Eevee", true, "Al");
+        PokemonRegistry.INSTANCE.registerPokemon(opponent, "Eevee", false, "Alice");
 
         String opponentReference = MessageParser.INSTANCE.extractPokemonName(
             Text.translatable("cobblemon.battle.owned_pokemon", "Alice", "Eevee")
         );
 
         assertEquals(opponent, PokemonRegistry.INSTANCE.resolvePokemonUuid(opponentReference, null));
+    }
+
+    @Test
+    void ownerResolutionDistinguishesSameNamedPokemonOnTheSameSide() {
+        UUID aliceEevee = UUID.randomUUID();
+        UUID carolEevee = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.setPlayerNames(
+            List.of("Alice", "Carol"),
+            List.of("Bob", "Dave")
+        );
+        PokemonRegistry.INSTANCE.registerPokemon(aliceEevee, "Eevee", true, "Alice");
+        PokemonRegistry.INSTANCE.registerPokemon(carolEevee, "Eevee", true, "Carol");
+
+        assertEquals(
+            carolEevee,
+            PokemonRegistry.INSTANCE.resolvePokemonUuid("Carol's Eevee", null)
+        );
+        assertEquals(
+            aliceEevee,
+            PokemonRegistry.INSTANCE.resolvePokemonUuid("Alice's Eevee", null)
+        );
+    }
+
+    @Test
+    void sameSideDuplicateWithoutOwnerIsNotGuessed() {
+        PokemonRegistry.INSTANCE.registerPokemon(UUID.randomUUID(), "Eevee", true);
+        PokemonRegistry.INSTANCE.registerPokemon(UUID.randomUUID(), "Eevee", true);
+
+        assertEquals(null, PokemonRegistry.INSTANCE.resolvePokemonUuid("Eevee", true));
+    }
+
+    @Test
+    void ownerQualifiedReferenceNeverFallsBackToAnotherOwnersSingleCandidate() {
+        UUID aliceEevee = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.setPlayerNames(
+            List.of("Alice", "Carol"),
+            List.of("Bob")
+        );
+        PokemonRegistry.INSTANCE.registerPokemon(aliceEevee, "Eevee", true, "Alice");
+
+        assertEquals(null, PokemonRegistry.INSTANCE.resolvePokemonUuid("Carol's Eevee", null));
     }
 
     @Test
