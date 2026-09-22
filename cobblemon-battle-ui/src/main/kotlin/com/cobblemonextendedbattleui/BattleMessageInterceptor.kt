@@ -265,6 +265,11 @@ object BattleMessageInterceptor {
                 return
             }
 
+            if (key == TranslationKeys.DROWSY_END_KEY) {
+                StateUpdater.extractVolatileStatusEnd(args, BattleStateTracker.VolatileStatus.DROWSY)
+                return
+            }
+
             TranslationKeys.VOLATILE_ACTIVATE_KEYS[key]?.let { volatileStatus ->
                 StateUpdater.extractVolatileStatusStart(args, volatileStatus)
                 return

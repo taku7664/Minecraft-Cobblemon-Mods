@@ -188,6 +188,23 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void yawnDrowsinessClearsWhenCobblemonAnnouncesSleep() {
+        UUID uuid = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(uuid, "Victim", false);
+
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(
+            Text.translatable("cobblemon.battle.start.yawn", "Victim")
+        ));
+        assertTrue(VolatileStatusTracker.INSTANCE.getVolatileStatuses(uuid).stream()
+            .anyMatch(state -> state.getType() == BattleStateTracker.VolatileStatus.DROWSY));
+
+        BattleMessageInterceptor.INSTANCE.processMessages(List.of(
+            Text.translatable("cobblemon.status.sleep.apply", "Victim")
+        ));
+        assertTrue(VolatileStatusTracker.INSTANCE.getVolatileStatuses(uuid).isEmpty());
+    }
+
+    @Test
     void lifeOrbRevealUsesTheCobblemonItemTranslation() {
         UUID uuid = UUID.randomUUID();
         PokemonRegistry.INSTANCE.registerPokemon(uuid, "Lucario", false);

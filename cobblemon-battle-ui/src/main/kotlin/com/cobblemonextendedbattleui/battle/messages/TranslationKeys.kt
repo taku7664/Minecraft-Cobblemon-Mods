@@ -295,6 +295,7 @@ object TranslationKeys {
     const val FAINT_KEY = "cobblemon.battle.fainted"
     const val PERISH_SONG_FIELD_KEY = "cobblemon.battle.fieldactivate.perishsong"
     const val TRANSFORM_KEY = "cobblemon.battle.transform"
+    const val DROWSY_END_KEY = "cobblemon.status.sleep.apply"
 
     // ═════════════════════════════════════════════════════════════════════════
     // Form Change Keys

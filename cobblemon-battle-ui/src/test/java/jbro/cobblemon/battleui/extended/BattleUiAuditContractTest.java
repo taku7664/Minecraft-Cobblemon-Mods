@@ -175,7 +175,7 @@ final class BattleUiAuditContractTest {
             "src/main/kotlin/com/cobblemonextendedbattleui/battle/messages/TranslationKeys.kt"
         );
         var matcher = Pattern.compile(
-            "\\\"(cobblemon\\.(?:battle|move|stat)\\.[A-Za-z0-9_.-]+|item\\.cobblemon\\.[A-Za-z0-9_.-]+)\\\""
+            "\\\"(cobblemon\\.(?:battle|move|stat|status)\\.[A-Za-z0-9_.-]+|item\\.cobblemon\\.[A-Za-z0-9_.-]+)\\\""
         ).matcher(constants);
         Set<String> missing = new HashSet<>();
         while (matcher.find()) {
