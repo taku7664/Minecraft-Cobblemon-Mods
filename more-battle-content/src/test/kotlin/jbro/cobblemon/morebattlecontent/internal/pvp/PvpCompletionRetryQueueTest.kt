@@ -47,4 +47,14 @@ class PvpCompletionRetryQueueTest {
         assertFalse(settled)
         assertSame(failure, reported)
     }
+
+    @Test
+    fun `reporter compatibility failure cannot discard a retryable settlement`() {
+        val settled = attemptPvpCompletionSettlement(
+            settle = { throw IllegalStateException("record store unavailable") },
+            reportFailure = { throw NoSuchMethodError("logger API drift") },
+        )
+
+        assertFalse(settled)
+    }
 }

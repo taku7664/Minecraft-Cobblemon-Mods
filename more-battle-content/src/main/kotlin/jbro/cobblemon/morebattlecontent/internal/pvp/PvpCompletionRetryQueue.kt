@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.internal.pvp
 
 import java.util.UUID
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.reportManagedCleanupFailureSafely
 
 internal const val PVP_COMPLETION_RETRY_MILLIS = 5_000L
 
@@ -18,10 +19,10 @@ internal fun attemptPvpCompletionSettlement(
 ): Boolean = try {
     settle()
 } catch (failure: RuntimeException) {
-    reportFailure(failure)
+    reportManagedCleanupFailureSafely(failure, reportFailure)
     false
 } catch (failure: LinkageError) {
-    reportFailure(failure)
+    reportManagedCleanupFailureSafely(failure, reportFailure)
     false
 }
 
