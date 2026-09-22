@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.internal.tower.opponent
 
 import java.io.Reader
 import jbro.cobblemon.morebattlecontent.internal.catalog.CatalogResourceInput
+import jbro.cobblemon.morebattlecontent.internal.catalog.closeCatalogResourcesSafely
 
 internal sealed interface TowerOpponentCatalogReloadOutcome {
     data class Applied(val catalog: TowerOpponentCatalog) : TowerOpponentCatalogReloadOutcome
@@ -45,7 +46,7 @@ internal class TowerOpponentCatalogResourceReloader(
         } catch (error: Exception) {
             TowerOpponentCatalogReloadOutcome.ReadFailed(error)
         } finally {
-            readers.forEach { reader -> runCatching(reader::close) }
+            closeCatalogResourcesSafely(readers)
         }
     }
 
@@ -61,7 +62,7 @@ internal class TowerOpponentCatalogResourceReloader(
         } catch (error: Exception) {
             TowerOpponentCatalogReloadOutcome.ReadFailed(error)
         } finally {
-            readers.forEach { (_, reader) -> runCatching(reader::close) }
+            closeCatalogResourcesSafely(readers.map { it.second })
         }
     }
 

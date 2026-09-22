@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.internal.compat.fabric
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
 import jbro.cobblemon.morebattlecontent.internal.bp.shop.BattlePointShopCatalogLoadResult
 import jbro.cobblemon.morebattlecontent.internal.bp.shop.BattlePointShopCatalogStore
+import jbro.cobblemon.morebattlecontent.internal.catalog.closeCatalogResourcesSafely
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener
 import net.minecraft.core.registries.BuiltInRegistries
@@ -51,7 +52,7 @@ internal object BattlePointShopCatalogResources {
                         )
                         return
                     } finally {
-                        readers.forEach { reader -> runCatching(reader::close) }
+                        closeCatalogResourcesSafely(readers)
                     }
                     when (result) {
                         is BattlePointShopCatalogLoadResult.Loaded -> MoreBattleContent.LOGGER.info(
