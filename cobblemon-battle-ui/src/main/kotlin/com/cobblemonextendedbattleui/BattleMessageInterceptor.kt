@@ -306,6 +306,11 @@ object BattleMessageInterceptor {
                 return
             }
 
+            if (key in TranslationKeys.ITEM_DESTROYED_KEYS) {
+                StateUpdater.extractItemDestroyed(args)
+                return
+            }
+
             TranslationKeys.ITEM_SINGLE_ARG_EVENTS[key]?.let { (itemTranslationKey, status) ->
                 StateUpdater.extractItemSingleArg(args, itemTranslationKey, status)
                 return

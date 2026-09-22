@@ -109,7 +109,6 @@ object TranslationKeys {
 
     val ITEM_REVEAL_KEYS = setOf(
         "cobblemon.battle.item.airballoon",
-        "cobblemon.battle.item.eat",
         "cobblemon.battle.item.harvest",
         "cobblemon.battle.item.recycle",
         "cobblemon.battle.damage.item"
@@ -131,10 +130,10 @@ object TranslationKeys {
     const val BESTOW_KEY = "cobblemon.battle.item.bestow"
 
     val ITEM_CONSUMED_KEYS = setOf(
+        "cobblemon.battle.item.eat",
         "cobblemon.battle.enditem.eat",
         "cobblemon.battle.enditem.fling",
         "cobblemon.battle.enditem.gem",
-        "cobblemon.battle.enditem.incinerate",
         "cobblemon.battle.enditem.airballoon",
         "cobblemon.battle.enditem.generic",
         "cobblemon.battle.enditem.mentalherb",
@@ -147,6 +146,10 @@ object TranslationKeys {
         "cobblemon.battle.enditem.ejectpack",
         "cobblemon.battle.enditem.berryjuice",
         "cobblemon.battle.enditem.redcard"
+    )
+
+    val ITEM_DESTROYED_KEYS = setOf(
+        "cobblemon.battle.enditem.incinerate"
     )
 
     val ITEM_SINGLE_ARG_EVENTS = mapOf(

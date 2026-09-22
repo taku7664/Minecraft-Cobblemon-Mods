@@ -215,6 +215,13 @@ object StateUpdater {
         BattleStateTracker.setItem(pokemonName, itemName, ItemStatus.CONSUMED)
     }
 
+    fun extractItemDestroyed(args: Array<out Any>) {
+        if (args.size < 2) return
+        val pokemonName = MessageParser.extractPokemonName(args[0])
+        val itemName = MessageParser.argToString(args[1])
+        BattleStateTracker.setItem(pokemonName, itemName, ItemStatus.DESTROYED)
+    }
+
     fun extractItemSingleArg(
         args: Array<out Any>,
         itemTranslationKey: String,
@@ -250,10 +257,7 @@ object StateUpdater {
     }
 
     fun extractCorrosiveGas(args: Array<out Any>) {
-        if (args.size < 2) return
-        val targetPokemon = MessageParser.extractPokemonName(args[0])
-        val itemName = MessageParser.argToString(args[1])
-        BattleStateTracker.setItem(targetPokemon, itemName, ItemStatus.DESTROYED)
+        extractItemDestroyed(args)
     }
 
     fun extractHealingItem(args: Array<out Any>) {

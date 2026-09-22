@@ -38,6 +38,30 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void itemEatMessageIsClassifiedAsConsumption() {
+        assertFalse(TranslationKeys.INSTANCE.getITEM_REVEAL_KEYS().contains("cobblemon.battle.item.eat"));
+        assertTrue(TranslationKeys.INSTANCE.getITEM_CONSUMED_KEYS().contains("cobblemon.battle.item.eat"));
+
+        UUID uuid = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(uuid, "Tropius", false);
+        StateUpdater.INSTANCE.extractItemConsumed(new Object[] {"Tropius", "Sitrus Berry"});
+
+        assertEquals(ItemStatus.CONSUMED, AbilityItemTracker.INSTANCE.getItem(uuid).getStatus());
+    }
+
+    @Test
+    void incinerateMessageIsClassifiedAsDestruction() {
+        assertFalse(TranslationKeys.INSTANCE.getITEM_CONSUMED_KEYS().contains("cobblemon.battle.enditem.incinerate"));
+        assertTrue(TranslationKeys.INSTANCE.getITEM_DESTROYED_KEYS().contains("cobblemon.battle.enditem.incinerate"));
+
+        UUID uuid = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(uuid, "Tropius", false);
+        StateUpdater.INSTANCE.extractItemDestroyed(new Object[] {"Tropius", "Sitrus Berry"});
+
+        assertEquals(ItemStatus.DESTROYED, AbilityItemTracker.INSTANCE.getItem(uuid).getStatus());
+    }
+
+    @Test
     void localizedHealingMessageDoesNotRestoreAnAlreadyConsumedBerry() {
         UUID uuid = UUID.randomUUID();
         PokemonRegistry.INSTANCE.registerPokemon(uuid, "Tropius", false);
