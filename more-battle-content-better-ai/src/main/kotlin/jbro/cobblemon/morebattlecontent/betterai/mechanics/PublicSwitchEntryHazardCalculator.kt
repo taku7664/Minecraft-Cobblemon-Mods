@@ -16,19 +16,27 @@ internal object PublicSwitchEntryHazardCalculator {
         enteringSide,
         pokemon,
         itemsActive = !LocalPublicFieldMechanics.magicRoomActive(state),
+        grounded = LocalPublicTurnOrder.grounded(state, pokemon),
     )
 
     fun hpLoss(
         field: BattleFieldStateView,
         enteringSide: BattleSide,
         pokemon: BattlePokemonStateView,
-    ): Double? = hpLoss(field, enteringSide, pokemon, itemsActive = true)
+    ): Double? = hpLoss(
+        field,
+        enteringSide,
+        pokemon,
+        itemsActive = true,
+        grounded = isGrounded(pokemon, canonical(pokemon.knownHeldItemId), canonical(pokemon.knownAbilityId)),
+    )
 
     private fun hpLoss(
         field: BattleFieldStateView,
         enteringSide: BattleSide,
         pokemon: BattlePokemonStateView,
         itemsActive: Boolean,
+        grounded: Boolean,
     ): Double? {
         val hazards = field.sideConditions.getValue(enteringSide)
         if (hazards.isEmpty()) return 0.0
@@ -51,7 +59,7 @@ internal object PublicSwitchEntryHazardCalculator {
                 }
                 SPIKES -> {
                     if (pokemon.knownTypeIds.isEmpty()) return null
-                    if (isGrounded(pokemon, item, ability)) {
+                    if (grounded) {
                         loss += when ((hazard.stacks ?: 1).coerceIn(1, 3)) {
                             1 -> 1.0 / 8.0
                             2 -> 1.0 / 6.0

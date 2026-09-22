@@ -54,7 +54,8 @@ internal object LocalSwitchStateProjector {
             observedEvents = state.observedEvents,
             inferences = state.inferences,
         )
-        return LocalEntryAbilityProjector.project(switched, incomingId)
+        val afterHazards = LocalSwitchEntryEffectProjector.project(switched, incomingId)
+        return LocalEntryAbilityProjector.project(afterHazards, incomingId)
     }
 
     fun projectedSwitchOutHp(pokemon: BattlePokemonStateView): Double =

@@ -10,10 +10,12 @@ internal object LocalEntryAbilityProjector {
         val incoming = state.pokemon.firstOrNull {
             it.battlePokemonId == incomingPokemonId && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         } ?: return state
-        if (canonical(incoming.knownAbilityId) != "intimidate") return state
+        val ability = canonical(incoming.knownAbilityId)
+        val fieldState = projectField(state, ability)
+        if (ability != "intimidate") return fieldState
 
         var reflectedDrops = 0
-        val next = state.pokemon.map { pokemon ->
+        val next = fieldState.pokemon.map { pokemon ->
             if (pokemon.side == incoming.side || pokemon.activeSlot == null || pokemon.fainted || pokemon.hpFraction <= 0.0) {
                 return@map pokemon
             }
@@ -36,7 +38,24 @@ internal object LocalEntryAbilityProjector {
                 pokemon
             }
         }
-        return copyState(state, next)
+        return copyState(fieldState, next)
+    }
+
+    private fun projectField(state: BattleStateView, ability: String?): BattleStateView {
+        val weather = ENTRY_WEATHER[ability]
+        val terrain = ENTRY_TERRAIN[ability]
+        if (weather == null && terrain == null) return state
+        val field = BattleFieldStateView(
+            weather = weather?.let { BattleTimedEffectView(it, ENTRY_FIELD_TURNS) } ?: state.field.weather,
+            terrain = terrain?.let { BattleTimedEffectView(it, ENTRY_FIELD_TURNS) } ?: state.field.terrain,
+            roomEffects = state.field.roomEffects,
+            globalEffects = state.field.globalEffects,
+            sideConditions = state.field.sideConditions,
+        )
+        return BattleStateView(
+            state.battleId, state.format, state.turn, state.pokemon, field, state.remainingPokemonBySide,
+            state.observedEvents, state.inferences,
+        )
     }
 
     private fun changeStage(pokemon: BattlePokemonStateView, stat: String, amount: Int): BattlePokemonStateView {
@@ -96,4 +115,19 @@ internal object LocalEntryAbilityProjector {
         "special_attack" to setOf("specialattack", "spa"),
         "speed" to setOf("speed", "spe"),
     )
+    private val ENTRY_WEATHER = mapOf(
+        "drizzle" to "raindance",
+        "drought" to "sunnyday",
+        "sandstream" to "sandstorm",
+        "snowwarning" to "snow",
+        "orichalcumpulse" to "sunnyday",
+    )
+    private val ENTRY_TERRAIN = mapOf(
+        "electricsurge" to "electricterrain",
+        "grassysurge" to "grassyterrain",
+        "mistysurge" to "mistyterrain",
+        "psychicsurge" to "psychicterrain",
+        "hadronengine" to "electricterrain",
+    )
+    private const val ENTRY_FIELD_TURNS = 5
 }
