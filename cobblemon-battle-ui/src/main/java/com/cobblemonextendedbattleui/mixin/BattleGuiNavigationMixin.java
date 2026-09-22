@@ -308,7 +308,8 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
         if (!CobblemonExtendedBattleUIClient.INSTANCE.getSelectActionKey().matchesKey(keyCode, scanCode)) {
             return false;
         }
-        if (cobblemonBattleUi$gridIndex < 0 || !enabled.test(tiles.get(cobblemonBattleUi$gridIndex))) {
+        if (!GridMenuNavigator.isIndexInBounds(cobblemonBattleUi$gridIndex, tiles.size())
+                || !enabled.test(tiles.get(cobblemonBattleUi$gridIndex))) {
             List<Boolean> enabledTiles = tiles.stream().map(enabled::test).toList();
             cobblemonBattleUi$gridIndex = new BattleMenuNavigator(enabledTiles, -1).move(1);
         }
@@ -377,7 +378,8 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
         if (!CobblemonExtendedBattleUIClient.INSTANCE.getSelectActionKey().matchesKey(keyCode, scanCode)) {
             return false;
         }
-        if (cobblemonBattleUi$gridIndex < 0 || !enabled.test(tiles.get(cobblemonBattleUi$gridIndex))) {
+        if (!GridMenuNavigator.isIndexInBounds(cobblemonBattleUi$gridIndex, tiles.size())
+                || !enabled.test(tiles.get(cobblemonBattleUi$gridIndex))) {
             List<Boolean> enabledTiles = tiles.stream().map(enabled::test).toList();
             cobblemonBattleUi$gridIndex = new GridMenuNavigator(enabledTiles, 2, -1).move(0, 1);
         }

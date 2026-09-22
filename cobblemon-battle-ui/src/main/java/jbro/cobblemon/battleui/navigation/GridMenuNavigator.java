@@ -53,6 +53,10 @@ public final class GridMenuNavigator {
         return selectedIndex;
     }
 
+    public static boolean isIndexInBounds(int index, int size) {
+        return index >= 0 && index < size;
+    }
+
     private int firstEnabled() {
         for (int index = 0; index < enabled.size(); index++) {
             if (isEnabled(index)) {
@@ -63,6 +67,6 @@ public final class GridMenuNavigator {
     }
 
     private boolean isEnabled(int index) {
-        return index >= 0 && index < enabled.size() && enabled.get(index);
+        return isIndexInBounds(index, enabled.size()) && enabled.get(index);
     }
 }

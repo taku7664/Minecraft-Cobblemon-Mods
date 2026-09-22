@@ -1,6 +1,8 @@
 package jbro.cobblemon.battleui.navigation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -28,5 +30,13 @@ class GridMenuNavigatorTest {
         );
 
         assertEquals(1, navigator.move(0, 1));
+    }
+
+    @Test
+    void validatesRememberedSelectionAgainstTheCurrentListSize() {
+        assertTrue(GridMenuNavigator.isIndexInBounds(0, 1));
+        assertFalse(GridMenuNavigator.isIndexInBounds(-1, 1));
+        assertFalse(GridMenuNavigator.isIndexInBounds(1, 1));
+        assertFalse(GridMenuNavigator.isIndexInBounds(0, 0));
     }
 }
