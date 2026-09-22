@@ -45,6 +45,7 @@ internal object LocalPublicMoveDamageInputs {
                 ) it * 2 else it
             }
             "storedpower", "powertrip" -> wholePower?.plus(20 * actor.positiveBoosts())
+            "punishment" -> (60 + 20 * target.positiveBoosts()).coerceAtMost(200)
             "facade" -> wholePower?.let { if (actor.statusId != null) it * 2 else it }
             "hex", "infernalparade" -> wholePower?.let { if (target.statusId != null) it * 2 else it }
             "brine" -> wholePower?.let { if (target.hpFraction <= 0.5) it * 2 else it }
@@ -249,7 +250,7 @@ internal object LocalPublicMoveDamageInputs {
     private val PUBLICLY_RESOLVED_DYNAMIC_MOVES = setOf(
         "acrobatics", "expandingforce", "risingvoltage", "eruption", "waterspout",
         "dragonenergy", "flail", "reversal", "crushgrip", "wringout", "storedpower",
-        "powertrip", "facade", "hex",
+        "powertrip", "punishment", "facade", "hex",
         "infernalparade", "brine", "venoshock",
         "barbbarrage", "smellingsalts", "wakeupslap", "round", "fishiousrend", "boltbeak",
         "assurance", "payback", "avalanche", "revenge", "electroball", "gyroball",
