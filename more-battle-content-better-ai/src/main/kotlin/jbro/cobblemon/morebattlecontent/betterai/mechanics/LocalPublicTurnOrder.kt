@@ -50,14 +50,16 @@ internal object LocalPublicTurnOrder {
         side: BattleSide,
         action: BattleActionCandidate,
     ): Double {
-        if (alwaysLastWithinPriority(state, side, action)) return 0.0
         val actor = active(state, side, action.actorSlot) ?: return 0.0
+        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, actor)
+        val myceliumStatus = ability == MYCELIUM_MIGHT &&
+            action.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS
         val chances = buildList {
-            if (LocalPublicAbilityState.effectiveKnownAbility(state, actor) == QUICK_DRAW &&
+            if (ability == QUICK_DRAW &&
                 action.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS
             ) add(QUICK_DRAW_CHANCE)
             if (!LocalPublicFieldMechanics.magicRoomActive(state) &&
-                canonical(actor.knownHeldItemId.orEmpty()) == QUICK_CLAW
+                canonical(actor.knownHeldItemId.orEmpty()) == QUICK_CLAW && !myceliumStatus
             ) add(QUICK_CLAW_CHANCE)
         }
         return 1.0 - chances.fold(1.0) { none, chance -> none * (1.0 - chance) }
@@ -119,9 +121,13 @@ internal object LocalPublicTurnOrder {
             it.side != actorSide && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         } ?: return null
         val speedProbability = speedOrderProbability(state, actor, opponent) ?: return null
-        if (alwaysLastWithinPriority(state, actorSide, actorAction)) return 0.0
-        val quickChance = fractionalPriorityChance(state, actorSide, actorAction)
-        return quickChance + (1.0 - quickChance) * speedProbability
+        return fractionalPriorityDistribution(state, actorSide, actorAction).sumOf { (fraction, chance) ->
+            chance * when {
+                fraction > 0 -> 1.0
+                fraction < 0 -> 0.0
+                else -> speedProbability
+            }
+        }
     }
 
     fun actsFirstProbability(
@@ -202,9 +208,13 @@ internal object LocalPublicTurnOrder {
         side: BattleSide,
         action: BattleActionCandidate,
     ): List<Pair<Int, Double>> {
-        if (alwaysLastWithinPriority(state, side, action)) return listOf(-1 to 1.0)
+        val delayed = alwaysLastWithinPriority(state, side, action)
         val chance = fractionalPriorityChance(state, side, action)
-        return if (chance > 0.0) listOf(1 to chance, 0 to 1.0 - chance) else listOf(0 to 1.0)
+        return when {
+            chance > 0.0 -> listOf(1 to chance, (if (delayed) -1 else 0) to 1.0 - chance)
+            delayed -> listOf(-1 to 1.0)
+            else -> listOf(0 to 1.0)
+        }
     }
 
     private fun speedOrderProbability(

@@ -163,6 +163,72 @@ class LocalSpecialTurnOrderTest {
     }
 
     @Test
+    fun `quick claw can override stall inside and outside trick room`() {
+        val attack = move("tackle", "normal", BattleMoveDamageCategory.PHYSICAL)
+        listOf(null, "trickroom").forEach { room ->
+            val battle = state(allyAbility = "stall", allyItem = "quickclaw", room = room)
+
+            assertEquals(
+                0.20,
+                LocalPublicTurnOrder.fractionalPriorityChance(battle, BattleSide.ALLY, attack),
+                1e-9,
+            )
+            assertEquals(
+                0.20,
+                LocalPublicTurnOrder.actsFirstProbability(
+                    battle,
+                    BattleSide.ALLY,
+                    attack,
+                    BattleSide.OPPONENT,
+                    attack,
+                ) ?: -1.0,
+                1e-9,
+            )
+        }
+    }
+
+    @Test
+    fun `quick draw can override a lagging item but quick claw cannot override mycelium might`() {
+        val attack = move("tackle", "normal", BattleMoveDamageCategory.PHYSICAL)
+        val status = move(
+            "spore",
+            "grass",
+            BattleMoveDamageCategory.STATUS,
+            effects = statusEffects("slp"),
+        )
+        val laggingDraw = state(allyAbility = "quickdraw", allyItem = "laggingtail")
+        val myceliumClaw = state(allyAbility = "myceliummight", allyItem = "quickclaw")
+
+        assertEquals(
+            0.30,
+            LocalPublicTurnOrder.actsFirstProbability(
+                laggingDraw,
+                BattleSide.ALLY,
+                attack,
+                BattleSide.OPPONENT,
+                attack,
+            ) ?: -1.0,
+            1e-9,
+        )
+        assertEquals(
+            0.0,
+            LocalPublicTurnOrder.fractionalPriorityChance(myceliumClaw, BattleSide.ALLY, status),
+            1e-9,
+        )
+        assertEquals(
+            0.0,
+            LocalPublicTurnOrder.actsFirstProbability(
+                myceliumClaw,
+                BattleSide.ALLY,
+                status,
+                BattleSide.OPPONENT,
+                status,
+            ) ?: -1.0,
+            1e-9,
+        )
+    }
+
+    @Test
     fun `armor tail blocks priority but not ordinary attacks`() {
         val quickAttack = move("quickattack", "normal", BattleMoveDamageCategory.PHYSICAL, priority = 1)
         val tackle = move("tackle", "normal", BattleMoveDamageCategory.PHYSICAL)
