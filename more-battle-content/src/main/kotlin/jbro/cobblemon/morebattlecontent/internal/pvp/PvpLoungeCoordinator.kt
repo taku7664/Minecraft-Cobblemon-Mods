@@ -33,6 +33,7 @@ internal class PvpLoungeCoordinator(
     private val sessions = LinkedHashMap<UUID, Session>()
     private val preparations = LinkedHashMap<UUID, Preparation>()
     private val returns = LinkedHashMap<UUID, PvpReturnPoint>()
+    private val pendingSpectatorStops = LinkedHashMap<UUID, UUID>()
 
     @Synchronized
     fun start(room: PvpRoomView, battleId: UUID): Boolean {
@@ -122,15 +123,40 @@ internal class PvpLoungeCoordinator(
         val session = sessions[roomId] ?: return false
         if (playerId in session.spectators) return true
         if (playerId in returns) return false
-        val point = gateway.capture(playerId) ?: return false
+        if (targetId != session.leftPlayerId && targetId != session.rightPlayerId) return false
+        val point = try {
+            gateway.capture(playerId)
+        } catch (failure: RuntimeException) {
+            MoreBattleContent.LOGGER.error("Could not capture PvP spectator return point for $playerId", failure)
+            return false
+        } catch (failure: LinkageError) {
+            MoreBattleContent.LOGGER.error("Could not capture PvP spectator return point for $playerId", failure)
+            return false
+        } ?: return false
         returns[playerId] = point
-        if (!gateway.moveSpectator(playerId, session.lease) || !gateway.spectate(playerId, targetId)) {
+        if (sessions[roomId] !== session) {
             if (restorePoint(playerId, point)) returns.remove(playerId)
             return false
         }
+        try {
+            if (!gateway.moveSpectator(playerId, session.lease)) {
+                return rollbackSpectatorAdmission(playerId, session, point)
+            }
+            if (sessions[roomId] !== session) return rollbackSpectatorAdmission(playerId, session, point)
+            if (!gateway.spectate(playerId, targetId)) return rollbackSpectatorAdmission(playerId, session, point)
+            if (sessions[roomId] !== session) return rollbackSpectatorAdmission(playerId, session, point)
+        } catch (failure: RuntimeException) {
+            MoreBattleContent.LOGGER.error("PvP spectator admission failed for $playerId", failure)
+            return rollbackSpectatorAdmission(playerId, session, point)
+        } catch (failure: LinkageError) {
+            MoreBattleContent.LOGGER.error("PvP spectator admission failed for $playerId", failure)
+            return rollbackSpectatorAdmission(playerId, session, point)
+        }
         session.spectators += playerId
         val perspective = if (targetId == session.rightPlayerId) PvpRoomSide.RIGHT else PvpRoomSide.LEFT
-        gateway.showArenaHologram(playerId, session.battleId, session.lease, perspective)
+        runGatewayCleanup("show spectator arena hologram", playerId) {
+            gateway.showArenaHologram(playerId, session.battleId, session.lease, perspective)
+        }
         return true
     }
 
@@ -141,10 +167,14 @@ internal class PvpLoungeCoordinator(
         runGatewayCleanup("hide spectator arena hologram", playerId) {
             gateway.hideArenaHologram(playerId, session.battleId)
         }
-        runGatewayCleanup("stop battle spectating", playerId) {
+        val stopped = tryGatewayCleanup("stop battle spectating", playerId) {
             gateway.stopSpectating(playerId, session.battleId)
         }
-        restorePending(playerId)
+        if (stopped) {
+            restorePending(playerId)
+        } else {
+            pendingSpectatorStops[playerId] = session.battleId
+        }
         return true
     }
 
@@ -152,25 +182,32 @@ internal class PvpLoungeCoordinator(
     fun disconnectSpectator(roomId: UUID, playerId: UUID): Boolean {
         val session = sessions[roomId] ?: return false
         if (!session.spectators.remove(playerId)) return false
-        runGatewayCleanup("disconnect battle spectator", playerId) {
+        val disconnected = tryGatewayCleanup("disconnect battle spectator", playerId) {
             gateway.disconnectSpectating(playerId, session.battleId)
         }
+        if (!disconnected) pendingSpectatorStops[playerId] = session.battleId
         return true
     }
 
     @Synchronized
     fun finish(roomId: UUID): Boolean {
         val session = sessions.remove(roomId) ?: return rollbackPreparation(roomId)
-        val players = linkedSetOf(session.leftPlayerId, session.rightPlayerId).apply { addAll(session.spectators) }
+        val players = linkedSetOf(session.leftPlayerId, session.rightPlayerId).apply {
+            addAll(session.spectators)
+            pendingSpectatorStops.forEach { (playerId, battleId) ->
+                if (battleId == session.battleId) add(playerId)
+            }
+        }
         players.forEach { playerId ->
             runGatewayCleanup("hide arena hologram", playerId) {
                 gateway.hideArenaHologram(playerId, session.battleId)
             }
         }
         session.spectators.forEach { playerId ->
-            runGatewayCleanup("stop battle spectating", playerId) {
+            val stopped = tryGatewayCleanup("stop battle spectating", playerId) {
                 gateway.stopSpectating(playerId, session.battleId)
             }
+            if (!stopped) pendingSpectatorStops[playerId] = session.battleId
         }
         players.forEach(::restorePending)
         arenas.release(roomId)
@@ -179,6 +216,14 @@ internal class PvpLoungeCoordinator(
 
     @Synchronized
     fun restorePending(playerId: UUID): Boolean {
+        val pendingBattleId = pendingSpectatorStops[playerId]
+        if (pendingBattleId != null) {
+            val stopped = tryGatewayCleanup("stop partial battle spectating", playerId) {
+                gateway.stopSpectating(playerId, pendingBattleId)
+            }
+            if (!stopped) return false
+            pendingSpectatorStops.remove(playerId)
+        }
         val point = returns[playerId] ?: return false
         if (!restorePoint(playerId, point)) return false
         returns.remove(playerId)
@@ -221,6 +266,7 @@ internal class PvpLoungeCoordinator(
         sessions.clear()
         preparations.clear()
         returns.clear()
+        pendingSpectatorStops.clear()
     }
 
     private fun rollbackCaptured(roomId: UUID, captured: Map<UUID, PvpReturnPoint>): Boolean {
@@ -229,6 +275,19 @@ internal class PvpLoungeCoordinator(
             if (restorePoint(playerId, point)) returns.remove(playerId)
         }
         arenas.release(roomId)
+        return false
+    }
+
+    private fun rollbackSpectatorAdmission(playerId: UUID, session: Session, point: PvpReturnPoint): Boolean {
+        val stopped = tryGatewayCleanup("stop partial battle spectating", playerId) {
+            gateway.stopSpectating(playerId, session.battleId)
+        }
+        if (!stopped) {
+            pendingSpectatorStops[playerId] = session.battleId
+            return false
+        }
+        pendingSpectatorStops.remove(playerId)
+        if (restorePoint(playerId, point)) returns.remove(playerId)
         return false
     }
 
@@ -243,13 +302,18 @@ internal class PvpLoungeCoordinator(
     }
 
     private fun runGatewayCleanup(action: String, playerId: UUID, cleanup: () -> Unit) {
-        try {
-            cleanup()
-        } catch (exception: RuntimeException) {
-            MoreBattleContent.LOGGER.error("Could not $action for $playerId", exception)
-        } catch (error: LinkageError) {
-            MoreBattleContent.LOGGER.error("Could not $action for $playerId", error)
-        }
+        tryGatewayCleanup(action, playerId, cleanup)
+    }
+
+    private fun tryGatewayCleanup(action: String, playerId: UUID, cleanup: () -> Unit): Boolean = try {
+        cleanup()
+        true
+    } catch (exception: RuntimeException) {
+        MoreBattleContent.LOGGER.error("Could not $action for $playerId", exception)
+        false
+    } catch (error: LinkageError) {
+        MoreBattleContent.LOGGER.error("Could not $action for $playerId", error)
+        false
     }
 
     private data class Preparation(

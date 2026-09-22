@@ -56,6 +56,74 @@ class PvpLoungeCoordinatorTest {
     }
 
     @Test
+    fun `spectator admission exception restores the captured player and leaves no partial membership`() {
+        val gateway = RecordingGateway().apply {
+            spectatorFailure = NoSuchMethodError("spectator API drift")
+        }
+        val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
+        coordinator.start(room(spectators = emptyList()), UUID(0, 900))
+
+        assertFalse(coordinator.addSpectator(roomId, viewer, left))
+
+        assertEquals(listOf(viewer), gateway.restored)
+        assertEquals(listOf(viewer to UUID(0, 900)), gateway.stoppedSpectating)
+        assertFalse(viewer in coordinator.pendingReturnPlayerIds())
+        assertFalse(coordinator.removeSpectator(roomId, viewer))
+    }
+
+    @Test
+    fun `failed spectator rollback keeps the captured return point retryable`() {
+        val gateway = RecordingGateway().apply {
+            spectatorFailure = IllegalStateException("spectator move failed")
+            unavailableForRestore += viewer
+        }
+        val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
+        coordinator.start(room(spectators = emptyList()), UUID(0, 900))
+
+        assertFalse(coordinator.addSpectator(roomId, viewer, left))
+
+        assertTrue(viewer in coordinator.pendingReturnPlayerIds())
+        gateway.unavailableForRestore.clear()
+        assertTrue(coordinator.restorePending(viewer))
+        assertFalse(viewer in coordinator.pendingReturnPlayerIds())
+    }
+
+    @Test
+    fun `partial spectate and failed stop stay queued until both cleanup steps succeed`() {
+        val gateway = RecordingGateway().apply {
+            spectateFailure = NoSuchMethodError("spectate failed after registration")
+            stopFailure = true
+        }
+        val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
+        coordinator.start(room(spectators = emptyList()), UUID(0, 900))
+
+        assertFalse(coordinator.addSpectator(roomId, viewer, left))
+
+        assertTrue(viewer in coordinator.pendingReturnPlayerIds())
+        assertTrue(gateway.restored.isEmpty())
+        gateway.spectateFailure = null
+        gateway.stopFailure = false
+        assertTrue(coordinator.restorePending(viewer))
+        assertEquals(listOf(viewer), gateway.restored)
+        assertFalse(viewer in coordinator.pendingReturnPlayerIds())
+    }
+
+    @Test
+    fun `reentrant room finish during spectator admission rolls back the detached viewer`() {
+        val gateway = RecordingGateway()
+        val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
+        coordinator.start(room(spectators = emptyList()), UUID(0, 900))
+        gateway.onSpectate = { coordinator.finish(roomId) }
+
+        assertFalse(coordinator.addSpectator(roomId, viewer, left))
+
+        assertTrue(coordinator.activeRoomIds().isEmpty())
+        assertTrue(coordinator.pendingReturnPlayerIds().isEmpty())
+        assertEquals(setOf(left, right, viewer), gateway.restored.toSet())
+        assertFalse(coordinator.removeSpectator(roomId, viewer))
+    }
+
+    @Test
     fun `offline restore remains pending until that player is available`() {
         val gateway = RecordingGateway().apply { unavailableForRestore += viewer }
         val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
@@ -80,6 +148,23 @@ class PvpLoungeCoordinatorTest {
 
         gateway.unavailableForRestore.clear()
         assertTrue(coordinator.restorePending(viewer))
+        assertFalse(viewer in coordinator.pendingReturnPlayerIds())
+    }
+
+    @Test
+    fun `spectator exit waits to restore until failed spectating cleanup can retry`() {
+        val gateway = RecordingGateway()
+        val coordinator = PvpLoungeCoordinator(PvpArenaPool(), gateway)
+        coordinator.start(room(), UUID(0, 900))
+        gateway.stopFailure = true
+
+        assertTrue(coordinator.removeSpectator(roomId, viewer))
+
+        assertTrue(viewer in coordinator.pendingReturnPlayerIds())
+        assertFalse(viewer in gateway.restored)
+        gateway.stopFailure = false
+        assertTrue(coordinator.restorePending(viewer))
+        assertTrue(viewer in gateway.restored)
         assertFalse(viewer in coordinator.pendingReturnPlayerIds())
     }
 
@@ -261,6 +346,10 @@ class PvpLoungeCoordinatorTest {
         val unavailableForRestore = LinkedHashSet<UUID>()
         var failDisconnect = false
         var competitorFailure: Pair<UUID, Throwable>? = null
+        var spectatorFailure: Throwable? = null
+        var spectateFailure: Throwable? = null
+        var stopFailure = false
+        var onSpectate: (() -> Unit)? = null
         var hideFailure: Throwable? = null
 
         override fun ensureArena(lease: PvpArenaLease): Boolean = true.also { ensured += lease }
@@ -273,10 +362,18 @@ class PvpLoungeCoordinatorTest {
             return true
         }
 
-        override fun moveSpectator(playerId: UUID, lease: PvpArenaLease): Boolean =
-            true.also { spectators += playerId }
+        override fun moveSpectator(playerId: UUID, lease: PvpArenaLease): Boolean {
+            spectatorFailure?.let { throw it }
+            spectators += playerId
+            return true
+        }
 
-        override fun spectate(viewerId: UUID, targetId: UUID): Boolean = true.also { spectating += viewerId to targetId }
+        override fun spectate(viewerId: UUID, targetId: UUID): Boolean {
+            spectating += viewerId to targetId
+            onSpectate?.invoke()
+            spectateFailure?.let { throw it }
+            return true
+        }
 
         override fun showArenaHologram(playerId: UUID, battleId: UUID, lease: PvpArenaLease, perspective: PvpRoomSide) {
             shownArenaHolograms += ArenaHologramEvent(playerId, battleId, perspective)
@@ -288,6 +385,7 @@ class PvpLoungeCoordinatorTest {
         }
 
         override fun stopSpectating(viewerId: UUID, battleId: UUID) {
+            if (stopFailure) error("forced stop failure")
             stoppedSpectating += viewerId to battleId
         }
 
