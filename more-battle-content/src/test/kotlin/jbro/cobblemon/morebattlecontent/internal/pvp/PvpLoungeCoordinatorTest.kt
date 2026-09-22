@@ -307,6 +307,124 @@ class PvpLoungeCoordinatorTest {
     }
 
     @Test
+    fun `optional hologram failure cannot abort an activated battle lounge`() {
+        val gateway = RecordingGateway().apply {
+            showFailure = left to NoSuchMethodError("hologram API drift")
+        }
+        val pool = PvpArenaPool()
+        val coordinator = PvpLoungeCoordinator(pool, gateway)
+
+        assertTrue(coordinator.start(room(), UUID(0, 900)))
+
+        assertEquals(setOf(roomId), coordinator.activeRoomIds())
+        assertEquals(setOf(right, viewer), gateway.shownArenaHolograms.map { it.playerId }.toSet())
+        assertTrue(coordinator.finish(roomId))
+        assertNull(pool.leaseFor(roomId))
+        assertTrue(coordinator.pendingReturnPlayerIds().isEmpty())
+    }
+
+    @Test
+    fun `partial spectator activation is stopped before preparation rollback`() {
+        val gateway = RecordingGateway().apply {
+            spectateFailure = NoSuchMethodError("spectate API drift")
+        }
+        val pool = PvpArenaPool()
+        val coordinator = PvpLoungeCoordinator(pool, gateway)
+        val battleId = UUID(0, 900)
+
+        assertTrue(coordinator.prepare(room(phase = PvpRoomPhase.TEAM_PREVIEW)))
+        assertFalse(coordinator.activate(roomId, battleId))
+
+        assertEquals(listOf(viewer to battleId), gateway.stoppedSpectating)
+        assertEquals(setOf(left, right, viewer), gateway.restored.toSet())
+        assertTrue(coordinator.activeRoomIds().isEmpty())
+        assertTrue(coordinator.pendingReturnPlayerIds().isEmpty())
+        assertNull(pool.leaseFor(roomId))
+    }
+
+    @Test
+    fun `reentrant preparation rollback cannot create a session on a released arena`() {
+        val gateway = RecordingGateway()
+        val pool = PvpArenaPool()
+        val coordinator = PvpLoungeCoordinator(pool, gateway)
+        val battleId = UUID(0, 900)
+        assertTrue(coordinator.prepare(room(phase = PvpRoomPhase.TEAM_PREVIEW)))
+        gateway.onSpectate = { coordinator.rollbackPreparation(roomId) }
+
+        assertFalse(coordinator.activate(roomId, battleId))
+
+        assertTrue(coordinator.activeRoomIds().isEmpty())
+        assertNull(pool.leaseFor(roomId))
+        assertTrue(coordinator.pendingReturnPlayerIds().isEmpty())
+        assertTrue(gateway.stoppedSpectating.all { it == viewer to battleId })
+    }
+
+    @Test
+    fun `reentrant activation rollback keeps a failed spectator stop retryable`() {
+        val gateway = RecordingGateway().apply { stopFailure = true }
+        val pool = PvpArenaPool()
+        val coordinator = PvpLoungeCoordinator(pool, gateway)
+        val battleId = UUID(0, 900)
+        assertTrue(coordinator.prepare(room(phase = PvpRoomPhase.TEAM_PREVIEW)))
+        gateway.onSpectate = { coordinator.rollbackPreparation(roomId) }
+
+        assertFalse(coordinator.activate(roomId, battleId))
+
+        assertTrue(viewer in coordinator.pendingReturnPlayerIds())
+        assertFalse(viewer in gateway.restored)
+        gateway.stopFailure = false
+        assertTrue(coordinator.restorePending(viewer))
+        assertTrue(viewer in gateway.restored)
+        assertFalse(viewer in coordinator.pendingReturnPlayerIds())
+        assertNull(pool.leaseFor(roomId))
+    }
+
+    @Test
+    fun `pending only spectator stop blocks new preparation and admission until cleanup`() {
+        val gateway = RecordingGateway().apply { failStopOnCall = 2 }
+        val pool = PvpArenaPool()
+        val coordinator = PvpLoungeCoordinator(pool, gateway)
+        val oldBattleId = UUID(0, 900)
+        assertTrue(coordinator.prepare(room(phase = PvpRoomPhase.TEAM_PREVIEW)))
+        gateway.onSpectate = { coordinator.rollbackPreparation(roomId) }
+        assertFalse(coordinator.activate(roomId, oldBattleId))
+        assertTrue(viewer in coordinator.pendingReturnPlayerIds())
+
+        val pendingRoomId = UUID(0, 101)
+        assertFalse(coordinator.prepare(room(phase = PvpRoomPhase.TEAM_PREVIEW).copy(roomId = pendingRoomId)))
+
+        val activeRoomId = UUID(0, 102)
+        assertTrue(
+            coordinator.start(
+                room(spectators = emptyList()).copy(roomId = activeRoomId),
+                UUID(0, 901),
+            ),
+        )
+        assertFalse(coordinator.addSpectator(activeRoomId, viewer, left))
+
+        assertTrue(coordinator.restorePending(viewer))
+        assertFalse(viewer in coordinator.pendingReturnPlayerIds())
+        assertTrue(coordinator.addSpectator(activeRoomId, viewer, left))
+    }
+
+    @Test
+    fun `reentrant rollback while moving spectator cannot continue into spectating`() {
+        val gateway = RecordingGateway()
+        val pool = PvpArenaPool()
+        val coordinator = PvpLoungeCoordinator(pool, gateway)
+        val battleId = UUID(0, 900)
+        assertTrue(coordinator.prepare(room(phase = PvpRoomPhase.TEAM_PREVIEW)))
+        gateway.onMoveSpectator = { coordinator.rollbackPreparation(roomId) }
+
+        assertFalse(coordinator.activate(roomId, battleId))
+
+        assertTrue(gateway.spectating.isEmpty())
+        assertTrue(coordinator.activeRoomIds().isEmpty())
+        assertNull(pool.leaseFor(roomId))
+        assertTrue(coordinator.pendingReturnPlayerIds().isEmpty())
+    }
+
+    @Test
     fun `server shutdown rolls back preparations and drops stale return points`() {
         val gateway = RecordingGateway().apply { unavailableForRestore += viewer }
         val pool = PvpArenaPool()
@@ -349,7 +467,11 @@ class PvpLoungeCoordinatorTest {
         var spectatorFailure: Throwable? = null
         var spectateFailure: Throwable? = null
         var stopFailure = false
+        var failStopOnCall: Int? = null
+        var stopCalls = 0
+        var onMoveSpectator: (() -> Unit)? = null
         var onSpectate: (() -> Unit)? = null
+        var showFailure: Pair<UUID, Throwable>? = null
         var hideFailure: Throwable? = null
 
         override fun ensureArena(lease: PvpArenaLease): Boolean = true.also { ensured += lease }
@@ -365,6 +487,7 @@ class PvpLoungeCoordinatorTest {
         override fun moveSpectator(playerId: UUID, lease: PvpArenaLease): Boolean {
             spectatorFailure?.let { throw it }
             spectators += playerId
+            onMoveSpectator?.invoke()
             return true
         }
 
@@ -376,6 +499,7 @@ class PvpLoungeCoordinatorTest {
         }
 
         override fun showArenaHologram(playerId: UUID, battleId: UUID, lease: PvpArenaLease, perspective: PvpRoomSide) {
+            showFailure?.takeIf { it.first == playerId }?.second?.let { throw it }
             shownArenaHolograms += ArenaHologramEvent(playerId, battleId, perspective)
         }
 
@@ -385,7 +509,8 @@ class PvpLoungeCoordinatorTest {
         }
 
         override fun stopSpectating(viewerId: UUID, battleId: UUID) {
-            if (stopFailure) error("forced stop failure")
+            stopCalls += 1
+            if (stopFailure || stopCalls == failStopOnCall) error("forced stop failure")
             stoppedSpectating += viewerId to battleId
         }
 
