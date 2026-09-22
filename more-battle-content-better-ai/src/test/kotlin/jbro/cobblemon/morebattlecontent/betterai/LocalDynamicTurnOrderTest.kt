@@ -124,6 +124,91 @@ class LocalDynamicTurnOrderTest {
         }
     }
 
+    @Test
+    fun `after you makes its pending target act next`() {
+        val state = BattleStateView(
+            battleId = UUID.randomUUID(),
+            format = BattleFormat.DOUBLE,
+            turn = 1,
+            pokemon = listOf(
+                pokemon(RAIN_SETTER, BattleSide.ALLY, 0, speed = 200),
+                pokemon(SWIMMER, BattleSide.ALLY, 1, speed = 50),
+                pokemon(FAST_FOE, BattleSide.OPPONENT, 0, speed = 150),
+                pokemon(SLOW_FOE, BattleSide.OPPONENT, 1, speed = 100),
+            ),
+            field = BattleFieldStateView.empty(),
+            remainingPokemonBySide = BattleSide.entries.associateWith { 2 },
+            observedEvents = emptyList(),
+            inferences = emptyList(),
+        )
+        val afterYou = afterYouMove()
+        val allyJoint = joint("ally", afterYou, statusMove("ally_wait", 1))
+        val opponentJoint = joint(
+            "opponent",
+            statusMove("fast_foe_wait", 0),
+            statusMove("slow_foe_wait", 1),
+        )
+        val context = BattleDecisionContext(
+            requestId = UUID.randomUUID(),
+            state = state,
+            candidates = listOf(allyJoint),
+            deadlineEpochMillis = Long.MAX_VALUE,
+        )
+
+        val outcomes = PublicSingleTurnProjector.project(state, allyJoint, opponentJoint, context)
+
+        assertEquals(1.0, outcomes.sumOf { it.probability * it.orderProbability }, 1e-9)
+        assertTrue(outcomes.isNotEmpty())
+        outcomes.forEach { outcome ->
+            assertEquals(
+                listOf(RAIN_SETTER, SWIMMER, FAST_FOE, SLOW_FOE),
+                outcome.actionOrderPokemonIds,
+            )
+        }
+    }
+
+    @Test
+    fun `after you does not promote its target when the user cannot act`() {
+        val state = BattleStateView(
+            battleId = UUID.randomUUID(),
+            format = BattleFormat.DOUBLE,
+            turn = 1,
+            pokemon = listOf(
+                pokemon(RAIN_SETTER, BattleSide.ALLY, 0, speed = 200, status = "slp"),
+                pokemon(SWIMMER, BattleSide.ALLY, 1, speed = 50),
+                pokemon(FAST_FOE, BattleSide.OPPONENT, 0, speed = 150),
+                pokemon(SLOW_FOE, BattleSide.OPPONENT, 1, speed = 100),
+            ),
+            field = BattleFieldStateView.empty(),
+            remainingPokemonBySide = BattleSide.entries.associateWith { 2 },
+            observedEvents = emptyList(),
+            inferences = emptyList(),
+        )
+        val afterYou = afterYouMove()
+        val allyJoint = joint("ally", afterYou, statusMove("ally_wait", 1))
+        val opponentJoint = joint(
+            "opponent",
+            statusMove("fast_foe_wait", 0),
+            statusMove("slow_foe_wait", 1),
+        )
+        val context = BattleDecisionContext(
+            requestId = UUID.randomUUID(),
+            state = state,
+            candidates = listOf(allyJoint),
+            deadlineEpochMillis = Long.MAX_VALUE,
+        )
+
+        val outcomes = PublicSingleTurnProjector.project(state, allyJoint, opponentJoint, context)
+
+        assertEquals(1.0, outcomes.sumOf { it.probability * it.orderProbability }, 1e-9)
+        outcomes.forEach { outcome ->
+            assertEquals(
+                listOf(RAIN_SETTER, FAST_FOE, SLOW_FOE, SWIMMER),
+                outcome.actionOrderPokemonIds,
+            )
+        }
+    }
+
     private fun statusMove(
         id: String,
         actorSlot: Int,
@@ -147,6 +232,29 @@ class LocalDynamicTurnOrderTest {
         ),
     )
 
+    private fun afterYouMove() = BattleActionCandidate(
+        actionId = "afteryou",
+        kind = BattleActionKind.USE_MOVE,
+        actorSlot = 0,
+        moveSlot = 0,
+        moveId = "afteryou",
+        targets = listOf(BattleTargetSlot(BattleSide.ALLY, 1)),
+        moveDetails = BattleMoveCandidateView(
+            typeId = "normal",
+            damageCategory = BattleMoveDamageCategory.STATUS,
+            power = 0.0,
+            accuracy = 100.0,
+            priority = 0,
+            currentPp = 10,
+            targetPattern = BattleMoveTargetPattern.SELECTED_ALLY,
+            effects = BattleMoveEffectsView(
+                coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                effects = emptyList(),
+                scriptedBehavior = true,
+            ),
+        ),
+    )
+
     private fun joint(id: String, vararg actions: BattleActionCandidate) = BattleActionCandidate(
         actionId = id,
         kind = BattleActionKind.COMPOSITE,
@@ -160,6 +268,7 @@ class LocalDynamicTurnOrderTest {
         slot: Int,
         speed: Int,
         ability: String? = null,
+        status: String? = null,
     ) = BattlePokemonStateView(
         battlePokemonId = id,
         side = side,
@@ -168,7 +277,7 @@ class LocalDynamicTurnOrderTest {
         formId = null,
         level = 50,
         hpFraction = 1.0,
-        statusId = null,
+        statusId = status,
         statStages = emptyMap(),
         knownMoveIds = emptySet(),
         knownAbilityId = ability,

@@ -100,7 +100,11 @@ internal object PublicSingleTurnProjector {
             if (!shouldContinue()) return emptyList()
             scheduled = scheduled.flatMap { current ->
                 if (current.remaining.isEmpty()) return@flatMap listOf(current)
-                nextActionChoices(sourceContext.state, current.branch.state, current.remaining).flatMap { next ->
+                val nextChoices = current.promotedNextAction
+                    ?.takeIf { it in current.remaining }
+                    ?.let { listOf(WeightedNextAction(it, 1.0)) }
+                    ?: nextActionChoices(sourceContext.state, current.branch.state, current.remaining)
+                nextChoices.flatMap { next ->
                     val remaining = current.remaining.toMutableList().also { it.remove(next.action) }
                     applyScheduledAction(
                         branch = current.branch,
@@ -118,6 +122,7 @@ internal object PublicSingleTurnProjector {
                             remaining = remaining,
                             order = current.order + next.action,
                             orderProbability = current.orderProbability * next.probability,
+                            promotedNextAction = promotedAfterYouAction(next.action, remaining, projected),
                         )
                     }
                 }
@@ -1503,6 +1508,29 @@ internal object PublicSingleTurnProjector {
     }
 
     /**
+     * After You promotes the target's still-pending action to the front of the queue. The execution
+     * ledger is the success gate: sleep, full paralysis, Taunt, or another inability to use the move
+     * leaves no executed move and therefore must not reorder anything.
+     */
+    private fun promotedAfterYouAction(
+        executed: TurnPrimitiveAction,
+        remaining: List<TurnPrimitiveAction>,
+        outcome: WeightedState,
+    ): TurnPrimitiveAction? {
+        if (canonicalId(executed.action.moveId) != AFTER_YOU) return null
+        val actorId = executed.actorPokemonId ?: return null
+        if (canonicalId(outcome.executedMoveIdsByPokemon[actorId]) != AFTER_YOU) return null
+        val target = executed.action.targets.singleOrNull() ?: return null
+        val pending = remaining.singleOrNull {
+            it.side == target.side && it.action.actorSlot == target.slot
+        } ?: return null
+        val targetPokemon = outcome.state.pokemon.singleOrNull {
+            it.side == pending.side && it.activeSlot == pending.action.actorSlot
+        }
+        return pending.takeIf { targetPokemon != null && !targetPokemon.fainted && targetPokemon.hpFraction > 0.0 }
+    }
+
+    /**
      * How likely the first action is to resolve first, given only what is public about both Speeds.
      *
      * Reached only when the ranges overlap, so neither side is provably faster. The old reading called
@@ -1710,6 +1738,7 @@ internal object PublicSingleTurnProjector {
         val remaining: List<TurnPrimitiveAction>,
         val order: List<TurnPrimitiveAction> = emptyList(),
         val orderProbability: Double = 1.0,
+        val promotedNextAction: TurnPrimitiveAction? = null,
     )
 
     private data class WeightedState(
@@ -1756,6 +1785,7 @@ internal object PublicSingleTurnProjector {
     private const val FULL_PARALYSIS_PROBABILITY = 0.25
     private const val FREEZE_THAW_PROBABILITY = 0.20
     private const val FUTURE_MOVE_DELAY_TURNS = 2
+    private const val AFTER_YOU = "afteryou"
     private val PARALYSIS_IDS = setOf("par", "paralysis", "paralyzed", "paralysed")
     private val SLEEP_IDS = setOf("slp", "sleep", "asleep")
     private val FREEZE_IDS = setOf("frz", "freeze", "frozen")
