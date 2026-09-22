@@ -607,6 +607,44 @@ internal object PublicSingleTurnProjector {
         }
         val targetIsProtected = target?.battlePokemonId in protectedPokemonIds
         val breaksProtection = effects.any { it.kind == BattleMoveEffectKind.BREAKS_PROTECTION }
+        val reflectedByMagicBounce = target != null && target.side != side &&
+            calculatedAction.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS &&
+            "reflectable" in calculatedAction.moveDetails?.effects?.mechanicFlags.orEmpty() &&
+            canonicalId(target.knownAbilityId) == "magicbounce" &&
+            !LocalPublicAbilityMechanics.ignoresTargetAbility(
+                calculatedAction,
+                actor,
+                target,
+                projectedFormState,
+            )
+        if (reflectedByMagicBounce) {
+            val reflectedSide = if (side == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
+            return PublicMoveOutcomeBranchProjector.project(calculatedAction, calculated, side).flatMap { outcome ->
+                if (!outcome.hit) {
+                    listOf(
+                        WeightedState(
+                            state = applyCrashRecoil(projectedFormState, actor.battlePokemonId, effects),
+                            probability = outcome.probability,
+                            executedSides = setOf(side),
+                            executedMoveIdsByPokemon = effectiveAction.moveId?.let {
+                                mapOf(actor.battlePokemonId to it)
+                            }.orEmpty(),
+                        ),
+                    )
+                } else {
+                    applyChanceEffects(
+                        projectedFormState,
+                        actor.battlePokemonId,
+                        actor.battlePokemonId,
+                        effects,
+                        executedSide = side,
+                        effectSourceSide = reflectedSide,
+                        mode = chanceEffectMode,
+                        shouldContinue = shouldContinue,
+                    ).map { it.copy(probability = it.probability * outcome.probability) }
+                }
+            }
+        }
         if (projection.publiclyNullified || (targetIsProtected && !breaksProtection)) {
             val contact = "contact" in calculatedAction.moveDetails?.effects?.mechanicFlags.orEmpty()
             val attackDrop = target?.battlePokemonId?.let(protectionAttackDrops::get) ?: 0
@@ -1198,6 +1236,7 @@ internal object PublicSingleTurnProjector {
         targetId: UUID?,
         effects: List<BattleMoveEffectView>,
         executedSide: BattleSide,
+        effectSourceSide: BattleSide = executedSide,
         mode: ChanceEffectProjectionMode,
         shouldContinue: () -> Boolean,
     ): List<WeightedState> {
@@ -1211,8 +1250,8 @@ internal object PublicSingleTurnProjector {
             val probability = (effect.probability ?: 1.0).coerceIn(0.0, 1.0)
             if (probability <= 0.0) return@forEach
             branches = branches.flatMap { branch ->
-                val controlEffect = recursiveControlEffect(effect, actorId, targetId, executedSide)
-                val applied = applyEffect(branch.state, actorId, targetId, effect, executedSide)
+                val controlEffect = recursiveControlEffect(effect, actorId, targetId, effectSourceSide)
+                val applied = applyEffect(branch.state, actorId, targetId, effect, effectSourceSide)
                 when {
                     probability >= CERTAIN_PROBABILITY -> listOf(
                         branch.copy(
