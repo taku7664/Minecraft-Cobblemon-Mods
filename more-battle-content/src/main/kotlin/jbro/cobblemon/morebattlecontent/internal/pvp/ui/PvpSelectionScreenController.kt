@@ -71,7 +71,12 @@ internal class PvpSelectionScreenController(
     private fun nextRequestId(): UUID = requestIdFactory().also { pendingRequestId = it }
 
     private fun send(intent: PvpSelectionIntent): Boolean {
-        send.invoke(intent)
+        try {
+            send.invoke(intent)
+        } catch (failure: Throwable) {
+            if (pendingRequestId == intent.requestId) pendingRequestId = null
+            throw failure
+        }
         return true
     }
 }

@@ -84,7 +84,12 @@ internal class TowerPlayScreenController(
         pendingIntent = intent
         feedbackKey = null
         fieldFeedbackKeys = emptyList()
-        sendIntent(intent)
+        try {
+            sendIntent(intent)
+        } catch (failure: Throwable) {
+            if (pendingIntent === intent) pendingIntent = null
+            throw failure
+        }
         return true
     }
 }

@@ -191,7 +191,12 @@ internal class FactoryPlayScreenController(
         val intent = create(requestId) ?: return false
         pendingRequestId = requestId
         feedbackKey = null
-        sendIntent(intent)
+        try {
+            sendIntent(intent)
+        } catch (failure: Throwable) {
+            if (pendingRequestId == requestId) pendingRequestId = null
+            throw failure
+        }
         return true
     }
 

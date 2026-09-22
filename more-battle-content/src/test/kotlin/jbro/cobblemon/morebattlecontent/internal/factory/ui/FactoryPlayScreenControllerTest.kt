@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class FactoryPlayScreenControllerTest {
     private val playerId = UUID.randomUUID()
@@ -66,6 +67,15 @@ class FactoryPlayScreenControllerTest {
         assertTrue(swap.swap())
         assertEquals("set2", (swapSent.single() as FactoryPlayIntent.Swap).outgoingSetId)
         assertEquals(incomingToken, (swapSent.single() as FactoryPlayIntent.Swap).incomingToken)
+    }
+
+    @Test
+    fun `failed send releases the pending factory mutation`() {
+        val failure = AssertionError("network send failed")
+        val controller = FactoryPlayScreenController(view(FactoryPlayPhase.AVAILABLE), { throw failure })
+
+        assertEquals(failure, assertThrows<AssertionError> { controller.start() })
+        assertFalse(controller.isPending)
     }
 
     @Test

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class PvpSelectionScreenControllerTest {
     private val matchId = UUID.fromString("11111111-1111-1111-1111-111111111111")
@@ -38,6 +39,16 @@ class PvpSelectionScreenControllerTest {
         assertFalse(controller.isPending)
         assertEquals(ids.take(3).toSet(), controller.selectedPokemonIds)
         assertEquals("pvp.error", controller.feedbackKey)
+    }
+
+    @Test
+    fun `failed send releases the pending PvP selection`() {
+        val failure = AssertionError("network send failed")
+        val controller = PvpSelectionScreenController(state(), { throw failure })
+        ids.take(3).forEach(controller::toggle)
+
+        assertEquals(failure, assertThrows<AssertionError> { controller.submit() })
+        assertFalse(controller.isPending)
     }
 
     @Test

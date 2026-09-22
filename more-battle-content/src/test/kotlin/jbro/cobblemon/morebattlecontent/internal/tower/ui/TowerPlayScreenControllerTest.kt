@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class TowerPlayScreenControllerTest {
     private val pokemonId = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
@@ -85,6 +86,15 @@ class TowerPlayScreenControllerTest {
         assertTrue(controller.toggleSelection(pokemonId))
         assertFalse(controller.changeFormat(TowerBattleFormat.DOUBLE))
         assertEquals(1, sent.size)
+    }
+
+    @Test
+    fun `failed send releases the pending tower mutation`() {
+        val failure = AssertionError("network send failed")
+        val controller = TowerPlayScreenController(state(), { requestId }) { throw failure }
+
+        assertEquals(failure, assertThrows<AssertionError> { controller.toggleSelection(pokemonId) })
+        assertFalse(controller.isPending)
     }
 
     @Test
