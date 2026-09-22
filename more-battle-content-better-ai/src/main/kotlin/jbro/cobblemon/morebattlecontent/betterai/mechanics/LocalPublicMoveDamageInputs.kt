@@ -31,6 +31,7 @@ internal object LocalPublicMoveDamageInputs {
         val dynamicPower = speedRatioPower(id, actor, target, state)
         val wholePower = details.power.toInt().takeIf { it > 0 && it.toDouble() == details.power }
         val fixedPower = when (id) {
+            "acrobatics" -> wholePower?.let { if (actor.knownHeldItemId == null) it * 2 else it }
             "storedpower", "powertrip" -> wholePower?.plus(20 * actor.positiveBoosts())
             "facade" -> wholePower?.let { if (actor.statusId != null) it * 2 else it }
             "hex", "infernalparade" -> wholePower?.let { if (target.statusId != null) it * 2 else it }
@@ -183,7 +184,7 @@ internal object LocalPublicMoveDamageInputs {
         "dynamic_base_power", "dynamic_move_type", "dynamic_damage_category", "dynamic_damage_value",
     )
     private val PUBLICLY_RESOLVED_DYNAMIC_MOVES = setOf(
-        "storedpower", "powertrip", "facade", "hex", "infernalparade", "brine", "venoshock",
+        "acrobatics", "storedpower", "powertrip", "facade", "hex", "infernalparade", "brine", "venoshock",
         "barbbarrage", "smellingsalts", "wakeupslap", "round", "fishiousrend", "boltbeak",
         "assurance", "payback", "avalanche", "revenge", "electroball", "gyroball",
     )
