@@ -46,11 +46,12 @@ internal object ShadowTerrainHologramRenderer {
             context.client().execute { hide(payload.battleId) }
         }
         WorldRenderEvents.START.register {
-            releaseTargetsWhenIdle(System.nanoTime())
-            backgroundCaptured = false
-            shaderPackBackgroundCaptured = false
-            shaderPackTerrainCaptured = false
-            pendingShaderPackFrame = null
+            runOptionalClientEffect(
+                action = { releaseTargetsWhenIdle(System.nanoTime()) },
+                recover = {},
+                reportFailure = { warnOnce("Failed to release idle terrain hologram targets", it) },
+            )
+            resetFrameCaptureState()
         }
         WorldRenderEvents.AFTER_SETUP.register(::captureBackground)
         WorldRenderEvents.BEFORE_ENTITIES.register(::captureShaderPackTerrain)
@@ -68,11 +69,15 @@ internal object ShadowTerrainHologramRenderer {
 
     fun clear() {
         transition.clear()
+        resetFrameCaptureState()
+        destroyTargets()
+    }
+
+    private fun resetFrameCaptureState() {
         backgroundCaptured = false
         shaderPackBackgroundCaptured = false
         shaderPackTerrainCaptured = false
         pendingShaderPackFrame = null
-        destroyTargets()
     }
 
     private fun releaseTargetsWhenIdle(nowNanos: Long) {
@@ -83,111 +88,123 @@ internal object ShadowTerrainHologramRenderer {
     }
 
     private fun captureBackground(@Suppress("UNUSED_PARAMETER") context: WorldRenderContext) {
-        if (transition.snapshot(System.nanoTime()) == null) return
-        if (ExternalShaderPackState.isRenderingShadowPass()) return
-        val shaderPackActive = ExternalShaderPackState.isInUse()
-        try {
-            preserveFramebufferBindings { active ->
-                ensureTargets(active.width, active.height)
-                copyFramebuffer(active, requireNotNull(backgroundTarget), GL11.GL_COLOR_BUFFER_BIT)
-                backgroundCaptured = !shaderPackActive
-                shaderPackBackgroundCaptured = shaderPackActive
-            }
-        } catch (exception: RuntimeException) {
-            backgroundCaptured = false
-            shaderPackBackgroundCaptured = false
-            warnOnce("Failed to capture the pre-terrain framebuffer; skipping the terrain hologram frame", exception)
-        }
+        runOptionalClientEffect(
+            action = {
+                if (transition.snapshot(System.nanoTime()) == null) return@runOptionalClientEffect
+                if (ExternalShaderPackState.isRenderingShadowPass()) return@runOptionalClientEffect
+                val shaderPackActive = ExternalShaderPackState.isInUse()
+                preserveFramebufferBindings { active ->
+                    ensureTargets(active.width, active.height)
+                    copyFramebuffer(active, requireNotNull(backgroundTarget), GL11.GL_COLOR_BUFFER_BIT)
+                    backgroundCaptured = !shaderPackActive
+                    shaderPackBackgroundCaptured = shaderPackActive
+                }
+            },
+            recover = {
+                backgroundCaptured = false
+                shaderPackBackgroundCaptured = false
+            },
+            reportFailure = {
+                warnOnce("Failed to capture the pre-terrain framebuffer; skipping the terrain hologram frame", it)
+            },
+        )
     }
 
     private fun compositeTerrain(context: WorldRenderContext) {
-        val snapshot = transition.snapshot(System.nanoTime()) ?: return
-        if (ExternalShaderPackState.isInUse()) return
-        if (ExternalShaderPackState.isRenderingShadowPass()) return
-        if (!backgroundCaptured || snapshot.strength <= 0F) return
-        val shader = ShadowTerrainHologramShader.activeShader() ?: return
-        val frame = TerrainHologramRenderFrame.capture(context)
-
-        try {
-            preserveFramebufferBindings { active ->
-                if (active.width <= 0 || active.height <= 0) return@preserveFramebufferBindings
-                ensureTargets(active.width, active.height)
-                val background = backgroundTarget ?: return@preserveFramebufferBindings
-                val terrain = terrainTarget ?: return@preserveFramebufferBindings
-                copyFramebuffer(active, terrain, GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT)
-                drawComposite(frame, snapshot, active, terrain, background, terrain, false, shader)
-            }
-        } catch (exception: RuntimeException) {
-            warnOnce("Failed to composite the terrain hologram; skipping the terrain effect", exception)
-        }
+        runOptionalClientEffect(
+            action = {
+                val snapshot = transition.snapshot(System.nanoTime()) ?: return@runOptionalClientEffect
+                if (ExternalShaderPackState.isInUse()) return@runOptionalClientEffect
+                if (ExternalShaderPackState.isRenderingShadowPass()) return@runOptionalClientEffect
+                if (!backgroundCaptured || snapshot.strength <= 0F) return@runOptionalClientEffect
+                val shader = ShadowTerrainHologramShader.activeShader() ?: return@runOptionalClientEffect
+                val frame = TerrainHologramRenderFrame.capture(context)
+                preserveFramebufferBindings { active ->
+                    if (active.width <= 0 || active.height <= 0) return@preserveFramebufferBindings
+                    ensureTargets(active.width, active.height)
+                    val background = backgroundTarget ?: return@preserveFramebufferBindings
+                    val terrain = terrainTarget ?: return@preserveFramebufferBindings
+                    copyFramebuffer(active, terrain, GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT)
+                    drawComposite(frame, snapshot, active, terrain, background, terrain, false, shader)
+                }
+            },
+            reportFailure = { warnOnce("Failed to composite the terrain hologram; skipping the terrain effect", it) },
+        )
     }
 
     /** Captures terrain depth before entities so the late Iris-safe pass can leave foreground models untouched. */
     private fun captureShaderPackTerrain(@Suppress("UNUSED_PARAMETER") context: WorldRenderContext) {
-        if (!ExternalShaderPackState.isInUse()) return
-        if (transition.snapshot(System.nanoTime()) == null) return
-        if (ExternalShaderPackState.isRenderingShadowPass()) return
-        try {
-            preserveFramebufferBindings { active ->
-                if (active.width <= 0 || active.height <= 0) return@preserveFramebufferBindings
-                ensureTargets(active.width, active.height)
-                val terrain = terrainTarget ?: return@preserveFramebufferBindings
-                copyFramebuffer(active, terrain, GL11.GL_DEPTH_BUFFER_BIT)
-                shaderPackTerrainCaptured = true
-            }
-        } catch (exception: RuntimeException) {
-            shaderPackTerrainCaptured = false
-            warnOnce("Failed to capture terrain depth for the shader-pack hologram frame", exception)
-        }
+        runOptionalClientEffect(
+            action = {
+                if (!ExternalShaderPackState.isInUse()) return@runOptionalClientEffect
+                if (transition.snapshot(System.nanoTime()) == null) return@runOptionalClientEffect
+                if (ExternalShaderPackState.isRenderingShadowPass()) return@runOptionalClientEffect
+                preserveFramebufferBindings { active ->
+                    if (active.width <= 0 || active.height <= 0) return@preserveFramebufferBindings
+                    ensureTargets(active.width, active.height)
+                    val terrain = terrainTarget ?: return@preserveFramebufferBindings
+                    copyFramebuffer(active, terrain, GL11.GL_DEPTH_BUFFER_BIT)
+                    shaderPackTerrainCaptured = true
+                }
+            },
+            recover = { shaderPackTerrainCaptured = false },
+            reportFailure = { warnOnce("Failed to capture terrain depth for the shader-pack hologram frame", it) },
+        )
     }
 
     /** Runs after Iris has written its final world image but before the held item and GUI are rendered. */
     private fun compositeShaderPackTerrain(frame: TerrainHologramRenderFrame) {
-        if (!ExternalShaderPackState.isInUse()) return
-        val snapshot = transition.snapshot(System.nanoTime()) ?: return
-        if (!shaderPackTerrainCaptured || snapshot.strength <= 0F) return
-        val shader = ShadowTerrainHologramShader.activeShader() ?: return
-
-        try {
-            preserveFramebufferBindings { active ->
-                if (active.width <= 0 || active.height <= 0) return@preserveFramebufferBindings
-                val terrain = terrainTarget ?: return@preserveFramebufferBindings
-                if (terrain.viewWidth != active.width || terrain.viewHeight != active.height) {
-                    return@preserveFramebufferBindings
-                }
-                val finalScene = finalSceneTarget ?: return@preserveFramebufferBindings
-                val shaderPackBackground = backgroundTarget
-                    ?.takeIf {
-                        shaderPackBackgroundCaptured &&
-                            it.viewWidth == active.width && it.viewHeight == active.height
+        runOptionalClientEffect(
+            action = {
+                if (!ExternalShaderPackState.isInUse()) return@runOptionalClientEffect
+                val snapshot = transition.snapshot(System.nanoTime()) ?: return@runOptionalClientEffect
+                if (!shaderPackTerrainCaptured || snapshot.strength <= 0F) return@runOptionalClientEffect
+                val shader = ShadowTerrainHologramShader.activeShader() ?: return@runOptionalClientEffect
+                preserveFramebufferBindings { active ->
+                    if (active.width <= 0 || active.height <= 0) return@preserveFramebufferBindings
+                    val terrain = terrainTarget ?: return@preserveFramebufferBindings
+                    if (terrain.viewWidth != active.width || terrain.viewHeight != active.height) {
+                        return@preserveFramebufferBindings
                     }
-                    ?: finalScene
-                copyFramebuffer(active, finalScene, GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT)
-                drawComposite(frame, snapshot, active, finalScene, shaderPackBackground, terrain, true, shader)
-                if (!loggedLateShaderPackComposite) {
-                    loggedLateShaderPackComposite = true
-                    MoreBattleContent.LOGGER.info(
-                        "Composited MBC terrain hologram after external shader finalization ({}x{}, framebuffer {})",
-                        active.width,
-                        active.height,
-                        active.drawFramebuffer,
-                    )
+                    val finalScene = finalSceneTarget ?: return@preserveFramebufferBindings
+                    val shaderPackBackground = backgroundTarget
+                        ?.takeIf {
+                            shaderPackBackgroundCaptured &&
+                                it.viewWidth == active.width && it.viewHeight == active.height
+                        }
+                        ?: finalScene
+                    copyFramebuffer(active, finalScene, GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT)
+                    drawComposite(frame, snapshot, active, finalScene, shaderPackBackground, terrain, true, shader)
+                    if (!loggedLateShaderPackComposite) {
+                        loggedLateShaderPackComposite = true
+                        MoreBattleContent.LOGGER.info(
+                            "Composited MBC terrain hologram after external shader finalization ({}x{}, framebuffer {})",
+                            active.width,
+                            active.height,
+                            active.drawFramebuffer,
+                        )
+                    }
                 }
-            }
-        } catch (exception: RuntimeException) {
-            warnOnce("Failed to composite the shader-pack terrain hologram", exception)
-        }
+            },
+            reportFailure = { warnOnce("Failed to composite the shader-pack terrain hologram", it) },
+        )
     }
 
     private fun prepareShaderPackComposite(context: WorldRenderContext) {
-        pendingShaderPackFrame = if (
-            ExternalShaderPackState.isInUse() && shaderPackTerrainCaptured &&
-            transition.snapshot(System.nanoTime()) != null
-        ) {
-            TerrainHologramRenderFrame.capture(context)
-        } else {
-            null
-        }
+        runOptionalClientEffect(
+            action = {
+                pendingShaderPackFrame = if (
+                    ExternalShaderPackState.isInUse() && shaderPackTerrainCaptured &&
+                    transition.snapshot(System.nanoTime()) != null
+                ) {
+                    TerrainHologramRenderFrame.capture(context)
+                } else {
+                    null
+                }
+            },
+            recover = { pendingShaderPackFrame = null },
+            reportFailure = { warnOnce("Failed to prepare the shader-pack terrain hologram frame", it) },
+        )
     }
 
     /** Called by a low-priority renderLevel RETURN mixin after Iris finalizes its external pipeline. */
@@ -349,10 +366,10 @@ internal object ShadowTerrainHologramRenderer {
         finalSceneTarget = null
     }
 
-    private fun warnOnce(message: String, exception: RuntimeException) {
+    private fun warnOnce(message: String, failure: Throwable) {
         if (warned) return
         warned = true
-        MoreBattleContent.LOGGER.error(message, exception)
+        MoreBattleContent.LOGGER.error(message, failure)
     }
 
     private data class FramebufferBindings(
