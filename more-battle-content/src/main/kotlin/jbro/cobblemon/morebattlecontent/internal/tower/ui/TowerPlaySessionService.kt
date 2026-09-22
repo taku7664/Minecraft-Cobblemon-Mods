@@ -216,9 +216,15 @@ internal class TowerPlaySessionService(
         val requested = try {
             forfeit(battleId)
         } catch (exception: RuntimeException) {
+            if (sessions[playerId] !== session) return TowerSessionAbandonResult.SessionClosed
+            session.abandonRequested = false
+            throw exception
+        } catch (exception: LinkageError) {
+            if (sessions[playerId] !== session) return TowerSessionAbandonResult.SessionClosed
             session.abandonRequested = false
             throw exception
         }
+        if (sessions[playerId] !== session) return TowerSessionAbandonResult.SessionClosed
         if (!requested) {
             session.abandonRequested = false
             return TowerSessionAbandonResult.ForfeitUnavailable(battleId)

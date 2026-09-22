@@ -233,6 +233,85 @@ class TowerPlayBattleLaunchTest {
     }
 
     @Test
+    fun `linkage failure while requesting forfeit rolls back the pending abandon flag`() {
+        val service = TowerPlaySessionService(
+            entryContextIdFactory = { contextId },
+            battleLauncher = TowerBattleLauncher { TowerBattleLaunchResult.Started(battleId) },
+            registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
+        )
+        val locked = lockFirstThree(service)
+        service.mutate(
+            playerId,
+            TowerPlayIntent.Start(UUID(0, 28), contextId, locked.revision),
+        ) as TowerPlayMutationResult.Accepted
+        var attempts = 0
+
+        assertThrows(NoSuchMethodError::class.java) {
+            service.abandonSession(playerId) {
+                attempts++
+                throw NoSuchMethodError("forfeit API drift")
+            }
+        }
+        val retried = service.abandonSession(playerId) {
+            attempts++
+            true
+        }
+
+        assertEquals(TowerSessionAbandonResult.ForfeitRequested(battleId), retried)
+        assertEquals(2, attempts)
+    }
+
+    @Test
+    fun `synchronous completion during accepted forfeit reports the already closed session`() {
+        val recorded = ArrayList<TowerProgressUpdate>()
+        val service = TowerPlaySessionService(
+            entryContextIdFactory = { contextId },
+            battleLauncher = TowerBattleLauncher { TowerBattleLaunchResult.Started(battleId) },
+            registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
+            battleCompletionSink = { _, update -> recorded += update },
+        )
+        val locked = lockFirstThree(service)
+        service.mutate(
+            playerId,
+            TowerPlayIntent.Start(UUID(0, 29), contextId, locked.revision),
+        ) as TowerPlayMutationResult.Accepted
+
+        val result = service.abandonSession(playerId) {
+            service.completeBattle(playerId, battleId, TowerBattleOutcome.WIN)
+            true
+        }
+
+        assertEquals(TowerSessionAbandonResult.SessionClosed, result)
+        assertEquals(TowerBattleOutcome.LOSS, recorded.single().outcome)
+        assertEquals(null, service.current(playerId))
+    }
+
+    @Test
+    fun `synchronous completion wins over a stale unavailable forfeit response`() {
+        val recorded = ArrayList<TowerProgressUpdate>()
+        val service = TowerPlaySessionService(
+            entryContextIdFactory = { contextId },
+            battleLauncher = TowerBattleLauncher { TowerBattleLaunchResult.Started(battleId) },
+            registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
+            battleCompletionSink = { _, update -> recorded += update },
+        )
+        val locked = lockFirstThree(service)
+        service.mutate(
+            playerId,
+            TowerPlayIntent.Start(UUID(0, 30), contextId, locked.revision),
+        ) as TowerPlayMutationResult.Accepted
+
+        val result = service.abandonSession(playerId) {
+            service.completeBattle(playerId, battleId, TowerBattleOutcome.WIN)
+            false
+        }
+
+        assertEquals(TowerSessionAbandonResult.SessionClosed, result)
+        assertEquals(TowerBattleOutcome.LOSS, recorded.single().outcome)
+        assertEquals(null, service.current(playerId))
+    }
+
+    @Test
     fun `explicit abandon remains a loss when the battle ends without a declared winner`() {
         val recorded = ArrayList<TowerProgressUpdate>()
         val service = TowerPlaySessionService(
