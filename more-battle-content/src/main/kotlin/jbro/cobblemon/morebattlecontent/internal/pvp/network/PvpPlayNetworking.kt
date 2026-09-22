@@ -290,12 +290,17 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             )
         }
         ServerTickEvents.END_SERVER_TICK.register { server ->
-            currentServer = server
-            processEntryTimeouts()
-            turnHooks.processTimeouts()
-            processPendingCompletions(server)
-            lounge.restoreAvailable(onlinePlayers::containsKey)
-            loungeGateway.enforceSpectatorAnchors()
+            runManagedCleanupActionsSafely(
+                reportFailure = { failure ->
+                    MoreBattleContent.LOGGER.error("PvP server tick cleanup failed", failure)
+                },
+                { currentServer = server },
+                ::processEntryTimeouts,
+                turnHooks::processTimeouts,
+                { processPendingCompletions(server) },
+                { lounge.restoreAvailable(onlinePlayers::containsKey) },
+                loungeGateway::enforceSpectatorAnchors,
+            )
         }
     }
 
