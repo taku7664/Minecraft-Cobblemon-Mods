@@ -534,13 +534,15 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             if (targetId == null || !lounge.addSpectator(joined.room.roomId, player.uuid, targetId)) {
                 val battleId = sessions.battleIdFor(joined.room.roomId)
                 if (battleId == null || BattleRegistry.getBattle(battleId) == null) {
-                    runCatching { battleId?.let { sessions.cancelBattle(joined.room.roomId, it) } }
-                        .onFailure { exception ->
+                    runManagedCleanupActionsSafely(
+                        reportFailure = { failure ->
                             MoreBattleContent.LOGGER.error(
                                 "Could not reconcile stale PvP match ${joined.room.roomId}",
-                                exception,
+                                failure,
                             )
-                        }
+                        },
+                        { battleId?.let { sessions.cancelBattle(joined.room.roomId, it) } },
+                    )
                     finishRoom(joined.room.roomId)
                     rooms.get(joined.room.roomId)?.let { recovered ->
                         if (player.uuid in recovered.memberIds) {
