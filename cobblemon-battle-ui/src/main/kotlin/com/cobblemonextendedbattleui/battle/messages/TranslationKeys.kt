@@ -160,15 +160,24 @@ object TranslationKeys {
     )
 
     val BERRY_DAMAGE_KEYS = setOf(
+        "cobblemon.battle.enditem.babiriberry",
+        "cobblemon.battle.enditem.chartiberry",
+        "cobblemon.battle.enditem.chilanberry",
+        "cobblemon.battle.enditem.chopleberry",
+        "cobblemon.battle.enditem.cobaberry",
+        "cobblemon.battle.enditem.colburberry",
+        "cobblemon.battle.enditem.habanberry",
+        "cobblemon.battle.enditem.kasibberry",
+        "cobblemon.battle.enditem.kebiaberry",
         "cobblemon.battle.enditem.occaberry",
         "cobblemon.battle.enditem.passhoberry",
-        "cobblemon.battle.enditem.wacanberry",
+        "cobblemon.battle.enditem.payapaberry",
         "cobblemon.battle.enditem.rindoberry",
-        "cobblemon.battle.enditem.yacheberry",
-        "cobblemon.battle.enditem.chopleberry",
-        "cobblemon.battle.enditem.kebiaberry",
+        "cobblemon.battle.enditem.roseliberry",
         "cobblemon.battle.enditem.shucaberry",
-        "cobblemon.battle.enditem.cobaberry"
+        "cobblemon.battle.enditem.tangaberry",
+        "cobblemon.battle.enditem.wacanberry",
+        "cobblemon.battle.enditem.yacheberry"
     )
 
     const val KNOCKOFF_KEY = "cobblemon.battle.enditem.knockoff"

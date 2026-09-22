@@ -145,6 +145,30 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void allCobblemon181ResistanceBerryEventsAreTracked() {
+        assertEquals(Set.of(
+            "cobblemon.battle.enditem.babiriberry",
+            "cobblemon.battle.enditem.chartiberry",
+            "cobblemon.battle.enditem.chilanberry",
+            "cobblemon.battle.enditem.chopleberry",
+            "cobblemon.battle.enditem.cobaberry",
+            "cobblemon.battle.enditem.colburberry",
+            "cobblemon.battle.enditem.habanberry",
+            "cobblemon.battle.enditem.kasibberry",
+            "cobblemon.battle.enditem.kebiaberry",
+            "cobblemon.battle.enditem.occaberry",
+            "cobblemon.battle.enditem.passhoberry",
+            "cobblemon.battle.enditem.payapaberry",
+            "cobblemon.battle.enditem.rindoberry",
+            "cobblemon.battle.enditem.roseliberry",
+            "cobblemon.battle.enditem.shucaberry",
+            "cobblemon.battle.enditem.tangaberry",
+            "cobblemon.battle.enditem.wacanberry",
+            "cobblemon.battle.enditem.yacheberry"
+        ), TranslationKeys.INSTANCE.getBERRY_DAMAGE_KEYS());
+    }
+
+    @Test
     void lifeOrbRevealUsesTheCobblemonItemTranslation() {
         UUID uuid = UUID.randomUUID();
         PokemonRegistry.INSTANCE.registerPokemon(uuid, "Lucario", false);
