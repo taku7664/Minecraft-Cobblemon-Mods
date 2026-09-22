@@ -70,6 +70,24 @@ final class BattleUiAuditContractTest {
     }
 
     @Test
+    void transformAbilityUsesOnlyOwnedOrRevealedInformation() throws Exception {
+        String indicators = read("src/main/kotlin/com/cobblemonextendedbattleui/TeamIndicatorUI.kt");
+        int staleAbilityClear = indicators.indexOf(
+            "replaceAbilityForTransform(transformerUuid, null)"
+        );
+        int targetLookup = indicators.indexOf("BattleStateTracker.getPokemonUuid(targetName)");
+        assertFalse(indicators.contains("getBattlePokemonByUuid(targetUuid, battle)"));
+        assertFalse(indicators.contains("form?.abilities?.firstOrNull()"));
+        assertFalse(indicators.contains("findTrackedPokemonByName"));
+        assertTrue(indicators.contains("BattleStateTracker.getRevealedAbility(targetUuid)"));
+        assertTrue(indicators.contains("playerActor.pokemon.find { it.uuid == targetUuid }"));
+        assertTrue(indicators.contains("replaceAbilityForTransform(transformerUuid, targetAbility)"));
+        assertTrue(staleAbilityClear >= 0);
+        assertTrue(targetLookup >= 0);
+        assertTrue(staleAbilityClear < targetLookup, "Stale ability must clear before target lookup can fail");
+    }
+
+    @Test
     void battleLogUsesCobblemon181MoveKeys() throws Exception {
         String log = read("src/main/kotlin/com/cobblemonextendedbattleui/BattleLog.kt");
         assertTrue(log.contains("cobblemon.battle.used_move"));

@@ -332,11 +332,17 @@ object TeamIndicatorUI {
             return
         }
 
+        // Clear the pre-transform ability even if target/UI tracking has not caught up yet.
+        // A known copied ability is restored below after it passes the public-information checks.
+        BattleStateTracker.replaceAbilityForTransform(transformerUuid, null)
+
         // Find the transformer's tracked data
         val transformer = trackedSide1Pokemon[transformerUuid] ?: trackedSide2Pokemon[transformerUuid]
 
-        // Find the target Pokemon - search both sides by display name
-        val target = findTrackedPokemonByName(targetName)
+        // Preserve the structured owner identity from the battle message. Name-only
+        // first-match lookup can select the wrong side in mirror battles.
+        val targetUuid = BattleStateTracker.getPokemonUuid(targetName)
+        val target = targetUuid?.let { trackedSide1Pokemon[it] ?: trackedSide2Pokemon[it] }
 
         if (transformer != null) {
             applyTransformToTracked(transformer, transformerName, target)
@@ -348,42 +354,6 @@ object TeamIndicatorUI {
                 "TeamIndicatorUI: Queued pending transform for $transformerName (UUID: $transformerUuid)"
             )
         }
-    }
-
-    /**
-     * Find a tracked Pokemon by display name across both sides.
-     * Handles owner prefixes like "Player123's Gardevoir" -> "Gardevoir".
-     * Returns the first match found.
-     */
-    private fun findTrackedPokemonByName(displayName: String): TrackedPokemon? {
-        val lowerName = displayName.lowercase()
-
-        // Strip owner prefix if present (e.g., "Player123's Gardevoir" -> "Gardevoir")
-        val strippedName = if (lowerName.contains("'s ")) {
-            lowerName.substringAfter("'s ")
-        } else {
-            lowerName
-        }
-
-        // Search both sides - try exact match first, then stripped name
-        for (tracked in trackedSide1Pokemon.values) {
-            val trackedName = tracked.displayName?.lowercase()
-            if (trackedName == lowerName || trackedName == strippedName) {
-                return tracked
-            }
-        }
-
-        for (tracked in trackedSide2Pokemon.values) {
-            val trackedName = tracked.displayName?.lowercase()
-            if (trackedName == lowerName || trackedName == strippedName) {
-                return tracked
-            }
-        }
-
-        CobblemonExtendedBattleUI.LOGGER.debug(
-            "TeamIndicatorUI: findTrackedPokemonByName - could not find '$displayName' (stripped: '$strippedName')"
-        )
-        return null
     }
 
     /**
@@ -459,18 +429,9 @@ object TeamIndicatorUI {
 
         var targetAbility: String? = null
 
-        // Strategy 1: Try to get target's ability from Pokemon object
-        // This works when we have direct access to the Pokemon (our own Pokemon)
-        val targetPokemon = getBattlePokemonByUuid(targetUuid, battle)
-        if (targetPokemon != null) {
-            val rawAbilityName = targetPokemon.ability.name
-            targetAbility = formatAbilityName(rawAbilityName)
-            CobblemonExtendedBattleUI.LOGGER.debug(
-                "TeamIndicatorUI: Got target ability from Pokemon object: '$rawAbilityName' -> '$targetAbility'"
-            )
-        }
-
-        // Strategy 2: Check if target is in player's own team (we have full data access)
+        // Strategy 1: Check if target is in player's own team (we have full data access).
+        // Do not scan every actor: an opponent actor may expose implementation data that
+        // has not been announced by the battle protocol.
         // actor.pokemon can be empty for opponent actors, but should be populated for our own
         if (targetAbility == null) {
             val playerUuid = MinecraftClient.getInstance().player?.uuid
@@ -492,7 +453,7 @@ object TeamIndicatorUI {
             }
         }
 
-        // Strategy 3: Check revealed abilities (for opponent Pokemon whose ability was shown)
+        // Strategy 2: Check revealed abilities (for opponent Pokemon whose ability was shown)
         if (targetAbility == null) {
             targetAbility = BattleStateTracker.getRevealedAbility(targetUuid)
             if (targetAbility != null) {
@@ -502,25 +463,8 @@ object TeamIndicatorUI {
             }
         }
 
-        // Strategy 4: Try to get ability from TrackedPokemon's form data
-        // If we tracked the target and know its species/form, look up default ability
-        if (targetAbility == null) {
-            val trackedTarget = trackedSide1Pokemon[targetUuid] ?: trackedSide2Pokemon[targetUuid]
-            if (trackedTarget?.form != null) {
-                // Get the first ability as fallback (most Pokemon have their primary ability)
-                val firstAbility = trackedTarget.form?.abilities?.firstOrNull()?.template?.name
-                if (firstAbility != null) {
-                    targetAbility = formatAbilityName(firstAbility)
-                    CobblemonExtendedBattleUI.LOGGER.debug(
-                        "TeamIndicatorUI: Got target ability from form data (fallback): $targetAbility"
-                    )
-                }
-            }
-        }
-
-        // Set the ability on the transformer
         if (targetAbility != null) {
-            BattleStateTracker.setRevealedAbility(transformerUuid, targetAbility)
+            BattleStateTracker.replaceAbilityForTransform(transformerUuid, targetAbility)
             CobblemonExtendedBattleUI.LOGGER.debug(
                 "TeamIndicatorUI: Copied ability '$targetAbility' to $debugName"
             )

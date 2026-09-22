@@ -354,6 +354,7 @@ object BattleStateTracker {
     fun getRevealedAbility(uuid: UUID): String? = AbilityItemTracker.getRevealedAbility(uuid)
     fun getRevealedAbilityByName(pokemonName: String, preferAlly: Boolean? = null): String? = AbilityItemTracker.getRevealedAbilityByName(pokemonName, preferAlly)
     fun clearRevealedAbility(uuid: UUID) = AbilityItemTracker.clearRevealedAbility(uuid)
+    fun replaceAbilityForTransform(uuid: UUID, copiedAbility: String?) = AbilityItemTracker.replaceAbilityForTransform(uuid, copiedAbility)
 
     fun setItem(pokemonName: String, itemName: String, status: ItemStatus, preferAlly: Boolean? = null) = AbilityItemTracker.setItem(pokemonName, itemName, status, currentTurn, preferAlly)
     fun getItem(uuid: UUID): TrackedItem? = AbilityItemTracker.getItem(uuid)

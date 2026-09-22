@@ -36,6 +36,26 @@ final class BattleStateRegressionTest {
     }
 
     @Test
+    void transformClearsTheOldAbilityWhenTheCopiedAbilityIsUnknown() {
+        UUID transformer = UUID.randomUUID();
+        AbilityItemTracker.INSTANCE.setRevealedAbility(transformer, "Imposter");
+
+        AbilityItemTracker.INSTANCE.replaceAbilityForTransform(transformer, null);
+
+        assertEquals(null, AbilityItemTracker.INSTANCE.getRevealedAbility(transformer));
+    }
+
+    @Test
+    void transformReplacesTheOldAbilityWhenTheCopiedAbilityIsKnown() {
+        UUID transformer = UUID.randomUUID();
+        AbilityItemTracker.INSTANCE.setRevealedAbility(transformer, "Imposter");
+
+        AbilityItemTracker.INSTANCE.replaceAbilityForTransform(transformer, "Flash Fire");
+
+        assertEquals("Flash Fire", AbilityItemTracker.INSTANCE.getRevealedAbility(transformer));
+    }
+
+    @Test
     void perishSongOnlyMarksTheProvidedActivePokemon() {
         UUID active = UUID.randomUUID();
         UUID benched = UUID.randomUUID();

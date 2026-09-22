@@ -50,6 +50,15 @@ object AbilityItemTracker {
         }
     }
 
+    /** Replaces pre-transform ability state without guessing an unrevealed copied ability. */
+    fun replaceAbilityForTransform(uuid: UUID, copiedAbility: String?) {
+        if (copiedAbility == null) {
+            clearRevealedAbility(uuid)
+        } else {
+            setRevealedAbility(uuid, copiedAbility)
+        }
+    }
+
     // ── Item Tracking ────────────────────────────────────────────────────────
 
     fun setItem(pokemonName: String, itemName: String, status: ItemStatus, currentTurn: Int, preferAlly: Boolean? = null) {
