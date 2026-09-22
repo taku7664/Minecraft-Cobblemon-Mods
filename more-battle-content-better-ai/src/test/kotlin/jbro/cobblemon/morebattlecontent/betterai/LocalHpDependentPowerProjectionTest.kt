@@ -47,6 +47,24 @@ class LocalHpDependentPowerProjectionTest {
 
         assertNull(LocalPublicMoveDamageInputs.resolve(move("eruption", 150), actor, target, state))
         assertNull(LocalPublicMoveDamageInputs.resolve(move("flail", 0), actor, target, state))
+
+        val targetModeledState = state(
+            hpFraction = 1.0,
+            maxHp = BattleIntegerRange(200, 200),
+            knowledge = BattleCombatStatKnowledge.EXACT_OWN,
+            targetHpFraction = 0.123456789,
+            targetMaxHp = BattleIntegerRange(200, 220),
+        )
+        val targetModeledActor = targetModeledState.pokemon.single { it.side == BattleSide.ALLY }
+        val modeledTarget = targetModeledState.pokemon.single { it.side == BattleSide.OPPONENT }
+        assertNull(
+            LocalPublicMoveDamageInputs.resolve(
+                move("crushgrip", 0),
+                targetModeledActor,
+                modeledTarget,
+                targetModeledState,
+            ),
+        )
     }
 
     @Test
@@ -66,6 +84,25 @@ class LocalHpDependentPowerProjectionTest {
         assertEquals(setOf(40), flail.powers)
     }
 
+    @Test
+    fun `crush grip and wring out use the targets exact public hp with showdown rounding`() {
+        val cases = listOf(
+            200 to 120,
+            199 to 119,
+            198 to 118,
+            101 to 60,
+            100 to 60,
+            99 to 59,
+            2 to 1,
+            1 to 1,
+        )
+        for (id in listOf("crushgrip", "wringout")) {
+            for ((hp, expected) in cases) {
+                assertTargetPower(id, hp = hp, maxHp = 200, expected = expected)
+            }
+        }
+    }
+
     private fun assertPower(id: String, printedPower: Int, hp: Int, maxHp: Int, expected: Int) {
         val state = state(
             hpFraction = hp.toDouble() / maxHp,
@@ -79,6 +116,39 @@ class LocalHpDependentPowerProjectionTest {
         )
 
         assertEquals(setOf(expected), resolved.powers, "$id at $hp/$maxHp HP")
+    }
+
+    private fun assertTargetPower(id: String, hp: Int, maxHp: Int, expected: Int) {
+        val state = BattleStateView(
+            battleId = BATTLE_ID,
+            format = BattleFormat.SINGLE,
+            turn = 1,
+            pokemon = listOf(
+                pokemon(
+                    ALLY_ID,
+                    BattleSide.ALLY,
+                    hpFraction = 1.0,
+                    maxHp = BattleIntegerRange(200, 200),
+                    knowledge = BattleCombatStatKnowledge.EXACT_OWN,
+                ),
+                pokemon(
+                    OPPONENT_ID,
+                    BattleSide.OPPONENT,
+                    hpFraction = hp.toDouble() / maxHp,
+                    maxHp = BattleIntegerRange(maxHp, maxHp),
+                    knowledge = BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
+                ),
+            ),
+            field = BattleFieldStateView.empty(),
+            remainingPokemonBySide = mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1),
+            observedEvents = emptyList(),
+            inferences = emptyList(),
+        )
+        val actor = state.pokemon.single { it.side == BattleSide.ALLY }
+        val target = state.pokemon.single { it.side == BattleSide.OPPONENT }
+        val resolved = requireNotNull(LocalPublicMoveDamageInputs.resolve(move(id, 0), actor, target, state))
+
+        assertEquals(setOf(expected), resolved.powers, "$id against $hp/$maxHp HP")
     }
 
     private fun move(id: String, power: Int) = BattleActionCandidate(
@@ -109,6 +179,8 @@ class LocalHpDependentPowerProjectionTest {
         hpFraction: Double,
         maxHp: BattleIntegerRange,
         knowledge: BattleCombatStatKnowledge,
+        targetHpFraction: Double = 1.0,
+        targetMaxHp: BattleIntegerRange = BattleIntegerRange(200, 240),
     ) = BattleStateView(
         battleId = BATTLE_ID,
         format = BattleFormat.SINGLE,
@@ -118,8 +190,8 @@ class LocalHpDependentPowerProjectionTest {
             pokemon(
                 OPPONENT_ID,
                 BattleSide.OPPONENT,
-                hpFraction = 1.0,
-                maxHp = BattleIntegerRange(200, 240),
+                hpFraction = targetHpFraction,
+                maxHp = targetMaxHp,
                 knowledge = BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
             ),
         ),

@@ -31,6 +31,7 @@ internal object LocalPublicMoveDamageInputs {
         val wholePower = details.power.toInt().takeIf { it > 0 && it.toDouble() == details.power }
         val dynamicPower = speedRatioPower(id, actor, target, state)
             ?: hpDependentPowers(id, actor, wholePower)
+            ?: targetHpDependentPowers(id, target)
         val fixedPower = when (id) {
             "acrobatics" -> wholePower?.let { if (actor.knownHeldItemId == null) it * 2 else it }
             "expandingforce" -> wholePower?.let {
@@ -59,7 +60,7 @@ internal object LocalPublicMoveDamageInputs {
             else -> wholePower
         }
         val powers = dynamicPower ?: when (id) {
-            in SPEED_RATIO_MOVES, in HP_DEPENDENT_MOVES -> return null
+            in SPEED_RATIO_MOVES, in HP_DEPENDENT_MOVES, in TARGET_HP_DEPENDENT_MOVES -> return null
             else -> fixedPower?.let(::setOf) ?: return null
         }
         val offensivePokemon = if (id == "foulplay") target else actor
@@ -201,6 +202,22 @@ internal object LocalPublicMoveDamageInputs {
         }
     }
 
+    private fun targetHpDependentPowers(
+        id: String,
+        target: BattlePokemonStateView,
+    ): Set<Int>? {
+        if (id !in TARGET_HP_DEPENDENT_MOVES) return null
+        val hypotheses = LocalHpArithmetic.exactHpHypotheses(target)
+        if (hypotheses.isEmpty()) return null
+        return hypotheses.mapTo(linkedSetOf()) { hp -> crushGripPower(hp.current, hp.maximum) }
+    }
+
+    private fun crushGripPower(currentHp: Int, maximumHp: Int): Int {
+        val hpRatio = currentHp.toLong() * 4096L / maximumHp
+        val scaledPower = (120L * (100L * hpRatio) + 2047L) / 4096L
+        return (scaledPower / 100L).coerceAtLeast(1L).toInt()
+    }
+
     private fun BattlePokemonStateView.stage(stat: CombatStat): Int = when (stat) {
         CombatStat.ATTACK -> stage("attack", "atk")
         CombatStat.DEFENCE -> stage("defence", "defense", "def")
@@ -231,7 +248,8 @@ internal object LocalPublicMoveDamageInputs {
     )
     private val PUBLICLY_RESOLVED_DYNAMIC_MOVES = setOf(
         "acrobatics", "expandingforce", "risingvoltage", "eruption", "waterspout",
-        "dragonenergy", "flail", "reversal", "storedpower", "powertrip", "facade", "hex",
+        "dragonenergy", "flail", "reversal", "crushgrip", "wringout", "storedpower",
+        "powertrip", "facade", "hex",
         "infernalparade", "brine", "venoshock",
         "barbbarrage", "smellingsalts", "wakeupslap", "round", "fishiousrend", "boltbeak",
         "assurance", "payback", "avalanche", "revenge", "electroball", "gyroball",
@@ -241,6 +259,7 @@ internal object LocalPublicMoveDamageInputs {
     private val HP_DEPENDENT_MOVES = setOf(
         "eruption", "waterspout", "dragonenergy", "flail", "reversal",
     )
+    private val TARGET_HP_DEPENDENT_MOVES = setOf("crushgrip", "wringout")
     private val ELECTRO_BALL_POWERS = listOf(40, 60, 80, 120, 150)
 
     /** Fallback for synthetic/older candidates that predate declarative callback flags. */
