@@ -7,6 +7,7 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalDeclaredMultiHit
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalFullHealthSurvivalRules
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalKnownStatMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalMechanicFormResolution
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveDamageInputs
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveTargets
@@ -371,6 +372,11 @@ internal object PublicBattleTacticalCalculator {
         val stealsStages = effects.any { it.kind == BattleMoveEffectKind.STEALS_STAT_STAGES }
         val attackStage = moveInputs.offensiveStage
         val defenceStage = moveInputs.defensiveStage
+        val actorAbility = canonical(actor.knownAbilityId)
+        val targetAbility = canonical(target.knownAbilityId)
+        val ignoresTargetAbility = LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, actor, target, state)
+        val defenderUnaware = targetAbility == UNAWARE && !ignoresTargetAbility
+        val attackerUnaware = actorAbility == UNAWARE
         val stolenAttackStage = if (stealsStages) {
             when (details.damageCategory) {
                 BattleMoveDamageCategory.PHYSICAL -> target.stage("attack", "atk").coerceAtLeast(0)
@@ -380,12 +386,22 @@ internal object PublicBattleTacticalCalculator {
         } else {
             0
         }
-        val effectiveAttackStage = if (guaranteedCritical && attackStage < 0) 0 else {
-            (attackStage + stolenAttackStage).coerceIn(-6, 6)
+        val combinedAttackStage = (attackStage + stolenAttackStage).coerceIn(-6, 6)
+        val defenderIgnoresOffensiveStage = defenderUnaware &&
+            moveInputs.offensivePokemon.battlePokemonId == actor.battlePokemonId &&
+            moveInputs.offensiveStat in UNAWARE_IGNORED_OFFENSIVE_STATS
+        val effectiveAttackStage = when {
+            defenderIgnoresOffensiveStage -> 0
+            guaranteedCritical && combinedAttackStage < 0 -> 0
+            else -> combinedAttackStage
         }
-        val ignoresDefensiveStages = guaranteedCritical ||
+        val ignoresHelpfulDefensiveStages = guaranteedCritical ||
             effects.any { it.kind == BattleMoveEffectKind.IGNORE_DEFENSIVE_STAGES }
-        val effectiveDefenceStage = if (ignoresDefensiveStages && defenceStage > 0) 0 else defenceStage
+        val effectiveDefenceStage = when {
+            attackerUnaware -> 0
+            ignoresHelpfulDefensiveStages && defenceStage > 0 -> 0
+            else -> defenceStage
+        }
         val stagedAttack = applyStage(attack, effectiveAttackStage)
         return ShowdownStandardDamageProjection.project(
             level = level,
@@ -564,6 +580,13 @@ internal object PublicBattleTacticalCalculator {
         ?.substringAfter(':')
         ?.lowercase()
         ?.filter(Char::isLetterOrDigit)
+
+    private const val UNAWARE = "unaware"
+    private val UNAWARE_IGNORED_OFFENSIVE_STATS = setOf(
+        LocalPublicMoveDamageInputs.CombatStat.ATTACK,
+        LocalPublicMoveDamageInputs.CombatStat.DEFENCE,
+        LocalPublicMoveDamageInputs.CombatStat.SPECIAL_ATTACK,
+    )
 
     private fun BattlePokemonStateView.stage(vararg aliases: String): Int = statStages.entries
         .firstOrNull { (key, _) -> key.substringAfter(':').lowercase() in aliases }

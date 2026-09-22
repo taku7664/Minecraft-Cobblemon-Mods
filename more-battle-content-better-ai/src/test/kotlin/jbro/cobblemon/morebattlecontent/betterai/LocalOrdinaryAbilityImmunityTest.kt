@@ -42,6 +42,38 @@ class LocalOrdinaryAbilityImmunityTest {
         )
     }
 
+    @Test
+    fun `ability shield preserves a known immunity from mold breaker until magic room suppresses the item`() {
+        val ally = mon(BattleSide.ALLY, setOf("ground"), ability = "mold_breaker")
+        val opponent = mon(
+            BattleSide.OPPONENT,
+            setOf("steel"),
+            ability = "earth_eater",
+            item = "ability_shield",
+        )
+        val move = move("earthquake", "ground")
+        fun context(field: BattleFieldStateView) = BattleDecisionContext(
+            requestId = UUID.randomUUID(),
+            state = BattleStateView(
+                battleId = UUID.randomUUID(), format = BattleFormat.SINGLE, turn = 2,
+                pokemon = listOf(ally, opponent), field = field,
+                remainingPokemonBySide = BattleSide.entries.associateWith { 3 },
+                observedEvents = emptyList(), inferences = emptyList(),
+            ),
+            candidates = listOf(move), deadlineEpochMillis = Long.MAX_VALUE,
+        )
+        val magicRoom = BattleFieldStateView(
+            weather = null,
+            terrain = null,
+            roomEffects = listOf(BattleTimedEffectView("magicroom", 3)),
+            globalEffects = emptyList(),
+            sideConditions = BattleSide.entries.associateWith { emptyList() },
+        )
+
+        assertTrue(LocalPublicMechanicsKernel.projectMove(move, context(BattleFieldStateView.empty())).publiclyNullified)
+        assertEquals(false, LocalPublicMechanicsKernel.projectMove(move, context(magicRoom)).publiclyNullified)
+    }
+
     private fun factsFor(
         hiddenSandVeil: Boolean,
         extraOrdinaryAbility: String? = null,
@@ -98,11 +130,16 @@ class LocalOrdinaryAbilityImmunityTest {
         ),
     )
 
-    private fun mon(side: BattleSide, types: Set<String>) = BattlePokemonStateView(
+    private fun mon(
+        side: BattleSide,
+        types: Set<String>,
+        ability: String? = null,
+        item: String? = null,
+    ) = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(), side = side, activeSlot = 0,
         speciesId = "cobblemon:probe", formId = null, level = 50, hpFraction = 1.0,
-        statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(), knownAbilityId = null,
-        knownHeldItemId = null, fainted = false, knownTypeIds = types,
+        statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(), knownAbilityId = ability,
+        knownHeldItemId = item, fainted = false, knownTypeIds = types,
         combatStats = if (side == BattleSide.ALLY) {
             BattleCombatStatRangesView.exact(160, 130, 100, 90, 100, 90)
         } else {

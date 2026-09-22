@@ -37,6 +37,7 @@ internal object LocalPublicAccuracy {
         val actorAbility = canonical(actor.knownAbilityId)
         val targetAbility = canonical(target?.knownAbilityId)
         if (actorAbility == NO_GUARD || targetAbility == NO_GUARD) return 1.0
+        val ignoresTargetAbility = LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, actor, target, state)
 
         val moveId = canonical(candidate.moveId)
         val weather = LocalPublicFieldMechanics.effectiveWeatherId(state)
@@ -53,11 +54,19 @@ internal object LocalPublicAccuracy {
             candidate.moveDetails?.damageCategory == BattleMoveDamageCategory.PHYSICAL
         ) base *= HUSTLE_ACCURACY_MODIFIER
 
-        val accuracyStage = actor.stage("accuracy", "acc")
+        val accuracyStage = if (targetAbility == UNAWARE && !ignoresTargetAbility) {
+            0
+        } else {
+            actor.stage("accuracy", "acc")
+        }
         val ignoresEvasion = candidate.moveDetails?.effects?.effects.orEmpty().any {
             it.kind == BattleMoveEffectKind.IGNORE_EVASION_STAGES
         }
-        val evasionStage = if (ignoresEvasion) 0 else target?.stage("evasion", "eva") ?: 0
+        val evasionStage = if (ignoresEvasion || actorAbility == UNAWARE) {
+            0
+        } else {
+            target?.stage("evasion", "eva") ?: 0
+        }
         val combined = (accuracyStage - evasionStage).coerceIn(-6, 6)
         val multiplier = if (combined >= 0) (3.0 + combined) / 3.0 else 3.0 / (3.0 - combined)
         return (base * multiplier).coerceIn(0.0, 1.0)
@@ -76,6 +85,7 @@ internal object LocalPublicAccuracy {
     private const val NO_GUARD = "noguard"
     private const val COMPOUND_EYES = "compoundeyes"
     private const val HUSTLE = "hustle"
+    private const val UNAWARE = "unaware"
     private const val UTILITY_UMBRELLA = "utilityumbrella"
     private const val BLIZZARD = "blizzard"
     private val RAIN_ACCURATE_MOVES = setOf("thunder", "hurricane")

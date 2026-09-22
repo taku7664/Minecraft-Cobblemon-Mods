@@ -464,6 +464,91 @@ class PublicBattleTacticalCalculatorTest {
     }
 
     @Test
+    fun `defender unaware ignores the attackers offensive stage`() {
+        val neutral = damage(context(
+            setOf("normal"), true, damageCategory = BattleMoveDamageCategory.PHYSICAL,
+            opponentAbility = "unaware",
+        ))
+        val boosted = damage(context(
+            setOf("normal"), true, damageCategory = BattleMoveDamageCategory.PHYSICAL,
+            allyStages = mapOf("attack" to 6), opponentAbility = "unaware",
+        ))
+
+        assertEquals(neutral, boosted)
+    }
+
+    @Test
+    fun `attacker unaware ignores the targets defensive stage`() {
+        val neutral = damage(context(
+            setOf("normal"), true, damageCategory = BattleMoveDamageCategory.PHYSICAL,
+            allyAbility = "unaware",
+        ))
+        val boostedDefence = damage(context(
+            setOf("normal"), true, damageCategory = BattleMoveDamageCategory.PHYSICAL,
+            opponentStages = mapOf("defense" to 6), allyAbility = "unaware",
+        ))
+        val loweredDefence = damage(context(
+            setOf("normal"), true, damageCategory = BattleMoveDamageCategory.PHYSICAL,
+            opponentStages = mapOf("defense" to -6), allyAbility = "unaware",
+        ))
+
+        assertEquals(neutral, boostedDefence)
+        assertEquals(neutral, loweredDefence)
+    }
+
+    @Test
+    fun `mold breaker bypasses defender unaware unless ability shield is active`() {
+        val neutral = damage(context(
+            setOf("normal"), true, damageCategory = BattleMoveDamageCategory.PHYSICAL,
+            opponentAbility = "unaware",
+        ))
+        val bypassed = damage(context(
+            setOf("normal"), true, damageCategory = BattleMoveDamageCategory.PHYSICAL,
+            allyStages = mapOf("attack" to 6), allyAbility = "mold_breaker", opponentAbility = "unaware",
+        ))
+        val shielded = damage(context(
+            setOf("normal"), true, damageCategory = BattleMoveDamageCategory.PHYSICAL,
+            allyStages = mapOf("attack" to 6), allyAbility = "mold_breaker", opponentAbility = "unaware",
+            opponentItem = "ability_shield",
+        ))
+
+        assertTrue(bypassed.minimum > neutral.minimum * 3.8)
+        assertEquals(neutral, shielded)
+    }
+
+    @Test
+    fun `defender unaware still permits foul play to use its own attack stage`() {
+        val boostedTarget = damage(context(
+            setOf("normal"), true, moveId = "foulplay", moveType = "dark",
+            damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 95.0,
+            opponentStages = mapOf("attack" to 2),
+        ))
+        val boostedUnawareTarget = damage(context(
+            setOf("normal"), true, moveId = "foulplay", moveType = "dark",
+            damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 95.0,
+            opponentStages = mapOf("attack" to 2), opponentAbility = "unaware",
+        ))
+
+        assertEquals(boostedTarget, boostedUnawareTarget)
+    }
+
+    @Test
+    fun `defender unaware ignores the defence stage body press attacks with`() {
+        val neutral = damage(context(
+            setOf("normal"), true, moveId = "bodypress", moveType = "fighting",
+            damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 80.0,
+            opponentAbility = "unaware",
+        ))
+        val boosted = damage(context(
+            setOf("normal"), true, moveId = "bodypress", moveType = "fighting",
+            damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 80.0,
+            allyStages = mapOf("defense" to 2), opponentAbility = "unaware",
+        ))
+
+        assertEquals(neutral, boosted)
+    }
+
+    @Test
     fun `future move slot condition is not published as immediate damage`() {
         val facts = requireNotNull(
             PublicBattleTacticalCalculator.calculate(
@@ -506,6 +591,7 @@ class PublicBattleTacticalCalculatorTest {
         opponentStatus: String? = null,
         opponentHp: Double = 1.0,
         allyAbility: String? = null,
+        opponentAbility: String? = null,
         allyItem: String? = null,
         opponentItem: String? = null,
         opponentCombatStats: BattleCombatStatRangesView = opponentStats(),
@@ -538,6 +624,7 @@ class PublicBattleTacticalCalculatorTest {
                         opponentStages,
                         statusId = opponentStatus,
                         hpFraction = opponentHp,
+                        knownAbilityId = opponentAbility,
                         knownHeldItemId = opponentItem,
                     ),
                 ),

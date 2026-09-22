@@ -29,9 +29,12 @@ internal object LocalPublicMechanicsKernel {
             it.side == actingSide && it.activeSlot == candidate.actorSlot && !it.fainted
         }
         val actorAbility = canonicalOrNull(actor?.knownAbilityId)
-        val ignoresAbility = actorAbility in ABILITY_IGNORING_ABILITIES ||
-            actorAbility == MYCELIUM_MIGHT && details.damageCategory == BattleMoveDamageCategory.STATUS ||
-            details.effects?.effects?.any { it.kind == BattleMoveEffectKind.IGNORE_ABILITY } == true
+        val ignoresAbility = LocalPublicAbilityMechanics.ignoresTargetAbility(
+            candidate,
+            actor,
+            target,
+            context.state,
+        )
         if (specialTargetImmunity(candidate, context, actingSide, target, actorAbility, ignoresAbility)) {
             return LocalPublicMoveProjection(
                 knownDamageMultiplier = 0.0,
@@ -319,8 +322,6 @@ internal object LocalPublicMechanicsKernel {
         ELECTRIC to setOf("voltabsorb", "lightningrod", "motordrive"),
         GRASS to setOf("sapsipper"),
     )
-    private val ABILITY_IGNORING_ABILITIES = setOf("moldbreaker", "teravolt", "turboblaze")
-    private const val MYCELIUM_MIGHT = "myceliummight"
     private const val PRANKSTER = "prankster"
     private const val POWDER_FLAG = "powder"
     private const val SAFETY_GOGGLES = "safetygoggles"

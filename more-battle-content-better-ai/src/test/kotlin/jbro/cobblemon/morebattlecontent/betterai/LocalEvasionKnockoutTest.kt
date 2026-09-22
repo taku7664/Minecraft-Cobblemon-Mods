@@ -52,17 +52,69 @@ class LocalEvasionKnockoutTest {
         )
     }
 
-    private fun knockoutUtility(targetEvasion: Int = 0, actorAccuracy: Int = 0): Double {
-        val calculated = PublicBattleTacticalCalculator.calculate(context(targetEvasion, actorAccuracy))
+    @Test
+    fun `unaware attacker ignores target evasion`() {
+        val plain = knockoutUtility()
+        val unaware = knockoutUtility(targetEvasion = 2, actorAbility = "unaware")
+
+        assertEquals(plain, unaware, 1.0e-9)
+    }
+
+    @Test
+    fun `unaware defender ignores attacker accuracy stages unless bypassed`() {
+        val plain = knockoutUtility()
+        val unaware = knockoutUtility(actorAccuracy = -2, targetAbility = "unaware")
+        val bypassed = knockoutUtility(
+            actorAccuracy = -2,
+            actorAbility = "mold_breaker",
+            targetAbility = "unaware",
+        )
+        val shielded = knockoutUtility(
+            actorAccuracy = -2,
+            actorAbility = "mold_breaker",
+            targetAbility = "unaware",
+            targetItem = "ability_shield",
+        )
+
+        assertEquals(plain, unaware, 1.0e-9)
+        assertEquals(plain * 0.6, bypassed, 1.0e-9)
+        assertEquals(plain, shielded, 1.0e-9)
+    }
+
+    private fun knockoutUtility(
+        targetEvasion: Int = 0,
+        actorAccuracy: Int = 0,
+        actorAbility: String? = null,
+        targetAbility: String? = null,
+        targetItem: String? = null,
+    ): Double {
+        val calculated = PublicBattleTacticalCalculator.calculate(
+            context(targetEvasion, actorAccuracy, actorAbility, targetAbility, targetItem),
+        )
         return LocalTacticalScorer.knockoutUtility(
             candidate = calculated.candidates.single(),
             context = calculated,
         )
     }
 
-    private fun context(targetEvasion: Int = 0, actorAccuracy: Int = 0): BattleDecisionContext {
-        val ally = mon(BattleSide.ALLY, if (actorAccuracy == 0) emptyMap() else mapOf("accuracy" to actorAccuracy))
-        val opponent = mon(BattleSide.OPPONENT, if (targetEvasion == 0) emptyMap() else mapOf("evasion" to targetEvasion))
+    private fun context(
+        targetEvasion: Int = 0,
+        actorAccuracy: Int = 0,
+        actorAbility: String? = null,
+        targetAbility: String? = null,
+        targetItem: String? = null,
+    ): BattleDecisionContext {
+        val ally = mon(
+            BattleSide.ALLY,
+            if (actorAccuracy == 0) emptyMap() else mapOf("accuracy" to actorAccuracy),
+            actorAbility,
+        )
+        val opponent = mon(
+            BattleSide.OPPONENT,
+            if (targetEvasion == 0) emptyMap() else mapOf("evasion" to targetEvasion),
+            targetAbility,
+            targetItem,
+        )
         val move = BattleActionCandidate(
             actionId = "probe", kind = BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
             moveId = "cobblemon:probe", targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
@@ -86,11 +138,16 @@ class LocalEvasionKnockoutTest {
         )
     }
 
-    private fun mon(side: BattleSide, stages: Map<String, Int>) = BattlePokemonStateView(
+    private fun mon(
+        side: BattleSide,
+        stages: Map<String, Int>,
+        ability: String? = null,
+        item: String? = null,
+    ) = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(), side = side, activeSlot = 0,
         speciesId = "cobblemon:probe", formId = null, level = 50, hpFraction = 1.0,
         statusId = null, statStages = stages, knownMoveIds = emptySet(),
-        knownAbilityId = null, knownHeldItemId = null, fainted = false,
+        knownAbilityId = ability, knownHeldItemId = item, fainted = false,
         knownTypeIds = setOf("normal"),
         combatStats = if (side == BattleSide.ALLY) {
             BattleCombatStatRangesView.exact(150, 100, 100, 150, 100, 100)

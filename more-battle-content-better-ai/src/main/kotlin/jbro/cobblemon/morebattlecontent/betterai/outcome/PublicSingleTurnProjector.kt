@@ -16,6 +16,7 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalDirectHitMechani
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalKnownStatMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalObservedActionOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalProjectedActionCalculationCache
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilityMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicStatusImmunity
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
@@ -645,7 +646,12 @@ internal object PublicSingleTurnProjector {
                     target?.battlePokemonId,
                     moveOutcome.damageFraction,
                     effects,
-                    ignoreTargetAbility = ignoresTargetAbility(actor, calculatedAction),
+                    ignoreTargetAbility = LocalPublicAbilityMechanics.ignoresTargetAbility(
+                        calculatedAction,
+                        actor,
+                        target,
+                        projectedFormState,
+                    ),
                 )
                 LocalContactAfterHitMechanics.project(
                     appliedHit.state,
@@ -947,7 +953,12 @@ internal object PublicSingleTurnProjector {
                             currentTarget.battlePokemonId,
                             outcome.damageFraction,
                             perTargetEffects,
-                            ignoreTargetAbility = ignoresTargetAbility(currentActor, calculatedAction),
+                            ignoreTargetAbility = LocalPublicAbilityMechanics.ignoresTargetAbility(
+                                calculatedAction,
+                                currentActor,
+                                currentTarget,
+                                branch.state,
+                            ),
                         )
                         LocalContactAfterHitMechanics.project(
                             applied.state,
@@ -1180,10 +1191,6 @@ internal object PublicSingleTurnProjector {
         }
         return branch.copy(state = selected.first, switchedSides = branch.switchedSides + side)
     }
-
-    private fun ignoresTargetAbility(actor: BattlePokemonStateView, action: BattleActionCandidate): Boolean =
-        canonicalId(actor.knownAbilityId) in ABILITY_IGNORING_ABILITIES ||
-            action.moveDetails?.effects?.effects?.any { it.kind == BattleMoveEffectKind.IGNORE_ABILITY } == true
 
     private fun applyChanceEffects(
         initial: BattleStateView,
@@ -1698,7 +1705,6 @@ internal object PublicSingleTurnProjector {
         "spiritshackle",
         "thousandwaves",
     )
-    private val ABILITY_IGNORING_ABILITIES = setOf("moldbreaker", "teravolt", "turboblaze")
 }
 
 private fun BattleActionCandidate.withoutFacts() = BattleActionCandidate(
