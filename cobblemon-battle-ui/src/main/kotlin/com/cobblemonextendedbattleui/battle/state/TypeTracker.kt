@@ -54,13 +54,6 @@ object TypeTracker {
 
         val existing = dynamicTypes[uuid]
 
-        if (existing?.hasLostPrimaryType == true) {
-            CobblemonExtendedBattleUI.LOGGER.debug(
-                "TypeTracker: Ignoring type replacement for $pokemonName - hasLostPrimaryType is already true"
-            )
-            return
-        }
-
         var originalPrimary = existing?.originalPrimaryType
         var originalSecondary = existing?.originalSecondaryType
 

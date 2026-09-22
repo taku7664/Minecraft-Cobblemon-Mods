@@ -15,6 +15,7 @@ import jbro.cobblemon.battleui.extended.battle.messages.TranslationKeys;
 import jbro.cobblemon.battleui.extended.battle.state.AbilityItemTracker;
 import jbro.cobblemon.battleui.extended.battle.state.FormTracker;
 import jbro.cobblemon.battleui.extended.battle.state.PokemonRegistry;
+import jbro.cobblemon.battleui.extended.battle.state.TypeTracker;
 import jbro.cobblemon.battleui.extended.battle.state.VolatileStatusTracker;
 import net.minecraft.text.Text;
 import org.junit.jupiter.api.AfterEach;
@@ -227,6 +228,23 @@ final class BattleStateRegressionTest {
     @Test
     void typeTranslationKeyProducesStableInternalId() {
         assertEquals("fire", MessageParser.INSTANCE.extractTypeId(Text.translatable("cobblemon.type.fire")));
+    }
+
+    @Test
+    void typeReplacementOverridesAnEarlierTypeLoss() {
+        UUID uuid = UUID.randomUUID();
+        PokemonRegistry.INSTANCE.registerPokemon(uuid, "Typhlosion", false);
+        TypeTracker.INSTANCE.initializeDynamicTypes(uuid, "fire", null);
+        TypeTracker.INSTANCE.loseType("Typhlosion", "fire", false);
+
+        assertTrue(TypeTracker.INSTANCE.getDynamicTypes(uuid).getHasLostPrimaryType());
+
+        TypeTracker.INSTANCE.setTypeReplacement("Typhlosion", "water", null, false);
+
+        var state = TypeTracker.INSTANCE.getDynamicTypes(uuid);
+        assertEquals("water", state.getPrimaryType());
+        assertFalse(state.getHasLostPrimaryType());
+        assertEquals("fire", state.getOriginalPrimaryType());
     }
 
     @Test
