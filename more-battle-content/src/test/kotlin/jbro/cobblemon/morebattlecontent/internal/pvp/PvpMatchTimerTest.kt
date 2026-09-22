@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.internal.pvp
 
 import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -33,8 +34,100 @@ class PvpMatchTimerTest {
         now = 45_000L
 
         assertEquals(setOf(second), timer.turnTimeouts(1))
+        assertTrue(timer.turnTimeouts(1).isEmpty())
         assertEquals(390_000L, timer.remainingPersonalTime(first))
         assertEquals(375_000L, timer.remainingPersonalTime(second))
+    }
+
+    @Test
+    fun `submission uses packet receipt time even when validation finishes after the deadline`() {
+        var now = 0L
+        val timer = PvpMatchTimer(setOf(first, second), PvpRulesPreset.champions(), timeSource { now })
+        timer.beginTurn(1, setOf(first))
+
+        now = 44_999L
+        val received = timer.captureTurnSubmission(1, first)
+        now = 45_001L
+
+        assertTrue(timer.turnTimeouts(1).isEmpty())
+        assertEquals(PvpTimedSubmissionStatus.ACCEPTED, timer.submitTurn(received))
+        assertEquals(375_001L, timer.remainingPersonalTime(first))
+    }
+
+    @Test
+    fun `rejected validation releases a pending submission for timeout`() {
+        var now = 0L
+        val timer = PvpMatchTimer(setOf(first, second), PvpRulesPreset.champions(), timeSource { now })
+        timer.beginTurn(1, setOf(first))
+
+        now = 44_999L
+        val rejected = timer.captureTurnSubmission(1, first)
+        now = 45_000L
+        assertTrue(timer.turnTimeouts(1).isEmpty())
+
+        timer.rejectTurnSubmission(rejected)
+
+        assertEquals(PvpTimedSubmissionStatus.REJECTED, timer.submitTurn(rejected))
+        assertEquals(setOf(first), timer.turnTimeouts(1))
+        assertEquals(375_000L, timer.remainingPersonalTime(first))
+    }
+
+    @Test
+    fun `late duplicate cannot invalidate an earlier pending submission`() {
+        var now = 0L
+        val timer = PvpMatchTimer(setOf(first, second), PvpRulesPreset.champions(), timeSource { now })
+        timer.beginTurn(1, setOf(first))
+
+        now = 44_999L
+        val onTime = timer.captureTurnSubmission(1, first)
+        now = 45_000L
+        val late = timer.captureTurnSubmission(1, first)
+
+        assertEquals(PvpTimedSubmissionStatus.TIMED_OUT, timer.submitTurn(late))
+        assertEquals(420_000L, timer.remainingPersonalTime(first))
+        assertEquals(PvpTimedSubmissionStatus.ACCEPTED, timer.submitTurn(onTime))
+        assertEquals(375_001L, timer.remainingPersonalTime(first))
+    }
+
+    @Test
+    fun `submission received at the deadline remains timed out after validation`() {
+        var now = 0L
+        val timer = PvpMatchTimer(setOf(first, second), PvpRulesPreset.champions(), timeSource { now })
+        timer.beginTurn(1, setOf(first))
+
+        now = 45_000L
+        val received = timer.captureTurnSubmission(1, first)
+        now = 45_001L
+
+        assertEquals(PvpTimedSubmissionStatus.TIMED_OUT, timer.submitTurn(received))
+        assertEquals(375_000L, timer.remainingPersonalTime(first))
+    }
+
+    @Test
+    fun `submission captured before a turn cannot be applied to that later turn`() {
+        var now = 0L
+        val timer = PvpMatchTimer(setOf(first, second), PvpRulesPreset.champions(), timeSource { now })
+        val premature = timer.captureTurnSubmission(1, first)
+        timer.beginTurn(1, setOf(first))
+
+        assertEquals(PvpTimedSubmissionStatus.STALE_TURN, timer.submitTurn(premature))
+        assertEquals(420_000L, timer.remainingPersonalTime(first))
+    }
+
+    @Test
+    fun `submission token cannot cross between concurrent match timers`() {
+        var now = 0L
+        val source = timeSource { now }
+        val firstTimer = PvpMatchTimer(setOf(first, second), PvpRulesPreset.champions(), source)
+        val secondTimer = PvpMatchTimer(setOf(first, second), PvpRulesPreset.champions(), source)
+        firstTimer.beginTurn(1, setOf(first))
+        secondTimer.beginTurn(1, setOf(first))
+        val wrongMatch = firstTimer.captureTurnSubmission(1, first)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            secondTimer.submitTurn(wrongMatch)
+        }
+        assertEquals(420_000L, secondTimer.remainingPersonalTime(first))
     }
 
     @Test

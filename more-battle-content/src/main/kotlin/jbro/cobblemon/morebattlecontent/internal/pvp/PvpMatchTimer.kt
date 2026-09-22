@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.internal.pvp
 
 import java.util.Collections
 import java.util.UUID
+import java.util.WeakHashMap
 import java.util.concurrent.TimeUnit
 
 internal interface PvpTimeSource {
@@ -22,13 +23,23 @@ internal enum class PvpTimedSubmissionStatus {
     STALE_TURN,
     NOT_REQUIRED,
     NOT_STARTED,
+    REJECTED,
 }
+
+internal class PvpTurnSubmission internal constructor(
+    internal val timerIdentity: Any,
+    internal val turnIdentity: Any?,
+    internal val turnId: Long,
+    internal val playerId: UUID,
+    internal val receivedAtMonotonicMillis: Long,
+)
 
 internal class PvpMatchTimer(
     participants: Set<UUID>,
     private val rules: PvpRulesPreset,
     private val timeSource: PvpTimeSource = SystemPvpTimeSource,
 ) {
+    private val identity = Any()
     private val participants = Collections.unmodifiableSet(LinkedHashSet(participants))
     private val remainingPersonalMillis = participants.associateWith {
         Math.multiplyExact(rules.totalBattleSecondsPerPlayer.toLong(), MILLIS_PER_SECOND)
@@ -98,23 +109,71 @@ internal class PvpMatchTimer(
 
     @Synchronized
     fun submitTurn(turnId: Long, playerId: UUID): PvpTimedSubmissionStatus {
-        requireParticipant(playerId)
-        val active = turn ?: return PvpTimedSubmissionStatus.NOT_STARTED
-        if (turnId != active.turnId) return PvpTimedSubmissionStatus.STALE_TURN
-        if (playerId !in active.requiredPlayers) return PvpTimedSubmissionStatus.NOT_REQUIRED
-        if (playerId in active.submittedPlayers) return PvpTimedSubmissionStatus.ALREADY_SUBMITTED
-        if (playerId in active.timedOutPlayers) return PvpTimedSubmissionStatus.TIMED_OUT
+        return submitTurn(captureTurnSubmission(turnId, playerId))
+    }
 
-        val elapsed = elapsedSince(active.startedAtMillis)
-        val allowed = allowedMillis(playerId)
-        if (elapsed >= allowed) {
-            consume(playerId, allowed)
-            active.timedOutPlayers += playerId
+    @Synchronized
+    fun captureTurnSubmission(turnId: Long, playerId: UUID): PvpTurnSubmission {
+        requireParticipant(playerId)
+        val active = turn?.takeIf { it.turnId == turnId }
+        val submission = PvpTurnSubmission(identity, active?.identity, turnId, playerId, monotonicNow())
+        if (
+            active != null &&
+            playerId in active.requiredPlayers &&
+            playerId !in active.resolvedPlayers() &&
+            elapsedBetween(active.startedAtMillis, submission.receivedAtMonotonicMillis) < allowedMillis(playerId)
+        ) {
+            active.pendingSubmissions.getOrPut(playerId, ::LinkedHashSet) += submission
+        }
+        return submission
+    }
+
+    @Synchronized
+    fun submitTurn(submission: PvpTurnSubmission): PvpTimedSubmissionStatus {
+        require(submission.timerIdentity === identity) { "PvP turn submission belongs to another timer" }
+        requireParticipant(submission.playerId)
+        val active = turn ?: return PvpTimedSubmissionStatus.NOT_STARTED
+        if (submission.turnId != active.turnId) return PvpTimedSubmissionStatus.STALE_TURN
+        if (submission.turnIdentity !== active.identity) {
+            return PvpTimedSubmissionStatus.STALE_TURN
+        }
+        if (submission in active.rejectedSubmissions) return PvpTimedSubmissionStatus.REJECTED
+        releasePending(active, submission)
+        if (submission.playerId !in active.requiredPlayers) {
+            return PvpTimedSubmissionStatus.NOT_REQUIRED
+        }
+        if (submission.playerId in active.submittedPlayers) {
+            return PvpTimedSubmissionStatus.ALREADY_SUBMITTED
+        }
+        if (submission.playerId in active.timedOutPlayers) {
             return PvpTimedSubmissionStatus.TIMED_OUT
         }
-        consume(playerId, elapsed)
-        active.submittedPlayers += playerId
+
+        val elapsed = elapsedBetween(active.startedAtMillis, submission.receivedAtMonotonicMillis)
+        val allowed = allowedMillis(submission.playerId)
+        if (elapsed >= allowed) {
+            if (!active.pendingSubmissions[submission.playerId].isNullOrEmpty()) {
+                return PvpTimedSubmissionStatus.TIMED_OUT
+            }
+            consume(submission.playerId, allowed)
+            active.timedOutPlayers += submission.playerId
+            return PvpTimedSubmissionStatus.TIMED_OUT
+        }
+        consume(submission.playerId, elapsed)
+        active.submittedPlayers += submission.playerId
         return PvpTimedSubmissionStatus.ACCEPTED
+    }
+
+    @Synchronized
+    fun rejectTurnSubmission(submission: PvpTurnSubmission) {
+        require(submission.timerIdentity === identity) { "PvP turn submission belongs to another timer" }
+        val active = turn ?: return
+        if (submission.turnId == active.turnId && submission.turnIdentity === active.identity) {
+            if (submission.playerId !in active.resolvedPlayers()) {
+                active.rejectedSubmissions += submission
+            }
+            releasePending(active, submission)
+        }
     }
 
     @Synchronized
@@ -122,16 +181,22 @@ internal class PvpMatchTimer(
         val active = turn ?: return emptySet()
         if (turnId != active.turnId) return emptySet()
         val elapsed = elapsedSince(active.startedAtMillis)
+        val newlyTimedOut = LinkedHashSet<UUID>()
         active.requiredPlayers.forEach { playerId ->
-            if (playerId !in active.submittedPlayers && playerId !in active.timedOutPlayers) {
+            if (
+                playerId !in active.submittedPlayers &&
+                playerId !in active.timedOutPlayers &&
+                active.pendingSubmissions[playerId].isNullOrEmpty()
+            ) {
                 val allowed = allowedMillis(playerId)
                 if (elapsed >= allowed) {
                     consume(playerId, allowed)
                     active.timedOutPlayers += playerId
+                    newlyTimedOut += playerId
                 }
             }
         }
-        return Collections.unmodifiableSet(LinkedHashSet(active.timedOutPlayers))
+        return Collections.unmodifiableSet(newlyTimedOut)
     }
 
     @Synchronized
@@ -150,6 +215,12 @@ internal class PvpMatchTimer(
         remainingPersonalMillis[playerId] = (remaining - elapsedMillis).coerceAtLeast(0)
     }
 
+    private fun releasePending(active: TurnClock, submission: PvpTurnSubmission) {
+        val pending = active.pendingSubmissions[submission.playerId] ?: return
+        pending -= submission
+        if (pending.isEmpty()) active.pendingSubmissions.remove(submission.playerId)
+    }
+
     private fun deadlineAfterEpoch(seconds: Int): Long = Math.addExact(
         epochNow(),
         Math.multiplyExact(seconds.toLong(), MILLIS_PER_SECOND),
@@ -160,9 +231,12 @@ internal class PvpMatchTimer(
             Math.multiplyExact(rules.entrySelectionSeconds.toLong(), MILLIS_PER_SECOND)
 
     private fun elapsedSince(startedAtMillis: Long): Long {
-        val current = monotonicNow()
-        check(current >= startedAtMillis) { "PvP monotonic time moved backwards" }
-        return current - startedAtMillis
+        return elapsedBetween(startedAtMillis, monotonicNow())
+    }
+
+    private fun elapsedBetween(startedAtMillis: Long, currentMillis: Long): Long {
+        check(currentMillis >= startedAtMillis) { "PvP monotonic time moved backwards" }
+        return currentMillis - startedAtMillis
     }
 
     private fun epochNow(): Long = timeSource.epochMillis().also {
@@ -179,8 +253,12 @@ internal class PvpMatchTimer(
         val turnId: Long,
         val startedAtMillis: Long,
         val requiredPlayers: Set<UUID>,
+        val identity: Any = Any(),
         val submittedPlayers: MutableSet<UUID> = LinkedHashSet(),
         val timedOutPlayers: MutableSet<UUID> = LinkedHashSet(),
+        val pendingSubmissions: MutableMap<UUID, MutableSet<PvpTurnSubmission>> = LinkedHashMap(),
+        val rejectedSubmissions: MutableSet<PvpTurnSubmission> =
+            Collections.newSetFromMap(WeakHashMap()),
     ) {
         fun resolvedPlayers(): Set<UUID> = submittedPlayers + timedOutPlayers
     }
