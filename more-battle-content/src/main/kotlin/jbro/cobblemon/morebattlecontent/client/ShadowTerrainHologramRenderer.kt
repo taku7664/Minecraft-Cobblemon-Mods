@@ -358,12 +358,15 @@ internal object ShadowTerrainHologramRenderer {
     }
 
     private fun destroyTargets() {
-        backgroundTarget?.destroyBuffers()
-        terrainTarget?.destroyBuffers()
-        finalSceneTarget?.destroyBuffers()
+        val targets = listOfNotNull(backgroundTarget, terrainTarget, finalSceneTarget)
         backgroundTarget = null
         terrainTarget = null
         finalSceneTarget = null
+        releaseOptionalClientResourcesSafely(
+            resources = targets,
+            release = TextureTarget::destroyBuffers,
+            reportFailure = { warnOnce("Failed to release a terrain hologram framebuffer", it) },
+        )
     }
 
     private fun warnOnce(message: String, failure: Throwable) {

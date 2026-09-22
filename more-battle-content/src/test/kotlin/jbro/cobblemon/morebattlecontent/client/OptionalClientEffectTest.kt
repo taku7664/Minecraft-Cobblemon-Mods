@@ -55,4 +55,25 @@ class OptionalClientEffectTest {
             },
         )
     }
+
+    @Test
+    fun `resource release continues after ordinary and linkage failures`() {
+        val released = mutableListOf<Int>()
+        val failures = mutableListOf<Throwable>()
+
+        releaseOptionalClientResourcesSafely(
+            resources = listOf(1, 2, 3, 4),
+            release = { resource ->
+                released += resource
+                when (resource) {
+                    1 -> throw IllegalStateException("first failed")
+                    3 -> throw NoSuchMethodError("third API drift")
+                }
+            },
+            reportFailure = failures::add,
+        )
+
+        assertEquals(listOf(1, 2, 3, 4), released)
+        assertEquals(listOf("first failed", "third API drift"), failures.map { it.message })
+    }
 }

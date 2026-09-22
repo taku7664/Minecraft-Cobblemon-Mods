@@ -32,3 +32,16 @@ private inline fun runOptionalClientEffectCallback(action: () -> Unit) {
         // Client integration callbacks are best-effort across supported dependency versions.
     }
 }
+
+internal inline fun <T> releaseOptionalClientResourcesSafely(
+    resources: Iterable<T>,
+    release: (T) -> Unit,
+    reportFailure: (Throwable) -> Unit,
+) {
+    resources.forEach { resource ->
+        runOptionalClientEffect(
+            action = { release(resource) },
+            reportFailure = reportFailure,
+        )
+    }
+}
