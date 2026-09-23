@@ -7,6 +7,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectTarget
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
 
 /**
  * Values a non-damaging move by the progress it can still make from public state.
@@ -32,6 +33,17 @@ internal object LocalNonDamagingMoveEvaluator {
 
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()
         if (LocalIdleUtilityMoveRules.isIdle(candidate, context)) return 0.0
+        val protectionSuccessProbability = if (LocalStallingProtectionRules.isStallingProtection(candidate)) {
+            LocalStallingProtectionRules.nextSuccessProbability(
+                LocalStallingProtectionRules.consecutiveSuccessfulUses(
+                    context.state,
+                    BattleSide.ALLY,
+                    candidate.actorSlot,
+                ),
+            )
+        } else {
+            1.0
+        }
         val selectedTarget = selectedTarget(candidate, context)
         val declaresMajorStatus = selectedTarget?.side == BattleSide.OPPONENT && effects.any {
             it.kind == BattleMoveEffectKind.STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET
@@ -64,7 +76,7 @@ internal object LocalNonDamagingMoveEvaluator {
             declaresPureRecovery -> 0.0
             setupPressure != null -> setupPressure
             else -> (GENERIC_STATUS_PRESSURE - additionalScreenOpportunityCost(effects, context))
-                .coerceAtLeast(0.0) * accuracy
+                .coerceAtLeast(0.0) * accuracy * protectionSuccessProbability
         }
         return maxOf(recovery, status)
     }

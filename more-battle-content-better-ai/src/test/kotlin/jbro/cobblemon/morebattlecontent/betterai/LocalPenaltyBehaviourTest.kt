@@ -30,6 +30,8 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalNonDamagingMoveEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalSituationalEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionPolicy
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -229,9 +231,34 @@ class LocalPenaltyBehaviourTest {
                 ),
             ),
             candidates = listOf(
-                statusMove("protect_again", extraEffects = listOf(effect(BattleMoveEffectKind.PROTECT_USER))),
+                statusMove(
+                    "protect_again",
+                    extraEffects = listOf(effect(BattleMoveEffectKind.PROTECT_USER)),
+                    mechanicFlags = setOf("stalling_move"),
+                    priority = 4,
+                ),
                 statusMove("act_instead"),
             ),
+        )
+        val calculated = PublicBattleTacticalCalculator.calculate(context)
+        val protect = calculated.candidates.single { it.actionId == "protect_again" }
+        assertEquals(
+            20.0 / 3.0,
+            LocalNonDamagingMoveEvaluator.pressure(protect, context, accuracy = 1.0),
+            1e-9,
+            "the nominal Protect value must be multiplied by its one-third success chance",
+        )
+        assertEquals(
+            10.0 / 9.0,
+            LocalTacticalSituationalEvaluator.repeatedProtectionPenalty(protect, context),
+            1e-9,
+            "the one-third branch keeps a small Bernoulli uncertainty reserve",
+        )
+        assertEquals(
+            74.0 / 9.0,
+            LocalTacticalScorer.score(protect, context),
+            1e-9,
+            "the Protect priority benefit must be probability-weighted with its base value",
         )
         assertPenalised(context, "protect_again", LocalTacticalSituationalEvaluator::repeatedProtectionPenalty)
     }
@@ -280,6 +307,7 @@ class LocalPenaltyBehaviourTest {
         extraEffects: List<BattleMoveEffectView> = emptyList(),
         requirements: List<BattleMoveRequirementView> = emptyList(),
         mechanicFlags: Set<String> = emptySet(),
+        priority: Int = 0,
     ): BattleActionCandidate {
         val effects = buildList {
             if (statStages.isNotEmpty()) {
@@ -299,7 +327,7 @@ class LocalPenaltyBehaviourTest {
                 damageCategory = BattleMoveDamageCategory.STATUS,
                 power = 0.0,
                 accuracy = 100.0,
-                priority = 0,
+                priority = priority,
                 currentPp = 10,
                 targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
                 effects = BattleMoveEffectsView(

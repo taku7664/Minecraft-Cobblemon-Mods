@@ -302,16 +302,21 @@ internal object LocalTacticalSituationalEvaluator {
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
     ): Double {
-        val protects = candidate.moveDetails?.effects?.effects.orEmpty().any {
-            it.kind == BattleMoveEffectKind.PROTECT_USER
-        }
+        val protects = LocalStallingProtectionRules.isStallingProtection(candidate)
         val chain = LocalStallingProtectionRules.consecutiveSuccessfulUses(
             context.state,
             BattleSide.ALLY,
             candidate.actorSlot,
         )
         if (!protects || chain < 1) return 0.0
-        return REPEATED_PROTECTION_HABIT_PENALTY +
+        val successProbability = LocalStallingProtectionRules.nextSuccessProbability(chain)
+        // The expected benefit is already multiplied by success probability in the status scorer.
+        // Keep a smaller certainty-equivalent reserve as well: at equal expected value, a line that
+        // can simply fail should lose to a deterministic one. Bernoulli variance peaks at 50% and
+        // shrinks again when failure is nearly certain; the low expected score handles that end.
+        val uncertaintyReserve = PROTECTION_UNCERTAINTY_SCORE *
+            successProbability * (1.0 - successProbability)
+        return uncertaintyReserve +
             context.memory.nonProgressControlStreak.coerceAtMost(MAX_PROTECTION_NO_PROGRESS_STREAK) *
             PROTECTION_NO_PROGRESS_PENALTY
     }
@@ -624,7 +629,7 @@ internal object LocalTacticalSituationalEvaluator {
     private const val SATURATED_STAT_STAGE_PENALTY = 100.0
     private const val UNMET_PUBLIC_REQUIREMENT_PENALTY = 100.0
     private const val RECENT_PUBLIC_FAILURE_PENALTY = 100.0
-    private const val REPEATED_PROTECTION_HABIT_PENALTY = 8.0
+    private const val PROTECTION_UNCERTAINTY_SCORE = 5.0
     private const val PROTECTION_NO_PROGRESS_PENALTY = 4.0
     private const val MAX_PROTECTION_NO_PROGRESS_STREAK = 3
     private const val CONDITIONAL_MOVE_CERTAIN_FAILURE_PENALTY = 100.0

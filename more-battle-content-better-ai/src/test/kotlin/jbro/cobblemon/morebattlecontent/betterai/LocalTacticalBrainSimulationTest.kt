@@ -1720,8 +1720,18 @@ class LocalTacticalBrainSimulationTest {
 
     @Test
     fun `consecutive protection and charge turns pay their real tempo cost`() {
-        val protect = effectMove("protect", BattleMoveEffectKind.PROTECT_USER, "protect")
-        val detect = effectMove("detect", BattleMoveEffectKind.PROTECT_USER, "detect")
+        val protect = effectMove(
+            "protect",
+            BattleMoveEffectKind.PROTECT_USER,
+            "protect",
+            mechanicFlags = setOf("stalling_move"),
+        )
+        val detect = effectMove(
+            "detect",
+            BattleMoveEffectKind.PROTECT_USER,
+            "detect",
+            mechanicFlags = setOf("stalling_move"),
+        )
         val actorId = UUID.randomUUID()
         val chargeAttack = move(
             id = "solar_beam",
@@ -1732,7 +1742,7 @@ class LocalTacticalBrainSimulationTest {
         val chip = move("small_damage", power = 60.0, facts = damageFacts(0.20))
 
         assertEquals(
-            "small_damage",
+            "protect",
             decide(
                 candidates = listOf(protect, chip),
                 allyPokemonId = actorId,
@@ -1741,7 +1751,7 @@ class LocalTacticalBrainSimulationTest {
                     sameMoveRepeatCount = 1,
                 ),
             ).actionId,
-            "A failed Protect still must not be followed by another Protect",
+            "a failed Protect resets the shared counter, so the next attempt is certain again",
         )
 
         assertEquals(
@@ -2202,6 +2212,7 @@ class LocalTacticalBrainSimulationTest {
         target: BattleMoveEffectTarget = BattleMoveEffectTarget.USER,
         statStages: Map<String, Int> = emptyMap(),
         requirements: List<BattleMoveRequirementView> = emptyList(),
+        mechanicFlags: Set<String> = emptySet(),
     ) = move(
         id = id,
         power = 0.0,
@@ -2214,17 +2225,20 @@ class LocalTacticalBrainSimulationTest {
                 statStages = statStages,
             ),
             requirements = requirements,
+            mechanicFlags = mechanicFlags,
         ),
     )
 
     private fun effects(
         vararg effects: BattleMoveEffectView,
         requirements: List<BattleMoveRequirementView> = emptyList(),
+        mechanicFlags: Set<String> = emptySet(),
     ) = BattleMoveEffectsView(
         coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
         effects = effects.toList(),
         scriptedBehavior = true,
         requirements = requirements,
+        mechanicFlags = mechanicFlags,
     )
 
     internal fun damageFacts(fraction: Double) = BattleCandidateFactsView(

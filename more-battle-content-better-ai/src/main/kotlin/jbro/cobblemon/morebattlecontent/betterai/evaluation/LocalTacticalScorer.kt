@@ -22,6 +22,7 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsK
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalRiskAttitude
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffectiveness
 
 /**
@@ -172,12 +173,23 @@ internal object LocalTacticalScorer {
             unprojectedPressure(candidate, context, details, facts, tuning)
         }
         val effectivePriority = LocalPublicTurnOrder.effectivePriority(context.state, BattleSide.ALLY, candidate)
+        val prioritySuccessProbability = if (LocalStallingProtectionRules.isStallingProtection(candidate)) {
+            LocalStallingProtectionRules.nextSuccessProbability(
+                LocalStallingProtectionRules.consecutiveSuccessfulUses(
+                    context.state,
+                    BattleSide.ALLY,
+                    candidate.actorSlot,
+                ),
+            )
+        } else {
+            1.0
+        }
         val priorityBonus = when {
             effectivePriority <= 0 -> effectivePriority * 2.0
             opponentActiveHp(context) <= CRITICAL_HP -> effectivePriority * 25.0
             allyActiveHp(context) <= CRITICAL_HP -> effectivePriority * 8.0
             else -> effectivePriority * 2.0
-        }
+        } * prioritySuccessProbability
         val knockoutBonus = LocalTacticalSituationalEvaluator.knockoutAdjustment(candidate, accuracy, tuning, context)
         // A spread move's other targets. Zero for every single-target move, so this changes nothing
         // outside doubles.

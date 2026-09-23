@@ -16,22 +16,38 @@ class LocalRepeatedProtectionSelectionTest {
     private val selector = LocalWeightedActionSelector()
 
     @Test
-    fun `successful protection chain excludes another protection when any viable action exists`() {
-        val protect = rank("protect", 900.0, executableDamageActions = 0)
+    fun `repeated protection remains eligible when its expected score is the only value`() {
+        val protect = rank("protect", 60.0, executableDamageActions = 0)
         val attack = rank("foul_play", 10.0, executableDamageActions = 1, entryFaints = true)
         val context = LocalActionMixingContext(
             personality = BattleTrainerPersonality.balanced(),
             memory = BattleTacticalMemoryView(lastMoveId = "protect", sameMoveRepeatCount = 1),
             style = LocalTrainerStyle.BALANCED,
             riskBudget = 0.5,
-            repeatedProtectionActionIds = setOf("protect"),
         )
 
         repeat(1_000) { seed ->
-            assertEquals("foul_play", selector.choose(listOf(protect, attack), seed.toLong(), context)
+            assertEquals("protect", selector.choose(listOf(protect, attack), seed.toLong(), context)
                 .rank.outcome.candidate.actionId)
         }
-        assertEquals("protect", selector.choose(listOf(protect), 0L, context).rank.outcome.candidate.actionId)
+    }
+
+    @Test
+    fun `half best floor rejects low value repeated protection without a special ban`() {
+        val attack = rank("foul_play", 100.0, executableDamageActions = 1)
+        val protectAtFloor = rank("protect_at_floor", 50.0, executableDamageActions = 0)
+        val protectBelowFloor = rank("protect_below_floor", 49.999, executableDamageActions = 0)
+
+        assertEquals(
+            listOf("foul_play", "protect_at_floor"),
+            selector.shortlist(
+                listOf(attack, protectAtFloor, protectBelowFloor),
+                LocalActionMixingContext.balanced(0.5).copy(
+                    decisionRegretBand = 8.0,
+                    decisionShortlistWidth = 2.0,
+                ),
+            ).map { it.outcome.candidate.actionId },
+        )
     }
 
     private fun rank(
