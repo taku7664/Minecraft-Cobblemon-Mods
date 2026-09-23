@@ -19,6 +19,10 @@ final class ManagedTurnFailureRecovery {
         attempt(primaryFailure, abortBattle);
     }
 
+    static void releaseReservation(Throwable primaryFailure, Runnable rollbackReservation) {
+        attempt(primaryFailure, rollbackReservation);
+    }
+
     private static boolean attempt(Throwable primaryFailure, Runnable action) {
         try {
             action.run();

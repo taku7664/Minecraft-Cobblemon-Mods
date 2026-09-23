@@ -61,8 +61,20 @@ abstract class BattleActorMixin {
             }
             throw new IllegalActionChoiceException(actor, "Managed action response count does not match the request");
         }
-        List<ShowdownActionResponse> originalResponses = new ArrayList<>(actor.getResponses());
-        List<ShowdownActionResponse> submittedResponses = new ArrayList<>(responses);
+        List<ShowdownActionResponse> originalResponses;
+        List<ShowdownActionResponse> submittedResponses;
+        try {
+            originalResponses = new ArrayList<>(actor.getResponses());
+            submittedResponses = new ArrayList<>(responses);
+        } catch (RuntimeException | LinkageError failure) {
+            if (capture != null) {
+                ManagedTurnFailureRecovery.releaseReservation(
+                    failure,
+                    () -> PvpPlayNetworking.rejectBattleTurn(capture)
+                );
+            }
+            throw failure;
+        }
         mbc$validatingManagedTurn = true;
         mbc$managedTurnValidated = false;
         mbc$managedTurnCompleted = false;
