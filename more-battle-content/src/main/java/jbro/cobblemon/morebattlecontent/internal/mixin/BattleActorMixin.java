@@ -112,19 +112,21 @@ abstract class BattleActorMixin {
             return;
         }
         mbc$managedTurnCompleted = true;
-        if (capture != null) {
-            PvpPlayNetworking.rejectBattleTurn(capture);
-        }
-        if (actor.getRequest() == originalRequest && actor.getMustChoose()) {
-            actor.getResponses().clear();
-            actor.getResponses().addAll(originalResponses);
-            return;
-        }
-        try {
-            Cobblemon173BattleRuleHooks.abortFailedBattle(actor.getBattle().getBattleId());
-        } catch (RuntimeException | LinkageError cleanupFailure) {
-            failure.addSuppressed(cleanupFailure);
-        }
+        boolean canRestoreResponses = actor.getRequest() == originalRequest && actor.getMustChoose();
+        ManagedTurnFailureRecovery.recover(
+            failure,
+            canRestoreResponses,
+            () -> {
+                if (capture != null) {
+                    PvpPlayNetworking.rejectBattleTurn(capture);
+                }
+            },
+            () -> {
+                actor.getResponses().clear();
+                actor.getResponses().addAll(originalResponses);
+            },
+            () -> Cobblemon173BattleRuleHooks.abortFailedBattle(actor.getBattle().getBattleId())
+        );
     }
 
     @Unique
