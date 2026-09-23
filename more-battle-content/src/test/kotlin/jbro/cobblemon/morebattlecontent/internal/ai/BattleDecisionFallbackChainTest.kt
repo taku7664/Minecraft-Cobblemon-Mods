@@ -5,6 +5,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
@@ -227,6 +228,45 @@ class BattleDecisionFallbackChainTest {
         val elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)
 
         assertTrue(elapsedMillis < 200L, "linkage failure took ${elapsedMillis}ms")
+        assertEquals(BattleDecisionSource.BASELINE_REQUIRED, result.source)
+        assertEquals(BattleDecisionFailureReason.BRAIN_FAILURE, result.failures.single().reason)
+    }
+
+    @Test
+    fun `rejected timeout scheduling returns a brain failure instead of throwing`() {
+        val rejectedScheduler = Executors.newSingleThreadScheduledExecutor().also { it.shutdownNow() }
+        val context = context(System.currentTimeMillis() + 5_000L)
+        val coordinator = BattleBrainDecisionCoordinator(
+            scheduler = rejectedScheduler,
+            brainExecutor = brainExecutor,
+            maximumDecisionMillis = 500L,
+        )
+
+        val result = BattleDecisionFallbackChain(coordinator).decide(
+            primary = endpoint { CompletableFuture.completedFuture(decision(context, "move:0")) },
+            local = null,
+            context = context,
+        ).toCompletableFuture().get(1, TimeUnit.SECONDS)
+
+        assertEquals(BattleDecisionSource.BASELINE_REQUIRED, result.source)
+        assertEquals(BattleDecisionFailureReason.BRAIN_FAILURE, result.failures.single().reason)
+    }
+
+    @Test
+    fun `brain executor linkage failure returns a fallback immediately`() {
+        val context = context(System.currentTimeMillis() + 5_000L)
+        val coordinator = BattleBrainDecisionCoordinator(
+            scheduler = scheduler,
+            brainExecutor = Executor { throw NoSuchMethodError("executor API drift") },
+            maximumDecisionMillis = 500L,
+        )
+
+        val result = BattleDecisionFallbackChain(coordinator).decide(
+            primary = endpoint { CompletableFuture.completedFuture(decision(context, "move:0")) },
+            local = null,
+            context = context,
+        ).toCompletableFuture().get(1, TimeUnit.SECONDS)
+
         assertEquals(BattleDecisionSource.BASELINE_REQUIRED, result.source)
         assertEquals(BattleDecisionFailureReason.BRAIN_FAILURE, result.failures.single().reason)
     }

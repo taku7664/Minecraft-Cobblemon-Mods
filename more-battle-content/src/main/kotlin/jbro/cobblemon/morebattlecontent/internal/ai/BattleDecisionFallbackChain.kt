@@ -43,18 +43,28 @@ internal class BattleBrainDecisionCoordinator(
             return result
         }
 
-        val timeout = scheduler.schedule(
-            {
-                pendingDecision.get()?.cancel(true)
-                result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.TIMEOUT))
-            },
-            remainingMillis,
-            TimeUnit.MILLISECONDS,
-        )
+        val timeout = try {
+            scheduler.schedule(
+                {
+                    pendingDecision.get()?.cancel(true)
+                    result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.TIMEOUT))
+                },
+                remainingMillis,
+                TimeUnit.MILLISECONDS,
+            )
+        } catch (failure: Exception) {
+            result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))
+            reportBrainFailureSafely(context, failure)
+            return result
+        } catch (failure: LinkageError) {
+            result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))
+            reportBrainFailureSafely(context, failure)
+            return result
+        }
         fun failBrain(throwable: Throwable) {
             if (result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))) {
                 timeout.cancel(false)
-                reportBrainFailure(context, throwable)
+                reportBrainFailureSafely(context, throwable)
             }
         }
         try {
@@ -76,7 +86,7 @@ internal class BattleBrainDecisionCoordinator(
                                 validate(context, decision)
                             }
                             if (result.complete(attempt)) timeout.cancel(false)
-                            if (failed) throwable?.let { reportBrainFailure(context, it) }
+                            if (failed) throwable?.let { reportBrainFailureSafely(context, it) }
                         } catch (exception: Exception) {
                             failBrain(exception)
                         } catch (error: LinkageError) {
@@ -92,9 +102,23 @@ internal class BattleBrainDecisionCoordinator(
         } catch (exception: Exception) {
             timeout.cancel(false)
             result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))
-            reportBrainFailure(context, exception)
+            reportBrainFailureSafely(context, exception)
+        } catch (error: LinkageError) {
+            timeout.cancel(false)
+            result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))
+            reportBrainFailureSafely(context, error)
         }
         return result
+    }
+
+    private fun reportBrainFailureSafely(context: BattleDecisionContext, throwable: Throwable) {
+        try {
+            reportBrainFailure(context, throwable)
+        } catch (_: RuntimeException) {
+            // Diagnostics cannot replace the already-completed fallback attempt.
+        } catch (_: LinkageError) {
+            // Logging integrations are best-effort across supported dependency versions.
+        }
     }
 
     /**
