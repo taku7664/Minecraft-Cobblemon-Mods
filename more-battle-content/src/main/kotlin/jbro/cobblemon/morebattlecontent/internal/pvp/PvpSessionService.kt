@@ -124,6 +124,7 @@ internal class PvpSessionService<P>(
         val match = matches[matchId] ?: return PvpSelectionMutation.UNKNOWN_MATCH
         if (!match.isParticipant(playerId)) return PvpSelectionMutation.NOT_PARTICIPANT
         if (match.phase != PvpMatchPhase.TEAM_PREVIEW) return PvpSelectionMutation.INVALID_STATE
+        if (match.isReady(playerId)) return PvpSelectionMutation.INVALID_STATE
         try {
             match.select(playerId, pokemonIds)
         } catch (_: IllegalArgumentException) {

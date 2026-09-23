@@ -176,6 +176,17 @@ class PvpSessionServiceTest {
     }
 
     @Test
+    fun `replayed selection from a ready player is rejected without throwing`() {
+        val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
+        ready(service)
+
+        assertEquals(
+            PvpSelectionMutation.INVALID_STATE,
+            service.select(matchId, first, ids(first, 1)),
+        )
+    }
+
+    @Test
     fun `unready player is auto selected when the original entry deadline expires`() {
         var now = 0L
         val snapshots = RecordingSnapshots()
