@@ -171,9 +171,11 @@ internal class Cobblemon173BrainTrainerBattleActor(
 
     fun closeBrains(result: BattleBrainCloseResult) {
         if (!closeResult.compareAndSet(null, result)) return
-        BattleTacticalRunMemoryStore.record(learningScopeId, tacticalMemory.view(result.turns).tendencies)
-        closeSessionReference(primaryBrain, primarySession, result)
-        closeSessionReference(localBrain, localSession, result)
+        runManagedCleanupActions(
+            { BattleTacticalRunMemoryStore.record(learningScopeId, tacticalMemory.view(result.turns).tendencies) },
+            { closeSessionReference(primaryBrain, primarySession, result) },
+            { closeSessionReference(localBrain, localSession, result) },
+        )
     }
 
     private fun completeOnServerThread(
