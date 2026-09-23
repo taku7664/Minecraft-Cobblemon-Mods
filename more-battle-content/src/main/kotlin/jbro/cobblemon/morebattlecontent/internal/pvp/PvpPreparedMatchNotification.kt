@@ -1,10 +1,10 @@
 package jbro.cobblemon.morebattlecontent.internal.pvp
 
 /**
- * Keeps a prepared match provisional until both players can be moved into its selection UI.
- * A failed notification must not leave snapshots, timers, or room phase changes behind.
+ * Keeps newly committed PvP state provisional until its required notification succeeds. A failed
+ * notification must not leave invitations, snapshots, timers, or room phase changes behind.
  */
-internal inline fun protectPreparedPvpMatchNotification(
+internal inline fun protectProvisionalPvpStateNotification(
     rollback: () -> Unit,
     notify: () -> Unit,
 ) {

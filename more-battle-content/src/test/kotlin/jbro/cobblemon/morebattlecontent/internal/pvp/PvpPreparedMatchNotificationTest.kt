@@ -12,7 +12,7 @@ class PvpPreparedMatchNotificationTest {
         val notificationFailure = IllegalStateException("send failed")
 
         val thrown = assertThrows(IllegalStateException::class.java) {
-            protectPreparedPvpMatchNotification(
+            protectProvisionalPvpStateNotification(
                 rollback = { events += "rollback" },
             ) {
                 events += "notify"
@@ -30,7 +30,7 @@ class PvpPreparedMatchNotificationTest {
         val rollbackFailure = IllegalStateException("rollback failed")
 
         val thrown = assertThrows(NoSuchMethodError::class.java) {
-            protectPreparedPvpMatchNotification(
+            protectProvisionalPvpStateNotification(
                 rollback = { throw rollbackFailure },
             ) {
                 throw notificationFailure
@@ -45,7 +45,7 @@ class PvpPreparedMatchNotificationTest {
     fun `successful notification keeps prepared match intact`() {
         var rolledBack = false
 
-        protectPreparedPvpMatchNotification(
+        protectProvisionalPvpStateNotification(
             rollback = { rolledBack = true },
         ) {}
 

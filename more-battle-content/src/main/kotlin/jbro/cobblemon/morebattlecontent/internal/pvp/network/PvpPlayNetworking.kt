@@ -26,7 +26,8 @@ import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengeMutationError
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengeMutationResult
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengePhase
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengeRequest
-import jbro.cobblemon.morebattlecontent.internal.pvp.protectPreparedPvpMatchNotification
+import jbro.cobblemon.morebattlecontent.internal.pvp.applyPvpInvitationWithNotification
+import jbro.cobblemon.morebattlecontent.internal.pvp.protectProvisionalPvpStateNotification
 import jbro.cobblemon.morebattlecontent.internal.pvp.PendingPvpCompletion
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpCompletionRetryQueue
 import jbro.cobblemon.morebattlecontent.internal.pvp.attemptPvpCompletionSettlement
@@ -394,19 +395,29 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             return PvpCommandOutcome(PvpCommandStatus.CLIENT_UNSUPPORTED)
         }
         val request = PvpChallengeRequest(UUID.randomUUID(), challenger.uuid, opponent.uuid, format)
-        return when (val result = sessions.invite(request)) {
-            is PvpChallengeMutationResult.Applied -> {
+        val result = applyPvpInvitationWithNotification(
+            invite = { sessions.invite(request) },
+            notify = { challenge ->
                 opponent.sendSystemMessage(
                     Component.translatable(
                         "command.${MoreBattleContent.MOD_ID}.pvp.invited",
                         challenger.scoreboardName,
-                        Component.translatable("screen.${MoreBattleContent.MOD_ID}.pvp.format.${format.recordId}"),
+                        Component.translatable(
+                            "screen.${MoreBattleContent.MOD_ID}.pvp.format.${challenge.request.format.recordId}",
+                        ),
                         challenger.scoreboardName,
                         challenger.scoreboardName,
                     ),
                 )
-                PvpCommandOutcome(PvpCommandStatus.APPLIED)
-            }
+            },
+            rollback = { challenge ->
+                check(sessions.cancel(challenge.request.challengeId, challenge.request.opponentId) is PvpChallengeMutationResult.Applied) {
+                    "New PvP invitation could not be rolled back after its notification failed"
+                }
+            },
+        )
+        return when (result) {
+            is PvpChallengeMutationResult.Applied -> PvpCommandOutcome(PvpCommandStatus.APPLIED)
             is PvpChallengeMutationResult.Unchanged -> PvpCommandOutcome(PvpCommandStatus.APPLIED)
             is PvpChallengeMutationResult.Rejected -> result.error.toCommandOutcome()
         }
@@ -448,7 +459,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             }
             throw failure
         }
-        protectPreparedPvpMatchNotification(
+        protectProvisionalPvpStateNotification(
             rollback = {
                 runManagedCleanupActions(
                     { sessions.cancel(challenge.request.challengeId, opponent.uuid) },
@@ -675,7 +686,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             return
         }
         pushRoomToMembers(started.room, intent.requestId)
-        protectPreparedPvpMatchNotification(
+        protectProvisionalPvpStateNotification(
             rollback = {
                 var restoredRoom: PvpRoomView? = null
                 runManagedCleanupActions(
