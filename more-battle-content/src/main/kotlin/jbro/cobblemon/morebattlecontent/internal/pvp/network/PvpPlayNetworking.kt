@@ -84,6 +84,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             cancellation = { _, matchId, battleId ->
                 transitionPvpBattleLifecycle(
                     transition = { sessions.cancelBattle(matchId, battleId) },
+                    isStillPending = { sessions.battleIdFor(matchId) != null },
                     cleanup = {
                         retryableMatches.remove(matchId)
                         finishRoom(matchId)
@@ -1083,6 +1084,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                             },
                         )
                     },
+                    isStillPending = { sessions.battleIdFor(pending.matchId) != null },
                     cleanup = {
                         retryableMatches.remove(pending.matchId)
                         finishRoom(pending.matchId)

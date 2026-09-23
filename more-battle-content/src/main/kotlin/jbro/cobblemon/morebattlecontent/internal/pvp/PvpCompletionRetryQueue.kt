@@ -28,11 +28,39 @@ internal fun attemptPvpCompletionSettlement(
 
 internal fun transitionPvpBattleLifecycle(
     transition: () -> Boolean,
+    isStillPending: () -> Boolean = { true },
     cleanup: () -> Unit,
 ): Boolean {
-    if (!transition()) return false
+    try {
+        if (!transition()) return false
+    } catch (failure: RuntimeException) {
+        cleanupCommittedPvpTransition(failure, isStillPending, cleanup)
+        throw failure
+    } catch (failure: LinkageError) {
+        cleanupCommittedPvpTransition(failure, isStillPending, cleanup)
+        throw failure
+    }
     cleanup()
     return true
+}
+
+private fun cleanupCommittedPvpTransition(
+    failure: Throwable,
+    isStillPending: () -> Boolean,
+    cleanup: () -> Unit,
+) {
+    val pending = try {
+        isStillPending()
+    } catch (inspectionFailure: Throwable) {
+        if (failure !== inspectionFailure) failure.addSuppressed(inspectionFailure)
+        return
+    }
+    if (pending) return
+    try {
+        cleanup()
+    } catch (cleanupFailure: Throwable) {
+        if (failure !== cleanupFailure) failure.addSuppressed(cleanupFailure)
+    }
 }
 
 /** Keeps a finished PvP result retryable while its paired persistent record is unavailable. */

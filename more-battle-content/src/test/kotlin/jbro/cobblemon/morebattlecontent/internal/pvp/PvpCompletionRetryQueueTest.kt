@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class PvpCompletionRetryQueueTest {
     @Test
@@ -32,6 +33,59 @@ class PvpCompletionRetryQueueTest {
             ),
         )
         assertEquals(1, cleanupCalls)
+    }
+
+    @Test
+    fun `failure before battle transition preserves the owned room generation`() {
+        val failure = IllegalStateException("record storage unavailable")
+        var cleanupCalls = 0
+
+        assertSame(
+            failure,
+            assertThrows<IllegalStateException> {
+                transitionPvpBattleLifecycle(
+                    transition = { throw failure },
+                    isStillPending = { true },
+                    cleanup = { cleanupCalls++ },
+                )
+            },
+        )
+        assertEquals(0, cleanupCalls)
+    }
+
+    @Test
+    fun `failure after battle transition still cleans its room generation`() {
+        val failure = NoSuchMethodError("snapshot API drift")
+        var cleanupCalls = 0
+
+        assertSame(
+            failure,
+            assertThrows<NoSuchMethodError> {
+                transitionPvpBattleLifecycle(
+                    transition = { throw failure },
+                    isStillPending = { false },
+                    cleanup = { cleanupCalls++ },
+                )
+            },
+        )
+        assertEquals(1, cleanupCalls)
+    }
+
+    @Test
+    fun `post transition cleanup failure is suppressed behind the original failure`() {
+        val failure = IllegalStateException("snapshot cleanup failed")
+        val cleanupFailure = NoSuchMethodError("room cleanup API drift")
+
+        val thrown = assertThrows<IllegalStateException> {
+            transitionPvpBattleLifecycle(
+                transition = { throw failure },
+                isStillPending = { false },
+                cleanup = { throw cleanupFailure },
+            )
+        }
+
+        assertSame(failure, thrown)
+        assertEquals(listOf(cleanupFailure), thrown.suppressed.toList())
     }
 
     @Test
