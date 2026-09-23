@@ -44,6 +44,19 @@ class PvpRoomServiceTest {
     }
 
     @Test
+    fun `private room remains visible to its host and current members`() {
+        val rooms = PvpRoomService { roomId }
+        val room = rooms.create(host, settings(PvpRoomVisibility.PRIVATE)).room
+        rooms.invite(room.roomId, host, guest)
+        rooms.join(room.roomId, guest)
+        rooms.declineInvite(room.roomId, guest)
+
+        assertTrue(rooms.visibleRoomsFor(host).any { it.roomId == room.roomId })
+        assertTrue(rooms.visibleRoomsFor(guest).any { it.roomId == room.roomId })
+        assertFalse(rooms.visibleRoomsFor(spectator).any { it.roomId == room.roomId })
+    }
+
+    @Test
     fun `members claim either seat and only the host can start with both seats occupied`() {
         val rooms = PvpRoomService { roomId }
         rooms.create(host, settings(PvpRoomVisibility.PUBLIC))

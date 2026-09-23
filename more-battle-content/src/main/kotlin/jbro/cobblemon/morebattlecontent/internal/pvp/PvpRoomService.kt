@@ -120,7 +120,9 @@ internal class PvpRoomService(
         .asSequence()
         .filter { room ->
             room.phase != PvpRoomPhase.CLOSED &&
-                (room.settings.visibility == PvpRoomVisibility.PUBLIC || playerId in room.invited)
+                (room.settings.visibility == PvpRoomVisibility.PUBLIC ||
+                    playerId in room.invited ||
+                    playerId in room.members)
         }
         .map(MutableRoom::view)
         .toList()
