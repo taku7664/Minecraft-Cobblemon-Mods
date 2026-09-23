@@ -21,6 +21,7 @@ import jbro.cobblemon.morebattlecontent.internal.factory.FactoryOpponentObservat
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryPreparedPveBattle
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryPveBattleRuntime
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryRentalSet
+import jbro.cobblemon.morebattlecontent.internal.factory.assembleFactoryObservationsOrEmpty
 import jbro.cobblemon.morebattlecontent.internal.shadow.ShadowTrainerProjectionNetworking
 import jbro.cobblemon.morebattlecontent.internal.presentation.BattleArenaHologramNetworking
 import net.minecraft.server.MinecraftServer
@@ -268,20 +269,22 @@ internal class Cobblemon173FactoryPveBattleRuntime(
         prepared: FactoryPreparedPveBattle<BattlePokemon>,
         playerActor: PlayerBattleActor,
         adapter: Cobblemon173ShowdownObservationAdapter,
-    ): Map<String, FactoryOpponentObservation> = try {
-        Cobblemon173FactoryObservationMapper.map(
-            rentalsByToken = prepared.request.opponentTeam,
-            battlePokemonIdsByToken = prepared.opponentTeam.mapValues { (_, pokemon) -> pokemon.uuid },
-            publicPokemon = adapter.snapshot(playerActor).pokemon,
-        )
-    } catch (exception: RuntimeException) {
-        MoreBattleContent.LOGGER.error(
-            "Battle Factory public swap observations could not be assembled for run {}",
-            prepared.request.runId,
-            exception,
-        )
-        emptyMap()
-    }
+    ): Map<String, FactoryOpponentObservation> = assembleFactoryObservationsOrEmpty(
+        assemble = {
+            Cobblemon173FactoryObservationMapper.map(
+                rentalsByToken = prepared.request.opponentTeam,
+                battlePokemonIdsByToken = prepared.opponentTeam.mapValues { (_, pokemon) -> pokemon.uuid },
+                publicPokemon = adapter.snapshot(playerActor).pokemon,
+            )
+        },
+        reportFailure = { failure ->
+            MoreBattleContent.LOGGER.error(
+                "Battle Factory public swap observations could not be assembled for run {}",
+                prepared.request.runId,
+                failure,
+            )
+        },
+    )
 
     private fun FactoryBattleFormat.toCobblemonFormat(): CobblemonBattleFormat = when (this) {
         FactoryBattleFormat.SINGLE -> CobblemonBattleFormat.GEN_9_SINGLES.copy(adjustLevel = 0)
