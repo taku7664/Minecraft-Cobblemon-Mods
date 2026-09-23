@@ -35,7 +35,13 @@ internal object EmbeddedTeamInput {
             parts.getOrNull(1)?.takeUnless { it == "fnt" }
     }
 
-    fun context(input: JsonObject, battleId: UUID, turn: Int, requestNumber: Int): BattleDecisionContext {
+    fun context(
+        input: JsonObject,
+        battleId: UUID,
+        turn: Int,
+        requestNumber: Int,
+        memory: (BattleStateView) -> BattleTacticalMemoryView = { BattleTacticalMemoryView.empty() },
+    ): BattleDecisionContext {
         requireSingleFormat(input)
         val ownSide = input["side"].asString
         fun side(ident: String) = if (ident.startsWith(ownSide)) BattleSide.ALLY else BattleSide.OPPONENT
@@ -280,7 +286,7 @@ internal object EmbeddedTeamInput {
                 ((sizes[BattleSide.OPPONENT] ?: error("Missing public team size")) - opponents.count { it.fainted })),
             observedEvents = events.takeLast(64), inferences = emptyList())
         return BattleDecisionContext(UUID.nameUUIDFromBytes("$battleId:$ownSide:$requestNumber".toByteArray()), state,
-            candidates, System.currentTimeMillis() + 20000, publicActionCatalog = catalog)
+            candidates, System.currentTimeMillis() + 20000, memory = memory(state), publicActionCatalog = catalog)
     }
 
     private fun requireSingleFormat(input: JsonObject) {

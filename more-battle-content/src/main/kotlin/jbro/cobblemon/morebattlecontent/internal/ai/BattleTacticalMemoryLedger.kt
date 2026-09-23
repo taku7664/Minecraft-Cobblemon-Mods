@@ -22,7 +22,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTendencyView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSituation
 
 /** Server-owned memory. It commits only metadata paired with an action that was actually submitted. */
-internal class BattleTacticalMemoryLedger(
+class BattleTacticalMemoryLedger(
     private val openContext: BattleBrainOpenContext,
 ) {
     private var activePlan: BattlePlanView? = null

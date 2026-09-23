@@ -115,6 +115,24 @@ class EmbeddedTeamBattleTest {
     }
 
     @Test
+    fun `native input installs the server tactical memory view`(@TempDir directory: Path) {
+        val audit = EmbeddedPresetAudit.run(directory.resolve("audit"), teamPairs = 1)
+        val pair = audit.getAsJsonObject("teamSampling").getAsJsonArray("pairs")[0].asJsonObject
+        EmbeddedTeamBattle.NativeSession(directory.resolve("audit/engine"), pair, directory.resolve("protocol"), 2).use { native ->
+            val frame = native.read()
+            val input = frame.getAsJsonArray("requests")[0].asJsonObject
+            val expected = BattleTacticalMemoryView(
+                lastMoveId = "protect",
+                sameMoveRepeatCount = 1,
+                nonProgressControlStreak = 1,
+            )
+            val context = EmbeddedTeamInput.context(input, UUID(0, 9), frame["turn"].asInt, 0) { expected }
+
+            assertSame(expected, context.memory)
+        }
+    }
+
+    @Test
     fun `unrevealed bench changes remain outside opponent input and illegal actions are never replaced`(@TempDir directory: Path) {
         val audit = EmbeddedPresetAudit.run(directory.resolve("audit"), teamPairs = 1)
         val pair = audit.getAsJsonObject("teamSampling").getAsJsonArray("pairs")[0].asJsonObject

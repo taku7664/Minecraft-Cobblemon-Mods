@@ -5,6 +5,7 @@ import com.google.gson.JsonParser
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
+import jbro.cobblemon.morebattlecontent.internal.ai.BattleTacticalMemoryLedger
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption.CREATE_NEW
@@ -36,8 +37,11 @@ internal object EmbeddedTeamBattle {
         val battleId = UUID.nameUUIDFromBytes(pair["battleSeed"].toString().toByteArray())
         val tunings = mapOf("p1" to p1Tuning, "p2" to p2Tuning)
         val brains = tunings.mapValues { (_, tuning) -> LocalTacticalBrain(tuning = tuning) }
-        val sessions = brains.mapValues { (_, brain) -> brain.openSession(
-            BattleBrainOpenContext(battleId, BattleFormat.SINGLE, trainerProfile = trainerProfile)) }
+        val openContexts = brains.keys.associateWith {
+            BattleBrainOpenContext(battleId, BattleFormat.SINGLE, trainerProfile = trainerProfile)
+        }
+        val sessions = brains.mapValues { (side, brain) -> brain.openSession(openContexts.getValue(side)) }
+        val memories = openContexts.mapValues { (_, context) -> BattleTacticalMemoryLedger(context) }
         var final: JsonObject? = null
         val counts = mutableMapOf("p1" to 0, "p2" to 0)
         var forced = 0
@@ -67,13 +71,19 @@ internal object EmbeddedTeamBattle {
                         frame.getAsJsonArray("requests").forEach { value ->
                             val input = value.asJsonObject
                             val side = input["side"].asString
-                            val context = EmbeddedTeamInput.context(input, battleId, frame["turn"].asInt, round)
+                            val memory = memories.getValue(side)
+                            val context = EmbeddedTeamInput.context(input, battleId, frame["turn"].asInt, round) { state ->
+                                memory.observe(state)
+                                memory.view(state.turn)
+                            }
                             val effects = context.candidates.filter { it.kind == BattleActionKind.USE_MOVE }
                                 .associate { it.actionId to it.moveDetails?.effects }
                             effectAnnotatedCandidates += effects.values.count { it != null }
                             val decision = brains.getValue(side).decide(sessions.getValue(side), context)
                                 .toCompletableFuture().get(25, TimeUnit.SECONDS)
                             check(decision.requestId == context.requestId && context.candidates.any { it.actionId == decision.actionId })
+                            val selected = context.candidates.single { it.actionId == decision.actionId }
+                            memory.accept(context.state, selected, decision.advice)
                             if (input.getAsJsonObject("request").has("forceSwitch")) forced++
                             counts[side] = counts.getValue(side) + 1
                             choices.addProperty(side, decision.actionId)
@@ -81,6 +91,7 @@ internal object EmbeddedTeamBattle {
                                 addProperty("side", side); addProperty("turn", frame["turn"].asInt)
                                 add("input", input); addProperty("actionId", decision.actionId)
                                 add("candidateEffects", com.google.gson.Gson().toJsonTree(effects))
+                                add("memory", com.google.gson.Gson().toJsonTree(context.memory))
                                 add("decisionTags", com.google.gson.Gson().toJsonTree(decision.tags))
                             }.toString()).appendLine()
                             trace.flush()
