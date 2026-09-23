@@ -148,15 +148,14 @@ class PvpSessionServiceTest {
     }
 
     @Test
-    fun `target can reject a pending challenge and both players become available`() {
+    fun `target rejection discards the settled challenge and frees its id for reuse`() {
         val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
-        service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
+        val request = PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE)
+        service.invite(request)
 
         assertTrue(service.reject(matchId, second) is PvpChallengeMutationResult.Applied)
-        assertTrue(
-            service.invite(PvpChallengeRequest(UUID.randomUUID(), first, second, PvpBattleFormat.DOUBLE)) is
-                PvpChallengeMutationResult.Applied,
-        )
+        assertNull(service.challenge(matchId))
+        assertTrue(service.invite(request) is PvpChallengeMutationResult.Applied)
     }
 
     @Test

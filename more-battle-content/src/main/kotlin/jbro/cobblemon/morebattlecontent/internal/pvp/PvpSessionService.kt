@@ -95,7 +95,15 @@ internal class PvpSessionService<P>(
     }
 
     @Synchronized
-    fun reject(matchId: UUID, playerId: UUID): PvpChallengeMutationResult = challenges.reject(matchId, playerId)
+    fun reject(matchId: UUID, playerId: UUID): PvpChallengeMutationResult {
+        val result = challenges.reject(matchId, playerId)
+        if (result is PvpChallengeMutationResult.Applied) {
+            // A pending challenge has no match, timer, or snapshots to preserve. Keeping the terminal
+            // object would grow the challenge map forever and prevent an explicit ID from being reused.
+            challenges.discard(matchId)
+        }
+        return result
+    }
 
     @Synchronized
     fun registerTeam(
