@@ -7,6 +7,7 @@ import com.cobblemon.mod.common.battles.SuccessfulBattleStart
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
+import jbro.cobblemon.morebattlecontent.internal.battle.attachReplayableCompletionHandler
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpBattleMechanic
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpBattleLaunchResult
@@ -165,7 +166,11 @@ internal class Cobblemon173PvpBattleRuntime(
                 PvpBattleLaunchResult.Unavailable
             } else {
                 Cobblemon173InitialTurnDiagnostics.watch("PvP", battle)
-                battle.onEndHandlers += { ended ->
+                attachReplayableCompletionHandler(
+                    completion = battle,
+                    register = { handler -> battle.onEndHandlers += handler },
+                    isComplete = { battle.ended },
+                ) { ended ->
                     runManagedCleanupActionsSafely(
                         reportFailure = { failure ->
                             MoreBattleContent.LOGGER.error(

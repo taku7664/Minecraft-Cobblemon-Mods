@@ -15,6 +15,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainRegistry
 import jbro.cobblemon.morebattlecontent.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.morebattlecontent.api.ai.BrainCapability
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat as BrainBattleFormat
+import jbro.cobblemon.morebattlecontent.internal.battle.attachReplayableCompletionHandler
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryBattleLaunchResult
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryOpponentObservation
@@ -189,7 +190,11 @@ internal class Cobblemon173FactoryPveBattleRuntime(
             },
             terminateBattle = { Cobblemon173ManagedBattleTermination.end(battle.battleId) },
         ) {
-            battle.onEndHandlers += { ended ->
+            attachReplayableCompletionHandler(
+                completion = battle,
+                register = { handler -> battle.onEndHandlers += handler },
+                isComplete = { battle.ended },
+            ) { ended ->
                 runManagedCleanupActionsSafely(
                     reportFailure = { failure ->
                         MoreBattleContent.LOGGER.error(
@@ -213,8 +218,14 @@ internal class Cobblemon173FactoryPveBattleRuntime(
             } else {
                 observationAdapter.attach(battle)
                 Cobblemon173InitialTurnDiagnostics.watch("Battle Factory", battle)
+                ShadowTrainerProjectionNetworking.show(player, battle.battleId, trainerActor.initialPos)
+                BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)
 
-                battle.onEndHandlers += { ended ->
+                attachReplayableCompletionHandler(
+                    completion = battle,
+                    register = { handler -> battle.onEndHandlers += handler },
+                    isComplete = { battle.ended },
+                ) { ended ->
                     val playerWon = playerActor in ended.winners
                     val playerLost = playerActor in ended.losers
                     runManagedCleanupActionsSafely(
@@ -258,8 +269,6 @@ internal class Cobblemon173FactoryPveBattleRuntime(
                         },
                     )
                 }
-                ShadowTrainerProjectionNetworking.show(player, battle.battleId, trainerActor.initialPos)
-                BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)
                 FactoryBattleLaunchResult.Started(battle.battleId)
             }
         }

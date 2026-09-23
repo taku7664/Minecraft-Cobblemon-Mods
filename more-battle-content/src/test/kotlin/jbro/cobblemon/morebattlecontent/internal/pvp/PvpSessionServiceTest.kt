@@ -209,6 +209,44 @@ class PvpSessionServiceTest {
     }
 
     @Test
+    fun `synchronous battle end during launch stays retryable until battle ownership is committed`() {
+        val snapshots = RecordingSnapshots()
+        val pending = PendingPvpCompletion(matchId, battleId, first, second)
+        val queue = PvpCompletionRetryQueue(currentTimeMillis = { 1_000L })
+        lateinit var service: PvpSessionService<String>
+        service = PvpSessionService(
+            snapshots = snapshots,
+            launcher = PvpBattleLauncher(
+                snapshots,
+                PvpBattleRuntime {
+                    assertTrue(service.isLaunchPending(matchId))
+                    assertFalse(queue.submit(pending) { false })
+                    PvpBattleLaunchResult.Started(battleId)
+                },
+            ),
+        )
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.ready(matchId, second))
+        assertFalse(service.isLaunchPending(matchId))
+        assertEquals(1, queue.size())
+
+        queue.retryDue(force = true) { completion ->
+            service.completeBattle(
+                completion.matchId,
+                completion.battleId,
+                checkNotNull(completion.winnerId),
+                checkNotNull(completion.loserId),
+                PvpBattleCompletionSink { _, _, _ -> },
+            )
+        }
+
+        assertEquals(0, queue.size())
+        assertNull(service.challenge(matchId))
+    }
+
+    @Test
     fun `a ready player can unready and edit until both players are ready`() {
         val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
         service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))

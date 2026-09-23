@@ -13,6 +13,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainRegistry
 import jbro.cobblemon.morebattlecontent.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.morebattlecontent.api.ai.BrainCapability
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat as BrainBattleFormat
+import jbro.cobblemon.morebattlecontent.internal.battle.attachReplayableCompletionHandler
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleLaunchResult
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleOutcome
@@ -187,7 +188,11 @@ internal class Cobblemon173TowerPveBattleRuntime(
             },
             terminateBattle = { Cobblemon173ManagedBattleTermination.end(battle.battleId) },
         ) {
-            battle.onEndHandlers += { ended ->
+            attachReplayableCompletionHandler(
+                completion = battle,
+                register = { handler -> battle.onEndHandlers += handler },
+                isComplete = { battle.ended },
+            ) { ended ->
                 runManagedCleanupActionsSafely(
                     reportFailure = { failure ->
                         MoreBattleContent.LOGGER.error(
@@ -210,8 +215,14 @@ internal class Cobblemon173TowerPveBattleRuntime(
                 TowerBattleLaunchResult.Unavailable
             } else {
                 Cobblemon173InitialTurnDiagnostics.watch("Battle Tower", battle)
+                ShadowTrainerProjectionNetworking.show(player, battle.battleId, trainerActor.initialPos)
+                BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)
 
-                battle.onEndHandlers += { ended ->
+                attachReplayableCompletionHandler(
+                    completion = battle,
+                    register = { handler -> battle.onEndHandlers += handler },
+                    isComplete = { battle.ended },
+                ) { ended ->
                     val outcome = when (playerActor) {
                         in ended.winners -> TowerBattleOutcome.WIN
                         in ended.losers -> TowerBattleOutcome.LOSS
@@ -250,8 +261,6 @@ internal class Cobblemon173TowerPveBattleRuntime(
                         },
                     )
                 }
-                ShadowTrainerProjectionNetworking.show(player, battle.battleId, trainerActor.initialPos)
-                BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)
                 TowerBattleLaunchResult.Started(battle.battleId)
             }
         }

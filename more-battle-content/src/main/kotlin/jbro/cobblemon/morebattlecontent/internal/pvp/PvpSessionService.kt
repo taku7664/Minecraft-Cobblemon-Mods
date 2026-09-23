@@ -69,6 +69,7 @@ internal class PvpSessionService<P>(
     private val matches = LinkedHashMap<UUID, PvpMatchSession>()
     private val activeBattleIds = HashMap<UUID, UUID>()
     private val timers = LinkedHashMap<UUID, PvpMatchTimer>()
+    private val launchingMatches = HashSet<UUID>()
 
     @Synchronized
     fun invite(request: PvpChallengeRequest): PvpChallengeMutationResult = challenges.invite(request)
@@ -203,25 +204,30 @@ internal class PvpSessionService<P>(
         }
         val firstSelection = requireNotNull(match.selectionFor(match.challengerId))
         val secondSelection = requireNotNull(match.selectionFor(match.opponentId))
-        val launchResult = launcher.launch(
-            PvpBattleLaunchRequest(
-                matchId = match.matchId,
-                firstPlayerId = match.challengerId,
-                secondPlayerId = match.opponentId,
-                format = match.format,
-                enabledMechanics = match.enabledMechanics,
-                firstSelection = firstSelection,
-                secondSelection = secondSelection,
-            ),
-        )
-        if (launchResult !is PvpBattleLaunchResult.Started) {
-            return PvpSelectionMutation.BATTLE_UNAVAILABLE
+        if (!launchingMatches.add(matchId)) return PvpSelectionMutation.INVALID_STATE
+        try {
+            val launchResult = launcher.launch(
+                PvpBattleLaunchRequest(
+                    matchId = match.matchId,
+                    firstPlayerId = match.challengerId,
+                    secondPlayerId = match.opponentId,
+                    format = match.format,
+                    enabledMechanics = match.enabledMechanics,
+                    firstSelection = firstSelection,
+                    secondSelection = secondSelection,
+                ),
+            )
+            if (launchResult !is PvpBattleLaunchResult.Started) {
+                return PvpSelectionMutation.BATTLE_UNAVAILABLE
+            }
+            val transition = challenges.startMatch(matchId)
+            check(transition is PvpChallengeMutationResult.Applied) { "PvP challenge failed to become active" }
+            match.markActive()
+            activeBattleIds[matchId] = launchResult.battleId
+            return PvpSelectionMutation.BATTLE_STARTED
+        } finally {
+            launchingMatches.remove(matchId)
         }
-        val transition = challenges.startMatch(matchId)
-        check(transition is PvpChallengeMutationResult.Applied) { "PvP challenge failed to become active" }
-        match.markActive()
-        activeBattleIds[matchId] = launchResult.battleId
-        return PvpSelectionMutation.BATTLE_STARTED
     }
 
     @Synchronized
@@ -270,6 +276,9 @@ internal class PvpSessionService<P>(
     fun battleIdFor(matchId: UUID): UUID? = activeBattleIds[matchId]
 
     @Synchronized
+    fun isLaunchPending(matchId: UUID): Boolean = matchId in launchingMatches
+
+    @Synchronized
     fun timerForBattle(battleId: UUID): PvpMatchTimer? {
         val matchId = activeBattleIds.entries.firstOrNull { it.value == battleId }?.key ?: return null
         return timers[matchId]
@@ -285,6 +294,7 @@ internal class PvpSessionService<P>(
             .flatMap { match -> listOf(match.challengerId, match.opponentId) }
             .toSet()
         activeBattleIds.clear()
+        launchingMatches.clear()
         timers.clear()
         matches.clear()
         challenges.clear()
@@ -394,6 +404,7 @@ internal class PvpSessionService<P>(
 
     private fun cleanup(matchId: UUID, challengerId: UUID, opponentId: UUID) {
         activeBattleIds.remove(matchId)
+        launchingMatches.remove(matchId)
         timers.remove(matchId)
         matches.remove(matchId)
 

@@ -9,9 +9,21 @@ internal const val PVP_COMPLETION_RETRY_MILLIS = 5_000L
 internal data class PendingPvpCompletion(
     val matchId: UUID,
     val battleId: UUID,
-    val winnerId: UUID,
-    val loserId: UUID,
-)
+    val winnerId: UUID?,
+    val loserId: UUID?,
+) {
+    init {
+        require((winnerId == null) == (loserId == null)) { "A PvP result must contain both winner and loser" }
+        require(winnerId == null || winnerId != loserId) { "A PvP winner and loser must be different" }
+    }
+
+    val cancelled: Boolean
+        get() = winnerId == null
+
+    companion object {
+        fun cancelled(matchId: UUID, battleId: UUID) = PendingPvpCompletion(matchId, battleId, null, null)
+    }
+}
 
 internal fun attemptPvpCompletionSettlement(
     settle: () -> Boolean,

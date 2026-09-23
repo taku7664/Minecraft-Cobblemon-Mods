@@ -83,15 +83,9 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                 val pending = PendingPvpCompletion(matchId, battleId, winnerId, loserId)
                 pendingCompletions.submit(pending) { completion -> settleCompletion(server, completion) }
             },
-            cancellation = { _, matchId, battleId ->
-                transitionPvpBattleLifecycle(
-                    transition = { sessions.cancelBattle(matchId, battleId) },
-                    isStillPending = { sessions.battleIdFor(matchId) != null },
-                    cleanup = {
-                        retryableMatches.remove(matchId)
-                        finishRoom(matchId)
-                    },
-                )
+            cancellation = { server, matchId, battleId ->
+                val pending = PendingPvpCompletion.cancelled(matchId, battleId)
+                pendingCompletions.submit(pending) { completion -> settleCompletion(server, completion) }
             },
         )
     }
@@ -1120,19 +1114,24 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     private fun settleCompletion(server: MinecraftServer, pending: PendingPvpCompletion): Boolean =
         attemptPvpCompletionSettlement(
             settle = {
+                if (sessions.isLaunchPending(pending.matchId)) return@attemptPvpCompletionSettlement false
                 val accepted = transitionPvpBattleLifecycle(
                     transition = {
-                        sessions.completeBattle(
-                            pending.matchId,
-                            pending.battleId,
-                            pending.winnerId,
-                            pending.loserId,
-                            PvpBattleCompletionSink { winnerId, loserId, format ->
-                                PvpBattleRecordService { completions ->
-                                    BattleRecordService.recordCompletedBattles(server, completions)
-                                }.recordResult(winnerId, loserId, format)
-                            },
-                        )
+                        if (pending.cancelled) {
+                            sessions.cancelBattle(pending.matchId, pending.battleId)
+                        } else {
+                            sessions.completeBattle(
+                                pending.matchId,
+                                pending.battleId,
+                                checkNotNull(pending.winnerId),
+                                checkNotNull(pending.loserId),
+                                PvpBattleCompletionSink { winnerId, loserId, format ->
+                                    PvpBattleRecordService { completions ->
+                                        BattleRecordService.recordCompletedBattles(server, completions)
+                                    }.recordResult(winnerId, loserId, format)
+                                },
+                            )
+                        }
                     },
                     isStillPending = { sessions.battleIdFor(pending.matchId) != null },
                     cleanup = {
@@ -1151,7 +1150,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             },
             reportFailure = { failure ->
                 MoreBattleContent.LOGGER.error(
-                    "PvP record settlement failed for match {} and battle {}; retrying in {} ms",
+                    "PvP battle-end settlement failed for match {} and battle {}; retrying in {} ms",
                     pending.matchId,
                     pending.battleId,
                     PVP_COMPLETION_RETRY_MILLIS,
