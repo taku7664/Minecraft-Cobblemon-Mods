@@ -128,15 +128,33 @@ class LocalWeightedActionSelectorTest {
     }
 
     @Test
+    fun `plausibility floor keeps half score and rejects anything lower`() {
+        val ranked = listOf(
+            rank("best", 100.0),
+            rank("exactly_half", 50.0),
+            rank("below_half", 49.999),
+        )
+        val introductory = mixingContext().copy(
+            decisionRegretBand = 8.0,
+            decisionShortlistWidth = 2.0,
+        )
+
+        assertEquals(
+            listOf("best", "exactly_half"),
+            selector.shortlist(ranked, introductory).map { it.outcome.candidate.actionId },
+        )
+    }
+
+    @Test
     fun `difficulty band does not flatten score weighting`() {
-        val ranked = listOf(rank("best", 100.0), rank("weak_but_plausible", 40.0))
+        val ranked = listOf(rank("best", 100.0), rank("weak_but_plausible", 60.0))
         val introductory = mixingContext(riskTolerance = 0.5).copy(decisionRegretBand = 8.0)
 
         val weakSelections = (0L until 10_000L).count { seed ->
             selector.choose(ranked, seed, introductory).rank.outcome.candidate.actionId == "weak_but_plausible"
         }
 
-        assertTrue(weakSelections in 2_000..3_500, "weak selections=$weakSelections")
+        assertTrue(weakSelections in 3_000..4_000, "weak selections=$weakSelections")
     }
 
     @Test

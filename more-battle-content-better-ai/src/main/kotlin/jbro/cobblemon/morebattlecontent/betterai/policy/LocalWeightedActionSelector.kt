@@ -114,7 +114,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         // It is now two things that were being conflated. Within `allowedGap` the trainer is choosing
         // between real alternatives, and weight decays smoothly rather than falling off an edge.
         // Past `ABSURD_REGRET_MULTIPLE` times that, the action is not a close call at all and stays
-        // excluded outright - a player who watched an AI pick a move three times worse than the
+        // excluded outright - a player who watched an AI pick a move worth less than half of the
         // obvious one would call it broken, not characterful, and removing that boundary entirely did
         // exactly that in the regression suite.
         val absurdGap = allowedGap * ABSURD_REGRET_MULTIPLE
@@ -356,7 +356,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
 
     /**
      * Difficulty may admit a genuine mistake, but it may not turn an obviously broken action into a
-     * personality choice. The selector's own contract calls a move three times worse than the clear
+     * personality choice. The selector's own contract calls a move worth less than half of the clear
      * answer absurd; enforce that statement as a score ratio rather than an absolute gap, because the
      * scale of one decision can span several health bars while another barely moves the board.
      *
@@ -471,7 +471,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
          * widen this band.
          */
         const val ABSURD_REGRET_MULTIPLE = 1.0
-        const val MAXIMUM_PLAUSIBLE_SCORE_MULTIPLE = 3.0
+        const val MAXIMUM_PLAUSIBLE_SCORE_MULTIPLE = 2.0
 
         /**
          * Decay rate of weight against regret, in units of the baseline adaptive regret band.
