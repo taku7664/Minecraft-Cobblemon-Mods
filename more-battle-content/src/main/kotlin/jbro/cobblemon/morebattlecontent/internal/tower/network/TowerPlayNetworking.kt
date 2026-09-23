@@ -369,37 +369,45 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
     private fun settleCompletion(
         server: MinecraftServer,
         pending: PendingTowerCompletion,
-    ): Boolean = attemptBattleCompletionSettlement(
-        settle = {
-            if (pending.outcome == null) {
-                sessions.cancelBattle(pending.playerId, pending.battleId, completionSink(server, pending.battleId))
-            } else {
-                sessions.completeBattle(
-                    pending.playerId,
-                    pending.battleId,
-                    pending.outcome,
-                    completionSink(server, pending.battleId),
-                )
-            }
-        },
-        afterSettlement = { completion ->
-            if (completion is TowerPlayBattleCompletionResult.Completed) {
-                onlinePlayers[pending.playerId]?.let(BattleHubNetworking::sendHeader)
-                reopenScreen(pending.playerId, completion)
-            } else if (completion is TowerPlayBattleCompletionResult.StaleBattle ||
-                completion is TowerPlayBattleCompletionResult.SessionNotFound ||
-                completion is TowerPlayBattleCompletionResult.NoActiveBattle
-            ) {
-                MoreBattleContent.LOGGER.warn(
-                    "Dropping stale Battle Tower completion retry for player {} and battle {}",
-                    pending.playerId,
-                    pending.battleId,
-                )
-            }
-        },
-        reportSettlementFailure = { failure -> reportTowerCompletionFailure(pending, failure) },
-        reportNotificationFailure = { failure -> reportTowerCompletionNotificationFailure(pending, failure) },
-    )
+    ): Boolean {
+        var waitsForLaunchCommit = false
+        val settled = attemptBattleCompletionSettlement(
+            settle = {
+                if (pending.outcome == null) {
+                    sessions.cancelBattle(pending.playerId, pending.battleId, completionSink(server, pending.battleId))
+                } else {
+                    sessions.completeBattle(
+                        pending.playerId,
+                        pending.battleId,
+                        pending.outcome,
+                        completionSink(server, pending.battleId),
+                    )
+                }
+            },
+            afterSettlement = { completion ->
+                if (completion is TowerPlayBattleCompletionResult.Completed) {
+                    onlinePlayers[pending.playerId]?.let(BattleHubNetworking::sendHeader)
+                    reopenScreen(pending.playerId, completion)
+                } else if (completion is TowerPlayBattleCompletionResult.NoActiveBattle &&
+                    sessions.isLaunchPending(pending.playerId)
+                ) {
+                    waitsForLaunchCommit = true
+                } else if (completion is TowerPlayBattleCompletionResult.StaleBattle ||
+                    completion is TowerPlayBattleCompletionResult.SessionNotFound ||
+                    completion is TowerPlayBattleCompletionResult.NoActiveBattle
+                ) {
+                    MoreBattleContent.LOGGER.warn(
+                        "Dropping stale Battle Tower completion retry for player {} and battle {}",
+                        pending.playerId,
+                        pending.battleId,
+                    )
+                }
+            },
+            reportSettlementFailure = { failure -> reportTowerCompletionFailure(pending, failure) },
+            reportNotificationFailure = { failure -> reportTowerCompletionNotificationFailure(pending, failure) },
+        )
+        return settled && !waitsForLaunchCommit
+    }
 
     private fun reportTowerCompletionFailure(pending: PendingTowerCompletion, failure: Throwable) {
         reportManagedCleanupFailureSafely(failure) {

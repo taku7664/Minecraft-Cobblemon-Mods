@@ -99,6 +99,7 @@ internal class TowerPlaySessionService(
     private val entryContextIdFactory: () -> UUID = UUID::randomUUID,
 ) {
     private val sessions = HashMap<UUID, Session>()
+    private val launchingPlayers = HashSet<UUID>()
 
     @Synchronized
     fun open(
@@ -292,6 +293,9 @@ internal class TowerPlaySessionService(
     fun activeBattleIds(): Set<UUID> = sessions.values.mapNotNullTo(LinkedHashSet()) { it.activeBattleId }
 
     @Synchronized
+    fun isLaunchPending(playerId: UUID): Boolean = playerId in launchingPlayers
+
+    @Synchronized
     fun clear() {
         var failure: Throwable? = null
         sessions.keys.toList().forEach { playerId ->
@@ -303,6 +307,7 @@ internal class TowerPlaySessionService(
                 }
             }
         }
+        launchingPlayers.clear()
         failure?.let { throw it }
     }
 
@@ -525,34 +530,39 @@ internal class TowerPlaySessionService(
         val mechanic = checkNotNull(state.selectedMechanic) {
             "A locked Battle Tower team must retain its selected mechanic"
         }
-        return when (
-            val launch = battleLauncher.launch(
-                TowerBattleLaunchRequest(
-                    playerId,
-                    progress,
-                    selection,
-                    mechanic,
-                    state.legendaryClassAllowed,
-                    session.state.entryContextId,
-                ),
-            )
-        ) {
-            is TowerBattleLaunchResult.Started -> {
-                session.activeBattleId = launch.battleId
-                accept(
-                    session,
-                    intent,
-                    state.copy(
-                        revision = state.revision + 1,
-                        phase = TowerPlayPhase.ACTIVE,
-                        mechanicLocked = true,
-                        legendaryClassLocked = true,
+        check(launchingPlayers.add(playerId)) { "Battle Tower session is already launching a battle" }
+        return try {
+            when (
+                val launch = battleLauncher.launch(
+                    TowerBattleLaunchRequest(
+                        playerId,
+                        progress,
+                        selection,
+                        mechanic,
+                        state.legendaryClassAllowed,
+                        session.state.entryContextId,
                     ),
                 )
-            }
+            ) {
+                is TowerBattleLaunchResult.Started -> {
+                    session.activeBattleId = launch.battleId
+                    accept(
+                        session,
+                        intent,
+                        state.copy(
+                            revision = state.revision + 1,
+                            phase = TowerPlayPhase.ACTIVE,
+                            mechanicLocked = true,
+                            legendaryClassLocked = true,
+                        ),
+                    )
+                }
 
-            TowerBattleLaunchResult.Unavailable ->
-                rejected(intent, state.revision, TowerPlayMessageKeys.BATTLE_UNAVAILABLE)
+                TowerBattleLaunchResult.Unavailable ->
+                    rejected(intent, state.revision, TowerPlayMessageKeys.BATTLE_UNAVAILABLE)
+            }
+        } finally {
+            launchingPlayers.remove(playerId)
         }
     }
 

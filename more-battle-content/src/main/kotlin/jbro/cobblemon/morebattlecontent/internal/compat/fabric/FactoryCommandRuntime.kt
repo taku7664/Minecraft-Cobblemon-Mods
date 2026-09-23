@@ -343,6 +343,12 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
                 )
             }
             if (result is FactorySessionCompletionResult.Completed &&
+                result.result is FactoryBattleCompletionResult.NoActiveBattle &&
+                sessions.isLaunchPending(completion.playerId, completion.runId)
+            ) {
+                return false
+            }
+            if (result is FactorySessionCompletionResult.Completed &&
                 result.result !is FactoryBattleCompletionResult.StaleBattle &&
                 result.result !is FactoryBattleCompletionResult.NoActiveBattle
             ) {

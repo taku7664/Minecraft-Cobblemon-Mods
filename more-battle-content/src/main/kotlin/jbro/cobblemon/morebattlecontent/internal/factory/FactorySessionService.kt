@@ -41,6 +41,7 @@ internal class FactorySessionService(
         { _, _, _, _ -> null },
 ) {
     private val sessions = HashMap<UUID, FactoryRunSession>()
+    private val launchingRuns = HashMap<UUID, UUID>()
 
     @Synchronized
     fun start(
@@ -81,7 +82,13 @@ internal class FactorySessionService(
         strategyBrief: BattleStrategyBrief,
     ): FactoryBattleLaunchResult {
         val session = sessions[playerId] ?: return FactoryBattleLaunchResult.Unavailable
-        return runBattles.begin(playerId, session, opponentTeam, trainerNameKey, aiSkill, strategyBrief)
+        check(playerId !in launchingRuns) { "Factory run is already launching a battle" }
+        launchingRuns[playerId] = session.runId
+        return try {
+            runBattles.begin(playerId, session, opponentTeam, trainerNameKey, aiSkill, strategyBrief)
+        } finally {
+            launchingRuns.remove(playerId, session.runId)
+        }
     }
 
     @Synchronized
@@ -158,7 +165,11 @@ internal class FactorySessionService(
     fun activeBattleIds(): Set<UUID> = sessions.values.mapNotNullTo(LinkedHashSet()) { it.activeBattleId }
 
     @Synchronized
+    fun isLaunchPending(playerId: UUID, runId: UUID): Boolean = launchingRuns[playerId] == runId
+
+    @Synchronized
     fun clear() {
+        launchingRuns.clear()
         sessions.clear()
     }
 

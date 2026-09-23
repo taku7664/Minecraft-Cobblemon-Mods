@@ -4,6 +4,7 @@ import java.util.UUID
 import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordStats
 import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordOutcome
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -73,6 +74,32 @@ class FactorySessionServiceTest {
         )
         assertEquals(FactoryRunPhase.READY, active.snapshot(playerId)?.phase)
         assertEquals(started.runId, unavailable.snapshot(playerId)?.runId)
+    }
+
+    @Test
+    fun `synchronous completion during launch remains identifiable for retry`() {
+        lateinit var active: FactorySessionService
+        var earlyCompletion: FactorySessionCompletionResult? = null
+        active = FactorySessionService(
+            runBattles = FactoryRunBattleService(FactoryBattleLauncher { request ->
+                assertTrue(active.isLaunchPending(request.playerId, request.runId))
+                earlyCompletion = active.completeLoss(request.playerId, request.runId, battleId)
+                FactoryBattleLaunchResult.Started(battleId)
+            }),
+            completions = completionService(),
+        )
+        val started = active.start(playerId, team(), FactoryLevelMode.LEVEL_50) {} as FactorySessionStartResult.Started
+
+        assertEquals(
+            FactoryBattleLaunchResult.Started(battleId),
+            active.beginBattle(playerId, opponent(), "trainer.factory", 3, strategyBrief()),
+        )
+
+        val early = earlyCompletion as FactorySessionCompletionResult.Completed
+        assertEquals(FactoryBattleCompletionResult.NoActiveBattle, early.result)
+        assertFalse(active.isLaunchPending(playerId, started.runId))
+        val retried = active.completeLoss(playerId, started.runId, battleId) as FactorySessionCompletionResult.Completed
+        assertEquals(FactoryBattleCompletionResult.Loss, retried.result)
     }
 
     @Test

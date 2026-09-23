@@ -121,6 +121,32 @@ class TowerPlayBattleLaunchTest {
     }
 
     @Test
+    fun `synchronous completion during launch remains identifiable for retry`() {
+        lateinit var service: TowerPlaySessionService
+        var earlyCompletion: TowerPlayBattleCompletionResult? = null
+        service = TowerPlaySessionService(
+            entryContextIdFactory = { contextId },
+            battleLauncher = TowerBattleLauncher {
+                assertTrue(service.isLaunchPending(playerId))
+                earlyCompletion = service.completeBattle(playerId, battleId, TowerBattleOutcome.WIN)
+                TowerBattleLaunchResult.Started(battleId)
+            },
+            registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
+        )
+        val locked = lockFirstThree(service)
+
+        val active = service.mutate(
+            playerId,
+            TowerPlayIntent.Start(UUID(0, 21), contextId, locked.revision),
+        ) as TowerPlayMutationResult.Accepted
+
+        assertEquals(TowerPlayBattleCompletionResult.NoActiveBattle, earlyCompletion)
+        assertFalse(service.isLaunchPending(playerId))
+        assertEquals(TowerPlayPhase.ACTIVE, active.state.phase)
+        assertTrue(service.completeBattle(playerId, battleId, TowerBattleOutcome.WIN) is TowerPlayBattleCompletionResult.Completed)
+    }
+
+    @Test
     fun `successful start uses the order in which pokemon were selected`() {
         val launches = ArrayList<TowerBattleLaunchRequest>()
         val service = TowerPlaySessionService(
