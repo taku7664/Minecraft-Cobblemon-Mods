@@ -204,6 +204,23 @@ tasks.register<JavaExec>("captureBssTournamentMirror") {
     }
 }
 
+tasks.register<JavaExec>("captureBssFactoryTournamentMatch") {
+    group = "verification"
+    description = "Runs exact reconstructed entries and selections from a BSS Factory tournament replay."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.EmbeddedBssFactoryTournamentBattle")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(
+            providers.gradleProperty("bssFactoryOutput").orNull
+                ?: layout.buildDirectory.dir("reports/betterai-bss-factory/${UUID.randomUUID()}").get().asFile.absolutePath,
+            providers.gradleProperty("bssFactorySeeds").getOrElse("4"),
+            providers.gradleProperty("bssFactoryMaxTurns").getOrElse("200"),
+        ))
+    }
+}
+
 tasks.register<JavaExec>("compareNativePolicies") {
     group = "verification"
     description = "Compares existing Local Brain tunings with crossed teams and seats in native battles."
