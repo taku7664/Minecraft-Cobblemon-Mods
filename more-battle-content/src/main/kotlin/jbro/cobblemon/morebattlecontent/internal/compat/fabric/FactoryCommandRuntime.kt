@@ -6,6 +6,7 @@ import jbro.cobblemon.morebattlecontent.internal.command.FactoryCommandBackend
 import jbro.cobblemon.morebattlecontent.internal.command.BattleProgressSetResult
 import jbro.cobblemon.morebattlecontent.internal.application.BattleContentId
 import jbro.cobblemon.morebattlecontent.internal.battle.BattleCompletionRetryQueue
+import jbro.cobblemon.morebattlecontent.internal.battle.finalizeCompletionOwner
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointRewardSettlementService
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointService
 import jbro.cobblemon.morebattlecontent.internal.bp.requireAcceptedReward
@@ -360,7 +361,12 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
                     completion.battleId,
                 )
             }
-            true
+            finalizeCompletionOwner(
+                settled = true,
+                ownerOnline = completion.playerId in onlinePlayers,
+            ) {
+                play.disconnect(completion.playerId)
+            }
         } catch (failure: RuntimeException) {
             reportCompletionFailure(completion, failure)
             false

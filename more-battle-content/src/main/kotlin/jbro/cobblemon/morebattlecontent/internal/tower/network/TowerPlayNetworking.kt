@@ -4,6 +4,7 @@ import jbro.cobblemon.morebattlecontent.MoreBattleContent
 import jbro.cobblemon.morebattlecontent.internal.application.BattleContentId
 import jbro.cobblemon.morebattlecontent.internal.battle.BattleCompletionRetryQueue
 import jbro.cobblemon.morebattlecontent.internal.battle.attemptBattleCompletionSettlement
+import jbro.cobblemon.morebattlecontent.internal.battle.finalizeCompletionOwner
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointRewardSettlementService
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointRewardSettlement
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointService
@@ -15,6 +16,7 @@ import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon17
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173TowerPveBattleRuntime
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173ManagedBattleTermination
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.reportManagedCleanupFailureSafely
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupActions
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupActionsSafely
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.TowerOpponentCatalogResources
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.dispatchToServerThread
@@ -406,7 +408,23 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
             reportSettlementFailure = { failure -> reportTowerCompletionFailure(pending, failure) },
             reportNotificationFailure = { failure -> reportTowerCompletionNotificationFailure(pending, failure) },
         )
-        return settled && !waitsForLaunchCommit
+        return try {
+            finalizeCompletionOwner(
+                settled = settled && !waitsForLaunchCommit,
+                ownerOnline = pending.playerId in onlinePlayers,
+            ) {
+                runManagedCleanupActions(
+                    { sessions.close(pending.playerId) },
+                    { launcher.forget(pending.playerId) },
+                )
+            }
+        } catch (failure: RuntimeException) {
+            reportTowerCompletionFailure(pending, failure)
+            false
+        } catch (failure: LinkageError) {
+            reportTowerCompletionFailure(pending, failure)
+            false
+        }
     }
 
     private fun reportTowerCompletionFailure(pending: PendingTowerCompletion, failure: Throwable) {

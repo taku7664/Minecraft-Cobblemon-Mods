@@ -2,10 +2,43 @@ package jbro.cobblemon.morebattlecontent.internal.battle
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class BattleCompletionRetryQueueTest {
+    @Test
+    fun `settled offline completion releases its retained owner`() {
+        var cleanups = 0
+
+        val settled = finalizeCompletionOwner(
+            settled = true,
+            ownerOnline = false,
+        ) { cleanups++ }
+
+        assertTrue(settled)
+        assertEquals(1, cleanups)
+    }
+
+    @Test
+    fun `unsettled or online completion retains its owner`() {
+        var cleanups = 0
+
+        assertFalse(finalizeCompletionOwner(settled = false, ownerOnline = false) { cleanups++ })
+        assertTrue(finalizeCompletionOwner(settled = true, ownerOnline = true) { cleanups++ })
+
+        assertEquals(0, cleanups)
+    }
+
+    @Test
+    fun `offline cleanup failure keeps completion retryable`() {
+        assertThrows(IllegalStateException::class.java) {
+            finalizeCompletionOwner(settled = true, ownerOnline = false) {
+                error("cleanup failed")
+            }
+        }
+    }
+
     private data class Completion(val battleId: Int, val playerId: Int)
 
     @Test

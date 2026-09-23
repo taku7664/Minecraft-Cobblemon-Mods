@@ -1,5 +1,19 @@
 package jbro.cobblemon.morebattlecontent.internal.battle
 
+/**
+ * Releases state retained only to retry a completion once persistence has succeeded and its owner
+ * is no longer connected. Cleanup failures propagate so the caller can keep the completion queued.
+ */
+internal inline fun finalizeCompletionOwner(
+    settled: Boolean,
+    ownerOnline: Boolean,
+    cleanupOfflineOwner: () -> Unit,
+): Boolean {
+    if (!settled) return false
+    if (!ownerOnline) cleanupOfflineOwner()
+    return true
+}
+
 /** Retains a completed battle result until its persistent settlement succeeds or becomes stale. */
 internal class BattleCompletionRetryQueue<K, T>(
     private val keyOf: (T) -> K,
