@@ -138,14 +138,17 @@ internal class Cobblemon173PvpLoungeGateway(
 
     /**
      * Last-resort exit used when a recorded return point is gone, for example because the server
-     * restarted while somebody was standing in an arena. The game mode is left alone because nothing
-     * here changes it on the way in.
+     * restarted while somebody was standing in an arena. The exact previous game mode is no longer
+     * available, so restore the server default instead of leaving an admitted spectator in spectator
+     * mode after returning them to the overworld.
      */
     fun restoreToOverworldSpawn(playerId: UUID): Boolean {
         val player = playerResolver(playerId) ?: return false
         val overworld = player.server.overworld()
         val spawn = overworld.sharedSpawnPos
         spectatorAnchors.remove(playerId)
+        val fallbackGameMode = player.server.defaultGameType
+        if (player.gameMode.gameModeForPlayer != fallbackGameMode && !player.setGameMode(fallbackGameMode)) return false
         player.teleportTo(overworld, spawn.x + 0.5, spawn.y.toDouble(), spawn.z + 0.5, 0F, 0F)
         player.deltaMovement = Vec3.ZERO
         if (ServerPlayNetworking.canSend(player, PvpLoungeSpectatorStatePayload.TYPE)) {
