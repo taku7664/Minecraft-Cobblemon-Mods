@@ -186,6 +186,24 @@ tasks.register<JavaExec>("captureTournamentMirror") {
     }
 }
 
+tasks.register<JavaExec>("captureBssTournamentMirror") {
+    group = "verification"
+    description = "Runs a published level-50 BSS entry as a bring-six-pick-three Better AI mirror."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.EmbeddedBssTournamentMirrorBattle")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(
+            providers.gradleProperty("bssMirrorOutput").orNull
+                ?: layout.buildDirectory.dir("reports/betterai-bss-mirror/${UUID.randomUUID()}").get().asFile.absolutePath,
+            providers.gradleProperty("bssMirrorSeedsPerLead").getOrElse("2"),
+            providers.gradleProperty("bssMirrorRepeats").getOrElse("1"),
+            providers.gradleProperty("bssMirrorMaxTurns").getOrElse("100"),
+        ))
+    }
+}
+
 tasks.register<JavaExec>("compareNativePolicies") {
     group = "verification"
     description = "Compares existing Local Brain tunings with crossed teams and seats in native battles."
