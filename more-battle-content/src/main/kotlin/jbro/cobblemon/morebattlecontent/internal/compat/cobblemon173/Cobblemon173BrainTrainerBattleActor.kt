@@ -17,6 +17,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainCloseResult
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainDefaults
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainOpenContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainSession
+import jbro.cobblemon.morebattlecontent.api.ai.BattleDecision
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionValidationStatus
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionValidator
@@ -33,6 +34,7 @@ import jbro.cobblemon.morebattlecontent.internal.ai.BattleDecisionResolution
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleDecisionSource
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleTacticalMemoryLedger
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleTacticalRunMemoryStore
+import jbro.cobblemon.morebattlecontent.internal.ai.attemptBattleDecisionCompletion
 import jbro.cobblemon.morebattlecontent.internal.ai.attemptBattleDecisionSetup
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.entity.decoration.ArmorStand
@@ -204,25 +206,50 @@ internal class Cobblemon173BrainTrainerBattleActor(
         }
 
         if (selectedResponses != null) {
-            val selectedResolution = requireNotNull(resolution)
-            val selectedDecision = requireNotNull(selectedResolution.decision)
-            val selectedCandidate = context.candidates.single { it.actionId == selectedDecision.actionId }
-            logDecisionResolution(
-                context = context,
-                source = selectedResolution.source,
-                failures = selectedResolution.failures,
-                actionKinds = selectedCandidate.diagnosticActionKinds(),
-                diagnosticTags = selectedDecision.tags,
-                decisionStartedAtNanos = decisionStartedAtNanos,
+            var selectedResolution: BattleDecisionResolution? = null
+            var selectedDecision: BattleDecision? = null
+            var selectedCandidate: BattleActionCandidate? = null
+            val prepared = attemptBattleDecisionCompletion(
+                complete = {
+                    selectedResolution = requireNotNull(resolution)
+                    selectedDecision = requireNotNull(selectedResolution?.decision)
+                    selectedCandidate = context.candidates.single { it.actionId == selectedDecision?.actionId }
+                    logDecisionResolution(
+                        context = context,
+                        source = requireNotNull(selectedResolution).source,
+                        failures = requireNotNull(selectedResolution).failures,
+                        actionKinds = requireNotNull(selectedCandidate).diagnosticActionKinds(),
+                        diagnosticTags = requireNotNull(selectedDecision).tags,
+                        decisionStartedAtNanos = decisionStartedAtNanos,
+                    )
+                },
+                recover = { failure ->
+                    logFailure("Brain decision finalization", failure)
+                    submitBaselineOrEmergency(expectedRequest, preparation, context, resolution)
+                },
             )
+            if (!prepared) return
+            val finalizedResolution = requireNotNull(selectedResolution)
+            val finalizedDecision = requireNotNull(selectedDecision)
+            val finalizedCandidate = requireNotNull(selectedCandidate)
             val submitted = submitPreparedResponses(expectedRequest, selectedResponses)
             if (submitted) {
-                val planOwner = when (selectedResolution.source) {
+                val planOwner = when (finalizedResolution.source) {
                     BattleDecisionSource.PRIMARY_BRAIN -> jbro.cobblemon.morebattlecontent.api.ai.BattlePlanOwner.PRIMARY_BRAIN
                     BattleDecisionSource.LOCAL_BRAIN -> jbro.cobblemon.morebattlecontent.api.ai.BattlePlanOwner.LOCAL_BRAIN
                     else -> null
                 }
-                tacticalMemory.accept(context.state, selectedCandidate, selectedDecision.advice, planOwner)
+                attemptBattleDecisionCompletion(
+                    complete = {
+                        tacticalMemory.accept(
+                            context.state,
+                            finalizedCandidate,
+                            finalizedDecision.advice,
+                            planOwner,
+                        )
+                    },
+                    recover = { failure -> logFailure("Brain decision bookkeeping", failure) },
+                )
             }
         } else {
             if (throwable != null) logFailure("Brain decision completion", throwable)

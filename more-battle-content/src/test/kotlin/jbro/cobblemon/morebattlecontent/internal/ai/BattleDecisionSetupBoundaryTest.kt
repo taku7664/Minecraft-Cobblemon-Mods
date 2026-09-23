@@ -37,4 +37,45 @@ class BattleDecisionSetupBoundaryTest {
         assertNull(result)
         assertSame(failure, recovered)
     }
+
+    @Test
+    fun `runtime completion failure enters its recovery path`() {
+        val failure = IllegalStateException("candidate lookup failed")
+        var recovered: Throwable? = null
+
+        val completed = attemptBattleDecisionCompletion(
+            complete = { throw failure },
+            recover = { recovered = it },
+        )
+
+        assertEquals(false, completed)
+        assertSame(failure, recovered)
+    }
+
+    @Test
+    fun `compatibility completion failure enters its recovery path`() {
+        val failure = NoSuchMethodError("response adapter drift")
+        var recovered: Throwable? = null
+
+        val completed = attemptBattleDecisionCompletion(
+            complete = { throw failure },
+            recover = { recovered = it },
+        )
+
+        assertEquals(false, completed)
+        assertSame(failure, recovered)
+    }
+
+    @Test
+    fun `successful completion does not invoke recovery`() {
+        var recovered = false
+
+        val completed = attemptBattleDecisionCompletion(
+            complete = {},
+            recover = { recovered = true },
+        )
+
+        assertEquals(true, completed)
+        assertEquals(false, recovered)
+    }
 }
