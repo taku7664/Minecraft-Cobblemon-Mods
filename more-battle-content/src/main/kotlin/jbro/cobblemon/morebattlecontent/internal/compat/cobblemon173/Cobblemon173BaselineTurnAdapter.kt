@@ -10,30 +10,35 @@ internal object Cobblemon173BaselineTurnAdapter {
         val request = actor.request
             ?: return Cobblemon173BaselineTurnResult.failed(Cobblemon173BaselineTurnStatus.NO_REQUEST)
         return try {
-            val responses = if (request.wait) {
-                Cobblemon173ActionCandidateAdapter.passResponses(request, actor.activePokemon)
-            } else {
-                request.iterate(actor.activePokemon) { active, moveset, forceSwitch ->
-                    baseline.choose(active, actor.battle, actor.getSide(), moveset, forceSwitch).also { response ->
-                        check(response.isValid(active, moveset, forceSwitch)) {
-                            "Cobblemon baseline AI returned an invalid response"
+            compatibilityCallOrElse(
+                fallback = { Cobblemon173BaselineTurnResult.failed(Cobblemon173BaselineTurnStatus.FAILED) },
+                action = {
+                    val responses = if (request.wait) {
+                        Cobblemon173ActionCandidateAdapter.passResponses(request, actor.activePokemon)
+                    } else {
+                        request.iterate(actor.activePokemon) { active, moveset, forceSwitch ->
+                            baseline.choose(active, actor.battle, actor.getSide(), moveset, forceSwitch).also { response ->
+                                check(response.isValid(active, moveset, forceSwitch)) {
+                                    "Cobblemon baseline AI returned an invalid response"
+                                }
+                            }
                         }
                     }
-                }
-            }
-            if (responses.isEmpty()) {
-                if (request.wait) {
-                    Cobblemon173BaselineTurnResult.noActionRequired()
-                } else {
-                    Cobblemon173BaselineTurnResult.failed(Cobblemon173BaselineTurnStatus.NO_LEGAL_ACTIONS)
-                }
-            } else {
-                Cobblemon173BaselineTurnResult.ready(responses)
-            }
-        } catch (_: Exception) {
-            Cobblemon173BaselineTurnResult.failed(Cobblemon173BaselineTurnStatus.FAILED)
+                    if (responses.isEmpty()) {
+                        if (request.wait) {
+                            Cobblemon173BaselineTurnResult.noActionRequired()
+                        } else {
+                            Cobblemon173BaselineTurnResult.failed(Cobblemon173BaselineTurnStatus.NO_LEGAL_ACTIONS)
+                        }
+                    } else {
+                        Cobblemon173BaselineTurnResult.ready(responses)
+                    }
+                },
+            )
         } finally {
-            actor.pokemonList.forEach { it.willBeSwitchedIn = false }
+            compatibilityCallOrNull { actor.pokemonList }.orEmpty().forEach { pokemon ->
+                compatibilityCallOrNull { pokemon.willBeSwitchedIn = false }
+            }
         }
     }
 }
