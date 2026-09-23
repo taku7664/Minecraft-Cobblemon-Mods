@@ -197,6 +197,34 @@ class FactoryRentalRulesTest {
     }
 
     @Test
+    fun `victory overflow fails before healing or mutating the run`() {
+        val team = FactoryRentalDraft((1..6).map(::rental))
+            .select(listOf("set1", "set2", "set3"), FactoryBattleFormat.SINGLE)
+        var healed = 0
+        val session = FactoryRunSession(
+            UUID.randomUUID(),
+            team,
+            FactoryLevelMode.LEVEL_50,
+            healRentals = { healed++ },
+            initialWins = Int.MAX_VALUE,
+        )
+        val battleId = UUID.randomUUID()
+        val opponent = mapOf(
+            UUID(1, 7) to rental(7),
+            UUID(1, 8) to rental(8),
+            UUID(1, 9) to rental(9),
+        )
+        session.beginBattle(battleId)
+
+        assertThrows<ArithmeticException> { session.recordVictory(battleId, opponent, emptyMap()) }
+
+        assertEquals(0, healed)
+        assertEquals(Int.MAX_VALUE, session.wins)
+        assertEquals(FactoryRunPhase.IN_BATTLE, session.phase)
+        assertEquals(battleId, session.activeBattleId)
+    }
+
+    @Test
     fun `swap offers expose exact public ability and item but reject values outside the rental set`() {
         val team = FactoryRentalDraft((1..6).map(::rental))
             .select(listOf("set1", "set2", "set3"), FactoryBattleFormat.SINGLE)

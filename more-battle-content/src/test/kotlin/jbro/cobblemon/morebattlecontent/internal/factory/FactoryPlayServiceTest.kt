@@ -71,6 +71,39 @@ class FactoryPlayServiceTest {
     }
 
     @Test
+    fun `maximum stored wins reject a new run without integer wraparound`() {
+        val service = playService(
+            catalog = catalog(),
+            startingWins = { _, _, _ -> Int.MAX_VALUE },
+        ) { FactoryBattleLaunchResult.Started(battleId) }
+
+        val result = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+
+        assertEquals(FactoryPlayError.BATTLE_UNAVAILABLE, (result as FactoryPlayResult.Rejected).error)
+        assertEquals(FactoryPlayPhase.AVAILABLE, service.status(playerId).phase)
+    }
+
+    @Test
+    fun `maximum active wins reject battle start before team reordering or launch`() {
+        var launched = false
+        val service = playService(catalog()) {
+            launched = true
+            FactoryBattleLaunchResult.Started(battleId)
+        }
+        val draft = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+            as FactoryPlayResult.Accepted
+        val selectedIds = draft.view.draftSets.take(3).map(FactoryRentalSet::setId)
+        service.selectDraft(playerId, selectedIds)
+        assertTrue(service.adminSetWins(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50, Int.MAX_VALUE))
+
+        val result = service.beginBattle(playerId, selectedIds.reversed())
+
+        assertEquals(FactoryPlayError.BATTLE_UNAVAILABLE, (result as FactoryPlayResult.Rejected).error)
+        assertEquals(selectedIds, service.status(playerId).teamSets.map(FactoryRentalSet::setId))
+        assertEquals(false, launched)
+    }
+
+    @Test
     fun `admin floor refreshes a pending rental selection before it is confirmed`() {
         var launched: FactoryBattleLaunchRequest? = null
         val service = playService(catalog()) { request ->

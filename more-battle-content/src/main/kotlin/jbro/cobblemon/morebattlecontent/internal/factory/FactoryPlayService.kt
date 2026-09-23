@@ -70,12 +70,14 @@ internal class FactoryPlayService(
         val pending = pendingStarts[playerId]
         if (pending != null) {
             if (pending.format == format && pending.levelMode == levelMode) {
-                val refreshedDraft = draftOffers.select(
-                    playerId,
-                    levelMode,
-                    round = FactoryProgression.roundForBattle(Math.addExact(value, 1)),
-                    rentAndTradeCount = 1,
-                ) ?: pending.draft
+                val refreshedDraft = FactoryProgression.nextBattleNumber(value)?.let { battleNumber ->
+                    draftOffers.select(
+                        playerId,
+                        levelMode,
+                        round = FactoryProgression.roundForBattle(battleNumber),
+                        rentAndTradeCount = 1,
+                    )
+                } ?: pending.draft
                 pendingStarts[playerId] = pending.copy(draft = refreshedDraft, initialWins = value)
             }
             return true
@@ -96,10 +98,12 @@ internal class FactoryPlayService(
         }
         val initialWins = startingWins(playerId, format, levelMode)
         require(initialWins >= 0) { "Factory starting wins must be non-negative" }
+        val nextBattleNumber = FactoryProgression.nextBattleNumber(initialWins)
+            ?: return FactoryPlayResult.Rejected(FactoryPlayError.BATTLE_UNAVAILABLE)
         val draft = draftOffers.select(
             playerId,
             levelMode,
-            round = FactoryProgression.roundForBattle(Math.addExact(initialWins, 1)),
+            round = FactoryProgression.roundForBattle(nextBattleNumber),
             rentAndTradeCount = 1,
         )
             ?: return FactoryPlayResult.Rejected(FactoryPlayError.CATALOG_UNAVAILABLE)
@@ -155,12 +159,14 @@ internal class FactoryPlayService(
     fun beginBattle(playerId: UUID, orderedSetIds: List<String>? = null): FactoryPlayResult {
         val snapshot = sessions.snapshot(playerId) ?: return FactoryPlayResult.Rejected(FactoryPlayError.NO_RUN)
         if (snapshot.phase != FactoryRunPhase.READY) return FactoryPlayResult.Rejected(FactoryPlayError.WRONG_PHASE)
+        val battleNumber = FactoryProgression.nextBattleNumber(snapshot.wins)
+            ?: return FactoryPlayResult.Rejected(FactoryPlayError.BATTLE_UNAVAILABLE)
         val requestedOrder = orderedSetIds ?: snapshot.teamSets.map(FactoryRentalSet::setId)
         if (!sessions.reorderTeam(playerId, requestedOrder)) {
             return FactoryPlayResult.Rejected(FactoryPlayError.INVALID_SELECTION)
         }
         val catalog = catalogSource() ?: return FactoryPlayResult.Rejected(FactoryPlayError.CATALOG_UNAVAILABLE)
-        val round = FactoryProgression.roundForBattle(snapshot.wins + 1)
+        val round = FactoryProgression.roundForBattle(battleNumber)
         val opponent = FactoryOpponentSelector(catalog, random)
             .select(
                 snapshot.format,

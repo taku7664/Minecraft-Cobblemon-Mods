@@ -11,6 +11,11 @@ internal object FactoryProgression {
         return (battleNumber - 1) / BATTLES_PER_ROUND + 1
     }
 
+    fun nextBattleNumber(completedWins: Int): Int? {
+        require(completedWins >= 0) { "Factory completed wins must be non-negative" }
+        return if (completedWins == Int.MAX_VALUE) null else completedWins + 1
+    }
+
     fun uniformIvForRound(round: Int): Int {
         require(round > 0) { "Factory round must be positive" }
         return roundIvs[(round - 1).coerceAtMost(roundIvs.lastIndex)]
@@ -148,6 +153,7 @@ internal class FactoryRunSession(
         require(observations.keys.all { observedId -> opponentSets.values.any { it.setId == observedId } }) {
             "Factory observations must reference an opponent rental"
         }
+        val winsAfter = Math.addExact(wins, 1)
 
         val offers = opponentSets.map { (token, set) ->
             val observation = observations[set.setId]
@@ -171,14 +177,20 @@ internal class FactoryRunSession(
             )
         }
         healRentals(team)
-        val winsAfter = Math.addExact(wins, 1)
         beforeCommit(winsAfter)
         wins = winsAfter
         if (winsAfter % FactoryProgression.BATTLES_PER_ROUND == 0) {
             offeredSets = emptyMap()
             swapOffers = emptyList()
             activeBattleId = null
-            pendingDraft = nextDraft(levelMode, FactoryProgression.roundForBattle(winsAfter + 1), rentAndTradeCount)
+            val nextBattleNumber = checkNotNull(FactoryProgression.nextBattleNumber(winsAfter)) {
+                "Factory progression cannot continue past the supported win count"
+            }
+            pendingDraft = nextDraft(
+                levelMode,
+                FactoryProgression.roundForBattle(nextBattleNumber),
+                rentAndTradeCount,
+            )
             phase = FactoryRunPhase.DRAFT_SELECTION
             return emptyList()
         }
