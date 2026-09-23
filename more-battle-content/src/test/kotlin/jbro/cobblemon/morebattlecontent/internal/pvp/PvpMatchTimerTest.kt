@@ -197,6 +197,52 @@ class PvpMatchTimerTest {
         assertEquals(390_000L, timer.remainingPersonalTime(first))
     }
 
+    @Test
+    fun `failed clock read cannot leave an added turn participant without a start time`() {
+        var failNextRead = false
+        val failure = NoSuchMethodError("clock API drift")
+        val time = object : PvpTimeSource {
+            override fun epochMillis(): Long = 0L
+
+            override fun monotonicMillis(): Long {
+                if (failNextRead) {
+                    failNextRead = false
+                    throw failure
+                }
+                return 0L
+            }
+        }
+        val timer = PvpMatchTimer(setOf(first, second), PvpRulesPreset.champions(), time)
+        timer.beginTurn(1, setOf(first))
+
+        failNextRead = true
+        assertEquals(failure, assertThrows(NoSuchMethodError::class.java) { timer.requireTurnChoice(1, second) })
+
+        assertEquals(PvpTimedSubmissionStatus.NOT_REQUIRED, timer.submitTurn(1, second))
+    }
+
+    @Test
+    fun `turn timeout sweep observes every player with one clock read`() {
+        var reads = 0
+        val failure = NoSuchMethodError("clock API drift")
+        val time = object : PvpTimeSource {
+            override fun epochMillis(): Long = 0L
+
+            override fun monotonicMillis(): Long = when (++reads) {
+                1 -> 0L
+                2 -> 45_000L
+                else -> throw failure
+            }
+        }
+        val timer = PvpMatchTimer(setOf(first, second), PvpRulesPreset.champions(), time)
+        timer.beginTurn(1, linkedSetOf(first, second))
+
+        assertEquals(setOf(first, second), timer.turnTimeouts(1))
+
+        assertEquals(375_000L, timer.remainingPersonalTime(first))
+        assertEquals(375_000L, timer.remainingPersonalTime(second))
+    }
+
     private class MutablePvpTimeSource(
         var epochMillis: Long,
         var monotonicMillis: Long,

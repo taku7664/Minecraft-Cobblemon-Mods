@@ -125,8 +125,9 @@ internal class PvpMatchTimer(
         require(active.turnId == turnId) { "PvP turn ID does not match the active turn" }
         if (playerId in active.requiredPlayers) return
         check(playerId !in active.resolvedPlayers()) { "A resolved player cannot be required again in the same PvP turn" }
+        val startedAtMillis = monotonicNow()
         active.requiredPlayers += playerId
-        active.startedAtMillisByPlayer[playerId] = monotonicNow()
+        active.startedAtMillisByPlayer[playerId] = startedAtMillis
     }
 
     @Synchronized
@@ -219,20 +220,20 @@ internal class PvpMatchTimer(
     fun turnTimeouts(turnId: Long): Set<UUID> {
         val active = turn ?: return emptySet()
         if (turnId != active.turnId) return emptySet()
-        val newlyTimedOut = LinkedHashSet<UUID>()
-        active.requiredPlayers.forEach { playerId ->
-            if (
-                playerId !in active.submittedPlayers &&
+        val candidates = active.requiredPlayers.filterTo(LinkedHashSet()) { playerId ->
+            playerId !in active.submittedPlayers &&
                 playerId !in active.timedOutPlayers &&
                 active.pendingSubmissions[playerId].isNullOrEmpty()
-            ) {
-                val allowed = allowedMillis(playerId)
-                if (elapsedSince(active.startedAtMillisByPlayer.getValue(playerId)) >= allowed) {
-                    consume(playerId, allowed)
-                    active.timedOutPlayers += playerId
-                    newlyTimedOut += playerId
-                }
-            }
+        }
+        if (candidates.isEmpty()) return emptySet()
+        val observedAtMillis = monotonicNow()
+        val newlyTimedOut = candidates.filterTo(LinkedHashSet()) { playerId ->
+            elapsedBetween(active.startedAtMillisByPlayer.getValue(playerId), observedAtMillis) >=
+                allowedMillis(playerId)
+        }
+        newlyTimedOut.forEach { playerId ->
+            consume(playerId, allowedMillis(playerId))
+            active.timedOutPlayers += playerId
         }
         return Collections.unmodifiableSet(newlyTimedOut)
     }
