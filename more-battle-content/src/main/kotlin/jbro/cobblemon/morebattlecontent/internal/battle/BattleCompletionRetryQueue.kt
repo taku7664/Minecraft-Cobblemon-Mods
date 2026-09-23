@@ -6,7 +6,11 @@ internal class BattleCompletionRetryQueue<K, T>(
     private val currentTimeMillis: () -> Long = System::currentTimeMillis,
     private val retryMillis: Long = DEFAULT_RETRY_MILLIS,
 ) {
-    private data class Entry<T>(val completion: T, val nextAttemptEpochMillis: Long)
+    private data class Entry<T>(
+        val completion: T,
+        var remainingDelayMillis: Long,
+        var observedAtMillis: Long,
+    )
 
     private val entries = LinkedHashMap<K, Entry<T>>()
 
@@ -21,7 +25,7 @@ internal class BattleCompletionRetryQueue<K, T>(
             entries.remove(key)
             return true
         }
-        entries[key] = Entry(completion, currentTimeMillis() + retryMillis)
+        entries[key] = Entry(completion, retryMillis, currentTimeMillis())
         return false
     }
 
@@ -30,7 +34,8 @@ internal class BattleCompletionRetryQueue<K, T>(
         val now = currentTimeMillis()
         entries.values.map(Entry<T>::completion).forEach { completion ->
             val entry = entries[keyOf(completion)] ?: return@forEach
-            if (force || entry.nextAttemptEpochMillis <= now) submit(completion, settle)
+            entry.advanceTo(now)
+            if (force || entry.remainingDelayMillis == 0L) submit(completion, settle)
         }
     }
 
@@ -42,6 +47,20 @@ internal class BattleCompletionRetryQueue<K, T>(
 
     @Synchronized
     fun clear() = entries.clear()
+
+    private fun Entry<T>.advanceTo(now: Long) {
+        val elapsed = if (now < observedAtMillis) {
+            0L
+        } else {
+            try {
+                Math.subtractExact(now, observedAtMillis)
+            } catch (_: ArithmeticException) {
+                Long.MAX_VALUE
+            }
+        }
+        remainingDelayMillis = if (elapsed >= remainingDelayMillis) 0L else remainingDelayMillis - elapsed
+        observedAtMillis = now
+    }
 
     internal companion object {
         const val DEFAULT_RETRY_MILLIS = 5_000L

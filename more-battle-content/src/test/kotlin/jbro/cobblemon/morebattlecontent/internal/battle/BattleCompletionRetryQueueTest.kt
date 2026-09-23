@@ -50,4 +50,29 @@ class BattleCompletionRetryQueueTest {
         assertTrue(queue.any { it.playerId == 20 })
         assertFalse(queue.any { it.playerId == 30 })
     }
+
+    @Test
+    fun `clock rollback does not postpone a completion until the old wall time returns`() {
+        var now = 100_000L
+        var available = false
+        var attempts = 0
+        val queue = BattleCompletionRetryQueue<Int, Completion>(
+            keyOf = Completion::battleId,
+            currentTimeMillis = { now },
+            retryMillis = 5_000L,
+        )
+
+        assertFalse(queue.submit(Completion(1, 10)) { attempts++; available })
+
+        now = 10_000L
+        queue.retryDue { attempts++; available }
+        assertEquals(1, attempts)
+
+        now = 15_000L
+        available = true
+        queue.retryDue { attempts++; available }
+
+        assertEquals(2, attempts)
+        assertEquals(0, queue.size())
+    }
 }
