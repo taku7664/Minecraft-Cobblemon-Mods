@@ -131,9 +131,20 @@ internal class Cobblemon173PvpLoungeGateway(
         player.teleportTo(level, point.x, point.y, point.z, point.yaw, point.pitch)
         player.deltaMovement = Vec3.ZERO
         spectatorAnchors.remove(playerId)
-        if (ServerPlayNetworking.canSend(player, PvpLoungeSpectatorStatePayload.TYPE)) {
-            ServerPlayNetworking.send(player, PvpLoungeSpectatorStatePayload(false))
-        }
+        notifyCompletedPvpLoungeRestore(
+            notifyClient = {
+                if (ServerPlayNetworking.canSend(player, PvpLoungeSpectatorStatePayload.TYPE)) {
+                    ServerPlayNetworking.send(player, PvpLoungeSpectatorStatePayload(false))
+                }
+            },
+            reportFailure = { failure ->
+                MoreBattleContent.LOGGER.error(
+                    "PvP lounge restore notification failed for {} after server-side restore completed",
+                    playerId,
+                    failure,
+                )
+            },
+        )
         return true
     }
 
@@ -152,9 +163,20 @@ internal class Cobblemon173PvpLoungeGateway(
         player.teleportTo(overworld, spawn.x + 0.5, spawn.y.toDouble(), spawn.z + 0.5, 0F, 0F)
         player.deltaMovement = Vec3.ZERO
         spectatorAnchors.remove(playerId)
-        if (ServerPlayNetworking.canSend(player, PvpLoungeSpectatorStatePayload.TYPE)) {
-            ServerPlayNetworking.send(player, PvpLoungeSpectatorStatePayload(false))
-        }
+        notifyCompletedPvpLoungeRestore(
+            notifyClient = {
+                if (ServerPlayNetworking.canSend(player, PvpLoungeSpectatorStatePayload.TYPE)) {
+                    ServerPlayNetworking.send(player, PvpLoungeSpectatorStatePayload(false))
+                }
+            },
+            reportFailure = { failure ->
+                MoreBattleContent.LOGGER.error(
+                    "PvP lounge fallback restore notification failed for {} after server-side restore completed",
+                    playerId,
+                    failure,
+                )
+            },
+        )
         return true
     }
 
@@ -182,6 +204,13 @@ internal class Cobblemon173PvpLoungeGateway(
             ResourceLocation.fromNamespaceAndPath(MoreBattleContent.MOD_ID, "battle_lounge"),
         )
     }
+}
+
+internal fun notifyCompletedPvpLoungeRestore(
+    notifyClient: () -> Unit,
+    reportFailure: (Throwable) -> Unit,
+) {
+    runManagedCleanupActionsSafely(reportFailure, notifyClient)
 }
 
 private object PvpLoungeArenaBuilder {
