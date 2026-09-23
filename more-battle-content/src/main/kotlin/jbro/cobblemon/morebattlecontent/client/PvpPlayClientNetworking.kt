@@ -23,6 +23,7 @@ internal object PvpPlayClientNetworking {
     private val loungeExitRequest = PendingClientRequest()
 
     fun register() {
+        MbcClientSessionReset.onReset("PvP room client state", PvpRoomClientState::clear)
         ClientPlayNetworking.registerGlobalReceiver(PvpLoungeSpectatorStatePayload.TYPE) { payload, context ->
             context.client().execute {
                 val closeForConfirmedExit = !payload.active && loungeExitRequest.complete(accepted = true)
@@ -181,4 +182,10 @@ internal object PvpRoomClientState {
     var lastRooms = emptyList<jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpRoomSummaryView>()
     var lastRoom: PvpRoomClientView? = null
     val pendingOpenRequests = HashSet<UUID>()
+
+    fun clear() {
+        lastRooms = emptyList()
+        lastRoom = null
+        pendingOpenRequests.clear()
+    }
 }
