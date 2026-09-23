@@ -126,10 +126,11 @@ internal class Cobblemon173PvpLoungeGateway(
         val location = ResourceLocation.tryParse(point.dimensionId) ?: return false
         val key = ResourceKey.create(Registries.DIMENSION, location)
         val level = player.server.getLevel(key) ?: return false
-        spectatorAnchors.remove(playerId)
-        player.setGameMode(GameType.byName(point.gameModeId, GameType.SURVIVAL) ?: GameType.SURVIVAL)
+        val restoredGameMode = GameType.byName(point.gameModeId, GameType.SURVIVAL) ?: GameType.SURVIVAL
+        if (player.gameMode.gameModeForPlayer != restoredGameMode && !player.setGameMode(restoredGameMode)) return false
         player.teleportTo(level, point.x, point.y, point.z, point.yaw, point.pitch)
         player.deltaMovement = Vec3.ZERO
+        spectatorAnchors.remove(playerId)
         if (ServerPlayNetworking.canSend(player, PvpLoungeSpectatorStatePayload.TYPE)) {
             ServerPlayNetworking.send(player, PvpLoungeSpectatorStatePayload(false))
         }
@@ -146,11 +147,11 @@ internal class Cobblemon173PvpLoungeGateway(
         val player = playerResolver(playerId) ?: return false
         val overworld = player.server.overworld()
         val spawn = overworld.sharedSpawnPos
-        spectatorAnchors.remove(playerId)
         val fallbackGameMode = player.server.defaultGameType
         if (player.gameMode.gameModeForPlayer != fallbackGameMode && !player.setGameMode(fallbackGameMode)) return false
         player.teleportTo(overworld, spawn.x + 0.5, spawn.y.toDouble(), spawn.z + 0.5, 0F, 0F)
         player.deltaMovement = Vec3.ZERO
+        spectatorAnchors.remove(playerId)
         if (ServerPlayNetworking.canSend(player, PvpLoungeSpectatorStatePayload.TYPE)) {
             ServerPlayNetworking.send(player, PvpLoungeSpectatorStatePayload(false))
         }
