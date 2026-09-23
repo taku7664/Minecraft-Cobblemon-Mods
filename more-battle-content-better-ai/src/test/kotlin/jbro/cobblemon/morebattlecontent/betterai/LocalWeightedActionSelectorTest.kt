@@ -8,6 +8,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerPersonality
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionMixingContext
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionChoiceSeed
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionOutcome
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionRank
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleMind
@@ -15,6 +16,7 @@ import jbro.cobblemon.morebattlecontent.betterai.policy.LocalPositionRiskBudget
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalTrainerStyleModel
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalWeightedActionSelector
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -39,7 +41,7 @@ class LocalWeightedActionSelectorTest {
             digest.update(("${choice.rank.outcome.candidate.actionId}:${choice.seed}:${choice.shortlistSize}:" +
                 "${choice.probability.toBits()}\n").toByteArray(Charsets.UTF_8))
         }
-        assertEquals("4d0c72062b276a8fed40c0fa8040da039c5bac9e76043f5670e8aa2aaad5ed22",
+        assertEquals("0ba98d6b98e5e98ad27c4c1cbb43116d1264840388841fae61932c23bf00c425",
             digest.digest().joinToString("") { "%02x".format(it) })
     }
 
@@ -97,6 +99,59 @@ class LocalWeightedActionSelectorTest {
         val replay = selector.choose(ranked, seed = 912_734L, riskTolerance = 0.5)
 
         assertEquals(first.rank.outcome.candidate.actionId, replay.rank.outcome.candidate.actionId)
+    }
+
+    @Test
+    fun `introductory tier cannot draw a catastrophically inferior action`() {
+        val ranked = listOf(
+            rank("shadow_ball", 188.86455863381008, executableDamageActions = 1),
+            rank("moonblast", 173.08935003170774, executableDamageActions = 1),
+            rank("power_gem", 50.63606428437695, executableDamageActions = 1),
+            rank("perish_song", 13.0),
+            rank("switch_koraidon", -67.55555555555557, kind = BattleActionKind.SWITCH),
+            rank("switch_calyrex", -326.0542136339238, kind = BattleActionKind.SWITCH),
+        )
+        val introductory = mixingContext(riskTolerance = 0.49890513852145446).copy(
+            decisionRegretBand = 8.0,
+            decisionShortlistWidth = 2.0,
+        )
+
+        assertEquals(
+            listOf("shadow_ball", "moonblast"),
+            selector.shortlist(ranked, introductory).map { it.outcome.candidate.actionId },
+        )
+        repeat(10_000) { seed ->
+            assertTrue(
+                selector.choose(ranked, seed.toLong(), introductory).rank.outcome.candidate.actionId != "power_gem",
+            )
+        }
+    }
+
+    @Test
+    fun `difficulty band does not flatten score weighting`() {
+        val ranked = listOf(rank("best", 100.0), rank("weak_but_plausible", 40.0))
+        val introductory = mixingContext(riskTolerance = 0.5).copy(decisionRegretBand = 8.0)
+
+        val weakSelections = (0L until 10_000L).count { seed ->
+            selector.choose(ranked, seed, introductory).rank.outcome.candidate.actionId == "weak_but_plausible"
+        }
+
+        assertTrue(weakSelections in 2_000..3_500, "weak selections=$weakSelections")
+    }
+
+    @Test
+    fun `choice seed distinguishes mirrored battle perspectives`() {
+        val ranked = listOf(rank("best", 100.0), rank("second", 90.0))
+        val battleId = java.util.UUID.fromString("666faa82-5f14-324d-9138-5a0d472ae0d4")
+        val p1Roster = listOf(java.util.UUID.fromString("00000000-0000-0000-0000-000000000101"))
+        val p2Roster = listOf(java.util.UUID.fromString("00000000-0000-0000-0000-000000000201"))
+
+        val p1 = LocalActionChoiceSeed.derive(battleId, 1, ranked, p1Roster)
+        val p1Replay = LocalActionChoiceSeed.derive(battleId, 1, ranked, p1Roster)
+        val p2 = LocalActionChoiceSeed.derive(battleId, 1, ranked, p2Roster)
+
+        assertEquals(p1, p1Replay)
+        assertNotEquals(p1, p2)
     }
 
     @Test

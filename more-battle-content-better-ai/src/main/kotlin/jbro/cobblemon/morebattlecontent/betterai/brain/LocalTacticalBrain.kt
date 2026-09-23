@@ -161,6 +161,10 @@ internal class LocalTacticalBrain(
             battleId = battleId,
             turn = calculatedContext.state.turn,
             ranked = ranked,
+            perspectivePokemonIds = calculatedContext.state.pokemon.asSequence()
+                .filter { it.side == BattleSide.ALLY }
+                .map { it.battlePokemonId }
+                .toList(),
         )
         val selection = actionSelector.choose(
             ranked,

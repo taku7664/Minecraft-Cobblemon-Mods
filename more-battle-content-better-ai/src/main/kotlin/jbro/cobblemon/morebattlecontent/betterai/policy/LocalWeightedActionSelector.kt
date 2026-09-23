@@ -62,7 +62,11 @@ internal data class LocalActionMixingContext(
  * public mechanics.
  */
 internal class LocalWeightedActionSelector : LocalActionSelector {
-    private data class ChoicePool(val ranks: List<LocalBattleActionRank>, val bestScore: Double, val allowedGap: Double)
+    private data class ChoicePool(
+        val ranks: List<LocalBattleActionRank>,
+        val bestScore: Double,
+        val drawGap: Double,
+    )
 
     /** Exact pre-weight pool used by choose; zero-weight/fallback handling may narrow it further. */
     fun shortlist(ranked: List<LocalBattleActionRank>, context: LocalActionMixingContext): List<LocalBattleActionRank> =
@@ -93,15 +97,14 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         val bestScore = countShortlist.first().comparisonValue
         // The tier multiplier is applied after the tuning ceiling, not before it.
         //
-        // `maximumReasonableScoreGap` is a global guard against a huge-swing turn sweeping bad actions
-        // into the shortlist by absolute size alone. Folding the tier into the operands would let that
-        // guard silently swallow the whole setting on exactly the turns a weak trainer is most likely
-        // to be punished for a mistake - the tier would then mean nothing precisely where it means
-        // most. A tier that widens the band is doing it deliberately and is allowed past the ceiling.
-        val allowedGap = minOf(
+        // The tier may widen which plausible mistakes are considered, but it must not flatten their
+        // draw weights too. Keeping the unscaled gap separately prevents the old eightfold beginner
+        // band from turning a 138-point deficit into almost the same probability as the best move.
+        val drawGap = minOf(
             context.tuning.maximumReasonableScoreGap,
             adaptiveRegretGap(context.riskBudget, bestScore, context.tuning),
-        ) * context.decisionRegretBand
+        )
+        val allowedGap = drawGap * context.decisionRegretBand
         // The regret gap used to be a single cliff: anything further than `allowedGap` behind the
         // best was removed outright. That cliff was where trainer character went to die - the
         // shortlist collapsed to one entry in a third of positions, two thirds once a cautious
@@ -116,9 +119,10 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         // exactly that in the regression suite.
         val absurdGap = allowedGap * ABSURD_REGRET_MULTIPLE
         val shortlist = countShortlist.filter { rank ->
-            bestScore - rank.comparisonValue <= absurdGap * conditionalScale(rank, context)
+            bestScore - rank.comparisonValue <= absurdGap * conditionalScale(rank, context) &&
+                isPlausibleRelativeToBest(bestScore, rank.comparisonValue, context.tuning)
         }.ifEmpty { listOf(countShortlist.first()) }
-        return ChoicePool(shortlist, bestScore, allowedGap)
+        return ChoicePool(shortlist, bestScore, drawGap)
     }
 
     override fun choose(
@@ -129,27 +133,26 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         val pool = preparePool(ranked, context)
         val shortlist = pool.ranks
         val bestScore = pool.bestScore
-        val allowedGap = pool.allowedGap
+        val drawGap = pool.drawGap
         if (shortlist.size == 1) {
             return LocalActionSelection(shortlist.single(), seed, 1, 1.0)
         }
 
         val style = context.style
         val riskTolerance = context.riskBudget
-        // Sharpness of the draw, deliberately independent of risk appetite.
+        // Sharpness of the draw, deliberately independent of the difficulty handicap.
         //
-        // Risk already has a lever: it widens `allowedGap`, so a bold trainer treats a larger band of
-        // actions as live alternatives. Letting it flatten the decay as well applied it twice, and
-        // the second application meant something different and wrong - not "willing to take a close
-        // alternative" but "willing to take a bad move". A dominated action 95 points behind kept
-        // over half the weight of the best one.
+        // Difficulty already has a lever: it widens `allowedGap`, so a weaker tier treats a larger
+        // band of actions as live alternatives. Letting that same multiplier flatten the decay as
+        // well applies the handicap twice, and the second application means something different and
+        // wrong - not "allowed to make a plausible mistake" but "nearly blind to its own scores".
         //
         // A plan in progress still sharpens: sticking to a line is what having a plan means.
         val sharpness = BASE_DRAW_SHARPNESS +
             if (context.memory.activePlan == null) 0.0 else context.personality.planPersistence * PLAN_SHARPNESS
         val weights = shortlist.map { rank ->
             // Weight decays with regret against the best action, on a scale set by how much regret
-            // this trainer tolerates. Nothing else shapes it.
+            // the baseline evaluator tolerates. Difficulty changes membership, not this scale.
             //
             // It used to be multiplied by `(score - floor)^exponent`, and that term was the real
             // reason the draw stayed effectively deterministic even after the shortlist was widened:
@@ -158,7 +161,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
             // not because it was bad, but because it was last. Softening the cliff had barely moved
             // the favourite's 94% share until this went with it.
             val regret = (bestScore - rank.comparisonValue).coerceAtLeast(0.0)
-            exp(-sharpness * regret / (allowedGap * conditionalScale(rank, context))) *
+            exp(-sharpness * regret / (drawGap * conditionalScale(rank, context))) *
                 riskMultiplier(rank, riskTolerance) * patternMultiplier(rank, shortlist, context, style) *
                 switchHysteresisMultiplier(rank, shortlist, context.memory, context.decisionShortlistWidth) *
                 nonProgressControlMultiplier(rank, context.memory) *
@@ -351,6 +354,21 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
             .coerceIn(tuning.minimumRegretGapScore, tuning.maximumRegretGapScore)
     }
 
+    /**
+     * Difficulty may admit a genuine mistake, but it may not turn an obviously broken action into a
+     * personality choice. The selector's own contract calls a move three times worse than the clear
+     * answer absurd; enforce that statement as a score ratio rather than an absolute gap, because the
+     * scale of one decision can span several health bars while another barely moves the board.
+     *
+     * Near zero the ratio is unstable and the normal absolute regret band remains authoritative.
+     */
+    private fun isPlausibleRelativeToBest(
+        bestScore: Double,
+        candidateScore: Double,
+        tuning: LocalDecisionTuning,
+    ): Boolean = bestScore < tuning.minimumRegretGapScore ||
+        candidateScore >= bestScore / MAXIMUM_PLAUSIBLE_SCORE_MULTIPLE
+
     private fun riskMultiplier(rank: LocalBattleActionRank, riskTolerance: Double): Double {
         val atomic = rank.outcome.componentOutcomes.ifEmpty { listOf(rank.outcome) }
         val risk = atomic.map { outcome ->
@@ -449,12 +467,14 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
          * caught the AI playing one of them. That is not character, it is a worse player, and the
          * measurement that looked like success could not tell the two apart.
          *
-         * What the band admits is unchanged. What changed is the shape inside it.
+         * The independent score-ratio guard below is the final boundary for tiers that deliberately
+         * widen this band.
          */
         const val ABSURD_REGRET_MULTIPLE = 1.0
+        const val MAXIMUM_PLAUSIBLE_SCORE_MULTIPLE = 3.0
 
         /**
-         * Decay rate of weight against regret, in units of the trainer's own regret band.
+         * Decay rate of weight against regret, in units of the baseline adaptive regret band.
          *
          * One means an action exactly at the edge of the band keeps `1/e` of the best action's
          * weight. Replaced the pair of weight exponents that shaped the old power-law term; those
@@ -492,11 +512,20 @@ internal object LocalActionChoiceSeed {
         battleId: UUID,
         turn: Int,
         ranked: List<LocalBattleActionRank>,
+        perspectivePokemonIds: Collection<UUID> = emptyList(),
     ): Long {
         var hash = FNV_OFFSET_BASIS
         hash = mix(hash, battleId.mostSignificantBits)
         hash = mix(hash, battleId.leastSignificantBits)
         hash = mix(hash, turn.toLong())
+        if (perspectivePokemonIds.isNotEmpty()) {
+            val perspective = perspectivePokemonIds.sortedBy(UUID::toString)
+            hash = mix(hash, perspective.size.toLong())
+            perspective.forEach { pokemonId ->
+                hash = mix(hash, pokemonId.mostSignificantBits)
+                hash = mix(hash, pokemonId.leastSignificantBits)
+            }
+        }
         ranked.forEach { rank ->
             rank.outcome.candidate.actionId.forEach { character -> hash = mix(hash, character.code.toLong()) }
             hash = mix(hash, rank.comparisonValue.toBits())

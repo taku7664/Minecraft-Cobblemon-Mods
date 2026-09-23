@@ -77,7 +77,8 @@ internal object EmbeddedFirstDecisionReplay {
         val tuning = tuningFor(args[4])
         // Native input reconstructs public observations from the snapshot and uses default tactical
         // memory. This is NOT a production-session replay. The request UUID nonce is synthetic here;
-        // LocalTacticalBrain's choice seed uses battle ID, turn and ranks, not that nonce.
+        // LocalTacticalBrain's choice seed uses battle ID, turn, ranks and stable own-roster IDs,
+        // not that nonce.
         val turn = row["turn"].asInt
         val context = EmbeddedTeamInput.context(row.getAsJsonObject("input"), battleId, turn, snapshotIndex ?: 0)
         val choiceSeedOverride = choiceSeedOverride(args.getOrNull(8))
