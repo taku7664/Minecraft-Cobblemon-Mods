@@ -340,12 +340,25 @@ class LocalTacticalVirtualBattleTest {
             val damageRange = requireNotNull(facts.standardDamageFractionRange) {
                 "Virtual battle move must have a standard damage projection: ${calculated.moveId}"
             }
-            val damage = if (damageRange.minimum == damageRange.maximum) {
+            val sampledDamage = if (damageRange.minimum == damageRange.maximum) {
                 damageRange.minimum
             } else {
                 random.nextDouble(damageRange.minimum, damageRange.maximum)
             }
-            defender.active.hpFraction = (defender.active.hpFraction - damage).coerceAtLeast(0.0)
+            // Battle HP is integral. Keeping a continuously sampled fraction here eventually made
+            // exact own HP internally impossible (for example 0.1234 of a known 301 maximum), so
+            // public HP-dependent moves such as Water Spout correctly refused to invent a power.
+            // Quantize the synthetic damage back to HP points before publishing the next state.
+            val maximumHp = defender.active.template.stats.maxHp
+            val currentHp = (defender.active.hpFraction * maximumHp).roundToInt()
+            val damageHp = if (sampledDamage <= 0.0) {
+                0
+            } else {
+                (sampledDamage * maximumHp).roundToInt().coerceAtLeast(1)
+            }
+            val remainingHp = (currentHp - damageHp).coerceAtLeast(0)
+            val damage = (currentHp - remainingHp).toDouble() / maximumHp
+            defender.active.hpFraction = remainingHp.toDouble() / maximumHp
             trace += "t$turn ${attacker.label} ${calculated.moveId} damage=${"%.3f".format(damage)} " +
                 "target=${defender.active.template.speciesId} hp=${"%.3f".format(defender.active.hpFraction)}"
         }
