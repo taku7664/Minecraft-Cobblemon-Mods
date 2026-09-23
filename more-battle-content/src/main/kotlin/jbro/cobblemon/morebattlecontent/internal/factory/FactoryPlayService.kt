@@ -165,33 +165,41 @@ internal class FactoryPlayService(
         if (!sessions.reorderTeam(playerId, requestedOrder)) {
             return FactoryPlayResult.Rejected(FactoryPlayError.INVALID_SELECTION)
         }
-        val catalog = catalogSource() ?: return FactoryPlayResult.Rejected(FactoryPlayError.CATALOG_UNAVAILABLE)
-        val round = FactoryProgression.roundForBattle(battleNumber)
-        val opponent = FactoryOpponentSelector(catalog, random)
-            .select(
-                snapshot.format,
-                snapshot.levelMode,
-                round,
-                recentOpponentTrainers.recent(playerId),
+        val previousOrder = snapshot.teamSets.map(FactoryRentalSet::setId)
+        var started = false
+        try {
+            val catalog = catalogSource() ?: return FactoryPlayResult.Rejected(FactoryPlayError.CATALOG_UNAVAILABLE)
+            val round = FactoryProgression.roundForBattle(battleNumber)
+            val opponent = FactoryOpponentSelector(catalog, random)
+                .select(
+                    snapshot.format,
+                    snapshot.levelMode,
+                    round,
+                    recentOpponentTrainers.recent(playerId),
+                )
+            if (opponent !is FactoryOpponentSelectionResult.Selected) {
+                return FactoryPlayResult.Rejected(FactoryPlayError.CATALOG_UNAVAILABLE)
+            }
+            val opponentByToken = opponent.team.associateByTo(LinkedHashMap()) { UUID.randomUUID() }
+            val launched = sessions.beginBattle(
+                playerId = playerId,
+                opponentTeam = opponentByToken,
+                trainerNameKey = opponent.trainer.displayNameKey,
+                aiSkill = opponent.trainer.aiSkill,
+                strategyBrief = opponent.strategy,
             )
-        if (opponent !is FactoryOpponentSelectionResult.Selected) {
-            return FactoryPlayResult.Rejected(FactoryPlayError.CATALOG_UNAVAILABLE)
-        }
-        val opponentByToken = opponent.team.associateByTo(LinkedHashMap()) { UUID.randomUUID() }
-        val launched = sessions.beginBattle(
-            playerId = playerId,
-            opponentTeam = opponentByToken,
-            trainerNameKey = opponent.trainer.displayNameKey,
-            aiSkill = opponent.trainer.aiSkill,
-            strategyBrief = opponent.strategy,
-        )
-        if (launched is FactoryBattleLaunchResult.Started) {
-            recentOpponentTrainers.record(playerId, opponent.trainer.trainerId)
-        }
-        return if (launched is FactoryBattleLaunchResult.Started) {
-            FactoryPlayResult.Accepted(current(playerId))
-        } else {
-            FactoryPlayResult.Rejected(FactoryPlayError.BATTLE_UNAVAILABLE)
+            if (launched is FactoryBattleLaunchResult.Started) {
+                started = true
+                recentOpponentTrainers.record(playerId, opponent.trainer.trainerId)
+                return FactoryPlayResult.Accepted(current(playerId))
+            }
+            return FactoryPlayResult.Rejected(FactoryPlayError.BATTLE_UNAVAILABLE)
+        } finally {
+            if (!started) {
+                check(sessions.reorderTeam(playerId, previousOrder)) {
+                    "Factory rental order could not be restored after a failed battle launch"
+                }
+            }
         }
     }
 

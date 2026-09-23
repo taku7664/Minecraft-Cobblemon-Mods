@@ -6,6 +6,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTeamRole
 import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordStats
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -161,6 +162,35 @@ class FactoryPlayServiceTest {
 
         assertEquals(requestedOrder, checkNotNull(launched).playerTeam.sets.map(FactoryRentalSet::setId))
         assertEquals(requestedOrder, active.view.teamSets.map(FactoryRentalSet::setId))
+    }
+
+    @Test
+    fun `unavailable battle launch restores the previous rental order`() {
+        val service = playService(catalog()) { FactoryBattleLaunchResult.Unavailable }
+        val initial = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+            as FactoryPlayResult.Accepted
+        val selectedIds = initial.view.draftSets.take(3).map(FactoryRentalSet::setId)
+        service.selectDraft(playerId, selectedIds)
+
+        val rejected = service.beginBattle(playerId, selectedIds.reversed()) as FactoryPlayResult.Rejected
+
+        assertEquals(FactoryPlayError.BATTLE_UNAVAILABLE, rejected.error)
+        assertEquals(selectedIds, service.status(playerId).teamSets.map(FactoryRentalSet::setId))
+    }
+
+    @Test
+    fun `throwing battle launch restores the previous rental order`() {
+        val service = playService(catalog()) { throw IllegalStateException("launch failed") }
+        val initial = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+            as FactoryPlayResult.Accepted
+        val selectedIds = initial.view.draftSets.take(3).map(FactoryRentalSet::setId)
+        service.selectDraft(playerId, selectedIds)
+
+        assertThrows(IllegalStateException::class.java) {
+            service.beginBattle(playerId, selectedIds.reversed())
+        }
+
+        assertEquals(selectedIds, service.status(playerId).teamSets.map(FactoryRentalSet::setId))
     }
 
     @Test
