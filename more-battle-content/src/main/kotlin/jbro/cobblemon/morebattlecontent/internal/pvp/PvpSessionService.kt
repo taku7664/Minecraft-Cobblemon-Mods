@@ -149,7 +149,12 @@ internal class PvpSessionService<P>(
     fun unready(matchId: UUID, playerId: UUID): Boolean {
         val match = matches[matchId] ?: return false
         if (!match.isParticipant(playerId)) return false
-        return match.unready(playerId)
+        if (match.phase != PvpMatchPhase.TEAM_PREVIEW) return false
+        if (!match.isReady(playerId)) return false
+        val timer = requireNotNull(timers[matchId]) { "PvP entry timer is missing" }
+        check(timer.withdrawEntrySelection(playerId)) { "Ready player has no submitted PvP entry selection" }
+        check(match.unready(playerId)) { "Ready player could not be returned to PvP team preview" }
+        return true
     }
 
     @Synchronized

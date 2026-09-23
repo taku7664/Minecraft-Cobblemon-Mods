@@ -176,6 +176,37 @@ class PvpSessionServiceTest {
     }
 
     @Test
+    fun `unready player is auto selected when the original entry deadline expires`() {
+        var now = 0L
+        val snapshots = RecordingSnapshots()
+        val service = PvpSessionService(
+            snapshots = snapshots,
+            launcher = PvpBattleLauncher(
+                snapshots,
+                PvpBattleRuntime { PvpBattleLaunchResult.Started(battleId) },
+            ),
+            timeSource = object : PvpTimeSource {
+                override fun epochMillis(): Long = now
+                override fun monotonicMillis(): Long = now
+            },
+        )
+        service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
+        service.accept(matchId, second)
+        service.registerTeam(matchId, first, team(first, 1))
+        service.registerTeam(matchId, second, team(second, 4))
+        service.select(matchId, first, ids(first, 1).reversed())
+        assertEquals(PvpSelectionMutation.WAITING_FOR_OPPONENT, service.ready(matchId, first))
+        assertTrue(service.unready(matchId, first))
+
+        now = 90_000L
+        val resolution = service.expireEntrySelections().single()
+
+        assertEquals(setOf(first, second), resolution.autoSelectedPlayerIds)
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, resolution.launchResult)
+        assertEquals(battleId, service.battleIdFor(matchId))
+    }
+
+    @Test
     fun `spectator preview exposes both public rosters without either private selection`() {
         val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
         service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))

@@ -24,6 +24,19 @@ class PvpMatchTimerTest {
     }
 
     @Test
+    fun `withdrawing entry selection makes the player owe a choice again`() {
+        var now = 0L
+        val timer = PvpMatchTimer(setOf(first, second), PvpRulesPreset.champions(), timeSource { now })
+        timer.beginEntrySelection()
+        assertEquals(PvpTimedSubmissionStatus.ACCEPTED, timer.submitEntrySelection(first))
+
+        assertTrue(timer.withdrawEntrySelection(first))
+        now = 90_000L
+
+        assertEquals(setOf(first, second), timer.entrySelectionTimeouts())
+    }
+
+    @Test
     fun `turn deadline forfeits only players who still owe a choice`() {
         var now = 0L
         val timer = PvpMatchTimer(setOf(first, second), PvpRulesPreset.champions(), timeSource { now })

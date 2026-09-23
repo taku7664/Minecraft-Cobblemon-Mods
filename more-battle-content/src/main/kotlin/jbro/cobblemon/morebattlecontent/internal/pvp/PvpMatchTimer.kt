@@ -73,6 +73,12 @@ internal class PvpMatchTimer(
     }
 
     @Synchronized
+    fun withdrawEntrySelection(playerId: UUID): Boolean {
+        requireParticipant(playerId)
+        return entrySubmissions.remove(playerId)
+    }
+
+    @Synchronized
     fun entrySelectionTimeouts(): Set<UUID> {
         if (entryStartedMonotonicMillis == null) return emptySet()
         return if (entrySelectionTimedOut()) {
