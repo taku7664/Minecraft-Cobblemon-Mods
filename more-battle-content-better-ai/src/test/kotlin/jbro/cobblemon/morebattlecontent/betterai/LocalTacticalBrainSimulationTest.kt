@@ -1736,6 +1736,19 @@ class LocalTacticalBrainSimulationTest {
             decide(
                 candidates = listOf(protect, chip),
                 allyPokemonId = actorId,
+                memory = BattleTacticalMemoryView(
+                    lastMoveId = "cobblemon:protect",
+                    sameMoveRepeatCount = 1,
+                ),
+            ).actionId,
+            "A failed Protect still must not be followed by another Protect",
+        )
+
+        assertEquals(
+            "small_damage",
+            decide(
+                candidates = listOf(protect, chip),
+                allyPokemonId = actorId,
                 observedEvents = protectionHistory(actorId, "protect"),
                 memory = BattleTacticalMemoryView(
                     activePlan = null,

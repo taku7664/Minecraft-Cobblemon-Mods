@@ -90,6 +90,10 @@ internal class LocalTacticalBrain(
         val decidingProfile = profile.copy(
             personality = profile.personality.copy(riskTolerance = mind.riskBudget),
         )
+        fun canonical(moveId: String?) = moveId?.substringAfter(':')?.lowercase()?.filter(Char::isLetterOrDigit)
+        fun protects(candidate: BattleActionCandidate) = candidate.moveDetails?.effects?.effects.orEmpty().any {
+            it.kind == BattleMoveEffectKind.PROTECT_USER
+        }
         val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
         baseRanked.singleOrNull()?.let { selected ->
             return CompletableFuture.completedFuture(
@@ -107,7 +111,19 @@ internal class LocalTacticalBrain(
                 ),
             )
         }
-        fun mixingContext(ranked: List<LocalBattleActionRank>) = LocalActionMixingContext(
+        val baseProtectionRanks = baseRanked.filter { protects(it.outcome.candidate) }
+        val previousMoveWasProtection = difficultyContext.memory.sameMoveRepeatCount >= 1 &&
+            baseProtectionRanks.any {
+                canonical(it.outcome.candidate.moveId) == canonical(difficultyContext.memory.lastMoveId)
+            }
+        val rootRanked = if (previousMoveWasProtection && baseRanked.any { !protects(it.outcome.candidate) }) {
+            baseRanked.filterNot { protects(it.outcome.candidate) }
+        } else {
+            baseRanked
+        }
+        fun mixingContext(ranked: List<LocalBattleActionRank>): LocalActionMixingContext {
+            val protectionRanks = ranked.filter { protects(it.outcome.candidate) }
+            return LocalActionMixingContext(
                 personality = profile.personality,
                 memory = difficultyContext.memory,
                 style = mind.trainerStyle,
@@ -123,15 +139,19 @@ internal class LocalTacticalBrain(
                     }
                     .map { it.outcome.candidate.actionId }
                     .toSet(),
-                repeatedProtectionActionIds = ranked.asSequence()
-                    .filter {
-                        LocalTacticalSituationalEvaluator.repeatedProtectionPenalty(
-                            it.outcome.candidate,
-                            difficultyContext,
-                        ) > 0.0
-                    }
-                    .map { it.outcome.candidate.actionId }
-                    .toSet(),
+                repeatedProtectionActionIds = if (previousMoveWasProtection) {
+                    protectionRanks.mapTo(linkedSetOf()) { it.outcome.candidate.actionId }
+                } else {
+                    protectionRanks.asSequence()
+                        .filter {
+                            LocalTacticalSituationalEvaluator.repeatedProtectionPenalty(
+                                it.outcome.candidate,
+                                difficultyContext,
+                            ) > 0.0
+                        }
+                        .map { it.outcome.candidate.actionId }
+                        .toSet()
+                },
                 alreadyBoostedSetupActionIds = ranked.asSequence()
                     .filter {
                         LocalTacticalSituationalEvaluator.alreadyBoostedSelfSetup(
@@ -152,8 +172,9 @@ internal class LocalTacticalBrain(
                     .toSet(),
                 tuning = tuning,
             )
+        }
         val lookahead = LocalRecursiveLookaheadEvaluator.evaluate(
-            baseRanked,
+            rootRanked,
             difficultyContext,
             decidingProfile,
             tuning,
