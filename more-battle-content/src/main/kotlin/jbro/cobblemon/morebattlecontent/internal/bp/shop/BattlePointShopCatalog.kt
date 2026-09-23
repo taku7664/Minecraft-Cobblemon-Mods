@@ -64,6 +64,10 @@ internal class BattlePointShopCatalogStore(
 
     fun snapshot(): BattlePointShopCatalog? = current
 
+    fun clear() {
+        current = null
+    }
+
     fun reload(reader: Reader): BattlePointShopCatalogLoadResult =
         BattlePointShopCatalogLoader.load(reader, itemExists).also { result ->
             if (result is BattlePointShopCatalogLoadResult.Loaded) current = result.catalog

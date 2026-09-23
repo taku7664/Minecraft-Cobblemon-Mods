@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.internal.bp.shop
 import java.io.StringReader
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -57,6 +58,16 @@ class BattlePointShopCatalogLoaderTest {
         assertTrue(accepted is BattlePointShopCatalogLoadResult.Loaded)
         assertTrue(rejected is BattlePointShopCatalogLoadResult.Rejected)
         assertSame(snapshot, store.snapshot())
+    }
+
+    @Test
+    fun `server boundary clears the published shop snapshot`() {
+        val store = BattlePointShopCatalogStore(existingItems::contains)
+        store.reload(StringReader(validJson()))
+
+        store.clear()
+
+        assertNull(store.snapshot())
     }
 
     @Test

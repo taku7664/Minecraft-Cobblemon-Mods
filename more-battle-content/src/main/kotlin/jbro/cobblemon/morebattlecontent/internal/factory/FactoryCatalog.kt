@@ -120,6 +120,10 @@ internal class FactoryCatalogStore {
 
     fun snapshot(): FactoryCatalog? = current
 
+    fun clear() {
+        current = null
+    }
+
     fun reload(reader: Reader): FactoryCatalogLoadResult = FactoryCatalogLoader.load(reader).also { result ->
         if (result is FactoryCatalogLoadResult.Loaded) current = result.catalog
     }

@@ -20,6 +20,9 @@ internal object ManagedServerEphemeralStateCleanup {
                 Cobblemon173BattleRuleHooks::clear,
                 Cobblemon173ManagedTrainerPokemonOwners::clear,
                 BattleTacticalRunMemoryStore::clear,
+                FactoryCatalogResources.store::clear,
+                TowerOpponentCatalogResources.store::clear,
+                BattlePointShopCatalogResources.store::clear,
             )
         }
     }

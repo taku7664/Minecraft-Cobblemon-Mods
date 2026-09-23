@@ -4,6 +4,7 @@ import com.google.gson.JsonParser
 import java.io.StringReader
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTeamRole
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -148,6 +149,16 @@ class FactoryCatalogLoaderTest {
 
         assertTrue(store.reload(StringReader("{}")) is FactoryCatalogLoadResult.Rejected)
         assertSame(accepted.catalog, store.snapshot())
+    }
+
+    @Test
+    fun `server boundary clears the published factory snapshot`() {
+        val store = FactoryCatalogStore()
+        store.reload(StringReader(validJson()))
+
+        store.clear()
+
+        assertNull(store.snapshot())
     }
 
     private fun assertRejected(json: String, code: FactoryCatalogIssueCode) {

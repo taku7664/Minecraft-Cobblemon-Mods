@@ -365,6 +365,16 @@ class TowerOpponentCatalogLoaderTest {
         assertNull(TowerOpponentCatalogStore().snapshot())
     }
 
+    @Test
+    fun `server boundary clears the published tower snapshot`() {
+        val store = TowerOpponentCatalogStore()
+        store.reload(StringReader(validCatalogJson()))
+
+        store.clear()
+
+        assertNull(store.snapshot())
+    }
+
     private fun assertIssue(code: TowerOpponentCatalogIssueCode, json: String) {
         val result = TowerOpponentCatalogLoader.load(StringReader(json))
         result as TowerOpponentCatalogLoadResult.Rejected

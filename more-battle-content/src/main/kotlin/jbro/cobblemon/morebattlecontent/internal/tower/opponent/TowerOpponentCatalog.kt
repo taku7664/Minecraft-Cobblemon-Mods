@@ -163,6 +163,10 @@ internal class TowerOpponentCatalogStore {
 
     fun snapshot(): TowerOpponentCatalog? = current
 
+    fun clear() {
+        current = null
+    }
+
     fun reload(reader: Reader): TowerOpponentCatalogLoadResult {
         val result = TowerOpponentCatalogLoader.load(reader)
         if (result is TowerOpponentCatalogLoadResult.Loaded) {
