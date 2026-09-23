@@ -798,8 +798,11 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     private fun exitSpectator(player: ServerPlayer): PvpSpectatorExitResult {
         val room = rooms.roomFor(player.uuid)
         if (room == null) {
-            recoverUntrackedSpectator(player)
-            return PvpSpectatorExitResult.ACCEPTED
+            return if (recoverUntrackedSpectator(player)) {
+                PvpSpectatorExitResult.ACCEPTED
+            } else {
+                PvpSpectatorExitResult.INTERNAL_FAILURE
+            }
         }
         if (player.uuid !in room.spectatorIds) return PvpSpectatorExitResult.INVALID_STATE
 
@@ -815,7 +818,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                 if (room.phase == jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomPhase.ACTIVE &&
                     !lounge.removeSpectator(room.roomId, player.uuid)
                 ) {
-                    recoverUntrackedSpectator(player)
+                    if (!recoverUntrackedSpectator(player)) stateCleanupFailed = true
                 }
             },
             {
@@ -875,16 +878,17 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         INTERNAL_FAILURE,
     }
 
-    private fun recoverUntrackedSpectator(player: ServerPlayer) {
-        if (player.uuid in lounge.pendingReturnPlayerIds()) {
-            lounge.restorePending(player.uuid)
-            return
-        }
-        if (rescueStrandedLoungePlayer(player)) return
-        if (ServerPlayNetworking.canSend(player, PvpLoungeSpectatorStatePayload.TYPE)) {
-            ServerPlayNetworking.send(player, PvpLoungeSpectatorStatePayload(false))
-        }
-    }
+    private fun recoverUntrackedSpectator(player: ServerPlayer): Boolean = attemptUntrackedPvpSpectatorRecovery(
+        hasPendingReturn = player.uuid in lounge.pendingReturnPlayerIds(),
+        inLoungeDimension = player.serverLevel().dimension() == Cobblemon173PvpLoungeGateway.LEVEL_KEY,
+        restorePending = { lounge.restorePending(player.uuid) },
+        rescueStranded = { rescueStrandedLoungePlayer(player) },
+        notifyInactive = {
+            if (ServerPlayNetworking.canSend(player, PvpLoungeSpectatorStatePayload.TYPE)) {
+                ServerPlayNetworking.send(player, PvpLoungeSpectatorStatePayload(false))
+            }
+        },
+    )
 
     /**
      * Tears down the arena a match used and returns its room to the lobby, keeping the group together
@@ -1184,4 +1188,19 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             else -> PvpCommandStatus.INVALID_STATE
         },
     )
+}
+
+internal fun attemptUntrackedPvpSpectatorRecovery(
+    hasPendingReturn: Boolean,
+    inLoungeDimension: Boolean,
+    restorePending: () -> Boolean,
+    rescueStranded: () -> Boolean,
+    notifyInactive: () -> Unit,
+): Boolean = when {
+    hasPendingReturn -> restorePending()
+    inLoungeDimension -> rescueStranded()
+    else -> {
+        notifyInactive()
+        true
+    }
 }
