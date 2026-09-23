@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.internal.pvp
 
 import java.util.UUID
+import jbro.cobblemon.morebattlecontent.internal.battle.BattleCompletionRetryQueue
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.reportManagedCleanupFailureSafely
 
 internal const val PVP_COMPLETION_RETRY_MILLIS = 5_000L
@@ -10,7 +11,6 @@ internal data class PendingPvpCompletion(
     val battleId: UUID,
     val winnerId: UUID,
     val loserId: UUID,
-    val nextAttemptEpochMillis: Long = 0L,
 )
 
 internal fun attemptPvpCompletionSettlement(
@@ -37,40 +37,28 @@ internal fun transitionPvpBattleLifecycle(
 
 /** Keeps a finished PvP result retryable while its paired persistent record is unavailable. */
 internal class PvpCompletionRetryQueue(
-    private val currentTimeMillis: () -> Long = System::currentTimeMillis,
-    private val retryMillis: Long = PVP_COMPLETION_RETRY_MILLIS,
+    currentTimeMillis: () -> Long = System::currentTimeMillis,
+    retryMillis: Long = PVP_COMPLETION_RETRY_MILLIS,
 ) {
-    private val entries = LinkedHashMap<UUID, PendingPvpCompletion>()
-
-    init {
-        require(retryMillis > 0)
-    }
-
-    @Synchronized
-    fun submit(completion: PendingPvpCompletion, settle: (PendingPvpCompletion) -> Boolean): Boolean {
-        if (settle(completion)) {
-            entries.remove(completion.battleId)
-            return true
-        }
-        entries[completion.battleId] = completion.copy(
-            nextAttemptEpochMillis = currentTimeMillis() + retryMillis,
-        )
-        return false
-    }
+    private val entries = BattleCompletionRetryQueue<UUID, PendingPvpCompletion>(
+        keyOf = PendingPvpCompletion::battleId,
+        currentTimeMillis = currentTimeMillis,
+        retryMillis = retryMillis,
+    )
 
     @Synchronized
-    fun retryDue(force: Boolean = false, settle: (PendingPvpCompletion) -> Boolean) {
-        val now = currentTimeMillis()
-        entries.values.toList().forEach { pending ->
-            if (force || pending.nextAttemptEpochMillis <= now) submit(pending, settle)
-        }
-    }
+    fun submit(completion: PendingPvpCompletion, settle: (PendingPvpCompletion) -> Boolean): Boolean =
+        entries.submit(completion, settle)
 
     @Synchronized
-    operator fun contains(matchId: UUID): Boolean = entries.values.any { it.matchId == matchId }
+    fun retryDue(force: Boolean = false, settle: (PendingPvpCompletion) -> Boolean) =
+        entries.retryDue(force, settle)
 
     @Synchronized
-    fun size(): Int = entries.size
+    operator fun contains(matchId: UUID): Boolean = entries.any { it.matchId == matchId }
+
+    @Synchronized
+    fun size(): Int = entries.size()
 
     @Synchronized
     fun clear() = entries.clear()

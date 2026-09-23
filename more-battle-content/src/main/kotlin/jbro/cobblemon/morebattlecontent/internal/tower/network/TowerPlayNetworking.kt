@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.internal.tower.network
 
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
 import jbro.cobblemon.morebattlecontent.internal.application.BattleContentId
+import jbro.cobblemon.morebattlecontent.internal.battle.BattleCompletionRetryQueue
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointRewardSettlementService
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointRewardSettlement
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointService
@@ -22,6 +23,7 @@ import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordKey
 import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordService
 import jbro.cobblemon.morebattlecontent.internal.hub.BattleHubNetworking
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleRecordService
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleOutcome
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgressRecordCodec
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerRecordContract
@@ -36,31 +38,31 @@ import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlaySessionServic
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayViewState
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerSessionAbandonResult
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import kotlin.random.Random
 
 internal object TowerPlayNetworking : BattleTowerApplicationBackend {
+    private const val COMPLETION_RETRY_MILLIS = 5_000L
     private val onlinePlayers = HashMap<java.util.UUID, ServerPlayer>()
+    private val pendingCompletions = BattleCompletionRetryQueue<java.util.UUID, PendingTowerCompletion>(
+        keyOf = PendingTowerCompletion::battleId,
+        retryMillis = COMPLETION_RETRY_MILLIS,
+    )
     private val registeredTeamSnapshots = Cobblemon173TowerRegisteredTeamSnapshotStore(onlinePlayers::get)
     private val runtime: Cobblemon173TowerPveBattleRuntime by lazy {
         Cobblemon173TowerPveBattleRuntime(
             playerResolver = onlinePlayers::get,
             sessionCompletion = { server, playerId, battleId, outcome ->
-                val completion = sessions.completeBattle(
-                    playerId,
-                    battleId,
-                    outcome,
-                    completionSink(server, battleId),
-                )
-                onlinePlayers[playerId]?.let(BattleHubNetworking::sendHeader)
-                reopenScreen(playerId, completion)
+                submitCompletion(server, PendingTowerCompletion(playerId, battleId, outcome))
             },
             sessionCancellation = { server, playerId, battleId ->
-                val completion = sessions.cancelBattle(playerId, battleId, completionSink(server, battleId))
-                reopenScreen(playerId, completion)
+                submitCompletion(server, PendingTowerCompletion(playerId, battleId, null))
             },
         )
     }
@@ -120,30 +122,56 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
                 reportMutationResponseFailure(player, failure)
             }
         }
+        ServerLifecycleEvents.SERVER_STOPPING.register { server ->
+            runManagedCleanupActionsSafely(
+                reportFailure = { failure ->
+                    MoreBattleContent.LOGGER.error("Battle Tower server shutdown cleanup failed", failure)
+                },
+                { processPendingCompletions(server, force = true) },
+                {
+                    if (pendingCompletions.size() > 0) {
+                        MoreBattleContent.LOGGER.error(
+                            "Discarding {} Battle Tower completion retries because the server is stopping and record storage is still unavailable",
+                            pendingCompletions.size(),
+                        )
+                    }
+                },
+                pendingCompletions::clear,
+                onlinePlayers::clear,
+            )
+        }
+        ServerTickEvents.END_SERVER_TICK.register { server -> processPendingCompletions(server) }
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
             onlinePlayers[handler.player.uuid] = handler.player
         }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, server ->
             val playerId = handler.player.uuid
             dispatchToServerThread(server.isSameThread, { action -> server.execute(action) }) {
+                processPendingCompletions(server, force = true)
                 runManagedCleanupActionsSafely(
                     reportFailure = { failure ->
                         MoreBattleContent.LOGGER.error("Battle Tower disconnect cleanup failed for $playerId", failure)
                     },
                     {
-                        val battleId = sessions.activeBattleId(playerId)
-                        if (battleId == null) {
-                            sessions.disconnect(playerId)
-                        } else {
-                            sessions.disconnect(
-                                playerId,
-                                completionSink(server, battleId),
-                                Cobblemon173ManagedBattleTermination::end,
-                            )
+                        if (!pendingCompletions.any { it.playerId == playerId }) {
+                            val battleId = sessions.activeBattleId(playerId)
+                            if (battleId == null) {
+                                sessions.disconnect(playerId)
+                            } else {
+                                sessions.disconnect(
+                                    playerId,
+                                    completionSink(server, battleId),
+                                    Cobblemon173ManagedBattleTermination::end,
+                                )
+                            }
                         }
                     },
-                    { sessions.close(playerId) },
-                    { launcher.forget(playerId) },
+                    {
+                        if (!pendingCompletions.any { it.playerId == playerId }) sessions.close(playerId)
+                    },
+                    {
+                        if (!pendingCompletions.any { it.playerId == playerId }) launcher.forget(playerId)
+                    },
                     { onlinePlayers.remove(playerId) },
                 )
             }
@@ -307,9 +335,77 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         ServerPlayNetworking.send(player, TowerPlayStatePayload(null, settled))
     }
 
-    private fun completionSink(server: net.minecraft.server.MinecraftServer, battleId: java.util.UUID) =
+    private fun submitCompletion(
+        server: MinecraftServer,
+        completion: PendingTowerCompletion,
+    ) {
+        pendingCompletions.submit(completion) { settleCompletion(server, it) }
+    }
+
+    private fun processPendingCompletions(
+        server: MinecraftServer,
+        force: Boolean = false,
+    ) {
+        pendingCompletions.retryDue(force) { settleCompletion(server, it) }
+    }
+
+    private fun settleCompletion(
+        server: MinecraftServer,
+        pending: PendingTowerCompletion,
+    ): Boolean = try {
+        val completion = if (pending.outcome == null) {
+            sessions.cancelBattle(pending.playerId, pending.battleId, completionSink(server, pending.battleId))
+        } else {
+            sessions.completeBattle(
+                pending.playerId,
+                pending.battleId,
+                pending.outcome,
+                completionSink(server, pending.battleId),
+            )
+        }
+        if (completion is TowerPlayBattleCompletionResult.Completed) {
+            onlinePlayers[pending.playerId]?.let(BattleHubNetworking::sendHeader)
+            reopenScreen(pending.playerId, completion)
+        } else if (completion is TowerPlayBattleCompletionResult.StaleBattle ||
+            completion is TowerPlayBattleCompletionResult.SessionNotFound ||
+            completion is TowerPlayBattleCompletionResult.NoActiveBattle
+        ) {
+            MoreBattleContent.LOGGER.warn(
+                "Dropping stale Battle Tower completion retry for player {} and battle {}",
+                pending.playerId,
+                pending.battleId,
+            )
+        }
+        true
+    } catch (failure: RuntimeException) {
+        reportTowerCompletionFailure(pending, failure)
+        false
+    } catch (failure: LinkageError) {
+        reportTowerCompletionFailure(pending, failure)
+        false
+    }
+
+    private fun reportTowerCompletionFailure(pending: PendingTowerCompletion, failure: Throwable) {
+        reportManagedCleanupFailureSafely(failure) {
+            MoreBattleContent.LOGGER.error(
+                "Battle Tower settlement failed for player {} and battle {}; retrying in {} ms",
+                pending.playerId,
+                pending.battleId,
+                COMPLETION_RETRY_MILLIS,
+                it,
+            )
+        }
+    }
+
+    private data class PendingTowerCompletion(
+        val playerId: java.util.UUID,
+        val battleId: java.util.UUID,
+        val outcome: TowerBattleOutcome?,
+    )
+
+    private fun completionSink(server: MinecraftServer, battleId: java.util.UUID) =
         TowerPlayBattleCompletionSink { recordedPlayerId, update ->
-            if (update.outcome == jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleOutcome.WIN) {
+            if (update.outcome == TowerBattleOutcome.WIN) {
                 BattlePointRewardSettlementService { request ->
                     BattlePointService.apply(server, request)
                 }.settle(
