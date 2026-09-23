@@ -123,17 +123,20 @@ internal class BattlePointShopService(
                 false
             } else {
                 val preparedPlan = requireNotNull(plan)
+                var recoverableCommitFailure: Throwable? = null
                 val committed = try {
                     preparedPlan.commit()
-                } catch (_: RuntimeException) {
+                } catch (failure: RuntimeException) {
+                    recoverableCommitFailure = failure
                     false
-                } catch (_: LinkageError) {
+                } catch (failure: LinkageError) {
+                    recoverableCommitFailure = failure
                     false
                 } catch (failure: Throwable) {
                     rollbackAfterFatalCommitFailure(preparedPlan, failure)
                 }
                 if (!committed) {
-                    rollbackSafely(preparedPlan)
+                    rollbackRecoverableCommit(preparedPlan, recoverableCommitFailure)
                 }
                 deliveryState = if (committed) DeliveryState.COMMITTED else DeliveryState.COMMIT_FAILED
                 committed
@@ -156,14 +159,20 @@ internal class BattlePointShopService(
         return BattlePointShopPurchaseResult(status, resolved.totalCostBp, bpResult.balance)
     }
 
-    private fun rollbackSafely(plan: BattlePointShopDeliveryPlan) {
+    private fun rollbackRecoverableCommit(plan: BattlePointShopDeliveryPlan, commitFailure: Throwable?) {
         try {
             plan.rollback()
-        } catch (_: RuntimeException) {
-            // The purchase still fails; the packet handler must remain able to report it.
-        } catch (_: LinkageError) {
-            // The purchase still fails; the packet handler must remain able to report it.
+        } catch (rollbackFailure: RuntimeException) {
+            propagateUncertainDelivery(commitFailure, rollbackFailure)
+        } catch (rollbackFailure: LinkageError) {
+            propagateUncertainDelivery(commitFailure, rollbackFailure)
         }
+    }
+
+    private fun propagateUncertainDelivery(commitFailure: Throwable?, rollbackFailure: Throwable): Nothing {
+        if (commitFailure == null) throw rollbackFailure
+        if (commitFailure !== rollbackFailure) commitFailure.addSuppressed(rollbackFailure)
+        throw commitFailure
     }
 
     private fun rollbackAfterFatalCommitFailure(plan: BattlePointShopDeliveryPlan, failure: Throwable): Nothing {

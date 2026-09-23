@@ -110,6 +110,38 @@ class BattlePointShopServiceTest {
     }
 
     @Test
+    fun `rollback failure is propagated because delivered inventory is uncertain`() {
+        val store = fundedStore(100)
+        val rollbackFailure = LinkageError("inventory rollback API drift")
+        val delivery = RecordingDelivery(
+            commitFailure = IllegalStateException("partial delivery"),
+            rollbackFailure = rollbackFailure,
+        )
+
+        val thrown = assertThrows<IllegalStateException> { service(store, delivery).purchase(request()) }
+
+        assertEquals("partial delivery", thrown.message)
+        assertEquals(listOf(rollbackFailure), thrown.suppressed.toList())
+        assertEquals(100, store.balance(playerId))
+        assertEquals(1, delivery.rollbackCalls)
+        assertEquals(BattlePointShopPurchaseStatus.APPLIED, service(store, RecordingDelivery()).purchase(request()).status)
+        assertEquals(75, store.balance(playerId))
+    }
+
+    @Test
+    fun `rollback failure after rejected commit is not reported as an ordinary delivery failure`() {
+        val store = fundedStore(100)
+        val rollbackFailure = IllegalStateException("inventory snapshot restore failed")
+        val delivery = RecordingDelivery(commitResult = false, rollbackFailure = rollbackFailure)
+
+        val thrown = assertThrows<IllegalStateException> { service(store, delivery).purchase(request()) }
+
+        assertEquals(rollbackFailure, thrown)
+        assertEquals(100, store.balance(playerId))
+        assertEquals(1, delivery.rollbackCalls)
+    }
+
+    @Test
     fun `linkage failure while preparing delivery is contained without touching BP`() {
         val store = fundedStore(100)
         val delivery = RecordingDelivery(prepareFailure = LinkageError("inventory API drift"))
@@ -208,6 +240,7 @@ class BattlePointShopServiceTest {
         private val commitResult: Boolean = true,
         private val prepareFailure: Throwable? = null,
         var commitFailure: Throwable? = null,
+        private val rollbackFailure: Throwable? = null,
     ) : BattlePointShopDelivery {
         var prepareCalls = 0
         var rollbackCalls = 0
@@ -224,6 +257,7 @@ class BattlePointShopServiceTest {
                 }
                 override fun rollback() {
                     rollbackCalls++
+                    rollbackFailure?.let { throw it }
                 }
             }
         }
