@@ -9,6 +9,15 @@ import org.junit.jupiter.api.Test
 
 class BattleBrainExecutorTest {
     @Test
+    fun `default worker count reserves server cores and stays bounded`() {
+        assertEquals(1, BattleBrainExecutors.workerCountFor(1))
+        assertEquals(1, BattleBrainExecutors.workerCountFor(2))
+        assertEquals(2, BattleBrainExecutors.workerCountFor(4))
+        assertEquals(4, BattleBrainExecutors.workerCountFor(8))
+        assertEquals(4, BattleBrainExecutors.workerCountFor(64))
+    }
+
+    @Test
     fun `blocked Brain calls cannot create unbounded workers or queue entries`() {
         val release = CountDownLatch(1)
         val executor = BattleBrainExecutors.worker(maximumWorkers = 1, queueCapacity = 1) as ThreadPoolExecutor

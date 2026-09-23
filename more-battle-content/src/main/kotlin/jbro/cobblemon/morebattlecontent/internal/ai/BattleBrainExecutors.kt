@@ -34,11 +34,15 @@ internal object BattleBrainExecutors {
         ).apply { allowCoreThreadTimeOut(true) }
     }
 
-    private fun defaultWorkerCount(): Int =
-        Runtime.getRuntime().availableProcessors().coerceIn(MINIMUM_WORKERS, MAXIMUM_WORKERS)
+    private fun defaultWorkerCount(): Int = workerCountFor(Runtime.getRuntime().availableProcessors())
 
-    private const val MINIMUM_WORKERS = 2
-    private const val MAXIMUM_WORKERS = 8
+    internal fun workerCountFor(availableProcessors: Int): Int {
+        require(availableProcessors > 0)
+        return (availableProcessors - RESERVED_SERVER_PROCESSORS).coerceIn(1, MAXIMUM_WORKERS)
+    }
+
+    private const val RESERVED_SERVER_PROCESSORS = 2
+    private const val MAXIMUM_WORKERS = 4
     private const val DEFAULT_QUEUE_CAPACITY = 64
     private const val KEEP_ALIVE_SECONDS = 30L
 }
