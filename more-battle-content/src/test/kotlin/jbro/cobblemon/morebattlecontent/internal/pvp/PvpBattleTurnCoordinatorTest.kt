@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -74,6 +75,26 @@ class PvpBattleTurnCoordinatorTest {
         assertTrue(late.timedOut)
         assertEquals(PvpTimedSubmissionStatus.ACCEPTED, coordinator.accept(onTime))
         assertEquals(PvpTimedSubmissionStatus.TIMED_OUT, coordinator.accept(late))
+        val timeout = coordinator.timeouts().single()
+        assertEquals(second, timeout.playerId)
+        assertTrue(coordinator.acknowledgeTimeout(late))
+        assertTrue(coordinator.timeouts().isEmpty())
+    }
+
+    @Test
+    fun `timeout remains pending until its action is acknowledged`() {
+        var now = 0L
+        val timer = timer { now }
+        val coordinator = PvpBattleTurnCoordinator { timer }
+        val request = Any()
+        coordinator.observe(battleId, mapOf(first to request))
+        now = 45_000L
+
+        val firstDelivery = coordinator.timeouts().single()
+        val retryDelivery = coordinator.timeouts().single()
+
+        assertSame(firstDelivery, retryDelivery)
+        assertTrue(coordinator.acknowledgeTimeout(firstDelivery))
         assertTrue(coordinator.timeouts().isEmpty())
     }
 

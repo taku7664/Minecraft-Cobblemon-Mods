@@ -43,8 +43,14 @@ internal class Cobblemon173PvpTurnHooks(
     }
 
     fun resolveTimedOut(actor: BattleActor, capture: PvpTurnCapture) {
-        if (!capture.timedOut || actor.request !== capture.requestIdentity || !actor.mustChoose) return
-        applyTimeout(actor, capture.personalTimeExhausted)
+        if (!capture.timedOut) return
+        if (actor.request !== capture.requestIdentity || !actor.mustChoose) {
+            coordinator.acknowledgeTimeout(capture)
+            return
+        }
+        if (applyTimeout(actor, capture.personalTimeExhausted)) {
+            coordinator.acknowledgeTimeout(capture)
+        }
     }
 
     fun processTimeouts() {
@@ -61,10 +67,18 @@ internal class Cobblemon173PvpTurnHooks(
                 }
             },
         ) { timeout ->
-            val battle = BattleRegistry.getBattle(timeout.battleId) ?: return@runManagedCleanupForEachSafely
-            val actor = battle.getActor(timeout.playerId) ?: return@runManagedCleanupForEachSafely
+            val battle = BattleRegistry.getBattle(timeout.battleId)
+            val actor = battle?.getActor(timeout.playerId)
+            if (actor == null) {
+                coordinator.acknowledgeTimeout(timeout)
+                return@runManagedCleanupForEachSafely
+            }
             if (actor.mustChoose && actor.request === timeout.requestIdentity) {
-                applyTimeout(actor, timeout.personalTimeExhausted)
+                if (applyTimeout(actor, timeout.personalTimeExhausted)) {
+                    coordinator.acknowledgeTimeout(timeout)
+                }
+            } else {
+                coordinator.acknowledgeTimeout(timeout)
             }
         }
     }
@@ -77,9 +91,14 @@ internal class Cobblemon173PvpTurnHooks(
         coordinator.clear()
     }
 
-    private fun applyTimeout(actor: BattleActor, personalTimeExhausted: Boolean) {
-        val expectedRequest = actor.request ?: return abort(actor, "request disappeared before timeout resolution")
-        if (!actor.mustChoose) return abort(actor, "choice closed before timeout resolution")
+    private fun applyTimeout(actor: BattleActor, personalTimeExhausted: Boolean): Boolean {
+        val expectedRequest = actor.request
+        if (expectedRequest == null) {
+            return true
+        }
+        if (!actor.mustChoose) {
+            return true
+        }
         val responses = if (personalTimeExhausted) {
             listOf(ForfeitActionResponse())
         } else {
@@ -102,12 +121,12 @@ internal class Cobblemon173PvpTurnHooks(
         if (!actor.battle.ended && actor.mustChoose && actor.request === expectedRequest) {
             recoverWithForfeit(actor, expectedRequest)
         }
+        return actor.battle.ended || !actor.mustChoose || actor.request !== expectedRequest
     }
 
     private fun recoverWithForfeit(actor: BattleActor, expectedRequest: Any) {
         if (actor.battle.ended) return
         if (!actor.mustChoose || actor.request !== expectedRequest) {
-            abort(actor, "timeout action failed after its request closed")
             return
         }
         try {

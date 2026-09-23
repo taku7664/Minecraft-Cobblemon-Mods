@@ -20,6 +20,7 @@ internal class PvpTurnCapture internal constructor(
 )
 
 internal data class PvpTurnTimeout(
+    internal val coordinatorIdentity: Any,
     val battleId: UUID,
     val playerId: UUID,
     val requestIdentity: Any,
@@ -66,13 +67,24 @@ internal class PvpBattleTurnCoordinator(
     fun capture(battleId: UUID, playerId: UUID, requestIdentity: Any): PvpTurnCapture? {
         val timer = timerForBattle(battleId) ?: return null
         val window = battles[battleId]?.window ?: return null
-        if (window.requestIdentities[playerId] !== requestIdentity || playerId in window.resolvedPlayers) return null
+        if (
+            window.requestIdentities[playerId] !== requestIdentity ||
+            playerId in window.resolvedPlayers ||
+            playerId in window.pendingTimeouts
+        ) return null
         val submission = timer.captureTurnSubmission(window.turnId, playerId)
         val timedOut = timer.submissionTimedOut(submission)
         val personalTimeExhausted = if (timedOut) {
             check(timer.submitTurn(submission) == PvpTimedSubmissionStatus.TIMED_OUT)
-            window.resolvedPlayers += playerId
-            timer.remainingPersonalTime(playerId) == 0L
+            val exhausted = timer.remainingPersonalTime(playerId) == 0L
+            window.pendingTimeouts[playerId] = PvpTurnTimeout(
+                identity,
+                battleId,
+                playerId,
+                requestIdentity,
+                exhausted,
+            )
+            exhausted
         } else {
             false
         }
@@ -115,16 +127,49 @@ internal class PvpBattleTurnCoordinator(
             }
             val window = state.window ?: return@forEach
             timer.turnTimeouts(window.turnId).forEach { playerId ->
-                window.resolvedPlayers += playerId
-                timedOut += PvpTurnTimeout(
+                window.pendingTimeouts[playerId] = PvpTurnTimeout(
+                    identity,
                     battleId,
                     playerId,
                     window.requestIdentities.getValue(playerId),
                     timer.remainingPersonalTime(playerId) == 0L,
                 )
             }
+            timedOut += window.pendingTimeouts.values
         }
         return timedOut
+    }
+
+    @Synchronized
+    fun acknowledgeTimeout(timeout: PvpTurnTimeout): Boolean {
+        require(timeout.coordinatorIdentity === identity) { "PvP timeout belongs to another coordinator" }
+        return acknowledgeTimeout(timeout.battleId, timeout.playerId, timeout.requestIdentity, timeout)
+    }
+
+    @Synchronized
+    fun acknowledgeTimeout(capture: PvpTurnCapture): Boolean {
+        require(capture.coordinatorIdentity === identity) { "PvP turn capture belongs to another coordinator" }
+        if (!capture.timedOut) return false
+        return acknowledgeTimeout(
+            capture.battleId,
+            capture.submission.playerId,
+            capture.requestIdentity,
+            expectedTimeout = null,
+        )
+    }
+
+    private fun acknowledgeTimeout(
+        battleId: UUID,
+        playerId: UUID,
+        requestIdentity: Any,
+        expectedTimeout: PvpTurnTimeout?,
+    ): Boolean {
+        val window = battles[battleId]?.window ?: return false
+        val pending = window.pendingTimeouts[playerId] ?: return false
+        if (pending.requestIdentity !== requestIdentity || expectedTimeout != null && pending !== expectedTimeout) return false
+        window.pendingTimeouts.remove(playerId)
+        window.resolvedPlayers += playerId
+        return true
     }
 
     @Synchronized
@@ -146,6 +191,7 @@ internal class PvpBattleTurnCoordinator(
         val turnId: Long,
         val requestIdentities: MutableMap<UUID, Any>,
         val resolvedPlayers: MutableSet<UUID> = LinkedHashSet(),
+        val pendingTimeouts: MutableMap<UUID, PvpTurnTimeout> = LinkedHashMap(),
     ) {
         fun isResolved(): Boolean = resolvedPlayers.containsAll(requestIdentities.keys)
     }
