@@ -114,22 +114,22 @@ internal class BattleBrainDecisionCoordinator(
      * must not be what makes the fallback miss it. `BattleDecisionFallbackChainTest` holds this.
      */
     private fun reportBrainFailure(context: BattleDecisionContext, throwable: Throwable) {
-        val cause = generateSequence(throwable) { it.cause }.last()
+        val cause = deepestDistinctCause(throwable)
         val signature = "${cause.javaClass.name}:${cause.message.orEmpty()}"
         if (!brainFailureCounts.containsKey(signature) && brainFailureCounts.size >= MAX_DISTINCT_FAILURE_SIGNATURES) return
         val seen = brainFailureCounts.merge(signature, 1, Int::plus) ?: 1
         if (seen == 1) {
             MoreBattleContent.LOGGER.error(
                 "Battle {} turn {} Brain threw with {} candidates; falling back",
-                runCatching { context.state.battleId }.getOrNull(),
-                runCatching { context.state.turn }.getOrNull(),
+                context.state.battleId,
+                context.state.turn,
                 context.candidates.size,
                 throwable,
             )
         } else if (seen % REPEATED_FAILURE_LOG_INTERVAL == 0) {
             MoreBattleContent.LOGGER.error(
                 "Battle {} Brain has now thrown {} times with {}",
-                runCatching { context.state.battleId }.getOrNull(),
+                context.state.battleId,
                 seen,
                 signature,
             )

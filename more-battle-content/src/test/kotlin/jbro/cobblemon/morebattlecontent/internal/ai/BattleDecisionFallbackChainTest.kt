@@ -28,6 +28,16 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 
 class BattleDecisionFallbackChainTest {
+    @Test
+    fun `cyclic brain failure causes terminate at the deepest distinct throwable`() {
+        val outer = IllegalStateException("outer")
+        val inner = IllegalArgumentException("inner")
+        outer.initCause(inner)
+        inner.initCause(outer)
+
+        assertEquals(inner, deepestDistinctCause(outer))
+    }
+
     private val scheduler = Executors.newSingleThreadScheduledExecutor()
     private val brainExecutor = Executors.newCachedThreadPool()
 
