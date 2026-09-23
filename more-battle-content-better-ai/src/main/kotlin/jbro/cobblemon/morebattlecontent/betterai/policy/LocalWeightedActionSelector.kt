@@ -32,6 +32,8 @@ internal data class LocalActionMixingContext(
     val style: LocalTrainerStyle,
     val riskBudget: Double,
     val uncertainConditionalActionIds: Set<String> = emptySet(),
+    /** Protect-family actions whose shared stalling counter already has a public successful use. */
+    val repeatedProtectionActionIds: Set<String> = emptySet(),
     val alreadyBoostedSetupActionIds: Set<String> = emptySet(),
     val overcommittedSetupActionIds: Set<String> = emptySet(),
     val tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
@@ -75,12 +77,18 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
     private fun preparePool(ranked: List<LocalBattleActionRank>, context: LocalActionMixingContext): ChoicePool {
         require(ranked.isNotEmpty()) { "Weighted action selection requires at least one ranked action" }
 
-        val best = ranked.first()
-        val credibleStayAlternativeExists = ranked.any { rank ->
+        val alternativesToRepeatedProtection = ranked.filter { rank ->
+            rank.outcome.candidate.actionId !in context.repeatedProtectionActionIds &&
+                rank.outcome.candidate.kind != BattleActionKind.FORFEIT &&
+                rank.outcome.candidate.kind != BattleActionKind.WAIT
+        }
+        val selectionUniverse = alternativesToRepeatedProtection.ifEmpty { ranked }
+        val best = selectionUniverse.first()
+        val credibleStayAlternativeExists = selectionUniverse.any { rank ->
             isCredibleDamagingStay(rank) &&
                 best.comparisonValue - rank.comparisonValue <= context.tuning.maximumReasonableScoreGap
         }
-        val viable = ranked.filter { rank ->
+        val eligible = selectionUniverse.filter { rank ->
             canReceiveWeight(
                 rank,
                 rank === best,
@@ -90,7 +98,15 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
                 context.alreadyBoostedSetupActionIds,
                 context.overcommittedSetupActionIds,
             )
-        }.ifEmpty { listOf(emergencyFallback(ranked, context.overcommittedSetupActionIds)) }
+        }
+        // A score penalty was not a safety rule: a repeated Protect worth hundreds of search points
+        // still beat an ordinary move after the fixed penalty was subtracted. Worse, applying the
+        // guard after survival filtering let a low-health position discard every attack and then
+        // restore Protect as its emergency fallback. Remove the repeated protection from the entire
+        // selection universe first. It remains only when it is literally the sole legal action.
+        val viable = eligible.ifEmpty {
+            listOf(emergencyFallback(selectionUniverse, context.overcommittedSetupActionIds))
+        }
         val countShortlist = viable.take(
             shortlistSize(viable.size, context.tuning, context.decisionShortlistWidth),
         )

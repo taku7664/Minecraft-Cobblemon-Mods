@@ -123,6 +123,15 @@ internal class LocalTacticalBrain(
                     }
                     .map { it.outcome.candidate.actionId }
                     .toSet(),
+                repeatedProtectionActionIds = ranked.asSequence()
+                    .filter {
+                        LocalTacticalSituationalEvaluator.repeatedProtectionPenalty(
+                            it.outcome.candidate,
+                            difficultyContext,
+                        ) > 0.0
+                    }
+                    .map { it.outcome.candidate.actionId }
+                    .toSet(),
                 alreadyBoostedSetupActionIds = ranked.asSequence()
                     .filter {
                         LocalTacticalSituationalEvaluator.alreadyBoostedSelfSetup(
