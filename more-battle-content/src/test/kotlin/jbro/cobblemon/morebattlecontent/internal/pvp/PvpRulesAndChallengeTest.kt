@@ -107,6 +107,34 @@ class PvpRulesAndChallengeTest {
     }
 
     @Test
+    fun `challenge service snapshots caller owned mechanic sets`() {
+        val service = PvpChallengeService()
+        val id = UUID.fromString("11111111-1111-1111-1111-111111111111")
+        val mechanics = linkedSetOf(PvpBattleMechanic.MEGA)
+        val request = PvpChallengeRequest(id, challenger, opponent, PvpBattleFormat.SINGLE, mechanics)
+
+        assertTrue(service.invite(request) is PvpChallengeMutationResult.Applied)
+        mechanics += PvpBattleMechanic.TERA
+
+        val stored = requireNotNull(service.get(id)).request
+        assertEquals(setOf(PvpBattleMechanic.MEGA), stored.enabledMechanics)
+        assertTrue(
+            service.invite(
+                PvpChallengeRequest(
+                    id,
+                    challenger,
+                    opponent,
+                    PvpBattleFormat.SINGLE,
+                    setOf(PvpBattleMechanic.MEGA),
+                ),
+            ) is PvpChallengeMutationResult.Unchanged,
+        )
+        assertThrows<UnsupportedOperationException> {
+            (stored.enabledMechanics as MutableSet<PvpBattleMechanic>) += PvpBattleMechanic.Z_MOVE
+        }
+    }
+
+    @Test
     fun `completed challenges release both participants for later matches`() {
         val service = PvpChallengeService()
         val id = UUID.fromString("11111111-1111-1111-1111-111111111111")

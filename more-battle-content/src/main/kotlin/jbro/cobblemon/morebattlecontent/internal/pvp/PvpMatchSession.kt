@@ -27,7 +27,7 @@ internal class PvpMatchSession(
     val format: PvpBattleFormat,
     enabledMechanics: Set<PvpBattleMechanic> = PvpRoomDefaults.ENABLED_MECHANICS,
 ) {
-    val enabledMechanics: Set<PvpBattleMechanic> = enabledMechanics.toSet()
+    val enabledMechanics: Set<PvpBattleMechanic> = enabledMechanics.immutableMechanicSet()
     var phase: PvpMatchPhase = PvpMatchPhase.TEAM_REGISTRATION
         private set
     private val registeredTeams = LinkedHashMap<UUID, PvpRegisteredTeam>()

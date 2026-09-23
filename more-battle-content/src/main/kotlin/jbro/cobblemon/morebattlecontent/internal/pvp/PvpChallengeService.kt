@@ -13,7 +13,7 @@ internal data class PvpChallengeRequest(
         require(challengerId != opponentId) { "A player cannot challenge themselves" }
     }
 
-    val immutableEnabledMechanics: Set<PvpBattleMechanic> = enabledMechanics.toSet()
+    val immutableEnabledMechanics: Set<PvpBattleMechanic> = enabledMechanics.immutableMechanicSet()
 }
 
 internal enum class PvpChallengePhase {
@@ -60,9 +60,10 @@ internal class PvpChallengeService {
 
     @Synchronized
     fun invite(request: PvpChallengeRequest): PvpChallengeMutationResult {
+        val immutableRequest = request.copy(enabledMechanics = request.immutableEnabledMechanics)
         val existing = challenges[request.challengeId]
         if (existing != null) {
-            return if (existing.request == request) {
+            return if (existing.request == immutableRequest) {
                 PvpChallengeMutationResult.Unchanged(existing)
             } else {
                 PvpChallengeMutationResult.Rejected(PvpChallengeMutationError.REQUEST_CONFLICT)
@@ -71,7 +72,7 @@ internal class PvpChallengeService {
         if (request.challengerId in activeByPlayer || request.opponentId in activeByPlayer) {
             return PvpChallengeMutationResult.Rejected(PvpChallengeMutationError.PARTICIPANT_BUSY)
         }
-        val challenge = PvpChallenge(request, PvpChallengePhase.PENDING)
+        val challenge = PvpChallenge(immutableRequest, PvpChallengePhase.PENDING)
         challenges[request.challengeId] = challenge
         activeByPlayer[request.challengerId] = request.challengeId
         activeByPlayer[request.opponentId] = request.challengeId

@@ -19,7 +19,7 @@ internal data class PvpBattleLaunchRequest(
         }
     }
 
-    val immutableEnabledMechanics: Set<PvpBattleMechanic> = enabledMechanics.toSet()
+    val immutableEnabledMechanics: Set<PvpBattleMechanic> = enabledMechanics.immutableMechanicSet()
 }
 
 internal class PvpPreparedBattle<P> internal constructor(
