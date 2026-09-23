@@ -24,51 +24,141 @@ internal data class PvpSelectionOpponentSlot(
 
 internal data class PvpSelectionSpectator(val playerId: UUID, val name: String)
 
-internal data class PvpSelectionViewState(
+internal class PvpSelectionViewState(
     val matchId: UUID,
     val format: PvpBattleFormat,
     val opponentName: String,
-    val ownParty: List<PvpSelectionPartySlot>,
-    val opponentParty: List<PvpSelectionOpponentSlot>,
-    val selectedPokemonIds: Set<UUID>,
+    ownParty: Collection<PvpSelectionPartySlot>,
+    opponentParty: Collection<PvpSelectionOpponentSlot>,
+    selectedPokemonIds: Collection<UUID>,
     val selectionDeadlineEpochMillis: Long,
     val waitingForOpponent: Boolean,
     val battleStartRetryAvailable: Boolean = false,
     val playerOnLeft: Boolean = true,
     val leftPlayerName: String = "",
     val rightPlayerName: String = opponentName,
-    val spectators: List<PvpSelectionSpectator> = emptyList(),
+    spectators: Collection<PvpSelectionSpectator> = emptyList(),
     val spectatorMode: Boolean = false,
-    val spectatorLeftParty: List<PvpSelectionOpponentSlot> = emptyList(),
-    val spectatorRightParty: List<PvpSelectionOpponentSlot> = emptyList(),
+    spectatorLeftParty: Collection<PvpSelectionOpponentSlot> = emptyList(),
+    spectatorRightParty: Collection<PvpSelectionOpponentSlot> = emptyList(),
 ) {
+    val ownParty: List<PvpSelectionPartySlot> = Collections.unmodifiableList(ArrayList(ownParty))
+    val opponentParty: List<PvpSelectionOpponentSlot> = Collections.unmodifiableList(ArrayList(opponentParty))
+    val selectedPokemonIds: Set<UUID> = Collections.unmodifiableSet(LinkedHashSet(selectedPokemonIds))
+    val spectators: List<PvpSelectionSpectator> = Collections.unmodifiableList(ArrayList(spectators))
+    val spectatorLeftParty: List<PvpSelectionOpponentSlot> =
+        Collections.unmodifiableList(ArrayList(spectatorLeftParty))
+    val spectatorRightParty: List<PvpSelectionOpponentSlot> =
+        Collections.unmodifiableList(ArrayList(spectatorRightParty))
+
     init {
         if (spectatorMode) {
-            require(ownParty.isEmpty() && opponentParty.isEmpty() && selectedPokemonIds.isEmpty()) {
+            require(this.ownParty.isEmpty() && this.opponentParty.isEmpty() && this.selectedPokemonIds.isEmpty()) {
                 "PvP spectator view cannot contain participant-private state"
             }
-            require(spectatorLeftParty.size in format.registrationRange) { "PvP spectator view has an invalid left party size" }
-            require(spectatorRightParty.size in format.registrationRange) { "PvP spectator view has an invalid right party size" }
+            require(this.spectatorLeftParty.size in format.registrationRange) { "PvP spectator view has an invalid left party size" }
+            require(this.spectatorRightParty.size in format.registrationRange) { "PvP spectator view has an invalid right party size" }
         } else {
-            require(ownParty.size in format.registrationRange) { "PvP view has an invalid registered party size" }
-            require(opponentParty.size in format.registrationRange) { "PvP view has an invalid opponent party size" }
+            require(this.ownParty.size in format.registrationRange) { "PvP view has an invalid registered party size" }
+            require(this.opponentParty.size in format.registrationRange) { "PvP view has an invalid opponent party size" }
         }
-        require(selectedPokemonIds.size <= format.selectionSize) { "PvP view has too many selected Pokemon" }
-        require(ownParty.map(PvpSelectionPartySlot::pokemonId).containsAll(selectedPokemonIds)) {
+        require(this.selectedPokemonIds.size <= format.selectionSize) { "PvP view has too many selected Pokemon" }
+        require(this.ownParty.map(PvpSelectionPartySlot::pokemonId).containsAll(this.selectedPokemonIds)) {
             "PvP view selection contains an unregistered Pokemon"
         }
         require(selectionDeadlineEpochMillis >= 0) { "PvP selection deadline cannot be negative" }
     }
 
-    val immutableOwnParty: List<PvpSelectionPartySlot> = Collections.unmodifiableList(ArrayList(ownParty))
-    val immutableOpponentParty: List<PvpSelectionOpponentSlot> =
-        Collections.unmodifiableList(ArrayList(opponentParty))
-    val immutableSelectedPokemonIds: Set<UUID> = Collections.unmodifiableSet(LinkedHashSet(selectedPokemonIds))
-    val immutableSpectators: List<PvpSelectionSpectator> = Collections.unmodifiableList(ArrayList(spectators))
-    val immutableSpectatorLeftParty: List<PvpSelectionOpponentSlot> =
-        Collections.unmodifiableList(ArrayList(spectatorLeftParty))
-    val immutableSpectatorRightParty: List<PvpSelectionOpponentSlot> =
-        Collections.unmodifiableList(ArrayList(spectatorRightParty))
+    val immutableOwnParty: List<PvpSelectionPartySlot> = this.ownParty
+    val immutableOpponentParty: List<PvpSelectionOpponentSlot> = this.opponentParty
+    val immutableSelectedPokemonIds: Set<UUID> = this.selectedPokemonIds
+    val immutableSpectators: List<PvpSelectionSpectator> = this.spectators
+    val immutableSpectatorLeftParty: List<PvpSelectionOpponentSlot> = this.spectatorLeftParty
+    val immutableSpectatorRightParty: List<PvpSelectionOpponentSlot> = this.spectatorRightParty
+
+    fun copy(
+        matchId: UUID = this.matchId,
+        format: PvpBattleFormat = this.format,
+        opponentName: String = this.opponentName,
+        ownParty: Collection<PvpSelectionPartySlot> = this.ownParty,
+        opponentParty: Collection<PvpSelectionOpponentSlot> = this.opponentParty,
+        selectedPokemonIds: Collection<UUID> = this.selectedPokemonIds,
+        selectionDeadlineEpochMillis: Long = this.selectionDeadlineEpochMillis,
+        waitingForOpponent: Boolean = this.waitingForOpponent,
+        battleStartRetryAvailable: Boolean = this.battleStartRetryAvailable,
+        playerOnLeft: Boolean = this.playerOnLeft,
+        leftPlayerName: String = this.leftPlayerName,
+        rightPlayerName: String = this.rightPlayerName,
+        spectators: Collection<PvpSelectionSpectator> = this.spectators,
+        spectatorMode: Boolean = this.spectatorMode,
+        spectatorLeftParty: Collection<PvpSelectionOpponentSlot> = this.spectatorLeftParty,
+        spectatorRightParty: Collection<PvpSelectionOpponentSlot> = this.spectatorRightParty,
+    ) = PvpSelectionViewState(
+        matchId,
+        format,
+        opponentName,
+        ownParty,
+        opponentParty,
+        selectedPokemonIds,
+        selectionDeadlineEpochMillis,
+        waitingForOpponent,
+        battleStartRetryAvailable,
+        playerOnLeft,
+        leftPlayerName,
+        rightPlayerName,
+        spectators,
+        spectatorMode,
+        spectatorLeftParty,
+        spectatorRightParty,
+    )
+
+    override fun equals(other: Any?): Boolean =
+        this === other || other is PvpSelectionViewState &&
+            matchId == other.matchId &&
+            format == other.format &&
+            opponentName == other.opponentName &&
+            ownParty == other.ownParty &&
+            opponentParty == other.opponentParty &&
+            selectedPokemonIds == other.selectedPokemonIds &&
+            selectionDeadlineEpochMillis == other.selectionDeadlineEpochMillis &&
+            waitingForOpponent == other.waitingForOpponent &&
+            battleStartRetryAvailable == other.battleStartRetryAvailable &&
+            playerOnLeft == other.playerOnLeft &&
+            leftPlayerName == other.leftPlayerName &&
+            rightPlayerName == other.rightPlayerName &&
+            spectators == other.spectators &&
+            spectatorMode == other.spectatorMode &&
+            spectatorLeftParty == other.spectatorLeftParty &&
+            spectatorRightParty == other.spectatorRightParty
+
+    override fun hashCode(): Int {
+        var result = matchId.hashCode()
+        result = 31 * result + format.hashCode()
+        result = 31 * result + opponentName.hashCode()
+        result = 31 * result + ownParty.hashCode()
+        result = 31 * result + opponentParty.hashCode()
+        result = 31 * result + selectedPokemonIds.hashCode()
+        result = 31 * result + selectionDeadlineEpochMillis.hashCode()
+        result = 31 * result + waitingForOpponent.hashCode()
+        result = 31 * result + battleStartRetryAvailable.hashCode()
+        result = 31 * result + playerOnLeft.hashCode()
+        result = 31 * result + leftPlayerName.hashCode()
+        result = 31 * result + rightPlayerName.hashCode()
+        result = 31 * result + spectators.hashCode()
+        result = 31 * result + spectatorMode.hashCode()
+        result = 31 * result + spectatorLeftParty.hashCode()
+        result = 31 * result + spectatorRightParty.hashCode()
+        return result
+    }
+
+    override fun toString(): String =
+        "PvpSelectionViewState(matchId=$matchId, format=$format, opponentName=$opponentName, " +
+            "ownParty=$ownParty, opponentParty=$opponentParty, selectedPokemonIds=$selectedPokemonIds, " +
+            "selectionDeadlineEpochMillis=$selectionDeadlineEpochMillis, waitingForOpponent=$waitingForOpponent, " +
+            "battleStartRetryAvailable=$battleStartRetryAvailable, playerOnLeft=$playerOnLeft, " +
+            "leftPlayerName=$leftPlayerName, rightPlayerName=$rightPlayerName, spectators=$spectators, " +
+            "spectatorMode=$spectatorMode, spectatorLeftParty=$spectatorLeftParty, " +
+            "spectatorRightParty=$spectatorRightParty)"
 }
 
 internal sealed interface PvpSelectionIntent {
