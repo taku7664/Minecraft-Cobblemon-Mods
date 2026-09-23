@@ -220,6 +220,32 @@ class TowerBattleRuleRegistryTest {
     }
 
     @Test
+    fun `registered mechanics cannot be changed through the caller collection`() {
+        val registry = TowerBattleRuleRegistry()
+        val enabled = linkedSetOf(TowerSubmittedMechanic.MEGA)
+        assertTrue(registry.registerMultiple(battleId, enabled, setOf(playerActorId, trainerActorId)))
+
+        enabled.clear()
+        enabled += TowerSubmittedMechanic.TERA
+
+        assertNull(
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                TowerActionSubmission(mechanics = listOf(TowerSubmittedMechanic.MEGA)),
+            ),
+        )
+        assertEquals(
+            TowerRuleRejection.WRONG_MECHANIC,
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                TowerActionSubmission(mechanics = listOf(TowerSubmittedMechanic.TERA)),
+            ),
+        )
+    }
+
+    @Test
     fun `duplicate registration cannot replace active rules and unregister removes them`() {
         val registry = registered(MajorBattleMechanic.MEGA)
 

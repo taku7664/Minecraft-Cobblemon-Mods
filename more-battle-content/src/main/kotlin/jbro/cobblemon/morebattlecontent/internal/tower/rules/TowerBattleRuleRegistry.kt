@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.internal.tower.rules
 
 import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 import jbro.cobblemon.morebattlecontent.api.presentation.ManagedBattleContentIds
+import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -99,11 +100,12 @@ internal class TowerBattleRuleRegistry {
 
     private class BattleRules(
         val contentId: String,
-        private val allowedMechanics: Set<TowerSubmittedMechanic>,
+        allowedMechanics: Set<TowerSubmittedMechanic>,
         actorIds: Set<UUID>,
         private val selectedForTower: MajorBattleMechanic?,
         private val allowMultiplePerTurn: Boolean,
     ) {
+        private val allowedMechanics = Collections.unmodifiableSet(LinkedHashSet(allowedMechanics))
         private val actors = actorIds.associateWith { LinkedHashSet<TowerSubmittedMechanic>() }.toMutableMap()
 
         fun snapshotAllowedMechanics(): Set<TowerSubmittedMechanic> = allowedMechanics.toSet()
