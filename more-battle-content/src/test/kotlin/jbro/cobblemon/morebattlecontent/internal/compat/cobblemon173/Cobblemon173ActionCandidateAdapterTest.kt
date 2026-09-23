@@ -143,6 +143,13 @@ class Cobblemon173ActionCandidateAdapterTest {
     fun `Cobblemon always hit accuracy is normalized for the public AI contract`() {
         assertEquals(100.0, Cobblemon173ActionCandidateAdapter.publicAccuracy(-1.0))
         assertEquals(85.0, Cobblemon173ActionCandidateAdapter.publicAccuracy(85.0))
+        assertNull(Cobblemon173ActionCandidateAdapter.publicAccuracy(Double.NaN))
+        assertNull(Cobblemon173ActionCandidateAdapter.publicAccuracy(Double.POSITIVE_INFINITY))
+        assertNull(Cobblemon173ActionCandidateAdapter.publicAccuracy(101.0))
+        assertEquals(0.0, Cobblemon173ActionCandidateAdapter.publicPower(0.0))
+        assertEquals(120.0, Cobblemon173ActionCandidateAdapter.publicPower(120.0))
+        assertNull(Cobblemon173ActionCandidateAdapter.publicPower(-1.0))
+        assertNull(Cobblemon173ActionCandidateAdapter.publicPower(Double.NaN))
     }
 
     @Test

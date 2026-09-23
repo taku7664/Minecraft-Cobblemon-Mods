@@ -588,6 +588,8 @@ class Cobblemon173PublicBattleObserverTest {
         assertEquals(0.0, Cobblemon173ShowdownObservationAdapter.parseHpFraction("0 fnt"))
         assertNull(Cobblemon173ShowdownObservationAdapter.parseHpFraction("75%"))
         assertNull(Cobblemon173ShowdownObservationAdapter.parseHpFraction("0/0"))
+        assertNull(Cobblemon173ShowdownObservationAdapter.parseHpFraction("NaN/100"))
+        assertNull(Cobblemon173ShowdownObservationAdapter.parseHpFraction("50/Infinity"))
         assertEquals(
             ShowdownActionConstraintDescriptor(BattleActionConstraintKind.TAUNT, true),
             Cobblemon173ShowdownObservationAdapter.actionConstraintDescriptor(

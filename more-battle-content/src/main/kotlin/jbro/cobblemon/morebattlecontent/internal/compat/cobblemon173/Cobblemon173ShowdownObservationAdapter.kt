@@ -509,9 +509,9 @@ internal class Cobblemon173ShowdownObservationAdapter(
             if (value == "0") return 0.0
             val parts = value.split('/')
             if (parts.size != 2) return null
-            val current = parts[0].toDoubleOrNull() ?: return null
-            val maximum = parts[1].toDoubleOrNull()?.takeIf { it > 0.0 } ?: return null
-            return (current / maximum).coerceIn(0.0, 1.0)
+            val current = parts[0].toDoubleOrNull()?.takeIf(Double::isFinite) ?: return null
+            val maximum = parts[1].toDoubleOrNull()?.takeIf { it.isFinite() && it > 0.0 } ?: return null
+            return (current / maximum).takeIf(Double::isFinite)?.coerceIn(0.0, 1.0)
         }
 
         fun publicSourceEffectId(message: BattleMessage): String? =

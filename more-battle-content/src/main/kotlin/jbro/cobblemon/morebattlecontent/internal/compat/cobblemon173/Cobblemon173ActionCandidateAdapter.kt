@@ -277,8 +277,8 @@ internal object Cobblemon173ActionCandidateAdapter {
         return BattleMoveCandidateView(
             typeId = template.elementalType.name,
             damageCategory = category,
-            power = template.power,
-            accuracy = publicAccuracy(template.accuracy),
+            power = publicPower(template.power) ?: return null,
+            accuracy = publicAccuracy(template.accuracy) ?: return null,
             priority = template.priority,
             currentPp = move.pp,
             targetPattern = publicTargetPattern(target),
@@ -359,8 +359,13 @@ internal object Cobblemon173ActionCandidateAdapter {
         -> error("Unsupported major mechanic leaked into the MBC candidate adapter: $gimmick")
     }
 
-    internal fun publicAccuracy(cobblemonAccuracy: Double): Double =
-        if (cobblemonAccuracy < 0.0) 100.0 else cobblemonAccuracy
+    internal fun publicAccuracy(cobblemonAccuracy: Double): Double? =
+        cobblemonAccuracy.takeIf(Double::isFinite)
+            ?.let { if (it < 0.0) 100.0 else it }
+            ?.takeIf { it <= 100.0 }
+
+    internal fun publicPower(cobblemonPower: Double): Double? =
+        cobblemonPower.takeIf { it.isFinite() && it >= 0.0 }
 
     internal fun publicMoveDetails(moveId: String): BattleMoveCandidateView? {
         val template = Moves.getByName(moveId) ?: return null
@@ -373,8 +378,8 @@ internal object Cobblemon173ActionCandidateAdapter {
         return BattleMoveCandidateView(
             typeId = template.elementalType.name,
             damageCategory = category,
-            power = template.power,
-            accuracy = publicAccuracy(template.accuracy),
+            power = publicPower(template.power) ?: return null,
+            accuracy = publicAccuracy(template.accuracy) ?: return null,
             priority = template.priority,
             currentPp = template.maxPp,
             targetPattern = publicTargetPattern(template.target),
