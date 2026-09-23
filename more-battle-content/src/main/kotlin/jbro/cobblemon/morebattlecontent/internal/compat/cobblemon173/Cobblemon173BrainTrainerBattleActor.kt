@@ -36,6 +36,7 @@ import jbro.cobblemon.morebattlecontent.internal.ai.BattleTacticalMemoryLedger
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleTacticalRunMemoryStore
 import jbro.cobblemon.morebattlecontent.internal.ai.attemptBattleDecisionCompletion
 import jbro.cobblemon.morebattlecontent.internal.ai.attemptBattleDecisionSetup
+import jbro.cobblemon.morebattlecontent.internal.ai.prepareBattleDecisionFallback
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.Vec3
@@ -290,15 +291,33 @@ internal class Cobblemon173BrainTrainerBattleActor(
             battle.battleId,
             baseline.status,
         )
-        val emergencyResponses = if (preparation != null && context != null && preparation.candidates.isNotEmpty()) {
-            val emergency = BattleDecisionResolution.emergency(context, resolution?.failures.orEmpty())
-            preparation.responsesFor(requireNotNull(emergency.decision).actionId)
-        } else if (preparation != null && preparation.candidates.isNotEmpty()) {
-            preparation.responsesFor(preparation.candidates.first().actionId)
-        } else {
-            null
+        val emergencyResponses = prepareBattleDecisionFallback(
+            preferred = {
+                when {
+                    preparation != null && context != null && preparation.candidates.isNotEmpty() -> {
+                        val emergency = BattleDecisionResolution.emergency(context, resolution?.failures.orEmpty())
+                        preparation.responsesFor(requireNotNull(emergency.decision).actionId)
+                    }
+                    preparation != null && preparation.candidates.isNotEmpty() ->
+                        preparation.responsesFor(preparation.candidates.first().actionId)
+                    else -> null
+                }
+            },
+            lastResort = { emergencyPasses(expectedRequest) },
+            report = { failure -> logFailure("emergency response preparation", failure) },
+        )
+        if (emergencyResponses == null) {
+            pendingRequest.compareAndSet(expectedRequest, null)
+            compatibilityCallOrNull { pokemonList }.orEmpty().forEach { pokemon ->
+                compatibilityCallOrNull { pokemon.willBeSwitchedIn = false }
+            }
+            compatibilityCallOrElse(
+                fallback = { failure -> logFailure("unrecoverable Brain turn termination", failure) },
+                action = { Cobblemon173ManagedBattleTermination.end(battle.battleId) },
+            )
+            return
         }
-        submitPreparedResponses(expectedRequest, emergencyResponses ?: emergencyPasses(expectedRequest))
+        submitPreparedResponses(expectedRequest, emergencyResponses)
     }
 
     private fun submitPreparedResponses(

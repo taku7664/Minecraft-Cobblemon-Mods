@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.internal.ai
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class BattleDecisionSetupBoundaryTest {
@@ -77,5 +78,52 @@ class BattleDecisionSetupBoundaryTest {
 
         assertEquals(true, completed)
         assertEquals(false, recovered)
+    }
+
+    @Test
+    fun `failed preferred fallback uses the last resort response`() {
+        val failure = IllegalStateException("candidate response failed")
+        val reported = mutableListOf<Throwable>()
+
+        val response = prepareBattleDecisionFallback(
+            preferred = { throw failure },
+            lastResort = { "pass" },
+            report = reported::add,
+        )
+
+        assertEquals("pass", response)
+        assertEquals(listOf(failure), reported)
+    }
+
+    @Test
+    fun `double fallback failure preserves both causes and returns no response`() {
+        val preferredFailure = IllegalStateException("candidate response failed")
+        val lastResortFailure = NoSuchMethodError("pass response API drift")
+        val reported = mutableListOf<Throwable>()
+
+        val response = prepareBattleDecisionFallback<String>(
+            preferred = { throw preferredFailure },
+            lastResort = { throw lastResortFailure },
+            report = reported::add,
+        )
+
+        assertNull(response)
+        assertEquals(listOf(preferredFailure), reported)
+        assertEquals(listOf(lastResortFailure), preferredFailure.suppressed.toList())
+        assertTrue(preferredFailure !== lastResortFailure)
+    }
+
+    @Test
+    fun `diagnostics failure cannot replace a successful last resort response`() {
+        val preferredFailure = IllegalStateException("candidate response failed")
+
+        val response = prepareBattleDecisionFallback(
+            preferred = { throw preferredFailure },
+            lastResort = { "pass" },
+            report = { throw NoSuchMethodError("logger API drift") },
+        )
+
+        assertEquals("pass", response)
+        assertEquals(1, preferredFailure.suppressed.size)
     }
 }

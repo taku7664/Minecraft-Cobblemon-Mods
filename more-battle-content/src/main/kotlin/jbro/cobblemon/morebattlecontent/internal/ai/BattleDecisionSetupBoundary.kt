@@ -28,3 +28,56 @@ internal inline fun attemptBattleDecisionCompletion(
     recover(failure)
     false
 }
+
+/** Builds a fallback response through one preferred path and one compatibility-safe last resort. */
+internal fun <T> prepareBattleDecisionFallback(
+    preferred: () -> T?,
+    lastResort: () -> T,
+    report: (Throwable) -> Unit,
+): T? {
+    var preferredFailure: Throwable? = null
+    val preferredValue = try {
+        preferred()
+    } catch (failure: Exception) {
+        preferredFailure = failure
+        null
+    } catch (failure: LinkageError) {
+        preferredFailure = failure
+        null
+    }
+    if (preferredValue != null) return preferredValue
+
+    val lastResortValue = try {
+        lastResort()
+    } catch (lastResortFailure: Exception) {
+        reportBattleDecisionFallbackFailure(preferredFailure, lastResortFailure, report)
+        return null
+    } catch (lastResortFailure: LinkageError) {
+        reportBattleDecisionFallbackFailure(preferredFailure, lastResortFailure, report)
+        return null
+    }
+    preferredFailure?.let { reportBattleDecisionFallbackSafely(it, report) }
+    return lastResortValue
+}
+
+private fun reportBattleDecisionFallbackFailure(
+    preferredFailure: Throwable?,
+    lastResortFailure: Throwable,
+    report: (Throwable) -> Unit,
+) {
+    val primary = preferredFailure ?: lastResortFailure
+    if (preferredFailure != null && preferredFailure !== lastResortFailure) {
+        preferredFailure.addSuppressed(lastResortFailure)
+    }
+    reportBattleDecisionFallbackSafely(primary, report)
+}
+
+private fun reportBattleDecisionFallbackSafely(primary: Throwable, report: (Throwable) -> Unit) {
+    try {
+        report(primary)
+    } catch (reportFailure: Exception) {
+        if (primary !== reportFailure) primary.addSuppressed(reportFailure)
+    } catch (reportFailure: LinkageError) {
+        if (primary !== reportFailure) primary.addSuppressed(reportFailure)
+    }
+}
