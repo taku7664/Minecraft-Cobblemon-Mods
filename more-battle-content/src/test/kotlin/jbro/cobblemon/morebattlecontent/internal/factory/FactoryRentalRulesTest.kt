@@ -291,6 +291,39 @@ class FactoryRentalRulesTest {
         assertEquals(listOf("set11", "set12", "set13"), session.team.sets.map(FactoryRentalSet::setId))
     }
 
+    @Test
+    fun `missing next round draft fails before healing or persistent settlement`() {
+        val team = FactoryRentalDraft((1..6).map(::rental))
+            .select(listOf("set1", "set2", "set3"), FactoryBattleFormat.SINGLE)
+        var healed = 0
+        var settled = 0
+        val session = FactoryRunSession(
+            runId = UUID.randomUUID(),
+            initialTeam = team,
+            levelMode = FactoryLevelMode.LEVEL_50,
+            healRentals = { healed++ },
+            initialWins = 6,
+            nextDraft = { _, _, _ -> null },
+        )
+        val battleId = UUID.randomUUID()
+        val opponent = mapOf(
+            UUID(1, 7) to rental(7),
+            UUID(1, 8) to rental(8),
+            UUID(1, 9) to rental(9),
+        )
+        session.beginBattle(battleId)
+
+        assertThrows<IllegalStateException> {
+            session.recordVictory(battleId, opponent, emptyMap()) { settled++ }
+        }
+
+        assertEquals(0, healed)
+        assertEquals(0, settled)
+        assertEquals(6, session.wins)
+        assertEquals(FactoryRunPhase.IN_BATTLE, session.phase)
+        assertEquals(battleId, session.activeBattleId)
+    }
+
     private fun rental(
         index: Int,
         species: String = "cobblemon:species$index",

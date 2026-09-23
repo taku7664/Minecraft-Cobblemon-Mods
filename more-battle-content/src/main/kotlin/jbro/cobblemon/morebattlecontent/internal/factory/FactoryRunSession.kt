@@ -176,6 +176,20 @@ internal class FactoryRunSession(
                 formId = set.formId,
             )
         }
+        val nextRoundDraft = if (winsAfter % FactoryProgression.BATTLES_PER_ROUND == 0) {
+            val nextBattleNumber = checkNotNull(FactoryProgression.nextBattleNumber(winsAfter)) {
+                "Factory progression cannot continue past the supported win count"
+            }
+            checkNotNull(
+                nextDraft(
+                    levelMode,
+                    FactoryProgression.roundForBattle(nextBattleNumber),
+                    rentAndTradeCount,
+                ),
+            ) { "Factory rental draft is unavailable for the next round" }
+        } else {
+            null
+        }
         healRentals(team)
         beforeCommit(winsAfter)
         wins = winsAfter
@@ -183,14 +197,7 @@ internal class FactoryRunSession(
             offeredSets = emptyMap()
             swapOffers = emptyList()
             activeBattleId = null
-            val nextBattleNumber = checkNotNull(FactoryProgression.nextBattleNumber(winsAfter)) {
-                "Factory progression cannot continue past the supported win count"
-            }
-            pendingDraft = nextDraft(
-                levelMode,
-                FactoryProgression.roundForBattle(nextBattleNumber),
-                rentAndTradeCount,
-            )
+            pendingDraft = nextRoundDraft
             phase = FactoryRunPhase.DRAFT_SELECTION
             return emptyList()
         }
