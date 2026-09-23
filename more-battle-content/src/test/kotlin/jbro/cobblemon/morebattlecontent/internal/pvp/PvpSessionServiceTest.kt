@@ -67,6 +67,24 @@ class PvpSessionServiceTest {
     }
 
     @Test
+    fun `launch exception remains ready and can be retried`() {
+        val snapshots = RecordingSnapshots()
+        var attempts = 0
+        val service = service(snapshots, BattleRecordStore()) {
+            attempts++
+            if (attempts == 1) throw IllegalStateException("runtime start failed")
+            PvpBattleLaunchResult.Started(battleId)
+        }
+        ready(service)
+
+        assertEquals(PvpSelectionMutation.SELECTION_STORED, service.select(matchId, second, ids(second, 4)))
+        assertEquals(PvpSelectionMutation.BATTLE_UNAVAILABLE, service.ready(matchId, second))
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.launchReady(matchId))
+        assertEquals(2, attempts)
+        assertEquals(2, snapshots.captured.size)
+    }
+
+    @Test
     fun `registration failure and cancellation fail closed and discard captured snapshots`() {
         val snapshots = RecordingSnapshots(rejectedPlayer = second)
         val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }

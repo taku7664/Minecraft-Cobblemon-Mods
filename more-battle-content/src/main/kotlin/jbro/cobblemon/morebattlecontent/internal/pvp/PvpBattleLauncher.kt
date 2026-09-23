@@ -70,7 +70,23 @@ internal class PvpBattleLauncher<P>(
     private val diagnostics: (String) -> Unit = {},
 ) {
     fun launch(request: PvpBattleLaunchRequest): PvpBattleLaunchResult {
-        val first = materialize.materialize(request.firstPlayerId, request.firstSelection)
+        val first = try {
+            materialize.materialize(request.firstPlayerId, request.firstSelection)
+        } catch (failure: RuntimeException) {
+            return unavailableAfterPreparationFailure(
+                request.matchId,
+                "first team materialization",
+                failure,
+                diagnostics,
+            )
+        } catch (failure: LinkageError) {
+            return unavailableAfterPreparationFailure(
+                request.matchId,
+                "first team materialization API",
+                failure,
+                diagnostics,
+            )
+        }
         if (first !is PvpRegisteredBattleTeamResult.Created) {
             reportDiagnosticsSafely(diagnostics,
                 "match ${request.matchId}: the team of ${request.firstPlayerId} could not be " +
@@ -79,7 +95,23 @@ internal class PvpBattleLauncher<P>(
             )
             return PvpBattleLaunchResult.Unavailable
         }
-        val second = materialize.materialize(request.secondPlayerId, request.secondSelection)
+        val second = try {
+            materialize.materialize(request.secondPlayerId, request.secondSelection)
+        } catch (failure: RuntimeException) {
+            return unavailableAfterPreparationFailure(
+                request.matchId,
+                "second team materialization",
+                failure,
+                diagnostics,
+            )
+        } catch (failure: LinkageError) {
+            return unavailableAfterPreparationFailure(
+                request.matchId,
+                "second team materialization API",
+                failure,
+                diagnostics,
+            )
+        }
         if (second !is PvpRegisteredBattleTeamResult.Created) {
             reportDiagnosticsSafely(diagnostics,
                 "match ${request.matchId}: the team of ${request.secondPlayerId} could not be " +
@@ -88,7 +120,23 @@ internal class PvpBattleLauncher<P>(
             )
             return PvpBattleLaunchResult.Unavailable
         }
-        val preparedPlacement = placement.prepare(request) ?: run {
+        val preparedPlacement = try {
+            placement.prepare(request)
+        } catch (failure: RuntimeException) {
+            return unavailableAfterPreparationFailure(
+                request.matchId,
+                "lounge placement preparation",
+                failure,
+                diagnostics,
+            )
+        } catch (failure: LinkageError) {
+            return unavailableAfterPreparationFailure(
+                request.matchId,
+                "lounge placement preparation API",
+                failure,
+                diagnostics,
+            )
+        } ?: run {
             reportDiagnosticsSafely(
                 diagnostics,
                 "match ${request.matchId}: no lounge placement could be prepared",
@@ -99,7 +147,7 @@ internal class PvpBattleLauncher<P>(
         val result = try {
             runtime.start(PvpPreparedBattle(request, first.members, second.members))
         } catch (failure: Throwable) {
-            rollbackAfterRuntimeFailure(preparedPlacement, failure)
+            return recoverAfterRuntimeFailure(preparedPlacement, request.matchId, failure, diagnostics)
         }
         if (result !is PvpBattleLaunchResult.Started) {
             preparedPlacement.rollback()
@@ -139,16 +187,41 @@ internal class PvpBattleLauncher<P>(
     }
 
     private companion object {
-        fun rollbackAfterRuntimeFailure(
-            preparedPlacement: PvpPreparedBattlePlacement,
+        fun unavailableAfterPreparationFailure(
+            matchId: UUID,
+            stage: String,
             failure: Throwable,
-        ): Nothing {
+            diagnostics: (String) -> Unit,
+        ): PvpBattleLaunchResult {
+            reportDiagnosticsSafely(
+                diagnostics,
+                "match $matchId: $stage failed before battle startup: ${failure.message}",
+                null,
+            )
+            return PvpBattleLaunchResult.Unavailable
+        }
+
+        fun recoverAfterRuntimeFailure(
+            preparedPlacement: PvpPreparedBattlePlacement,
+            matchId: UUID,
+            failure: Throwable,
+            diagnostics: (String) -> Unit,
+        ): PvpBattleLaunchResult {
+            var rollbackFailed = false
             try {
                 preparedPlacement.rollback()
             } catch (rollbackFailure: Throwable) {
+                rollbackFailed = true
                 if (failure !== rollbackFailure) failure.addSuppressed(rollbackFailure)
             }
-            throw failure
+            val mustPropagate = rollbackFailed || (failure !is RuntimeException && failure !is LinkageError)
+            reportDiagnosticsSafely(
+                diagnostics,
+                "match $matchId: battle runtime failed before startup completed: ${failure.message}",
+                failure.takeIf { mustPropagate },
+            )
+            if (mustPropagate) throw failure
+            return PvpBattleLaunchResult.Unavailable
         }
 
         fun cleanupAfterActivationFailure(

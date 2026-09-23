@@ -54,6 +54,16 @@ class PvpBattleLauncherTest {
     }
 
     @Test
+    fun `materialization exception becomes retryable unavailability`() {
+        val launcher = PvpBattleLauncher<String>(
+            materialize = { _, _ -> throw IllegalStateException("snapshot storage unavailable") },
+            runtime = PvpBattleRuntime { PvpBattleLaunchResult.Started(UUID.randomUUID()) },
+        )
+
+        assertEquals(PvpBattleLaunchResult.Unavailable, launcher.launch(request()))
+    }
+
+    @Test
     fun `diagnostics failure cannot replace an unavailable player team`() {
         val launcher = PvpBattleLauncher<String>(
             materialize = { _, _ -> PvpRegisteredBattleTeamResult.NoSnapshot },
@@ -342,7 +352,18 @@ class PvpBattleLauncherTest {
     }
 
     @Test
-    fun `runtime linkage failure rolls prepared placement back`() {
+    fun `placement preparation API failure becomes retryable unavailability`() {
+        val launcher = PvpBattleLauncher(
+            materialize = { playerId, _ -> PvpRegisteredBattleTeamResult.Created(listOf("copy-$playerId")) },
+            runtime = PvpBattleRuntime { PvpBattleLaunchResult.Started(UUID.randomUUID()) },
+            placement = PvpBattlePlacement { throw NoSuchMethodError("placement API drift") },
+        )
+
+        assertEquals(PvpBattleLaunchResult.Unavailable, launcher.launch(request()))
+    }
+
+    @Test
+    fun `runtime linkage failure rolls prepared placement back and becomes unavailable`() {
         val events = ArrayList<String>()
         val failure = NoSuchMethodError("Cobblemon API drift")
         val launcher = PvpBattleLauncher(
@@ -359,7 +380,7 @@ class PvpBattleLauncherTest {
             },
         )
 
-        assertEquals(failure, assertThrows(NoSuchMethodError::class.java) { launcher.launch(request()) })
+        assertEquals(PvpBattleLaunchResult.Unavailable, launcher.launch(request()))
         assertEquals(listOf("rollback"), events)
     }
 
