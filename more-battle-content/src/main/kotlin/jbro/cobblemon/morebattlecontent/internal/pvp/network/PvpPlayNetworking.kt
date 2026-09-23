@@ -26,6 +26,7 @@ import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengeMutationError
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengeMutationResult
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengePhase
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengeRequest
+import jbro.cobblemon.morebattlecontent.internal.pvp.protectPreparedPvpMatchNotification
 import jbro.cobblemon.morebattlecontent.internal.pvp.PendingPvpCompletion
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpCompletionRetryQueue
 import jbro.cobblemon.morebattlecontent.internal.pvp.attemptPvpCompletionSettlement
@@ -447,8 +448,22 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             }
             throw failure
         }
-        sendState(challenger, null)
-        sendState(opponent, null)
+        protectPreparedPvpMatchNotification(
+            rollback = {
+                runManagedCleanupActions(
+                    { sessions.cancel(challenge.request.challengeId, opponent.uuid) },
+                    {
+                        notifyClosed(
+                            challenge.request,
+                            "screen.${MoreBattleContent.MOD_ID}.pvp.closed.cancelled",
+                        )
+                    },
+                )
+            },
+        ) {
+            sendState(challenger, null)
+            sendState(opponent, null)
+        }
         return PvpCommandOutcome(PvpCommandStatus.APPLIED)
     }
 
@@ -660,8 +675,25 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             return
         }
         pushRoomToMembers(started.room, intent.requestId)
-        sendState(left, null)
-        sendState(right, null)
+        protectPreparedPvpMatchNotification(
+            rollback = {
+                var restoredRoom: PvpRoomView? = null
+                runManagedCleanupActions(
+                    { sessions.cancel(room.roomId, leftId) },
+                    { restoredRoom = rooms.finishMatch(room.roomId) },
+                    {
+                        notifyClosed(
+                            request,
+                            "screen.${MoreBattleContent.MOD_ID}.pvp.closed.cancelled",
+                        )
+                    },
+                    { restoredRoom?.let { pushRoomToMembers(it, null, reopen = true) } },
+                )
+            },
+        ) {
+            sendState(left, null)
+            sendState(right, null)
+        }
         pushSpectatorPreview(started.room)
     }
 
