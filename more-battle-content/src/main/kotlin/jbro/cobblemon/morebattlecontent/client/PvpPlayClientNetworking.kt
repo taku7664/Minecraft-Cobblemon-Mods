@@ -37,8 +37,12 @@ internal object PvpPlayClientNetworking {
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpLoungeExitResultPayload.TYPE) { payload, context ->
             context.client().execute {
-                val closeScreen = loungeExitRequest.complete(payload.accepted)
-                PvpLoungeSpectatorControls.setExitPending(false)
+                val closeScreen = applyPvpLoungeExitResult(
+                    request = loungeExitRequest,
+                    accepted = payload.accepted,
+                    deactivateControls = { PvpLoungeSpectatorControls.setActive(false) },
+                    clearExitPending = { PvpLoungeSpectatorControls.setExitPending(false) },
+                )
                 if (closeScreen) {
                     context.client().setScreen(null)
                 } else if (!payload.accepted) {
@@ -176,6 +180,17 @@ internal object PvpPlayClientNetworking {
     fun openRoom(roomId: UUID) {
         send(PvpRoomIntentPayload(PvpRoomNavigationContract.openIntent(UUID.randomUUID(), roomId)))
     }
+}
+
+internal fun applyPvpLoungeExitResult(
+    request: PendingClientRequest,
+    accepted: Boolean,
+    deactivateControls: () -> Unit,
+    clearExitPending: () -> Unit,
+): Boolean {
+    val closeScreen = request.complete(accepted)
+    if (accepted) deactivateControls() else clearExitPending()
+    return closeScreen
 }
 
 internal object PvpRoomClientState {
