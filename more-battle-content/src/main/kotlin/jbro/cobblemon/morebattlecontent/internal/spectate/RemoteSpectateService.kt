@@ -26,6 +26,39 @@ internal interface RemoteSpectateGateway {
     fun beginSpectating(battleId: UUID, targetId: UUID, viewerId: UUID): Boolean
 }
 
+internal fun beginSpectatingAtomically(
+    start: () -> Unit,
+    isStarted: () -> Boolean,
+    complete: () -> Unit = {},
+    rollback: () -> Unit,
+): Boolean {
+    try {
+        start()
+        if (isStarted()) {
+            complete()
+            return true
+        }
+    } catch (failure: RuntimeException) {
+        rollbackSpectatingAndRethrow(failure, rollback)
+    } catch (failure: LinkageError) {
+        rollbackSpectatingAndRethrow(failure, rollback)
+    }
+
+    rollback()
+    return false
+}
+
+private fun rollbackSpectatingAndRethrow(failure: Throwable, rollback: () -> Unit): Nothing {
+    try {
+        rollback()
+    } catch (cleanupFailure: RuntimeException) {
+        if (failure !== cleanupFailure) failure.addSuppressed(cleanupFailure)
+    } catch (cleanupFailure: LinkageError) {
+        if (failure !== cleanupFailure) failure.addSuppressed(cleanupFailure)
+    }
+    throw failure
+}
+
 internal class RemoteSpectateService(
     private val gateway: RemoteSpectateGateway,
 ) {

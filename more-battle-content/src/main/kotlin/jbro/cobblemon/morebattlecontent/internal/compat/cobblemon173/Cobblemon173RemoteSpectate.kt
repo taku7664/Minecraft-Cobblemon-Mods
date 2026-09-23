@@ -2,14 +2,16 @@ package jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173
 
 import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.battles.BattleRegistry
+import com.cobblemon.mod.common.net.messages.client.battle.BattleEndPacket
 import com.cobblemon.mod.common.net.serverhandling.battle.SpectateBattleHandler
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
+import jbro.cobblemon.morebattlecontent.internal.battle.ManagedBattleContentNetworking
 import jbro.cobblemon.morebattlecontent.internal.command.SpectateCommandBackend
 import jbro.cobblemon.morebattlecontent.internal.spectate.RemoteSpectateGateway
 import jbro.cobblemon.morebattlecontent.internal.spectate.RemoteSpectateResult
 import jbro.cobblemon.morebattlecontent.internal.spectate.RemoteSpectateService
-import jbro.cobblemon.morebattlecontent.internal.battle.ManagedBattleContentNetworking
+import jbro.cobblemon.morebattlecontent.internal.spectate.beginSpectatingAtomically
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
@@ -55,14 +57,24 @@ internal object Cobblemon173RemoteSpectate : SpectateCommandBackend {
             if (battle.battleId != battleId || !isManagedBattle(battleId)) return false
             if (BattleRegistry.getBattleByParticipatingPlayerId(viewerId) != null) return false
 
-            SpectateBattleHandler.spectateBattle(target, viewer)
-            val started = BattleRegistry.getBattle(battleId)?.spectators?.contains(viewerId) == true
-            if (started) {
-                Cobblemon173BattleRuleHooks.contentId(battleId)?.let { contentId ->
-                    ManagedBattleContentNetworking.showTo(viewer, battleId, contentId)
-                }
-            }
-            return started
+            return beginSpectatingAtomically(
+                start = { SpectateBattleHandler.spectateBattle(target, viewer) },
+                isStarted = {
+                    BattleRegistry.getBattle(battleId) === battle && viewerId in battle.spectators
+                },
+                complete = {
+                    Cobblemon173BattleRuleHooks.contentId(battleId)?.let { contentId ->
+                        ManagedBattleContentNetworking.showTo(viewer, battleId, contentId)
+                    }
+                },
+                rollback = {
+                    runManagedCleanupActions(
+                        { battle.spectators.remove(viewerId) },
+                        { ManagedBattleContentNetworking.hideFrom(viewer, battleId) },
+                        { BattleEndPacket().sendToPlayer(viewer) },
+                    )
+                },
+            )
         }
     }
 }

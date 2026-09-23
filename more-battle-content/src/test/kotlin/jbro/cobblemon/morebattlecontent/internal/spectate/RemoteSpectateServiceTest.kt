@@ -4,6 +4,7 @@ import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 
 class RemoteSpectateServiceTest {
@@ -85,6 +86,78 @@ class RemoteSpectateServiceTest {
 
         assertEquals(RemoteSpectateResult.BATTLE_UNAVAILABLE, RemoteSpectateService(gateway).spectate(viewerId, targetId))
         assertEquals(Triple(targetBattleId, targetId, viewerId), gateway.started)
+    }
+
+    @Test
+    fun `partial spectator registration is rolled back when startup throws`() {
+        val events = mutableListOf<String>()
+        val startupFailure = IllegalStateException("initialization packet failed")
+
+        val thrown = assertThrows(IllegalStateException::class.java) {
+            beginSpectatingAtomically(
+                start = {
+                    events += "registered"
+                    throw startupFailure
+                },
+                isStarted = { true },
+                rollback = { events += "rolled-back" },
+            )
+        }
+
+        assertEquals(startupFailure, thrown)
+        assertEquals(listOf("registered", "rolled-back"), events)
+    }
+
+    @Test
+    fun `failed spectator verification is rolled back before returning unavailable`() {
+        val events = mutableListOf<String>()
+
+        assertFalse(
+            beginSpectatingAtomically(
+                start = { events += "registered" },
+                isStarted = { false },
+                rollback = { events += "rolled-back" },
+            ),
+        )
+        assertEquals(listOf("registered", "rolled-back"), events)
+    }
+
+    @Test
+    fun `failed managed overlay delivery rolls back the completed spectator registration`() {
+        val events = mutableListOf<String>()
+        val overlayFailure = IllegalStateException("managed overlay failed")
+
+        val thrown = assertThrows(IllegalStateException::class.java) {
+            beginSpectatingAtomically(
+                start = { events += "registered" },
+                isStarted = { true },
+                complete = {
+                    events += "overlay"
+                    throw overlayFailure
+                },
+                rollback = { events += "rolled-back" },
+            )
+        }
+
+        assertEquals(overlayFailure, thrown)
+        assertEquals(listOf("registered", "overlay", "rolled-back"), events)
+    }
+
+    @Test
+    fun `spectator rollback failure is suppressed behind the startup failure`() {
+        val startupFailure = IllegalStateException("initialization packet failed")
+        val rollbackFailure = NoSuchMethodError("battle end packet unavailable")
+
+        val thrown = assertThrows(IllegalStateException::class.java) {
+            beginSpectatingAtomically(
+                start = { throw startupFailure },
+                isStarted = { true },
+                rollback = { throw rollbackFailure },
+            )
+        }
+
+        assertEquals(startupFailure, thrown)
+        assertEquals(listOf(rollbackFailure), thrown.suppressed.toList())
     }
 
     private fun managedGateway() = FakeGateway().apply {
