@@ -148,6 +148,31 @@ class PvpSessionServiceTest {
     }
 
     @Test
+    fun `accept timer failure preserves the cause and releases both players`() {
+        val failure = NoSuchMethodError("timer API drift")
+        val service = PvpSessionService(
+            snapshots = RecordingSnapshots(),
+            launcher = PvpBattleLauncher(
+                RecordingSnapshots(),
+                PvpBattleRuntime { PvpBattleLaunchResult.Unavailable },
+            ),
+            timeSource = object : PvpTimeSource {
+                override fun epochMillis(): Long = throw failure
+
+                override fun monotonicMillis(): Long = throw failure
+            },
+        )
+        val request = PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE)
+        service.invite(request)
+
+        assertSame(failure, assertThrows(NoSuchMethodError::class.java) { service.accept(matchId, second) })
+        assertNull(service.challenge(matchId))
+        assertNull(service.challengeFor(first))
+        assertNull(service.viewFor(first))
+        assertTrue(service.invite(request) is PvpChallengeMutationResult.Applied)
+    }
+
+    @Test
     fun `target rejection discards the settled challenge and frees its id for reuse`() {
         val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
         val request = PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE)

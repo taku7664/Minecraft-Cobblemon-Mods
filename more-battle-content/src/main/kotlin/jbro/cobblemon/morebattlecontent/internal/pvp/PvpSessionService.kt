@@ -79,18 +79,23 @@ internal class PvpSessionService<P>(
         val result = challenges.accept(matchId, playerId)
         if (result is PvpChallengeMutationResult.Applied) {
             val request = result.challenge.request
-            matches[matchId] = PvpMatchSession(
-                matchId = request.challengeId,
-                challengerId = request.challengerId,
-                opponentId = request.opponentId,
-                format = request.format,
-                enabledMechanics = request.immutableEnabledMechanics,
-            )
-            timers[matchId] = PvpMatchTimer(
-                setOf(request.challengerId, request.opponentId),
-                rules,
-                timeSource,
-            ).also(PvpMatchTimer::beginEntrySelection)
+            try {
+                matches[matchId] = PvpMatchSession(
+                    matchId = request.challengeId,
+                    challengerId = request.challengerId,
+                    opponentId = request.opponentId,
+                    format = request.format,
+                    enabledMechanics = request.immutableEnabledMechanics,
+                )
+                timers[matchId] = PvpMatchTimer(
+                    setOf(request.challengerId, request.opponentId),
+                    rules,
+                    timeSource,
+                ).also(PvpMatchTimer::beginEntrySelection)
+            } catch (failure: Throwable) {
+                rollbackMatchPreparation(request, failure)
+                throw failure
+            }
         }
         return result
     }
