@@ -168,6 +168,24 @@ tasks.register<JavaExec>("captureNativePairs") {
     }
 }
 
+tasks.register<JavaExec>("captureTournamentMirror") {
+    group = "verification"
+    description = "Runs the published 2025 WCoP SV OU team as a same-entry native Better AI mirror."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.EmbeddedTournamentMirrorBattle")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(
+            providers.gradleProperty("tournamentMirrorOutput").orNull
+                ?: layout.buildDirectory.dir("reports/betterai-tournament-mirror/${UUID.randomUUID()}").get().asFile.absolutePath,
+            providers.gradleProperty("tournamentMirrorSeedsPerLead").getOrElse("2"),
+            providers.gradleProperty("tournamentMirrorRepeats").getOrElse("2"),
+            providers.gradleProperty("tournamentMirrorMaxTurns").getOrElse("300"),
+        ))
+    }
+}
+
 tasks.register<JavaExec>("compareNativePolicies") {
     group = "verification"
     description = "Compares existing Local Brain tunings with crossed teams and seats in native battles."
