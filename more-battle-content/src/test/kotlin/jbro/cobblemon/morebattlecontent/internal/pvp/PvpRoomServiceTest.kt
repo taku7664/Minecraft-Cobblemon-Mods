@@ -113,6 +113,27 @@ class PvpRoomServiceTest {
     }
 
     @Test
+    fun `seated departure during preview closes room and releases remaining members`() {
+        val rooms = PvpRoomService { roomId }
+        rooms.create(host, settings(PvpRoomVisibility.PUBLIC))
+        rooms.join(roomId, guest)
+        rooms.join(roomId, spectator)
+        rooms.claimSeat(roomId, host, PvpRoomSide.LEFT)
+        rooms.claimSeat(roomId, guest, PvpRoomSide.RIGHT)
+        rooms.startPreview(roomId, host)
+
+        val closed = requireNotNull(rooms.leave(roomId, host))
+
+        assertEquals(PvpRoomPhase.CLOSED, closed.phase)
+        assertNull(rooms.get(roomId))
+        assertNull(rooms.roomFor(guest))
+        assertNull(rooms.roomFor(spectator))
+        val replacement = rooms.create(guest, settings(PvpRoomVisibility.PUBLIC)).room
+        assertEquals(PvpRoomPhase.LOBBY, replacement.phase)
+        assertEquals(guest, replacement.hostId)
+    }
+
+    @Test
     fun `disconnect releases an active spectator room index so they can rejoin`() {
         val rooms = PvpRoomService { roomId }
         rooms.create(host, settings(PvpRoomVisibility.PUBLIC))

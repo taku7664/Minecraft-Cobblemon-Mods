@@ -231,11 +231,7 @@ internal class PvpRoomService(
     @Synchronized
     fun close(roomId: UUID): PvpRoomView? {
         val room = rooms[roomId] ?: return null
-        room.phase = PvpRoomPhase.CLOSED
-        val closed = room.view()
-        rooms.remove(roomId)
-        room.members.keys.forEach { playerId -> roomByPlayer.remove(playerId, roomId) }
-        return closed
+        return closeAndRemove(room)
     }
 
     @Synchronized
@@ -262,7 +258,7 @@ internal class PvpRoomService(
             room.hostId = room.members.minBy { it.value }.key
         }
         if (room.phase != PvpRoomPhase.LOBBY && (room.leftPlayerId == null || room.rightPlayerId == null)) {
-            room.phase = PvpRoomPhase.CLOSED
+            return closeAndRemove(room)
         }
         return room.view()
     }
@@ -282,6 +278,14 @@ internal class PvpRoomService(
         return rooms.values.firstOrNull { playerId in it.members }?.also { actualRoom ->
             roomByPlayer[playerId] = actualRoom.roomId
         }
+    }
+
+    private fun closeAndRemove(room: MutableRoom): PvpRoomView {
+        room.phase = PvpRoomPhase.CLOSED
+        val closed = room.view()
+        rooms.remove(room.roomId)
+        room.members.keys.forEach { playerId -> roomByPlayer.remove(playerId, room.roomId) }
+        return closed
     }
 
     private fun applied(room: MutableRoom) = PvpRoomMutation.Applied(room.view())
