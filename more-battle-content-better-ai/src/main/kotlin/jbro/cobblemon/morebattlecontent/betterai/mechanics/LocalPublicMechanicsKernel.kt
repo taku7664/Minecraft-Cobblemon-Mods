@@ -122,7 +122,12 @@ internal object LocalPublicMechanicsKernel {
         } else {
             abilityDamageMultiplier(moveType, targetAbility)
         }
-        val weatherMultiplier = weatherDamageMultiplier(moveType, actorItem, context)
+        val weatherMultiplier = weatherDamageMultiplier(
+            moveId = canonicalOrNull(candidate.moveId),
+            moveType = moveType,
+            actorItem = actorItem,
+            context = context,
+        )
         if (weatherMultiplier == 0.0) {
             return LocalPublicMoveProjection(
                 knownDamageMultiplier = 0.0,
@@ -270,12 +275,15 @@ internal object LocalPublicMechanicsKernel {
     }
 
     private fun weatherDamageMultiplier(
+        moveId: String?,
         moveType: String,
         actorItem: String?,
         context: BattleDecisionContext,
     ): Double {
         if (actorItem == UTILITY_UMBRELLA) return 1.0
-        return when (LocalPublicFieldMechanics.effectiveWeatherId(context.state)) {
+        val weather = LocalPublicFieldMechanics.effectiveWeatherId(context.state)
+        if (moveId == HYDRO_STEAM && weather in SUN_WEATHER) return 1.5
+        return when (weather) {
             in HEAVY_RAIN_WEATHER -> when (moveType) {
                 WATER -> 1.5
                 FIRE -> 0.0
@@ -460,6 +468,7 @@ internal object LocalPublicMechanicsKernel {
     private const val GROUND = "ground"
     private const val FIRE = "fire"
     private const val WATER = "water"
+    private const val HYDRO_STEAM = "hydrosteam"
     private const val ELECTRIC = "electric"
     private const val GRASS = "grass"
     private const val DARK = "dark"
