@@ -2,20 +2,18 @@ package jbro.cobblemon.morebattlecontent.betterai
 
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDifficultyProfiles
+import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainOpenContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
-import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
-import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
-import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionPolicy
+import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadBudget
-import jbro.cobblemon.morebattlecontent.betterai.search.LocalRecursiveLookaheadEvaluator
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
  * Prices the Boss search budget in the only currency that matters: decisions it changes.
  *
- * A time budget is not free. It is wall clock on the server thread, paid on every Boss decision, and
- * a player waits through it. Three seconds was chosen without ever being measured against what it
+ * A time budget is not free. It is CPU wall time in the server process, paid on every Boss decision,
+ * and a player waits through it. Three seconds was chosen without ever being measured against what it
  * bought, and the tier divergence measurement then showed Boss and Advanced picking the identical
  * action in 40 of 40 recorded positions despite Boss genuinely reaching a deeper mean depth. Depth was
  * being reached and then converging on the same answer.
@@ -37,7 +35,9 @@ class LocalSearchBudgetTest {
         val budgets = listOf(
             "former (3000ms)" to LocalLookaheadBudget(3_000L, 400_000, 64),
             "current (1500ms)" to LocalLookaheadBudget(1_500L, 400_000, 64),
-            "half again (750ms)" to LocalLookaheadBudget(750L, 400_000, 64),
+            "candidate (1000ms)" to LocalLookaheadBudget(1_000L, 400_000, 64),
+            "candidate (750ms)" to LocalLookaheadBudget(750L, 400_000, 64),
+            "candidate (500ms)" to LocalLookaheadBudget(500L, 400_000, 64),
         )
 
         val resultsByBudget = budgets.associate { (name, budget) ->
@@ -58,19 +58,20 @@ class LocalSearchBudgetTest {
                 val depths = results.map { it.depth }
                 val histogram = depths.groupingBy { it }.eachCount().toSortedMap()
                     .entries.joinToString(" ") { "d${it.key}x${it.value}" }
+                val stops = results.groupingBy { it.stopReason }.eachCount().toSortedMap()
+                    .entries.joinToString(" ") { "${it.key}x${it.value}" }
                 appendLine(
                     String.format(
-                        "  %-20s %5dms  divergence=%5.1f%% (%d/%d)  depth mean=%.2f  %s",
+                        "  %-20s %5dms  divergence=%5.1f%% (%d/%d)  depth mean=%.2f  elapsed mean=%.1fms  %s  %s",
                         name, budget.timeMillis,
                         differing * 100.0 / contexts.size, differing, contexts.size,
-                        depths.average(), histogram,
+                        depths.average(), results.map { it.elapsedMillis }.average(), histogram, stops,
                     ),
                 )
             }
             appendLine()
-            appendLine("Divergence at the current budget is the cost of the cut. Divergence at 750ms is")
-            appendLine("the headroom left: if it is also zero, the budget is still not the binding limit")
-            appendLine("and the search is converging long before the clock stops it.")
+            appendLine("Divergence at each budget is the decision cost of that cut under the actual")
+            appendLine("root refinement, deterministic seed, shortlist and weighted production draw.")
         }
         println(report)
 
@@ -86,26 +87,34 @@ class LocalSearchBudgetTest {
         )
     }
 
-    private data class BudgetDecision(val actionId: String, val depth: Int)
+    private data class BudgetDecision(
+        val actionId: String,
+        val depth: Int,
+        val elapsedMillis: Long,
+        val stopReason: String,
+    )
 
     private fun decide(
         context: BattleDecisionContext,
         profile: BattleTrainerProfile,
         budget: LocalLookaheadBudget,
     ): BudgetDecision {
-        // The same two production stages the Brain runs, so a budget is never measured against a
-        // reimplementation of the ranking it is supposed to affect.
-        val calculated = PublicBattleTacticalCalculator.calculate(context)
-        val base = LocalBattleActionPolicy.rank(calculated, null, profile, LocalDecisionTuning.CURRENT)
-        val evaluation = LocalRecursiveLookaheadEvaluator.evaluate(
-            ranked = base,
-            context = calculated,
-            profile = profile,
-            tuning = LocalDecisionTuning.CURRENT,
-            budget = budget,
+        val brain = LocalTacticalBrain(lookaheadBudget = { budget })
+        val session = brain.openSession(
+            BattleBrainOpenContext(
+                battleId = context.state.battleId,
+                format = context.state.format,
+                trainerProfile = profile,
+            ),
         )
-        val best = evaluation.ranked.maxByOrNull { it.comparisonValue }
-        return BudgetDecision(best?.outcome?.candidate?.actionId ?: "none", evaluation.depthCompleted)
+        val decision = brain.decide(session, context).toCompletableFuture().join()
+        fun tagValue(prefix: String): String = decision.tags.single { it.startsWith(prefix) }.removePrefix(prefix)
+        return BudgetDecision(
+            actionId = decision.actionId,
+            depth = tagValue("lookahead_turns_").toInt(),
+            elapsedMillis = tagValue("lookahead_elapsed_ms_").toLong(),
+            stopReason = tagValue("lookahead_stop_"),
+        )
     }
 
     /** Real positions from played battles, shared with the tier measurement so the two are comparable. */

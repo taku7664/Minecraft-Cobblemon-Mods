@@ -36,6 +36,9 @@ import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleMind
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalRootDecisionPolicy
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalWeightedActionSelector
 import jbro.cobblemon.morebattlecontent.betterai.policy.forPlanOwner
+import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadBudget
+import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadBudgetPolicy
+import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadDecisionSignature
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalRecursiveLookaheadEvaluator
 import kotlin.math.roundToInt
 
@@ -44,6 +47,7 @@ private const val WEAKER_CHOICE_MARGIN = 0.05
 internal class LocalTacticalBrain(
     private val actionSelector: LocalActionSelector = LocalWeightedActionSelector(),
     private val tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+    private val lookaheadBudget: (BattleTrainerTier) -> LocalLookaheadBudget = LocalLookaheadBudgetPolicy::forTier,
 ) : BattleBrain {
     override fun openSession(context: BattleBrainOpenContext): BattleBrainSession =
         Session(
@@ -145,6 +149,10 @@ internal class LocalTacticalBrain(
                 tuning = tuning,
             )
         }
+        val perspectivePokemonIds = calculatedContext.state.pokemon.asSequence()
+            .filter { it.side == BattleSide.ALLY }
+            .map { it.battlePokemonId }
+            .toList()
         val lookahead = LocalRecursiveLookaheadEvaluator.evaluate(
             rootRanked,
             difficultyContext,
@@ -156,6 +164,26 @@ internal class LocalTacticalBrain(
                 LocalWeightedActionSelector().shortlist(refined, mixingContext(refined))
                     .mapTo(linkedSetOf()) { it.outcome.candidate.actionId }
             },
+            budget = lookaheadBudget(profile.difficulty.tier),
+            decisionSignature = if (actionSelector !is LocalWeightedActionSelector) null else { tentative ->
+                val refined = LocalRootDecisionPolicy.refine(tentative, difficultyContext).ranked
+                val tentativeSeed = LocalActionChoiceSeed.derive(
+                    battleId = battleId,
+                    turn = calculatedContext.state.turn,
+                    ranked = refined,
+                    perspectivePokemonIds = perspectivePokemonIds,
+                )
+                val tentativeSelection = actionSelector.choose(
+                    refined,
+                    tentativeSeed,
+                    mixingContext(refined),
+                )
+                LocalLookaheadDecisionSignature(
+                    topActionId = refined.first().outcome.candidate.actionId,
+                    selectedActionId = tentativeSelection.rank.outcome.candidate.actionId,
+                    shortlistSize = tentativeSelection.shortlistSize,
+                )
+            },
         )
         val rootDecision = LocalRootDecisionPolicy.refine(lookahead.ranked, difficultyContext)
         val ranked = rootDecision.ranked
@@ -163,10 +191,7 @@ internal class LocalTacticalBrain(
             battleId = battleId,
             turn = calculatedContext.state.turn,
             ranked = ranked,
-            perspectivePokemonIds = calculatedContext.state.pokemon.asSequence()
-                .filter { it.side == BattleSide.ALLY }
-                .map { it.battlePokemonId }
-                .toList(),
+            perspectivePokemonIds = perspectivePokemonIds,
         )
         val selection = actionSelector.choose(
             ranked,
@@ -198,6 +223,8 @@ internal class LocalTacticalBrain(
                      "lookahead_nodes_${lookahead.nodesVisited}",
                     "lookahead_pruned_${lookahead.branchesPruned}",
                     "lookahead_coverage_${(lookahead.publicResponseCoverage * 100).roundToInt()}",
+                    "lookahead_stop_${lookahead.terminationReason.name.lowercase(Locale.ROOT)}",
+                    "lookahead_elapsed_ms_${lookahead.elapsedMillis}",
                      ))
                     if (lookahead.truncated) add("lookahead_truncated")
                     if (lookahead.publicResponseIncomplete) add("lookahead_public_response_incomplete")

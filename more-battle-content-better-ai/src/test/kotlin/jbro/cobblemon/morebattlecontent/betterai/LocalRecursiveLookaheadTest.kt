@@ -12,7 +12,10 @@ import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicSingleTurnProject
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionOutcome
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionPolicy
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionRank
+import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadBudget
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadBudgetPolicy
+import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadDecisionSignature
+import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadTerminationReason
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalRecursiveLookaheadEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalTurnBranchPruner
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalRecursiveMoveHabit
@@ -565,10 +568,12 @@ class LocalRecursiveLookaheadTest {
         val decisionContext = context(initial, listOf(ownTurn), publicCatalog)
 
         BattleDifficultyProfiles.entries.forEachIndexed { index, difficulty ->
+            val tierBudget = LocalLookaheadBudgetPolicy.forTier(difficulty.tier)
             val result = LocalRecursiveLookaheadEvaluator.evaluate(
                 listOf(rank(ownTurn)),
                 decisionContext,
                 BattleTrainerProfile.balanced(index.coerceAtMost(5), difficulty),
+                budget = tierBudget.copy(timeMillis = 10_000L),
             )
             assertEquals(index + 1, result.depthCompleted, difficulty.id)
             assertFalse(result.truncated, difficulty.id)
@@ -632,7 +637,13 @@ class LocalRecursiveLookaheadTest {
         val ranks = LocalBattleActionPolicy.rank(calculated, null, profile)
         val started = System.nanoTime()
 
-        val result = LocalRecursiveLookaheadEvaluator.evaluate(ranks, calculated, profile)
+        val tierBudget = LocalLookaheadBudgetPolicy.forTier(profile.difficulty.tier)
+        val result = LocalRecursiveLookaheadEvaluator.evaluate(
+            ranks,
+            calculated,
+            profile,
+            budget = tierBudget.copy(timeMillis = 10_000L),
+        )
         val elapsedMillis = (System.nanoTime() - started) / 1_000_000
 
         assertEquals(1, result.depthCompleted)
@@ -1087,7 +1098,7 @@ class LocalRecursiveLookaheadTest {
         assertEquals(1_500L, LocalLookaheadBudgetPolicy.forTier(BattleTrainerTier.ADVANCED).timeMillis)
         // Boss shares Advanced's wall clock deliberately. Three seconds bought a deeper search that
         // reached the same decision in every measured position, and it was charged to the server
-        // thread on every Boss turn. See LocalSearchBudgetTest.
+        // process on every Boss turn. See LocalSearchBudgetTest.
         assertEquals(1_500L, LocalLookaheadBudgetPolicy.forTier(BattleTrainerTier.BOSS).timeMillis)
 
         // What still separates a Boss search is how wide it may go, not how long it may run.
@@ -1269,6 +1280,8 @@ class LocalRecursiveLookaheadTest {
         assertTrue("difficulty_introductory" in decision.tags, decision.tags.toString())
         assertTrue("lookahead_requested_1" in decision.tags, decision.tags.toString())
         assertTrue("lookahead_turns_1" in decision.tags, decision.tags.toString())
+        assertTrue("lookahead_stop_completed" in decision.tags, decision.tags.toString())
+        assertTrue(decision.tags.any { it.startsWith("lookahead_elapsed_ms_") }, decision.tags.toString())
         assertTrue(wholeDecisionMillis < 1_000L, "whole introductory decision took ${wholeDecisionMillis}ms")
     }
 
@@ -1550,6 +1563,75 @@ class LocalRecursiveLookaheadTest {
         assertTrue(result.truncated)
         assertEquals(0, result.depthCompleted)
         assertEquals(original, result.ranked.single())
+        assertEquals(LocalLookaheadTerminationReason.TIME_BUDGET, result.terminationReason)
+        assertTrue(result.elapsedMillis >= 0L)
+    }
+
+    @Test
+    fun `node exhaustion is reported separately from time exhaustion`() {
+        val ownMove = move("own", 0, power = 20.0)
+        val state = state(
+            ally = pokemon(ALLY_ID, BattleSide.ALLY, 0, 1.0, speed = 100),
+            opponents = listOf(pokemon(OPPONENT_ID, BattleSide.OPPONENT, 0, 1.0, speed = 90)),
+        )
+        val catalog = BattlePublicActionCatalogView(
+            listOf(
+                BattlePokemonActionCatalogView(
+                    ALLY_ID,
+                    listOf(BattlePublicMoveOptionView("cobblemon:own", moveDetails(power = 20.0), BattlePublicMoveKnowledge.EXACT_OWN)),
+                ),
+                BattlePokemonActionCatalogView(
+                    OPPONENT_ID,
+                    listOf(BattlePublicMoveOptionView("cobblemon:opponent", moveDetails(power = 20.0), BattlePublicMoveKnowledge.PUBLICLY_REVEALED)),
+                    moveSetComplete = true,
+                ),
+            ),
+        )
+
+        val result = LocalRecursiveLookaheadEvaluator.evaluate(
+            listOf(rank(ownMove)),
+            context(state, listOf(ownMove), catalog),
+            BattleTrainerProfile.boss(),
+            budget = LocalLookaheadBudget(timeMillis = 10_000L, nodeLimit = 1, chanceBranchesPerMove = 64),
+        )
+
+        assertTrue(result.truncated)
+        assertEquals(LocalLookaheadTerminationReason.NODE_BUDGET, result.terminationReason)
+    }
+
+    @Test
+    fun `stable production decision stops a boss search after three completed turns`() {
+        val ownMove = move("own", 0, power = 20.0)
+        val state = state(
+            ally = pokemon(ALLY_ID, BattleSide.ALLY, 0, 1.0, speed = 100),
+            opponents = listOf(pokemon(OPPONENT_ID, BattleSide.OPPONENT, 0, 1.0, speed = 90)),
+        )
+        val catalog = BattlePublicActionCatalogView(
+            listOf(
+                BattlePokemonActionCatalogView(
+                    ALLY_ID,
+                    listOf(BattlePublicMoveOptionView("cobblemon:own", moveDetails(power = 20.0), BattlePublicMoveKnowledge.EXACT_OWN)),
+                ),
+                BattlePokemonActionCatalogView(
+                    OPPONENT_ID,
+                    listOf(BattlePublicMoveOptionView("cobblemon:opponent", moveDetails(power = 20.0), BattlePublicMoveKnowledge.PUBLICLY_REVEALED)),
+                    moveSetComplete = true,
+                ),
+            ),
+        )
+        val signature = LocalLookaheadDecisionSignature("own", "own", 1)
+
+        val result = LocalRecursiveLookaheadEvaluator.evaluate(
+            listOf(rank(ownMove)),
+            context(state, listOf(ownMove), catalog),
+            BattleTrainerProfile.boss(),
+            budget = LocalLookaheadBudget(timeMillis = 10_000L, nodeLimit = 400_000, chanceBranchesPerMove = 64),
+            decisionSignature = { signature },
+        )
+
+        assertEquals(3, result.depthCompleted)
+        assertFalse(result.truncated)
+        assertEquals(LocalLookaheadTerminationReason.STABLE_DECISION, result.terminationReason)
     }
 
     @Test

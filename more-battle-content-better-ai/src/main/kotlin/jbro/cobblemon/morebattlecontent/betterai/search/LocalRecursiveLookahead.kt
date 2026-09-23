@@ -45,6 +45,10 @@ internal data class LocalLookaheadEvaluation(
     val leafWorkUnits: Int = 0,
     /** Per-action coverage for the accepted depth, excluding discarded partial iterations. */
     val responseCoverageByAction: Map<String, LocalLookaheadCoverage> = emptyMap(),
+    /** Why the evaluator stopped, including intentional early exits that are not partial searches. */
+    val terminationReason: LocalLookaheadTerminationReason = LocalLookaheadTerminationReason.COMPLETED,
+    /** Wall-clock time consumed inside this evaluator invocation. */
+    val elapsedMillis: Long = 0L,
 )
 
 /**
@@ -75,6 +79,8 @@ internal object LocalRecursiveLookaheadEvaluator {
         budget: LocalLookaheadBudget = LocalLookaheadBudgetPolicy.forTier(profile.difficulty.tier),
         /** Experimental exact pre-weight pool, recomputed after every root adjustment. */
         rootChoicePool: ((List<LocalBattleActionRank>) -> Set<String>)? = null,
+        /** The actual production decision represented by a completed depth, for conservative convergence stops. */
+        decisionSignature: ((List<LocalBattleActionRank>) -> LocalLookaheadDecisionSignature)? = null,
     ): LocalLookaheadEvaluation {
         val requestedDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1)
         val searchStartedAt = clockMillis()
@@ -91,7 +97,17 @@ internal object LocalRecursiveLookaheadEvaluator {
         // clearly show are better. Fall back to the flat heuristic instead of trusting a search that is
         // blind to half the move pool.
         if (!canProjectDamage(context)) {
-            return LocalLookaheadEvaluation(ranked, 0, 0, 0, false, true, 0.0)
+            return LocalLookaheadEvaluation(
+                ranked = ranked,
+                nodesVisited = 0,
+                branchesPruned = 0,
+                depthCompleted = 0,
+                truncated = false,
+                publicResponseIncomplete = true,
+                publicResponseCoverage = 0.0,
+                terminationReason = LocalLookaheadTerminationReason.PUBLIC_DATA_INCOMPLETE,
+                elapsedMillis = elapsedMillis(searchStartedAt, clockMillis()),
+            )
         }
         val actionCalculationCache = LocalProjectedActionCalculationCache()
         val baseline = LocalLookaheadStateEvaluator.evaluate(
@@ -102,7 +118,17 @@ internal object LocalRecursiveLookaheadEvaluator {
             tuning = tuning,
         )
         if (clockMillis() >= localDeadline - DEADLINE_MARGIN_MILLIS) {
-            return LocalLookaheadEvaluation(ranked, 0, 0, 0, true, false, 0.0)
+            return LocalLookaheadEvaluation(
+                ranked = ranked,
+                nodesVisited = 0,
+                branchesPruned = 0,
+                depthCompleted = 0,
+                truncated = true,
+                publicResponseIncomplete = false,
+                publicResponseCoverage = 0.0,
+                terminationReason = LocalLookaheadTerminationReason.TIME_BUDGET,
+                elapsedMillis = elapsedMillis(searchStartedAt, clockMillis()),
+            )
         }
         var accepted = ranked
         var completedDepth = 0
@@ -110,6 +136,7 @@ internal object LocalRecursiveLookaheadEvaluator {
         var totalBranchesPruned = 0
         var totalLeafWorkUnits = 0
         var truncated = false
+        var terminationReason = LocalLookaheadTerminationReason.COMPLETED
         var publicResponseIncomplete = false
         var lastCoverage = 1.0
         // Board gain each candidate showed at a single ply, keyed by action.
@@ -122,7 +149,10 @@ internal object LocalRecursiveLookaheadEvaluator {
         val singlePlyGain = mutableMapOf<String, Double>()
         val singlePlyCoverage = mutableMapOf<String, Double>()
         var acceptedCoverage = emptyMap<String, LocalLookaheadCoverage>()
+        var previousDepthCost: LocalCompletedDepthCost? = null
+        var previousDecisionSignature: LocalLookaheadDecisionSignature? = null
         for (depth in 1..requestedDepth) {
+            val depthStartedAt = clockMillis()
             val search = Search(
                 context = context,
                 profile = profile,
@@ -271,13 +301,52 @@ internal object LocalRecursiveLookaheadEvaluator {
             totalLeafWorkUnits += search.leafWorkUnits
             publicResponseIncomplete = publicResponseIncomplete || search.publicResponseIncomplete
             lastCoverage = search.publicResponseCoverage
-            if (search.truncated || !leaderValidated) {
+            if (search.truncated) {
                 truncated = true
+                terminationReason = search.terminationReason ?: LocalLookaheadTerminationReason.TIME_BUDGET
+                break
+            }
+            if (!leaderValidated) {
+                truncated = true
+                terminationReason = if (clockMillis() >= localDeadline - DEADLINE_MARGIN_MILLIS) {
+                    LocalLookaheadTerminationReason.TIME_BUDGET
+                } else {
+                    LocalLookaheadTerminationReason.ROOT_VALIDATION_INCOMPLETE
+                }
                 break
             }
             accepted = LocalBattleActionPolicy.sort(evaluated)
             acceptedCoverage = evaluatedCoverage.toMap()
             completedDepth = depth
+            val depthFinishedAt = clockMillis()
+            val currentDepthCost = LocalCompletedDepthCost(
+                elapsedMillis = elapsedMillis(depthStartedAt, depthFinishedAt),
+                nodesVisited = search.nodesVisited,
+            )
+            val currentDecisionSignature = decisionSignature?.invoke(accepted)
+            val admission = LocalDepthAdmissionPolicy.afterCompletedDepth(
+                completedDepth = completedDepth,
+                requestedDepth = requestedDepth,
+                remainingMillis = remainingMillis(localDeadline - DEADLINE_MARGIN_MILLIS, depthFinishedAt),
+                previousCost = previousDepthCost,
+                currentCost = currentDepthCost,
+                previousSignature = previousDecisionSignature,
+                currentSignature = currentDecisionSignature,
+            )
+            previousDepthCost = currentDepthCost
+            previousDecisionSignature = currentDecisionSignature
+            when (admission) {
+                LocalDepthAdmissionDecision.CONTINUE -> Unit
+                LocalDepthAdmissionDecision.STOP_PREDICTED_COST -> {
+                    truncated = true
+                    terminationReason = LocalLookaheadTerminationReason.PREDICTED_NEXT_DEPTH_COST
+                    break
+                }
+                LocalDepthAdmissionDecision.STOP_STABLE_DECISION -> {
+                    terminationReason = LocalLookaheadTerminationReason.STABLE_DECISION
+                    break
+                }
+            }
         }
         return LocalLookaheadEvaluation(
             ranked = accepted,
@@ -291,6 +360,8 @@ internal object LocalRecursiveLookaheadEvaluator {
             leafCalculationsUnderIdentityKeying = actionCalculationCache.calculationsUnderIdentityKeying,
             leafWorkUnits = totalLeafWorkUnits,
             responseCoverageByAction = acceptedCoverage,
+            terminationReason = terminationReason,
+            elapsedMillis = elapsedMillis(searchStartedAt, clockMillis()),
         )
     }
 
@@ -324,6 +395,8 @@ internal object LocalRecursiveLookaheadEvaluator {
         var branchesPruned: Int = 0
             private set
         var truncated: Boolean = false
+            private set
+        var terminationReason: LocalLookaheadTerminationReason? = null
             private set
         var publicResponseIncomplete: Boolean = false
             private set
@@ -752,24 +825,33 @@ internal object LocalRecursiveLookaheadEvaluator {
         }
 
         private fun budgetExhausted(): Boolean {
-            if (truncated) return true
-            nodesVisited++
-            if (nodesVisited > nodeLimit || clockMillis() >= deadlineMillis - DEADLINE_MARGIN_MILLIS) {
-                truncated = true
-            }
-            return truncated
+            return !consumeWorkUnit()
         }
 
         private fun fingerprint(state: BattleStateView): String =
             actionCalculationCache.fingerprints.of(state)
 
         private fun projectedWorkAvailable(): Boolean {
+            return consumeWorkUnit()
+        }
+
+        private fun consumeWorkUnit(): Boolean {
             if (truncated) return false
             nodesVisited++
-            if (nodesVisited > nodeLimit || clockMillis() >= deadlineMillis - DEADLINE_MARGIN_MILLIS) {
-                truncated = true
+            when {
+                nodesVisited > nodeLimit -> stop(LocalLookaheadTerminationReason.NODE_BUDGET)
+                clockMillis() >= deadlineMillis - DEADLINE_MARGIN_MILLIS -> {
+                    stop(LocalLookaheadTerminationReason.TIME_BUDGET)
+                }
             }
             return !truncated
+        }
+
+        private fun stop(reason: LocalLookaheadTerminationReason) {
+            if (!truncated) {
+                truncated = true
+                terminationReason = reason
+            }
         }
 
         /**
@@ -869,6 +951,12 @@ internal object LocalRecursiveLookaheadEvaluator {
     private fun battleEnded(state: BattleStateView): Boolean = BattleSide.entries.any { side ->
         state.remainingPokemonBySide.getValue(side) <= 0
     }
+
+    private fun elapsedMillis(startMillis: Long, endMillis: Long): Long =
+        if (endMillis >= startMillis) endMillis - startMillis else 0L
+
+    private fun remainingMillis(deadlineMillis: Long, currentMillis: Long): Long =
+        if (deadlineMillis > currentMillis) deadlineMillis - currentMillis else 0L
 
     private const val BOARD_TO_SCORE = 100.0
     private const val MAX_ADJUSTMENT = 800.0
