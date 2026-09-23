@@ -77,12 +77,20 @@ class BattleDecisionFallbackChainTest {
         val context = context(System.currentTimeMillis() + 5_000L)
         val pendingPrimary = CompletableFuture<BattleDecision>()
         val pendingLocal = CompletableFuture<BattleDecision>()
+        val started = CountDownLatch(2)
         val future = chain(System.currentTimeMillis()).decide(
-            primary = endpoint { pendingPrimary },
-            local = endpoint { pendingLocal },
+            primary = endpoint {
+                started.countDown()
+                pendingPrimary
+            },
+            local = endpoint {
+                started.countDown()
+                pendingLocal
+            },
             context = context,
         ).toCompletableFuture()
 
+        assertTrue(started.await(1, TimeUnit.SECONDS))
         assertTrue(future.cancel(true))
 
         assertTrue(pendingPrimary.isCancelled)
@@ -340,6 +348,29 @@ class BattleDecisionFallbackChainTest {
             pending.get(1, TimeUnit.SECONDS)
         }
         assertTrue(pending.isCancelled)
+    }
+
+    @Test
+    fun `future that throws while cancelling cannot suppress timeout fallback`() {
+        val context = context(System.currentTimeMillis() + 5_000L)
+        val hostileFuture = object : CompletableFuture<BattleDecision>() {
+            override fun cancel(mayInterruptIfRunning: Boolean): Boolean =
+                throw IllegalStateException("cancellation refused")
+        }
+        val coordinator = BattleBrainDecisionCoordinator(
+            scheduler = scheduler,
+            brainExecutor = brainExecutor,
+            maximumDecisionMillis = 30L,
+        )
+
+        val result = BattleDecisionFallbackChain(coordinator).decide(
+            primary = endpoint { hostileFuture },
+            local = null,
+            context = context,
+        ).toCompletableFuture().get(1, TimeUnit.SECONDS)
+
+        assertEquals(BattleDecisionSource.BASELINE_REQUIRED, result.source)
+        assertEquals(BattleDecisionFailureReason.TIMEOUT, result.failures.single().reason)
     }
 
     @Test

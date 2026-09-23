@@ -36,6 +36,16 @@ internal class BattleBrainDecisionCoordinator(
     ): CompletionStage<BattleBrainAttempt> {
         val result = CompletableFuture<BattleBrainAttempt>()
         val pendingDecision = AtomicReference<CompletableFuture<BattleDecision>?>()
+        fun cancelPendingDecisionSafely() {
+            val decision = pendingDecision.get() ?: return
+            try {
+                decision.cancel(true)
+            } catch (failure: Exception) {
+                reportBrainFailureSafely(context, failure)
+            } catch (failure: LinkageError) {
+                reportBrainFailureSafely(context, failure)
+            }
+        }
         val remainingMillis = (context.deadlineEpochMillis - nowEpochMillis())
             .coerceIn(0L, maximumDecisionMillis)
         if (remainingMillis == 0L) {
@@ -46,8 +56,9 @@ internal class BattleBrainDecisionCoordinator(
         val timeout = try {
             scheduler.schedule(
                 {
-                    pendingDecision.get()?.cancel(true)
-                    result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.TIMEOUT))
+                    if (result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.TIMEOUT))) {
+                        cancelPendingDecisionSafely()
+                    }
                 },
                 remainingMillis,
                 TimeUnit.MILLISECONDS,
@@ -64,7 +75,7 @@ internal class BattleBrainDecisionCoordinator(
         result.whenComplete { _, _ ->
             if (result.isCancelled) {
                 timeout.cancel(false)
-                pendingDecision.get()?.cancel(true)
+                cancelPendingDecisionSafely()
             }
         }
         fun failBrain(throwable: Throwable) {
@@ -79,7 +90,7 @@ internal class BattleBrainDecisionCoordinator(
                     val decisionFuture = endpoint.brain.decide(endpoint.session(), context).toCompletableFuture()
                     pendingDecision.set(decisionFuture)
                     if (result.isDone) {
-                        decisionFuture.cancel(true)
+                        cancelPendingDecisionSafely()
                         return@execute
                     }
                     decisionFuture.whenComplete { decision, throwable ->
