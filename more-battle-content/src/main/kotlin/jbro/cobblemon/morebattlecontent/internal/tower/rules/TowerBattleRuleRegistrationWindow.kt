@@ -40,6 +40,11 @@ internal class TowerBattleRuleRegistrationWindow(
         return false
     }
 
+    fun clear() {
+        pending.get()?.attachedBattleId?.let(registry::unregister)
+        pending.remove()
+    }
+
     private class Pending(
         val contentId: String,
         val mechanic: MajorBattleMechanic?,

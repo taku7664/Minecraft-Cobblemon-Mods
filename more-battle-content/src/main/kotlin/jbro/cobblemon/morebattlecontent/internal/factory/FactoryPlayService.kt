@@ -243,6 +243,17 @@ internal class FactoryPlayService(
         sessions.disconnect(playerId, terminateBattle)
     }
 
+    @Synchronized
+    fun activeBattleIds(): Set<UUID> = sessions.activeBattleIds()
+
+    @Synchronized
+    fun clear() {
+        pendingStarts.clear()
+        recentOpponentTrainers.clear()
+        draftOffers.clear()
+        sessions.clear()
+    }
+
     private fun current(playerId: UUID): FactoryPlayView {
         val pending = pendingStarts[playerId]
         if (pending != null) {

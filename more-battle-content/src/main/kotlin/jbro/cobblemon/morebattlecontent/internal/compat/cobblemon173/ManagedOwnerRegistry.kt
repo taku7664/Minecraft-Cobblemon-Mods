@@ -32,6 +32,8 @@ internal class ManagedOwnerRegistry<K : Any, V : Any> {
 
     fun resolve(key: K): V? = synchronized(lock) { owners[key] }
 
+    fun clear() = synchronized(lock) { owners.clear() }
+
     private class Registration(
         private val unregister: () -> Unit,
     ) : AutoCloseable {

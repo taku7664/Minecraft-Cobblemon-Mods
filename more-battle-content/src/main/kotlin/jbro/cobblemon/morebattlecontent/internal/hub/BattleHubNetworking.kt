@@ -85,6 +85,8 @@ internal object BattleHubNetworking {
         }
     }
 
+    fun clear() = towerEntryContexts.clear()
+
     private fun balance(player: ServerPlayer): Long = BattlePointService.balance(player.server, player.uuid)
 
     private fun reportFailure(player: ServerPlayer, operation: String, failure: Throwable) {

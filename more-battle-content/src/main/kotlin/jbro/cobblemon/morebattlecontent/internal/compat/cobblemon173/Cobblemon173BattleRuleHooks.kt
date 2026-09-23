@@ -90,6 +90,11 @@ internal object Cobblemon173BattleRuleHooks {
 
     fun registeredBattleIds(): Set<UUID> = registry.registeredBattleIds()
 
+    fun clear() {
+        registrationWindow.clear()
+        registry.clear()
+    }
+
     fun contentId(battleId: UUID): String? = registry.contentId(battleId)
 
     fun mechanicPolicy(battleId: UUID, actorId: UUID): Cobblemon173MechanicPolicy? =

@@ -39,4 +39,17 @@ class ManagedOwnerRegistryTest {
         assertEquals("trainer-a", registry.resolve("shared"))
         first.close()
     }
+
+    @Test
+    fun `server reset removes all managed owners and old handles stay harmless`() {
+        val registry = ManagedOwnerRegistry<String, String>()
+        val first = registry.register("trainer-a", setOf("a"))
+        registry.register("trainer-b", setOf("b"))
+
+        registry.clear()
+        first.close()
+
+        assertNull(registry.resolve("a"))
+        assertNull(registry.resolve("b"))
+    }
 }

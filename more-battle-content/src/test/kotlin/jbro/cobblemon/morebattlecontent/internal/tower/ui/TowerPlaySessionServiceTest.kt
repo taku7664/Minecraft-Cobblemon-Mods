@@ -584,6 +584,37 @@ class TowerPlaySessionServiceTest {
     }
 
     @Test
+    fun `server reset clears every tower session even when one snapshot cleanup fails`() {
+        val otherPlayerId = UUID.randomUUID()
+        val failure = NoSuchMethodError("snapshot API drift")
+        val discarded = ArrayList<UUID>()
+        var failDiscard = false
+        val snapshots = object : TowerRegisteredTeamSnapshots {
+            override fun snapshot(playerId: UUID, team: TowerRegisteredTeam) =
+                TowerRegisteredTeamSnapshotResult.Stored
+
+            override fun discard(playerId: UUID) {
+                discarded += playerId
+                if (failDiscard && playerId == this@TowerPlaySessionServiceTest.playerId) throw failure
+            }
+        }
+        var nextContextId = 1L
+        val service = TowerPlaySessionService(registeredTeamSnapshots = snapshots) {
+            UUID(0, nextContextId++)
+        }
+        service.open(playerId, openRequest())
+        service.open(otherPlayerId, openRequest())
+        discarded.clear()
+        failDiscard = true
+
+        assertSame(failure, assertThrows(NoSuchMethodError::class.java, service::clear))
+
+        assertEquals(null, service.current(playerId))
+        assertEquals(null, service.current(otherPlayerId))
+        assertEquals(setOf(playerId, otherPlayerId), discarded.toSet())
+    }
+
+    @Test
     fun `authoritative BP refresh is retained by later session states`() {
         val service = service()
         val opened = service.open(playerId, openRequest())

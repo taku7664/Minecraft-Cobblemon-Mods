@@ -155,6 +155,14 @@ internal class FactorySessionService(
     fun close(playerId: UUID): Boolean = sessions.remove(playerId) != null
 
     @Synchronized
+    fun activeBattleIds(): Set<UUID> = sessions.values.mapNotNullTo(LinkedHashSet()) { it.activeBattleId }
+
+    @Synchronized
+    fun clear() {
+        sessions.clear()
+    }
+
+    @Synchronized
     fun disconnect(
         playerId: UUID,
         terminateBattle: (UUID) -> Unit = {},

@@ -138,6 +138,20 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
                 },
                 { processPendingCompletions(server, force = true) },
                 {
+                    play.activeBattleIds().forEach { battleId ->
+                        runManagedCleanupActionsSafely(
+                            reportFailure = { failure ->
+                                jbro.cobblemon.morebattlecontent.MoreBattleContent.LOGGER.error(
+                                    "Battle Factory battle $battleId could not be terminated during server shutdown",
+                                    failure,
+                                )
+                            },
+                            { Cobblemon173ManagedBattleTermination.end(battleId) },
+                        )
+                    }
+                },
+                { processPendingCompletions(server, force = true) },
+                {
                     if (pendingCompletions.size() > 0) {
                         jbro.cobblemon.morebattlecontent.MoreBattleContent.LOGGER.error(
                             "Discarding {} Battle Factory completion retries because the server is stopping and record storage is still unavailable",
@@ -146,6 +160,7 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
                     }
                 },
                 pendingCompletions::clear,
+                play::clear,
                 onlinePlayers::clear,
                 { if (currentServer === server) currentServer = null },
             )

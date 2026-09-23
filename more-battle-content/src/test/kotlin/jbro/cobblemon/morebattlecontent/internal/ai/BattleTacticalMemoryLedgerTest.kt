@@ -22,6 +22,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTeamRole
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSituation
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTendencyView
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -572,6 +573,26 @@ class BattleTacticalMemoryLedgerTest {
             BattleBrainOpenContext(UUID.randomUUID(), BattleFormat.SINGLE, learningScopeId = scopeId),
         )
         assertEquals(emptyList<Any>(), empty.view(1).tendencies)
+    }
+
+    @Test
+    fun `server reset discards tactical memory for every run scope`() {
+        val firstScope = UUID.randomUUID()
+        val secondScope = UUID.randomUUID()
+        val tendency = BattleTendencyView(
+            situation = BattleSituation.GENERAL,
+            response = BattlePredictedResponse.SWITCH,
+            samples = 1,
+            recentWeight = 1.0,
+            estimatedRate = 1.0,
+        )
+        BattleTacticalRunMemoryStore.record(firstScope, listOf(tendency))
+        BattleTacticalRunMemoryStore.record(secondScope, listOf(tendency))
+
+        BattleTacticalRunMemoryStore.clear()
+
+        assertEquals(emptyList<BattleTendencyView>(), BattleTacticalRunMemoryStore.snapshot(firstScope))
+        assertEquals(emptyList<BattleTendencyView>(), BattleTacticalRunMemoryStore.snapshot(secondScope))
     }
 
     private fun advice(response: BattlePredictedResponse, expiresAtTurn: Int = 8) = BattleDecisionAdvice(

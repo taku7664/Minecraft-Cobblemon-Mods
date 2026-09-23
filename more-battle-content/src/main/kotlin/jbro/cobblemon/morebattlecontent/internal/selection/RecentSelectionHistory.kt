@@ -26,4 +26,9 @@ internal class RecentSelectionHistory<K, V>(private val capacity: Int) {
     fun forget(owner: K) {
         selections.remove(owner)
     }
+
+    @Synchronized
+    fun clear() {
+        selections.clear()
+    }
 }

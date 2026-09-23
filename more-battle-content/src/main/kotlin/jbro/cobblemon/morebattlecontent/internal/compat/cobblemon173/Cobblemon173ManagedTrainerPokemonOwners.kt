@@ -19,4 +19,6 @@ internal object Cobblemon173ManagedTrainerPokemonOwners {
 
     @JvmStatic
     fun resolve(pokemon: Pokemon): LivingEntity? = owners.resolve(pokemon.uuid)
+
+    fun clear() = owners.clear()
 }

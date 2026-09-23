@@ -245,6 +245,18 @@ class TowerBattleRuleRegistryTest {
         )
     }
 
+    @Test
+    fun `server reset removes every registered battle rule`() {
+        val registry = registered(MajorBattleMechanic.MEGA)
+        val otherBattleId = UUID.randomUUID()
+        assertTrue(registry.register(otherBattleId, MajorBattleMechanic.TERA, setOf(playerActorId)))
+
+        registry.clear()
+
+        assertTrue(registry.registeredBattleIds().isEmpty())
+        assertNull(registry.rejectionReason(battleId, playerActorId, TowerActionSubmission(hasBagItem = true)))
+    }
+
     private fun registered(mechanic: MajorBattleMechanic): TowerBattleRuleRegistry =
         TowerBattleRuleRegistry().also {
             assertTrue(it.register(battleId, mechanic, setOf(playerActorId, trainerActorId)))

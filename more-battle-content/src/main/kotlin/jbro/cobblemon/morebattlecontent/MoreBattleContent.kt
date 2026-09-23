@@ -9,6 +9,7 @@ import jbro.cobblemon.morebattlecontent.internal.compat.fabric.HoloBattleTermina
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.FactoryCatalogResources
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.FactoryCommandRuntime
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.PvpLoungeProtection
+import jbro.cobblemon.morebattlecontent.internal.compat.fabric.ManagedServerEphemeralStateCleanup
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.TowerOpponentCatalogResources
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.BattlePointShopCatalogResources
 import jbro.cobblemon.morebattlecontent.internal.tower.application.BattleTowerContentApplication
@@ -60,5 +61,6 @@ object MoreBattleContent : ModInitializer {
             CONTENTS,
             openScreen = BattleHubNetworking::open,
         )
+        ManagedServerEphemeralStateCleanup.registerServer()
     }
 }

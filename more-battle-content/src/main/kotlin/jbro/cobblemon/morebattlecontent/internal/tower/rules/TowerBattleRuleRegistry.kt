@@ -75,6 +75,8 @@ internal class TowerBattleRuleRegistry {
 
     fun registeredBattleIds(): Set<UUID> = battles.keys.toSet()
 
+    fun clear() = battles.clear()
+
     fun allowedMechanics(battleId: UUID): Set<TowerSubmittedMechanic>? =
         battles[battleId]?.snapshotAllowedMechanics()
 

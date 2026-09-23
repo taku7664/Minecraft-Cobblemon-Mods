@@ -129,6 +129,20 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
                 },
                 { processPendingCompletions(server, force = true) },
                 {
+                    sessions.activeBattleIds().forEach { battleId ->
+                        runManagedCleanupActionsSafely(
+                            reportFailure = { failure ->
+                                MoreBattleContent.LOGGER.error(
+                                    "Battle Tower battle $battleId could not be terminated during server shutdown",
+                                    failure,
+                                )
+                            },
+                            { Cobblemon173ManagedBattleTermination.end(battleId) },
+                        )
+                    }
+                },
+                { processPendingCompletions(server, force = true) },
+                {
                     if (pendingCompletions.size() > 0) {
                         MoreBattleContent.LOGGER.error(
                             "Discarding {} Battle Tower completion retries because the server is stopping and record storage is still unavailable",
@@ -137,6 +151,8 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
                     }
                 },
                 pendingCompletions::clear,
+                sessions::clear,
+                launcher::clear,
                 onlinePlayers::clear,
             )
         }

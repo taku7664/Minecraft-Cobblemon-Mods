@@ -289,6 +289,24 @@ internal class TowerPlaySessionService(
     fun close(playerId: UUID): Boolean = removeSessionAndDiscardSnapshot(playerId) != null
 
     @Synchronized
+    fun activeBattleIds(): Set<UUID> = sessions.values.mapNotNullTo(LinkedHashSet()) { it.activeBattleId }
+
+    @Synchronized
+    fun clear() {
+        var failure: Throwable? = null
+        sessions.keys.toList().forEach { playerId ->
+            try {
+                removeSessionAndDiscardSnapshot(playerId)
+            } catch (cleanupFailure: Throwable) {
+                if (failure == null) failure = cleanupFailure else if (failure !== cleanupFailure) {
+                    failure?.addSuppressed(cleanupFailure)
+                }
+            }
+        }
+        failure?.let { throw it }
+    }
+
+    @Synchronized
     fun disconnect(
         playerId: UUID,
         completionSink: TowerPlayBattleCompletionSink = battleCompletionSink,

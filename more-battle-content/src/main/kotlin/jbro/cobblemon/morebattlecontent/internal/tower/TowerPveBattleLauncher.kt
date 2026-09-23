@@ -116,6 +116,11 @@ internal class TowerPveBattleLauncher<P, O>(
         recentSpecies.forget(playerId)
     }
 
+    fun clear() {
+        recentProfiles.clear()
+        recentSpecies.clear()
+    }
+
     private fun reportSafely(message: String) {
         try {
             diagnostics(message)

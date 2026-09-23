@@ -17,4 +17,6 @@ internal object BattleTacticalRunMemoryStore {
     }
 
     fun discard(scopeId: UUID?): Boolean = scopeId != null && tendenciesByScope.remove(scopeId) != null
+
+    fun clear() = tendenciesByScope.clear()
 }

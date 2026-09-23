@@ -32,6 +32,11 @@ internal class FactoryDraftOfferService(
         recentSpeciesIds.forget(playerId)
     }
 
+    @Synchronized
+    fun clear() {
+        recentSpeciesIds.clear()
+    }
+
     private companion object {
         const val RECENT_SPECIES_LIMIT = 18
     }

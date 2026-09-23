@@ -262,6 +262,31 @@ class FactoryPlayServiceTest {
     }
 
     @Test
+    fun `server reset clears pending active and selection history state`() {
+        val activePlayerId = UUID.randomUUID()
+        val service = playService(catalog()) { FactoryBattleLaunchResult.Started(battleId) }
+        val pending = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+            as FactoryPlayResult.Accepted
+        val activeDraft = service.start(activePlayerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+            as FactoryPlayResult.Accepted
+        service.selectDraft(activePlayerId, activeDraft.view.draftSets.take(3).map(FactoryRentalSet::setId))
+        service.beginBattle(activePlayerId)
+
+        assertEquals(setOf(battleId), service.activeBattleIds())
+        service.clear()
+
+        assertTrue(service.activeBattleIds().isEmpty())
+        assertEquals(FactoryPlayPhase.AVAILABLE, service.status(playerId).phase)
+        assertEquals(FactoryPlayPhase.AVAILABLE, service.status(activePlayerId).phase)
+        val restarted = service.start(playerId, FactoryBattleFormat.SINGLE, FactoryLevelMode.LEVEL_50)
+            as FactoryPlayResult.Accepted
+        assertEquals(
+            pending.view.draftSets.map(FactoryRentalSet::setId),
+            restarted.view.draftSets.map(FactoryRentalSet::setId),
+        )
+    }
+
+    @Test
     fun `invalid selections and unavailable catalogs fail without creating a run`() {
         val unavailable = playService(null) { FactoryBattleLaunchResult.Started(battleId) }
         assertEquals(
