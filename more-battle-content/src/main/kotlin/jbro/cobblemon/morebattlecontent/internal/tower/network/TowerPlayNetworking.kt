@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.internal.tower.network
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
 import jbro.cobblemon.morebattlecontent.internal.application.BattleContentId
 import jbro.cobblemon.morebattlecontent.internal.battle.BattleCompletionRetryQueue
+import jbro.cobblemon.morebattlecontent.internal.battle.attemptBattleCompletionSettlement
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointRewardSettlementService
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointRewardSettlement
 import jbro.cobblemon.morebattlecontent.internal.bp.BattlePointService
@@ -368,38 +369,37 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
     private fun settleCompletion(
         server: MinecraftServer,
         pending: PendingTowerCompletion,
-    ): Boolean = try {
-        val completion = if (pending.outcome == null) {
-            sessions.cancelBattle(pending.playerId, pending.battleId, completionSink(server, pending.battleId))
-        } else {
-            sessions.completeBattle(
-                pending.playerId,
-                pending.battleId,
-                pending.outcome,
-                completionSink(server, pending.battleId),
-            )
-        }
-        if (completion is TowerPlayBattleCompletionResult.Completed) {
-            onlinePlayers[pending.playerId]?.let(BattleHubNetworking::sendHeader)
-            reopenScreen(pending.playerId, completion)
-        } else if (completion is TowerPlayBattleCompletionResult.StaleBattle ||
-            completion is TowerPlayBattleCompletionResult.SessionNotFound ||
-            completion is TowerPlayBattleCompletionResult.NoActiveBattle
-        ) {
-            MoreBattleContent.LOGGER.warn(
-                "Dropping stale Battle Tower completion retry for player {} and battle {}",
-                pending.playerId,
-                pending.battleId,
-            )
-        }
-        true
-    } catch (failure: RuntimeException) {
-        reportTowerCompletionFailure(pending, failure)
-        false
-    } catch (failure: LinkageError) {
-        reportTowerCompletionFailure(pending, failure)
-        false
-    }
+    ): Boolean = attemptBattleCompletionSettlement(
+        settle = {
+            if (pending.outcome == null) {
+                sessions.cancelBattle(pending.playerId, pending.battleId, completionSink(server, pending.battleId))
+            } else {
+                sessions.completeBattle(
+                    pending.playerId,
+                    pending.battleId,
+                    pending.outcome,
+                    completionSink(server, pending.battleId),
+                )
+            }
+        },
+        afterSettlement = { completion ->
+            if (completion is TowerPlayBattleCompletionResult.Completed) {
+                onlinePlayers[pending.playerId]?.let(BattleHubNetworking::sendHeader)
+                reopenScreen(pending.playerId, completion)
+            } else if (completion is TowerPlayBattleCompletionResult.StaleBattle ||
+                completion is TowerPlayBattleCompletionResult.SessionNotFound ||
+                completion is TowerPlayBattleCompletionResult.NoActiveBattle
+            ) {
+                MoreBattleContent.LOGGER.warn(
+                    "Dropping stale Battle Tower completion retry for player {} and battle {}",
+                    pending.playerId,
+                    pending.battleId,
+                )
+            }
+        },
+        reportSettlementFailure = { failure -> reportTowerCompletionFailure(pending, failure) },
+        reportNotificationFailure = { failure -> reportTowerCompletionNotificationFailure(pending, failure) },
+    )
 
     private fun reportTowerCompletionFailure(pending: PendingTowerCompletion, failure: Throwable) {
         reportManagedCleanupFailureSafely(failure) {
@@ -411,6 +411,15 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
                 it,
             )
         }
+    }
+
+    private fun reportTowerCompletionNotificationFailure(pending: PendingTowerCompletion, failure: Throwable) {
+        MoreBattleContent.LOGGER.error(
+            "Battle Tower result settled for player {} and battle {}, but its client update failed",
+            pending.playerId,
+            pending.battleId,
+            failure,
+        )
     }
 
     private data class PendingTowerCompletion(
