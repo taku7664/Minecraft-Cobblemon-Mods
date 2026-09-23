@@ -289,7 +289,7 @@ internal class BattleDecisionFallbackChain(
         val localAttempt = local?.let { coordinator.decide(it, context).toCompletableFuture() }
 
         if (primaryAttempt == null) {
-            return localAttempt!!.thenApply { attempt ->
+            val resolution = localAttempt!!.thenApply { attempt ->
                 if (attempt.succeeded) {
                     BattleDecisionResolution.selected(
                         decision = requireNotNull(attempt.decision),
@@ -301,9 +301,10 @@ internal class BattleDecisionFallbackChain(
                     )
                 }
             }
+            return propagateCancellation(resolution, localAttempt)
         }
 
-        return primaryAttempt.thenCompose { primaryResult ->
+        val resolution = primaryAttempt.thenCompose { primaryResult ->
             if (primaryResult.succeeded) {
                 localAttempt?.cancel(true)
                 CompletableFuture.completedFuture(
@@ -334,6 +335,16 @@ internal class BattleDecisionFallbackChain(
                     }
                 }
             }
+        }
+        return propagateCancellation(resolution, primaryAttempt, localAttempt)
+    }
+
+    private fun propagateCancellation(
+        resolution: CompletableFuture<BattleDecisionResolution>,
+        vararg attempts: CompletableFuture<BattleBrainAttempt>?,
+    ): CompletionStage<BattleDecisionResolution> = resolution.also { returned ->
+        returned.whenComplete { _, _ ->
+            if (returned.isCancelled) attempts.forEach { it?.cancel(true) }
         }
     }
 

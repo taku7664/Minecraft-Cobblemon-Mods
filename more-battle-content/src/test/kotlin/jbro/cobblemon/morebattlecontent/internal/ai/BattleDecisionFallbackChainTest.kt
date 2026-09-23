@@ -73,6 +73,23 @@ class BattleDecisionFallbackChainTest {
     }
 
     @Test
+    fun `cancelling fallback resolution cancels both running brains`() {
+        val context = context(System.currentTimeMillis() + 5_000L)
+        val pendingPrimary = CompletableFuture<BattleDecision>()
+        val pendingLocal = CompletableFuture<BattleDecision>()
+        val future = chain(System.currentTimeMillis()).decide(
+            primary = endpoint { pendingPrimary },
+            local = endpoint { pendingLocal },
+            context = context,
+        ).toCompletableFuture()
+
+        assertTrue(future.cancel(true))
+
+        assertTrue(pendingPrimary.isCancelled)
+        assertTrue(pendingLocal.isCancelled)
+    }
+
+    @Test
     fun `invalid primary uses concurrently prepared local decision`() {
         val now = 1_000L
         val context = context(now + 5_000L)

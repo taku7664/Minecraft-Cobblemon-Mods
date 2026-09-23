@@ -70,6 +70,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
         initialOpponentPokemonCount = initialOpponentPokemonCount,
     )
     private val pendingRequest = AtomicReference<ShowdownActionRequest?>()
+    private val pendingDecision = AtomicReference<java.util.concurrent.CompletableFuture<BattleDecisionResolution>?>()
     private val closeResult = AtomicReference<BattleBrainCloseResult?>()
     private val primarySession = AtomicReference<BattleBrainSession?>()
     private val localSession = AtomicReference<BattleBrainSession?>()
@@ -140,14 +141,19 @@ internal class Cobblemon173BrainTrainerBattleActor(
                         originalPpSpent = observationAdapter.originalPpSpent(),
                     ),
                 )
+                val decision = fallbackChain.decide(
+                    endpoint(primaryBrain, primarySession),
+                    endpoint(localBrain, localSession),
+                    context,
+                ).toCompletableFuture()
+                pendingDecision.set(decision)
+                if (closeResult.get() != null && pendingDecision.compareAndSet(decision, null)) {
+                    decision.cancel(true)
+                }
                 PreparedBrainDecision(
                     context = context,
                     startedAtNanos = System.nanoTime(),
-                    pending = fallbackChain.decide(
-                        endpoint(primaryBrain, primarySession),
-                        endpoint(localBrain, localSession),
-                        context,
-                    ),
+                    pending = decision,
                 )
             },
             recover = { failure ->
@@ -156,6 +162,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
             },
         ) ?: return
         preparedDecision.pending.whenComplete { resolution, throwable ->
+            pendingDecision.compareAndSet(preparedDecision.pending, null)
             server.execute {
                 completeOnServerThread(
                     expectedRequest = currentRequest,
@@ -172,6 +179,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
     fun closeBrains(result: BattleBrainCloseResult) {
         if (!closeResult.compareAndSet(null, result)) return
         runManagedCleanupActions(
+            { pendingDecision.getAndSet(null)?.cancel(true) },
             { BattleTacticalRunMemoryStore.record(learningScopeId, tacticalMemory.view(result.turns).tendencies) },
             { closeSessionReference(primaryBrain, primarySession, result) },
             { closeSessionReference(localBrain, localSession, result) },
@@ -469,7 +477,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
     private data class PreparedBrainDecision(
         val context: BattleDecisionContext,
         val startedAtNanos: Long,
-        val pending: java.util.concurrent.CompletionStage<BattleDecisionResolution>,
+        val pending: java.util.concurrent.CompletableFuture<BattleDecisionResolution>,
     )
 
     private fun BattleActionCandidate.diagnosticActionKinds(): List<BattleActionKind> =
