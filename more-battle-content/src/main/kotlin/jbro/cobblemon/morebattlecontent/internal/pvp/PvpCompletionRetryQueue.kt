@@ -26,6 +26,15 @@ internal fun attemptPvpCompletionSettlement(
     false
 }
 
+internal fun transitionPvpBattleLifecycle(
+    transition: () -> Boolean,
+    cleanup: () -> Unit,
+): Boolean {
+    if (!transition()) return false
+    cleanup()
+    return true
+}
+
 /** Keeps a finished PvP result retryable while its paired persistent record is unavailable. */
 internal class PvpCompletionRetryQueue(
     private val currentTimeMillis: () -> Long = System::currentTimeMillis,
@@ -40,10 +49,10 @@ internal class PvpCompletionRetryQueue(
     @Synchronized
     fun submit(completion: PendingPvpCompletion, settle: (PendingPvpCompletion) -> Boolean): Boolean {
         if (settle(completion)) {
-            entries.remove(completion.matchId)
+            entries.remove(completion.battleId)
             return true
         }
-        entries[completion.matchId] = completion.copy(
+        entries[completion.battleId] = completion.copy(
             nextAttemptEpochMillis = currentTimeMillis() + retryMillis,
         )
         return false
@@ -58,7 +67,7 @@ internal class PvpCompletionRetryQueue(
     }
 
     @Synchronized
-    operator fun contains(matchId: UUID): Boolean = matchId in entries
+    operator fun contains(matchId: UUID): Boolean = entries.values.any { it.matchId == matchId }
 
     @Synchronized
     fun size(): Int = entries.size

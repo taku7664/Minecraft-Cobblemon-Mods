@@ -29,6 +29,7 @@ import jbro.cobblemon.morebattlecontent.internal.pvp.PvpChallengeRequest
 import jbro.cobblemon.morebattlecontent.internal.pvp.PendingPvpCompletion
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpCompletionRetryQueue
 import jbro.cobblemon.morebattlecontent.internal.pvp.attemptPvpCompletionSettlement
+import jbro.cobblemon.morebattlecontent.internal.pvp.transitionPvpBattleLifecycle
 import jbro.cobblemon.morebattlecontent.internal.pvp.PVP_COMPLETION_RETRY_MILLIS
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpMatchPhase
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpLoungeCoordinator
@@ -78,16 +79,15 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             completion = { server, matchId, winnerId, loserId, battleId ->
                 val pending = PendingPvpCompletion(matchId, battleId, winnerId, loserId)
                 pendingCompletions.submit(pending) { completion -> settleCompletion(server, completion) }
-                retryableMatches.remove(matchId)
-                finishRoom(matchId)
             },
             cancellation = { _, matchId, battleId ->
-                try {
-                    sessions.cancelBattle(matchId, battleId)
-                } finally {
-                    retryableMatches.remove(matchId)
-                    finishRoom(matchId)
-                }
+                transitionPvpBattleLifecycle(
+                    transition = { sessions.cancelBattle(matchId, battleId) },
+                    cleanup = {
+                        retryableMatches.remove(matchId)
+                        finishRoom(matchId)
+                    },
+                )
             },
         )
     }
@@ -1061,15 +1061,23 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     private fun settleCompletion(server: MinecraftServer, pending: PendingPvpCompletion): Boolean =
         attemptPvpCompletionSettlement(
             settle = {
-                val accepted = sessions.completeBattle(
-                    pending.matchId,
-                    pending.battleId,
-                    pending.winnerId,
-                    pending.loserId,
-                    PvpBattleCompletionSink { winnerId, loserId, format ->
-                        PvpBattleRecordService { completions ->
-                            BattleRecordService.recordCompletedBattles(server, completions)
-                        }.recordResult(winnerId, loserId, format)
+                val accepted = transitionPvpBattleLifecycle(
+                    transition = {
+                        sessions.completeBattle(
+                            pending.matchId,
+                            pending.battleId,
+                            pending.winnerId,
+                            pending.loserId,
+                            PvpBattleCompletionSink { winnerId, loserId, format ->
+                                PvpBattleRecordService { completions ->
+                                    BattleRecordService.recordCompletedBattles(server, completions)
+                                }.recordResult(winnerId, loserId, format)
+                            },
+                        )
+                    },
+                    cleanup = {
+                        retryableMatches.remove(pending.matchId)
+                        finishRoom(pending.matchId)
                     },
                 )
                 if (!accepted) {
