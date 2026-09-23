@@ -51,7 +51,7 @@ class BattleDecisionFallbackChainTest {
     }
 
     @Test
-    fun `valid primary decision wins without waiting for local brain`() {
+    fun `valid primary decision wins and cancels the unneeded local brain`() {
         val now = 1_000L
         val context = context(now + 5_000L)
         val pendingLocal = CompletableFuture<BattleDecision>()
@@ -66,7 +66,10 @@ class BattleDecisionFallbackChainTest {
         assertEquals(BattleDecisionSource.PRIMARY_BRAIN, result.source)
         assertEquals("move:1", result.decision?.actionId)
         assertTrue(result.failures.isEmpty())
-        assertFalse(pendingLocal.isDone)
+        assertThrows(CancellationException::class.java) {
+            pendingLocal.get(1, TimeUnit.SECONDS)
+        }
+        assertTrue(pendingLocal.isCancelled)
     }
 
     @Test

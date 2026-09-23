@@ -61,6 +61,12 @@ internal class BattleBrainDecisionCoordinator(
             reportBrainFailureSafely(context, failure)
             return result
         }
+        result.whenComplete { _, _ ->
+            if (result.isCancelled) {
+                timeout.cancel(false)
+                pendingDecision.get()?.cancel(true)
+            }
+        }
         fun failBrain(throwable: Throwable) {
             if (result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))) {
                 timeout.cancel(false)
@@ -299,6 +305,7 @@ internal class BattleDecisionFallbackChain(
 
         return primaryAttempt.thenCompose { primaryResult ->
             if (primaryResult.succeeded) {
+                localAttempt?.cancel(true)
                 CompletableFuture.completedFuture(
                     BattleDecisionResolution.selected(
                         decision = requireNotNull(primaryResult.decision),
