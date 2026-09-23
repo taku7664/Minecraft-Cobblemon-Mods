@@ -110,7 +110,17 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     private val turnHooks by lazy { Cobblemon173PvpTurnHooks(sessions::timerForBattle) }
 
     @JvmStatic
-    fun observeBattleTurn(battle: PokemonBattle) = turnHooks.observe(battle)
+    fun observeBattleTurn(battle: PokemonBattle) {
+        runManagedCleanupActionsSafely(
+            reportFailure = { failure ->
+                reportPvpFailureSafely(
+                    "PvP turn observation failed for battle ${battle.battleId}",
+                    failure,
+                )
+            },
+            { turnHooks.observe(battle) },
+        )
+    }
 
     @JvmStatic
     fun captureBattleTurn(actor: BattleActor): PvpTurnCapture? = turnHooks.capture(actor)
