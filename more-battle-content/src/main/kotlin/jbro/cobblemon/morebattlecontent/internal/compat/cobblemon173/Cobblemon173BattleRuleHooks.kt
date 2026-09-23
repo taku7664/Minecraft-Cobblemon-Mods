@@ -13,6 +13,7 @@ import jbro.cobblemon.morebattlecontent.internal.tower.rules.TowerSubmittedMecha
 import jbro.cobblemon.morebattlecontent.internal.battle.ManagedBattleMechanic
 import jbro.cobblemon.morebattlecontent.internal.battle.ManagedBattleMechanicVisibilityNetworking
 import jbro.cobblemon.morebattlecontent.internal.battle.ManagedBattleContentNetworking
+import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpPlayNetworking
 import java.util.UUID
 
 internal object Cobblemon173BattleRuleHooks {
@@ -51,7 +52,23 @@ internal object Cobblemon173BattleRuleHooks {
     }
 
     @JvmStatic
-    fun hideClientMechanicPolicy(battle: PokemonBattle) {
+    fun beforeBattleEnd(battle: PokemonBattle) {
+        runManagedCleanupActionsSafely(
+            reportFailure = { failure ->
+                reportManagedCleanupFailureSafely(failure) {
+                    jbro.cobblemon.morebattlecontent.MoreBattleContent.LOGGER.error(
+                        "Managed battle end hook failed for battle {}",
+                        compatibilityCallOrNull { battle.battleId },
+                        it,
+                    )
+                }
+            },
+            { PvpPlayNetworking.forgetBattleTurn(battle.battleId) },
+            { hideClientMechanicPolicy(battle) },
+        )
+    }
+
+    private fun hideClientMechanicPolicy(battle: PokemonBattle) {
         if (registry.isRegistered(battle.battleId)) {
             ManagedBattleMechanicVisibilityNetworking.hide(battle)
             ManagedBattleContentNetworking.hide(battle)

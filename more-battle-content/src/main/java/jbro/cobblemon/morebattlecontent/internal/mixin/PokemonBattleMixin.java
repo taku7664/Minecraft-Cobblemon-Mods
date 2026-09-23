@@ -24,9 +24,7 @@ abstract class PokemonBattleMixin {
 
     @Inject(method = "end", at = @At("HEAD"))
     private void mbc$hideManagedMechanicPolicy(CallbackInfo callbackInfo) {
-        PokemonBattle battle = (PokemonBattle) (Object) this;
-        PvpPlayNetworking.forgetBattleTurn(battle.getBattleId());
-        Cobblemon173BattleRuleHooks.hideClientMechanicPolicy(battle);
+        Cobblemon173BattleRuleHooks.beforeBattleEnd((PokemonBattle) (Object) this);
     }
 
     @Inject(method = "tick", at = @At("RETURN"))

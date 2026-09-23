@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.internal.battle
 import com.cobblemon.mod.common.api.battles.model.PokemonBattle
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.runManagedCleanupForEachSafely
 import jbro.cobblemon.morebattlecontent.api.presentation.ManagedBattleContentIds
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
@@ -123,7 +124,17 @@ internal object ManagedBattleMechanicVisibilityNetworking {
 
     fun hide(battle: PokemonBattle) {
         val payload = HideManagedBattleMechanicsPayload(battle.battleId)
-        battle.players.forEach { player ->
+        runManagedCleanupForEachSafely(
+            items = battle.players,
+            reportFailure = { player, failure ->
+                MoreBattleContent.LOGGER.error(
+                    "Managed mechanic visibility cleanup failed for player {} in battle {}",
+                    player.uuid,
+                    battle.battleId,
+                    failure,
+                )
+            },
+        ) { player ->
             if (ServerPlayNetworking.canSend(player, HideManagedBattleMechanicsPayload.TYPE)) {
                 ServerPlayNetworking.send(player, payload)
             }
@@ -165,7 +176,17 @@ internal object ManagedBattleContentNetworking {
         if (server != null) {
             battle.spectators.mapNotNullTo(recipients) { spectatorId -> server.playerList.getPlayer(spectatorId) }
         }
-        recipients.forEach { player -> hideFrom(player, battle.battleId) }
+        runManagedCleanupForEachSafely(
+            items = recipients,
+            reportFailure = { player, failure ->
+                MoreBattleContent.LOGGER.error(
+                    "Managed content visibility cleanup failed for player {} in battle {}",
+                    player.uuid,
+                    battle.battleId,
+                    failure,
+                )
+            },
+        ) { player -> hideFrom(player, battle.battleId) }
     }
 }
 
