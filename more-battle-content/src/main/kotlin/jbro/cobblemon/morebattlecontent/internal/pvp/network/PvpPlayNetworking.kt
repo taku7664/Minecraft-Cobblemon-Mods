@@ -311,6 +311,9 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                         )
                     }
                 },
+                // Ending a battle invokes its completion callback and can enqueue a fresh settlement.
+                // Flush those results before session state and retry ownership are discarded.
+                { processPendingCompletions(server, force = true) },
                 lounge::shutdown,
                 sessions::clear,
                 rooms::clear,
