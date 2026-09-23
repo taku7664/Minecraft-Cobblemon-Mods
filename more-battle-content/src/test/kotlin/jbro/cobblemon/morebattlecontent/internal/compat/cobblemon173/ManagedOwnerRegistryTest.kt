@@ -52,4 +52,37 @@ class ManagedOwnerRegistryTest {
         assertNull(registry.resolve("a"))
         assertNull(registry.resolve("b"))
     }
+
+    @Test
+    fun `overlapping registrations by the same owner remain until every handle closes`() {
+        val registry = ManagedOwnerRegistry<String, String>()
+        val first = registry.register("trainer-a", setOf("shared", "first-only"))
+        val second = registry.register("trainer-a", setOf("shared", "second-only"))
+
+        first.close()
+
+        assertEquals("trainer-a", registry.resolve("shared"))
+        assertNull(registry.resolve("first-only"))
+        assertEquals("trainer-a", registry.resolve("second-only"))
+
+        second.close()
+        assertNull(registry.resolve("shared"))
+        assertNull(registry.resolve("second-only"))
+    }
+
+    @Test
+    fun `handle from before reset cannot remove an equal new owner registration`() {
+        data class Owner(val id: String)
+
+        val registry = ManagedOwnerRegistry<String, Owner>()
+        val old = registry.register(Owner("trainer-a"), setOf("shared"))
+        registry.clear()
+        val replacement = registry.register(Owner("trainer-a"), setOf("shared"))
+
+        old.close()
+
+        assertEquals(Owner("trainer-a"), registry.resolve("shared"))
+        replacement.close()
+        assertNull(registry.resolve("shared"))
+    }
 }
