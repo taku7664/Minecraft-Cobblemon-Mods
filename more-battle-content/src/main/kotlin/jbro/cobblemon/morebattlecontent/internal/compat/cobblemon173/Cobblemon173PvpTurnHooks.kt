@@ -48,9 +48,21 @@ internal class Cobblemon173PvpTurnHooks(
     }
 
     fun processTimeouts() {
-        coordinator.timeouts().forEach { timeout ->
-            val battle = BattleRegistry.getBattle(timeout.battleId) ?: return@forEach
-            val actor = battle.getActor(timeout.playerId) ?: return@forEach
+        runManagedCleanupForEachSafely(
+            items = coordinator.timeouts(),
+            reportFailure = { timeout, failure ->
+                reportManagedCleanupFailureSafely(failure) {
+                    MoreBattleContent.LOGGER.error(
+                        "PvP timeout processing failed for battle {} and player {}",
+                        timeout.battleId,
+                        timeout.playerId,
+                        it,
+                    )
+                }
+            },
+        ) { timeout ->
+            val battle = BattleRegistry.getBattle(timeout.battleId) ?: return@runManagedCleanupForEachSafely
+            val actor = battle.getActor(timeout.playerId) ?: return@runManagedCleanupForEachSafely
             if (actor.mustChoose && actor.request === timeout.requestIdentity) {
                 applyTimeout(actor, timeout.personalTimeExhausted)
             }
@@ -81,10 +93,10 @@ internal class Cobblemon173PvpTurnHooks(
         try {
             actor.setActionResponses(responses)
         } catch (failure: RuntimeException) {
-            MoreBattleContent.LOGGER.error("PvP timeout action failed for ${actor.uuid}", failure)
+            reportTimeoutFailureSafely(actor, "action", failure)
             recoverWithForfeit(actor, expectedRequest)
         } catch (failure: LinkageError) {
-            MoreBattleContent.LOGGER.error("PvP timeout action API failed for ${actor.uuid}", failure)
+            reportTimeoutFailureSafely(actor, "action API", failure)
             recoverWithForfeit(actor, expectedRequest)
         }
         if (!actor.battle.ended && actor.mustChoose && actor.request === expectedRequest) {
@@ -101,11 +113,11 @@ internal class Cobblemon173PvpTurnHooks(
         try {
             actor.setActionResponses(listOf(ForfeitActionResponse()))
         } catch (failure: RuntimeException) {
-            MoreBattleContent.LOGGER.error("PvP timeout forfeit failed for ${actor.uuid}", failure)
+            reportTimeoutFailureSafely(actor, "forfeit", failure)
             abort(actor, "timeout forfeit failed")
             return
         } catch (failure: LinkageError) {
-            MoreBattleContent.LOGGER.error("PvP timeout forfeit API failed for ${actor.uuid}", failure)
+            reportTimeoutFailureSafely(actor, "forfeit API", failure)
             abort(actor, "timeout forfeit API failed")
             return
         }
@@ -115,13 +127,38 @@ internal class Cobblemon173PvpTurnHooks(
     }
 
     private fun abort(actor: BattleActor, reason: String) {
-        MoreBattleContent.LOGGER.error("Aborting PvP battle {} because {}", actor.battle.battleId, reason)
+        reportTimeoutAbortSafely(actor, reason)
         try {
             Cobblemon173ManagedBattleTermination.end(actor.battle.battleId)
         } catch (failure: RuntimeException) {
-            MoreBattleContent.LOGGER.error("PvP timeout cleanup failed for ${actor.battle.battleId}", failure)
+            reportTimeoutFailureSafely(actor, "cleanup", failure)
         } catch (failure: LinkageError) {
-            MoreBattleContent.LOGGER.error("PvP timeout cleanup API failed for ${actor.battle.battleId}", failure)
+            reportTimeoutFailureSafely(actor, "cleanup API", failure)
+        }
+    }
+
+    private fun reportTimeoutFailureSafely(actor: BattleActor, stage: String, failure: Throwable) {
+        reportManagedCleanupFailureSafely(failure) {
+            MoreBattleContent.LOGGER.error(
+                "PvP timeout {} failed for actor {}",
+                stage,
+                compatibilityCallOrNull { actor.uuid },
+                it,
+            )
+        }
+    }
+
+    private fun reportTimeoutAbortSafely(actor: BattleActor, reason: String) {
+        try {
+            MoreBattleContent.LOGGER.error(
+                "Aborting PvP battle {} because {}",
+                compatibilityCallOrNull { actor.battle.battleId },
+                reason,
+            )
+        } catch (_: RuntimeException) {
+            // Diagnostics cannot prevent the required battle termination.
+        } catch (_: LinkageError) {
+            // Logging integrations are optional at this compatibility boundary.
         }
     }
 }
