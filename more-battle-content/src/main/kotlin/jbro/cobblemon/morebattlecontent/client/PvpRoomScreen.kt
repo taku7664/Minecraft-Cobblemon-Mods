@@ -12,15 +12,22 @@ import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpRoomClientView
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpRoomIntent
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpRoomIntentPayload
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpRoomMemberView
+import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpRoomScreenController
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.PlayerFaceRenderer
 import net.minecraft.network.chat.Component
 
 internal class PvpRoomScreen(
-    private var state: PvpRoomClientView,
+    initialState: PvpRoomClientView,
     private val roomList: PvpRoomListScreen,
 ) : MbcScreen(Component.translatable(key("title"))) {
-    private var feedbackKey: String? = null
+    private val controller = PvpRoomScreenController(initialState) { intent ->
+        PvpPlayClientNetworking.send(PvpRoomIntentPayload(intent))
+    }
+    private val state: PvpRoomClientView
+        get() = controller.state
+    private val feedbackKey: String?
+        get() = controller.feedbackKey
     private val playerModels = PvpRoomPlayerModelRenderer()
 
     override fun init() = buildWidgets()
@@ -51,12 +58,13 @@ internal class PvpRoomScreen(
         super.render(graphics, mouseX, mouseY, partialTick)
     }
 
-    fun applyRejected(messageKey: String) {
-        feedbackKey = messageKey
+    fun applyRejected(requestId: UUID, messageKey: String) {
+        controller.applyRejected(requestId, messageKey)
+        rebuild()
     }
 
-    fun applyState(newState: PvpRoomClientView) {
-        state = newState
+    fun applyState(requestId: UUID?, newState: PvpRoomClientView) {
+        controller.applyState(requestId, newState)
         PvpRoomClientState.lastRoom = newState
         rebuild()
     }
@@ -136,25 +144,25 @@ internal class PvpRoomScreen(
             visibilityOptions[0],
             Component.translatable(key("visibility.public")),
             state.settings.visibility == PvpRoomVisibility.PUBLIC,
-            host && lobby,
+            host && lobby && !controller.isPending,
         ) { updateSettings(state.settings.copy(visibility = PvpRoomVisibility.PUBLIC)) }
         addOptionButton(
             visibilityOptions[1],
             Component.translatable(key("visibility.private")),
             state.settings.visibility == PvpRoomVisibility.PRIVATE,
-            host && lobby,
+            host && lobby && !controller.isPending,
         ) { updateSettings(state.settings.copy(visibility = PvpRoomVisibility.PRIVATE)) }
         addOptionButton(
             formatOptions[0],
             Component.translatable(key("format.single")),
             state.settings.format == PvpBattleFormat.SINGLE,
-            host && lobby,
+            host && lobby && !controller.isPending,
         ) { updateSettings(state.settings.copy(format = PvpBattleFormat.SINGLE)) }
         addOptionButton(
             formatOptions[1],
             Component.translatable(key("format.double")),
             state.settings.format == PvpBattleFormat.DOUBLE,
-            host && lobby,
+            host && lobby && !controller.isPending,
         ) { updateSettings(state.settings.copy(format = PvpBattleFormat.DOUBLE)) }
 
         PvpBattleMechanic.entries.forEachIndexed { index, mechanic ->
@@ -162,7 +170,7 @@ internal class PvpRoomScreen(
                 mechanicOptions[index],
                 Component.translatable(key("mechanic.${mechanic.id}")),
                 mechanic in state.settings.immutableEnabledMechanics,
-                host && lobby,
+                host && lobby && !controller.isPending,
             ) { toggleMechanic(mechanic) }
         }
 
@@ -170,22 +178,22 @@ internal class PvpRoomScreen(
         val selfSeated = state.leftPlayer?.playerId == playerId || state.rightPlayer?.playerId == playerId
         addRenderableWidget(MbcStyledButton(layout.spectatorJoinButton, Component.translatable(key("observe")), selected = !selfSeated) {
             send(PvpRoomIntent.Observe(UUID.randomUUID(), state.roomId))
-        }.also { it.active = lobby && selfSeated })
+        }.also { it.active = lobby && selfSeated && !controller.isPending })
 
         val members = listOfNotNull(state.leftPlayer, state.rightPlayer) + state.spectators
         val transferCandidates = members.distinctBy(PvpRoomMemberView::playerId).filter { it.playerId != state.hostId }
         addRenderableWidget(MbcStyledButton(actions[0], Component.translatable(key("invite_manage")), MbcButtonTone.SECONDARY) {
             openPicker(true, state.inviteCandidates)
-        }.also { it.active = host && lobby && state.inviteCandidates.isNotEmpty() })
+        }.also { it.active = host && lobby && state.inviteCandidates.isNotEmpty() && !controller.isPending })
         addRenderableWidget(MbcStyledButton(actions[1], Component.translatable(key("transfer_manage"))) {
             openPicker(false, transferCandidates)
-        }.also { it.active = host && lobby && transferCandidates.isNotEmpty() })
+        }.also { it.active = host && lobby && transferCandidates.isNotEmpty() && !controller.isPending })
         addRenderableWidget(MbcStyledButton(actions[2], Component.translatable(key("start")), MbcButtonTone.PRIMARY) {
             send(PvpRoomIntent.Start(UUID.randomUUID(), state.roomId))
-        }.also { it.active = host && lobby && state.leftPlayer != null && state.rightPlayer != null })
+        }.also { it.active = host && lobby && state.leftPlayer != null && state.rightPlayer != null && !controller.isPending })
         addRenderableWidget(MbcStyledButton(actions[3], Component.translatable(key("leave")), MbcButtonTone.DANGER) {
             send(PvpRoomIntent.Leave(UUID.randomUUID(), state.roomId))
-        })
+        }.also { it.active = !controller.isPending })
     }
 
     private fun addSeatButton(
@@ -204,7 +212,7 @@ internal class PvpRoomScreen(
         }
         addRenderableWidget(MbcStyledButton(bounds, label, MbcButtonTone.PRIMARY, occupant?.playerId == playerId) {
             send(PvpRoomIntent.ClaimSeat(UUID.randomUUID(), state.roomId, side))
-        }.also { it.active = lobby && occupant == null })
+        }.also { it.active = lobby && occupant == null && !controller.isPending })
     }
 
     private fun openPicker(invite: Boolean, members: List<PvpRoomMemberView>) {
@@ -245,7 +253,7 @@ internal class PvpRoomScreen(
         updateSettings(state.settings.copy(enabledMechanics = mechanics))
     }
 
-    private fun send(intent: PvpRoomIntent) = PvpPlayClientNetworking.send(PvpRoomIntentPayload(intent))
+    private fun send(intent: PvpRoomIntent) = controller.submit(intent)
 
     private fun rebuild() {
         clearWidgets()

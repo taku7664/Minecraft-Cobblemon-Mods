@@ -92,7 +92,7 @@ internal object PvpPlayClientNetworking {
                 PvpRoomClientState.lastRoom = payload.room
                 PvpRoomHudOverlay.refreshControls()
                 when (val current = context.client().screen) {
-                    is PvpRoomScreen -> current.applyState(payload.room)
+                    is PvpRoomScreen -> current.applyState(payload.requestId, payload.room)
                     is PvpRoomListScreen -> if (PvpRoomNavigationContract.shouldOpen(payload.requestId, PvpRoomClientState.pendingOpenRequests, payload.reopen)) {
                         context.client().setScreen(PvpRoomScreen(payload.room, current))
                     }
@@ -107,7 +107,7 @@ internal object PvpPlayClientNetworking {
                 PvpRoomClientState.pendingOpenRequests.remove(payload.requestId)
                 when (val current = context.client().screen) {
                     is PvpRoomListScreen -> current.applyRejected(payload.messageKey)
-                    is PvpRoomScreen -> current.applyRejected(payload.messageKey)
+                    is PvpRoomScreen -> current.applyRejected(payload.requestId, payload.messageKey)
                     else -> context.client().player?.displayClientMessage(Component.translatable(payload.messageKey), false)
                 }
             }

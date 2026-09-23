@@ -45,7 +45,10 @@ internal class PvpMemberPickerScreen(
                     TowerPlayRect(listPanel().left + 7, listPanel().top + 7 + index * 23, listPanel().width - 14, 19),
                     Component.literal(member.name),
                     MbcButtonTone.PRIMARY,
-                ) { select(member) },
+                ) {
+                    minecraft?.setScreen(parent)
+                    select(member)
+                },
             )
         }
         val buttons = split(footer(), 3)
