@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.internal.compat.fabric
 
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
 import jbro.cobblemon.morebattlecontent.internal.catalog.CatalogResourceInput
+import jbro.cobblemon.morebattlecontent.internal.catalog.runCatalogReloadSafely
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryCatalogReloadOutcome
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryCatalogResourceBundle
 import jbro.cobblemon.morebattlecontent.internal.factory.FactoryCatalogResourceReloader
@@ -25,6 +26,18 @@ internal object FactoryCatalogResources {
                 override fun getFabricId(): ResourceLocation = listenerId
 
                 override fun onResourceManagerReload(resourceManager: ResourceManager) {
+                    runCatalogReloadSafely(
+                        reload = { reload(resourceManager) },
+                        reportFailure = { failure ->
+                            MoreBattleContent.LOGGER.error(
+                                "Battle Factory catalog reload handling failed. The last successfully applied catalog remains usable.",
+                                failure,
+                            )
+                        },
+                    )
+                }
+
+                private fun reload(resourceManager: ResourceManager) {
                     fun resources(directory: String) = resourceManager.listResources(directory) { location ->
                         location.path.endsWith(".json")
                     }.entries.sortedBy { it.key.toString() }
