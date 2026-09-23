@@ -108,13 +108,19 @@ internal data class BattlePointTransaction(
     private fun matchesBalanceChange(): Boolean = when (kind) {
         BattlePointTransactionKind.CONTENT_REWARD,
         BattlePointTransactionKind.ADMIN_ADD,
-        -> requestedValue > 0 && runCatching { Math.addExact(balanceBefore, requestedValue) }.getOrNull() == balanceAfter
+        -> requestedValue > 0 && addedBalanceMatches()
 
         BattlePointTransactionKind.ADMIN_REMOVE,
         BattlePointTransactionKind.SHOP_PURCHASE,
         -> requestedValue > 0 && balanceBefore >= requestedValue && balanceBefore - requestedValue == balanceAfter
 
         BattlePointTransactionKind.ADMIN_SET -> balanceAfter == requestedValue
+    }
+
+    private fun addedBalanceMatches(): Boolean = try {
+        Math.addExact(balanceBefore, requestedValue) == balanceAfter
+    } catch (_: ArithmeticException) {
+        false
     }
 }
 

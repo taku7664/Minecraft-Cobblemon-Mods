@@ -22,7 +22,11 @@ internal object PvpInviteChatActionMarker {
         val parts = marker.removePrefix(PREFIX).split(':')
         if (parts.size != 2) return null
         val action = PvpInviteChatAction.entries.singleOrNull { it.wireName == parts[0] } ?: return null
-        val roomId = runCatching { UUID.fromString(parts[1]) }.getOrNull() ?: return null
+        val roomId = try {
+            UUID.fromString(parts[1])
+        } catch (_: IllegalArgumentException) {
+            return null
+        }
         return PvpInviteChatTarget(action, roomId)
     }
 }
