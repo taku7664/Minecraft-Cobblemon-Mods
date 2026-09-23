@@ -21,11 +21,14 @@ internal class BattleCompletionRetryQueue<K, T>(
     @Synchronized
     fun submit(completion: T, settle: (T) -> Boolean): Boolean {
         val key = keyOf(completion)
+        val observedEntry = entries[key]
         if (settle(completion)) {
-            entries.remove(key)
+            if (entries[key] === observedEntry) entries.remove(key)
             return true
         }
-        entries[key] = Entry(completion, retryMillis, currentTimeMillis())
+        if (entries[key] === observedEntry) {
+            entries[key] = Entry(completion, retryMillis, currentTimeMillis())
+        }
         return false
     }
 

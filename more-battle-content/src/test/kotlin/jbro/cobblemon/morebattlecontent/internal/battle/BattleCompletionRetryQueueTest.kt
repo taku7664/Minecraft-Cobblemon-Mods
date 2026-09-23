@@ -52,6 +52,30 @@ class BattleCompletionRetryQueueTest {
     }
 
     @Test
+    fun `reentrant settlement cannot delete or overwrite a newer completion for the same battle`() {
+        val newer = Completion(1, 20)
+
+        listOf(true, false).forEach { outerSucceeded ->
+            val queue = BattleCompletionRetryQueue<Int, Completion>(
+                keyOf = Completion::battleId,
+                currentTimeMillis = { 1_000L },
+            )
+
+            assertEquals(
+                outerSucceeded,
+                queue.submit(Completion(1, 10)) {
+                    assertFalse(queue.submit(newer) { false })
+                    outerSucceeded
+                },
+            )
+
+            assertEquals(1, queue.size())
+            assertTrue(queue.any { it == newer })
+            assertFalse(queue.any { it.playerId == 10 })
+        }
+    }
+
+    @Test
     fun `clock rollback does not postpone a completion until the old wall time returns`() {
         var now = 100_000L
         var available = false
