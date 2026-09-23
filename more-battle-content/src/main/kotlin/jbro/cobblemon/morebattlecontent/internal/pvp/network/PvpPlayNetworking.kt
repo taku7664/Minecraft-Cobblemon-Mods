@@ -49,6 +49,7 @@ import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionOpponentSlot
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionPartySlot
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionSpectator
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionViewState
+import jbro.cobblemon.morebattlecontent.internal.presentation.attemptServerUiOperation
 import jbro.cobblemon.morebattlecontent.internal.hub.BattleHubNetworking
 import jbro.cobblemon.morebattlecontent.internal.record.BattleRecordService
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
@@ -365,9 +366,16 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         if (!ServerPlayNetworking.canSend(player, PvpRoomListStatePayload.TYPE)) {
             return PvpCommandOutcome(PvpCommandStatus.CLIENT_UNSUPPORTED)
         }
-        BattleHubNetworking.sendHeader(player)
-        sendRoomList(player, null)
-        return PvpCommandOutcome(PvpCommandStatus.APPLIED)
+        val opened = attemptServerUiOperation(
+            reportFailure = { failure ->
+                MoreBattleContent.LOGGER.error("PvP room list could not be opened for ${player.uuid}", failure)
+            },
+        ) {
+            BattleHubNetworking.sendHeader(player)
+            sendRoomList(player, null)
+            true
+        }
+        return PvpCommandOutcome(if (opened) PvpCommandStatus.APPLIED else PvpCommandStatus.INTERNAL_FAILURE)
     }
 
     override fun challenge(

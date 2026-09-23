@@ -6,6 +6,7 @@ import jbro.cobblemon.morebattlecontent.internal.bp.shop.ShopPlayNetworking
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.FactoryCommandRuntime
 import jbro.cobblemon.morebattlecontent.internal.command.PvpCommandStatus
 import jbro.cobblemon.morebattlecontent.internal.pvp.network.PvpPlayNetworking
+import jbro.cobblemon.morebattlecontent.internal.presentation.attemptServerUiOperation
 import jbro.cobblemon.morebattlecontent.internal.tower.network.TowerPlayNetworking
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayEntryContext
 import java.util.UUID
@@ -24,20 +25,29 @@ internal object BattleHubNetworking {
         PayloadTypeRegistry.playC2S().register(BattleHubOpenContentPayload.TYPE, BattleHubOpenContentPayload.CODEC)
         ServerPlayNetworking.registerGlobalReceiver(BattleHubOpenContentPayload.TYPE) { payload, context ->
             val player = context.player()
-            val opened = when (payload.content) {
-                BattleHubContent.BATTLE_TOWER -> TowerPlayNetworking.open(
-                    player,
-                    entryContext = towerEntryContexts[player.uuid],
-                ).also { success -> if (success) towerEntryContexts.remove(player.uuid) }
-                BattleHubContent.BATTLE_FACTORY -> FactoryCommandRuntime.open(player)
-                BattleHubContent.PVP -> PvpPlayNetworking.open(player).status == PvpCommandStatus.APPLIED
-                BattleHubContent.BOSS_RAID -> false
-                BattleHubContent.SHOP -> ShopPlayNetworking.open(player)
+            val opened = attemptServerUiOperation(
+                reportFailure = { failure -> reportFailure(player, "content ${payload.content}", failure) },
+            ) {
+                when (payload.content) {
+                    BattleHubContent.BATTLE_TOWER -> TowerPlayNetworking.open(
+                        player,
+                        entryContext = towerEntryContexts[player.uuid],
+                    ).also { success -> if (success) towerEntryContexts.remove(player.uuid) }
+                    BattleHubContent.BATTLE_FACTORY -> FactoryCommandRuntime.open(player)
+                    BattleHubContent.PVP -> PvpPlayNetworking.open(player).status == PvpCommandStatus.APPLIED
+                    BattleHubContent.BOSS_RAID -> false
+                    BattleHubContent.SHOP -> ShopPlayNetworking.open(player)
+                }
             }
             if (!opened) {
-                player.sendSystemMessage(
-                    Component.translatable("screen.${MoreBattleContent.MOD_ID}.hub.unavailable.${payload.content.name.lowercase()}"),
-                )
+                attemptServerUiOperation(
+                    reportFailure = { failure -> reportFailure(player, "unavailable response", failure) },
+                ) {
+                    player.sendSystemMessage(
+                        Component.translatable("screen.${MoreBattleContent.MOD_ID}.hub.unavailable.${payload.content.name.lowercase()}"),
+                    )
+                    true
+                }
             }
         }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
@@ -46,22 +56,38 @@ internal object BattleHubNetworking {
     }
 
     fun open(player: ServerPlayer, towerEntryContext: TowerPlayEntryContext? = null): Boolean {
-        if (!ServerPlayNetworking.canSend(player, BattleHubStatePayload.TYPE)) return false
-        if (towerEntryContext == null) {
-            towerEntryContexts.remove(player.uuid)
-        } else {
-            towerEntryContexts[player.uuid] = towerEntryContext
+        val opened = attemptServerUiOperation(
+            reportFailure = { failure -> reportFailure(player, "open", failure) },
+        ) {
+            if (!ServerPlayNetworking.canSend(player, BattleHubStatePayload.TYPE)) return@attemptServerUiOperation false
+            if (towerEntryContext == null) {
+                towerEntryContexts.remove(player.uuid)
+            } else {
+                towerEntryContexts[player.uuid] = towerEntryContext
+            }
+            sendHeader(player)
+            ServerPlayNetworking.send(player, BattleHubStatePayload)
+            true
         }
-        sendHeader(player)
-        ServerPlayNetworking.send(player, BattleHubStatePayload)
-        return true
+        if (!opened && towerEntryContext != null) {
+            towerEntryContexts.remove(player.uuid, towerEntryContext)
+        }
+        return opened
     }
 
     fun sendHeader(player: ServerPlayer): Boolean {
-        if (!ServerPlayNetworking.canSend(player, BattleHubHeaderStatePayload.TYPE)) return false
-        ServerPlayNetworking.send(player, BattleHubHeaderStatePayload(balance(player)))
-        return true
+        return attemptServerUiOperation(
+            reportFailure = { failure -> reportFailure(player, "header", failure) },
+        ) {
+            if (!ServerPlayNetworking.canSend(player, BattleHubHeaderStatePayload.TYPE)) return@attemptServerUiOperation false
+            ServerPlayNetworking.send(player, BattleHubHeaderStatePayload(balance(player)))
+            true
+        }
     }
 
     private fun balance(player: ServerPlayer): Long = BattlePointService.balance(player.server, player.uuid)
+
+    private fun reportFailure(player: ServerPlayer, operation: String, failure: Throwable) {
+        MoreBattleContent.LOGGER.error("Battle Hub $operation failed for ${player.uuid}", failure)
+    }
 }
