@@ -8,6 +8,7 @@ import com.mojang.blaze3d.vertex.VertexSorting
 import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.client.battle.ClientBattle
 import java.util.UUID
+import jbro.cobblemon.morebattlecontent.MoreBattleContent
 import jbro.cobblemon.morebattlecontent.internal.shadow.HideShadowTrainerPayload
 import jbro.cobblemon.morebattlecontent.internal.shadow.ShadowTrainerProjection
 import jbro.cobblemon.morebattlecontent.internal.shadow.ShadowTrainerProjectionState
@@ -35,6 +36,7 @@ internal object ShadowTrainerProjectionRenderer {
     private var renderedBattleId: UUID? = null
     private var shadowPlayer: ShadowPlayer? = null
     private var pendingShaderPackFrame: TrainerHologramRenderFrame? = null
+    private var warned = false
 
     fun register() {
         MbcClientSessionReset.onReset("trainer hologram", ::clear)
@@ -59,21 +61,32 @@ internal object ShadowTrainerProjectionRenderer {
     }
 
     private fun renderBeforeExternalFinalization(context: WorldRenderContext) {
-        if (ExternalShaderPackState.isInUse()) return
-        val buffers = context.consumers() ?: return
-        val frame = TrainerHologramRenderFrame.capture(context) ?: return
-        render(frame, buffers)
+        runOptionalClientEffect(
+            action = {
+                if (ExternalShaderPackState.isInUse()) return@runOptionalClientEffect
+                val buffers = context.consumers() ?: return@runOptionalClientEffect
+                val frame = TrainerHologramRenderFrame.capture(context) ?: return@runOptionalClientEffect
+                render(frame, buffers)
+            },
+            reportFailure = { warnOnce("Failed to render the trainer hologram before shader finalization", it) },
+        )
     }
 
     private fun prepareShaderPackRender(context: WorldRenderContext) {
-        pendingShaderPackFrame = if (
-            ExternalShaderPackState.isInUse() && !ExternalShaderPackState.isRenderingShadowPass() &&
-            state.current() != null
-        ) {
-            TrainerHologramRenderFrame.capture(context)
-        } else {
-            null
-        }
+        runOptionalClientEffect(
+            action = {
+                pendingShaderPackFrame = if (
+                    ExternalShaderPackState.isInUse() && !ExternalShaderPackState.isRenderingShadowPass() &&
+                    state.current() != null
+                ) {
+                    TrainerHologramRenderFrame.capture(context)
+                } else {
+                    null
+                }
+            },
+            recover = { pendingShaderPackFrame = null },
+            reportFailure = { warnOnce("Failed to prepare the shader-pack trainer hologram frame", it) },
+        )
     }
 
     /** Draws the original GLSL model after Iris has finalized its world framebuffer. */
@@ -81,16 +94,23 @@ internal object ShadowTrainerProjectionRenderer {
     fun renderAfterExternalShaderPack() {
         val frame = pendingShaderPackFrame ?: return
         pendingShaderPackFrame = null
-        if (!ExternalShaderPackState.isInUse() || ExternalShaderPackState.isRenderingShadowPass()) return
-        val client = Minecraft.getInstance()
-        val buffers = client.renderBuffers().bufferSource()
-        frame.withCapturedRenderSystemState {
-            try {
-                render(frame, buffers)
-            } finally {
-                buffers.endBatch()
-            }
-        }
+        runOptionalClientEffect(
+            action = {
+                if (!ExternalShaderPackState.isInUse() || ExternalShaderPackState.isRenderingShadowPass()) {
+                    return@runOptionalClientEffect
+                }
+                val client = Minecraft.getInstance()
+                val buffers = client.renderBuffers().bufferSource()
+                frame.withCapturedRenderSystemState {
+                    try {
+                        render(frame, buffers)
+                    } finally {
+                        buffers.endBatch()
+                    }
+                }
+            },
+            reportFailure = { warnOnce("Failed to render the trainer hologram after shader finalization", it) },
+        )
     }
 
     private fun render(frame: TrainerHologramRenderFrame, buffers: MultiBufferSource) {
@@ -197,7 +217,14 @@ internal object ShadowTrainerProjectionRenderer {
     private fun clear() {
         state.clear()
         pendingShaderPackFrame = null
+        warned = false
         clearCachedPlayer()
+    }
+
+    private fun warnOnce(message: String, failure: Throwable) {
+        if (warned) return
+        warned = true
+        MoreBattleContent.LOGGER.error(message, failure)
     }
 
     private fun clearCachedPlayer() {
