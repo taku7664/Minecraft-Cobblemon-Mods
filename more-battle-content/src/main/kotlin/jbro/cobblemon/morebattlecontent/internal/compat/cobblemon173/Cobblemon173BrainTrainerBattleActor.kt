@@ -83,6 +83,10 @@ internal class Cobblemon173BrainTrainerBattleActor(
             logFailure("action preparation", exception)
             submitBaselineOrEmergency(currentRequest, null)
             return
+        } catch (error: LinkageError) {
+            logFailure("action preparation", error)
+            submitBaselineOrEmergency(currentRequest, null)
+            return
         }
         if (preparation.status == Cobblemon173ActionPreparationStatus.WAITING) {
             submitPreparedResponses(currentRequest, preparation.responsesFor("wait").orEmpty())
@@ -108,6 +112,10 @@ internal class Cobblemon173BrainTrainerBattleActor(
             observationAdapter.snapshot(this, ownCurrentPp)
         } catch (exception: Exception) {
             logFailure("public observation", exception)
+            submitBaselineOrEmergency(currentRequest, preparation)
+            return
+        } catch (error: LinkageError) {
+            logFailure("public observation", error)
             submitBaselineOrEmergency(currentRequest, preparation)
             return
         }
@@ -141,6 +149,10 @@ internal class Cobblemon173BrainTrainerBattleActor(
             fallbackChain.decide(primaryEndpoint, localEndpoint, context)
         } catch (exception: Exception) {
             logFailure("Brain decision start", exception)
+            submitBaselineOrEmergency(currentRequest, preparation)
+            return
+        } catch (error: LinkageError) {
+            logFailure("Brain decision start", error)
             submitBaselineOrEmergency(currentRequest, preparation)
             return
         }
@@ -279,17 +291,29 @@ internal class Cobblemon173BrainTrainerBattleActor(
             setActionResponses(responses)
             true
         } catch (exception: Exception) {
-            logFailure("action submission", exception)
-            try {
-                setActionResponses(emergencyPasses(expectedRequest))
-            } catch (passException: Exception) {
-                logFailure("emergency pass submission", passException)
-            }
+            recoverFailedSubmission(expectedRequest, exception)
+            false
+        } catch (error: LinkageError) {
+            recoverFailedSubmission(expectedRequest, error)
             false
         } finally {
-            pokemonList.forEach { it.willBeSwitchedIn = false }
             pendingRequest.compareAndSet(expectedRequest, null)
+            compatibilityCallOrNull { pokemonList }.orEmpty().forEach { pokemon ->
+                compatibilityCallOrNull { pokemon.willBeSwitchedIn = false }
+            }
         }
+    }
+
+    private fun recoverFailedSubmission(expectedRequest: ShowdownActionRequest, failure: Throwable) {
+        logFailure("action submission", failure)
+        compatibilityCallOrElse(
+            fallback = { passFailure ->
+                logFailure("emergency pass submission", passFailure)
+            },
+            action = {
+                setActionResponses(emergencyPasses(expectedRequest))
+            },
+        )
     }
 
     private fun emergencyPasses(request: ShowdownActionRequest): List<ShowdownActionResponse> {
@@ -349,6 +373,8 @@ internal class Cobblemon173BrainTrainerBattleActor(
             brain.closeSession(session, result)
         } catch (exception: Exception) {
             logFailure("Brain session close", exception)
+        } catch (error: LinkageError) {
+            logFailure("Brain session close", error)
         }
     }
 
@@ -360,12 +386,14 @@ internal class Cobblemon173BrainTrainerBattleActor(
         }
 
     private fun logFailure(operation: String, throwable: Throwable) {
-        MoreBattleContent.LOGGER.error(
-            "Battle {} {} failed: {}",
-            compatibilityCallOrNull { battle.battleId },
-            operation,
-            throwable.javaClass.name,
-        )
+        compatibilityCallOrNull {
+            MoreBattleContent.LOGGER.error(
+                "Battle {} {} failed: {}",
+                compatibilityCallOrNull { battle.battleId },
+                operation,
+                throwable.javaClass.name,
+            )
+        }
     }
 
     private fun logDecisionResolution(
