@@ -324,6 +324,40 @@ class FactoryRentalRulesTest {
         assertEquals(battleId, session.activeBattleId)
     }
 
+    @Test
+    fun `settlement retry reuses the prepared next round draft`() {
+        val team = FactoryRentalDraft((1..6).map(::rental))
+            .select(listOf("set1", "set2", "set3"), FactoryBattleFormat.SINGLE)
+        var draftRequests = 0
+        val session = FactoryRunSession(
+            runId = UUID.randomUUID(),
+            initialTeam = team,
+            levelMode = FactoryLevelMode.LEVEL_50,
+            healRentals = {},
+            initialWins = 6,
+            nextDraft = { _, _, _ ->
+                draftRequests++
+                val offset = draftRequests * 10
+                FactoryRentalDraft(((offset + 1)..(offset + 6)).map(::rental))
+            },
+        )
+        val battleId = UUID.randomUUID()
+        val opponent = mapOf(
+            UUID(1, 7) to rental(7),
+            UUID(1, 8) to rental(8),
+            UUID(1, 9) to rental(9),
+        )
+        session.beginBattle(battleId)
+
+        assertThrows<IllegalStateException> {
+            session.recordVictory(battleId, opponent, emptyMap()) { error("storage unavailable") }
+        }
+        session.recordVictory(battleId, opponent, emptyMap())
+
+        assertEquals(1, draftRequests)
+        assertEquals((11..16).map { "set$it" }, session.pendingDraft!!.sets.map(FactoryRentalSet::setId))
+    }
+
     private fun rental(
         index: Int,
         species: String = "cobblemon:species$index",

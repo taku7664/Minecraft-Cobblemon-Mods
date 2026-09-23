@@ -120,6 +120,7 @@ internal class FactoryRunSession(
     var pendingDraft: FactoryRentalDraft? = null
         private set
     private var revisableDraft: FactoryRentalDraft? = initialDraft
+    private var preparedNextRoundDraft: PreparedNextRoundDraft? = null
     val canReviseSelection: Boolean
         get() = phase == FactoryRunPhase.READY && activeBattleId == null && revisableDraft != null
     private var offeredSets: Map<UUID, FactoryRentalSet> = emptyMap()
@@ -177,22 +178,29 @@ internal class FactoryRunSession(
             )
         }
         val nextRoundDraft = if (winsAfter % FactoryProgression.BATTLES_PER_ROUND == 0) {
-            val nextBattleNumber = checkNotNull(FactoryProgression.nextBattleNumber(winsAfter)) {
-                "Factory progression cannot continue past the supported win count"
-            }
-            checkNotNull(
-                nextDraft(
-                    levelMode,
-                    FactoryProgression.roundForBattle(nextBattleNumber),
-                    rentAndTradeCount,
-                ),
-            ) { "Factory rental draft is unavailable for the next round" }
+            preparedNextRoundDraft
+                ?.takeIf { it.battleId == battleId && it.winsAfter == winsAfter }
+                ?.draft
+                ?: run {
+                    val nextBattleNumber = checkNotNull(FactoryProgression.nextBattleNumber(winsAfter)) {
+                        "Factory progression cannot continue past the supported win count"
+                    }
+                    checkNotNull(
+                        nextDraft(
+                            levelMode,
+                            FactoryProgression.roundForBattle(nextBattleNumber),
+                            rentAndTradeCount,
+                        ),
+                    ) { "Factory rental draft is unavailable for the next round" }
+                        .also { preparedNextRoundDraft = PreparedNextRoundDraft(battleId, winsAfter, it) }
+                }
         } else {
             null
         }
         healRentals(team)
         beforeCommit(winsAfter)
         wins = winsAfter
+        preparedNextRoundDraft = null
         if (winsAfter % FactoryProgression.BATTLES_PER_ROUND == 0) {
             offeredSets = emptyMap()
             swapOffers = emptyList()
@@ -252,6 +260,7 @@ internal class FactoryRunSession(
         swapOffers = emptyList()
         pendingDraft = null
         revisableDraft = null
+        preparedNextRoundDraft = null
     }
 
     fun cancelBattle(battleId: UUID) {
@@ -259,6 +268,7 @@ internal class FactoryRunSession(
         activeBattleId = null
         phase = FactoryRunPhase.READY
         swapOffers = emptyList()
+        preparedNextRoundDraft = null
     }
 
     fun adminSetWins(value: Int): Boolean {
@@ -278,4 +288,10 @@ internal class FactoryRunSession(
         swapOffers = emptyList()
         phase = FactoryRunPhase.READY
     }
+
+    private data class PreparedNextRoundDraft(
+        val battleId: UUID,
+        val winsAfter: Int,
+        val draft: FactoryRentalDraft,
+    )
 }
