@@ -130,6 +130,24 @@ class PvpSessionServiceTest {
     }
 
     @Test
+    fun `accepted match preparation exception preserves failure and releases ownership`() {
+        val failure = NoSuchMethodError("snapshot API drift")
+        val snapshots = RecordingSnapshots(snapshotFailure = second to failure)
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
+        service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
+
+        assertSame(
+            failure,
+            assertThrows(NoSuchMethodError::class.java) {
+                service.acceptRegisteredMatch(matchId, second, team(first, 1), team(second, 4))
+            },
+        )
+        assertNull(service.challenge(matchId))
+        assertNull(service.challengeFor(first))
+        assertEquals(setOf(first, second), snapshots.discarded)
+    }
+
+    @Test
     fun `target can reject a pending challenge and both players become available`() {
         val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
         service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))

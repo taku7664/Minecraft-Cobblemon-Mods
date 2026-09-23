@@ -41,7 +41,6 @@ import jbro.cobblemon.morebattlecontent.internal.pvp.PvpRoomView
 import jbro.cobblemon.morebattlecontent.internal.pvp.leaveRequestError
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpSelectionMutation
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpSessionService
-import jbro.cobblemon.morebattlecontent.internal.pvp.PvpTeamRegistrationMutation
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpTeamRegistrationResult
 import jbro.cobblemon.morebattlecontent.internal.pvp.PvpTurnCapture
 import jbro.cobblemon.morebattlecontent.internal.pvp.ui.PvpSelectionIntent
@@ -410,24 +409,31 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         if (!supportsSelectionScreen(challenger) || !supportsSelectionScreen(opponent)) {
             return PvpCommandOutcome(PvpCommandStatus.CLIENT_UNSUPPORTED)
         }
-        val accepted = sessions.accept(challenge.request.challengeId, opponent.uuid)
-        if (accepted !is PvpChallengeMutationResult.Applied) return accepted.toCommandOutcome()
-
-        val challengerTeam = Cobblemon173PvpTeamFactory.register(challenger, challenge.request.format)
-        if (challengerTeam !is PvpTeamRegistrationResult.Accepted) {
-            sessions.cancel(challenge.request.challengeId, opponent.uuid)
-            return PvpCommandOutcome(PvpCommandStatus.OPPONENT_TEAM_INVALID)
-        }
-        val opponentTeam = Cobblemon173PvpTeamFactory.register(opponent, challenge.request.format)
-        if (opponentTeam !is PvpTeamRegistrationResult.Accepted) {
-            sessions.cancel(challenge.request.challengeId, opponent.uuid)
-            return PvpCommandOutcome(PvpCommandStatus.TEAM_INVALID)
-        }
-        val challengerStored = sessions.registerTeam(challenge.request.challengeId, challenger.uuid, challengerTeam.team)
-        val opponentStored = sessions.registerTeam(challenge.request.challengeId, opponent.uuid, opponentTeam.team)
-        if (challengerStored != PvpTeamRegistrationMutation.STORED || opponentStored != PvpTeamRegistrationMutation.STORED) {
-            sessions.cancel(challenge.request.challengeId, opponent.uuid)
-            return PvpCommandOutcome(PvpCommandStatus.INVALID_STATE)
+        try {
+            val challengerTeam = Cobblemon173PvpTeamFactory.register(challenger, challenge.request.format)
+            if (challengerTeam !is PvpTeamRegistrationResult.Accepted) {
+                sessions.cancel(challenge.request.challengeId, opponent.uuid)
+                return PvpCommandOutcome(PvpCommandStatus.OPPONENT_TEAM_INVALID)
+            }
+            val opponentTeam = Cobblemon173PvpTeamFactory.register(opponent, challenge.request.format)
+            if (opponentTeam !is PvpTeamRegistrationResult.Accepted) {
+                sessions.cancel(challenge.request.challengeId, opponent.uuid)
+                return PvpCommandOutcome(PvpCommandStatus.TEAM_INVALID)
+            }
+            val prepared = sessions.acceptRegisteredMatch(
+                challenge.request.challengeId,
+                opponent.uuid,
+                challengerTeam.team,
+                opponentTeam.team,
+            )
+            if (prepared !is PvpChallengeMutationResult.Applied) return prepared.toCommandOutcome()
+        } catch (failure: Throwable) {
+            try {
+                sessions.cancel(challenge.request.challengeId, opponent.uuid)
+            } catch (cleanupFailure: Throwable) {
+                if (failure !== cleanupFailure) failure.addSuppressed(cleanupFailure)
+            }
+            throw failure
         }
         sendState(challenger, null)
         sendState(opponent, null)

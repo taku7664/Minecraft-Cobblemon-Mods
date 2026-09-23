@@ -122,21 +122,24 @@ internal class PvpSessionService<P>(
         opponentTeam: PvpRegisteredTeam,
     ): Boolean {
         if (invite(request) !is PvpChallengeMutationResult.Applied) return false
-        try {
-            val accepted = accept(request.challengeId, request.opponentId) is PvpChallengeMutationResult.Applied
-            val challengerStored = accepted &&
-                registerTeam(request.challengeId, request.challengerId, challengerTeam) ==
-                PvpTeamRegistrationMutation.STORED
-            val opponentStored = challengerStored &&
-                registerTeam(request.challengeId, request.opponentId, opponentTeam) ==
-                PvpTeamRegistrationMutation.STORED
-            if (opponentStored) return true
-        } catch (failure: Throwable) {
-            rollbackRoomMatchPreparation(request, failure)
-            throw failure
+        val accepted = accept(request.challengeId, request.opponentId)
+        if (accepted !is PvpChallengeMutationResult.Applied) {
+            rollbackMatchPreparation(request, null)
+            return false
         }
-        rollbackRoomMatchPreparation(request, null)
-        return false
+        return registerAcceptedTeams(accepted, challengerTeam, opponentTeam) is PvpChallengeMutationResult.Applied
+    }
+
+    @Synchronized
+    fun acceptRegisteredMatch(
+        matchId: UUID,
+        opponentId: UUID,
+        challengerTeam: PvpRegisteredTeam,
+        opponentTeam: PvpRegisteredTeam,
+    ): PvpChallengeMutationResult {
+        val accepted = accept(matchId, opponentId)
+        if (accepted !is PvpChallengeMutationResult.Applied) return accepted
+        return registerAcceptedTeams(accepted, challengerTeam, opponentTeam)
     }
 
     @Synchronized
@@ -393,10 +396,32 @@ internal class PvpSessionService<P>(
         )
     }
 
-    private fun rollbackRoomMatchPreparation(request: PvpChallengeRequest, primaryFailure: Throwable?) {
+    private fun registerAcceptedTeams(
+        accepted: PvpChallengeMutationResult.Applied,
+        challengerTeam: PvpRegisteredTeam,
+        opponentTeam: PvpRegisteredTeam,
+    ): PvpChallengeMutationResult {
+        val request = accepted.challenge.request
+        try {
+            val challengerStored =
+                registerTeam(request.challengeId, request.challengerId, challengerTeam) ==
+                PvpTeamRegistrationMutation.STORED
+            val opponentStored = challengerStored &&
+                registerTeam(request.challengeId, request.opponentId, opponentTeam) ==
+                PvpTeamRegistrationMutation.STORED
+            if (opponentStored) return accepted
+        } catch (failure: Throwable) {
+            rollbackMatchPreparation(request, failure)
+            throw failure
+        }
+        rollbackMatchPreparation(request, null)
+        return PvpChallengeMutationResult.Rejected(PvpChallengeMutationError.INVALID_PHASE)
+    }
+
+    private fun rollbackMatchPreparation(request: PvpChallengeRequest, primaryFailure: Throwable?) {
         try {
             check(cancel(request.challengeId, request.challengerId) is PvpChallengeMutationResult.Applied) {
-                "New PvP room match could not be cancelled during preparation rollback"
+                "PvP match could not be cancelled during preparation rollback"
             }
         } catch (cleanupFailure: Throwable) {
             if (primaryFailure == null) throw cleanupFailure
