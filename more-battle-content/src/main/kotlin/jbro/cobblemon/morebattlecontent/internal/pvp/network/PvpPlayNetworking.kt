@@ -631,16 +631,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             format = room.settings.format,
             enabledMechanics = room.settings.immutableEnabledMechanics,
         )
-        if (sessions.invite(request) !is PvpChallengeMutationResult.Applied ||
-            sessions.accept(room.roomId, rightId) !is PvpChallengeMutationResult.Applied
-        ) {
-            rejectRoom(player, intent.requestId, PvpRoomError.INVALID_PHASE)
-            return
-        }
-        val storedLeft = sessions.registerTeam(room.roomId, leftId, leftTeam.team)
-        val storedRight = sessions.registerTeam(room.roomId, rightId, rightTeam.team)
-        if (storedLeft != PvpTeamRegistrationMutation.STORED || storedRight != PvpTeamRegistrationMutation.STORED) {
-            sessions.cancel(room.roomId, leftId)
+        if (!sessions.prepareRoomMatch(request, leftTeam.team, rightTeam.team)) {
             rejectRoom(player, intent.requestId, PvpRoomError.INVALID_PHASE)
             return
         }

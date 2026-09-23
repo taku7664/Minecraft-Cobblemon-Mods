@@ -116,6 +116,30 @@ internal class PvpSessionService<P>(
     }
 
     @Synchronized
+    fun prepareRoomMatch(
+        request: PvpChallengeRequest,
+        challengerTeam: PvpRegisteredTeam,
+        opponentTeam: PvpRegisteredTeam,
+    ): Boolean {
+        if (invite(request) !is PvpChallengeMutationResult.Applied) return false
+        try {
+            val accepted = accept(request.challengeId, request.opponentId) is PvpChallengeMutationResult.Applied
+            val challengerStored = accepted &&
+                registerTeam(request.challengeId, request.challengerId, challengerTeam) ==
+                PvpTeamRegistrationMutation.STORED
+            val opponentStored = challengerStored &&
+                registerTeam(request.challengeId, request.opponentId, opponentTeam) ==
+                PvpTeamRegistrationMutation.STORED
+            if (opponentStored) return true
+        } catch (failure: Throwable) {
+            rollbackRoomMatchPreparation(request, failure)
+            throw failure
+        }
+        rollbackRoomMatchPreparation(request, null)
+        return false
+    }
+
+    @Synchronized
     fun select(
         matchId: UUID,
         playerId: UUID,
@@ -367,6 +391,17 @@ internal class PvpSessionService<P>(
             { snapshots.discard(challengerId) },
             { snapshots.discard(opponentId) },
         )
+    }
+
+    private fun rollbackRoomMatchPreparation(request: PvpChallengeRequest, primaryFailure: Throwable?) {
+        try {
+            check(cancel(request.challengeId, request.challengerId) is PvpChallengeMutationResult.Applied) {
+                "New PvP room match could not be cancelled during preparation rollback"
+            }
+        } catch (cleanupFailure: Throwable) {
+            if (primaryFailure == null) throw cleanupFailure
+            if (primaryFailure !== cleanupFailure) primaryFailure.addSuppressed(cleanupFailure)
+        }
     }
 
     private fun runCleanupActions(vararg actions: () -> Unit) {

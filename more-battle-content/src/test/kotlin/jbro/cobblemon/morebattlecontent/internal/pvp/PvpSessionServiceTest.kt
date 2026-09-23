@@ -98,6 +98,38 @@ class PvpSessionServiceTest {
     }
 
     @Test
+    fun `room match preparation rolls back a rejected second snapshot`() {
+        val snapshots = RecordingSnapshots(rejectedPlayer = second)
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
+        val request = PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE)
+
+        assertFalse(service.prepareRoomMatch(request, team(first, 1), team(second, 4)))
+
+        assertNull(service.challenge(matchId))
+        assertNull(service.challengeFor(first))
+        assertEquals(setOf(first, second), snapshots.discarded)
+        assertTrue(service.invite(request) is PvpChallengeMutationResult.Applied)
+    }
+
+    @Test
+    fun `room match preparation exception preserves failure and releases ownership`() {
+        val failure = NoSuchMethodError("snapshot API drift")
+        val snapshots = RecordingSnapshots(snapshotFailure = second to failure)
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
+        val request = PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE)
+
+        assertSame(
+            failure,
+            assertThrows(NoSuchMethodError::class.java) {
+                service.prepareRoomMatch(request, team(first, 1), team(second, 4))
+            },
+        )
+        assertNull(service.challenge(matchId))
+        assertNull(service.challengeFor(first))
+        assertEquals(setOf(first, second), snapshots.discarded)
+    }
+
+    @Test
     fun `target can reject a pending challenge and both players become available`() {
         val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
         service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
@@ -434,6 +466,7 @@ class PvpSessionServiceTest {
     private class RecordingSnapshots(
         private val rejectedPlayer: UUID? = null,
         private val discardFailure: Pair<UUID, Throwable>? = null,
+        private val snapshotFailure: Pair<UUID, Throwable>? = null,
     ) : PvpSessionSnapshots<String>, PvpBattleTeamMaterializer<String> {
         val captured = LinkedHashSet<UUID>()
         val discarded = LinkedHashSet<UUID>()
@@ -442,6 +475,7 @@ class PvpSessionServiceTest {
             if (playerId == rejectedPlayer) {
                 PvpRegisteredTeamSnapshotResult.Rejected(team.members.first().pokemonId)
             } else {
+                snapshotFailure?.takeIf { it.first == playerId }?.second?.let { throw it }
                 captured += playerId
                 PvpRegisteredTeamSnapshotResult.Stored
             }
