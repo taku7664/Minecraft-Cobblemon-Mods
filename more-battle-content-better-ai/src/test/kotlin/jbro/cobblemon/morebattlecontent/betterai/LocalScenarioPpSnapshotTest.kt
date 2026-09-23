@@ -45,6 +45,7 @@ class LocalScenarioPpSnapshotTest {
             // cannot Taunt or Encore it. Its positive-PP moves must not disappear through a second
             // subtraction of historical usage while building current legal candidates.
             context.state.pokemon.singleOrNull { it.side == BattleSide.ALLY && it.activeSlot != null &&
+                !it.fainted && it.hpFraction > 0.0 &&
                 it.speciesId == "cobblemon:lugia" }?.let { lugia ->
                 assertEquals(context.publicActionCatalog.forPokemon(lugia.battlePokemonId)
                     .filter { it.details.currentPp > 0 }.map { it.moveId }.toSet(),

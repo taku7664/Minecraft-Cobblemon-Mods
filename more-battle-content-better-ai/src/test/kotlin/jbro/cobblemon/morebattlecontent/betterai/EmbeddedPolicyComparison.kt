@@ -38,6 +38,8 @@ internal object EmbeddedPolicyComparison {
             id = "current_uncapped_leaf", capLeafDamageToRemainingHp = false)
         "CURRENT_TEAM_COVERAGE" -> LocalDecisionTuning.CURRENT.copy(
             id = "current_team_coverage", leafTeamCoverageWeight = 0.25)
+        "CURRENT_NO_MOVE_USAGE" -> LocalDecisionTuning.CURRENT.copy(
+            id = "current_no_move_usage", lookaheadMoveHypotheses = false)
         "CURRENT_PUBLIC_MOVE_HYPOTHESES" -> LocalDecisionTuning.CURRENT.copy(
             id = "current_public_move_hypotheses", lookaheadMoveHypotheses = true)
         "CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3" -> LocalDecisionTuning.CURRENT.copy(
@@ -49,7 +51,7 @@ internal object EmbeddedPolicyComparison {
         "CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY_CONDITIONS" -> LocalDecisionTuning.CURRENT.copy(
             id = "current_public_move_hypotheses_cap3_priority_conditions", lookaheadMoveHypotheses = true,
             hypotheticalMoveLimitPerSlot = 3, hypotheticalPriorityReservation = LocalHypothesisPriorityReservation.CONDITION_GROUPS)
-        else -> error("Supported arms: CURRENT, LEGACY, CURRENT_UNCAPPED_LEAF, CURRENT_TEAM_COVERAGE, CURRENT_PUBLIC_MOVE_HYPOTHESES, CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3, CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY or CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY_CONDITIONS")
+        else -> error("Supported arms: CURRENT, LEGACY, CURRENT_UNCAPPED_LEAF, CURRENT_TEAM_COVERAGE, CURRENT_NO_MOVE_USAGE, CURRENT_PUBLIC_MOVE_HYPOTHESES, CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3, CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY or CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY_CONDITIONS")
     }
 
     fun runPair(engine: Path, pair: JsonObject, directory: Path, pairIndex: Int,

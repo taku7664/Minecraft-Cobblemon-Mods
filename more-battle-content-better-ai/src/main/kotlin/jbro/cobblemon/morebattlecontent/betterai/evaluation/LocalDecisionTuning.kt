@@ -43,7 +43,7 @@ internal data class LocalDecisionTuning(
      * over the moves that *are* known is still evidence; it is just not the whole picture.
      */
     val lookaheadCoverageFloor: Double = 0.35,
-    /** Experimental public-learnset response search; adoption requires paired validation. */
+    /** Search hidden responses only when the bundled public usage snapshot supports the move. */
     val lookaheadMoveHypotheses: Boolean = false,
     /** Distinct hypothetical moves per active slot, before the existing overall action cap. */
     val hypotheticalMoveLimitPerSlot: Int = Int.MAX_VALUE,
@@ -387,7 +387,14 @@ internal data class LocalDecisionTuning(
          * leaf evaluator has been given what it is missing. Raising this without doing that first
          * will reproduce the same result.
          */
-        val CURRENT = LocalDecisionTuning(id = "current")
+        val CURRENT = LocalDecisionTuning(
+            id = "current",
+            lookaheadMoveHypotheses = true,
+            hypotheticalMoveLimitPerSlot = 3,
+            // A low-usage priority attack can still be the only lethal reply. Preserve both
+            // unconditional and condition-gated groups before filling the cap by usage.
+            hypotheticalPriorityReservation = LocalHypothesisPriorityReservation.CONDITION_GROUPS,
+        )
 
         /**
          * Exact pre-fix behaviour, kept so regressions and improvements can be measured head to head

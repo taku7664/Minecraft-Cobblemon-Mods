@@ -74,7 +74,7 @@ class LocalRecursiveLookaheadTest {
         fun evaluate(cap: Int, reservation: LocalHypothesisPriorityReservation = LocalHypothesisPriorityReservation.SINGLE) = LocalRecursiveLookaheadEvaluator.evaluate(listOf(rank(recovery)), source,
             profile, jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning.CURRENT.copy(
                 lookaheadMoveHypotheses = true, hypotheticalMoveLimitPerSlot = cap,
-                hypotheticalPriorityReservation = reservation), clockMillis = { 0L })
+                hypotheticalPriorityReservation = reservation), clockMillis = { 0L }, moveUsageForFormat = { null })
         val full = evaluate(Int.MAX_VALUE)
         val capped = evaluate(3)
         val grouped = evaluate(3, LocalHypothesisPriorityReservation.CONDITION_GROUPS)
@@ -143,7 +143,8 @@ class LocalRecursiveLookaheadTest {
             profile,
             jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning.CURRENT.copy(
                 lookaheadMoveHypotheses = true, hypotheticalMoveLimitPerSlot = cap,
-                hypotheticalPriorityReservation = if (reservePriority) LocalHypothesisPriorityReservation.SINGLE else LocalHypothesisPriorityReservation.NONE), clockMillis = { 0L })
+                hypotheticalPriorityReservation = if (reservePriority) LocalHypothesisPriorityReservation.SINGLE else LocalHypothesisPriorityReservation.NONE),
+            clockMillis = { 0L }, moveUsageForFormat = { null })
         val full = evaluate(Int.MAX_VALUE)
         val capped = evaluate(3)
         for (result in listOf(full, capped)) {
@@ -181,7 +182,7 @@ class LocalRecursiveLookaheadTest {
         val profile = BattleTrainerProfile.balanced(0, BattleDifficultyProfiles.INTRODUCTORY)
         fun evaluate(enabled: Boolean) = LocalRecursiveLookaheadEvaluator.evaluate(listOf(rank(attack)), source,
             profile, jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning.CURRENT.copy(
-                lookaheadMoveHypotheses = enabled), clockMillis = { 0L })
+                lookaheadMoveHypotheses = enabled), clockMillis = { 0L }, moveUsageForFormat = { null })
         val disabled = evaluate(false)
         val enabled = evaluate(true)
         assertEquals(1, enabled.depthCompleted)
@@ -566,6 +567,7 @@ class LocalRecursiveLookaheadTest {
             ),
         )
         val decisionContext = context(initial, listOf(ownTurn), publicCatalog)
+        val selectedUsageFormats = mutableListOf<BattleFormat>()
 
         BattleDifficultyProfiles.entries.forEachIndexed { index, difficulty ->
             val tierBudget = LocalLookaheadBudgetPolicy.forTier(difficulty.tier)
@@ -574,12 +576,14 @@ class LocalRecursiveLookaheadTest {
                 decisionContext,
                 BattleTrainerProfile.balanced(index.coerceAtMost(5), difficulty),
                 budget = tierBudget.copy(timeMillis = 10_000L),
+                moveUsageForFormat = { format -> selectedUsageFormats += format; null },
             )
             assertEquals(index + 1, result.depthCompleted, difficulty.id)
             assertFalse(result.truncated, difficulty.id)
             assertFalse(result.publicResponseIncomplete, difficulty.id)
             assertTrue(result.nodesVisited > 0, difficulty.id)
         }
+        assertEquals(List(BattleDifficultyProfiles.entries.size) { BattleFormat.DOUBLE }, selectedUsageFormats)
     }
 
     @Test

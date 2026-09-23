@@ -20,6 +20,8 @@ import jbro.cobblemon.morebattlecontent.betterai.state.LocalRecursiveMoveHabit
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalRecursiveSwitchTempo
 import jbro.cobblemon.morebattlecontent.betterai.state.PublicTurnProjection
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalOpponentMoveUsage
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalMoveUsageLookup
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveHistoryProjector
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveSnapshotActionConstraints
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalBranchMoveInputs
@@ -81,8 +83,11 @@ internal object LocalRecursiveLookaheadEvaluator {
         rootChoicePool: ((List<LocalBattleActionRank>) -> Set<String>)? = null,
         /** The actual production decision represented by a completed depth, for conservative convergence stops. */
         decisionSignature: ((List<LocalBattleActionRank>) -> LocalLookaheadDecisionSignature)? = null,
+        /** Override only for synthetic fixtures; production selects the bundled table by battle format. */
+        moveUsageForFormat: (BattleFormat) -> LocalMoveUsageLookup? = LocalOpponentMoveUsage::forFormat,
     ): LocalLookaheadEvaluation {
         val requestedDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1)
+        val moveUsage = moveUsageForFormat(context.state.format)
         val searchStartedAt = clockMillis()
         val localDeadline = LocalLookaheadBudgetPolicy.deadline(
             startMillis = searchStartedAt,
@@ -164,6 +169,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 initialStateUtility = baseline,
                 actionCalculationCache = actionCalculationCache,
                 clockMillis = clockMillis,
+                moveUsage = moveUsage,
             )
             // Which candidates this ply is allowed to spend the budget on.
             //
@@ -389,6 +395,7 @@ internal object LocalRecursiveLookaheadEvaluator {
         initialStateUtility: Double,
         private val actionCalculationCache: LocalProjectedActionCalculationCache,
         private val clockMillis: () -> Long,
+        private val moveUsage: LocalMoveUsageLookup?,
     ) {
         var nodesVisited: Int = 0
             private set
@@ -811,6 +818,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 includeMoveHypotheses = tuning.lookaheadMoveHypotheses,
                 hypotheticalMoveLimitPerSlot = tuning.hypotheticalMoveLimitPerSlot,
                 hypotheticalPriorityReservation = tuning.hypotheticalPriorityReservation,
+                moveUsage = moveUsage,
             )
             if (incompleteIds.isNotEmpty()) {
                 publicResponseIncomplete = true

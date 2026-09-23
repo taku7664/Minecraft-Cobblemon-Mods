@@ -4,7 +4,7 @@ import java.util.Collections
 import java.util.Locale
 import jbro.cobblemon.morebattlecontent.api.ai.*
 
-/** Lazy moveset hypotheses. Alternatives are possibilities, not a calibrated usage distribution. */
+/** Lazy moveset hypotheses. Usage is a move-presence prior, never a turn-choice distribution. */
 internal object LocalOpponentMoveHypotheses {
     /** Templates retain source PP; the action factory deducts branch uses exactly once. */
     fun options(pokemon: BattlePokemonStateView, catalog: BattlePublicActionCatalogView,
@@ -25,6 +25,18 @@ internal object LocalOpponentMoveHypotheses {
                 (details.currentPp > used || history.chargingMoveByPokemon[pokemon.battlePokemonId] == move)
         }
     }
+
+    /** Keep only publicly sourced moves and order them by marginal set presence. */
+    fun usageRankedOptions(
+        pokemon: BattlePokemonStateView,
+        catalog: BattlePublicActionCatalogView,
+        history: RecursiveActionHistory,
+        usage: LocalMoveUsageLookup,
+    ): Map<String, BattleMoveCandidateView> = options(pokemon, catalog, history).entries.mapNotNull { entry ->
+        usage.rate(pokemon.speciesId, pokemon.formId, entry.key)?.let { rate -> Triple(entry.key, entry.value, rate) }
+    }.sortedWith(compareByDescending<Triple<String, BattleMoveCandidateView, Double>> { it.third }
+        .thenBy { canonical(it.first) })
+        .associateTo(linkedMapOf()) { (move, details) -> move to details }
 
     fun assumeAction(state: BattleStateView, catalog: BattlePublicActionCatalogView,
                      history: RecursiveActionHistory, action: BattleActionCandidate): RecursiveActionHistory {

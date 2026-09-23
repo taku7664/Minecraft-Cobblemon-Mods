@@ -11,6 +11,7 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffective
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveMoveUseKey
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalOpponentMoveHypotheses
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalMoveUsageLookup
 
 /** Builds complete public-information turns for one or two active slots. */
 internal object PublicFutureActionFactory {
@@ -24,6 +25,7 @@ internal object PublicFutureActionFactory {
         includeMoveHypotheses: Boolean = false,
         hypotheticalMoveLimitPerSlot: Int = Int.MAX_VALUE,
         hypotheticalPriorityReservation: LocalHypothesisPriorityReservation = LocalHypothesisPriorityReservation.NONE,
+        moveUsage: LocalMoveUsageLookup? = null,
     ): List<BattleActionCandidate> {
         require(candidateLimitPerSlot > 0)
         require(hypotheticalMoveLimitPerSlot > 0)
@@ -36,10 +38,12 @@ internal object PublicFutureActionFactory {
                 state,
                 side,
                 pokemon,
-                primitiveActions(state, side, pokemon, catalog, history, unknownMovePokemonIds, includeMoveHypotheses),
+                primitiveActions(state, side, pokemon, catalog, history, unknownMovePokemonIds, includeMoveHypotheses,
+                    moveUsage),
                 candidateLimitPerSlot,
                 hypotheticalMoveLimitPerSlot,
                 hypotheticalPriorityReservation,
+                moveUsage,
             )
         }
         if (bySlot.any(List<BattleActionCandidate>::isEmpty)) return emptyList()
@@ -69,6 +73,7 @@ internal object PublicFutureActionFactory {
         limit: Int,
         hypotheticalMoveLimit: Int,
         hypotheticalPriorityReservation: LocalHypothesisPriorityReservation,
+        moveUsage: LocalMoveUsageLookup?,
     ): List<BattleActionCandidate> {
         val ordered = actions.sortedWith(
             compareByDescending<BattleActionCandidate> { primitivePriority(state, side, actor, it) }
@@ -90,6 +95,19 @@ internal object PublicFutureActionFactory {
         }.take(hypotheticalMoveLimit).toList()
         val selectedHypotheses = linkedSetOf<String>()
         priorityResponses.forEach { action -> action.moveId?.let { selectedHypotheses.add(canonicalId(it)) } }
+        if (moveUsage != null) {
+            ordered.asSequence().filter { "hypothetical_public_move" in it.tags }
+                .distinctBy { canonicalId(requireNotNull(it.moveId)) }
+                .sortedWith(compareByDescending<BattleActionCandidate> {
+                    moveUsage.rate(actor.speciesId, actor.formId, requireNotNull(it.moveId)) ?: -1.0
+                }.thenByDescending { primitivePriority(state, side, actor, it) }
+                    .thenBy(BattleActionCandidate::actionId))
+                .forEach { action ->
+                    if (selectedHypotheses.size < hypotheticalMoveLimit) {
+                        selectedHypotheses.add(canonicalId(requireNotNull(action.moveId)))
+                    }
+                }
+        }
         val ranked = ordered.filter { action ->
             // A search-cost cap, not a claim that omitted moves are impossible. Keep every target
             // variant of a selected move; known moves, switches and unknown responses do not count.
@@ -193,6 +211,7 @@ internal object PublicFutureActionFactory {
         history: RecursiveActionHistory,
         unknownMovePokemonIds: Set<java.util.UUID>,
         includeMoveHypotheses: Boolean = false,
+        moveUsage: LocalMoveUsageLookup? = null,
     ): List<BattleActionCandidate> {
         val actorSlot = requireNotNull(active.activeSlot)
         if (active.actionConstraints.mustRecharge || active.battlePokemonId in history.rechargingPokemonIds) {
@@ -208,7 +227,9 @@ internal object PublicFutureActionFactory {
         val knownOptions = currentCatalog.forPokemon(active.battlePokemonId).map {
             FutureMoveOption(it.moveId, it.details, false)
         }
-        val hypotheses = if (includeMoveHypotheses) LocalOpponentMoveHypotheses.options(active, currentCatalog, history)
+        val hypotheses = if (includeMoveHypotheses) (moveUsage?.let {
+            LocalOpponentMoveHypotheses.usageRankedOptions(active, currentCatalog, history, it)
+        } ?: LocalOpponentMoveHypotheses.options(active, currentCatalog, history))
             .filterKeys { move -> knownOptions.none { canonicalId(it.moveId) == canonicalId(move) } }
             .map { (move, details) -> FutureMoveOption(move, details, true) } else emptyList()
         val moves = (knownOptions + hypotheses).flatMapIndexed { index, option ->

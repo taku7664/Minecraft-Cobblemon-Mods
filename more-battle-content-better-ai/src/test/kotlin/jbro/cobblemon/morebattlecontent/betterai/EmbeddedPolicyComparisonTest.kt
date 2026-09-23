@@ -16,16 +16,18 @@ class EmbeddedPolicyComparisonTest {
     }
 
     @Test
-    fun `hypothesis comparison arm changes only the experimental switch and identity`() {
+    fun `current usage policy retains an explicit no usage comparison arm`() {
         val current = EmbeddedPolicyComparison.tuning("CURRENT")
         assertEquals(0.0, current.leafTeamCoverageWeight)
         assertEquals(current.copy(id = "current_team_coverage", leafTeamCoverageWeight = 0.25),
             EmbeddedPolicyComparison.tuning("CURRENT_TEAM_COVERAGE"))
         assertEquals(current.copy(id = "current_public_move_hypotheses", lookaheadMoveHypotheses = true),
             EmbeddedPolicyComparison.tuning("CURRENT_PUBLIC_MOVE_HYPOTHESES"))
-        assertFalse(current.lookaheadMoveHypotheses)
-        assertEquals(Int.MAX_VALUE, current.hypotheticalMoveLimitPerSlot)
-        assertEquals(LocalHypothesisPriorityReservation.NONE, current.hypotheticalPriorityReservation)
+        assertTrue(current.lookaheadMoveHypotheses)
+        assertEquals(3, current.hypotheticalMoveLimitPerSlot)
+        assertEquals(LocalHypothesisPriorityReservation.CONDITION_GROUPS, current.hypotheticalPriorityReservation)
+        assertEquals(current.copy(id = "current_no_move_usage", lookaheadMoveHypotheses = false),
+            EmbeddedPolicyComparison.tuning("CURRENT_NO_MOVE_USAGE"))
         assertEquals(current.copy(id = "current_public_move_hypotheses_cap3_priority_conditions", lookaheadMoveHypotheses = true,
             hypotheticalMoveLimitPerSlot = 3, hypotheticalPriorityReservation = LocalHypothesisPriorityReservation.CONDITION_GROUPS),
             EmbeddedPolicyComparison.tuning("CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY_CONDITIONS"))

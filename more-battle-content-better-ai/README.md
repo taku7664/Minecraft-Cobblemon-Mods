@@ -16,6 +16,54 @@ Run from the repository root:
 
 The JAR is written to `more-battle-content-better-ai/build/libs`.
 
+## Opponent move usage snapshots
+
+The local Brain ships separate fixed, server-local move-presence tables generated
+from Smogon Pokemon Showdown's December 2025 Regulation J statistics at the 1500
+cutoff: Gen 9 BSS for singles (26,139 battles) and Gen 9 VGC for doubles (200,077
+battles). `BattleFormat.SINGLE` can only select the BSS table and
+`BattleFormat.DOUBLE` can only select the VGC table. Runtime battle decisions never
+fetch the network. Each snapshot records its source URL and raw SHA-256 and fails
+closed to the existing unknown-response branch if its resource is missing or invalid.
+
+The values are marginal probabilities that a species carried each move. They are
+used only to admit and order at most three unrevealed-move branches. They are not
+treated as the probability that the opponent selects that move on the current
+turn, because moves coexist on four-slot sets and the public table does not expose
+their full joint distribution. The unknown-response branch remains present for
+unreported moves, custom species and stale-season mismatch. A
+low-usage damaging priority response is reserved before remaining slots are filled
+by usage, preserving the existing priority-threat counterexample.
+
+Regenerate the committed singles snapshot deterministically from its two pinned
+sources (chaos JSON plus the independently rendered moveset table):
+
+```powershell
+python more-battle-content-better-ai/tools/import_showdown_move_usage.py
+```
+
+Regenerate the doubles snapshot with its own format and pins:
+
+```powershell
+python more-battle-content-better-ai/tools/import_showdown_move_usage.py `
+  --format gen9vgc2025regj --month 2025-12 --cutoff 1500 `
+  --expected-sha256 b0b522eb7aaead5e1e396b549d51503dfbc5874eaf14c73594c10fd70ca6585f `
+  --moveset-url https://www.smogon.com/stats/2025-12/moveset/gen9vgc2025regj-1500.txt `
+  --moveset-expected-sha256 7a8efa089183cbcac294de4dac1e6ad33ac9dfeeedc6a69a9a3f988b32138be8
+```
+
+For downloaded copies, pass `--input <chaos-json>` and `--moveset-input
+<moveset-txt>`. The importer verifies both hashes, source metadata and every named
+move percentage printed in the moveset table, removes anonymous/empty-slot tails,
+canonicalizes IDs, divides each move's weighted count by the species' weighted
+count, and writes sorted JSON. The committed files cross-check 4,172 singles rows
+and 6,394 doubles rows. A same-Regulation-J November comparison retained at least
+two of December's top three moves for 69.4% of 356 shared singles species and
+85.4% of 411 shared doubles species; the unresolved branch remains because this
+is not complete set inference. Updating seasons is an explicit source change:
+update pins, resource names and loader constants together, then rerun the tests
+and policy comparison. A build never silently replaces either snapshot.
+
 ## Local AI baseline capture
 
 This opt-in test tool records complete sampled teams, battle seeds, difficulty,

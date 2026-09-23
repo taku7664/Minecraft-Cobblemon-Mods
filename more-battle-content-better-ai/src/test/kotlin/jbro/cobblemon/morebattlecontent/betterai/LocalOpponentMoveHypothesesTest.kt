@@ -180,7 +180,10 @@ class LocalOpponentMoveHypothesesTest {
         fun actions(history: RecursiveActionHistory, enabled: Boolean) = PublicFutureActionFactory.actions(
             state, BattleSide.OPPONENT, catalog, history, unknownMovePokemonIds = setOf(id),
             includeMoveHypotheses = enabled)
-        assertFalse(LocalDecisionTuning.CURRENT.lookaheadMoveHypotheses)
+        assertTrue(LocalDecisionTuning.CURRENT.lookaheadMoveHypotheses)
+        assertEquals(3, LocalDecisionTuning.CURRENT.hypotheticalMoveLimitPerSlot)
+        assertEquals(LocalHypothesisPriorityReservation.CONDITION_GROUPS,
+            LocalDecisionTuning.CURRENT.hypotheticalPriorityReservation)
         assertFalse(actions(root, false).any { it.kind == BattleActionKind.USE_MOVE })
         val enabled = actions(root, true)
         assertTrue(enabled.any { "unknown_public_response" in it.tags })

@@ -131,13 +131,14 @@ class LocalSearchBudgetTest {
         const val POSITION_LIMIT = 40
         const val SEED = 20260825
         /**
-         * Two positions in forty.
+         * Three positions in forty.
          *
-         * The measured cost of the cut is one, and one is also the resolution of this sample - a
-         * threshold set exactly there would fail on any tie broken the other way rather than on a
-         * real regression. Two is the smallest bound that distinguishes "the cut costs about what it
-         * was measured to cost" from "something changed".
+         * The original known/revealed-only search measured one changed decision and allowed two.
+         * Shipping the capped public move-usage hypotheses intentionally added up to three plausible
+         * hidden replies per active opponent. Two isolated runs then measured the new 1500ms cost at
+         * exactly three decisions while keeping mean elapsed time below the budget. Four is the next
+         * observable regression in this fixed corpus, so keep the accepted cost explicit here.
          */
-        const val MAXIMUM_TOLERATED_DIVERGENCE = 0.05
+        const val MAXIMUM_TOLERATED_DIVERGENCE = 0.075
     }
 }
