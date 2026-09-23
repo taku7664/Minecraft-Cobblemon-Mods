@@ -62,6 +62,11 @@ internal object LocalPublicMoveDamageInputs {
             "psyblade" -> wholePower?.let {
                 if (LocalPublicFieldMechanics.terrainId(state) == "electricterrain") it * 3 / 2 else it
             }
+            "collisioncourse", "electrodrift" -> superEffectivePower(
+                printedPower = wholePower,
+                moveType = details.typeId,
+                targetTypes = target.knownTypeIds,
+            )
             "storedpower", "powertrip" -> wholePower?.plus(20 * actor.positiveBoosts())
             "punishment" -> (60 + 20 * target.positiveBoosts()).coerceAtMost(200)
             "facade" -> wholePower?.let { if (actor.statusId != null) it * 2 else it }
@@ -262,6 +267,22 @@ internal object LocalPublicMoveDamageInputs {
         return (scaledPower / 100L).coerceAtLeast(1L).toInt()
     }
 
+    private fun superEffectivePower(
+        printedPower: Int?,
+        moveType: String,
+        targetTypes: Set<String>,
+    ): Int? {
+        val power = printedPower ?: return null
+        if (targetTypes.isEmpty()) return null
+        val effectiveness = StandardTypeEffectiveness.multiplier(moveType, targetTypes)
+        return if (effectiveness > 1.0) showdownModify(power, 5461, 4096) else power
+    }
+
+    private fun showdownModify(value: Int, numerator: Int, denominator: Int): Int {
+        val modifier = numerator.toLong() * 4096L / denominator
+        return ((value.toLong() * modifier + 2047L) / 4096L).toInt()
+    }
+
     private fun ppDependentPower(
         id: String,
         actor: BattlePokemonStateView,
@@ -320,7 +341,7 @@ internal object LocalPublicMoveDamageInputs {
         "acrobatics", "expandingforce", "risingvoltage", "eruption", "waterspout",
         "dragonenergy", "flail", "reversal", "crushgrip", "wringout", "storedpower",
         "powertrip", "punishment", "trumpcard", "weatherball", "terrainpulse", "mistyexplosion",
-        "psyblade", "facade", "hex",
+        "psyblade", "collisioncourse", "electrodrift", "facade", "hex",
         "infernalparade", "brine", "venoshock",
         "barbbarrage", "smellingsalts", "wakeupslap", "round", "fishiousrend", "boltbeak",
         "assurance", "payback", "avalanche", "revenge", "electroball", "gyroball",
