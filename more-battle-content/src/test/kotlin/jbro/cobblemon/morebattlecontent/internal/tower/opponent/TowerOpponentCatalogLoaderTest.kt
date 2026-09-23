@@ -89,6 +89,43 @@ class TowerOpponentCatalogLoaderTest {
     }
 
     @Test
+    fun `separated pool tiers reject fractional and out of range integers`() {
+        val sets = JsonParser.parseString(validCatalogJson()).asJsonObject.getAsJsonArray("sets")
+        sets.forEach { it.asJsonObject.addProperty("mechanic_id", "mega") }
+        listOf("1.5", "2147483648").forEach { invalidTier ->
+            val result = TowerOpponentCatalogLoader.loadSeparated(
+                trainerFragments = listOf(
+                    "example:mbc-battle-tower/trainers/core.json" to StringReader(
+                        """{"schema_version":1,"trainers":[{"trainer_id":"ace","display_name_key":"trainer.example.ace"}]}""",
+                    ),
+                ),
+                poolFragments = listOf(
+                    "example:mbc-battle-tower/pools/invalid.json" to StringReader(
+                        """{"schema_version":1,"pools":[{"pool_id":"invalid","mechanic_id":"mega","set_tiers":[$invalidTier]}]}""",
+                    ),
+                ),
+                encounterFragments = listOf(
+                    "example:mbc-battle-tower/encounters/core.json" to StringReader(
+                        """{"schema_version":1,"encounters":[{"encounter_id":"core","trainer_ids":["ace"],"stage_ids":["introductory"],"format":"single","opponent_kind":"regular","mechanic_id":"mega","weight":1,"ai_skill":1,"theme":"core","pool_id":"invalid"}]}""",
+                    ),
+                ),
+                pokemonSetFragments = listOf(
+                    "example:mbc-battle-tower/pokemon-sets/core.json" to StringReader(
+                        """{"schema_version":4,"pokemon_sets":$sets}""",
+                    ),
+                ),
+            ) as TowerOpponentCatalogLoadResult.Rejected
+
+            assertTrue(
+                result.issues.any {
+                    it.code == TowerOpponentCatalogIssueCode.INVALID_VALUE && it.path.endsWith(".set_tiers[0]")
+                },
+                "Expected strict integer rejection for $invalidTier but got ${result.issues}",
+            )
+        }
+    }
+
+    @Test
     fun `merges tower profiles and sets from independent files before validating references`() {
         val root = JsonParser.parseString(validCatalogJson()).asJsonObject
         val profiles = root.deepCopy().apply {

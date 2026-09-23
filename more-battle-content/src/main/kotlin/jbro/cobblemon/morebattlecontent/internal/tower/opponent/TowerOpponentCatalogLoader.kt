@@ -110,10 +110,7 @@ internal object TowerOpponentCatalogLoader {
                 value.rejectUnknownFields(path, POOL_FIELDS)
                 val mechanic = parseMechanic(value.requiredString(path, "mechanic_id"), "$path.mechanic_id")
                 val tiers = value.requiredArray(path, "set_tiers").mapIndexed { index, element ->
-                    if (!element.isJsonPrimitive || !element.asJsonPrimitive.isNumber) {
-                        reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.set_tiers[$index]", "Expected an integer")
-                    }
-                    element.asInt.also { tier ->
+                    element.requiredInt("$path.set_tiers[$index]").also { tier ->
                         if (tier <= 0) reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.set_tiers[$index]", "Set tier must be positive")
                     }
                 }
@@ -634,32 +631,26 @@ private fun JsonObject.requiredString(path: String, field: String): String {
 }
 
 private fun JsonObject.requiredInt(path: String, field: String): Int {
-    val element = requiredElement(path, field)
-    if (!element.isJsonPrimitive || !element.asJsonPrimitive.isNumber) {
-        reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.$field", "Expected an integer")
+    return requiredElement(path, field).requiredInt("$path.$field")
+}
+
+private fun JsonElement.requiredInt(path: String, expectation: String = "Expected an integer"): Int {
+    if (!isJsonPrimitive || !asJsonPrimitive.isNumber) {
+        reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, path, expectation)
     }
     return try {
-        element.asBigDecimal.toBigIntegerExact().intValueExact()
+        asBigDecimal.toBigIntegerExact().intValueExact()
     } catch (_: ArithmeticException) {
-        reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.$field", "Expected an integer")
+        reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, path, expectation)
     } catch (_: NumberFormatException) {
-        reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.$field", "Expected an integer")
+        reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, path, expectation)
     }
 }
 
 private fun JsonObject.optionalInt(path: String, field: String): Int? {
     val element = get(field) ?: return null
     if (element.isJsonNull) return null
-    if (!element.isJsonPrimitive || !element.asJsonPrimitive.isNumber) {
-        reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.$field", "Expected an integer or null")
-    }
-    return try {
-        element.asBigDecimal.toBigIntegerExact().intValueExact()
-    } catch (_: ArithmeticException) {
-        reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.$field", "Expected an integer or null")
-    } catch (_: NumberFormatException) {
-        reject(TowerOpponentCatalogIssueCode.INVALID_VALUE, "$path.$field", "Expected an integer or null")
-    }
+    return element.requiredInt("$path.$field", "Expected an integer or null")
 }
 
 private fun JsonObject.optionalBoolean(path: String, field: String): Boolean? {
