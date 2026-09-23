@@ -206,8 +206,7 @@ internal class TowerPlaySessionService(
         val session = sessions[playerId] ?: return TowerSessionAbandonResult.NoSession
         val battleId = session.activeBattleId
         if (battleId == null) {
-            registeredTeamSnapshots.discard(playerId)
-            removeSession(playerId)
+            removeSessionAndDiscardSnapshot(playerId)
             return TowerSessionAbandonResult.SessionClosed
         }
         if (session.abandonRequested) return TowerSessionAbandonResult.ForfeitRequested(battleId)
@@ -251,8 +250,7 @@ internal class TowerPlaySessionService(
         session.progressByFormat[state.format] = update.after
         session.activeBattleId = null
         if (session.abandonRequested) {
-            registeredTeamSnapshots.discard(playerId)
-            removeSession(playerId)
+            removeSessionAndDiscardSnapshot(playerId)
             return TowerPlayBattleCompletionResult.SessionAbandoned
         }
         val updated = state.copy(
@@ -288,10 +286,7 @@ internal class TowerPlaySessionService(
     }
 
     @Synchronized
-    fun close(playerId: UUID): Boolean {
-        registeredTeamSnapshots.discard(playerId)
-        return removeSession(playerId) != null
-    }
+    fun close(playerId: UUID): Boolean = removeSessionAndDiscardSnapshot(playerId) != null
 
     @Synchronized
     fun disconnect(
@@ -308,10 +303,11 @@ internal class TowerPlaySessionService(
                     terminate = terminateBattle,
                 )
             }
-        } finally {
-            registeredTeamSnapshots.discard(playerId)
-            removeSession(playerId)
+        } catch (failure: Throwable) {
+            removeSessionAndDiscardSnapshot(playerId, failure)
+            throw failure
         }
+        removeSessionAndDiscardSnapshot(playerId)
         return true
     }
 
@@ -577,6 +573,30 @@ internal class TowerPlaySessionService(
 
     private fun removeSession(playerId: UUID): Session? = sessions.remove(playerId)?.also {
         BattleTacticalRunMemoryStore.discard(it.state.entryContextId)
+    }
+
+    private fun removeSessionAndDiscardSnapshot(
+        playerId: UUID,
+        primaryFailure: Throwable? = null,
+    ): Session? {
+        var removed: Session? = null
+        var failure = primaryFailure
+        try {
+            removed = removeSession(playerId)
+        } catch (cleanupFailure: Throwable) {
+            if (failure == null) failure = cleanupFailure else if (failure !== cleanupFailure) {
+                failure.addSuppressed(cleanupFailure)
+            }
+        }
+        try {
+            registeredTeamSnapshots.discard(playerId)
+        } catch (cleanupFailure: Throwable) {
+            if (failure == null) failure = cleanupFailure else if (failure !== cleanupFailure) {
+                failure.addSuppressed(cleanupFailure)
+            }
+        }
+        if (primaryFailure == null) failure?.let { throw it }
+        return removed
     }
 
     private fun rejected(

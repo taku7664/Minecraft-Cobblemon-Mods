@@ -9,6 +9,8 @@ import jbro.cobblemon.morebattlecontent.internal.tower.TowerRegisteredTeamSnapsh
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerRegisteredTeamSnapshots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -559,6 +561,26 @@ class TowerPlaySessionServiceTest {
         assertTrue(service.close(playerId))
         assertEquals(null, service.current(playerId))
         assertTrue(!service.close(playerId))
+    }
+
+    @Test
+    fun `snapshot cleanup failure cannot keep a closed tower session alive`() {
+        val failure = NoSuchMethodError("snapshot API drift")
+        var failDiscard = false
+        val snapshots = object : TowerRegisteredTeamSnapshots {
+            override fun snapshot(playerId: UUID, team: TowerRegisteredTeam) =
+                TowerRegisteredTeamSnapshotResult.Stored
+
+            override fun discard(playerId: UUID) {
+                if (failDiscard) throw failure
+            }
+        }
+        val service = TowerPlaySessionService(registeredTeamSnapshots = snapshots) { entryContextId }
+        service.open(playerId, openRequest())
+        failDiscard = true
+
+        assertSame(failure, assertThrows(NoSuchMethodError::class.java) { service.close(playerId) })
+        assertEquals(null, service.current(playerId))
     }
 
     @Test

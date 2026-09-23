@@ -9,8 +9,12 @@ import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleLaunchResult
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgress
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleOutcome
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerProgressUpdate
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerRegisteredTeam
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerRegisteredTeamSnapshotResult
+import jbro.cobblemon.morebattlecontent.internal.tower.TowerRegisteredTeamSnapshots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -489,12 +493,23 @@ class TowerPlayBattleLaunchTest {
     }
 
     @Test
-    fun `disconnect still records the loss and removes the session when battle termination throws`() {
+    fun `disconnect preserves termination failure and removes the session when snapshot cleanup also fails`() {
         val recorded = ArrayList<TowerProgressUpdate>()
+        val terminationFailure = IllegalStateException("termination failed")
+        val snapshotFailure = NoSuchMethodError("snapshot API drift")
+        var failDiscard = false
+        val snapshots = object : TowerRegisteredTeamSnapshots {
+            override fun snapshot(playerId: UUID, team: TowerRegisteredTeam) =
+                TowerRegisteredTeamSnapshotResult.Stored
+
+            override fun discard(playerId: UUID) {
+                if (failDiscard) throw snapshotFailure
+            }
+        }
         val service = TowerPlaySessionService(
             entryContextIdFactory = { contextId },
             battleLauncher = TowerBattleLauncher { TowerBattleLaunchResult.Started(battleId) },
-            registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
+            registeredTeamSnapshots = snapshots,
             battleCompletionSink = { _, update -> recorded += update },
         )
         val locked = lockFirstThree(service, currentWinStreak = 4)
@@ -502,11 +517,14 @@ class TowerPlayBattleLaunchTest {
             playerId,
             TowerPlayIntent.Start(UUID(0, 35), contextId, locked.revision),
         ) as TowerPlayMutationResult.Accepted
+        failDiscard = true
 
-        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException::class.java) {
-            service.disconnect(playerId, terminateBattle = { throw IllegalStateException("termination failed") })
+        val thrown = assertThrows(IllegalStateException::class.java) {
+            service.disconnect(playerId, terminateBattle = { throw terminationFailure })
         }
 
+        assertSame(terminationFailure, thrown)
+        assertEquals(listOf(snapshotFailure), thrown.suppressed.toList())
         assertEquals(1, recorded.size)
         assertEquals(TowerBattleOutcome.LOSS, recorded.single().outcome)
         assertEquals(null, service.current(playerId))
