@@ -164,10 +164,11 @@ class BattlePokemonStateView(
 
     /** Observed active effects only. Absence is not proof of complete volatile knowledge or future persistence. */
     val knownVolatileEffectIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownVolatileEffectIds))
-    val statStages: Map<String, Int> = statStages.toMap()
-    val knownMoveIds: Set<String> = knownMoveIds.toSet()
-    val knownTypeIds: Set<String> = knownTypeIds.toSet()
-    val knownFormStates: Map<String, BattlePokemonFormStateView> = knownFormStates.toMap()
+    val statStages: Map<String, Int> = Collections.unmodifiableMap(LinkedHashMap(statStages))
+    val knownMoveIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownMoveIds))
+    val knownTypeIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownTypeIds))
+    val knownFormStates: Map<String, BattlePokemonFormStateView> =
+        Collections.unmodifiableMap(LinkedHashMap(knownFormStates))
 
     init {
         require(activeSlot == null || activeSlot >= 0)
@@ -204,7 +205,7 @@ class BattlePokemonFormStateView(
     knownTypeIds: Set<String>,
     val combatStats: BattleCombatStatRangesView,
 ) {
-    val knownTypeIds: Set<String> = knownTypeIds.toSet()
+    val knownTypeIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownTypeIds))
 
     init {
         require(formId.isNotBlank())
@@ -222,10 +223,11 @@ class BattleStateView(
     observedEvents: List<BattleObservedEventView>,
     inferences: List<BattleInferenceView>,
 ) {
-    val pokemon: List<BattlePokemonStateView> = pokemon.toList()
-    val remainingPokemonBySide: Map<BattleSide, Int> = remainingPokemonBySide.toMap()
-    val observedEvents: List<BattleObservedEventView> = observedEvents.toList()
-    val inferences: List<BattleInferenceView> = inferences.toList()
+    val pokemon: List<BattlePokemonStateView> = Collections.unmodifiableList(ArrayList(pokemon))
+    val remainingPokemonBySide: Map<BattleSide, Int> =
+        Collections.unmodifiableMap(LinkedHashMap(remainingPokemonBySide))
+    val observedEvents: List<BattleObservedEventView> = Collections.unmodifiableList(ArrayList(observedEvents))
+    val inferences: List<BattleInferenceView> = Collections.unmodifiableList(ArrayList(inferences))
 
     init {
         require(turn >= 0)
@@ -576,10 +578,10 @@ class BattleActionCandidate(
     val facts: BattleCandidateFactsView? = null,
     tags: Set<String> = emptySet(),
 ) {
-    val targets: List<BattleTargetSlot> = targets.toList()
-    val componentActionIds: List<String> = componentActionIds.toList()
-    val componentActions: List<BattleActionCandidate> = componentActions.toList()
-    val tags: Set<String> = tags.toSet()
+    val targets: List<BattleTargetSlot> = Collections.unmodifiableList(ArrayList(targets))
+    val componentActionIds: List<String> = Collections.unmodifiableList(ArrayList(componentActionIds))
+    val componentActions: List<BattleActionCandidate> = Collections.unmodifiableList(ArrayList(componentActions))
+    val tags: Set<String> = Collections.unmodifiableSet(LinkedHashSet(tags))
 
     init {
         require(actionId.isNotBlank())
@@ -642,7 +644,7 @@ class BattleDecisionContext(
     val memory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
     val publicActionCatalog: BattlePublicActionCatalogView = BattlePublicActionCatalogView.empty(),
 ) {
-    val candidates: List<BattleActionCandidate> = candidates.toList()
+    val candidates: List<BattleActionCandidate> = Collections.unmodifiableList(ArrayList(candidates))
 
     init {
         require(candidates.isNotEmpty())
@@ -659,7 +661,7 @@ class BattleDecision(
     tags: Set<String> = emptySet(),
     val advice: BattleDecisionAdvice? = null,
 ) {
-    val tags: Set<String> = tags.toSet()
+    val tags: Set<String> = Collections.unmodifiableSet(LinkedHashSet(tags))
 
     init {
         require(actionId.isNotBlank())

@@ -33,10 +33,13 @@ class BattleFieldStateView(
     globalEffects: List<BattleTimedEffectView>,
     sideConditions: Map<BattleSide, List<BattleTimedEffectView>>,
 ) {
-    val roomEffects: List<BattleTimedEffectView> = roomEffects.toList()
-    val globalEffects: List<BattleTimedEffectView> = globalEffects.toList()
-    val sideConditions: Map<BattleSide, List<BattleTimedEffectView>> =
-        sideConditions.mapValues { (_, effects) -> effects.toList() }.toMap()
+    val roomEffects: List<BattleTimedEffectView> = Collections.unmodifiableList(ArrayList(roomEffects))
+    val globalEffects: List<BattleTimedEffectView> = Collections.unmodifiableList(ArrayList(globalEffects))
+    val sideConditions: Map<BattleSide, List<BattleTimedEffectView>> = Collections.unmodifiableMap(
+        sideConditions.mapValuesTo(LinkedHashMap()) { (_, effects) ->
+            Collections.unmodifiableList(ArrayList(effects))
+        },
+    )
 
     init {
         require(sideConditions.keys == BattleSide.entries.toSet()) {
@@ -147,7 +150,7 @@ class BattleObservedEventView @JvmOverloads constructor(
     val moveOutcome: BattleMoveOutcomeView? = null,
     val actorSlot: Int? = null,
 ) {
-    val targetPokemonIds: List<UUID> = targetPokemonIds.toList()
+    val targetPokemonIds: List<UUID> = Collections.unmodifiableList(ArrayList(targetPokemonIds))
 
     init {
         require(sequence >= 0)

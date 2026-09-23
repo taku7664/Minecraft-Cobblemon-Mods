@@ -2,10 +2,81 @@ package jbro.cobblemon.morebattlecontent.api.ai
 
 import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class BattleContractImmutabilityTest {
+    @Test
+    fun `public decision collections reject mutation by an untrusted brain`() {
+        val firstId = UUID.randomUUID()
+        val secondId = UUID.randomUUID()
+        val firstPokemon = pokemon(firstId, BattleSide.ALLY, 0)
+        val secondPokemon = pokemon(secondId, BattleSide.OPPONENT, 0)
+        val field = BattleFieldStateView(
+            weather = null,
+            terrain = null,
+            roomEffects = listOf(
+                BattleTimedEffectView("trick_room", 3),
+                BattleTimedEffectView("magic_room", 2),
+            ),
+            globalEffects = emptyList(),
+            sideConditions = mapOf(
+                BattleSide.ALLY to listOf(
+                    BattleTimedEffectView("reflect", 2),
+                    BattleTimedEffectView("light_screen", 3),
+                ),
+                BattleSide.OPPONENT to emptyList(),
+            ),
+        )
+        val state = BattleStateView(
+            battleId = UUID.randomUUID(),
+            format = BattleFormat.SINGLE,
+            turn = 1,
+            pokemon = listOf(firstPokemon, secondPokemon),
+            field = field,
+            remainingPokemonBySide = mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1),
+            observedEvents = emptyList(),
+            inferences = emptyList(),
+        )
+        val candidate = BattleActionCandidate(
+            actionId = "move:0",
+            kind = BattleActionKind.USE_MOVE,
+            actorSlot = 0,
+            moveSlot = 0,
+            targets = listOf(
+                BattleTargetSlot(BattleSide.OPPONENT, 0),
+                BattleTargetSlot(BattleSide.OPPONENT, 1),
+            ),
+            tags = setOf("safe", "damaging"),
+        )
+        val context = BattleDecisionContext(
+            requestId = UUID.randomUUID(),
+            state = state,
+            candidates = listOf(candidate, BattleActionCandidate("wait", BattleActionKind.WAIT)),
+            deadlineEpochMillis = 1_000,
+        )
+        val provider = BattleBrainProvider(
+            BrainId("test:immutable"),
+            setOf(BrainCapability.SINGLE, BrainCapability.DOUBLE),
+            BattleBrainFactory { error("not created") },
+        )
+
+        assertThrows(UnsupportedOperationException::class.java) { (field.roomEffects as MutableList).clear() }
+        assertThrows(UnsupportedOperationException::class.java) {
+            (field.sideConditions.getValue(BattleSide.ALLY) as MutableList).clear()
+        }
+        assertThrows(UnsupportedOperationException::class.java) { (field.sideConditions as MutableMap).clear() }
+        assertThrows(UnsupportedOperationException::class.java) { (firstPokemon.statStages as MutableMap).clear() }
+        assertThrows(UnsupportedOperationException::class.java) { (firstPokemon.knownMoveIds as MutableSet).clear() }
+        assertThrows(UnsupportedOperationException::class.java) { (state.pokemon as MutableList).clear() }
+        assertThrows(UnsupportedOperationException::class.java) { (state.remainingPokemonBySide as MutableMap).clear() }
+        assertThrows(UnsupportedOperationException::class.java) { (candidate.targets as MutableList).clear() }
+        assertThrows(UnsupportedOperationException::class.java) { (candidate.tags as MutableSet).clear() }
+        assertThrows(UnsupportedOperationException::class.java) { (context.candidates as MutableList).clear() }
+        assertThrows(UnsupportedOperationException::class.java) { (provider.capabilities as MutableSet).clear() }
+    }
+
     @Test
     fun `state snapshot detaches all caller owned collections`() {
         val pokemonId = UUID.randomUUID()
@@ -223,5 +294,22 @@ class BattleContractImmutabilityTest {
         remainingPokemonBySide = BattleSide.entries.associateWith { 0 },
         observedEvents = emptyList(),
         inferences = emptyList(),
+    )
+
+    private fun pokemon(id: UUID, side: BattleSide, slot: Int) = BattlePokemonStateView(
+        battlePokemonId = id,
+        side = side,
+        activeSlot = slot,
+        speciesId = "test_species",
+        formId = null,
+        level = 50,
+        hpFraction = 1.0,
+        statusId = null,
+        statStages = mapOf("attack" to 1, "defence" to -1),
+        knownMoveIds = setOf("tackle", "protect"),
+        knownAbilityId = null,
+        knownHeldItemId = null,
+        fainted = false,
+        knownTypeIds = setOf("normal", "flying"),
     )
 }

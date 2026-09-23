@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.api.ai
 
+import java.util.Collections
 import jbro.cobblemon.morebattlecontent.internal.ai.DefaultBattleBrainRegistry
 import jbro.cobblemon.morebattlecontent.api.presentation.ManagedBattleContentIds
 
@@ -42,7 +43,7 @@ class BattleBrainProvider(
     val factory: BattleBrainFactory,
     val role: BattleBrainProviderRole = BattleBrainProviderRole.PRIMARY,
 ) {
-    val capabilities: Set<BrainCapability> = capabilities.toSet()
+    val capabilities: Set<BrainCapability> = Collections.unmodifiableSet(LinkedHashSet(capabilities))
     private var selectionPolicy: BattleBrainSelectionPolicy = BattleBrainSelectionPolicy.ALWAYS
 
     constructor(
