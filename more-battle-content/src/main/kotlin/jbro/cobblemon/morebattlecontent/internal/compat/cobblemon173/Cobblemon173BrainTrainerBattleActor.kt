@@ -33,6 +33,7 @@ import jbro.cobblemon.morebattlecontent.internal.ai.BattleDecisionResolution
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleDecisionSource
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleTacticalMemoryLedger
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleTacticalRunMemoryStore
+import jbro.cobblemon.morebattlecontent.internal.ai.attemptBattleDecisionSetup
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.Vec3
@@ -102,69 +103,64 @@ internal class Cobblemon173BrainTrainerBattleActor(
             return
         }
 
-        val ownCurrentPp = currentRequest.active.orEmpty().mapIndexedNotNull { slot, moveset ->
-            activePokemon.getOrNull(slot)?.battlePokemon?.uuid?.let { id ->
-                id to moveset.moves.associate { it.id to it.pp }
-            }
-        }.toMap()
-        val state = try {
-            observationAdapter.attach(battle)
-            observationAdapter.snapshot(this, ownCurrentPp)
-        } catch (exception: Exception) {
-            logFailure("public observation", exception)
-            submitBaselineOrEmergency(currentRequest, preparation)
-            return
-        } catch (error: LinkageError) {
-            logFailure("public observation", error)
-            submitBaselineOrEmergency(currentRequest, preparation)
-            return
-        }
-        if (state.format != battleFormat || preparation.format != battleFormat) {
-            MoreBattleContent.LOGGER.error("Battle {} format changed while preparing a Brain turn", battle.battleId)
-            submitBaselineOrEmergency(currentRequest, preparation)
-            return
-        }
-        tacticalMemory.observe(state)
+        val preparedDecision = attemptBattleDecisionSetup(
+            setup = {
+                val ownCurrentPp = currentRequest.active.orEmpty().mapIndexedNotNull { slot, moveset ->
+                    activePokemon.getOrNull(slot)?.battlePokemon?.uuid?.let { id ->
+                        id to moveset.moves.associate { it.id to it.pp }
+                    }
+                }.toMap()
+                observationAdapter.attach(battle)
+                val state = observationAdapter.snapshot(this, ownCurrentPp)
+                if (state.format != battleFormat || preparation.format != battleFormat) {
+                    MoreBattleContent.LOGGER.error(
+                        "Battle {} format changed while preparing a Brain turn",
+                        battle.battleId,
+                    )
+                    submitBaselineOrEmergency(currentRequest, preparation)
+                    return
+                }
+                tacticalMemory.observe(state)
 
-        val now = System.currentTimeMillis()
-        val context = BattleDecisionContext(
-            requestId = UUID.randomUUID(),
-            state = state,
-            candidates = preparation.candidates,
-            deadlineEpochMillis = safeDeadline(now),
-            memory = tacticalMemory.view(state.turn),
-            publicActionCatalog = Cobblemon173PublicActionCatalog.from(
-                state,
-                observationAdapter.publicPpSpent(),
-                ownCurrentPp,
-                transformedPokemon = observationAdapter.transformedPokemon(),
-                originalMoveIds = observationAdapter.originalMoveIds(this),
-                originalPpSpent = observationAdapter.originalPpSpent(),
-            ),
-        )
-        val primaryEndpoint = endpoint(primaryBrain, primarySession)
-        val localEndpoint = endpoint(localBrain, localSession)
-        val decisionStartedAtNanos = System.nanoTime()
-        val pendingDecision = try {
-            fallbackChain.decide(primaryEndpoint, localEndpoint, context)
-        } catch (exception: Exception) {
-            logFailure("Brain decision start", exception)
-            submitBaselineOrEmergency(currentRequest, preparation)
-            return
-        } catch (error: LinkageError) {
-            logFailure("Brain decision start", error)
-            submitBaselineOrEmergency(currentRequest, preparation)
-            return
-        }
-        pendingDecision.whenComplete { resolution, throwable ->
+                val context = BattleDecisionContext(
+                    requestId = UUID.randomUUID(),
+                    state = state,
+                    candidates = preparation.candidates,
+                    deadlineEpochMillis = safeDeadline(System.currentTimeMillis()),
+                    memory = tacticalMemory.view(state.turn),
+                    publicActionCatalog = Cobblemon173PublicActionCatalog.from(
+                        state,
+                        observationAdapter.publicPpSpent(),
+                        ownCurrentPp,
+                        transformedPokemon = observationAdapter.transformedPokemon(),
+                        originalMoveIds = observationAdapter.originalMoveIds(this),
+                        originalPpSpent = observationAdapter.originalPpSpent(),
+                    ),
+                )
+                PreparedBrainDecision(
+                    context = context,
+                    startedAtNanos = System.nanoTime(),
+                    pending = fallbackChain.decide(
+                        endpoint(primaryBrain, primarySession),
+                        endpoint(localBrain, localSession),
+                        context,
+                    ),
+                )
+            },
+            recover = { failure ->
+                logFailure("Brain decision preparation", failure)
+                submitBaselineOrEmergency(currentRequest, preparation)
+            },
+        ) ?: return
+        preparedDecision.pending.whenComplete { resolution, throwable ->
             server.execute {
                 completeOnServerThread(
                     expectedRequest = currentRequest,
                     preparation = preparation,
-                    context = context,
+                    context = preparedDecision.context,
                     resolution = resolution,
                     throwable = throwable,
-                    decisionStartedAtNanos = decisionStartedAtNanos,
+                    decisionStartedAtNanos = preparedDecision.startedAtNanos,
                 )
             }
         }
@@ -421,6 +417,12 @@ internal class Cobblemon173BrainTrainerBattleActor(
             ),
         )
     }
+
+    private data class PreparedBrainDecision(
+        val context: BattleDecisionContext,
+        val startedAtNanos: Long,
+        val pending: java.util.concurrent.CompletionStage<BattleDecisionResolution>,
+    )
 
     private fun BattleActionCandidate.diagnosticActionKinds(): List<BattleActionKind> =
         if (kind == BattleActionKind.COMPOSITE) componentActions.map { it.kind } else listOf(kind)
