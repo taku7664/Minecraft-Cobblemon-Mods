@@ -11,6 +11,8 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentMoveInferenceView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentMoveKnowledge
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentMoveSlotView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentMoveSource
+import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonActionCatalogView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
@@ -97,7 +99,7 @@ class NativeInitialBattleDefinitionCompilerTest {
     }
 
     @Test
-    fun `build source and revealed ability item must agree with public state`() {
+    fun `build source and revealed item must agree with public state`() {
         val badWorld = world(
             allyBuild = build(ALLY, NativeBuildKnowledge.PUBLIC_HYPOTHESIS, "lightningrod", "leftovers"),
             opponentBuild = build(OPPONENT, NativeBuildKnowledge.EXACT_OWN, "protosynthesis", "leftovers"),
@@ -114,11 +116,67 @@ class NativeInitialBattleDefinitionCompilerTest {
         assertEquals(
             setOf(
                 NativeBattleDefinitionIssueCode.BUILD_KNOWLEDGE_MISMATCH,
-                NativeBattleDefinitionIssueCode.PUBLIC_ABILITY_CONFLICT,
                 NativeBattleDefinitionIssueCode.PUBLIC_ITEM_CONFLICT,
             ),
             result.issues.mapTo(linkedSetOf()) { it.code },
         )
+    }
+
+    @Test
+    fun `opening item reveal constrains builds before dto fields are folded`() {
+        val reveals = listOf(
+            BattleObservedEventView(
+                sequence = 0,
+                turn = 0,
+                kind = BattleObservedEventKind.HELD_ITEM_REVEALED,
+                actorPokemonId = OPPONENT,
+                publicValueId = "choicespecs",
+            ),
+        )
+        val result = NativeInitialBattleDefinitionCompiler.compile(
+            state = state(events = reveals),
+            catalog = catalog(),
+            identities = identities(),
+            world = world(opponentBuild = build(
+                OPPONENT,
+                NativeBuildKnowledge.PUBLIC_HYPOTHESIS,
+                "pressure",
+                "leftovers",
+            )),
+            seed = SEED,
+        )
+
+        assertNull(result.definition)
+        assertEquals(
+            setOf(NativeBattleDefinitionIssueCode.PUBLIC_ITEM_CONFLICT),
+            result.issues.mapTo(linkedSetOf()) { it.code },
+        )
+    }
+
+    @Test
+    fun `trace current ability does not reject its different source set ability`() {
+        val traceReveal = BattleObservedEventView(
+            sequence = 0,
+            turn = 0,
+            kind = BattleObservedEventKind.ABILITY_REVEALED,
+            actorPokemonId = OPPONENT,
+            publicValueId = "intimidate",
+        )
+        val result = NativeInitialBattleDefinitionCompiler.compile(
+            state = state(opponentAbility = "intimidate", events = listOf(traceReveal)),
+            catalog = catalog(),
+            identities = identities(),
+            world = world(opponentBuild = build(
+                OPPONENT,
+                NativeBuildKnowledge.PUBLIC_HYPOTHESIS,
+                "trace",
+                "choicespecs",
+            )),
+            seed = SEED,
+        )
+
+        assertEquals(emptyList<Any>(), result.issues)
+        assertEquals("trace", requireNotNull(result.definition).p2Team.single().ability)
     }
 
     @Test
@@ -232,6 +290,7 @@ class NativeInitialBattleDefinitionCompilerTest {
         allyStages: Map<String, Int> = emptyMap(),
         opponentAbility: String? = null,
         opponentItem: String? = null,
+        events: List<BattleObservedEventView> = emptyList(),
     ) = BattleStateView(
         battleId = BATTLE,
         format = BattleFormat.SINGLE,
@@ -259,7 +318,7 @@ class NativeInitialBattleDefinitionCompilerTest {
         ),
         field = BattleFieldStateView.empty(),
         remainingPokemonBySide = mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to remainingOpponent),
-        observedEvents = emptyList(),
+        observedEvents = events,
         inferences = emptyList(),
     )
 

@@ -203,6 +203,51 @@ class NativeOpponentRosterHypothesisCompilerTest {
     }
 
     @Test
+    fun `illusion assignment keeps a selected bench capable of producing the public appearance`() {
+        val disguisedLead = opponent("cobblemon:garchomp")
+        val preview = preview(3, "garchomp", "zoroark", "rotom", "mew", "ditto", "pikachu")
+
+        val result = NativeOpponentRosterHypothesisCompiler.compile(
+            state(disguisedLead, remaining = 3),
+            preview,
+            compatiblePreviewSlots = mapOf(disguisedLead.battlePokemonId to setOf(0, 1)),
+        )
+
+        assertTrue(result.issues.isEmpty())
+        val illusionWorlds = result.hypotheses.filter {
+            it.revealedAssignments.getValue(disguisedLead.battlePokemonId) == 1
+        }
+        assertEquals(4, illusionWorlds.size)
+        assertTrue(illusionWorlds.all { 0 in it.selectedPreviewSlotIds })
+        assertTrue(result.hypotheses.none {
+            it.revealedAssignments.getValue(disguisedLead.battlePokemonId) == 1 &&
+                0 !in it.selectedPreviewSlotIds
+        })
+    }
+
+    @Test
+    fun `incompatible double illusion appearances fail explicitly instead of returning no worlds`() {
+        val left = opponent("cobblemon:garchomp", slot = 0)
+        val right = opponent("cobblemon:dragonite", slot = 1)
+        val preview = preview(4, "garchomp", "dragonite", "zoroark", "zoroarkhisui", "mew", "ditto")
+
+        val result = NativeOpponentRosterHypothesisCompiler.compile(
+            state(left, right, remaining = 4, format = BattleFormat.DOUBLE),
+            preview,
+            compatiblePreviewSlots = mapOf(
+                left.battlePokemonId to setOf(2),
+                right.battlePokemonId to setOf(3),
+            ),
+        )
+
+        assertTrue(result.hypotheses.isEmpty())
+        assertEquals(
+            setOf(NativeOpponentRosterIssueCode.REVEALED_ASSIGNMENT_UNAVAILABLE),
+            result.issues.mapTo(linkedSetOf()) { it.code },
+        )
+    }
+
+    @Test
     fun `two revealed pokemon cannot share one preview slot`() {
         val left = opponent("cobblemon:zoroark", slot = 0)
         val right = opponent("cobblemon:zoroark", slot = 1)

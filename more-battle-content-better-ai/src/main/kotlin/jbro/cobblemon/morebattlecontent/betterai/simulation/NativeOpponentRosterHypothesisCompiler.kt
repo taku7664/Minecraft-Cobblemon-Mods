@@ -5,7 +5,6 @@ import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewPokemonView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
-import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
@@ -73,27 +72,13 @@ internal object NativeOpponentRosterHypothesisCompiler {
             BattleFormat.SINGLE -> setOf(0)
             BattleFormat.DOUBLE -> setOf(0, 1)
         }
-        val activePokemonIds = state.pokemon.asSequence()
-            .filter { it.activeSlot != null && !it.fainted }
-            .map(BattlePokemonStateView::battlePokemonId)
-            .toSet()
-        val switchedActors = state.observedEvents.asSequence()
-            .filter { it.kind == BattleObservedEventKind.SWITCHED }
-            .mapNotNull { it.actorPokemonId }
-            .toList()
-        val invalidOpeningEvents = state.observedEvents.any { event ->
-            event.turn != 0 || event.kind !in OPENING_EVENT_KINDS || when (event.kind) {
-                BattleObservedEventKind.FIELD_EFFECT_CHANGED -> event.actorPokemonId != null
-                else -> event.actorPokemonId !in activePokemonIds
-            }
-        } || switchedActors.size != switchedActors.distinct().size
         if (preview.pokemon.size != BattleOpponentTeamPreviewView.MAX_PREVIEW_SIZE ||
             preview.selectionSize != expectedSelectionSize
         ) {
             issues += NativeOpponentRosterIssue(NativeOpponentRosterIssueCode.UNSUPPORTED_SELECTION_RULE)
         }
         if (state.turn !in 0..1 ||
-            invalidOpeningEvents ||
+            !NativeOpeningStateRules.acceptsObservations(state) ||
             revealed.any(BattlePokemonStateView::fainted) ||
             state.remainingPokemonBySide.getValue(BattleSide.OPPONENT) != preview.selectionSize
         ) {
@@ -150,11 +135,27 @@ internal object NativeOpponentRosterHypothesisCompiler {
             val remaining = previewById.keys.filterNot(fixed::contains).sorted()
             val needed = preview.selectionSize - fixed.size
             combinations(remaining, needed).forEach { extra ->
-                raw += (fixed + extra).sorted() to assignment
+                val selected = (fixed + extra).sorted()
+                if (canProduceEveryPublicAppearance(selected, assignment, revealed, previewById)) {
+                    raw += selected to assignment
+                }
             }
         }
         val ordered = raw.distinctBy { (selected, assignment) -> selected to assignment }
             .sortedBy { (selected, assignment) -> hypothesisId(selected, assignment) }
+        if (ordered.isEmpty()) {
+            return NativeOpponentRosterCompilation(
+                emptyList(),
+                revealed.map {
+                    NativeOpponentRosterIssue(
+                        NativeOpponentRosterIssueCode.REVEALED_ASSIGNMENT_UNAVAILABLE,
+                        it.battlePokemonId,
+                    )
+                }.ifEmpty {
+                    listOf(NativeOpponentRosterIssue(NativeOpponentRosterIssueCode.REVEALED_ASSIGNMENT_UNAVAILABLE))
+                },
+            )
+        }
         val probability = 1.0 / ordered.size.toDouble()
         return NativeOpponentRosterCompilation(
             hypotheses = ordered.map { (selected, assignment) ->
@@ -221,6 +222,31 @@ internal object NativeOpponentRosterHypothesisCompiler {
                 normalizedId(revealedForm) == normalizedId(previewForm))
     }
 
+    /**
+     * A cross-identity assignment represents an Illusion-compatible world. At the opening, every
+     * such public appearance must be producible by one common unassigned final team member; merely
+     * selecting the hidden Illusion user is not enough.
+     */
+    private fun canProduceEveryPublicAppearance(
+        selected: List<Int>,
+        assignment: Map<UUID, Int>,
+        revealed: List<BattlePokemonStateView>,
+        previewById: Map<Int, BattleOpponentTeamPreviewPokemonView>,
+    ): Boolean {
+        val revealedById = revealed.associateBy(BattlePokemonStateView::battlePokemonId)
+        val mismatchedAppearances = assignment.mapNotNull { (pokemonId, assignedSlot) ->
+            val pokemon = revealedById.getValue(pokemonId)
+            val assignedPreview = previewById.getValue(assignedSlot)
+            pokemon.takeUnless { samePublicIdentity(it, assignedPreview) }
+        }
+        if (mismatchedAppearances.isEmpty()) return true
+        val activeAssignments = assignment.values.toSet()
+        return selected.asSequence().filterNot(activeAssignments::contains).any { candidateSlot ->
+            val candidate = previewById.getValue(candidateSlot)
+            mismatchedAppearances.all { samePublicIdentity(it, candidate) }
+        }
+    }
+
     private fun hypothesisId(selected: List<Int>, assignment: Map<UUID, Int>): String =
         "roster:${selected.joinToString(",")}|map:" + assignment.entries.sortedBy { it.key.toString() }
             .joinToString(",") { (pokemon, slot) -> "$pokemon=$slot" }
@@ -228,11 +254,4 @@ internal object NativeOpponentRosterHypothesisCompiler {
     private fun normalizedId(value: String): String = value.substringAfter(':')
         .lowercase(Locale.ROOT)
         .filter(Char::isLetterOrDigit)
-
-    private val OPENING_EVENT_KINDS = setOf(
-        BattleObservedEventKind.SWITCHED,
-        BattleObservedEventKind.ABILITY_REVEALED,
-        BattleObservedEventKind.HELD_ITEM_REVEALED,
-        BattleObservedEventKind.FIELD_EFFECT_CHANGED,
-    )
 }

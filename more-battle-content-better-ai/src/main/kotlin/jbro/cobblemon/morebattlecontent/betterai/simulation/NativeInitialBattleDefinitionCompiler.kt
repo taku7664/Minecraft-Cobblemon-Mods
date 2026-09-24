@@ -4,6 +4,7 @@ import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleCombatStatKnowledge
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
+import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonActionConstraintView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
@@ -79,7 +80,6 @@ internal enum class NativeBattleDefinitionIssueCode {
     PUBLIC_IDENTITY_STALE,
     BUILD_HYPOTHESIS_MISSING,
     BUILD_KNOWLEDGE_MISMATCH,
-    PUBLIC_ABILITY_CONFLICT,
     PUBLIC_ITEM_CONFLICT,
     MOVESET_UNAVAILABLE,
     LEVEL_UNAVAILABLE,
@@ -165,15 +165,17 @@ internal object NativeInitialBattleDefinitionCompiler {
                 if (build.knowledge != expectedKnowledge) {
                     issue(issues, NativeBattleDefinitionIssueCode.BUILD_KNOWLEDGE_MISMATCH, id)
                 }
-                val publicAbility = pokemon.knownAbilityId
-                if (publicAbility != null && normalizedNativeId(publicAbility) != normalizedNativeId(build.abilityId)) {
-                    issue(issues, NativeBattleDefinitionIssueCode.PUBLIC_ABILITY_CONFLICT, id)
-                }
-                val publicItem = pokemon.knownHeldItemId?.let(::normalizedNativeId)
+                // knownAbilityId is the live public ability, not necessarily the source-set ability:
+                // Trace and native switch-in callbacks may legally change it before the first move.
+                // The native opening frame must be reconciled with that public value after creation.
+                val publicItems = buildList {
+                    pokemon.knownHeldItemId?.let(::add)
+                    addAll(revealedValues(state, id, BattleObservedEventKind.HELD_ITEM_REVEALED))
+                }.map(::normalizedNativeId)
                 val hypothesizedItem = normalizedNativeId(build.itemId)
                 val itemConflict = when (pokemon.side) {
-                    BattleSide.ALLY -> publicItem.orEmpty() != hypothesizedItem
-                    BattleSide.OPPONENT -> publicItem != null && publicItem != hypothesizedItem
+                    BattleSide.ALLY -> publicItems.ifEmpty { listOf("") }.any { it != hypothesizedItem }
+                    BattleSide.OPPONENT -> publicItems.any { it != hypothesizedItem }
                 }
                 if (itemConflict) issue(issues, NativeBattleDefinitionIssueCode.PUBLIC_ITEM_CONFLICT, id)
             }
@@ -232,9 +234,18 @@ internal object NativeInitialBattleDefinitionCompiler {
         BattleSide.OPPONENT -> NativeMoveHypothesisCompiler.compile(pokemon, catalog).nativeMoveIds
     }
 
+    private fun revealedValues(
+        state: BattleStateView,
+        pokemonId: UUID,
+        kind: BattleObservedEventKind,
+    ): List<String> = state.observedEvents.asSequence()
+        .filter { it.kind == kind && it.actorPokemonId == pokemonId }
+        .mapNotNull { it.publicValueId }
+        .toList()
+
     private fun isInitialState(state: BattleStateView): Boolean =
         state.turn in 0..1 &&
-            state.observedEvents.isEmpty() &&
+            NativeOpeningStateRules.acceptsObservations(state) &&
             state.field.weather == null &&
             state.field.terrain == null &&
             state.field.roomEffects.isEmpty() &&
