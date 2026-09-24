@@ -221,6 +221,23 @@ tasks.register<JavaExec>("captureBssFactoryTournamentMatch") {
     }
 }
 
+tasks.register<JavaExec>("compareTournamentDifficulties") {
+    group = "verification"
+    description = "Compares adjacent difficulty tiers with same-entry 3v3 BSS and 4v4 VGC tournament teams."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.EmbeddedTournamentDifficultyComparison")
+    workingDir(rootProject.projectDir)
+    doFirst {
+        setArgs(listOf(
+            providers.gradleProperty("tournamentDifficultyOutput").orNull
+                ?: layout.buildDirectory.dir("reports/betterai-tournament-difficulty/${UUID.randomUUID()}").get().asFile.absolutePath,
+            providers.gradleProperty("tournamentDifficultySeeds").getOrElse("1"),
+            providers.gradleProperty("tournamentDifficultyMaxTurns").getOrElse("120"),
+        ))
+    }
+}
+
 tasks.register<JavaExec>("compareNativePolicies") {
     group = "verification"
     description = "Compares existing Local Brain tunings with crossed teams and seats in native battles."

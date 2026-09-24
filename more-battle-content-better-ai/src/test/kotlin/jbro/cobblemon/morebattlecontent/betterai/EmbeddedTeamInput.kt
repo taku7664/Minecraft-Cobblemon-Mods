@@ -7,7 +7,6 @@ import java.util.zip.ZipInputStream
 
 /** Test adapter, deliberately separate from privileged team definitions and referee state. */
 internal object EmbeddedTeamInput {
-    private val nonSingleActiveSlot = Regex("^p[12][b-z]:")
     private val declarativeEffects by lazy {
         ZipInputStream(requireNotNull(javaClass.getResourceAsStream("/data/cobblemon/showdown.zip"))).use { zip ->
             while (true) {
@@ -27,6 +26,7 @@ internal object EmbeddedTeamInput {
 
     fun identity(ident: String): String = ident.take(2) + ":" + ident.substringAfter(':').trim()
     private fun uuid(ident: String) = UUID.nameUUIDFromBytes(identity(ident).toByteArray(Charsets.UTF_8))
+    private fun activeSlot(ident: String): Int? = ident.getOrNull(2)?.takeIf { it in 'a'..'b' }?.minus('a')
     private fun id(text: String) = text.substringAfter(": ").lowercase().filter(Char::isLetterOrDigit)
     private fun condition(value: String): Pair<Double, String?> {
         val parts = value.split(' ')
@@ -42,7 +42,7 @@ internal object EmbeddedTeamInput {
         requestNumber: Int,
         memory: (BattleStateView) -> BattleTacticalMemoryView = { BattleTacticalMemoryView.empty() },
     ): BattleDecisionContext {
-        requireSingleFormat(input)
+        val format = battleFormat(input)
         val ownSide = input["side"].asString
         fun side(ident: String) = if (ident.startsWith(ownSide)) BattleSide.ALLY else BattleSide.OPPONENT
         val speciesData = input.getAsJsonObject("species")
@@ -97,7 +97,9 @@ internal object EmbeddedTeamInput {
                         seen.values.singleOrNull { it.active && it.ident.take(2) == actor.take(2) }
                             ?.volatileEffects.orEmpty().toSet()
                     } else emptySet()
-                    seen.values.filter { it.ident.take(2) == actor.take(2) }.forEach {
+                    seen.values.filter {
+                        it.ident.take(2) == actor.take(2) && activeSlot(it.ident) == activeSlot(actor)
+                    }.forEach {
                         if (kind != "replace") {
                             it.originalMoves?.let { moves -> it.moves.clear(); it.moves.addAll(moves) }
                             it.originalMoves = null
@@ -188,6 +190,7 @@ internal object EmbeddedTeamInput {
         }
         val request = input.getAsJsonObject("request")
         val own = request.getAsJsonObject("side").getAsJsonArray("pokemon").map { it.asJsonObject }
+        val ownActiveSlots = input.getAsJsonObject("ownActiveSlots") ?: JsonObject()
         fun privateMap(name: String, ident: String) = input.getAsJsonObject(name).entrySet()
             .firstOrNull { identity(it.key) == identity(ident) }?.value
         val allies = own.map { pokemon ->
@@ -196,7 +199,8 @@ internal object EmbeddedTeamInput {
             val hp = condition(pokemon["condition"].asString)
             val stats = pokemon.getAsJsonObject("stats")
             val maxHp = pokemon["condition"].asString.substringBefore(' ').substringAfter('/', "0").toInt()
-            BattlePokemonStateView(uuid(ident), BattleSide.ALLY, if (pokemon["active"].asBoolean) 0 else null,
+            BattlePokemonStateView(uuid(ident), BattleSide.ALLY,
+                if (pokemon["active"].asBoolean) ownActiveSlots[identity(ident)]?.asInt else null,
                 id(details[0]), null, details.firstOrNull { it.matches(Regex("L\\d+")) }?.drop(1)?.toInt() ?: 100,
                 hp.first, hp.second, seen[identity(ident)]?.stages.orEmpty(),
                 pokemon.getAsJsonArray("moves").map { id(it.asString) }.toSet(),
@@ -211,7 +215,8 @@ internal object EmbeddedTeamInput {
         }
         val opponents = seen.values.filter { side(it.ident) == BattleSide.OPPONENT }.map { pokemon ->
             val stats = speciesData.getAsJsonObject(pokemon.species)?.getAsJsonObject("baseStats")
-            BattlePokemonStateView(uuid(pokemon.ident), BattleSide.OPPONENT, if (pokemon.active) 0 else null,
+            BattlePokemonStateView(uuid(pokemon.ident), BattleSide.OPPONENT,
+                if (pokemon.active) activeSlot(pokemon.ident) else null,
                 pokemon.species, null, pokemon.level, pokemon.hp, pokemon.status, pokemon.stages, pokemon.moves,
                 pokemon.ability, pokemon.item, pokemon.hp == 0.0,
                 if (pokemon.types.isEmpty()) emptySet() else pokemon.types + listOfNotNull(pokemon.added),
@@ -238,22 +243,74 @@ internal object EmbeddedTeamInput {
                 move["power"].asDouble, move["accuracy"].asDouble, move["priority"].asInt, pp, target,
                 effects = declarativeEffects[moveId])
         }
-        val candidates = input.getAsJsonArray("actions").map { it.asJsonObject }.map { action ->
-            val slot = action["slot"].asInt
-            if (action["kind"].asString == "switch") BattleActionCandidate(action["id"].asString, BattleActionKind.SWITCH,
-                actorSlot = 0, switchPokemonId = allies[slot].battlePokemonId)
-            else {
+        fun targets(
+            details: BattleMoveCandidateView,
+            actorSlot: Int,
+            targetLoc: Int?,
+        ): List<BattleTargetSlot> = when {
+            targetLoc != null && targetLoc > 0 -> listOf(BattleTargetSlot(BattleSide.OPPONENT, targetLoc - 1))
+            targetLoc != null && targetLoc < 0 -> listOf(BattleTargetSlot(BattleSide.ALLY, -targetLoc - 1))
+            details.targetPattern == BattleMoveTargetPattern.SELF ->
+                listOf(BattleTargetSlot(BattleSide.ALLY, actorSlot))
+            details.targetPattern == BattleMoveTargetPattern.ALL_ACTIVE ->
+                (allies.filter { it.activeSlot != null && !it.fainted }.map {
+                    BattleTargetSlot(BattleSide.ALLY, requireNotNull(it.activeSlot))
+                } + opponents.filter { it.activeSlot != null && !it.fainted }.map {
+                    BattleTargetSlot(BattleSide.OPPONENT, requireNotNull(it.activeSlot))
+                })
+            details.targetPattern == BattleMoveTargetPattern.ALL_ADJACENT ->
+                (allies.filter { it.activeSlot != null && it.activeSlot != actorSlot && !it.fainted }.map {
+                    BattleTargetSlot(BattleSide.ALLY, requireNotNull(it.activeSlot))
+                } + opponents.filter { it.activeSlot != null && !it.fainted }.map {
+                    BattleTargetSlot(BattleSide.OPPONENT, requireNotNull(it.activeSlot))
+                })
+            details.targetPattern == BattleMoveTargetPattern.ALL_OPPONENTS ->
+                opponents.filter { it.activeSlot != null && !it.fainted }.map {
+                    BattleTargetSlot(BattleSide.OPPONENT, requireNotNull(it.activeSlot))
+                }
+            details.targetPattern == BattleMoveTargetPattern.ALL_ALLIES ->
+                allies.filter { it.activeSlot != null && !it.fainted }.map {
+                    BattleTargetSlot(BattleSide.ALLY, requireNotNull(it.activeSlot))
+                }
+            details.targetPattern == BattleMoveTargetPattern.SELECTED_ALLY_OR_SELF ->
+                listOf(BattleTargetSlot(BattleSide.ALLY, actorSlot))
+            details.targetPattern == BattleMoveTargetPattern.SIDE ||
+                details.targetPattern == BattleMoveTargetPattern.SELECTED_ALLY -> emptyList()
+            else -> opponents.filter { it.activeSlot != null && !it.fainted }.take(1).map {
+                BattleTargetSlot(BattleSide.OPPONENT, requireNotNull(it.activeSlot))
+            }
+        }
+        fun atomic(action: JsonObject): BattleActionCandidate? {
+            val actorSlot = action["actorSlot"]?.asInt ?: 0
+            val actionId = action["id"]?.asString ?: "slot$actorSlot:${action["command"].asString}"
+            return if (action["kind"].asString == "pass") {
+                null
+            } else if (action["kind"].asString == "switch") {
+                val slot = action["slot"].asInt
+                BattleActionCandidate(actionId, BattleActionKind.SWITCH,
+                    actorSlot = actorSlot, switchPokemonId = allies[slot].battlePokemonId)
+            } else {
+                val slot = action["slot"].asInt
                 val moveId = id(action["moveId"].asString)
-                val moveRequest = request.getAsJsonArray("active")[0].asJsonObject.getAsJsonArray("moves")[slot].asJsonObject
+                val moveRequest = request.getAsJsonArray("active")[actorSlot].asJsonObject
+                    .getAsJsonArray("moves")[slot].asJsonObject
                 val details = moveDetails(moveId, moveRequest["pp"]?.asInt ?: 1)
-                BattleActionCandidate(action["id"].asString, BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = slot,
-                    moveId = moveId, targets = when (details.targetPattern) {
-                        BattleMoveTargetPattern.SELF, BattleMoveTargetPattern.SELECTED_ALLY_OR_SELF -> listOf(BattleTargetSlot(BattleSide.ALLY, 0))
-                        BattleMoveTargetPattern.ALL_ACTIVE ->
-                            listOf(BattleTargetSlot(BattleSide.ALLY, 0), BattleTargetSlot(BattleSide.OPPONENT, 0))
-                        BattleMoveTargetPattern.SIDE, BattleMoveTargetPattern.ALL_ALLIES, BattleMoveTargetPattern.SELECTED_ALLY -> emptyList()
-                        else -> listOf(BattleTargetSlot(BattleSide.OPPONENT, 0))
-                    }, moveDetails = details)
+                BattleActionCandidate(actionId, BattleActionKind.USE_MOVE, actorSlot = actorSlot, moveSlot = slot,
+                    moveId = moveId, targets = targets(details, actorSlot, action["targetLoc"]?.takeUnless { it.isJsonNull }?.asInt),
+                    moveDetails = details)
+            }
+        }
+        val candidates = input.getAsJsonArray("actions").map { it.asJsonObject }.map { action ->
+            if (action["kind"].asString != "composite") {
+                requireNotNull(atomic(action))
+            } else {
+                val components = action.getAsJsonArray("components").mapNotNull { component -> atomic(component.asJsonObject) }
+                BattleActionCandidate(
+                    action["id"].asString,
+                    BattleActionKind.COMPOSITE,
+                    componentActionIds = components.map { it.actionId },
+                    componentActions = components,
+                )
             }
         }
         val pokemon = allies + opponents
@@ -281,7 +338,7 @@ internal object EmbeddedTeamInput {
         val field = BattleFieldStateView(weather?.let(::effect), fields.firstOrNull { it.endsWith("terrain") }?.let(::effect),
             fields.filter { it.endsWith("room") }.map(::effect), fields.filterNot { it.endsWith("terrain") || it.endsWith("room") }.map(::effect),
             sideEffects.mapValues { (_, values) -> values.map { (name, stacks) -> BattleTimedEffectView(name, null, stacks) } })
-        val state = BattleStateView(battleId, BattleFormat.SINGLE, turn, pokemon, field,
+        val state = BattleStateView(battleId, format, turn, pokemon, field,
             mapOf(BattleSide.ALLY to allies.count { !it.fainted }, BattleSide.OPPONENT to
                 ((sizes[BattleSide.OPPONENT] ?: error("Missing public team size")) - opponents.count { it.fainted })),
             observedEvents = events.takeLast(64), inferences = emptyList())
@@ -289,19 +346,26 @@ internal object EmbeddedTeamInput {
             candidates, System.currentTimeMillis() + 20000, memory = memory(state), publicActionCatalog = catalog)
     }
 
-    private fun requireSingleFormat(input: JsonObject) {
-        val message = "Native team input currently supports singles only"
-        require(input["format"]?.asString.let { it == null || it == "SINGLE" }) { message }
+    internal fun battleFormat(input: JsonObject): BattleFormat {
+        val declared = input["format"]?.asString ?: "SINGLE"
+        require(declared in setOf("SINGLE", "DOUBLE")) { "Native team input supports SINGLE and DOUBLE only" }
+        val expectedGameType = if (declared == "DOUBLE") "doubles" else "singles"
         input.getAsJsonArray("publicLog")?.forEach { line ->
             val parts = line.asString.split('|')
-            if (parts.getOrNull(1) == "gametype") require(parts.getOrNull(2) == "singles") { message }
-            require(parts.none { nonSingleActiveSlot.containsMatchIn(it) }) { message }
+            if (parts.getOrNull(1) == "gametype") {
+                require(parts.getOrNull(2) == expectedGameType) { "Declared format disagrees with public game type" }
+            }
         }
-        val request = input.getAsJsonObject("request") ?: return
-        require((request.getAsJsonArray("active")?.size() ?: 0) <= 1) { message }
-        require((request.getAsJsonArray("forceSwitch")?.size() ?: 0) <= 1) { message }
+        val result = if (declared == "DOUBLE") BattleFormat.DOUBLE else BattleFormat.SINGLE
+        val request = input.getAsJsonObject("request") ?: return result
+        val activeLimit = if (declared == "DOUBLE") 2 else 1
+        require((request.getAsJsonArray("active")?.size() ?: 0) <= activeLimit) { "Too many active requests for $declared" }
+        require((request.getAsJsonArray("forceSwitch")?.size() ?: 0) <= activeLimit) { "Too many forced slots for $declared" }
         val own = request.getAsJsonObject("side")?.getAsJsonArray("pokemon")
-        require((own?.count { it.asJsonObject["active"]?.asBoolean == true } ?: 0) <= 1) { message }
+        require((own?.count { it.asJsonObject["active"]?.asBoolean == true } ?: 0) <= activeLimit) {
+            "Too many active Pokemon for $declared"
+        }
+        return result
     }
 
     private fun statName(value: String) = when (value) {

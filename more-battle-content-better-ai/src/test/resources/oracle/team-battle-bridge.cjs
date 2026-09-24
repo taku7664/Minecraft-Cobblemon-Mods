@@ -9,9 +9,8 @@ const dex = Dex.mod('cobblemon');
 dex.includeData(); // getMovePool reads dex.gen before lazily loading species data.
 if (dex.gen !== 9) throw new Error('Public learnset export requires the declared Gen 9 engine');
 const input = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
-if (input.battleFormat !== undefined && input.battleFormat !== 'SINGLE') {
-  throw new Error('Native team bridge currently supports singles only');
-}
+const battleFormat = input.battleFormat || 'SINGLE';
+if (!['SINGLE', 'DOUBLE'].includes(battleFormat)) throw new Error(`Unsupported native team format ${battleFormat}`);
 if (!Array.isArray(input.battleSeed) || input.battleSeed.length !== 4 ||
     !input.battleSeed.every(value => Number.isInteger(value) && value >= 0 && value <= 65535) ||
     !Number.isInteger(input.maxTurns) || input.maxTurns < 1 || input.maxTurns > 10000) {
@@ -42,7 +41,7 @@ const publicEvents = new Set(['gametype', 'player', 'teamsize', 'gen', 'tier', '
   '-sideend', '-swapsideconditions', '-singleturn', '-singlemove', '-prepare', '-mustrecharge',
   '-notarget', '-miss', '-block', '-transform', '-terastallize']);
 const battle = new Battle({ format: { id: 'betteraiteambridge', name: 'Better AI Team Bridge',
-  mod: 'cobblemon', gameType: 'singles', ruleset: [], gen: 9 }, seed: input.battleSeed });
+  mod: 'cobblemon', gameType: battleFormat === 'DOUBLE' ? 'doubles' : 'singles', ruleset: [], gen: 9 }, seed: input.battleSeed });
 let pending = [];
 let closed = false;
 let lines;
@@ -67,6 +66,26 @@ const moveInfo = id => {
     maxPp: move.noPPBoosts ? move.pp : Math.floor(move.pp * 8 / 5),
     pressureTarget: move.flags.mustpressure ? 'allAdjacentFoes' : move.target, charge: !!move.flags.charge };
 };
+const targetLocations = (target, actorSlot, opposingSlots, alliedSlots) => {
+  if (battleFormat === 'SINGLE') return [''];
+  if (['normal', 'adjacentFoe'].includes(target)) {
+    return opposingSlots.map(slot => ` ${slot + 1}`);
+  }
+  const partnerSlot = actorSlot === 0 ? 1 : 0;
+  if (target === 'adjacentAlly') return alliedSlots.includes(partnerSlot) ? [` ${-(partnerSlot + 1)}`] : [];
+  if (target === 'adjacentAllyOrSelf') {
+    return [` ${-(actorSlot + 1)}`, ...(alliedSlots.includes(partnerSlot) ? [` ${-(partnerSlot + 1)}`] : [])];
+  }
+  if (target === 'any') {
+    return [
+      ...opposingSlots.map(slot => ` ${slot + 1}`),
+      ...(alliedSlots.includes(partnerSlot) ? [` ${-(partnerSlot + 1)}`] : []),
+    ];
+  }
+  return [''];
+};
+const combine = choicesBySlot => choicesBySlot.reduce(
+  (combinations, choices) => combinations.flatMap(prefix => choices.map(choice => [...prefix, choice])), [[]]);
 function snapshot() {
   const log = publicLog();
   if (battle.ended || battle.turn > input.maxTurns) {
@@ -82,6 +101,10 @@ function snapshot() {
     if (!side.requestState) continue;
     if (!['move', 'switch'].includes(side.requestState)) throw new Error(`Unsupported request ${side.requestState}`);
     const request = structuredClone(side.activeRequest);
+    const ownActiveSlots = {};
+    side.active.forEach((pokemon, activeSlot) => {
+      if (pokemon) ownActiveSlots[`${side.id}:${pokemon.uuid}`] = activeSlot;
+    });
     for (const [slot, pokemon] of side.pokemon.entries()) {
       if (!request.side.pokemon[slot]) throw new Error('Own request roster is incomplete');
       request.side.pokemon[slot].ident = `${side.id}: ${pokemon.uuid}`;
@@ -128,26 +151,58 @@ function snapshot() {
     }
     const actions = [];
     if (side.requestState === 'move') {
-      const active = request.active?.[0];
-      if (!active || request.active.length !== 1) throw new Error('Only single active requests supported');
-      active.moves.forEach((move, slot) => {
-        if (move.disabled || move.pp === 0) return;
-        // Recharge and Struggle can omit PP; they are still native legal requests.
-        const metadata = moveInfo(move.id);
-        actions.push({ id: `move ${slot + 1}`, kind: 'move', slot, moveId: move.id,
-          target: move.target || metadata.target });
-        moves[move.id] = metadata;
+      const alliedSlots = side.active.flatMap((pokemon, slot) => pokemon && !pokemon.fainted ? [slot] : []);
+      const opposingSlots = side.foe.active.flatMap((pokemon, slot) => pokemon && !pokemon.fainted ? [slot] : []);
+      const choicesBySlot = request.active.map((active, actorSlot) => {
+        if (!active || !side.active[actorSlot] || side.active[actorSlot].fainted) {
+          return [{ command: 'pass', actorSlot, kind: 'pass' }];
+        }
+        const choices = [];
+        active.moves.forEach((move, moveSlot) => {
+          if (move.disabled || move.pp === 0) return;
+          // Recharge and Struggle can omit PP; they are still native legal requests.
+          const metadata = moveInfo(move.id);
+          const target = move.target || metadata.target;
+          targetLocations(target, actorSlot, opposingSlots, alliedSlots).forEach(targetLocation => {
+            choices.push({ command: `move ${moveSlot + 1}${targetLocation}`, actorSlot,
+              kind: 'move', slot: moveSlot, moveId: move.id, target,
+              targetLoc: targetLocation.trim() ? Number(targetLocation.trim()) : null });
+          });
+          moves[move.id] = metadata;
+        });
+        if (!active.trapped) {
+          request.side.pokemon.forEach((pokemon, slot) => {
+            if (pokemon.active || /(?:^0(?:\s|$)|\bfnt\b)/.test(pokemon.condition)) return;
+            choices.push({ command: `switch ${slot + 1}`, actorSlot, kind: 'switch', slot });
+          });
+        }
+        return choices;
       });
-    }
-    if (side.requestState === 'switch' || !request.active?.[0]?.trapped) {
-      request.side.pokemon.forEach((pokemon, slot) => {
-        if (pokemon.active || /(?:^0(?:\s|$)|\bfnt\b)/.test(pokemon.condition)) return;
-        actions.push({ id: `switch ${slot + 1}`, kind: 'switch', slot });
+      for (const components of combine(choicesBySlot)) {
+        const switchSlots = components.filter(component => component.kind === 'switch').map(component => component.slot);
+        if (new Set(switchSlots).size !== switchSlots.length) continue;
+        const command = components.map(component => component.command).join(', ');
+        if (battleFormat === 'SINGLE') actions.push({ ...components[0], id: command });
+        else actions.push({ id: command, kind: 'composite', components });
+      }
+    } else {
+      const choicesBySlot = request.forceSwitch.map((forced, actorSlot) => {
+        if (!forced) return [{ command: 'pass', actorSlot, kind: 'pass' }];
+        return request.side.pokemon.flatMap((pokemon, slot) =>
+          pokemon.active || /(?:^0(?:\s|$)|\bfnt\b)/.test(pokemon.condition) ? [] :
+            [{ command: `switch ${slot + 1}`, actorSlot, kind: 'switch', slot }]);
       });
+      for (const components of combine(choicesBySlot)) {
+        const switchSlots = components.filter(component => component.kind === 'switch').map(component => component.slot);
+        if (new Set(switchSlots).size !== switchSlots.length) continue;
+        const command = components.map(component => component.command).join(', ');
+        if (battleFormat === 'SINGLE') actions.push({ ...components[0], id: command });
+        else actions.push({ id: command, kind: 'composite', components });
+      }
     }
     if (!actions.length) throw new Error(`No exposed legal actions for ${side.id}`);
-    requests.push({ format: 'SINGLE', side: side.id, request, ownTypes, ownAbilities, ownItems, actions,
-      publicLog: log, species, moves, publicLearnsets, ownCurrentPp });
+    requests.push({ format: battleFormat, side: side.id, request, ownTypes, ownAbilities, ownItems, actions,
+      publicLog: log, species, moves, publicLearnsets, ownCurrentPp, ownActiveSlots });
   }
   if (!requests.length) throw new Error('Battle neither ended nor requested input');
   pending = requests;

@@ -5,6 +5,7 @@ import com.google.gson.JsonParser
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
+import jbro.cobblemon.morebattlecontent.internal.ai.BattleOpponentMoveInferenceLedger
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleTacticalMemoryLedger
 import java.nio.file.Files
 import java.nio.file.Path
@@ -33,15 +34,23 @@ internal object EmbeddedTeamBattle {
     fun run(engine: Path, pair: JsonObject, directory: Path, maxTurns: Int = 200,
         p1Tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
         p2Tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
-        trainerProfile: BattleTrainerProfile = BattleTrainerProfile.balanced()): JsonObject {
+        trainerProfile: BattleTrainerProfile = BattleTrainerProfile.balanced(),
+        p1TrainerProfile: BattleTrainerProfile = trainerProfile,
+        p2TrainerProfile: BattleTrainerProfile = trainerProfile): JsonObject {
         val battleId = UUID.nameUUIDFromBytes(pair["battleSeed"].toString().toByteArray())
+        val format = pair["battleFormat"]?.asString?.let(BattleFormat::valueOf) ?: BattleFormat.SINGLE
         val tunings = mapOf("p1" to p1Tuning, "p2" to p2Tuning)
+        val profiles = mapOf("p1" to p1TrainerProfile, "p2" to p2TrainerProfile)
         val brains = tunings.mapValues { (_, tuning) -> LocalTacticalBrain(tuning = tuning) }
-        val openContexts = brains.keys.associateWith {
-            BattleBrainOpenContext(battleId, BattleFormat.SINGLE, trainerProfile = trainerProfile)
+        val openContexts = brains.keys.associateWith { side ->
+            BattleBrainOpenContext(battleId, format, trainerProfile = profiles.getValue(side))
         }
         val sessions = brains.mapValues { (side, brain) -> brain.openSession(openContexts.getValue(side)) }
         val memories = openContexts.mapValues { (_, context) -> BattleTacticalMemoryLedger(context) }
+        val inferenceMoveDetails = brains.keys.associateWith { linkedMapOf<String, BattleMoveCandidateView>() }
+        val inferenceLedgers = brains.keys.associateWith { side ->
+            BattleOpponentMoveInferenceLedger { moveId -> inferenceMoveDetails.getValue(side)[canonical(moveId)] }
+        }
         var final: JsonObject? = null
         val counts = mutableMapOf("p1" to 0, "p2" to 0)
         var forced = 0
@@ -61,7 +70,7 @@ internal object EmbeddedTeamBattle {
                             frame.addProperty("illegalChoices", 0) // Any illegal/rejected choice aborts instead of producing a result.
                             frame.addProperty("effectAnnotatedCandidates", effectAnnotatedCandidates)
                             frame.add("policyTuning", com.google.gson.Gson().toJsonTree(tunings))
-                            frame.add("trainerProfile", com.google.gson.Gson().toJsonTree(trainerProfile))
+                            frame.add("trainerProfiles", com.google.gson.Gson().toJsonTree(profiles))
                             frame.addProperty("evidence", "NATIVE_LOCAL_BRAIN_TEAMS_PARTIAL_INPUT_ADAPTER_NOT_QUALITY_PROOF")
                             frame.addProperty("adapterLimits", "PARTIAL_DECLARATIVE_EFFECTS_NO_CALLBACK_EXECUTION;PARTIAL_PUBLIC_EVENTS_AND_VOLATILES;UNKNOWN_EFFECT_DURATIONS;NO_GIMMICK_CANDIDATES;INCOMPLETE_FUTURE_PP;NO_RUNTIME_ADDONS")
                             Files.writeString(directory.resolve("result.json"), frame.toString(), CREATE_NEW)
@@ -72,11 +81,32 @@ internal object EmbeddedTeamBattle {
                             val input = value.asJsonObject
                             val side = input["side"].asString
                             val memory = memories.getValue(side)
-                            val context = EmbeddedTeamInput.context(input, battleId, frame["turn"].asInt, round) { state ->
+                            val baseContext = EmbeddedTeamInput.context(input, battleId, frame["turn"].asInt, round) { state ->
                                 memory.observe(state)
                                 memory.view(state.turn)
                             }
-                            val effects = context.candidates.filter { it.kind == BattleActionKind.USE_MOVE }
+                            registerMoveDetails(baseContext.publicActionCatalog, inferenceMoveDetails.getValue(side))
+                            val inferences = inferenceLedgers.getValue(side).update(
+                                baseContext.state,
+                                baseContext.publicActionCatalog,
+                                profiles.getValue(side).difficulty.tier,
+                                actualOpponentMoves(pair, side, baseContext.state),
+                            )
+                            val context = BattleDecisionContext(
+                                baseContext.requestId,
+                                baseContext.state,
+                                baseContext.candidates,
+                                baseContext.deadlineEpochMillis,
+                                baseContext.memory,
+                                baseContext.publicActionCatalog.withOpponentMoveInferences(inferences),
+                            )
+                            val effects = context.candidates.asSequence().flatMap { candidate ->
+                                if (candidate.kind == BattleActionKind.COMPOSITE) {
+                                    candidate.componentActions.asSequence()
+                                } else {
+                                    sequenceOf(candidate)
+                                }
+                            }.filter { it.kind == BattleActionKind.USE_MOVE }
                                 .associate { it.actionId to it.moveDetails?.effects }
                             effectAnnotatedCandidates += effects.values.count { it != null }
                             val decision = brains.getValue(side).decide(sessions.getValue(side), context)
@@ -92,6 +122,7 @@ internal object EmbeddedTeamBattle {
                                 add("input", input); addProperty("actionId", decision.actionId)
                                 add("candidateEffects", com.google.gson.Gson().toJsonTree(effects))
                                 add("memory", com.google.gson.Gson().toJsonTree(context.memory))
+                                add("opponentMoveInferences", com.google.gson.Gson().toJsonTree(inferences))
                                 add("decisionTags", com.google.gson.Gson().toJsonTree(decision.tags))
                             }.toString()).appendLine()
                             trace.flush()
@@ -115,6 +146,35 @@ internal object EmbeddedTeamBattle {
         }
     }
 
+    private fun registerMoveDetails(
+        catalog: BattlePublicActionCatalogView,
+        destination: MutableMap<String, BattleMoveCandidateView>,
+    ) {
+        catalog.entries.forEach { entry -> entry.moves.forEach { destination[canonical(it.moveId)] = it.details } }
+        catalog.candidatePools.forEach { pool ->
+            pool.moveDetails.forEach { (moveId, details) -> destination[canonical(moveId)] = details }
+        }
+    }
+
+    private fun actualOpponentMoves(
+        pair: JsonObject,
+        requestingSide: String,
+        state: BattleStateView,
+    ): Map<UUID, Set<String>> {
+        val opponentSide = if (requestingSide == "p1") "p2" else "p1"
+        val movesBySpecies = pair.getAsJsonObject(opponentSide).getAsJsonArray("sets")
+            .associate { setValue ->
+                val set = setValue.asJsonObject
+                canonical(set["species"].asString) to set.getAsJsonArray("moves").map { canonical(it.asString) }.toSet()
+            }
+        return state.pokemon.asSequence().filter { it.side == BattleSide.OPPONENT }.mapNotNull { pokemon ->
+            movesBySpecies[canonical(pokemon.speciesId)]?.let { pokemon.battlePokemonId to it }
+        }.toMap()
+    }
+
+    private fun canonical(value: String): String =
+        value.substringAfter(':').lowercase(java.util.Locale.ROOT).filter(Char::isLetterOrDigit)
+
     internal class NativeSession(engine: Path, pair: JsonObject, directory: Path, maxTurns: Int) : AutoCloseable {
         private val readerExecutor = Executors.newSingleThreadExecutor { task -> Thread(task, "native-team-output").apply { isDaemon = true } }
         private val stderr: Path
@@ -123,8 +183,8 @@ internal object EmbeddedTeamBattle {
         private val writer: java.io.BufferedWriter
         init {
             require(maxTurns in 1..10000)
-            require(pair["battleFormat"]?.asString.let { it == null || it == "SINGLE" }) {
-                "Native team bridge currently supports singles only"
+            require(pair["battleFormat"]?.asString.let { it == null || it in setOf("SINGLE", "DOUBLE") }) {
+                "Native team bridge supports SINGLE and DOUBLE only"
             }
             Files.createDirectories(directory)
             val script = directory.resolve("bridge.cjs").toAbsolutePath()

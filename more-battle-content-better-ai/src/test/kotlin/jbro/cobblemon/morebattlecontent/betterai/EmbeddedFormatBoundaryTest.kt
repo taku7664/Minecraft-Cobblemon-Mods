@@ -1,16 +1,15 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
 import com.google.gson.JsonParser
-import java.util.UUID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class EmbeddedFormatBoundaryTest {
     @Test
-    fun `unsupported battle format is rejected before creating a native process`(
+    fun `unknown battle format is rejected before creating a native process`(
         @org.junit.jupiter.api.io.TempDir directory: java.nio.file.Path,
     ) {
-        val pair = JsonParser.parseString("""{"battleFormat":"DOUBLE"}""").asJsonObject
+        val pair = JsonParser.parseString("""{"battleFormat":"TRIPLE"}""").asJsonObject
         assertThrows(IllegalArgumentException::class.java) {
             EmbeddedTeamBattle.NativeSession(directory.resolve("unused-engine"), pair, directory.resolve("output"), 2)
         }
@@ -18,20 +17,25 @@ class EmbeddedFormatBoundaryTest {
     }
 
     @Test
-    fun `unsupported formats fail before single slot projection`() {
-        val inputs = listOf(
-            """{"format":"DOUBLE"}""",
-            """{"publicLog":["|gametype|doubles"]}""",
-            """{"request":{"active":[{},{}]}}""",
-            """{"request":{"forceSwitch":[false,true]}}""",
-            """{"request":{"side":{"pokemon":[{"active":true},{"active":true}]}}}""",
-            """{"publicLog":["|move|p2b: second|Protect|p2b: second"]}""",
+    fun `single and double format boundaries are explicit`() {
+        assertEquals(jbro.cobblemon.morebattlecontent.api.ai.BattleFormat.SINGLE,
+            EmbeddedTeamInput.battleFormat(JsonParser.parseString(
+                """{"format":"SINGLE","publicLog":["|gametype|singles"]}""").asJsonObject))
+        assertEquals(jbro.cobblemon.morebattlecontent.api.ai.BattleFormat.DOUBLE,
+            EmbeddedTeamInput.battleFormat(JsonParser.parseString(
+                """{"format":"DOUBLE","publicLog":["|gametype|doubles"],"request":{"active":[{},{}]}}""").asJsonObject))
+
+        val invalid = listOf(
+            """{"format":"TRIPLE"}""",
+            """{"format":"SINGLE","publicLog":["|gametype|doubles"]}""",
+            """{"format":"SINGLE","request":{"active":[{},{}]}}""",
+            """{"format":"DOUBLE","request":{"active":[{},{},{}]}}""",
         )
-        for (json in inputs) {
+        for (json in invalid) {
             val failure = assertThrows(IllegalArgumentException::class.java) {
-                EmbeddedTeamInput.context(JsonParser.parseString(json).asJsonObject, UUID(0, 1), 1, 0)
+                EmbeddedTeamInput.battleFormat(JsonParser.parseString(json).asJsonObject)
             }
-            assertTrue(failure.message.orEmpty().contains("single", ignoreCase = true), json)
+            assertTrue(failure.message.orEmpty().isNotBlank(), json)
         }
     }
 }
