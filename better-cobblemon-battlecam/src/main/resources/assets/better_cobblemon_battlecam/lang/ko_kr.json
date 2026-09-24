@@ -1,4 +1,11 @@
 {
+  "modmenu.nameTranslation.better_cobblemon_battlecam": "Better Cobblemon Battlecam",
+  "category.battlecam": "Better Cobblemon Battlecam",
+  "key.battlecam.toggle_own_body": "내 캐릭터 표시 전환",
+  "key.battlecam.cycle_mode": "배틀캠 모드 전환",
+  "key.battlecam.next_shot": "다음 배틀캠 구도",
+  "key.battlecam.prev_shot": "이전 배틀캠 구도",
+  "message.battlecam.join_hint": "배틀캠 준비 완료. 전투 중 F6으로 카메라 모드를 전환할 수 있습니다.",
   "category.better_cobblemon_battlecam": "Better Cobblemon Battlecam",
   "key.better_cobblemon_battlecam.cycle_mode": "배틀캠 모드 전환",
   "key.better_cobblemon_battlecam.next_shot": "다음 배틀캠 구도",

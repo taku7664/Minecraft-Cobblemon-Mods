@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "package": "com.batmite2b.battlecam.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "BattleFaintHandlerMixin",
+    "BattleHealthChangeHandlerMixin",
+    "BattleMessageHandlerMixin",
+    "CameraMixin",
+    "EntityRenderDispatcherMixin",
+    "GameRendererMixin",
+    "HeldItemRendererMixin",
+    "InGameHudMixin",
+    "PlayPosableAnimationHandlerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

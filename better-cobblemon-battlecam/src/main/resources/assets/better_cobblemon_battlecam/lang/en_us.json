@@ -1,4 +1,11 @@
 {
+  "modmenu.nameTranslation.better_cobblemon_battlecam": "Better Cobblemon Battlecam",
+  "category.battlecam": "Better Cobblemon Battlecam",
+  "key.battlecam.toggle_own_body": "Toggle Own Body",
+  "key.battlecam.cycle_mode": "Cycle Battlecam Mode",
+  "key.battlecam.next_shot": "Next Battlecam Shot",
+  "key.battlecam.prev_shot": "Previous Battlecam Shot",
+  "message.battlecam.join_hint": "Battlecam ready. Press F6 during a battle to cycle camera modes.",
   "category.better_cobblemon_battlecam": "Better Cobblemon Battlecam",
   "key.better_cobblemon_battlecam.cycle_mode": "Cycle Battlecam Mode",
   "key.better_cobblemon_battlecam.next_shot": "Next Battlecam Shot",

@@ -6,7 +6,7 @@ import java.util.Map;
 import jbro.cobblemon.battlecam.BattlecamBattleType;
 import jbro.cobblemon.battlecam.BattlecamConfig;
 import jbro.cobblemon.battlecam.BattlecamConfigStore;
-import jbro.cobblemon.battlecam.BattlecamController;
+import jbro.cobblemon.battlecam.BattlecamModePolicy;
 import jbro.cobblemon.battlecam.BattlecamMode;
 import jbro.cobblemon.battlecam.BetterCobblemonBattlecamClient;
 import net.minecraft.client.gui.DrawContext;
@@ -103,7 +103,7 @@ final class BattlecamConfigScreen extends Screen {
         BattlecamConfig config = draft();
         try {
             BattlecamConfigStore.replace(config);
-            BattlecamController.applyConfig(config);
+            BattlecamModePolicy.applyToActiveBattle();
             close();
         } catch (IOException exception) {
             BetterCobblemonBattlecamClient.LOGGER.error("Could not save Battlecam config", exception);
