@@ -12,8 +12,8 @@ final class MusicLowPassFilterTest {
         assertEquals(0.51F, MusicLowPassFilter.gainHighFrequency(0.5), 0.0001F);
         assertEquals(0.02F, MusicLowPassFilter.gainHighFrequency(1.0), 0.0001F);
         assertEquals(1.0F, MusicLowPassFilter.gain(0.0), 0.0001F);
-        assertEquals(0.825F, MusicLowPassFilter.gain(0.5), 0.0001F);
-        assertEquals(0.65F, MusicLowPassFilter.gain(1.0), 0.0001F);
+        assertEquals(1.0F, MusicLowPassFilter.gain(0.5), 0.0001F);
+        assertEquals(1.0F, MusicLowPassFilter.gain(1.0), 0.0001F);
     }
 
     @Test

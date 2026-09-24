@@ -6,7 +6,7 @@ import org.lwjgl.openal.EXTEfx;
 import org.slf4j.Logger;
 
 final class MusicLowPassFilter {
-    private static final float FULL_MUFFLE_GAIN = 0.65F;
+    private static final float FULL_MUFFLE_GAIN = 1.0F;
     private static final float FULL_MUFFLE_GAIN_HF = 0.02F;
 
     private final Logger logger;

@@ -2,8 +2,10 @@ package jbro.cobblemon.bettermusic.client;
 
 import com.cobblemon.mod.common.client.CobblemonClient;
 import com.cobblemon.mod.common.pokemon.Pokemon;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -11,6 +13,8 @@ import net.minecraft.client.Minecraft;
 
 public final class LastPokemonMuffleTracker {
     public static final LastPokemonMuffleTracker INSTANCE = new LastPokemonMuffleTracker();
+    // Matches Cobblemon's red health-bar threshold in RenderHelper.
+    private static final double RED_HEALTH_RATIO = 0.2;
 
     private UUID battleId;
     private final Set<UUID> observedFaintedPokemon = new HashSet<>();
@@ -34,7 +38,27 @@ public final class LastPokemonMuffleTracker {
         List<TeamPokemon> team = actor.getPokemon().stream()
             .map(pokemon -> new TeamPokemon(pokemon.getUuid(), pokemon.isFainted()))
             .toList();
-        return update(battle.getBattleId(), team);
+        Map<UUID, Double> activeHealthRatios = new HashMap<>();
+        for (var side : battle.getSides()) {
+            for (var activePokemon : side.getActiveClientBattlePokemon()) {
+                if (!activePokemon.getActor().getUuid().equals(actor.getUuid())) {
+                    continue;
+                }
+                var battlePokemon = activePokemon.getBattlePokemon();
+                if (battlePokemon == null) {
+                    continue;
+                }
+                double healthRatio = battlePokemon.isHpFlat()
+                    ? battlePokemon.getMaxHp() > 0.0F
+                        ? battlePokemon.getHpValue() / battlePokemon.getMaxHp()
+                        : Double.NaN
+                    : battlePokemon.getHpValue();
+                if (Double.isFinite(healthRatio)) {
+                    activeHealthRatios.put(battlePokemon.getUuid(), healthRatio);
+                }
+            }
+        }
+        return update(battle.getBattleId(), team, activeHealthRatios);
     }
 
     public synchronized void onFaint(Minecraft client, String pnx) {
@@ -85,16 +109,30 @@ public final class LastPokemonMuffleTracker {
         );
     }
 
-    synchronized boolean update(UUID currentBattleId, List<TeamPokemon> team) {
+    synchronized boolean update(
+        UUID currentBattleId,
+        List<TeamPokemon> team,
+        Map<UUID, Double> activeHealthRatios
+    ) {
         Objects.requireNonNull(currentBattleId, "currentBattleId");
         team = List.copyOf(Objects.requireNonNull(team, "team"));
+        activeHealthRatios = Map.copyOf(Objects.requireNonNull(
+            activeHealthRatios,
+            "activeHealthRatios"
+        ));
         switchBattleIfNeeded(currentBattleId);
-        long usablePokemon = team.stream()
+        List<TeamPokemon> usablePokemon = team.stream()
             .filter(pokemon -> !pokemon.fainted())
             .filter(pokemon -> !observedFaintedPokemon.contains(pokemon.id()))
             .limit(2)
-            .count();
-        return usablePokemon == 1;
+            .toList();
+        if (usablePokemon.size() != 1) {
+            return false;
+        }
+        Double healthRatio = activeHealthRatios.get(usablePokemon.getFirst().id());
+        return healthRatio != null
+            && healthRatio > 0.0
+            && healthRatio <= RED_HEALTH_RATIO;
     }
 
     synchronized void markFainted(UUID currentBattleId, UUID pokemonId) {
