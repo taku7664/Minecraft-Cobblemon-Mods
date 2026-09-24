@@ -53,12 +53,6 @@ internal data class LocalDecisionTuning(
     val expectedMoveResponseConfidence: Double = 0.80,
     /** Score-space tolerance for treating expected replies as a shared first place. */
     val expectedMoveBestTieTolerance: Double = 1.0e-9,
-    /** Root-score bonus for the first useful guessed-status counter. */
-    val guessedStatusCounterBonus: Double = 4.0,
-    /** Each additional guessed status slot contributes this share of the previous one. */
-    val guessedStatusCounterDiminishingFactor: Double = 0.50,
-    /** Hard cap so guesses cannot overwhelm concrete damage or knockout evidence. */
-    val maximumGuessedStatusCounterBonus: Double = 6.0,
     /** When true, coverage decays linearly in revealed fraction instead of quadratically. */
     val lookaheadLinearCoverage: Boolean = true,
     val maximumLookaheadAdjustment: Double = 800.0,
@@ -353,9 +347,6 @@ internal data class LocalDecisionTuning(
         require(hypotheticalMoveLimitPerSlot > 0)
         require(expectedMoveResponseConfidence in 0.0..1.0)
         require(expectedMoveBestTieTolerance.isFinite() && expectedMoveBestTieTolerance >= 0.0)
-        require(guessedStatusCounterBonus.isFinite() && guessedStatusCounterBonus >= 0.0)
-        require(guessedStatusCounterDiminishingFactor in 0.0..1.0)
-        require(maximumGuessedStatusCounterBonus.isFinite() && maximumGuessedStatusCounterBonus >= 0.0)
         require(searchAuthority.isFinite() && searchAuthority in 0.0..1.0)
         require(leafPressureWeight.isFinite() && leafPressureWeight >= 0.0)
         require(leafTeamCoverageWeight.isFinite() && leafTeamCoverageWeight >= 0.0)

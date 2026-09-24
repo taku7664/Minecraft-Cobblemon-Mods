@@ -28,6 +28,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
                     initialInference(
                         pokemon,
                         catalog,
+                        state.format,
                         policy,
                         actualMoveIds[pokemon.battlePokemonId].orEmpty(),
                         moveDetails,
@@ -45,6 +46,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
     private fun initialInference(
         pokemon: BattlePokemonStateView,
         catalog: BattlePublicActionCatalogView,
+        format: BattleFormat,
         policy: BattleOpponentMoveInferencePolicy,
         actualMoveIds: Set<String>,
         moveDetails: (String) -> BattleMoveCandidateView?,
@@ -57,17 +59,18 @@ internal object BattleOpponentMoveInferenceNormalizer {
                 BattleOpponentMoveSource.PUBLIC_REVEAL)
         }
 
-        val actual = if (policy.readsHiddenSet) {
+        val resolvedActual = if (policy.readsHiddenSet) {
             actualMoveIds.mapNotNull { id -> moveDetails(id)?.let { id to it } }
-                .filterNot { (id, _) -> slots.containsMove(id) }
         } else {
             emptyList()
         }
-        selectHiddenStab(actual, pokemon, policy.confirmedHiddenStabSlots).forEach { (id, details) ->
+        val unrevealedActual = resolvedActual.filterNot { (id, _) -> slots.containsMove(id) }
+        selectHiddenStab(unrevealedActual, pokemon, format, policy.confirmedHiddenStabSlots)
+            .forEach { (id, details) ->
             addConcrete(slots, id, details, BattleOpponentMoveGroup.STAB_ATTACK,
                 BattleOpponentMoveKnowledge.CONFIRMED, BattleOpponentMoveSource.DIFFICULTY_SET_READ)
         }
-        selectHiddenSetup(actual, pokemon, policy.confirmedHiddenSetupSlots)
+        selectHiddenSetup(unrevealedActual, pokemon, policy.confirmedHiddenSetupSlots)
             .filterNot { (id, _) -> slots.containsMove(id) }
             .forEach { (id, details) ->
                 addConcrete(slots, id, details, BattleOpponentMoveGroup.PURE_SETUP,
@@ -81,9 +84,9 @@ internal object BattleOpponentMoveInferenceNormalizer {
             .filterKeys { id -> !slots.containsMove(id) }
 
         if (policy.preserveActualAttackStatusCounts) {
-            fillPreservingActualShape(slots, pokemon, actual, learnset, policy)
+            fillPreservingActualShape(slots, pokemon, format, resolvedActual, learnset, policy)
         } else {
-            fillFixedPolicy(slots, pokemon, learnset, policy)
+            fillFixedPolicy(slots, pokemon, format, learnset, policy)
         }
         fillGuesses(slots, BattleOpponentMoveGroup.OTHER, MAX_MOVE_SLOTS - slots.size)
         return BattleOpponentMoveInferenceView(pokemon.battlePokemonId, slots)
@@ -92,12 +95,13 @@ internal object BattleOpponentMoveInferenceNormalizer {
     private fun fillFixedPolicy(
         slots: MutableList<BattleOpponentMoveSlotView>,
         pokemon: BattlePokemonStateView,
+        format: BattleFormat,
         learnset: Map<String, BattleMoveCandidateView>,
         policy: BattleOpponentMoveInferencePolicy,
     ) {
-        addExpected(slots, ranked(learnset, pokemon, BattleOpponentMoveGroup.STAB_ATTACK),
+        addExpected(slots, ranked(learnset, pokemon, format, BattleOpponentMoveGroup.STAB_ATTACK),
             BattleOpponentMoveGroup.STAB_ATTACK, policy.expectedStabSlots)
-        addExpected(slots, ranked(learnset, pokemon, BattleOpponentMoveGroup.COVERAGE_ATTACK),
+        addExpected(slots, ranked(learnset, pokemon, format, BattleOpponentMoveGroup.COVERAGE_ATTACK),
             BattleOpponentMoveGroup.COVERAGE_ATTACK, policy.expectedCoverageSlots)
         fillGuesses(slots, BattleOpponentMoveGroup.STATUS_OTHER, policy.guessedStatusSlots)
     }
@@ -105,6 +109,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
     private fun fillPreservingActualShape(
         slots: MutableList<BattleOpponentMoveSlotView>,
         pokemon: BattlePokemonStateView,
+        format: BattleFormat,
         actual: List<Pair<String, BattleMoveCandidateView>>,
         learnset: Map<String, BattleMoveCandidateView>,
         policy: BattleOpponentMoveInferencePolicy,
@@ -117,8 +122,8 @@ internal object BattleOpponentMoveInferenceNormalizer {
         fillGuesses(slots, BattleOpponentMoveGroup.STATUS_OTHER, statusGuesses)
 
         val attacksNeeded = (actualAttackCount - currentAttackCount).coerceAtLeast(0)
-        val coverage = ranked(learnset, pokemon, BattleOpponentMoveGroup.COVERAGE_ATTACK)
-        val stab = ranked(learnset, pokemon, BattleOpponentMoveGroup.STAB_ATTACK)
+        val coverage = ranked(learnset, pokemon, format, BattleOpponentMoveGroup.COVERAGE_ATTACK)
+        val stab = ranked(learnset, pokemon, format, BattleOpponentMoveGroup.STAB_ATTACK)
         val expectedBeforeCoverage = slots.count { it.knowledge == BattleOpponentMoveKnowledge.EXPECTED }
         addExpected(slots, coverage, BattleOpponentMoveGroup.COVERAGE_ATTACK,
             minOf(attacksNeeded, policy.expectedCoverageSlots))
@@ -183,10 +188,11 @@ internal object BattleOpponentMoveInferenceNormalizer {
     private fun selectHiddenStab(
         actual: List<Pair<String, BattleMoveCandidateView>>,
         pokemon: BattlePokemonStateView,
+        format: BattleFormat,
         limit: Int,
     ): List<Pair<String, BattleMoveCandidateView>> = actual.asSequence()
         .filter { (_, details) -> group(pokemon, details) == BattleOpponentMoveGroup.STAB_ATTACK }
-        .sortedWith(moveComparator())
+        .sortedWith(moveComparator(pokemon, format))
         .distinctBy { (_, details) -> canonical(details.typeId) }
         .take(limit)
         .toList()
@@ -204,20 +210,20 @@ internal object BattleOpponentMoveInferenceNormalizer {
     private fun ranked(
         moves: Map<String, BattleMoveCandidateView>,
         pokemon: BattlePokemonStateView,
+        format: BattleFormat,
         wanted: BattleOpponentMoveGroup,
     ): List<Pair<String, BattleMoveCandidateView>> = moves.entries.asSequence()
         .filter { (_, details) -> group(pokemon, details) == wanted }
         .map { it.key to it.value }
-        .sortedWith(moveComparator())
+        .sortedWith(moveComparator(pokemon, format))
         .toList()
 
-    private fun moveComparator() = compareByDescending<Pair<String, BattleMoveCandidateView>> {
-        expectedStrength(it.second)
+    private fun moveComparator(
+        pokemon: BattlePokemonStateView,
+        format: BattleFormat,
+    ) = compareByDescending<Pair<String, BattleMoveCandidateView>> {
+        BattleOpponentMoveExpectationScorer.score(pokemon, it.second, format)
     }.thenBy { canonical(it.first) }
-
-    /** Deliberately one function: candidate ranking can be rebalanced without changing slot rules. */
-    internal fun expectedStrength(details: BattleMoveCandidateView): Double =
-        details.power * (details.accuracy / 100.0) + details.priority.coerceAtLeast(0) * PRIORITY_WEIGHT
 
     internal fun group(
         pokemon: BattlePokemonStateView,
@@ -308,11 +314,10 @@ internal object BattleOpponentMoveInferenceNormalizer {
         value.substringAfter(':').lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
 
     private const val MAX_MOVE_SLOTS = 4
-    private const val PRIORITY_WEIGHT = 12.0
 }
 
 /** Per-battle persistence; deterministic slots survive until new public evidence changes them. */
-internal class BattleOpponentMoveInferenceLedger(
+class BattleOpponentMoveInferenceLedger(
     private val moveDetails: (String) -> BattleMoveCandidateView?,
 ) {
     private var byPokemon: Map<UUID, BattleOpponentMoveInferenceView> = emptyMap()

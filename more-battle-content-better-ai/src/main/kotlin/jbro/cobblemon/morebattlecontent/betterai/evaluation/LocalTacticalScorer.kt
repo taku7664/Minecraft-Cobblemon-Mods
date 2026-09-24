@@ -155,7 +155,7 @@ internal object LocalTacticalScorer {
             LocalTacticalSituationalEvaluator.pendingDamagingMoveRiskPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.consecutiveUseForbiddenPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.forcedTempoPenalty(candidate, context) +
-            LocalInferredMoveGuessScorer.score(candidate, context, tuning) +
+            LocalInferredMoveGuessScorer.score(candidate, context) +
             mechanicResourceAdjustment(candidate) +
             selfPatternAdjustment(candidate, context, profile) +
             strategyMoveAdjustment(candidate, context, strategy)
@@ -242,7 +242,7 @@ internal object LocalTacticalScorer {
             LocalTacticalSituationalEvaluator.pendingDamagingMoveRiskPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.consecutiveUseForbiddenPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.forcedTempoPenalty(candidate, context) +
-            LocalInferredMoveGuessScorer.score(candidate, context, tuning) +
+            LocalInferredMoveGuessScorer.score(candidate, context) +
             mechanicResourceAdjustment(candidate) +
             selfPatternAdjustment(candidate, context, profile) +
             strategyMoveAdjustment(candidate, context, strategy)

@@ -10,11 +10,19 @@ import org.junit.jupiter.api.Test
 
 class LocalInferredMoveGuessScorerTest {
     @Test
-    fun `status guesses give taunt a capped diminishing bonus but never beat a guaranteed knockout`() {
+    fun `status guesses never give taunt direct score`() {
         val tuning = LocalDecisionTuning.CURRENT
         val base = context(includeGuaranteedKo = false)
-        assertEquals(6.0, LocalInferredMoveGuessScorer.score(taunt, base, tuning), 1.0e-9)
-        assertEquals(0.0, LocalInferredMoveGuessScorer.score(taunt, context(includeGuaranteedKo = true), tuning), 1.0e-9)
+        assertEquals(0.0, LocalInferredMoveGuessScorer.score(taunt, base), 1.0e-9)
+        assertEquals(0.0, LocalInferredMoveGuessScorer.score(taunt, context(includeGuaranteedKo = true)), 1.0e-9)
+    }
+
+    @Test
+    fun `taunt stays scoreless when the target is already taunted`() {
+        assertEquals(0.0, LocalInferredMoveGuessScorer.score(
+            taunt,
+            context(includeGuaranteedKo = false, targetTaunted = true),
+        ), 1.0e-9)
     }
 
     @Test
@@ -33,8 +41,8 @@ class LocalInferredMoveGuessScorerTest {
         assertEquals(0, actions.count { it.kind == BattleActionKind.USE_MOVE })
     }
 
-    private fun context(includeGuaranteedKo: Boolean): BattleDecisionContext {
-        val opponent = pokemon(OPPONENT_ID, BattleSide.OPPONENT, 0)
+    private fun context(includeGuaranteedKo: Boolean, targetTaunted: Boolean = false): BattleDecisionContext {
+        val opponent = pokemon(OPPONENT_ID, BattleSide.OPPONENT, 0, targetTaunted)
         val ally = pokemon(ALLY_ID, BattleSide.ALLY, 0)
         val state = BattleStateView(
             UUID.randomUUID(), BattleFormat.SINGLE, 1, listOf(ally, opponent),
@@ -70,9 +78,9 @@ class LocalInferredMoveGuessScorerTest {
         )
     }
 
-    private fun pokemon(id: UUID, side: BattleSide, slot: Int) = BattlePokemonStateView(
+    private fun pokemon(id: UUID, side: BattleSide, slot: Int, taunted: Boolean = false) = BattlePokemonStateView(
         id, side, slot, "probe", null, 50, 1.0, null, emptyMap(), emptySet(), null, null,
-        false, setOf("normal"),
+        false, setOf("normal"), actionConstraints = BattlePokemonActionConstraintView(taunted = taunted),
     )
 
     private val taunt = BattleActionCandidate(

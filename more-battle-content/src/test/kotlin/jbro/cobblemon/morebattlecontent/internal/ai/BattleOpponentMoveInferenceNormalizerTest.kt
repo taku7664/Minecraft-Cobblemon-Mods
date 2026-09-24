@@ -97,6 +97,24 @@ class BattleOpponentMoveInferenceNormalizerTest {
     }
 
     @Test
+    fun `initial public reveals still count toward the actual attack status shape`() {
+        val actual = mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave"))
+        val revealedState = state(setOf("moonblast"))
+
+        val result = BattleOpponentMoveInferenceNormalizer.normalize(
+            revealedState,
+            catalog(revealedState),
+            BattleTrainerTier.ADVANCED,
+            actual,
+            moveDetails = MOVES::get,
+        ).single()
+
+        assertEquals(2, result.slots.count { it.group.isAttackForTest() })
+        assertEquals(2, result.slots.count { !it.group.isAttackForTest() })
+        assertTrue(result.slots.any { it.moveId == "powergem" })
+    }
+
+    @Test
     fun `temporary transformed moves do not confirm an original set slot`() {
         val actual = mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave"))
         val initial = normalize(BattleTrainerTier.STANDARD, actual)
@@ -203,6 +221,9 @@ class BattleOpponentMoveInferenceNormalizerTest {
     private fun signatures(view: BattleOpponentMoveInferenceView) = view.slots.map {
         listOf(it.slot, it.moveId, it.group, it.knowledge, it.source)
     }
+
+    private fun BattleOpponentMoveGroup.isAttackForTest(): Boolean =
+        this == BattleOpponentMoveGroup.STAB_ATTACK || this == BattleOpponentMoveGroup.COVERAGE_ATTACK
 
     private companion object {
         val BATTLE_ID: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
