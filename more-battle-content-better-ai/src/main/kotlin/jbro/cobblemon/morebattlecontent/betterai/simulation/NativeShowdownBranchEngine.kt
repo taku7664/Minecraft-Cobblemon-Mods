@@ -287,6 +287,22 @@ internal data class NativePokemonFrame(
     val activeSlot: Int?,
     val level: Int = 50,
     val stats: Map<String, Int> = emptyMap(),
+    val sourceSet: NativePokemonSourceSetFrame? = null,
+)
+
+/** Immutable team-set identity, kept separate from callback-mutated live Pokemon state. */
+internal data class NativePokemonSourceSetFrame(
+    val species: String,
+    val ability: String,
+    val item: String,
+    val moves: List<String>,
+    val nature: String = "",
+    val gender: String = "",
+    val evs: Map<String, Int> = emptyMap(),
+    val ivs: Map<String, Int> = emptyMap(),
+    val openingHp: Int? = null,
+    val openingMaxHp: Int? = null,
+    val openingStatus: String = "",
 )
 
 internal data class NativeMoveFrame(

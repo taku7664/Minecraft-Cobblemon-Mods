@@ -111,6 +111,19 @@ function validatePokemonOpeningState(battle, seed) {
 function pokemonFrame(pokemon, activeSlot) {
   return {
     uuid: pokemon.uuid || '',
+    sourceSet: {
+      species: pokemon.set.species || '',
+      ability: pokemon.set.ability || '',
+      item: pokemon.set.item || '',
+      moves: (pokemon.set.moves || []).slice(),
+      nature: pokemon.set.nature || '',
+      gender: pokemon.set.gender || '',
+      evs: { ...(pokemon.set.evs || {}) },
+      ivs: { ...(pokemon.set.ivs || {}) },
+      openingHp: Number.isInteger(pokemon.set.currentHealth) ? pokemon.set.currentHealth : null,
+      openingMaxHp: pokemon.maxhp,
+      openingStatus: pokemon.set.status || '',
+    },
     species: pokemon.species.id,
     hp: pokemon.hp,
     maxHp: pokemon.maxhp,

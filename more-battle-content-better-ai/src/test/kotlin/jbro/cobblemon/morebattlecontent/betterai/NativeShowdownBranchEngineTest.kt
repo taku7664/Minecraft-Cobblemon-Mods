@@ -126,6 +126,9 @@ class NativeShowdownBranchEngineTest {
             assertEquals("leftovers", technician.p1Active.single().item)
             assertEquals(50, technician.p1Active.single().level)
             assertTrue(technician.p1Active.single().stats.values.all { it > 0 })
+            assertEquals(70, technician.p1Active.single().sourceSet?.openingHp)
+            assertEquals(145, technician.p1Active.single().sourceSet?.openingMaxHp)
+            assertEquals("", technician.p1Active.single().sourceSet?.openingStatus)
             assertEquals("move", technician.requestState, "Showdown must create the request after opening callbacks")
             assertEquals(20, schooling.p1Active.single().hp, "Showdown must construct the lead at public pre-battle HP")
             assertEquals(
@@ -153,6 +156,29 @@ class NativeShowdownBranchEngineTest {
             assertEquals(79, technicianAfter.p1Active.single().hp, "Hydrated Leftovers must run in native residuals")
             assertEquals(70, neutralAfter.p1Active.single().hp)
             assertTrue(technicianDamage > neutralDamage, "Hydrated Technician must run in native damage callbacks")
+        }
+    }
+
+    @Test
+    fun `native frame preserves source set after imposter mutates the live Pokemon`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val frame = engine.createBattle(imposterBattle())
+            val transformed = frame.p1Active.single()
+
+            assertEquals("ditto", transformed.sourceSet?.species?.lowercase())
+            assertEquals("imposter", transformed.sourceSet?.ability?.lowercase())
+            assertEquals(listOf("transform"), transformed.sourceSet?.moves?.map { it.lowercase() })
+            assertEquals("serious", transformed.sourceSet?.nature?.lowercase())
+            assertEquals("M", transformed.sourceSet?.gender)
+            assertEquals(setOf("hp", "atk", "def", "spa", "spd", "spe"), transformed.sourceSet?.evs?.keys)
+            assertEquals(setOf(0), transformed.sourceSet?.evs?.values?.toSet())
+            assertEquals(setOf(31), transformed.sourceSet?.ivs?.values?.toSet())
+            assertTrue(
+                transformed.species != "ditto" || transformed.ability != "imposter" ||
+                    transformed.moves.map { it.id } != listOf("transform"),
+                "The test must exercise a callback-mutated live Pokemon",
+            )
         }
     }
 
@@ -297,11 +323,24 @@ class NativeShowdownBranchEngineTest {
         ),
     )
 
-    private fun nativeSet(name: String, species: String, move: String, uuid: String) = NativePokemonSet(
+    private fun imposterBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(19, 23, 29, 31),
+        p1Team = listOf(nativeSet("Imposter", "Ditto", "transform", "00000000-0000-0000-0000-000000000031", "Imposter")),
+        p2Team = listOf(nativeSet("Target", "Mew", "splash", "00000000-0000-0000-0000-000000000032")),
+    )
+
+    private fun nativeSet(
+        name: String,
+        species: String,
+        move: String,
+        uuid: String,
+        ability: String = "Synchronize",
+    ) = NativePokemonSet(
         name = name,
         species = species,
         moves = listOf(move),
-        ability = "Synchronize",
+        ability = ability,
         uuid = uuid,
     )
 

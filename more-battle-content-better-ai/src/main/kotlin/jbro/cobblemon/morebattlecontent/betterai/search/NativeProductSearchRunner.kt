@@ -3,6 +3,8 @@ package jbro.cobblemon.morebattlecontent.betterai.search
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootIssue
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootValidator
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBranchWorker
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRootActionMapping
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownRuntimeService
@@ -32,6 +34,7 @@ internal enum class NativeProductSearchRunStatus {
     COMPLETED,
     DEADLINE_EXHAUSTED,
     RUNTIME_UNAVAILABLE,
+    ROOT_STATE_INCONSISTENT,
     ROOT_ACTION_MAPPING_INCOMPLETE,
     NATIVE_EXECUTION_FAILURE,
 }
@@ -41,12 +44,23 @@ internal data class NativeProductSearchRun(
     val result: NativeRecursiveSearchResult? = null,
     val mapping: NativeRootActionMapping? = null,
     val failure: Throwable? = null,
+    val rootIssues: List<NativeBattleRootIssue> = emptyList(),
 )
+
+internal sealed interface NativeLeasedProductSearch
+
+internal data class NativeLeasedProductSearchAttempt(
+    val attempt: NativeProductSearchAttempt,
+) : NativeLeasedProductSearch
+
+internal data class NativeLeasedInvalidRoot(
+    val issues: List<NativeBattleRootIssue>,
+) : NativeLeasedProductSearch
 
 private typealias NativeProductSearchLease = (
     deadlineNanos: Long,
-    action: (NativeBranchWorker) -> NativeProductSearchAttempt,
-) -> NativeProductSearchAttempt?
+    action: (NativeBranchWorker) -> NativeLeasedProductSearch,
+) -> NativeLeasedProductSearch?
 
 /**
  * Runtime boundary between product candidates and the native Showdown search.
@@ -65,17 +79,21 @@ internal class NativeProductSearchRunner(
             return NativeProductSearchRun(NativeProductSearchRunStatus.DEADLINE_EXHAUSTED)
         }
 
-        val attempt = try {
+        val leased = try {
             lease(request.deadlineNanos) { worker ->
                 val root = worker.createBattle(request.definition)
+                val rootIssues = NativeBattleRootValidator.validate(request.definition, root, request.publicState)
+                if (rootIssues.isNotEmpty()) return@lease NativeLeasedInvalidRoot(rootIssues)
                 val tree = NativeShowdownSearchTree(worker, root, request.publicState)
-                NativeRecursiveSearch(
-                    tree = tree,
-                    world = request.world,
-                    evaluate = request.evaluate,
-                    nodeLimit = request.nodeLimit,
-                    shouldContinue = { !deadlineReached(request.deadlineNanos) },
-                ).evaluateProduct(request.productActions, request.maxDepth)
+                NativeLeasedProductSearchAttempt(
+                    NativeRecursiveSearch(
+                        tree = tree,
+                        world = request.world,
+                        evaluate = request.evaluate,
+                        nodeLimit = request.nodeLimit,
+                        shouldContinue = { !deadlineReached(request.deadlineNanos) },
+                    ).evaluateProduct(request.productActions, request.maxDepth),
+                )
             }
         } catch (failure: Exception) {
             return NativeProductSearchRun(
@@ -89,7 +107,7 @@ internal class NativeProductSearchRunner(
             )
         }
 
-        if (attempt == null) {
+        if (leased == null) {
             val status = if (deadlineReached(request.deadlineNanos)) {
                 NativeProductSearchRunStatus.DEADLINE_EXHAUSTED
             } else {
@@ -97,6 +115,13 @@ internal class NativeProductSearchRunner(
             }
             return NativeProductSearchRun(status)
         }
+        if (leased is NativeLeasedInvalidRoot) {
+            return NativeProductSearchRun(
+                status = NativeProductSearchRunStatus.ROOT_STATE_INCONSISTENT,
+                rootIssues = leased.issues,
+            )
+        }
+        val attempt = (leased as NativeLeasedProductSearchAttempt).attempt
         if (!attempt.mapping.complete || attempt.result == null) {
             return NativeProductSearchRun(
                 status = NativeProductSearchRunStatus.ROOT_ACTION_MAPPING_INCOMPLETE,

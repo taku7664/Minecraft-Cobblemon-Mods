@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleCombatStatRangesView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFieldStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
@@ -18,6 +19,7 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBranchWorker
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMoveFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonSet
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonSourceSetFrame
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -140,6 +142,23 @@ class NativeProductSearchRunnerTest {
         assertNull(run.result)
     }
 
+    @Test
+    fun `inconsistent native root is explicit and never branches`() {
+        val worker = Worker(rootFrame(), terminalFrame())
+        val runner = NativeProductSearchRunner { _, action -> action(worker) }
+        val inconsistent = request(productMove("tackle")).copy(
+            publicState = template(allyStats = BattleCombatStatRangesView.exact(100, 101, 100, 100, 100, 100)),
+        )
+
+        val run = runner.run(inconsistent)
+
+        assertEquals(NativeProductSearchRunStatus.ROOT_STATE_INCONSISTENT, run.status)
+        assertEquals(setOf("COMBAT_STATS_MISMATCH"), run.rootIssues.mapTo(linkedSetOf()) { it.code.name })
+        assertEquals(1, worker.createCalls)
+        assertEquals(0, worker.branchCalls)
+        assertNull(run.result)
+    }
+
     private class Worker(
         private val root: NativeBattleFrame,
         private val terminal: NativeBattleFrame,
@@ -238,6 +257,16 @@ class NativeProductSearchRunnerTest {
         moves = listOf(NativeMoveFrame(move, 35, 35, false)),
         activeSlot = 0,
         stats = STATS,
+        sourceSet = NativePokemonSourceSetFrame(
+            "Mew",
+            "Synchronize",
+            "",
+            listOf(move),
+            "Serious",
+            "M",
+            ZERO_EVS,
+            PERFECT_IVS,
+        ),
     )
 
     private fun moveRequest(move: String) =
@@ -248,18 +277,25 @@ class NativeProductSearchRunnerTest {
         state.pokemon.single { it.side == BattleSide.ALLY }.hpFraction -
             state.pokemon.single { it.side == BattleSide.OPPONENT }.hpFraction
 
-    private fun template() = BattleStateView(
+    private fun template(allyStats: BattleCombatStatRangesView? = null) = BattleStateView(
         battleId = UUID.fromString("00000000-0000-0000-0000-000000000001"),
         format = BattleFormat.SINGLE,
         turn = 1,
-        pokemon = listOf(templatePokemon(ALLY, BattleSide.ALLY), templatePokemon(OPPONENT, BattleSide.OPPONENT)),
+        pokemon = listOf(
+            templatePokemon(ALLY, BattleSide.ALLY, allyStats),
+            templatePokemon(OPPONENT, BattleSide.OPPONENT, null),
+        ),
         field = BattleFieldStateView.empty(),
         remainingPokemonBySide = mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1),
         observedEvents = emptyList(),
         inferences = emptyList(),
     )
 
-    private fun templatePokemon(uuid: UUID, side: BattleSide) = BattlePokemonStateView(
+    private fun templatePokemon(
+        uuid: UUID,
+        side: BattleSide,
+        stats: BattleCombatStatRangesView?,
+    ) = BattlePokemonStateView(
         uuid,
         side,
         0,
@@ -274,11 +310,14 @@ class NativeProductSearchRunnerTest {
         null,
         false,
         setOf("psychic"),
+        stats,
     )
 
     private companion object {
         val ALLY: UUID = UUID.fromString("00000000-0000-0000-0000-000000000101")
         val OPPONENT: UUID = UUID.fromString("00000000-0000-0000-0000-000000000201")
         val STATS = mapOf("atk" to 100, "def" to 100, "spa" to 100, "spd" to 100, "spe" to 100)
+        val ZERO_EVS = setOf("hp", "atk", "def", "spa", "spd", "spe").associateWith { 0 }
+        val PERFECT_IVS = setOf("hp", "atk", "def", "spa", "spd", "spe").associateWith { 31 }
     }
 }
