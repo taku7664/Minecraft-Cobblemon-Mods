@@ -153,6 +153,8 @@ function frame(battle) {
     p2Active: activeFrames(battle.p2),
     p1Team: sideFrames(battle.p1),
     p2Team: sideFrames(battle.p2),
+    p1RequestJson: JSON.stringify(battle.p1.activeRequest || null),
+    p2RequestJson: JSON.stringify(battle.p2.activeRequest || null),
     log: battle.log.slice(),
   };
 }

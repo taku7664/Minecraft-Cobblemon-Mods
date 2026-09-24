@@ -177,6 +177,8 @@ class NativeShowdownChoiceEncoderTest {
             pokemon(OPPONENT_ACTIVE_ZERO, 0, "opponent_move"),
             pokemon(OPPONENT_ACTIVE_ONE, 1, "opponent_other"),
         ),
+        p1RequestJson = "null",
+        p2RequestJson = "null",
         log = emptyList(),
     )
 

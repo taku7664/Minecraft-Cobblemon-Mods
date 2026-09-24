@@ -266,6 +266,8 @@ internal data class NativeBattleFrame(
     val p2Active: List<NativePokemonFrame>,
     val p1Team: List<NativePokemonFrame>,
     val p2Team: List<NativePokemonFrame>,
+    val p1RequestJson: String,
+    val p2RequestJson: String,
     val log: List<String>,
 )
 

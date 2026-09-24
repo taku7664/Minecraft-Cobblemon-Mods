@@ -6,10 +6,7 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption.APPEND
 import java.nio.file.StandardOpenOption.CREATE_NEW
 import java.util.zip.ZipInputStream
-import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
-import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
-import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleOpeningState
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonOpeningState
@@ -19,6 +16,7 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRuleSource
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRulesGeneration
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownBranchEngine
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownChoiceEncoder
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownRequestActionFactory
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -27,20 +25,35 @@ import org.junit.jupiter.api.io.TempDir
 
 class NativeShowdownBranchEngineTest {
     @Test
+    fun `native request preserves choice lock after the first move`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(battle("Technician", "Choice Scarf"))
+            val afterFirstMove = engine.branch(before.snapshotJson, "move 1", "move 1")
+
+            val legal = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, afterFirstMove)
+
+            assertEquals(setOf("bulletpunch"), legal.mapNotNull { it.moveId }.toSet())
+            val encoded = legal.map { NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, afterFirstMove) }.toSet()
+            assertTrue(encoded.isNotEmpty() && encoded.all { it.startsWith("move 1") })
+            assertTrue(encoded.none { it.startsWith("move 2") })
+            assertEquals(3, engine.branch(afterFirstMove.snapshotJson, "move 1", "move 1").turn)
+        }
+    }
+
+    @Test
     fun `encoded double joint actions are accepted by native Showdown`(@TempDir directory: Path) {
         val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
         NativeShowdownBranchEngine.open(engineRoot).use { engine ->
             val before = engine.createBattle(doubleBattle())
-            val p1Actions = listOf(
-                moveAction("p1-left", 0, "tackle", BattleSide.OPPONENT, 0),
-                moveAction("p1-right", 1, "tackle", BattleSide.OPPONENT, 1),
-            )
-            val p2Actions = listOf(
-                moveAction("p2-left", 0, "splash"),
-                moveAction("p2-right", 1, "splash"),
-            )
-            val p1Choice = NativeShowdownChoiceEncoder.encode(composite(p1Actions), BattleSide.ALLY, before)
-            val p2Choice = NativeShowdownChoiceEncoder.encode(composite(p2Actions), BattleSide.OPPONENT, before)
+            val p1Choices = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, before)
+                .associateBy { NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, before) }
+            val p2Choices = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, before)
+                .associateBy { NativeShowdownChoiceEncoder.encode(it, BattleSide.OPPONENT, before) }
+            val p1Choice = "move 1 1, move 1 2"
+            val p2Choice = "move 1, move 1"
+            assertTrue(p1Choice in p1Choices, "Native p1 request must generate both selected targets")
+            assertTrue(p2Choice in p2Choices, "Native p2 request must generate its self-target moves")
 
             val after = engine.branch(before.snapshotJson, p1Choice, p2Choice)
 
@@ -284,28 +297,6 @@ class NativeShowdownBranchEngineTest {
         moves = listOf(move),
         ability = "Synchronize",
         uuid = uuid,
-    )
-
-    private fun moveAction(
-        id: String,
-        actorSlot: Int,
-        moveId: String,
-        targetSide: BattleSide? = null,
-        targetSlot: Int = 0,
-    ) = BattleActionCandidate(
-        actionId = id,
-        kind = BattleActionKind.USE_MOVE,
-        actorSlot = actorSlot,
-        moveSlot = 0,
-        moveId = moveId,
-        targets = targetSide?.let { listOf(BattleTargetSlot(it, targetSlot)) }.orEmpty(),
-    )
-
-    private fun composite(actions: List<BattleActionCandidate>) = BattleActionCandidate(
-        actionId = actions.joinToString("+") { it.actionId },
-        kind = BattleActionKind.COMPOSITE,
-        componentActionIds = actions.map { it.actionId },
-        componentActions = actions,
     )
 
     private fun openingState(
