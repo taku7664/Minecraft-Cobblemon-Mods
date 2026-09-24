@@ -8,6 +8,19 @@ import org.junit.jupiter.api.Test
 
 class RootTacticalFixturesTest {
     @Test
+    fun `tactical reference covers every approved difficulty horizon`() {
+        assertEquals(
+            listOf(
+                BattleTrainerTier.INTRODUCTORY to 1,
+                BattleTrainerTier.STANDARD to 2,
+                BattleTrainerTier.ADVANCED to 2,
+                BattleTrainerTier.BOSS to 3,
+            ),
+            BattleDifficultyProfiles.entries.map { it.tier to it.lookaheadPlies },
+        )
+    }
+
+    @Test
     fun `default acceptance does not compare different completed depths`() {
         val source = RootTacticalFixtures.all().single { it.id == "setup_hp40_hit120_reply60" }.context
         for (budget in listOf(50, 100, 200)) {
@@ -32,9 +45,9 @@ class RootTacticalFixturesTest {
     }
 
     @Test
-    fun `controls preserve immediate finishing and priority survival at both depths`() {
+    fun `controls preserve immediate finishing and priority survival at every supported depth`() {
         for (fixture in RootTacticalFixtures.all().filter { it.expectedAction != null }) {
-            for (depth in 1..2) {
+            for (depth in 1..3) {
                 val result = RootObjectiveReference.evaluate(fixture.context, depth)
                 assertTrue(result.matches)
                 assertEquals(fixture.expectedAction, result.isolatedRanking.first(), "${fixture.id} depth=$depth")
@@ -76,14 +89,16 @@ class RootTacticalFixturesTest {
     }
 
     @Test
-    fun `setup grid exposes at least one change of best action with deeper search`() {
+    fun `setup grid exposes boss depth setup windows absent at introductory depth`() {
+        val introductoryDepth = BattleDifficultyProfiles.INTRODUCTORY.lookaheadPlies
+        val bossDepth = BattleDifficultyProfiles.BOSS.lookaheadPlies
         val choices = RootTacticalFixtures.all().filter { it.family == "SETUP_WINDOW" }.map { fixture ->
-            val one = RootObjectiveReference.evaluate(fixture.context, 1)
-            val two = RootObjectiveReference.evaluate(fixture.context, 2)
-            assertTrue(one.matches && two.matches)
-            Triple(fixture.id, one.isolatedRanking.first(), two.isolatedRanking.first())
+            val introductory = RootObjectiveReference.evaluate(fixture.context, introductoryDepth)
+            val boss = RootObjectiveReference.evaluate(fixture.context, bossDepth)
+            assertTrue(introductory.matches && boss.matches)
+            Triple(fixture.id, introductory.isolatedRanking.first(), boss.isolatedRanking.first())
         }
-        println("TACTICAL_HORIZONS $choices")
-        assertTrue(choices.any { it.second != it.third }, "Grid does not distinguish search depth: $choices")
+        assertTrue(choices.all { it.second == "strike" }, "Introductory depth unexpectedly sets up: $choices")
+        assertTrue(choices.any { it.third == "setup" }, "Boss depth finds no setup window: $choices")
     }
 }

@@ -29,7 +29,7 @@ internal object RootObjectiveReference {
     fun evaluate(context: BattleDecisionContext, depth: Int, nodeLimit: Int = 200_000): RootReferenceResult {
         require(context.state.format == BattleFormat.SINGLE) { "Doubles candidate pruning needs separate equivalence proof" }
         require(context.deadlineEpochMillis == Long.MAX_VALUE) { "Reference requires offline contexts" }
-        require(depth in 1..2 && nodeLimit > 0)
+        require(depth in 1..3 && nodeLimit > 0)
         require(context.candidates.isNotEmpty() && context.candidates.map { it.actionId }.distinct().size == context.candidates.size)
         val profile = BattleTrainerProfile.balanced().copy(
             difficulty = BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = depth))
