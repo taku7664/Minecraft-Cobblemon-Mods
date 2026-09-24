@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalHypothesisPriorityReservation
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalStatStageMarginalEvaluator
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
@@ -1181,11 +1182,61 @@ class LocalRecursiveLookaheadTest {
                 ),
             ),
         )
+        fun damagingMove(
+            id: String,
+            category: BattleMoveDamageCategory,
+            targetSide: BattleSide,
+        ) = BattleActionCandidate(
+            actionId = id,
+            kind = BattleActionKind.USE_MOVE,
+            actorSlot = 0,
+            moveSlot = 0,
+            moveId = "cobblemon:$id",
+            targets = listOf(BattleTargetSlot(targetSide, 0)),
+            moveDetails = moveDetails(power = 70.0).copy(damageCategory = category),
+        )
+        val allyPhysical = damagingMove("ally_physical", BattleMoveDamageCategory.PHYSICAL, BattleSide.OPPONENT)
+        val allySpecial = damagingMove("ally_special", BattleMoveDamageCategory.SPECIAL, BattleSide.OPPONENT)
+        val opponentPhysical = damagingMove("opponent_physical", BattleMoveDamageCategory.PHYSICAL, BattleSide.ALLY)
+        val opponentSpecial = damagingMove("opponent_special", BattleMoveDamageCategory.SPECIAL, BattleSide.ALLY)
+        fun catalogEntry(
+            pokemonId: UUID,
+            moves: List<BattleActionCandidate>,
+            knowledge: BattlePublicMoveKnowledge,
+        ) = BattlePokemonActionCatalogView(
+            pokemonId,
+            moves.map { action ->
+                BattlePublicMoveOptionView(
+                    requireNotNull(action.moveId),
+                    requireNotNull(action.moveDetails),
+                    knowledge,
+                )
+            },
+            moveSetComplete = true,
+        )
+        val source = context(
+            initial,
+            listOf(setup),
+            BattlePublicActionCatalogView(
+                listOf(
+                    catalogEntry(
+                        ALLY_ID,
+                        listOf(allyPhysical, allySpecial, setup),
+                        BattlePublicMoveKnowledge.EXACT_OWN,
+                    ),
+                    catalogEntry(
+                        OPPONENT_ID,
+                        listOf(opponentPhysical, opponentSpecial),
+                        BattlePublicMoveKnowledge.PUBLICLY_REVEALED,
+                    ),
+                ),
+            ),
+        )
         val outcomes = PublicSingleTurnProjector.project(
             initialState = initial,
             allyAction = setup,
             opponentAction = BattleActionCandidate("opponent_wait", BattleActionKind.WAIT),
-            sourceContext = context(initial, listOf(setup)),
+            sourceContext = source,
             maxChanceBranchesPerMove = 4,
         )
 
@@ -1193,7 +1244,11 @@ class LocalRecursiveLookaheadTest {
         assertTrue(
             outcomes.single().state.pokemon.single { it.battlePokemonId == ALLY_ID }.statStages.isEmpty(),
         )
-        assertEquals(0.22, outcomes.single().expectedScoreAdjustment, 1e-9)
+        val expectedBoardValue = requireNotNull(
+            LocalStatStageMarginalEvaluator.candidateScore(setup, source, accuracy = 1.0),
+        ) / 100.0
+        assertTrue(expectedBoardValue > 0.0)
+        assertEquals(expectedBoardValue, outcomes.single().expectedScoreAdjustment, 1e-9)
     }
 
     @Test

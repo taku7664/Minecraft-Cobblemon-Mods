@@ -16,11 +16,24 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtecti
  * same flat benefit. It does not predict a hidden opponent set or feed recommendations to Router.
  */
 internal object LocalNonDamagingMoveEvaluator {
+    internal data class Score(
+        val total: Double,
+        /** The part of [total] owned by the stat-stage evaluator and replaceable by lookahead. */
+        val statStageUtility: Double,
+    )
+
     fun pressure(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         accuracy: Double,
-    ): Double {
+    ): Double = score(candidate, context, accuracy).total
+
+    fun score(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        accuracy: Double,
+        tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+    ): Score {
         val actor = actor(candidate, context)
         val missingHp = (1.0 - (actor?.hpFraction ?: 1.0)).coerceIn(0.0, 1.0)
         val recovery = candidate.facts?.selfHealingFractionRange?.let { range ->
@@ -32,7 +45,7 @@ internal object LocalNonDamagingMoveEvaluator {
         } ?: 0.0
 
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()
-        if (LocalIdleUtilityMoveRules.isIdle(candidate, context)) return 0.0
+        if (LocalIdleUtilityMoveRules.isIdle(candidate, context)) return Score(0.0, 0.0)
         val protectionSuccessProbability = if (LocalStallingProtectionRules.isStallingProtection(candidate)) {
             LocalStallingProtectionRules.nextSuccessProbability(
                 LocalStallingProtectionRules.consecutiveSuccessfulUses(
@@ -52,10 +65,12 @@ internal object LocalNonDamagingMoveEvaluator {
             effects.all {
                 it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == BattleMoveEffectTarget.USER
             }
-        val setupPressure = listOfNotNull(
-            selfSetupPressure(effects, actor, accuracy),
-            selectedTargetSetupPressure(effects, selectedTarget, accuracy),
-        ).maxOrNull()
+        val setupPressure = LocalStatStageMarginalEvaluator.candidateScore(
+            candidate,
+            context,
+            accuracy,
+            tuning = tuning,
+        )
         val target = selectedTarget?.takeIf { it.side == BattleSide.OPPONENT }
         val baseAccuracy = candidate.facts?.baseAccuracyProbability
             ?: candidate.moveDetails?.accuracy?.div(100.0)
@@ -67,6 +82,7 @@ internal object LocalNonDamagingMoveEvaluator {
                 0.0
             }
         }
+        var usesSetupPressure = false
         val status = when {
             declaresMajorStatus && target?.statusId != null -> 0.0
             statusProbability != null -> {
@@ -74,11 +90,18 @@ internal object LocalNonDamagingMoveEvaluator {
                 statusProbability * MAJOR_STATUS_PRESSURE * targetHpWeight
             }
             declaresPureRecovery -> 0.0
-            setupPressure != null -> setupPressure
+            setupPressure != null -> {
+                usesSetupPressure = true
+                setupPressure
+            }
             else -> (GENERIC_STATUS_PRESSURE - additionalScreenOpportunityCost(effects, context))
                 .coerceAtLeast(0.0) * accuracy * protectionSuccessProbability
         }
-        return maxOf(recovery, status)
+        val total = maxOf(recovery, status)
+        return Score(
+            total = total,
+            statStageUtility = if (usesSetupPressure && status >= recovery) status else 0.0,
+        )
     }
 
     private fun repeatedRecoveryLoss(
@@ -131,51 +154,6 @@ internal object LocalNonDamagingMoveEvaluator {
         return healthyScale * repeatPressure * RECOVERY_HABIT_LOSS_PER_REPEAT
     }
 
-    private fun selfSetupPressure(
-        effects: List<jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectView>,
-        actor: BattlePokemonStateView?,
-        accuracy: Double,
-    ): Double? {
-        val boostedStats = effects.asSequence()
-            .filter { it.kind == BattleMoveEffectKind.STAT_STAGE && it.target == BattleMoveEffectTarget.USER }
-            .flatMap { it.statStages.asSequence() }
-            .filter { it.value > 0 }
-            .map { canonicalEffectId(it.key) }
-            .toSet()
-        if (boostedStats.isEmpty()) return null
-        val currentPositiveStage = actor?.statStages.orEmpty()
-            .filterKeys { canonicalEffectId(it) in boostedStats }
-            .values
-            .maxOfOrNull { it.coerceAtLeast(0) }
-            ?: 0
-        return (GENERIC_STATUS_PRESSURE - currentPositiveStage * SETUP_PRESSURE_LOSS_PER_STAGE)
-            .coerceAtLeast(0.0) * accuracy
-    }
-
-    private fun selectedTargetSetupPressure(
-        effects: List<jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectView>,
-        target: BattlePokemonStateView?,
-        accuracy: Double,
-    ): Double? {
-        target ?: return null
-        val beneficialChanges = effects.asSequence()
-            .filter { it.kind == BattleMoveEffectKind.STAT_STAGE && it.target == BattleMoveEffectTarget.SELECTED_TARGET }
-            .flatMap { it.statStages.asSequence() }
-            .filter { (_, amount) ->
-                if (target.side == BattleSide.ALLY) amount > 0 else amount < 0
-            }
-            .toList()
-        if (beneficialChanges.isEmpty()) return null
-        val remainingUsefulStages = beneficialChanges.sumOf { (stat, amount) ->
-            val current = target.statStages.entries.firstOrNull {
-                canonicalEffectId(it.key) == canonicalEffectId(stat)
-            }?.value ?: 0
-            if (amount > 0) minOf(amount, 6 - current) else minOf(-amount, current + 6)
-        }.coerceAtLeast(0)
-        if (remainingUsefulStages == 0) return 0.0
-        return (GENERIC_STATUS_PRESSURE + (remainingUsefulStages - 1) * TARGET_SETUP_PRESSURE_PER_EXTRA_STAGE) * accuracy
-    }
-
     private fun additionalScreenOpportunityCost(
         effects: List<jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectView>,
         context: BattleDecisionContext,
@@ -219,8 +197,6 @@ internal object LocalNonDamagingMoveEvaluator {
 
     private const val GENERIC_STATUS_PRESSURE = 20.0
     private const val MAJOR_STATUS_PRESSURE = 35.0
-    private const val SETUP_PRESSURE_LOSS_PER_STAGE = 6.0
-    private const val TARGET_SETUP_PRESSURE_PER_EXTRA_STAGE = 6.0
     private const val ADDITIONAL_SCREEN_OPPORTUNITY_COST = 10.0
     private const val EXPIRING_EFFECT_TURNS = 1
     private const val MINIMUM_RECOVERY_REPEATS_FOR_HABIT_LOSS = 2

@@ -236,7 +236,14 @@ internal object LocalRecursiveLookaheadEvaluator {
                     // on top of the root scorer's. As the search takes over the value half, the root
                     // value it would be correcting for goes away, so the correction retires with it.
                     val authority = tuning.searchAuthority
-                    val immediateAdjustment = immediateGain - rootSecureKoBaselineCorrection * (1.0 - authority)
+                    // Stat-stage marginal value is owned by the root only until a projected turn can
+                    // replace it. Blend `(search - root)` by public coverage so partial knowledge
+                    // retains the unresolved share instead of adding the same setup value twice. The
+                    // heuristic withdrawal above already removes its authority-owned share, so only
+                    // the share that remains at the root may be subtracted here.
+                    val immediateAdjustment = immediateGain -
+                        rootSecureKoBaselineCorrection * (1.0 - authority) -
+                        rank.outcome.statStageUtility * (1.0 - authority)
                     // Future unknown replacements must not discount an already modelled current turn.
                     val adjustment = (immediateAdjustment * coverage.immediate + foresightGain * coverage.future)
                         .coerceIn(-tuning.maximumLookaheadAdjustment, tuning.maximumLookaheadAdjustment)
@@ -595,11 +602,12 @@ internal object LocalRecursiveLookaheadEvaluator {
         ): TurnValue? {
             val projectedHistory = LocalOpponentMoveHypotheses.assumeAction(
                 state, context.publicActionCatalog, history, opponentAction)
+            val projectionContext = LocalBranchMoveInputs.context(context, state, projectedHistory)
             val projections = PublicSingleTurnProjector.project(
                 initialState = state,
                 allyAction = ownAction,
                 opponentAction = opponentAction,
-                sourceContext = LocalBranchMoveInputs.context(context, state, projectedHistory),
+                sourceContext = projectionContext,
                 history = projectedHistory,
                 maxChanceBranchesPerMove = chanceBranchesPerMove,
                 calculationCache = actionCalculationCache,
@@ -626,7 +634,14 @@ internal object LocalRecursiveLookaheadEvaluator {
                         outcome.state.pokemon.firstOrNull { it.battlePokemonId == id }?.hpFraction
                     }.averageOrNull() ?: 0.0
                     remainingHpFraction += trackedHp * outcome.probability
-                    val immediateTurnScore = LocalImmediateTurnScorer.score(state, outcome.state)
+                    val immediateTurnScore = LocalImmediateTurnScorer.score(
+                        state,
+                        outcome.state,
+                        projectionContext,
+                        actionCalculationCache,
+                        tuning,
+                        ::projectedWorkAvailable,
+                    )
                     val immediateTurnDelta = immediateTurnScore.total + outcome.expectedScoreAdjustment
                     val immediateValue = turnStartValue + immediateTurnDelta
                     val stopBranch = !battleEnded(outcome.state) &&

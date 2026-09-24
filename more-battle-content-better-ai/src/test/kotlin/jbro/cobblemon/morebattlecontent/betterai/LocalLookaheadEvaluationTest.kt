@@ -11,6 +11,7 @@ import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalLookaheadStateE
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalBoardMaterial
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalPublicSpeedRelation
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalStatStageMarginalEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalSituationalEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
@@ -38,6 +39,264 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class LocalLookaheadEvaluationTest {
+    @Test
+    fun `stat stage value comes from realizable damage rather than a flat stage price`() {
+        val physical = move("physical_pressure", power = 70.0)
+        val special = move(
+            "special_pressure",
+            category = BattleMoveDamageCategory.SPECIAL,
+            power = 70.0,
+        )
+        val physicalCatalog = catalog(allyMoves = listOf(physical), opponentMoves = emptyList())
+        val specialCatalog = catalog(allyMoves = listOf(special), opponentMoves = emptyList())
+        val before = state(
+            allyCombatStats = BattleCombatStatRangesView.exact(200, 120, 100, 120, 100, 100),
+        )
+        val plusOne = staged(before, ALLY_ID, "attack", 1)
+        val plusTwo = staged(before, ALLY_ID, "attack", 2)
+
+        val oneStage = LocalStatStageMarginalEvaluator.evaluate(
+            before,
+            plusOne,
+            context(before, listOf(physical), physicalCatalog),
+        )
+        val twoStages = LocalStatStageMarginalEvaluator.evaluate(
+            before,
+            plusTwo,
+            context(before, listOf(physical), physicalCatalog),
+        )
+        val irrelevantPhysicalBoost = LocalStatStageMarginalEvaluator.evaluate(
+            before,
+            plusTwo,
+            context(before, listOf(special), specialCatalog),
+        )
+
+        assertTrue(oneStage.score > 0.0)
+        assertTrue(twoStages.score > oneStage.score)
+        assertEquals(0.0, irrelevantPhysicalBoost.score, 1e-9)
+        assertTrue(irrelevantPhysicalBoost.publiclyResolved)
+    }
+
+    @Test
+    fun `stat stage value disappears after damage is already lethal`() {
+        val overkill = move("overkill_stage_probe", power = 1_000.0)
+        val moves = catalog(allyMoves = listOf(overkill), opponentMoves = emptyList())
+        val before = state(opponentHp = 0.20)
+        val after = staged(before, ALLY_ID, "attack", 2)
+
+        val value = LocalStatStageMarginalEvaluator.evaluate(
+            before,
+            after,
+            context(before, listOf(overkill), moves),
+        )
+
+        assertEquals(0.0, value.score, 1e-9)
+        assertTrue(value.publiclyResolved)
+    }
+
+    @Test
+    fun `speed stages are valued only when public order probability changes`() {
+        val slow = state(allySpeed = 40, opponentSpeed = 45)
+        val slowBoosted = staged(slow, ALLY_ID, "speed", 1)
+        val alreadyFast = state(allySpeed = 120, opponentSpeed = 100)
+        val alreadyFastBoosted = staged(alreadyFast, ALLY_ID, "speed", 1)
+        val trickRoom = state(
+            allySpeed = 40,
+            opponentSpeed = 45,
+            field = BattleFieldStateView(
+                weather = null,
+                terrain = null,
+                roomEffects = listOf(BattleTimedEffectView("trickroom", 3)),
+                globalEffects = emptyList(),
+                sideConditions = BattleSide.entries.associateWith { emptyList() },
+            ),
+        )
+        val trickRoomBoosted = staged(trickRoom, ALLY_ID, "speed", 1)
+        val noMoves = catalog(allyMoves = emptyList(), opponentMoves = emptyList())
+
+        fun value(before: BattleStateView, after: BattleStateView) = LocalStatStageMarginalEvaluator.evaluate(
+            before,
+            after,
+            context(before, listOf(wait("speed_probe")), noMoves),
+        ).score
+
+        assertTrue(value(slow, slowBoosted) > 0.0)
+        assertEquals(0.0, value(alreadyFast, alreadyFastBoosted), 1e-9)
+        assertTrue(value(trickRoom, trickRoomBoosted) < 0.0)
+    }
+
+    @Test
+    fun `defensive stages are worth only the incoming damage they prevent`() {
+        val physical = move("opponent_physical", side = BattleSide.OPPONENT, power = 100.0)
+        val special = move(
+            "opponent_special_only",
+            side = BattleSide.OPPONENT,
+            category = BattleMoveDamageCategory.SPECIAL,
+            power = 100.0,
+        )
+        val physicalCatalog = catalog(allyMoves = emptyList(), opponentMoves = listOf(physical))
+        val specialCatalog = catalog(allyMoves = emptyList(), opponentMoves = listOf(special))
+        val before = state()
+        val after = staged(before, ALLY_ID, "defense", 1)
+
+        val physicalValue = LocalStatStageMarginalEvaluator.evaluate(
+            before,
+            after,
+            context(before, listOf(wait("defense_probe")), physicalCatalog),
+        )
+        val specialValue = LocalStatStageMarginalEvaluator.evaluate(
+            before,
+            after,
+            context(before, listOf(wait("special_defense_probe")), specialCatalog),
+        )
+
+        assertTrue(physicalValue.score > 0.0)
+        assertEquals(0.0, specialValue.score, 1e-9)
+        assertTrue(specialValue.publiclyResolved)
+    }
+
+    @Test
+    fun `root setup score uses the same realizable marginal and records its ownership`() {
+        val initial = state()
+        val physical = move("setup_followup", power = 80.0)
+        fun setup(id: String, amount: Int) = move(
+            id = id,
+            category = BattleMoveDamageCategory.STATUS,
+            power = 0.0,
+            targetPattern = BattleMoveTargetPattern.SELF,
+            effects = effects(
+                BattleMoveEffectView(
+                    kind = BattleMoveEffectKind.STAT_STAGE,
+                    target = BattleMoveEffectTarget.USER,
+                    probability = 1.0,
+                    statStages = mapOf("attack" to amount),
+                ),
+            ),
+        )
+        val plusOne = setup("howl", 1)
+        val plusTwo = setup("swords_dance", 2)
+        val source = context(
+            initial,
+            listOf(plusOne, plusTwo),
+            catalog(allyMoves = listOf(physical, plusOne, plusTwo), opponentMoves = emptyList()),
+        )
+
+        val one = LocalTacticalScorer.scoreBreakdown(plusOne, source)
+        val two = LocalTacticalScorer.scoreBreakdown(plusTwo, source)
+        val expected = requireNotNull(LocalStatStageMarginalEvaluator.candidateScore(plusTwo, source, 1.0))
+
+        assertTrue(one.statStageUtility > 0.0)
+        assertTrue(two.statStageUtility > one.statStageUtility)
+        assertEquals(expected, two.statStageUtility, 1e-9)
+        assertEquals(two.statStageUtility, two.total, 1e-9)
+    }
+
+    @Test
+    fun `mixed setup keeps resolved outcome value and falls back only for the unknown stat`() {
+        val initial = state()
+        val physical = move("known_physical_followup", power = 80.0)
+        fun setup(id: String, stages: Map<String, Int>) = move(
+            id = id,
+            category = BattleMoveDamageCategory.STATUS,
+            power = 0.0,
+            targetPattern = BattleMoveTargetPattern.SELF,
+            effects = effects(
+                BattleMoveEffectView(
+                    kind = BattleMoveEffectKind.STAT_STAGE,
+                    target = BattleMoveEffectTarget.USER,
+                    probability = 1.0,
+                    statStages = stages,
+                ),
+            ),
+        )
+        val physicalOnly = setup("physical_only_setup", mapOf("attack" to 1))
+        val mixed = setup("mixed_setup", mapOf("attack" to 1, "special_attack" to 1))
+        val incompleteCatalog = BattlePublicActionCatalogView(
+            listOf(
+                BattlePokemonActionCatalogView(
+                    ALLY_ID,
+                    listOf(
+                        BattlePublicMoveOptionView(
+                            requireNotNull(physical.moveId),
+                            requireNotNull(physical.moveDetails),
+                            BattlePublicMoveKnowledge.EXACT_OWN,
+                        ),
+                    ),
+                    moveSetComplete = false,
+                ),
+                BattlePokemonActionCatalogView(OPPONENT_ID, emptyList(), moveSetComplete = true),
+            ),
+        )
+        val source = context(initial, listOf(physicalOnly, mixed), incompleteCatalog)
+
+        val physicalValue = requireNotNull(
+            LocalStatStageMarginalEvaluator.candidateScore(physicalOnly, source, accuracy = 1.0),
+        )
+        val mixedValue = requireNotNull(
+            LocalStatStageMarginalEvaluator.candidateScore(mixed, source, accuracy = 1.0),
+        )
+
+        assertTrue(physicalValue > 0.0)
+        assertEquals(physicalValue + 4.0, mixedValue, 1e-9)
+    }
+
+    @Test
+    fun `full search authority does not remove a setup marginal twice`() {
+        val initial = state()
+        val physical = move("authority_followup", power = 80.0)
+        val opponentSplash = move(
+            id = "opponent_splash",
+            side = BattleSide.OPPONENT,
+            category = BattleMoveDamageCategory.STATUS,
+            power = 0.0,
+            targetPattern = BattleMoveTargetPattern.SELF,
+        )
+        val setup = move(
+            id = "authority_swords_dance",
+            category = BattleMoveDamageCategory.STATUS,
+            power = 0.0,
+            targetPattern = BattleMoveTargetPattern.SELF,
+            effects = effects(
+                BattleMoveEffectView(
+                    kind = BattleMoveEffectKind.STAT_STAGE,
+                    target = BattleMoveEffectTarget.USER,
+                    probability = 1.0,
+                    statStages = mapOf("attack" to 2),
+                ),
+            ),
+        )
+        val raw = context(
+            initial,
+            listOf(setup),
+            catalog(allyMoves = listOf(physical, setup), opponentMoves = listOf(opponentSplash)),
+        )
+        val calculated = PublicBattleTacticalCalculator.calculate(raw)
+        val profile = BattleTrainerProfile.balanced(0, BattleDifficultyProfiles.INTRODUCTORY)
+        val ranked = LocalBattleActionPolicy.rank(calculated, null, profile)
+        fun evaluated(authority: Double) = LocalRecursiveLookaheadEvaluator.evaluate(
+            ranked,
+            calculated,
+            profile,
+            tuning = LocalDecisionTuning.CURRENT.copy(
+                id = "setup_authority_$authority",
+                searchAuthority = authority,
+            ),
+            clockMillis = { 0L },
+        )
+
+        val heuristicLed = evaluated(0.0)
+        val searchLed = evaluated(1.0)
+
+        assertEquals(1, heuristicLed.depthCompleted)
+        assertEquals(1, searchLed.depthCompleted)
+        assertTrue(heuristicLed.ranked.single().outcome.statStageUtility > 0.0)
+        assertEquals(
+            heuristicLed.ranked.single().comparisonValue,
+            searchLed.ranked.single().comparisonValue,
+            1e-9,
+        )
+    }
+
     @Test
     fun `leaf damage stops at remaining HP before accuracy and gives no overkill setup value`() {
         val tuning = LocalDecisionTuning.CURRENT
@@ -216,7 +475,14 @@ class LocalLookaheadEvaluationTest {
             outcomes.single().state.pokemon.single { it.battlePokemonId == OPPONENT_ID }
                 .statStages["special_attack"],
         )
-        assertEquals(0.10 * 0.30, outcomes.single().expectedScoreAdjustment, 1e-9)
+        val stateWithoutDrop = outcomes.single().state
+        val stateWithDrop = staged(stateWithoutDrop, OPPONENT_ID, "special_attack", -1)
+        val fullEffectValue = LocalStatStageMarginalEvaluator.evaluate(
+            stateWithoutDrop,
+            stateWithDrop,
+            context(stateWithoutDrop, listOf(moonblast)),
+        ).boardDelta
+        assertEquals(fullEffectValue * 0.30, outcomes.single().expectedScoreAdjustment, 1e-9)
     }
 
     @Test
@@ -380,8 +646,9 @@ class LocalLookaheadEvaluationTest {
             outcome.state.pokemon.single { it.battlePokemonId == OPPONENT_ID }
                 .statStages["special_attack"] == null
         })
+        val hit = outcomes.single { it.expectedScoreAdjustment > 0.0 }
         assertEquals(
-            0.10 * 0.30 * 0.50,
+            hit.expectedScoreAdjustment * 0.50,
             outcomes.sumOf { it.probability * it.expectedScoreAdjustment },
             1e-9,
         )
@@ -2155,6 +2422,21 @@ class LocalLookaheadEvaluationTest {
             .distinct()
             .single()
     }
+
+    private fun staged(
+        state: BattleStateView,
+        pokemonId: UUID,
+        stat: String,
+        stage: Int,
+    ) = state.copyState(
+        pokemon = state.pokemon.map { pokemon ->
+            if (pokemon.battlePokemonId == pokemonId) {
+                pokemon.copyState(statStages = pokemon.statStages + (stat to stage))
+            } else {
+                pokemon
+            }
+        },
+    )
 
     private fun context(
         state: BattleStateView,

@@ -1,8 +1,10 @@
 package jbro.cobblemon.morebattlecontent.betterai.evaluation
 
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalProjectedActionCalculationCache
 
 internal data class LocalImmediateTurnScore(
     val materialDelta: Double,
@@ -21,22 +23,36 @@ internal data class LocalImmediateTurnScore(
  * Removal value is already part of materialDelta; secondary effects can still use weighted score.
  */
 internal object LocalImmediateTurnScorer {
-    fun score(before: BattleStateView, after: BattleStateView): LocalImmediateTurnScore {
+    fun score(
+        before: BattleStateView,
+        after: BattleStateView,
+        source: BattleDecisionContext? = null,
+        calculationCache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
+        tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+        shouldContinue: () -> Boolean = { true },
+    ): LocalImmediateTurnScore {
         val beforeMaterial = LocalBoardMaterial.evaluate(before)
         val afterMaterial = LocalBoardMaterial.evaluate(after)
-        val beforeStages = positionStages(before)
-        val afterStages = positionStages(after)
+        val stageDelta = source?.let {
+            LocalStatStageMarginalEvaluator.transitionValue(
+                before,
+                after,
+                it,
+                calculationCache,
+                tuning,
+                shouldContinue,
+            ).pressureBoardDelta
+        } ?: 0.0
         val beforeStatus = positionStatus(before)
         val afterStatus = positionStatus(after)
-        val beforeSpeed = speedControlValue(before)
-        val afterSpeed = speedControlValue(after)
+        val speedControlDelta = LocalStatStageMarginalEvaluator.speedTransitionBoardDelta(before, after, tuning)
         val beforeField = positionField(before)
         val afterField = positionField(after)
         return LocalImmediateTurnScore(
             materialDelta = afterMaterial - beforeMaterial,
-            stageDelta = afterStages - beforeStages,
+            stageDelta = stageDelta,
             statusDelta = afterStatus - beforeStatus,
-            speedControlDelta = afterSpeed - beforeSpeed,
+            speedControlDelta = speedControlDelta,
             fieldDelta = afterField - beforeField,
         )
     }
@@ -45,20 +61,18 @@ internal object LocalImmediateTurnScorer {
         before: BattleStateView,
         afterEffect: BattleStateView,
         probability: Double,
-    ): Double = score(before, afterEffect).total * probability.coerceIn(0.0, 1.0)
-
-    private fun positionStages(state: BattleStateView): Double =
-        sideStages(state, BattleSide.ALLY) - sideStages(state, BattleSide.OPPONENT)
-
-    private fun sideStages(state: BattleStateView, side: BattleSide): Double = state.pokemon
-        .asSequence()
-        .filter { it.side == side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
-        .sumOf(::stageValue)
-        .coerceIn(-MAX_STAGE_VALUE, MAX_STAGE_VALUE)
-
-    private fun stageValue(pokemon: BattlePokemonStateView): Double = pokemon.statStages.entries.sumOf { (stat, stage) ->
-        stage.coerceIn(-6, 6) * (STAGE_WEIGHTS[canonicalId(stat)] ?: DEFAULT_STAGE_WEIGHT)
-    }
+        source: BattleDecisionContext,
+        calculationCache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
+        tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+        shouldContinue: () -> Boolean = { true },
+    ): Double = score(
+        before,
+        afterEffect,
+        source,
+        calculationCache,
+        tuning,
+        shouldContinue,
+    ).total * probability.coerceIn(0.0, 1.0)
 
     private fun positionStatus(state: BattleStateView): Double =
         sideStatusBurden(state, BattleSide.OPPONENT) - sideStatusBurden(state, BattleSide.ALLY)
@@ -75,14 +89,6 @@ internal object LocalImmediateTurnScorer {
         "par", "paralysis", "paralyzed", "paralysed", "brn", "burn", "burned", "burnt" -> 0.25
         "psn", "poison", "poisoned" -> 0.20
         else -> 0.15
-    }
-
-    private fun speedControlValue(state: BattleStateView): Double = when (LocalLookaheadStateEvaluator.speedRelation(state)) {
-        LocalPublicSpeedRelation.ALLY_FIRST -> SPEED_CONTROL_VALUE
-        LocalPublicSpeedRelation.OPPONENT_FIRST -> -SPEED_CONTROL_VALUE
-        LocalPublicSpeedRelation.AMBIGUOUS,
-        LocalPublicSpeedRelation.UNAVAILABLE,
-        -> 0.0
     }
 
     private fun positionField(state: BattleStateView): Double =
@@ -103,27 +109,6 @@ internal object LocalImmediateTurnScorer {
         ?.lowercase()
         ?.filter(Char::isLetterOrDigit)
 
-    private const val MAX_STAGE_VALUE = 0.60
-    private const val DEFAULT_STAGE_WEIGHT = 0.06
-    private const val SPEED_CONTROL_VALUE = 0.15
     private const val HAZARD_STACK_VALUE = 0.10
     private const val BENEFICIAL_SIDE_EFFECT_VALUE = 0.15
-    private val STAGE_WEIGHTS = mapOf(
-        "attack" to 0.10,
-        "atk" to 0.10,
-        "specialattack" to 0.10,
-        "spatk" to 0.10,
-        "spa" to 0.10,
-        "defense" to 0.08,
-        "defence" to 0.08,
-        "def" to 0.08,
-        "specialdefense" to 0.08,
-        "specialdefence" to 0.08,
-        "spdef" to 0.08,
-        "spd" to 0.08,
-        "speed" to 0.08,
-        "spe" to 0.08,
-        "accuracy" to 0.06,
-        "evasion" to 0.06,
-    )
 }

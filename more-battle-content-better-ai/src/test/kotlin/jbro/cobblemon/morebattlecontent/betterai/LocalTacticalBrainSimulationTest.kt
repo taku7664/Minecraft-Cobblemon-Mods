@@ -37,6 +37,10 @@ import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanUpdateOperation
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonActionCatalogView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicMoveKnowledge
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicMoveOptionView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStandardDamageModel
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
@@ -1573,29 +1577,62 @@ class LocalTacticalBrainSimulationTest {
     }
 
     @Test
-    fun `stat setup is used once then converts the boost into damage`() {
+    fun `stat setup without public combat stats uses only the conservative fallback`() {
         val swordsDance = effectMove(
             id = "swords_dance",
             kind = BattleMoveEffectKind.STAT_STAGE,
             statStages = mapOf("attack" to 2),
         )
         val chip = move("small_damage", power = 40.0, facts = damageFacts(0.15))
+        val allyId = UUID.fromString("00000000-0000-0000-0000-000000000711")
+        val ownCatalog = BattlePublicActionCatalogView(
+            listOf(
+                BattlePokemonActionCatalogView(
+                    allyId,
+                    listOf(swordsDance, chip).map { action ->
+                        BattlePublicMoveOptionView(
+                            requireNotNull(action.moveId),
+                            requireNotNull(action.moveDetails),
+                            BattlePublicMoveKnowledge.EXACT_OWN,
+                        )
+                    },
+                    moveSetComplete = true,
+                ),
+            ),
+        )
 
         assertEquals(
             "small_damage",
             decide(
                 candidates = listOf(swordsDance, chip),
+                allyPokemonId = allyId,
                 allyStatStages = mapOf("attack" to 6),
+                publicActionCatalog = ownCatalog,
             ).actionId,
         )
         assertEquals(
             "small_damage",
             decide(
                 candidates = listOf(swordsDance, chip),
+                allyPokemonId = allyId,
                 allyStatStages = mapOf("attack" to 2),
+                publicActionCatalog = ownCatalog,
             ).actionId,
         )
-        assertEquals("swords_dance", decide(listOf(swordsDance, chip)).actionId)
+        val unresolved = contextOf(
+            candidates = listOf(swordsDance, chip),
+            allyPokemonId = allyId,
+            publicActionCatalog = ownCatalog,
+        )
+        assertEquals(8.0, LocalTacticalScorer.scoreBreakdown(swordsDance, unresolved).statStageUtility, 1e-9)
+        assertEquals(
+            "small_damage",
+            decide(
+                candidates = listOf(swordsDance, chip),
+                allyPokemonId = allyId,
+                publicActionCatalog = ownCatalog,
+            ).actionId,
+        )
     }
 
     @Test
@@ -1988,11 +2025,12 @@ class LocalTacticalBrainSimulationTest {
         allyBench: Map<UUID, BenchPokemon> = emptyMap(),
         memory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
         selectedSession: BattleBrainSession = session,
+        publicActionCatalog: BattlePublicActionCatalogView = BattlePublicActionCatalogView.empty(),
     ) = brain.decide(selectedSession, contextOf(
         candidates, turn, allyPokemonId, allyHp, opponentHp, opponentPokemonId, allyTypes,
         opponentTypes, format, allyPartnerTypes, allyPartnerHp, opponentPartnerTypes,
         opponentPartnerHp, opponentStatusId, allyAbilityId, opponentAbilityId, allyStatusId,
-        allyStatStages, field, observedEvents, inferences, allyBench, memory,
+        allyStatStages, field, observedEvents, inferences, allyBench, memory, publicActionCatalog,
     )).toCompletableFuture().join()
 
     /** Same context [decide] builds, exposed so a decision can be inspected instead of only executed. */
@@ -2020,6 +2058,7 @@ class LocalTacticalBrainSimulationTest {
         inferences: List<BattleInferenceView> = emptyList(),
         allyBench: Map<UUID, BenchPokemon> = emptyMap(),
         memory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
+        publicActionCatalog: BattlePublicActionCatalogView = BattlePublicActionCatalogView.empty(),
     ) = BattleDecisionContext(
         requestId = UUID.randomUUID(),
         state = state(
@@ -2048,6 +2087,7 @@ class LocalTacticalBrainSimulationTest {
             candidates = candidates,
             deadlineEpochMillis = Long.MAX_VALUE,
             memory = memory,
+            publicActionCatalog = publicActionCatalog,
         )
 
     internal fun move(

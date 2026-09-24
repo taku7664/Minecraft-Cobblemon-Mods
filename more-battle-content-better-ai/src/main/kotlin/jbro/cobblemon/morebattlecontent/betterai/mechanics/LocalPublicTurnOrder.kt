@@ -216,7 +216,7 @@ internal object LocalPublicTurnOrder {
         }
     }
 
-    private fun speedOrderProbability(
+    internal fun speedOrderProbability(
         state: BattleStateView,
         first: BattlePokemonStateView,
         second: BattlePokemonStateView,

@@ -781,6 +781,8 @@ internal object PublicSingleTurnProjector {
                         executedSide = side,
                         effectSourceSide = reflectedSide,
                         mode = chanceEffectMode,
+                        sourceContext = sourceContext,
+                        calculationCache = calculationCache,
                         shouldContinue = shouldContinue,
                     ).map { it.copy(probability = it.probability * outcome.probability) }
                 }
@@ -846,6 +848,8 @@ internal object PublicSingleTurnProjector {
                         effects,
                         executedSide = side,
                         mode = chanceEffectMode,
+                        sourceContext = sourceContext,
+                        calculationCache = calculationCache,
                         shouldContinue = shouldContinue,
                     ).map { it.copy(probability = it.probability * contactOutcome.probability) }
                 }.flatMap { effectOutcome ->
@@ -1167,6 +1171,8 @@ internal object PublicSingleTurnProjector {
                                 perTargetEffects,
                                 executedSide = side,
                                 mode = chanceEffectMode,
+                                sourceContext = sourceContext,
+                                calculationCache = calculationCache,
                                 shouldContinue = shouldContinue,
                             ).map { effectOutcome ->
                                 effectOutcome.copy(
@@ -1393,6 +1399,8 @@ internal object PublicSingleTurnProjector {
         executedSide: BattleSide,
         effectSourceSide: BattleSide = executedSide,
         mode: ChanceEffectProjectionMode,
+        sourceContext: BattleDecisionContext,
+        calculationCache: LocalProjectedActionCalculationCache,
         shouldContinue: () -> Boolean,
     ): List<WeightedState> {
         val projectable = effects.filter { effect ->
@@ -1417,7 +1425,14 @@ internal object PublicSingleTurnProjector {
                     mode == ChanceEffectProjectionMode.EXPECTED_SCORE -> listOf(
                         branch.copy(
                             expectedScoreAdjustment = branch.expectedScoreAdjustment +
-                                LocalImmediateTurnScorer.expectedEffectScore(branch.state, applied, probability),
+                                LocalImmediateTurnScorer.expectedEffectScore(
+                                    branch.state,
+                                    applied,
+                                    probability,
+                                    sourceContext,
+                                    calculationCache,
+                                    shouldContinue = shouldContinue,
+                                ),
                         ),
                     )
                     else -> listOf(

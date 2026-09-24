@@ -32,7 +32,7 @@ class LocalImmediateTurnScorerTest {
             ),
         )
 
-        val score = LocalImmediateTurnScorer.score(before, after)
+        val score = LocalImmediateTurnScorer.score(before, after, context(before))
 
         assertEquals(0.10, score.materialDelta, 1e-9)
         assertTrue(score.stageDelta > 0.0)
@@ -121,6 +121,65 @@ class LocalImmediateTurnScorerTest {
             )
         },
     )
+
+    private fun context(state: BattleStateView): BattleDecisionContext {
+        val allyMove = BattleActionCandidate(
+            actionId = "ally_physical",
+            kind = BattleActionKind.USE_MOVE,
+            actorSlot = 0,
+            moveSlot = 0,
+            moveId = "cobblemon:body_slam",
+            targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
+            moveDetails = BattleMoveCandidateView(
+                typeId = "normal",
+                damageCategory = BattleMoveDamageCategory.PHYSICAL,
+                power = 85.0,
+                accuracy = 100.0,
+                priority = 0,
+                currentPp = 10,
+                targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
+            ),
+        )
+        val opponentMove = BattlePublicMoveOptionView(
+            moveId = "cobblemon:tackle",
+            details = BattleMoveCandidateView(
+                typeId = "normal",
+                damageCategory = BattleMoveDamageCategory.PHYSICAL,
+                power = 40.0,
+                accuracy = 100.0,
+                priority = 0,
+                currentPp = 10,
+                targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
+            ),
+            knowledge = BattlePublicMoveKnowledge.PUBLICLY_REVEALED,
+        )
+        return BattleDecisionContext(
+            requestId = BATTLE_ID,
+            state = state,
+            candidates = listOf(allyMove),
+            deadlineEpochMillis = Long.MAX_VALUE,
+            publicActionCatalog = BattlePublicActionCatalogView(
+                listOf(
+                    BattlePokemonActionCatalogView(
+                        ALLY_ID,
+                        listOf(
+                            BattlePublicMoveOptionView(
+                                requireNotNull(allyMove.moveId),
+                                requireNotNull(allyMove.moveDetails),
+                                BattlePublicMoveKnowledge.EXACT_OWN,
+                            ),
+                        ),
+                        moveSetComplete = true,
+                    ),
+                    BattlePokemonActionCatalogView(
+                        OPPONENT_ID,
+                        listOf(opponentMove),
+                        moveSetComplete = true,
+                    ),
+                ),
+            ),
+        )
+    }
 
     private companion object {
         val BATTLE_ID: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")

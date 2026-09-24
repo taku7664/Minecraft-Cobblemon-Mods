@@ -33,6 +33,12 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffective
  * existed. Both symptoms this module was rebuilt for - resisted moves being preferred and switches
  * appearing without a reason - were produced here.
  */
+internal data class LocalTacticalScore(
+    val total: Double,
+    /** Root value re-derived from projected stat stages and therefore replaceable by search. */
+    val statStageUtility: Double = 0.0,
+)
+
 internal object LocalTacticalScorer {
     fun score(
         candidate: BattleActionCandidate,
@@ -40,15 +46,28 @@ internal object LocalTacticalScorer {
         strategy: BattleStrategyBrief? = null,
         profile: BattleTrainerProfile = BattleTrainerProfile.balanced(),
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
-    ): Double = when (candidate.kind) {
+    ): Double = scoreBreakdown(candidate, context, strategy, profile, tuning).total
+
+    fun scoreBreakdown(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        strategy: BattleStrategyBrief? = null,
+        profile: BattleTrainerProfile = BattleTrainerProfile.balanced(),
+        tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+    ): LocalTacticalScore = when (candidate.kind) {
         BattleActionKind.USE_MOVE -> scoreMove(candidate, context, strategy, profile, tuning)
-        BattleActionKind.SWITCH -> scoreSwitch(candidate, context, strategy, profile, tuning)
-        BattleActionKind.COMPOSITE ->
-            candidate.componentActions.sumOf { score(it, context, strategy, profile, tuning) } +
-                LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context) -
-                duplicateCertainKnockoutCredit(candidate, context, tuning)
-        BattleActionKind.WAIT -> -100.0
-        BattleActionKind.FORFEIT -> -10_000.0
+        BattleActionKind.SWITCH -> LocalTacticalScore(scoreSwitch(candidate, context, strategy, profile, tuning))
+        BattleActionKind.COMPOSITE -> {
+            val components = candidate.componentActions.map { scoreBreakdown(it, context, strategy, profile, tuning) }
+            LocalTacticalScore(
+                total = components.sumOf(LocalTacticalScore::total) +
+                    LocalTacticalSituationalEvaluator.compositeCoordinationAdjustment(candidate, context) -
+                    duplicateCertainKnockoutCredit(candidate, context, tuning),
+                statStageUtility = components.sumOf(LocalTacticalScore::statStageUtility),
+            )
+        }
+        BattleActionKind.WAIT -> LocalTacticalScore(-100.0)
+        BattleActionKind.FORFEIT -> LocalTacticalScore(-10_000.0)
     }
 
     /**
@@ -147,15 +166,24 @@ internal object LocalTacticalScorer {
         strategy: BattleStrategyBrief?,
         profile: BattleTrainerProfile,
         tuning: LocalDecisionTuning,
-    ): Double {
+    ): LocalTacticalScore {
         val details = candidate.moveDetails
-            ?: return 5.0 +
-                strategyMoveAdjustment(candidate, context, strategy)
+            ?: return LocalTacticalScore(5.0 + strategyMoveAdjustment(candidate, context, strategy))
         val facts = candidate.facts
         val damageRange = facts?.standardDamageFractionRange
         val accuracy = LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY)
-        val pressure = if (details.damageCategory == BattleMoveDamageCategory.STATUS) {
-            LocalTacticalSituationalEvaluator.statusPressure(candidate, context, accuracy)
+        val nonDamagingScore = if (details.damageCategory == BattleMoveDamageCategory.STATUS) {
+            LocalNonDamagingMoveEvaluator.score(candidate, context, accuracy, tuning)
+        } else {
+            null
+        }
+        val damagingStageUtility = if (details.damageCategory == BattleMoveDamageCategory.STATUS) {
+            0.0
+        } else {
+            LocalStatStageMarginalEvaluator.candidateScore(candidate, context, accuracy, tuning = tuning) ?: 0.0
+        }
+        val pressure = if (nonDamagingScore != null) {
+            nonDamagingScore.total
         } else if (damageRange != null) {
             // HP-fraction pressure. This is deliberately the unclamped projection: the outcome
             // evaluator adds `(clampedExpectedDamage - thisValue / 100) * 100`, so the two terms
@@ -168,9 +196,9 @@ internal object LocalTacticalScorer {
                 damageRange.minimum,
                 damageRange.maximum,
                 profile.personality.riskTolerance,
-            ) * 100.0 * accuracy
+            ) * 100.0 * accuracy + damagingStageUtility
         } else {
-            unprojectedPressure(candidate, context, details, facts, tuning)
+            unprojectedPressure(candidate, context, details, facts, tuning) + damagingStageUtility
         }
         val effectivePriority = LocalPublicTurnOrder.effectivePriority(context.state, BattleSide.ALLY, candidate)
         val prioritySuccessProbability = if (LocalStallingProtectionRules.isStallingProtection(candidate)) {
@@ -202,7 +230,7 @@ internal object LocalTacticalScorer {
         } else {
             0.0
         }
-        return pressure + priorityBonus + knockoutBonus + spreadBonus -
+        val total = pressure + priorityBonus + knockoutBonus + spreadBonus -
             recoilPenalty - publicAllyCollateral(candidate, context, tuning) -
             LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) -
@@ -216,6 +244,10 @@ internal object LocalTacticalScorer {
             mechanicResourceAdjustment(candidate) +
             selfPatternAdjustment(candidate, context, profile) +
             strategyMoveAdjustment(candidate, context, strategy)
+        return LocalTacticalScore(
+            total = total,
+            statStageUtility = nonDamagingScore?.statStageUtility ?: damagingStageUtility,
+        )
     }
 
     /**

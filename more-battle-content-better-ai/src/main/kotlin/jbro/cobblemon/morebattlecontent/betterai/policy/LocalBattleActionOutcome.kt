@@ -51,6 +51,8 @@ internal data class LocalBattleActionOutcome(
      * never matched what was there.
      */
     val knockoutUtility: Double = 0.0,
+    /** Stat-stage value already present in [tacticalUtility] and replaceable by projected value. */
+    val statStageUtility: Double = 0.0,
     val componentOutcomes: List<LocalBattleActionOutcome> = emptyList(),
 )
 
@@ -271,10 +273,10 @@ internal object LocalBattleActionOutcomeEvaluator {
         } else {
             0
         }
+        val tactical = LocalTacticalScorer.scoreBreakdown(candidate, context, strategy, profile, tuning)
         return LocalBattleActionOutcome(
             candidate = candidate,
-            tacticalUtility = LocalTacticalScorer.score(candidate, context, strategy, profile, tuning) +
-                mechanicsUtilityAdjustment,
+            tacticalUtility = tactical.total + mechanicsUtilityAdjustment,
             expectedDamageFraction = expectedDamage,
             secureStandardKnockouts = secureKnockout,
             executableDamageActions = executableDamage,
@@ -286,6 +288,7 @@ internal object LocalBattleActionOutcomeEvaluator {
             survivalPositionImprovement = null,
             effectiveAccuracyProbability = accuracy,
             knockoutUtility = LocalTacticalScorer.knockoutUtility(candidate, tuning, context),
+            statStageUtility = tactical.statStageUtility,
         )
     }
 
@@ -360,6 +363,7 @@ internal object LocalBattleActionOutcomeEvaluator {
             survivalPositionImprovement = null,
             knockoutUtility = components.sumOf(LocalBattleActionOutcome::knockoutUtility) -
                 LocalTacticalScorer.duplicateCertainKnockoutCredit(candidate, context, tuning),
+            statStageUtility = components.sumOf(LocalBattleActionOutcome::statStageUtility),
             componentOutcomes = components,
         )
     }
