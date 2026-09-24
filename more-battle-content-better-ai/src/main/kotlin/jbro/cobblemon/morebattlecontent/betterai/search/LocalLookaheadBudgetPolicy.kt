@@ -11,15 +11,11 @@ internal data class LocalLookaheadBudget(
 /**
  * Keeps local search responsive without changing the independent Router timeout.
  *
- * These are wall-clock costs paid by the server process for every NPC decision. The work runs on a
- * bounded AI worker, but still competes for CPU and allocation bandwidth, so a budget has to be
- * justified by decisions it changes, not by the depth it reaches.
- *
- * With production root refinement and weighted selection, repeated runs changed one or two of forty
- * recorded decisions when cutting Boss from 3,000ms to 1,500ms. Every tested budget at or below
- * 1,000ms crossed the five-percent guard (three to six changes), so 1,500ms remains the conservative
- * knee rather than the cheapest setting. Stable-decision and predicted-cost exits reduce work inside
- * that ceiling. `LocalSearchBudgetTest` re-measures this whenever these numbers are touched.
+ * The work runs on a bounded AI worker but still competes for CPU and allocation bandwidth. Wall-clock
+ * completion depends on host load, so time is only a fail-safe ceiling, not a reproducible quality
+ * contract. Node and chance-branch limits are the deterministic work bounds; tests verify those values
+ * and distinguish node exhaustion from deadline exhaustion. Stable-decision and predicted-cost exits
+ * may stop earlier without weakening either hard limit.
  */
 internal object LocalLookaheadBudgetPolicy {
     fun forTier(tier: BattleTrainerTier): LocalLookaheadBudget = when (tier) {
@@ -38,9 +34,8 @@ internal object LocalLookaheadBudgetPolicy {
             nodeLimit = 80_000,
             chanceBranchesPerMove = 40,
         )
-        // Halved from 3,000ms. The node ceiling and branch width stay above Advanced, so a Boss search
-        // is still the widest one available and never explores less; only the wall clock a player
-        // waits for, and that the server process pays for every Boss decision, is cut.
+        // Boss shares Advanced's wall-clock ceiling but retains the largest deterministic node and
+        // chance-branch limits. This prevents a longer tier-specific stall without flattening width.
         BattleTrainerTier.BOSS -> LocalLookaheadBudget(
             timeMillis = 1_500L,
             nodeLimit = 400_000,
