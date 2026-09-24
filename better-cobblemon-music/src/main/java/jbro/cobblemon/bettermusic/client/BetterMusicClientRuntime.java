@@ -42,6 +42,7 @@ public final class BetterMusicClientRuntime {
     private double nextScanSeconds;
     private boolean inWorld;
     private boolean suppressOriginalMusic;
+    private boolean lastPokemonMuffleTarget;
     private String lastDesiredPlaylistId;
 
     public BetterMusicClientRuntime(BetterMusicConfigManager configManager, Logger logger) {
@@ -103,7 +104,7 @@ public final class BetterMusicClientRuntime {
             return;
         }
         inWorld = false;
-        player.setMuffled(false);
+        setLastPokemonMuffleTarget(false);
         LastPokemonMuffleTracker.INSTANCE.clear();
         coordinator.update(nowSeconds, MusicPlaybackCoordinator.Input.none())
             .ifPresent(transition -> applyTransition(nowSeconds, transition));
@@ -115,7 +116,7 @@ public final class BetterMusicClientRuntime {
             return;
         }
         nextScanSeconds = nowSeconds + snapshot.playback().scanIntervalSeconds();
-        player.setMuffled(LastPokemonMuffleTracker.INSTANCE.shouldMuffle(client));
+        setLastPokemonMuffleTarget(LastPokemonMuffleTracker.INSTANCE.shouldMuffle(client));
 
         Optional<String> fieldCue = fieldSampler.sample(client)
             .map(fieldResolver::select)
@@ -147,6 +148,14 @@ public final class BetterMusicClientRuntime {
                 suppressOriginalMusic = true;
             });
         }
+    }
+
+    private void setLastPokemonMuffleTarget(boolean target) {
+        if (lastPokemonMuffleTarget != target) {
+            logger.info("Last-Pokémon BGM muffling {}", target ? "enabled" : "disabled");
+            lastPokemonMuffleTarget = target;
+        }
+        player.setMuffled(target);
     }
 
     private void applyTransition(double nowSeconds, MusicPlaybackCoordinator.Transition transition) {
