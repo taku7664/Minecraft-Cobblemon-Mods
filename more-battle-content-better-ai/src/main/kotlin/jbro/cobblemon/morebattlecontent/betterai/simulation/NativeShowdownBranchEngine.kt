@@ -268,6 +268,7 @@ internal data class NativeBattleFrame(
     val p2Team: List<NativePokemonFrame>,
     val p1RequestJson: String,
     val p2RequestJson: String,
+    val field: NativeBattleFieldFrame = NativeBattleFieldFrame.empty(),
     val log: List<String>,
 )
 
@@ -284,6 +285,8 @@ internal data class NativePokemonFrame(
     val volatiles: List<String>,
     val moves: List<NativeMoveFrame>,
     val activeSlot: Int?,
+    val level: Int = 50,
+    val stats: Map<String, Int> = emptyMap(),
 )
 
 internal data class NativeMoveFrame(
@@ -291,6 +294,24 @@ internal data class NativeMoveFrame(
     val pp: Int,
     val maxPp: Int,
     val disabled: Boolean,
+)
+
+internal data class NativeBattleFieldFrame(
+    val weather: NativeTimedEffectFrame?,
+    val terrain: NativeTimedEffectFrame?,
+    val pseudoWeather: List<NativeTimedEffectFrame>,
+    val p1SideConditions: List<NativeTimedEffectFrame>,
+    val p2SideConditions: List<NativeTimedEffectFrame>,
+) {
+    companion object {
+        fun empty() = NativeBattleFieldFrame(null, null, emptyList(), emptyList(), emptyList())
+    }
+}
+
+internal data class NativeTimedEffectFrame(
+    val id: String,
+    val remainingTurns: Int?,
+    val stacks: Int?,
 )
 
 private data class NativeBranchRequest(

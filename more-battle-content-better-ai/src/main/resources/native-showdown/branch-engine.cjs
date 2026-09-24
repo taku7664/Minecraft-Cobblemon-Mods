@@ -127,6 +127,14 @@ function pokemonFrame(pokemon, activeSlot) {
       disabled: !!slot.disabled,
     })),
     activeSlot,
+    level: pokemon.level,
+    stats: {
+      atk: pokemon.storedStats.atk,
+      def: pokemon.storedStats.def,
+      spa: pokemon.storedStats.spa,
+      spd: pokemon.storedStats.spd,
+      spe: pokemon.storedStats.spe,
+    },
   };
 }
 
@@ -143,6 +151,29 @@ function activeFrames(side) {
     .filter(Boolean);
 }
 
+function timedEffectFrame(id, state) {
+  const duration = state && Number.isInteger(state.duration) && state.duration > 0 ? state.duration : null;
+  const layers = state && Number.isInteger(state.layers) && state.layers > 0 ? state.layers : null;
+  return { id, remainingTurns: duration, stacks: layers };
+}
+
+function timedEffectFrames(effects) {
+  return Object.entries(effects || {})
+    .map(([id, state]) => timedEffectFrame(id, state))
+    .sort((left, right) => left.id.localeCompare(right.id));
+}
+
+function fieldFrame(battle) {
+  const field = battle.field;
+  return {
+    weather: field.weather ? timedEffectFrame(field.weather, field.weatherState) : null,
+    terrain: field.terrain ? timedEffectFrame(field.terrain, field.terrainState) : null,
+    pseudoWeather: timedEffectFrames(field.pseudoWeather),
+    p1SideConditions: timedEffectFrames(battle.p1.sideConditions),
+    p2SideConditions: timedEffectFrames(battle.p2.sideConditions),
+  };
+}
+
 function frame(battle) {
   return {
     snapshotJson: JSON.stringify(battle.toJSON()),
@@ -155,6 +186,7 @@ function frame(battle) {
     p2Team: sideFrames(battle.p2),
     p1RequestJson: JSON.stringify(battle.p1.activeRequest || null),
     p2RequestJson: JSON.stringify(battle.p2.activeRequest || null),
+    field: fieldFrame(battle),
     log: battle.log.slice(),
   };
 }

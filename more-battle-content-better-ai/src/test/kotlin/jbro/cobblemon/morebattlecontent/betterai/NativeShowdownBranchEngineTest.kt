@@ -124,6 +124,8 @@ class NativeShowdownBranchEngineTest {
             assertEquals(145, technician.p1Active.single().maxHp)
             assertEquals("technician", technician.p1Active.single().ability)
             assertEquals("leftovers", technician.p1Active.single().item)
+            assertEquals(50, technician.p1Active.single().level)
+            assertTrue(technician.p1Active.single().stats.values.all { it > 0 })
             assertEquals("move", technician.requestState, "Showdown must create the request after opening callbacks")
             assertEquals(20, schooling.p1Active.single().hp, "Showdown must construct the lead at public pre-battle HP")
             assertEquals(
@@ -137,6 +139,10 @@ class NativeShowdownBranchEngineTest {
                     .getAsJsonObject("field").get("weather").asString,
                 "Opening ability callbacks must be executed by native Showdown",
             )
+            assertEquals("raindance", drizzle.field.weather?.id)
+
+            val boosted = engine.branch(neutral.snapshotJson, "move 2", "move 1")
+            assertEquals(2, boosted.p1Active.single().boosts["atk"])
 
             val technicianAfter = engine.branch(technician.snapshotJson, "move 1", "move 1")
             val neutralAfter = engine.branch(neutral.snapshotJson, "move 1", "move 1")
