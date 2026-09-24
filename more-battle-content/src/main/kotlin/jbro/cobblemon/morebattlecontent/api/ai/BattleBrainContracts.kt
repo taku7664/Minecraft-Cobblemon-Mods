@@ -213,6 +213,65 @@ class BattlePokemonFormStateView(
     }
 }
 
+/** Public team-preview identity. The opaque slot id must never be a live BattlePokemon UUID. */
+class BattleOpponentTeamPreviewPokemonView(
+    val previewSlotId: Int,
+    val speciesId: String,
+    val formId: String?,
+    val level: Int?,
+    knownTypeIds: Set<String> = emptySet(),
+    val combatStats: BattleCombatStatRangesView? = null,
+    knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
+) {
+    val knownTypeIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownTypeIds))
+    val knownFormStates: Map<String, BattlePokemonFormStateView> =
+        Collections.unmodifiableMap(LinkedHashMap(knownFormStates))
+
+    init {
+        require(previewSlotId in 0 until BattleOpponentTeamPreviewView.MAX_PREVIEW_SIZE)
+        require(speciesId.isNotBlank())
+        require(formId == null || formId.isNotBlank())
+        require(level == null || level > 0)
+        require(this.knownTypeIds.all(String::isNotBlank))
+        require(this.knownFormStates.keys.all(String::isNotBlank))
+        require(combatStats?.knowledge != BattleCombatStatKnowledge.EXACT_OWN)
+        require(combatStats == null || !combatStats.hasExactComponent()) {
+            "Opponent team preview cannot carry exact combat-stat components"
+        }
+        require(this.knownFormStates.values.none {
+            it.combatStats.knowledge == BattleCombatStatKnowledge.EXACT_OWN ||
+                it.combatStats.hasExactComponent()
+        })
+    }
+}
+
+/** Opponent candidates shown before a private singles/doubles selection. */
+class BattleOpponentTeamPreviewView(
+    val selectionSize: Int,
+    pokemon: List<BattleOpponentTeamPreviewPokemonView>,
+) {
+    val pokemon: List<BattleOpponentTeamPreviewPokemonView> =
+        Collections.unmodifiableList(ArrayList(pokemon))
+
+    init {
+        require(this.pokemon.size in 1..MAX_PREVIEW_SIZE)
+        require(selectionSize in 1..this.pokemon.size)
+        require(this.pokemon.map(BattleOpponentTeamPreviewPokemonView::previewSlotId).distinct().size ==
+            this.pokemon.size) {
+            "Opponent team-preview slot ids must be unique"
+        }
+    }
+
+    companion object {
+        const val MAX_PREVIEW_SIZE = 6
+    }
+}
+
+private fun BattleCombatStatRangesView.hasExactComponent(): Boolean =
+    listOf(maxHp, attack, defence, specialAttack, specialDefence, speed).any {
+        it.minimum == it.maximum
+    }
+
 class BattleStateView(
     val battleId: UUID,
     val format: BattleFormat,
@@ -659,13 +718,15 @@ data class BattleBrainOpenContext(
     }
 }
 
-class BattleDecisionContext(
+class BattleDecisionContext private constructor(
     val requestId: UUID,
     val state: BattleStateView,
     candidates: List<BattleActionCandidate>,
     val deadlineEpochMillis: Long,
-    val memory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
-    val publicActionCatalog: BattlePublicActionCatalogView = BattlePublicActionCatalogView.empty(),
+    val memory: BattleTacticalMemoryView,
+    val publicActionCatalog: BattlePublicActionCatalogView,
+    val opponentTeamPreview: BattleOpponentTeamPreviewView?,
+    @Suppress("UNUSED_PARAMETER") compatibilityMarker: Unit,
 ) {
     val candidates: List<BattleActionCandidate> = Collections.unmodifiableList(ArrayList(candidates))
 
@@ -675,6 +736,44 @@ class BattleDecisionContext(
             "Server-generated action ids must be unique within a decision request"
         }
     }
+
+    /** Preserve the original Kotlin/JVM constructor and its default-argument bridge. */
+    constructor(
+        requestId: UUID,
+        state: BattleStateView,
+        candidates: List<BattleActionCandidate>,
+        deadlineEpochMillis: Long,
+        memory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
+        publicActionCatalog: BattlePublicActionCatalogView = BattlePublicActionCatalogView.empty(),
+    ) : this(
+        requestId,
+        state,
+        candidates,
+        deadlineEpochMillis,
+        memory,
+        publicActionCatalog,
+        null,
+        Unit,
+    )
+
+    constructor(
+        requestId: UUID,
+        state: BattleStateView,
+        candidates: List<BattleActionCandidate>,
+        deadlineEpochMillis: Long,
+        memory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
+        publicActionCatalog: BattlePublicActionCatalogView = BattlePublicActionCatalogView.empty(),
+        opponentTeamPreview: BattleOpponentTeamPreviewView,
+    ) : this(
+        requestId,
+        state,
+        candidates,
+        deadlineEpochMillis,
+        memory,
+        publicActionCatalog,
+        opponentTeamPreview,
+        Unit,
+    )
 }
 
 class BattleDecision(
