@@ -479,7 +479,7 @@ class LocalRecursiveLookaheadTest {
     }
 
     @Test
-    fun `difficulty depth means complete turns from one through four`() {
+    fun `difficulty depth means configured complete turns`() {
         val ownMove = move("own", 0, power = 20.0)
         val opponentMove = BattlePublicMoveOptionView(
             "cobblemon:opponent",
@@ -513,14 +513,14 @@ class LocalRecursiveLookaheadTest {
                 context,
                 BattleTrainerProfile.balanced(index.coerceAtMost(5), difficulty),
             )
-            assertEquals(index + 1, result.depthCompleted)
+            assertEquals(difficulty.lookaheadPlies, result.depthCompleted)
             assertFalse(result.truncated)
             assertTrue(result.nodesVisited > 0)
         }
     }
 
     @Test
-    fun `double difficulty depth also means complete turns from one through four`() {
+    fun `double difficulty depth also means configured complete turns`() {
         val allyPartnerId = UUID.fromString("00000000-0000-0000-0000-000000000021")
         val opponentPartnerId = UUID.fromString("00000000-0000-0000-0000-000000000022")
         val initial = BattleStateView(
@@ -579,7 +579,7 @@ class LocalRecursiveLookaheadTest {
                 budget = tierBudget.copy(timeMillis = 10_000L),
                 moveUsageForFormat = { format -> selectedUsageFormats += format; null },
             )
-            assertEquals(index + 1, result.depthCompleted, difficulty.id)
+            assertEquals(difficulty.lookaheadPlies, result.depthCompleted, difficulty.id)
             assertFalse(result.truncated, difficulty.id)
             assertFalse(result.publicResponseIncomplete, difficulty.id)
             assertTrue(result.nodesVisited > 0, difficulty.id)
@@ -1388,7 +1388,7 @@ class LocalRecursiveLookaheadTest {
             BattleTrainerProfile.boss(),
         )
 
-        assertEquals(4, result.depthCompleted)
+        assertEquals(3, result.depthCompleted)
         assertEquals(0, result.branchesPruned)
         assertFalse(result.truncated)
     }
@@ -1659,7 +1659,7 @@ class LocalRecursiveLookaheadTest {
     }
 
     @Test
-    fun `stable production decision stops a boss search after three completed turns`() {
+    fun `boss completes its configured three turns before a fourth-depth stability check`() {
         val ownMove = move("own", 0, power = 20.0)
         val state = state(
             ally = pokemon(ALLY_ID, BattleSide.ALLY, 0, 1.0, speed = 100),
@@ -1690,7 +1690,7 @@ class LocalRecursiveLookaheadTest {
 
         assertEquals(3, result.depthCompleted)
         assertFalse(result.truncated)
-        assertEquals(LocalLookaheadTerminationReason.STABLE_DECISION, result.terminationReason)
+        assertEquals(LocalLookaheadTerminationReason.COMPLETED, result.terminationReason)
     }
 
     @Test

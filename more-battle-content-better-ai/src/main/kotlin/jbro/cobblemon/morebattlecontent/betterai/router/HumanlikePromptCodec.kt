@@ -407,10 +407,10 @@ internal object HumanlikePromptCodec {
             " Difficulty contract: STANDARD. Compare two complete turns over every supplied public action pair and " +
                 "use the supplied strategy. Avoid speculative mind games."
         BattleTrainerTier.ADVANCED ->
-            " Difficulty contract: ADVANCED. Compare three complete turns over every supplied public action pair, " +
+            " Difficulty contract: ADVANCED. Compare two complete turns over every supplied public action pair, " +
                 "maintain a short plan, and use calibrated predictions only when public evidence supports them."
         BattleTrainerTier.BOSS ->
-            " Difficulty contract: BOSS. Play as a champion. Compare four complete turns over every supplied public " +
+            " Difficulty contract: BOSS. Play as a champion. Compare three complete turns over every supplied public " +
                 "action pair, protect win conditions, use the complete strategy brief, and exploit every fair public " +
                 "inference within the supplied hypothesis budget."
     }
@@ -454,7 +454,7 @@ internal object HumanlikePromptCodec {
     private const val MAXIMUM_CONSECUTIVE_MISSES = 2
     private const val CALIBRATION_SAMPLE_FLOOR = 4
     private const val MINIMUM_CALIBRATED_HIT_RATE = 0.55
-    private const val EFFECTIVE_PROMPT_VERSION = "brain-choice-v23"
+    private const val EFFECTIVE_PROMPT_VERSION = "brain-choice-v24"
     private const val VOLATILE_DOCTRINE = """ `knownVolatileEffectIds` lists publicly observed currently active Pokemon effects, initially Substitute only. An empty list does not establish complete volatile knowledge. Substitute HP is unknown; no exact durability is supplied. Current presence does not imply it will persist until the selected action: an earlier opposing hit may break it and allow same-turn recreation. Ordinary switching clears Substitute; an explicitly observed Baton Pass or Shed Tail can transfer it."""
     private const val RECENT_EVENT_TURNS = 3
     private const val ACTION_CONSTRAINT_DOCTRINE = """ Each board Pokemon's `actionConstraints` is a current public fact: `taunted` removes status moves, `encoreMoveId` locks the move, `trapped` removes voluntary switches, and `mustRecharge` forces the recharge turn."""

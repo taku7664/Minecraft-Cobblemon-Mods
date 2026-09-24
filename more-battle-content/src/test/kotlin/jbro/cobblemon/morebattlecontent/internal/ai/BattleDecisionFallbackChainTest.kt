@@ -8,6 +8,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrain
@@ -20,6 +21,8 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleFieldStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentMoveInferenceView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -115,6 +118,42 @@ class BattleDecisionFallbackChainTest {
             listOf(BattleDecisionFailure(BattleDecisionStage.PRIMARY, BattleDecisionFailureReason.UNKNOWN_ACTION)),
             result.failures,
         )
+    }
+
+    @Test
+    fun `primary keeps public context while local receives normalized inference slots`() {
+        val now = 1_000L
+        val publicContext = context(now + 5_000L)
+        val localContext = BattleDecisionContext(
+            requestId = publicContext.requestId,
+            state = publicContext.state,
+            candidates = publicContext.candidates,
+            deadlineEpochMillis = publicContext.deadlineEpochMillis,
+            memory = publicContext.memory,
+            publicActionCatalog = BattlePublicActionCatalogView(
+                emptyList(),
+                opponentMoveInferences = listOf(BattleOpponentMoveInferenceView(UUID.randomUUID(), emptyList())),
+            ),
+        )
+        val primarySeen = AtomicReference<BattleDecisionContext>()
+        val localSeen = AtomicReference<BattleDecisionContext>()
+
+        val result = chain(now).decide(
+            primary = endpointWithContext { seen ->
+                primarySeen.set(seen)
+                CompletableFuture.completedFuture(decision(seen, "invented"))
+            },
+            local = endpointWithContext { seen ->
+                localSeen.set(seen)
+                CompletableFuture.completedFuture(decision(seen, "move:0"))
+            },
+            context = publicContext,
+            localContext = localContext,
+        ).toCompletableFuture().get(1, TimeUnit.SECONDS)
+
+        assertEquals(BattleDecisionSource.LOCAL_BRAIN, result.source)
+        assertTrue(primarySeen.get().publicActionCatalog.opponentMoveInferences.isEmpty())
+        assertEquals(1, localSeen.get().publicActionCatalog.opponentMoveInferences.size)
     }
 
     @Test
@@ -422,6 +461,21 @@ class BattleDecisionFallbackChainTest {
 
     private fun endpoint(decide: () -> CompletionStage<BattleDecision>) = BattleBrainEndpoint(
         brain = brain(decide),
+        session = Session,
+    )
+
+    private fun endpointWithContext(
+        decide: (BattleDecisionContext) -> CompletionStage<BattleDecision>,
+    ) = BattleBrainEndpoint(
+        brain = object : BattleBrain {
+            override fun openSession(context: BattleBrainOpenContext): BattleBrainSession = Session
+            override fun decide(
+                session: BattleBrainSession,
+                context: BattleDecisionContext,
+            ): CompletionStage<BattleDecision> = decide(context)
+
+            override fun closeSession(session: BattleBrainSession, result: BattleBrainCloseResult) = Unit
+        },
         session = Session,
     )
 

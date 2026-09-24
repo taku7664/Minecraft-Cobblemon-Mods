@@ -57,9 +57,8 @@ internal data class LocalLookaheadEvaluation(
  * Full-turn, public-information minimax for single and double battles.
  *
  * One depth consumes every action submitted by both trainers for that turn. The local side
- * maximizes the resulting public board value and the opponent minimizes it. Hidden opponent moves
- * retain unresolved public-response reserve branches. Experimental learnset hypotheses add explicitly
- * assumed responses without treating them as observations or increasing revealed-information coverage.
+ * maximizes the resulting board value and the opponent minimizes it. Guessed opponent slots remain
+ * unresolved reserve branches, while concrete expected and confirmed slots become explicit responses.
  */
 internal object LocalRecursiveLookaheadEvaluator {
     fun evaluate(
@@ -456,12 +455,13 @@ internal object LocalRecursiveLookaheadEvaluator {
                     turnStartValue = turnStartValue,
                 )?.let { value -> responseValues += OpponentTurnValue(opponentAction, value) }
             }
-            return aggregateOpponentResponses(responseValues, state, ownAction)?.let { aggregate ->
+            val calibratedResponses = calibrateExpectedResponses(responseValues)
+            return aggregateOpponentResponses(calibratedResponses, state, ownAction)?.let { aggregate ->
                 // A risky action may still remain the best-ranked fallback, but it must not enter the
                 // exploratory pool merely because some other public response lets it execute.
-                val executionProbability = responseValues.minOfOrNull { it.value.ownExecutionProbability }
+                val executionProbability = calibratedResponses.minOfOrNull { it.value.ownExecutionProbability }
                     ?: aggregate.ownExecutionProbability
-                val worstResponseRemainingHp = responseValues.minOfOrNull { it.value.ownRemainingHpFraction }
+                val worstResponseRemainingHp = calibratedResponses.minOfOrNull { it.value.ownRemainingHpFraction }
                     ?: aggregate.ownRemainingHpFraction
                 RootActionEvaluation(aggregate.value, executionProbability, worstResponseRemainingHp)
             }
@@ -503,7 +503,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     )
                         ?.let { value -> responseValues += OpponentTurnValue(opponentAction, value) }
                 }
-                aggregateOpponentResponses(responseValues, state, ownAction)?.let { responseValue ->
+                aggregateOpponentResponses(calibrateExpectedResponses(responseValues), state, ownAction)?.let { responseValue ->
                     best = maxOf(best, responseValue.value)
                 }
             }
@@ -775,6 +775,21 @@ internal object LocalRecursiveLookaheadEvaluator {
             )
         }
 
+        private fun calibrateExpectedResponses(
+            values: List<OpponentTurnValue>,
+        ): List<OpponentTurnValue> {
+            val baseline = LocalExpectedMoveResponseConfidence.noResponseBaseline(
+                values,
+                UNKNOWN_RESPONSE_RESERVE,
+            ) ?: return values
+            return LocalExpectedMoveResponseConfidence.adjust(
+                values,
+                noResponseBaseline = baseline,
+                confidence = tuning.expectedMoveResponseConfidence,
+                bestTieTolerance = tuning.expectedMoveBestTieTolerance,
+            )
+        }
+
         private fun stateUtility(state: BattleStateView, history: RecursiveActionHistory): Double {
             val key = LocalBranchMoveInputs.key(fingerprint(state), history)
             stateUtilityMemo[key]?.let { return it }
@@ -838,9 +853,16 @@ internal object LocalRecursiveLookaheadEvaluator {
             if (incompleteIds.isNotEmpty()) {
                 publicResponseIncomplete = true
                 val revealedCoverage = incompleteIds.fold(1.0) { coverage, pokemonId ->
-                    val revealedMoveCount = currentCatalog.forPokemon(pokemonId).size
-                    val revealedFraction = (revealedMoveCount.toDouble() / STANDARD_MOVE_SLOTS).coerceIn(0.0, 1.0)
-                    coverage * confidence(revealedFraction)
+                    val inference = currentCatalog.inferredMovesForPokemon(pokemonId)
+                    val concreteCoverage = inference?.slots?.sumOf { slot ->
+                        when (slot.knowledge) {
+                            BattleOpponentMoveKnowledge.CONFIRMED -> 1.0
+                            BattleOpponentMoveKnowledge.EXPECTED -> tuning.expectedMoveResponseConfidence
+                            BattleOpponentMoveKnowledge.GUESS -> 0.0
+                        }
+                    } ?: currentCatalog.forPokemon(pokemonId).size.toDouble()
+                    val knownFraction = (concreteCoverage / STANDARD_MOVE_SLOTS).coerceIn(0.0, 1.0)
+                    coverage * confidence(knownFraction)
                 }
                 publicResponseCoverage = minOf(publicResponseCoverage, revealedCoverage)
             }

@@ -91,7 +91,14 @@ internal class Cobblemon173PublicBattleObserver(
                 val pressureLoss = if (observation.ppLockedContinuation) 0 else pressureLoss(actor, observation)
                 if (pressureLoss > 0) observePpLoss(actor.battlePokemonId,
                     observation.ppCallerMoveId ?: observation.moveId, pressureLoss)
-                pokemon[actor.battlePokemonId] = actor.withKnownMove(observation.moveId)
+                // A called move is public action evidence, but it is not evidence that the move
+                // occupies this Pokemon's set. Sleep Talk, Metronome, Copycat and similar callers
+                // spend the caller's PP and must not permanently confirm the invoked move slot.
+                pokemon[actor.battlePokemonId] = if (observation.ppCallerMoveId == null) {
+                    actor.withKnownMove(observation.moveId)
+                } else {
+                    actor
+                }
                 val actionSequence = appendEvent(
                     turn = observation.turn,
                     kind = BattleObservedEventKind.ACTION_ORDER,

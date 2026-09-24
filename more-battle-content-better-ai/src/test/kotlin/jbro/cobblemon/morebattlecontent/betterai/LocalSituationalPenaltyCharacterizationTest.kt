@@ -82,7 +82,7 @@ class LocalSituationalPenaltyCharacterizationTest {
         penalty: (BattleActionCandidate, BattleDecisionContext) -> Double,
     ): Boolean {
         // Memoized because the ranking does not depend on which penalty is being examined, while
-        // producing it runs a full Boss search - four plies with a 1500ms ceiling. Recomputing it per
+        // producing it runs a full Boss search with a 1500ms ceiling. Recomputing it per
         // penalty made this one test 360 searches and roughly nine minutes, over a third of the whole
         // suite, for a report that nine calls could produce.
         val breakdown = breakdownCache.getOrPut(context) {

@@ -16,12 +16,12 @@ Run from the repository root:
 
 The JAR is written to `more-battle-content-better-ai/build/libs`.
 
-## Design drafts
+## Design contract
 
 - [Difficulty-scaled opponent move inference](docs/DIFFICULTY_MOVE_INFERENCE_PROPOSAL.md)
-  records the non-normative proposal for `name-group-GUESS/EXPECTED/CONFIRMED`
-  slots and `1/2/2/3` maximum lookahead. It is not implemented and intentionally
-  does not replace the current fair-information or move-usage behavior below.
+  defines the implemented `name-group-GUESS/EXPECTED/CONFIRMED` slots and
+  `1/2/2/3` maximum lookahead. The primary/Router path remains public-only; a dedicated
+  normalizer supplies only the tier-approved slots to the local Brain.
 
 ## Opponent move usage snapshots
 
@@ -33,14 +33,15 @@ battles). `BattleFormat.SINGLE` can only select the BSS table and
 fetch the network. Each snapshot records its source URL and raw SHA-256 and fails
 closed to the existing unknown-response branch if its resource is missing or invalid.
 
-The values are marginal probabilities that a species carried each move. They are
-used only to admit and order at most three unrevealed-move branches. They are not
+The values are marginal probabilities that a species carried each move. They remain
+as a compatibility fallback for contexts that do not yet supply normalized slots; live local
+trainer battles use the difficulty-slot contract instead. They are not
 treated as the probability that the opponent selects that move on the current
 turn, because moves coexist on four-slot sets and the public table does not expose
 their full joint distribution. The unknown-response branch remains present for
-unreported moves, custom species and stale-season mismatch. A
+guessed slots, custom species and incomplete learnsets. A
 low-usage damaging priority response is reserved before remaining slots are filled
-by usage, preserving the existing priority-threat counterexample.
+by usage on the compatibility path.
 
 Regenerate the committed singles snapshot deterministically from its two pinned
 sources (chaos JSON plus the independently rendered moveset table):
@@ -897,7 +898,7 @@ adapter supplies the same field, and the own-team assembler merges the public
 observation into private-own facts without accessing hidden opponent state.
 
 Local state copies preserve the field, ordinary switch/faint projections clear it,
-and the state fingerprint distinguishes it. Router prompt `brain-choice-v23`
+and the state fingerprint distinguishes it. Router prompt `brain-choice-v24`
 receives the same public fact with the same-turn recreation limitation, not a
 local recommendation. This is state plumbing, not a substitute damage simulator:
 durability, absorption, projected transfer and conditional action evaluation are

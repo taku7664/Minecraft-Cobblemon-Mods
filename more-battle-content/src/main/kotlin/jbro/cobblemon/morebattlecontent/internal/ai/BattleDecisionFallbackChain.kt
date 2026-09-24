@@ -292,12 +292,13 @@ internal class BattleDecisionFallbackChain(
         primary: BattleBrainEndpoint?,
         local: BattleBrainEndpoint?,
         context: BattleDecisionContext,
+        localContext: BattleDecisionContext = context,
     ): CompletionStage<BattleDecisionResolution> {
         if (primary == null && local == null) {
             return CompletableFuture.completedFuture(BattleDecisionResolution.baselineRequired(emptyList()))
         }
         val primaryAttempt = primary?.let { coordinator.decide(it, context).toCompletableFuture() }
-        val localAttempt = local?.let { coordinator.decide(it, context).toCompletableFuture() }
+        val localAttempt = local?.let { coordinator.decide(it, localContext).toCompletableFuture() }
 
         if (primaryAttempt == null) {
             val resolution = localAttempt!!.thenApply { attempt ->

@@ -82,7 +82,7 @@ internal object PublicFutureActionFactory {
         // Generated candidates have passed known PP/entry constraints, not all success conditions.
         // Group only by declared requirements: missing metadata is not proof of unconditional success.
         val priorityCandidates = ordered.asSequence().filter {
-            "hypothetical_public_move" in it.tags && it.kind == BattleActionKind.USE_MOVE &&
+            it.isInferredMove() && it.kind == BattleActionKind.USE_MOVE &&
                 it.moveDetails?.let { details -> LocalPublicTurnOrder.effectivePriority(state, side, it) > 0 &&
                     details.damageCategory != BattleMoveDamageCategory.STATUS } == true
         }
@@ -96,7 +96,7 @@ internal object PublicFutureActionFactory {
         val selectedHypotheses = linkedSetOf<String>()
         priorityResponses.forEach { action -> action.moveId?.let { selectedHypotheses.add(canonicalId(it)) } }
         if (moveUsage != null) {
-            ordered.asSequence().filter { "hypothetical_public_move" in it.tags }
+            ordered.asSequence().filter { it.isInferredMove() }
                 .distinctBy { canonicalId(requireNotNull(it.moveId)) }
                 .sortedWith(compareByDescending<BattleActionCandidate> {
                     moveUsage.rate(actor.speciesId, actor.formId, requireNotNull(it.moveId)) ?: -1.0
@@ -111,7 +111,7 @@ internal object PublicFutureActionFactory {
         val ranked = ordered.filter { action ->
             // A search-cost cap, not a claim that omitted moves are impossible. Keep every target
             // variant of a selected move; known moves, switches and unknown responses do not count.
-            if ("hypothetical_public_move" !in action.tags) true
+            if (!action.isInferredMove()) true
             else {
                 val move = canonicalId(requireNotNull(action.moveId))
                 move in selectedHypotheses ||
@@ -225,13 +225,12 @@ internal object PublicFutureActionFactory {
             (history.tauntTurnsByPokemon[active.battlePokemonId] ?: 0) > 0
         val currentCatalog = catalog.afterSwitch(history.restoredOriginalPokemonIds)
         val knownOptions = currentCatalog.forPokemon(active.battlePokemonId).map {
-            FutureMoveOption(it.moveId, it.details, false)
+            FutureMoveOption(it.moveId, it.details)
         }
-        val hypotheses = if (includeMoveHypotheses) (moveUsage?.let {
-            LocalOpponentMoveHypotheses.usageRankedOptions(active, currentCatalog, history, it)
-        } ?: LocalOpponentMoveHypotheses.options(active, currentCatalog, history))
+        val hypotheses = if (includeMoveHypotheses) LocalOpponentMoveHypotheses
+            .inferredOptions(active, currentCatalog, history, moveUsage)
             .filterKeys { move -> knownOptions.none { canonicalId(it.moveId) == canonicalId(move) } }
-            .map { (move, details) -> FutureMoveOption(move, details, true) } else emptyList()
+            .map { (move, option) -> FutureMoveOption(move, option.details, option.knowledge) } else emptyList()
         val moves = (knownOptions + hypotheses).flatMapIndexed { index, option ->
             val used = history.moveUses[RecursiveMoveUseKey(active.battlePokemonId, option.moveId)] ?: 0
             val remainingPp = (option.details.currentPp - used).coerceAtLeast(0)
@@ -255,8 +254,18 @@ internal object PublicFutureActionFactory {
                     moveId = option.moveId,
                     targets = targets,
                     moveDetails = option.details.copy(currentPp = remainingPp),
-                    tags = if (option.hypothetical) setOf("public_lookahead", "hypothetical_public_move")
-                        else setOf("public_lookahead"),
+                    tags = option.inferenceKnowledge?.let { knowledge ->
+                        setOf(
+                            "public_lookahead",
+                            "inferred_opponent_move",
+                            "hypothetical_public_move",
+                            when (knowledge) {
+                                BattleOpponentMoveKnowledge.EXPECTED -> "expected_opponent_move"
+                                BattleOpponentMoveKnowledge.CONFIRMED -> "confirmed_opponent_move"
+                                BattleOpponentMoveKnowledge.GUESS -> error("A guessed slot cannot become an action")
+                            },
+                        )
+                    } ?: setOf("public_lookahead"),
                 )
             }
         }
@@ -285,7 +294,13 @@ internal object PublicFutureActionFactory {
         return moves + unknown + switches
     }
 
-    private data class FutureMoveOption(val moveId: String, val details: BattleMoveCandidateView, val hypothetical: Boolean)
+    private data class FutureMoveOption(
+        val moveId: String,
+        val details: BattleMoveCandidateView,
+        val inferenceKnowledge: BattleOpponentMoveKnowledge? = null,
+    ) {
+        val hypothetical: Boolean get() = inferenceKnowledge != null
+    }
 
     private fun combine(bySlot: List<List<BattleActionCandidate>>): List<BattleActionCandidate> =
         bySlot.fold(listOf(emptyList<BattleActionCandidate>())) { combinations, slotActions ->
@@ -364,6 +379,9 @@ internal object PublicFutureActionFactory {
         .substringAfter(':')
         .lowercase()
         .filter(Char::isLetterOrDigit)
+
+    private fun BattleActionCandidate.isInferredMove(): Boolean =
+        "inferred_opponent_move" in tags || "hypothetical_public_move" in tags
 
     private val FIRST_ENTRY_ONLY_MOVES = setOf("fakeout", "firstimpression", "matblock")
 }

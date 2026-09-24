@@ -181,7 +181,7 @@ class LocalOpponentMoveHypothesesTest {
             state, BattleSide.OPPONENT, catalog, history, unknownMovePokemonIds = setOf(id),
             includeMoveHypotheses = enabled)
         assertTrue(LocalDecisionTuning.CURRENT.lookaheadMoveHypotheses)
-        assertEquals(3, LocalDecisionTuning.CURRENT.hypotheticalMoveLimitPerSlot)
+        assertEquals(4, LocalDecisionTuning.CURRENT.hypotheticalMoveLimitPerSlot)
         assertEquals(LocalHypothesisPriorityReservation.CONDITION_GROUPS,
             LocalDecisionTuning.CURRENT.hypotheticalPriorityReservation)
         assertFalse(actions(root, false).any { it.kind == BattleActionKind.USE_MOVE })
@@ -241,5 +241,31 @@ class LocalOpponentMoveHypothesesTest {
         val wrongForm = BattlePublicActionCatalogView(emptyList(), candidatePools = listOf(
             BattlePublicMoveCandidatePoolView(id, "other", null, setOf("d"), "fixture", mapOf("d" to details))))
         assertTrue(LocalOpponentMoveHypotheses.options(pokemon, wrongForm, RecursiveActionHistory()).isEmpty())
+    }
+
+    @Test
+    fun `normalized expected slots create concrete branches while guesses create none`() {
+        val ally = BattlePokemonStateView(UUID.randomUUID(), BattleSide.ALLY, 0, "target", null, 50,
+            1.0, null, emptyMap(), emptySet(), null, null, false)
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 1, listOf(ally, pokemon),
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1),
+            emptyList(), emptyList())
+        val normalized = catalog.withOpponentMoveInferences(listOf(BattleOpponentMoveInferenceView(id, listOf(
+            BattleOpponentMoveSlotView(0, "d", BattleOpponentMoveGroup.COVERAGE_ATTACK,
+                BattleOpponentMoveKnowledge.EXPECTED, BattleOpponentMoveSource.LEARNSET_EXPECTATION, details),
+            BattleOpponentMoveSlotView(1, null, BattleOpponentMoveGroup.STATUS_OTHER,
+                BattleOpponentMoveKnowledge.GUESS, BattleOpponentMoveSource.GROUP_GUESS),
+        ))))
+
+        val actions = PublicFutureActionFactory.actions(
+            state, BattleSide.OPPONENT, normalized,
+            unknownMovePokemonIds = setOf(id), includeMoveHypotheses = true,
+        )
+
+        val moves = actions.filter { it.kind == BattleActionKind.USE_MOVE }
+        assertEquals(listOf("d"), moves.map { it.moveId })
+        assertTrue("expected_opponent_move" in moves.single().tags)
+        assertFalse(actions.any { it.moveId == "e" })
+        assertTrue(actions.any { "unknown_public_response" in it.tags })
     }
 }

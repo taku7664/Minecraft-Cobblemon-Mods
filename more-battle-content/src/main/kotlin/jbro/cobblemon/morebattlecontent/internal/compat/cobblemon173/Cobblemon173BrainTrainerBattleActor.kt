@@ -34,6 +34,7 @@ import jbro.cobblemon.morebattlecontent.internal.ai.BattleDecisionResolution
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleDecisionSource
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleTacticalMemoryLedger
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleTacticalRunMemoryStore
+import jbro.cobblemon.morebattlecontent.internal.ai.BattleOpponentMoveInferenceLedger
 import jbro.cobblemon.morebattlecontent.internal.ai.attemptBattleDecisionCompletion
 import jbro.cobblemon.morebattlecontent.internal.ai.attemptBattleDecisionSetup
 import jbro.cobblemon.morebattlecontent.internal.ai.prepareBattleDecisionFallback
@@ -74,6 +75,9 @@ internal class Cobblemon173BrainTrainerBattleActor(
     private val closeResult = AtomicReference<BattleBrainCloseResult?>()
     private val primarySession = AtomicReference<BattleBrainSession?>()
     private val localSession = AtomicReference<BattleBrainSession?>()
+    private val opponentMoveInference = BattleOpponentMoveInferenceLedger(
+        Cobblemon173ActionCandidateAdapter::publicMoveDetails,
+    )
     private val tacticalMemory by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         BattleTacticalMemoryLedger(openContext())
     }
@@ -126,25 +130,49 @@ internal class Cobblemon173BrainTrainerBattleActor(
                 }
                 tacticalMemory.observe(state)
 
+                val publicCatalog = Cobblemon173PublicActionCatalog.from(
+                    state,
+                    observationAdapter.publicPpSpent(),
+                    ownCurrentPp,
+                    transformedPokemon = observationAdapter.transformedPokemon(),
+                    originalMoveIds = observationAdapter.originalMoveIds(this),
+                    originalPpSpent = observationAdapter.originalPpSpent(),
+                )
                 val context = BattleDecisionContext(
                     requestId = UUID.randomUUID(),
                     state = state,
                     candidates = preparation.candidates,
                     deadlineEpochMillis = safeDeadline(System.currentTimeMillis()),
                     memory = tacticalMemory.view(state.turn),
-                    publicActionCatalog = Cobblemon173PublicActionCatalog.from(
-                        state,
-                        observationAdapter.publicPpSpent(),
-                        ownCurrentPp,
-                        transformedPokemon = observationAdapter.transformedPokemon(),
-                        originalMoveIds = observationAdapter.originalMoveIds(this),
-                        originalPpSpent = observationAdapter.originalPpSpent(),
-                    ),
+                    publicActionCatalog = publicCatalog,
                 )
+                // The primary Brain retains the public-only context. Only the local fallback receives
+                // the already-normalized tier budget; the full live moveset never enters either context.
+                val localContext = if (localBrain == null) {
+                    context
+                } else {
+                    BattleDecisionContext(
+                        requestId = context.requestId,
+                        state = context.state,
+                        candidates = context.candidates,
+                        deadlineEpochMillis = context.deadlineEpochMillis,
+                        memory = context.memory,
+                        publicActionCatalog = publicCatalog.withOpponentMoveInferences(
+                            opponentMoveInference.update(
+                                state,
+                                publicCatalog,
+                                trainerProfile.difficulty.tier,
+                                actualOpponentMoveIds(),
+                                observationAdapter.transformedPokemon(),
+                            ),
+                        ),
+                    )
+                }
                 val decision = fallbackChain.decide(
                     endpoint(primaryBrain, primarySession),
                     endpoint(localBrain, localSession),
                     context,
+                    localContext,
                 ).toCompletableFuture()
                 pendingDecision.set(decision)
                 if (closeResult.get() != null && pendingDecision.compareAndSet(decision, null)) {
@@ -435,6 +463,12 @@ internal class Cobblemon173BrainTrainerBattleActor(
             Long.MAX_VALUE
         } else {
             now + BattleBrainDefaults.DECISION_TIMEOUT_MILLIS
+        }
+
+    /** Read once at the normalization boundary; callers receive only the tier-approved slots. */
+    private fun actualOpponentMoveIds(): Map<UUID, Set<String>> =
+        compatibilityCallOrNull { battle.getActor(opponentActorId) }?.pokemonList.orEmpty().associate { pokemon ->
+            pokemon.uuid to pokemon.moveSet.getMoves().mapTo(linkedSetOf()) { move -> move.name }
         }
 
     private fun logFailure(operation: String, throwable: Throwable) {

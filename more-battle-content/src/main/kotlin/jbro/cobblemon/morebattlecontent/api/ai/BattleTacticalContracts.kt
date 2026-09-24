@@ -15,12 +15,8 @@ data class BattleDifficultyProfile(
     /**
      * How many competing readings of one opposing Pokemon a brain may carry.
      *
-     * Router-side only, and deliberately so. It is sent in the prompt digest and the doctrine holds
-     * the model to "inference within the supplied hypothesis budget", which is a real constraint on
-     * a brain that reasons in prose. The local brain has nothing to bind it to: it does not enumerate
-     * readings of an opponent at all, it represents everything unrevealed as a single reserve branch
-     * and prices it. A sweep of 3, 10 and 16 against each other returned 29-29 three times over -
-     * not a close result, the same battle replayed.
+     * Router-side prose-hypothesis budget. The local brain uses the separate normalized four-slot
+     * inference contract; changing this value must not silently widen that contract.
      *
      * Left in place rather than removed, because the Router contract is the reason it exists. Do not
      * sweep it as a local difficulty lever again; there is no local code path for it to travel.
@@ -134,8 +130,7 @@ object BattleDifficultyProfiles {
         maximumHypothesesPerPokemon = 6,
         lookaheadPlies = 2,
         doubleCandidateLimitPerSlot = 5,
-        // Same depth as Introductory, so the difference between the two tiers is purely how much of
-        // that foresight is acted on.
+        // Two complete turns, paired with the standard tier's public-learnset slot policy.
         foresightWeight = 0.60,
         decisionRegretBand = 4.0,
         decisionShortlistWidth = 1.6,
@@ -146,7 +141,7 @@ object BattleDifficultyProfiles {
         id = "cobblemon_more_battle_content:advanced",
         tier = BattleTrainerTier.ADVANCED,
         maximumHypothesesPerPokemon = 10,
-        lookaheadPlies = 3,
+        lookaheadPlies = 2,
         doubleCandidateLimitPerSlot = 8,
         foresightWeight = 0.85,
         decisionRegretBand = 2.0,
@@ -158,9 +153,9 @@ object BattleDifficultyProfiles {
         id = "cobblemon_more_battle_content:boss",
         tier = BattleTrainerTier.BOSS,
         maximumHypothesesPerPokemon = 16,
-        lookaheadPlies = 4,
+        lookaheadPlies = 3,
         doubleCandidateLimitPerSlot = 12,
-        // Acts on everything it finds. Boss behaviour is unchanged by this lever.
+        // Acts on everything found within the boss tier's three-turn and normalized-slot budget.
         foresightWeight = 1.0,
         // The shipped band exactly. Boss is the tier that never plays a move outside what the
         // evaluation calls a genuinely close alternative, and that is now what makes it a Boss.

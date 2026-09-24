@@ -6,10 +6,27 @@ import jbro.cobblemon.morebattlecontent.api.ai.*
 
 /** Lazy moveset hypotheses. Usage is a move-presence prior, never a turn-choice distribution. */
 internal object LocalOpponentMoveHypotheses {
+    data class InferredOption(
+        val details: BattleMoveCandidateView,
+        val knowledge: BattleOpponentMoveKnowledge,
+    )
+
     /** Templates retain source PP; the action factory deducts branch uses exactly once. */
     fun options(pokemon: BattlePokemonStateView, catalog: BattlePublicActionCatalogView,
                 history: RecursiveActionHistory): Map<String, BattleMoveCandidateView> {
         if (pokemon.side != BattleSide.OPPONENT || pokemon.fainted) return emptyMap()
+        catalog.inferredMovesForPokemon(pokemon.battlePokemonId)?.let { inference ->
+            return inference.slots.asSequence()
+                .filter { it.knowledge != BattleOpponentMoveKnowledge.GUESS }
+                .mapNotNull { slot -> slot.moveId?.let { move -> slot.details?.let { move to it } } }
+                .filter { (move, details) ->
+                    val used = history.moveUses.entries.filter {
+                        it.key.pokemonId == pokemon.battlePokemonId && canonical(it.key.moveId) == canonical(move)
+                    }.sumOf { it.value }
+                    details.currentPp > used || history.chargingMoveByPokemon[pokemon.battlePokemonId] == move
+                }
+                .associateTo(linkedMapOf()) { it }
+        }
         if (catalog.isMoveSetComplete(pokemon.battlePokemonId)) return emptyMap()
         val pool = catalog.candidatePools.singleOrNull { it.battlePokemonId == pokemon.battlePokemonId }
             ?.takeIf { it.speciesId == pokemon.speciesId && it.formId == pokemon.formId } ?: return emptyMap()
@@ -38,12 +55,36 @@ internal object LocalOpponentMoveHypotheses {
         .thenBy { canonical(it.first) })
         .associateTo(linkedMapOf()) { (move, details) -> move to details }
 
+    /** Normalized slots are already ranked. Usage remains only as a compatibility fallback. */
+    fun inferredOptions(
+        pokemon: BattlePokemonStateView,
+        catalog: BattlePublicActionCatalogView,
+        history: RecursiveActionHistory,
+        usage: LocalMoveUsageLookup?,
+    ): Map<String, InferredOption> {
+        val inference = catalog.inferredMovesForPokemon(pokemon.battlePokemonId)
+        if (inference != null) {
+            val available = options(pokemon, catalog, history)
+            return inference.slots.asSequence().mapNotNull { slot ->
+                val id = slot.moveId ?: return@mapNotNull null
+                available.entries.singleOrNull { canonical(it.key) == canonical(id) }?.let { entry ->
+                    entry.key to InferredOption(entry.value, slot.knowledge)
+                }
+            }.associateTo(linkedMapOf()) { it }
+        }
+        val legacy = usage?.let { usageRankedOptions(pokemon, catalog, history, it) }
+            ?: options(pokemon, catalog, history)
+        return legacy.mapValuesTo(linkedMapOf()) { (_, details) ->
+            InferredOption(details, BattleOpponentMoveKnowledge.EXPECTED)
+        }
+    }
+
     fun assumeAction(state: BattleStateView, catalog: BattlePublicActionCatalogView,
                      history: RecursiveActionHistory, action: BattleActionCandidate): RecursiveActionHistory {
         if (action.kind == BattleActionKind.COMPOSITE) return action.componentActions.fold(history) { branch, component ->
             assumeAction(state, catalog, branch, component)
         }
-        if ("hypothetical_public_move" !in action.tags) return history
+        if ("hypothetical_public_move" !in action.tags && "inferred_opponent_move" !in action.tags) return history
         require(action.kind == BattleActionKind.USE_MOVE)
         val actor = state.pokemon.single { it.side == BattleSide.OPPONENT && it.activeSlot == action.actorSlot }
         return assume(actor, catalog, history, requireNotNull(action.moveId))

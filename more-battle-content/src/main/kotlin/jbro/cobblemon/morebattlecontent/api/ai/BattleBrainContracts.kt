@@ -518,9 +518,13 @@ class BattlePublicActionCatalogView @JvmOverloads constructor(
     entries: List<BattlePokemonActionCatalogView>,
     originalEntries: List<BattlePokemonActionCatalogView> = emptyList(),
     candidatePools: List<BattlePublicMoveCandidatePoolView> = emptyList(),
+    opponentMoveInferences: List<BattleOpponentMoveInferenceView> = emptyList(),
 ) {
     /** Unconfirmed public learnset candidates, deliberately separate from known action templates. */
     val candidatePools: List<BattlePublicMoveCandidatePoolView> = Collections.unmodifiableList(ArrayList(candidatePools))
+    /** Tier-normalized slots. The runtime supplies these only to the local Brain context. */
+    val opponentMoveInferences: List<BattleOpponentMoveInferenceView> =
+        Collections.unmodifiableList(ArrayList(opponentMoveInferences))
     /** Pre-Transform move pools, restored on departure; these are not currently usable moves. */
     val originalEntries: List<BattlePokemonActionCatalogView> = Collections.unmodifiableList(ArrayList(originalEntries))
     val entries: List<BattlePokemonActionCatalogView> = Collections.unmodifiableList(ArrayList(entries))
@@ -532,6 +536,10 @@ class BattlePublicActionCatalogView @JvmOverloads constructor(
         require(this.candidatePools.map { it.battlePokemonId }.distinct().size == this.candidatePools.size) {
             "Public candidate pools cannot contain duplicate Pokemon identities"
         }
+        require(this.opponentMoveInferences.map { it.battlePokemonId }.distinct().size ==
+            this.opponentMoveInferences.size) {
+            "Opponent move inference entries cannot contain duplicate Pokemon identities"
+        }
         require(this.originalEntries.map { it.battlePokemonId }.distinct().size == this.originalEntries.size) {
             "Original action catalog cannot contain duplicate Pokemon identities"
         }
@@ -542,6 +550,12 @@ class BattlePublicActionCatalogView @JvmOverloads constructor(
 
     fun forPokemon(battlePokemonId: UUID): List<BattlePublicMoveOptionView> = byPokemon[battlePokemonId].orEmpty()
 
+    fun inferredMovesForPokemon(battlePokemonId: UUID): BattleOpponentMoveInferenceView? =
+        opponentMoveInferences.singleOrNull { it.battlePokemonId == battlePokemonId }
+
+    fun withOpponentMoveInferences(inferences: List<BattleOpponentMoveInferenceView>) =
+        BattlePublicActionCatalogView(entries, originalEntries, candidatePools, inferences)
+
     /** Returns a branch-local catalog; restoring a pool never changes the source or restores twice. */
     fun afterSwitch(pokemonIds: Set<UUID>): BattlePublicActionCatalogView {
         val restored = originalEntries.filter { it.battlePokemonId in pokemonIds }
@@ -551,6 +565,7 @@ class BattlePublicActionCatalogView @JvmOverloads constructor(
             entries.filterNot { it.battlePokemonId in restoredIds } + restored,
             originalEntries.filterNot { it.battlePokemonId in restoredIds },
             candidatePools,
+            opponentMoveInferences,
         )
     }
 

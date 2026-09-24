@@ -15,8 +15,8 @@ class BattleTacticalContractTest {
             listOf(
                 BattleTrainerTier.INTRODUCTORY to Triple(3, 1, 3),
                 BattleTrainerTier.STANDARD to Triple(6, 2, 5),
-                BattleTrainerTier.ADVANCED to Triple(10, 3, 8),
-                BattleTrainerTier.BOSS to Triple(16, 4, 12),
+                BattleTrainerTier.ADVANCED to Triple(10, 2, 8),
+                BattleTrainerTier.BOSS to Triple(16, 3, 12),
             ),
             profiles.map {
                 it.tier to Triple(

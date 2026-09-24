@@ -889,9 +889,15 @@ class Cobblemon173PublicBattleObserverTest {
         assertEquals(2, observer.publicPpSpent()[actor.battlePokemonId]?.get("sleeptalk"))
         assertEquals(0, observer.publicPpSpent()[actor.battlePokemonId]?.get("tackle") ?: 0)
         assertEquals(1, observer.publicSnapshot().moveUses[actor.battlePokemonId]?.get("tackle"))
+        assertFalse(observer.publicSnapshot().pokemon.single {
+            it.battlePokemonId == actor.battlePokemonId
+        }.knownMoveIds.contains("tackle"))
         observer.observe(Cobblemon173PublicObservation.MoveUsed(2, actor, "tackle", listOf(target),
             pressureTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT))
         assertEquals(2, observer.publicPpSpent()[actor.battlePokemonId]?.get("tackle"))
+        assertTrue(observer.publicSnapshot().pokemon.single {
+            it.battlePokemonId == actor.battlePokemonId
+        }.knownMoveIds.contains("tackle"))
     }
 
     @Test

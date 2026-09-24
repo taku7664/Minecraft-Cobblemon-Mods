@@ -112,14 +112,14 @@ class LocalTierLeverSweepTest {
      * measurement that only exists at the end of a thirty-minute run is a measurement that does not
      * survive its own failure.
      *
-     * Boss searches four plies, so this is the most expensive thing in the module. Fewer definitions
+     * Boss searches three plies, so this is the most expensive thing in the module. Fewer definitions
      * than the lever arms use, and the reported error says what that costs.
      */
     @Test
     @EnabledIfSystemProperty(
         named = "betterai.sweeps",
         matches = "true",
-        disabledReason = "The Boss arms search four plies. Run with -Psweeps when the ladder is in question.",
+        disabledReason = "The Boss arms search three plies. Run with -Psweeps when the ladder is in question.",
     )
     fun `measure the shipped ladder rung by rung`() {
         println("SHIPPED LADDER  challenger is always the higher tier")
@@ -154,7 +154,7 @@ class LocalTierLeverSweepTest {
         const val FIXED_PLIES = 2
         const val DEFINITIONS = 90
 
-        /** Boss searches four plies per decision, so the ladder buys its arms at a narrower width. */
+        /** Boss searches three plies per decision, so the ladder buys its arms at a narrower width. */
         const val LADDER_DEFINITIONS = 50
         const val SEED = 20260829
 
