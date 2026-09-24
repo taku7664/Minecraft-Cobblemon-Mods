@@ -108,7 +108,7 @@ function validatePokemonOpeningState(battle, seed) {
   }
 }
 
-function pokemonFrame(pokemon) {
+function pokemonFrame(pokemon, activeSlot) {
   return {
     uuid: pokemon.uuid || '',
     species: pokemon.species.id,
@@ -126,7 +126,21 @@ function pokemonFrame(pokemon) {
       maxPp: slot.maxpp,
       disabled: !!slot.disabled,
     })),
+    activeSlot,
   };
+}
+
+function sideFrames(side) {
+  return side.pokemon.map(pokemon => {
+    const activeSlot = side.active.indexOf(pokemon);
+    return pokemonFrame(pokemon, activeSlot >= 0 ? activeSlot : null);
+  });
+}
+
+function activeFrames(side) {
+  return side.active
+    .map((pokemon, activeSlot) => pokemon ? pokemonFrame(pokemon, activeSlot) : null)
+    .filter(Boolean);
 }
 
 function frame(battle) {
@@ -135,8 +149,10 @@ function frame(battle) {
     turn: battle.turn,
     requestState: battle.requestState || '',
     ended: !!battle.ended,
-    p1Active: battle.p1.active.filter(Boolean).map(pokemonFrame),
-    p2Active: battle.p2.active.filter(Boolean).map(pokemonFrame),
+    p1Active: activeFrames(battle.p1),
+    p2Active: activeFrames(battle.p2),
+    p1Team: sideFrames(battle.p1),
+    p2Team: sideFrames(battle.p2),
     log: battle.log.slice(),
   };
 }

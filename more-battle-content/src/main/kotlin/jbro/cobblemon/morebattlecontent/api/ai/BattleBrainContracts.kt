@@ -628,8 +628,16 @@ class BattleActionCandidate(
                 require(targets.isEmpty() && switchPokemonId == null && mechanic == null && moveDetails == null)
             }
 
-            BattleActionKind.FORFEIT, BattleActionKind.WAIT -> {
+            BattleActionKind.FORFEIT -> {
                 require(actorSlot == null && moveSlot == null && moveId == null)
+                require(targets.isEmpty() && switchPokemonId == null)
+                require(componentActionIds.isEmpty() && componentActions.isEmpty() && mechanic == null && moveDetails == null)
+            }
+
+            BattleActionKind.WAIT -> {
+                // A whole-side wait has no actor. A pass inside a doubles joint choice must retain
+                // its active slot so native Showdown receives components in the correct order.
+                require(moveSlot == null && moveId == null)
                 require(targets.isEmpty() && switchPokemonId == null)
                 require(componentActionIds.isEmpty() && componentActions.isEmpty() && mechanic == null && moveDetails == null)
             }

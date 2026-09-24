@@ -6,6 +6,10 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption.APPEND
 import java.nio.file.StandardOpenOption.CREATE_NEW
 import java.util.zip.ZipInputStream
+import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
+import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleOpeningState
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonOpeningState
@@ -14,6 +18,7 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRuleRegistry
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRuleSource
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRulesGeneration
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownBranchEngine
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownChoiceEncoder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -21,6 +26,31 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
 class NativeShowdownBranchEngineTest {
+    @Test
+    fun `encoded double joint actions are accepted by native Showdown`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(doubleBattle())
+            val p1Actions = listOf(
+                moveAction("p1-left", 0, "tackle", BattleSide.OPPONENT, 0),
+                moveAction("p1-right", 1, "tackle", BattleSide.OPPONENT, 1),
+            )
+            val p2Actions = listOf(
+                moveAction("p2-left", 0, "splash"),
+                moveAction("p2-right", 1, "splash"),
+            )
+            val p1Choice = NativeShowdownChoiceEncoder.encode(composite(p1Actions), BattleSide.ALLY, before)
+            val p2Choice = NativeShowdownChoiceEncoder.encode(composite(p2Actions), BattleSide.OPPONENT, before)
+
+            val after = engine.branch(before.snapshotJson, p1Choice, p2Choice)
+
+            assertEquals("move 1 1, move 1 2", p1Choice)
+            assertEquals("move 1, move 1", p2Choice)
+            assertEquals(2, after.turn)
+            assertTrue(after.p2Team.any { it.hp < it.maxHp }, "Encoded target slots must reach native damage resolution")
+        }
+    }
+
     @Test
     fun `public opening state rejects history-dependent status without counters`() {
         val failure = assertThrows(IllegalArgumentException::class.java) {
@@ -233,6 +263,49 @@ class NativeShowdownBranchEngineTest {
                 uuid = "00000000-0000-0000-0000-000000000002",
             ),
         ),
+    )
+
+    private fun doubleBattle() = NativeBattleDefinition(
+        formatId = "cobblemondoubles",
+        seed = listOf(7, 11, 13, 17),
+        p1Team = listOf(
+            nativeSet("P1 Left", "Raichu", "tackle", "00000000-0000-0000-0000-000000000011"),
+            nativeSet("P1 Right", "Pikachu", "tackle", "00000000-0000-0000-0000-000000000012"),
+        ),
+        p2Team = listOf(
+            nativeSet("P2 Left", "Mew", "splash", "00000000-0000-0000-0000-000000000021"),
+            nativeSet("P2 Right", "Mew", "splash", "00000000-0000-0000-0000-000000000022"),
+        ),
+    )
+
+    private fun nativeSet(name: String, species: String, move: String, uuid: String) = NativePokemonSet(
+        name = name,
+        species = species,
+        moves = listOf(move),
+        ability = "Synchronize",
+        uuid = uuid,
+    )
+
+    private fun moveAction(
+        id: String,
+        actorSlot: Int,
+        moveId: String,
+        targetSide: BattleSide? = null,
+        targetSlot: Int = 0,
+    ) = BattleActionCandidate(
+        actionId = id,
+        kind = BattleActionKind.USE_MOVE,
+        actorSlot = actorSlot,
+        moveSlot = 0,
+        moveId = moveId,
+        targets = targetSide?.let { listOf(BattleTargetSlot(it, targetSlot)) }.orEmpty(),
+    )
+
+    private fun composite(actions: List<BattleActionCandidate>) = BattleActionCandidate(
+        actionId = actions.joinToString("+") { it.actionId },
+        kind = BattleActionKind.COMPOSITE,
+        componentActionIds = actions.map { it.actionId },
+        componentActions = actions,
     )
 
     private fun openingState(

@@ -356,6 +356,7 @@ internal object PublicFutureActionFactory {
     private fun wait(side: BattleSide, active: BattlePokemonStateView, reason: String) = BattleActionCandidate(
         actionId = "lookahead:${side.name.lowercase()}:${active.battlePokemonId}:$reason",
         kind = BattleActionKind.WAIT,
+        actorSlot = active.activeSlot,
         tags = setOf("public_lookahead", reason),
     )
 

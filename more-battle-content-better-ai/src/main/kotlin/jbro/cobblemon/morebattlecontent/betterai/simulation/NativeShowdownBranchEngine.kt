@@ -264,6 +264,8 @@ internal data class NativeBattleFrame(
     val ended: Boolean,
     val p1Active: List<NativePokemonFrame>,
     val p2Active: List<NativePokemonFrame>,
+    val p1Team: List<NativePokemonFrame>,
+    val p2Team: List<NativePokemonFrame>,
     val log: List<String>,
 )
 
@@ -279,6 +281,7 @@ internal data class NativePokemonFrame(
     val boosts: Map<String, Int>,
     val volatiles: List<String>,
     val moves: List<NativeMoveFrame>,
+    val activeSlot: Int?,
 )
 
 internal data class NativeMoveFrame(
