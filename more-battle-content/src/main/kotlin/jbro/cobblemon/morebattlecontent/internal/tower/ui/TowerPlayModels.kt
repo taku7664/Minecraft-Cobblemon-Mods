@@ -47,6 +47,7 @@ internal data class TowerPlayPartySlot(
     val level: Int,
     val battleLevel: Int,
     val legendaryClass: Boolean = false,
+    val formId: String? = null,
 ) {
     init {
         require(slot in PARTY_SLOT_RANGE) { "Party slot must be within the registered team" }
@@ -58,6 +59,7 @@ internal data class TowerPlayPartySlot(
         require(battleLevel in LEVEL_RANGE && battleLevel <= level && battleLevel <= TOWER_BATTLE_LEVEL_CAP) {
             "Battle level must be valid, no greater than the original level, and capped at $TOWER_BATTLE_LEVEL_CAP"
         }
+        require(formId == null || formId.isNotBlank()) { "Pokemon form ID cannot be blank" }
     }
 }
 

@@ -18,6 +18,7 @@ internal data class TowerPokemonRegistration(
     val heldItemId: String?,
     val level: Int,
     val legendaryClass: Boolean = false,
+    val formId: String? = null,
 ) {
     init {
         require(IdentifierSyntax.isResourceId(speciesId)) { "Invalid species ID: $speciesId" }
@@ -25,6 +26,7 @@ internal data class TowerPokemonRegistration(
             "Invalid held item ID: $heldItemId"
         }
         require(level in MIN_LEVEL..MAX_LEVEL) { "Pokemon level must be between $MIN_LEVEL and $MAX_LEVEL" }
+        require(formId == null || formId.isNotBlank()) { "Pokemon form ID cannot be blank" }
     }
 
     val battleLevel: Int

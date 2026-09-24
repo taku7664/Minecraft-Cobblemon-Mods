@@ -4,6 +4,8 @@ import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainContentIds
 import jbro.cobblemon.morebattlecontent.api.ai.BattleEncounterRole
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerTier
+import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewPokemonView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerOpponentCatalog
 import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerOpponentProfile
 import jbro.cobblemon.morebattlecontent.internal.tower.opponent.TowerOpponentRandom
@@ -188,10 +190,21 @@ class TowerPveBattleLauncherTest {
         mechanic: MajorBattleMechanic,
         progress: TowerProgress = TowerProgress.initial(TowerBattleFormat.SINGLE),
     ) = TowerBattleLaunchRequest(
-        playerId,
-        progress,
-        selection,
-        mechanic,
+        playerId = playerId,
+        progress = progress,
+        selection = selection,
+        playerTeamPreview = BattleOpponentTeamPreviewView(
+            selectionSize = progress.format.selectionSize,
+            pokemon = (1..6).map { index ->
+                BattleOpponentTeamPreviewPokemonView(
+                    previewSlotId = index - 1,
+                    speciesId = "cobblemon:species_$index",
+                    formId = null,
+                    level = 50,
+                )
+            },
+        ),
+        mechanic = mechanic,
     )
 
     private fun catalog(

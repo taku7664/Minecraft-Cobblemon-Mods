@@ -164,6 +164,8 @@ private fun RegistryFriendlyByteBuf.writePartySlot(slot: TowerPlayPartySlot) {
     writeVarInt(slot.level)
     writeVarInt(slot.battleLevel)
     writeBoolean(slot.legendaryClass)
+    writeBoolean(slot.formId != null)
+    slot.formId?.let(::writeBoundedString)
 }
 
 private fun RegistryFriendlyByteBuf.readPartySlot(): TowerPlayPartySlot = TowerPlayPartySlot(
@@ -174,6 +176,7 @@ private fun RegistryFriendlyByteBuf.readPartySlot(): TowerPlayPartySlot = TowerP
     level = readVarInt(),
     battleLevel = readVarInt(),
     legendaryClass = readBoolean(),
+    formId = if (readBoolean()) readBoundedString() else null,
 )
 
 private fun RegistryFriendlyByteBuf.writeIntent(intent: TowerPlayIntent) {

@@ -2,6 +2,8 @@ package jbro.cobblemon.morebattlecontent.internal.tower.ui
 
 import java.util.Collections
 import java.util.UUID
+import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewPokemonView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleLaunchRequest
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleLauncher
@@ -535,12 +537,13 @@ internal class TowerPlaySessionService(
             when (
                 val launch = battleLauncher.launch(
                     TowerBattleLaunchRequest(
-                        playerId,
-                        progress,
-                        selection,
-                        mechanic,
-                        state.legendaryClassAllowed,
-                        session.state.entryContextId,
+                        playerId = playerId,
+                        progress = progress,
+                        selection = selection,
+                        playerTeamPreview = state.publicTeamPreview(),
+                        mechanic = mechanic,
+                        legendaryClassAllowed = state.legendaryClassAllowed,
+                        learningScopeId = session.state.entryContextId,
                     ),
                 )
             ) {
@@ -709,6 +712,19 @@ private fun TowerPlayPartySlot.asRegistration() = TowerPokemonRegistration(
     heldItemId,
     level,
     legendaryClass,
+    formId,
+)
+
+private fun TowerPlayViewState.publicTeamPreview() = BattleOpponentTeamPreviewView(
+    selectionSize = format.selectionSize,
+    pokemon = party.sortedBy(TowerPlayPartySlot::slot).map { pokemon ->
+        BattleOpponentTeamPreviewPokemonView(
+            previewSlotId = pokemon.slot,
+            speciesId = pokemon.speciesId,
+            formId = pokemon.formId,
+            level = pokemon.battleLevel,
+        )
+    },
 )
 
 private fun List<TowerTeamRegistrationIssue>.associateIssueKeys(): Map<String, String> =

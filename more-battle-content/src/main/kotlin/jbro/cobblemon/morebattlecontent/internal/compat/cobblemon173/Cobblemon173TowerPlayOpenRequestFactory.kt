@@ -54,6 +54,7 @@ internal object Cobblemon173TowerPlayOpenRequestFactory {
                     level = registration.level,
                     battleLevel = registration.battleLevel,
                     legendaryClass = registration.legendaryClass,
+                    formId = registration.formId,
                 )
             }
         }

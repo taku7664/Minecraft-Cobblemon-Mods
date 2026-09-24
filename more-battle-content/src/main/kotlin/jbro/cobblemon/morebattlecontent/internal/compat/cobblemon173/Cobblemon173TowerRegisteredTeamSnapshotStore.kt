@@ -71,5 +71,6 @@ internal fun Pokemon.toTowerPokemonRegistration(): TowerPokemonRegistration {
         heldItemId = if (heldItem.isEmpty) null else BuiltInRegistries.ITEM.getKey(heldItem.item).toString(),
         level = level,
         legendaryClass = TowerLegendaryClassPolicy.isLegendaryClass(speciesId, species.labels),
+        formId = form.name.takeUnless { form == species.standardForm },
     )
 }

@@ -84,6 +84,7 @@ class TowerPlayPayloadsTest {
                 if (index == 6) null else "minecraft:item_$index",
                 40 + index,
                 minOf(40 + index, 50),
+                formId = if (index == 2) "wash" else null,
             )
         },
         selectedPokemonIds = selectedPokemonIds,

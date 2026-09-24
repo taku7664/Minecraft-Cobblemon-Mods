@@ -7,7 +7,6 @@ import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleTeamMaterializ
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerBattleTeamMaterializer
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerPokemonRegistration
 import jbro.cobblemon.morebattlecontent.internal.tower.TowerSelectedTeam
-import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.server.level.ServerPlayer
 
 internal object Cobblemon173TowerBattleTeamMaterializer {
@@ -20,15 +19,7 @@ internal object Cobblemon173TowerBattleTeamMaterializer {
             cloneForBattle = ::cloneForBattle,
         ).materialize(selection, Cobblemon.storage.getParty(player).toList())
 
-    private fun registration(pokemon: Pokemon): TowerPokemonRegistration {
-        val heldItem = pokemon.heldItem()
-        return TowerPokemonRegistration(
-            pokemonId = pokemon.uuid,
-            speciesId = pokemon.species.resourceIdentifier.toString(),
-            heldItemId = if (heldItem.isEmpty) null else BuiltInRegistries.ITEM.getKey(heldItem.item).toString(),
-            level = pokemon.level,
-        )
-    }
+    private fun registration(pokemon: Pokemon): TowerPokemonRegistration = pokemon.toTowerPokemonRegistration()
 
     private fun cloneForBattle(pokemon: Pokemon, battleLevel: Int): BattlePokemon {
         val battlePokemon = BattlePokemon.Companion.safeCopyOf(pokemon)

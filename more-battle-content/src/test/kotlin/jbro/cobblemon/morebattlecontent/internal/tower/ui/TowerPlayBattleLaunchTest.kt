@@ -118,6 +118,62 @@ class TowerPlayBattleLaunchTest {
         assertEquals(playerId, launches.single().playerId)
         assertEquals(TowerBattleFormat.SINGLE, launches.single().progress.format)
         assertEquals(party().take(3).map(TowerPlayPartySlot::pokemonId), launches.single().selection.members.map { it.pokemonId })
+        val publicPreview = launches.single().playerTeamPreview
+        assertEquals(3, publicPreview.selectionSize)
+        assertEquals((0..5).toList(), publicPreview.pokemon.map { it.previewSlotId })
+        assertEquals(party().map(TowerPlayPartySlot::speciesId), publicPreview.pokemon.map { it.speciesId })
+        assertEquals(party().map(TowerPlayPartySlot::battleLevel), publicPreview.pokemon.map { it.level })
+        assertEquals(party().map(TowerPlayPartySlot::formId), publicPreview.pokemon.map { it.formId })
+        assertTrue(publicPreview.pokemon.all { it.knownTypeIds.isEmpty() && it.combatStats == null })
+    }
+
+    @Test
+    fun `double start exposes six public candidates without revealing the locked four`() {
+        val launches = ArrayList<TowerBattleLaunchRequest>()
+        val service = TowerPlaySessionService(
+            entryContextIdFactory = { contextId },
+            battleLauncher = TowerBattleLauncher { request ->
+                launches += request
+                TowerBattleLaunchResult.Started(battleId)
+            },
+            registeredTeamSnapshots = TestTowerRegisteredTeamSnapshots,
+        )
+        var state = service.open(
+            playerId,
+            TowerPlayOpenRequest(
+                party = party(),
+                initialFormat = TowerBattleFormat.DOUBLE,
+                progressByFormat = TowerBattleFormat.entries.associateWith(TowerProgress::initial),
+                bpBalance = 0,
+            ),
+        )
+        state = (service.mutate(
+            playerId,
+            TowerPlayIntent.ChangeMechanic(UUID(20, 1), contextId, state.revision, MajorBattleMechanic.MEGA),
+        ) as TowerPlayMutationResult.Accepted).state
+        party().take(4).forEachIndexed { index, pokemon ->
+            state = (service.mutate(
+                playerId,
+                TowerPlayIntent.ToggleSelection(
+                    UUID(20, index.toLong() + 2),
+                    contextId,
+                    state.revision,
+                    pokemon.pokemonId,
+                ),
+            ) as TowerPlayMutationResult.Accepted).state
+        }
+        state = (service.mutate(
+            playerId,
+            TowerPlayIntent.LockTeam(UUID(20, 6), contextId, state.revision),
+        ) as TowerPlayMutationResult.Accepted).state
+
+        service.mutate(playerId, TowerPlayIntent.Start(UUID(20, 7), contextId, state.revision))
+
+        val launch = launches.single()
+        assertEquals(4, launch.selection.members.size)
+        assertEquals(4, launch.playerTeamPreview.selectionSize)
+        assertEquals(6, launch.playerTeamPreview.pokemon.size)
+        assertEquals(party().map(TowerPlayPartySlot::speciesId), launch.playerTeamPreview.pokemon.map { it.speciesId })
     }
 
     @Test
@@ -646,6 +702,7 @@ class TowerPlayBattleLaunchTest {
             heldItemId = if (index == 6) null else "minecraft:item_$index",
             level = 40 + index,
             battleLevel = minOf(40 + index, 50),
+            formId = if (index == 2) "wash" else null,
         )
     }
 }
