@@ -39,6 +39,55 @@ class BattleDecisionContractTest {
     }
 
     @Test
+    fun `opponent preview carries an immutable public move pool without a live pokemon identity`() {
+        val moveIds = linkedSetOf("moonblast", "shadowball")
+        val moveDetails = linkedMapOf(
+            "moonblast" to BattleMoveCandidateView(
+                "fairy",
+                BattleMoveDamageCategory.SPECIAL,
+                95.0,
+                100.0,
+                0,
+                24,
+            ),
+        )
+        val pool = BattleOpponentPreviewMovePoolView(
+            speciesId = "cobblemon:fluttermane",
+            formId = "normal",
+            moveIds = moveIds,
+            sourceId = "fixture:public-learnset",
+            moveDetails = moveDetails,
+        )
+        val preview = BattleOpponentTeamPreviewPokemonView(
+            previewSlotId = 0,
+            speciesId = "cobblemon:fluttermane",
+            formId = "normal",
+            level = 50,
+            knownTypeIds = setOf("ghost", "fairy"),
+            moveCandidatePool = pool,
+        )
+
+        moveIds.clear()
+        moveDetails.clear()
+
+        assertSame(pool, preview.moveCandidatePool)
+        assertEquals(setOf("moonblast", "shadowball"), pool.moveIds)
+        assertEquals(setOf("moonblast"), pool.moveDetails.keys)
+        assertNull(pool::class.java.declaredFields.singleOrNull {
+            it.name.contains("battlePokemon", ignoreCase = true)
+        })
+        assertThrows(IllegalArgumentException::class.java) {
+            BattleOpponentTeamPreviewPokemonView(
+                previewSlotId = 0,
+                speciesId = "cobblemon:mimikyu",
+                formId = "normal",
+                level = 50,
+                moveCandidatePool = pool,
+            )
+        }
+    }
+
+    @Test
     fun `opponent preview rejects invalid selection and hidden exact stats`() {
         assertThrows(IllegalArgumentException::class.java) {
             BattleOpponentTeamPreviewView(
@@ -93,6 +142,17 @@ class BattleDecisionContractTest {
         val getter = BattleOpponentTeamPreviewPokemonView::class.java.getDeclaredMethod("getPreviewSlotId")
 
         assertEquals(Int::class.javaPrimitiveType, getter.returnType)
+    }
+
+    @Test
+    fun `opponent preview retains its old Kotlin default constructor ABI`() {
+        val constructors = BattleOpponentTeamPreviewPokemonView::class.java.declaredConstructors
+
+        assertTrue(constructors.any { constructor ->
+            constructor.parameterCount == 9 &&
+                constructor.parameterTypes[7] == Int::class.javaPrimitiveType &&
+                constructor.parameterTypes[8].name == "kotlin.jvm.internal.DefaultConstructorMarker"
+        })
     }
 
     @Test

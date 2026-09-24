@@ -84,7 +84,9 @@ internal class Cobblemon173TowerPveBattleRuntime(
             trainerPersonaId = prepared.profile.profileId,
             primaryBrain = primaryBrain,
             localBrain = localBrain,
-            opponentTeamPreview = prepared.request.playerTeamPreview,
+            opponentTeamPreview = Cobblemon173PublicTeamPreviewKnowledge.enrich(
+                prepared.request.playerTeamPreview,
+            ),
             mechanicPolicy = {
                 requireNotNull(
                     Cobblemon173BattleRuleHooks.mechanicPolicy(

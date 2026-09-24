@@ -258,7 +258,7 @@ class BattleExactOwnTeamView(builds: List<BattleExactPokemonBuildView>) {
 }
 
 /** Public team-preview identity. The opaque slot id must never be a live BattlePokemon UUID. */
-class BattleOpponentTeamPreviewPokemonView(
+class BattleOpponentTeamPreviewPokemonView private constructor(
     val previewSlotId: Int,
     val speciesId: String,
     val formId: String?,
@@ -266,6 +266,8 @@ class BattleOpponentTeamPreviewPokemonView(
     knownTypeIds: Set<String> = emptySet(),
     val combatStats: BattleCombatStatRangesView? = null,
     knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
+    val moveCandidatePool: BattleOpponentPreviewMovePoolView?,
+    @Suppress("UNUSED_PARAMETER") compatibilityMarker: Unit,
 ) {
     val knownTypeIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownTypeIds))
     val knownFormStates: Map<String, BattlePokemonFormStateView> =
@@ -286,7 +288,53 @@ class BattleOpponentTeamPreviewPokemonView(
             it.combatStats.knowledge == BattleCombatStatKnowledge.EXACT_OWN ||
                 it.combatStats.hasExactComponent()
         })
+        require(moveCandidatePool == null ||
+            moveCandidatePool.speciesId == speciesId && moveCandidatePool.formId == formId) {
+            "Opponent preview move candidates must describe the same public species and form"
+        }
     }
+
+    /** Preserve the original Kotlin/JVM constructor and its default-argument bridge. */
+    constructor(
+        previewSlotId: Int,
+        speciesId: String,
+        formId: String?,
+        level: Int?,
+        knownTypeIds: Set<String> = emptySet(),
+        combatStats: BattleCombatStatRangesView? = null,
+        knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
+    ) : this(
+        previewSlotId,
+        speciesId,
+        formId,
+        level,
+        knownTypeIds,
+        combatStats,
+        knownFormStates,
+        null,
+        Unit,
+    )
+
+    constructor(
+        previewSlotId: Int,
+        speciesId: String,
+        formId: String?,
+        level: Int?,
+        knownTypeIds: Set<String> = emptySet(),
+        combatStats: BattleCombatStatRangesView? = null,
+        knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
+        moveCandidatePool: BattleOpponentPreviewMovePoolView,
+    ) : this(
+        previewSlotId,
+        speciesId,
+        formId,
+        level,
+        knownTypeIds,
+        combatStats,
+        knownFormStates,
+        moveCandidatePool,
+        Unit,
+    )
 }
 
 /** Opponent candidates shown before a private singles/doubles selection. */
