@@ -55,6 +55,17 @@ zero-Speed and combined zero-Attack/zero-Speed worlds at equal policy weight. Th
 is an explicit inference policy because the source does not publish IVs; it is not
 presented as observed usage. `nothing` is represented as a no-item hypothesis.
 
+The native initial-world assembler binds the normalized four logical move slots to
+the same opponent hypothesis as the numeric build. `EXPECTED` and `CONFIRMED`
+slots become Showdown set moves; a `GUESS` slot keeps its group and null name in
+the hypothesis fingerprint but is never fabricated into a native move. Fewer than
+four logical slots, no executable concrete move, or a missing inference fails the
+world closed. Once bound, the native definition compiler reads opponent moves from
+the world rather than a later mutable catalog, so a cache key cannot describe one
+build while executing another move assumption. This is initial-world plumbing;
+the production `LocalTacticalBrain` cutover and public-event posterior rebuild are
+still pending.
+
 Regenerate the committed singles snapshot deterministically from its two pinned
 sources (chaos JSON plus the independently rendered moveset table):
 

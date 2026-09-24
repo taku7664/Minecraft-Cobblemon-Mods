@@ -4,6 +4,7 @@ import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleExactOwnTeamView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleExactPokemonBuildView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 
 /** One complete public build assumption for an opaque team-preview slot. */
@@ -44,6 +45,9 @@ internal enum class NativeInitialWorldAssemblyIssueCode {
     EXACT_OWN_TEAM_MISMATCH,
     ROSTER_HYPOTHESIS_MISMATCH,
     OPPONENT_PREVIEW_BUILD_MISSING,
+    OPPONENT_MOVE_INFERENCE_MISSING,
+    OPPONENT_MOVESET_INCOMPLETE,
+    OPPONENT_EXECUTABLE_MOVE_MISSING,
 }
 
 internal data class NativeInitialWorldAssemblyIssue(
@@ -70,6 +74,7 @@ internal object NativeInitialBattleWorldAssembler {
         rosterHypothesis: NativeOpponentRosterHypothesis,
         exactOwnTeam: BattleExactOwnTeamView,
         opponentWorld: NativeOpponentPreviewBuildWorld,
+        catalog: BattlePublicActionCatalogView,
     ): NativeInitialBattleWorldAssembly {
         val issues = linkedSetOf<NativeInitialWorldAssemblyIssue>()
         val allyIds = roster.state.pokemon.asSequence()
@@ -98,6 +103,24 @@ internal object NativeInitialBattleWorldAssembler {
                 previewSlotId = slot,
             )
         }
+        val opponentMoveSets = linkedMapOf<UUID, NativeOpponentMoveSetHypothesis>()
+        roster.state.pokemon.asSequence().filter { it.side == BattleSide.OPPONENT }.forEach { pokemon ->
+            val slot = roster.opponentPreviewSlotByPokemonId.getValue(pokemon.battlePokemonId)
+            val compiled = NativeMoveHypothesisCompiler.compile(pokemon, catalog)
+            val complete = compiled.completeSetOrNull()
+            if (complete == null) {
+                val code = when (compiled.unavailableReason) {
+                    "normalized_inference_missing" ->
+                        NativeInitialWorldAssemblyIssueCode.OPPONENT_MOVE_INFERENCE_MISSING
+                    "normalized_inference_incomplete" ->
+                        NativeInitialWorldAssemblyIssueCode.OPPONENT_MOVESET_INCOMPLETE
+                    else -> NativeInitialWorldAssemblyIssueCode.OPPONENT_EXECUTABLE_MOVE_MISSING
+                }
+                issues += NativeInitialWorldAssemblyIssue(code, pokemon.battlePokemonId, slot)
+            } else {
+                opponentMoveSets[pokemon.battlePokemonId] = complete
+            }
+        }
         if (issues.isNotEmpty()) return NativeInitialBattleWorldAssembly(null, issues.toList())
 
         val builds = roster.state.pokemon.map { pokemon ->
@@ -105,13 +128,21 @@ internal object NativeInitialBattleWorldAssembler {
                 BattleSide.ALLY -> exactBuild(requireNotNull(exactById[pokemon.battlePokemonId]))
                 BattleSide.OPPONENT -> {
                     val slot = roster.opponentPreviewSlotByPokemonId.getValue(pokemon.battlePokemonId)
-                    publicBuild(pokemon.battlePokemonId, previewBuildBySlot.getValue(slot))
+                    publicBuild(
+                        pokemon.battlePokemonId,
+                        previewBuildBySlot.getValue(slot),
+                        opponentMoveSets.getValue(pokemon.battlePokemonId),
+                    )
                 }
             }
         }
+        val moveFingerprint = roster.opponentPreviewSlotByPokemonId.entries.sortedBy { it.value }
+            .joinToString("|") { (pokemonId, slot) ->
+                "s$slot=${opponentMoveSets.getValue(pokemonId).fingerprint}"
+            }
         return NativeInitialBattleWorldAssembly(
             world = NativeBattleWorldHypothesis(
-                hypothesisId = "${rosterHypothesis.hypothesisId}+${opponentWorld.hypothesisId}",
+                hypothesisId = "${rosterHypothesis.hypothesisId}+${opponentWorld.hypothesisId}+moves:$moveFingerprint",
                 probability = rosterHypothesis.probability * opponentWorld.probability,
                 pokemon = builds,
             ),
@@ -133,6 +164,7 @@ internal object NativeInitialBattleWorldAssembler {
     private fun publicBuild(
         battlePokemonId: UUID,
         build: NativeOpponentPreviewBuildHypothesis,
+        moveSet: NativeOpponentMoveSetHypothesis,
     ) = NativePokemonBuildHypothesis(
         battlePokemonId = battlePokemonId,
         knowledge = NativeBuildKnowledge.PUBLIC_HYPOTHESIS,
@@ -142,6 +174,7 @@ internal object NativeInitialBattleWorldAssembler {
         gender = build.gender,
         evs = build.evs,
         ivs = build.ivs,
+        opponentMoveSet = moveSet,
     )
 }
 

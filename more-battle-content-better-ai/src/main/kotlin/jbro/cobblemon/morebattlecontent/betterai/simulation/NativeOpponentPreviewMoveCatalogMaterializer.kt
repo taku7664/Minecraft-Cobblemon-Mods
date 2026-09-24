@@ -24,6 +24,7 @@ import jbro.cobblemon.morebattlecontent.betterai.state.LocalMoveUsageLookup
 internal enum class NativeOpponentPreviewMoveCatalogIssueCode {
     SELECTED_PREVIEW_SLOT_MISSING,
     PUBLIC_MOVE_POOL_MISSING,
+    NORMALIZED_MOVESET_INCOMPLETE,
     EXECUTABLE_MOVE_UNAVAILABLE,
 }
 
@@ -68,7 +69,23 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
                     )
                     return@mapNotNull null
                 }
-                sourceCatalog.inferredMovesForPokemon(pokemon.battlePokemonId)?.let { return@mapNotNull it }
+                sourceCatalog.inferredMovesForPokemon(pokemon.battlePokemonId)?.let { existing ->
+                    val compiled = NativeMoveHypothesisCompiler.compile(pokemon, sourceCatalog)
+                    when {
+                        !compiled.isCompleteSet -> issues += issue(
+                            NativeOpponentPreviewMoveCatalogIssueCode.NORMALIZED_MOVESET_INCOMPLETE,
+                            pokemon,
+                            slot,
+                        )
+                        !compiled.hasExecutableMove -> issues += issue(
+                            NativeOpponentPreviewMoveCatalogIssueCode.EXECUTABLE_MOVE_UNAVAILABLE,
+                            pokemon,
+                            slot,
+                        )
+                        else -> return@mapNotNull existing
+                    }
+                    return@mapNotNull null
+                }
                 if (previewPokemon.moveCandidatePool == null) {
                     issues += issue(
                         NativeOpponentPreviewMoveCatalogIssueCode.PUBLIC_MOVE_POOL_MISSING,

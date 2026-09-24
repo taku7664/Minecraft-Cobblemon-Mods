@@ -25,6 +25,8 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleWorldHypothesis
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBuildKnowledge
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialBattleDefinitionCompiler
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMoveHypothesisCompiler
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeOpponentMoveSetHypothesis
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeOpponentRosterHypothesis
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeOpponentRosterMaterializationIssueCode
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeOpponentRosterStateMaterializer
@@ -300,14 +302,19 @@ class NativeOpponentRosterStateMaterializerTest {
                 moveSetComplete = true,
             )),
             opponentMoveInferences = opponentIds.map { id ->
-                BattleOpponentMoveInferenceView(id, listOf(BattleOpponentMoveSlotView(
-                    slot = 0,
-                    moveId = "tackle",
-                    group = BattleOpponentMoveGroup.COVERAGE_ATTACK,
-                    knowledge = BattleOpponentMoveKnowledge.EXPECTED,
-                    source = BattleOpponentMoveSource.LEARNSET_EXPECTATION,
-                    details = MOVE_DETAILS,
-                )))
+                BattleOpponentMoveInferenceView(id, listOf(
+                    BattleOpponentMoveSlotView(
+                        slot = 0,
+                        moveId = "tackle",
+                        group = BattleOpponentMoveGroup.COVERAGE_ATTACK,
+                        knowledge = BattleOpponentMoveKnowledge.EXPECTED,
+                        source = BattleOpponentMoveSource.LEARNSET_EXPECTATION,
+                        details = MOVE_DETAILS,
+                    ),
+                    guessed(1),
+                    guessed(2),
+                    guessed(3),
+                ))
             },
         )
         val world = NativeBattleWorldHypothesis(
@@ -322,6 +329,11 @@ class NativeOpponentRosterStateMaterializerTest {
                         NativeBuildKnowledge.PUBLIC_HYPOTHESIS
                     },
                     if (pokemon.side == BattleSide.ALLY) "static" else "pressure",
+                    if (pokemon.side == BattleSide.OPPONENT) {
+                        requireNotNull(NativeMoveHypothesisCompiler.compile(pokemon, catalog).completeSetOrNull())
+                    } else {
+                        null
+                    },
                 )
             },
         )
@@ -418,6 +430,7 @@ class NativeOpponentRosterStateMaterializerTest {
         id: UUID,
         knowledge: NativeBuildKnowledge,
         ability: String,
+        opponentMoveSet: NativeOpponentMoveSetHypothesis? = null,
     ) = NativePokemonBuildHypothesis(
         battlePokemonId = id,
         knowledge = knowledge,
@@ -427,6 +440,15 @@ class NativeOpponentRosterStateMaterializerTest {
         gender = "N",
         evs = EVS,
         ivs = IVS,
+        opponentMoveSet = opponentMoveSet,
+    )
+
+    private fun guessed(slot: Int) = BattleOpponentMoveSlotView(
+        slot = slot,
+        moveId = null,
+        group = BattleOpponentMoveGroup.OTHER,
+        knowledge = BattleOpponentMoveKnowledge.GUESS,
+        source = BattleOpponentMoveSource.GROUP_GUESS,
     )
 
     private fun resolveSpecies(speciesId: String, @Suppress("UNUSED_PARAMETER") formId: String?): String =

@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai.simulation
 
+import java.util.Collections
 import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentMoveGroup
@@ -28,33 +29,31 @@ internal object NativeMoveHypothesisCompiler {
         val inference = catalog.inferredMovesForPokemon(pokemon.battlePokemonId)
             ?: return NativeMoveHypothesisCompilation(
                 battlePokemonId = pokemon.battlePokemonId,
-                concreteMoves = emptyList(),
-                unresolvedSlots = emptyList(),
+                slots = emptyList(),
                 unavailableReason = "normalized_inference_missing",
             )
-        val concrete = inference.slots.mapNotNull { slot ->
-            if (slot.knowledge == BattleOpponentMoveKnowledge.GUESS) return@mapNotNull null
-            NativeConcreteMoveHypothesis(
+        val slots = inference.slots.map { slot ->
+            NativeOpponentMoveSlotHypothesis(
                 slot = slot.slot,
-                moveId = showdownId(requireNotNull(slot.moveId)),
+                moveId = slot.moveId?.let(::showdownId),
                 group = slot.group,
                 knowledge = slot.knowledge,
                 source = slot.source,
             )
         }
+        val concrete = slots.filter { it.knowledge != BattleOpponentMoveKnowledge.GUESS }
         require(concrete.map { it.moveId }.distinct().size == concrete.size) {
             "Normalized move slots collapse to duplicate Showdown move IDs"
         }
-        val unresolved = inference.slots.mapNotNull { slot ->
-            slot.takeIf { it.knowledge == BattleOpponentMoveKnowledge.GUESS }?.let {
-                NativeUnresolvedMoveSlot(it.slot, it.group)
-            }
-        }
+        val complete = slots.size == MAX_MOVE_SLOTS && slots.map { it.slot } == (0 until MAX_MOVE_SLOTS).toList()
         return NativeMoveHypothesisCompilation(
             battlePokemonId = pokemon.battlePokemonId,
-            concreteMoves = concrete,
-            unresolvedSlots = unresolved,
-            unavailableReason = "no_concrete_moves".takeIf { concrete.isEmpty() },
+            slots = slots,
+            unavailableReason = when {
+                !complete -> "normalized_inference_incomplete"
+                concrete.isEmpty() -> "no_concrete_moves"
+                else -> null
+            },
         )
     }
 
@@ -62,25 +61,115 @@ internal object NativeMoveHypothesisCompiler {
         .lowercase(Locale.ROOT)
         .filter(Char::isLetterOrDigit)
         .also { require(it.isNotBlank()) { "Native Showdown move ID cannot be blank" } }
+
+    private const val MAX_MOVE_SLOTS = 4
 }
 
 internal data class NativeMoveHypothesisCompilation(
     val battlePokemonId: UUID,
-    val concreteMoves: List<NativeConcreteMoveHypothesis>,
-    val unresolvedSlots: List<NativeUnresolvedMoveSlot>,
+    val slots: List<NativeOpponentMoveSlotHypothesis>,
     val unavailableReason: String?,
 ) {
+    val concreteMoves: List<NativeConcreteMoveHypothesis> get() = slots.mapNotNull { slot ->
+        if (slot.knowledge == BattleOpponentMoveKnowledge.GUESS) null else NativeConcreteMoveHypothesis(
+            slot.slot,
+            requireNotNull(slot.moveId),
+            slot.group,
+            slot.knowledge,
+            slot.source,
+        )
+    }
+    val unresolvedSlots: List<NativeUnresolvedMoveSlot> get() = slots.mapNotNull { slot ->
+        if (slot.knowledge == BattleOpponentMoveKnowledge.GUESS) {
+            NativeUnresolvedMoveSlot(slot.slot, slot.group)
+        } else {
+            null
+        }
+    }
     val nativeMoveIds: List<String> get() = concreteMoves.map(NativeConcreteMoveHypothesis::moveId)
     val hasExecutableMove: Boolean get() = concreteMoves.isNotEmpty()
     val hasUnresolvedSlots: Boolean get() = unresolvedSlots.isNotEmpty()
+    val isCompleteSet: Boolean get() = slots.size == MAX_MOVE_SLOTS &&
+        slots.map(NativeOpponentMoveSlotHypothesis::slot) == (0 until MAX_MOVE_SLOTS).toList()
+
+    fun completeSetOrNull(): NativeOpponentMoveSetHypothesis? = if (unavailableReason == null) {
+        NativeOpponentMoveSetHypothesis(battlePokemonId, slots)
+    } else {
+        null
+    }
 
     init {
-        require((unavailableReason == null) == concreteMoves.isNotEmpty()) {
-            "An executable native move hypothesis must not carry an unavailable reason"
+        require(slots == slots.sortedBy(NativeOpponentMoveSlotHypothesis::slot)) {
+            "Native move hypothesis slots must be sorted"
         }
-        require((concreteMoves.map { it.slot } + unresolvedSlots.map { it.slot }).distinct().size ==
-            concreteMoves.size + unresolvedSlots.size) {
+        require((unavailableReason == null) == (isCompleteSet && hasExecutableMove)) {
+            "An available native move set must have four logical slots and an executable move"
+        }
+        require(slots.map(NativeOpponentMoveSlotHypothesis::slot).distinct().size == slots.size) {
             "Native move hypothesis slots must be unique"
+        }
+    }
+
+    private companion object {
+        const val MAX_MOVE_SLOTS = 4
+    }
+}
+
+internal class NativeOpponentMoveSetHypothesis(
+    val battlePokemonId: UUID,
+    slots: List<NativeOpponentMoveSlotHypothesis>,
+) {
+    val slots: List<NativeOpponentMoveSlotHypothesis> = Collections.unmodifiableList(slots.toList())
+    val nativeMoveIds: List<String> = Collections.unmodifiableList(
+        this.slots.mapNotNull(NativeOpponentMoveSlotHypothesis::moveId),
+    )
+    val fingerprint: String = this.slots.joinToString(",") { slot ->
+        "${slot.slot}:${slot.knowledge.name.lowercase(Locale.ROOT)}:${slot.moveId ?: "?"}:${slot.group.name.lowercase(Locale.ROOT)}"
+    }
+
+    init {
+        require(slots.size == MAX_MOVE_SLOTS)
+        require(slots.map(NativeOpponentMoveSlotHypothesis::slot) == (0 until MAX_MOVE_SLOTS).toList())
+        require(nativeMoveIds.isNotEmpty())
+        require(nativeMoveIds.distinct().size == nativeMoveIds.size)
+    }
+
+    override fun equals(other: Any?): Boolean = other is NativeOpponentMoveSetHypothesis &&
+        battlePokemonId == other.battlePokemonId && slots == other.slots
+
+    override fun hashCode(): Int = 31 * battlePokemonId.hashCode() + slots.hashCode()
+
+    override fun toString(): String =
+        "NativeOpponentMoveSetHypothesis(battlePokemonId=$battlePokemonId, slots=$slots)"
+
+    private companion object {
+        const val MAX_MOVE_SLOTS = 4
+    }
+}
+
+internal data class NativeOpponentMoveSlotHypothesis(
+    val slot: Int,
+    val moveId: String?,
+    val group: BattleOpponentMoveGroup,
+    val knowledge: BattleOpponentMoveKnowledge,
+    val source: BattleOpponentMoveSource,
+) {
+    init {
+        require(slot in 0 until 4)
+        when (knowledge) {
+            BattleOpponentMoveKnowledge.GUESS -> {
+                require(moveId == null)
+                require(source == BattleOpponentMoveSource.GROUP_GUESS)
+            }
+            BattleOpponentMoveKnowledge.EXPECTED -> {
+                require(!moveId.isNullOrBlank())
+                require(source == BattleOpponentMoveSource.LEARNSET_EXPECTATION)
+            }
+            BattleOpponentMoveKnowledge.CONFIRMED -> {
+                require(!moveId.isNullOrBlank())
+                require(source == BattleOpponentMoveSource.PUBLIC_REVEAL ||
+                    source == BattleOpponentMoveSource.DIFFICULTY_SET_READ)
+            }
         }
     }
 }

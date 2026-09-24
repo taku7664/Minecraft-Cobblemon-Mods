@@ -32,7 +32,7 @@ internal data class NativePublicPokemonIdentity(
     }
 }
 
-/** A complete numeric build; no neutral-nature or zero-EV defaults are admitted here. */
+/** A complete numeric build; public opponent hypotheses also bind their four logical move slots. */
 internal data class NativePokemonBuildHypothesis(
     val battlePokemonId: UUID,
     val knowledge: NativeBuildKnowledge,
@@ -42,6 +42,7 @@ internal data class NativePokemonBuildHypothesis(
     val gender: String,
     val evs: Map<String, Int>,
     val ivs: Map<String, Int>,
+    val opponentMoveSet: NativeOpponentMoveSetHypothesis? = null,
 ) {
     init {
         require(normalizedNativeId(abilityId).isNotBlank())
@@ -50,6 +51,9 @@ internal data class NativePokemonBuildHypothesis(
         require(gender in setOf("M", "F", "N"))
         require(evs.keys == STAT_IDS && evs.values.all { it in 0..252 } && evs.values.sum() <= 510)
         require(ivs.keys == STAT_IDS && ivs.values.all { it in 0..31 })
+        require(opponentMoveSet == null || opponentMoveSet.battlePokemonId == battlePokemonId) {
+            "A bound opponent move set must belong to the same battle Pokemon"
+        }
     }
 
     companion object {
@@ -57,7 +61,7 @@ internal data class NativePokemonBuildHypothesis(
     }
 }
 
-/** One bounded, complete native world. Move identities remain owned by normalized move slots. */
+/** One bounded native world whose opponent builds own the normalized move slots they execute. */
 internal data class NativeBattleWorldHypothesis(
     val hypothesisId: String,
     val probability: Double,
@@ -81,6 +85,7 @@ internal enum class NativeBattleDefinitionIssueCode {
     BUILD_HYPOTHESIS_MISSING,
     BUILD_KNOWLEDGE_MISMATCH,
     PUBLIC_ITEM_CONFLICT,
+    PUBLIC_MOVE_CONFLICT,
     MOVESET_UNAVAILABLE,
     LEVEL_UNAVAILABLE,
     HYPOTHESIS_ROSTER_MISMATCH,
@@ -178,12 +183,21 @@ internal object NativeInitialBattleDefinitionCompiler {
                     BattleSide.OPPONENT -> publicItems.any { it != hypothesizedItem }
                 }
                 if (itemConflict) issue(issues, NativeBattleDefinitionIssueCode.PUBLIC_ITEM_CONFLICT, id)
+                if (pokemon.side == BattleSide.OPPONENT && build.opponentMoveSet != null) {
+                    val publicMoves = pokemon.knownMoveIds.mapTo(linkedSetOf(), ::normalizedNativeId)
+                    val worldMoves = build.opponentMoveSet.nativeMoveIds.toSet()
+                    if (!worldMoves.containsAll(publicMoves)) {
+                        issue(issues, NativeBattleDefinitionIssueCode.PUBLIC_MOVE_CONFLICT, id)
+                    }
+                }
             }
 
             val level = pokemon.level
             if (level == null) issue(issues, NativeBattleDefinitionIssueCode.LEVEL_UNAVAILABLE, id)
-            val moves = concreteMoves(pokemon, catalog)
-            if (moves.isEmpty()) issue(issues, NativeBattleDefinitionIssueCode.MOVESET_UNAVAILABLE, id)
+            val moves = concreteMoves(pokemon, catalog, build)
+            if (build != null && moves.isEmpty()) {
+                issue(issues, NativeBattleDefinitionIssueCode.MOVESET_UNAVAILABLE, id)
+            }
 
             if (identity != null && build != null && level != null && moves.isNotEmpty()) {
                 sets[id] = NativePokemonSet(
@@ -223,6 +237,7 @@ internal object NativeInitialBattleDefinitionCompiler {
     private fun concreteMoves(
         pokemon: BattlePokemonStateView,
         catalog: BattlePublicActionCatalogView,
+        build: NativePokemonBuildHypothesis?,
     ): List<String> = when (pokemon.side) {
         BattleSide.ALLY -> catalog.forPokemon(pokemon.battlePokemonId).takeIf {
             catalog.isMoveSetComplete(pokemon.battlePokemonId) &&
@@ -231,7 +246,7 @@ internal object NativeInitialBattleDefinitionCompiler {
         }?.map { normalizedNativeId(it.moveId) }
             ?.takeIf { moves -> moves.all(String::isNotBlank) && moves.distinct().size == moves.size }
             .orEmpty()
-        BattleSide.OPPONENT -> NativeMoveHypothesisCompiler.compile(pokemon, catalog).nativeMoveIds
+        BattleSide.OPPONENT -> build?.opponentMoveSet?.nativeMoveIds.orEmpty()
     }
 
     private fun revealedValues(

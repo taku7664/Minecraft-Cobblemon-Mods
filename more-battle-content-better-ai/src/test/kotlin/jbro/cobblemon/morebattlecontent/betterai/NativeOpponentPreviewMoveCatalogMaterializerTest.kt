@@ -8,6 +8,8 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleWorldHyp
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBuildKnowledge
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialBattleDefinitionCompiler
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMoveHypothesisCompiler
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeOpponentMoveSetHypothesis
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeOpponentPreviewMoveCatalogIssueCode
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeOpponentPreviewMoveCatalogMaterializer
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonBuildHypothesis
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePublicPokemonIdentity
@@ -25,6 +27,8 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
         val live = BattleOpponentMoveInferenceView(ACTIVE, listOf(
             confirmed(0, "thunderwave", BattleOpponentMoveGroup.STATUS_OTHER),
             expected(1, "moonblast", BattleOpponentMoveGroup.STAB_ATTACK),
+            guess(2),
+            guess(3),
         ))
         val source = BattlePublicActionCatalogView(
             entries = listOf(BattlePokemonActionCatalogView(
@@ -89,12 +93,50 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
             world = NativeBattleWorldHypothesis(
                 hypothesisId = "preview-moves",
                 probability = 1.0,
-                pokemon = roster.state.pokemon.map { member -> build(member) },
+                pokemon = roster.state.pokemon.map { member ->
+                    build(
+                        member,
+                        if (member.side == BattleSide.OPPONENT) {
+                            requireNotNull(
+                                NativeMoveHypothesisCompiler.compile(member, catalog).completeSetOrNull(),
+                            )
+                        } else {
+                            null
+                        },
+                    )
+                },
             ),
             seed = listOf(1, 2, 3, 4),
         )
         assertFalse(definition.issues.any { it.code == NativeBattleDefinitionIssueCode.MOVESET_UNAVAILABLE })
         assertEquals(3, requireNotNull(definition.definition).p2Team.size)
+    }
+
+    @Test
+    fun `an existing live inference with fewer than four logical slots fails closed`() {
+        val roster = roster()
+        val source = BattlePublicActionCatalogView(
+            entries = emptyList(),
+            opponentMoveInferences = listOf(BattleOpponentMoveInferenceView(ACTIVE, listOf(
+                confirmed(0, "thunderwave", BattleOpponentMoveGroup.STATUS_OTHER),
+                expected(1, "moonblast", BattleOpponentMoveGroup.STAB_ATTACK),
+            ))),
+        )
+
+        val result = NativeOpponentPreviewMoveCatalogMaterializer.materialize(
+            roster = roster,
+            preview = preview(),
+            sourceCatalog = source,
+            tier = BattleTrainerTier.STANDARD,
+            usage = null,
+        )
+
+        assertNull(result.catalog)
+        assertEquals(
+            listOf(NativeOpponentPreviewMoveCatalogIssueCode.NORMALIZED_MOVESET_INCOMPLETE),
+            result.issues.map { it.code },
+        )
+        assertEquals(ACTIVE, result.issues.single().battlePokemonId)
     }
 
     @Test
@@ -251,7 +293,10 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
         },
     )
 
-    private fun build(pokemon: BattlePokemonStateView) = NativePokemonBuildHypothesis(
+    private fun build(
+        pokemon: BattlePokemonStateView,
+        opponentMoveSet: NativeOpponentMoveSetHypothesis? = null,
+    ) = NativePokemonBuildHypothesis(
         battlePokemonId = pokemon.battlePokemonId,
         knowledge = if (pokemon.side == BattleSide.ALLY) {
             NativeBuildKnowledge.EXACT_OWN
@@ -264,6 +309,7 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
         gender = "N",
         evs = stats(0),
         ivs = stats(31),
+        opponentMoveSet = opponentMoveSet,
     )
 
     private fun stats(value: Int) = setOf("hp", "atk", "def", "spa", "spd", "spe")
@@ -285,6 +331,14 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
     private fun confirmed(slot: Int, move: String, group: BattleOpponentMoveGroup) = BattleOpponentMoveSlotView(
         slot, move, group, BattleOpponentMoveKnowledge.CONFIRMED,
         BattleOpponentMoveSource.PUBLIC_REVEAL, status("electric"),
+    )
+
+    private fun guess(slot: Int) = BattleOpponentMoveSlotView(
+        slot,
+        null,
+        BattleOpponentMoveGroup.OTHER,
+        BattleOpponentMoveKnowledge.GUESS,
+        BattleOpponentMoveSource.GROUP_GUESS,
     )
 
     private companion object {

@@ -24,6 +24,8 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefiniti
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleWorldHypothesis
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBuildKnowledge
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialBattleDefinitionCompiler
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeOpponentMoveSetHypothesis
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeOpponentMoveSlotHypothesis
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonBuildHypothesis
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePublicPokemonIdentity
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -56,6 +58,57 @@ class NativeInitialBattleDefinitionCompilerTest {
         assertEquals(EVS, definition.p2Team.single().evs)
         assertEquals(IVS, definition.p2Team.single().ivs)
         assertNull(definition.openingState)
+    }
+
+    @Test
+    fun `opponent moves are bound to the world and cannot be replaced by a later catalog`() {
+        val boundMoves = NativeOpponentMoveSetHypothesis(
+            OPPONENT,
+            listOf(
+                nativeExpected(0, "moonblast"),
+                nativeGuess(1),
+                nativeGuess(2),
+                nativeGuess(3),
+            ),
+        )
+        val result = NativeInitialBattleDefinitionCompiler.compile(
+            state = state(),
+            catalog = catalog(opponentSlots = listOf(
+                expected(0, "powergem"),
+                guess(1),
+                guess(2),
+                guess(3),
+            )),
+            identities = identities(),
+            world = world(opponentBuild = build(
+                OPPONENT,
+                NativeBuildKnowledge.PUBLIC_HYPOTHESIS,
+                "protosynthesis",
+                "choicespecs",
+                opponentMoveSet = boundMoves,
+            )),
+            seed = SEED,
+        )
+
+        assertEquals(emptyList<Any>(), result.issues)
+        assertEquals(listOf("moonblast"), requireNotNull(result.definition).p2Team.single().moves)
+    }
+
+    @Test
+    fun `a world that omits an already public opponent move is rejected as stale`() {
+        val result = NativeInitialBattleDefinitionCompiler.compile(
+            state = state(opponentKnownMoves = setOf("cobblemon:power_gem")),
+            catalog = catalog(),
+            identities = identities(),
+            world = world(),
+            seed = SEED,
+        )
+
+        assertNull(result.definition)
+        assertEquals(
+            setOf(NativeBattleDefinitionIssueCode.PUBLIC_MOVE_CONFLICT),
+            result.issues.mapTo(linkedSetOf()) { it.code },
+        )
     }
 
     @Test
@@ -102,7 +155,13 @@ class NativeInitialBattleDefinitionCompilerTest {
     fun `build source and revealed item must agree with public state`() {
         val badWorld = world(
             allyBuild = build(ALLY, NativeBuildKnowledge.PUBLIC_HYPOTHESIS, "lightningrod", "leftovers"),
-            opponentBuild = build(OPPONENT, NativeBuildKnowledge.EXACT_OWN, "protosynthesis", "leftovers"),
+            opponentBuild = build(
+                OPPONENT,
+                NativeBuildKnowledge.EXACT_OWN,
+                "protosynthesis",
+                "leftovers",
+                defaultOpponentMoveSet(),
+            ),
         )
         val result = NativeInitialBattleDefinitionCompiler.compile(
             state = state(opponentAbility = "protosynthesis", opponentItem = "choicespecs"),
@@ -142,6 +201,7 @@ class NativeInitialBattleDefinitionCompilerTest {
                 NativeBuildKnowledge.PUBLIC_HYPOTHESIS,
                 "pressure",
                 "leftovers",
+                defaultOpponentMoveSet(),
             )),
             seed = SEED,
         )
@@ -171,6 +231,7 @@ class NativeInitialBattleDefinitionCompilerTest {
                 NativeBuildKnowledge.PUBLIC_HYPOTHESIS,
                 "trace",
                 "choicespecs",
+                defaultOpponentMoveSet(),
             )),
             seed = SEED,
         )
@@ -185,7 +246,13 @@ class NativeInitialBattleDefinitionCompilerTest {
             state = state(),
             catalog = catalog(opponentSlots = listOf(guess(0), guess(1))),
             identities = identities(),
-            world = world(),
+            world = world(opponentBuild = build(
+                OPPONENT,
+                NativeBuildKnowledge.PUBLIC_HYPOTHESIS,
+                "protosynthesis",
+                "choicespecs",
+                opponentMoveSet = null,
+            )),
             seed = SEED,
         )
 
@@ -290,6 +357,7 @@ class NativeInitialBattleDefinitionCompilerTest {
         allyStages: Map<String, Int> = emptyMap(),
         opponentAbility: String? = null,
         opponentItem: String? = null,
+        opponentKnownMoves: Set<String> = emptySet(),
         events: List<BattleObservedEventView> = emptyList(),
     ) = BattleStateView(
         battleId = BATTLE,
@@ -314,6 +382,7 @@ class NativeInitialBattleDefinitionCompilerTest {
                 ability = opponentAbility,
                 item = opponentItem,
                 stats = null,
+                knownMoves = opponentKnownMoves,
             ),
         ),
         field = BattleFieldStateView.empty(),
@@ -331,6 +400,7 @@ class NativeInitialBattleDefinitionCompilerTest {
         ability: String?,
         item: String?,
         stats: BattleCombatStatRangesView?,
+        knownMoves: Set<String> = emptySet(),
     ) = BattlePokemonStateView(
         battlePokemonId = id,
         side = side,
@@ -341,7 +411,7 @@ class NativeInitialBattleDefinitionCompilerTest {
         hpFraction = hp,
         statusId = null,
         statStages = stages,
-        knownMoveIds = emptySet(),
+        knownMoveIds = knownMoves,
         knownAbilityId = ability,
         knownHeldItemId = item,
         fainted = false,
@@ -418,6 +488,7 @@ class NativeInitialBattleDefinitionCompilerTest {
             NativeBuildKnowledge.PUBLIC_HYPOTHESIS,
             "protosynthesis",
             "choicespecs",
+            defaultOpponentMoveSet(),
         ),
     ) = NativeBattleWorldHypothesis("world-1", 1.0, listOf(allyBuild, opponentBuild))
 
@@ -426,6 +497,7 @@ class NativeInitialBattleDefinitionCompilerTest {
         knowledge: NativeBuildKnowledge,
         ability: String,
         item: String,
+        opponentMoveSet: NativeOpponentMoveSetHypothesis? = null,
     ) = NativePokemonBuildHypothesis(
         battlePokemonId = id,
         knowledge = knowledge,
@@ -435,6 +507,33 @@ class NativeInitialBattleDefinitionCompilerTest {
         gender = "N",
         evs = EVS,
         ivs = IVS,
+        opponentMoveSet = opponentMoveSet,
+    )
+
+    private fun nativeExpected(slot: Int, moveId: String) = NativeOpponentMoveSlotHypothesis(
+        slot,
+        moveId,
+        BattleOpponentMoveGroup.STAB_ATTACK,
+        BattleOpponentMoveKnowledge.EXPECTED,
+        BattleOpponentMoveSource.LEARNSET_EXPECTATION,
+    )
+
+    private fun nativeGuess(slot: Int) = NativeOpponentMoveSlotHypothesis(
+        slot,
+        null,
+        BattleOpponentMoveGroup.STATUS_OTHER,
+        BattleOpponentMoveKnowledge.GUESS,
+        BattleOpponentMoveSource.GROUP_GUESS,
+    )
+
+    private fun defaultOpponentMoveSet() = NativeOpponentMoveSetHypothesis(
+        OPPONENT,
+        listOf(
+            nativeExpected(0, "moonblast"),
+            nativeGuess(1),
+            nativeGuess(2),
+            nativeGuess(3),
+        ),
     )
 
     private companion object {

@@ -38,6 +38,17 @@ class NativeMoveHypothesisCompilerTest {
             result.unresolvedSlots.map { it.group },
         )
         assertTrue(result.hasUnresolvedSlots)
+        assertTrue(result.isCompleteSet)
+        assertEquals(listOf(0, 1, 2, 3), result.slots.map { it.slot })
+        assertEquals(
+            listOf(
+                BattleOpponentMoveKnowledge.EXPECTED,
+                BattleOpponentMoveKnowledge.GUESS,
+                BattleOpponentMoveKnowledge.CONFIRMED,
+                BattleOpponentMoveKnowledge.GUESS,
+            ),
+            result.slots.map { it.knowledge },
+        )
     }
 
     @Test
@@ -121,6 +132,22 @@ class NativeMoveHypothesisCompilerTest {
         assertTrue(result.unresolvedSlots.isEmpty())
         assertFalse(result.hasExecutableMove)
         assertEquals("normalized_inference_missing", result.unavailableReason)
+    }
+
+    @Test
+    fun `a partial logical slot shape is unavailable even when it has an executable move`() {
+        val result = NativeMoveHypothesisCompiler.compile(
+            opponent,
+            catalog(
+                expected(0, "moonblast", BattleOpponentMoveGroup.STAB_ATTACK),
+                guess(1, BattleOpponentMoveGroup.STATUS_OTHER),
+                guess(2, BattleOpponentMoveGroup.OTHER),
+            ),
+        )
+
+        assertTrue(result.hasExecutableMove)
+        assertFalse(result.isCompleteSet)
+        assertEquals("normalized_inference_incomplete", result.unavailableReason)
     }
 
     private fun catalog(vararg slots: BattleOpponentMoveSlotView) = BattlePublicActionCatalogView(
