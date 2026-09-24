@@ -51,6 +51,7 @@ public final class FadingMusicPlayer {
     public void tick(double nowSeconds) {
         requireTime(nowSeconds);
         updateMuffle(nowSeconds);
+        backend.setMuffle(muffleAmount);
         updateEnvelopes(nowSeconds);
 
         if (active != null
@@ -88,7 +89,6 @@ public final class FadingMusicPlayer {
             track.volume(),
             initialVolume
         );
-        backend.setMuffle(handle, muffleAmount);
         restartAtSeconds = Double.POSITIVE_INFINITY;
     }
 
@@ -112,7 +112,6 @@ public final class FadingMusicPlayer {
             track.progress(nowSeconds)
         );
         backend.setVolume(track.handle, track.currentVolume);
-        backend.setMuffle(track.handle, muffleAmount);
     }
 
     private void updateMuffle(double nowSeconds) {
@@ -163,7 +162,7 @@ public final class FadingMusicPlayer {
 
         void setVolume(Handle handle, double volume);
 
-        void setMuffle(Handle handle, double amount);
+        void setMuffle(double amount);
 
         void stop(Handle handle);
 

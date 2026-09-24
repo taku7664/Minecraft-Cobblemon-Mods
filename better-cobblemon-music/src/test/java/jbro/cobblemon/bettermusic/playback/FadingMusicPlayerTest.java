@@ -98,15 +98,27 @@ final class FadingMusicPlayerTest {
         player.setMuffled(true);
         player.tick(0.0);
         player.tick(0.375);
-        assertEquals(0.5, backend.handles.getFirst().muffleAmount, 0.0001);
+        assertEquals(0.5, backend.muffleAmount, 0.0001);
         player.tick(0.75);
-        assertEquals(1.0, backend.handles.getFirst().muffleAmount, 0.0001);
+        assertEquals(1.0, backend.muffleAmount, 0.0001);
 
         player.setMuffled(false);
         player.tick(1.125);
-        assertEquals(0.5, backend.handles.getFirst().muffleAmount, 0.0001);
+        assertEquals(0.5, backend.muffleAmount, 0.0001);
         player.tick(1.5);
-        assertEquals(0.0, backend.handles.getFirst().muffleAmount, 0.0001);
+        assertEquals(0.0, backend.muffleAmount, 0.0001);
+    }
+
+    @Test
+    void muffleTargetUpdatesMusicChannelsEvenWithoutAnOwnedTrack() {
+        var backend = new FakeBackend();
+        var player = new FadingMusicPlayer(backend);
+
+        player.setMuffled(true);
+        player.tick(0.0);
+        player.tick(0.75);
+
+        assertEquals(1.0, backend.muffleAmount, 0.0001);
     }
 
     private static FadingMusicPlayer.TrackSource source(
@@ -128,6 +140,7 @@ final class FadingMusicPlayerTest {
 
     private static final class FakeBackend implements FadingMusicPlayer.Backend {
         private final List<FakeHandle> handles = new ArrayList<>();
+        private double muffleAmount;
 
         @Override
         public FadingMusicPlayer.Handle play(FadingMusicPlayer.Track track, double initialVolume) {
@@ -142,8 +155,8 @@ final class FadingMusicPlayerTest {
         }
 
         @Override
-        public void setMuffle(FadingMusicPlayer.Handle handle, double amount) {
-            ((FakeHandle) handle).muffleAmount = amount;
+        public void setMuffle(double amount) {
+            muffleAmount = amount;
         }
 
         @Override
@@ -162,7 +175,6 @@ final class FadingMusicPlayerTest {
     private static final class FakeHandle implements FadingMusicPlayer.Handle {
         private final FadingMusicPlayer.Track track;
         private double volume;
-        private double muffleAmount;
         private boolean playing = true;
         private boolean stopped;
 
