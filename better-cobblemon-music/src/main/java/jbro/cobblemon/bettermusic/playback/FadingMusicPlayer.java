@@ -5,6 +5,7 @@ import java.util.Optional;
 
 public final class FadingMusicPlayer {
     private static final double STARTUP_GRACE_SECONDS = 0.1;
+    private static final double MUFFLE_TRANSITION_SECONDS = 0.75;
 
     private final Backend backend;
     private Optional<TrackSource> desiredSource = Optional.empty();
@@ -12,6 +13,9 @@ public final class FadingMusicPlayer {
     private ActiveTrack outgoing;
     private double restartAtSeconds = Double.POSITIVE_INFINITY;
     private double lastTimeSeconds = Double.NEGATIVE_INFINITY;
+    private double lastMuffleUpdateSeconds = Double.NaN;
+    private double muffleAmount;
+    private boolean muffled;
 
     public FadingMusicPlayer(Backend backend) {
         this.backend = Objects.requireNonNull(backend, "backend");
@@ -46,6 +50,7 @@ public final class FadingMusicPlayer {
 
     public void tick(double nowSeconds) {
         requireTime(nowSeconds);
+        updateMuffle(nowSeconds);
         updateEnvelopes(nowSeconds);
 
         if (active != null
@@ -66,6 +71,10 @@ public final class FadingMusicPlayer {
         return desiredSource.isPresent() || active != null || outgoing != null;
     }
 
+    public void setMuffled(boolean muffled) {
+        this.muffled = muffled;
+    }
+
     private void startTrack(Track track, double nowSeconds, double fadeInSeconds) {
         double initialVolume = fadeInSeconds == 0.0 ? track.volume() : 0.0;
         Handle handle = backend.play(track, initialVolume);
@@ -79,6 +88,7 @@ public final class FadingMusicPlayer {
             track.volume(),
             initialVolume
         );
+        backend.setMuffle(handle, muffleAmount);
         restartAtSeconds = Double.POSITIVE_INFINITY;
     }
 
@@ -102,6 +112,23 @@ public final class FadingMusicPlayer {
             track.progress(nowSeconds)
         );
         backend.setVolume(track.handle, track.currentVolume);
+        backend.setMuffle(track.handle, muffleAmount);
+    }
+
+    private void updateMuffle(double nowSeconds) {
+        if (Double.isNaN(lastMuffleUpdateSeconds)) {
+            lastMuffleUpdateSeconds = nowSeconds;
+            return;
+        }
+        double elapsed = nowSeconds - lastMuffleUpdateSeconds;
+        lastMuffleUpdateSeconds = nowSeconds;
+        double target = muffled ? 1.0 : 0.0;
+        double maximumChange = elapsed / MUFFLE_TRANSITION_SECONDS;
+        if (muffleAmount < target) {
+            muffleAmount = Math.min(target, muffleAmount + maximumChange);
+        } else if (muffleAmount > target) {
+            muffleAmount = Math.max(target, muffleAmount - maximumChange);
+        }
     }
 
     private void stopOutgoing() {
@@ -135,6 +162,8 @@ public final class FadingMusicPlayer {
         Handle play(Track track, double initialVolume);
 
         void setVolume(Handle handle, double volume);
+
+        void setMuffle(Handle handle, double amount);
 
         void stop(Handle handle);
 

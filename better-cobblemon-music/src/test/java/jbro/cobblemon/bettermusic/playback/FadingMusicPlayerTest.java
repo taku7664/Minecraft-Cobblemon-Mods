@@ -84,6 +84,31 @@ final class FadingMusicPlayerTest {
         assertEquals(0.8, backend.handles.get(1).volume, 0.0001);
     }
 
+    @Test
+    void lastPokemonMuffleFadesInAndBackOut() {
+        var backend = new FakeBackend();
+        var player = new FadingMusicPlayer(backend);
+        player.transitionSource(
+            0.0,
+            Optional.of(source(new FadingMusicPlayer.Track("example:last_stand", 1.0), 0.0)),
+            0.0,
+            0.0
+        );
+
+        player.setMuffled(true);
+        player.tick(0.0);
+        player.tick(0.375);
+        assertEquals(0.5, backend.handles.getFirst().muffleAmount, 0.0001);
+        player.tick(0.75);
+        assertEquals(1.0, backend.handles.getFirst().muffleAmount, 0.0001);
+
+        player.setMuffled(false);
+        player.tick(1.125);
+        assertEquals(0.5, backend.handles.getFirst().muffleAmount, 0.0001);
+        player.tick(1.5);
+        assertEquals(0.0, backend.handles.getFirst().muffleAmount, 0.0001);
+    }
+
     private static FadingMusicPlayer.TrackSource source(
         FadingMusicPlayer.Track track,
         double betweenTracksSeconds
@@ -117,6 +142,11 @@ final class FadingMusicPlayerTest {
         }
 
         @Override
+        public void setMuffle(FadingMusicPlayer.Handle handle, double amount) {
+            ((FakeHandle) handle).muffleAmount = amount;
+        }
+
+        @Override
         public void stop(FadingMusicPlayer.Handle handle) {
             var fake = (FakeHandle) handle;
             fake.stopped = true;
@@ -132,6 +162,7 @@ final class FadingMusicPlayerTest {
     private static final class FakeHandle implements FadingMusicPlayer.Handle {
         private final FadingMusicPlayer.Track track;
         private double volume;
+        private double muffleAmount;
         private boolean playing = true;
         private boolean stopped;
 

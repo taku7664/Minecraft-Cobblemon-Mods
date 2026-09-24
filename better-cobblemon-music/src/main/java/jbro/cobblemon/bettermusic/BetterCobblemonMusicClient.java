@@ -18,9 +18,10 @@ public final class BetterCobblemonMusicClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
-            jbro.cobblemon.bettermusic.audio.ClientHitSoundTracker.INSTANCE.clear()
-        );
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            jbro.cobblemon.bettermusic.audio.ClientHitSoundTracker.INSTANCE.clear();
+            jbro.cobblemon.bettermusic.client.LastPokemonMuffleTracker.INSTANCE.clear();
+        });
         MoreBattleContentIntegration.registerIfInstalled(LOGGER);
         var configDirectory = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID);
         var configManager = new BetterMusicConfigManager(configDirectory);

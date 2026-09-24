@@ -61,6 +61,7 @@ public final class BetterMusicClientRuntime {
             return;
         }
 
+        player.setMuffled(LastPokemonMuffleTracker.INSTANCE.shouldMuffle(client));
         player.tick(nowSeconds);
         if (client.player == null || client.level == null) {
             leaveWorld(nowSeconds);
@@ -81,7 +82,7 @@ public final class BetterMusicClientRuntime {
         }
 
         if (backend == null) {
-            backend = new MinecraftMusicBackend(client.getSoundManager());
+            backend = new MinecraftMusicBackend(client.getSoundManager(), logger);
         }
         if (player == null) {
             player = new FadingMusicPlayer(backend);
