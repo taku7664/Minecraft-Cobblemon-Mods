@@ -9,8 +9,8 @@ final class HeartbeatPulseSchedulerTest {
     @Test
     void scalesTheHeartbeatBaseVolumeFromTheConfiguredMultiplier() {
         assertTrue(Math.abs(LastPokemonHeartbeatPlayer.scaledVolume(0.0) - 0.0F) < 0.0001F);
-        assertTrue(Math.abs(LastPokemonHeartbeatPlayer.scaledVolume(1.0) - 0.35F) < 0.0001F);
-        assertTrue(Math.abs(LastPokemonHeartbeatPlayer.scaledVolume(2.0) - 0.7F) < 0.0001F);
+        assertTrue(Math.abs(LastPokemonHeartbeatPlayer.scaledVolume(1.0) - 1.0F) < 0.0001F);
+        assertTrue(Math.abs(LastPokemonHeartbeatPlayer.scaledVolume(2.0) - 2.0F) < 0.0001F);
     }
 
     @Test

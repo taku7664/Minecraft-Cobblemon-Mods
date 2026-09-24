@@ -7,7 +7,7 @@ import net.minecraft.sounds.SoundEvents;
 final class LastPokemonHeartbeatPlayer {
     private static final double CADENCE_SECONDS = 1.0;
     private static final float PITCH = 1.0F;
-    private static final float BASE_VOLUME = 0.35F;
+    private static final float BASE_VOLUME = 1.0F;
 
     private final HeartbeatPulseScheduler scheduler = new HeartbeatPulseScheduler(CADENCE_SECONDS);
 
