@@ -6,6 +6,10 @@ Adds Battle Tower, Battle Factory, player-versus-player battles, holographic bat
 - Side: client and server
 - Requires: Fabric Loader 0.19.5+, Fabric API, Fabric Language Kotlin 1.14.1+kotlin.2.4.20+, Cobblemon 1.8.1, and Mega Showdown 1.2.0 for Cobblemon 1.8.1
 
+## 기획 문서
+
+- [보스 레이드 기획 초안](docs/BOSS_RAID_DESIGN.md)
+
 ## Build
 
 Run from the repository root:
