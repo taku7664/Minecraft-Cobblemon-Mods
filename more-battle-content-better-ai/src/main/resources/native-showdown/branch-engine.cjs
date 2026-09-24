@@ -34,13 +34,78 @@ globalThis.mbcApplyRules = function(payload) {
   }
 };
 
-function normalizeSet(set) {
+function normalizeSet(set, openingByUuid) {
   const movesInfo = set.moves.map(id => {
     const move = dex.moves.get(id);
     if (!move.exists) throw new Error(`Unknown move ${id}`);
     return { pp: move.pp, maxPp: move.pp };
   });
-  return { ...set, movesInfo };
+  const opening = openingByUuid && openingByUuid.get(set.uuid);
+  return {
+    ...set,
+    movesInfo,
+    ...(opening ? {
+      currentHealth: opening.hp,
+      status: opening.status,
+      statusDuration: -1,
+    } : {}),
+  };
+}
+
+function toID(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+function indexPokemonOpeningState(seed) {
+  if (!seed) return null;
+  const byUuid = new Map();
+  for (const opening of seed.pokemon) {
+    if (!opening.uuid || byUuid.has(opening.uuid)) {
+      throw new Error(`Native public opening state has a missing or duplicate Pokemon UUID ${opening.uuid || ''}`);
+    }
+    byUuid.set(opening.uuid, opening);
+  }
+  return byUuid;
+}
+
+function validatePokemonOpeningState(battle, seed) {
+  if (battle.started || battle.turn !== 0) {
+    throw new Error('Native public opening state can only be applied before Showdown starts');
+  }
+  const pokemonByUuid = new Map();
+  for (const side of battle.sides) {
+    for (const pokemon of side.pokemon) {
+      if (!pokemon.uuid || pokemonByUuid.has(pokemon.uuid)) {
+        throw new Error(`Synthetic battle has a missing or duplicate Pokemon UUID ${pokemon.uuid || ''}`);
+      }
+      pokemonByUuid.set(pokemon.uuid, pokemon);
+    }
+  }
+  if (pokemonByUuid.size !== seed.pokemon.length) {
+    throw new Error('Native public opening state must cover the whole synthetic roster');
+  }
+  for (const patch of seed.pokemon) {
+    const pokemon = pokemonByUuid.get(patch.uuid);
+    if (!pokemon) throw new Error(`Native public opening state names unknown Pokemon ${patch.uuid}`);
+    if (toID(pokemon.set.ability) !== toID(patch.ability) ||
+        toID(pokemon.set.item) !== toID(patch.item)) {
+      throw new Error(`Seeded ability or item disagrees with synthetic set ${patch.uuid}`);
+    }
+    const status = patch.status ? dex.conditions.get(patch.status) : null;
+    if (patch.status && !status.exists) throw new Error(`Unknown seeded status ${patch.status}`);
+
+    if (pokemon.maxhp !== patch.maxHp) {
+      throw new Error(`Opening max HP disagrees with synthetic set ${patch.uuid}: ${patch.maxHp} != ${pokemon.maxhp}`);
+    }
+    if (pokemon.hp !== patch.hp || pokemon.status !== (status ? status.id : '')) {
+      throw new Error(`Showdown did not construct the requested public opening state ${patch.uuid}`);
+    }
+  }
+  for (const side of battle.sides) {
+    if (!side.pokemon[0].hp) {
+      throw new Error('Native opening state cannot select a fainted lead Pokemon');
+    }
+  }
 }
 
 function pokemonFrame(pokemon) {
@@ -78,10 +143,20 @@ function frame(battle) {
 
 globalThis.mbcCreateBattle = function(payload) {
   const input = JSON.parse(payload);
-  const battle = new Battle({ formatid: input.formatId, seed: input.seed });
+  const openingByUuid = indexPokemonOpeningState(input.openingState);
+  const battle = new Battle({
+    formatid: input.formatId,
+    seed: input.seed,
+    deserialized: !!input.openingState,
+  });
   try {
-    battle.setPlayer('p1', { name: 'p1', team: input.p1Team.map(normalizeSet) });
-    battle.setPlayer('p2', { name: 'p2', team: input.p2Team.map(normalizeSet) });
+    battle.setPlayer('p1', { name: 'p1', team: input.p1Team.map(set => normalizeSet(set, openingByUuid)) });
+    battle.setPlayer('p2', { name: 'p2', team: input.p2Team.map(set => normalizeSet(set, openingByUuid)) });
+    if (input.openingState) {
+      validatePokemonOpeningState(battle, input.openingState);
+      battle.deserialized = false;
+      battle.start();
+    }
     return JSON.stringify(frame(battle));
   } finally {
     battle.destroy();

@@ -13,6 +13,7 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.FileAttribute
 import java.util.Collections
+import java.util.Locale
 import java.util.UUID
 import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.PolyglotAccess
@@ -158,6 +159,7 @@ internal data class NativeBattleDefinition(
     val seed: List<Int>,
     val p1Team: List<NativePokemonSet>,
     val p2Team: List<NativePokemonSet>,
+    val openingState: NativeBattleOpeningState? = null,
 ) {
     init {
         require(formatId.isNotBlank())
@@ -166,6 +168,65 @@ internal data class NativeBattleDefinition(
         require((p1Team + p2Team).map(NativePokemonSet::uuid).distinct().size == p1Team.size + p2Team.size) {
             "Native battle Pokemon UUIDs must be unique"
         }
+        openingState?.let { state ->
+            val setsByUuid = (p1Team + p2Team).associateBy(NativePokemonSet::uuid)
+            require(state.pokemon.map(NativePokemonOpeningState::uuid).toSet() == setsByUuid.keys) {
+                "A native public opening state must describe every Pokemon in the synthetic battle exactly once"
+            }
+            state.pokemon.forEach { seeded ->
+                val set = setsByUuid.getValue(seeded.uuid)
+                require(nativeId(set.ability) == nativeId(seeded.ability) &&
+                    nativeId(set.item) == nativeId(seeded.item)) {
+                    "Native opening ability and item must come from the same public hypothesis as the team set"
+                }
+            }
+        }
+    }
+
+    private companion object {
+        fun nativeId(value: String): String = value.substringAfter(':')
+            .lowercase(Locale.ROOT)
+            .filter(Char::isLetterOrDigit)
+    }
+}
+
+/**
+ * Public or hypothesis-owned pre-battle state, never a sanitized live Showdown snapshot.
+ *
+ * Arbitrary mid-battle reconstruction is deliberately rejected: public HP and boosts alone do not
+ * recover active-turn counters, move locks, volatile state or other history-sensitive native fields.
+ * The schema therefore has no turn, boost or volatile fields. Showdown applies switch-in callbacks
+ * and creates the first move request after this state is installed. Later turns must descend from
+ * that synthetic native root until a full public reconciliation contract exists.
+ */
+internal data class NativeBattleOpeningState(
+    val pokemon: List<NativePokemonOpeningState>,
+) {
+    init {
+        require(pokemon.isNotEmpty())
+        require(pokemon.map(NativePokemonOpeningState::uuid).distinct().size == pokemon.size)
+    }
+}
+
+internal data class NativePokemonOpeningState(
+    val uuid: String,
+    val hp: Int,
+    val maxHp: Int,
+    val ability: String,
+    val item: String = "",
+    val status: String = "",
+) {
+    init {
+        UUID.fromString(uuid)
+        require(maxHp > 0 && hp in 0..maxHp)
+        require(ability.isNotBlank())
+        require(status in SIMPLE_OPENING_STATUSES) {
+            "Opening sleep and toxic poison require hidden counters and cannot be reconstructed from a status name"
+        }
+    }
+
+    private companion object {
+        val SIMPLE_OPENING_STATUSES = setOf("", "brn", "par", "psn", "frz")
     }
 }
 
