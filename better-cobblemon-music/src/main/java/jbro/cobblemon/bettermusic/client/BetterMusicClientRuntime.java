@@ -31,6 +31,7 @@ public final class BetterMusicClientRuntime {
     private final Map<String, PlaylistDefinition> playlistsById = new HashMap<>();
     private final Map<String, String> fallbackPlaylistIds = new HashMap<>();
     private final PlaylistNavigator playlistNavigator = new PlaylistNavigator(ThreadLocalRandom.current());
+    private final LastPokemonHeartbeatPlayer heartbeatPlayer = new LastPokemonHeartbeatPlayer();
 
     private BetterMusicConfigSnapshot snapshot;
     private MinecraftMusicBackend backend;
@@ -42,7 +43,7 @@ public final class BetterMusicClientRuntime {
     private double nextScanSeconds;
     private boolean inWorld;
     private boolean suppressOriginalMusic;
-    private boolean lastPokemonMuffleTarget;
+    private LastPokemonMuffleTracker.Effect lastPokemonEffect = LastPokemonMuffleTracker.Effect.NONE;
     private String lastDesiredPlaylistId;
 
     public BetterMusicClientRuntime(BetterMusicConfigManager configManager, Logger logger) {
@@ -69,6 +70,7 @@ public final class BetterMusicClientRuntime {
             inWorld = true;
             scanContextIfDue(client, nowSeconds);
         }
+        heartbeatPlayer.tick(client, nowSeconds, lastPokemonEffect.heartbeat());
 
         if (suppressOriginalMusic || player.ownsMusic()) {
             client.getMusicManager().stopPlaying();
@@ -104,7 +106,7 @@ public final class BetterMusicClientRuntime {
             return;
         }
         inWorld = false;
-        setLastPokemonMuffleTarget(false);
+        setLastPokemonEffect(LastPokemonMuffleTracker.Effect.NONE);
         LastPokemonMuffleTracker.INSTANCE.clear();
         coordinator.update(nowSeconds, MusicPlaybackCoordinator.Input.none())
             .ifPresent(transition -> applyTransition(nowSeconds, transition));
@@ -116,7 +118,7 @@ public final class BetterMusicClientRuntime {
             return;
         }
         nextScanSeconds = nowSeconds + snapshot.playback().scanIntervalSeconds();
-        setLastPokemonMuffleTarget(LastPokemonMuffleTracker.INSTANCE.shouldMuffle(client));
+        setLastPokemonEffect(LastPokemonMuffleTracker.INSTANCE.sampleEffect(client));
 
         Optional<String> fieldCue = fieldSampler.sample(client)
             .map(fieldResolver::select)
@@ -150,12 +152,12 @@ public final class BetterMusicClientRuntime {
         }
     }
 
-    private void setLastPokemonMuffleTarget(boolean target) {
-        if (lastPokemonMuffleTarget != target) {
-            logger.info("Last-Pokémon BGM muffling {}", target ? "enabled" : "disabled");
-            lastPokemonMuffleTarget = target;
+    private void setLastPokemonEffect(LastPokemonMuffleTracker.Effect effect) {
+        if (lastPokemonEffect != effect) {
+            logger.info("Last-Pokémon battle audio effect changed from {} to {}", lastPokemonEffect, effect);
+            lastPokemonEffect = effect;
         }
-        player.setMuffled(target);
+        player.setMuffled(effect.muffled());
     }
 
     private void applyTransition(double nowSeconds, MusicPlaybackCoordinator.Transition transition) {

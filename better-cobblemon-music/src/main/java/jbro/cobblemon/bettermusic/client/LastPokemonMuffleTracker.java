@@ -13,27 +13,28 @@ import net.minecraft.client.Minecraft;
 
 public final class LastPokemonMuffleTracker {
     public static final LastPokemonMuffleTracker INSTANCE = new LastPokemonMuffleTracker();
+    private static final double HALF_HEALTH_RATIO = 0.5;
     // Matches Cobblemon's red health-bar threshold in RenderHelper.
     private static final double RED_HEALTH_RATIO = 0.2;
 
     private UUID battleId;
     private final Set<UUID> observedFaintedPokemon = new HashSet<>();
 
-    public synchronized boolean shouldMuffle(Minecraft client) {
+    public synchronized Effect sampleEffect(Minecraft client) {
         Objects.requireNonNull(client, "client");
         if (client.player == null) {
             clear();
-            return false;
+            return Effect.NONE;
         }
         var battle = CobblemonClient.INSTANCE.getBattle();
         if (battle == null) {
             clear();
-            return false;
+            return Effect.NONE;
         }
         var actor = battle.getParticipatingActor(client.player.getUUID());
         if (actor == null) {
             clear();
-            return false;
+            return Effect.NONE;
         }
         List<TeamPokemon> team = actor.getPokemon().stream()
             .map(pokemon -> new TeamPokemon(pokemon.getUuid(), pokemon.isFainted()))
@@ -109,7 +110,7 @@ public final class LastPokemonMuffleTracker {
         );
     }
 
-    synchronized boolean update(
+    synchronized Effect update(
         UUID currentBattleId,
         List<TeamPokemon> team,
         Map<UUID, Double> activeHealthRatios
@@ -127,12 +128,13 @@ public final class LastPokemonMuffleTracker {
             .limit(2)
             .toList();
         if (usablePokemon.size() != 1) {
-            return false;
+            return Effect.NONE;
         }
         Double healthRatio = activeHealthRatios.get(usablePokemon.getFirst().id());
-        return healthRatio != null
-            && healthRatio > 0.0
-            && healthRatio <= RED_HEALTH_RATIO;
+        if (healthRatio == null || healthRatio <= 0.0 || healthRatio > HALF_HEALTH_RATIO) {
+            return Effect.NONE;
+        }
+        return healthRatio <= RED_HEALTH_RATIO ? Effect.CRITICAL : Effect.MUFFLED;
     }
 
     synchronized void markFainted(UUID currentBattleId, UUID pokemonId) {
@@ -168,6 +170,28 @@ public final class LastPokemonMuffleTracker {
     record TeamPokemon(UUID id, boolean fainted) {
         TeamPokemon {
             Objects.requireNonNull(id, "id");
+        }
+    }
+
+    enum Effect {
+        NONE(false, false),
+        MUFFLED(true, false),
+        CRITICAL(true, true);
+
+        private final boolean muffled;
+        private final boolean heartbeat;
+
+        Effect(boolean muffled, boolean heartbeat) {
+            this.muffled = muffled;
+            this.heartbeat = heartbeat;
+        }
+
+        boolean muffled() {
+            return muffled;
+        }
+
+        boolean heartbeat() {
+            return heartbeat;
         }
     }
 }
