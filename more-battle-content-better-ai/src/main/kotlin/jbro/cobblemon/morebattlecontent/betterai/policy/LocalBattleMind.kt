@@ -308,11 +308,7 @@ internal object LocalBattleMind {
 internal fun BattleDecisionContext.forPlanOwner(owner: BattlePlanOwner): BattleDecisionContext {
     val planBelongsToOwner = memory.activePlanOwner == null || memory.activePlanOwner == owner
     if (planBelongsToOwner) return this
-    return BattleDecisionContext(
-        requestId = requestId,
-        state = state,
-        candidates = candidates,
-        deadlineEpochMillis = deadlineEpochMillis,
+    return copy(
         memory = BattleTacticalMemoryView(
             activePlan = null,
             activePlanOwner = null,
@@ -328,6 +324,5 @@ internal fun BattleDecisionContext.forPlanOwner(owner: BattlePlanOwner): BattleD
             opponentResponseVolatility = memory.opponentResponseVolatility,
             nonProgressControlStreak = memory.nonProgressControlStreak,
         ),
-        publicActionCatalog = publicActionCatalog,
     )
 }

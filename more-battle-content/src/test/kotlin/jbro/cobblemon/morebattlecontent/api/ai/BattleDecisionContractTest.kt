@@ -107,6 +107,29 @@ class BattleDecisionContractTest {
     }
 
     @Test
+    fun `derived decision context preserves public opponent preview by default`() {
+        val preview = BattleOpponentTeamPreviewView(
+            selectionSize = 3,
+            pokemon = (0 until 6).map { slot -> previewPokemon(slot, "cobblemon:species$slot") },
+        )
+        val original = BattleDecisionContext(
+            requestId = UUID.randomUUID(),
+            state = context(UUID.randomUUID(), 10_000L).state,
+            candidates = listOf(candidate()),
+            deadlineEpochMillis = 10_000L,
+            opponentTeamPreview = preview,
+        )
+
+        val derived = original.copy(deadlineEpochMillis = 20_000L)
+
+        assertSame(preview, derived.opponentTeamPreview)
+        assertEquals(20_000L, derived.deadlineEpochMillis)
+        assertSame(original.state, derived.state)
+        assertSame(original.memory, derived.memory)
+        assertSame(original.publicActionCatalog, derived.publicActionCatalog)
+    }
+
+    @Test
     fun `decision deadline allows a fifteen second router budget`() {
         assertEquals(20_000L, BattleBrainDefaults.DECISION_TIMEOUT_MILLIS)
     }

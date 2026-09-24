@@ -16,13 +16,6 @@ internal object PublicMechanicalActionGate {
                 PublicActionOutcomeProjector.project(candidate, context).publiclyNullified
         }
         if (viable.isEmpty() || viable.size == context.candidates.size) return context
-        return BattleDecisionContext(
-            requestId = context.requestId,
-            state = context.state,
-            candidates = viable,
-            deadlineEpochMillis = context.deadlineEpochMillis,
-            memory = context.memory,
-            publicActionCatalog = context.publicActionCatalog,
-        )
+        return context.copy(candidates = viable)
     }
 }

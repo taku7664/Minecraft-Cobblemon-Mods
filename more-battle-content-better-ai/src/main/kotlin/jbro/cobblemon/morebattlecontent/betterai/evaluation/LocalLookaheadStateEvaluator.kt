@@ -178,13 +178,10 @@ internal object LocalLookaheadStateEvaluator {
         state: BattleStateView,
         action: BattleActionCandidate,
         source: BattleDecisionContext,
-    ) = BattleDecisionContext(
-        requestId = source.requestId,
+    ) = source.copy(
         state = state,
         candidates = listOf(action),
-        deadlineEpochMillis = source.deadlineEpochMillis,
         memory = BattleTacticalMemoryView.empty(),
-        publicActionCatalog = source.publicActionCatalog,
     )
 
     private fun battleEnded(state: BattleStateView): Boolean = BattleSide.entries.any { side ->

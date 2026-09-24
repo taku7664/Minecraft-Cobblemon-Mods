@@ -47,8 +47,10 @@ internal object LocalBranchMoveInputs {
                     move.copy(details = move.details.copy(currentPp = (move.details.currentPp - used).coerceAtLeast(0)))
                 }, entry.moveSetComplete)
             }, restored.originalEntries, restored.candidatePools)
-        return BattleDecisionContext(source.requestId, this.state(state, source.publicActionCatalog, history),
-            source.candidates, source.deadlineEpochMillis, source.memory, catalog)
+        return source.copy(
+            state = this.state(state, source.publicActionCatalog, history),
+            publicActionCatalog = catalog,
+        )
     }
 }
 

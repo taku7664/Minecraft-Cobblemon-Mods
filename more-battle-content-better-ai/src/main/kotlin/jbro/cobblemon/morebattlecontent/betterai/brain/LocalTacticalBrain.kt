@@ -307,12 +307,8 @@ internal class LocalTacticalBrain(
         val trainerProfile: BattleTrainerProfile,
     ) : BattleBrainSession
 
-    private fun BattleDecisionContext.withoutActivePlan(): BattleDecisionContext = BattleDecisionContext(
-        requestId = requestId,
-        state = state,
-        candidates = candidates,
-            deadlineEpochMillis = deadlineEpochMillis,
-            memory = BattleTacticalMemoryView(
+    private fun BattleDecisionContext.withoutActivePlan(): BattleDecisionContext = copy(
+        memory = BattleTacticalMemoryView(
             activePlan = null,
             activePlanOwner = null,
             tendencies = memory.tendencies,
@@ -326,7 +322,6 @@ internal class LocalTacticalBrain(
             patternResponseShiftEvidence = memory.patternResponseShiftEvidence,
             opponentResponseVolatility = memory.opponentResponseVolatility,
             nonProgressControlStreak = memory.nonProgressControlStreak,
-            ),
-            publicActionCatalog = publicActionCatalog,
-        )
+        ),
+    )
 }

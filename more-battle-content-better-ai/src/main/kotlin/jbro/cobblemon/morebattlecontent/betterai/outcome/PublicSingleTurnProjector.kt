@@ -2000,13 +2000,10 @@ internal object PublicSingleTurnProjector {
         action: BattleActionCandidate,
         source: BattleDecisionContext,
     ): BattleDecisionContext {
-        return BattleDecisionContext(
-            requestId = source.requestId,
+        return source.copy(
             state = state,
             candidates = listOf(action),
-            deadlineEpochMillis = source.deadlineEpochMillis,
             memory = BattleTacticalMemoryView.empty(),
-            publicActionCatalog = source.publicActionCatalog,
         )
     }
 

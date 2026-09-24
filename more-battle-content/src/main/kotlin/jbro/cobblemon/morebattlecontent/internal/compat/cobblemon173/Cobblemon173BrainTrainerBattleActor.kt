@@ -151,12 +151,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
                 val localContext = if (localBrain == null) {
                     context
                 } else {
-                    BattleDecisionContext(
-                        requestId = context.requestId,
-                        state = context.state,
-                        candidates = context.candidates,
-                        deadlineEpochMillis = context.deadlineEpochMillis,
-                        memory = context.memory,
+                    context.copy(
                         publicActionCatalog = publicCatalog.withOpponentMoveInferences(
                             opponentMoveInference.update(
                                 state,

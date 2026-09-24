@@ -44,12 +44,9 @@ internal object LocalForcedReplacementResolver {
                     tags = setOf("public_lookahead", "forced_replacement"),
                 )
                 val calculated = PublicBattleTacticalCalculator.calculate(
-                    BattleDecisionContext(
-                        requestId = source.requestId,
+                    source.copy(
                         state = projected,
                         candidates = listOf(raw),
-                        deadlineEpochMillis = source.deadlineEpochMillis,
-                        publicActionCatalog = source.publicActionCatalog,
                     ),
                     side,
                 ).candidates.single()

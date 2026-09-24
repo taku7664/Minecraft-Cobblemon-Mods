@@ -86,9 +86,10 @@ internal object LocalTeamMatchupCoverage {
             .firstOrNull { it.kind == BattleActionKind.SWITCH && it.switchPokemonId == pokemon.battlePokemonId }
             ?: return null
         val calculated = cache.getOrCalculate(state, pokemon.side, action, source.publicActionCatalog) {
-            PublicBattleTacticalCalculator.calculate(BattleDecisionContext(source.requestId, state,
-                listOf(action), source.deadlineEpochMillis, memory = source.memory,
-                publicActionCatalog = source.publicActionCatalog), pokemon.side)
+            PublicBattleTacticalCalculator.calculate(
+                source.copy(state = state, candidates = listOf(action)),
+                pokemon.side,
+            )
         }
         val outgoingIds = state.pokemon.filter { it.side == pokemon.side && it.activeSlot == action.actorSlot }
             .mapTo(hashSetOf()) { it.battlePokemonId }
@@ -97,8 +98,7 @@ internal object LocalTeamMatchupCoverage {
     }
 
     private fun sourceAt(source: BattleDecisionContext, state: BattleStateView, catalog: BattlePublicActionCatalogView) =
-        BattleDecisionContext(source.requestId, state, source.candidates, source.deadlineEpochMillis,
-            memory = source.memory, publicActionCatalog = catalog)
+        source.copy(state = state, publicActionCatalog = catalog)
 
     private fun Collection<Double>.averageOrZero(): Double = if (isEmpty()) 0.0 else average()
 

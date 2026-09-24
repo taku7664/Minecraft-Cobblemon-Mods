@@ -56,13 +56,10 @@ internal object PublicSwitchIncomingThreatCalculator {
                     it.side == BattleSide.OPPONENT && it.activeSlot == action.actorSlot && !it.fainted
                 }?.battlePokemonId ?: return@mapNotNull null
                 val calculated = PublicBattleTacticalCalculator.calculate(
-                    BattleDecisionContext(
-                        requestId = context.requestId,
+                    context.copy(
                         state = switched,
                         candidates = listOf(action),
-                        deadlineEpochMillis = context.deadlineEpochMillis,
                         memory = BattleTacticalMemoryView.empty(),
-                        publicActionCatalog = context.publicActionCatalog,
                     ),
                     BattleSide.OPPONENT,
                 )

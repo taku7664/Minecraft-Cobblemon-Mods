@@ -32,13 +32,8 @@ internal object PublicBattleTacticalCalculator {
         actingSide: BattleSide = BattleSide.ALLY,
     ): BattleDecisionContext {
         if (context.candidates.all(::fullyCalculated)) return context
-        return BattleDecisionContext(
-            requestId = context.requestId,
-            state = context.state,
+        return context.copy(
             candidates = context.candidates.map { calculateCandidate(it, context, actingSide) },
-            deadlineEpochMillis = context.deadlineEpochMillis,
-            memory = context.memory,
-            publicActionCatalog = context.publicActionCatalog,
         )
     }
 

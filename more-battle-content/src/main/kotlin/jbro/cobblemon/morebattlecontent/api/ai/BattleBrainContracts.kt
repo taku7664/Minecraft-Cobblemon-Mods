@@ -737,6 +737,26 @@ class BattleDecisionContext private constructor(
         }
     }
 
+    /** Derive a decision view without silently dropping public context added to this contract. */
+    fun copy(
+        requestId: UUID = this.requestId,
+        state: BattleStateView = this.state,
+        candidates: List<BattleActionCandidate> = this.candidates,
+        deadlineEpochMillis: Long = this.deadlineEpochMillis,
+        memory: BattleTacticalMemoryView = this.memory,
+        publicActionCatalog: BattlePublicActionCatalogView = this.publicActionCatalog,
+        opponentTeamPreview: BattleOpponentTeamPreviewView? = this.opponentTeamPreview,
+    ): BattleDecisionContext = BattleDecisionContext(
+        requestId,
+        state,
+        candidates,
+        deadlineEpochMillis,
+        memory,
+        publicActionCatalog,
+        opponentTeamPreview,
+        Unit,
+    )
+
     /** Preserve the original Kotlin/JVM constructor and its default-argument bridge. */
     constructor(
         requestId: UUID,
