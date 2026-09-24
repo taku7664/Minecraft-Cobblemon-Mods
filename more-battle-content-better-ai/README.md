@@ -23,7 +23,7 @@ The JAR is written to `more-battle-content-better-ai/build/libs`.
   `1/2/2/3` maximum lookahead. The primary/Router path remains public-only; a dedicated
   normalizer supplies only the tier-approved slots to the local Brain.
 
-## Opponent move usage snapshots
+## Opponent move and build usage snapshots
 
 The local Brain ships separate fixed, server-local move-presence tables generated
 from Smogon Pokemon Showdown's December 2025 Regulation J statistics at the 1500
@@ -32,6 +32,9 @@ battles). `BattleFormat.SINGLE` can only select the BSS table and
 `BattleFormat.DOUBLE` can only select the VGC table. Runtime battle decisions never
 fetch the network. Each snapshot records its source URL and raw SHA-256 and fails
 closed to the existing unknown-response branch if its resource is missing or invalid.
+The same pinned sources also produce separate build-prior snapshots containing
+ability, item, nature/EV spread and Tera-type marginals. They are loaded locally;
+no runtime battle decision fetches statistics from the network.
 
 The values are marginal probabilities that a species carried each move. They remain
 as a compatibility fallback for contexts that do not yet supply normalized slots; live local
@@ -42,6 +45,15 @@ their full joint distribution. The unknown-response branch remains present for
 guessed slots, custom species and incomplete learnsets. A
 low-usage damaging priority response is reserved before remaining slots are filled
 by usage on the compatibility path.
+
+Build fields are also independent marginals, not joint sets. The native build-world
+compiler intersects ability usage with the abilities legal for the public
+species/form, combines only a bounded highest-posterior beam, enforces the held-item
+clause, and renormalizes after truncation. Its versioned `public-build-prior-v1` IV
+policy keeps a perfect-IV world and, where the EV spread permits them, zero-Attack,
+zero-Speed and combined zero-Attack/zero-Speed worlds at equal policy weight. This
+is an explicit inference policy because the source does not publish IVs; it is not
+presented as observed usage. `nothing` is represented as a no-item hypothesis.
 
 Regenerate the committed singles snapshot deterministically from its two pinned
 sources (chaos JSON plus the independently rendered moveset table):
@@ -62,10 +74,13 @@ python more-battle-content-better-ai/tools/import_showdown_move_usage.py `
 
 For downloaded copies, pass `--input <chaos-json>` and `--moveset-input
 <moveset-txt>`. The importer verifies both hashes, source metadata and every named
-move percentage printed in the moveset table, removes anonymous/empty-slot tails,
-canonicalizes IDs, divides each move's weighted count by the species' weighted
-count, and writes sorted JSON. The committed files cross-check 4,172 singles rows
-and 6,394 doubles rows. A same-Regulation-J November comparison retained at least
+move percentage and every named legal build percentage printed in the moveset
+table, removes anonymous/empty-slot tails, canonicalizes IDs, divides each value's
+weighted count by the species' weighted count, and writes sorted JSON. Illegal
+source EV spreads are excluded from executable candidates while their probability
+is retained as `unresolvedSpreadRate`. The committed files cross-check 4,172 move
+and 6,057 build rows for singles, plus 6,394 move and 9,638 build rows for doubles.
+A same-Regulation-J November comparison retained at least
 two of December's top three moves for 69.4% of 356 shared singles species and
 85.4% of 411 shared doubles species; the unresolved branch remains because this
 is not complete set inference. Updating seasons is an explicit source change:

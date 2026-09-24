@@ -88,6 +88,45 @@ class BattleDecisionContractTest {
     }
 
     @Test
+    fun `opponent preview carries immutable legal ability and gender priors for the same public form`() {
+        val abilities = mutableListOf(
+            BattleOpponentPreviewAbilityView("multiscale", BattleAbilityAvailability.HIDDEN),
+            BattleOpponentPreviewAbilityView("innerfocus", BattleAbilityAvailability.REGULAR),
+        )
+        val genders = linkedMapOf("M" to 0.5, "F" to 0.5)
+        val pool = BattleOpponentPreviewBuildPoolView(
+            speciesId = "cobblemon:dragonite",
+            formId = "normal",
+            abilities = abilities,
+            genderRates = genders,
+            sourceId = "fixture:public-form",
+        )
+        val preview = BattleOpponentTeamPreviewPokemonView(
+            previewSlotId = 0,
+            speciesId = "cobblemon:dragonite",
+            formId = "normal",
+            level = 50,
+            buildCandidatePool = pool,
+        )
+
+        abilities.clear()
+        genders.clear()
+
+        assertSame(pool, preview.buildCandidatePool)
+        assertEquals(setOf("multiscale", "innerfocus"), pool.abilities.mapTo(linkedSetOf()) { it.abilityId })
+        assertEquals(mapOf("M" to 0.5, "F" to 0.5), pool.genderRates)
+        assertThrows(IllegalArgumentException::class.java) {
+            BattleOpponentTeamPreviewPokemonView(
+                previewSlotId = 0,
+                speciesId = "cobblemon:mimikyu",
+                formId = "normal",
+                level = 50,
+                buildCandidatePool = pool,
+            )
+        }
+    }
+
+    @Test
     fun `opponent preview rejects invalid selection and hidden exact stats`() {
         assertThrows(IllegalArgumentException::class.java) {
             BattleOpponentTeamPreviewView(

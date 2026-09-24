@@ -5,6 +5,8 @@ import com.cobblemon.mod.common.pokemon.abilities.HiddenAbility
 import com.cobblemon.mod.common.pokemon.Species
 import java.util.Locale
 import jbro.cobblemon.morebattlecontent.api.ai.BattleAbilityAvailability
+import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentPreviewAbilityView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentPreviewBuildPoolView
 import jbro.cobblemon.morebattlecontent.internal.ai.PublicAbilityPossibility
 import jbro.cobblemon.morebattlecontent.internal.ai.PublicSpeciesInferenceKnowledge
 import jbro.cobblemon.morebattlecontent.internal.ai.PublicSpeciesMoveKnowledge
@@ -49,7 +51,40 @@ internal object Cobblemon173PublicSpeciesInferenceKnowledge : PublicSpeciesInfer
             knownTypeIds = form.types.mapTo(linkedSetOf()) { it.name },
             combatStats = level?.let { Cobblemon173PublicStatHypothesis.fromForm(it, form) },
             knownFormStates = level?.let { Cobblemon173KnownFormStates.publicRanges(it, species) }.orEmpty(),
+            buildCandidatePool = publicBuildPool(speciesId, formId, form),
         )
+    }
+
+    private fun publicBuildPool(
+        speciesId: String,
+        formId: String?,
+        form: FormData,
+    ): BattleOpponentPreviewBuildPoolView? {
+        val abilities = form.abilities.mapNotNull { potential ->
+            canonical(potential.template.name).takeIf(String::isNotBlank)?.let { abilityId ->
+                BattleOpponentPreviewAbilityView(
+                    abilityId,
+                    if (potential is HiddenAbility) BattleAbilityAvailability.HIDDEN else BattleAbilityAvailability.REGULAR,
+                )
+            }
+        }.distinctBy(BattleOpponentPreviewAbilityView::abilityId)
+        val maleRatio = form.maleRatio.toDouble()
+        val genderRates = when {
+            maleRatio == -1.0 -> mapOf("N" to 1.0)
+            maleRatio == 0.0 -> mapOf("F" to 1.0)
+            maleRatio == 1.0 -> mapOf("M" to 1.0)
+            maleRatio > 0.0 && maleRatio < 1.0 -> linkedMapOf("M" to maleRatio, "F" to 1.0 - maleRatio)
+            else -> return null
+        }
+        return abilities.takeIf(List<*>::isNotEmpty)?.let {
+            BattleOpponentPreviewBuildPoolView(
+                speciesId = speciesId,
+                formId = formId,
+                abilities = abilities,
+                genderRates = genderRates,
+                sourceId = "cobblemon:1.7.3/form_abilities_and_gender_ratio",
+            )
+        }
     }
 
     private fun publicSpeciesAndForm(speciesId: String, formId: String?): Pair<Species, FormData>? {

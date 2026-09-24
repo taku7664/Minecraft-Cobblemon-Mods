@@ -12,6 +12,7 @@ internal data class Cobblemon173PublicPreviewFacts(
     val knownTypeIds: Set<String>,
     val combatStats: BattleCombatStatRangesView?,
     val knownFormStates: Map<String, BattlePokemonFormStateView>,
+    val buildCandidatePool: jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentPreviewBuildPoolView? = null,
 )
 
 /** Enriches opaque preview slots without accepting any live or registered Pokemon object. */
@@ -43,7 +44,8 @@ internal object Cobblemon173PublicTeamPreviewKnowledge {
             val knownTypes = publicFacts?.knownTypeIds ?: pokemon.knownTypeIds
             val combatStats = publicFacts?.combatStats ?: pokemon.combatStats
             val formStates = publicFacts?.knownFormStates ?: pokemon.knownFormStates
-            if (movePool == null) {
+            val buildPool = pokemon.buildCandidatePool ?: publicFacts?.buildCandidatePool
+            if (movePool == null && buildPool == null) {
                 BattleOpponentTeamPreviewPokemonView(
                     pokemon.previewSlotId,
                     pokemon.speciesId,
@@ -52,6 +54,28 @@ internal object Cobblemon173PublicTeamPreviewKnowledge {
                     knownTypes,
                     combatStats,
                     formStates,
+                )
+            } else if (movePool != null && buildPool == null) {
+                BattleOpponentTeamPreviewPokemonView(
+                    pokemon.previewSlotId,
+                    pokemon.speciesId,
+                    pokemon.formId,
+                    pokemon.level,
+                    knownTypes,
+                    combatStats,
+                    formStates,
+                    movePool,
+                )
+            } else if (movePool == null) {
+                BattleOpponentTeamPreviewPokemonView(
+                    pokemon.previewSlotId,
+                    pokemon.speciesId,
+                    pokemon.formId,
+                    pokemon.level,
+                    knownTypes,
+                    combatStats,
+                    formStates,
+                    requireNotNull(buildPool),
                 )
             } else {
                 BattleOpponentTeamPreviewPokemonView(
@@ -63,6 +87,7 @@ internal object Cobblemon173PublicTeamPreviewKnowledge {
                     combatStats,
                     formStates,
                     movePool,
+                    requireNotNull(buildPool),
                 )
             }
         },

@@ -267,6 +267,7 @@ class BattleOpponentTeamPreviewPokemonView private constructor(
     val combatStats: BattleCombatStatRangesView? = null,
     knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
     val moveCandidatePool: BattleOpponentPreviewMovePoolView?,
+    val buildCandidatePool: BattleOpponentPreviewBuildPoolView?,
     @Suppress("UNUSED_PARAMETER") compatibilityMarker: Unit,
 ) {
     val knownTypeIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownTypeIds))
@@ -292,6 +293,10 @@ class BattleOpponentTeamPreviewPokemonView private constructor(
             moveCandidatePool.speciesId == speciesId && moveCandidatePool.formId == formId) {
             "Opponent preview move candidates must describe the same public species and form"
         }
+        require(buildCandidatePool == null ||
+            buildCandidatePool.speciesId == speciesId && buildCandidatePool.formId == formId) {
+            "Opponent preview build candidates must describe the same public species and form"
+        }
     }
 
     /** Preserve the original Kotlin/JVM constructor and its default-argument bridge. */
@@ -311,6 +316,7 @@ class BattleOpponentTeamPreviewPokemonView private constructor(
         knownTypeIds,
         combatStats,
         knownFormStates,
+        null,
         null,
         Unit,
     )
@@ -333,6 +339,52 @@ class BattleOpponentTeamPreviewPokemonView private constructor(
         combatStats,
         knownFormStates,
         moveCandidatePool,
+        null,
+        Unit,
+    )
+
+    constructor(
+        previewSlotId: Int,
+        speciesId: String,
+        formId: String?,
+        level: Int?,
+        knownTypeIds: Set<String> = emptySet(),
+        combatStats: BattleCombatStatRangesView? = null,
+        knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
+        buildCandidatePool: BattleOpponentPreviewBuildPoolView,
+    ) : this(
+        previewSlotId,
+        speciesId,
+        formId,
+        level,
+        knownTypeIds,
+        combatStats,
+        knownFormStates,
+        null,
+        buildCandidatePool,
+        Unit,
+    )
+
+    constructor(
+        previewSlotId: Int,
+        speciesId: String,
+        formId: String?,
+        level: Int?,
+        knownTypeIds: Set<String> = emptySet(),
+        combatStats: BattleCombatStatRangesView? = null,
+        knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
+        moveCandidatePool: BattleOpponentPreviewMovePoolView,
+        buildCandidatePool: BattleOpponentPreviewBuildPoolView,
+    ) : this(
+        previewSlotId,
+        speciesId,
+        formId,
+        level,
+        knownTypeIds,
+        combatStats,
+        knownFormStates,
+        moveCandidatePool,
+        buildCandidatePool,
         Unit,
     )
 }

@@ -5,6 +5,9 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleCombatStatKnowledge
 import jbro.cobblemon.morebattlecontent.api.ai.BattleIntegerRange
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveCandidateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
+import jbro.cobblemon.morebattlecontent.api.ai.BattleAbilityAvailability
+import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentPreviewAbilityView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentPreviewBuildPoolView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewPokemonView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.morebattlecontent.internal.ai.PublicSpeciesMoveKnowledge
@@ -45,7 +48,21 @@ class Cobblemon173PublicTeamPreviewKnowledgeTest {
             preview = raw,
             facts = { species, form, level ->
                 requests += listOf("facts", species, form, level)
-                Cobblemon173PublicPreviewFacts(setOf("ghost", "fairy"), stats, emptyMap())
+                Cobblemon173PublicPreviewFacts(
+                    knownTypeIds = setOf("ghost", "fairy"),
+                    combatStats = stats,
+                    knownFormStates = emptyMap(),
+                    buildCandidatePool = BattleOpponentPreviewBuildPoolView(
+                        speciesId = species,
+                        formId = form,
+                        abilities = listOf(BattleOpponentPreviewAbilityView(
+                            "protosynthesis",
+                            BattleAbilityAvailability.REGULAR,
+                        )),
+                        genderRates = mapOf("N" to 1.0),
+                        sourceId = "fixture:public-form",
+                    ),
+                )
             },
             moveKnowledge = moves,
             moveDetails = { move ->
@@ -62,6 +79,8 @@ class Cobblemon173PublicTeamPreviewKnowledgeTest {
         assertEquals(stats, pokemon.combatStats)
         assertEquals(setOf("hidden-power", "moonblast", "shadowball"), pokemon.moveCandidatePool?.moveIds)
         assertEquals(setOf("moonblast", "shadowball"), pokemon.moveCandidatePool?.moveDetails?.keys)
+        assertEquals(listOf("protosynthesis"), pokemon.buildCandidatePool?.abilities?.map { it.abilityId })
+        assertEquals(mapOf("N" to 1.0), pokemon.buildCandidatePool?.genderRates)
         assertEquals(
             listOf(
                 listOf("facts", "cobblemon:fluttermane", "normal", 50),
@@ -88,5 +107,6 @@ class Cobblemon173PublicTeamPreviewKnowledgeTest {
         assertTrue(enriched.knownTypeIds.isEmpty())
         assertNull(enriched.combatStats)
         assertNull(enriched.moveCandidatePool)
+        assertNull(enriched.buildCandidatePool)
     }
 }

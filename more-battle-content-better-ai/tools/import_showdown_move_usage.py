@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create and cross-check a deterministic move-presence snapshot from Showdown stats."""
+"""Create deterministic move and public-build usage snapshots from Showdown stats."""
 
 from __future__ import annotations
 
@@ -116,6 +116,100 @@ def transform(
     }
 
 
+def transform_build_usage(
+    raw: bytes,
+    source_url: str,
+    expected_sha256: str | None,
+    expected_format: str,
+    expected_month: str,
+    expected_cutoff: int,
+) -> dict[str, Any]:
+    """Extract independent public build marginals; these are not joint set samples."""
+    digest = hashlib.sha256(raw).hexdigest()
+    if expected_sha256 and digest.lower() != expected_sha256.lower():
+        raise ValueError(f"source SHA-256 mismatch: expected {expected_sha256}, got {digest}")
+    document = json.loads(raw)
+    info = document.get("info")
+    data = document.get("data")
+    if not isinstance(info, dict) or not isinstance(data, dict) or not data:
+        raise ValueError("source must contain non-empty info and data objects")
+    format_id = str(info.get("metagame", ""))
+    cutoff = int(finite_number(info.get("cutoff"), "info.cutoff"))
+    battle_count = int(finite_number(info.get("number of battles"), "info.number of battles"))
+    if format_id != expected_format or cutoff != expected_cutoff or battle_count <= 0:
+        raise ValueError("source metadata does not match the requested snapshot")
+
+    species_output: dict[str, dict[str, Any]] = {}
+    sections = {
+        "Abilities": "abilities",
+        "Items": "items",
+        "Spreads": "spreads",
+        "Tera Types": "teraTypes",
+    }
+    spread_pattern = re.compile(r"^([^:]+):([0-9]+(?:/[0-9]+){5})$")
+    for raw_species, entry in sorted(data.items(), key=lambda item: canonical(item[0])):
+        if not isinstance(entry, dict):
+            raise ValueError(f"species entry must be an object: {raw_species}")
+        species_id = canonical(raw_species)
+        if not species_id or species_id in species_output:
+            raise ValueError(f"empty or colliding species id: {raw_species}")
+        abilities = entry.get("Abilities")
+        if not isinstance(abilities, dict):
+            raise ValueError(f"missing Abilities: {raw_species}")
+        denominator = sum(finite_number(value, f"{raw_species}.Abilities") for value in abilities.values())
+        if denominator <= 0.0:
+            continue
+        output_entry: dict[str, Any] = {}
+        unresolved_spread_weight = 0.0
+        for source_section, output_section in sections.items():
+            values = entry.get(source_section)
+            if not isinstance(values, dict) or not values:
+                raise ValueError(f"missing {source_section}: {raw_species}")
+            output_values: dict[str, float] = {}
+            for raw_id, weight in sorted(values.items(), key=lambda item: canonical(item[0])):
+                if source_section == "Spreads":
+                    match = spread_pattern.fullmatch(raw_id)
+                    if match is None:
+                        raise ValueError(f"invalid spread for {raw_species}: {raw_id}")
+                    evs = [int(value) for value in match.group(2).split("/")]
+                    if any(value > 252 for value in evs) or sum(evs) > 510:
+                        unresolved_spread_weight += finite_number(
+                            weight, f"{raw_species}.{source_section}.{raw_id}"
+                        )
+                        continue
+                    value_id = f"{canonical(match.group(1))}:{match.group(2)}"
+                else:
+                    value_id = canonical(raw_id)
+                if not value_id or value_id in output_values:
+                    raise ValueError(f"empty or colliding {source_section} id for {raw_species}: {raw_id}")
+                rate = finite_number(weight, f"{raw_species}.{source_section}.{raw_id}") / denominator
+                if rate < 0.0 or rate > 1.000000001:
+                    raise ValueError(f"invalid {source_section} rate for {raw_species}/{raw_id}: {rate}")
+                rounded = round(min(rate, 1.0), 12)
+                if rounded > 0.0:
+                    output_values[value_id] = rounded
+            if not output_values:
+                raise ValueError(f"{source_section} produced no values: {raw_species}")
+            output_entry[output_section] = output_values
+        output_entry["unresolvedSpreadRate"] = round(unresolved_spread_weight / denominator, 12)
+        species_output[species_id] = output_entry
+    if not species_output:
+        raise ValueError("source produced no build-usage species")
+    return {
+        "schemaVersion": 1,
+        "source": {
+            "provider": "Smogon Pokemon Showdown usage stats",
+            "format": format_id,
+            "month": expected_month,
+            "cutoff": cutoff,
+            "battleCount": battle_count,
+            "url": source_url,
+            "rawSha256": digest,
+        },
+        "species": species_output,
+    }
+
+
 def parse_moveset_rates(raw: bytes) -> dict[str, dict[str, float]]:
     """Read the independently rendered Showdown moveset table for cross-validation."""
     result: dict[str, dict[str, float]] = {}
@@ -187,6 +281,101 @@ def cross_validate_moveset(output: dict[str, Any], raw: bytes) -> int:
     return checked
 
 
+def parse_moveset_build_rates(raw: bytes) -> dict[str, dict[str, dict[str, float]]]:
+    """Read named build rows rendered independently from the chaos source."""
+    result: dict[str, dict[str, dict[str, float]]] = {}
+    current_species: str | None = None
+    section: str | None = None
+    after_separator = False
+    section_names = {
+        "Abilities", "Items", "Spreads", "Moves", "Tera Types", "Teammates",
+        "Checks and Counters",
+    }
+    wanted = {
+        "Abilities": "abilities",
+        "Items": "items",
+        "Spreads": "spreads",
+        "Tera Types": "teraTypes",
+    }
+    spread_pattern = re.compile(r"^([^:]+):([0-9]+(?:/[0-9]+){5})$")
+    for raw_line in raw.decode("utf-8").splitlines():
+        line = raw_line.strip()
+        if line.startswith("+") and line.endswith("+"):
+            after_separator = True
+            continue
+        if not (line.startswith("|") and line.endswith("|")):
+            continue
+        content = line[1:-1].strip()
+        if after_separator:
+            after_separator = False
+            if content in section_names:
+                section = content
+            elif content.startswith(("Raw count:", "Avg. weight:", "Viability Ceiling:")):
+                section = None
+            else:
+                current_species = content
+                section = None
+            continue
+        if section not in wanted or current_species is None:
+            continue
+        match = re.fullmatch(r"(.+?)\s+([0-9]+(?:\.[0-9]+)?)%", content)
+        if match is None or match.group(1) == "Other":
+            continue
+        raw_id = match.group(1)
+        if section == "Spreads":
+            spread_match = spread_pattern.fullmatch(raw_id)
+            if spread_match is None:
+                raise ValueError(f"invalid rendered spread row: {content}")
+            evs = [int(value) for value in spread_match.group(2).split("/")]
+            if any(value > 252 for value in evs) or sum(evs) > 510:
+                continue
+            value_id = f"{canonical(spread_match.group(1))}:{spread_match.group(2)}"
+        else:
+            value_id = canonical(raw_id)
+        species_id = canonical(current_species)
+        if not species_id or not value_id:
+            raise ValueError(f"invalid moveset build row: {content}")
+        rendered_rate = float(match.group(2)) / 100.0
+        # The text table can retain a named row that rounds to 0.000%, while the
+        # twelve-decimal build snapshot deliberately drops zero-probability entries.
+        if rendered_rate == 0.0:
+            continue
+        values = result.setdefault(species_id, {}).setdefault(wanted[section], {})
+        if value_id in values:
+            raise ValueError(f"duplicate moveset build row: {current_species}/{section}/{raw_id}")
+        values[value_id] = rendered_rate
+    if not result:
+        raise ValueError("moveset table produced no build rows")
+    return result
+
+
+def cross_validate_build_usage(output: dict[str, Any], raw: bytes) -> int:
+    """Require every named ability, item, spread and Tera row to match chaos JSON."""
+    rendered = parse_moveset_build_rates(raw)
+    generated = output["species"]
+    checked = 0
+    for species_id, sections in rendered.items():
+        if species_id not in generated:
+            raise ValueError(f"moveset build species missing from chaos JSON: {species_id}")
+        for section, values in sections.items():
+            generated_values = generated[species_id][section]
+            for value_id, rendered_rate in values.items():
+                generated_rate = generated_values.get(value_id)
+                if generated_rate is None:
+                    raise ValueError(
+                        f"moveset build value missing from chaos JSON: {species_id}/{section}/{value_id}"
+                    )
+                if abs(generated_rate - rendered_rate) > 0.0000051:
+                    raise ValueError(
+                        f"moveset build rate mismatch for {species_id}/{section}/{value_id}: "
+                        f"chaos={generated_rate:.6f}, moveset={rendered_rate:.6f}"
+                    )
+                checked += 1
+    if checked == 0:
+        raise ValueError("moveset build cross-validation checked no rows")
+    return checked
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, help="Use a downloaded chaos JSON instead of HTTP")
@@ -199,6 +388,7 @@ def main() -> None:
     parser.add_argument("--moveset-url")
     parser.add_argument("--moveset-expected-sha256")
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--build-output", type=Path)
     args = parser.parse_args()
 
     source_url = args.source_url or (
@@ -209,6 +399,11 @@ def main() -> None:
         / "src/main/resources/data/cobblemon_more_battle_content_better_ai/opponent_move_usage"
         / f"{args.format}-{args.month}-{args.cutoff}.json"
     )
+    build_output_path = args.build_output or (
+        Path(__file__).resolve().parents[1]
+        / "src/main/resources/data/cobblemon_more_battle_content_better_ai/opponent_build_usage"
+        / f"{args.format}-{args.month}-{args.cutoff}.json"
+    )
     expected_sha256 = args.expected_sha256
     is_default_snapshot = (
         args.format, args.month, args.cutoff
@@ -217,7 +412,11 @@ def main() -> None:
         expected_sha256 = DEFAULT_SHA256
     raw = read_source(args.input, source_url)
     output = transform(raw, source_url, expected_sha256, args.format, args.month, args.cutoff)
+    build_output = transform_build_usage(
+        raw, source_url, expected_sha256, args.format, args.month, args.cutoff
+    )
     checked = 0
+    build_checked = 0
     moveset_url = args.moveset_url or (DEFAULT_MOVESET_URL if is_default_snapshot else None)
     moveset_expected_sha256 = args.moveset_expected_sha256 or (
         DEFAULT_MOVESET_SHA256 if is_default_snapshot else None
@@ -231,17 +430,31 @@ def main() -> None:
                 f"expected {moveset_expected_sha256}, got {moveset_digest}"
             )
         checked = cross_validate_moveset(output, moveset_raw)
+        build_checked = cross_validate_build_usage(build_output, moveset_raw)
         output["source"]["crossValidation"] = {
             "provider": "Smogon Pokemon Showdown moveset stats",
             "url": moveset_url or "local input",
             "rawSha256": moveset_digest,
             "verifiedMoveRows": checked,
         }
+        build_output["source"]["crossValidation"] = {
+            "provider": "Smogon Pokemon Showdown moveset stats",
+            "url": moveset_url or "local input",
+            "rawSha256": moveset_digest,
+            "verifiedBuildRows": build_checked,
+        }
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(output, ensure_ascii=True, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    build_output_path.parent.mkdir(parents=True, exist_ok=True)
+    build_output_path.write_text(
+        json.dumps(build_output, ensure_ascii=True, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     print(
         f"wrote {len(output['species'])} species to {output_path} "
-        f"from {output['source']['battleCount']} battles; cross-checked {checked} move rows"
+        f"and {len(build_output['species'])} species to {build_output_path} "
+        f"from {output['source']['battleCount']} battles; cross-checked {checked} move rows "
+        f"and {build_checked} build rows"
     )
 
 
