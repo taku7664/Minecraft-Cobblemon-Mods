@@ -61,13 +61,12 @@ public final class BetterMusicClientRuntime {
             return;
         }
 
-        player.setMuffled(LastPokemonMuffleTracker.INSTANCE.shouldMuffle(client));
         player.tick(nowSeconds);
         if (client.player == null || client.level == null) {
             leaveWorld(nowSeconds);
         } else {
             inWorld = true;
-            scanFieldIfDue(client, nowSeconds);
+            scanContextIfDue(client, nowSeconds);
         }
 
         if (suppressOriginalMusic || player.ownsMusic()) {
@@ -104,16 +103,19 @@ public final class BetterMusicClientRuntime {
             return;
         }
         inWorld = false;
+        player.setMuffled(false);
+        LastPokemonMuffleTracker.INSTANCE.clear();
         coordinator.update(nowSeconds, MusicPlaybackCoordinator.Input.none())
             .ifPresent(transition -> applyTransition(nowSeconds, transition));
         nextScanSeconds = nowSeconds;
     }
 
-    private void scanFieldIfDue(Minecraft client, double nowSeconds) {
+    private void scanContextIfDue(Minecraft client, double nowSeconds) {
         if (nowSeconds < nextScanSeconds) {
             return;
         }
         nextScanSeconds = nowSeconds + snapshot.playback().scanIntervalSeconds();
+        player.setMuffled(LastPokemonMuffleTracker.INSTANCE.shouldMuffle(client));
 
         Optional<String> fieldCue = fieldSampler.sample(client)
             .map(fieldResolver::select)
