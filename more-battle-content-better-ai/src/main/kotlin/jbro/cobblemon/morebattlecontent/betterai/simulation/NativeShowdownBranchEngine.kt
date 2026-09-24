@@ -27,19 +27,27 @@ import org.graalvm.polyglot.io.FileSystem
  * synthetic battle or branch an already synthetic snapshot; there is deliberately no live
  * [com.cobblemon.mod.common.api.battles.model.PokemonBattle] input.
  */
+internal interface NativeBranchWorker : AutoCloseable {
+    val rulesFingerprint: String
+
+    fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame
+
+    fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame
+}
+
 internal class NativeShowdownBranchEngine private constructor(
     private val context: Context,
     private val createBattleFunction: Value,
     private val branchFunction: Value,
     private val gson: Gson,
-    val rulesFingerprint: String,
+    override val rulesFingerprint: String,
     private val ownedRulesGeneration: NativeRulesGeneration?,
-) : AutoCloseable {
-    fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame = decode(
+) : NativeBranchWorker {
+    override fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame = decode(
         createBattleFunction.execute(gson.toJson(definition)).asString(),
     )
 
-    fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame {
+    override fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame {
         require(snapshotJson.isNotBlank()) { "Native Showdown snapshot cannot be blank" }
         require(p1Choice.isNotBlank() && p2Choice.isNotBlank()) { "Both native choices are required" }
         return decode(

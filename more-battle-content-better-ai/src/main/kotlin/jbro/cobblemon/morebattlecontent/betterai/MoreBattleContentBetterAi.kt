@@ -29,6 +29,7 @@ import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterModelCapabilit
 import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterModelMetadata
 import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterModelMetadataHttpTransport
 import jbro.cobblemon.morebattlecontent.betterai.router.OpenRouterModelMetadataTransport
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownRuntimeService
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.loader.api.FabricLoader
@@ -68,6 +69,7 @@ object MoreBattleContentBetterAi : ModInitializer {
             decisionSummarySink = summarySink,
             decisionSummaryExecutor = summaryExecutor ?: ForkJoinPool.commonPool(),
         )
+        NativeShowdownRuntimeService.install(loader)
         summaryExecutor?.let(::registerDecisionSummaryShutdown)
     }
 
