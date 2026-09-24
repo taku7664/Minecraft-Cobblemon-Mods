@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import jbro.cobblemon.bettermusic.config.BetterMusicConfigManager;
 import jbro.cobblemon.bettermusic.config.BetterMusicConfigSnapshot;
+import jbro.cobblemon.bettermusic.config.AudioEffectsSettings;
 import jbro.cobblemon.bettermusic.config.PlaylistDefinition;
 import jbro.cobblemon.bettermusic.battle.BattlePlaylistResolver;
 import jbro.cobblemon.bettermusic.field.FieldPlaylistResolver;
@@ -44,6 +45,7 @@ public final class BetterMusicClientRuntime {
     private boolean inWorld;
     private boolean suppressOriginalMusic;
     private LastPokemonMuffleTracker.Effect lastPokemonEffect = LastPokemonMuffleTracker.Effect.NONE;
+    private AudioEffectsSettings audioEffects = AudioEffectsSettings.defaults();
     private String lastDesiredPlaylistId;
 
     public BetterMusicClientRuntime(BetterMusicConfigManager configManager, Logger logger) {
@@ -70,7 +72,12 @@ public final class BetterMusicClientRuntime {
             inWorld = true;
             scanContextIfDue(client, nowSeconds);
         }
-        heartbeatPlayer.tick(client, nowSeconds, lastPokemonEffect.heartbeat());
+        heartbeatPlayer.tick(
+            client,
+            nowSeconds,
+            lastPokemonEffect.heartbeat(),
+            audioEffects.lastPokemonHpEffectVolume()
+        );
 
         if (suppressOriginalMusic || player.ownsMusic()) {
             client.getMusicManager().stopPlaying();
@@ -90,6 +97,8 @@ public final class BetterMusicClientRuntime {
             player = new FadingMusicPlayer(backend);
         }
         snapshot = latest;
+        audioEffects = latest.audioEffects();
+        BattleHitSoundPlayer.configure(audioEffects);
         coordinator = new MusicPlaybackCoordinator(latest.playback());
         fieldResolver = new FieldPlaylistResolver(latest.field());
         battleResolver = new BattlePlaylistResolver(latest.battle());
@@ -118,7 +127,9 @@ public final class BetterMusicClientRuntime {
             return;
         }
         nextScanSeconds = nowSeconds + snapshot.playback().scanIntervalSeconds();
-        setLastPokemonEffect(LastPokemonMuffleTracker.INSTANCE.sampleEffect(client));
+        setLastPokemonEffect(audioEffects.lastPokemonHpEffectsEnabled()
+            ? LastPokemonMuffleTracker.INSTANCE.sampleEffect(client)
+            : LastPokemonMuffleTracker.Effect.NONE);
 
         Optional<String> fieldCue = fieldSampler.sample(client)
             .map(fieldResolver::select)

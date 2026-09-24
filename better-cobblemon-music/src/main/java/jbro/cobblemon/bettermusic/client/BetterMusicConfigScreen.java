@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicReference;
 import jbro.cobblemon.bettermusic.BetterCobblemonMusicClient;
+import jbro.cobblemon.bettermusic.config.AudioEffectsSettings;
 import jbro.cobblemon.bettermusic.config.GlobalMusicSettings;
 import jbro.cobblemon.bettermusic.config.GlobalMusicSettingsStore;
 import jbro.cobblemon.bettermusic.config.PlaylistDefinition;
@@ -74,6 +75,76 @@ final class BetterMusicConfigScreen {
             .setSaveConsumer(value -> edited.updateAndGet(settings -> withVolume(settings, value)))
             .build());
 
+        ConfigCategory effects = builder.getOrCreateCategory(text("category.effects"));
+        effects.addEntry(entries.startBooleanToggle(
+                text("hit_sounds_enabled"),
+                initial.audioEffects().hitSoundsEnabled()
+            )
+            .setDefaultValue(true)
+            .setTooltip(text("hit_sounds_enabled.tooltip"))
+            .setSaveConsumer(value -> edited.updateAndGet(settings -> withAudioEffects(
+                settings,
+                new AudioEffectsSettings(
+                    value,
+                    settings.audioEffects().hitSoundVolume(),
+                    settings.audioEffects().lastPokemonHpEffectsEnabled(),
+                    settings.audioEffects().lastPokemonHpEffectVolume()
+                )
+            )))
+            .build());
+        effects.addEntry(entries.startDoubleField(
+                text("hit_sound_volume"),
+                initial.audioEffects().hitSoundVolume()
+            )
+            .setDefaultValue(1.0)
+            .setMin(0.0)
+            .setMax(AudioEffectsSettings.MAX_VOLUME)
+            .setTooltip(text("hit_sound_volume.tooltip"))
+            .setSaveConsumer(value -> edited.updateAndGet(settings -> withAudioEffects(
+                settings,
+                new AudioEffectsSettings(
+                    settings.audioEffects().hitSoundsEnabled(),
+                    value,
+                    settings.audioEffects().lastPokemonHpEffectsEnabled(),
+                    settings.audioEffects().lastPokemonHpEffectVolume()
+                )
+            )))
+            .build());
+        effects.addEntry(entries.startBooleanToggle(
+                text("last_pokemon_hp_effects_enabled"),
+                initial.audioEffects().lastPokemonHpEffectsEnabled()
+            )
+            .setDefaultValue(true)
+            .setTooltip(text("last_pokemon_hp_effects_enabled.tooltip"))
+            .setSaveConsumer(value -> edited.updateAndGet(settings -> withAudioEffects(
+                settings,
+                new AudioEffectsSettings(
+                    settings.audioEffects().hitSoundsEnabled(),
+                    settings.audioEffects().hitSoundVolume(),
+                    value,
+                    settings.audioEffects().lastPokemonHpEffectVolume()
+                )
+            )))
+            .build());
+        effects.addEntry(entries.startDoubleField(
+                text("last_pokemon_hp_effect_volume"),
+                initial.audioEffects().lastPokemonHpEffectVolume()
+            )
+            .setDefaultValue(1.0)
+            .setMin(0.0)
+            .setMax(AudioEffectsSettings.MAX_VOLUME)
+            .setTooltip(text("last_pokemon_hp_effect_volume.tooltip"))
+            .setSaveConsumer(value -> edited.updateAndGet(settings -> withAudioEffects(
+                settings,
+                new AudioEffectsSettings(
+                    settings.audioEffects().hitSoundsEnabled(),
+                    settings.audioEffects().hitSoundVolume(),
+                    settings.audioEffects().lastPokemonHpEffectsEnabled(),
+                    value
+                )
+            )))
+            .build());
+
         ConfigCategory advanced = builder.getOrCreateCategory(text("category.advanced"));
         advanced.addEntry(entries.startTextDescription(text("advanced.description")).build());
         return builder.build();
@@ -116,7 +187,8 @@ final class BetterMusicConfigScreen {
             key.equals("fade_in") ? value : settings.fadeInSeconds(),
             key.equals("fade_out") ? value : settings.fadeOutSeconds(),
             settings.selection(),
-            settings.volume()
+            settings.volume(),
+            settings.audioEffects()
         );
     }
 
@@ -127,7 +199,7 @@ final class BetterMusicConfigScreen {
         return new GlobalMusicSettings(
             settings.scanIntervalSeconds(), settings.fieldChangeDelaySeconds(),
             settings.betweenTracksSeconds(), settings.fadeInSeconds(), settings.fadeOutSeconds(),
-            selection, settings.volume()
+            selection, settings.volume(), settings.audioEffects()
         );
     }
 
@@ -135,7 +207,18 @@ final class BetterMusicConfigScreen {
         return new GlobalMusicSettings(
             settings.scanIntervalSeconds(), settings.fieldChangeDelaySeconds(),
             settings.betweenTracksSeconds(), settings.fadeInSeconds(), settings.fadeOutSeconds(),
-            settings.selection(), volume
+            settings.selection(), volume, settings.audioEffects()
+        );
+    }
+
+    private static GlobalMusicSettings withAudioEffects(
+        GlobalMusicSettings settings,
+        AudioEffectsSettings audioEffects
+    ) {
+        return new GlobalMusicSettings(
+            settings.scanIntervalSeconds(), settings.fieldChangeDelaySeconds(),
+            settings.betweenTracksSeconds(), settings.fadeInSeconds(), settings.fadeOutSeconds(),
+            settings.selection(), settings.volume(), audioEffects
         );
     }
 

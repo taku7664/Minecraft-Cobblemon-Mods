@@ -9,7 +9,8 @@ public record GlobalMusicSettings(
     double fadeInSeconds,
     double fadeOutSeconds,
     PlaylistDefinition.Selection selection,
-    double volume
+    double volume,
+    AudioEffectsSettings audioEffects
 ) {
     public GlobalMusicSettings {
         new PlaybackSettings(
@@ -20,6 +21,7 @@ public record GlobalMusicSettings(
             fadeOutSeconds
         );
         Objects.requireNonNull(selection, "selection");
+        Objects.requireNonNull(audioEffects, "audioEffects");
         if (!Double.isFinite(volume) || volume < 0.0 || volume > Float.MAX_VALUE) {
             throw new IllegalArgumentException("volume must be a non-negative finite float");
         }

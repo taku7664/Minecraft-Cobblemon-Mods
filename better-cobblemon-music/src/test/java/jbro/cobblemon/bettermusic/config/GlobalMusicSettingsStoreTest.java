@@ -25,7 +25,8 @@ final class GlobalMusicSettingsStoreTest {
             0.5,
             1.5,
             PlaylistDefinition.Selection.SEQUENTIAL,
-            0.75
+            0.75,
+            new AudioEffectsSettings(false, 0.6, false, 0.4)
         );
 
         GlobalMusicSettingsStore.save(config, settings);
@@ -35,6 +36,10 @@ final class GlobalMusicSettingsStoreTest {
         assertEquals(before.get("field"), after.get("field"));
         assertEquals(before.get("battle"), after.get("battle"));
         assertEquals(2, after.get("schemaVersion").getAsInt());
+        assertEquals(false, after.get("hitSoundsEnabled").getAsBoolean());
+        assertEquals(0.6, after.get("hitSoundVolume").getAsDouble());
+        assertEquals(false, after.get("lastPokemonHpEffectsEnabled").getAsBoolean());
+        assertEquals(0.4, after.get("lastPokemonHpEffectVolume").getAsDouble());
     }
 
     private static String minimalConfig() {

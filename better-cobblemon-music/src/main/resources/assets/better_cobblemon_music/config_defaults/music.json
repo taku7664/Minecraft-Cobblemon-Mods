@@ -7,6 +7,10 @@
   "fadeOutSeconds": 1.0,
   "selection": "shuffle",
   "volume": 1.0,
+  "hitSoundsEnabled": true,
+  "hitSoundVolume": 1.0,
+  "lastPokemonHpEffectsEnabled": true,
+  "lastPokemonHpEffectVolume": 1.0,
   "field": {
     "default": "field/plains/sinnoh_route_201_day.ogg",
     "dimensions": {

@@ -12,6 +12,40 @@ import org.junit.jupiter.api.Test;
 
 final class MusicConfigParserTest {
     @Test
+    void defaultsMissingAudioEffectSettingsForExistingConfigs() {
+        var config = MusicConfigParser.parse(new StringReader(minimalConfig("\"field/plains.ogg\"")));
+
+        assertEquals(AudioEffectsSettings.defaults(), config.audioEffects());
+    }
+
+    @Test
+    void parsesAudioEffectTogglesAndVolumes() {
+        String configured = minimalConfig("\"field/plains.ogg\"").replace(
+            "\"volume\": 1.0,",
+            "\"volume\": 1.0, \"hitSoundsEnabled\": false, \"hitSoundVolume\": 0.6, "
+                + "\"lastPokemonHpEffectsEnabled\": false, \"lastPokemonHpEffectVolume\": 0.4,"
+        );
+
+        var config = MusicConfigParser.parse(new StringReader(configured));
+
+        assertEquals(new AudioEffectsSettings(false, 0.6, false, 0.4), config.audioEffects());
+    }
+
+    @Test
+    void rejectsAudioEffectVolumesAboveTheUiLimit() {
+        String configured = minimalConfig("\"field/plains.ogg\"").replace(
+            "\"volume\": 1.0,",
+            "\"volume\": 1.0, \"hitSoundVolume\": 2.01,"
+        );
+
+        var exception = assertThrows(ConfigValidationException.class, () ->
+            MusicConfigParser.parse(new StringReader(configured))
+        );
+
+        assertTrue(exception.getMessage().contains("$.hitSoundVolume"));
+    }
+
+    @Test
     void parsesOrderedSchemaTwoBiomeRulesWithMultiTrackPlaylists() {
         var config = MusicConfigParser.parse(new StringReader("""
             {

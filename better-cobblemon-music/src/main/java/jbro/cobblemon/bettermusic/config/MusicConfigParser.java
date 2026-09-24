@@ -37,6 +37,10 @@ public final class MusicConfigParser {
             "fadeOutSeconds",
             "selection",
             "volume",
+            "hitSoundsEnabled",
+            "hitSoundVolume",
+            "lastPokemonHpEffectsEnabled",
+            "lastPokemonHpEffectVolume",
             "field",
             "battle"
         ));
@@ -61,8 +65,15 @@ public final class MusicConfigParser {
             fadeIn,
             fadeOut
         );
+        var audioEffects = new AudioEffectsSettings(
+            optionalBoolean(root, "hitSoundsEnabled", true, "$.hitSoundsEnabled"),
+            optionalEffectVolume(root, "hitSoundVolume", 1.0, "$.hitSoundVolume"),
+            optionalBoolean(root, "lastPokemonHpEffectsEnabled", true, "$.lastPokemonHpEffectsEnabled"),
+            optionalEffectVolume(root, "lastPokemonHpEffectVolume", 1.0, "$.lastPokemonHpEffectVolume")
+        );
         return new BetterMusicConfigSnapshot(
             playback,
+            audioEffects,
             parseField(object(root, "field", "$.field"), defaults, schemaVersion),
             parseBattle(object(root, "battle", "$.battle"), defaults)
         );
@@ -458,6 +469,38 @@ public final class MusicConfigParser {
             throw error(path, "must fit in a finite float sound volume");
         }
         return value;
+    }
+
+    private static double optionalEffectVolume(
+        JsonObject object,
+        String key,
+        double defaultValue,
+        String path
+    ) {
+        if (!object.has(key)) {
+            return defaultValue;
+        }
+        double value = nonNegativeNumber(object, key, path);
+        if (value > AudioEffectsSettings.MAX_VOLUME) {
+            throw error(path, "must not exceed " + AudioEffectsSettings.MAX_VOLUME);
+        }
+        return value;
+    }
+
+    private static boolean optionalBoolean(
+        JsonObject object,
+        String key,
+        boolean defaultValue,
+        String path
+    ) {
+        if (!object.has(key)) {
+            return defaultValue;
+        }
+        JsonElement element = required(object, key, path);
+        if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isBoolean()) {
+            throw error(path, "must be a boolean");
+        }
+        return element.getAsBoolean();
     }
 
     private static double number(JsonObject object, String key, String path) {

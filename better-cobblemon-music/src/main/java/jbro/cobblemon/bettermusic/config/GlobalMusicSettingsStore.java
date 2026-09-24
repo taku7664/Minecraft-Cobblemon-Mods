@@ -31,7 +31,8 @@ public final class GlobalMusicSettingsStore {
             PlaylistDefinition.Selection.valueOf(
                 root.get("selection").getAsString().toUpperCase(Locale.ROOT)
             ),
-            root.get("volume").getAsDouble()
+            root.get("volume").getAsDouble(),
+            config.audioEffects()
         );
     }
 
@@ -48,6 +49,16 @@ public final class GlobalMusicSettingsStore {
         root.addProperty("fadeOutSeconds", settings.fadeOutSeconds());
         root.addProperty("selection", settings.selection().name().toLowerCase(Locale.ROOT));
         root.addProperty("volume", settings.volume());
+        root.addProperty("hitSoundsEnabled", settings.audioEffects().hitSoundsEnabled());
+        root.addProperty("hitSoundVolume", settings.audioEffects().hitSoundVolume());
+        root.addProperty(
+            "lastPokemonHpEffectsEnabled",
+            settings.audioEffects().lastPokemonHpEffectsEnabled()
+        );
+        root.addProperty(
+            "lastPokemonHpEffectVolume",
+            settings.audioEffects().lastPokemonHpEffectVolume()
+        );
 
         String candidate = new GsonBuilder().setPrettyPrinting().create().toJson(root)
             + System.lineSeparator();

@@ -19,6 +19,7 @@ final class DefaultMusicConfigResourceTest {
             config = MusicConfigParser.parse(reader);
         }
 
+        assertEquals(AudioEffectsSettings.defaults(), config.audioEffects());
         assertEquals(3, config.field().dimensions().get("cobblemon_policy:plaza").tracks().size());
         assertEquals(4, config.battle().pvp().tracks().size());
         assertEquals(
