@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
 import com.google.gson.JsonParser
+import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -36,6 +37,22 @@ class EmbeddedFormatBoundaryTest {
                 EmbeddedTeamInput.battleFormat(JsonParser.parseString(json).asJsonObject)
             }
             assertTrue(failure.message.orEmpty().isNotBlank(), json)
+        }
+    }
+
+    @Test
+    fun `single active slot is unambiguous but doubles require the bridge mapping`() {
+        val none = JsonParser.parseString("{}").asJsonObject
+        val mapped = JsonParser.parseString(
+            """{"p1:00000000-0000-0000-0000-000000000101":1}""",
+        ).asJsonObject
+        val ident = "p1: 00000000-0000-0000-0000-000000000101"
+
+        assertEquals(0, EmbeddedTeamInput.ownActiveSlot(BattleFormat.SINGLE, none, ident, active = true))
+        assertNull(EmbeddedTeamInput.ownActiveSlot(BattleFormat.DOUBLE, none, ident, active = false))
+        assertEquals(1, EmbeddedTeamInput.ownActiveSlot(BattleFormat.DOUBLE, mapped, ident, active = true))
+        assertThrows(IllegalArgumentException::class.java) {
+            EmbeddedTeamInput.ownActiveSlot(BattleFormat.DOUBLE, none, ident, active = true)
         }
     }
 }

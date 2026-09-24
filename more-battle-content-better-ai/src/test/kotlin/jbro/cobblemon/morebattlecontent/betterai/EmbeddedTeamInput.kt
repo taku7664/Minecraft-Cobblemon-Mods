@@ -27,6 +27,22 @@ internal object EmbeddedTeamInput {
     fun identity(ident: String): String = ident.take(2) + ":" + ident.substringAfter(':').trim()
     private fun uuid(ident: String) = UUID.nameUUIDFromBytes(identity(ident).toByteArray(Charsets.UTF_8))
     private fun activeSlot(ident: String): Int? = ident.getOrNull(2)?.takeIf { it in 'a'..'b' }?.minus('a')
+    internal fun ownActiveSlot(
+        format: BattleFormat,
+        ownActiveSlots: JsonObject,
+        ident: String,
+        active: Boolean,
+    ): Int? {
+        if (!active) return null
+        val mapped = ownActiveSlots[identity(ident)]?.takeUnless { it.isJsonNull }?.asInt
+        if (mapped != null) {
+            val maximum = if (format == BattleFormat.SINGLE) 0 else 1
+            require(mapped in 0..maximum) { "Own active slot $mapped is invalid for $format" }
+            return mapped
+        }
+        require(format == BattleFormat.SINGLE) { "Missing own active slot mapping for $ident in $format" }
+        return 0
+    }
     private fun id(text: String) = text.substringAfter(": ").lowercase().filter(Char::isLetterOrDigit)
     private fun condition(value: String): Pair<Double, String?> {
         val parts = value.split(' ')
@@ -200,7 +216,7 @@ internal object EmbeddedTeamInput {
             val stats = pokemon.getAsJsonObject("stats")
             val maxHp = pokemon["condition"].asString.substringBefore(' ').substringAfter('/', "0").toInt()
             BattlePokemonStateView(uuid(ident), BattleSide.ALLY,
-                if (pokemon["active"].asBoolean) ownActiveSlots[identity(ident)]?.asInt else null,
+                ownActiveSlot(format, ownActiveSlots, ident, pokemon["active"].asBoolean),
                 id(details[0]), null, details.firstOrNull { it.matches(Regex("L\\d+")) }?.drop(1)?.toInt() ?: 100,
                 hp.first, hp.second, seen[identity(ident)]?.stages.orEmpty(),
                 pokemon.getAsJsonArray("moves").map { id(it.asString) }.toSet(),
