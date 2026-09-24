@@ -21,6 +21,8 @@ internal class NativeShowdownSearchTree(
     rootFrame: NativeBattleFrame,
     publicTemplate: BattleStateView,
 ) {
+    val rulesFingerprint: String = worker.rulesFingerprint
+
     val root = NativeSearchPosition(
         frame = rootFrame,
         state = NativeBattleStateAdapter.adapt(rootFrame, publicTemplate),
