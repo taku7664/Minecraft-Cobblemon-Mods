@@ -17,6 +17,9 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
     implementation(project(":more-battle-content"))
     implementation("com.google.code.gson:gson:2.11.0")
+    // Cobblemon supplies GraalJS at runtime. Better AI compiles only against its public context API
+    // so the addon does not package a second JavaScript engine into its own JAR.
+    compileOnly("org.graalvm.sdk:graal-sdk:22.3.0")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("com.google.code.gson:gson:2.11.0")
