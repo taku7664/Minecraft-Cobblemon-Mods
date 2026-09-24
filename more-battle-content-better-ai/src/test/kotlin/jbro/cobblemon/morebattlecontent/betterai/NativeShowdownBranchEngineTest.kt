@@ -2,12 +2,17 @@ package jbro.cobblemon.morebattlecontent.betterai
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardOpenOption.APPEND
 import java.nio.file.StandardOpenOption.CREATE_NEW
 import java.util.zip.ZipInputStream
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonSet
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRuleRegistry
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRuleSource
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRulesGeneration
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownBranchEngine
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -32,6 +37,88 @@ class NativeShowdownBranchEngineTest {
             assertEquals(technicianAfter.p1Active, technicianReplay.p1Active)
             assertEquals(technicianAfter.p2Active, technicianReplay.p2Active)
             assertTrue(technicianDamage > swarmDamage, "Technician must be executed by native Showdown")
+        }
+    }
+
+    @Test
+    fun `runtime rule source keeps JavaScript callback in isolated context`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        val rules = NativeRulesGeneration.capture(
+            engineRoot,
+            listOf(
+                NativeRuleSource(
+                    registry = NativeRuleRegistry.ABILITY,
+                    id = "mbctestpower",
+                    javaScript = """({
+                        name: "MBC Test Power",
+                        // A raw runtime source may contain line comments; replay must preserve line boundaries.
+                        onModifyAtk(atk) { return this.chainModify(2); },
+                        flags: {}, rating: 1, num: -999
+                    })""".trimIndent(),
+                ),
+            ),
+        )
+        rules.use {
+            Files.writeString(engineRoot.resolve("index.js"), "throw new Error('mutated source root');")
+            NativeShowdownBranchEngine.open(engineRoot, rules).use { engine ->
+                val boosted = engine.createBattle(battle("MBC Test Power"))
+                val neutral = engine.createBattle(battle("No Ability"))
+                val boostedAfter = engine.branch(boosted.snapshotJson, "move 1", "move 1")
+                val neutralAfter = engine.branch(neutral.snapshotJson, "move 1", "move 1")
+
+                val boostedDamage = boosted.p2Active.single().hp - boostedAfter.p2Active.single().hp
+                val neutralDamage = neutral.p2Active.single().hp - neutralAfter.p2Active.single().hp
+                assertEquals(rules.fingerprint, engine.rulesFingerprint)
+                assertTrue(boostedDamage > neutralDamage, "Runtime ability callback must survive rule replay")
+            }
+        }
+    }
+
+    @Test
+    fun `patched index receives specialized runtime registries without rewriting source`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        Files.writeString(
+            engineRoot.resolve("index.js"),
+            """
+            globalThis.receiveScriptData = function(id, source) {
+              if (!source.includes("\n")) throw new Error("SCRIPT source lost line boundaries");
+            };
+            globalThis.receiveConditionData = function(id, source) {
+              if (!source.includes("\n")) throw new Error("CONDITION source lost line boundaries");
+            };
+            globalThis.receiveTypeChartData = function(id, source) {
+              if (!source.includes("\n")) throw new Error("TYPE_CHART source lost line boundaries");
+            };
+            """.trimIndent(),
+            APPEND,
+        )
+        val rules = NativeRulesGeneration.capture(
+            engineRoot,
+            listOf(
+                NativeRuleSource(NativeRuleRegistry.SCRIPT, "gen9", "({\n// script\nonBegin() {}\n})"),
+                NativeRuleSource(NativeRuleRegistry.CONDITION, "testcondition", "({\n// condition\nonStart() {}\n})"),
+                NativeRuleSource(NativeRuleRegistry.TYPE_CHART, "testtype", "({\n// type\ndamageTaken: {}\n})"),
+            ),
+        )
+        rules.use {
+            NativeShowdownBranchEngine.open(engineRoot, rules).use { engine ->
+                assertEquals("move", engine.createBattle(battle("Technician")).requestState)
+            }
+        }
+    }
+
+    @Test
+    fun `specialized runtime registry is rejected when patched receiver is missing`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        val rules = NativeRulesGeneration.capture(
+            engineRoot,
+            listOf(NativeRuleSource(NativeRuleRegistry.SCRIPT, "gen9", "({ inherit: 'gen9' })")),
+        )
+        rules.use {
+            val failure = assertThrows(RuntimeException::class.java) {
+                NativeShowdownBranchEngine.open(engineRoot, rules).close()
+            }
+            assertTrue(failure.message.orEmpty().contains("receiveScriptData"))
         }
     }
 

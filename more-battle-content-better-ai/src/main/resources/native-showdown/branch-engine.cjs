@@ -1,9 +1,38 @@
 'use strict';
 
+(function() {
 const { Battle } = require('./sim/battle.js');
 const { Dex } = require('./sim/dex.js');
 const dex = Dex.mod('cobblemon');
 dex.includeData();
+
+const ruleReceivers = {
+  ABILITY: ['receiveAbilityData', 'ability'],
+  MOVE: ['receiveMoveData', 'move'],
+  SCRIPT: ['receiveScriptData', null],
+  CONDITION: ['receiveConditionData', null],
+  HELD_ITEM: ['receiveHeldItemData', 'heldItem'],
+  TYPE_CHART: ['receiveTypeChartData', null],
+};
+
+globalThis.mbcApplyRules = function(payload) {
+  const sources = JSON.parse(payload);
+  for (const source of sources) {
+    const receiver = ruleReceivers[source.registry];
+    if (!receiver) throw new Error(`Unsupported native rule registry ${source.registry}`);
+    const specialized = globalThis[receiver[0]];
+    if (typeof specialized === 'function') {
+      specialized(source.id, source.javaScript);
+      continue;
+    }
+    if (receiver[1] && typeof globalThis.receiveData === 'function') {
+      const objectSource = `{${JSON.stringify(source.id)}:${source.javaScript}}`;
+      globalThis.receiveData(objectSource, receiver[1]);
+      continue;
+    }
+    throw new Error(`Showdown index.js is missing ${receiver[0]}`);
+  }
+};
 
 function normalizeSet(set) {
   const movesInfo = set.moves.map(id => {
@@ -75,3 +104,4 @@ globalThis.mbcBranchBattle = function(payload) {
     battle.destroy();
   }
 };
+})();

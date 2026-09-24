@@ -32,6 +32,8 @@ internal class NativeShowdownBranchEngine private constructor(
     private val createBattleFunction: Value,
     private val branchFunction: Value,
     private val gson: Gson,
+    val rulesFingerprint: String,
+    private val ownedRulesGeneration: NativeRulesGeneration?,
 ) : AutoCloseable {
     fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame = decode(
         createBattleFunction.execute(gson.toJson(definition)).asString(),
@@ -50,14 +52,43 @@ internal class NativeShowdownBranchEngine private constructor(
     private fun decode(json: String): NativeBattleFrame =
         gson.fromJson(json, NativeBattleFrame::class.java)
 
-    override fun close() = context.close(true)
+    override fun close() {
+        try {
+            context.close(true)
+        } finally {
+            ownedRulesGeneration?.close()
+        }
+    }
 
     companion object {
         fun open(engineRoot: Path): NativeShowdownBranchEngine {
-            val normalizedRoot = engineRoot.toAbsolutePath().normalize().toRealPath(LinkOption.NOFOLLOW_LINKS)
+            val rules = NativeRulesGeneration.capture(engineRoot)
+            return try {
+                open(engineRoot, rules, rules)
+            } catch (failure: Throwable) {
+                rules.close()
+                throw failure
+            }
+        }
+
+        fun open(engineRoot: Path, rules: NativeRulesGeneration): NativeShowdownBranchEngine =
+            open(engineRoot, rules, null)
+
+        private fun open(
+            engineRoot: Path,
+            rules: NativeRulesGeneration,
+            ownedRulesGeneration: NativeRulesGeneration?,
+        ): NativeShowdownBranchEngine {
+            val sourceRoot = engineRoot.toAbsolutePath().normalize().toRealPath(LinkOption.NOFOLLOW_LINKS)
+            require(sourceRoot == rules.sourceEngineRoot) {
+                "Native rules generation belongs to a different Showdown directory"
+            }
+            val normalizedRoot = rules.engineRoot
             require(normalizedRoot.resolve("sim/battle.js").toFile().isFile) {
                 "Showdown sim/battle.js is missing under $normalizedRoot"
             }
+            val indexPath = normalizedRoot.resolve("index.js")
+            require(indexPath.toFile().isFile) { "Showdown index.js is missing under $normalizedRoot" }
             val rootForJs = normalizedRoot.toString().replace('\\', '/')
             val rootLiteral = Gson().toJson(rootForJs)
             val fileSystem = ReadOnlyRootFileSystem(normalizedRoot)
@@ -83,6 +114,7 @@ internal class NativeShowdownBranchEngine private constructor(
                     "js",
                     "globalThis.process = { cwd: function() { return $rootLiteral; } };",
                 )
+                context.eval(Source.newBuilder("js", indexPath.toFile()).build())
                 val bridge = requireNotNull(
                     NativeShowdownBranchEngine::class.java.getResourceAsStream(
                         "/native-showdown/branch-engine.cjs",
@@ -92,10 +124,19 @@ internal class NativeShowdownBranchEngine private constructor(
                 val bindings = context.getBindings("js")
                 val create = bindings.getMember("mbcCreateBattle")
                 val branch = bindings.getMember("mbcBranchBattle")
-                check(create?.canExecute() == true && branch?.canExecute() == true) {
+                val applyRules = bindings.getMember("mbcApplyRules")
+                check(create?.canExecute() == true && branch?.canExecute() == true && applyRules?.canExecute() == true) {
                     "Native Showdown bridge did not export its branch functions"
                 }
-                return NativeShowdownBranchEngine(context, create, branch, Gson())
+                applyRules.execute(Gson().toJson(rules.sources))
+                return NativeShowdownBranchEngine(
+                    context,
+                    create,
+                    branch,
+                    Gson(),
+                    rules.fingerprint,
+                    ownedRulesGeneration,
+                )
             } catch (failure: Throwable) {
                 context.close(true)
                 throw failure
