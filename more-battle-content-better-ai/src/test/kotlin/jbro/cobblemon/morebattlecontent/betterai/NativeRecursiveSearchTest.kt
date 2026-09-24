@@ -1,6 +1,8 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
 import java.util.UUID
+import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
+import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFieldStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
@@ -16,6 +18,7 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMoveFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownSearchTree
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 class NativeRecursiveSearchTest {
@@ -138,6 +141,57 @@ class NativeRecursiveSearchTest {
         assertEquals(NativeSearchTerminationReason.NODE_BUDGET, result.terminationReason)
         assertEquals(0.2, rounded(result.rootValues.single().value))
         assertEquals(listOf("root", "root"), worker.visitedSnapshots)
+    }
+
+    @Test
+    fun `product root actions are mapped before search and restored in the result`() {
+        val root = frame("root", 1, 100, 100, listOf("tackle"), listOf("growl"))
+        val worker = RecordingWorker(
+            mapOf(BranchKey("root", "move 1", "move 1") to terminal("after", 80, 60)),
+        )
+        val productAction = BattleActionCandidate(
+            actionId = "product:tackle",
+            kind = BattleActionKind.USE_MOVE,
+            actorSlot = 0,
+            moveSlot = 0,
+            moveId = "cobblemon:Tackle",
+            targets = listOf(jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot(BattleSide.OPPONENT, 0)),
+        )
+
+        val attempt = NativeRecursiveSearch(
+            tree = NativeShowdownSearchTree(worker, root, template()),
+            world = NativeSearchWorldKey("hypothesis-1", randomSampleIndex = 0),
+            evaluate = ::material,
+            nodeLimit = 100,
+        ).evaluateProduct(listOf(productAction), maxDepth = 1)
+
+        assertEquals(true, attempt.mapping.complete)
+        assertEquals(productAction.actionId, attempt.result?.rootValues?.single()?.action?.actionId)
+        assertEquals(listOf("root"), worker.visitedSnapshots)
+    }
+
+    @Test
+    fun `incomplete product root mapping never executes a native branch`() {
+        val root = frame("root", 1, 100, 100, listOf("tackle"), listOf("growl"))
+        val worker = RecordingWorker(emptyMap())
+        val unavailableAction = BattleActionCandidate(
+            actionId = "product:powergem",
+            kind = BattleActionKind.USE_MOVE,
+            actorSlot = 0,
+            moveSlot = 0,
+            moveId = "powergem",
+        )
+
+        val attempt = NativeRecursiveSearch(
+            tree = NativeShowdownSearchTree(worker, root, template()),
+            world = NativeSearchWorldKey("hypothesis-1", randomSampleIndex = 0),
+            evaluate = ::material,
+            nodeLimit = 100,
+        ).evaluateProduct(listOf(unavailableAction), maxDepth = 1)
+
+        assertEquals(false, attempt.mapping.complete)
+        assertNull(attempt.result)
+        assertEquals(emptyList<String>(), worker.visitedSnapshots)
     }
 
     private data class BranchKey(val snapshot: String, val p1Choice: String, val p2Choice: String)

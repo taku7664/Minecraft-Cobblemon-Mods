@@ -3,6 +3,8 @@ package jbro.cobblemon.morebattlecontent.betterai.search
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRootActionMapping
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRootActionMatcher
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeSearchPosition
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownSearchTree
 
@@ -34,6 +36,11 @@ internal data class NativeRecursiveSearchResult(
     val bestAction: BattleActionCandidate? = rootValues.maxByOrNull(NativeRootActionValue::value)?.action
 }
 
+internal data class NativeProductSearchAttempt(
+    val mapping: NativeRootActionMapping,
+    val result: NativeRecursiveSearchResult?,
+)
+
 /** Iterative-deepening minimax whose state transitions come only from native Showdown snapshots. */
 internal class NativeRecursiveSearch(
     private val tree: NativeShowdownSearchTree,
@@ -53,8 +60,44 @@ internal class NativeRecursiveSearch(
     }
 
     fun evaluate(maxDepth: Int): NativeRecursiveSearchResult {
+        return evaluateNative(maxDepth, tree.actions(tree.root, BattleSide.ALLY))
+    }
+
+    fun evaluateProduct(
+        productActions: List<BattleActionCandidate>,
+        maxDepth: Int,
+    ): NativeProductSearchAttempt {
+        val mapping = NativeRootActionMatcher.match(
+            tree.root.state.format,
+            productActions,
+            tree.actions(tree.root, BattleSide.ALLY),
+        )
+        if (!mapping.complete) return NativeProductSearchAttempt(mapping, null)
+        val nativeActions = productActions.map { product ->
+            mapping.productToNative.getValue(product.actionId)
+        }
+        val nativeResult = evaluateNative(maxDepth, nativeActions)
+        val productByNativeId = mapping.productToNative.entries.associate { (productId, native) ->
+            native.actionId to productActions.single { it.actionId == productId }
+        }
+        return NativeProductSearchAttempt(
+            mapping = mapping,
+            result = nativeResult.copy(
+                rootValues = nativeResult.rootValues.map { rootValue ->
+                    NativeRootActionValue(
+                        action = requireNotNull(productByNativeId[rootValue.action.actionId]),
+                        value = rootValue.value,
+                    )
+                },
+            ),
+        )
+    }
+
+    private fun evaluateNative(
+        maxDepth: Int,
+        rootActions: List<BattleActionCandidate>,
+    ): NativeRecursiveSearchResult {
         require(maxDepth > 0)
-        val rootActions = tree.actions(tree.root, BattleSide.ALLY)
         var accepted = emptyList<NativeRootActionValue>()
         var completedDepth = 0
         for (depth in 1..maxDepth) {
