@@ -5,15 +5,12 @@ final class BattlecamActivationPolicy {
     }
 
     static boolean shouldActivate(
-        boolean spectating,
+        boolean enabledForBattleType,
         boolean hasSubjects,
-        BattlecamMode mode,
-        boolean onlyWhenBattleScreenOpen,
-        boolean battleScreenOpen
+        BattlecamMode mode
     ) {
-        return spectating
+        return enabledForBattleType
             && hasSubjects
-            && mode != BattlecamMode.OFF
-            && (!onlyWhenBattleScreenOpen || battleScreenOpen);
+            && mode != BattlecamMode.OFF;
     }
 }

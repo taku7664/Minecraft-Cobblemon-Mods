@@ -4,7 +4,6 @@ import com.cobblemon.mod.common.client.CobblemonClient;
 import com.cobblemon.mod.common.client.battle.ActiveClientBattlePokemon;
 import com.cobblemon.mod.common.client.battle.ClientBattle;
 import com.cobblemon.mod.common.client.battle.ClientBattleSide;
-import com.cobblemon.mod.common.client.gui.battle.BattleGUI;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,8 +21,6 @@ import net.minecraft.world.RaycastContext;
 public final class BattlecamController {
     private static final int AUTO_SHOT_TICKS = 160;
     private static final double SMOOTHING = 0.14;
-    private static final boolean ONLY_WHEN_BATTLE_SCREEN_OPEN = false;
-
     private static BattlecamMode mode = BattlecamMode.AUTO;
     private static List<BattlecamShot> shots = List.of();
     private static int shotIndex;
@@ -31,20 +28,33 @@ public final class BattlecamController {
     private static boolean active;
     private static Vec3d currentPosition;
     private static Vec3d currentTarget;
+    private static UUID activeBattleId;
+    private static BattlecamBattleType activeBattleType;
 
     private BattlecamController() {
     }
 
     public static void tick(MinecraftClient client) {
         if (client.world == null || client.player == null) {
-            deactivate();
+            endBattle();
             return;
         }
 
         ClientBattle battle = CobblemonClient.INSTANCE.getBattle();
         if (battle == null) {
-            deactivate();
+            endBattle();
             return;
+        }
+
+        BattlecamBattleType battleType = BattlecamBattleType.classify(battle);
+        if (!battle.getBattleId().equals(activeBattleId) || battleType != activeBattleType) {
+            activeBattleId = battle.getBattleId();
+            activeBattleType = battleType;
+            mode = BattlecamConfigStore.current().defaultMode(battleType);
+            shotIndex = 0;
+            lastShotTick = client.world.getTime();
+            currentPosition = null;
+            currentTarget = null;
         }
 
         Map<UUID, PokemonEntity> entities = findBattlePokemon(client, battle);
@@ -55,13 +65,10 @@ public final class BattlecamController {
             shotIndex = Math.floorMod(shotIndex, shots.size());
         }
 
-        boolean battleScreenOpen = client.currentScreen instanceof BattleGUI;
         active = BattlecamActivationPolicy.shouldActivate(
-            battle.getSpectating(),
+            BattlecamConfigStore.current().enabled(battleType),
             !shots.isEmpty(),
-            mode,
-            ONLY_WHEN_BATTLE_SCREEN_OPEN,
-            battleScreenOpen
+            mode
         );
 
         if (!active) {
@@ -143,11 +150,22 @@ public final class BattlecamController {
         return shots.isEmpty() ? "-" : shots.get(shotIndex).name();
     }
 
-    private static void deactivate() {
+    public static void applyConfig(BattlecamConfig config) {
+        if (activeBattleType != null) {
+            mode = config.defaultMode(activeBattleType);
+        }
+        active = false;
+        currentPosition = null;
+        currentTarget = null;
+    }
+
+    private static void endBattle() {
         active = false;
         shots = List.of();
         currentPosition = null;
         currentTarget = null;
+        activeBattleId = null;
+        activeBattleType = null;
     }
 
     private static Map<UUID, PokemonEntity> findBattlePokemon(MinecraftClient client, ClientBattle battle) {

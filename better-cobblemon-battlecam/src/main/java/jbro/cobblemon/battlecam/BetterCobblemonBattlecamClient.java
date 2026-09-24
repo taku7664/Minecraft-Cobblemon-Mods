@@ -4,6 +4,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
@@ -22,6 +23,7 @@ public final class BetterCobblemonBattlecamClient implements ClientModInitialize
 
     @Override
     public void onInitializeClient() {
+        BattlecamConfigStore.initialize(FabricLoader.getInstance().getConfigDir());
         cycleMode = register("cycle_mode", GLFW.GLFW_KEY_F6);
         nextShot = register("next_shot", GLFW.GLFW_KEY_F7);
         previousShot = register("previous_shot", GLFW.GLFW_KEY_F8);

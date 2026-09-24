@@ -17,6 +17,11 @@ final class BetterCobblemonBattlecamMetadataTest {
             assertEquals("better_cobblemon_battlecam", metadata.get("id").getAsString());
             assertEquals(">=0.19.5", dependencies.get("fabricloader").getAsString());
             assertEquals(">=1.8.1 <1.9.0", dependencies.get("cobblemon").getAsString());
+            assertEquals(
+                "jbro.cobblemon.battlecam.client.BattlecamModMenu",
+                metadata.getAsJsonObject("entrypoints").getAsJsonArray("modmenu").get(0).getAsString()
+            );
+            assertEquals("*", metadata.getAsJsonObject("suggests").get("modmenu").getAsString());
         }
     }
 }

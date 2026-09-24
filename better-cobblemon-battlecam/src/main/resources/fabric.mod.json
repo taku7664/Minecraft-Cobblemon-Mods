@@ -11,7 +11,8 @@
   "license": "MIT",
   "environment": "client",
   "entrypoints": {
-    "client": ["jbro.cobblemon.battlecam.BetterCobblemonBattlecamClient"]
+    "client": ["jbro.cobblemon.battlecam.BetterCobblemonBattlecamClient"],
+    "modmenu": ["jbro.cobblemon.battlecam.client.BattlecamModMenu"]
   },
   "mixins": ["better_cobblemon_battlecam.mixins.json"],
   "depends": {
@@ -21,5 +22,8 @@
     "java": ">=21",
     "fabric-language-kotlin": ">=1.14.1",
     "cobblemon": ">=1.8.1 <1.9.0"
+  },
+  "suggests": {
+    "modmenu": "*"
   }
 }

@@ -4,5 +4,19 @@
   "key.better_cobblemon_battlecam.next_shot": "Next Battlecam Shot",
   "key.better_cobblemon_battlecam.previous_shot": "Previous Battlecam Shot",
   "message.better_cobblemon_battlecam.mode": "Battlecam: %s",
-  "hud.better_cobblemon_battlecam.status": "BATTLECAM %s  |  %s/%s %s"
+  "hud.better_cobblemon_battlecam.status": "BATTLECAM %s  |  %s/%s %s",
+  "screen.better_cobblemon_battlecam.title": "Better Cobblemon Battlecam Settings",
+  "screen.better_cobblemon_battlecam.battle_type": "Battle Type",
+  "screen.better_cobblemon_battlecam.enabled_header": "Enabled",
+  "screen.better_cobblemon_battlecam.mode_header": "Default Camera Mode",
+  "screen.better_cobblemon_battlecam.type.wild": "Wild",
+  "screen.better_cobblemon_battlecam.type.pve": "PvE",
+  "screen.better_cobblemon_battlecam.type.pvp": "PvP",
+  "screen.better_cobblemon_battlecam.enabled": "On",
+  "screen.better_cobblemon_battlecam.disabled": "Off",
+  "screen.better_cobblemon_battlecam.mode": "%s",
+  "screen.better_cobblemon_battlecam.defaults": "Defaults",
+  "screen.better_cobblemon_battlecam.save": "Save",
+  "screen.better_cobblemon_battlecam.cancel": "Cancel",
+  "screen.better_cobblemon_battlecam.save_failed": "Save failed: %s"
 }

@@ -4,5 +4,19 @@
   "key.better_cobblemon_battlecam.next_shot": "다음 배틀캠 구도",
   "key.better_cobblemon_battlecam.previous_shot": "이전 배틀캠 구도",
   "message.better_cobblemon_battlecam.mode": "배틀캠: %s",
-  "hud.better_cobblemon_battlecam.status": "배틀캠 %s  |  %s/%s %s"
+  "hud.better_cobblemon_battlecam.status": "배틀캠 %s  |  %s/%s %s",
+  "screen.better_cobblemon_battlecam.title": "Better Cobblemon Battlecam 설정",
+  "screen.better_cobblemon_battlecam.battle_type": "전투 유형",
+  "screen.better_cobblemon_battlecam.enabled_header": "사용 여부",
+  "screen.better_cobblemon_battlecam.mode_header": "기본 카메라 모드",
+  "screen.better_cobblemon_battlecam.type.wild": "야생전",
+  "screen.better_cobblemon_battlecam.type.pve": "PvE",
+  "screen.better_cobblemon_battlecam.type.pvp": "PvP",
+  "screen.better_cobblemon_battlecam.enabled": "켜짐",
+  "screen.better_cobblemon_battlecam.disabled": "꺼짐",
+  "screen.better_cobblemon_battlecam.mode": "%s",
+  "screen.better_cobblemon_battlecam.defaults": "기본값",
+  "screen.better_cobblemon_battlecam.save": "저장",
+  "screen.better_cobblemon_battlecam.cancel": "취소",
+  "screen.better_cobblemon_battlecam.save_failed": "저장 실패: %s"
 }
