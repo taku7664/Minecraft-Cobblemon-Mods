@@ -73,11 +73,15 @@ internal object NativeRootActionMatcher {
 
     private fun primitiveSignature(format: BattleFormat, action: BattleActionCandidate): PrimitiveSignature? {
         if (action.kind == BattleActionKind.COMPOSITE) return null
+        val moveId = action.moveId?.let(::nativeId)
         return PrimitiveSignature(
             kind = action.kind,
             actorSlot = action.actorSlot,
-            moveSlot = action.moveSlot,
-            moveId = action.moveId?.let(::nativeId),
+            // Slot numbers encode each request's local move ordering. A normalized native
+            // hypothesis may place the same move in a different slot than the live request, so
+            // the stable move ID owns semantic matching whenever it is available.
+            moveSlot = action.moveSlot.takeIf { moveId == null },
+            moveId = moveId,
             targets = if (format == BattleFormat.SINGLE) emptyList() else {
                 action.targets.map { TargetSignature(it.side, it.slot) }
                     .sortedWith(compareBy(TargetSignature::side, TargetSignature::slot))

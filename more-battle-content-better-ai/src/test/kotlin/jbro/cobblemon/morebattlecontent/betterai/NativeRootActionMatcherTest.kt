@@ -50,6 +50,17 @@ class NativeRootActionMatcherTest {
     }
 
     @Test
+    fun `same move maps when product and native sets place it in different slots`() {
+        val product = move("product:moonblast", 0, 3, "cobblemon:moonblast")
+        val native = move("native:moonblast", 0, 0, "moonblast")
+
+        val result = NativeRootActionMatcher.match(BattleFormat.SINGLE, listOf(product), listOf(native))
+
+        assertTrue(result.complete)
+        assertEquals(native.actionId, result.productToNative.getValue(product.actionId).actionId)
+    }
+
+    @Test
     fun `double composites map by semantic slot action instead of component ids or order`() {
         val productLeft = move(
             "product:left",
