@@ -16,7 +16,7 @@ class EmbeddedPolicyComparisonTest {
     }
 
     @Test
-    fun `current usage policy retains an explicit no usage comparison arm`() {
+    fun `current four slot usage policy retains explicit capped comparison arms`() {
         val current = EmbeddedPolicyComparison.tuning("CURRENT")
         assertEquals(0.0, current.leafTeamCoverageWeight)
         assertEquals(current.copy(id = "current_team_coverage", leafTeamCoverageWeight = 0.25),
@@ -24,7 +24,7 @@ class EmbeddedPolicyComparisonTest {
         assertEquals(current.copy(id = "current_public_move_hypotheses", lookaheadMoveHypotheses = true),
             EmbeddedPolicyComparison.tuning("CURRENT_PUBLIC_MOVE_HYPOTHESES"))
         assertTrue(current.lookaheadMoveHypotheses)
-        assertEquals(3, current.hypotheticalMoveLimitPerSlot)
+        assertEquals(4, current.hypotheticalMoveLimitPerSlot)
         assertEquals(LocalHypothesisPriorityReservation.CONDITION_GROUPS, current.hypotheticalPriorityReservation)
         assertEquals(current.copy(id = "current_no_move_usage", lookaheadMoveHypotheses = false),
             EmbeddedPolicyComparison.tuning("CURRENT_NO_MOVE_USAGE"))
