@@ -16,6 +16,13 @@ Run from the repository root:
 
 The JAR is written to `more-battle-content-better-ai/build/libs`.
 
+## Design drafts
+
+- [Difficulty-scaled opponent move inference](docs/DIFFICULTY_MOVE_INFERENCE_PROPOSAL.md)
+  records the non-normative proposal for `name-group-GUESS/EXPECTED/CONFIRMED`
+  slots and `1/2/2/3` maximum lookahead. It is not implemented and intentionally
+  does not replace the current fair-information or move-usage behavior below.
+
 ## Opponent move usage snapshots
 
 The local Brain ships separate fixed, server-local move-presence tables generated
