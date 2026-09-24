@@ -20,6 +20,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainSession
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecision
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionValidationStatus
+import jbro.cobblemon.morebattlecontent.api.ai.BattleExactOwnTeamView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionValidator
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
 import jbro.cobblemon.morebattlecontent.api.ai.BattleKnowledgePolicy
@@ -63,6 +64,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
     localBrain: BattleBrain? = null,
     private val knowledgePolicy: BattleKnowledgePolicy = BattleKnowledgePolicy.FAIR_INFERENCE,
     private val opponentTeamPreview: BattleOpponentTeamPreviewView? = null,
+    private val exactOwnTeam: BattleExactOwnTeamView = Cobblemon173ExactOwnTeamView.from(pokemonList),
 ) : TrainerBattleActor(trainerName, actorId, pokemonList, baselineAi), EntityBackedBattleActor<ArmorStand> {
     override val entity: ArmorStand = trainerEntity
     override val initialPos: Vec3 = trainerEntity.position()
@@ -147,7 +149,10 @@ internal class Cobblemon173BrainTrainerBattleActor(
                     deadlineEpochMillis = safeDeadline(System.currentTimeMillis()),
                     memory = tacticalMemory.view(state.turn),
                     publicActionCatalog = publicCatalog,
-                ).copy(opponentTeamPreview = opponentTeamPreview)
+                ).copy(
+                    opponentTeamPreview = opponentTeamPreview,
+                    exactOwnTeam = exactOwnTeam,
+                )
                 // The primary Brain retains the public-only context. Only the local fallback receives
                 // the already-normalized tier budget; the full live moveset never enters either context.
                 val localContext = if (localBrain == null) {

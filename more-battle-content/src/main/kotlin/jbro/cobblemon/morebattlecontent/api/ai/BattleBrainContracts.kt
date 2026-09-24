@@ -213,6 +213,50 @@ class BattlePokemonFormStateView(
     }
 }
 
+/** A complete source set for one Pokemon owned by the deciding trainer. */
+class BattleExactPokemonBuildView(
+    val battlePokemonId: UUID,
+    val abilityId: String,
+    val heldItemId: String?,
+    val natureId: String,
+    val gender: String,
+    evs: Map<String, Int>,
+    ivs: Map<String, Int>,
+) {
+    val evs: Map<String, Int> = Collections.unmodifiableMap(LinkedHashMap(evs))
+    val ivs: Map<String, Int> = Collections.unmodifiableMap(LinkedHashMap(ivs))
+
+    init {
+        require(abilityId.isNotBlank()) { "Exact own ability ID cannot be blank" }
+        require(heldItemId == null || heldItemId.isNotBlank()) { "Exact own held item ID cannot be blank" }
+        require(natureId.isNotBlank()) { "Exact own nature ID cannot be blank" }
+        require(gender in setOf("M", "F", "N")) { "Exact own gender must use a Showdown gender ID" }
+        require(this.evs.keys == STAT_IDS && this.evs.values.all { it in 0..252 } && this.evs.values.sum() <= 510) {
+            "Exact own EVs must contain six legal stats with a total no greater than 510"
+        }
+        require(this.ivs.keys == STAT_IDS && this.ivs.values.all { it in 0..31 }) {
+            "Exact own IVs must contain six legal stats"
+        }
+    }
+
+    private companion object {
+        val STAT_IDS = setOf("hp", "atk", "def", "spa", "spd", "spe")
+    }
+}
+
+/** Exact information for the deciding trainer's team; never an opponent hypothesis. */
+class BattleExactOwnTeamView(builds: List<BattleExactPokemonBuildView>) {
+    val builds: List<BattleExactPokemonBuildView> = Collections.unmodifiableList(ArrayList(builds))
+    private val byPokemon = this.builds.associateBy(BattleExactPokemonBuildView::battlePokemonId)
+
+    init {
+        require(this.builds.isNotEmpty()) { "Exact own team cannot be empty" }
+        require(byPokemon.size == this.builds.size) { "Exact own team cannot contain duplicate Pokemon identities" }
+    }
+
+    fun buildFor(battlePokemonId: UUID): BattleExactPokemonBuildView? = byPokemon[battlePokemonId]
+}
+
 /** Public team-preview identity. The opaque slot id must never be a live BattlePokemon UUID. */
 class BattleOpponentTeamPreviewPokemonView(
     val previewSlotId: Int,
@@ -726,6 +770,7 @@ class BattleDecisionContext private constructor(
     val memory: BattleTacticalMemoryView,
     val publicActionCatalog: BattlePublicActionCatalogView,
     val opponentTeamPreview: BattleOpponentTeamPreviewView?,
+    val exactOwnTeam: BattleExactOwnTeamView?,
     @Suppress("UNUSED_PARAMETER") compatibilityMarker: Unit,
 ) {
     val candidates: List<BattleActionCandidate> = Collections.unmodifiableList(ArrayList(candidates))
@@ -734,6 +779,14 @@ class BattleDecisionContext private constructor(
         require(candidates.isNotEmpty())
         require(candidates.map { it.actionId }.distinct().size == candidates.size) {
             "Server-generated action ids must be unique within a decision request"
+        }
+        exactOwnTeam?.let { team ->
+            val allyIds = state.pokemon.asSequence()
+                .filter { it.side == BattleSide.ALLY }
+                .mapTo(linkedSetOf(), BattlePokemonStateView::battlePokemonId)
+            require(team.builds.mapTo(linkedSetOf(), BattleExactPokemonBuildView::battlePokemonId) == allyIds) {
+                "Exact own team must cover every ally and cannot contain opponent identities"
+            }
         }
     }
 
@@ -746,6 +799,7 @@ class BattleDecisionContext private constructor(
         memory: BattleTacticalMemoryView = this.memory,
         publicActionCatalog: BattlePublicActionCatalogView = this.publicActionCatalog,
         opponentTeamPreview: BattleOpponentTeamPreviewView? = this.opponentTeamPreview,
+        exactOwnTeam: BattleExactOwnTeamView? = this.exactOwnTeam,
     ): BattleDecisionContext = BattleDecisionContext(
         requestId,
         state,
@@ -754,6 +808,7 @@ class BattleDecisionContext private constructor(
         memory,
         publicActionCatalog,
         opponentTeamPreview,
+        exactOwnTeam,
         Unit,
     )
 
@@ -772,6 +827,7 @@ class BattleDecisionContext private constructor(
         deadlineEpochMillis,
         memory,
         publicActionCatalog,
+        null,
         null,
         Unit,
     )
@@ -792,6 +848,7 @@ class BattleDecisionContext private constructor(
         memory,
         publicActionCatalog,
         opponentTeamPreview,
+        null,
         Unit,
     )
 }

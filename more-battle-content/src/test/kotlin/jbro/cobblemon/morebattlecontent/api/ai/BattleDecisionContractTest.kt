@@ -130,6 +130,68 @@ class BattleDecisionContractTest {
     }
 
     @Test
+    fun `decision context preserves a complete exact own team without admitting opponent builds`() {
+        val allyId = UUID.randomUUID()
+        val opponentId = UUID.randomUUID()
+        val state = BattleStateView(
+            battleId = UUID.randomUUID(),
+            format = BattleFormat.SINGLE,
+            turn = 1,
+            pokemon = listOf(
+                pokemon(allyId, BattleSide.ALLY),
+                pokemon(opponentId, BattleSide.OPPONENT),
+            ),
+            field = BattleFieldStateView.empty(),
+            remainingPokemonBySide = BattleSide.entries.associateWith { 1 },
+            observedEvents = emptyList(),
+            inferences = emptyList(),
+        )
+        val ownTeam = BattleExactOwnTeamView(listOf(exactBuild(allyId)))
+        val original = BattleDecisionContext(
+            requestId = UUID.randomUUID(),
+            state = state,
+            candidates = listOf(candidate()),
+            deadlineEpochMillis = 10_000L,
+        ).copy(exactOwnTeam = ownTeam)
+
+        val derived = original.copy(deadlineEpochMillis = 20_000L)
+
+        assertSame(ownTeam, derived.exactOwnTeam)
+        assertSame(ownTeam.buildFor(allyId), derived.exactOwnTeam?.buildFor(allyId))
+        assertNull(derived.exactOwnTeam?.buildFor(opponentId))
+        assertThrows(IllegalArgumentException::class.java) {
+            original.copy(exactOwnTeam = BattleExactOwnTeamView(listOf(exactBuild(opponentId))))
+        }
+    }
+
+    @Test
+    fun `exact own build rejects incomplete or invented numeric spreads`() {
+        val id = UUID.randomUUID()
+        assertThrows(IllegalArgumentException::class.java) {
+            BattleExactPokemonBuildView(
+                battlePokemonId = id,
+                abilityId = "protosynthesis",
+                heldItemId = null,
+                natureId = "timid",
+                gender = "N",
+                evs = exactSpread().minus("spe"),
+                ivs = exactSpread(31),
+            )
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            BattleExactPokemonBuildView(
+                battlePokemonId = id,
+                abilityId = "protosynthesis",
+                heldItemId = null,
+                natureId = "timid",
+                gender = "N",
+                evs = exactSpread(252),
+                ivs = exactSpread(31),
+            )
+        }
+    }
+
+    @Test
     fun `decision deadline allows a fifteen second router budget`() {
         assertEquals(20_000L, BattleBrainDefaults.DECISION_TIMEOUT_MILLIS)
     }
@@ -248,6 +310,42 @@ class BattleDecisionContractTest {
             speed = BattleIntegerRange(100, 180),
             knowledge = BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
         ),
+    )
+
+    private fun pokemon(id: UUID, side: BattleSide) = BattlePokemonStateView(
+        battlePokemonId = id,
+        side = side,
+        activeSlot = 0,
+        speciesId = if (side == BattleSide.ALLY) "cobblemon:pikachu" else "cobblemon:fluttermane",
+        formId = "normal",
+        level = 50,
+        hpFraction = 1.0,
+        statusId = null,
+        statStages = emptyMap(),
+        knownMoveIds = emptySet(),
+        knownAbilityId = null,
+        knownHeldItemId = null,
+        fainted = false,
+        knownVolatileEffectIds = emptySet(),
+    )
+
+    private fun exactBuild(id: UUID) = BattleExactPokemonBuildView(
+        battlePokemonId = id,
+        abilityId = "static",
+        heldItemId = "lightball",
+        natureId = "timid",
+        gender = "M",
+        evs = mapOf("hp" to 4, "atk" to 0, "def" to 0, "spa" to 252, "spd" to 0, "spe" to 252),
+        ivs = exactSpread(31),
+    )
+
+    private fun exactSpread(value: Int = 0) = mapOf(
+        "hp" to value,
+        "atk" to value,
+        "def" to value,
+        "spa" to value,
+        "spd" to value,
+        "spe" to value,
     )
 
     private fun decision(requestId: UUID) = BattleDecision(requestId, "move:0")
