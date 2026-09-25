@@ -18,14 +18,14 @@ import org.junit.jupiter.api.Test
 
 class BetterAiModuleContractTest {
     @Test
-    fun `addon metadata requires a compatible core and stays server only`() {
+    fun `addon metadata requires a compatible core and loads for integrated servers`() {
         val stream = javaClass.classLoader.getResourceAsStream("fabric.mod.json")
         assertNotNull(stream, "fabric.mod.json must be packaged")
 
         val root = stream!!.reader().use { JsonParser.parseReader(it).asJsonObject }
         assertEquals("cobblemon_more_battle_content_better_ai", root["id"].asString)
         assertEquals("Cobblemon: More Battle Content - Better AI", root["name"].asString)
-        assertEquals("server", root["environment"].asString)
+        assertEquals("*", root["environment"].asString)
 
         val main = root.getAsJsonObject("entrypoints").getAsJsonArray("main")[0].asJsonObject
         assertEquals("kotlin", main["adapter"].asString)

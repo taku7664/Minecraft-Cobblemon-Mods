@@ -6,7 +6,7 @@
   "description": "Optional server-side tactical AI for Cobblemon: More Battle Content.",
   "authors": ["jbro"],
   "license": "MIT",
-  "environment": "server",
+  "environment": "*",
   "entrypoints": {
     "main": [
       {

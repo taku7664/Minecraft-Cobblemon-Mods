@@ -3,7 +3,9 @@
 Optional server-side tactical AI for Cobblemon: More Battle Content. It keeps external-provider and local-brain decision paths separate and falls back safely when a provider is unavailable.
 
 - Mod ID: `cobblemon_more_battle_content_better_ai`
-- Side: server only
+- Side: server logic. Install it in a dedicated server's `mods` directory, or in the client profile's
+  `mods` directory when the profile hosts a single-player integrated server. A remote multiplayer
+  client does not need its own copy.
 - Requires: Fabric Loader 0.19.5+, Fabric Language Kotlin 1.14.1+kotlin.2.4.20+, and Cobblemon: More Battle Content 1.6.21+
 
 ## Build
