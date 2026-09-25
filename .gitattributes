@@ -4,4 +4,4 @@
 *.jar binary
 *.schem binary
 *.png binary
-*.ogg binary
+*.ogg filter=lfs diff=lfs merge=lfs -text
