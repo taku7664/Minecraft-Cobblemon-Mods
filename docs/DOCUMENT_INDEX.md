@@ -76,21 +76,23 @@
 53. `MORE_BATTLE_CONTENT_HOME_THREE_COLUMN_REVISION.md` — 캐릭터 2/3폭·리더보드 기존폭·상점 나머지의 동일 높이 3열 후속 계약
 54. `MORE_BATTLE_CONTENT_HOME_MODEL_AND_LEADERBOARD_CORRECTION.md` — 전신 모델 중심·점유율과 타워·팩토리·PvP 8보드 후속 정정 계약
 55. `BETTER_COBBLEMON_MUSIC_ARCHITECTURE_AND_MIGRATION_DECISION.md` — Better Cobblemon Music의 새 정체성, 레거시 0.5.3 단계 이식과 데이터 기반 음악 아키텍처 계약
-56. `BETTER_COBBLEMON_MUSIC_RCT_ROLE_MAPPING_CORRECTION.md` — 잘못 승계한 RAD Gyms 판별을 종료하고 선택형 RCT 역할·관전자 진영·야생 특수곡 우선순위를 정정한 후속 계약
+56. `BETTER_COBBLEMON_MUSIC_RCT_ROLE_MAPPING_CORRECTION.md` — 2026-09-22 폐기된 RCT 역할별 선곡의 과거 결정 기록
 57. `MORE_BATTLE_CONTENT_PLAIN_NPC_NAMES_DECISION.md` — 배틀타워 18프로필과 배틀팩토리 28컨셉의 호칭형 이름을 한·영 일반 사람 이름으로 정정한 후속 계약
 58. `BETTER_AI_ROUTER_BOSS_ACTIVATION_DECISION.md` — 실제 승급 보스·MAX 챔피언·팩토리 헤드만 기본 Router로 선택하고 스키마 3에서 콘텐츠별 모드를 제공하는 후속 계약
 59. `MORE_BATTLE_CONTENT_SHADOW_NPC_NAME_DECISION.md` — 플레이어 Shadow 외형은 유지하고 이름표만 동일 전투의 일반 NPC 이름으로 바꾸는 후속 계약
-60. `BETTER_COBBLEMON_MUSIC_MBC_INTEGRATION_DECISION.md` — MBC 타워·팩토리·PvP의 명시적 콘텐츠 ID, 늦은 관전자 동기화, 콘텐츠별 JSON 선곡과 단일 공유 생성 리소스팩 계약
+60. `BETTER_COBBLEMON_MUSIC_MBC_INTEGRATION_DECISION.md` — 삭제된 선택형 애드온과 구형 생성팩의 과거 결정 기록. 콘텐츠 ID만 현행 본체 연동에 남음
 61. `MORE_BATTLE_CONTENT_ROOT_COMMAND_AND_BP_VICTORY_REWARD_DECISION.md` — `/mbc` 직접 GUI 진입, 구형 콘텐츠 하위 명령 폐기, 권한 레벨 2 BP 관리와 타워·팩토리 승리당 2 BP 멱등 정산 후속 계약
 62. `MORE_BATTLE_CONTENT_PVP_PRE_BATTLE_PLACEMENT_CORRECTION.md` — 룸 참가자를 actor 생성 전에 배치하고 타워·팩토리·PvP의 플레이어 actor·임시 파티 수명주기를 공통화하는 정정 계약
 63. `MORE_BATTLE_CONTENT_CATALOG_PROPERTY_ID_CORRECTION.md` — 팩토리 54세트의 특성 경로와 타워·팩토리 공통 `PokemonProperties` 특성·기술 이름 변환을 정정한 후속 계약
 64. `MORE_BATTLE_CONTENT_SHARED_ARENA_HOLOGRAM_DECISION.md` — 타워·팩토리·PvP에 같은 몬스터볼 LED 지형 홀로그램을 표시하고 Shadow 모델과 연출 수명주기를 분리한 후속 계약
 65. `MORE_BATTLE_CONTENT_BOSS_RAID_MECHANICS_AND_PARTY_SCALE_DECISION.md` — 레퍼런스 Boss Mode의 병렬 1대1 구조, 불사 보스와 커스텀 `-bossdamage` 공유 HP 실체, 1~4인 확장과 인원 비례 HP 배율 제안
-66. `../better-cobblemon-music/RELIABILITY_UPDATE_2026-08-22.md` — 설정·생성팩·Minecraft 리소스 재로드의 전체 성공/원복, Ogg/Vorbis·경로 검증, 폴링 하한과 선택형 제공자 격리를 확정한 후속 계약
-67. `../better-cobblemon-music/CONFIG_SCHEMA_V2_2026-08-23.md` — 정확한 바이옴 객체와 순서형 태그·경로 규칙, 같은 바이옴 복수곡 재생, 스키마 1 무수정 호환을 확정한 설정 스키마 2 계약
+66. `../better-cobblemon-music/RELIABILITY_UPDATE_2026-08-22.md` — 카탈로그 구조 이전 재로드·생성팩 신뢰성의 과거 결정 기록
+67. `../better-cobblemon-music/CONFIG_SCHEMA_V2_2026-08-23.md` — 카탈로그 구조 이전 `music.json` 스키마 2의 과거 결정과 마이그레이션 기준
 68. `ROUNDING_BLOCK_ARCHITECTURE_DECISION.md` — Rounding-Block의 Fabric Renderer API 기반 외곽 엣지 라운딩, Sodium·Iris 그림자 호환 경계, 안전 폴백과 단계별 검증 계약 초안
 69. `MORE_BATTLE_CONTENT_DECLARATIVE_UI_FRAMEWORK_DECISION.md` — MBC 공용 선언형 UI 계약, 웹·Minecraft 이중 렌더러, 내장 테마와 선택형 외부 리소스팩, GUI 우선 점진 이행 후속 결정
 70. `MORE_BATTLE_CONTENT_UI_RESOURCE_BOUNDARY_AMENDMENT.md` — 69번의 교체 가능한 화면 문서와 웹 우선 단계를 수정한 현행 계약. 불변 타입 화면·행동, 시각 전용 Visual Pack과 Minecraft 우선 수직 스파이크를 확정
+71. `BETTER_COBBLEMON_MUSIC_RESOURCE_CATALOG_AND_MAPPING_DECISION.md` — 공식 ZIP의 OGG·사운드 이벤트·기본 카탈로그 소유권, 확장 카탈로그, 안정 ID, `settings.json`·`overrides.json`, 구형 생성팩 종료를 확정한 현행 계약
+72. `../better-cobblemon-music/RCT_ROLE_SUPPORT_RETIREMENT_2026-09-22.md` — RCT 역할 조회와 `battle.roles`·`battle.gym`을 전부 제거하고 NPC 여부만 사용하는 현행 종료 계약
 
 `MORE_BATTLE_CONTENT_CONTENT_PROPOSAL.md`는 `rejected` 상태의 과거 대안이다. 현재 제품 범위나 구현 우선순위를 결정할 때 사용하지 않는다.
 
