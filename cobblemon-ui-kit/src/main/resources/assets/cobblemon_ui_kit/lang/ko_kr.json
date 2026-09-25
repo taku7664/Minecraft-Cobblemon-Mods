@@ -1,0 +1,23 @@
+{
+  "modmenu.nameTranslation.cobblemon_ui_kit": "코블몬 UI 키트",
+  "screen.cobblemon_ui_kit.gallery.title": "코블몬 UI 키트",
+  "screen.cobblemon_ui_kit.gallery.subtitle": "공용 위젯과 테마 상태",
+  "screen.cobblemon_ui_kit.gallery.buttons": "버튼",
+  "screen.cobblemon_ui_kit.gallery.states": "상태",
+  "screen.cobblemon_ui_kit.gallery.list": "목록과 진행도",
+  "screen.cobblemon_ui_kit.gallery.primary": "도전 시작",
+  "screen.cobblemon_ui_kit.gallery.secondary": "규칙 보기",
+  "screen.cobblemon_ui_kit.gallery.danger": "도전 포기",
+  "screen.cobblemon_ui_kit.gallery.ghost": "전투 기록",
+  "screen.cobblemon_ui_kit.gallery.icon": "정보",
+  "screen.cobblemon_ui_kit.gallery.supporting": "뱃지 8개 중 4개 필요",
+  "screen.cobblemon_ui_kit.gallery.normal": "기본",
+  "screen.cobblemon_ui_kit.gallery.hover": "호버",
+  "screen.cobblemon_ui_kit.gallery.focus": "포커스",
+  "screen.cobblemon_ui_kit.gallery.pressed": "누름",
+  "screen.cobblemon_ui_kit.gallery.disabled": "비활성",
+  "screen.cobblemon_ui_kit.gallery.selected": "선택",
+  "screen.cobblemon_ui_kit.gallery.rank": "리그 진행도",
+  "screen.cobblemon_ui_kit.gallery.close": "닫기",
+  "command.cobblemon_ui_kit.gallery.opened": "코블몬 UI 키트 갤러리를 열었습니다."
+}

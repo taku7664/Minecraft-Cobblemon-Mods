@@ -1,0 +1,34 @@
+package jbro.cobblemon.uikit
+
+import net.minecraft.network.chat.Component
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Test
+
+class UiButtonSpecTest {
+    private val theme = CobblemonUiDefaultTheme.snapshot
+
+    @Test
+    fun `content width follows text icon gap and semantic padding`() {
+        val plain = UiButtonSpec(title = Component.literal("Start"), size = UiControlSize.MEDIUM)
+        val withIcon = plain.copy(icon = UiIcon("cobblemon_ui_kit", "textures/gui/icons/start.png"))
+
+        assertEquals(64, plain.resolveWidth(contentWidth = 40, availableWidth = 200, theme = theme))
+        assertEquals(78, withIcon.resolveWidth(contentWidth = 40, availableWidth = 200, theme = theme))
+    }
+
+    @Test
+    fun `fill width uses available width and fixed width remains explicit`() {
+        val fill = UiButtonSpec(Component.literal("Start"), width = UiWidthPolicy.Fill)
+        val fixed = UiButtonSpec(Component.literal("Start"), width = UiWidthPolicy.Fixed(96))
+
+        assertEquals(180, fill.resolveWidth(contentWidth = 40, availableWidth = 180, theme = theme))
+        assertEquals(96, fixed.resolveWidth(contentWidth = 40, availableWidth = 180, theme = theme))
+    }
+
+    @Test
+    fun `invalid fixed width and blank title are rejected`() {
+        assertThrows(IllegalArgumentException::class.java) { UiWidthPolicy.Fixed(0) }
+        assertThrows(IllegalArgumentException::class.java) { UiButtonSpec(Component.literal(" ")) }
+    }
+}

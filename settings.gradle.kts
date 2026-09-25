@@ -14,6 +14,7 @@ include(
     "better-cobblemon-music",
     "better-battle-presentation",
     "cobblemon-battle-ui",
+    "cobblemon-ui-kit",
     "cobblemon-custom-species",
     "font-glyph-race-fix",
     "more-battle-content",

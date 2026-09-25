@@ -1,0 +1,23 @@
+{
+  "modmenu.nameTranslation.cobblemon_ui_kit": "Cobblemon UI Kit",
+  "screen.cobblemon_ui_kit.gallery.title": "Cobblemon UI Kit",
+  "screen.cobblemon_ui_kit.gallery.subtitle": "Shared widgets and theme states",
+  "screen.cobblemon_ui_kit.gallery.buttons": "Buttons",
+  "screen.cobblemon_ui_kit.gallery.states": "States",
+  "screen.cobblemon_ui_kit.gallery.list": "List and progress",
+  "screen.cobblemon_ui_kit.gallery.primary": "Start challenge",
+  "screen.cobblemon_ui_kit.gallery.secondary": "View rules",
+  "screen.cobblemon_ui_kit.gallery.danger": "Abandon run",
+  "screen.cobblemon_ui_kit.gallery.ghost": "Battle record",
+  "screen.cobblemon_ui_kit.gallery.icon": "Info",
+  "screen.cobblemon_ui_kit.gallery.supporting": "Badge 4 of 8 required",
+  "screen.cobblemon_ui_kit.gallery.normal": "Normal",
+  "screen.cobblemon_ui_kit.gallery.hover": "Hover",
+  "screen.cobblemon_ui_kit.gallery.focus": "Focus",
+  "screen.cobblemon_ui_kit.gallery.pressed": "Pressed",
+  "screen.cobblemon_ui_kit.gallery.disabled": "Disabled",
+  "screen.cobblemon_ui_kit.gallery.selected": "Selected",
+  "screen.cobblemon_ui_kit.gallery.rank": "League progress",
+  "screen.cobblemon_ui_kit.gallery.close": "Close",
+  "command.cobblemon_ui_kit.gallery.opened": "Opened the Cobblemon UI Kit gallery."
+}
