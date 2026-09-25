@@ -11,6 +11,7 @@ import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUIClient;
 import jbro.cobblemon.battleui.extended.BattleInfoPanel;
 import jbro.cobblemon.battleui.extended.BattleDialogue;
 import jbro.cobblemon.battleui.extended.navigation.BattleGuiNavigationAccess;
+import jbro.cobblemon.battleui.extended.navigation.BattleCommandLayout;
 import jbro.cobblemon.battleui.extended.navigation.KeyboardTileFocus;
 import jbro.cobblemon.battleui.navigation.ActionSubmissionGate;
 import jbro.cobblemon.battleui.navigation.BattleMenuNavigator;

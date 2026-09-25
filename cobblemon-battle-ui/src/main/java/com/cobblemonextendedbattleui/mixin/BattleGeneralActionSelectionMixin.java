@@ -3,6 +3,7 @@ package jbro.cobblemon.battleui.extended.mixin;
 import com.cobblemon.mod.common.client.battle.SingleActionRequest;
 import com.cobblemon.mod.common.client.gui.battle.BattleGUI;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleGeneralActionSelection;
+import jbro.cobblemon.battleui.extended.navigation.BattleCommandLayout;
 import com.cobblemon.mod.common.client.gui.battle.widgets.BattleOptionTile;
 import com.cobblemon.mod.common.battles.ForfeitActionResponse;
 import net.minecraft.client.MinecraftClient;

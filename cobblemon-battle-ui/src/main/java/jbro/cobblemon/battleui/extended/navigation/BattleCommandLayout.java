@@ -1,7 +1,8 @@
-package jbro.cobblemon.battleui.extended.mixin;
+package jbro.cobblemon.battleui.extended.navigation;
 
 import com.cobblemon.mod.common.client.gui.battle.widgets.BattleOptionTile;
 import java.util.List;
+import jbro.cobblemon.battleui.extended.mixin.BattleOptionTileAccessor;
 import jbro.cobblemon.battleui.navigation.BattleMenuLayout;
 import jbro.cobblemon.battleui.navigation.UiRect;
 
