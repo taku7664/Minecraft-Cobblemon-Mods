@@ -134,6 +134,7 @@ class NativeInitialProductBrainIntegrationTest {
         assertTrue(failure is NativeInitialProductDecisionException)
         assertEquals(NativeInitialProductDecisionStatus.PLANNING_FAILED,
             (failure as NativeInitialProductDecisionException).evaluation.status)
+        assertTrue(failure.message!!.contains("PUBLIC_SPECIES_IDENTITY_MISSING"))
     }
 
     @Test

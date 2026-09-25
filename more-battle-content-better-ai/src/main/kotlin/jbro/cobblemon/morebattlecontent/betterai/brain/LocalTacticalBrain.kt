@@ -29,6 +29,7 @@ import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTactica
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalSituationalEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionChoiceSeed
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionSelection
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionMixingContext
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionSelector
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionPolicy
@@ -63,6 +64,7 @@ private val defaultNativeInitialDecisionEvaluator = NativeInitialProductDecision
 
 internal class NativeInitialProductDecisionException(
     val evaluation: NativeInitialProductDecisionEvaluation,
+    context: BattleDecisionContext,
 ) : IllegalStateException(
     buildString {
         append("Native product decision failed: ")
@@ -72,7 +74,20 @@ internal class NativeInitialProductDecisionException(
         evaluation.failedWorldId?.let { append(" world=").append(it) }
         if (evaluation.planIssues.isNotEmpty()) {
             append(" issues=")
-            append(evaluation.planIssues.joinToString(",") { it.code.name })
+            append(evaluation.planIssues.joinToString(",") { issue ->
+                issue.code.name + (issue.detailCode?.let { "/$it" } ?: "")
+            })
+            if (evaluation.planIssues.any { it.code.name == "ROSTER_COMPILATION_FAILED" }) {
+                append(" public_roster=")
+                append("turn:").append(context.state.turn)
+                append(";remaining:").append(context.state.remainingPokemonBySide[BattleSide.OPPONENT])
+                append(";selection:").append(context.opponentTeamPreview?.selectionSize)
+                append(";seen:").append(context.state.pokemon.asSequence()
+                    .filter { it.side == BattleSide.OPPONENT }
+                    .joinToString("|") { "${it.speciesId}/${it.formId}@${it.activeSlot}" })
+                append(";events:").append(context.state.observedEvents.asSequence()
+                    .take(16).joinToString("|") { "${it.kind}@${it.turn}" })
+            }
         }
     },
 )
@@ -99,6 +114,7 @@ internal class LocalTacticalBrain(
         session: BattleBrainSession,
         context: BattleDecisionContext,
     ): CompletionStage<BattleDecision> {
+        val decisionStartedAtNanos = System.nanoTime()
         val active = session as? Session
         val profile = active?.trainerProfile ?: BattleTrainerProfile.balanced()
         val strategy = active?.strategy.takeUnless {
@@ -178,6 +194,9 @@ internal class LocalTacticalBrain(
             .toList()
         val unboundedTestDecision = active?.trainerPersonaId
             ?.startsWith(BattleBrainContentIds.AI_TEST_PERSONA_PREFIX) == true
+        val decisionTrace = AiTestDecisionTrace.forTestPersona(
+            active?.trainerPersonaId, difficultyContext, decisionStartedAtNanos,
+        )
         val budget = lookaheadBudget(profile.difficulty.tier).let { configured ->
             if (unboundedTestDecision) configured.copy(timeMillis = Long.MAX_VALUE) else configured
         }
@@ -205,6 +224,7 @@ internal class LocalTacticalBrain(
                     mixingContext(ranked, authoritativeSimulationScores = true),
                 )
                 val selected = selection.rank
+                decisionTrace?.resolved(if (continuingNative) "native_continuation" else "native_initial", ranked, selection)
                 active?.nativeProductState = requireNotNull(nativeInitial.sessionState) {
                     "An available native product decision must preserve its reusable roots"
                 }.withPendingOwnAction(selected.outcome.candidate)
@@ -247,7 +267,12 @@ internal class LocalTacticalBrain(
             NativeInitialProductDecisionStatus.PLANNING_FAILED,
             NativeInitialProductDecisionStatus.RECONCILIATION_FAILED,
             NativeInitialProductDecisionStatus.SEARCH_FAILED,
-            -> return CompletableFuture.failedFuture(NativeInitialProductDecisionException(nativeInitial))
+            -> {
+                decisionTrace?.failed(nativeInitial.status.name, nativeInitial.planIssues.joinToString(",") {
+                    it.code.name + (it.detailCode?.let { detail -> "/$detail" } ?: "")
+                })
+                return CompletableFuture.failedFuture(NativeInitialProductDecisionException(nativeInitial, difficultyContext))
+            }
             NativeInitialProductDecisionStatus.NOT_APPLICABLE -> Unit
         }
         difficultyContext.candidates.singleOrNull()?.let {
@@ -257,6 +282,7 @@ internal class LocalTacticalBrain(
                 decidingProfile,
                 tuning,
             ).single()
+            decisionTrace?.resolved("single_legal", listOf(selected), LocalActionSelection(selected, 0L, 1, 1.0))
             return CompletableFuture.completedFuture(
                 BattleDecision(
                     requestId = context.requestId,
@@ -320,6 +346,7 @@ internal class LocalTacticalBrain(
             mixingContext(ranked),
         )
         val selected = selection.rank
+        decisionTrace?.resolved("legacy_lookahead", ranked, selection)
         val confidence = (0.35 + selection.probability * 0.6).coerceIn(0.35, 0.99)
         return CompletableFuture.completedFuture(
             BattleDecision(

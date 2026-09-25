@@ -982,3 +982,11 @@ healing larger than the hit, and overkill capping: restoring target HP does not
 retroactively reduce damage attributed to the move. This does not resolve the
 separate target-HP/actor-HP conversion used by drain and recoil, or validate every
 berry's activation threshold and healing amount.
+# Live AI test decision log
+
+Run `watch-ai-log.bat` from this folder to follow the `cobblemon-dev` client's
+`latest.log` in a terminal. The watcher also follows a new client launch. It
+shows each `/mbc test ai-*` decision's public knowledge, inferred move slots,
+candidate scores, selected action, selection probability, and Brain elapsed
+seconds. The core battle-resolution line supplies the full coordinator elapsed
+time. Normal Tower and Factory decisions do not emit the detailed trace.
