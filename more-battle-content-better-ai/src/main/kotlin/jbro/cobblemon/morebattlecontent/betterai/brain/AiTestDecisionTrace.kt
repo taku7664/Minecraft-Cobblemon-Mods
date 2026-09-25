@@ -50,10 +50,12 @@ internal class AiTestDecisionTrace private constructor(
             val switchSpecies = candidate.switchPokemonId?.let { id ->
                 context.state.pokemon.firstOrNull { it.battlePokemonId == id }?.speciesId ?: id.toString()
             }
+            val moveDetails = candidate.moveDetails?.let { "${it.typeId}/${number(it.power)}" } ?: "?"
             logger.info(
-                "[BetterAI Trace] battle={} turn={} phase=candidate mode={} rank={} action={} kind={} move={} switch={} score={} base={} lookahead={} tier={} execution={}",
+                "[BetterAI Trace] battle={} turn={} phase=candidate mode={} rank={} action={} kind={} move={} details={} mechanic={} switch={} score={} base={} lookahead={} tier={} execution={}",
                 battleId, turn, mode, index + 1, candidate.actionId, candidate.kind,
-                candidate.moveId ?: "-", switchSpecies ?: "-", number(rank.comparisonValue),
+                candidate.moveId ?: "-", moveDetails, candidate.mechanic?.mechanicId ?: "-",
+                switchSpecies ?: "-", number(rank.comparisonValue),
                 number(rank.outcome.tacticalUtility), number(rank.lookaheadUtility),
                 rank.decisionTier, number(rank.executionProbability),
             )

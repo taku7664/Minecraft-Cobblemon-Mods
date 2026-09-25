@@ -145,7 +145,9 @@ internal object LocalTacticalScorer {
         profile: BattleTrainerProfile,
         tuning: LocalDecisionTuning,
     ): Double {
-        if (candidate.moveDetails == null) return strategyMoveAdjustment(candidate, context, strategy)
+        if (candidate.moveDetails == null) {
+            return mechanicResourceAdjustment(candidate) + strategyMoveAdjustment(candidate, context, strategy)
+        }
         return -publicAllyCollateral(candidate, context, tuning) -
             LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) -
@@ -170,7 +172,9 @@ internal object LocalTacticalScorer {
         tuning: LocalDecisionTuning,
     ): LocalTacticalScore {
         val details = candidate.moveDetails
-            ?: return LocalTacticalScore(5.0 + strategyMoveAdjustment(candidate, context, strategy))
+            ?: return LocalTacticalScore(
+                5.0 + mechanicResourceAdjustment(candidate) + strategyMoveAdjustment(candidate, context, strategy),
+            )
         val facts = candidate.facts
         val damageRange = facts?.standardDamageFractionRange
         val accuracy = LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY)

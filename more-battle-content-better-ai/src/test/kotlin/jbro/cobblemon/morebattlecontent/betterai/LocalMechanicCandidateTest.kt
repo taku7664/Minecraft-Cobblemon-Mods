@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.betterai
 
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionPolicy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -16,6 +17,40 @@ import java.util.UUID
  * plain move every time and the AI can never use the mechanic it was given.
  */
 class LocalMechanicCandidateTest {
+    @Test
+    fun `missing move metadata cannot make a free terastallization tie`() {
+        val plain = BattleActionCandidate(
+            actionId = "stoneedge:base", kind = BattleActionKind.USE_MOVE,
+            actorSlot = 0, moveSlot = 0, moveId = "stoneedge",
+        )
+        val tera = BattleActionCandidate(
+            actionId = "stoneedge:tera", kind = BattleActionKind.USE_MOVE,
+            actorSlot = 0, moveSlot = 0, moveId = "stoneedge",
+            mechanic = mechanic("tera", types = setOf("ground")),
+        )
+        val context = BattleDecisionContext(
+            requestId = UUID.randomUUID(),
+            state = BattleStateView(
+                battleId = UUID.randomUUID(), format = BattleFormat.SINGLE, turn = 3,
+                pokemon = listOf(
+                    mon(BattleSide.ALLY, setOf("ground", "dragon")),
+                    mon(BattleSide.OPPONENT, setOf("electric", "flying")),
+                ),
+                field = BattleFieldStateView.empty(),
+                remainingPokemonBySide = BattleSide.entries.associateWith { 2 },
+                observedEvents = emptyList(), inferences = emptyList(),
+            ),
+            candidates = listOf(plain, tera), deadlineEpochMillis = Long.MAX_VALUE,
+            memory = BattleTacticalMemoryView.empty(),
+            publicActionCatalog = BattlePublicActionCatalogView(emptyList()),
+        )
+
+        val byId = LocalBattleActionPolicy.rank(context, null, BattleTrainerProfile.balanced())
+            .associateBy { it.outcome.candidate.actionId }
+        assertEquals(5.0, byId.getValue(plain.actionId).comparisonValue)
+        assertEquals(-20.0, byId.getValue(tera.actionId).comparisonValue)
+    }
+
     @Test
     fun `a mechanic candidate projects damage instead of nothing`() {
         val plain = facts(mechanic = null)

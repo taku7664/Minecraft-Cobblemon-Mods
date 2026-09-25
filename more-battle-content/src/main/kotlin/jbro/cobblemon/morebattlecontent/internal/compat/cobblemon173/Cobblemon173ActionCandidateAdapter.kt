@@ -2,6 +2,8 @@ package jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173
 
 import com.cobblemon.mod.common.api.battles.model.actor.BattleActor
 import com.cobblemon.mod.common.api.moves.Moves
+import com.cobblemon.mod.common.api.moves.MoveTemplate
+import java.util.Locale
 import com.cobblemon.mod.common.battles.ActiveBattlePokemon
 import com.cobblemon.mod.common.battles.InBattleGimmickMove
 import com.cobblemon.mod.common.battles.InBattleMove
@@ -261,13 +263,19 @@ internal object Cobblemon173ActionCandidateAdapter {
         else -> null
     }
 
-    private fun moveDetails(
+    internal fun moveDetails(
         move: InBattleMove,
         transformed: InBattleGimmickMove?,
         target: MoveTarget,
+        templateLookup: (String) -> MoveTemplate? = Moves::getByName,
     ): BattleMoveCandidateView? {
-        val moveId = transformed?.move ?: move.move
-        val template = Moves.getByName(moveId) ?: return null
+        // The request's `move` is a display name such as "Stone Edge"; Cobblemon's move registry
+        // is keyed by Showdown ids such as "stoneedge". Prefer the request id and only fall back to
+        // the normalized display name when the id is not a registered move.
+        val resolved = requestMoveLookupIds(move, transformed).firstNotNullOfOrNull { id ->
+            templateLookup(id)?.let { id to it }
+        } ?: return null
+        val (moveId, template) = resolved
         val category = when (template.damageCategory.name.lowercase()) {
             "physical" -> BattleMoveDamageCategory.PHYSICAL
             "special" -> BattleMoveDamageCategory.SPECIAL
@@ -285,6 +293,19 @@ internal object Cobblemon173ActionCandidateAdapter {
             effects = publicMoveEffects(moveId),
         )
     }
+
+    internal fun requestMoveLookupIds(
+        move: InBattleMove,
+        transformed: InBattleGimmickMove?,
+    ): List<String> = (if (transformed == null) {
+        listOf(move.id, move.move)
+    } else {
+        listOf(transformed.move)
+    }).map(::canonicalRequestMoveId).filter(String::isNotBlank).distinct()
+
+    private fun canonicalRequestMoveId(value: String): String = value.substringAfter(':')
+        .lowercase(Locale.ROOT)
+        .filter(Char::isLetterOrDigit)
 
     /** A datapack script with the same ID supersedes the embedded Showdown definition. */
     internal fun publicMoveEffects(moveId: String) = Cobblemon173ShowdownMoveEffects.resolve(moveId).takeUnless {
