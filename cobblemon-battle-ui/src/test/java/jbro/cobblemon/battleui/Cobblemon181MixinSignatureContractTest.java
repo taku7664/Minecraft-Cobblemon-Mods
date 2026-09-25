@@ -13,6 +13,8 @@ final class Cobblemon181MixinSignatureContractTest {
             "src/main/java/com/cobblemonextendedbattleui/mixin/BattleGeneralActionSelectionMixin.java"
         ));
 
-        assertTrue(source.contains("BattleGUI battleGUI,\n            SingleActionRequest request,\n            BattleGeneralActionSelection selection,"));
+        assertTrue(source.replace("\r\n", "\n").contains(
+            "BattleGUI battleGUI,\n            SingleActionRequest request,\n            BattleGeneralActionSelection selection,"
+        ));
     }
 }
