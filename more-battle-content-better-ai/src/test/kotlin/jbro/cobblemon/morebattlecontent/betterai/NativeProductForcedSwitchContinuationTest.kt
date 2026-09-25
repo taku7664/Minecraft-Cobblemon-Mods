@@ -99,6 +99,11 @@ class NativeProductForcedSwitchContinuationTest {
             )
             val reconciler = NativeProductSessionReconciler { _, action -> action(engine) }
 
+            val skippedOwnDecision = reconciler.reconcile(initial, replacementContext, Long.MAX_VALUE)
+
+            assertEquals(NativeProductSessionReconcileStatus.NO_CONSISTENT_WORLD, skippedOwnDecision.status,
+                "The native replay must not invent the ally's forced replacement")
+
             val forcedResult = reconciler.reconcile(initial, forcedContext, Long.MAX_VALUE)
 
             assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, forcedResult.status,
@@ -213,6 +218,97 @@ class NativeProductForcedSwitchContinuationTest {
         }
     }
 
+    @Test
+    fun `opponent pivot replacement is replayed without an intermediate ally decision`(
+        @TempDir directory: Path,
+    ) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val definition = opponentPivotBattle()
+            val opening = engine.createBattle(definition)
+            val allyMove = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, opening)
+                .single { it.moveId == "splash" && it.mechanic == null }
+            val pivotMove = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, opening)
+                .single { it.moveId == "uturn" && it.mechanic == null }
+            val pivotRequest = engine.branch(
+                opening.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(allyMove, BattleSide.ALLY, opening),
+                NativeShowdownChoiceEncoder.encode(pivotMove, BattleSide.OPPONENT, opening),
+            )
+            val allyWait = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, pivotRequest).single()
+            val opponentReplacement = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, pivotRequest)
+                .single()
+            val afterReplacement = engine.branch(
+                pivotRequest.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(allyWait, BattleSide.ALLY, pivotRequest),
+                NativeShowdownChoiceEncoder.encode(opponentReplacement, BattleSide.OPPONENT, pivotRequest),
+            )
+
+            assertEquals("switch", pivotRequest.requestState)
+            assertEquals("move", afterReplacement.requestState)
+            assertEquals(OPPONENT_RESERVE.toString(), afterReplacement.p2Active.single().uuid)
+
+            val events = listOf(
+                BattleObservedEventView(
+                    sequence = 1,
+                    turn = opening.turn,
+                    kind = BattleObservedEventKind.MOVE_USED,
+                    actorPokemonId = OPPONENT,
+                    publicValueId = "uturn",
+                    actorSlot = 0,
+                ),
+                BattleObservedEventView(
+                    sequence = 2,
+                    turn = pivotRequest.turn,
+                    kind = BattleObservedEventKind.SWITCHED,
+                    actorPokemonId = OPPONENT_RESERVE,
+                    actorSlot = 0,
+                ),
+                BattleObservedEventView(
+                    sequence = 3,
+                    turn = pivotRequest.turn,
+                    kind = BattleObservedEventKind.MOVE_USED,
+                    actorPokemonId = ALLY_LEAD,
+                    publicValueId = "splash",
+                    actorSlot = 0,
+                ),
+            )
+            val openingContext = context(
+                opening,
+                publicTemplate(definition),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, opening),
+            )
+            val finalContext = context(
+                afterReplacement,
+                publicTemplate(definition, events),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, afterReplacement),
+            )
+            val initial = NativeProductSessionState(
+                battleId = BATTLE,
+                format = BattleFormat.SINGLE,
+                rulesFingerprint = engine.rulesFingerprint,
+                worlds = listOf(NativeProductSessionWorld(
+                    key = NativeSearchWorldKey("opponent-pivot-world", 0),
+                    probability = 1.0,
+                    definition = definition,
+                    rootSnapshot = NativeProductRootSnapshot(engine.rulesFingerprint, opening),
+                    publicContext = openingContext,
+                )),
+                publicTurn = opening.turn,
+                lastObservedEventSequence = null,
+                pendingOwnAction = allyMove,
+            )
+            val reconciler = NativeProductSessionReconciler { _, action -> action(engine) }
+
+            val result = reconciler.reconcile(initial, finalContext, Long.MAX_VALUE)
+
+            assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status,
+                "root=${result.rootIssues}, observed=${result.observedActionIssues}")
+            assertEquals(afterReplacement.snapshotJson,
+                result.sessionState?.worlds?.single()?.rootSnapshot?.frame?.snapshotJson)
+        }
+    }
+
     private fun context(
         frame: jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame,
         template: BattleStateView,
@@ -288,6 +384,21 @@ class NativeProductForcedSwitchContinuationTest {
         ),
     )
 
+    private fun opponentPivotBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(29, 31, 37, 41),
+        p1Team = listOf(
+            NativePokemonSet("Waiting", "Slowpoke", listOf("splash"), "oblivious",
+                uuid = ALLY_LEAD.toString(), level = 50),
+        ),
+        p2Team = listOf(
+            NativePokemonSet("Pivot", "Ninjask", listOf("uturn"), "speedboost",
+                uuid = OPPONENT.toString(), level = 50),
+            NativePokemonSet("Reserve", "Mew", listOf("splash"), "synchronize",
+                uuid = OPPONENT_RESERVE.toString(), level = 50),
+        ),
+    )
+
     private fun extractBundledShowdown(targetRoot: Path): Path {
         Files.createDirectories(targetRoot)
         val resource = requireNotNull(javaClass.getResourceAsStream("/data/cobblemon/showdown.zip")) {
@@ -324,5 +435,6 @@ class NativeProductForcedSwitchContinuationTest {
         val ALLY_LEAD: UUID = UUID.fromString("00000000-0000-0000-0000-000000000101")
         val ALLY_RESERVE: UUID = UUID.fromString("00000000-0000-0000-0000-000000000102")
         val OPPONENT: UUID = UUID.fromString("00000000-0000-0000-0000-000000000201")
+        val OPPONENT_RESERVE: UUID = UUID.fromString("00000000-0000-0000-0000-000000000202")
     }
 }

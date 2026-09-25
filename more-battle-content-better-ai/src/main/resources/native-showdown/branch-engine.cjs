@@ -215,6 +215,19 @@ function frame(battle) {
   };
 }
 
+function submitRequestedChoice(battle, sideId, choice) {
+  const side = battle[sideId];
+  if (side.activeRequest && side.activeRequest.wait) {
+    if (choice !== 'pass') {
+      throw new Error(`BetterAI supplied ${choice} for ${sideId} wait request`);
+    }
+    return;
+  }
+  if (!battle.choose(sideId, choice)) {
+    throw new Error(`Showdown rejected ${sideId} choice: ${choice}`);
+  }
+}
+
 globalThis.mbcCreateBattle = function(payload) {
   const input = JSON.parse(payload);
   const openingByUuid = indexPokemonOpeningState(input.openingState);
@@ -242,12 +255,8 @@ globalThis.mbcBranchBattle = function(payload) {
   const battle = Battle.fromJSON(JSON.parse(input.snapshotJson));
   battle.restart(function() {});
   try {
-    if (!battle.choose('p1', input.p1Choice)) {
-      throw new Error(`Showdown rejected p1 choice: ${input.p1Choice}`);
-    }
-    if (!battle.choose('p2', input.p2Choice)) {
-      throw new Error(`Showdown rejected p2 choice: ${input.p2Choice}`);
-    }
+    submitRequestedChoice(battle, 'p1', input.p1Choice);
+    submitRequestedChoice(battle, 'p2', input.p2Choice);
     return JSON.stringify(frame(battle));
   } finally {
     battle.destroy();

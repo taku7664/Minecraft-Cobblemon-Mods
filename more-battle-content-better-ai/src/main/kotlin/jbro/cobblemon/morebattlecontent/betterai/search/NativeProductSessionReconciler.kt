@@ -1,16 +1,12 @@
 package jbro.cobblemon.morebattlecontent.betterai.search
 
 import java.security.MessageDigest
-import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
-import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
-import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootIssue
-import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootIssueCode
-import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootValidator
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBranchWorker
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeObservedTurnActionIssue
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeObservedTurnActionMatcher
@@ -66,6 +62,8 @@ internal class NativeProductSessionReconciler(
         NativeShowdownRuntimeService.withWorker(deadlineNanos, action)
     },
 ) {
+    private val intermediateReplayer = NativeIntermediateRequestReplayer(nanoTime)
+
     fun reconcile(
         session: NativeProductSessionState,
         currentContext: BattleDecisionContext,
@@ -99,14 +97,22 @@ internal class NativeProductSessionReconciler(
                         return@lease failure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
                     }
                     val root = world.rootSnapshot.frame
-                    val deferred = validateDeferredActions(world, root, eventWindow)
+                    val deferred = intermediateReplayer.conditionDeferred(
+                        session.format,
+                        root,
+                        NativeDeferredCommandState(
+                            allyAction = world.deferredAllyAction,
+                            opponentAction = world.deferredOpponentAction,
+                        ),
+                        eventWindow,
+                    )
                     if (deferred.issues.isNotEmpty()) {
                         if (firstObservedMismatch == null) {
                             firstObservedMismatch = world.key.hypothesisId to deferred.issues
                         }
                         continue
                     }
-                    val currentEvents = eventWindow.filterNot { it.sequence in deferred.consumedSequences }
+                    val currentEvents = deferred.remainingEvents
                     val ownNativeActions = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, root)
                     val ownMapping = NativeRootActionMatcher.match(
                         session.format,
@@ -150,44 +156,42 @@ internal class NativeProductSessionReconciler(
                             root,
                         )
                         val next = worker.branch(root.snapshotJson, ownChoice, opponentChoice)
-                        val issues = NativeBattleRootValidator.validate(
-                            world.definition,
-                            next,
-                            currentContext.state,
+                        val replayed = intermediateReplayer.replayAfterChoice(
+                            worker = worker,
+                            definition = world.definition,
+                            format = session.format,
+                            before = root,
+                            after = next,
+                            existingDeferred = deferred.commands,
+                            submittedAllyAction = ownNativeAction,
+                            submittedOpponentAction = opponentAction,
+                            events = currentEvents,
+                            publicState = currentContext.state,
+                            deadlineNanos = deadlineNanos,
                         )
-                        val structural = issues.filter { it.code in STRUCTURAL_ROOT_ISSUES }
-                        if (structural.isNotEmpty()) {
-                            return@lease failure(
+                        when (replayed.status) {
+                            NativeIntermediateReplayStatus.AVAILABLE -> replayed.frames.forEach { frame ->
+                                val compatible = CompatibleFrame(
+                                    frame = frame.frame,
+                                    deferredAllyAction = frame.deferredCommands.allyAction,
+                                    deferredOpponentAction = frame.deferredCommands.opponentAction,
+                                )
+                                compatibleFrames.putIfAbsent(compatible.identity, compatible)
+                            }
+                            NativeIntermediateReplayStatus.DEADLINE_EXHAUSTED -> return@lease failure(
+                                NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED,
+                            )
+                            NativeIntermediateReplayStatus.ROOT_STATE_INCONSISTENT -> return@lease failure(
                                 NativeProductSessionReconcileStatus.ROOT_STATE_INCONSISTENT,
                                 failedWorldId = world.key.hypothesisId,
-                                rootIssues = structural,
+                                rootIssues = replayed.rootIssues,
                             )
-                        }
-                        if (issues.isEmpty()) {
-                            val compatible = CompatibleFrame(
-                                frame = next,
-                                deferredAllyAction = deferredForNextRequest(
-                                    BattleSide.ALLY,
-                                    root,
-                                    next,
-                                    world.deferredAllyAction.takeUnless {
-                                        BattleSide.ALLY in deferred.consumedSides
-                                    },
-                                    ownNativeAction,
-                                    currentEvents,
-                                ),
-                                deferredOpponentAction = deferredForNextRequest(
-                                    BattleSide.OPPONENT,
-                                    root,
-                                    next,
-                                    world.deferredOpponentAction.takeUnless {
-                                        BattleSide.OPPONENT in deferred.consumedSides
-                                    },
-                                    opponentAction,
-                                    currentEvents,
-                                ),
-                            )
-                            compatibleFrames.putIfAbsent(compatible.identity, compatible)
+                            NativeIntermediateReplayStatus.OBSERVED_ACTION_MISMATCH -> {
+                                if (firstObservedMismatch == null) {
+                                    firstObservedMismatch = world.key.hypothesisId to replayed.observedActionIssues
+                                }
+                            }
+                            NativeIntermediateReplayStatus.NO_CONSISTENT_WORLD -> Unit
                         }
                     }
                     if (compatibleFrames.isEmpty()) continue
@@ -294,88 +298,6 @@ internal class NativeProductSessionReconciler(
 
     private fun deadlineReached(deadlineNanos: Long): Boolean = nanoTime() - deadlineNanos >= 0L
 
-    private fun validateDeferredActions(
-        world: NativeProductSessionWorld,
-        root: NativeBattleFrame,
-        events: List<BattleObservedEventView>,
-    ): DeferredValidation {
-        val consumed = linkedSetOf<Long>()
-        val consumedSides = linkedSetOf<BattleSide>()
-        val issues = mutableListOf<NativeObservedTurnActionIssue>()
-        listOf(
-            BattleSide.ALLY to world.deferredAllyAction,
-            BattleSide.OPPONENT to world.deferredOpponentAction,
-        ).forEach { (side, action) ->
-            if (action == null) return@forEach
-            val evidence = evidenceForAction(side, root, action, events)
-            if (evidence.isEmpty()) return@forEach
-            val match = NativeObservedTurnActionMatcher.match(
-                world.publicContext.state.format,
-                side,
-                root,
-                listOf(action),
-                evidence,
-            )
-            if (match.issues.isNotEmpty()) {
-                issues += match.issues
-            } else {
-                evidence.mapTo(consumed) { it.sequence }
-                consumedSides += side
-            }
-        }
-        return DeferredValidation(consumed, consumedSides, issues)
-    }
-
-    private fun evidenceForAction(
-        side: BattleSide,
-        frame: NativeBattleFrame,
-        action: BattleActionCandidate,
-        events: List<BattleObservedEventView>,
-    ): List<BattleObservedEventView> {
-        val sideIds = when (side) {
-            BattleSide.ALLY -> frame.p1Team
-            BattleSide.OPPONENT -> frame.p2Team
-        }.mapTo(linkedSetOf()) { java.util.UUID.fromString(it.uuid) }
-        val components = if (action.kind == BattleActionKind.COMPOSITE) {
-            action.componentActions
-        } else {
-            listOf(action)
-        }
-        val bySlot = components.mapNotNull { component ->
-            component.actorSlot?.let { it to component }
-        }.toMap()
-        return events.filter { event ->
-            if (event.actorPokemonId !in sideIds) return@filter false
-            val component = event.actorSlot?.let(bySlot::get)
-            when (event.kind) {
-                BattleObservedEventKind.MOVE_USED -> component?.kind == BattleActionKind.USE_MOVE
-                BattleObservedEventKind.TERA_TYPE_REVEALED -> component?.kind == BattleActionKind.USE_MOVE
-                BattleObservedEventKind.SWITCHED -> component?.kind == BattleActionKind.SWITCH
-                else -> false
-            }
-        }
-    }
-
-    private fun deferredForNextRequest(
-        side: BattleSide,
-        root: NativeBattleFrame,
-        next: NativeBattleFrame,
-        existing: BattleActionCandidate?,
-        submitted: BattleActionCandidate,
-        events: List<BattleObservedEventView>,
-    ): BattleActionCandidate? {
-        if (!isWaitRequest(side, next)) return null
-        if (existing != null) return existing
-        if (submitted.kind == BattleActionKind.WAIT) return null
-        return submitted.takeIf { evidenceForAction(side, root, submitted, events).isEmpty() }
-    }
-
-    private fun isWaitRequest(side: BattleSide, frame: NativeBattleFrame): Boolean {
-        if (frame.ended) return false
-        val actions = NativeShowdownRequestActionFactory.actions(side, frame)
-        return actions.size == 1 && actions.single().kind == BattleActionKind.WAIT
-    }
-
     private fun failure(
         status: NativeProductSessionReconcileStatus,
         failedWorldId: String? = null,
@@ -423,25 +345,10 @@ internal class NativeProductSessionReconciler(
         val deferredOpponentActionId: String?,
     )
 
-    private data class DeferredValidation(
-        val consumedSequences: Set<Long>,
-        val consumedSides: Set<BattleSide>,
-        val issues: List<NativeObservedTurnActionIssue>,
-    )
-
     private companion object {
         val WORLD_ORDER = compareBy<NativeProductSessionWorld> { it.key.hypothesisId }
             .thenBy { it.key.randomSampleIndex }
             .thenBy { it.key.lineage }
-        val STRUCTURAL_ROOT_ISSUES = setOf(
-            NativeBattleRootIssueCode.MALFORMED_FRAME,
-            NativeBattleRootIssueCode.FORMAT_MISMATCH,
-            NativeBattleRootIssueCode.DEFINITION_FRAME_MISMATCH,
-            NativeBattleRootIssueCode.OPENING_STATE_MISMATCH,
-            NativeBattleRootIssueCode.ACTIVE_VIEW_MISMATCH,
-            NativeBattleRootIssueCode.SIDE_MISMATCH,
-            NativeBattleRootIssueCode.LEVEL_MISMATCH,
-        )
 
         fun extendLineage(previous: String, snapshotJson: String): String {
             val digest = MessageDigest.getInstance("SHA-256").digest(snapshotJson.toByteArray(Charsets.UTF_8))
