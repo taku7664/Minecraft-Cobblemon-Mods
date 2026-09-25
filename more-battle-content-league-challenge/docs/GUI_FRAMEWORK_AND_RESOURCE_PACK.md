@@ -1,8 +1,8 @@
 # League Challenge GUI 프레임워크 및 리소스팩 계획
 
 - 상태: `shared planning baseline`
-- 적용 상위 결정: `../../docs/MORE_BATTLE_CONTENT_UI_RESOURCE_BOUNDARY_AMENDMENT.md`
-- 구현 상태: 문서화만 완료, 코드·자산·리소스팩 미구현
+- 적용 상위 결정: `../../docs/MORE_BATTLE_CONTENT_UI_RESOURCE_BOUNDARY_AMENDMENT.md`, `../../docs/MORE_BATTLE_CONTENT_LEAGUE_UI_BOOTSTRAP_AMENDMENT.md`
+- 구현 상태: GUI 착수용 모듈·실험 계약 구현 단계
 
 ## 1. 소유권과 신뢰 경계
 
@@ -89,14 +89,15 @@ assets/cobblemon_more_battle_content_league_challenge/textures/gui/portraits/*.p
 
 | 단계 | 산출물 | 다음 단계 조건 |
 | --- | --- | --- |
-| LGUI-0 | League 홈 fixture, 타입 있는 화면·상태·행동 계약 | 등록되지 않은 행동·중복 ID·잘못된 상태 거부 |
-| LGUI-1 | 코드 드로잉과 owo 후보의 Minecraft 홈 스파이크 | 세 폭·한영·3D·입력·클리핑 비교 자료 확보 |
-| LGUI-2 | 백엔드와 첫 시각 방향 결정 | 실제 게임 캡처와 접근성·성능 검토 통과 |
-| LGUI-3 | 코드 기본값, 내장 League 테마와 Visual Pack 계약 | 별도 팩 없이 완전하며 잘못된 외부 테마 폴백 성공 |
-| LGUI-4 | Minecraft 네 화면 수직 단면 | 공용 컴포넌트의 실제 반복 사용과 전체 흐름 승인 |
-| LGUI-5 | 선택형 fixture·manifest 웹 보조 도구 | 유지 비용보다 반복 속도 이득이 확인될 때만 채택 |
-| LGUI-6 | 서버 권위 상태 연결 | 오래된 상태·조작 요청을 서버가 거부 |
-| LGUI-7 | 사천왕·챔피언 화면 확장 | 수직 단면의 공용 컴포넌트 재사용 확인 |
+| LGUI-0 | 최소 League 모듈과 개발 환경 전용 GUI 진입점 | 프로덕션 환경에서 진입점 미등록, 서버 기능·저장 없음 |
+| LGUI-1 | 실험적 League 홈 fixture와 타입 있는 화면·상태·행동 계약 | 등록되지 않은 행동·중복 ID·잘못된 상태 거부 |
+| LGUI-2 | 코드 드로잉과 owo 후보의 Minecraft 홈 스파이크 | 세 폭·한영·3D·입력·클리핑 비교 자료 확보 |
+| LGUI-3 | 백엔드와 첫 시각 방향 결정, 미선택 스파이크 제거 | 실제 게임 캡처와 접근성·성능 검토 통과 |
+| LGUI-4 | 코드 기본값, 내장 League 테마와 Visual Pack 계약 | 별도 팩 없이 완전하며 잘못된 외부 테마 폴백 성공 |
+| LGUI-5 | Minecraft 네 화면 수직 단면과 안정 API 승격 검토 | 최소 두 화면의 실제 반복 사용과 전체 흐름 승인 |
+| LGUI-6 | 선택형 fixture·manifest 웹 보조 도구 | 유지 비용보다 반복 속도 이득이 확인될 때만 채택 |
+| LGUI-7 | 서버 권위 상태 연결 | 오래된 상태·조작 요청을 서버가 거부 |
+| LGUI-8 | 사천왕·챔피언 화면 확장 | 수직 단면의 공용 컴포넌트 재사용 확인 |
 
 ## 8. 시각·기능 검증
 

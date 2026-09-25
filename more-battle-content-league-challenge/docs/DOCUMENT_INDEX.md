@@ -2,7 +2,7 @@
 
 - 상태: `planning baseline`
 - 대상: 기획자, MBC 본체 구현자, League Challenge 구현자, 데이터·리소스팩 제작자
-- 최종 갱신: 2026-09-25
+- 최종 갱신: 2026-09-25 — 실행 가능한 GUI 착수 순서 반영
 
 ## 문서 목록
 
@@ -18,6 +18,7 @@
 | [TRAINER_APPEARANCES.md](TRAINER_APPEARANCES.md) | 관장·사천왕·챔피언 스킨, 초상화와 홀로그램 렌더링을 정의한다. |
 | [MBC_CORE_CHANGES.md](MBC_CORE_CHANGES.md) | MBC가 독립성을 유지하면서 애드온을 지원하기 위해 필요한 공개 API와 잠금 지점을 정의한다. |
 | [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | 선행 작업, 구현 단계, 검증 범위와 완료 조건을 정리한다. |
+| [../../docs/MORE_BATTLE_CONTENT_LEAGUE_UI_BOOTSTRAP_AMENDMENT.md](../../docs/MORE_BATTLE_CONTENT_LEAGUE_UI_BOOTSTRAP_AMENDMENT.md) | 최소 모듈부터 시작하는 GUI 착수 순서와 실험 API 승격·롤백 경계를 정의한다. |
 
 ## 문서 우선순위
 
