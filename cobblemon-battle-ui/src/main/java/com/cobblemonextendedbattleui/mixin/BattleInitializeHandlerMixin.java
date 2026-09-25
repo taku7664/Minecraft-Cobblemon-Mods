@@ -10,6 +10,7 @@ import com.cobblemon.mod.common.net.messages.client.battle.BattleInitializePacke
 import jbro.cobblemon.battleui.extended.BattleStateTracker;
 import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUI;
 import jbro.cobblemon.battleui.extended.DamageTracker;
+import jbro.cobblemon.battleui.extended.BattleDialogue;
 import jbro.cobblemon.battleui.extended.PanelConfig;
 import net.minecraft.client.MinecraftClient;
 
@@ -29,6 +30,7 @@ public class BattleInitializeHandlerMixin {
 
     @Inject(method = "handle", at = @At("HEAD"))
     private void onHandlePre(BattleInitializePacket packet, MinecraftClient client, CallbackInfo ci) {
+        BattleDialogue.INSTANCE.clear();
         boolean needsStateTracking = PanelConfig.INSTANCE.needsBattleStateTracking();
         boolean needsDamageTracking = PanelConfig.INSTANCE.needsDamageTracking();
 

@@ -427,7 +427,9 @@ object PanelConfig {
         get() = enableBattleInfoPanel
 
     val enableBattleLogEffective: Boolean
-        get() = enableBattleLog
+        // The old config value is retained for file compatibility, but battle narration
+        // always uses dialogue until a separate log interface is designed.
+        get() = true
 
     val enableBattleLogDamagePercentagesEffective: Boolean
         get() = enableBattleLogDamagePercentages

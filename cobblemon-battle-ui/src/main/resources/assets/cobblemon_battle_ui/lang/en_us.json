@@ -1,7 +1,8 @@
 {
   "category.cobblemon_battle_ui": "Cobblemon: Battle UI",
   "key.cobblemon_battle_ui.toggle_panel": "Battle Information",
-  "key.cobblemon_battle_ui.select_action": "Select / Confirm Battle Action",
+  "key.cobblemon_battle_ui.select_action": "Confirm Battle Action / Advance Dialogue",
+  "key.cobblemon_battle_ui.cancel_action": "Cancel Battle Action",
   "key.cobblemon_battle_ui.increase_font": "Increase Panel Font Size",
   "key.cobblemon_battle_ui.decrease_font": "Decrease Panel Font Size",
   "cobblemon_battle_ui.champions.title": "BATTLE INFO",
@@ -51,15 +52,8 @@
   "cobblemon_battle_ui.config.enableBattleInfoPanel": "Battle Info Panel",
   "cobblemon_battle_ui.config.enableBattleInfoPanel.tooltip": "Show panel with weather, terrain, field conditions, and stat stages",
 
-  "cobblemon_battle_ui.config.enableBattleLog": "Battle Log",
-  "cobblemon_battle_ui.config.enableBattleLog.tooltip": "Show the custom on-screen battle log instead of Cobblemon's chat-based battle messages. Optional damage and healing percentage lines are configured below.",
-
-  "cobblemon_battle_ui.config.enableBattleLogDamagePercentages": "Damage Percentages",
-  "cobblemon_battle_ui.config.enableBattleLogDamagePercentages.tooltip": "When Battle Log is enabled, add extra lines showing damage and healing as a percentage of max HP. Requires Battle Log (above) to be enabled; this option is disabled while Battle Log is off.",
-
   "cobblemon_battle_ui.config.enableMoveTooltips": "Move Tooltips",
   "cobblemon_battle_ui.config.enableMoveTooltips.tooltip": "Show tooltips with type effectiveness when hovering over moves. Disable if using Cobblemon Move Inspector.",
-  "cobblemon_battle_ui.config.logFontScale": "Battle Log Text Scale",
   "cobblemon_battle_ui.config.tooltipFontScale": "Pokemon Tooltip Text Scale",
   "cobblemon_battle_ui.config.moveTooltipFontScale": "Move Tooltip Text Scale",
 

@@ -9,6 +9,7 @@ import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleTargetSelectio
 import com.cobblemon.mod.common.client.gui.battle.widgets.BattleOptionTile;
 import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUIClient;
 import jbro.cobblemon.battleui.extended.BattleInfoPanel;
+import jbro.cobblemon.battleui.extended.BattleDialogue;
 import jbro.cobblemon.battleui.extended.navigation.BattleGuiNavigationAccess;
 import jbro.cobblemon.battleui.extended.navigation.KeyboardTileFocus;
 import jbro.cobblemon.battleui.navigation.ActionSubmissionGate;
@@ -66,7 +67,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             int button,
             CallbackInfoReturnable<Boolean> cir
     ) {
-        if (BattleInfoPanel.INSTANCE.isExpanded()) {
+        if (BattleInfoPanel.INSTANCE.isExpanded() || BattleDialogue.INSTANCE.hasPending()) {
             cir.setReturnValue(true);
         }
     }
@@ -128,6 +129,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             float delta,
             CallbackInfo ci
     ) {
+        BattleDialogue.INSTANCE.render(context);
         BattleInfoPanel.INSTANCE.renderForeground(context);
     }
 

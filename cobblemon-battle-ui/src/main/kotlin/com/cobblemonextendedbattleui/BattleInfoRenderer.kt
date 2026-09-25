@@ -32,8 +32,5 @@ object BattleInfoRenderer {
         if (PanelConfig.enableTeamIndicatorsEffective) {
             TeamIndicatorUI.render(context)
         }
-        if (PanelConfig.enableBattleLogEffective) {
-            BattleLogWidget.render(context)
-        }
     }
 }

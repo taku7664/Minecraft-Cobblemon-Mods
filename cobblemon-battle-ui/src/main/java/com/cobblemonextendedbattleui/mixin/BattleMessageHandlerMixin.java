@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.cobblemon.mod.common.client.net.battle.BattleMessageHandler;
 import com.cobblemon.mod.common.net.messages.client.battle.BattleMessagePacket;
 import jbro.cobblemon.battleui.extended.BattleLog;
+import jbro.cobblemon.battleui.extended.BattleDialogue;
 import jbro.cobblemon.battleui.extended.BattleMessageInterceptor;
 import jbro.cobblemon.battleui.extended.PanelConfig;
 import net.minecraft.client.MinecraftClient;
@@ -38,7 +39,8 @@ public class BattleMessageHandlerMixin {
         // Store messages in battle log only if the battle log feature is enabled
         if (PanelConfig.INSTANCE.getEnableBattleLogEffective()) {
             BattleLog.INSTANCE.processMessages(packet.getMessages());
-            // Also prevent Cobblemon from showing messages in chat (we show our own log)
+            BattleDialogue.INSTANCE.enqueue(packet.getMessages());
+            // Dialogue owns battle message presentation while this feature is enabled.
             ci.cancel();
         }
     }

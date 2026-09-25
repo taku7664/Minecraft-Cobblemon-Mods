@@ -2,7 +2,6 @@ package jbro.cobblemon.battleui.extended
 
 import me.shedaniel.clothconfig2.api.ConfigBuilder
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder
-import me.shedaniel.clothconfig2.api.Requirement
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.text.Text
 
@@ -44,19 +43,6 @@ object ClothConfigScreenBuilder {
             .setTooltip(Text.translatable("cobblemon_battle_ui.config.enableBattleInfoPanel.tooltip"))
             .setSaveConsumer(PanelConfig::setEnableBattleInfoPanel).build())
 
-        val battleLog = entries.startBooleanToggle(
-            Text.translatable("cobblemon_battle_ui.config.enableBattleLog"), PanelConfig.enableBattleLog
-        ).setDefaultValue(true)
-            .setTooltip(Text.translatable("cobblemon_battle_ui.config.enableBattleLog.tooltip"))
-            .setSaveConsumer(PanelConfig::setEnableBattleLog).build()
-        features.addEntry(battleLog)
-        features.addEntry(entries.startBooleanToggle(
-            Text.translatable("cobblemon_battle_ui.config.enableBattleLogDamagePercentages"),
-            PanelConfig.enableBattleLogDamagePercentages
-        ).setDefaultValue(true)
-            .setTooltip(Text.translatable("cobblemon_battle_ui.config.enableBattleLogDamagePercentages.tooltip"))
-            .setSaveConsumer(PanelConfig::setEnableBattleLogDamagePercentages)
-            .setRequirement(Requirement.isTrue(battleLog)).build())
         features.addEntry(entries.startBooleanToggle(
             Text.translatable("cobblemon_battle_ui.config.enableMoveTooltips"), PanelConfig.enableMoveTooltips
         ).setDefaultValue(true)
@@ -64,7 +50,6 @@ object ClothConfigScreenBuilder {
             .setSaveConsumer(PanelConfig::setEnableMoveTooltips).build())
 
         val sizing = builder.getOrCreateCategory(Text.translatable("cobblemon_battle_ui.config.category.sizing"))
-        sizing.addEntry(scaleEntry(entries, "logFontScale", PanelConfig.logFontScale, PanelConfig::setLogFontScale))
         sizing.addEntry(scaleEntry(entries, "tooltipFontScale", PanelConfig.tooltipFontScale, PanelConfig::setTooltipFontScale))
         sizing.addEntry(scaleEntry(entries, "moveTooltipFontScale", PanelConfig.moveTooltipFontScale, PanelConfig::setMoveTooltipFontScale))
 

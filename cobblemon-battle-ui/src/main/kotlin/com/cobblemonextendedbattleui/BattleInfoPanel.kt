@@ -159,6 +159,7 @@ object BattleInfoPanel {
         BattleStateTracker.clear()
         TeamIndicatorUI.clear()
         BattleLog.clear()
+        BattleDialogue.clear()
         BattleLogWidget.clear()
         clearBattleState()
         isExpanded = false

@@ -9,6 +9,7 @@ import com.cobblemon.mod.common.client.net.battle.BattleEndHandler;
 import com.cobblemon.mod.common.net.messages.client.battle.BattleEndPacket;
 import jbro.cobblemon.battleui.extended.BattleInfoPanel;
 import jbro.cobblemon.battleui.extended.BattleLog;
+import jbro.cobblemon.battleui.extended.BattleDialogue;
 import jbro.cobblemon.battleui.extended.BattleLogWidget;
 import jbro.cobblemon.battleui.extended.BattleStateTracker;
 import jbro.cobblemon.battleui.extended.DamageTracker;
@@ -31,6 +32,7 @@ public class BattleEndHandlerMixin {
         TeamIndicatorUI.INSTANCE.clear();
         BattleInfoPanel.INSTANCE.clearBattleState();
         BattleLog.INSTANCE.clear();
+        BattleDialogue.INSTANCE.clear();
         BattleLogWidget.INSTANCE.clear();
         DamageTracker.INSTANCE.clear();
         MoveTooltipRenderer.INSTANCE.clear();

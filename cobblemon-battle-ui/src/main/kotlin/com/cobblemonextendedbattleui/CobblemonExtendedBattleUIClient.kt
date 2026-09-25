@@ -17,6 +17,8 @@ object CobblemonExtendedBattleUIClient : ClientModInitializer {
         private set
     lateinit var selectActionKey: KeyBinding
         private set
+    lateinit var cancelActionKey: KeyBinding
+        private set
 
     override fun onInitializeClient() {
         CobblemonExtendedBattleUI.LOGGER.info("Cobblemon: Battle UI client initializing...")
@@ -80,7 +82,15 @@ object CobblemonExtendedBattleUIClient : ClientModInitializer {
             KeyBinding(
                 "key.cobblemon_battle_ui.select_action",
                 InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_SPACE,
+                GLFW.GLFW_KEY_Z,
+                "category.cobblemon_battle_ui"
+            )
+        )
+        cancelActionKey = KeyBindingHelper.registerKeyBinding(
+            KeyBinding(
+                "key.cobblemon_battle_ui.cancel_action",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_X,
                 "category.cobblemon_battle_ui"
             )
         )

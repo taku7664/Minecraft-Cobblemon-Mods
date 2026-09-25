@@ -1,7 +1,6 @@
 package jbro.cobblemon.battleui.extended.mixin;
 
 import jbro.cobblemon.battleui.extended.BattleInfoPanel;
-import jbro.cobblemon.battleui.extended.BattleLogWidget;
 import jbro.cobblemon.battleui.extended.MoveTooltipRenderer;
 import jbro.cobblemon.battleui.extended.PanelConfig;
 import com.cobblemon.mod.common.client.CobblemonClient;
@@ -44,13 +43,7 @@ public abstract class MouseScrollMixin {
                 ci.cancel();
                 return;
             }
-            // Then let the battle log widget try
-            if (PanelConfig.INSTANCE.getEnableBattleLogEffective() &&
-                BattleLogWidget.INSTANCE.onScroll(this.x, this.y, vertical)) {
-                ci.cancel();
-                return;
-            }
-            // Finally try the info panel
+            // Try the info panel after move tooltips.
             if (PanelConfig.INSTANCE.getEnableBattleInfoPanelEffective() &&
                 BattleInfoPanel.INSTANCE.onScroll(this.x, this.y, vertical)) {
                 ci.cancel();
