@@ -96,6 +96,16 @@ the result instead of being dropped and renormalized; one deterministic node bud
 is divided across the full world set. This is the product aggregation primitive,
 not yet the `LocalTacticalBrain` entrypoint.
 
+The initial product-world planner now joins the public 6-member preview, the
+format's private 3/4-selection hypotheses, synthetic hidden bench identities,
+difficulty-normalized move slots, exact own builds and bounded opponent build
+priors into one normalized beam of Showdown definitions. Singles and doubles use
+the same contract. Missing native species identity, move/build data, roster
+materialization or definition compilation invalidates the whole opening plan;
+the planner never deletes just the failed roster and renormalizes the remainder.
+Seeds are derived deterministically from battle, complete-world ID and sample
+index. Mid-battle continuation and the `LocalTacticalBrain` call remain pending.
+
 Regenerate the committed singles snapshot deterministically from its two pinned
 sources (chaos JSON plus the independently rendered moveset table):
 
