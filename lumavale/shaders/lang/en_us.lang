@@ -5,7 +5,8 @@ profile.comment=Soft favors performance, Cozy is the intended look, and High use
 
 screen.LIGHTING=Lighting
 screen.SHADOWS=Shadows
-screen.COLOR=Color and atmosphere
+screen.COLOR=Color
+screen.ATMOSPHERE=Atmosphere
 
 option.EXPOSURE=Exposure
 option.BLOCKLIGHT_STRENGTH=Warm light strength
@@ -16,3 +17,7 @@ option.shadowMapResolution=Shadow resolution
 option.SATURATION=Saturation
 option.BLOOM_STRENGTH=Bloom strength
 option.FOG_STRENGTH=Atmosphere strength
+option.BORDER_FOG=Border fog
+option.BORDER_FOG.comment=Completely blends distant terrain into the sky before the render-distance edge.
+option.BORDER_FOG_START=Border fog start
+option.BORDER_FOG_START.comment=Sets where border fog starts as a fraction of the render distance.
