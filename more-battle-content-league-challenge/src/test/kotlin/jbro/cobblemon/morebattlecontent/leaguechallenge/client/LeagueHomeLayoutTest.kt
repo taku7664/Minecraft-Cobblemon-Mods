@@ -16,6 +16,7 @@ class LeagueHomeLayoutTest {
         assertTrue(layout.shell.contains(layout.challenge))
         assertTrue(layout.shell.contains(layout.footer))
         assertTrue(layout.footer.contains(layout.actionButton))
+        assertTrue(layout.challenge.contains(layout.trainerViewport))
         assertFalse(layout.badges.overlaps(layout.challenge))
         assertFalse(layout.header.overlaps(layout.badges))
         assertFalse(layout.header.overlaps(layout.challenge))
@@ -23,6 +24,8 @@ class LeagueHomeLayoutTest {
         assertFalse(layout.footer.overlaps(layout.challenge))
         assertTrue(layout.badges.width >= 120)
         assertTrue(layout.challenge.width >= 120)
+        assertTrue(layout.trainerViewport.width >= 24)
+        assertTrue(layout.trainerViewport.height >= 24)
     }
 
     @ParameterizedTest

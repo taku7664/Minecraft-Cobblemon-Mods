@@ -31,12 +31,19 @@ internal class LeagueChallengeOwoSpikeScreen(
     private val fixture: LeagueHomeFixture = LeagueHomeFixtureCatalog.require("badges_3")
 ) : BaseOwoScreen<StackLayout>(text("title")), LeagueUiVerificationProbe {
     private var statusLabel: LabelComponent? = null
+    private val trainerModelRenderer = LeagueTrainerModelRenderer()
     override var actionDispatched: Boolean = false
+        private set
+    override val actionAvailable: Boolean get() = fixture.challengeAvailable
+    override var trainerModelRendered: Boolean = false
+        private set
+    override var unavailableExplanationShown: Boolean = false
         private set
 
     override fun createAdapter(): OwoUIAdapter<StackLayout> {
         val root = Containers.stack(Sizing.fill(100), Sizing.fill(100))
-        return LeagueNarratingOwoAdapter(0, 0, width, height, root, title).also { adapter ->
+        val focusNarration = if (fixture.challengeAvailable) null else text("challenge_unavailable")
+        return LeagueNarratingOwoAdapter(0, 0, width, height, root, title, focusNarration).also { adapter ->
             addRenderableWidget(adapter)
             focused = adapter
         }
@@ -81,14 +88,24 @@ internal class LeagueChallengeOwoSpikeScreen(
         statusLabel = label(Component.empty(), layout.footer.left + 7, layout.footer.top + 22, footerTextWidth, ACCENT).also(root::child)
 
         root.child(
-            Components.button(text("challenge")) {
-                actionDispatched = true
-                statusLabel?.text(text("dev_action", LeagueHomeContract.OPEN_NEXT_CHALLENGE.value))
+            Components.button(text(if (fixture.challengeAvailable) "challenge" else "challenge_unavailable_short")) {
+                if (fixture.challengeAvailable) {
+                    actionDispatched = true
+                    statusLabel?.text(text("dev_action", LeagueHomeContract.OPEN_NEXT_CHALLENGE.value))
+                } else {
+                    unavailableExplanationShown = true
+                    statusLabel?.text(text("challenge_unavailable_status"))
+                }
             }.apply {
                 sizing(Sizing.fixed(layout.actionButton.width), Sizing.fixed(layout.actionButton.height))
                 positioning(Positioning.absolute(layout.actionButton.left, layout.actionButton.top))
-                renderer(ButtonComponent.Renderer.flat(BUTTON, BUTTON_HOVER, BUTTON_DISABLED))
-                active(fixture.challengeAvailable)
+                renderer(
+                    if (fixture.challengeAvailable) {
+                        ButtonComponent.Renderer.flat(BUTTON, BUTTON_HOVER, BUTTON_DISABLED)
+                    } else {
+                        ButtonComponent.Renderer.flat(BUTTON_DISABLED, BUTTON_DISABLED, BUTTON_DISABLED)
+                    }
+                )
                 textShadow(false)
             }
         )
@@ -123,24 +140,35 @@ internal class LeagueChallengeOwoSpikeScreen(
     }
 
     private fun addChallenge(root: StackLayout, layout: LeagueHomeLayout) {
-        val portraitSize = minOf(48, layout.challenge.height - 31, layout.challenge.width / 3).coerceAtLeast(24)
-        val portrait = LeagueUiRect(layout.challenge.left + 7, layout.challenge.top + 21, portraitSize, portraitSize)
-        root.child(rectangle(portrait, PORTRAIT_BACKGROUND, BORDER_DIM))
-        val centerX = portrait.left + portrait.width / 2
-        val head = (portrait.width / 7).coerceAtLeast(3)
-        val headTop = portrait.top + 7
-        root.child(rectangle(LeagueUiRect(centerX - head, headTop, head * 2, head * 2), SILHOUETTE))
-        root.child(rectangle(LeagueUiRect(centerX - head * 2, headTop + head * 2 + 2, head * 4, portrait.bottom - 6 - (headTop + head * 2 + 2)), SILHOUETTE))
+        val portrait = layout.trainerViewport
+        root.child(
+            rectangle(portrait, PORTRAIT_BACKGROUND, BORDER_DIM).apply {
+                surface(
+                    Surface.flat(PORTRAIT_BACKGROUND)
+                        .and(Surface.outline(BORDER_DIM))
+                        .and(Surface { graphics, component ->
+                            trainerModelRendered = trainerModelRenderer.render(
+                                graphics,
+                                LeagueUiRect(component.x(), component.y(), component.width(), component.height())
+                            )
+                        })
+                )
+            }
+        )
 
         val textLeft = portrait.right + 7
         val textWidth = (layout.challenge.right - 7 - textLeft).coerceAtLeast(36)
-        val challenge = when (fixture.nextChallenge) {
+        val challenge = fixture.challengeTitleTranslationKey?.let(::text) ?: when (fixture.nextChallenge) {
             LeagueNextChallenge.GYM -> text("next_gym", fixture.badgeCount + 1)
             LeagueNextChallenge.POKEMON_LEAGUE -> text("pokemon_league")
             LeagueNextChallenge.COMPLETE -> text("complete")
         }
-        root.child(label(challenge, textLeft, layout.challenge.top + 24, textWidth, TEXT_PRIMARY))
-        root.child(label(text("fixture_notice"), textLeft, layout.challenge.top + 47, textWidth, TEXT_MUTED))
+        val copyPlacement = LeagueChallengeCopyPlacement.calculate(
+            titleTop = layout.challenge.top + 24,
+            titleLineCount = font.split(challenge, textWidth).size
+        )
+        root.child(label(challenge, textLeft, copyPlacement.titleTop, textWidth, TEXT_PRIMARY))
+        root.child(label(text(fixture.challengeDetailTranslationKey), textLeft, copyPlacement.detailTop, textWidth, TEXT_MUTED))
     }
 
     private fun addBallEmblem(root: StackLayout, x: Int, y: Int, color: Int) {
@@ -201,7 +229,6 @@ internal class LeagueChallengeOwoSpikeScreen(
         private const val BADGE_MARK = 0xFFD8E1EC.toInt()
         private const val BADGE_MARK_LINE = 0xFF25374A.toInt()
         private const val PORTRAIT_BACKGROUND = 0xFF0E1621.toInt()
-        private const val SILHOUETTE = 0xFF60758C.toInt()
         private const val BUTTON = 0xFF8C6526.toInt()
         private const val BUTTON_HOVER = 0xFFB98A32.toInt()
         private const val BUTTON_DISABLED = 0xFF26313D.toInt()
@@ -224,7 +251,8 @@ private class LeagueNarratingOwoAdapter(
     width: Int,
     height: Int,
     root: StackLayout,
-    private val fallbackTitle: Component
+    private val fallbackTitle: Component,
+    private val focusNarration: Component?
 ) : OwoUIAdapter<StackLayout>(x, y, width, height, root) {
     override fun narrationPriority(): NarratableEntry.NarrationPriority =
         focusedNarratable()?.narrationPriority() ?: NarratableEntry.NarrationPriority.NONE
@@ -232,6 +260,7 @@ private class LeagueNarratingOwoAdapter(
     override fun updateNarration(output: NarrationElementOutput) {
         val focused = focusedNarratable()
         if (focused != null) {
+            focusNarration?.let { output.add(NarratedElementType.TITLE, it) }
             focused.updateNarration(output)
         } else {
             output.add(NarratedElementType.TITLE, fallbackTitle)

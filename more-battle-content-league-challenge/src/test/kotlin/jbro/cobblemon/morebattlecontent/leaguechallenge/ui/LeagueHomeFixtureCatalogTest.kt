@@ -9,7 +9,7 @@ class LeagueHomeFixtureCatalogTest {
     @Test
     fun `catalog contains every planned rank boundary fixture`() {
         assertEquals(
-            listOf("badges_0", "badges_2", "badges_3", "badges_5", "badges_8", "champion"),
+            listOf("badges_0", "badges_2", "badges_3", "badges_5", "badges_8", "champion", "long_disabled"),
             LeagueHomeFixtureCatalog.all.map(LeagueHomeFixture::id)
         )
     }
@@ -30,5 +30,14 @@ class LeagueHomeFixtureCatalogTest {
         val champion = LeagueHomeFixtureCatalog.require("champion")
         assertFalse(champion.challengeAvailable)
         assertTrue(champion.facilitiesUnlocked)
+    }
+
+    @Test
+    fun `long text fixture keeps the challenge disabled and names explicit translations`() {
+        val fixture = LeagueHomeFixtureCatalog.require("long_disabled")
+
+        assertFalse(fixture.challengeAvailable)
+        assertEquals("long_trainer", fixture.challengeTitleTranslationKey)
+        assertEquals("long_reward", fixture.challengeDetailTranslationKey)
     }
 }

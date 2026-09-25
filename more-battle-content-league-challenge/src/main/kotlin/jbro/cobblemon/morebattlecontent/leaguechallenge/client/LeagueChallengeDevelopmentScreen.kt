@@ -13,6 +13,7 @@ import net.minecraft.client.gui.components.AbstractButton
 import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 
 @OptIn(ExperimentalMbcUi::class)
 internal class LeagueChallengeDevelopmentScreen(
@@ -20,8 +21,14 @@ internal class LeagueChallengeDevelopmentScreen(
 ) : Screen(text("title")), LeagueUiVerificationProbe {
     private lateinit var layout: LeagueHomeLayout
     private lateinit var challengeButton: LeagueHomeActionButton
+    private val trainerModelRenderer = LeagueTrainerModelRenderer()
     private var actionStatus: Component = Component.empty()
     override var actionDispatched: Boolean = false
+        private set
+    override val actionAvailable: Boolean get() = fixture.challengeAvailable
+    override var trainerModelRendered: Boolean = false
+        private set
+    override var unavailableExplanationShown: Boolean = false
         private set
 
     override fun init() {
@@ -29,9 +36,15 @@ internal class LeagueChallengeDevelopmentScreen(
             "Invalid League home MbcUI contract"
         }
         layout = LeagueHomeLayout.calculate(width, height)
-        challengeButton = LeagueHomeActionButton(layout.actionButton, text("challenge"), ::dispatchChallenge).also {
-            it.active = fixture.challengeAvailable
-        }
+        val actionLabel = text(if (fixture.challengeAvailable) "challenge" else "challenge_unavailable_short")
+        val actionNarration = text(if (fixture.challengeAvailable) "challenge" else "challenge_unavailable")
+        challengeButton = LeagueHomeActionButton(
+            layout.actionButton,
+            actionLabel,
+            actionNarration,
+            fixture.challengeAvailable,
+            ::dispatchChallenge
+        )
         addRenderableWidget(challengeButton)
     }
 
@@ -100,28 +113,30 @@ internal class LeagueChallengeDevelopmentScreen(
     private fun drawChallenge(graphics: GuiGraphics) {
         panel(graphics, layout.challenge)
         graphics.drawString(font, text("next_challenge"), layout.challenge.left + 7, layout.challenge.top + 6, ACCENT, false)
-        val portraitSize = minOf(48, layout.challenge.height - 31, layout.challenge.width / 3).coerceAtLeast(24)
-        val portrait = LeagueUiRect(layout.challenge.left + 7, layout.challenge.top + 21, portraitSize, portraitSize)
+        val portrait = layout.trainerViewport
         graphics.fill(portrait.left, portrait.top, portrait.right, portrait.bottom, PORTRAIT_BACKGROUND)
         border(graphics, portrait, BORDER_DIM)
-        drawTrainerSilhouette(graphics, portrait)
+        trainerModelRendered = trainerModelRenderer.render(graphics, portrait)
 
         val textLeft = portrait.right + 7
         val textWidth = (layout.challenge.right - 7 - textLeft).coerceAtLeast(36)
-        val challenge = when (fixture.nextChallenge) {
+        val challenge = fixture.challengeTitleTranslationKey?.let(::text) ?: when (fixture.nextChallenge) {
             LeagueNextChallenge.GYM -> text("next_gym", fixture.badgeCount + 1)
             LeagueNextChallenge.POKEMON_LEAGUE -> text("pokemon_league")
             LeagueNextChallenge.COMPLETE -> text("complete")
         }
-        drawWrapped(graphics, challenge, textLeft, layout.challenge.top + 24, textWidth, TEXT_PRIMARY, 2)
+        val copyPlacement = LeagueChallengeCopyPlacement.calculate(
+            titleTop = layout.challenge.top + 24,
+            titleLineCount = font.split(challenge, textWidth).size
+        )
+        drawWrapped(graphics, challenge, textLeft, copyPlacement.titleTop, textWidth, TEXT_PRIMARY)
         drawWrapped(
             graphics,
-            text("fixture_notice"),
+            text(fixture.challengeDetailTranslationKey),
             textLeft,
-            layout.challenge.top + 47,
+            copyPlacement.detailTop,
             textWidth,
-            TEXT_MUTED,
-            if (layout.stacked) 1 else 3
+            TEXT_MUTED
         )
     }
 
@@ -138,8 +153,13 @@ internal class LeagueChallengeDevelopmentScreen(
     }
 
     private fun dispatchChallenge() {
-        actionDispatched = true
-        actionStatus = text("dev_action", LeagueHomeContract.OPEN_NEXT_CHALLENGE.value)
+        if (fixture.challengeAvailable) {
+            actionDispatched = true
+            actionStatus = text("dev_action", LeagueHomeContract.OPEN_NEXT_CHALLENGE.value)
+        } else {
+            unavailableExplanationShown = true
+            actionStatus = text("challenge_unavailable_status")
+        }
     }
 
     private fun drawBadgeMark(graphics: GuiGraphics, rect: LeagueUiRect, index: Int, state: LeagueBadgeState) {
@@ -150,14 +170,6 @@ internal class LeagueChallengeDevelopmentScreen(
         graphics.fill(centerX - size / 2, centerY - 1, centerX + size / 2, centerY + 1, BADGE_MARK_LINE)
         val numberColor = if (state == LeagueBadgeState.LOCKED) TEXT_MUTED else TEXT_PRIMARY
         graphics.drawCenteredString(font, index.toString(), centerX, centerY - 4, numberColor)
-    }
-
-    private fun drawTrainerSilhouette(graphics: GuiGraphics, rect: LeagueUiRect) {
-        val centerX = rect.left + rect.width / 2
-        val head = (rect.width / 7).coerceAtLeast(3)
-        val headTop = rect.top + 7
-        graphics.fill(centerX - head, headTop, centerX + head, headTop + head * 2, SILHOUETTE)
-        graphics.fill(centerX - head * 2, headTop + head * 2 + 2, centerX + head * 2, rect.bottom - 6, SILHOUETTE)
     }
 
     private fun drawBallEmblem(graphics: GuiGraphics, x: Int, y: Int, color: Int) {
@@ -185,10 +197,9 @@ internal class LeagueChallengeDevelopmentScreen(
         x: Int,
         y: Int,
         width: Int,
-        color: Int,
-        maxLines: Int
+        color: Int
     ) {
-        font.split(component, width).take(maxLines).forEachIndexed { index, line ->
+        font.split(component, width).forEachIndexed { index, line ->
             graphics.drawString(font, line, x, y + index * 10, color, false)
         }
     }
@@ -219,7 +230,6 @@ internal class LeagueChallengeDevelopmentScreen(
         private const val BADGE_MARK = 0xFFD8E1EC.toInt()
         private const val BADGE_MARK_LINE = 0xFF25374A.toInt()
         private const val PORTRAIT_BACKGROUND = 0xFF0E1621.toInt()
-        private const val SILHOUETTE = 0xFF60758C.toInt()
         private const val RANK_POKE = 0xFFE5E7EB.toInt()
         private const val RANK_GREAT = 0xFF5CB8FF.toInt()
         private const val RANK_ULTRA = 0xFFFFD45C.toInt()
@@ -236,17 +246,21 @@ internal class LeagueChallengeDevelopmentScreen(
 private class LeagueHomeActionButton(
     bounds: LeagueUiRect,
     message: Component,
+    private val narrationMessage: Component,
+    private val available: Boolean,
     private val press: () -> Unit
 ) : AbstractButton(bounds.left, bounds.top, bounds.width, bounds.height, message) {
     override fun onPress() = press()
 
+    override fun createNarrationMessage(): MutableComponent = wrapDefaultNarrationMessage(narrationMessage)
+
     override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         val background = when {
-            !active -> 0xFF26313D.toInt()
+            !available -> 0xFF26313D.toInt()
             isHoveredOrFocused -> 0xFFB98A32.toInt()
             else -> 0xFF8C6526.toInt()
         }
-        val border = if (isHoveredOrFocused && active) 0xFFFFE09A.toInt() else 0xFFD1A451.toInt()
+        val border = if (isHoveredOrFocused && available) 0xFFFFE09A.toInt() else 0xFFD1A451.toInt()
         graphics.fill(x, y, x + width, y + height, background)
         graphics.fill(x, y, x + width, y + 1, border)
         graphics.fill(x, y + height - 1, x + width, y + height, border)
@@ -259,7 +273,7 @@ private class LeagueHomeActionButton(
             Component.literal(label),
             x + width / 2,
             y + (height - 8) / 2,
-            if (active) 0xFFFFFFFF.toInt() else 0xFF778392.toInt()
+            if (available) 0xFFFFFFFF.toInt() else 0xFF778392.toInt()
         )
     }
 

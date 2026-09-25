@@ -141,14 +141,24 @@ internal object LeagueUiCaptureHarness {
         val narration = RecordingNarrationOutput()
         narratable.updateNarration(narration)
         check(narration.entries.isNotEmpty()) { "Focused League UI component produced no narration" }
-        check(screen.keyPressed(GLFW.GLFW_KEY_ENTER, 0, 0)) { "League UI did not handle ENTER activation" }
         val probe = screen as? LeagueUiVerificationProbe
             ?: error("League UI screen does not expose the development verification probe")
-        check(probe.actionDispatched) { "League UI focused action was not dispatched by ENTER" }
+        check(probe.trainerModelRendered) { "League UI trainer model did not render before input verification" }
+        val enterHandled = screen.keyPressed(GLFW.GLFW_KEY_ENTER, 0, 0)
+        if (probe.actionAvailable) {
+            check(enterHandled) { "League UI did not handle ENTER activation" }
+            check(probe.actionDispatched) { "League UI focused action was not dispatched by ENTER" }
+        } else {
+            check(enterHandled) { "Unavailable League UI action did not handle ENTER for its explanation" }
+            check(!probe.actionDispatched) { "Disabled League UI action unexpectedly dispatched" }
+            check(probe.unavailableExplanationShown) { "Unavailable League UI action did not expose its explanation" }
+        }
         logger.info(
-            "Verified League UI input backend={} focused={} narration={}",
+            "Verified League UI input backend={} focused={} available={} trainerModelRendered={} narration={}",
             screen.javaClass.simpleName,
             focused.javaClass.simpleName,
+            probe.actionAvailable,
+            probe.trainerModelRendered,
             narration.entries.joinToString(" | ")
         )
     }

@@ -22,4 +22,7 @@ internal enum class LeagueUiLocale(val id: String) {
 
 internal interface LeagueUiVerificationProbe {
     val actionDispatched: Boolean
+    val actionAvailable: Boolean
+    val trainerModelRendered: Boolean
+    val unavailableExplanationShown: Boolean
 }

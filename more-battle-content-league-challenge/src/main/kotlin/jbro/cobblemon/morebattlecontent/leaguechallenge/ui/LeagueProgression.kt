@@ -33,11 +33,13 @@ data class LeagueHomeFixture(
     val badgeCount: Int,
     val championDefeated: Boolean,
     val badges: List<LeagueBadgeFixture>,
-    val levelCap: Int? = null
+    val levelCap: Int? = null,
+    val challengeAvailable: Boolean = !championDefeated,
+    val challengeTitleTranslationKey: String? = null,
+    val challengeDetailTranslationKey: String = "fixture_notice"
 ) {
     val rank: LeagueRank = LeagueRank.fromProgress(badgeCount, championDefeated)
     val facilitiesUnlocked: Boolean = championDefeated
-    val challengeAvailable: Boolean = !championDefeated
     val nextChallenge: LeagueNextChallenge = when {
         championDefeated -> LeagueNextChallenge.COMPLETE
         badgeCount == 8 -> LeagueNextChallenge.POKEMON_LEAGUE
@@ -46,7 +48,8 @@ data class LeagueHomeFixture(
 }
 
 object LeagueHomeFixtureCatalog {
-    val all: List<LeagueHomeFixture> = listOf(0, 2, 3, 5, 8).map(::fixture) + fixture(8, champion = true)
+    val all: List<LeagueHomeFixture> =
+        listOf(0, 2, 3, 5, 8).map(::fixture) + fixture(8, champion = true) + longDisabledFixture()
 
     fun require(id: String): LeagueHomeFixture =
         requireNotNull(all.firstOrNull { it.id == id }) { "Unknown League home fixture: $id" }
@@ -65,5 +68,12 @@ object LeagueHomeFixtureCatalog {
                 }
             )
         }
+    )
+
+    private fun longDisabledFixture(): LeagueHomeFixture = fixture(3).copy(
+        id = "long_disabled",
+        challengeAvailable = false,
+        challengeTitleTranslationKey = "long_trainer",
+        challengeDetailTranslationKey = "long_reward"
     )
 }

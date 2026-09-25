@@ -18,6 +18,7 @@ internal data class LeagueHomeLayout(
     val header: LeagueUiRect,
     val badges: LeagueUiRect,
     val challenge: LeagueUiRect,
+    val trainerViewport: LeagueUiRect,
     val footer: LeagueUiRect,
     val actionButton: LeagueUiRect,
     val stacked: Boolean
@@ -69,7 +70,14 @@ internal data class LeagueHomeLayout(
                 width = buttonWidth,
                 height = 20
             )
-            return LeagueHomeLayout(shell, header, badges, challenge, footer, actionButton, stacked)
+            val portraitSize = minOf(48, challenge.height - 31, challenge.width / 3).coerceAtLeast(24)
+            val trainerViewport = LeagueUiRect(
+                left = challenge.left + 7,
+                top = challenge.top + 21,
+                width = portraitSize,
+                height = portraitSize
+            )
+            return LeagueHomeLayout(shell, header, badges, challenge, trainerViewport, footer, actionButton, stacked)
         }
     }
 }

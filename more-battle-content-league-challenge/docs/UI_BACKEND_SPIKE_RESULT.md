@@ -3,7 +3,7 @@
 - 상태: `non-normative evidence record`
 - 실행일: 2026-09-25
 - 대상: GUI 백엔드를 결정할 빡대리님과 후속 구현자
-- fixture: `badges_3`
+- fixture: `badges_3`, `long_disabled`
 - 런타임: Minecraft 1.21.1, Fabric Loader 0.19.5, owo-lib 0.12.15.4+1.21
 
 이 문서는 코드 드로잉과 owo 후보를 같은 fixture로 실제 Minecraft 클라이언트에서 실행한 결과를 기록한다. 백엔드 최종 채택 기록이 아니며, [GUI_FRAMEWORK_AND_RESOURCE_PACK.md](GUI_FRAMEWORK_AND_RESOURCE_PACK.md)의 LGUI-2 승인 조건을 대체하지 않는다.
@@ -23,6 +23,13 @@
 
 ![427×240 코드 드로잉과 owo 비교](assets/ui-spike/league-code-vs-owo-427x240.png)
 
+긴 관장명·보상명, 잠긴 행동과 3D 트레이너 슬롯을 함께 넣은 `long_disabled`도 같은 크기로 비교했다.
+
+- 코드 드로잉: [영어 원본](assets/ui-spike/league-code-long_disabled-en_us-427x240.png) · [한국어 원본](assets/ui-spike/league-code-long_disabled-ko_kr-427x240.png)
+- owo 후보: [영어 원본](assets/ui-spike/league-owo-long_disabled-en_us-427x240.png) · [한국어 원본](assets/ui-spike/league-owo-long_disabled-ko_kr-427x240.png)
+
+네 파일을 원본 크기로 비교했다. 영어 4줄·한국어 3줄 관장명 뒤에 보상문이 겹치지 않았고, 모델은 초상화 안쪽 scissor 경계에 머물렀다. 잠금 버튼은 짧은 화면 라벨을 사용하되 전체 이유를 내레이션으로 유지했다.
+
 ### 논리 해상도 320×240
 
 [코드 드로잉 원본](assets/ui-spike/league-code-badges_3-320x240.png) · [owo 원본](assets/ui-spike/league-owo-badges_3-320x240.png)
@@ -40,6 +47,9 @@
 | 버튼 | 1픽셀 외곽선 포함 | 현재 flat renderer에는 외곽선 없음 |
 | 기본 위젯 외형 | 사용하지 않음 | 사용하지 않고 사용자 정의 surface와 renderer 적용 |
 | 640×360 한영 | `en_us`, `ko_kr` 모두 잘림 없이 표시 | `en_us`, `ko_kr` 모두 잘림 없이 표시 |
+| 427×240 긴 문자열 | 줄 수를 측정해 관장명 다음에 보상문 배치 | 동일한 배치 계산을 사용하며 겹침 없음 |
+| 잠긴 행동 | TAB 포커스와 ENTER 설명은 허용하지만 행동은 전달하지 않음 | 동일 |
+| 3D 슬롯 | 바닐라 Steve fixture 모델이 초상화 내부에 표시 | 초상화 컴포넌트 surface 단계에서 같은 렌더러로 표시 |
 | 키보드 행동 | TAB 포커스 후 ENTER로 행동 전달 | TAB 포커스 후 ENTER로 행동 전달 |
 | 내레이션 | 포커스한 버튼의 제목·사용 안내 생성 | MBC 소유 전달 어댑터를 추가한 뒤 동일 안내 생성 |
 | 닫기 | 화면 `onClose` 경로로 닫힘 | 화면 `onClose` 경로로 닫힘 |
@@ -50,19 +60,22 @@
 
 owo의 기본 `OwoUIAdapter`는 자신을 바닐라 화면의 포커스 대상으로 노출하지만 내레이션 우선순위와 내용을 제공하지 않았다. 내부 버튼은 내레이션을 만들 수 있어도 화면 밖으로 전달되지 않는 구조였다. 스파이크에는 포커스된 내부 `NarratableEntry`의 우선순위와 내용을 전달하는 `LeagueNarratingOwoAdapter`를 추가했다. 따라서 owo를 채택하면 이 전달 계층을 MBC 비공개 백엔드가 소유해야 한다(MUST).
 
+바닐라와 owo 모두 버튼 자체를 비활성화하면 TAB 포커스 대상에서 빠져 잠금 이유를 키보드로 확인할 수 없었다. 따라서 잠긴 행동은 포커스와 ENTER 설명은 받되 실제 행동 전달을 거부하는 별도 권한 상태로 구현했다. 버튼에는 `Locked`/`잠김`만 표시하고 전체 이유는 내레이션과 하단 상태문으로 제공한다. Owo 고정 폭 버튼은 긴 라벨을 자동으로 자르지 않고 밖으로 그렸기 때문에 이 짧은 시각 라벨 분리는 레이아웃 안전에도 필요했다.
+
+처음에는 Owo 화면의 전체 렌더가 끝난 뒤 3D 모델을 덧그렸고, 검증 플래그는 참이었지만 실제 캡처에는 모델이 보이지 않았다. 모델 렌더를 초상화 컴포넌트의 `Surface` 단계로 옮긴 뒤 실제 픽셀에서 표시되는 것을 확인했다. 모델 렌더러는 두 백엔드가 공유하며 초상화 안쪽에서 scissor를 열고 `finally`에서 반드시 닫는다. 현재 자산은 렌더·클리핑 검증용 바닐라 Steve일 뿐이며, 리소스팩 관장 스킨이나 `default`/`slim` 선택을 검증한 증거는 아니다.
+
 입력 검증은 실제 개발 클라이언트의 `Screen.keyPressed` 경로에 TAB과 ENTER를 주입하고, 포커스 대상·내레이션 항목·행동 전달 상태를 검사했다. Minecraft의 `Screen.keyPressed(TAB)`은 포커스를 옮겨도 `false`를 반환하므로 반환값이 아니라 실제 포커스 결과를 판정했다. 이는 물리 키보드·마우스 조작이나 화면 읽기 프로그램의 음성 출력을 사람이 확인한 결과는 아니다.
 
 두 한국어 실행에서 Cobblemon 자체 `cobblemon:lang/ko_kr.json`의 834행 부근이 잘못되어 해당 외부 언어 파일을 건너뛰었다는 경고가 발생했다. League와 MBC의 언어 파일 오류는 아니었고 League 한국어 화면과 내레이션은 정상 작동했다. 배포 조합에서는 Cobblemon 한국어 파일 제공 출처를 별도로 확인해야 한다.
 
-정적 계약 테스트에서도 MBC의 `en_us`·`ko_kr` 574개 키와 League의 28개 키가 각각 일치하고, 빈 값·영문 번들의 한글 혼입·포맷 자리표시자 형식 불일치가 없음을 확인했다. MBC 번역값 수정은 필요하지 않았다.
+정적 계약 테스트에서도 MBC의 `en_us`·`ko_kr` 574개 키와 League의 33개 키가 각각 일치하고, 빈 값·영문 번들의 한글 혼입·포맷 자리표시자 형식 불일치가 없음을 확인했다. MBC 번역값 수정은 필요하지 않았다.
 
 ## 현재 판단
 
-owo는 MbcUI의 비공개 Minecraft 백엔드 선두 후보로 유지한다(SHOULD). 세 해상도, 한영 홈 화면, 키보드 행동·내레이션 전달과 닫기 경로를 통과했지만 다음 항목을 실제 게임에서 검증하기 전에는 최종 채택하면 안 된다(MUST NOT).
+owo는 MbcUI의 비공개 Minecraft 백엔드 선두 후보로 유지한다(SHOULD). 세 해상도, 한영 홈 화면, 긴 문자열·잠긴 행동, fixture 3D 슬롯, 키보드 행동·내레이션 전달과 닫기 경로를 통과했지만 다음 항목을 실제 게임에서 검증하기 전에는 최종 채택하면 안 된다(MUST NOT).
 
-- 마우스 입력과 비활성 버튼 설명
-- 긴 관장명·보상명 fixture
-- 3D 트레이너 슬롯과 scissor 경계
+- 물리 마우스 입력과 화면 읽기 프로그램의 실제 음성 출력
+- 리소스팩 사용자 정의 관장 스킨과 `default`/`slim` 모델
 - 프레임 시간과 입력 지연
 
 ## 임시 구현 경계
@@ -89,7 +102,7 @@ LGUI-3에 들어가기 전에 다음 중 하나를 수행해야 한다(MUST).
 
 ```text
 MBC_LEAGUE_CAPTURE_BACKEND=code|owo
-MBC_LEAGUE_CAPTURE_FIXTURE=badges_3
+MBC_LEAGUE_CAPTURE_FIXTURE=badges_3|long_disabled
 MBC_LEAGUE_CAPTURE_LOCALE=en_us|ko_kr
 MBC_LEAGUE_CAPTURE_GUI_SCALE=1..4
 ```
