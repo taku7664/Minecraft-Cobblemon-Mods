@@ -227,6 +227,110 @@ function submitRequestedChoice(battle, sideId, choice, requestWasWait) {
   }
 }
 
+function moveSlot(battle, moveId) {
+  const move = battle.dex.moves.get(moveId);
+  if (!move.exists) throw new Error(`Unknown rebound move ${moveId}`);
+  return {
+    move: move.name,
+    id: move.id,
+    pp: move.pp,
+    maxpp: move.pp,
+    target: move.target,
+    disabled: false,
+    disabledSource: '',
+    used: false,
+  };
+}
+
+function rebindPokemonMoves(battle, rebind) {
+  const matches = battle.sides.flatMap(side => side.pokemon)
+    .filter(pokemon => pokemon.uuid === rebind.pokemonUuid);
+  if (matches.length !== 1) {
+    throw new Error(`Move-set rebinding names unknown or duplicate Pokemon ${rebind.pokemonUuid}`);
+  }
+  const pokemon = matches[0];
+  const expected = rebind.expectedMoveIds.map(toID);
+  const replacement = rebind.replacementMoveIds.map(toID);
+  if (!replacement.length || replacement.length > 4 || new Set(replacement).size !== replacement.length) {
+    throw new Error(`Invalid replacement move set for ${rebind.pokemonUuid}`);
+  }
+  const sourceMoves = (pokemon.set.moves || []).map(toID);
+  const baseMoves = pokemon.baseMoveSlots.map(slot => slot.id);
+  const liveMoves = pokemon.moveSlots.map(slot => slot.id);
+  if (pokemon.transformed || JSON.stringify(sourceMoves) !== JSON.stringify(expected) ||
+      JSON.stringify(baseMoves) !== JSON.stringify(expected) ||
+      JSON.stringify(liveMoves) !== JSON.stringify(expected) ||
+      !pokemon.baseMoveSlots.every((slot, index) => slot === pokemon.moveSlots[index])) {
+    throw new Error(`Unsafe history-sensitive move-set rebinding for ${rebind.pokemonUuid}`);
+  }
+  const removed = new Set(expected.filter(moveId => !replacement.includes(moveId)));
+  const historyMoves = [pokemon.lastMove?.id, pokemon.lastMoveUsed?.id, pokemon.moveThisTurn];
+  for (const volatile of Object.values(pokemon.volatiles || {})) historyMoves.push(volatile?.move);
+  if (historyMoves.some(moveId => removed.has(toID(moveId)))) {
+    throw new Error(`Move-set rebinding would erase referenced move history for ${rebind.pokemonUuid}`);
+  }
+  const previousById = new Map(pokemon.moveSlots.map(slot => [slot.id, slot]));
+  const rebound = replacement.map(moveId => previousById.get(moveId) || moveSlot(battle, moveId));
+  pokemon.set.moves = replacement.slice();
+  pokemon.set.movesInfo = rebound.map(slot => ({ pp: slot.maxpp, maxPp: slot.maxpp }));
+  pokemon.baseMoveSlots = rebound;
+  pokemon.moveSlots = rebound.slice();
+  return pokemon;
+}
+
+function refreshMoveDisables(battle, pokemon) {
+  if (!pokemon.isActive || battle.requestState !== 'move') return;
+  pokemon.maybeDisabled = false;
+  for (const slot of pokemon.moveSlots) {
+    slot.disabled = false;
+    slot.disabledSource = '';
+  }
+  battle.runEvent('DisableMove', pokemon);
+  for (const slot of pokemon.moveSlots) {
+    const activeMove = battle.dex.getActiveMove(slot.id);
+    battle.singleEvent('DisableMove', activeMove, null, pokemon);
+    if (activeMove.flags['cantusetwice'] && pokemon.lastMove?.id === slot.id) {
+      pokemon.disableMove(pokemon.lastMove.id);
+    }
+  }
+}
+
+function refreshRequestsAfterRebind(battle, reboundPokemon) {
+  const reboundIds = new Set(reboundPokemon.map(pokemon => pokemon.uuid));
+  const probe = Battle.fromJSON(battle.toJSON());
+  probe.restart(function() {});
+  try {
+    const probeByUuid = new Map(probe.sides.flatMap(side => side.pokemon)
+      .map(pokemon => [pokemon.uuid, pokemon]));
+    for (const uuid of reboundIds) {
+      const pokemon = probeByUuid.get(uuid);
+      if (!pokemon) throw new Error(`Rebound request probe lost Pokemon ${uuid}`);
+      refreshMoveDisables(probe, pokemon);
+    }
+    const requests = probe.getRequests(probe.requestState);
+    const originalByUuid = new Map(battle.sides.flatMap(side => side.pokemon)
+      .map(pokemon => [pokemon.uuid, pokemon]));
+    for (const uuid of reboundIds) {
+      const original = originalByUuid.get(uuid);
+      const checked = probeByUuid.get(uuid);
+      if (original.moveSlots.length !== checked.moveSlots.length ||
+          original.moveSlots.some((slot, index) => slot.id !== checked.moveSlots[index].id)) {
+        throw new Error(`Rebound request probe changed move identity for ${uuid}`);
+      }
+      original.maybeDisabled = checked.maybeDisabled;
+      for (let index = 0; index < original.moveSlots.length; index++) {
+        original.moveSlots[index].disabled = checked.moveSlots[index].disabled;
+        original.moveSlots[index].disabledSource = checked.moveSlots[index].disabledSource;
+      }
+    }
+    for (let index = 0; index < battle.sides.length; index++) {
+      battle.sides[index].activeRequest = requests[index];
+    }
+  } finally {
+    probe.destroy();
+  }
+}
+
 globalThis.mbcCreateBattle = function(payload) {
   const input = JSON.parse(payload);
   const openingByUuid = indexPokemonOpeningState(input.openingState);
@@ -243,6 +347,22 @@ globalThis.mbcCreateBattle = function(payload) {
       battle.deserialized = false;
       battle.start();
     }
+    return JSON.stringify(frame(battle));
+  } finally {
+    battle.destroy();
+  }
+};
+
+globalThis.mbcRebindBattleMoves = function(payload) {
+  const input = JSON.parse(payload);
+  if (!Array.isArray(input.rebindings) || !input.rebindings.length) {
+    throw new Error('At least one native move-set rebinding is required');
+  }
+  const battle = Battle.fromJSON(JSON.parse(input.snapshotJson));
+  battle.restart(function() {});
+  try {
+    const reboundPokemon = input.rebindings.map(rebind => rebindPokemonMoves(battle, rebind));
+    refreshRequestsAfterRebind(battle, reboundPokemon);
     return JSON.stringify(frame(battle));
   } finally {
     battle.destroy();

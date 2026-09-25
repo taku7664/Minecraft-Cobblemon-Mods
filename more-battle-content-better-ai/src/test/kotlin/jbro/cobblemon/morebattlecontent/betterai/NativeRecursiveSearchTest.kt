@@ -260,6 +260,11 @@ class NativeRecursiveSearchTest {
         override fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame =
             error("This test starts from an existing native frame")
 
+        override fun rebindMoves(
+            snapshotJson: String,
+            rebindings: List<jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMoveSetRebinding>,
+        ): NativeBattleFrame = error("recursive search must not rebind move hypotheses")
+
         override fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame {
             visitedSnapshots += snapshotJson
             return requireNotNull(branches[BranchKey(snapshotJson, p1Choice, p2Choice)])

@@ -33,12 +33,15 @@ internal interface NativeBranchWorker : AutoCloseable {
 
     fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame
 
+    fun rebindMoves(snapshotJson: String, rebindings: List<NativeMoveSetRebinding>): NativeBattleFrame
+
     fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame
 }
 
 internal class NativeShowdownBranchEngine private constructor(
     private val context: Context,
     private val createBattleFunction: Value,
+    private val rebindMovesFunction: Value,
     private val branchFunction: Value,
     private val gson: Gson,
     override val rulesFingerprint: String,
@@ -47,6 +50,19 @@ internal class NativeShowdownBranchEngine private constructor(
     override fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame = decode(
         createBattleFunction.execute(gson.toJson(definition)).asString(),
     )
+
+    override fun rebindMoves(
+        snapshotJson: String,
+        rebindings: List<NativeMoveSetRebinding>,
+    ): NativeBattleFrame {
+        require(snapshotJson.isNotBlank()) { "Native Showdown snapshot cannot be blank" }
+        require(rebindings.isNotEmpty()) { "At least one native move-set rebinding is required" }
+        return decode(
+            rebindMovesFunction.execute(
+                gson.toJson(NativeMoveSetRebindRequest(snapshotJson, rebindings)),
+            ).asString(),
+        )
+    }
 
     override fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame {
         require(snapshotJson.isNotBlank()) { "Native Showdown snapshot cannot be blank" }
@@ -132,15 +148,18 @@ internal class NativeShowdownBranchEngine private constructor(
                 context.eval(Source.newBuilder("js", bridge, "mbc-native-showdown-branch-engine.cjs").build())
                 val bindings = context.getBindings("js")
                 val create = bindings.getMember("mbcCreateBattle")
+                val rebindMoves = bindings.getMember("mbcRebindBattleMoves")
                 val branch = bindings.getMember("mbcBranchBattle")
                 val applyRules = bindings.getMember("mbcApplyRules")
-                check(create?.canExecute() == true && branch?.canExecute() == true && applyRules?.canExecute() == true) {
+                check(create?.canExecute() == true && rebindMoves?.canExecute() == true &&
+                    branch?.canExecute() == true && applyRules?.canExecute() == true) {
                     "Native Showdown bridge did not export its branch functions"
                 }
                 applyRules.execute(Gson().toJson(rules.sources))
                 return NativeShowdownBranchEngine(
                     context,
                     create,
+                    rebindMoves,
                     branch,
                     Gson(),
                     rules.fingerprint,
@@ -151,6 +170,23 @@ internal class NativeShowdownBranchEngine private constructor(
                 throw failure
             }
         }
+    }
+}
+
+/** Replaces only an unresolved synthetic source-set hypothesis, never a live public battle set. */
+internal data class NativeMoveSetRebinding(
+    val pokemonUuid: String,
+    val expectedMoveIds: List<String>,
+    val replacementMoveIds: List<String>,
+) {
+    init {
+        UUID.fromString(pokemonUuid)
+        require(expectedMoveIds.isNotEmpty() && expectedMoveIds.size <= 4)
+        require(replacementMoveIds.isNotEmpty() && replacementMoveIds.size <= 4)
+        require(expectedMoveIds.all(String::isNotBlank) && replacementMoveIds.all(String::isNotBlank))
+        require(expectedMoveIds.distinct().size == expectedMoveIds.size)
+        require(replacementMoveIds.distinct().size == replacementMoveIds.size)
+        require(expectedMoveIds != replacementMoveIds) { "A native move-set rebinding must change the set" }
     }
 }
 
@@ -337,6 +373,11 @@ private data class NativeBranchRequest(
     val snapshotJson: String,
     val p1Choice: String,
     val p2Choice: String,
+)
+
+private data class NativeMoveSetRebindRequest(
+    val snapshotJson: String,
+    val rebindings: List<NativeMoveSetRebinding>,
 )
 
 /** Graal CommonJS may read only the chosen, already-unbundled Showdown directory. */

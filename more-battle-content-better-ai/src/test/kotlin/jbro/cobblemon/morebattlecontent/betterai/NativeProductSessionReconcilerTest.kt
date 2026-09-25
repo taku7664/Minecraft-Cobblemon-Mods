@@ -238,6 +238,11 @@ class NativeProductSessionReconcilerTest {
 
         override fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame = error("must reuse root")
 
+        override fun rebindMoves(
+            snapshotJson: String,
+            rebindings: List<jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMoveSetRebinding>,
+        ): NativeBattleFrame = error("fixture does not expect move-set rebinding")
+
         override fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame {
             branchCalls++
             choices += p1Choice to p2Choice

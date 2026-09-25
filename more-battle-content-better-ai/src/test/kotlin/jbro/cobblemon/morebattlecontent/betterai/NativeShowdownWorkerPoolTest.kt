@@ -224,6 +224,11 @@ class NativeShowdownWorkerPoolTest {
         override fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame =
             error("Not needed by the pool lifecycle test")
 
+        override fun rebindMoves(
+            snapshotJson: String,
+            rebindings: List<jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMoveSetRebinding>,
+        ): NativeBattleFrame = error("Not needed by the pool lifecycle test")
+
         override fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame =
             error("Not needed by the pool lifecycle test")
 

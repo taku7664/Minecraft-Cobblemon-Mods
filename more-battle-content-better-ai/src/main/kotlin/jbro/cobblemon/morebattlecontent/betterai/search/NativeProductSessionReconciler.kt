@@ -4,12 +4,15 @@ import java.security.MessageDigest
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootIssue
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBranchWorker
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeObservedTurnActionIssue
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeObservedTurnActionMatcher
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeOpponentMoveHypothesisRebinder
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRootActionMatcher
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownChoiceEncoder
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownRequestActionFactory
@@ -92,11 +95,16 @@ internal class NativeProductSessionReconciler(
                 }
                 val descendants = mutableListOf<Descendant>()
                 var firstObservedMismatch: Pair<String, List<NativeObservedTurnActionIssue>>? = null
+                val currentPublicPokemonIds = currentContext.state.pokemon.mapTo(linkedSetOf()) {
+                    it.battlePokemonId
+                }
                 for (world in session.worlds.sortedWith(WORLD_ORDER)) {
                     if (deadlineReached(deadlineNanos)) {
                         return@lease failure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
                     }
-                    val root = world.rootSnapshot.frame
+                    var root = world.rootSnapshot.frame
+                    var definition = world.definition
+                    var catalog = world.publicContext.publicActionCatalog
                     val deferred = intermediateReplayer.conditionDeferred(
                         session.format,
                         root,
@@ -113,6 +121,23 @@ internal class NativeProductSessionReconciler(
                         continue
                     }
                     val currentEvents = deferred.remainingEvents
+                    val revealedMoves = currentEvents.asSequence()
+                        .filter { it.kind == BattleObservedEventKind.MOVE_USED }
+                        .filter { it.actorPokemonId != null && it.publicValueId != null }
+                        .groupBy { requireNotNull(it.actorPokemonId) }
+                        .mapValues { (_, events) -> events.mapTo(linkedSetOf()) { requireNotNull(it.publicValueId) } }
+                    val preReplayPlan = NativeOpponentMoveHypothesisRebinder.plan(
+                        definition = definition,
+                        previousCatalog = catalog,
+                        currentCatalog = currentContext.publicActionCatalog,
+                        currentPublicPokemonIds = currentPublicPokemonIds,
+                        revealedMoveIdsByPokemon = revealedMoves,
+                    )
+                    if (preReplayPlan.rebindings.isNotEmpty()) {
+                        root = worker.rebindMoves(root.snapshotJson, preReplayPlan.rebindings)
+                    }
+                    definition = preReplayPlan.definition
+                    catalog = preReplayPlan.catalog
                     val ownNativeActions = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, root)
                     val ownMapping = NativeRootActionMatcher.match(
                         session.format,
@@ -158,7 +183,7 @@ internal class NativeProductSessionReconciler(
                         val next = worker.branch(root.snapshotJson, ownChoice, opponentChoice)
                         val replayed = intermediateReplayer.replayAfterChoice(
                             worker = worker,
-                            definition = world.definition,
+                            definition = definition,
                             format = session.format,
                             before = root,
                             after = next,
@@ -171,8 +196,21 @@ internal class NativeProductSessionReconciler(
                         )
                         when (replayed.status) {
                             NativeIntermediateReplayStatus.AVAILABLE -> replayed.frames.forEach { frame ->
+                                val postReplayPlan = NativeOpponentMoveHypothesisRebinder.plan(
+                                    definition = definition,
+                                    previousCatalog = catalog,
+                                    currentCatalog = currentContext.publicActionCatalog,
+                                    currentPublicPokemonIds = currentPublicPokemonIds,
+                                )
+                                val updatedFrame = if (postReplayPlan.rebindings.isEmpty()) {
+                                    frame.frame
+                                } else {
+                                    worker.rebindMoves(frame.frame.snapshotJson, postReplayPlan.rebindings)
+                                }
                                 val compatible = CompatibleFrame(
-                                    frame = frame.frame,
+                                    frame = updatedFrame,
+                                    definition = postReplayPlan.definition,
+                                    catalog = postReplayPlan.catalog,
                                     deferredAllyAction = frame.deferredCommands.allyAction,
                                     deferredOpponentAction = frame.deferredCommands.opponentAction,
                                 )
@@ -204,6 +242,8 @@ internal class NativeProductSessionReconciler(
                         descendants += Descendant(
                             world = world,
                             frame = compatible.frame,
+                            definition = compatible.definition,
+                            catalog = compatible.catalog,
                             probability = probability,
                             split = compatibleFrames.size > 1,
                             deferredAllyAction = compatible.deferredAllyAction,
@@ -238,10 +278,10 @@ internal class NativeProductSessionReconciler(
                     NativeProductSessionWorld(
                         key = key,
                         probability = descendant.probability / retainedMass,
-                        definition = previous.definition,
+                        definition = descendant.definition,
                         rootSnapshot = NativeProductRootSnapshot(session.rulesFingerprint, descendant.frame),
                         publicContext = currentContext.copy(
-                            publicActionCatalog = previous.publicContext.publicActionCatalog,
+                            publicActionCatalog = descendant.catalog,
                             opponentTeamPreview = currentContext.opponentTeamPreview
                                 ?: previous.publicContext.opponentTeamPreview,
                             exactOwnTeam = currentContext.exactOwnTeam ?: previous.publicContext.exactOwnTeam,
@@ -315,6 +355,8 @@ internal class NativeProductSessionReconciler(
     private data class Descendant(
         val world: NativeProductSessionWorld,
         val frame: NativeBattleFrame,
+        val definition: NativeBattleDefinition,
+        val catalog: jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView,
         val probability: Double,
         val split: Boolean,
         val deferredAllyAction: BattleActionCandidate?,
@@ -329,6 +371,8 @@ internal class NativeProductSessionReconciler(
 
     private data class CompatibleFrame(
         val frame: NativeBattleFrame,
+        val definition: NativeBattleDefinition,
+        val catalog: jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView,
         val deferredAllyAction: BattleActionCandidate?,
         val deferredOpponentAction: BattleActionCandidate?,
     ) {

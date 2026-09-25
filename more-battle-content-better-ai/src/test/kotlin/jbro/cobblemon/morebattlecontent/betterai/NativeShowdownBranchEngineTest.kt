@@ -9,6 +9,7 @@ import java.util.zip.ZipInputStream
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleOpeningState
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMoveSetRebinding
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonOpeningState
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonSet
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRuleRegistry
@@ -25,6 +26,108 @@ import org.junit.jupiter.api.io.TempDir
 
 class NativeShowdownBranchEngineTest {
     @Test
+    fun `move hypothesis rebinding preserves PP and an existing choice lock`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(battle("Technician", "Choice Scarf"))
+            val afterFirstMove = engine.branch(before.snapshotJson, "move 1", "move 1")
+            val bulletPunchPp = afterFirstMove.p1Active.single().moves.single { it.id == "bulletpunch" }.pp
+            val beforeRebindSnapshot = JsonParser.parseString(afterFirstMove.snapshotJson).asJsonObject
+
+            val rebound = engine.rebindMoves(
+                afterFirstMove.snapshotJson,
+                listOf(NativeMoveSetRebinding(
+                    pokemonUuid = "00000000-0000-0000-0000-000000000001",
+                    expectedMoveIds = listOf("bulletpunch", "swordsdance"),
+                    replacementMoveIds = listOf("bulletpunch", "protect"),
+                )),
+            )
+            val afterRebindSnapshot = JsonParser.parseString(rebound.snapshotJson).asJsonObject
+            val beforePokemon = afterFirstMove.p1Active.single()
+            val afterPokemon = rebound.p1Active.single()
+
+            assertEquals(listOf("bulletpunch", "protect"), rebound.p1Active.single().moves.map { it.id })
+            assertEquals(
+                bulletPunchPp,
+                rebound.p1Active.single().moves.single { it.id == "bulletpunch" }.pp,
+                "An unchanged revealed move must retain its consumed PP",
+            )
+            assertEquals(listOf("bulletpunch", "protect"), rebound.p1Active.single().sourceSet?.moves)
+            assertEquals(
+                setOf("bulletpunch"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, rebound)
+                    .mapNotNull { it.moveId }
+                    .toSet(),
+                "Rebinding another slot must not erase the active Choice lock",
+            )
+            assertTrue(
+                beforeRebindSnapshot.has("prng"),
+                "Native snapshots must expose the authoritative battle PRNG",
+            )
+            assertEquals(
+                beforeRebindSnapshot.get("prng"),
+                afterRebindSnapshot.get("prng"),
+                "Request legality probing must not consume the authoritative battle PRNG",
+            )
+            assertEquals(afterFirstMove.turn, rebound.turn)
+            assertEquals(afterFirstMove.field, rebound.field)
+            assertEquals(afterFirstMove.p2Team, rebound.p2Team)
+            assertEquals(beforePokemon.hp, afterPokemon.hp)
+            assertEquals(beforePokemon.maxHp, afterPokemon.maxHp)
+            assertEquals(beforePokemon.status, afterPokemon.status)
+            assertEquals(beforePokemon.ability, afterPokemon.ability)
+            assertEquals(beforePokemon.item, afterPokemon.item)
+            assertEquals(beforePokemon.types, afterPokemon.types)
+            assertEquals(beforePokemon.boosts, afterPokemon.boosts)
+            assertEquals(beforePokemon.volatiles, afterPokemon.volatiles)
+            assertEquals(beforePokemon.stats, afterPokemon.stats)
+        }
+    }
+
+    @Test
+    fun `move hypothesis rebinding rejects a transformed live move set`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val transformed = engine.createBattle(imposterBattle())
+
+            val failure = assertThrows(RuntimeException::class.java) {
+                engine.rebindMoves(
+                    transformed.snapshotJson,
+                    listOf(NativeMoveSetRebinding(
+                        pokemonUuid = "00000000-0000-0000-0000-000000000031",
+                        expectedMoveIds = listOf("transform"),
+                        replacementMoveIds = listOf("protect"),
+                    )),
+                )
+            }
+
+            assertTrue(failure.message.orEmpty().contains("Unsafe history-sensitive move-set rebinding"))
+        }
+    }
+
+    @Test
+    fun `move hypothesis rebinding cannot erase a move referenced by native history`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(battle("Technician"))
+            val afterBulletPunch = engine.branch(before.snapshotJson, "move 1", "move 1")
+
+            val failure = assertThrows(RuntimeException::class.java) {
+                engine.rebindMoves(
+                    afterBulletPunch.snapshotJson,
+                    listOf(NativeMoveSetRebinding(
+                        pokemonUuid = "00000000-0000-0000-0000-000000000001",
+                        expectedMoveIds = listOf("bulletpunch", "swordsdance"),
+                        replacementMoveIds = listOf("protect", "swordsdance"),
+                    )),
+                )
+            }
+
+            assertTrue(failure.message.orEmpty().contains("erase referenced move history"))
+        }
+    }
+
+    @Test
     fun `native request preserves choice lock after the first move`(@TempDir directory: Path) {
         val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
         NativeShowdownBranchEngine.open(engineRoot).use { engine ->
@@ -38,6 +141,22 @@ class NativeShowdownBranchEngineTest {
             assertTrue(encoded.isNotEmpty() && encoded.all { it.startsWith("move 1") })
             assertTrue(encoded.none { it.startsWith("move 2") })
             assertEquals(3, engine.branch(afterFirstMove.snapshotJson, "move 1", "move 1").turn)
+        }
+    }
+
+    @Test
+    fun `native request maps a choice lock on the second source slot`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(battle("Technician", "Choice Scarf"))
+            val afterSecondMove = engine.branch(before.snapshotJson, "move 2", "move 1")
+
+            val legal = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, afterSecondMove)
+
+            assertEquals(setOf("swordsdance"), legal.mapNotNull { it.moveId }.toSet())
+            assertTrue(legal.map {
+                NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, afterSecondMove)
+            }.all { it.startsWith("move 2") })
         }
     }
 
