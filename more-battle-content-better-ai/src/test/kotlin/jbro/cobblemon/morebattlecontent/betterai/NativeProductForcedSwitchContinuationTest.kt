@@ -21,8 +21,10 @@ import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionStat
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionWorld
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeSearchWorldKey
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleOpeningState
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleStateAdapter
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeObservedTurnActionMatcher
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonOpeningState
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonSet
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownBranchEngine
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownChoiceEncoder
@@ -615,6 +617,111 @@ class NativeProductForcedSwitchContinuationTest {
         }
     }
 
+    @Test
+    fun `opponent replacement that faints on entry is replayed through the next replacement`(
+        @TempDir directory: Path,
+    ) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val definition = chainedHazardReplacementBattle()
+            val opening = engine.createBattle(definition)
+            val stealthRock = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, opening)
+                .single { it.moveId == "stealthrock" && it.mechanic == null }
+            val openingSplash = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, opening)
+                .single { it.moveId == "splash" && it.mechanic == null }
+            val afterRocks = engine.branch(
+                opening.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(stealthRock, BattleSide.ALLY, opening),
+                NativeShowdownChoiceEncoder.encode(openingSplash, BattleSide.OPPONENT, opening),
+            )
+            val tackle = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, afterRocks)
+                .single { it.moveId == "tackle" && it.mechanic == null }
+            val doomedSplash = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, afterRocks)
+                .single { it.moveId == "splash" && it.mechanic == null }
+            val forced = engine.branch(
+                afterRocks.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(tackle, BattleSide.ALLY, afterRocks),
+                NativeShowdownChoiceEncoder.encode(doomedSplash, BattleSide.OPPONENT, afterRocks),
+            )
+            val allyWait = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, forced).single()
+            val hazardVictim = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, forced)
+                .single { it.switchPokemonId == OPPONENT_RESERVE }
+            val chained = engine.branch(
+                forced.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(allyWait, BattleSide.ALLY, forced),
+                NativeShowdownChoiceEncoder.encode(hazardVictim, BattleSide.OPPONENT, forced),
+            )
+            val chainedAllyWait = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, chained).single()
+            val healthyReplacement = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, chained)
+                .single { it.switchPokemonId == OPPONENT_SECOND }
+            val afterReplacement = engine.branch(
+                chained.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(chainedAllyWait, BattleSide.ALLY, chained),
+                NativeShowdownChoiceEncoder.encode(healthyReplacement, BattleSide.OPPONENT, chained),
+            )
+
+            assertEquals("switch", forced.requestState)
+            assertEquals("switch", chained.requestState)
+            assertEquals(0, chained.p2Team.single { it.uuid == OPPONENT_RESERVE.toString() }.hp)
+            assertEquals("move", afterReplacement.requestState)
+
+            val firstTurnEvents = listOf(
+                moveEvent(1, ALLY_LEAD, 0, "stealthrock", opening.turn),
+                moveEvent(2, OPPONENT, 0, "splash", opening.turn),
+            )
+            val allEvents = firstTurnEvents + listOf(
+                moveEvent(3, ALLY_LEAD, 0, "tackle", afterRocks.turn, targets = listOf(OPPONENT)),
+                BattleObservedEventView(
+                    sequence = 4,
+                    turn = forced.turn,
+                    kind = BattleObservedEventKind.SWITCHED,
+                    actorPokemonId = OPPONENT_RESERVE,
+                    actorSlot = 0,
+                ),
+                BattleObservedEventView(
+                    sequence = 5,
+                    turn = chained.turn,
+                    kind = BattleObservedEventKind.SWITCHED,
+                    actorPokemonId = OPPONENT_SECOND,
+                    actorSlot = 0,
+                ),
+            )
+            val afterRocksContext = context(
+                afterRocks,
+                publicTemplate(definition, firstTurnEvents),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, afterRocks),
+            )
+            val finalContext = context(
+                afterReplacement,
+                publicTemplate(definition, allEvents),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, afterReplacement),
+            )
+            val initial = NativeProductSessionState(
+                battleId = BATTLE,
+                format = BattleFormat.SINGLE,
+                rulesFingerprint = engine.rulesFingerprint,
+                worlds = listOf(NativeProductSessionWorld(
+                    key = NativeSearchWorldKey("chained-hazard-world", 0),
+                    probability = 1.0,
+                    definition = definition,
+                    rootSnapshot = NativeProductRootSnapshot(engine.rulesFingerprint, afterRocks),
+                    publicContext = afterRocksContext,
+                )),
+                publicTurn = afterRocks.turn,
+                lastObservedEventSequence = 2,
+                pendingOwnAction = tackle,
+            )
+            val reconciler = NativeProductSessionReconciler { _, action -> action(engine) }
+
+            val result = reconciler.reconcile(initial, finalContext, Long.MAX_VALUE)
+
+            assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status,
+                "root=${result.rootIssues}, observed=${result.observedActionIssues}")
+            assertEquals(afterReplacement.snapshotJson,
+                result.sessionState?.worlds?.single()?.rootSnapshot?.frame?.snapshotJson)
+        }
+    }
+
     private fun context(
         frame: jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame,
         template: BattleStateView,
@@ -635,7 +742,7 @@ class NativeProductForcedSwitchContinuationTest {
         return BattleStateView(
         battleId = BATTLE,
         format = format,
-        turn = 1,
+        turn = maxOf(1, events.maxOfOrNull(BattleObservedEventView::turn) ?: 1),
         pokemon = definition.p1Team.mapIndexed { index, set ->
             publicPokemon(UUID.fromString(set.uuid), BattleSide.ALLY, index.takeIf { index < activeSlots },
                 set.species, set.level)
@@ -768,6 +875,33 @@ class NativeProductForcedSwitchContinuationTest {
             NativePokemonSet("Partner", "Shuckle", listOf("splash"), "sturdy",
                 uuid = OPPONENT_SECOND.toString(), level = 50),
         ),
+    )
+
+    private fun chainedHazardReplacementBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(101, 103, 107, 109),
+        p1Team = listOf(
+            NativePokemonSet("Setter", "Mew", listOf("stealthrock", "tackle"), "synchronize",
+                uuid = ALLY_LEAD.toString(), level = 100),
+        ),
+        p2Team = listOf(
+            NativePokemonSet("Doomed Lead", "Magikarp", listOf("splash"), "swiftswim",
+                uuid = OPPONENT.toString(), level = 1),
+            NativePokemonSet("Hazard Victim", "Charizard", listOf("splash"), "blaze",
+                uuid = OPPONENT_RESERVE.toString(), level = 50),
+            NativePokemonSet("Healthy Reserve", "Mew", listOf("splash"), "synchronize",
+                uuid = OPPONENT_SECOND.toString(), level = 50),
+        ),
+        openingState = NativeBattleOpeningState(listOf(
+            NativePokemonOpeningState(ALLY_LEAD.toString(), hp = 341, maxHp = 341,
+                ability = "synchronize"),
+            NativePokemonOpeningState(OPPONENT.toString(), hp = 11, maxHp = 11,
+                ability = "swiftswim"),
+            NativePokemonOpeningState(OPPONENT_RESERVE.toString(), hp = 1, maxHp = 153,
+                ability = "blaze"),
+            NativePokemonOpeningState(OPPONENT_SECOND.toString(), hp = 175, maxHp = 175,
+                ability = "synchronize"),
+        )),
     )
 
     private fun jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate.moveIdsBySlot(): List<String?> =

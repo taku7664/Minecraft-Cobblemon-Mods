@@ -73,6 +73,25 @@ class NativeObservedTurnActionMatcherTest {
     }
 
     @Test
+    fun `a replacement after another side moves does not become the unobserved command`() {
+        val actions = listOf(move("growl", 0), move("tackle", 0), switch(BENCH, 0))
+        val events = listOf(
+            event(1, BattleObservedEventKind.MOVE_USED, ALLY, "tackle", actorSlot = 0),
+            event(2, BattleObservedEventKind.SWITCHED, BENCH, actorSlot = 0),
+        )
+
+        val result = NativeObservedTurnActionMatcher.match(
+            BattleFormat.SINGLE,
+            BattleSide.OPPONENT,
+            frame(single = true),
+            actions,
+            events,
+        )
+
+        assertEquals(actions, result.actions)
+    }
+
+    @Test
     fun `double observations match components by actor slot instead of list order`() {
         val exact = joint(move("taunt", 0), move("protect", 1))
         val reversed = joint(move("protect", 0), move("taunt", 1))

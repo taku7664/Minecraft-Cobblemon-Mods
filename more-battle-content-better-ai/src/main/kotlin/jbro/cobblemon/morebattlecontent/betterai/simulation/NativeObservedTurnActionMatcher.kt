@@ -61,7 +61,7 @@ internal object NativeObservedTurnActionMatcher {
         relevant.firstOrNull { it.actorPokemonId != null && it.actorPokemonId !in allIds }?.let { unknown ->
             return failure(NativeObservedTurnActionIssueCode.UNKNOWN_OBSERVED_ACTOR, unknown.sequence)
         }
-        val sideEvents = relevant.filter { it.actorPokemonId in sideIds }
+        val sideEvents = evidenceForCurrentRequest(frame, sideIds, relevant)
         sideEvents.firstOrNull { it.actorSlot == null }?.let { missing ->
             return failure(NativeObservedTurnActionIssueCode.OBSERVED_ACTION_SLOT_MISSING, missing.sequence)
         }
@@ -139,6 +139,44 @@ internal object NativeObservedTurnActionMatcher {
 
     private fun components(action: BattleActionCandidate): List<BattleActionCandidate> =
         if (action.kind == BattleActionKind.COMPOSITE) action.componentActions else listOf(action)
+
+    /**
+     * Keeps later replacement requests out of the command evidence for the current request.
+     *
+     * A voluntary switch selected from a move request resolves before ordinary moves. If a switch
+     * is first observed only after any move from that turn, it can be a pivot, forced replacement,
+     * Red Card-style displacement, or another later request and therefore cannot prove that the
+     * side originally selected a switch. A native forced-switch request is already unambiguous, so
+     * its first switch per slot remains usable even though earlier moves occurred in the same turn.
+     */
+    private fun evidenceForCurrentRequest(
+        frame: NativeBattleFrame,
+        sideIds: Set<UUID>,
+        relevant: List<BattleObservedEventView>,
+    ): List<BattleObservedEventView> {
+        val sideEvents = relevant.filter { it.actorPokemonId in sideIds }
+        if (nativeId(frame.requestState) == "switch") {
+            return firstSwitchPerSlot(sideEvents)
+        }
+        val firstMoveSequence = relevant.asSequence()
+            .filter { it.turn == frame.turn && it.kind == BattleObservedEventKind.MOVE_USED }
+            .minOfOrNull(BattleObservedEventView::sequence)
+        val nonSwitchEvidence = sideEvents.filter { it.kind != BattleObservedEventKind.SWITCHED }
+        val voluntarySwitches = sideEvents.filter { event ->
+            event.kind == BattleObservedEventKind.SWITCHED &&
+                event.turn == frame.turn &&
+                (firstMoveSequence == null || event.sequence < firstMoveSequence)
+        }
+        return (nonSwitchEvidence + firstSwitchPerSlot(voluntarySwitches))
+            .sortedBy(BattleObservedEventView::sequence)
+    }
+
+    private fun firstSwitchPerSlot(events: List<BattleObservedEventView>): List<BattleObservedEventView> =
+        events.asSequence()
+            .filter { it.kind == BattleObservedEventKind.SWITCHED }
+            .sortedBy(BattleObservedEventView::sequence)
+            .distinctBy(BattleObservedEventView::actorSlot)
+            .toList()
 
     private fun team(side: BattleSide, frame: NativeBattleFrame): List<NativePokemonFrame> = when (side) {
         BattleSide.ALLY -> frame.p1Team
