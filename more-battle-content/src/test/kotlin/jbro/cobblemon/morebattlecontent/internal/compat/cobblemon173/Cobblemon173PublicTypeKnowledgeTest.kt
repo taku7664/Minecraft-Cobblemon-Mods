@@ -14,8 +14,83 @@ class Cobblemon173PublicTypeKnowledgeTest {
         assertEquals(setOf("fire", "flying"), change("|-start|p2a: Target|typechange|Fire/Flying")!!.types)
         assertTrue(change("|-start|p1a: User|typechange|[from] move: Reflect Type|[of] p2a: Target")!!.types.isEmpty())
         assertTrue(change("|-start|p1a: User|typechange|???")!!.types.isEmpty())
+        val tera = change("|-terastallize|p2a: Target|Water")!!
+        assertEquals(PublicTypeChangeKind.TERA, tera.kind)
+        assertEquals(setOf("water"), tera.types)
         assertNull(change("|-start|p1a: User|substitute"))
         assertNull(change("|move|p1a: User|Soak|p2a: Target"))
+    }
+
+    @Test
+    fun `public Tera type survives switching and emits exact inference evidence`() {
+        for (side in BattleSide.entries) {
+            val first = pokemon(side, UUID(0, 1))
+            val other = pokemon(side, UUID(0, 2))
+            val observer = Cobblemon173PublicBattleObserver(3)
+            observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, first))
+            observer.observe(Cobblemon173PublicObservation.TypesChanged(
+                1,
+                first,
+                change("|-terastallize|p2a: Target|Water")!!,
+            ))
+
+            val revealed = observer.publicSnapshot()
+            assertEquals(setOf("water"), revealed.pokemon.single().knownTypeIds)
+            assertEquals(
+                listOf(BattleObservedEventKind.TERA_TYPE_REVEALED),
+                revealed.events.filter { it.kind == BattleObservedEventKind.TERA_TYPE_REVEALED }.map { it.kind },
+            )
+            assertEquals(
+                "water",
+                revealed.events.single { it.kind == BattleObservedEventKind.TERA_TYPE_REVEALED }.publicValueId,
+            )
+
+            observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, other))
+            assertEquals(
+                setOf("water"),
+                observer.publicSnapshot().pokemon.single { it.battlePokemonId == first.battlePokemonId }.knownTypeIds,
+            )
+            observer.observe(Cobblemon173PublicObservation.PokemonPresented(3, first))
+            val returned = observer.publicSnapshot()
+            assertEquals(
+                setOf("water"),
+                returned.pokemon.single { it.battlePokemonId == first.battlePokemonId }.knownTypeIds,
+            )
+            assertEquals(setOf("water"), returned.typeOverrides[first.battlePokemonId])
+        }
+    }
+
+    @Test
+    fun `confirmed Tera inference survives bounded event eviction`() {
+        val first = pokemon(BattleSide.OPPONENT, UUID(0, 1))
+        val other = pokemon(BattleSide.OPPONENT, UUID(0, 2))
+        val observer = Cobblemon173PublicBattleObserver(3, maximumRecentEvents = 1)
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, first))
+        observer.observe(Cobblemon173PublicObservation.TypesChanged(
+            1,
+            first,
+            change("|-terastallize|p2a: Target|Water")!!,
+        ))
+        observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, other))
+        val snapshot = observer.publicSnapshot()
+
+        assertTrue(snapshot.events.none { it.kind == BattleObservedEventKind.TERA_TYPE_REVEALED })
+        assertEquals(mapOf(first.battlePokemonId to "water"), snapshot.teraTypes)
+
+        val assembled = Cobblemon173BattleStateAssembler.assemble(
+            battleId = UUID(0, 99),
+            format = BattleFormat.SINGLE,
+            turn = 2,
+            ownPokemon = emptyList(),
+            publicSnapshot = snapshot,
+            inferenceKnowledge = { _, _ -> emptyList() },
+        )
+        val inference = assembled.inferences.single { it.categoryId == "tera_type" }
+        assertEquals(first.battlePokemonId, inference.subjectPokemonId)
+        assertEquals("water", inference.candidateId)
+        assertEquals(BattleInferenceConfidence.CONFIRMED, inference.confidence)
+        assertEquals(setOf(BattleInferenceBasis.PUBLIC_REVEAL), inference.basis)
+        assertTrue(inference.evidenceEventSequences.isEmpty())
     }
 
     @Test

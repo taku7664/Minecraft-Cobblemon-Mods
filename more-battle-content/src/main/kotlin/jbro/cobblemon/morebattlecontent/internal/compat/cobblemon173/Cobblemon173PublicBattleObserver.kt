@@ -6,6 +6,9 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleCombatStatRangesView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFieldStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
 import jbro.cobblemon.morebattlecontent.api.ai.BattleIntegerRange
+import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceBasis
+import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceConfidence
+import jbro.cobblemon.morebattlecontent.api.ai.BattleInferenceView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveOutcomeKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveOutcomeView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
@@ -149,6 +152,16 @@ internal class Cobblemon173PublicBattleObserver(
                 pokemon[actor.battlePokemonId] = actor.copyView(knownTypeIds = publicTypes.apply(
                     actor.battlePokemonId, actor.knownTypeIds, observation.change,
                 ))
+                if (observation.change.kind == PublicTypeChangeKind.TERA) {
+                    observation.change.types.singleOrNull()?.let { teraType ->
+                        appendEvent(
+                            observation.turn,
+                            BattleObservedEventKind.TERA_TYPE_REVEALED,
+                            actor.battlePokemonId,
+                            publicValueId = teraType,
+                        )
+                    }
+                }
             }
 
             is Cobblemon173PublicObservation.ActionConstraintChanged -> {
@@ -404,6 +417,7 @@ internal class Cobblemon173PublicBattleObserver(
         events = events.toList(),
         remainingOpponentPokemon = (initialOpponentPokemonCount - faintedOpponents.size).coerceAtLeast(0),
         typeOverrides = publicTypes.snapshot(),
+        teraTypes = publicTypes.teraSnapshot(),
         moveUses = moveUses,
         transformedPokemon = copiedPpSpent.keys,
     )
@@ -439,7 +453,7 @@ internal class Cobblemon173PublicBattleObserver(
         snapshot: Cobblemon173PublicPokemonSnapshot,
         refreshPublicIdentity: Boolean = false,
     ): BattlePokemonStateView {
-        if (refreshPublicIdentity) publicTypes.clear(snapshot.battlePokemonId)
+        val persistentTypes = if (refreshPublicIdentity) publicTypes.clear(snapshot.battlePokemonId) else null
         if (snapshot.activeSlot != null) {
             pokemon.replaceAll { id, current ->
                 if (
@@ -461,7 +475,8 @@ internal class Cobblemon173PublicBattleObserver(
             }
         }
         val previous = pokemon[snapshot.battlePokemonId]
-        return snapshot.toView(previous, refreshPublicIdentity).also { pokemon[it.battlePokemonId] = it }
+        val publicSnapshot = if (persistentTypes == null) snapshot else snapshot.copy(knownTypeIds = persistentTypes)
+        return publicSnapshot.toView(previous, refreshPublicIdentity).also { pokemon[it.battlePokemonId] = it }
     }
 
     /**
@@ -827,6 +842,7 @@ internal class Cobblemon173PublicBattleSnapshot(
     events: List<BattleObservedEventView>,
     val remainingOpponentPokemon: Int,
     typeOverrides: Map<UUID, Set<String>> = emptyMap(),
+    teraTypes: Map<UUID, String> = emptyMap(),
     moveUses: Map<UUID, Map<String, Int>> = emptyMap(),
     transformedPokemon: Set<UUID> = emptySet(),
 ) {
@@ -834,6 +850,7 @@ internal class Cobblemon173PublicBattleSnapshot(
     val pokemon = pokemon.toList()
     val events = events.toList()
     val typeOverrides = typeOverrides.mapValues { it.value.toSet() }
+    val teraTypes = teraTypes.toMap()
     /** Public uses across the whole battle, independent of the bounded event window; not exact PP loss. */
     val moveUses = moveUses.mapValues { it.value.toMap() }
 
@@ -866,6 +883,22 @@ internal object Cobblemon173BattleStateAssembler {
         }
         val opponents = publicSnapshot.pokemon.filter { it.side == BattleSide.OPPONENT }
         val pokemon = allies + opponents
+        val teraInferences = publicSnapshot.teraTypes.entries.sortedBy { it.key.toString() }.map { (id, type) ->
+            BattleInferenceView(
+                subjectPokemonId = id,
+                categoryId = "tera_type",
+                candidateId = type,
+                confidence = BattleInferenceConfidence.CONFIRMED,
+                basis = setOf(BattleInferenceBasis.PUBLIC_REVEAL),
+                evidenceEventSequences = publicSnapshot.events.asSequence()
+                    .filter {
+                        it.kind == BattleObservedEventKind.TERA_TYPE_REVEALED &&
+                            it.actorPokemonId == id && it.publicValueId == type
+                    }
+                    .map { it.sequence }
+                    .toList(),
+            )
+        }
         return BattleStateView(
             battleId = battleId,
             format = format,
@@ -877,7 +910,8 @@ internal object Cobblemon173BattleStateAssembler {
                 BattleSide.OPPONENT to publicSnapshot.remainingOpponentPokemon,
             ),
             observedEvents = publicSnapshot.events,
-            inferences = PublicBattleInferenceEngine.infer(pokemon, inferenceKnowledge, publicSnapshot.events),
+            inferences = PublicBattleInferenceEngine.infer(pokemon, inferenceKnowledge, publicSnapshot.events) +
+                teraInferences,
         )
     }
 }

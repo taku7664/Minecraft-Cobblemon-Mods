@@ -72,9 +72,14 @@ the same initial world into the Showdown team set. The native request exposes a 
 choice only while legal; executing it changes the live type and the serialized
 `Battle.toJSON()/fromJSON()` branch keeps that type at the next search depth. The
 immutable source-set frame also retains the original Tera type and root validation
-rejects a definition/frame disagreement. This proves the synthetic native primitive,
-not live `-terastallize` observation, posterior rebuilding, Mega/Dynamax persistence,
-or the production Brain path.
+rejects a definition/frame disagreement. The public observer also parses
+`-terastallize`, keeps the revealed type across switch/re-entry and persists it as a
+confirmed `tera_type` inference after the bounded recent-event list evicts the source
+event. The native posterior updater consumes only confirmed public-reveal evidence,
+removes incompatible complete worlds and renormalizes the retained probability mass;
+conflicting evidence, stale rosters and an empty posterior fail explicitly. These
+pieces prove the observation, synthetic-world and posterior primitives, not their
+production `LocalTacticalBrain` cutover or Mega/Dynamax persistence.
 
 Regenerate the committed singles snapshot deterministically from its two pinned
 sources (chaos JSON plus the independently rendered moveset table):

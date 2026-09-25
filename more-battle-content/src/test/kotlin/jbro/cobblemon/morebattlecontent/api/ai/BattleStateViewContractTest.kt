@@ -279,9 +279,10 @@ class BattleStateViewContractTest {
                 "HELD_ITEM_REVEALED",
                 "FIELD_EFFECT_CHANGED",
             ),
-            BattleObservedEventKind.entries.dropLast(1).map { it.name },
+            BattleObservedEventKind.entries.take(9).map { it.name },
         )
-        assertEquals(BattleObservedEventKind.MOVE_OUTCOME, BattleObservedEventKind.entries.last())
+        assertEquals(9, BattleObservedEventKind.MOVE_OUTCOME.ordinal)
+        assertEquals(10, BattleObservedEventKind.TERA_TYPE_REVEALED.ordinal)
     }
 
     @Test

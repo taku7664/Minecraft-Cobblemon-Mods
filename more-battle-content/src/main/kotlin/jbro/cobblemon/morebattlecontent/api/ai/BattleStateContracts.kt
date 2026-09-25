@@ -73,6 +73,7 @@ enum class BattleObservedEventKind {
     HELD_ITEM_REVEALED,
     FIELD_EFFECT_CHANGED,
     MOVE_OUTCOME,
+    TERA_TYPE_REVEALED,
 }
 
 enum class BattleMoveOutcomeKind {
@@ -204,6 +205,7 @@ class BattleObservedEventView @JvmOverloads constructor(
             BattleObservedEventKind.MOVE_USED,
             BattleObservedEventKind.ABILITY_REVEALED,
             BattleObservedEventKind.HELD_ITEM_REVEALED,
+            BattleObservedEventKind.TERA_TYPE_REVEALED,
         )
     }
 }
