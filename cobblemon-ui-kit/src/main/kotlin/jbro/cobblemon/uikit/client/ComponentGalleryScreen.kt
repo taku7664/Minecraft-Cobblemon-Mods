@@ -150,9 +150,16 @@ class ComponentGalleryScreen : Screen(text("title")) {
         return y + rowHeight
     }
 
+    override fun renderBackground(
+        graphics: GuiGraphics,
+        mouseX: Int,
+        mouseY: Int,
+        partialTick: Float
+    ) = Unit
+
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         val theme = CobblemonUiThemes.registry.snapshot()
-        renderTransparentBackground(graphics)
+        graphics.fill(0, 0, width, height, theme.colors.backdrop)
         graphics.fill(shellLeft, shellTop, shellLeft + shellWidth, height - 8, theme.colors.shell)
         outline(graphics, shellLeft, shellTop, shellWidth, height - shellTop - 8, theme.colors.borderBright)
         graphics.drawString(font, title, shellLeft + 12, shellTop + 10, theme.colors.textPrimary, false)

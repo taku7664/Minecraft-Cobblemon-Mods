@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.nio.file.Files
+import java.nio.file.Path
 
 class CobblemonUiKitModuleContractTest {
     @Test
@@ -56,10 +58,32 @@ class CobblemonUiKitModuleContractTest {
         }
     }
 
+    @Test
+    fun `component gallery never blurs its own widgets`() {
+        val source = sourceText(
+            "src/main/kotlin/jbro/cobblemon/uikit/client/ComponentGalleryScreen.kt"
+        )
+
+        assertFalse(source.contains("renderTransparentBackground("))
+        assertTrue(source.contains("theme.colors.backdrop"))
+        assertTrue(source.contains("override fun renderBackground("))
+        assertTrue(source.contains(") = Unit"))
+    }
+
     private fun resourceJson(path: String): JsonObject {
         val stream = javaClass.classLoader.getResourceAsStream(path)
         assertNotNull(stream, "Missing resource: $path")
         return stream!!.reader().use { JsonParser.parseReader(it).asJsonObject }
+    }
+
+    private fun sourceText(relativePath: String): String {
+        val candidates = listOf(
+            Path.of(relativePath),
+            Path.of("cobblemon-ui-kit").resolve(relativePath)
+        )
+        val path = candidates.firstOrNull(Files::exists)
+        assertNotNull(path, "Missing source: $relativePath")
+        return Files.readString(path!!)
     }
 
     private companion object {
