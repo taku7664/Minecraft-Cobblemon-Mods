@@ -52,16 +52,18 @@ public final class MinecraftMusicBackend implements FadingMusicPlayer.Backend {
             .betterCobblemonMusic$getSoundEngine();
         var channels = ((SoundEngineAccessor) soundEngine)
             .betterCobblemonMusic$getInstanceToChannel();
-        ownedSounds.removeIf(sound -> !channels.containsKey(sound));
-        muffledSounds.removeIf(sound -> !channels.containsKey(sound));
         for (SoundInstance sound : ownedSounds) {
+            var channel = channels.get(sound);
+            if (channel == null) {
+                continue;
+            }
             boolean shouldApply = amount > 0.0;
             if (shouldApply) {
                 muffledSounds.add(sound);
             } else if (!muffledSounds.remove(sound)) {
                 continue;
             }
-            channels.get(sound).execute(openAlChannel -> lowPassFilter.apply(
+            channel.execute(openAlChannel -> lowPassFilter.apply(
                 ((ChannelAccessor) openAlChannel).betterCobblemonMusic$getSource(), amount
             ));
         }
@@ -69,12 +71,21 @@ public final class MinecraftMusicBackend implements FadingMusicPlayer.Backend {
 
     @Override
     public void stop(FadingMusicPlayer.Handle handle) {
-        soundManager.stop(requireSound(handle));
+        FadingMusicSoundInstance sound = requireSound(handle);
+        ownedSounds.remove(sound);
+        muffledSounds.remove(sound);
+        soundManager.stop(sound);
     }
 
     @Override
     public boolean isPlaying(FadingMusicPlayer.Handle handle) {
-        return soundManager.isActive(requireSound(handle));
+        FadingMusicSoundInstance sound = requireSound(handle);
+        boolean active = soundManager.isActive(sound);
+        if (!active) {
+            ownedSounds.remove(sound);
+            muffledSounds.remove(sound);
+        }
+        return active;
     }
 
     private static FadingMusicSoundInstance requireSound(FadingMusicPlayer.Handle handle) {
