@@ -83,6 +83,7 @@ internal object NativeBattleRootValidator {
                     normalizedId(set.item) != normalizedId(sourceSet.item) ||
                     normalizedId(set.nature) != normalizedId(sourceSet.nature) ||
                     set.gender != sourceSet.gender ||
+                    normalizedId(set.teraType.orEmpty()) != normalizedId(sourceSet.teraType) ||
                     set.evs != sourceSet.evs ||
                     set.ivs != sourceSet.ivs ||
                     set.level != actual.level ||

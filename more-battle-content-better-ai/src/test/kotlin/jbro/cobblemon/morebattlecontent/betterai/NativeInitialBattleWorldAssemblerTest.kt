@@ -66,6 +66,7 @@ class NativeInitialBattleWorldAssemblerTest {
         assertEquals("static", world.pokemon.single { it.battlePokemonId == ALLY }.abilityId)
         assertEquals("lightball", world.pokemon.single { it.battlePokemonId == ALLY }.itemId)
         assertEquals("timid", world.pokemon.single { it.battlePokemonId == ALLY }.nature)
+        assertEquals("electric", world.pokemon.single { it.battlePokemonId == ALLY }.teraTypeId)
         assertEquals(31, world.pokemon.single { it.battlePokemonId == ALLY }.ivs.getValue("spe"))
 
         val idForSlot2 = roster.opponentPreviewSlotByPokemonId.entries.single { it.value == 2 }.key
@@ -74,6 +75,8 @@ class NativeInitialBattleWorldAssemblerTest {
         assertEquals("grassysurge", world.pokemon.single { it.battlePokemonId == idForSlot4 }.abilityId)
         assertTrue(world.pokemon.filter { it.battlePokemonId != ALLY }
             .all { it.knowledge == NativeBuildKnowledge.PUBLIC_HYPOTHESIS })
+        assertTrue(world.pokemon.filter { it.battlePokemonId != ALLY }
+            .all { it.teraTypeId == "fairy" })
         assertTrue(world.pokemon.filter { it.battlePokemonId != ALLY }
             .all { it.opponentMoveSet?.slots?.size == 4 })
         assertTrue(world.pokemon.filter { it.battlePokemonId != ALLY }
@@ -237,6 +240,7 @@ class NativeInitialBattleWorldAssemblerTest {
         gender = "M",
         evs = spread(hp = 4, spa = 252, spe = 252),
         ivs = spread(31, 31, 31, 31, 31, 31),
+        teraTypeId = "cobblemon:electric",
     )
 
     private fun opponentBuild(slot: Int, ability: String) = NativeOpponentPreviewBuildHypothesis(
@@ -245,6 +249,7 @@ class NativeInitialBattleWorldAssemblerTest {
         itemId = "cobblemon:leftovers",
         natureId = "cobblemon:modest",
         gender = "N",
+        teraTypeId = "cobblemon:fairy",
         evs = spread(hp = 252, spa = 252, spd = 4),
         ivs = spread(31, 31, 31, 31, 31, 31),
     )

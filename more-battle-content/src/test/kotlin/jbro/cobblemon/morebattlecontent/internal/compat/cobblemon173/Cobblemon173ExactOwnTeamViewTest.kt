@@ -24,6 +24,7 @@ class Cobblemon173ExactOwnTeamViewTest {
         assertEquals(pokemon.ability.name, build?.abilityId)
         assertEquals(pokemon.nature.name.toString(), build?.natureId)
         assertEquals(pokemon.gender.showdownName, build?.gender)
+        assertEquals(pokemon.teraType.name, build?.teraTypeId)
         assertEquals(4, build?.evs?.get("hp"))
         assertEquals(252, build?.evs?.get("spa"))
         assertEquals(252, build?.evs?.get("spe"))

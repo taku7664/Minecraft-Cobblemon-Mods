@@ -42,6 +42,7 @@ internal data class NativePokemonBuildHypothesis(
     val gender: String,
     val evs: Map<String, Int>,
     val ivs: Map<String, Int>,
+    val teraTypeId: String? = null,
     val opponentMoveSet: NativeOpponentMoveSetHypothesis? = null,
 ) {
     init {
@@ -49,6 +50,7 @@ internal data class NativePokemonBuildHypothesis(
         require(itemId.isBlank() || normalizedNativeId(itemId).isNotBlank())
         require(nature.isNotBlank())
         require(gender in setOf("M", "F", "N"))
+        require(teraTypeId == null || normalizedNativeId(teraTypeId).isNotBlank())
         require(evs.keys == STAT_IDS && evs.values.all { it in 0..252 } && evs.values.sum() <= 510)
         require(ivs.keys == STAT_IDS && ivs.values.all { it in 0..31 })
         require(opponentMoveSet == null || opponentMoveSet.battlePokemonId == battlePokemonId) {
@@ -209,6 +211,7 @@ internal object NativeInitialBattleDefinitionCompiler {
                     item = normalizedNativeId(build.itemId),
                     nature = build.nature,
                     gender = build.gender,
+                    teraType = build.teraTypeId?.let(::normalizedNativeId),
                     level = level,
                     evs = build.evs,
                     ivs = build.ivs,

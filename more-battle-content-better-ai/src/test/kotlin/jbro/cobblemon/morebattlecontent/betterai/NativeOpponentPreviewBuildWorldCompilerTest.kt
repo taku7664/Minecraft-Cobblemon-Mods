@@ -66,6 +66,8 @@ class NativeOpponentPreviewBuildWorldCompilerTest {
         assertTrue(bossBuilds.any { it.ivs.getValue("atk") == 0 })
         assertTrue(bossBuilds.any { it.ivs.getValue("spe") == 0 })
         assertTrue(bossBuilds.any { it.itemId == null })
+        assertTrue(bossBuilds.all { it.teraTypeId in setOf("normal", "flying") })
+        assertTrue(bossBuilds.any { it.teraTypeId == "flying" })
     }
 
     @Test
@@ -146,6 +148,7 @@ class NativeOpponentPreviewBuildWorldCompilerTest {
         when (species.substringAfter(':')) {
             "dragonite" -> buildUsage(
                 abilities = mapOf("multiscale" to 0.75, "innerfocus" to 0.2, "levitate" to 0.05),
+                teraTypes = mapOf("normal" to 0.7, "flying" to 0.3),
             )
             "corviknight" -> buildUsage(
                 abilities = mapOf("mirrorarmor" to 0.8, "pressure" to 0.2),
@@ -160,6 +163,7 @@ class NativeOpponentPreviewBuildWorldCompilerTest {
         abilities: Map<String, Double>,
         items: Map<String, Double> = mapOf("leftovers" to 0.8, "focussash" to 0.15),
         noItem: Double = 0.05,
+        teraTypes: Map<String, Double> = mapOf("steel" to 1.0),
     ) = LocalOpponentBuildUsageEntry(
         abilityRates = abilities,
         itemRates = items,
@@ -169,7 +173,7 @@ class NativeOpponentPreviewBuildWorldCompilerTest {
             LocalOpponentSpreadUsage("jolly", spread(hp = 252), 0.3),
         ),
         unresolvedSpreadRate = 0.0,
-        teraTypeRates = mapOf("normal" to 1.0),
+        teraTypeRates = teraTypes,
     )
 
     private fun spread(

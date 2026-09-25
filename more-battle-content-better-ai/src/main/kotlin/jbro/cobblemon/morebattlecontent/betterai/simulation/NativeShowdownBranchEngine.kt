@@ -239,6 +239,7 @@ internal data class NativePokemonSet(
     val item: String = "",
     val nature: String = "Serious",
     val gender: String = "M",
+    val teraType: String? = null,
     val level: Int = 50,
     val evs: Map<String, Int> = ZERO_EVS,
     val ivs: Map<String, Int> = PERFECT_IVS,
@@ -246,6 +247,7 @@ internal data class NativePokemonSet(
     init {
         require(name.isNotBlank() && species.isNotBlank() && ability.isNotBlank() && uuid.isNotBlank())
         require(moves.isNotEmpty() && moves.size <= 4 && moves.all(String::isNotBlank))
+        require(teraType == null || teraType.isNotBlank())
         require(level in 1..100)
         UUID.fromString(uuid)
     }
@@ -300,6 +302,7 @@ internal data class NativePokemonSourceSetFrame(
     val gender: String = "",
     val evs: Map<String, Int> = emptyMap(),
     val ivs: Map<String, Int> = emptyMap(),
+    val teraType: String = "",
     val openingHp: Int? = null,
     val openingMaxHp: Int? = null,
     val openingStatus: String = "",

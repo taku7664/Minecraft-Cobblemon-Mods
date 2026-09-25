@@ -49,7 +49,8 @@ by usage on the compatibility path.
 Build fields are also independent marginals, not joint sets. The native build-world
 compiler intersects ability usage with the abilities legal for the public
 species/form, combines only a bounded highest-posterior beam, enforces the held-item
-clause, and renormalizes after truncation. Its versioned `public-build-prior-v1` IV
+clause, keeps bounded high-weight Tera-type representatives, and renormalizes after
+truncation. Its versioned `public-build-prior-v1` IV
 policy keeps a perfect-IV world and, where the EV spread permits them, zero-Attack,
 zero-Speed and combined zero-Attack/zero-Speed worlds at equal policy weight. This
 is an explicit inference policy because the source does not publish IVs; it is not
@@ -65,6 +66,15 @@ the world rather than a later mutable catalog, so a cache key cannot describe on
 build while executing another move assumption. This is initial-world plumbing;
 the production `LocalTacticalBrain` cutover and public-event posterior rebuild are
 still pending.
+
+Exact own Tera types and weighted opponent Tera-type hypotheses are carried through
+the same initial world into the Showdown team set. The native request exposes a Tera
+choice only while legal; executing it changes the live type and the serialized
+`Battle.toJSON()/fromJSON()` branch keeps that type at the next search depth. The
+immutable source-set frame also retains the original Tera type and root validation
+rejects a definition/frame disagreement. This proves the synthetic native primitive,
+not live `-terastallize` observation, posterior rebuilding, Mega/Dynamax persistence,
+or the production Brain path.
 
 Regenerate the committed singles snapshot deterministically from its two pinned
 sources (chaos JSON plus the independently rendered moveset table):

@@ -291,6 +291,25 @@ class BattleDecisionContractTest {
     }
 
     @Test
+    fun `exact own build carries Tera type while retaining the old constructor ABI`() {
+        val id = UUID.randomUUID()
+        val build = BattleExactPokemonBuildView(
+            battlePokemonId = id,
+            abilityId = "static",
+            heldItemId = "lightball",
+            natureId = "timid",
+            gender = "M",
+            evs = exactSpread(),
+            ivs = exactSpread(31),
+            teraTypeId = "electric",
+        )
+
+        assertEquals("electric", build.teraTypeId)
+        assertTrue(BattleExactPokemonBuildView::class.java.declaredConstructors.any { it.parameterCount == 7 })
+        assertNull(exactBuild(id).teraTypeId)
+    }
+
+    @Test
     fun `decision deadline allows a fifteen second router budget`() {
         assertEquals(20_000L, BattleBrainDefaults.DECISION_TIMEOUT_MILLIS)
     }

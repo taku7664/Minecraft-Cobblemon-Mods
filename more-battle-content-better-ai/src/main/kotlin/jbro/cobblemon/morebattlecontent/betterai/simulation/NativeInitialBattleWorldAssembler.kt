@@ -14,6 +14,7 @@ internal data class NativeOpponentPreviewBuildHypothesis(
     val itemId: String?,
     val natureId: String,
     val gender: String,
+    val teraTypeId: String,
     val evs: Map<String, Int>,
     val ivs: Map<String, Int>,
 ) {
@@ -23,6 +24,7 @@ internal data class NativeOpponentPreviewBuildHypothesis(
         require(itemId == null || nativeId(itemId).isNotBlank())
         require(nativeId(natureId).isNotBlank())
         require(gender in setOf("M", "F", "N"))
+        require(nativeId(teraTypeId).isNotBlank())
         requireValidSpreads(evs, ivs)
     }
 }
@@ -157,6 +159,7 @@ internal object NativeInitialBattleWorldAssembler {
         itemId = build.heldItemId?.let(::nativeId).orEmpty(),
         nature = nativeId(build.natureId),
         gender = build.gender,
+        teraTypeId = build.teraTypeId?.let(::nativeId),
         evs = build.evs,
         ivs = build.ivs,
     )
@@ -174,6 +177,7 @@ internal object NativeInitialBattleWorldAssembler {
         gender = build.gender,
         evs = build.evs,
         ivs = build.ivs,
+        teraTypeId = nativeId(build.teraTypeId),
         opponentMoveSet = moveSet,
     )
 }

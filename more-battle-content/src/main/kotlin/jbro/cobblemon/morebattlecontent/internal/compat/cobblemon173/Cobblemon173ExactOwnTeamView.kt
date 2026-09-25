@@ -22,6 +22,7 @@ internal object Cobblemon173ExactOwnTeamView {
                 gender = source.gender.showdownName,
                 evs = statSpread(source.evs) { getOrDefault(it) },
                 ivs = statSpread(source.ivs) { getEffectiveBattleIV(it) },
+                teraTypeId = source.teraType.name,
             )
         },
     )

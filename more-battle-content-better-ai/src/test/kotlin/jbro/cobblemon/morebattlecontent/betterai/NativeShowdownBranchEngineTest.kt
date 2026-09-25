@@ -42,6 +42,32 @@ class NativeShowdownBranchEngineTest {
     }
 
     @Test
+    fun `native Tera choice changes type and survives the next branch depth`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(battle("Technician", teraType = "Fire"))
+            val teraAction = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, before).single {
+                it.moveId == "bulletpunch" && it.mechanic?.mechanicId == "tera"
+            }
+            val teraChoice = NativeShowdownChoiceEncoder.encode(teraAction, BattleSide.ALLY, before)
+
+            assertEquals("Fire", before.p1Active.single().sourceSet?.teraType)
+            assertEquals("move 1 terastallize", teraChoice)
+
+            val afterTera = engine.branch(before.snapshotJson, teraChoice, "move 1")
+            assertEquals(listOf("Fire"), afterTera.p1Active.single().types)
+            assertEquals("Fire", afterTera.p1Active.single().sourceSet?.teraType)
+            assertTrue(NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, afterTera).none {
+                it.mechanic?.mechanicId == "tera"
+            })
+
+            val afterNextTurn = engine.branch(afterTera.snapshotJson, "move 1", "move 1")
+            assertEquals(listOf("Fire"), afterNextTurn.p1Active.single().types)
+            assertEquals("Fire", afterNextTurn.p1Active.single().sourceSet?.teraType)
+        }
+    }
+
+    @Test
     fun `encoded double joint actions are accepted by native Showdown`(@TempDir directory: Path) {
         val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
         NativeShowdownBranchEngine.open(engineRoot).use { engine ->
@@ -286,7 +312,12 @@ class NativeShowdownBranchEngineTest {
         }
     }
 
-    private fun battle(ability: String, item: String = "", species: String = "Scizor") = NativeBattleDefinition(
+    private fun battle(
+        ability: String,
+        item: String = "",
+        species: String = "Scizor",
+        teraType: String? = null,
+    ) = NativeBattleDefinition(
         formatId = "cobblemonsingles",
         seed = listOf(17, 29, 41, 53),
         p1Team = listOf(
@@ -296,6 +327,7 @@ class NativeShowdownBranchEngineTest {
                 moves = listOf("bulletpunch", "swordsdance"),
                 ability = ability,
                 item = item,
+                teraType = teraType,
                 uuid = "00000000-0000-0000-0000-000000000001",
             ),
         ),

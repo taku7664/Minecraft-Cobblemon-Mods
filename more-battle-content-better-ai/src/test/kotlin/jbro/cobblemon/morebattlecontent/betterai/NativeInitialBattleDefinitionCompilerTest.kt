@@ -55,6 +55,8 @@ class NativeInitialBattleDefinitionCompilerTest {
         assertEquals("choicespecs", definition.p2Team.single().item)
         assertEquals("Timid", definition.p2Team.single().nature)
         assertEquals("N", definition.p2Team.single().gender)
+        assertEquals("electric", definition.p1Team.single().teraType)
+        assertEquals("fairy", definition.p2Team.single().teraType)
         assertEquals(EVS, definition.p2Team.single().evs)
         assertEquals(IVS, definition.p2Team.single().ivs)
         assertNull(definition.openingState)
@@ -498,6 +500,7 @@ class NativeInitialBattleDefinitionCompilerTest {
         ability: String,
         item: String,
         opponentMoveSet: NativeOpponentMoveSetHypothesis? = null,
+        teraType: String = if (id == ALLY) "electric" else "fairy",
     ) = NativePokemonBuildHypothesis(
         battlePokemonId = id,
         knowledge = knowledge,
@@ -507,6 +510,7 @@ class NativeInitialBattleDefinitionCompilerTest {
         gender = "N",
         evs = EVS,
         ivs = IVS,
+        teraTypeId = teraType,
         opponentMoveSet = opponentMoveSet,
     )
 

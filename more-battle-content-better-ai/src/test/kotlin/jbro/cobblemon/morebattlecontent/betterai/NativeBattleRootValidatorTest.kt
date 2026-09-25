@@ -174,6 +174,22 @@ class NativeBattleRootValidatorTest {
     }
 
     @Test
+    fun `source Tera type disagreement is rejected before search`() {
+        val plain = frame()
+        val ally = plain.p1Team.single().copy(
+            sourceSet = requireNotNull(plain.p1Team.single().sourceSet).copy(teraType = "Water"),
+        )
+        val altered = plain.copy(p1Active = listOf(ally), p1Team = listOf(ally))
+
+        val issues = NativeBattleRootValidator.validate(definition(), altered, state())
+
+        assertEquals(
+            setOf(NativeBattleRootIssueCode.DEFINITION_FRAME_MISMATCH),
+            issues.mapTo(linkedSetOf()) { it.code },
+        )
+    }
+
+    @Test
     fun `public battle format must match the native definition`() {
         val issues = NativeBattleRootValidator.validate(
             definition(),
@@ -190,8 +206,8 @@ class NativeBattleRootValidatorTest {
     private fun definition() = NativeBattleDefinition(
         "cobblemonsingles",
         listOf(1, 2, 3, 4),
-        listOf(NativePokemonSet("Ally", "Mew", listOf("tackle"), "synchronize", ALLY.toString(), "leftovers")),
-        listOf(NativePokemonSet("Opponent", "Mew", listOf("growl"), "levitate", OPPONENT.toString(), "choicespecs")),
+        listOf(NativePokemonSet("Ally", "Mew", listOf("tackle"), "synchronize", ALLY.toString(), "leftovers", teraType = "Psychic")),
+        listOf(NativePokemonSet("Opponent", "Mew", listOf("growl"), "levitate", OPPONENT.toString(), "choicespecs", teraType = "Psychic")),
     )
 
     private fun frame(
@@ -220,6 +236,7 @@ class NativeBattleRootValidatorTest {
                 "M",
                 ZERO_EVS,
                 PERFECT_IVS,
+                "Psychic",
             ),
         )
         return NativeBattleFrame(
@@ -261,6 +278,7 @@ class NativeBattleRootValidatorTest {
             "M",
             ZERO_EVS,
             PERFECT_IVS,
+            "Psychic",
         ),
     ) = NativePokemonFrame(
         uuid = id.toString(),

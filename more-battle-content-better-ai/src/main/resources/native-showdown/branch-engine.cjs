@@ -120,6 +120,7 @@ function pokemonFrame(pokemon, activeSlot) {
       gender: pokemon.set.gender || '',
       evs: { ...(pokemon.set.evs || {}) },
       ivs: { ...(pokemon.set.ivs || {}) },
+      teraType: pokemon.set.teraType || '',
       openingHp: Number.isInteger(pokemon.set.currentHealth) ? pokemon.set.currentHealth : null,
       openingMaxHp: pokemon.maxhp,
       openingStatus: pokemon.set.status || '',

@@ -162,12 +162,19 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
         val spreads = usage.spreads.filter { it.rate > 0.0 }
             .sortedWith(compareByDescending<LocalOpponentSpreadUsage> { it.rate }
                 .thenBy(::spreadId))
+        val teraTypes = usage.teraTypeRates.entries.asSequence()
+            .filter { it.value > 0.0 }
+            .map { WeightedValue(canonical(it.key), it.value, canonical(it.key)) }
+            .sortedWith(VALUE_ORDER)
+            .toList()
         val genders = pool.genderRates.entries.asSequence()
             .filter { it.value > 0.0 }
             .map { WeightedValue(it.key, it.value, it.key) }
             .sortedWith(VALUE_ORDER)
             .toList()
-        if (abilities.isEmpty() || items.isEmpty() || spreads.isEmpty() || genders.isEmpty()) return emptyList()
+        if (abilities.isEmpty() || items.isEmpty() || spreads.isEmpty() ||
+            teraTypes.isEmpty() || genders.isEmpty()
+        ) return emptyList()
 
         var partials = abilities.asSequence().flatMap { ability ->
             items.asSequence().map { item ->
@@ -175,6 +182,7 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
                     ability = ability.value,
                     item = item.value,
                     spread = null,
+                    teraType = null,
                     gender = null,
                     ivs = null,
                     weight = ability.weight * item.weight,
@@ -188,6 +196,15 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
                     spread = spread,
                     weight = partial.weight * spread.rate,
                     id = "${partial.id},s=${spreadId(spread)}",
+                )
+            }
+        }.let { bounded(it, cap) }
+        partials = partials.asSequence().flatMap { partial ->
+            teraTypes.asSequence().map { teraType ->
+                partial.copy(
+                    teraType = teraType.value,
+                    weight = partial.weight * teraType.weight,
+                    id = "${partial.id},t=${teraType.id}",
                 )
             }
         }.let { bounded(it, cap) }
@@ -218,6 +235,7 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
                     itemId = partial.item,
                     natureId = spread.natureId,
                     gender = requireNotNull(partial.gender),
+                    teraTypeId = requireNotNull(partial.teraType),
                     evs = spread.evs,
                     ivs = requireNotNull(partial.ivs),
                 ),
@@ -227,12 +245,15 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
         }
     }
 
-    /** Preserve the strongest representative of each ability/item pair before filling by weight. */
+    /** Preserve high-weight Tera diversity and ability/item representatives before filling by weight. */
     private fun bounded(candidates: Sequence<PartialBuild>, cap: Int): List<PartialBuild> {
         val ranked = candidates.filter { it.weight.isFinite() && it.weight > 0.0 }
             .sortedWith(PARTIAL_ORDER)
             .toList()
         val kept = linkedMapOf<String, PartialBuild>()
+        ranked.asSequence().filter { it.teraType != null }.distinctBy(PartialBuild::teraType).forEach { candidate ->
+            if (kept.size < cap) kept[candidate.id] = candidate
+        }
         ranked.forEach { candidate ->
             if (kept.size < cap && kept.values.none { it.ability == candidate.ability && it.item == candidate.item }) {
                 kept[candidate.id] = candidate
@@ -277,6 +298,7 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
         val ability: String,
         val item: String?,
         val spread: LocalOpponentSpreadUsage?,
+        val teraType: String?,
         val gender: String?,
         val ivs: Map<String, Int>?,
         val weight: Double,

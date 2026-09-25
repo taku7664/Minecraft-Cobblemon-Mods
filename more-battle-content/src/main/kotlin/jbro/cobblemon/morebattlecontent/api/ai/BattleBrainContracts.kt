@@ -222,6 +222,7 @@ class BattleExactPokemonBuildView(
     val gender: String,
     evs: Map<String, Int>,
     ivs: Map<String, Int>,
+    val teraTypeId: String?,
 ) {
     val evs: Map<String, Int> = Collections.unmodifiableMap(LinkedHashMap(evs))
     val ivs: Map<String, Int> = Collections.unmodifiableMap(LinkedHashMap(ivs))
@@ -231,6 +232,7 @@ class BattleExactPokemonBuildView(
         require(heldItemId == null || heldItemId.isNotBlank()) { "Exact own held item ID cannot be blank" }
         require(natureId.isNotBlank()) { "Exact own nature ID cannot be blank" }
         require(gender in setOf("M", "F", "N")) { "Exact own gender must use a Showdown gender ID" }
+        require(teraTypeId == null || teraTypeId.isNotBlank()) { "Exact own Tera type ID cannot be blank" }
         require(this.evs.keys == STAT_IDS && this.evs.values.all { it in 0..252 } && this.evs.values.sum() <= 510) {
             "Exact own EVs must contain six legal stats with a total no greater than 510"
         }
@@ -238,6 +240,16 @@ class BattleExactPokemonBuildView(
             "Exact own IVs must contain six legal stats"
         }
     }
+
+    constructor(
+        battlePokemonId: UUID,
+        abilityId: String,
+        heldItemId: String?,
+        natureId: String,
+        gender: String,
+        evs: Map<String, Int>,
+        ivs: Map<String, Int>,
+    ) : this(battlePokemonId, abilityId, heldItemId, natureId, gender, evs, ivs, null)
 
     private companion object {
         val STAT_IDS = setOf("hp", "atk", "def", "spa", "spd", "spe")
