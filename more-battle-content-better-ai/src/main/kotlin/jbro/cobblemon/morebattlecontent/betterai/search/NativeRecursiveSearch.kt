@@ -26,13 +26,37 @@ internal data class NativeRootActionValue(
     val value: Double,
 )
 
+/** One root iteration that completed for every candidate before search stopped. */
+internal data class NativeCompletedSearchDepth(
+    val depth: Int,
+    val rootValues: List<NativeRootActionValue>,
+) {
+    init {
+        require(depth > 0)
+        require(rootValues.map { it.action.actionId }.distinct().size == rootValues.size)
+        require(rootValues.all { it.value.isFinite() })
+    }
+}
+
 internal data class NativeRecursiveSearchResult(
     val rootValues: List<NativeRootActionValue>,
+    val completedIterations: List<NativeCompletedSearchDepth>,
     val nodesVisited: Int,
     val depthCompleted: Int,
     val truncated: Boolean,
     val terminationReason: NativeSearchTerminationReason,
 ) {
+    init {
+        require(nodesVisited >= 0)
+        require(depthCompleted >= 0)
+        require(completedIterations.map(NativeCompletedSearchDepth::depth) == (1..depthCompleted).toList()) {
+            "Completed native iterations must be contiguous through depthCompleted"
+        }
+        require(rootValues == completedIterations.lastOrNull()?.rootValues.orEmpty()) {
+            "Native root values must come from the last fully completed iteration"
+        }
+    }
+
     val bestAction: BattleActionCandidate? = rootValues.maxByOrNull(NativeRootActionValue::value)?.action
 }
 
@@ -83,13 +107,23 @@ internal class NativeRecursiveSearch(
         return NativeProductSearchAttempt(
             mapping = mapping,
             result = nativeResult.copy(
-                rootValues = nativeResult.rootValues.map { rootValue ->
-                    NativeRootActionValue(
-                        action = requireNotNull(productByNativeId[rootValue.action.actionId]),
-                        value = rootValue.value,
+                rootValues = restoreProductActions(nativeResult.rootValues, productByNativeId),
+                completedIterations = nativeResult.completedIterations.map { iteration ->
+                    iteration.copy(
+                        rootValues = restoreProductActions(iteration.rootValues, productByNativeId),
                     )
                 },
             ),
+        )
+    }
+
+    private fun restoreProductActions(
+        values: List<NativeRootActionValue>,
+        productByNativeId: Map<String, BattleActionCandidate>,
+    ): List<NativeRootActionValue> = values.map { rootValue ->
+        NativeRootActionValue(
+            action = requireNotNull(productByNativeId[rootValue.action.actionId]),
+            value = rootValue.value,
         )
     }
 
@@ -99,15 +133,18 @@ internal class NativeRecursiveSearch(
     ): NativeRecursiveSearchResult {
         require(maxDepth > 0)
         var accepted = emptyList<NativeRootActionValue>()
+        val completedIterations = mutableListOf<NativeCompletedSearchDepth>()
         var completedDepth = 0
         for (depth in 1..maxDepth) {
             val iteration = evaluateRootDepth(rootActions, depth)
             if (truncated || iteration == null) break
             accepted = iteration
             completedDepth = depth
+            completedIterations += NativeCompletedSearchDepth(depth, iteration)
         }
         return NativeRecursiveSearchResult(
             rootValues = accepted,
+            completedIterations = completedIterations,
             nodesVisited = nodesVisited,
             depthCompleted = completedDepth,
             truncated = truncated,

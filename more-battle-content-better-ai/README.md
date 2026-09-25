@@ -88,6 +88,14 @@ conflicting evidence, stale rosters and an empty posterior fail explicitly. Thes
 pieces prove the observation, synthetic-world and posterior primitives, not their
 production `LocalTacticalBrain` cutover or Mega/Dynamax persistence.
 
+Native recursive search retains the root values from every fully completed depth.
+The posterior-world aggregator requires every retained world to complete a common
+depth and expose the same complete product action set, then combines only that
+depth as `world probability × action value`. A failed or zero-depth world invalidates
+the result instead of being dropped and renormalized; one deterministic node budget
+is divided across the full world set. This is the product aggregation primitive,
+not yet the `LocalTacticalBrain` entrypoint.
+
 Regenerate the committed singles snapshot deterministically from its two pinned
 sources (chaos JSON plus the independently rendered moveset table):
 

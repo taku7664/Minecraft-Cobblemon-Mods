@@ -90,6 +90,8 @@ class NativeRecursiveSearchTest {
         assertEquals(2, result.depthCompleted)
         assertEquals(false, result.truncated)
         assertEquals(0.2, rounded(result.rootValues.single().value))
+        assertEquals(listOf(1, 2), result.completedIterations.map { it.depth })
+        assertEquals(0.2, rounded(result.completedIterations.first().rootValues.single().value))
         assertEquals(listOf("root", "root", "child", "child", "child", "child"), worker.visitedSnapshots)
     }
 
@@ -116,6 +118,7 @@ class NativeRecursiveSearchTest {
         assertEquals(true, result.truncated)
         assertEquals(NativeSearchTerminationReason.DEADLINE, result.terminationReason)
         assertEquals(0.2, rounded(result.rootValues.single().value))
+        assertEquals(listOf(1), result.completedIterations.map { it.depth })
         assertEquals(listOf("root", "root", "child"), worker.visitedSnapshots)
     }
 
