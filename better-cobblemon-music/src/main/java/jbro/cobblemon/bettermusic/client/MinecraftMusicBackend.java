@@ -10,12 +10,14 @@ import jbro.cobblemon.bettermusic.playback.FadingMusicPlayer;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundSource;
 import org.slf4j.Logger;
 
 public final class MinecraftMusicBackend implements FadingMusicPlayer.Backend {
     private final SoundManager soundManager;
     private final MusicLowPassFilter lowPassFilter;
+    private final Set<SoundInstance> ownedSounds = Collections.newSetFromMap(
+        new IdentityHashMap<>()
+    );
     private final Set<SoundInstance> muffledSounds = Collections.newSetFromMap(
         new IdentityHashMap<>()
     );
@@ -34,6 +36,7 @@ public final class MinecraftMusicBackend implements FadingMusicPlayer.Backend {
     public FadingMusicPlayer.Handle play(FadingMusicPlayer.Track track, double initialVolume) {
         ResourceLocation location = ResourceLocation.parse(track.sound());
         var sound = new FadingMusicSoundInstance(location, initialVolume);
+        ownedSounds.add(sound);
         soundManager.play(sound);
         return sound;
     }
@@ -49,19 +52,16 @@ public final class MinecraftMusicBackend implements FadingMusicPlayer.Backend {
             .betterCobblemonMusic$getSoundEngine();
         var channels = ((SoundEngineAccessor) soundEngine)
             .betterCobblemonMusic$getInstanceToChannel();
+        ownedSounds.removeIf(sound -> !channels.containsKey(sound));
         muffledSounds.removeIf(sound -> !channels.containsKey(sound));
-        for (var entry : channels.entrySet()) {
-            SoundInstance sound = entry.getKey();
-            if (sound.getSource() != SoundSource.MUSIC) {
-                continue;
-            }
+        for (SoundInstance sound : ownedSounds) {
             boolean shouldApply = amount > 0.0;
             if (shouldApply) {
                 muffledSounds.add(sound);
             } else if (!muffledSounds.remove(sound)) {
                 continue;
             }
-            entry.getValue().execute(openAlChannel -> lowPassFilter.apply(
+            channels.get(sound).execute(openAlChannel -> lowPassFilter.apply(
                 ((ChannelAccessor) openAlChannel).betterCobblemonMusic$getSource(), amount
             ));
         }

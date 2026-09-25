@@ -5,10 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.gson.JsonParser;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -17,140 +17,102 @@ final class BetterMusicConfigManagerTest {
     Path temporaryDirectory;
 
     @Test
-    void newInstallationCreatesSchemaTwoWithoutRewritingLaterUserChanges() throws Exception {
-        Path configDirectory = temporaryDirectory.resolve("new_install");
-        var manager = new BetterMusicConfigManager(configDirectory);
-
-        assertEquals(BetterMusicConfigManager.Outcome.APPLIED, manager.initialize().outcome());
-        Path musicJson = configDirectory.resolve("music.json");
-        var root = JsonParser.parseString(Files.readString(musicJson)).getAsJsonObject();
-        assertEquals(2, root.get("schemaVersion").getAsInt());
-
-        String userSchemaOne = musicJson(2.0);
-        Files.writeString(musicJson, userSchemaOne, StandardCharsets.UTF_8);
-        assertEquals(BetterMusicConfigManager.Outcome.APPLIED, manager.initialize().outcome());
-        assertEquals(userSchemaOne, Files.readString(musicJson));
-    }
-
-    @Test
-    void initializeCreatesOnlyMissingDefaultsAndPreservesExistingUserFile() throws Exception {
+    void initializeCreatesOnlySettingsAndWaitsForResourceCatalogs() throws Exception {
         Path configDirectory = temporaryDirectory.resolve("better_cobblemon_music");
-        Files.createDirectories(configDirectory);
-        String customConfig = musicJson(2.0);
-        Files.writeString(configDirectory.resolve("music.json"), customConfig, StandardCharsets.UTF_8);
-
         var manager = new BetterMusicConfigManager(configDirectory);
+
         var result = manager.initialize();
 
-        assertEquals(BetterMusicConfigManager.Outcome.APPLIED, result.outcome());
-        assertEquals(2.0, manager.activeSnapshot().orElseThrow().playback().scanIntervalSeconds());
-        assertEquals(customConfig, Files.readString(configDirectory.resolve("music.json")));
-        assertTrue(Files.isDirectory(configDirectory.resolve("music")));
-        assertFalse(Files.exists(configDirectory.resolve("playback.json")));
-        assertFalse(Files.exists(configDirectory.resolve("cues.json")));
-        assertFalse(Files.exists(configDirectory.resolve("field_rules.json")));
+        assertEquals(BetterMusicConfigManager.Outcome.INITIALIZED, result.outcome());
+        assertTrue(Files.isRegularFile(configDirectory.resolve("settings.json")));
+        assertFalse(Files.exists(configDirectory.resolve("music.json")));
+        assertFalse(Files.exists(configDirectory.resolve("music")));
+        assertTrue(manager.activeConfiguration().isEmpty());
     }
 
     @Test
-    void invalidReloadRetainsTheExactLastGoodSnapshot() throws Exception {
-        Path configDirectory = temporaryDirectory.resolve("config");
-        var manager = new BetterMusicConfigManager(configDirectory);
-        assertEquals(BetterMusicConfigManager.Outcome.APPLIED, manager.initialize().outcome());
-        var lastGood = manager.activeSnapshot().orElseThrow();
+    void resourceReloadCompilesCatalogAndPublishesAtomically() throws Exception {
+        var manager = new BetterMusicConfigManager(temporaryDirectory.resolve("config"));
+        manager.initialize();
 
-        Files.writeString(
-            configDirectory.resolve("music.json"),
-            "{\"schemaVersion\":1}",
-            StandardCharsets.UTF_8
-        );
-        var result = manager.reload();
+        var result = manager.reloadCatalogs(List.of(document(validCatalog("cobleserver:music.one"))));
+
+        assertEquals(BetterMusicConfigManager.Outcome.APPLIED, result.outcome());
+        assertEquals(1, result.revision());
+        var active = manager.activeConfiguration().orElseThrow();
+        assertEquals("cobleserver:music.one", active.trackEvents().get("cobleserver:one"));
+        assertSame(active.snapshot(), manager.activeSnapshot().orElseThrow());
+    }
+
+    @Test
+    void failedResourceReloadKeepsTheExactLastGoodConfiguration() throws Exception {
+        var manager = new BetterMusicConfigManager(temporaryDirectory.resolve("config"));
+        manager.initialize();
+        manager.reloadCatalogs(List.of(document(validCatalog("cobleserver:music.one"))));
+        var before = manager.activeConfiguration().orElseThrow();
+
+        var result = manager.reloadCatalogs(List.of(new BetterMusicConfigManager.CatalogDocument(
+            "broken-pack", "{\"schemaVersion\":1}"
+        )));
 
         assertEquals(BetterMusicConfigManager.Outcome.RETAINED_LAST_GOOD, result.outcome());
-        assertTrue(result.message().contains("music.json"));
-        assertTrue(result.message().contains("$.scanIntervalSeconds"));
-        assertSame(lastGood, manager.activeSnapshot().orElseThrow());
+        assertEquals(1, result.revision());
+        assertSame(before, manager.activeConfiguration().orElseThrow());
+        assertTrue(result.message().contains("broken-pack"));
     }
 
     @Test
-    void invalidFirstUserConfigFallsBackToBundledDefaultsWithoutOverwritingIt() throws Exception {
-        Path configDirectory = temporaryDirectory.resolve("config");
-        Files.createDirectories(configDirectory);
-        Path music = configDirectory.resolve("music.json");
-        Files.writeString(music, "{\"schemaVersion\":1}", StandardCharsets.UTF_8);
-
-        var manager = new BetterMusicConfigManager(configDirectory);
-        var result = manager.initialize();
-
-        assertEquals(BetterMusicConfigManager.Outcome.FALLBACK_TO_BUNDLED, result.outcome());
-        assertEquals(1.0, manager.activeSnapshot().orElseThrow().playback().scanIntervalSeconds());
-        assertEquals("{\"schemaVersion\":1}", Files.readString(music));
-    }
-
-    @Test
-    void successfulReloadAtomicallyReplacesTheSnapshot() throws Exception {
+    void settingsChangesApplyOnTheNextCatalogReload() throws Exception {
         Path configDirectory = temporaryDirectory.resolve("config");
         var manager = new BetterMusicConfigManager(configDirectory);
         manager.initialize();
-        var before = manager.activeSnapshot().orElseThrow();
+        var catalogs = List.of(document(validCatalog("cobleserver:music.one")));
+        manager.reloadCatalogs(catalogs);
+        String settings = Files.readString(configDirectory.resolve("settings.json"));
         Files.writeString(
-            configDirectory.resolve("music.json"),
-            musicJson(3.0),
+            configDirectory.resolve("settings.json"),
+            settings.replace("\"volume\": 1.0", "\"volume\": 0.4"),
             StandardCharsets.UTF_8
         );
 
-        var result = manager.reload();
+        var result = manager.reloadCatalogs(catalogs);
 
         assertEquals(BetterMusicConfigManager.Outcome.APPLIED, result.outcome());
-        assertEquals(3.0, manager.activeSnapshot().orElseThrow().playback().scanIntervalSeconds());
-        assertFalse(before == manager.activeSnapshot().orElseThrow());
+        assertEquals(2, result.revision());
+        assertEquals(0.4, manager.activeConfiguration().orElseThrow().playlists().get("cobleserver:one").volume());
     }
 
-    @Test
-    void preparedReloadDoesNotPublishUntilExplicitlyActivated() throws Exception {
-        Path configDirectory = temporaryDirectory.resolve("config");
-        var manager = new BetterMusicConfigManager(configDirectory);
-        manager.initialize();
-        var before = manager.activeSnapshot().orElseThrow();
-        Files.writeString(
-            configDirectory.resolve("music.json"),
-            musicJson(3.0),
-            StandardCharsets.UTF_8
-        );
-
-        var prepared = manager.prepareReload();
-
-        assertEquals(BetterMusicConfigManager.Outcome.APPLIED, prepared.outcome());
-        assertSame(before, manager.activeSnapshot().orElseThrow());
-        assertEquals(3.0, prepared.snapshot().orElseThrow().playback().scanIntervalSeconds());
-
-        manager.activate(prepared.snapshot().orElseThrow());
-        assertEquals(3.0, manager.activeSnapshot().orElseThrow().playback().scanIntervalSeconds());
+    private static BetterMusicConfigManager.CatalogDocument document(String json) {
+        return new BetterMusicConfigManager.CatalogDocument("test-pack", json);
     }
 
-    private static String musicJson(double scanIntervalSeconds) {
+    private static String validCatalog(String event) {
         return """
             {
               "schemaVersion": 1,
-              "scanIntervalSeconds": %s,
-              "fieldChangeDelaySeconds": 4.0,
-              "betweenTracksSeconds": 0.0,
-              "fadeInSeconds": 1.0,
-              "fadeOutSeconds": 1.0,
-              "selection": "shuffle",
-              "volume": 1.0,
-              "field": {
-                "default": "field/plains.ogg",
-                "dimensions": {},
-                "biomes": {},
-                "biomePathContains": {}
+              "packId": "cobleserver:official",
+              "kind": "base",
+              "tracks": {
+                "cobleserver:one": {"event": "%s", "title": "One", "legacyPaths": ["one.ogg"]}
               },
-              "battle": {
-                "wild": "battle/wild.ogg",
-                "trainer": "battle/trainer.ogg",
-                "pvp": "battle/pvp.ogg",
-                "pokemon": []
+              "playlists": {
+                "cobleserver:one": {"tracks": ["cobleserver:one"]}
+              },
+              "mappings": {
+                "field": {"default": "cobleserver:one"},
+                "battle": {
+                  "wild": "cobleserver:one",
+                  "trainer": "cobleserver:one",
+                  "pvp": "cobleserver:one"
+                }
+              },
+              "audioEvents": {
+                "hitNormal": "cobleserver:hit.normal",
+                "hitSuperEffective": "cobleserver:hit.super",
+                "hitNotVeryEffective": "cobleserver:hit.weak",
+                "heartbeat": "cobleserver:heartbeat"
               }
             }
-            """.formatted(scanIntervalSeconds);
+            """.formatted(event);
     }
 }

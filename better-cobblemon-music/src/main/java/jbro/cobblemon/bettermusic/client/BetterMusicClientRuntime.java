@@ -10,10 +10,10 @@ import jbro.cobblemon.bettermusic.config.BetterMusicConfigManager;
 import jbro.cobblemon.bettermusic.config.BetterMusicConfigSnapshot;
 import jbro.cobblemon.bettermusic.config.AudioEffectsSettings;
 import jbro.cobblemon.bettermusic.config.PlaylistDefinition;
+import jbro.cobblemon.bettermusic.catalog.CompiledMusicConfiguration;
 import jbro.cobblemon.bettermusic.battle.BattlePlaylistResolver;
 import jbro.cobblemon.bettermusic.field.FieldPlaylistResolver;
 import jbro.cobblemon.bettermusic.playback.FadingMusicPlayer;
-import jbro.cobblemon.bettermusic.playback.MusicFileSoundIds;
 import jbro.cobblemon.bettermusic.playback.MusicPlaybackCoordinator;
 import jbro.cobblemon.bettermusic.playback.PlaylistNavigator;
 import jbro.cobblemon.bettermusic.playback.PlayablePlaylistResolver;
@@ -35,6 +35,7 @@ public final class BetterMusicClientRuntime {
     private final LastPokemonHeartbeatPlayer heartbeatPlayer = new LastPokemonHeartbeatPlayer();
 
     private BetterMusicConfigSnapshot snapshot;
+    private CompiledMusicConfiguration configuration;
     private MinecraftMusicBackend backend;
     private FadingMusicPlayer player;
     private MusicPlaybackCoordinator coordinator;
@@ -76,7 +77,8 @@ public final class BetterMusicClientRuntime {
             client,
             nowSeconds,
             lastPokemonEffect.heartbeat(),
-            audioEffects.lastPokemonHpEffectVolume()
+            audioEffects.lastPokemonHpEffectVolume(),
+            configuration.audioEvents().heartbeat()
         );
 
         if (suppressOriginalMusic || player.ownsMusic()) {
@@ -85,10 +87,11 @@ public final class BetterMusicClientRuntime {
     }
 
     private void applyConfigIfChanged(Minecraft client, double nowSeconds) {
-        BetterMusicConfigSnapshot latest = configManager.activeSnapshot().orElse(null);
-        if (latest == null || latest == snapshot) {
+        CompiledMusicConfiguration latestConfiguration = configManager.activeConfiguration().orElse(null);
+        if (latestConfiguration == null || latestConfiguration == configuration) {
             return;
         }
+        BetterMusicConfigSnapshot latest = latestConfiguration.snapshot();
 
         if (backend == null) {
             backend = new MinecraftMusicBackend(client.getSoundManager(), logger);
@@ -96,9 +99,10 @@ public final class BetterMusicClientRuntime {
         if (player == null) {
             player = new FadingMusicPlayer(backend);
         }
+        configuration = latestConfiguration;
         snapshot = latest;
         audioEffects = latest.audioEffects();
-        BattleHitSoundPlayer.configure(audioEffects);
+        BattleHitSoundPlayer.configure(audioEffects, latestConfiguration.audioEvents());
         coordinator = new MusicPlaybackCoordinator(latest.playback());
         fieldResolver = new FieldPlaylistResolver(latest.field());
         battleResolver = new BattlePlaylistResolver(latest.battle());
@@ -194,10 +198,10 @@ public final class BetterMusicClientRuntime {
             playlistId,
             playlistsById,
             fallbackPlaylistIds,
-            track -> backend.isSoundAvailable(MusicFileSoundIds.soundEvent(track)),
+            track -> soundEvent(track).map(backend::isSoundAvailable).orElse(false),
             track -> {
                 if (reportedUnavailableTracks.add(track)) {
-                    logger.warn("Music file '{}' is unavailable in the generated resource pack", track);
+                    logger.warn("Music track '{}' is unavailable in the active resource packs", track);
                 }
             }
         );
@@ -210,7 +214,7 @@ public final class BetterMusicClientRuntime {
             @Override
             public FadingMusicPlayer.Track nextTrack() {
                 String track = playlistNavigator.next(resolvedId, playable);
-                return new FadingMusicPlayer.Track(MusicFileSoundIds.soundEvent(track), playable.volume());
+                return new FadingMusicPlayer.Track(soundEvent(track).orElseThrow(), playable.volume());
             }
 
             @Override
@@ -218,5 +222,9 @@ public final class BetterMusicClientRuntime {
                 return playable.betweenTracksSeconds();
             }
         });
+    }
+
+    private Optional<String> soundEvent(String trackId) {
+        return Optional.ofNullable(configuration.trackEvents().get(trackId));
     }
 }

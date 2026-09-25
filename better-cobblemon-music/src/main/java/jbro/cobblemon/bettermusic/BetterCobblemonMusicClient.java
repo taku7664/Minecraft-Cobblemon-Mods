@@ -2,13 +2,14 @@ package jbro.cobblemon.bettermusic;
 
 import jbro.cobblemon.bettermusic.client.BetterMusicClientCommands;
 import jbro.cobblemon.bettermusic.client.BetterMusicClientRuntime;
-import jbro.cobblemon.bettermusic.client.GeneratedMusicPackController;
+import jbro.cobblemon.bettermusic.client.MusicCatalogResourceReloadListener;
 import jbro.cobblemon.bettermusic.config.BetterMusicConfigManager;
 import jbro.cobblemon.bettermusic.integration.mbc.MoreBattleContentIntegration;
-import jbro.cobblemon.bettermusic.resource.GeneratedMusicResourcePack;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.server.packs.PackType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,22 +28,18 @@ public final class BetterCobblemonMusicClient implements ClientModInitializer {
         var configManager = new BetterMusicConfigManager(configDirectory);
         var initialLoad = configManager.initialize();
         logInitialLoad(initialLoad);
-        var generatedPack = new GeneratedMusicResourcePack(
-            configDirectory,
-            FabricLoader.getInstance().getGameDir().resolve("resourcepacks")
+        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
+            new MusicCatalogResourceReloadListener(configManager, LOGGER)
         );
-        var packController = new GeneratedMusicPackController(generatedPack, LOGGER);
-        configManager.activeSnapshot().ifPresent(packController::prepare);
-        packController.registerActivation();
-        BetterMusicClientCommands.register(configManager, packController);
+        BetterMusicClientCommands.register(configManager);
         new BetterMusicClientRuntime(configManager, LOGGER).register();
     }
 
     private static void logInitialLoad(BetterMusicConfigManager.ReloadResult result) {
         switch (result.outcome()) {
+            case INITIALIZED -> LOGGER.info(result.message());
             case APPLIED -> LOGGER.info(result.message());
             case RETAINED_LAST_GOOD -> LOGGER.warn(result.message());
-            case FALLBACK_TO_BUNDLED -> LOGGER.warn(result.message());
             case NO_VALID_CONFIG -> LOGGER.error(result.message());
         }
     }
