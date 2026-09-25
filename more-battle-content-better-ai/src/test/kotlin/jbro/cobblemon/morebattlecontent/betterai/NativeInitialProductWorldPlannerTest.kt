@@ -133,6 +133,23 @@ class NativeInitialProductWorldPlannerTest {
     }
 
     @Test
+    fun `compiles a complete six on six singles test battle without selection hypotheses`() {
+        val result = planner().plan(
+            context(preview = preview(selectionSize = 6)),
+            BattleTrainerTier.BOSS,
+        )
+
+        assertTrue(result.issues.isEmpty(), result.issues.toString())
+        assertEquals(1, result.worlds.size)
+        result.worlds.forEach { world ->
+            assertEquals("cobblemonsingles", world.definition.formatId)
+            assertEquals(6, world.definition.p1Team.size)
+            assertEquals(6, world.definition.p2Team.size)
+            assertEquals(6, world.publicContext.publicActionCatalog.opponentMoveInferences.size)
+        }
+    }
+
+    @Test
     fun `missing canonical Showdown identity fails instead of inventing a form id`() {
         val result = planner().plan(
             context(preview = preview(selectionSize = 3, missingShowdownSlot = 0)),
@@ -430,6 +447,8 @@ class NativeInitialProductWorldPlannerTest {
             UUID.fromString("00000000-0000-0000-0000-000000000102"),
             UUID.fromString("00000000-0000-0000-0000-000000000103"),
             UUID.fromString("00000000-0000-0000-0000-000000000104"),
+            UUID.fromString("00000000-0000-0000-0000-000000000105"),
+            UUID.fromString("00000000-0000-0000-0000-000000000106"),
         )
         val OPPONENTS = listOf(
             UUID.fromString("00000000-0000-0000-0000-000000000201"),

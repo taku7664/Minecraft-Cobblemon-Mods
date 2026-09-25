@@ -72,11 +72,11 @@ internal object NativeOpponentRosterStateMaterializer {
         resolveShowdownSpecies: (speciesId: String, formId: String?) -> String?,
     ): NativeOpponentRosterMaterialization {
         val issues = linkedSetOf<NativeOpponentRosterMaterializationIssue>()
-        val expectedSelectionSize = when (state.format) {
-            BattleFormat.SINGLE -> 3
-            BattleFormat.DOUBLE -> 4
+        val supportedSelectionSizes = when (state.format) {
+            BattleFormat.SINGLE -> setOf(3, preview.pokemon.size)
+            BattleFormat.DOUBLE -> setOf(4, preview.pokemon.size)
         }
-        if (preview.selectionSize != expectedSelectionSize ||
+        if (preview.selectionSize !in supportedSelectionSizes ||
             hypothesis.selectedPreviewSlotIds.size != preview.selectionSize ||
             state.remainingPokemonBySide.getValue(BattleSide.OPPONENT) != preview.selectionSize
         ) {

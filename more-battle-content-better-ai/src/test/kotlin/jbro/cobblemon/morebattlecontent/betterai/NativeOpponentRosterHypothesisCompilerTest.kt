@@ -62,7 +62,24 @@ class NativeOpponentRosterHypothesisCompilerTest {
     }
 
     @Test
-    fun `selection rule must be six to three singles or six to four doubles`() {
+    fun `six on six singles test battle keeps the complete preview roster`() {
+        val lead = opponent("cobblemon:torterra")
+        val preview = preview(6, "torterra", "zoroark", "celebi", "houndoom", "milotic", "togekiss")
+
+        val result = NativeOpponentRosterHypothesisCompiler.compile(
+            state(lead, remaining = 6),
+            preview,
+        )
+
+        assertTrue(result.issues.isEmpty())
+        assertEquals(1, result.hypotheses.size)
+        assertEquals((0..5).toList(), result.hypotheses.single().selectedPreviewSlotIds)
+        assertEquals(0, result.hypotheses.single().revealedAssignments[lead.battlePokemonId])
+        assertEquals(1.0, result.hypotheses.single().probability, 1e-12)
+    }
+
+    @Test
+    fun `selection rule must be six to three or full singles or six to four or full doubles`() {
         val lead = opponent("cobblemon:fluttermane")
 
         val invalid = NativeOpponentRosterHypothesisCompiler.compile(
