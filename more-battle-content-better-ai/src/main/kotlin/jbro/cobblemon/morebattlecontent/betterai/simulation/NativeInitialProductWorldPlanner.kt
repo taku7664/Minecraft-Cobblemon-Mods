@@ -1,7 +1,5 @@
 package jbro.cobblemon.morebattlecontent.betterai.simulation
 
-import java.nio.charset.StandardCharsets
-import java.security.MessageDigest
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.abs
@@ -191,7 +189,11 @@ internal class NativeInitialProductWorldPlanner(
                 catalog = prepared.catalogContext.publicActionCatalog,
                 identities = prepared.roster.identities,
                 world = prepared.world.copy(probability = probability),
-                seed = seed(context.state.battleId, prepared.world.hypothesisId, randomSampleIndex = 0),
+                seed = NativeProductSeedPolicy.derive(
+                    context.state.battleId,
+                    prepared.world.hypothesisId,
+                    randomSampleIndex = 0,
+                ),
             )
             val definition = compilation.definition ?: return failure(
                 NativeInitialProductWorldPlanIssueCode.BATTLE_DEFINITION_COMPILATION_FAILED,
@@ -308,18 +310,5 @@ internal class NativeInitialProductWorldPlanner(
             .lowercase(Locale.ROOT)
             .filter(Char::isLetterOrDigit)
 
-        fun seed(battleId: UUID, hypothesisId: String, randomSampleIndex: Int): List<Int> {
-            val digest = MessageDigest.getInstance("SHA-256").digest(
-                "$SEED_POLICY|$battleId|$hypothesisId|$randomSampleIndex"
-                    .toByteArray(StandardCharsets.UTF_8),
-            )
-            val values = (0 until 4).map { index ->
-                val offset = index * 2
-                ((digest[offset].toInt() and 0xff) shl 8) or (digest[offset + 1].toInt() and 0xff)
-            }
-            return if (values.all { it == 0 }) listOf(1, 0, 0, 0) else values
-        }
-
-        const val SEED_POLICY = "native-product-seed-v1"
     }
 }

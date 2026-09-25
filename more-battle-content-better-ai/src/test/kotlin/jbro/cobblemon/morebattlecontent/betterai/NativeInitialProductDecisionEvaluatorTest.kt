@@ -207,12 +207,93 @@ class NativeInitialProductDecisionEvaluatorTest {
         assertEquals("test-rules", result.sessionState?.rulesFingerprint)
     }
 
+    @Test
+    fun `native chance budget expands every hidden world into equally weighted deterministic samples`() {
+        val context = context()
+        var searchedWorlds = emptyList<jbro.cobblemon.morebattlecontent.betterai.search.NativeProductWorldSearchInput>()
+        var baselineCalls = 0
+        val evaluator = NativeInitialProductDecisionEvaluator(
+            planWorlds = { supplied, _ -> plan(supplied) },
+            searchWorlds = { request ->
+                searchedWorlds = request.worlds
+                NativeProductWorldSearchResult(
+                    status = NativeProductWorldSearchStatus.COMPLETED,
+                    rootValues = request.productActions.mapIndexed { index, action ->
+                        NativeRootActionValue(action, 1.0 - index * 0.1)
+                    },
+                    depthCompleted = 1,
+                    nodesVisited = request.worlds.size,
+                    rootSnapshots = request.worlds.associate { world ->
+                        world.key to NativeProductRootSnapshot("test-rules", frame(world.key.randomSampleIndex.toString()))
+                    },
+                )
+            },
+            nowEpochMillis = { 1_000L },
+            nanoTime = { 5_000_000L },
+            leafEvaluator = { _, _, _, _ -> baselineCalls++; 0.0 },
+        )
+
+        val result = evaluator.evaluate(
+            context,
+            BattleTrainerProfile.balanced(),
+            LocalDecisionTuning.CURRENT,
+            LocalLookaheadBudget(250L, 100, 3),
+        )
+
+        assertEquals(NativeInitialProductDecisionStatus.AVAILABLE, result.status)
+        assertEquals(listOf(0, 1, 2), searchedWorlds.map { it.key.randomSampleIndex })
+        assertTrue(searchedWorlds.all { kotlin.math.abs(it.probability - 1.0 / 3.0) < 1e-9 })
+        assertEquals(3, searchedWorlds.map { it.definition.seed }.distinct().size)
+        assertEquals(3, result.sessionState?.worlds?.size)
+        assertEquals(1, baselineCalls)
+    }
+
+    @Test
+    fun `native chance budget is shared across hidden worlds by posterior mass`() {
+        val context = context()
+        var searchedWorlds = emptyList<jbro.cobblemon.morebattlecontent.betterai.search.NativeProductWorldSearchInput>()
+        val evaluator = NativeInitialProductDecisionEvaluator(
+            planWorlds = { supplied, _ -> twoWorldPlan(supplied) },
+            searchWorlds = { request ->
+                searchedWorlds = request.worlds
+                NativeProductWorldSearchResult(
+                    status = NativeProductWorldSearchStatus.COMPLETED,
+                    rootValues = request.productActions.map { NativeRootActionValue(it, 0.0) },
+                    depthCompleted = 1,
+                    nodesVisited = request.worlds.size,
+                    rootSnapshots = request.worlds.associate { world ->
+                        world.key to NativeProductRootSnapshot(
+                            "test-rules",
+                            frame("${world.key.hypothesisId}-${world.key.randomSampleIndex}"),
+                        )
+                    },
+                )
+            },
+            nowEpochMillis = { 1_000L },
+            nanoTime = { 5_000_000L },
+            leafEvaluator = { _, _, _, _ -> 0.0 },
+        )
+
+        val result = evaluator.evaluate(
+            context,
+            BattleTrainerProfile.balanced(),
+            LocalDecisionTuning.CURRENT,
+            LocalLookaheadBudget(250L, 100, 4),
+        )
+
+        assertEquals(NativeInitialProductDecisionStatus.AVAILABLE, result.status)
+        assertEquals(mapOf("world-a" to 3, "world-b" to 1),
+            searchedWorlds.groupingBy { it.key.hypothesisId }.eachCount())
+        assertEquals(4, searchedWorlds.size)
+        assertTrue(kotlin.math.abs(searchedWorlds.sumOf { it.probability } - 1.0) < 1e-9)
+    }
+
     private fun snapshots() = mapOf(
         NativeSearchWorldKey("world-1", 0) to NativeProductRootSnapshot("test-rules", frame()),
     )
 
-    private fun frame() = NativeBattleFrame(
-        snapshotJson = "root",
+    private fun frame(snapshotJson: String = "root") = NativeBattleFrame(
+        snapshotJson = snapshotJson,
         turn = 1,
         requestState = "move",
         ended = false,
@@ -232,6 +313,14 @@ class NativeInitialProductDecisionEvaluatorTest {
             definition = DEFINITION,
             publicContext = context,
         )),
+        issues = emptyList(),
+    )
+
+    private fun twoWorldPlan(context: BattleDecisionContext) = NativeInitialProductWorldPlan(
+        worlds = listOf(
+            NativeInitialProductWorld("world-a", 0.75, DEFINITION, context),
+            NativeInitialProductWorld("world-b", 0.25, DEFINITION.copy(seed = listOf(5, 6, 7, 8)), context),
+        ),
         issues = emptyList(),
     )
 

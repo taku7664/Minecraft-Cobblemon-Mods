@@ -15,6 +15,7 @@ import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionRank
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlan
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlanIssue
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlanner
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeProductSeedPolicy
 
 internal enum class NativeInitialProductDecisionStatus {
     NOT_APPLICABLE,
@@ -120,11 +121,29 @@ internal class NativeInitialProductDecisionEvaluator(
             }
             rootBaseline += world.probability * value
         }
+        val sampledWorlds = NativeChanceSampleAllocator.allocate(
+            plan.worlds,
+            budget.chanceBranchesPerMove,
+        ).flatMap { allocation ->
+            val world = allocation.world
+            (0 until allocation.sampleCount).map { sampleIndex ->
+                world.copy(
+                    probability = world.probability / allocation.sampleCount.toDouble(),
+                    definition = world.definition.copy(
+                        seed = NativeProductSeedPolicy.derive(
+                            context.state.battleId,
+                            world.hypothesisId,
+                            sampleIndex,
+                        ),
+                    ),
+                ) to sampleIndex
+            }
+        }
         val search = searchWorlds(
             NativeProductWorldSearchRequest(
-                worlds = plan.worlds.map { world ->
+                worlds = sampledWorlds.map { (world, sampleIndex) ->
                     NativeProductWorldSearchInput(
-                        key = NativeSearchWorldKey(world.hypothesisId, randomSampleIndex = 0),
+                        key = NativeSearchWorldKey(world.hypothesisId, sampleIndex),
                         probability = world.probability,
                         definition = world.definition,
                         publicState = world.publicContext.state,
@@ -163,8 +182,8 @@ internal class NativeInitialProductDecisionEvaluator(
                 battleId = context.state.battleId,
                 format = context.state.format,
                 rulesFingerprint = search.rootSnapshots.values.first().rulesFingerprint,
-                worlds = plan.worlds.map { world ->
-                    val key = NativeSearchWorldKey(world.hypothesisId, randomSampleIndex = 0)
+                worlds = sampledWorlds.map { (world, sampleIndex) ->
+                    val key = NativeSearchWorldKey(world.hypothesisId, sampleIndex)
                     NativeProductSessionWorld(
                         key = key,
                         probability = world.probability,
