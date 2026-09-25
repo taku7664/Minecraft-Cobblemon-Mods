@@ -11,7 +11,7 @@ final class Cobblemon181MixinSignatureContractTest {
     void wildBattleForfeitHookIncludesAllCobblemon181LambdaParameters() throws Exception {
         String source = Files.readString(Path.of(
             "src/main/java/com/cobblemonextendedbattleui/mixin/BattleGeneralActionSelectionMixin.java"
-        ));
+        )).replace("\r\n", "\n");
 
         assertTrue(source.contains("BattleGUI battleGUI,\n            SingleActionRequest request,\n            BattleGeneralActionSelection selection,"));
     }
