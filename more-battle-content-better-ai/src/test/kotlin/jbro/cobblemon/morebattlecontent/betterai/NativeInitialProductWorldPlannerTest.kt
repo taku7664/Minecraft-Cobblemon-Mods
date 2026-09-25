@@ -211,18 +211,58 @@ class NativeInitialProductWorldPlannerTest {
     }
 
     @Test
-    fun `a roster with missing build usage invalidates the plan instead of losing probability mass`() {
+    fun `a roster with missing ordinary build usage keeps complete generic-prior worlds`() {
         val result = planner(
             buildUsage = LocalOpponentBuildUsageLookup { species, _ ->
                 if (species.endsWith("mewtwo")) null else BUILD_USAGE
             },
         ).plan(context(), BattleTrainerTier.INTRODUCTORY)
 
-        assertTrue(result.worlds.isEmpty())
-        assertEquals(
-            NativeInitialProductWorldPlanIssueCode.BUILD_WORLD_COMPILATION_FAILED,
-            result.issues.single().code,
+        assertTrue(result.issues.isEmpty())
+        assertTrue(result.worlds.isNotEmpty())
+        assertEquals(1.0, result.worlds.sumOf { it.probability }, 1e-9)
+        assertTrue(result.worlds.all { it.definition.p2Team.size == 3 })
+        assertTrue(result.worlds.any { "generic-public-prior" in it.hypothesisId })
+    }
+
+    @Test
+    fun `Tapu Bulu absent from dated usage still opens a real native root`(@TempDir directory: Path) {
+        val speciesId = "cobblemon:tapubulu"
+        val tapuBulu = BattleOpponentTeamPreviewPokemonView(
+            previewSlotId = 0, speciesId = speciesId, formId = "normal", level = 50,
+            knownTypeIds = setOf("grass", "fairy"),
+            moveCandidatePool = BattleOpponentPreviewMovePoolView(
+                speciesId = speciesId, formId = "normal",
+                moveIds = setOf("hornleech"), sourceId = "fixture:public-learnset",
+                moveDetails = mapOf("hornleech" to BattleMoveCandidateView(
+                    typeId = "grass", damageCategory = BattleMoveDamageCategory.PHYSICAL,
+                    power = 75.0, accuracy = 100.0, priority = 0, currentPp = 10,
+                )),
+            ),
+            buildCandidatePool = BattleOpponentPreviewBuildPoolView(
+                speciesId = speciesId, formId = "normal",
+                abilities = listOf(BattleOpponentPreviewAbilityView(
+                    "grassysurge", BattleAbilityAvailability.REGULAR,
+                )),
+                genderRates = mapOf("N" to 1.0), sourceId = "fixture:public-form",
+            ),
+            showdownSpeciesId = "tapubulu",
         )
+        val result = planner(
+            buildUsage = LocalOpponentBuildUsageLookup { _, _ -> null },
+        ).plan(context(preview = BattleOpponentTeamPreviewView(1, listOf(tapuBulu))), BattleTrainerTier.BOSS)
+
+        assertTrue(result.issues.isEmpty(), "issues=${result.issues}")
+        assertTrue(result.worlds.isNotEmpty())
+        assertEquals(1.0, result.worlds.sumOf { it.probability }, 1e-9)
+        val world = result.worlds.first()
+        assertTrue("generic-public-prior" in world.hypothesisId)
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val frame = engine.createBattle(world.definition)
+            assertEquals("tapubulu", frame.p2Team.single().sourceSet?.species)
+            assertEquals("grassysurge", frame.p2Team.single().sourceSet?.ability)
+        }
     }
 
     private fun planner(

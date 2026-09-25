@@ -75,7 +75,8 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
                 )
                 return@forEach
             }
-            val source = usage.forPokemon(pokemon.speciesId, pokemon.formId)
+            val observedUsage = usage.forPokemon(pokemon.speciesId, pokemon.formId)
+            val source = observedUsage ?: NativeMissingBuildUsageFallback.forPokemon(pokemon)
             if (source == null) {
                 issues += NativeOpponentBuildWorldIssue(NativeOpponentBuildWorldIssueCode.BUILD_USAGE_MISSING, slot)
                 return@forEach
@@ -90,7 +91,10 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
                 )
                 return@forEach
             }
-            val candidates = compilePokemon(pokemon, source, cap)
+            val candidates = compilePokemon(
+                pokemon, source, cap,
+                priorSource = if (observedUsage == null) "generic-public-prior" else "usage-snapshot",
+            )
             if (candidates.isEmpty()) {
                 issues += NativeOpponentBuildWorldIssue(
                     NativeOpponentBuildWorldIssueCode.MATERIALIZABLE_BUILD_MISSING,
@@ -145,6 +149,7 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
         pokemon: BattleOpponentTeamPreviewPokemonView,
         usage: LocalOpponentBuildUsageEntry,
         cap: Int,
+        priorSource: String,
     ): List<WeightedBuild> {
         val pool = requireNotNull(pokemon.buildCandidatePool)
         val legalAbilities = pool.abilities.mapTo(linkedSetOf()) { canonical(it.abilityId) }
@@ -240,7 +245,7 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
                     ivs = requireNotNull(partial.ivs),
                 ),
                 weight = partial.weight,
-                id = partial.id,
+                id = "$priorSource:${partial.id}",
             )
         }
     }

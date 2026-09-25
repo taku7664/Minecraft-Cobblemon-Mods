@@ -142,7 +142,9 @@ internal class NativeInitialProductWorldPlanner(
                 return failure(
                     NativeInitialProductWorldPlanIssueCode.BUILD_WORLD_COMPILATION_FAILED,
                     rosterHypothesis.hypothesisId,
-                    buildCompilation.issues.map { it.code.name },
+                    buildCompilation.issues.map { issue ->
+                        issue.code.name + (issue.previewSlotId?.let { "@slot$it" } ?: "")
+                    },
                 )
             }
             moveMaterialization.worlds.forEach { moveWorld ->
