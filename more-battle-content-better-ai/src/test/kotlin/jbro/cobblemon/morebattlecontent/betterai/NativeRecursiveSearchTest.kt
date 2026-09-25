@@ -92,7 +92,34 @@ class NativeRecursiveSearchTest {
         assertEquals(0.2, rounded(result.rootValues.single().value))
         assertEquals(listOf(1, 2), result.completedIterations.map { it.depth })
         assertEquals(0.2, rounded(result.completedIterations.first().rootValues.single().value))
-        assertEquals(listOf("root", "root", "child", "child", "child", "child"), worker.visitedSnapshots)
+        assertEquals(5, result.nodesVisited)
+        assertEquals(listOf("root", "child", "child", "child", "child"), worker.visitedSnapshots,
+            "Iterative deepening must reuse the depth-independent root transition")
+    }
+
+    @Test
+    fun `transposed native state reuses its value at the same remaining depth`() {
+        val root = frame("root", 1, 100, 100, listOf("tackle", "scratch"), listOf("growl"))
+        val shared = frame("shared", 2, 80, 60, listOf("quickattack"), listOf("tailwhip"))
+        val worker = RecordingWorker(
+            mapOf(
+                BranchKey("root", "move 1", "move 1") to shared,
+                BranchKey("root", "move 2", "move 1") to shared,
+                BranchKey("shared", "move 1", "move 1") to terminal("terminal", 70, 40),
+            ),
+        )
+
+        val result = NativeRecursiveSearch(
+            tree = NativeShowdownSearchTree(worker, root, template()),
+            world = NativeSearchWorldKey("hypothesis-1", randomSampleIndex = 0),
+            evaluate = ::material,
+            nodeLimit = 100,
+        ).evaluate(maxDepth = 2)
+
+        assertEquals(2, result.depthCompleted)
+        assertEquals(3, result.nodesVisited)
+        assertEquals(listOf("root", "root", "shared"), worker.visitedSnapshots,
+            "The converged position must expand only once at the same remaining depth")
     }
 
     @Test
@@ -119,11 +146,11 @@ class NativeRecursiveSearchTest {
         assertEquals(NativeSearchTerminationReason.DEADLINE, result.terminationReason)
         assertEquals(0.2, rounded(result.rootValues.single().value))
         assertEquals(listOf(1), result.completedIterations.map { it.depth })
-        assertEquals(listOf("root", "root", "child"), worker.visitedSnapshots)
+        assertEquals(listOf("root", "child"), worker.visitedSnapshots)
     }
 
     @Test
-    fun `node budget also discards a partial deeper iteration`() {
+    fun `cached transitions do not consume the node budget again`() {
         val root = frame("root", 1, 100, 100, listOf("tackle"), listOf("growl"))
         val child = frame("child", 2, 80, 60, listOf("scratch"), listOf("tailwhip"))
         val worker = RecordingWorker(
@@ -139,11 +166,36 @@ class NativeRecursiveSearchTest {
             nodeLimit = 2,
         ).evaluate(maxDepth = 2)
 
+        assertEquals(2, result.depthCompleted)
+        assertEquals(false, result.truncated)
+        assertEquals(NativeSearchTerminationReason.COMPLETED, result.terminationReason)
+        assertEquals(0.4, rounded(result.rootValues.single().value))
+        assertEquals(2, result.nodesVisited)
+        assertEquals(listOf("root", "child"), worker.visitedSnapshots)
+    }
+
+    @Test
+    fun `node budget still stops the first uncached deeper transition`() {
+        val root = frame("root", 1, 100, 100, listOf("tackle"), listOf("growl"))
+        val child = frame("child", 2, 80, 60, listOf("scratch"), listOf("tailwhip"))
+        val worker = RecordingWorker(
+            mapOf(
+                BranchKey("root", "move 1", "move 1") to child,
+                BranchKey("child", "move 1", "move 1") to terminal("grandchild", 60, 20),
+            ),
+        )
+        val result = NativeRecursiveSearch(
+            tree = NativeShowdownSearchTree(worker, root, template()),
+            world = NativeSearchWorldKey("hypothesis-1", randomSampleIndex = 0),
+            evaluate = ::material,
+            nodeLimit = 1,
+        ).evaluate(maxDepth = 2)
+
         assertEquals(1, result.depthCompleted)
         assertEquals(true, result.truncated)
         assertEquals(NativeSearchTerminationReason.NODE_BUDGET, result.terminationReason)
-        assertEquals(0.2, rounded(result.rootValues.single().value))
-        assertEquals(listOf("root", "root"), worker.visitedSnapshots)
+        assertEquals(1, result.nodesVisited)
+        assertEquals(listOf("root"), worker.visitedSnapshots)
     }
 
     @Test

@@ -78,6 +78,8 @@ internal class NativeRecursiveSearch(
     private var nodesVisited = 0
     private var truncated = false
     private var terminationReason = NativeSearchTerminationReason.COMPLETED
+    // A deterministic Showdown transition does not depend on the search horizon. Values do, so
+    // only the value key carries depthRemaining. Both caches are deliberately decision-local.
     private val branchCache = HashMap<BranchKey, NativeSearchPosition>()
     private val valueCache = HashMap<ValueKey, Double>()
 
@@ -164,7 +166,7 @@ internal class NativeRecursiveSearch(
         for (allyAction in rootActions) {
             var worstResponse = Double.POSITIVE_INFINITY
             for (opponentAction in opponentActions) {
-                val child = descend(tree.root, allyAction, opponentAction, depth) ?: return null
+                val child = descend(tree.root, allyAction, opponentAction) ?: return null
                 val value = positionValue(child, depth - 1) ?: return null
                 worstResponse = minOf(worstResponse, value)
             }
@@ -191,7 +193,7 @@ internal class NativeRecursiveSearch(
         for (allyAction in allyActions) {
             var worstResponse = Double.POSITIVE_INFINITY
             for (opponentAction in opponentActions) {
-                val child = descend(position, allyAction, opponentAction, depthRemaining) ?: return null
+                val child = descend(position, allyAction, opponentAction) ?: return null
                 val value = positionValue(child, depthRemaining - 1) ?: return null
                 worstResponse = minOf(worstResponse, value)
             }
@@ -206,13 +208,8 @@ internal class NativeRecursiveSearch(
         position: NativeSearchPosition,
         allyAction: BattleActionCandidate,
         opponentAction: BattleActionCandidate,
-        depthRemaining: Int,
     ): NativeSearchPosition? {
         if (!timeAvailable()) return null
-        if (nodesVisited >= nodeLimit) {
-            stop(NativeSearchTerminationReason.NODE_BUDGET)
-            return null
-        }
         val key = BranchKey(
             tree.rulesFingerprint,
             world.hypothesisId,
@@ -220,12 +217,14 @@ internal class NativeRecursiveSearch(
             position.frame.snapshotJson,
             allyAction.actionId,
             opponentAction.actionId,
-            depthRemaining,
         )
-        nodesVisited++
-        return branchCache.getOrPut(key) {
-            tree.branch(position, allyAction, opponentAction)
+        branchCache[key]?.let { return it }
+        if (nodesVisited >= nodeLimit) {
+            stop(NativeSearchTerminationReason.NODE_BUDGET)
+            return null
         }
+        nodesVisited++
+        return tree.branch(position, allyAction, opponentAction).also { branchCache[key] = it }
     }
 
     private fun timeAvailable(): Boolean {
@@ -249,7 +248,6 @@ internal class NativeRecursiveSearch(
         val snapshotJson: String,
         val allyActionId: String,
         val opponentActionId: String,
-        val depthRemaining: Int,
     )
 
     private data class ValueKey(
