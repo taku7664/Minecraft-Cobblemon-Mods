@@ -9,6 +9,8 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainOpenContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFieldStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
+import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
@@ -26,6 +28,7 @@ import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductRankAdapter
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductRootSnapshot
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSearchRunner
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionReconcileStatus
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionReconciler
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionReconciliation
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionState
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionWorld
@@ -35,17 +38,103 @@ import jbro.cobblemon.morebattlecontent.betterai.search.NativeRecursiveSearch
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeSearchWorldKey
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleStateAdapter
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonSet
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownBranchEngine
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownChoiceEncoder
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownRequestActionFactory
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownSearchTree
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
 class NativeMiloticToxicRecoveryTest {
+    @Test
+    fun `public toxic observation retains the native counter across product decisions`(@TempDir directory: Path) {
+        NativeShowdownBranchEngine.open(extractBundledShowdown(directory.resolve("showdown"))).use { engine ->
+            val definition = battle()
+            val root = engine.createBattle(definition)
+            val initial = decisionContext(root, emptyList())
+            val initiallyPublicFoe = initial.state.pokemon.single { it.battlePokemonId == BLISSEY }
+            assertTrue(initiallyPublicFoe.knownMoveIds.isEmpty())
+            assertNull(initiallyPublicFoe.knownAbilityId)
+            assertNull(initiallyPublicFoe.knownHeldItemId)
+            assertNull(initiallyPublicFoe.combatStats)
+            val firstOwnAction = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, root).single {
+                it.moveId == "mirrorcoat" && it.mechanic == null
+            }
+            val session = NativeProductSessionState(
+                battleId = BATTLE,
+                format = BattleFormat.SINGLE,
+                rulesFingerprint = engine.rulesFingerprint,
+                worlds = listOf(NativeProductSessionWorld(
+                    key = NativeSearchWorldKey("milotic-toxic-continuation", 0),
+                    probability = 1.0,
+                    definition = definition,
+                    rootSnapshot = NativeProductRootSnapshot(engine.rulesFingerprint, root),
+                    publicContext = initial,
+                )),
+                publicTurn = root.turn,
+                lastObservedEventSequence = null,
+                pendingOwnAction = firstOwnAction,
+            )
+            val expectedFirst = engine.branch(
+                root.snapshotJson,
+                encodedMove(root, BattleSide.ALLY, "mirrorcoat"),
+                encodedMove(root, BattleSide.OPPONENT, "toxic"),
+            )
+            val firstEvents = listOf(
+                moveEvent(1, root.turn, MILOTIC, "mirrorcoat"),
+                moveEvent(2, root.turn, BLISSEY, "toxic"),
+                BattleObservedEventView(3, root.turn, BattleObservedEventKind.STATUS_CHANGED,
+                    actorPokemonId = MILOTIC, publicValueId = "tox"),
+                residualEvent(4, root.turn, root, expectedFirst),
+            )
+            val reconciler = NativeProductSessionReconciler(
+                nanoTime = { 0L },
+                lease = { _, action -> action(engine) },
+            )
+            val first = reconciler.reconcile(
+                session,
+                decisionContext(expectedFirst, firstEvents),
+                Long.MAX_VALUE,
+            )
+            assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, first.status,
+                "The public toxic turn must keep its native world: $first")
+            val retained = requireNotNull(first.sessionState).worlds.single().rootSnapshot.frame
+            assertEquals("tox", retained.p1Active.single().status)
+            assertEquals(expectedFirst.p1Active.single().hp, retained.p1Active.single().hp)
+
+            val secondOwnAction = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, retained).single {
+                it.moveId == "mirrorcoat" && it.mechanic == null
+            }
+            val expectedSecond = engine.branch(
+                expectedFirst.snapshotJson,
+                encodedMove(expectedFirst, BattleSide.ALLY, "mirrorcoat"),
+                encodedMove(expectedFirst, BattleSide.OPPONENT, "splash"),
+            )
+            val secondEvents = firstEvents + listOf(
+                moveEvent(5, expectedFirst.turn, MILOTIC, "mirrorcoat"),
+                moveEvent(6, expectedFirst.turn, BLISSEY, "splash"),
+                residualEvent(7, expectedFirst.turn, expectedFirst, expectedSecond),
+            )
+            val second = reconciler.reconcile(
+                requireNotNull(first.sessionState).withPendingOwnAction(secondOwnAction),
+                decisionContext(expectedSecond, secondEvents),
+                Long.MAX_VALUE,
+            )
+            assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, second.status,
+                "The next product decision must retain the prior toxic counter: $second")
+            val twiceRetained = requireNotNull(second.sessionState).worlds.single().rootSnapshot.frame
+            assertEquals("tox", twiceRetained.p1Active.single().status)
+            assertEquals(expectedSecond.p1Active.single().hp, twiceRetained.p1Active.single().hp)
+            assertTrue(twiceRetained.p1Active.single().hp < retained.p1Active.single().hp)
+            assertEquals(7L, second.sessionState.lastObservedEventSequence)
+        }
+    }
+
     @Test
     fun `bad poison progresses and late Recover loses to a safe switch`(@TempDir directory: Path) {
         NativeShowdownBranchEngine.open(extractBundledShowdown(directory.resolve("showdown"))).use { engine ->
@@ -181,6 +270,76 @@ class NativeMiloticToxicRecoveryTest {
         }
         return NativeShowdownChoiceEncoder.encode(action, side, frame)
     }
+
+    private fun decisionContext(frame: NativeBattleFrame, events: List<BattleObservedEventView>): BattleDecisionContext {
+        val adapted = NativeBattleStateAdapter.adapt(frame, publicTemplate())
+        val state = BattleStateView(
+            battleId = adapted.battleId,
+            format = adapted.format,
+            turn = adapted.turn,
+            pokemon = adapted.pokemon.map { pokemon ->
+                if (pokemon.side == BattleSide.ALLY) pokemon else publicOpponent(pokemon, events)
+            },
+            field = adapted.field,
+            remainingPokemonBySide = adapted.remainingPokemonBySide,
+            observedEvents = events,
+            inferences = adapted.inferences,
+        )
+        return BattleDecisionContext(
+            requestId = UUID.nameUUIDFromBytes("milotic-toxic-${frame.turn}".toByteArray()),
+            state = state,
+            candidates = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, frame),
+            deadlineEpochMillis = Long.MAX_VALUE,
+        )
+    }
+
+    private fun publicOpponent(
+        native: BattlePokemonStateView,
+        events: List<BattleObservedEventView>,
+    ) = BattlePokemonStateView(
+        battlePokemonId = native.battlePokemonId,
+        side = native.side,
+        activeSlot = native.activeSlot,
+        speciesId = native.speciesId,
+        formId = native.formId,
+        level = native.level,
+        hpFraction = native.hpFraction,
+        statusId = native.statusId,
+        statStages = native.statStages,
+        knownMoveIds = events.asSequence()
+            .filter { it.kind == BattleObservedEventKind.MOVE_USED && it.actorPokemonId == native.battlePokemonId }
+            .mapNotNull { it.publicValueId?.let { move -> "cobblemon:$move" } }
+            .toSet(),
+        knownAbilityId = null,
+        knownHeldItemId = null,
+        fainted = native.fainted,
+        knownTypeIds = native.knownTypeIds,
+        combatStats = null,
+    )
+
+    private fun moveEvent(sequence: Long, turn: Int, actor: UUID, moveId: String) = BattleObservedEventView(
+        sequence = sequence,
+        turn = turn,
+        kind = BattleObservedEventKind.MOVE_USED,
+        actorPokemonId = actor,
+        publicValueId = moveId,
+        actorSlot = 0,
+    )
+
+    private fun residualEvent(
+        sequence: Long,
+        turn: Int,
+        before: NativeBattleFrame,
+        after: NativeBattleFrame,
+    ) = BattleObservedEventView(
+        sequence = sequence,
+        turn = turn,
+        kind = BattleObservedEventKind.HP_CHANGED,
+        actorPokemonId = MILOTIC,
+        hpFractionDelta = after.p1Active.single().hp.toDouble() / after.p1Active.single().maxHp -
+            before.p1Active.single().hp.toDouble() / before.p1Active.single().maxHp,
+        publicSourceEffectId = "tox",
+    )
 
     private fun battle() = NativeBattleDefinition(
         formatId = "cobblemonsingles",
