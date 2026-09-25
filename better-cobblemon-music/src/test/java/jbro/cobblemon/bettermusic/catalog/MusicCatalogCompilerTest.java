@@ -76,6 +76,26 @@ final class MusicCatalogCompilerTest {
     }
 
     @Test
+    void extensionWithOnlyRejectedOverridesIsNotReportedAsActive() {
+        MusicCatalog base = parse(MusicCatalogParserTest.baseCatalogJson());
+        MusicCatalog extension = parse(extensionJson(
+            "username:rejected",
+            "cobleserver:plains",
+            "username:music.track.replacement",
+            "cobleserver:field_plains"
+        ));
+
+        CompiledMusicConfiguration compiled = MusicCatalogCompiler.compile(
+            "cobleserver:official",
+            List.of(base, extension),
+            MusicCatalogSettings.defaults("cobleserver:official"),
+            MusicMappingOverrides.empty()
+        );
+
+        assertFalse(compiled.activeExtensionPackIds().contains("username:rejected"));
+    }
+
+    @Test
     void duplicateExtensionTrackIdsDisableBothDeclarationsDeterministically() {
         MusicCatalog base = parse(MusicCatalogParserTest.baseCatalogJson());
         MusicCatalog first = parse(extensionJson(

@@ -61,8 +61,13 @@ public final class MusicCatalogCompiler {
 
         Set<String> activeExtensions = new LinkedHashSet<>();
         for (MusicCatalog extension : extensions) {
-            boolean contributesTrack = extension.tracks().keySet().stream().anyMatch(tracks::containsKey);
-            boolean contributesPlaylist = extension.playlists().keySet().stream().anyMatch(playlists::containsKey);
+            boolean contributesTrack = extension.tracks().entrySet().stream().anyMatch(entry ->
+                !base.tracks().containsKey(entry.getKey()) && tracks.get(entry.getKey()) == entry.getValue()
+            );
+            boolean contributesPlaylist = extension.playlists().entrySet().stream().anyMatch(entry ->
+                !base.playlists().containsKey(entry.getKey())
+                    && playlistSources.get(entry.getKey()) == entry.getValue()
+            );
             if (contributesTrack || contributesPlaylist) {
                 activeExtensions.add(extension.packId());
             }
