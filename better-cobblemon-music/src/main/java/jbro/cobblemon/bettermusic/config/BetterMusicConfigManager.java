@@ -24,7 +24,7 @@ import jbro.cobblemon.bettermusic.catalog.MusicMappingOverrides;
 public final class BetterMusicConfigManager {
     public static final String DEFAULT_BASE_PACK_ID = "cobleserver:official";
     private static final String LEGACY_DEFAULT_RESOURCE =
-        "/assets/better_cobblemon_music/config_defaults/music.json";
+        "/assets/better_cobblemon_music/legacy_defaults/music.json";
 
     private final MusicCatalogConfigStore store;
     private volatile CompiledMusicConfiguration activeConfiguration;

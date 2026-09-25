@@ -1,114 +1,116 @@
 # Better Cobblemon Music
 
-Cobblemon의 필드와 전투 음악을 사용자가 직접 바꿀 수 있는 클라이언트 모드입니다. 기술이 명중하면 보통·굉장한 효과·별로인 효과에 맞는 타격음도 재생합니다.
-
-타격음은 `cobleserver:battle.hit.normal`, `cobleserver:battle.hit.super_effective`, `cobleserver:battle.hit.not_very_effective` 사운드 이벤트를 사용하므로, 해당 이벤트와 OGG가 든 리소스팩이 활성화돼 있어야 합니다.
+Cobblemon의 필드·전투 상황에 맞춰 리소스팩 음악을 재생하는 Fabric 클라이언트 모드입니다. 타격음과 마지막 포켓몬 HP 효과도 제공합니다.
 
 - Mod ID: `better_cobblemon_music`
 - 실행 환경: 클라이언트 전용
 - 필요 모드: Fabric API, Cobblemon 1.8.1
+- 설정 화면: Mod Menu + Cloth Config
 
-## 설정 위치
+## 설치 단위
 
-첫 실행 뒤 다음 폴더가 만들어집니다.
+모드 JAR과 공식 음악 리소스팩 ZIP을 함께 설치해야 합니다.
 
 ```text
-config/better_cobblemon_music/
-├─ music.json
-└─ music/
+.minecraft/
+├─ mods/
+│  └─ better-cobblemon-music-<version>.jar
+├─ resourcepacks/
+│  └─ cobleserver-music-resourcepack-<version>.zip
+└─ config/better_cobblemon_music/
+   ├─ settings.json
+   └─ overrides.json
 ```
 
-음원은 `music/` 아래에 넣고 `music.json`에서 상대 경로로 지정합니다. 경로는 Minecraft 리소스 이름과 같은 소문자 영문·숫자·`_`·`-`·`.`·`/`만 사용할 수 있으며 파일은 실제 Ogg/Vorbis 형식이어야 합니다.
+JAR은 상황 판정과 재생을 담당합니다. ZIP은 OGG, `sounds.json`, 트랙·플레이리스트 카탈로그와 기본 매핑을 함께 소유합니다. 공식 음원을 `config`에 복사하거나 임시 리소스팩으로 다시 만드는 과정은 없습니다.
+
+## 설정
+
+`settings.json`은 재생과 효과 동작만 저장합니다.
 
 ```json
 {
-  "schemaVersion": 2,
-  "field": {
-    "default": "field/plains/theme.ogg",
-    "biomes": {
-      "minecraft:plains": {
-        "selection": "shuffle",
-        "betweenTracksSeconds": 0.0,
-        "tracks": [
-          "field/plains/theme_1.ogg",
-          "field/plains/theme_2.ogg",
-          "field/plains/theme_3.ogg"
-        ]
-      }
-    },
-    "biomeTags": [
-      {"tag": "minecraft:is_forest", "playlist": "field/forest/theme.ogg"}
-    ],
-    "biomePathContains": [
-      {"contains": "frozen_river", "playlist": "field/river/frozen.ogg"},
-      {"contains": "river", "playlist": [
-        "field/river/theme_1.ogg",
-        "field/river/theme_2.ogg"
-      ]}
-    ]
-  },
+  "schemaVersion": 1,
+  "basePackId": "cobleserver:official",
+  "scanIntervalSeconds": 1.0,
+  "fieldChangeDelaySeconds": 4.0,
+  "betweenTracksSeconds": 0.0,
+  "fadeInSeconds": 1.0,
+  "fadeOutSeconds": 1.0,
+  "selection": "shuffle",
+  "volume": 1.0,
+  "hitSoundsEnabled": true,
+  "hitSoundVolume": 1.0,
+  "lastPokemonHpEffectsEnabled": true,
+  "lastPokemonHpEffectVolume": 1.0
+}
+```
+
+`overrides.json`은 리소스팩 기본 매핑과 다른 값만 안정적인 플레이리스트 ID로 저장합니다.
+
+```json
+{
+  "schemaVersion": 1,
   "battle": {
-    "wild": "battle/wild/theme.ogg",
-    "trainer": [
-      "battle/trainer/theme_1.ogg",
-      "battle/trainer/theme_2.ogg"
-    ],
-    "pvp": {
-      "selection": "sequential",
-      "volume": 0.8,
-      "betweenTracksSeconds": 2.0,
-      "tracks": ["battle/pvp/theme.ogg"]
+    "content": {
+      "cobblemon_more_battle_content:battle_tower": "cobleserver:track/battle/pvp/swsh_gym_leader_battle"
     }
   }
 }
 ```
 
-플레이리스트는 단일 음원 문자열, 음원 배열, `selection`·음량·곡 사이 간격을 지정하는 객체 중 하나로 적을 수 있습니다. 같은 바이옴에 여러 곡을 넣으면 한 곡이 끝난 뒤 같은 플레이리스트의 다음 곡을 재생합니다. `shuffle`은 모든 곡을 섞어 한 번씩, `random`은 직전 곡을 피해서 무작위로, `sequential`은 적힌 순서대로 고릅니다.
+Mod Menu 설정 화면에서 재생·효과 설정과 리소스팩에 이미 정의된 필드·전투·콘텐츠·포켓몬 매핑을 선택할 수 있습니다. 저장하면 두 파일을 원자적으로 갱신하고 Minecraft 리소스를 다시 불러옵니다. 새 바이옴 키나 새 콘텐츠 ID처럼 규칙 자체를 추가할 때만 `overrides.json`을 직접 편집합니다.
 
-위 예시는 주요 구조만 보여 줍니다. 실제 `music.json`에는 재생 설정과 필드·전투의 필수 항목이 모두 있어야 하므로 처음 생성된 기본 파일을 기준으로 편집해 주세요. 기존 스키마 1 파일도 계속 읽으며 자동으로 덮어쓰거나 변환하지 않습니다.
+기존 `music.json`이 있고 `overrides.json`이 없으면 첫 카탈로그 로드 때 사용자 변경분만 변환합니다. 기존 `music.json`과 `music/`은 롤백을 위해 삭제하거나 덮어쓰지 않습니다.
 
-Mod Menu에서 Better Cobblemon Music의 설정 버튼을 누르면 검사 주기, 필드 전환 대기,
-곡 사이 간격, 페이드 인·아웃, 기본 선곡 방식, 기본 음량을 바꿀 수 있습니다. 이 화면은
-`music.json`의 나머지 바이옴·전투·포켓몬별 매핑을 그대로 보존합니다. 저장 후 월드에서
-`/bcm reload`를 실행해야 변경한 설정과 생성 리소스팩이 함께 적용됩니다. 설정 화면에는
-Mod Menu와 Cloth Config가 필요하며, 둘이 없어도 JSON 설정과 모드 재생 기능은 그대로 동작합니다.
+## 선곡 순서
 
-### 선곡 순서
-
-- 필드: 차원 → 정확한 바이옴 → 지하 → 바이옴 태그 → `biomePathContains` → 기본곡
+- 필드: 차원 → 정확한 바이옴 → 지하 → 바이옴 경로 포함 → 기본곡
 - 전투: 포켓몬 규칙 → 콘텐츠 ID → 야생 특수 분류 → 야생·트레이너·PvP 기본곡
 
-RCT 트레이너 역할별 선곡은 지원하지 않습니다. NPC 상대는 모두 `battle.trainer`를 사용합니다.
-이전 설정의 `battle.roles` 또는 `battle.gym` 항목은 제거한 뒤 다시 불러와야 합니다.
+RCT NPC는 NPC 여부만 사용합니다. 역할·사천왕·챔피언 같은 분류는 조회하지 않습니다.
 
-스키마 2의 `biomeTags`와 `biomePathContains`는 배열에 먼저 적은 항목이 우선합니다. `frozen_river`처럼 구체적인 조건을 `river`보다 앞에 적어 주세요. 스키마 1에서는 기존 객체의 키 순서를 그대로 유지합니다.
+마지막 전투 가능 포켓몬이 한 마리이고 HP가 절반 이하이면 Better Cobblemon Music이 재생한 곡에만 먹먹한 효과를 적용합니다. 빨간 HP 구간에서는 카탈로그가 지정한 심장박동 이벤트도 재생합니다.
 
-`scanIntervalSeconds`는 최소 `0.25`초입니다. 기본값 `1.0`초면 일반적인 사용에서 충분합니다.
-
-## 실행 중 다시 불러오기
+## 다시 불러오기
 
 ```text
 /bcm reload
 ```
 
-새 설정과 음원을 임시 생성팩에서 먼저 검증하고 Minecraft 리소스 재로드까지 끝난 뒤에만 새 설정을 활성화합니다. 중간에 실패하면 이전 설정과 생성팩을 복원하며, 채팅에는 최종 성공 또는 실패 결과가 표시됩니다.
+활성 리소스팩의 기본·확장 카탈로그, `settings.json`, `overrides.json`을 다시 읽습니다. 후보 전체가 유효할 때만 실행 스냅샷을 교체하며, 실패하면 직전 정상 구성을 유지합니다.
+
+## 개인 음악 확장팩
+
+공식 카탈로그를 복제하지 않고 확장 리소스팩으로 트랙과 플레이리스트를 추가할 수 있습니다.
+
+```text
+user-music-extension.zip
+├─ pack.mcmeta
+└─ assets/
+   ├─ username/
+   │  ├─ sounds.json
+   │  └─ sounds/music/my_song.ogg
+   └─ better_cobblemon_music/
+      └─ catalogs/extensions/username.json
+```
+
+확장 카탈로그는 기본 매핑을 자동으로 바꾸지 않습니다. 팩을 활성화한 뒤 Mod Menu나 `overrides.json`에서 새 플레이리스트를 상황에 연결합니다.
 
 ## More Battle Content 연동
 
-More Battle Content가 설치돼 있으면 Better Cobblemon Music 본체가 자동으로 감지합니다. 별도 애드온 없이 `battle.content`에서 다음 ID를 사용할 수 있습니다.
+More Battle Content가 설치돼 있으면 다음 콘텐츠 ID를 자동으로 인식합니다.
 
 - `cobblemon_more_battle_content:battle_tower`
 - `cobblemon_more_battle_content:battle_factory`
 - `cobblemon_more_battle_content:pvp`
 
-음원과 설정은 Better Cobblemon Music의 `music.json`과 `music/`을 그대로 사용합니다. MBC가 없거나 연동 API를 읽지 못하면 기본 전투 선곡으로 돌아갑니다.
+연동 모드가 없거나 콘텐츠 ID를 얻지 못하면 일반 전투 매핑으로 돌아갑니다.
 
 ## 빌드
-
-저장소 루트에서 실행합니다.
 
 ```powershell
 .\gradlew.bat :better-cobblemon-music:build
 ```
 
-JAR은 `better-cobblemon-music/build/libs`에 생성됩니다.
+`better-cobblemon-music/build/libs/`에 모드 JAR과 재현 가능한 공식 리소스팩 ZIP이 생성됩니다. 상세 계약과 이행 근거는 [`../docs/BETTER_COBBLEMON_MUSIC_RESOURCE_CATALOG_AND_MAPPING_DECISION.md`](../docs/BETTER_COBBLEMON_MUSIC_RESOURCE_CATALOG_AND_MAPPING_DECISION.md)를 따릅니다.

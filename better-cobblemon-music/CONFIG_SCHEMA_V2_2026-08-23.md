@@ -1,4 +1,6 @@
-# Better Cobblemon Music 설정 스키마 2
+# Better Cobblemon Music 설정 스키마 2 (종료됨)
+
+> 2026-09-25 종료. 새 구현에서 이 스키마는 신규 설정 계약이 아니며, 구형 `music.json` 마이그레이션 입력으로만 읽습니다. 후속 계약은 `docs/BETTER_COBBLEMON_MUSIC_RESOURCE_CATALOG_AND_MAPPING_DECISION.md`입니다. v3 형태로 이어서 확장하지 않습니다.
 
 | 항목 | 값 |
 |---|---|

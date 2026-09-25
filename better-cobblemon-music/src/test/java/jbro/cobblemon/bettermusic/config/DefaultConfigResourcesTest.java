@@ -35,7 +35,7 @@ final class DefaultConfigResourcesTest {
 
     private static InputStreamReader resource(String name) {
         var stream = DefaultConfigResourcesTest.class.getResourceAsStream(
-            "/assets/better_cobblemon_music/config_defaults/" + name
+            "/assets/better_cobblemon_music/legacy_defaults/" + name
         );
         assertNotNull(stream, name + " default resource must exist");
         return new InputStreamReader(stream, StandardCharsets.UTF_8);

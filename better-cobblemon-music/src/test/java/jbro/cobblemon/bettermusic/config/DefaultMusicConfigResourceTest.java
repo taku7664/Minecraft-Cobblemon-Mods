@@ -11,7 +11,7 @@ final class DefaultMusicConfigResourceTest {
     @Test
     void bundledDefaultsPreserveTheLegacyMultiTrackThemesInVisiblePlaylists() throws Exception {
         var stream = getClass().getResourceAsStream(
-            "/assets/better_cobblemon_music/config_defaults/music.json"
+            "/assets/better_cobblemon_music/legacy_defaults/music.json"
         );
         assertNotNull(stream);
         BetterMusicConfigSnapshot config;

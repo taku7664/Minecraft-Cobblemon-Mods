@@ -1,4 +1,6 @@
-# 전설·환상·울트라비스트 음악 전달 목록
+# 전설·환상·울트라비스트 음악 전달 목록 (구형 입력 경로)
+
+> 2026-09-25부터 `config/music` 배치 절차는 사용하지 않습니다. 이 목록은 기존 선곡 입력의 기록이며, 새 음원은 리소스팩 OGG·`sounds.json`·카탈로그를 함께 수정해야 합니다.
 
 ## 음악을 주는 방법
 
@@ -159,4 +161,4 @@ music-input/
       └─ sinnoh_wild_pokemon_battle.ogg
 ```
 
-이 목록의 경로는 `src/main/resources/assets/better_cobblemon_music/config_defaults/music.json`의 현재 기본 선곡 규칙과 일치해야 합니다. 선곡 규칙이 바뀌면 이 문서도 함께 갱신해야 합니다.
+이 목록은 `src/main/resources/assets/better_cobblemon_music/legacy_defaults/music.json`의 구형 마이그레이션 기준과 대응합니다. 현재 기본 선곡은 공식 리소스팩의 `catalogs/base/cobleserver.json`이 소유합니다.

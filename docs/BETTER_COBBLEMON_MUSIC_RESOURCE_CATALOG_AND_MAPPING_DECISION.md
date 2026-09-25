@@ -19,7 +19,7 @@
 - 매핑은 OGG 파일 경로가 아니라 네임스페이스가 있는 안정적인 트랙·플레이리스트 ID를 사용해야 **MUST** 한다.
 - OGG 하나는 독립 사운드 이벤트 하나에 대응해야 **MUST** 한다. 여러 곡이 든 Minecraft 사운드 이벤트를 플레이리스트로 사용해서는 안 된다 **MUST NOT**.
 
-이 문서는 목표 구조를 결정한다. 현재 배포된 JAR과 프로필은 아직 구형 `music.json`·`music/`·생성 리소스팩 구조를 사용한다. §10의 전환 조건을 모두 통과하기 전에는 이 문서를 런타임 구현 완료 증거로 해석해서는 안 된다 **MUST NOT**.
+이 문서는 목표 구조를 결정한다. 2026-09-25 현재 소스 구현과 단위 검증은 새 구조로 전환됐지만, 클라이언트 프로필 배치와 실게임 청감 검증은 아직 별도 단계다. §10의 전환 조건을 모두 통과하기 전에는 이 문서를 실게임 구현 완료 증거로 해석해서는 안 된다 **MUST NOT**.
 
 ## 2. 반례 검증과 결정 보정
 
@@ -194,6 +194,7 @@ user-music-extension.zip
   "basePackId": "cobleserver:official",
   "scanIntervalSeconds": 1.0,
   "fieldChangeDelaySeconds": 4.0,
+  "betweenTracksSeconds": 0.0,
   "fadeInSeconds": 1.0,
   "fadeOutSeconds": 1.0,
   "selection": "shuffle",
@@ -291,3 +292,12 @@ Minecraft 리소스 재로드
 - 구형 구조의 실제 종료일은 새 JAR과 공식 ZIP의 실게임 검증 완료일이다.
 - 종료가 선언되면 `GeneratedMusicResourcePack`, `GeneratedMusicPackController`, 파일 경로 기반 `MusicFileSoundIds`를 제거해야 **MUST** 하며 호환 구현으로 다시 만들지 않아야 **MUST NOT** 한다.
 - 실게임 검증 전까지 구형 구조는 현재 배포의 롤백 수단으로만 유지해야 **MUST** 한다.
+
+### 10.4 구현 상태 (2026-09-25)
+
+- 완료: 순수 카탈로그·설정·오버라이드 파서, 컴파일러, 충돌 격리와 레거시 사용자 차이 변환
+- 완료: 공식 50곡·타격음 3개 ZIP 소스화, 단일 OGG 이벤트 검증과 재현 가능한 ZIP 빌드
+- 완료: Minecraft 리소스 리로드 발견, 마지막 정상 스냅샷 유지, 안정 트랙 ID 재생, 카탈로그 효과음 이벤트
+- 완료: Mod Menu의 재생·효과 설정과 기존 필드·전투·콘텐츠·포켓몬 매핑 선택
+- 완료: `GeneratedMusicResourcePack`, `GeneratedMusicPackController`, `MusicFileSoundIds` 제거
+- 남음: 권위 클라이언트 프로필에 JAR·ZIP 배치, 로그 확인, 실제 필드·전투·먹먹함·심장박동 청감 검증
