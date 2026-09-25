@@ -9,6 +9,7 @@ import com.cobblemon.mod.common.client.battle.ClientBattlePokemon
 import com.cobblemon.mod.common.client.battle.ClientBattleSide
 import com.cobblemon.mod.common.pokemon.FormData
 import com.cobblemon.mod.common.pokemon.Pokemon
+import com.cobblemon.mod.common.pokemon.RenderablePokemon
 import jbro.cobblemon.battleui.extended.pokemon.render.PokemonModelRenderer
 import jbro.cobblemon.battleui.extended.pokemon.render.TeamPanelRenderer
 import jbro.cobblemon.battleui.extended.pokemon.tooltip.MoveInfo
@@ -83,6 +84,48 @@ object TeamIndicatorUI {
         var form: FormData? = null,
         var teraType: TeraType? = null
     )
+
+    data class TeamPreview(
+        val uuid: UUID,
+        val renderablePokemon: RenderablePokemon?,
+        val speciesIdentifier: Identifier?,
+        val aspects: Set<String>,
+        val isKO: Boolean,
+        val status: Status?
+    )
+
+    /** Snapshot for the TAB modal. The old HUD renderer is not used for these previews. */
+    fun modalTeams(playerSide: ClientBattleSide, opponentSide: ClientBattleSide, playerUuid: UUID, isSpectating: Boolean): Pair<List<TeamPreview>, List<TeamPreview>> {
+        val battle = CobblemonClient.battle ?: return emptyList<TeamPreview>() to emptyList()
+        if (lastBattleId != battle.battleId) {
+            clear()
+            lastBattleId = battle.battleId
+        }
+        updateTrackedPokemonForSide(playerSide, trackedSide1Pokemon, isLeftSide = true, isPlayerSide = !isSpectating)
+        updateTrackedPokemonForSide(opponentSide, trackedSide2Pokemon, isLeftSide = false, isPlayerSide = false)
+        checkForSwitchedOutTransforms(playerSide, opponentSide)
+
+        fun trackedPreview(pokemon: TrackedPokemon): TeamPreview {
+            val isKO = pokemon.isKO || isPokemonKO(pokemon.uuid)
+            val reverted = isKO && pokemon.isTransformed && pokemon.originalSpeciesIdentifier != null
+            return TeamPreview(
+                pokemon.uuid, null,
+                if (reverted) pokemon.originalSpeciesIdentifier else pokemon.speciesIdentifier,
+                if (reverted) pokemon.originalAspects else pokemon.aspects,
+                isKO, pokemon.status
+            )
+        }
+
+        val ownActor = if (isSpectating) null else playerSide.actors.find { it.uuid == playerUuid }
+        val allies = ownActor?.pokemon?.map { pokemon ->
+            TeamPreview(
+                pokemon.uuid, pokemon.asRenderablePokemon(), null, pokemon.aspects,
+                pokemon.currentHealth <= 0 || isPokemonKO(pokemon.uuid), pokemon.status?.status
+            )
+        } ?: trackedSide1Pokemon.values.map(::trackedPreview)
+        val opponents = trackedSide2Pokemon.values.map(::trackedPreview)
+        return allies to opponents
+    }
 
     // Track Pokemon for both sides separately (for spectating and opponent tracking)
     private val trackedSide1Pokemon = ConcurrentHashMap<UUID, TrackedPokemon>()

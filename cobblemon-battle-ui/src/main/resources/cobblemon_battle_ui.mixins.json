@@ -8,6 +8,7 @@
     "BattleMessageHandlerMixin",
     "BattleEndHandlerMixin",
     "BattleMessagePaneMixin",
+    "BattleActionDialogueVisibilityMixin",
     "BattleHealthChangeHandlerMixin",
     "BattleSwitchHandlerMixin",
     "BattleInitializeHandlerMixin",

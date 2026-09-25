@@ -29,8 +29,6 @@ object BattleInfoRenderer {
         if (PanelConfig.needsBattleStateTracking()) {
             BattleInfoPanel.update(syncOverlay = PanelConfig.enableBattleInfoPanelEffective)
         }
-        if (PanelConfig.enableTeamIndicatorsEffective) {
-            TeamIndicatorUI.render(context)
-        }
+        // Team previews now belong exclusively to the TAB modal.
     }
 }

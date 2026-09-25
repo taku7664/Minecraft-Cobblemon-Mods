@@ -21,23 +21,6 @@ object ClothConfigScreenBuilder {
             .setTooltip(Text.translatable("cobblemon_battle_ui.config.enableTeamIndicators.tooltip"))
             .setSaveConsumer(PanelConfig::setEnableTeamIndicators).build())
         features.addEntry(entries.startBooleanToggle(
-            Text.translatable("cobblemon_battle_ui.config.teamIndicatorRepositioning"),
-            PanelConfig.teamIndicatorRepositioningEnabled
-        ).setDefaultValue(true)
-            .setTooltip(Text.translatable("cobblemon_battle_ui.config.teamIndicatorRepositioning.tooltip"))
-            .setSaveConsumer(PanelConfig::setTeamIndicatorRepositioningEnabled).build())
-        features.addEntry(entries.startEnumSelector(
-            Text.translatable("cobblemon_battle_ui.config.teamIndicatorOrientation"),
-            PanelConfig.TeamIndicatorOrientation::class.java,
-            PanelConfig.teamIndicatorOrientation
-        ).setDefaultValue(PanelConfig.TeamIndicatorOrientation.HORIZONTAL)
-            .setEnumNameProvider { Text.translatable("cobblemon_battle_ui.config.orientation.${it.name.lowercase()}") }
-            .setSaveConsumer(PanelConfig::setTeamIndicatorOrientation).build())
-        features.addEntry(entries.startFloatField(
-            Text.translatable("cobblemon_battle_ui.config.teamIndicatorScale"), PanelConfig.teamIndicatorScale
-        ).setDefaultValue(1.0f).setMin(PanelConfig.MIN_FONT_SCALE).setMax(PanelConfig.MAX_FONT_SCALE)
-            .setSaveConsumer(PanelConfig::setTeamIndicatorScale).build())
-        features.addEntry(entries.startBooleanToggle(
             Text.translatable("cobblemon_battle_ui.config.enableBattleInfoPanel"), PanelConfig.enableBattleInfoPanel
         ).setDefaultValue(true)
             .setTooltip(Text.translatable("cobblemon_battle_ui.config.enableBattleInfoPanel.tooltip"))

@@ -7,6 +7,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.cobblemon.mod.common.client.gui.battle.widgets.BattleMessagePane;
 import jbro.cobblemon.battleui.extended.PanelConfig;
+import jbro.cobblemon.battleui.extended.BattleDialogue;
 import net.minecraft.client.gui.DrawContext;
 
 /**
@@ -29,7 +30,7 @@ public class BattleMessagePaneMixin {
         cancellable = true
     )
     private void onRenderWidget(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-        if (PanelConfig.INSTANCE.getEnableBattleLogEffective()) {
+        if (PanelConfig.INSTANCE.getEnableBattleLogEffective() || BattleDialogue.INSTANCE.hasPending()) {
             ci.cancel();
         }
     }

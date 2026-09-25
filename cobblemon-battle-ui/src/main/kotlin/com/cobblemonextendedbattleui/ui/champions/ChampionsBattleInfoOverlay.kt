@@ -6,23 +6,27 @@ import com.cobblemon.mod.common.client.battle.ClientBattleSide
 import jbro.cobblemon.battleui.extended.BattleStateTracker
 import jbro.cobblemon.battleui.extended.TeamIndicatorUI
 import jbro.cobblemon.battleui.extended.UIUtils
+import jbro.cobblemon.battleui.extended.PanelConfig
+import jbro.cobblemon.battleui.extended.pokemon.render.PokemonModelRenderer
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
 import java.util.UUID
+import net.minecraft.util.Identifier
 import kotlin.math.min
 
 /**
- * Large battle-status modal. Only currently active Pokemon and battlefield
- * conditions are shown; team intel, moves, items, abilities and models are
- * intentionally excluded from this screen.
+ * Large battle-status modal with vertical team previews and active Pokemon portraits.
  */
 object ChampionsBattleInfoOverlay {
-    private const val BASE_W = 840
+    private const val BASE_W = 960
     private const val BASE_H = 440
-    private const val SIDE_X_LEFT = 18
-    private const val FIELD_X = 280
-    private const val SIDE_X_RIGHT = 570
+    private const val TEAM_X_LEFT = 18
+    private const val SIDE_X_LEFT = 66
+    private const val FIELD_X = 340
+    private const val SIDE_X_RIGHT = 642
+    private const val TEAM_X_RIGHT = 900
+    private const val TEAM_W = 42
     private const val SIDE_W = 252
     private const val FIELD_W = 280
     private const val PANEL_Y = 62
@@ -42,6 +46,8 @@ object ChampionsBattleInfoOverlay {
 
     private var activeAllies: List<PokemonEntry> = emptyList()
     private var activeOpponents: List<PokemonEntry> = emptyList()
+    private var allyTeam: List<TeamIndicatorUI.TeamPreview> = emptyList()
+    private var opponentTeam: List<TeamIndicatorUI.TeamPreview> = emptyList()
     private var effects: List<EffectRow> = emptyList()
 
     private data class PokemonEntry(
@@ -49,7 +55,9 @@ object ChampionsBattleInfoOverlay {
         val name: String,
         val hpPercent: Float,
         val status: Status?,
-        val level: Int?
+        val level: Int?,
+        val speciesIdentifier: Identifier?,
+        val aspects: Set<String>
     )
 
     private data class EffectRow(
@@ -62,6 +70,8 @@ object ChampionsBattleInfoOverlay {
     fun clear() {
         activeAllies = emptyList()
         activeOpponents = emptyList()
+        allyTeam = emptyList()
+        opponentTeam = emptyList()
         effects = emptyList()
     }
 
@@ -80,6 +90,14 @@ object ChampionsBattleInfoOverlay {
         activeOpponents = opponentSide.activeClientBattlePokemon
             .mapNotNull { it.battlePokemon }
             .map(::fromClientBattlePokemon)
+        if (PanelConfig.enableTeamIndicatorsEffective) {
+            val teams = TeamIndicatorUI.modalTeams(playerSide, opponentSide, playerUuid, isSpectating)
+            allyTeam = teams.first
+            opponentTeam = teams.second
+        } else {
+            allyTeam = emptyList()
+            opponentTeam = emptyList()
+        }
         effects = collectEffects()
     }
 
@@ -107,9 +125,11 @@ object ChampionsBattleInfoOverlay {
 
     private fun drawOverlay(context: DrawContext) {
         drawFrame(context)
+        drawTeamRail(context, allyTeam, TEAM_X_LEFT, false)
         drawSidePanel(context, activeAllies, SIDE_X_LEFT, false)
         drawEffectsPanel(context, FIELD_X)
         drawSidePanel(context, activeOpponents, SIDE_X_RIGHT, true)
+        drawTeamRail(context, opponentTeam, TEAM_X_RIGHT, true)
         drawTextCentered(context, tr("cobblemon_battle_ui.champions.close"), BASE_W / 2, 417, WHITE, 0.95f)
     }
 
@@ -117,9 +137,25 @@ object ChampionsBattleInfoOverlay {
         context.fill(8, 12, BASE_W - 8, BASE_H - 8, color(8, 10, 45, 236))
         context.fill(9, 13, BASE_W - 9, 15, VIOLET_EDGE)
         context.fill(9, BASE_H - 11, BASE_W - 9, BASE_H - 9, color(85, 91, 220, 210))
-        context.fill(346, 10, 494, 51, color(18, 21, 75, 255))
-        drawBorder(context, 346, 10, 148, 41, color(91, 99, 232), 2)
+        context.fill(406, 10, 554, 51, color(18, 21, 75, 255))
+        drawBorder(context, 406, 10, 148, 41, color(91, 99, 232), 2)
         drawTextCentered(context, tr("cobblemon_battle_ui.champions.title"), BASE_W / 2, 24, WHITE, 1.2f)
+    }
+
+    private fun drawTeamRail(context: DrawContext, team: List<TeamIndicatorUI.TeamPreview>, x: Int, opponent: Boolean) {
+        val accent = if (opponent) MAGENTA_EDGE else VIOLET_EDGE
+        context.fill(x, PANEL_Y, x + TEAM_W, PANEL_Y + PANEL_H, color(13, 17, 60, 238))
+        drawBorder(context, x, PANEL_Y, TEAM_W, PANEL_H, color(80, 86, 180, 220), 1)
+        team.take(6).forEachIndexed { index, pokemon ->
+            val slotY = PANEL_Y + 16 + index * 52
+            context.fill(x + 3, slotY, x + TEAM_W - 3, slotY + 42, color(17, 22, 73, 246))
+            context.fill(x + 3, slotY, x + 5, slotY + 42, accent)
+            PokemonModelRenderer.drawPokemonModel(
+                context, x + 7, slotY + 5, 30, pokemon.renderablePokemon,
+                pokemon.speciesIdentifier, pokemon.aspects, pokemon.uuid, pokemon.isKO,
+                pokemon.status, !opponent, { it }, 1f
+            )
+        }
     }
 
     private fun drawSidePanel(
@@ -159,7 +195,7 @@ object ChampionsBattleInfoOverlay {
         val gap = 8
         val cardHeight = (availableHeight - gap * (shown.size - 1)) / shown.size
         shown.forEachIndexed { index, entry ->
-            drawPokemonCard(context, entry, x + 10, cardTop + index * (cardHeight + gap), SIDE_W - 20, cardHeight, accent)
+            drawPokemonCard(context, entry, x + 10, cardTop + index * (cardHeight + gap), SIDE_W - 20, cardHeight, accent, opponent)
         }
     }
 
@@ -170,20 +206,23 @@ object ChampionsBattleInfoOverlay {
         y: Int,
         width: Int,
         height: Int,
-        accent: Int
+        accent: Int,
+        opponent: Boolean
     ) {
         context.fill(x, y, x + width, y + height, color(17, 22, 73, 246))
         context.fill(x, y, x + 3, y + height, accent)
         drawBorder(context, x, y, width, height, color(69, 77, 155, 220), 1)
 
-        val nameWidth = if (entry.level == null) width - 28 else width - 84
-        drawText(context, trim(entry.name, nameWidth), x + 14, y + 13, WHITE, if (height >= 200) 1.2f else 1.05f)
+        drawPortrait(context, entry, x + 10, y + 12, 38, opponent)
+        val headerX = x + 54
+        val nameWidth = if (entry.level == null) width - 68 else width - 124
+        drawText(context, trim(entry.name, nameWidth), headerX, y + 13, WHITE, if (height >= 200) 1.2f else 1.05f)
         entry.level?.let { drawTextRight(context, "Lv.$it", x + width - 14, y + 15, TEXT_DIM, 0.95f) }
 
         val status = entry.status?.let { TeamIndicatorUI.getStatusDisplayName(it) }
             ?: tr("cobblemon_battle_ui.champions.normal")
-        drawText(context, tr("cobblemon_battle_ui.champions.status"), x + 14, y + 42, TEXT_LABEL, 0.9f)
-        drawText(context, status, x + 68, y + 42, WHITE, 1.0f)
+        drawText(context, tr("cobblemon_battle_ui.champions.status"), headerX, y + 42, TEXT_LABEL, 0.9f)
+        drawText(context, status, headerX + 54, y + 42, WHITE, 1.0f)
         drawHpBar(context, x + 14, y + 64, width - 28, entry.hpPercent, height >= 200)
 
         if (height >= 200) {
@@ -191,6 +230,16 @@ object ChampionsBattleInfoOverlay {
         } else if (height >= COMPACT_CONDITIONS_MIN_HEIGHT) {
             drawCompactConditions(context, entry, x, y, width)
         }
+    }
+
+    private fun drawPortrait(context: DrawContext, entry: PokemonEntry, x: Int, y: Int, size: Int, opponent: Boolean) {
+        context.fill(x, y, x + size, y + size, color(26, 30, 87, 240))
+        drawBorder(context, x, y, size, size, color(80, 86, 180, 220), 1)
+        PokemonModelRenderer.drawPokemonModel(
+            context, x + 2, y + 2, size - 4, null, entry.speciesIdentifier,
+            entry.aspects, entry.uuid, entry.hpPercent <= 0f, entry.status,
+            !opponent, { it }, 1f
+        )
     }
 
     private fun drawDetailedConditions(context: DrawContext, entry: PokemonEntry, x: Int, y: Int, width: Int) {
@@ -383,7 +432,9 @@ object ChampionsBattleInfoOverlay {
             name = pokemon.displayName.string,
             hpPercent = hp.coerceIn(0f, 1f),
             status = pokemon.status,
-            level = pokemon.properties.level
+            level = pokemon.properties.level,
+            speciesIdentifier = pokemon.properties.species?.let { Identifier.of("cobblemon", it) },
+            aspects = pokemon.state.currentAspects
         )
     }
 

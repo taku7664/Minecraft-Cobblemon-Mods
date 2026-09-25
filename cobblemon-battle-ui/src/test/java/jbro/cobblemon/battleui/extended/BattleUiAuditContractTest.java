@@ -23,9 +23,11 @@ final class BattleUiAuditContractTest {
     }
 
     @Test
-    void teamIndicatorsAreConnectedToTheHudPass() throws Exception {
+    void teamIndicatorsAreTrackedForTheModalWithoutHudRendering() throws Exception {
         String renderer = read("src/main/kotlin/com/cobblemonextendedbattleui/BattleInfoRenderer.kt");
-        assertTrue(renderer.contains("TeamIndicatorUI.render(context)"));
+        assertFalse(renderer.contains("TeamIndicatorUI.render(context)"));
+        assertTrue(read("src/main/kotlin/com/cobblemonextendedbattleui/ui/champions/ChampionsBattleInfoOverlay.kt")
+            .contains("TeamIndicatorUI.modalTeams("));
     }
 
     @Test

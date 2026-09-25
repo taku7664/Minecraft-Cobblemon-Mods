@@ -39,8 +39,8 @@
   "cobblemon_battle_ui.config.category.tooltipOptions": "Tooltip Options",
   "cobblemon_battle_ui.config.cloth_missing": "Install Cloth Config to edit these settings in game.",
 
-  "cobblemon_battle_ui.config.enableTeamIndicators": "Team Indicators",
-  "cobblemon_battle_ui.config.enableTeamIndicators.tooltip": "Show Pokemon team indicators under health bars during battle",
+  "cobblemon_battle_ui.config.enableTeamIndicators": "TAB Team Preview",
+  "cobblemon_battle_ui.config.enableTeamIndicators.tooltip": "Show both teams vertically in the TAB battle information screen",
 
   "cobblemon_battle_ui.config.teamIndicatorRepositioning": "Team Indicator Repositioning",
   "cobblemon_battle_ui.config.teamIndicatorRepositioning.tooltip": "Allow dragging team indicators to reposition them. When disabled, indicators stay in their default positions.",
