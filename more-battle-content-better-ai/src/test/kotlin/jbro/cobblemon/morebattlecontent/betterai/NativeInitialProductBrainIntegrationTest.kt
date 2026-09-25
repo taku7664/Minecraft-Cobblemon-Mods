@@ -12,6 +12,7 @@ import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDeci
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionStatus
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductRankAdapter
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductRootSnapshot
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionReconcileStatus
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionState
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionWorld
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductWorldSearchStatus
@@ -155,8 +156,160 @@ class NativeInitialProductBrainIntegrationTest {
         assertEquals(initialState.worlds, carried?.worlds)
     }
 
+    @Test
+    fun `continued native ranks drive the next decision and replace the retained roots`() {
+        val context = contestedContext()
+        val initialRanks = NativeProductRankAdapter.rank(context.candidates.mapIndexed { index, candidate ->
+            NativeRootActionValue(candidate, 1.0 - index * 0.1)
+        })
+        val continuedRanks = NativeProductRankAdapter.rank(context.candidates.mapIndexed { index, candidate ->
+            NativeRootActionValue(candidate, index * 0.4)
+        })
+        val initialState = nativeSessionState(context, "initial")
+        val continuedState = nativeSessionState(context, "continued")
+        var calls = 0
+        var carriedAfterContinuation: NativeProductSessionState? = null
+        val brain = LocalTacticalBrain(
+            actionSelector = LocalActionSelector { ranked, seed, _ ->
+                LocalActionSelection(ranked.first(), seed, ranked.size, 1.0)
+            },
+            nativeInitialDecision = { _, _, _, _, state ->
+                calls++
+                when (calls) {
+                    1 -> NativeInitialProductDecisionEvaluation(
+                        status = NativeInitialProductDecisionStatus.AVAILABLE,
+                        ranked = initialRanks,
+                        depthCompleted = 1,
+                        nodesVisited = 1,
+                        searchStatus = NativeProductWorldSearchStatus.COMPLETED,
+                        sessionState = initialState,
+                    )
+                    2 -> {
+                        assertEquals(initialRanks.first().outcome.candidate.actionId,
+                            state?.pendingOwnAction?.actionId)
+                        NativeInitialProductDecisionEvaluation(
+                            status = NativeInitialProductDecisionStatus.AVAILABLE,
+                            ranked = continuedRanks,
+                            depthCompleted = 2,
+                            nodesVisited = 7,
+                            searchStatus = NativeProductWorldSearchStatus.COMPLETED,
+                            sessionState = continuedState,
+                        )
+                    }
+                    else -> {
+                        carriedAfterContinuation = state
+                        NativeInitialProductDecisionEvaluation(NativeInitialProductDecisionStatus.NOT_APPLICABLE)
+                    }
+                }
+            },
+        )
+        val session = open(brain, context)
+
+        brain.decide(session, context).toCompletableFuture().get()
+        val continued = brain.decide(session, context).toCompletableFuture().get()
+        brain.decide(session, context).toCompletableFuture().get()
+
+        assertEquals(continuedRanks.first().outcome.candidate.actionId, continued.actionId)
+        assertTrue("native_showdown_continuation" in continued.tags)
+        assertEquals("continued",
+            carriedAfterContinuation?.worlds?.single()?.rootSnapshot?.frame?.snapshotJson)
+        assertEquals(continued.actionId, carriedAfterContinuation?.pendingOwnAction?.actionId)
+    }
+
+    @Test
+    fun `single legal action still advances an existing native session`() {
+        val contested = contestedContext()
+        val context = contested.copy(candidates = listOf(contested.candidates.first()))
+        val state = nativeSessionState(context, "continued")
+        var invoked = false
+        var calls = 0
+        val brain = LocalTacticalBrain(
+            actionSelector = LocalActionSelector { ranked, seed, _ ->
+                LocalActionSelection(ranked.first(), seed, ranked.size, 1.0)
+            },
+            nativeInitialDecision = { _, _, _, _, supplied ->
+                calls++
+                if (calls == 1) {
+                    assertNull(supplied)
+                    NativeInitialProductDecisionEvaluation(
+                        status = NativeInitialProductDecisionStatus.AVAILABLE,
+                        ranked = NativeProductRankAdapter.rank(contested.candidates.mapIndexed { index, action ->
+                            NativeRootActionValue(action, 1.0 - index * 0.1)
+                        }),
+                        depthCompleted = 1,
+                        nodesVisited = 1,
+                        searchStatus = NativeProductWorldSearchStatus.COMPLETED,
+                        sessionState = nativeSessionState(contested, "initial"),
+                    )
+                } else {
+                    invoked = true
+                    assertTrue(supplied != null)
+                    NativeInitialProductDecisionEvaluation(
+                        status = NativeInitialProductDecisionStatus.AVAILABLE,
+                        ranked = NativeProductRankAdapter.rank(listOf(
+                            NativeRootActionValue(context.candidates.single(), 1.0),
+                        )),
+                        depthCompleted = 1,
+                        nodesVisited = 1,
+                        searchStatus = NativeProductWorldSearchStatus.COMPLETED,
+                        sessionState = state,
+                    )
+                }
+            },
+        )
+        val session = open(brain, contested)
+        brain.decide(session, contested).toCompletableFuture().get()
+
+        val decision = brain.decide(session, context).toCompletableFuture().get()
+
+        assertTrue(invoked)
+        assertEquals(context.candidates.single().actionId, decision.actionId)
+        assertTrue("native_showdown_continuation" in decision.tags)
+    }
+
+    @Test
+    fun `continuation reconciliation failure escapes to the outer fallback without legacy projection`() {
+        val context = contestedContext()
+        val state = nativeSessionState(context)
+        var calls = 0
+        val brain = LocalTacticalBrain(
+            nativeInitialDecision = { _, _, _, _, _ ->
+                calls++
+                if (calls == 1) {
+                    NativeInitialProductDecisionEvaluation(
+                        status = NativeInitialProductDecisionStatus.AVAILABLE,
+                        ranked = NativeProductRankAdapter.rank(context.candidates.mapIndexed { index, action ->
+                            NativeRootActionValue(action, 1.0 - index * 0.1)
+                        }),
+                        depthCompleted = 1,
+                        nodesVisited = 1,
+                        searchStatus = NativeProductWorldSearchStatus.COMPLETED,
+                        sessionState = state,
+                    )
+                } else {
+                    NativeInitialProductDecisionEvaluation(
+                        status = NativeInitialProductDecisionStatus.RECONCILIATION_FAILED,
+                        reconciliationStatus = NativeProductSessionReconcileStatus.PUBLIC_EVENT_HISTORY_GAP,
+                    )
+                }
+            },
+        )
+        val session = open(brain, context)
+        brain.decide(session, context).toCompletableFuture().get()
+
+        val thrown = assertThrows(ExecutionException::class.java) {
+            brain.decide(session, context).toCompletableFuture().get()
+        }
+
+        val failure = thrown.cause as NativeInitialProductDecisionException
+        assertEquals(NativeInitialProductDecisionStatus.RECONCILIATION_FAILED, failure.evaluation.status)
+        assertEquals(NativeProductSessionReconcileStatus.PUBLIC_EVENT_HISTORY_GAP,
+            failure.evaluation.reconciliationStatus)
+    }
+
     private fun nativeSessionState(
         context: jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext,
+        snapshotJson: String = "root",
     ): NativeProductSessionState {
         val ally = context.state.pokemon.first { it.side.name == "ALLY" }
         val opponent = context.state.pokemon.first { it.side.name == "OPPONENT" }
@@ -169,7 +322,7 @@ class NativeInitialProductBrainIntegrationTest {
                 uuid = opponent.battlePokemonId.toString())),
         )
         val root = NativeProductRootSnapshot("test-rules", NativeBattleFrame(
-            snapshotJson = "root",
+            snapshotJson = snapshotJson,
             turn = context.state.turn,
             requestState = "move",
             ended = false,

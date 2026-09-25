@@ -21,6 +21,10 @@ import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDeci
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductWorldSearchResult
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductWorldSearchStatus
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductRootSnapshot
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionReconciliation
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionReconcileStatus
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionState
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionWorld
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeSearchWorldKey
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeRootActionValue
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
@@ -288,8 +292,153 @@ class NativeInitialProductDecisionEvaluatorTest {
         assertTrue(kotlin.math.abs(searchedWorlds.sumOf { it.probability } - 1.0) < 1e-9)
     }
 
+    @Test
+    fun `retained session is reconciled and searched without rebuilding opening worlds`() {
+        val current = context(turn = 2)
+        val prior = sessionState(context(turn = 1), frame("prior"), pending = ACTIONS.first())
+        val reconciled = sessionState(current, frame("reconciled"), pending = null)
+        var reconciledDeadline = 0L
+        var searchedRoot: NativeProductRootSnapshot? = null
+        var planned = false
+        val evaluator = NativeInitialProductDecisionEvaluator(
+            planWorlds = { _, _ -> planned = true; error("must not rebuild opening worlds") },
+            searchWorlds = { request ->
+                searchedRoot = request.worlds.single().rootSnapshot
+                NativeProductWorldSearchResult(
+                    status = NativeProductWorldSearchStatus.COMPLETED,
+                    rootValues = request.productActions.mapIndexed { index, action ->
+                        NativeRootActionValue(action, 0.4 - index * 0.1)
+                    },
+                    depthCompleted = 2,
+                    nodesVisited = 9,
+                    rootSnapshots = request.worlds.associate { it.key to requireNotNull(it.rootSnapshot) },
+                )
+            },
+            reconcileSession = { supplied, suppliedContext, deadline ->
+                assertEquals(prior, supplied)
+                assertEquals(current, suppliedContext)
+                reconciledDeadline = deadline
+                NativeProductSessionReconciliation(
+                    NativeProductSessionReconcileStatus.AVAILABLE,
+                    reconciled,
+                )
+            },
+            nowEpochMillis = { 1_000L },
+            nanoTime = { 5_000_000L },
+            leafEvaluator = { _, _, _, _ -> 0.1 },
+        )
+
+        val result = evaluator.evaluate(
+            current,
+            BattleTrainerProfile.balanced(),
+            LocalDecisionTuning.CURRENT,
+            LocalLookaheadBudget(250L, 100, 1),
+            prior,
+        )
+
+        assertEquals(NativeInitialProductDecisionStatus.AVAILABLE, result.status)
+        assertFalse(planned)
+        assertEquals(255_000_000L, reconciledDeadline)
+        assertEquals("reconciled", searchedRoot?.frame?.snapshotJson)
+        assertEquals(2, result.depthCompleted)
+        assertEquals(9, result.nodesVisited)
+        assertEquals(2, result.sessionState?.publicTurn)
+        assertEquals(null, result.sessionState?.pendingOwnAction)
+        assertEquals("reconciled", result.sessionState?.worlds?.single()?.rootSnapshot?.frame?.snapshotJson)
+    }
+
+    @Test
+    fun `session reconciliation failure is explicit and never falls back to opening planning or search`() {
+        val prior = sessionState(context(turn = 1), frame("prior"), pending = ACTIONS.first())
+        var planned = false
+        var searched = false
+        val evaluator = NativeInitialProductDecisionEvaluator(
+            planWorlds = { _, _ -> planned = true; error("must not plan") },
+            searchWorlds = { searched = true; error("must not search") },
+            reconcileSession = { _, _, _ ->
+                NativeProductSessionReconciliation(
+                    NativeProductSessionReconcileStatus.PUBLIC_EVENT_HISTORY_GAP,
+                )
+            },
+            nowEpochMillis = { 1_000L },
+        )
+
+        val result = evaluator.evaluate(
+            context(turn = 2),
+            BattleTrainerProfile.balanced(),
+            LocalDecisionTuning.CURRENT,
+            LocalLookaheadBudget(250L, 100, 1),
+            prior,
+        )
+
+        assertEquals(NativeInitialProductDecisionStatus.RECONCILIATION_FAILED, result.status)
+        assertEquals(NativeProductSessionReconcileStatus.PUBLIC_EVENT_HISTORY_GAP, result.reconciliationStatus)
+        assertFalse(planned)
+        assertFalse(searched)
+    }
+
+    @Test
+    fun `continued search cannot report success while dropping a reconciled world root`() {
+        val current = context(turn = 2)
+        val prior = sessionState(context(turn = 1), frame("prior"), pending = ACTIONS.first())
+        val reconciled = sessionState(current, frame("reconciled"), pending = null)
+        val evaluator = NativeInitialProductDecisionEvaluator(
+            planWorlds = { _, _ -> error("must not plan") },
+            searchWorlds = { request ->
+                NativeProductWorldSearchResult(
+                    status = NativeProductWorldSearchStatus.COMPLETED,
+                    rootValues = request.productActions.map { NativeRootActionValue(it, 0.0) },
+                    depthCompleted = 1,
+                    nodesVisited = 2,
+                    rootSnapshots = mapOf(
+                        NativeSearchWorldKey("wrong-world", 0) to
+                            NativeProductRootSnapshot("test-rules", frame("wrong")),
+                    ),
+                )
+            },
+            reconcileSession = { _, _, _ -> NativeProductSessionReconciliation(
+                NativeProductSessionReconcileStatus.AVAILABLE,
+                reconciled,
+            ) },
+            nowEpochMillis = { 1_000L },
+            nanoTime = { 5_000_000L },
+            leafEvaluator = { _, _, _, _ -> 0.0 },
+        )
+
+        val result = evaluator.evaluate(
+            current,
+            BattleTrainerProfile.balanced(),
+            LocalDecisionTuning.CURRENT,
+            LocalLookaheadBudget(250L, 100, 1),
+            prior,
+        )
+
+        assertEquals(NativeInitialProductDecisionStatus.SEARCH_FAILED, result.status)
+        assertEquals(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED, result.searchStatus)
+    }
+
     private fun snapshots() = mapOf(
         NativeSearchWorldKey("world-1", 0) to NativeProductRootSnapshot("test-rules", frame()),
+    )
+
+    private fun sessionState(
+        context: BattleDecisionContext,
+        frame: NativeBattleFrame,
+        pending: BattleActionCandidate?,
+    ) = NativeProductSessionState(
+        battleId = context.state.battleId,
+        format = context.state.format,
+        rulesFingerprint = "test-rules",
+        worlds = listOf(NativeProductSessionWorld(
+            key = NativeSearchWorldKey("world-1", 0),
+            probability = 1.0,
+            definition = DEFINITION,
+            rootSnapshot = NativeProductRootSnapshot("test-rules", frame),
+            publicContext = context,
+        )),
+        publicTurn = context.state.turn,
+        lastObservedEventSequence = context.state.observedEvents.lastOrNull()?.sequence,
+        pendingOwnAction = pending,
     )
 
     private fun frame(snapshotJson: String = "root") = NativeBattleFrame(

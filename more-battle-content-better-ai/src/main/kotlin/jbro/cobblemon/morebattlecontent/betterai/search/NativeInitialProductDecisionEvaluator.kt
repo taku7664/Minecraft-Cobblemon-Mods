@@ -21,6 +21,7 @@ internal enum class NativeInitialProductDecisionStatus {
     NOT_APPLICABLE,
     AVAILABLE,
     PLANNING_FAILED,
+    RECONCILIATION_FAILED,
     SEARCH_FAILED,
 }
 
@@ -31,6 +32,7 @@ internal data class NativeInitialProductDecisionEvaluation(
     val nodesVisited: Int = 0,
     val truncated: Boolean = false,
     val planIssues: List<NativeInitialProductWorldPlanIssue> = emptyList(),
+    val reconciliationStatus: NativeProductSessionReconcileStatus? = null,
     val searchStatus: NativeProductWorldSearchStatus? = null,
     val failedWorldId: String? = null,
     val sessionState: NativeProductSessionState? = null,
@@ -40,6 +42,7 @@ internal data class NativeInitialProductDecisionEvaluation(
         require(nodesVisited >= 0)
         require((status == NativeInitialProductDecisionStatus.AVAILABLE) == ranked.isNotEmpty())
         require(status != NativeInitialProductDecisionStatus.PLANNING_FAILED || planIssues.isNotEmpty())
+        require(status != NativeInitialProductDecisionStatus.RECONCILIATION_FAILED || reconciliationStatus != null)
         require(status != NativeInitialProductDecisionStatus.AVAILABLE ||
             searchStatus == NativeProductWorldSearchStatus.COMPLETED ||
             searchStatus == NativeProductWorldSearchStatus.PARTIAL_DEPTH
@@ -58,6 +61,12 @@ private typealias NativeWorldSearcher = (
     request: NativeProductWorldSearchRequest,
 ) -> NativeProductWorldSearchResult
 
+private typealias NativeSessionReconciler = (
+    session: NativeProductSessionState,
+    context: BattleDecisionContext,
+    deadlineNanos: Long,
+) -> NativeProductSessionReconciliation
+
 private typealias NativeLeafEvaluator = (
     state: BattleStateView,
     source: BattleDecisionContext,
@@ -69,6 +78,7 @@ private typealias NativeLeafEvaluator = (
 internal class NativeInitialProductDecisionEvaluator(
     private val planWorlds: NativeWorldPlanner = NativeInitialProductWorldPlanner()::plan,
     private val searchWorlds: NativeWorldSearcher = NativeProductWorldSearchAggregator()::search,
+    private val reconcileSession: NativeSessionReconciler = NativeProductSessionReconciler()::reconcile,
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
     private val nanoTime: () -> Long = System::nanoTime,
     private val leafEvaluator: NativeLeafEvaluator = { state, source, tuning, shouldContinue ->
@@ -85,7 +95,11 @@ internal class NativeInitialProductDecisionEvaluator(
         profile: BattleTrainerProfile,
         tuning: LocalDecisionTuning,
         budget: LocalLookaheadBudget,
+        sessionState: NativeProductSessionState? = null,
     ): NativeInitialProductDecisionEvaluation {
+        if (sessionState != null) {
+            return evaluateContinuation(context, profile, tuning, budget, sessionState)
+        }
         if (!isOpeningCandidate(context)) {
             return NativeInitialProductDecisionEvaluation(NativeInitialProductDecisionStatus.NOT_APPLICABLE)
         }
@@ -197,6 +211,115 @@ internal class NativeInitialProductDecisionEvaluator(
             ),
         )
     }
+
+    private fun evaluateContinuation(
+        context: BattleDecisionContext,
+        profile: BattleTrainerProfile,
+        tuning: LocalDecisionTuning,
+        budget: LocalLookaheadBudget,
+        sessionState: NativeProductSessionState,
+    ): NativeInitialProductDecisionEvaluation {
+        val deadlineNanos = nativeDeadline(context.deadlineEpochMillis, budget.timeMillis)
+            ?: return reconciliationFailure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
+        val reconciliation = reconcileSession(sessionState, context, deadlineNanos)
+        if (reconciliation.status != NativeProductSessionReconcileStatus.AVAILABLE) {
+            return NativeInitialProductDecisionEvaluation(
+                status = NativeInitialProductDecisionStatus.RECONCILIATION_FAILED,
+                reconciliationStatus = reconciliation.status,
+                failedWorldId = reconciliation.failedWorldId,
+            )
+        }
+        val reconciled = requireNotNull(reconciliation.sessionState) {
+            "An available native reconciliation must return its conditioned session"
+        }
+        if (budget.nodeLimit < reconciled.worlds.size) {
+            return NativeInitialProductDecisionEvaluation(
+                status = NativeInitialProductDecisionStatus.SEARCH_FAILED,
+                searchStatus = NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH,
+            )
+        }
+
+        var rootBaseline = 0.0
+        reconciled.worlds.forEach { world ->
+            if (nanoTime() - deadlineNanos >= 0L) {
+                return NativeInitialProductDecisionEvaluation(
+                    status = NativeInitialProductDecisionStatus.SEARCH_FAILED,
+                    searchStatus = NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH,
+                )
+            }
+            val value = leafEvaluator(world.publicContext.state, world.publicContext, tuning) {
+                nanoTime() - deadlineNanos < 0L
+            }
+            if (!value.isFinite() || nanoTime() - deadlineNanos >= 0L) {
+                return NativeInitialProductDecisionEvaluation(
+                    status = NativeInitialProductDecisionStatus.SEARCH_FAILED,
+                    searchStatus = NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH,
+                )
+            }
+            rootBaseline += world.probability * value
+        }
+        val search = searchWorlds(
+            NativeProductWorldSearchRequest(
+                worlds = reconciled.worlds.map { world ->
+                    NativeProductWorldSearchInput(
+                        key = world.key,
+                        probability = world.probability,
+                        definition = world.definition,
+                        publicState = world.publicContext.state,
+                        rootSnapshot = world.rootSnapshot,
+                        evaluate = { state ->
+                            leafEvaluator(state, world.publicContext, tuning) {
+                                nanoTime() - deadlineNanos < 0L
+                            }
+                        },
+                    )
+                },
+                productActions = context.candidates,
+                maxDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1),
+                nodeLimit = budget.nodeLimit,
+                deadlineNanos = deadlineNanos,
+            ),
+        )
+        if (search.status != NativeProductWorldSearchStatus.COMPLETED &&
+            search.status != NativeProductWorldSearchStatus.PARTIAL_DEPTH
+        ) {
+            return NativeInitialProductDecisionEvaluation(
+                status = NativeInitialProductDecisionStatus.SEARCH_FAILED,
+                depthCompleted = search.depthCompleted,
+                nodesVisited = search.nodesVisited,
+                searchStatus = search.status,
+                failedWorldId = search.failedWorldId,
+            )
+        }
+        val expectedWorldKeys = reconciled.worlds.mapTo(linkedSetOf()) { it.key }
+        if (search.rootSnapshots.keys != expectedWorldKeys) {
+            return NativeInitialProductDecisionEvaluation(
+                status = NativeInitialProductDecisionStatus.SEARCH_FAILED,
+                depthCompleted = search.depthCompleted,
+                nodesVisited = search.nodesVisited,
+                searchStatus = NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
+            )
+        }
+        val searchedWorlds = reconciled.worlds.map { world ->
+            world.copy(rootSnapshot = search.rootSnapshots.getValue(world.key))
+        }
+        return NativeInitialProductDecisionEvaluation(
+            status = NativeInitialProductDecisionStatus.AVAILABLE,
+            ranked = NativeProductRankAdapter.rank(search.rootValues, rootBaseline),
+            depthCompleted = search.depthCompleted,
+            nodesVisited = search.nodesVisited,
+            truncated = search.status == NativeProductWorldSearchStatus.PARTIAL_DEPTH,
+            searchStatus = search.status,
+            sessionState = reconciled.copy(worlds = searchedWorlds),
+        )
+    }
+
+    private fun reconciliationFailure(
+        status: NativeProductSessionReconcileStatus,
+    ) = NativeInitialProductDecisionEvaluation(
+        status = NativeInitialProductDecisionStatus.RECONCILIATION_FAILED,
+        reconciliationStatus = status,
+    )
 
     private fun isOpeningCandidate(context: BattleDecisionContext): Boolean =
         context.state.turn in 0..1 && context.opponentTeamPreview != null && context.exactOwnTeam != null
