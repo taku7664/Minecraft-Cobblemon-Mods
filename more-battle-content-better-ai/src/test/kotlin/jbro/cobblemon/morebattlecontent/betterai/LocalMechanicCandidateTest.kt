@@ -77,6 +77,89 @@ class LocalMechanicCandidateTest {
     }
 
     @Test
+    fun `Stellar uses its first type boost once and then returns to ordinary stab`() {
+        assertEquals(
+            2.0,
+            facts(
+                mechanic = mechanic("tera", types = setOf("stellar")),
+                baseStabTypes = setOf("water"),
+                moveType = "water",
+            )?.baseSameTypeAttackBonus,
+            "The move that activates Stellar still receives the unused base-type boost.",
+        )
+        assertEquals(
+            2.0,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("water"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "stellar",
+                stellarBoostedTypes = emptySet(),
+                moveType = "water",
+            )?.baseSameTypeAttackBonus,
+        )
+        assertEquals(
+            1.5,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("water"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "stellar",
+                stellarBoostedTypes = setOf("water"),
+                moveType = "water",
+            )?.baseSameTypeAttackBonus,
+        )
+        assertEquals(
+            4915.0 / 4096.0,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("water"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "stellar",
+                stellarBoostedTypes = emptySet(),
+                moveType = "fire",
+            )?.baseSameTypeAttackBonus,
+        )
+        assertEquals(
+            1.0,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("water"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "stellar",
+                stellarBoostedTypes = setOf("fire"),
+                moveType = "fire",
+            )?.baseSameTypeAttackBonus,
+        )
+    }
+
+    @Test
+    fun `unknown Stellar consumption uses the public lower bound instead of inventing a fresh boost`() {
+        assertEquals(
+            1.5,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("water"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "stellar",
+                stellarBoostedTypes = null,
+                moveType = "water",
+            )?.baseSameTypeAttackBonus,
+        )
+        assertEquals(
+            1.0,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("water"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "stellar",
+                stellarBoostedTypes = null,
+                moveType = "fire",
+            )?.baseSameTypeAttackBonus,
+        )
+    }
+
+    @Test
     fun `dynamax uses the doubled health it is given`() {
         val doubled = BattleCombatStatRangesView.exact(320, 130, 100, 110, 100, 100)
         val facts = facts(mechanic = mechanic("dynamax", stats = doubled))
@@ -100,9 +183,10 @@ class LocalMechanicCandidateTest {
         actorTypes: Set<String> = setOf("water"),
         baseStabTypes: Set<String> = actorTypes,
         activeTeraType: String? = null,
+        stellarBoostedTypes: Set<String>? = null,
         moveType: String = "water",
     ): BattleCandidateFactsView? {
-        val ally = mon(BattleSide.ALLY, actorTypes, baseStabTypes, activeTeraType)
+        val ally = mon(BattleSide.ALLY, actorTypes, baseStabTypes, activeTeraType, stellarBoostedTypes)
         val opponent = mon(BattleSide.OPPONENT, setOf("normal"))
         val move = BattleActionCandidate(
             actionId = "surf", kind = BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
@@ -134,6 +218,7 @@ class LocalMechanicCandidateTest {
         types: Set<String>,
         baseStabTypes: Set<String> = types,
         activeTeraType: String? = null,
+        stellarBoostedTypes: Set<String>? = null,
     ) = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(), side = side, activeSlot = 0,
         speciesId = "cobblemon:probe", formId = null, level = 50, hpFraction = 1.0,
@@ -151,5 +236,6 @@ class LocalMechanicCandidateTest {
         knownVolatileEffectIds = emptySet(),
         knownBaseStabTypeIds = baseStabTypes,
         knownTeraTypeId = activeTeraType,
+        knownStellarBoostedTypeIds = stellarBoostedTypes,
     )
 }

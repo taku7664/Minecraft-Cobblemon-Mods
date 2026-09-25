@@ -13,6 +13,7 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsK
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveDamageInputs
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveTargets
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicStatusImmunity
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicStab
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMoveProjection
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.PublicSwitchEntryHazardCalculator
@@ -457,26 +458,7 @@ internal object PublicBattleTacticalCalculator {
         details: BattleMoveCandidateView,
         actor: BattlePokemonStateView?,
         candidate: BattleActionCandidate,
-    ): Double? {
-        val original = actor?.knownBaseStabTypeIds?.takeIf { it.isNotEmpty() } ?: return null
-        val mechanicTypes = LocalMechanicFormResolution.transformedTypeIds(candidate, actor)
-        val transformed = mechanicTypes.ifEmpty {
-            actor.knownTeraTypeId?.let(::setOf).orEmpty()
-        }
-        fun matches(types: Collection<String>) = types.any { it.equals(details.typeId, ignoreCase = true) }
-        // A Mega swaps the typing rather than adding to it, so the doubling below - which exists for
-        // Tera keeping both - must not reach it.
-        if (transformed.isNotEmpty() && LocalMechanicFormResolution.replacesOriginalTypes(candidate, actor)) {
-            return if (matches(transformed)) 1.5 else 1.0
-        }
-        val matchesOriginal = matches(original)
-        val matchesTransformed = transformed.isNotEmpty() && matches(transformed)
-        return when {
-            matchesOriginal && matchesTransformed -> 2.0
-            matchesOriginal || matchesTransformed -> 1.5
-            else -> 1.0
-        }
-    }
+    ): Double? = LocalPublicStab.multiplier(candidate, actor, details.typeId)
 
     private fun publicTypeMultiplier(
         moveId: String?,

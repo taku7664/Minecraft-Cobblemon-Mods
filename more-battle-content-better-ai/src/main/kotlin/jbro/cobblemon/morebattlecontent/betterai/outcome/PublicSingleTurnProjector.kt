@@ -24,6 +24,7 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicStatusImmu
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalSideGuardRules
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStanceChangeStateProjector
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStellarBoostStateProjector
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.RecursiveControlEffect
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.RecursiveControlEffectKind
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.RecursiveDelayedStrike
@@ -821,8 +822,13 @@ internal object PublicSingleTurnProjector {
                     ),
                 )
             } else {
-                val appliedHit = LocalDirectHitMechanics.apply(
+                val stellarState = LocalStellarBoostStateProjector.afterSuccessfulDamageCalculation(
                     projectedFormState,
+                    actor.battlePokemonId,
+                    calculatedAction,
+                )
+                val appliedHit = LocalDirectHitMechanics.apply(
+                    stellarState,
                     actor.battlePokemonId,
                     target?.battlePokemonId,
                     moveOutcome.damageFraction,
@@ -995,9 +1001,14 @@ internal object PublicSingleTurnProjector {
                 if (!branch.hit) {
                     DelayedStrikeResolution(state, branch.probability)
                 } else {
+                    val stellarState = LocalStellarBoostStateProjector.afterSuccessfulDamageCalculation(
+                        state,
+                        strike.sourcePokemon.battlePokemonId,
+                        calculated.candidates.single(),
+                    )
                     DelayedStrikeResolution(
                         LocalDirectHitMechanics.apply(
-                            state,
+                            stellarState,
                             strike.sourcePokemon.battlePokemonId,
                             target.battlePokemonId,
                             branch.damageFraction,
@@ -1190,6 +1201,8 @@ internal object PublicSingleTurnProjector {
                                     directDamage = branch.directDamage + LocalDirectDamageLedger.hit(
                                         currentActor.battlePokemonId, currentTarget.battlePokemonId, applied.directDamageFraction,
                                     ),
+                                    successfulDamageCalculationPokemonIds =
+                                        branch.successfulDamageCalculationPokemonIds + currentActor.battlePokemonId,
                                     expectedScoreAdjustment = branch.expectedScoreAdjustment +
                                         effectOutcome.expectedScoreAdjustment,
                                 )
@@ -1203,9 +1216,22 @@ internal object PublicSingleTurnProjector {
             it.kind == BattleMoveEffectKind.RECHARGE_TURN && (it.probability ?: 1.0) >= CERTAIN_PROBABILITY
         }
         return branches.map { branch ->
-            val withRecharge = if (recharge) {
+            val withStellarConsumption = if (
+                actor.battlePokemonId in branch.successfulDamageCalculationPokemonIds
+            ) {
                 branch.copy(
-                    controlEffects = branch.controlEffects + RecursiveControlEffect(
+                    state = LocalStellarBoostStateProjector.afterSuccessfulDamageCalculation(
+                        branch.state,
+                        actor.battlePokemonId,
+                        originalAction,
+                    ),
+                )
+            } else {
+                branch
+            }
+            val withRecharge = if (recharge) {
+                withStellarConsumption.copy(
+                    controlEffects = withStellarConsumption.controlEffects + RecursiveControlEffect(
                         RecursiveControlEffectKind.RECHARGE,
                         side,
                         actor.battlePokemonId,
@@ -1213,7 +1239,7 @@ internal object PublicSingleTurnProjector {
                     ),
                 )
             } else {
-                branch
+                withStellarConsumption
             }
             if (effects.any { it.kind == BattleMoveEffectKind.SWITCH_USER }) {
                 applyPivotSwitch(
@@ -1525,6 +1551,7 @@ internal object PublicSingleTurnProjector {
                 it.protectionResultsByPokemon,
                 it.allySwitchResultsByPokemon,
                 it.successfulQueueControlMoveIdsByPokemon,
+                it.successfulDamageCalculationPokemonIds,
             )
         }.values.map { identical ->
             val probability = identical.sumOf(WeightedState::probability)
@@ -1552,6 +1579,8 @@ internal object PublicSingleTurnProjector {
                 identical.first().redirectingPokemonIds,
                 directDamage = LocalDirectDamageLedger.weighted(identical.map { it.probability to it.directDamage }),
                 successfulQueueControlMoveIdsByPokemon = identical.first().successfulQueueControlMoveIdsByPokemon,
+                successfulDamageCalculationPokemonIds =
+                    identical.first().successfulDamageCalculationPokemonIds,
             )
         }.sortedByDescending(WeightedState::probability)
         val total = merged.sumOf(WeightedState::probability)
@@ -2014,7 +2043,11 @@ internal object PublicSingleTurnProjector {
             append(it.battlePokemonId).append(':').append(it.side).append(':').append(it.activeSlot).append(':')
             append((it.hpFraction * 10_000).roundToInt()).append(':').append(it.statusId).append(':')
             append(it.formId).append(':').append(it.knownHeldItemId).append(':')
-            append(it.statStages).append('|')
+            append(it.statStages).append(':')
+            append(it.knownTypeIds.sorted()).append(':')
+            append(it.knownBaseStabTypeIds.sorted()).append(':')
+            append(it.knownTeraTypeId).append(':')
+            append(it.knownStellarBoostedTypeIds?.sorted() ?: "?").append('|')
         }
         appendTimedEffect("weather", state.field.weather)
         appendTimedEffect("terrain", state.field.terrain)
@@ -2133,6 +2166,8 @@ internal object PublicSingleTurnProjector {
         val directDamage: LocalDirectDamageLedger = LocalDirectDamageLedger.EMPTY,
         /** Moves that reached their target, distinct from misses, protection, and public nullification. */
         val successfulQueueControlMoveIdsByPokemon: Map<UUID, String> = emptyMap(),
+        /** Actors whose current damaging move reached at least one target and calculated damage. */
+        val successfulDamageCalculationPokemonIds: Set<UUID> = emptySet(),
     )
 
     private fun weightedExpectedScoreAdjustment(

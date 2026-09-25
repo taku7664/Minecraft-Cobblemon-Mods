@@ -46,6 +46,7 @@ internal object LocalStanceChangeStateProjector {
             knownVolatileEffectIds = actor.knownVolatileEffectIds,
             knownBaseStabTypeIds = form.knownTypeIds,
             knownTeraTypeId = actor.knownTeraTypeId,
+            knownStellarBoostedTypeIds = actor.knownStellarBoostedTypeIds,
         )
         val pokemon = state.pokemon.map { if (it.battlePokemonId == actor.battlePokemonId) updated else it }
         return BattleStateView(

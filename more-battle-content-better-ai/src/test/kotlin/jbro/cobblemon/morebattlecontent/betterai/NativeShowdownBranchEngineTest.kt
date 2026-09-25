@@ -229,6 +229,53 @@ class NativeShowdownBranchEngineTest {
     }
 
     @Test
+    fun `native Stellar records each boosted move type only after its first use`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(stellarBattle())
+            assertTrue(before.p1Active.single().stellarBoostedTypes.isEmpty())
+            val firstPsychic = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, before).single {
+                it.moveId == "psychic" && it.mechanic?.mechanicId == "tera"
+            }
+            val first = engine.branch(
+                before.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(firstPsychic, BattleSide.ALLY, before),
+                "move 1",
+            )
+            assertEquals("Stellar", first.p1Active.single().terastallizedType)
+            assertEquals(listOf("Psychic"), first.p1Active.single().stellarBoostedTypes)
+
+            val repeated = engine.branch(first.snapshotJson, "move 1", "move 1")
+            assertEquals(listOf("Psychic"), repeated.p1Active.single().stellarBoostedTypes)
+
+            val secondType = engine.branch(repeated.snapshotJson, "move 2", "move 1")
+            assertEquals(setOf("Psychic", "Electric"), secondType.p1Active.single().stellarBoostedTypes.toSet())
+        }
+    }
+
+    @Test
+    fun `native Terapagos Stellar keeps every type boost reusable`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(terapagosStellarBattle())
+            val firstTackle = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, before).single {
+                it.moveId == "tackle" && it.mechanic?.mechanicId == "tera"
+            }
+            val first = engine.branch(
+                before.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(firstTackle, BattleSide.ALLY, before),
+                "move 1",
+            )
+            assertEquals("terapagosstellar", first.p1Active.single().species)
+            assertEquals("Stellar", first.p1Active.single().terastallizedType)
+            assertTrue(first.p1Active.single().stellarBoostedTypes.isEmpty())
+
+            val repeated = engine.branch(first.snapshotJson, "move 1", "move 1")
+            assertTrue(repeated.p1Active.single().stellarBoostedTypes.isEmpty())
+        }
+    }
+
+    @Test
     fun `native stance change updates form without changing its base stab types`(@TempDir directory: Path) {
         val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
         NativeShowdownBranchEngine.open(engineRoot).use { engine ->
@@ -586,6 +633,46 @@ class NativeShowdownBranchEngineTest {
             species = "Mew",
             moves = listOf("forestscurse", "splash"),
             ability = "synchronize",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
+    )
+
+    private fun stellarBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(89, 97, 101, 103),
+        p1Team = listOf(NativePokemonSet(
+            name = "Stellar Actor",
+            species = "Mew",
+            moves = listOf("psychic", "thunderbolt"),
+            ability = "synchronize",
+            teraType = "Stellar",
+            uuid = "00000000-0000-0000-0000-000000000001",
+        )),
+        p2Team = listOf(NativePokemonSet(
+            name = "Observer",
+            species = "Blissey",
+            moves = listOf("splash"),
+            ability = "naturalcure",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
+    )
+
+    private fun terapagosStellarBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(107, 109, 113, 127),
+        p1Team = listOf(NativePokemonSet(
+            name = "Terapagos",
+            species = "Terapagos-Terastal",
+            moves = listOf("tackle"),
+            ability = "terashell",
+            teraType = "Stellar",
+            uuid = "00000000-0000-0000-0000-000000000001",
+        )),
+        p2Team = listOf(NativePokemonSet(
+            name = "Observer",
+            species = "Blissey",
+            moves = listOf("splash"),
+            ability = "naturalcure",
             uuid = "00000000-0000-0000-0000-000000000002",
         )),
     )

@@ -47,6 +47,7 @@ internal fun BattlePokemonStateView.copyState(
     knownTypeIds: Set<String> = this.knownTypeIds,
     knownBaseStabTypeIds: Set<String> = this.knownBaseStabTypeIds,
     knownTeraTypeId: String? = this.knownTeraTypeId,
+    knownStellarBoostedTypeIds: Set<String>? = this.knownStellarBoostedTypeIds,
 ): BattlePokemonStateView = BattlePokemonStateView(
     battlePokemonId = battlePokemonId,
     side = side,
@@ -68,4 +69,5 @@ internal fun BattlePokemonStateView.copyState(
     knownVolatileEffectIds = if (fainted || activeSlot == null) emptySet() else knownVolatileEffectIds,
     knownBaseStabTypeIds = knownBaseStabTypeIds,
     knownTeraTypeId = knownTeraTypeId,
+    knownStellarBoostedTypeIds = knownStellarBoostedTypeIds,
 )

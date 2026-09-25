@@ -37,6 +37,42 @@ class Cobblemon173PublicTypeKnowledgeTest {
     }
 
     @Test
+    fun `public Stellar consumption starts exact then becomes unknown without inventing a move type`() {
+        for (side in BattleSide.entries) {
+            val first = pokemon(side, UUID(0, 11))
+            val other = pokemon(side, UUID(0, 12))
+            val observer = Cobblemon173PublicBattleObserver(3)
+            observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, first))
+            observer.observe(Cobblemon173PublicObservation.TypesChanged(
+                1,
+                first,
+                change("|-terastallize|p2a: Target|Stellar")!!,
+            ))
+
+            val activated = observer.publicSnapshot()
+            val activatedPokemon = activated.pokemon.single()
+            assertEquals(emptySet<String>(), activatedPokemon.knownStellarBoostedTypeIds)
+            assertEquals(emptySet<String>(), activated.stellarBoostedTypeStates[first.battlePokemonId])
+
+            observer.observe(Cobblemon173PublicObservation.MoveUsed(1, first, "thunderbolt", emptyList()))
+            val used = observer.publicSnapshot()
+            assertNull(used.pokemon.single().knownStellarBoostedTypeIds)
+            assertTrue(used.stellarBoostedTypeStates.containsKey(first.battlePokemonId))
+            assertNull(used.stellarBoostedTypeStates[first.battlePokemonId])
+
+            observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, other))
+            observer.observe(Cobblemon173PublicObservation.PokemonPresented(3, first))
+            val returned = observer.publicSnapshot()
+            assertEquals("stellar", returned.pokemon.single {
+                it.battlePokemonId == first.battlePokemonId
+            }.knownTeraTypeId)
+            assertNull(returned.pokemon.single {
+                it.battlePokemonId == first.battlePokemonId
+            }.knownStellarBoostedTypeIds)
+        }
+    }
+
+    @Test
     fun `Tera clears an added type instead of preserving it as base stab`() {
         val id = UUID(0, 8)
         val knowledge = Cobblemon173PublicTypeKnowledge()

@@ -73,6 +73,7 @@ internal object NativeBattleStateAdapter {
             knownVolatileEffectIds = native.volatiles.mapTo(linkedSetOf(), ::nativeId),
             knownBaseStabTypeIds = native.baseStabTypes.mapTo(linkedSetOf(), ::nativeId),
             knownTeraTypeId = native.terastallizedType.takeIf(String::isNotBlank)?.let(::nativeId),
+            knownStellarBoostedTypeIds = native.stellarBoostedTypes.mapTo(linkedSetOf(), ::nativeId),
         )
     }
 

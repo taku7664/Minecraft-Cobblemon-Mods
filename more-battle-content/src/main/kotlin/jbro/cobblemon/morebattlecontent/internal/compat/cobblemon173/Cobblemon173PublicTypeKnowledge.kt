@@ -39,6 +39,7 @@ internal class Cobblemon173PublicTypeKnowledge {
         val added: Set<String>? = null,
         val tera: Set<String>? = null,
         val preTera: Set<String>? = null,
+        val stellarBoostedTypes: Set<String>? = null,
     ) {
         private fun ordinaryTypes(): Set<String> = if (base.isEmpty() || added?.isEmpty() == true) {
             emptySet()
@@ -70,6 +71,7 @@ internal class Cobblemon173PublicTypeKnowledge {
                 // Showdown clears pokemon.addedType as Tera activates. Only the replacement/base
                 // types survive through getTypes(false, true) for ordinary retained STAB.
                 preTera = previous.base,
+                stellarBoostedTypes = if (change.types.singleOrNull() == STELLAR) emptySet() else null,
             )
         }
         states[id] = updated
@@ -78,6 +80,15 @@ internal class Cobblemon173PublicTypeKnowledge {
 
     fun baseStabTypes(id: UUID): Set<String>? = states[id]?.baseStabTypes()
     fun teraType(id: UUID): String? = states[id]?.teraType()
+    fun stellarBoostedTypes(id: UUID): Set<String>? = states[id]
+        ?.takeIf { it.teraType() == STELLAR }
+        ?.stellarBoostedTypes
+
+    /** Public move logs name the move, not always its callback-resolved type; unknown is conservative. */
+    fun invalidateStellarBoostedTypes(id: UUID) {
+        val previous = states[id]?.takeIf { it.teraType() == STELLAR } ?: return
+        states[id] = previous.copy(stellarBoostedTypes = null)
+    }
 
     fun clear(id: UUID): Set<String>? {
         val previous = states[id] ?: return null
@@ -91,6 +102,7 @@ internal class Cobblemon173PublicTypeKnowledge {
                 previous.switchTypes,
                 tera = tera,
                 preTera = previous.switchTypes,
+                stellarBoostedTypes = previous.stellarBoostedTypes,
             )
             states[id] = restored
             restored.types()
@@ -102,6 +114,9 @@ internal class Cobblemon173PublicTypeKnowledge {
     fun teraSnapshot(): Map<UUID, String> = states.entries.mapNotNull { (id, state) ->
         state.tera?.singleOrNull()?.let { id to it }
     }.toMap()
+    fun stellarBoostedTypeSnapshot(): Map<UUID, Set<String>?> = states
+        .filterValues { it.teraType() == STELLAR }
+        .mapValues { (_, state) -> state.stellarBoostedTypes?.toSet() }
 
     private companion object {
         const val STELLAR = "stellar"

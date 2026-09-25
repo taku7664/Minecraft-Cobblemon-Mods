@@ -140,6 +140,7 @@ class BattlePokemonStateView(
     knownVolatileEffectIds: Set<String>,
     knownBaseStabTypeIds: Set<String> = knownTypeIds,
     val knownTeraTypeId: String? = null,
+    knownStellarBoostedTypeIds: Set<String>? = null,
 ) {
     /** Preserve the original JVM constructor and Kotlin default-argument constructor. */
     constructor(
@@ -162,7 +163,7 @@ class BattlePokemonStateView(
         actionConstraints: BattlePokemonActionConstraintView = BattlePokemonActionConstraintView.empty(),
     ) : this(battlePokemonId, side, activeSlot, speciesId, formId, level, hpFraction, statusId,
         statStages, knownMoveIds, knownAbilityId, knownHeldItemId, fainted, knownTypeIds,
-        combatStats, knownFormStates, actionConstraints, emptySet(), knownTypeIds, null)
+        combatStats, knownFormStates, actionConstraints, emptySet(), knownTypeIds, null, null)
 
     /** Preserve the JVM constructor added with public volatile-effect knowledge. */
     constructor(
@@ -186,7 +187,34 @@ class BattlePokemonStateView(
         knownVolatileEffectIds: Set<String>,
     ) : this(battlePokemonId, side, activeSlot, speciesId, formId, level, hpFraction, statusId,
         statStages, knownMoveIds, knownAbilityId, knownHeldItemId, fainted, knownTypeIds,
-        combatStats, knownFormStates, actionConstraints, knownVolatileEffectIds, knownTypeIds, null)
+        combatStats, knownFormStates, actionConstraints, knownVolatileEffectIds, knownTypeIds, null, null)
+
+    /** Preserve the JVM constructor added with separate base-STAB and Tera identity. */
+    constructor(
+        battlePokemonId: UUID,
+        side: BattleSide,
+        activeSlot: Int?,
+        speciesId: String,
+        formId: String?,
+        level: Int?,
+        hpFraction: Double,
+        statusId: String?,
+        statStages: Map<String, Int>,
+        knownMoveIds: Set<String>,
+        knownAbilityId: String?,
+        knownHeldItemId: String?,
+        fainted: Boolean,
+        knownTypeIds: Set<String>,
+        combatStats: BattleCombatStatRangesView?,
+        knownFormStates: Map<String, BattlePokemonFormStateView>,
+        actionConstraints: BattlePokemonActionConstraintView,
+        knownVolatileEffectIds: Set<String>,
+        knownBaseStabTypeIds: Set<String>,
+        knownTeraTypeId: String?,
+    ) : this(battlePokemonId, side, activeSlot, speciesId, formId, level, hpFraction, statusId,
+        statStages, knownMoveIds, knownAbilityId, knownHeldItemId, fainted, knownTypeIds,
+        combatStats, knownFormStates, actionConstraints, knownVolatileEffectIds, knownBaseStabTypeIds,
+        knownTeraTypeId, null)
 
     /** Observed active effects only. Absence is not proof of complete volatile knowledge or future persistence. */
     val knownVolatileEffectIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownVolatileEffectIds))
@@ -195,6 +223,13 @@ class BattlePokemonStateView(
     val knownTypeIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownTypeIds))
     /** Types retaining ordinary STAB before an active Terastallization; excludes the Tera type. */
     val knownBaseStabTypeIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownBaseStabTypeIds))
+    /**
+     * Exact effective move types whose one-use Stellar boost has been consumed, or null when public
+     * observation cannot determine the consumption state. An empty set is therefore meaningful.
+     */
+    val knownStellarBoostedTypeIds: Set<String>? = knownStellarBoostedTypeIds?.let {
+        Collections.unmodifiableSet(LinkedHashSet(it))
+    }
     val knownFormStates: Map<String, BattlePokemonFormStateView> =
         Collections.unmodifiableMap(LinkedHashMap(knownFormStates))
 
@@ -206,6 +241,7 @@ class BattlePokemonStateView(
         require(this.knownTypeIds.all { it.isNotBlank() })
         require(this.knownBaseStabTypeIds.all { it.isNotBlank() })
         require(knownTeraTypeId == null || knownTeraTypeId.isNotBlank())
+        require(this.knownStellarBoostedTypeIds?.all { it.isNotBlank() } != false)
         require(this.knownFormStates.keys.all { it.isNotBlank() })
         require(this.knownVolatileEffectIds.all { it.isNotBlank() })
     }

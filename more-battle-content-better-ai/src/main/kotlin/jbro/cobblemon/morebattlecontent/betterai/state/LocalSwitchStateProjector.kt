@@ -103,5 +103,6 @@ internal object LocalSwitchStateProjector {
         knownVolatileEffectIds = emptySet(),
         knownBaseStabTypeIds = formState?.knownTypeIds ?: knownBaseStabTypeIds,
         knownTeraTypeId = knownTeraTypeId,
+        knownStellarBoostedTypeIds = knownStellarBoostedTypeIds,
     )
 }

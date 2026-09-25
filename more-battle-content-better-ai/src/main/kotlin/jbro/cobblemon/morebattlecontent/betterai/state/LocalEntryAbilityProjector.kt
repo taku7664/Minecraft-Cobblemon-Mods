@@ -96,6 +96,7 @@ internal object LocalEntryAbilityProjector {
             knownVolatileEffectIds = pokemon.knownVolatileEffectIds,
             knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
             knownTeraTypeId = pokemon.knownTeraTypeId,
+            knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,
         )
     }
 

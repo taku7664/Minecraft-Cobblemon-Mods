@@ -21,6 +21,7 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilitySta
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicStab
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalRiskAttitude
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffectiveness
@@ -738,13 +739,7 @@ internal object LocalTacticalScorer {
         val actor = context.state.pokemon.firstOrNull {
             it.side == BattleSide.ALLY && it.activeSlot == actorSlot && !it.fainted
         } ?: return 1.0
-        val matchesBase = actor.knownBaseStabTypeIds.any { it.equals(moveType, ignoreCase = true) }
-        val matchesTera = actor.knownTeraTypeId?.equals(moveType, ignoreCase = true) == true
-        return when {
-            matchesBase && matchesTera -> 2.0
-            matchesBase || matchesTera -> 1.5
-            else -> 1.0
-        }
+        return LocalPublicStab.multiplier(candidate, actor, moveType) ?: 1.0
     }
 
     private fun allyActiveHp(context: BattleDecisionContext): Double = activeHp(context, BattleSide.ALLY)

@@ -32,6 +32,7 @@ class NativeBattleStateAdapterTest {
             types = listOf("Fire"),
             baseStabTypes = listOf("Bug", "Steel"),
             terastallizedType = "Fire",
+            stellarBoostedTypes = listOf("Water", "Psychic"),
             boosts = mapOf("atk" to 2),
             volatiles = listOf("confusion"),
             stats = mapOf("atk" to 121, "def" to 100, "spa" to 90, "spd" to 101, "spe" to 110),
@@ -84,6 +85,7 @@ class NativeBattleStateAdapterTest {
         assertEquals(setOf("fire"), adaptedAlly.knownTypeIds)
         assertEquals(setOf("bug", "steel"), adaptedAlly.knownBaseStabTypeIds)
         assertEquals("fire", adaptedAlly.knownTeraTypeId)
+        assertEquals(setOf("water", "psychic"), adaptedAlly.knownStellarBoostedTypeIds)
         assertEquals("flashfire", adaptedAlly.knownAbilityId)
         assertEquals("leftovers", adaptedAlly.knownHeldItemId)
         assertEquals(121, adaptedAlly.combatStats?.attack?.minimum)
@@ -151,6 +153,7 @@ class NativeBattleStateAdapterTest {
         types: List<String>,
         baseStabTypes: List<String> = types,
         terastallizedType: String = "",
+        stellarBoostedTypes: List<String> = emptyList(),
         boosts: Map<String, Int>,
         volatiles: List<String>,
         stats: Map<String, Int>,
@@ -171,6 +174,7 @@ class NativeBattleStateAdapterTest {
         stats = stats,
         baseStabTypes = baseStabTypes,
         terastallizedType = terastallizedType,
+        stellarBoostedTypes = stellarBoostedTypes,
     )
 
     private fun stats(knowledge: BattleCombatStatKnowledge) = BattleCombatStatRangesView(

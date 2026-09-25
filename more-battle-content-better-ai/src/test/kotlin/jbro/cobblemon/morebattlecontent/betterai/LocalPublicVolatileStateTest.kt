@@ -79,9 +79,22 @@ class LocalPublicVolatileStateTest {
             knownBaseStabTypeIds = setOf("electric"),
             knownTeraTypeId = "water",
         ))
+        val stellarUnused = withTarget(target.copyState(
+            knownTypeIds = setOf("electric"),
+            knownBaseStabTypeIds = setOf("electric"),
+            knownTeraTypeId = "stellar",
+            knownStellarBoostedTypeIds = emptySet(),
+        ))
+        val stellarElectricUsed = withTarget(target.copyState(
+            knownTypeIds = setOf("electric"),
+            knownBaseStabTypeIds = setOf("electric"),
+            knownTeraTypeId = "stellar",
+            knownStellarBoostedTypeIds = setOf("electric"),
+        ))
 
         assertNotEquals(fingerprint.of(teraFire), fingerprint.of(differentBaseStab))
         assertNotEquals(fingerprint.of(teraFire), fingerprint.of(differentTera))
+        assertNotEquals(fingerprint.of(stellarUnused), fingerprint.of(stellarElectricUsed))
     }
 
     @Test
@@ -96,6 +109,8 @@ class LocalPublicVolatileStateTest {
             it["side"].asString == "OPPONENT" && it["activeSlot"]?.isJsonNull == false
         }
         assertEquals(listOf("substitute"), target.getAsJsonArray("knownVolatileEffectIds").map { it.asString })
+        assertTrue(target.has("stellarBoostedTypes"), target.toString())
+        assertTrue(target["stellarBoostedTypes"].isJsonNull)
         assertFalse(target.has("recommendedAction"))
         assertFalse(target.has("publiclyInert"))
         assertTrue(messages[0].asJsonObject["content"].asString.contains("allow same-turn recreation"))

@@ -39,6 +39,7 @@ internal class LocalBattleStateFingerprint {
             append(pokemon.knownTypeIds.sorted().joinToString(",")).append(':')
             append(pokemon.knownBaseStabTypeIds.sorted().joinToString(",")).append(':')
             append(pokemon.knownTeraTypeId ?: "-").append(':')
+            append(pokemon.knownStellarBoostedTypeIds?.sorted()?.joinToString(",") ?: "?").append(':')
             append(pokemon.knownHeldItemId ?: "-").append(':')
             append(pokemon.actionConstraints.taunted).append(':')
             append(pokemon.actionConstraints.encoreMoveId ?: "-").append(':')

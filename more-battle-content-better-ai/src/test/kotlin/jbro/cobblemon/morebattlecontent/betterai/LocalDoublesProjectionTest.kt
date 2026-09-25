@@ -47,6 +47,113 @@ import java.util.UUID
  */
 class LocalDoublesProjectionTest {
     @Test
+    fun `local projection consumes a successful Stellar type before the next turn`() {
+        val initial = state(opponentPartner = false, defenderTypes = setOf("normal"), stellarActor = true)
+        val action = move("stellar_water", 90.0, "water", BattleMoveTargetPattern.SELECTED_OPPONENT, targeted = true)
+        val firstContext = BattleDecisionContext(
+            requestId = UUID.randomUUID(),
+            state = initial,
+            candidates = listOf(action),
+            deadlineEpochMillis = Long.MAX_VALUE,
+            memory = BattleTacticalMemoryView.empty(),
+        )
+        val first = PublicSingleTurnProjector.project(
+            initial,
+            action,
+            BattleActionCandidate("wait", BattleActionKind.WAIT),
+            firstContext,
+        )
+
+        assertTrue(first.isNotEmpty())
+        assertTrue(first.all { outcome ->
+            outcome.stateBeforeResidual.pokemon.single { it.side == BattleSide.ALLY && it.activeSlot == 0 }
+                .knownStellarBoostedTypeIds == setOf("water")
+        })
+        val firstDamage = first.sumOf { outcome ->
+            outcome.probability * outcome.orderProbability * outcome.directDamage.amounts.values.sum()
+        }
+        val nextState = first.maxBy { it.probability * it.orderProbability }.stateBeforeResidual
+        val secondContext = firstContext.copy(state = nextState)
+        val second = PublicSingleTurnProjector.project(
+            nextState,
+            action,
+            BattleActionCandidate("wait-again", BattleActionKind.WAIT),
+            secondContext,
+        )
+        val secondDamage = second.sumOf { outcome ->
+            outcome.probability * outcome.orderProbability * outcome.directDamage.amounts.values.sum()
+        }
+
+        assertTrue(secondDamage < firstDamage,
+            "The repeated type must lose its one-use Stellar boost: first=$firstDamage second=$secondDamage")
+    }
+
+    @Test
+    fun `one Stellar spread move boosts every target before consuming its type once`() {
+        val initial = state(opponentPartner = true, defenderTypes = setOf("normal"), stellarActor = true)
+        val action = move("stellar_spread", 90.0, "water", BattleMoveTargetPattern.ALL_OPPONENTS, targeted = false)
+        val context = BattleDecisionContext(
+            requestId = UUID.randomUUID(),
+            state = initial,
+            candidates = listOf(action),
+            deadlineEpochMillis = Long.MAX_VALUE,
+            memory = BattleTacticalMemoryView.empty(),
+        )
+
+        val outcomes = PublicSingleTurnProjector.project(
+            initial,
+            action,
+            BattleActionCandidate("wait", BattleActionKind.WAIT),
+            context,
+        )
+
+        assertTrue(outcomes.isNotEmpty())
+        outcomes.forEach { outcome ->
+            val actor = outcome.stateBeforeResidual.pokemon.single {
+                it.side == BattleSide.ALLY && it.activeSlot == 0
+            }
+            assertEquals(setOf("water"), actor.knownStellarBoostedTypeIds)
+            val targetDamage = outcome.directDamage.amounts.entries
+                .filter { (recipient, _) -> recipient.actorId == actor.battlePokemonId }
+                .map { it.value }
+            assertEquals(2, targetDamage.size)
+            assertEquals(targetDamage.first(), targetDamage.last(), 1e-9,
+                "Showdown's move.stellarBoosted flag keeps the first-use boost for every spread target")
+        }
+    }
+
+    @Test
+    fun `local Terapagos Stellar never consumes its reusable type boost`() {
+        val initial = state(
+            opponentPartner = false,
+            defenderTypes = setOf("normal"),
+            stellarActor = true,
+            stellarActorSpecies = "showdown:terapagos-stellar",
+        )
+        val action = move("stellar_water", 90.0, "water", BattleMoveTargetPattern.SELECTED_OPPONENT, targeted = true)
+        val context = BattleDecisionContext(
+            requestId = UUID.randomUUID(),
+            state = initial,
+            candidates = listOf(action),
+            deadlineEpochMillis = Long.MAX_VALUE,
+            memory = BattleTacticalMemoryView.empty(),
+        )
+
+        val outcomes = PublicSingleTurnProjector.project(
+            initial,
+            action,
+            BattleActionCandidate("wait", BattleActionKind.WAIT),
+            context,
+        )
+
+        assertTrue(outcomes.isNotEmpty())
+        assertTrue(outcomes.all { outcome ->
+            outcome.stateBeforeResidual.pokemon.single { it.side == BattleSide.ALLY && it.activeSlot == 0 }
+                .knownStellarBoostedTypeIds == emptySet<String>()
+        })
+    }
+
+    @Test
     fun `spread direct damage retains each actual recipient`() {
         val context = PublicBattleTacticalCalculator.calculate(spreadContext(opponentPartner = true))
         val outcomes = PublicSingleTurnProjector.project(context.state, context.candidates.single(),
@@ -278,12 +385,17 @@ class LocalDoublesProjectionTest {
         ),
     )
 
-    private fun state(opponentPartner: Boolean, defenderTypes: Set<String>): BattleStateView {
+    private fun state(
+        opponentPartner: Boolean,
+        defenderTypes: Set<String>,
+        stellarActor: Boolean = false,
+        stellarActorSpecies: String = "showdown:probe",
+    ): BattleStateView {
         // Active slot count has to match the format on both sides, or BattleStateView rejects the
         // state. The variable under test is the number of *opponents*, so the ally side simply
         // mirrors the format.
-        val pokemon = buildList {
-            add(pokemon(BattleSide.ALLY, 0, setOf("normal")))
+        val pokemon = buildList<BattlePokemonStateView> {
+            add(pokemon(BattleSide.ALLY, 0, setOf("normal"), stellarActor, stellarActorSpecies))
             add(pokemon(BattleSide.OPPONENT, 0, defenderTypes))
             if (opponentPartner) {
                 add(pokemon(BattleSide.ALLY, 1, setOf("normal")))
@@ -305,11 +417,17 @@ class LocalDoublesProjectionTest {
     }
 
     /** Carries public combat stats, without which no projection can run in any format. */
-    private fun pokemon(side: BattleSide, slot: Int, types: Set<String>) = BattlePokemonStateView(
+    private fun pokemon(
+        side: BattleSide,
+        slot: Int,
+        types: Set<String>,
+        stellar: Boolean = false,
+        speciesId: String = "showdown:probe",
+    ) = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(),
         side = side,
         activeSlot = slot,
-        speciesId = "showdown:probe",
+        speciesId = speciesId,
         formId = null,
         level = 50,
         hpFraction = 1.0,
@@ -329,6 +447,10 @@ class LocalDoublesProjectionTest {
             speed = BattleIntegerRange(100, 100),
             knowledge = BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
         ),
+        knownVolatileEffectIds = emptySet(),
+        knownBaseStabTypeIds = types,
+        knownTeraTypeId = "stellar".takeIf { stellar },
+        knownStellarBoostedTypeIds = emptySet<String>().takeIf { stellar },
     )
 
     private companion object {
