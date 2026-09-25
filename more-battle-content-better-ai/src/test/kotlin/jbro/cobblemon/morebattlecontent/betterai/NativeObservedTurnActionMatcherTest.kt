@@ -8,6 +8,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleMechanicCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMoveFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeObservedTurnActionMatcher
@@ -92,6 +93,30 @@ class NativeObservedTurnActionMatcherTest {
     }
 
     @Test
+    fun `double selected target keeps only the command aimed at the observed Pokemon`() {
+        val leftTarget = move("tackle", 0, target = BattleTargetSlot(BattleSide.ALLY, 0))
+        val rightTarget = move("tackle", 0, target = BattleTargetSlot(BattleSide.ALLY, 1))
+        val observed = event(
+            sequence = 1,
+            kind = BattleObservedEventKind.MOVE_USED,
+            actor = OPPONENT_A,
+            value = "tackle",
+            actorSlot = 0,
+            targets = listOf(ALLY_B),
+        )
+
+        val result = NativeObservedTurnActionMatcher.match(
+            BattleFormat.DOUBLE,
+            BattleSide.OPPONENT,
+            frame(single = false),
+            listOf(leftTarget, rightTarget),
+            listOf(observed),
+        )
+
+        assertEquals(listOf(rightTarget.actionId), result.actions.map { it.actionId })
+    }
+
+    @Test
     fun `public tera reveal distinguishes the tera command from the same base move`() {
         val base = move("flamethrower", 0)
         val tera = move("flamethrower", 0, "tera")
@@ -126,12 +151,35 @@ class NativeObservedTurnActionMatcherTest {
         assertEquals(actions, result.actions)
     }
 
-    private fun move(moveId: String, slot: Int, mechanic: String? = null) = BattleActionCandidate(
-        actionId = "move-$moveId-$slot-${mechanic ?: "base"}",
+    @Test
+    fun `absence of a public tera reveal rejects tera even when the move never executes`() {
+        val base = move("tackle", 0)
+        val tera = move("tackle", 0, "tera")
+
+        val result = NativeObservedTurnActionMatcher.match(
+            BattleFormat.DOUBLE,
+            BattleSide.OPPONENT,
+            frame(single = false),
+            listOf(base, tera),
+            emptyList(),
+        )
+
+        assertEquals(listOf(base.actionId), result.actions.map { it.actionId })
+    }
+
+    private fun move(
+        moveId: String,
+        slot: Int,
+        mechanic: String? = null,
+        target: BattleTargetSlot? = null,
+    ) = BattleActionCandidate(
+        actionId = "move-$moveId-$slot-${mechanic ?: "base"}" +
+            target?.let { "-target-${it.side}-${it.slot}" }.orEmpty(),
         kind = BattleActionKind.USE_MOVE,
         actorSlot = slot,
         moveSlot = 0,
         moveId = moveId,
+        targets = target?.let(::listOf).orEmpty(),
         mechanic = mechanic?.let { BattleMechanicCandidate(it, null, null) },
     )
 
@@ -155,17 +203,20 @@ class NativeObservedTurnActionMatcherTest {
         actor: UUID,
         value: String? = null,
         actorSlot: Int,
+        targets: List<UUID> = emptyList(),
     ) = BattleObservedEventView(
         sequence = sequence,
         turn = 1,
         kind = kind,
         actorPokemonId = actor,
+        targetPokemonIds = targets,
         publicValueId = value,
         actorSlot = actorSlot,
     )
 
     private fun frame(single: Boolean): NativeBattleFrame {
         val ally = pokemon(ALLY, 0, "tackle")
+        val allyB = pokemon(ALLY_B, 1, "splash")
         val opponentA = pokemon(OPPONENT_A, 0, "growl", "tackle", "uturn", "flamethrower", "taunt")
         val opponentB = pokemon(OPPONENT_B, 1, "protect", "taunt")
         val bench = pokemon(BENCH, null, "tackle")
@@ -174,9 +225,9 @@ class NativeObservedTurnActionMatcherTest {
             turn = 1,
             requestState = "move",
             ended = false,
-            p1Active = listOf(ally),
+            p1Active = if (single) listOf(ally) else listOf(ally, allyB),
             p2Active = if (single) listOf(opponentA) else listOf(opponentA, opponentB),
-            p1Team = listOf(ally),
+            p1Team = if (single) listOf(ally) else listOf(ally, allyB),
             p2Team = if (single) listOf(opponentA, bench) else listOf(opponentA, opponentB, bench),
             p1RequestJson = "null",
             p2RequestJson = "null",
@@ -201,6 +252,7 @@ class NativeObservedTurnActionMatcherTest {
 
     private companion object {
         val ALLY: UUID = UUID.fromString("00000000-0000-0000-0000-000000000101")
+        val ALLY_B: UUID = UUID.fromString("00000000-0000-0000-0000-000000000102")
         val OPPONENT_A: UUID = UUID.fromString("00000000-0000-0000-0000-000000000201")
         val OPPONENT_B: UUID = UUID.fromString("00000000-0000-0000-0000-000000000202")
         val BENCH: UUID = UUID.fromString("00000000-0000-0000-0000-000000000203")

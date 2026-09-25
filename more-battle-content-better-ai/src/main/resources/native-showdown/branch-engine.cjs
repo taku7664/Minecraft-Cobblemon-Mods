@@ -215,9 +215,8 @@ function frame(battle) {
   };
 }
 
-function submitRequestedChoice(battle, sideId, choice) {
-  const side = battle[sideId];
-  if (side.activeRequest && side.activeRequest.wait) {
+function submitRequestedChoice(battle, sideId, choice, requestWasWait) {
+  if (requestWasWait) {
     if (choice !== 'pass') {
       throw new Error(`BetterAI supplied ${choice} for ${sideId} wait request`);
     }
@@ -255,8 +254,10 @@ globalThis.mbcBranchBattle = function(payload) {
   const battle = Battle.fromJSON(JSON.parse(input.snapshotJson));
   battle.restart(function() {});
   try {
-    submitRequestedChoice(battle, 'p1', input.p1Choice);
-    submitRequestedChoice(battle, 'p2', input.p2Choice);
+    const p1Wait = !!(battle.p1.activeRequest && battle.p1.activeRequest.wait);
+    const p2Wait = !!(battle.p2.activeRequest && battle.p2.activeRequest.wait);
+    submitRequestedChoice(battle, 'p1', input.p1Choice, p1Wait);
+    submitRequestedChoice(battle, 'p2', input.p2Choice, p2Wait);
     return JSON.stringify(frame(battle));
   } finally {
     battle.destroy();

@@ -34,6 +34,10 @@ internal data class NativeObservedTurnActionMatch(
 /**
  * Conditions native request actions on public command evidence without inventing an unseen command.
  *
+ * [events] is the complete contiguous public window for these submitted commands. Consequently,
+ * the absence of a Tera reveal is negative evidence: Showdown queues Tera before ordinary moves,
+ * even when that Pokemon later faints before its move executes.
+ *
  * A move event owns its active slot even if a pivot or forced replacement later emits SWITCHED for
  * the same slot. A completely unobserved slot remains a wildcard: the Pokemon may have fainted or
  * otherwise failed before revealing the command it had selected.
@@ -61,14 +65,16 @@ internal object NativeObservedTurnActionMatcher {
         sideEvents.firstOrNull { it.actorSlot == null }?.let { missing ->
             return failure(NativeObservedTurnActionIssueCode.OBSERVED_ACTION_SLOT_MISSING, missing.sequence)
         }
-        if (sideEvents.isEmpty()) return NativeObservedTurnActionMatch(nativeActions.toList(), emptyList())
-
         val evidenceBySlot = sideEvents.groupBy { requireNotNull(it.actorSlot) }.mapValues { (_, slotEvents) ->
             SlotEvidence(
                 moveIds = slotEvents.asSequence()
                     .filter { it.kind == BattleObservedEventKind.MOVE_USED }
                     .mapNotNull(BattleObservedEventView::publicValueId)
                     .map(::nativeId)
+                    .toSet(),
+                targetPokemonIds = slotEvents.asSequence()
+                    .filter { it.kind == BattleObservedEventKind.MOVE_USED }
+                    .flatMap { it.targetPokemonIds.asSequence() }
                     .toSet(),
                 incomingPokemonIds = slotEvents.asSequence()
                     .filter { it.kind == BattleObservedEventKind.SWITCHED }
@@ -77,12 +83,20 @@ internal object NativeObservedTurnActionMatcher {
                 teraRevealed = slotEvents.any { it.kind == BattleObservedEventKind.TERA_TYPE_REVEALED },
             )
         }
+        val revealedTeraSlots = sideEvents.asSequence()
+            .filter { it.kind == BattleObservedEventKind.TERA_TYPE_REVEALED }
+            .map { requireNotNull(it.actorSlot) }
+            .toSet()
         val matching = nativeActions.filter { action ->
             val components = components(action)
             val bySlot = components.mapNotNull { component -> component.actorSlot?.let { it to component } }.toMap()
-            evidenceBySlot.all { (slot, evidence) ->
+            val selectedTeraSlots = components.asSequence()
+                .filter { it.mechanic?.mechanicId?.let(::canonicalMechanic) == "tera" }
+                .mapNotNull(BattleActionCandidate::actorSlot)
+                .toSet()
+            selectedTeraSlots == revealedTeraSlots && evidenceBySlot.all { (slot, evidence) ->
                 val component = bySlot[slot] ?: return@all false
-                matches(format, component, evidence)
+                matches(format, frame, component, evidence)
             }
         }
         return if (matching.isEmpty()) {
@@ -94,14 +108,28 @@ internal object NativeObservedTurnActionMatcher {
 
     private fun matches(
         @Suppress("UNUSED_PARAMETER") format: BattleFormat,
+        frame: NativeBattleFrame,
         action: BattleActionCandidate,
         evidence: SlotEvidence,
     ): Boolean {
         val mechanic = action.mechanic?.mechanicId?.let(::canonicalMechanic)
         if (evidence.teraRevealed != (mechanic == "tera")) return false
         if (evidence.moveIds.isNotEmpty()) {
-            return action.kind == BattleActionKind.USE_MOVE &&
-                action.moveId?.let(::nativeId) in evidence.moveIds
+            if (action.kind != BattleActionKind.USE_MOVE ||
+                action.moveId?.let(::nativeId) !in evidence.moveIds
+            ) {
+                return false
+            }
+            if (action.targets.isNotEmpty() && evidence.targetPokemonIds.isNotEmpty()) {
+                return action.targets.mapTo(linkedSetOf()) { target ->
+                    val active = when (target.side) {
+                        BattleSide.ALLY -> frame.p1Active
+                        BattleSide.OPPONENT -> frame.p2Active
+                    }
+                    UUID.fromString(requireNotNull(active.singleOrNull { it.activeSlot == target.slot }).uuid)
+                } == evidence.targetPokemonIds
+            }
+            return true
         }
         if (evidence.incomingPokemonIds.isNotEmpty()) {
             return action.kind == BattleActionKind.SWITCH && action.switchPokemonId in evidence.incomingPokemonIds
@@ -133,6 +161,7 @@ internal object NativeObservedTurnActionMatcher {
 
     private data class SlotEvidence(
         val moveIds: Set<String>,
+        val targetPokemonIds: Set<UUID>,
         val incomingPokemonIds: Set<UUID>,
         val teraRevealed: Boolean,
     )
