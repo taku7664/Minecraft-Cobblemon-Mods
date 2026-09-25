@@ -116,11 +116,11 @@ League Challenge는 새 화폐를 만들지 않고 MBC BP를 사용한다. MBC�
 
 ## 9. MbcUI 공개 계약과 콘텐츠 식별
 
-MBC는 [선언형 UI 프레임워크 후속 결정](../../docs/MORE_BATTLE_CONTENT_DECLARATIVE_UI_FRAMEWORK_DECISION.md)에 따라 클라이언트 전용 `MbcUI` 계약을 소유해야 한다. 공개 범위는 화면 문서, 디자인 토큰, 공용 컴포넌트, 상태 바인딩, 타입 있는 사용자 의도와 Minecraft 전용 호스트 슬롯이다(MUST).
+MBC는 [UI 리소스 경계 수정 결정](../../docs/MORE_BATTLE_CONTENT_UI_RESOURCE_BOUNDARY_AMENDMENT.md)에 따라 클라이언트 전용 `MbcUI` 계약을 소유해야 한다. 공개 범위는 타입 있는 화면 모델, 디자인 토큰, 공용 컴포넌트, 상태 바인딩, 사용자 의도와 Minecraft 전용 호스트 슬롯이다(MUST).
 
-League Challenge는 owo API, `GuiGraphics`, `MbcGuiStyle`, `MbcContentFrameLayout`과 화면별 내부 좌표 타입을 참조하면 안 된다(MUST NOT). owo는 실제 게임 백엔드 후보일 뿐이며, 스파이크에서 채택하지 않아도 League 화면 문서가 유지돼야 한다.
+League Challenge는 owo API, `GuiGraphics`, `MbcGuiStyle`, `MbcContentFrameLayout`과 화면별 내부 좌표 타입을 참조하면 안 된다(MUST NOT). owo는 실제 게임 백엔드 후보일 뿐이며, 스파이크에서 채택하지 않아도 League 상태·행동 계약이 유지돼야 한다.
 
-MBC 기본 테마는 MBC JAR에 내장하고 League 테마는 애드온 JAR에 내장한다. 선택형 외부 리소스팩은 안정적 ID의 시각 자산만 덮어쓸 수 있다. 잘못된 화면 문서나 테마가 로드되면 직전 정상 스냅샷 또는 기본 테마로 돌아가고 서버 진행은 계속돼야 한다(MUST).
+화면 구조, 행동 ID, 확인 단계와 포커스 순서는 타입 있는 코드가 소유하며 `ResourceManager`에서 읽지 않는다(MUST). MBC 기본 테마는 코드 기본값과 MBC JAR에, League 테마는 애드온 JAR에 내장한다. 선택형 외부 Visual Pack은 허용된 cosmetic 토큰과 안정적 ID의 시각 자산만 덮어쓸 수 있다. 잘못된 외부 테마는 전체를 버리고 코드 기본값과 내장 텍스처로 돌아가며 서버 진행은 계속돼야 한다(MUST).
 
 새 프레임워크는 기존 화면을 일괄 교체하지 않는다. League의 fixture 수직 단면과 개발 전용 진입점에서 먼저 검증하고, 실제 게임 승인을 통과한 화면만 한 개씩 이행한다.
 
@@ -142,8 +142,9 @@ MBC 변경에는 최소 다음 자동 테스트가 필요하다.
 - `ResourceSkin`이 도전자 프로필과 방어구를 복사하지 않음
 - 기존 `GameProfile` 투영이 회귀하지 않음
 - BP 거래가 재전송돼도 한 번만 반영됨
-- 같은 `MbcUI` 화면 문서가 웹과 Minecraft에서 같은 정보 구조와 행동 ID를 가짐
-- 잘못된 화면·테마 리로드가 직전 정상 스냅샷과 서버 진행을 보존함
+- 리소스팩이 화면 구조·행동 ID·확인 단계를 교체할 수 없음
+- 잘못된 외부 테마가 코드 기본값과 서버 진행을 보존함
+- 선택형 웹 도구의 fixture·manifest가 Minecraft 화면의 필수 컴포넌트와 상태·행동 ID를 보존함
 - League Challenge가 없어도 MBC 기본 테마와 기존 화면이 로드됨
 - League Challenge가 없는 MBC 단독 환경이 로드되고 기존 테스트가 통과함
 

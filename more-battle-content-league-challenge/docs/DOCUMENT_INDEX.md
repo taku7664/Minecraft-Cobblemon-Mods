@@ -13,7 +13,7 @@
 | [PROGRESSION_AND_CONTENT.md](PROGRESSION_AND_CONTENT.md) | 뱃지, 볼 계급, 레벨캡, 체육관, 사천왕, 챔피언과 후반 해금을 정의한다. |
 | [DATA_AND_ASSET_PACKS.md](DATA_AND_ASSET_PACKS.md) | 교체 가능한 리그 콘텐츠의 데이터팩·리소스팩 계약을 정의한다. |
 | [TERMINAL_GUI_AND_BATTLE_FLOW.md](TERMINAL_GUI_AND_BATTLE_FLOW.md) | 별도 터미널, GUI, 관장전과 리그 연전의 사용자 흐름을 정의한다. |
-| [GUI_FRAMEWORK_AND_RESOURCE_PACK.md](GUI_FRAMEWORK_AND_RESOURCE_PACK.md) | MbcUI 첫 사용처, GUI 우선 수직 단면, 내장 테마와 선택형 외부 리소스팩 계획을 정의한다. |
+| [GUI_FRAMEWORK_AND_RESOURCE_PACK.md](GUI_FRAMEWORK_AND_RESOURCE_PACK.md) | MbcUI의 불변 화면·행동 경계, Minecraft 우선 수직 단면, 내장 테마와 시각 전용 Visual Pack 계획을 정의한다. |
 | [EXTERNAL_INTEGRATIONS.md](EXTERNAL_INTEGRATIONS.md) | PokeBadges와 외부 레벨캡 제공자 연동 및 장애 처리를 정의한다. |
 | [TRAINER_APPEARANCES.md](TRAINER_APPEARANCES.md) | 관장·사천왕·챔피언 스킨, 초상화와 홀로그램 렌더링을 정의한다. |
 | [MBC_CORE_CHANGES.md](MBC_CORE_CHANGES.md) | MBC가 독립성을 유지하면서 애드온을 지원하기 위해 필요한 공개 API와 잠금 지점을 정의한다. |

@@ -24,7 +24,6 @@ data/<namespace>/mbc-league-challenge/appearances/*.json
 ```text
 assets/<namespace>/textures/entity/trainers/*.png
 assets/<namespace>/textures/gui/portraits/*.png
-assets/<namespace>/mbc_ui/screens/*.mbcui.xml
 assets/<namespace>/mbc_ui/themes/*.json
 assets/<namespace>/textures/gui/mbc_ui/panels/*.png
 assets/<namespace>/textures/gui/mbc_ui/icons/*.png
@@ -35,7 +34,7 @@ assets/<namespace>/lang/en_us.json
 
 MBC 공용 기본 테마는 MBC JAR에, League 기본 테마와 자산은 League Challenge JAR에 포함한다(MUST). 따라서 별도 팩을 설치하지 않아도 완전한 기본 화면이 보여야 한다. 서버가 커스텀 외형을 강제하려면 데이터팩과 짝을 이루는 서버 리소스팩을 배포할 수 있다(MAY).
 
-외부 리소스팩은 같은 안정적 ID를 덮어써서 색, 패널, 아이콘, 배경, 초상화와 애니메이션 프레임만 바꾼다. 진행 조건, 도전 순서, 레벨캡, 팀, 보상과 서버 승인 결과는 바꿀 수 없다(MUST NOT). 자세한 GUI 자산 계약은 [GUI_FRAMEWORK_AND_RESOURCE_PACK.md](GUI_FRAMEWORK_AND_RESOURCE_PACK.md)를 따른다.
+외부 리소스팩은 허용된 cosmetic 테마 토큰과 안정적 ID의 패널, 아이콘, 배경, 초상화와 애니메이션 프레임만 바꾼다. 화면·컴포넌트 트리, 행동 ID, 확인 단계, 필수 의미, 진행 조건, 도전 순서, 레벨캡, 팀, 보상과 서버 승인 결과는 바꿀 수 없다(MUST NOT). 화면 구조와 행동은 `ResourceManager` 밖의 타입 있는 코드 계약으로 둔다(MUST). 자세한 GUI 자산 계약은 [GUI_FRAMEWORK_AND_RESOURCE_PACK.md](GUI_FRAMEWORK_AND_RESOURCE_PACK.md)를 따른다.
 
 ## 3. 정의 분리
 
@@ -104,7 +103,7 @@ MBC 공용 기본 테마는 MBC JAR에, League 기본 테마와 자산은 League
 
 서버는 클라이언트 리소스팩의 실제 텍스처 존재를 완전히 보증할 수 없다. 누락 자산은 클라이언트에서 안전한 기본 외형으로 대체하고 전투 자체는 중단하지 않는다.
 
-화면 문서와 테마 리로드도 전체 후보 스냅샷 단위로 처리한다. 파싱·참조·리소스 ID 검증이 실패하면 직전 정상 화면과 테마를 유지한다(MUST). 화면 실패가 서버 진행 스냅샷을 되돌리거나 전투를 중단해서는 안 된다(MUST NOT).
+외부 테마 리로드는 전체 후보 스냅샷 단위로 처리한다. 파싱·허용 토큰·리소스 ID 검증이 실패하면 외부 테마 전체를 버리고 코드 기본값과 내장 텍스처를 사용한다(MUST). 테마 실패가 화면 구조, 행동, 서버 진행 스냅샷을 바꾸거나 전투를 중단해서는 안 된다(MUST NOT).
 
 진행 중인 배틀과 사천왕 연속 도전은 시작 시점의 정의 스냅샷을 유지한다. 리로드된 정의는 새 세션부터 적용한다.
 
@@ -118,9 +117,9 @@ MBC 공용 기본 테마는 MBC JAR에, League 기본 테마와 자산은 League
 
 - 데이터팩에는 원격 URL이나 임의 파일 경로를 허용하지 않는다.
 - 모든 사용자 노출 문구는 번역 키로 제공한다.
-- 화면·테마 문서에도 `schema_version`을 둔다.
+- 외부 테마 문서에도 `schema_version`을 둔다.
 - 기본 UI 자산은 각 모드 JAR에 내장하고 외부 리소스팩은 선택형 덮어쓰기로만 사용한다.
-- 원격 이미지 URL, 임의 CSS, 스크립트와 런타임 클래스 이름은 화면·테마 정의에 허용하지 않는다.
+- 원격 이미지 URL, 임의 CSS, 스크립트, 화면 구조, 행동 ID와 런타임 클래스 이름은 외부 테마 정의에 허용하지 않는다.
 - 정의에는 `schema_version`을 둔다.
 - 스키마를 깨는 변경은 마이그레이션 문서와 함께 새 버전으로 올린다.
 - 식별자는 저장 데이터와 외부 애드온 연동에 쓰이므로 출시 후 임의 변경하지 않는다.

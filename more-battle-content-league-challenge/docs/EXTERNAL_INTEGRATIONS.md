@@ -53,9 +53,9 @@ League Challenge는 MBC의 내부 패키지를 직접 사용하지 않는다. MB
 - 트레이너 가상 투영과 리소스 스킨 표현
 - BP 원자적 지급
 - Battle Tower·Battle Factory 접근 정책 등록
-- 클라이언트 전용 `MbcUI` 화면 문서·토큰·컴포넌트 사용
+- 클라이언트 전용 `MbcUI` 화면 모델·토큰·컴포넌트·행동 타입 사용
 
-League Challenge는 owo·`GuiGraphics`와 MBC 내부 레이아웃 타입을 직접 사용하지 않는다(MUST NOT). Minecraft UI 백엔드는 MBC가 소유하며 League는 공개 화면·상태·행동 계약에만 의존한다(MUST).
+League Challenge는 owo·`GuiGraphics`와 MBC 내부 레이아웃 타입을 직접 사용하지 않는다(MUST NOT). Minecraft UI 백엔드는 MBC가 소유하며 League는 공개 화면·상태·행동 계약에만 의존한다(MUST). 화면 구조와 행동 계약은 외부 리소스팩에서 로드하지 않는다(MUST NOT).
 
 MBC는 League Challenge를 의존하거나 클래스 이름으로 탐색하지 않는다. 애드온이 초기화될 때 정책과 공급자를 등록하고 서버 종료 때 해제한다.
 
