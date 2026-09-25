@@ -50,11 +50,6 @@ public final class BetterMusicConfigScreen {
             return BetterMusicConfigProblemScreen.loadFailure(parent, Path.of("settings.json"), "mod is not initialized");
         }
         CompiledMusicConfiguration compiled = currentManager.activeConfiguration().orElse(null);
-        if (compiled == null) {
-            return BetterMusicConfigProblemScreen.loadFailure(
-                parent, currentManager.store().settingsFile(), currentManager.lastReload().message()
-            );
-        }
 
         MusicCatalogSettings initialSettings;
         MusicMappingOverrides initialOverrides;
@@ -75,10 +70,39 @@ public final class BetterMusicConfigScreen {
             .setTitle(text("title"))
             .setSavingRunnable(() -> save(currentManager, settings.get(), overrides.get()));
         ConfigEntryBuilder entries = builder.entryBuilder();
-        addPlayback(builder.getOrCreateCategory(text("category.playback")), entries, settings, initialSettings);
+        ConfigCategory playback = builder.getOrCreateCategory(text("category.playback"));
+        addBasePack(playback, entries, settings, initialSettings, currentManager.availableBasePackIds());
+        addPlayback(playback, entries, settings, initialSettings);
         addEffects(builder.getOrCreateCategory(text("category.effects")), entries, settings, initialSettings);
-        addMappings(builder, entries, compiled, overrides, initialOverrides);
+        if (compiled != null) {
+            addMappings(builder, entries, compiled, overrides, initialOverrides);
+        } else {
+            ConfigCategory advanced = builder.getOrCreateCategory(text("category.advanced"));
+            advanced.addEntry(entries.startTextDescription(Component.translatable(
+                "better_cobblemon_music.config.mapping.no_active_base",
+                currentManager.lastReload().message()
+            )).build());
+        }
         return builder.build();
+    }
+
+    private static void addBasePack(
+        ConfigCategory category,
+        ConfigEntryBuilder entries,
+        AtomicReference<MusicCatalogSettings> edited,
+        MusicCatalogSettings initial,
+        Set<String> available
+    ) {
+        Set<String> choices = new java.util.TreeSet<>(available);
+        choices.add(initial.basePackId());
+        category.addEntry(entries.startStringDropdownMenu(
+                text("base_pack"), initial.basePackId(), Component::literal
+            ).setSelections(choices).setDefaultValue(BetterMusicConfigManager.DEFAULT_BASE_PACK_ID)
+            .setTooltip(text("base_pack.tooltip"))
+            .setSaveConsumer(value -> edited.updateAndGet(old -> new MusicCatalogSettings(
+                value, old.playback(), old.selection(), old.volume(), old.audioEffects()
+            )))
+            .build());
     }
 
     private static void addPlayback(

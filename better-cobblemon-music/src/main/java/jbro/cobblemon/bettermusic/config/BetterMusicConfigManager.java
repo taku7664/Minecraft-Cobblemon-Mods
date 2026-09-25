@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import jbro.cobblemon.bettermusic.catalog.CompiledMusicConfiguration;
 import jbro.cobblemon.bettermusic.catalog.LegacyMusicConfigMigrator;
 import jbro.cobblemon.bettermusic.catalog.MusicCatalog;
@@ -28,6 +30,7 @@ public final class BetterMusicConfigManager {
 
     private final MusicCatalogConfigStore store;
     private volatile CompiledMusicConfiguration activeConfiguration;
+    private volatile Set<String> availableBasePackIds = Set.of();
     private volatile ReloadResult lastReload = new ReloadResult(
         Outcome.NO_VALID_CONFIG, "Music catalogs have not loaded yet", 0
     );
@@ -57,6 +60,12 @@ public final class BetterMusicConfigManager {
                 diagnostics.add("Rejected catalog from " + document.source() + ": " + safeMessage(exception));
             }
         }
+        availableBasePackIds = catalogs.stream()
+            .filter(catalog -> catalog.kind() == MusicCatalog.Kind.BASE)
+            .map(MusicCatalog::packId)
+            .collect(java.util.stream.Collectors.collectingAndThen(
+                java.util.stream.Collectors.toCollection(TreeSet::new), Set::copyOf
+            ));
 
         try {
             MusicCatalogSettings settings = store.loadSettings();
@@ -88,6 +97,10 @@ public final class BetterMusicConfigManager {
 
     public ReloadResult lastReload() {
         return lastReload;
+    }
+
+    public Set<String> availableBasePackIds() {
+        return availableBasePackIds;
     }
 
     public MusicCatalogConfigStore store() {

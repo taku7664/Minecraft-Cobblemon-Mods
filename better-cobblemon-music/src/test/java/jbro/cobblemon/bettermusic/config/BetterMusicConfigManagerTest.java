@@ -82,6 +82,24 @@ final class BetterMusicConfigManagerTest {
         assertEquals(0.4, manager.activeConfiguration().orElseThrow().playlists().get("cobleserver:one").volume());
     }
 
+    @Test
+    void exposesDiscoveredBasePacksEvenWhenTheSelectedPackCannotActivate() throws Exception {
+        Path configDirectory = temporaryDirectory.resolve("config");
+        var manager = new BetterMusicConfigManager(configDirectory);
+        manager.initialize();
+        String settings = Files.readString(configDirectory.resolve("settings.json"));
+        Files.writeString(
+            configDirectory.resolve("settings.json"),
+            settings.replace("cobleserver:official", "missing:selected"),
+            StandardCharsets.UTF_8
+        );
+
+        var result = manager.reloadCatalogs(List.of(document(validCatalog("cobleserver:music.one"))));
+
+        assertEquals(BetterMusicConfigManager.Outcome.NO_VALID_CONFIG, result.outcome());
+        assertEquals(java.util.Set.of("cobleserver:official"), manager.availableBasePackIds());
+    }
+
     private static BetterMusicConfigManager.CatalogDocument document(String json) {
         return new BetterMusicConfigManager.CatalogDocument("test-pack", json);
     }
