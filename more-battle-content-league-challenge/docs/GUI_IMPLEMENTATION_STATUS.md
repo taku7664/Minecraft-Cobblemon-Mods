@@ -17,6 +17,7 @@
 | `ac86714` | 계급 경계와 여섯 fixture, 세 폭 레이아웃, 코드 드로잉 League 홈, fixture별 개발 하위 명령 | League `build`, 테스트 15개 |
 | `8e463510` | 독립 `cobblemon-ui-kit` 모듈, 의미 기반 버튼 계약, 불변 테마 스냅샷, Component Gallery | UI Kit `build`, 테스트 12개, JAR 내용 검사 |
 | `b3468c40`, `b8d9113f` | Cobblemon 전용 로드 계약과 Mojang 공식 매핑용 Cobblemon 개발 의존성 정정 | 메타데이터 계약 테스트, Cobblemon 1.8.1 실제 클라이언트 기동 |
+| `de1c4644` | Minecraft 기본 화면 블러가 갤러리 위젯까지 흐리게 만드는 결함 수정 | UI Kit `build`, 테스트 13개, 실제 Cobblemon 월드 상·하단 재캡처 |
 
 ## 2026-09-25 타이틀 화면 개발 fixture 스파이크
 
@@ -44,6 +45,8 @@ Minecraft 1.21.1 개발 클라이언트의 타이틀 파노라마 위에서 `bad
 개발 전용 Component Gallery를 실제 싱글플레이 통합 서버 오버월드에서 열었다. 자동 하네스는 `client.level`과 `client.player` 존재, TAB 포커스, 스크롤 소비, 닫은 뒤 월드 유지와 상·하단 캡처를 검증했다. 자동 검증이 약 1초 안에 클라이언트까지 종료해 수동 검토를 방해한 결함을 발견했고, 이후 `CAPTURE`와 `MANUAL` 모드를 분리했다. 수동 모드는 Cobblemon 1.8.1과 UI Kit이 함께 로드된 오버월드에서 갤러리만 열고 자동 입력·자동 종료를 하지 않는다.
 
 처음에는 Modrinth Cobblemon JAR과 Mojang 공식 매핑을 조합해 Kotlin 리플렉션이 intermediary 이름 `net.minecraft.class_2960`을 찾지 못하는 초기화 충돌이 발생했다. MBC와 같은 `com.cobblemon:mod`/`com.cobblemon:fabric` 공식 개발 좌표로 바꾼 뒤 Cobblemon 초기화, 월드 입장과 갤러리 오픈을 다시 확인했다. 이 런타임 검증은 실제 Cobblemon 월드 증거지만 물리 입력 승인, League 터미널, 서버 패킷이나 Battle UI 소비 증거는 아니다.
+
+첫 실제 월드 캡처는 Minecraft 기본 `Screen.renderBackground()` 후처리가 갤러리 본문까지 흐리게 만들어 시각 승인 증거로 사용할 수 없었다. 오른쪽 위 알림과 저장 문구는 선명하지만 제목·버튼·목록만 번지는 차이를 사용자 캡처와 자동 캡처를 나란히 놓아 확인했다. 갤러리가 기본 배경 렌더를 무효화하고 테마의 반투명 backdrop을 직접 그리도록 수정한 뒤 다시 캡처했으며, 제목·버튼·보조 문구·상태 라벨·목록이 선명한 것을 확인했다. `renderTransparentBackground()` 재도입과 기본 `renderBackground()` 상속을 막는 회귀 테스트를 추가했다.
 
 개발 환경에서 다음 화면 상태를 열 수 있다.
 
