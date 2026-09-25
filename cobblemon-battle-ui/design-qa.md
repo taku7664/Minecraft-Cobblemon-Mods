@@ -1,6 +1,7 @@
 # Design QA — 챔피언스식 전투 정보 화면
 
-- source visual truth path: `C:\Users\박주형\.codex\generated_images\01a05562-1795-7042-855a-bdd64385bbb2\exec-e2b35434-a27a-4dac-856f-48835abb19ab.png`
+- layout reference path: `C:\Users\박주형\.codex\generated_images\01a05562-1795-7042-855a-bdd64385bbb2\exec-e2b35434-a27a-4dac-856f-48835abb19ab.png`
+- color and surface contract: `../docs/COBBLEMON_UI_DESIGN_SYSTEM_BOUNDARY_DECISION.md`
 - implementation screenshot path: 없음
 - source pixels: 1680 × 945
 - intended implementation viewport: Minecraft GUI 854 × 480 기준, 화면 크기에 맞춘 등비 축소
@@ -19,7 +20,7 @@
 
 - Fonts and typography: 코드상 계층과 축척은 구현했으나 실제 Minecraft 글꼴의 줄바꿈·잘림은 미검증.
 - Spacing and layout rhythm: 기준 좌표와 등비 축소는 구현했으나 실제 3D 모델 외곽과의 겹침은 미검증.
-- Colors and visual tokens: 인디고·보라·마젠타·라임 포커스 토큰은 구현했으나 모니터상 대비는 미검증.
+- Colors and visual tokens: 공통 의미 토큰의 네이비 표면, 청록·보라 액센트, 코랄 위험 액센트를 적용했으나 실제 게임 대비는 미검증.
 - Image quality and asset fidelity: 2D 대체물을 쓰지 않고 Cobblemon 3D 모델 렌더러를 사용하지만 실제 모델별 크기 차이는 미검증.
 - Copy and content: 한글 레이블과 주요 전장 효과 번역을 추가했으나 실제 번역 누락 표시는 미검증.
 
@@ -35,6 +36,7 @@
 ## Comparison history
 
 - 1차: 구현 빌드와 단위 테스트 통과. 실제 전투 캡처 부재로 P1 유지.
+- 2차: 레이아웃·모달·랭크 트랙은 유지하고 저장소 공통 의미 토큰으로 색·표면 계층만 교체. 실제 전투 캡처 부재로 P1 유지.
 
 ## Implementation checklist
 

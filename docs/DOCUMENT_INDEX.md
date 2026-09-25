@@ -92,6 +92,7 @@
 69. `MORE_BATTLE_CONTENT_DECLARATIVE_UI_FRAMEWORK_DECISION.md` — MBC 공용 선언형 UI 계약, 웹·Minecraft 이중 렌더러, 내장 테마와 선택형 외부 리소스팩, GUI 우선 점진 이행 후속 결정
 70. `MORE_BATTLE_CONTENT_UI_RESOURCE_BOUNDARY_AMENDMENT.md` — 69번의 교체 가능한 화면 문서와 웹 우선 단계를 수정한 현행 계약. 불변 타입 화면·행동, 시각 전용 Visual Pack과 Minecraft 우선 수직 스파이크를 확정
 71. `MORE_BATTLE_CONTENT_LEAGUE_UI_BOOTSTRAP_AMENDMENT.md` — League 모듈이 없던 착수 순서를 수정하고 최소 모듈·개발 진입점·실험 MbcUI·두 Minecraft 스파이크·안정 API 승격 게이트를 확정
+72. `COBBLEMON_UI_DESIGN_SYSTEM_BOUNDARY_DECISION.md` — MbcUI는 MBC에 남기고, 독립 모드와는 의미 토큰·시각 문법·fixture·캡처 기준만 공유하며 별도 런타임 추출을 유예한 후속 결정
 
 `MORE_BATTLE_CONTENT_CONTENT_PROPOSAL.md`는 `rejected` 상태의 과거 대안이다. 현재 제품 범위나 구현 우선순위를 결정할 때 사용하지 않는다.
 
