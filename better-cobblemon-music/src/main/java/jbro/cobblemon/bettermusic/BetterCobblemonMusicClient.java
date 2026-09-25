@@ -28,6 +28,7 @@ public final class BetterCobblemonMusicClient implements ClientModInitializer {
         var configManager = new BetterMusicConfigManager(configDirectory);
         var initialLoad = configManager.initialize();
         logInitialLoad(initialLoad);
+        jbro.cobblemon.bettermusic.client.BetterMusicConfigScreen.configure(configManager);
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
             new MusicCatalogResourceReloadListener(configManager, LOGGER)
         );

@@ -32,7 +32,7 @@ final class BetterMusicConfigProblemScreen extends Screen {
     static BetterMusicConfigProblemScreen missingClothConfig(Screen parent) {
         Path configFile = FabricLoader.getInstance().getConfigDir()
             .resolve(BetterCobblemonMusicClient.MOD_ID)
-            .resolve("music.json")
+            .resolve("settings.json")
             .toAbsolutePath()
             .normalize();
         return new BetterMusicConfigProblemScreen(

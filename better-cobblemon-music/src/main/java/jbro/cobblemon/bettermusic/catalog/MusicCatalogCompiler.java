@@ -73,6 +73,7 @@ public final class MusicCatalogCompiler {
             snapshot,
             trackEvents,
             playlists,
+            baseMappings,
             base.audioEvents().orElseThrow(),
             activeExtensions,
             diagnostics,

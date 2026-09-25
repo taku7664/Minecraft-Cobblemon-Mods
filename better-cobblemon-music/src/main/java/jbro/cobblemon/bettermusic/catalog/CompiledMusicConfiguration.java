@@ -13,6 +13,7 @@ public record CompiledMusicConfiguration(
     BetterMusicConfigSnapshot snapshot,
     Map<String, String> trackEvents,
     Map<String, PlaylistDefinition> playlists,
+    CatalogMappings baseMappings,
     MusicCatalog.AudioEvents audioEvents,
     Set<String> activeExtensionPackIds,
     List<String> diagnostics,
@@ -22,6 +23,7 @@ public record CompiledMusicConfiguration(
         Objects.requireNonNull(snapshot, "snapshot");
         trackEvents = immutableMap(trackEvents, "trackEvents");
         playlists = immutableMap(playlists, "playlists");
+        Objects.requireNonNull(baseMappings, "baseMappings");
         Objects.requireNonNull(audioEvents, "audioEvents");
         activeExtensionPackIds = Set.copyOf(Objects.requireNonNull(activeExtensionPackIds, "activeExtensionPackIds"));
         diagnostics = List.copyOf(Objects.requireNonNull(diagnostics, "diagnostics"));
