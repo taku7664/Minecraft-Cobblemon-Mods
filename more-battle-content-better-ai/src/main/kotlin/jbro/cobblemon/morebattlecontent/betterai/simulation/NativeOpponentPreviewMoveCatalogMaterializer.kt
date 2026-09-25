@@ -26,6 +26,7 @@ internal enum class NativeOpponentPreviewMoveCatalogIssueCode {
     PUBLIC_MOVE_POOL_MISSING,
     NORMALIZED_MOVESET_INCOMPLETE,
     EXECUTABLE_MOVE_UNAVAILABLE,
+    TEAM_MOVE_WORLD_UNAVAILABLE,
 }
 
 internal data class NativeOpponentPreviewMoveCatalogIssue(
@@ -34,14 +35,27 @@ internal data class NativeOpponentPreviewMoveCatalogIssue(
     val previewSlotId: Int,
 )
 
+internal data class NativeOpponentPreviewMoveCatalogWorld(
+    val hypothesisId: String,
+    val probability: Double,
+    val catalog: BattlePublicActionCatalogView,
+) {
+    init {
+        require(hypothesisId.isNotBlank())
+        require(probability.isFinite() && probability > 0.0 && probability <= 1.0)
+    }
+}
+
 internal data class NativeOpponentPreviewMoveCatalogMaterialization(
-    val catalog: BattlePublicActionCatalogView?,
+    val worlds: List<NativeOpponentPreviewMoveCatalogWorld>,
     val issues: List<NativeOpponentPreviewMoveCatalogIssue>,
 ) {
     init {
-        require((catalog == null) == issues.isNotEmpty()) {
-            "Preview move materialization must return a complete catalog or explicit issues"
+        require(worlds.isEmpty() == issues.isNotEmpty()) {
+            "Preview move materialization must return normalized worlds or explicit issues"
         }
+        require(worlds.isEmpty() || kotlin.math.abs(worlds.sumOf { it.probability } - 1.0) <= 1e-9)
+        require(worlds.map { it.hypothesisId }.distinct().size == worlds.size)
     }
 }
 
@@ -56,9 +70,11 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
     ): NativeOpponentPreviewMoveCatalogMaterialization {
         val previewBySlot = preview.pokemon.associateBy(BattleOpponentTeamPreviewPokemonView::previewSlotId)
         val issues = mutableListOf<NativeOpponentPreviewMoveCatalogIssue>()
-        val inferences = roster.state.pokemon.asSequence()
+        val candidatesByPokemon = linkedMapOf<UUID, List<WeightedInference>>()
+        roster.state.pokemon.asSequence()
             .filter { it.side == BattleSide.OPPONENT }
-            .mapNotNull { pokemon ->
+            .sortedBy { roster.opponentPreviewSlotByPokemonId.getValue(it.battlePokemonId) }
+            .forEach { pokemon ->
                 val slot = roster.opponentPreviewSlotByPokemonId.getValue(pokemon.battlePokemonId)
                 val previewPokemon = previewBySlot[slot]
                 if (previewPokemon == null) {
@@ -67,7 +83,7 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
                         pokemon,
                         slot,
                     )
-                    return@mapNotNull null
+                    return@forEach
                 }
                 sourceCatalog.inferredMovesForPokemon(pokemon.battlePokemonId)?.let { existing ->
                     val compiled = NativeMoveHypothesisCompiler.compile(pokemon, sourceCatalog)
@@ -82,9 +98,11 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
                             pokemon,
                             slot,
                         )
-                        else -> return@mapNotNull existing
+                        else -> candidatesByPokemon[pokemon.battlePokemonId] = listOf(
+                            WeightedInference(existing, 1.0, "fixed:${inferenceId(existing)}"),
+                        )
                     }
-                    return@mapNotNull null
+                    return@forEach
                 }
                 if (previewPokemon.moveCandidatePool == null) {
                     issues += issue(
@@ -92,27 +110,66 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
                         pokemon,
                         slot,
                     )
-                    return@mapNotNull null
+                    return@forEach
                 }
-                val inferred = infer(pokemon, previewPokemon, roster.state.format, tier, usage)
-                if (inferred.slots.none { it.knowledge != BattleOpponentMoveKnowledge.GUESS }) {
+                val candidates = inferenceCandidates(
+                    pokemon,
+                    previewPokemon,
+                    roster.state.format,
+                    tier,
+                    usage,
+                )
+                if (candidates.isEmpty()) {
                     issues += issue(
                         NativeOpponentPreviewMoveCatalogIssueCode.EXECUTABLE_MOVE_UNAVAILABLE,
                         pokemon,
                         slot,
                     )
-                    null
                 } else {
-                    inferred
+                    candidatesByPokemon[pokemon.battlePokemonId] = candidates
                 }
             }
-            .toList()
         if (issues.isNotEmpty()) {
-            return NativeOpponentPreviewMoveCatalogMaterialization(null, issues)
+            return NativeOpponentPreviewMoveCatalogMaterialization(emptyList(), issues)
+        }
+
+        var teams = listOf(WeightedInferenceTeam(emptyList(), 1.0, MOVE_POLICY_ID))
+        val teamCap = teamWorldCap(tier, candidatesByPokemon.size)
+        candidatesByPokemon.forEach { (pokemonId, candidates) ->
+            teams = teams.asSequence().flatMap { team ->
+                candidates.asSequence().map { candidate ->
+                    WeightedInferenceTeam(
+                        inferences = team.inferences + candidate.inference,
+                        weight = team.weight * candidate.weight,
+                        id = "${team.id}|$pokemonId=${candidate.id}",
+                    )
+                }
+            }.filter { it.weight.isFinite() && it.weight > 0.0 }
+                .sortedWith(TEAM_ORDER)
+                .take(teamCap)
+                .toList()
+        }
+        val total = teams.sumOf(WeightedInferenceTeam::weight)
+        if (teams.isEmpty() || !total.isFinite() || total <= 0.0) {
+            val first = roster.state.pokemon.first { it.side == BattleSide.OPPONENT }
+            return NativeOpponentPreviewMoveCatalogMaterialization(
+                emptyList(),
+                listOf(issue(
+                    NativeOpponentPreviewMoveCatalogIssueCode.TEAM_MOVE_WORLD_UNAVAILABLE,
+                    first,
+                    roster.opponentPreviewSlotByPokemonId.getValue(first.battlePokemonId),
+                )),
+            )
         }
         return NativeOpponentPreviewMoveCatalogMaterialization(
-            sourceCatalog.withOpponentMoveInferences(inferences),
-            emptyList(),
+            worlds = teams.map { team ->
+                NativeOpponentPreviewMoveCatalogWorld(
+                    hypothesisId = team.id,
+                    probability = team.weight / total,
+                    catalog = sourceCatalog.withOpponentMoveInferences(team.inferences),
+                )
+            },
+            issues = emptyList(),
         )
     }
 
@@ -124,18 +181,11 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
         usage: LocalMoveUsageLookup?,
     ): BattleOpponentMoveInferenceView {
         require(pokemon.side == BattleSide.OPPONENT)
-        val pool = requireNotNull(preview.moveCandidatePool) {
+        requireNotNull(preview.moveCandidatePool) {
             "A public preview move pool is required before inference"
         }
         val policy = policy(tier)
-        val ranked = pool.moveDetails.entries
-            .filter { (moveId, details) -> moveId in pool.moveIds && details.currentPp > 0 }
-            .sortedWith(
-                compareByDescending<Map.Entry<String, BattleMoveCandidateView>> { (moveId, _) ->
-                    usage?.rate(preview.speciesId, preview.formId, moveId) ?: -1.0
-                }.thenByDescending { (_, details) -> attackScore(details, format) }
-                    .thenBy { (moveId, _) -> canonical(moveId) },
-            )
+        val ranked = rankedMoves(preview, format, usage)
         val stab = ranked.filter { (_, details) -> group(preview, details) == BattleOpponentMoveGroup.STAB_ATTACK }
             .distinctBy { (_, details) -> canonical(details.typeId) }
         val coverage = ranked.filter { (_, details) ->
@@ -153,6 +203,89 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
         }
         while (slots.size < MAX_MOVE_SLOTS) slots += guessed(slots.size, BattleOpponentMoveGroup.OTHER)
         return BattleOpponentMoveInferenceView(pokemon.battlePokemonId, slots)
+    }
+
+    private fun inferenceCandidates(
+        pokemon: BattlePokemonStateView,
+        preview: BattleOpponentTeamPreviewPokemonView,
+        format: BattleFormat,
+        tier: BattleTrainerTier,
+        usage: LocalMoveUsageLookup?,
+    ): List<WeightedInference> {
+        val policy = policy(tier)
+        if (!policy.variableStabShapes) {
+            val inference = infer(pokemon, preview, format, tier, usage)
+            return if (inference.slots.any { it.knowledge != BattleOpponentMoveKnowledge.GUESS }) {
+                listOf(WeightedInference(inference, 1.0, inferenceId(inference)))
+            } else {
+                emptyList()
+            }
+        }
+
+        val ranked = rankedMoves(preview, format, usage)
+        val stab = ranked.filter { (_, details) -> group(preview, details) == BattleOpponentMoveGroup.STAB_ATTACK }
+            .distinctBy { (_, details) -> canonical(details.typeId) }
+            .take(policy.stabSlots)
+        val coverage = ranked.filter { (_, details) ->
+            group(preview, details) == BattleOpponentMoveGroup.COVERAGE_ATTACK
+        }
+        val subsets = subsets(stab)
+        val candidates = linkedMapOf<String, WeightedInference>()
+        subsets.forEach { selectedStab ->
+            val slots = mutableListOf<BattleOpponentMoveSlotView>()
+            addExpected(slots, selectedStab, BattleOpponentMoveGroup.STAB_ATTACK)
+            val remainingAttacks = (policy.attackSlots - selectedStab.size).coerceAtLeast(0)
+            addExpected(slots, coverage.take(remainingAttacks), BattleOpponentMoveGroup.COVERAGE_ATTACK)
+            if (slots.isEmpty()) return@forEach
+            repeat(minOf(policy.statusGuessSlots, MAX_MOVE_SLOTS - slots.size)) {
+                slots += guessed(slots.size, BattleOpponentMoveGroup.STATUS_OTHER)
+            }
+            while (slots.size < MAX_MOVE_SLOTS) slots += guessed(slots.size, BattleOpponentMoveGroup.OTHER)
+            val inference = BattleOpponentMoveInferenceView(pokemon.battlePokemonId, slots)
+            val selectedIds = selectedStab.mapTo(hashSetOf()) { (moveId, _) -> canonical(moveId) }
+            val weight = stab.fold(1.0) { product, (moveId, _) ->
+                val rate = (usage?.rate(preview.speciesId, preview.formId, moveId) ?: DEFAULT_PRESENCE_RATE)
+                    .coerceIn(MIN_PRESENCE_RATE, MAX_PRESENCE_RATE)
+                product * if (canonical(moveId) in selectedIds) rate else 1.0 - rate
+            }
+            candidates.putIfAbsent(inferenceId(inference), WeightedInference(inference, weight, inferenceId(inference)))
+        }
+        return candidates.values.sortedWith(INFERENCE_ORDER)
+    }
+
+    private fun rankedMoves(
+        preview: BattleOpponentTeamPreviewPokemonView,
+        format: BattleFormat,
+        usage: LocalMoveUsageLookup?,
+    ): List<Map.Entry<String, BattleMoveCandidateView>> {
+        val pool = requireNotNull(preview.moveCandidatePool)
+        return pool.moveDetails.entries
+            .filter { (moveId, details) -> moveId in pool.moveIds && details.currentPp > 0 }
+            .sortedWith(
+                compareByDescending<Map.Entry<String, BattleMoveCandidateView>> { (moveId, _) ->
+                    usage?.rate(preview.speciesId, preview.formId, moveId) ?: -1.0
+                }.thenByDescending { (_, details) -> attackScore(details, format) }
+                    .thenBy { (moveId, _) -> canonical(moveId) },
+            )
+    }
+
+    private fun subsets(
+        candidates: List<Map.Entry<String, BattleMoveCandidateView>>,
+    ): List<List<Map.Entry<String, BattleMoveCandidateView>>> {
+        val output = mutableListOf<List<Map.Entry<String, BattleMoveCandidateView>>>()
+        fun visit(index: Int, selected: MutableList<Map.Entry<String, BattleMoveCandidateView>>) {
+            if (index == candidates.size) {
+                output += selected.toList()
+                return
+            }
+            visit(index + 1, selected)
+            selected += candidates[index]
+            visit(index + 1, selected)
+            selected.removeAt(selected.lastIndex)
+        }
+        visit(0, mutableListOf())
+        return output.sortedWith(compareBy<List<Map.Entry<String, BattleMoveCandidateView>>> { it.size }
+            .thenBy { subset -> subset.joinToString(",") { canonical(it.key) } })
     }
 
     private fun addExpected(
@@ -212,11 +345,23 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
     }
 
     private fun policy(tier: BattleTrainerTier): PublicPreviewPolicy = when (tier) {
-        BattleTrainerTier.INTRODUCTORY -> PublicPreviewPolicy(1, 0, 0)
-        BattleTrainerTier.STANDARD -> PublicPreviewPolicy(1, 1, 1)
-        BattleTrainerTier.ADVANCED -> PublicPreviewPolicy(1, 2, 1)
-        BattleTrainerTier.BOSS -> PublicPreviewPolicy(2, 1, 1)
+        BattleTrainerTier.INTRODUCTORY -> PublicPreviewPolicy(1, 0, 0, false)
+        BattleTrainerTier.STANDARD -> PublicPreviewPolicy(1, 1, 1, false)
+        BattleTrainerTier.ADVANCED -> PublicPreviewPolicy(1, 2, 1, true)
+        BattleTrainerTier.BOSS -> PublicPreviewPolicy(2, 1, 1, true)
     }
+
+    private fun teamWorldCap(tier: BattleTrainerTier, pokemonCount: Int): Int = when (tier) {
+        BattleTrainerTier.INTRODUCTORY -> 3
+        BattleTrainerTier.STANDARD -> 6
+        BattleTrainerTier.ADVANCED -> 10
+        BattleTrainerTier.BOSS -> 16
+    } * pokemonCount.coerceAtLeast(1)
+
+    private fun inferenceId(inference: BattleOpponentMoveInferenceView): String =
+        inference.slots.joinToString(",") { slot ->
+            "${slot.slot}:${slot.moveId?.let(::canonical).orEmpty()}:${slot.group.name}:${slot.knowledge.name}"
+        }
 
     private fun issue(
         code: NativeOpponentPreviewMoveCatalogIssueCode,
@@ -233,7 +378,28 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
         val stabSlots: Int,
         val coverageSlots: Int,
         val statusGuessSlots: Int,
+        val variableStabShapes: Boolean,
+    ) {
+        val attackSlots: Int = stabSlots + coverageSlots
+    }
+
+    private data class WeightedInference(
+        val inference: BattleOpponentMoveInferenceView,
+        val weight: Double,
+        val id: String,
+    )
+
+    private data class WeightedInferenceTeam(
+        val inferences: List<BattleOpponentMoveInferenceView>,
+        val weight: Double,
+        val id: String,
     )
 
     private const val MAX_MOVE_SLOTS = 4
+    private const val DEFAULT_PRESENCE_RATE = 0.5
+    private const val MIN_PRESENCE_RATE = 1e-6
+    private const val MAX_PRESENCE_RATE = 1.0 - MIN_PRESENCE_RATE
+    private const val MOVE_POLICY_ID = "public-move-shape-prior-v1"
+    private val INFERENCE_ORDER = compareByDescending<WeightedInference> { it.weight }.thenBy { it.id }
+    private val TEAM_ORDER = compareByDescending<WeightedInferenceTeam> { it.weight }.thenBy { it.id }
 }

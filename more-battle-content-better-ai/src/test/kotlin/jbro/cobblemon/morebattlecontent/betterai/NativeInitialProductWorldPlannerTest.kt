@@ -1,6 +1,10 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption.CREATE_NEW
 import java.util.UUID
+import java.util.zip.ZipInputStream
 import jbro.cobblemon.morebattlecontent.api.ai.BattleAbilityAvailability
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
@@ -27,6 +31,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerTier
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlanIssueCode
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlanner
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownBranchEngine
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalMoveUsageLookup
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalOpponentBuildUsageEntry
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalOpponentBuildUsageLookup
@@ -35,8 +40,56 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 
 class NativeInitialProductWorldPlannerTest {
+    @Test
+    fun `boss product worlds retain zero one and two stab shapes for one dual type preview`(
+        @TempDir directory: Path,
+    ) {
+        val preview = dualTypePreview()
+        val planner = planner(moveUsage = LocalMoveUsageLookup { _, _, _ -> 0.5 })
+
+        val result = planner.plan(context(preview = preview), BattleTrainerTier.BOSS)
+
+        assertTrue(result.issues.isEmpty(), result.issues.toString())
+        val stabMoves = setOf("moonblast", "shadowball")
+        val flutterSets = result.worlds.map { world ->
+            world.definition.p2Team.single { it.species == "fluttermane" }.moves.toSet()
+        }
+        assertEquals(setOf(0, 1, 2), flutterSets.map { moves -> moves.count(stabMoves::contains) }.toSet())
+        assertTrue(flutterSets.any { moves -> moves.none(stabMoves::contains) })
+        assertTrue(flutterSets.any { moves -> moves.count(stabMoves::contains) == 1 })
+        assertTrue(flutterSets.any { moves -> stabMoves.all(moves::contains) })
+
+        val representativeByShape = result.worlds.groupBy { world ->
+            world.definition.p2Team.single { it.species == "fluttermane" }
+                .moves.count(stabMoves::contains)
+        }.mapValues { (_, worlds) -> worlds.first() }
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            representativeByShape.forEach { (shape, world) ->
+                val expectedSet = world.definition.p2Team.single { it.species == "fluttermane" }
+                val frame = engine.createBattle(world.definition)
+                val nativeMoves = frame.p2Team.single { it.uuid == expectedSet.uuid }.moves.map { it.id }
+                assertEquals(shape, nativeMoves.count(stabMoves::contains))
+                assertEquals(expectedSet.moves, nativeMoves)
+            }
+        }
+
+        fun stabShapes(tier: BattleTrainerTier): Set<Int> = planner
+            .plan(context(preview = preview), tier)
+            .worlds
+            .map { world ->
+                world.definition.p2Team.single { it.species == "fluttermane" }
+                    .moves.count(stabMoves::contains)
+            }
+            .toSet()
+        assertEquals(setOf(1), stabShapes(BattleTrainerTier.INTRODUCTORY))
+        assertEquals(setOf(1), stabShapes(BattleTrainerTier.STANDARD))
+        assertEquals(setOf(0, 1), stabShapes(BattleTrainerTier.ADVANCED))
+    }
+
     @Test
     fun `compiles one normalized bounded product beam from public singles preview`() {
         val planner = planner()
@@ -110,8 +163,9 @@ class NativeInitialProductWorldPlannerTest {
 
     private fun planner(
         buildUsage: LocalOpponentBuildUsageLookup = LocalOpponentBuildUsageLookup { _, _ -> BUILD_USAGE },
+        moveUsage: LocalMoveUsageLookup = LocalMoveUsageLookup { _, _, _ -> 1.0 },
     ) = NativeInitialProductWorldPlanner(
-        moveUsageForFormat = { LocalMoveUsageLookup { _, _, _ -> 1.0 } },
+        moveUsageForFormat = { moveUsage },
         buildUsageForFormat = { buildUsage },
     )
 
@@ -138,13 +192,13 @@ class NativeInitialProductWorldPlannerTest {
                     stats = BattleCombatStatRangesView.exact(100, 100, 100, 100, 100, 100),
                 )
             } + OPPONENTS.take(activeCount).mapIndexed { index, id ->
-                val (species, type) = PREVIEW_SPECIES[index]
+                val previewPokemon = preview.pokemon[index]
                 pokemon(
                     id = id,
                     side = BattleSide.OPPONENT,
                     activeSlot = index,
-                    species = species,
-                    types = setOf(type),
+                    species = previewPokemon.speciesId.substringAfter(':'),
+                    types = previewPokemon.knownTypeIds,
                     stats = null,
                 )
             },
@@ -230,6 +284,73 @@ class NativeInitialProductWorldPlannerTest {
         },
     )
 
+    private fun dualTypePreview() = BattleOpponentTeamPreviewView(
+        selectionSize = 3,
+        pokemon = listOf(
+            previewPokemon(
+                slot = 0,
+                species = "fluttermane",
+                types = setOf("ghost", "fairy"),
+                moves = mapOf(
+                    "moonblast" to move("fairy"),
+                    "shadowball" to move("ghost"),
+                    "powergem" to move("rock"),
+                    "thunderbolt" to move("electric"),
+                    "mysticalfire" to move("fire"),
+                ),
+            ),
+            previewPokemon(1, "pikachu", setOf("electric"), mapOf(
+                "thunderbolt" to move("electric"),
+            )),
+            previewPokemon(2, "mewtwo", setOf("psychic"), mapOf(
+                "psychic" to move("psychic"),
+            )),
+            previewPokemon(3, "raichu", setOf("electric"), mapOf(
+                "thunderbolt" to move("electric"),
+            )),
+            previewPokemon(4, "eevee", setOf("normal"), mapOf(
+                "tackle" to move("normal"),
+            )),
+            previewPokemon(5, "snorlax", setOf("normal"), mapOf(
+                "bodyslam" to move("normal"),
+            )),
+        ),
+    )
+
+    private fun previewPokemon(
+        slot: Int,
+        species: String,
+        types: Set<String>,
+        moves: Map<String, BattleMoveCandidateView>,
+    ): BattleOpponentTeamPreviewPokemonView {
+        val speciesId = "cobblemon:$species"
+        return BattleOpponentTeamPreviewPokemonView(
+            previewSlotId = slot,
+            speciesId = speciesId,
+            formId = "normal",
+            level = 50,
+            knownTypeIds = types,
+            moveCandidatePool = BattleOpponentPreviewMovePoolView(
+                speciesId = speciesId,
+                formId = "normal",
+                moveIds = moves.keys,
+                sourceId = "fixture:dual-type-learnset",
+                moveDetails = moves,
+            ),
+            buildCandidatePool = BattleOpponentPreviewBuildPoolView(
+                speciesId = speciesId,
+                formId = "normal",
+                abilities = listOf(BattleOpponentPreviewAbilityView(
+                    "synchronize",
+                    BattleAbilityAvailability.REGULAR,
+                )),
+                genderRates = mapOf("N" to 1.0),
+                sourceId = "fixture:form",
+            ),
+            showdownSpeciesId = species,
+        )
+    }
+
     private fun pokemon(
         id: UUID,
         side: BattleSide,
@@ -269,6 +390,37 @@ class NativeInitialProductWorldPlannerTest {
         priority = 0,
         currentPp = 10,
     )
+
+    private fun extractBundledShowdown(targetRoot: Path): Path {
+        Files.createDirectories(targetRoot)
+        val resource = requireNotNull(javaClass.getResourceAsStream("/data/cobblemon/showdown.zip")) {
+            "Cobblemon embedded Showdown is missing from the test runtime"
+        }
+        var extracted = 0L
+        ZipInputStream(resource).use { zip ->
+            while (true) {
+                val entry = zip.nextEntry ?: break
+                val target = EmbeddedShowdownOracle.entryPath(targetRoot, entry.name)
+                if (!entry.isDirectory && (entry.name.endsWith(".js") || entry.name.endsWith(".json"))) {
+                    Files.createDirectories(target.parent)
+                    Files.newOutputStream(target, CREATE_NEW).use { output ->
+                        val buffer = ByteArray(65536)
+                        while (true) {
+                            val count = zip.read(buffer)
+                            if (count < 0) break
+                            extracted += count
+                            require(extracted <= 128L * 1024 * 1024) {
+                                "Embedded archive exceeds extraction limit"
+                            }
+                            output.write(buffer, 0, count)
+                        }
+                    }
+                }
+                zip.closeEntry()
+            }
+        }
+        return targetRoot.toAbsolutePath().normalize()
+    }
 
     private companion object {
         val BATTLE: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")

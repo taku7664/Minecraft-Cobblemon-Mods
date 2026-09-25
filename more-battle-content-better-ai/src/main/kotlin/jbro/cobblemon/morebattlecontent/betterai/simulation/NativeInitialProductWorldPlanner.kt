@@ -127,7 +127,7 @@ internal class NativeInitialProductWorldPlanner(
                 tier,
                 moveUsageForFormat(context.state.format),
             )
-            val catalog = moveMaterialization.catalog ?: return failure(
+            if (moveMaterialization.issues.isNotEmpty()) return failure(
                 NativeInitialProductWorldPlanIssueCode.MOVE_CATALOG_MATERIALIZATION_FAILED,
                 rosterHypothesis.hypothesisId,
                 moveMaterialization.issues.map { it.code.name },
@@ -145,27 +145,29 @@ internal class NativeInitialProductWorldPlanner(
                     buildCompilation.issues.map { it.code.name },
                 )
             }
-            buildCompilation.worlds.forEach { buildWorld ->
-                val assembly = NativeInitialBattleWorldAssembler.assemble(
-                    roster,
-                    rosterHypothesis,
-                    exactOwnTeam,
-                    buildWorld,
-                    catalog,
-                )
-                val world = assembly.world ?: return failure(
-                    NativeInitialProductWorldPlanIssueCode.INITIAL_WORLD_ASSEMBLY_FAILED,
-                    rosterHypothesis.hypothesisId,
-                    assembly.issues.map { it.code.name },
-                )
-                candidates += PreparedWorld(
-                    world = world,
-                    roster = roster,
-                    catalogContext = context.copy(
-                        state = roster.state,
-                        publicActionCatalog = catalog,
-                    ),
-                )
+            moveMaterialization.worlds.forEach { moveWorld ->
+                buildCompilation.worlds.forEach { buildWorld ->
+                    val assembly = NativeInitialBattleWorldAssembler.assemble(
+                        roster,
+                        rosterHypothesis,
+                        exactOwnTeam,
+                        buildWorld,
+                        moveWorld.catalog,
+                    )
+                    val assembled = assembly.world ?: return failure(
+                        NativeInitialProductWorldPlanIssueCode.INITIAL_WORLD_ASSEMBLY_FAILED,
+                        rosterHypothesis.hypothesisId,
+                        assembly.issues.map { it.code.name },
+                    )
+                    candidates += PreparedWorld(
+                        world = assembled.copy(probability = assembled.probability * moveWorld.probability),
+                        roster = roster,
+                        catalogContext = context.copy(
+                            state = roster.state,
+                            publicActionCatalog = moveWorld.catalog,
+                        ),
+                    )
+                }
             }
         }
 
