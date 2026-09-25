@@ -10,6 +10,7 @@ import jbro.cobblemon.morebattlecontent.internal.compat.fabric.FactoryCatalogRes
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.FactoryCommandRuntime
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.PvpLoungeProtection
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.ManagedServerEphemeralStateCleanup
+import jbro.cobblemon.morebattlecontent.internal.compat.fabric.ManagedBattleLifecycleEvents
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.TowerOpponentCatalogResources
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.BattlePointShopCatalogResources
 import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173AiTestBattleRuntime
@@ -58,6 +59,8 @@ object MoreBattleContent : ModInitializer {
         BattleArenaHologramNetworking.registerServer()
         ManagedBattleMechanicVisibilityNetworking.registerServer()
         ManagedBattleContentNetworking.registerServer()
+        // Register after feature handlers so their result settlement runs before the final entity backstop.
+        ManagedBattleLifecycleEvents.registerServer()
         BattleContentCommands.register(
             CONTENTS,
             openScreen = BattleHubNetworking::open,

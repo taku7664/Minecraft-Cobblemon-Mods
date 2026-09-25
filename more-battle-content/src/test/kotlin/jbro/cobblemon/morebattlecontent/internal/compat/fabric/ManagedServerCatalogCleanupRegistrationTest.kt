@@ -19,4 +19,20 @@ class ManagedServerCatalogCleanupRegistrationTest {
         assertTrue(source.contains("TowerOpponentCatalogResources.store::clear"))
         assertTrue(source.contains("BattlePointShopCatalogResources.store::clear"))
     }
+
+    @Test
+    fun `managed battle entity cleanup runs after feature settlement handlers`() {
+        val source = Files.readString(
+            Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/MoreBattleContent.kt"),
+        )
+
+        val towerRegistration = source.indexOf("TowerPlayNetworking.registerServer()")
+        val factoryRegistration = source.indexOf("FactoryCommandRuntime.registerServer()")
+        val lifecycleRegistration = source.indexOf("ManagedBattleLifecycleEvents.registerServer()")
+
+        assertTrue(towerRegistration >= 0)
+        assertTrue(factoryRegistration >= 0)
+        assertTrue(lifecycleRegistration > towerRegistration)
+        assertTrue(lifecycleRegistration > factoryRegistration)
+    }
 }
