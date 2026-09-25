@@ -99,6 +99,12 @@ assets/cobblemon_more_battle_content_league_challenge/textures/gui/portraits/*.p
 | LGUI-7 | 서버 권위 상태 연결 | 오래된 상태·조작 요청을 서버가 거부 |
 | LGUI-8 | 사천왕·챔피언 화면 확장 | 수직 단면의 공용 컴포넌트 재사용 확인 |
 
+### 2026-09-25 LGUI-2 중간 증거
+
+`badges_3` fixture의 코드 드로잉과 owo 후보를 실제 Minecraft에서 `320×240`, `427×240`으로 비교했다. 두 후보는 같은 정보 구조와 반응형 배치를 유지했고, owo도 기본 위젯 외형 대신 League 전용 surface와 renderer를 적용할 수 있었다. 캡처와 차이는 [UI_BACKEND_SPIKE_RESULT.md](UI_BACKEND_SPIKE_RESULT.md)에 기록했다.
+
+이는 LGUI-2 완료가 아니다. `640×360`, 한영·긴 문자열, 입력·내레이션, 3D 슬롯·scissor와 성능 증거가 남아 있다. 비교를 위한 League의 직접 owo 참조는 일회성 개발 예외이며 LGUI-3 전에 MBC 비공개 렌더러로 이동하거나 제거해야 한다(MUST).
+
 ## 8. 시각·기능 검증
 
 - 세 논리 화면 크기의 동일 상태를 실제 Minecraft에서 나란히 비교한다.

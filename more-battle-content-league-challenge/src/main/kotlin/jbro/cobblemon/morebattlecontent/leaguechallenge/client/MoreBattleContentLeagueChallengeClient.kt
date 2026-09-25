@@ -15,6 +15,8 @@ object MoreBattleContentLeagueChallengeClient : ClientModInitializer {
             return
         }
 
+        LeagueUiCaptureHarness.installFromEnvironment()
+
         ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
             val command = literal("mbc-league-ui").executes { context ->
                 openFixture(context.source, "badges_3")
@@ -25,6 +27,16 @@ object MoreBattleContentLeagueChallengeClient : ClientModInitializer {
                 })
             }
             dispatcher.register(command)
+
+            val owoCommand = literal("mbc-league-ui-owo").executes { context ->
+                openOwoFixture(context.source, "badges_3")
+            }
+            LeagueHomeFixtureCatalog.all.forEach { fixture ->
+                owoCommand.then(literal(fixture.id).executes { context ->
+                    openOwoFixture(context.source, fixture.id)
+                })
+            }
+            dispatcher.register(owoCommand)
         }
     }
 
@@ -36,6 +48,19 @@ object MoreBattleContentLeagueChallengeClient : ClientModInitializer {
             Component.translatable(
                 "command.cobblemon_more_battle_content_league_challenge.dev.opened",
                 fixtureId
+            )
+        )
+        return 1
+    }
+
+    private fun openOwoFixture(source: FabricClientCommandSource, fixtureId: String): Int {
+        source.client.setScreen(
+            LeagueChallengeOwoSpikeScreen(LeagueHomeFixtureCatalog.require(fixtureId))
+        )
+        source.sendFeedback(
+            Component.translatable(
+                "command.cobblemon_more_battle_content_league_challenge.dev.opened",
+                "owo:$fixtureId"
             )
         )
         return 1

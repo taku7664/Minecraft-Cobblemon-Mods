@@ -19,6 +19,7 @@ internal class LeagueChallengeDevelopmentScreen(
     private val fixture: LeagueHomeFixture = LeagueHomeFixtureCatalog.require("badges_3")
 ) : Screen(text("title")) {
     private lateinit var layout: LeagueHomeLayout
+    private lateinit var challengeButton: LeagueHomeActionButton
     private var actionStatus: Component = Component.empty()
 
     override fun init() {
@@ -26,21 +27,21 @@ internal class LeagueChallengeDevelopmentScreen(
             "Invalid League home MbcUI contract"
         }
         layout = LeagueHomeLayout.calculate(width, height)
-        addRenderableWidget(
-            LeagueHomeActionButton(layout.actionButton, text("challenge"), ::dispatchChallenge).also {
-                it.active = fixture.challengeAvailable
-            }
-        )
+        challengeButton = LeagueHomeActionButton(layout.actionButton, text("challenge"), ::dispatchChallenge).also {
+            it.active = fixture.challengeAvailable
+        }
+        addRenderableWidget(challengeButton)
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         renderBackground(graphics, mouseX, mouseY, partialTick)
+        graphics.flush()
         drawShell(graphics)
         drawHeader(graphics)
         drawBadges(graphics)
         drawChallenge(graphics)
         drawFooter(graphics)
-        super.render(graphics, mouseX, mouseY, partialTick)
+        challengeButton.render(graphics, mouseX, mouseY, partialTick)
     }
 
     private fun drawShell(graphics: GuiGraphics) {
