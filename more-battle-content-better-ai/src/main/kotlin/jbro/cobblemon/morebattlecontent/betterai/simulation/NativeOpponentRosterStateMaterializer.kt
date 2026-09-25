@@ -258,9 +258,13 @@ internal object NativeOpponentRosterStateMaterializer {
     ): Boolean {
         val publicForm = pokemon.formId
         val previewForm = preview.formId
-        return normalizedSpeciesId(pokemon.speciesId) == normalizedSpeciesId(preview.speciesId) &&
+        val species = normalizedSpeciesId(pokemon.speciesId)
+        val baseIdentity = species == normalizedSpeciesId(preview.speciesId) &&
             (publicForm == null || previewForm == null ||
                 normalizedSpeciesId(publicForm) == normalizedSpeciesId(previewForm))
+        val showdownIdentity = pokemon.speciesId.startsWith("showdown:") &&
+            preview.showdownSpeciesId?.let { species == normalizedSpeciesId(it) } == true
+        return baseIdentity || showdownIdentity
     }
 
     private fun issue(

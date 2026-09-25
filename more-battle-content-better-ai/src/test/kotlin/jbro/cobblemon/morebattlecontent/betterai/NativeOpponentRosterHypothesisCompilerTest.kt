@@ -79,6 +79,27 @@ class NativeOpponentRosterHypothesisCompilerTest {
     }
 
     @Test
+    fun `showdown switch form identity matches the public Cobblemon preview form`() {
+        val lead = opponent("showdown:zoroarkhisui")
+        val preview = BattleOpponentTeamPreviewView(1, listOf(
+            BattleOpponentTeamPreviewPokemonView(
+                previewSlotId = 0,
+                speciesId = "cobblemon:zoroark",
+                formId = "Hisuian",
+                level = 50,
+                moveCandidatePool = null,
+                buildCandidatePool = null,
+                showdownSpeciesId = "Zoroark-Hisui",
+            ),
+        ))
+
+        val result = NativeOpponentRosterHypothesisCompiler.compile(state(lead, remaining = 1), preview)
+
+        assertTrue(result.issues.isEmpty(), "issues=${result.issues}")
+        assertEquals(0, result.hypotheses.single().revealedAssignments.getValue(lead.battlePokemonId))
+    }
+
+    @Test
     fun `singles accepts every selection size exposed by the preview`() {
         val species = arrayOf("torterra", "zoroark", "celebi", "houndoom", "milotic", "togekiss")
         for (selectionSize in 1..species.size) {

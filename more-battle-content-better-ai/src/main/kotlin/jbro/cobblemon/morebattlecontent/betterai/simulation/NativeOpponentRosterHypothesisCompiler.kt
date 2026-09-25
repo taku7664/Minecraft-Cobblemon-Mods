@@ -217,9 +217,15 @@ internal object NativeOpponentRosterHypothesisCompiler {
     ): Boolean {
         val revealedForm = revealed.formId
         val previewForm = preview.formId
-        return normalizedId(revealed.speciesId) == normalizedId(preview.speciesId) &&
+        val species = normalizedId(revealed.speciesId)
+        val baseIdentity = species == normalizedId(preview.speciesId) &&
             (revealedForm == null || previewForm == null ||
                 normalizedId(revealedForm) == normalizedId(previewForm))
+        // A Showdown switch line names the form (for example Zoroark-Hisui), while the
+        // Cobblemon team preview names the base species plus a separate form.
+        val showdownIdentity = revealed.speciesId.startsWith("showdown:") &&
+            preview.showdownSpeciesId?.let { species == normalizedId(it) } == true
+        return baseIdentity || showdownIdentity
     }
 
     /**
