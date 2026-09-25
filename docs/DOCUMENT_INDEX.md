@@ -4,7 +4,7 @@
 |---|---|
 | Status | `shared` |
 | Effective | 2026-08-19 |
-| Last reviewed | 2026-09-25 — League Challenge GUI 착수 순서와 실험 API 승격 게이트 연결 |
+| Last reviewed | 2026-09-25 — Cobblemon UI 툴킷 경계, 런타임 증거 등급과 Battle UI 단계형 표시 계약 반영 |
 | 주 독자 | 빡대리님과 이후 설계·구현 담당자 |
 | 목적 | 활성 계약, 분석 근거, 폐기 기록과 재개 지점의 라우팅 |
 
@@ -93,6 +93,8 @@
 70. `MORE_BATTLE_CONTENT_UI_RESOURCE_BOUNDARY_AMENDMENT.md` — 69번의 교체 가능한 화면 문서와 웹 우선 단계를 수정한 현행 계약. 불변 타입 화면·행동, 시각 전용 Visual Pack과 Minecraft 우선 수직 스파이크를 확정
 71. `MORE_BATTLE_CONTENT_LEAGUE_UI_BOOTSTRAP_AMENDMENT.md` — League 모듈이 없던 착수 순서를 수정하고 최소 모듈·개발 진입점·실험 MbcUI·두 Minecraft 스파이크·안정 API 승격 게이트를 확정
 72. `COBBLEMON_UI_DESIGN_SYSTEM_BOUNDARY_DECISION.md` — MbcUI는 MBC에 남기고, 독립 모드와는 의미 토큰·시각 문법·fixture·캡처 기준만 공유하며 별도 런타임 추출을 유예한 후속 결정
+73. `COBBLEMON_UI_TOOLKIT_AND_RUNTIME_EVIDENCE_AMENDMENT.md` — 72번의 런타임 추출 유예를 갱신해 Cobblemon 전용 공용 위젯·테마 소스 모듈을 정하고, 내장 자산/Visual Pack 경계와 타이틀 fixture·실제 월드 증거 등급을 분리
+74. `COBBLEMON_BATTLE_UI_PHASED_COMMAND_AND_LOG_DECISION.md` — Battle UI를 명령 선택, 연출 내레이션과 별도 전체 기록으로 나누고 구조화된 아군·상대·시스템 사건과 기존 상시 로그 종료 조건을 정의
 
 `MORE_BATTLE_CONTENT_CONTENT_PROPOSAL.md`는 `rejected` 상태의 과거 대안이다. 현재 제품 범위나 구현 우선순위를 결정할 때 사용하지 않는다.
 
@@ -137,7 +139,8 @@
 | 첫 타워 Screen | Play만 노출. 파티·형식·선출·진행·BP·시작/재개/변경 의도를 포함하고 나머지 패널은 유예 |
 | 타워 파티 카드 | 클릭 순서가 실제 출전 순서이며 `(1)~(3/4)` 표시. GUI 초상·이름·배틀 레벨·지닌 도구를 카드에 즉시 노출 |
 | 타워 커스텀 GUI | 바닐라 버튼 텍스처 없이 코드 드로잉 셸·상단 BP·좌측 파티 rail·중앙 진행/설정·우측 상태·하단 행동을 제공. 320×240은 파티 rail과 세로 접힌 본문을 유지 |
-| MBC UI 프레임워크 | `MbcUI`의 화면 구조·행동은 타입이 있는 불변 계약으로 두고 owo는 내부 백엔드 후보로만 시험. 기본 테마는 각 JAR에 내장하며 외부 Visual Pack은 허용된 시각 토큰·텍스처만 덮어씀. 실제 Minecraft League 홈을 첫 스파이크로 구현 |
+| Cobblemon UI 툴킷 | MBC 내부 전용 `MbcUI` 경계를 갱신해 독립 Gradle 클라이언트 소스 모듈로 공용 위젯·테마·입력 계약을 추출. League와 독립 Battle UI가 실제로 소비한 뒤 별도 JAR/Jar-in-Jar 배포를 결정하며 owo는 비공개 백엔드 후보로만 유지 |
+| Battle UI 표시 | 명령 선택 때 데이터 기반 행동 메뉴, 연출 때 하단 내레이션, 요청 때만 좌·우·중앙 전체 기록을 표시. 실제 월드 Cobblemon 전투에서 검증한 뒤 기존 상시 로그를 종료 |
 | 타워 NPC 팀 | MBC 전용 신규 데이터로 작성. 소드·실드 실제 팀과 외부 모드 데이터는 복제하지 않고 여러 본가 배틀 시설의 공개 패턴만 참고 |
 | 상대 스키마 3 | TERA는 표준 `tera_type`, DYNAMAX는 `dmax_level: 10`과 Boolean `gmax_factor`, MEGA는 정확한 메가스톤을 사용. 승인된 18프로필·72세트를 내장 데이터에 적용 |
 | 팩토리 스키마 4 | 트레이너와 렌탈 풀을 분리하고 501종·폼에 네 개씩 2,004개 완성 프리셋을 제공한다. 기술 4개·특성·도구·성격·EV는 세트에 고정하며 무작위성은 세트 선발에만 적용 |

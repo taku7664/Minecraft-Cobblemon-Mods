@@ -114,15 +114,15 @@ League Challenge는 새 화폐를 만들지 않고 MBC BP를 사용한다. MBC�
 
 내부 `BattlePointService`를 그대로 공개하기보다 위 계약을 감싸는 안정적인 API를 둔다.
 
-## 9. MbcUI 공개 계약과 콘텐츠 식별
+## 9. Cobblemon UI 툴킷 계약과 콘텐츠 식별
 
-MBC는 [UI 리소스 경계 수정 결정](../../docs/MORE_BATTLE_CONTENT_UI_RESOURCE_BOUNDARY_AMENDMENT.md)에 따라 클라이언트 전용 `MbcUI` 계약을 소유해야 한다. 공개 범위는 타입 있는 화면 모델, 디자인 토큰, 공용 컴포넌트, 상태 바인딩, 사용자 의도와 Minecraft 전용 호스트 슬롯이다(MUST).
+[Cobblemon UI 툴킷 후속 결정](../../docs/COBBLEMON_UI_TOOLKIT_AND_RUNTIME_EVIDENCE_AMENDMENT.md)에 따라 독립된 클라이언트 소스 모듈이 타입 있는 위젯, 레이아웃, 입력·포커스, 디자인 토큰, 상태 바인딩과 Minecraft 전용 호스트 슬롯을 소유한다(MUST). MBC는 이를 소비하되 Battle UI가 MBC를 의존하게 만들면 안 된다(MUST NOT).
 
-League Challenge는 owo API, `GuiGraphics`, `MbcGuiStyle`, `MbcContentFrameLayout`과 화면별 내부 좌표 타입을 참조하면 안 된다(MUST NOT). owo는 실제 게임 백엔드 후보일 뿐이며, 스파이크에서 채택하지 않아도 League 상태·행동 계약이 유지돼야 한다.
+League Challenge는 owo API, `GuiGraphics`와 화면별 내부 좌표 타입을 참조하면 안 된다(MUST NOT). owo는 비공개 백엔드 후보일 뿐이며, 채택하지 않아도 League 상태·행동 계약이 유지돼야 한다.
 
 화면 구조, 행동 ID, 확인 단계와 포커스 순서는 타입 있는 코드가 소유하며 `ResourceManager`에서 읽지 않는다(MUST). MBC 기본 테마는 코드 기본값과 MBC JAR에, League 테마는 애드온 JAR에 내장한다. 선택형 외부 Visual Pack은 허용된 cosmetic 토큰과 안정적 ID의 시각 자산만 덮어쓸 수 있다. 잘못된 외부 테마는 전체를 버리고 코드 기본값과 내장 텍스처로 돌아가며 서버 진행은 계속돼야 한다(MUST).
 
-새 프레임워크는 기존 화면을 일괄 교체하지 않는다. League의 fixture 수직 단면과 개발 전용 진입점에서 먼저 검증하고, 실제 게임 승인을 통과한 화면만 한 개씩 이행한다.
+새 프레임워크는 기존 화면을 일괄 교체하지 않는다. Component Gallery, League와 Battle UI 두 실제 소비자에서 먼저 검증하고, 실제 월드 승인을 통과한 화면만 한 개씩 이행한다.
 
 배틀에는 안정적인 콘텐츠 ID를 전달해 Better AI·Better Music 같은 선택 애드온이 `gym`, `elite_four`, `champion`을 구분할 수 있게 한다. 특정 선택 애드온의 타입을 MBC 코어 요청에 직접 넣지 않는다.
 

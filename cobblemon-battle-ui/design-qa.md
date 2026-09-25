@@ -2,6 +2,8 @@
 
 - layout reference path: `C:\Users\박주형\.codex\generated_images\01a05562-1795-7042-855a-bdd64385bbb2\exec-e2b35434-a27a-4dac-856f-48835abb19ab.png`
 - color and surface contract: `../docs/COBBLEMON_UI_DESIGN_SYSTEM_BOUNDARY_DECISION.md`
+- current interaction contract: `../docs/COBBLEMON_BATTLE_UI_PHASED_COMMAND_AND_LOG_DECISION.md`
+- shared widget contract: `../docs/COBBLEMON_UI_TOOLKIT_AND_RUNTIME_EVIDENCE_AMENDMENT.md`
 - implementation screenshot path: 없음
 - source pixels: 1680 × 945
 - intended implementation viewport: Minecraft GUI 854 × 480 기준, 화면 크기에 맞춘 등비 축소
@@ -44,5 +46,8 @@
 - 같은 화면에서 방향키 포커스, 정지 마우스, 실제 마우스 이동 상태 각각 캡처
 - GUI 배율 최소·기본 상태에서 한글 잘림과 3D 모델 겹침 확인
 - 시안과 구현 캡처를 같은 크기로 합쳐 P1/P2 차이를 수정
+- 선택 단계의 데이터 기반 `BattleActionMenu`, 연출 단계의 하단 `BattleNarrationBar`, 요청형 `BattleTranscript`를 실제 전투에서 검증
+- 전체 기록에서 플레이어 왼쪽·상대 오른쪽·시스템 가운데 정렬과 번역 비종속 출처 판정 확인
+- 단계형 표시가 완료되면 기존 상시 `BattleLogWidget`을 제거하고 종료 커밋 기록
 
 final result: blocked
