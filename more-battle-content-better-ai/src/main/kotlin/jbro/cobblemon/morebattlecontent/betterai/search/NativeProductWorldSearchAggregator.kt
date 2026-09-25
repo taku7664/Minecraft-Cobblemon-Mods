@@ -91,7 +91,8 @@ internal class NativeProductWorldSearchAggregator(
     fun search(request: NativeProductWorldSearchRequest): NativeProductWorldSearchResult {
         val orderedWorlds = request.worlds.sortedWith(
             compareBy<NativeProductWorldSearchInput> { it.key.hypothesisId }
-                .thenBy { it.key.randomSampleIndex },
+                .thenBy { it.key.randomSampleIndex }
+                .thenBy { it.key.lineage },
         )
         var remainingNodeBudget = request.nodeLimit
         var nodesVisited = 0

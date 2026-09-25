@@ -12,6 +12,8 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownSearch
 internal data class NativeSearchWorldKey(
     val hypothesisId: String,
     val randomSampleIndex: Int,
+    /** Distinguishes publicly indistinguishable native descendants of the same sampled world. */
+    val lineage: String = "",
 ) {
     init {
         require(hypothesisId.isNotBlank())
