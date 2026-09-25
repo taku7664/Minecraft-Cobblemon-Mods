@@ -36,6 +36,27 @@ internal interface NativeBranchWorker : AutoCloseable {
     fun rebindMoves(snapshotJson: String, rebindings: List<NativeMoveSetRebinding>): NativeBattleFrame
 
     fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame
+
+    /**
+     * Replays an already-observed public turn and asks Showdown for the complete 16-roll support
+     * of each attributable direct hit. Product search must keep using [branch] so this diagnostic
+     * replay cost is paid only while conditioning retained worlds on public evidence.
+     */
+    fun branchWithDamageEvidence(
+        snapshotJson: String,
+        p1Choice: String,
+        p2Choice: String,
+    ): NativeBattleFrame = branch(snapshotJson, p1Choice, p2Choice)
+
+    /** Replays the same native branch with already-conditioned damage rolls. */
+    fun branchWithForcedDamage(
+        snapshotJson: String,
+        p1Choice: String,
+        p2Choice: String,
+        forcedDamageRolls: List<NativeForcedDamageRoll>,
+    ): NativeBattleFrame {
+        throw UnsupportedOperationException("This native worker cannot force observed damage rolls")
+    }
 }
 
 internal class NativeShowdownBranchEngine private constructor(
@@ -65,11 +86,45 @@ internal class NativeShowdownBranchEngine private constructor(
     }
 
     override fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame {
+        return branch(snapshotJson, p1Choice, p2Choice, captureDamageRolls = false, emptyList())
+    }
+
+    override fun branchWithDamageEvidence(
+        snapshotJson: String,
+        p1Choice: String,
+        p2Choice: String,
+    ): NativeBattleFrame {
+        return branch(snapshotJson, p1Choice, p2Choice, captureDamageRolls = true, emptyList())
+    }
+
+    override fun branchWithForcedDamage(
+        snapshotJson: String,
+        p1Choice: String,
+        p2Choice: String,
+        forcedDamageRolls: List<NativeForcedDamageRoll>,
+    ): NativeBattleFrame {
+        require(forcedDamageRolls.isNotEmpty()) { "At least one observed damage roll is required" }
+        return branch(snapshotJson, p1Choice, p2Choice, captureDamageRolls = true, forcedDamageRolls)
+    }
+
+    private fun branch(
+        snapshotJson: String,
+        p1Choice: String,
+        p2Choice: String,
+        captureDamageRolls: Boolean,
+        forcedDamageRolls: List<NativeForcedDamageRoll>,
+    ): NativeBattleFrame {
         require(snapshotJson.isNotBlank()) { "Native Showdown snapshot cannot be blank" }
         require(p1Choice.isNotBlank() && p2Choice.isNotBlank()) { "Both native choices are required" }
         return decode(
             branchFunction.execute(
-                gson.toJson(NativeBranchRequest(snapshotJson, p1Choice, p2Choice)),
+                gson.toJson(NativeBranchRequest(
+                    snapshotJson,
+                    p1Choice,
+                    p2Choice,
+                    captureDamageRolls,
+                    forcedDamageRolls,
+                )),
             ).asString(),
         )
     }
@@ -310,6 +365,8 @@ internal data class NativeBattleFrame(
     val log: List<String>,
     /** Exact move-message order emitted by the retained Showdown battle, across every completed turn. */
     val executedMoveOrder: List<NativeExecutedMoveFrame> = emptyList(),
+    /** Native random-damage support for publicly attributable direct hits. */
+    val executedDamageRolls: List<NativeDamageRollFrame> = emptyList(),
 )
 
 internal data class NativeExecutedMoveFrame(
@@ -321,6 +378,40 @@ internal data class NativeExecutedMoveFrame(
         require(turn >= 0)
         UUID.fromString(pokemonUuid)
         require(moveId.isNotBlank())
+    }
+}
+
+internal data class NativeDamageRollFrame(
+    val turn: Int,
+    val attackerPokemonUuid: String,
+    val targetPokemonUuid: String,
+    val moveId: String,
+    val hpBefore: Int,
+    val maxHp: Int,
+    val actualHpLoss: Int,
+    val possibleHpLosses: List<Int>,
+    val damageCallIndex: Int = 0,
+) {
+    init {
+        require(turn >= 0)
+        UUID.fromString(attackerPokemonUuid)
+        UUID.fromString(targetPokemonUuid)
+        require(moveId.isNotBlank())
+        require(maxHp > 0 && hpBefore in 1..maxHp)
+        require(actualHpLoss in 1..hpBefore)
+        require(possibleHpLosses.isNotEmpty() && possibleHpLosses.all { it in 1..hpBefore })
+        require(actualHpLoss in possibleHpLosses)
+        require(damageCallIndex >= 0)
+    }
+}
+
+internal data class NativeForcedDamageRoll(
+    val damageCallIndex: Int,
+    val percent: Int,
+) {
+    init {
+        require(damageCallIndex >= 0)
+        require(percent in 85..100)
     }
 }
 
@@ -390,6 +481,8 @@ private data class NativeBranchRequest(
     val snapshotJson: String,
     val p1Choice: String,
     val p2Choice: String,
+    val captureDamageRolls: Boolean,
+    val forcedDamageRolls: List<NativeForcedDamageRoll>,
 )
 
 private data class NativeMoveSetRebindRequest(

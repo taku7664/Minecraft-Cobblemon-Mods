@@ -182,7 +182,7 @@ internal class NativeProductSessionReconciler(
                             BattleSide.OPPONENT,
                             root,
                         )
-                        val next = worker.branch(root.snapshotJson, ownChoice, opponentChoice)
+                        val next = worker.branchWithDamageEvidence(root.snapshotJson, ownChoice, opponentChoice)
                         val replayed = intermediateReplayer.replayAfterChoice(
                             worker = worker,
                             definition = definition,
@@ -221,6 +221,7 @@ internal class NativeProductSessionReconciler(
                                     frame = updatedFrame,
                                     definition = postReplayPlan.definition,
                                     catalog = postReplayPlan.catalog,
+                                    observationLikelihood = frame.observationLikelihood,
                                     deferredAllyAction = frame.deferredCommands.allyAction,
                                     deferredOpponentAction = frame.deferredCommands.opponentAction,
                                 )
@@ -254,7 +255,7 @@ internal class NativeProductSessionReconciler(
                             frame = compatible.frame,
                             definition = compatible.definition,
                             catalog = compatible.catalog,
-                            probability = probability,
+                            probability = probability * compatible.observationLikelihood,
                             split = compatibleFrames.size > 1,
                             deferredAllyAction = compatible.deferredAllyAction,
                             deferredOpponentAction = compatible.deferredOpponentAction,
@@ -375,6 +376,7 @@ internal class NativeProductSessionReconciler(
     ) {
         val identity: String = listOf(
             frame.snapshotJson,
+            probability.toString(),
             deferredAllyAction?.actionId.orEmpty(),
             deferredOpponentAction?.actionId.orEmpty(),
         ).joinToString("|")
@@ -384,11 +386,18 @@ internal class NativeProductSessionReconciler(
         val frame: NativeBattleFrame,
         val definition: NativeBattleDefinition,
         val catalog: jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView,
+        val observationLikelihood: Double,
         val deferredAllyAction: BattleActionCandidate?,
         val deferredOpponentAction: BattleActionCandidate?,
     ) {
+        init {
+            require(observationLikelihood.isFinite() && observationLikelihood > 0.0 &&
+                observationLikelihood <= 1.0)
+        }
+
         val identity = DescendantIdentity(
             frame.snapshotJson,
+            observationLikelihood,
             deferredAllyAction?.actionId,
             deferredOpponentAction?.actionId,
         )
@@ -396,6 +405,7 @@ internal class NativeProductSessionReconciler(
 
     private data class DescendantIdentity(
         val snapshotJson: String,
+        val observationLikelihood: Double,
         val deferredAllyActionId: String?,
         val deferredOpponentActionId: String?,
     )

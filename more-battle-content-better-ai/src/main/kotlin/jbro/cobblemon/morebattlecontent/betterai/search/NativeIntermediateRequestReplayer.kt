@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai.search
 
+import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
@@ -14,6 +15,8 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootIssu
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootIssueCode
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootValidator
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBranchWorker
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeDamageObservationConditioner
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeDamageObservationStatus
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeObservedTurnActionIssue
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeObservedTurnActionMatcher
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownChoiceEncoder
@@ -51,7 +54,12 @@ internal enum class NativeIntermediateReplayStatus {
 internal data class NativeIntermediateReplayFrame(
     val frame: NativeBattleFrame,
     val deferredCommands: NativeDeferredCommandState,
-)
+    val observationLikelihood: Double = 1.0,
+) {
+    init {
+        require(observationLikelihood.isFinite() && observationLikelihood > 0.0 && observationLikelihood <= 1.0)
+    }
+}
 
 internal data class NativeIntermediateReplayResult(
     val status: NativeIntermediateReplayStatus,
@@ -111,16 +119,21 @@ internal class NativeIntermediateRequestReplayer(
         publicState: BattleStateView,
         deadlineNanos: Long,
     ): NativeIntermediateReplayResult {
+        val p1Choice = NativeShowdownChoiceEncoder.encode(submittedAllyAction, BattleSide.ALLY, before)
+        val p2Choice = NativeShowdownChoiceEncoder.encode(submittedOpponentAction, BattleSide.OPPONENT, before)
+        val damage = conditionDamageBranch(worker, before, after, p1Choice, p2Choice, events)
+            ?: return noConsistentWorld()
+        val eventsAfterDamage = events.filterNot { it.sequence in damage.explainedEventSequences }
         val transitioned = transition(
             format = format,
             before = before,
-            after = after,
+            after = damage.frame,
             existingDeferred = existingDeferred,
             submitted = mapOf(
                 BattleSide.ALLY to submittedAllyAction,
                 BattleSide.OPPONENT to submittedOpponentAction,
             ),
-            events = events,
+            events = eventsAfterDamage,
         )
         if (transitioned.issues.isNotEmpty()) {
             return observedMismatch(transitioned.issues)
@@ -129,7 +142,12 @@ internal class NativeIntermediateRequestReplayer(
             worker = worker,
             definition = definition,
             format = format,
-            state = ReplayState(after, transitioned.commands, transitioned.remainingEvents),
+            state = ReplayState(
+                damage.frame,
+                transitioned.commands,
+                transitioned.remainingEvents,
+                damage.likelihood,
+            ),
             publicState = publicState,
             deadlineNanos = deadlineNanos,
             intermediateDepth = 0,
@@ -160,7 +178,11 @@ internal class NativeIntermediateRequestReplayer(
         if (rootIssues.isEmpty()) {
             return NativeIntermediateReplayResult(
                 status = NativeIntermediateReplayStatus.AVAILABLE,
-                frames = listOf(NativeIntermediateReplayFrame(state.frame, conditioned.commands)),
+                frames = listOf(NativeIntermediateReplayFrame(
+                    state.frame,
+                    conditioned.commands,
+                    state.observationLikelihood,
+                )),
             )
         }
         if (intermediateDepth >= MAX_INTERMEDIATE_REQUESTS) return noConsistentWorld()
@@ -183,21 +205,33 @@ internal class NativeIntermediateRequestReplayer(
         var firstMismatch: NativeIntermediateReplayResult? = null
         for (opponentAction in observed.actions) {
             if (deadlineReached(deadlineNanos)) return deadlineExhausted()
-            val next = worker.branch(
+            val p1Choice = NativeShowdownChoiceEncoder.encode(allyWait, BattleSide.ALLY, state.frame)
+            val p2Choice = NativeShowdownChoiceEncoder.encode(opponentAction, BattleSide.OPPONENT, state.frame)
+            val next = worker.branchWithDamageEvidence(
                 state.frame.snapshotJson,
-                NativeShowdownChoiceEncoder.encode(allyWait, BattleSide.ALLY, state.frame),
-                NativeShowdownChoiceEncoder.encode(opponentAction, BattleSide.OPPONENT, state.frame),
+                p1Choice,
+                p2Choice,
             )
+            val damage = conditionDamageBranch(
+                worker,
+                state.frame,
+                next,
+                p1Choice,
+                p2Choice,
+                conditioned.remainingEvents,
+            ) ?: continue
+            val eventsAfterDamage = conditioned.remainingEvents
+                .filterNot { it.sequence in damage.explainedEventSequences }
             val transitioned = transition(
                 format = format,
                 before = state.frame,
-                after = next,
+                after = damage.frame,
                 existingDeferred = conditioned.commands,
                 submitted = mapOf(
                     BattleSide.ALLY to allyWait,
                     BattleSide.OPPONENT to opponentAction,
                 ),
-                events = conditioned.remainingEvents,
+                events = eventsAfterDamage,
             )
             if (transitioned.issues.isNotEmpty()) {
                 if (firstMismatch == null) firstMismatch = observedMismatch(transitioned.issues)
@@ -207,7 +241,12 @@ internal class NativeIntermediateRequestReplayer(
                 worker = worker,
                 definition = definition,
                 format = format,
-                state = ReplayState(next, transitioned.commands, transitioned.remainingEvents),
+                state = ReplayState(
+                    damage.frame,
+                    transitioned.commands,
+                    transitioned.remainingEvents,
+                    state.observationLikelihood * damage.likelihood,
+                ),
                 publicState = publicState,
                 deadlineNanos = deadlineNanos,
                 intermediateDepth = intermediateDepth + 1,
@@ -323,6 +362,65 @@ internal class NativeIntermediateRequestReplayer(
 
     private fun deadlineReached(deadlineNanos: Long): Boolean = nanoTime() - deadlineNanos >= 0L
 
+    private fun conditionDamageBranch(
+        worker: NativeBranchWorker,
+        before: NativeBattleFrame,
+        after: NativeBattleFrame,
+        p1Choice: String,
+        p2Choice: String,
+        events: List<BattleObservedEventView>,
+    ): ConditionedDamageBranch? {
+        val newRolls = newDamageRolls(before, after)
+        if (newRolls.isEmpty()) return ConditionedDamageBranch(after)
+        val matchingEvents = events.filter { event ->
+            event.kind == BattleObservedEventKind.HP_CHANGED &&
+                event.hpFractionDelta?.let { it < 0.0 } == true &&
+                event.precedingActionActorPokemonId != null &&
+                event.actorPokemonId != null &&
+                !event.precedingActionMoveId.isNullOrBlank() &&
+                newRolls.any { roll ->
+                    roll.turn == event.turn &&
+                        UUID.fromString(roll.attackerPokemonUuid) == event.precedingActionActorPokemonId &&
+                        UUID.fromString(roll.targetPokemonUuid) == event.actorPokemonId &&
+                        nativeId(roll.moveId) == nativeId(requireNotNull(event.precedingActionMoveId))
+                }
+        }
+        if (matchingEvents.isEmpty()) return ConditionedDamageBranch(after)
+        val evidenceFrame = after.copy(executedDamageRolls = newRolls)
+        val first = NativeDamageObservationConditioner.evaluate(evidenceFrame, matchingEvents)
+        if (first.status == NativeDamageObservationStatus.CONTRADICTED) return null
+        if (first.status != NativeDamageObservationStatus.CONSISTENT || first.forcedDamageRolls.isEmpty()) {
+            return ConditionedDamageBranch(after)
+        }
+        val forced = worker.branchWithForcedDamage(
+            before.snapshotJson,
+            p1Choice,
+            p2Choice,
+            first.forcedDamageRolls,
+        )
+        val forcedRolls = newDamageRolls(before, forced)
+        val confirmed = NativeDamageObservationConditioner.evaluate(
+            forced.copy(executedDamageRolls = forcedRolls),
+            matchingEvents,
+        )
+        if (confirmed.status != NativeDamageObservationStatus.CONSISTENT) return null
+        return ConditionedDamageBranch(
+            frame = forced,
+            likelihood = confirmed.likelihood,
+            explainedEventSequences = confirmed.explainedEventSequences,
+        )
+    }
+
+    private fun newDamageRolls(
+        @Suppress("UNUSED_PARAMETER") before: NativeBattleFrame,
+        after: NativeBattleFrame,
+    ): List<jbro.cobblemon.morebattlecontent.betterai.simulation.NativeDamageRollFrame> =
+        after.executedDamageRolls
+
+    private fun nativeId(value: String): String = value.substringAfter(':')
+        .lowercase(Locale.ROOT)
+        .filter(Char::isLetterOrDigit)
+
     private fun observedMismatch(issues: List<NativeObservedTurnActionIssue>) = NativeIntermediateReplayResult(
         status = NativeIntermediateReplayStatus.OBSERVED_ACTION_MISMATCH,
         observedActionIssues = issues,
@@ -340,7 +438,18 @@ internal class NativeIntermediateRequestReplayer(
         val frame: NativeBattleFrame,
         val deferredCommands: NativeDeferredCommandState,
         val remainingEvents: List<BattleObservedEventView>,
+        val observationLikelihood: Double,
     )
+
+    private data class ConditionedDamageBranch(
+        val frame: NativeBattleFrame,
+        val likelihood: Double = 1.0,
+        val explainedEventSequences: Set<Long> = emptySet(),
+    ) {
+        init {
+            require(likelihood.isFinite() && likelihood > 0.0 && likelihood <= 1.0)
+        }
+    }
 
     private data class EvidenceConsumption(
         val remainingEvents: List<BattleObservedEventView>,
@@ -350,6 +459,7 @@ internal class NativeIntermediateRequestReplayer(
 
     private data class ReplayIdentity(
         val snapshotJson: String,
+        val observationLikelihood: Double,
         val deferredAllyActionId: String?,
         val deferredOpponentActionId: String?,
     )
@@ -357,6 +467,7 @@ internal class NativeIntermediateRequestReplayer(
     private val NativeIntermediateReplayFrame.identity: ReplayIdentity
         get() = ReplayIdentity(
             frame.snapshotJson,
+            observationLikelihood,
             deferredCommands.allyAction?.actionId,
             deferredCommands.opponentAction?.actionId,
         )

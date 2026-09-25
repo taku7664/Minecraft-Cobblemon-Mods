@@ -198,6 +198,7 @@ function deterministicLog(log) {
 function deterministicSnapshot(battle) {
   const snapshot = battle.toJSON();
   snapshot.log = deterministicLog(snapshot.log);
+  delete snapshot.mbcExecutedDamageRolls;
   return snapshot;
 }
 
@@ -206,25 +207,130 @@ function ensureExecutedMoveOrder(battle) {
   return battle.mbcExecutedMoveOrder;
 }
 
-function recordExecutedMoveOrder(battle, action) {
-  const history = ensureExecutedMoveOrder(battle);
-  const original = battle.addMove;
+function recordExecutionTrace(battle, action, options = {}) {
+  const moveHistory = ensureExecutedMoveOrder(battle);
+  const hpByUuid = new Map(battle.sides.flatMap(side => side.pokemon)
+    .map(pokemon => [pokemon.uuid, pokemon.hp]));
+  let currentMove = null;
+  let pendingDamageRolls = [];
+  let damageCallIndex = 0;
+  const directHits = [];
+  const originalAddMove = battle.addMove;
+  const originalRandomizer = battle.randomizer;
+  const originalAdd = battle.add;
   battle.addMove = function(...parts) {
     if (parts[0] === 'move' && parts[1] && parts[1].uuid) {
       const moveId = toID(parts[2]);
       if (!moveId) throw new Error(`Native executed move is missing its id on turn ${battle.turn}`);
-      history.push({ turn: battle.turn, pokemonUuid: parts[1].uuid, moveId });
+      currentMove = { turn: battle.turn, attackerPokemonUuid: parts[1].uuid, moveId };
+      pendingDamageRolls = [];
+      if (options.persistMoveHistory !== false) {
+        moveHistory.push({ turn: battle.turn, pokemonUuid: parts[1].uuid, moveId });
+      }
     }
-    return original.apply(this, parts);
+    return originalAddMove.apply(this, parts);
+  };
+  battle.randomizer = function(baseDamage) {
+    const actualDamage = originalRandomizer.apply(this, arguments);
+    if (currentMove && Number.isInteger(baseDamage) && baseDamage > 0) {
+      const callIndex = damageCallIndex++;
+      pendingDamageRolls.push({
+        ...currentMove,
+        callIndex,
+      });
+      const percent = options.forcedDamagePercents && options.forcedDamagePercents.get(callIndex);
+      if (percent !== undefined) {
+        if (!Number.isInteger(percent) || percent < 85 || percent > 100) {
+          throw new Error(`Invalid forced native damage percentage ${percent}`);
+        }
+        return battle.trunc(battle.trunc(baseDamage * percent) / 100);
+      }
+    }
+    return actualDamage;
+  };
+  battle.add = function(...parts) {
+    const result = originalAdd.apply(this, parts);
+    const kind = parts[0];
+    const pokemon = parts[1];
+    if ((kind === '-damage' || kind === '-heal') && pokemon && pokemon.uuid) {
+      const previousHp = hpByUuid.get(pokemon.uuid);
+      hpByUuid.set(pokemon.uuid, pokemon.hp);
+      const hasPublicSource = parts.slice(3).some(part => String(part).startsWith('[from]'));
+      if (kind === '-damage' && currentMove && Number.isInteger(previousHp)) {
+        const rollIndex = pendingDamageRolls.findIndex(roll =>
+          roll.turn === currentMove.turn &&
+          roll.attackerPokemonUuid === currentMove.attackerPokemonUuid &&
+          roll.moveId === currentMove.moveId);
+        if (rollIndex >= 0) {
+          const roll = pendingDamageRolls.splice(rollIndex, 1)[0];
+          const actualHpLoss = previousHp - pokemon.hp;
+          if (!hasPublicSource && actualHpLoss > 0) {
+            directHits.push({
+              turn: currentMove.turn,
+              attackerPokemonUuid: currentMove.attackerPokemonUuid,
+              targetPokemonUuid: pokemon.uuid,
+              moveId: currentMove.moveId,
+              hpBefore: previousHp,
+              maxHp: pokemon.maxhp,
+              actualHpLoss,
+              damageCallIndex: roll.callIndex,
+            });
+          }
+        }
+      }
+    }
+    return result;
   };
   try {
-    return action();
+    action();
+    return directHits;
   } finally {
     delete battle.addMove;
+    delete battle.randomizer;
+    delete battle.add;
   }
 }
 
-function frame(battle) {
+function replayDamageRoll(input, targetCallIndex, percent, forcedDamagePercents) {
+  const battle = Battle.fromJSON(JSON.parse(input.snapshotJson));
+  battle.restart(function() {});
+  try {
+    const p1Wait = !!(battle.p1.activeRequest && battle.p1.activeRequest.wait);
+    const p2Wait = !!(battle.p2.activeRequest && battle.p2.activeRequest.wait);
+    const replayPercents = new Map(forcedDamagePercents);
+    replayPercents.set(targetCallIndex, percent);
+    const hits = recordExecutionTrace(battle, () => {
+      submitRequestedChoice(battle, 'p1', input.p1Choice, p1Wait);
+      submitRequestedChoice(battle, 'p2', input.p2Choice, p2Wait);
+    }, {
+      persistMoveHistory: false,
+      forcedDamagePercents: replayPercents,
+    });
+    return hits.find(hit => hit.damageCallIndex === targetCallIndex) || null;
+  } finally {
+    battle.destroy();
+  }
+}
+
+function collectDamageRollEvidence(input, actualHits, forcedDamagePercents) {
+  return actualHits.map(actual => {
+    const possibleHpLosses = [];
+    for (let percent = 85; percent <= 100; percent++) {
+      const replayed = replayDamageRoll(input, actual.damageCallIndex, percent, forcedDamagePercents);
+      if (!replayed || replayed.attackerPokemonUuid !== actual.attackerPokemonUuid ||
+          replayed.targetPokemonUuid !== actual.targetPokemonUuid || replayed.moveId !== actual.moveId) {
+        throw new Error(`Native damage replay lost direct hit ${actual.moveId} at call ${actual.damageCallIndex}`);
+      }
+      possibleHpLosses.push(replayed.actualHpLoss);
+    }
+    if (!possibleHpLosses.includes(actual.actualHpLoss)) {
+      throw new Error(`Actual native damage is outside replayed support for ${actual.moveId}`);
+    }
+    return { ...actual, possibleHpLosses };
+  });
+}
+
+function frame(battle, executedDamageRolls = []) {
   return {
     snapshotJson: JSON.stringify(deterministicSnapshot(battle)),
     turn: battle.turn,
@@ -239,6 +345,10 @@ function frame(battle) {
     field: fieldFrame(battle),
     log: deterministicLog(battle.log),
     executedMoveOrder: ensureExecutedMoveOrder(battle).map(entry => ({ ...entry })),
+    executedDamageRolls: executedDamageRolls.map(entry => ({
+      ...entry,
+      possibleHpLosses: entry.possibleHpLosses.slice(),
+    })),
   };
 }
 
@@ -399,16 +509,30 @@ globalThis.mbcRebindBattleMoves = function(payload) {
 
 globalThis.mbcBranchBattle = function(payload) {
   const input = JSON.parse(payload);
+  const forcedDamagePercents = new Map();
+  for (const forced of input.forcedDamageRolls || []) {
+    if (!Number.isInteger(forced.damageCallIndex) || forced.damageCallIndex < 0 ||
+        !Number.isInteger(forced.percent) || forced.percent < 85 || forced.percent > 100 ||
+        forcedDamagePercents.has(forced.damageCallIndex)) {
+      throw new Error(`Invalid or duplicate forced native damage roll ${JSON.stringify(forced)}`);
+    }
+    forcedDamagePercents.set(forced.damageCallIndex, forced.percent);
+  }
+  if (forcedDamagePercents.size && !input.captureDamageRolls) {
+    throw new Error('Forced native damage rolls require damage evidence capture');
+  }
   const battle = Battle.fromJSON(JSON.parse(input.snapshotJson));
   battle.restart(function() {});
   try {
     const p1Wait = !!(battle.p1.activeRequest && battle.p1.activeRequest.wait);
     const p2Wait = !!(battle.p2.activeRequest && battle.p2.activeRequest.wait);
-    recordExecutedMoveOrder(battle, () => {
+    const actualHits = recordExecutionTrace(battle, () => {
       submitRequestedChoice(battle, 'p1', input.p1Choice, p1Wait);
       submitRequestedChoice(battle, 'p2', input.p2Choice, p2Wait);
-    });
-    return JSON.stringify(frame(battle));
+    }, { forcedDamagePercents });
+    const damageEvidence = input.captureDamageRolls && actualHits.length ?
+      collectDamageRollEvidence(input, actualHits, forcedDamagePercents) : [];
+    return JSON.stringify(frame(battle, damageEvidence));
   } finally {
     battle.destroy();
   }
