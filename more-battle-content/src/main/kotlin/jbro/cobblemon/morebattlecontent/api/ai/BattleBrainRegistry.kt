@@ -8,6 +8,7 @@ object BattleBrainContentIds {
     const val BATTLE_TOWER: String = ManagedBattleContentIds.BATTLE_TOWER
     const val BATTLE_FACTORY: String = ManagedBattleContentIds.BATTLE_FACTORY
     const val AI_TEST: String = ManagedBattleContentIds.AI_TEST
+    const val AI_TEST_PERSONA_PREFIX: String = "ai_test_cynthia_"
 }
 
 enum class BattleEncounterRole { REGULAR, BOSS }

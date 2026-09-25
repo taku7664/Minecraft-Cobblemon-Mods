@@ -65,6 +65,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
     private val knowledgePolicy: BattleKnowledgePolicy = BattleKnowledgePolicy.FAIR_INFERENCE,
     private val opponentTeamPreview: BattleOpponentTeamPreviewView? = null,
     private val exactOwnTeam: BattleExactOwnTeamView = Cobblemon173ExactOwnTeamView.from(pokemonList),
+    private val unboundedDecisionTime: Boolean = false,
 ) : TrainerBattleActor(trainerName, actorId, pokemonList, baselineAi), EntityBackedBattleActor<ArmorStand> {
     override val entity: ArmorStand = trainerEntity
     override val initialPos: Vec3 = trainerEntity.position()
@@ -146,7 +147,10 @@ internal class Cobblemon173BrainTrainerBattleActor(
                     requestId = UUID.randomUUID(),
                     state = state,
                     candidates = preparation.candidates,
-                    deadlineEpochMillis = safeDeadline(System.currentTimeMillis()),
+                    deadlineEpochMillis = Cobblemon173BrainDecisionTiming.deadline(
+                        System.currentTimeMillis(),
+                        unboundedDecisionTime,
+                    ),
                     memory = tacticalMemory.view(state.turn),
                     publicActionCatalog = publicCatalog,
                 ).copy(
@@ -175,6 +179,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
                     endpoint(localBrain, localSession),
                     context,
                     localContext,
+                    enforceTimeout = !unboundedDecisionTime,
                 ).toCompletableFuture()
                 pendingDecision.set(decision)
                 if (closeResult.get() != null && pendingDecision.compareAndSet(decision, null)) {
@@ -460,13 +465,6 @@ internal class Cobblemon173BrainTrainerBattleActor(
         }
     }
 
-    private fun safeDeadline(now: Long): Long =
-        if (now > Long.MAX_VALUE - BattleBrainDefaults.DECISION_TIMEOUT_MILLIS) {
-            Long.MAX_VALUE
-        } else {
-            now + BattleBrainDefaults.DECISION_TIMEOUT_MILLIS
-        }
-
     /** Read once at the normalization boundary; callers receive only the tier-approved slots. */
     private fun actualOpponentMoveIds(): Map<UUID, Set<String>> =
         compatibilityCallOrNull { battle.getActor(opponentActorId) }?.pokemonList.orEmpty().associate { pokemon ->
@@ -525,5 +523,13 @@ internal class Cobblemon173BrainTrainerBattleActor(
             brainExecutor = BattleBrainExecutors.worker(),
         )
         val fallbackChain = BattleDecisionFallbackChain(coordinator)
+    }
+}
+
+internal object Cobblemon173BrainDecisionTiming {
+    fun deadline(now: Long, unbounded: Boolean): Long = when {
+        unbounded -> Long.MAX_VALUE
+        now > Long.MAX_VALUE - BattleBrainDefaults.DECISION_TIMEOUT_MILLIS -> Long.MAX_VALUE
+        else -> now + BattleBrainDefaults.DECISION_TIMEOUT_MILLIS
     }
 }

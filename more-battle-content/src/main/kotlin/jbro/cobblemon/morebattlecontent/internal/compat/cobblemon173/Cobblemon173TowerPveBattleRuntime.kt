@@ -44,6 +44,7 @@ internal data class Cobblemon173ManagedAiBattle(
     val brainSelectionContext: BattleBrainSelectionContext,
     val contentId: String,
     val diagnosticsLabel: String,
+    val unboundedBrainDecision: Boolean = false,
 )
 
 internal class Cobblemon173TowerPveBattleRuntime(
@@ -129,6 +130,7 @@ internal class Cobblemon173TowerPveBattleRuntime(
             opponentTeamPreview = Cobblemon173PublicTeamPreviewKnowledge.enrich(
                 prepared.opponentTeamPreview,
             ),
+            unboundedDecisionTime = prepared.unboundedBrainDecision,
             mechanicPolicy = {
                 requireNotNull(
                     Cobblemon173BattleRuleHooks.mechanicPolicy(

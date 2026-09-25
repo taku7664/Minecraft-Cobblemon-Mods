@@ -150,6 +150,24 @@ class NativeInitialProductWorldPlannerTest {
     }
 
     @Test
+    fun `compiles every singles selection size from one through the full preview`() {
+        for (selectionSize in 1..6) {
+            val result = planner().plan(
+                context(preview = preview(selectionSize = selectionSize)),
+                BattleTrainerTier.INTRODUCTORY,
+            )
+
+            assertTrue(result.issues.isEmpty(), "selectionSize=$selectionSize issues=${result.issues}")
+            assertTrue(result.worlds.isNotEmpty(), "selectionSize=$selectionSize")
+            assertTrue(result.worlds.all { world ->
+                world.definition.p1Team.size == selectionSize &&
+                    world.definition.p2Team.size == selectionSize
+            }, "selectionSize=$selectionSize")
+            assertEquals(1.0, result.worlds.sumOf { it.probability }, 1e-9)
+        }
+    }
+
+    @Test
     fun `missing canonical Showdown identity fails instead of inventing a form id`() {
         val result = planner().plan(
             context(preview = preview(selectionSize = 3, missingShowdownSlot = 0)),

@@ -7,6 +7,7 @@ import java.util.concurrent.CompletionStage
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrain
+import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainContentIds
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainCloseResult
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainOpenContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainSession
@@ -175,7 +176,11 @@ internal class LocalTacticalBrain(
             .filter { it.side == BattleSide.ALLY }
             .map { it.battlePokemonId }
             .toList()
-        val budget = lookaheadBudget(profile.difficulty.tier)
+        val unboundedTestDecision = active?.trainerPersonaId
+            ?.startsWith(BattleBrainContentIds.AI_TEST_PERSONA_PREFIX) == true
+        val budget = lookaheadBudget(profile.difficulty.tier).let { configured ->
+            if (unboundedTestDecision) configured.copy(timeMillis = Long.MAX_VALUE) else configured
+        }
         val continuingNative = active?.nativeProductState != null
         val nativeInitial = nativeInitialDecision.evaluate(
             difficultyContext,
@@ -232,6 +237,7 @@ internal class LocalTacticalBrain(
                             } else {
                                 "native_showdown_initial"
                             })
+                            if (unboundedTestDecision) add("lookahead_time_unbounded_test")
                             if (nativeInitial.truncated) add("lookahead_truncated")
                             addAll(decisionDiagnostics(calculatedContext, selected))
                         },
@@ -342,6 +348,7 @@ internal class LocalTacticalBrain(
                     "lookahead_elapsed_ms_${lookahead.elapsedMillis}",
                      ))
                     if (lookahead.truncated) add("lookahead_truncated")
+                    if (unboundedTestDecision) add("lookahead_time_unbounded_test")
                     if (lookahead.publicResponseIncomplete) add("lookahead_public_response_incomplete")
                     addAll(decisionDiagnostics(calculatedContext, selected))
                     rootDecision.switchReasonsByActionId[selected.outcome.candidate.actionId]

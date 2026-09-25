@@ -252,6 +252,33 @@ class BattleDecisionFallbackChainTest {
     }
 
     @Test
+    fun `explicit test decision can complete after the normal coordinator timeout`() {
+        val context = context(Long.MAX_VALUE)
+        val coordinator = BattleBrainDecisionCoordinator(
+            scheduler = scheduler,
+            brainExecutor = brainExecutor,
+            maximumDecisionMillis = 30L,
+        )
+        val delayed = CompletableFuture<BattleDecision>()
+        scheduler.schedule(
+            { delayed.complete(decision(context, "move:1")) },
+            80L,
+            TimeUnit.MILLISECONDS,
+        )
+
+        val result = BattleDecisionFallbackChain(coordinator).decide(
+            primary = endpoint { delayed },
+            local = null,
+            context = context,
+            enforceTimeout = false,
+        ).toCompletableFuture().get(1, TimeUnit.SECONDS)
+
+        assertEquals(BattleDecisionSource.PRIMARY_BRAIN, result.source)
+        assertEquals("move:1", requireNotNull(result.decision).actionId)
+        assertTrue(result.failures.isEmpty())
+    }
+
+    @Test
     fun `blocking session creation is also isolated behind the deadline`() {
         val release = CountDownLatch(1)
         val context = context(System.currentTimeMillis() + 5_000L)

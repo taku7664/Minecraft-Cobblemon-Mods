@@ -38,4 +38,10 @@ class Cobblemon173AiTestBattleRuntimeTest {
             AiTestDifficulty.entries.map { it.trainerProfile().personality },
         )
     }
+
+    @Test
+    fun `AI test decisions can remove the wall clock deadline without changing normal battles`() {
+        assertEquals(Long.MAX_VALUE, Cobblemon173BrainDecisionTiming.deadline(123L, unbounded = true))
+        assertEquals(20_123L, Cobblemon173BrainDecisionTiming.deadline(123L, unbounded = false))
+    }
 }

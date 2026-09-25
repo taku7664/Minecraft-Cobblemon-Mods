@@ -63,7 +63,7 @@ internal object Cobblemon173AiTestBattleRuntime : AiTestCommandBackend {
                         Cobblemon173OpponentPokemonPropertiesFactory::toBattlePokemon,
                     ),
                     trainerDisplayNameKey = CynthiaAiTestFixture.DISPLAY_NAME_KEY,
-                    trainerPersonaId = "ai_test_cynthia_${difficulty.name.lowercase()}",
+                    trainerPersonaId = "${BattleBrainContentIds.AI_TEST_PERSONA_PREFIX}${difficulty.name.lowercase()}",
                     trainerAiSkill = difficulty.skillLevel,
                     trainerProfile = difficulty.trainerProfile(),
                     learningScopeId = UUID.randomUUID(),
@@ -77,6 +77,7 @@ internal object Cobblemon173AiTestBattleRuntime : AiTestCommandBackend {
                     ),
                     contentId = ManagedBattleContentIds.AI_TEST,
                     diagnosticsLabel = "Cynthia Better AI test",
+                    unboundedBrainDecision = true,
                 ),
             )
             when (launch) {

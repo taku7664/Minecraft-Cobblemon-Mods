@@ -54,7 +54,7 @@ internal data class NativeOpponentRosterCompilation(
     }
 }
 
-/** Deterministically enumerates private 3/4-selection worlds from an opaque public team preview. */
+/** Deterministically enumerates private selection worlds from an opaque public team preview. */
 internal object NativeOpponentRosterHypothesisCompiler {
     fun compile(
         state: BattleStateView,
@@ -64,17 +64,17 @@ internal object NativeOpponentRosterHypothesisCompiler {
         val issues = linkedSetOf<NativeOpponentRosterIssue>()
         val revealed = state.pokemon.filter { it.side == BattleSide.OPPONENT }
             .sortedBy { it.battlePokemonId.toString() }
-        val supportedSelectionSizes = when (state.format) {
-            BattleFormat.SINGLE -> setOf(3, preview.pokemon.size)
-            BattleFormat.DOUBLE -> setOf(4, preview.pokemon.size)
+        val selectionRuleSupported = when (state.format) {
+            BattleFormat.SINGLE -> true
+            BattleFormat.DOUBLE ->
+                preview.pokemon.size == BattleOpponentTeamPreviewView.MAX_PREVIEW_SIZE &&
+                    preview.selectionSize in setOf(4, preview.pokemon.size)
         }
         val expectedActiveSlots = when (state.format) {
             BattleFormat.SINGLE -> setOf(0)
             BattleFormat.DOUBLE -> setOf(0, 1)
         }
-        if (preview.pokemon.size != BattleOpponentTeamPreviewView.MAX_PREVIEW_SIZE ||
-            preview.selectionSize !in supportedSelectionSizes
-        ) {
+        if (!selectionRuleSupported) {
             issues += NativeOpponentRosterIssue(NativeOpponentRosterIssueCode.UNSUPPORTED_SELECTION_RULE)
         }
         if (state.turn !in 0..1 ||

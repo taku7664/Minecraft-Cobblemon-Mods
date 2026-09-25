@@ -79,12 +79,33 @@ class NativeOpponentRosterHypothesisCompilerTest {
     }
 
     @Test
-    fun `selection rule must be six to three or full singles or six to four or full doubles`() {
-        val lead = opponent("cobblemon:fluttermane")
+    fun `singles accepts every selection size exposed by the preview`() {
+        val species = arrayOf("torterra", "zoroark", "celebi", "houndoom", "milotic", "togekiss")
+        for (selectionSize in 1..species.size) {
+            val lead = opponent("cobblemon:torterra")
+            val result = NativeOpponentRosterHypothesisCompiler.compile(
+                state(lead, remaining = selectionSize),
+                preview(selectionSize, *species),
+            )
+
+            assertTrue(result.issues.isEmpty(), "selectionSize=$selectionSize issues=${result.issues}")
+            assertTrue(result.hypotheses.isNotEmpty(), "selectionSize=$selectionSize")
+            assertTrue(result.hypotheses.all { hypothesis ->
+                hypothesis.selectedPreviewSlotIds.size == selectionSize &&
+                    0 in hypothesis.selectedPreviewSlotIds
+            }, "selectionSize=$selectionSize hypotheses=${result.hypotheses}")
+            assertEquals(1.0, result.hypotheses.sumOf { it.probability }, 1e-12)
+        }
+    }
+
+    @Test
+    fun `unsupported double selection size remains explicit`() {
+        val left = opponent("cobblemon:fluttermane", slot = 0)
+        val right = opponent("cobblemon:urshifu", slot = 1)
 
         val invalid = NativeOpponentRosterHypothesisCompiler.compile(
-            state(lead, remaining = 4),
-            preview(4, "fluttermane", "urshifu", "rillaboom", "incineroar", "amoonguss", "landorus"),
+            state(left, right, remaining = 3, format = BattleFormat.DOUBLE),
+            preview(3, "fluttermane", "urshifu", "rillaboom", "incineroar", "amoonguss", "landorus"),
         )
 
         assertTrue(invalid.hypotheses.isEmpty())
