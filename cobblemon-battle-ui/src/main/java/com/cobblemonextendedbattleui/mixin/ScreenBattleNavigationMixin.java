@@ -79,16 +79,4 @@ public abstract class ScreenBattleNavigationMixin {
             cir.setReturnValue(true);
         }
     }
-
-    @Inject(method = "keyReleased", at = @At("HEAD"))
-    private void cobblemonBattleUi$releaseDialogueConfirm(
-            int keyCode,
-            int scanCode,
-            int modifiers,
-            CallbackInfoReturnable<Boolean> cir
-    ) {
-        if ((Object) this instanceof BattleGUI) {
-            BattleDialogue.INSTANCE.releaseConfirm(keyCode, scanCode);
-        }
-    }
 }

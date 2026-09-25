@@ -15,6 +15,7 @@
     "BattleMoveSelectionMixin",
     "BattleMoveTileAccessor",
     "ScreenBattleNavigationMixin",
+    "KeyboardBattleNavigationMixin",
     "BattleGuiNavigationMixin",
     "BattleGeneralActionSelectionMixin",
     "BattleOptionTileAccessor",
