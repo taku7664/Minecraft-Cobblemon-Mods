@@ -46,6 +46,18 @@ class LeagueChallengeModuleContractTest {
         assertEquals(english.keySet(), korean.keySet())
         assertTrue(english.has("screen.cobblemon_more_battle_content_league_challenge.dev.title"))
         assertTrue(english.has("command.cobblemon_more_battle_content_league_challenge.dev.opened"))
+        english.keySet().forEach { key ->
+            val englishValue = english[key].asString
+            val koreanValue = korean[key].asString
+            assertTrue(englishValue.isNotBlank(), "en_us has a blank value for $key")
+            assertTrue(koreanValue.isNotBlank(), "ko_kr has a blank value for $key")
+            assertFalse(Regex("[가-힣]").containsMatchIn(englishValue), "en_us contains Korean text for $key")
+            assertEquals(
+                placeholders(englishValue),
+                placeholders(koreanValue),
+                "Translation placeholders differ for $key"
+            )
+        }
     }
 
     private fun entrypoint(metadata: JsonObject, type: String): String =
@@ -57,6 +69,11 @@ class LeagueChallengeModuleContractTest {
     private fun language(code: String): JsonObject = json(
         resources.resolve("assets/cobblemon_more_battle_content_league_challenge/lang/$code.json")
     )
+
+    private fun placeholders(value: String): List<String> = Regex("%(?:\\d+\\$)?[a-zA-Z]")
+        .findAll(value)
+        .map { match -> match.value.last().lowercase() }
+        .toList()
 
     private fun json(path: Path): JsonObject = JsonParser.parseString(Files.readString(path)).asJsonObject
 }
