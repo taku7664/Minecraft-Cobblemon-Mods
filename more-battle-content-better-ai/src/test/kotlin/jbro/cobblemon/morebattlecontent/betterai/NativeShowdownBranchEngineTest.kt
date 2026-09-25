@@ -226,6 +226,9 @@ class NativeShowdownBranchEngineTest {
             assertEquals(2, technicianAfter.turn)
             assertEquals(technicianAfter.p1Active, technicianReplay.p1Active)
             assertEquals(technicianAfter.p2Active, technicianReplay.p2Active)
+            assertEquals(technicianAfter.snapshotJson, technicianReplay.snapshotJson,
+                "The same root, choices and PRNG state must produce one cache-stable snapshot")
+            assertTrue(technicianAfter.log.filter { it.startsWith("|t:|") }.all { it == "|t:|0" })
             assertTrue(technicianDamage > swarmDamage, "Technician must be executed by native Showdown")
         }
     }

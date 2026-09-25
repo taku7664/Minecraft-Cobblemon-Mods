@@ -98,6 +98,108 @@ class NativeProductSessionReconcilerTest {
     }
 
     @Test
+    fun `submitted opponent move is deferred while the next native request waits`() {
+        val next = frame("waiting", turn = 2, p2RequestJson = WAIT_REQUEST)
+        val worker = Worker(mapOf("root" to next))
+        val reconciler = NativeProductSessionReconciler { _, action -> action(worker) }
+
+        val result = reconciler.reconcile(
+            session(listOf(world("world", "root", 1.0))),
+            context(turn = 2),
+            Long.MAX_VALUE,
+        )
+
+        assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status, result.rootIssues.toString())
+        val retained = requireNotNull(result.sessionState).worlds.single()
+        assertNull(retained.deferredAllyAction)
+        assertEquals("growl", retained.deferredOpponentAction?.moveId)
+        assertEquals(BattleActionKind.USE_MOVE, retained.deferredOpponentAction?.kind)
+    }
+
+    @Test
+    fun `delayed move evidence consumes the deferred command before matching current wait`() {
+        val waiting = frame("waiting", turn = 1, p2RequestJson = WAIT_REQUEST)
+        val next = frame("next", turn = 2, p2RequestJson = WAIT_REQUEST)
+        val worker = Worker(mapOf("waiting" to next))
+        val reconciler = NativeProductSessionReconciler { _, action -> action(worker) }
+        val prior = session(listOf(world(
+            "world",
+            "waiting",
+            1.0,
+            rootFrame = waiting,
+            deferredOpponentAction = opponentMove("growl"),
+        )))
+
+        val result = reconciler.reconcile(
+            prior,
+            context(turn = 2, events = listOf(moveEvent(1, "growl"))),
+            Long.MAX_VALUE,
+        )
+
+        assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status, result.observedActionIssues.toString())
+        assertEquals("move 1" to "pass", worker.choices.single())
+        assertNull(result.sessionState?.worlds?.single()?.deferredOpponentAction)
+    }
+
+    @Test
+    fun `mismatched delayed move evidence eliminates the deferred world`() {
+        val waiting = frame("waiting", turn = 1, p2RequestJson = WAIT_REQUEST)
+        val worker = Worker(emptyMap())
+        val reconciler = NativeProductSessionReconciler { _, action -> action(worker) }
+        val prior = session(listOf(world(
+            "world",
+            "waiting",
+            1.0,
+            rootFrame = waiting,
+            deferredOpponentAction = opponentMove("growl"),
+        )))
+
+        val result = reconciler.reconcile(
+            prior,
+            context(turn = 2, events = listOf(moveEvent(1, "protect"))),
+            Long.MAX_VALUE,
+        )
+
+        assertEquals(NativeProductSessionReconcileStatus.OBSERVED_ACTION_MISMATCH, result.status)
+        assertEquals("world", result.failedWorldId)
+        assertEquals(0, worker.branchCalls)
+    }
+
+    @Test
+    fun `identical snapshots with different deferred commands remain separate worlds`() {
+        val opponentMoves = listOf("growl", "protect")
+        val root = frame("root", turn = 1, opponentMoves = opponentMoves)
+        val waiting = frame(
+            "same-waiting-snapshot",
+            turn = 2,
+            opponentMoves = opponentMoves,
+            p2RequestJson = WAIT_REQUEST,
+        )
+        val worker = Worker(mapOf(
+            "root|move 1" to waiting,
+            "root|move 2" to waiting,
+        ))
+        val reconciler = NativeProductSessionReconciler { _, action -> action(worker) }
+        val prior = session(listOf(world(
+            "world",
+            "root",
+            1.0,
+            definition = definition(opponentMoves),
+            rootFrame = root,
+        )))
+
+        val result = reconciler.reconcile(prior, context(turn = 2), Long.MAX_VALUE)
+
+        assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status, result.rootIssues.toString())
+        val worlds = requireNotNull(result.sessionState).worlds
+        assertEquals(2, worlds.size)
+        assertEquals(setOf("growl", "protect"), worlds.mapNotNull { it.deferredOpponentAction?.moveId }.toSet())
+        assertEquals(setOf("same-waiting-snapshot"), worlds.map { it.rootSnapshot.frame.snapshotJson }.toSet())
+        assertEquals(listOf(0.5, 0.5), worlds.map { it.probability })
+        assertEquals(2, worlds.map { it.key.lineage }.distinct().size)
+    }
+
+    @Test
     fun `bounded public event history gap fails before leasing a native worker`() {
         var leased = false
         val reconciler = NativeProductSessionReconciler { _, _ -> leased = true; error("must not lease") }
@@ -165,12 +267,16 @@ class NativeProductSessionReconcilerTest {
         sample: Int = 0,
         definition: NativeBattleDefinition = DEFINITION,
         rootFrame: NativeBattleFrame = frame(snapshot, turn = 1),
+        deferredAllyAction: BattleActionCandidate? = null,
+        deferredOpponentAction: BattleActionCandidate? = null,
     ) = NativeProductSessionWorld(
         key = NativeSearchWorldKey(id, sample),
         probability = probability,
         definition = definition,
         rootSnapshot = NativeProductRootSnapshot(RULES, rootFrame),
         publicContext = context(turn = 1),
+        deferredAllyAction = deferredAllyAction,
+        deferredOpponentAction = deferredOpponentAction,
     )
 
     private fun context(
@@ -202,12 +308,12 @@ class NativeProductSessionReconcilerTest {
         emptyMap(), emptySet(), null, null, false, setOf("psychic"),
     )
 
-    private fun moveEvent(sequence: Long) = BattleObservedEventView(
+    private fun moveEvent(sequence: Long, moveId: String = "growl") = BattleObservedEventView(
         sequence = sequence,
         turn = 1,
         kind = BattleObservedEventKind.MOVE_USED,
         actorPokemonId = OPPONENT,
-        publicValueId = "growl",
+        publicValueId = moveId,
         actorSlot = 0,
     )
 
@@ -216,6 +322,8 @@ class NativeProductSessionReconcilerTest {
         turn: Int,
         opponentHp: Int = 100,
         opponentMoves: List<String> = listOf("growl"),
+        p1RequestJson: String = moveRequest(listOf("tackle")),
+        p2RequestJson: String = moveRequest(opponentMoves),
     ): NativeBattleFrame {
         val ally = nativePokemon(ALLY, listOf("tackle"), 100)
         val opponent = nativePokemon(OPPONENT, opponentMoves, opponentHp)
@@ -228,8 +336,8 @@ class NativeProductSessionReconcilerTest {
             p2Active = listOf(opponent),
             p1Team = listOf(ally),
             p2Team = listOf(opponent),
-            p1RequestJson = moveRequest(listOf("tackle")),
-            p2RequestJson = moveRequest(opponentMoves),
+            p1RequestJson = p1RequestJson,
+            p2RequestJson = p2RequestJson,
             log = emptyList(),
         )
     }
@@ -269,6 +377,14 @@ class NativeProductSessionReconcilerTest {
             "\"maxpp\":10,\"target\":\"normal\",\"disabled\":false}"
     }
 
+    private fun opponentMove(moveId: String) = BattleActionCandidate(
+        actionId = "native:opponent:slot:0:move:0:$moveId::base",
+        kind = BattleActionKind.USE_MOVE,
+        actorSlot = 0,
+        moveSlot = 0,
+        moveId = moveId,
+    )
+
     private fun definition(opponentMoves: List<String>) = NativeBattleDefinition(
         formatId = "cobblemonsingles",
         seed = listOf(1, 2, 3, 4),
@@ -284,6 +400,7 @@ class NativeProductSessionReconcilerTest {
 
     private companion object {
         const val RULES = "rules-v1"
+        const val WAIT_REQUEST = "{\"wait\":true}"
         val BATTLE: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
         val ALLY: UUID = UUID.fromString("00000000-0000-0000-0000-000000000101")
         val OPPONENT: UUID = UUID.fromString("00000000-0000-0000-0000-000000000201")

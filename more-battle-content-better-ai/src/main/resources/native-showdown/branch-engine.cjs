@@ -188,9 +188,19 @@ function fieldFrame(battle) {
   };
 }
 
+function deterministicLog(log) {
+  return (log || []).map(line => line.startsWith('|t:|') ? '|t:|0' : line);
+}
+
+function deterministicSnapshot(battle) {
+  const snapshot = battle.toJSON();
+  snapshot.log = deterministicLog(snapshot.log);
+  return snapshot;
+}
+
 function frame(battle) {
   return {
-    snapshotJson: JSON.stringify(battle.toJSON()),
+    snapshotJson: JSON.stringify(deterministicSnapshot(battle)),
     turn: battle.turn,
     requestState: battle.requestState || '',
     ended: !!battle.ended,
@@ -201,7 +211,7 @@ function frame(battle) {
     p1RequestJson: JSON.stringify(battle.p1.activeRequest || null),
     p2RequestJson: JSON.stringify(battle.p2.activeRequest || null),
     field: fieldFrame(battle),
-    log: battle.log.slice(),
+    log: deterministicLog(battle.log),
   };
 }
 

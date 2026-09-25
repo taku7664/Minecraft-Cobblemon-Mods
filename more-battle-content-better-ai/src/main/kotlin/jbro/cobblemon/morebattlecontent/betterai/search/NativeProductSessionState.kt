@@ -14,6 +14,10 @@ internal data class NativeProductSessionWorld(
     val definition: NativeBattleDefinition,
     val rootSnapshot: NativeProductRootSnapshot,
     val publicContext: BattleDecisionContext,
+    /** A command already submitted before an intermediate replacement request paused the turn. */
+    val deferredAllyAction: BattleActionCandidate? = null,
+    /** Opponent counterpart of [deferredAllyAction], retained until its delayed public evidence. */
+    val deferredOpponentAction: BattleActionCandidate? = null,
 ) {
     init {
         require(probability.isFinite() && probability > 0.0 && probability <= 1.0)

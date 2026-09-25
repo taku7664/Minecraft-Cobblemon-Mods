@@ -2,6 +2,9 @@ package jbro.cobblemon.morebattlecontent.betterai.search
 
 import java.security.MessageDigest
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
+import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
+import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
@@ -96,6 +99,14 @@ internal class NativeProductSessionReconciler(
                         return@lease failure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
                     }
                     val root = world.rootSnapshot.frame
+                    val deferred = validateDeferredActions(world, root, eventWindow)
+                    if (deferred.issues.isNotEmpty()) {
+                        if (firstObservedMismatch == null) {
+                            firstObservedMismatch = world.key.hypothesisId to deferred.issues
+                        }
+                        continue
+                    }
+                    val currentEvents = eventWindow.filterNot { it.sequence in deferred.consumedSequences }
                     val ownNativeActions = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, root)
                     val ownMapping = NativeRootActionMatcher.match(
                         session.format,
@@ -118,7 +129,7 @@ internal class NativeProductSessionReconciler(
                         BattleSide.OPPONENT,
                         root,
                         opponentNativeActions,
-                        eventWindow,
+                        currentEvents,
                     )
                     if (observed.issues.isNotEmpty()) {
                         if (firstObservedMismatch == null) {
@@ -128,7 +139,7 @@ internal class NativeProductSessionReconciler(
                     }
 
                     val ownChoice = NativeShowdownChoiceEncoder.encode(ownNativeAction, BattleSide.ALLY, root)
-                    val compatibleFrames = linkedMapOf<String, NativeBattleFrame>()
+                    val compatibleFrames = linkedMapOf<DescendantIdentity, CompatibleFrame>()
                     for (opponentAction in observed.actions) {
                         if (deadlineReached(deadlineNanos)) {
                             return@lease failure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
@@ -152,7 +163,32 @@ internal class NativeProductSessionReconciler(
                                 rootIssues = structural,
                             )
                         }
-                        if (issues.isEmpty()) compatibleFrames.putIfAbsent(next.snapshotJson, next)
+                        if (issues.isEmpty()) {
+                            val compatible = CompatibleFrame(
+                                frame = next,
+                                deferredAllyAction = deferredForNextRequest(
+                                    BattleSide.ALLY,
+                                    root,
+                                    next,
+                                    world.deferredAllyAction.takeUnless {
+                                        BattleSide.ALLY in deferred.consumedSides
+                                    },
+                                    ownNativeAction,
+                                    currentEvents,
+                                ),
+                                deferredOpponentAction = deferredForNextRequest(
+                                    BattleSide.OPPONENT,
+                                    root,
+                                    next,
+                                    world.deferredOpponentAction.takeUnless {
+                                        BattleSide.OPPONENT in deferred.consumedSides
+                                    },
+                                    opponentAction,
+                                    currentEvents,
+                                ),
+                            )
+                            compatibleFrames.putIfAbsent(compatible.identity, compatible)
+                        }
                     }
                     if (compatibleFrames.isEmpty()) continue
 
@@ -160,12 +196,14 @@ internal class NativeProductSessionReconciler(
                     // opponent-policy likelihood exists, preserve them with the uninformative prior
                     // instead of inventing one command or multiplying the parent probability mass.
                     val probability = world.probability / compatibleFrames.size.toDouble()
-                    compatibleFrames.values.forEach { frame ->
+                    compatibleFrames.values.forEach { compatible ->
                         descendants += Descendant(
                             world = world,
-                            frame = frame,
+                            frame = compatible.frame,
                             probability = probability,
                             split = compatibleFrames.size > 1,
+                            deferredAllyAction = compatible.deferredAllyAction,
+                            deferredOpponentAction = compatible.deferredOpponentAction,
                         )
                     }
                 }
@@ -189,7 +227,7 @@ internal class NativeProductSessionReconciler(
                 val updatedWorlds = descendants.map { descendant ->
                     val previous = descendant.world
                     val key = if (descendant.split) {
-                        previous.key.copy(lineage = extendLineage(previous.key.lineage, descendant.frame.snapshotJson))
+                        previous.key.copy(lineage = extendLineage(previous.key.lineage, descendant.identity))
                     } else {
                         previous.key
                     }
@@ -204,6 +242,8 @@ internal class NativeProductSessionReconciler(
                                 ?: previous.publicContext.opponentTeamPreview,
                             exactOwnTeam = currentContext.exactOwnTeam ?: previous.publicContext.exactOwnTeam,
                         ),
+                        deferredAllyAction = descendant.deferredAllyAction,
+                        deferredOpponentAction = descendant.deferredOpponentAction,
                     )
                 }
                 NativeProductSessionReconciliation(
@@ -254,6 +294,88 @@ internal class NativeProductSessionReconciler(
 
     private fun deadlineReached(deadlineNanos: Long): Boolean = nanoTime() - deadlineNanos >= 0L
 
+    private fun validateDeferredActions(
+        world: NativeProductSessionWorld,
+        root: NativeBattleFrame,
+        events: List<BattleObservedEventView>,
+    ): DeferredValidation {
+        val consumed = linkedSetOf<Long>()
+        val consumedSides = linkedSetOf<BattleSide>()
+        val issues = mutableListOf<NativeObservedTurnActionIssue>()
+        listOf(
+            BattleSide.ALLY to world.deferredAllyAction,
+            BattleSide.OPPONENT to world.deferredOpponentAction,
+        ).forEach { (side, action) ->
+            if (action == null) return@forEach
+            val evidence = evidenceForAction(side, root, action, events)
+            if (evidence.isEmpty()) return@forEach
+            val match = NativeObservedTurnActionMatcher.match(
+                world.publicContext.state.format,
+                side,
+                root,
+                listOf(action),
+                evidence,
+            )
+            if (match.issues.isNotEmpty()) {
+                issues += match.issues
+            } else {
+                evidence.mapTo(consumed) { it.sequence }
+                consumedSides += side
+            }
+        }
+        return DeferredValidation(consumed, consumedSides, issues)
+    }
+
+    private fun evidenceForAction(
+        side: BattleSide,
+        frame: NativeBattleFrame,
+        action: BattleActionCandidate,
+        events: List<BattleObservedEventView>,
+    ): List<BattleObservedEventView> {
+        val sideIds = when (side) {
+            BattleSide.ALLY -> frame.p1Team
+            BattleSide.OPPONENT -> frame.p2Team
+        }.mapTo(linkedSetOf()) { java.util.UUID.fromString(it.uuid) }
+        val components = if (action.kind == BattleActionKind.COMPOSITE) {
+            action.componentActions
+        } else {
+            listOf(action)
+        }
+        val bySlot = components.mapNotNull { component ->
+            component.actorSlot?.let { it to component }
+        }.toMap()
+        return events.filter { event ->
+            if (event.actorPokemonId !in sideIds) return@filter false
+            val component = event.actorSlot?.let(bySlot::get)
+            when (event.kind) {
+                BattleObservedEventKind.MOVE_USED -> component?.kind == BattleActionKind.USE_MOVE
+                BattleObservedEventKind.TERA_TYPE_REVEALED -> component?.kind == BattleActionKind.USE_MOVE
+                BattleObservedEventKind.SWITCHED -> component?.kind == BattleActionKind.SWITCH
+                else -> false
+            }
+        }
+    }
+
+    private fun deferredForNextRequest(
+        side: BattleSide,
+        root: NativeBattleFrame,
+        next: NativeBattleFrame,
+        existing: BattleActionCandidate?,
+        submitted: BattleActionCandidate,
+        events: List<BattleObservedEventView>,
+    ): BattleActionCandidate? {
+        if (!isWaitRequest(side, next)) return null
+        if (existing != null) return existing
+        if (submitted.kind == BattleActionKind.WAIT) return null
+        return submitted.takeIf { evidenceForAction(side, root, submitted, events).isEmpty() }
+    }
+
+    private fun isWaitRequest(side: BattleSide, frame: NativeBattleFrame): Boolean {
+        if (frame.ended) return false
+        val actions = NativeShowdownRequestActionFactory.actions(side, frame)
+        return actions.size == 1 && actions.single().kind == BattleActionKind.WAIT
+    }
+
     private fun failure(
         status: NativeProductSessionReconcileStatus,
         failedWorldId: String? = null,
@@ -273,6 +395,38 @@ internal class NativeProductSessionReconciler(
         val frame: NativeBattleFrame,
         val probability: Double,
         val split: Boolean,
+        val deferredAllyAction: BattleActionCandidate?,
+        val deferredOpponentAction: BattleActionCandidate?,
+    ) {
+        val identity: String = listOf(
+            frame.snapshotJson,
+            deferredAllyAction?.actionId.orEmpty(),
+            deferredOpponentAction?.actionId.orEmpty(),
+        ).joinToString("|")
+    }
+
+    private data class CompatibleFrame(
+        val frame: NativeBattleFrame,
+        val deferredAllyAction: BattleActionCandidate?,
+        val deferredOpponentAction: BattleActionCandidate?,
+    ) {
+        val identity = DescendantIdentity(
+            frame.snapshotJson,
+            deferredAllyAction?.actionId,
+            deferredOpponentAction?.actionId,
+        )
+    }
+
+    private data class DescendantIdentity(
+        val snapshotJson: String,
+        val deferredAllyActionId: String?,
+        val deferredOpponentActionId: String?,
+    )
+
+    private data class DeferredValidation(
+        val consumedSequences: Set<Long>,
+        val consumedSides: Set<BattleSide>,
+        val issues: List<NativeObservedTurnActionIssue>,
     )
 
     private companion object {
