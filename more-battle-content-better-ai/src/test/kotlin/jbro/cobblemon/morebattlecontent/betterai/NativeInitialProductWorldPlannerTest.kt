@@ -8,6 +8,7 @@ import java.util.zip.ZipInputStream
 import jbro.cobblemon.morebattlecontent.api.ai.BattleAbilityAvailability
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainOpenContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleCombatStatRangesView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleExactOwnTeamView
@@ -30,10 +31,24 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicMoveKnowledge
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicMoveOptionView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerTier
+import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalLookaheadStateEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadBudget
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionStatus
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSearchRequest
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSearchRunStatus
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSearchRunner
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductWorldSearchAggregator
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeSearchWorldKey
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlan
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlanIssueCode
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlanner
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownBranchEngine
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownSearchTree
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalMoveUsageLookup
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalOpponentBuildUsageEntry
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalOpponentBuildUsageLookup
@@ -266,7 +281,7 @@ class NativeInitialProductWorldPlannerTest {
     }
 
     @Test
-    fun `six on six opening with no dated build usage opens a real native root`(@TempDir directory: Path) {
+    fun `six on six missing usage representative world reaches native product brain`(@TempDir directory: Path) {
         val ordinaryPreview = preview(selectionSize = 6)
         val clodsire = previewPokemon(
             slot = 0,
@@ -283,9 +298,14 @@ class NativeInitialProductWorldPlannerTest {
             selectionSize = 6,
             pokemon = listOf(clodsire) + ordinaryPreview.pokemon.drop(1),
         )
+        // Level-50 Mew with 31 IVs, zero EVs and a neutral nature: 175 HP, 120 elsewhere.
+        val openingContext = context(
+            preview = publicPreview,
+            ownStats = BattleCombatStatRangesView.exact(175, 120, 120, 120, 120, 120),
+        )
         val result = planner(
             buildUsage = LocalOpponentBuildUsageLookup { _, _ -> null },
-        ).plan(context(preview = publicPreview), BattleTrainerTier.BOSS)
+        ).plan(openingContext, BattleTrainerTier.BOSS)
 
         assertTrue(result.issues.isEmpty(), "issues=${result.issues}")
         assertTrue(result.worlds.isNotEmpty())
@@ -293,7 +313,8 @@ class NativeInitialProductWorldPlannerTest {
         assertTrue(result.worlds.all { "generic-public-prior" in it.hypothesisId })
         val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
         NativeShowdownBranchEngine.open(engineRoot).use { engine ->
-            val frame = engine.createBattle(result.worlds.first().definition)
+            val world = result.worlds.first()
+            val frame = engine.createBattle(world.definition)
             assertEquals(6, frame.p1Team.size)
             assertEquals(6, frame.p2Team.size)
             assertEquals("clodsire", frame.p2Active.single().sourceSet?.species)
@@ -301,6 +322,77 @@ class NativeInitialProductWorldPlannerTest {
             assertEquals(frame.turn + 1, next.turn)
             assertEquals(6, next.p1Team.size)
             assertEquals(6, next.p2Team.size)
+
+            val tree = NativeShowdownSearchTree(engine, frame, world.publicContext.state)
+            val productActions = tree.actions(tree.root, BattleSide.ALLY).mapIndexed { index, action ->
+                BattleActionCandidate(
+                    actionId = "client-action-$index",
+                    kind = action.kind,
+                    actorSlot = action.actorSlot,
+                    moveSlot = action.moveSlot,
+                    moveId = action.moveId,
+                    targets = action.targets,
+                    switchPokemonId = action.switchPokemonId,
+                    mechanic = action.mechanic,
+                )
+            }
+            assertTrue(productActions.size > 1)
+            val runner = NativeProductSearchRunner(
+                nanoTime = { 0L },
+                lease = { _, action -> action(engine) },
+            )
+            val search = runner.run(NativeProductSearchRequest(
+                definition = world.definition,
+                publicState = world.publicContext.state,
+                productActions = productActions,
+                world = NativeSearchWorldKey(world.hypothesisId, 0),
+                maxDepth = 1,
+                nodeLimit = 10_000,
+                deadlineNanos = Long.MAX_VALUE,
+                evaluate = { state -> LocalLookaheadStateEvaluator.evaluate(state, world.publicContext) },
+            ))
+            assertEquals(NativeProductSearchRunStatus.COMPLETED, search.status,
+                "status=${search.status} rootIssues=${search.rootIssues} failure=${search.failure}")
+            assertTrue(search.mapping?.complete == true)
+            assertEquals(1, search.result?.depthCompleted)
+
+            val productContext = openingContext.copy(candidates = productActions)
+            val evaluator = NativeInitialProductDecisionEvaluator(
+                planWorlds = { _, _ -> NativeInitialProductWorldPlan(
+                    worlds = listOf(world.copy(probability = 1.0)),
+                    issues = emptyList(),
+                ) },
+                searchWorlds = NativeProductWorldSearchAggregator(runner::run)::search,
+                nowEpochMillis = { 1_000L },
+                nanoTime = { 0L },
+            )
+            val nativeDecision = evaluator.evaluate(
+                context = productContext,
+                profile = BattleTrainerProfile.boss(),
+                tuning = LocalDecisionTuning.CURRENT,
+                budget = LocalLookaheadBudget(
+                    timeMillis = 2_000L,
+                    // This integration check needs a complete first ply. Boss depth three is
+                    // audited separately; a deterministic node cap must not be called depth three.
+                    nodeLimit = 500,
+                    chanceBranchesPerMove = 1,
+                ),
+            )
+            assertEquals(NativeInitialProductDecisionStatus.AVAILABLE, nativeDecision.status,
+                "status=${nativeDecision.status} search=${nativeDecision.searchStatus} issues=${nativeDecision.planIssues}")
+            assertTrue(nativeDecision.depthCompleted >= 1)
+            assertEquals(productActions.map { it.actionId }.toSet(),
+                nativeDecision.ranked.map { it.outcome.candidate.actionId }.toSet())
+
+            val brain = LocalTacticalBrain(nativeInitialDecision = { _, _, _, _, _ -> nativeDecision })
+            val session = brain.openSession(BattleBrainOpenContext(
+                battleId = productContext.state.battleId,
+                format = BattleFormat.SINGLE,
+                trainerProfile = BattleTrainerProfile.boss(),
+            ))
+            val selected = brain.decide(session, productContext).toCompletableFuture().get()
+            assertTrue(selected.actionId in productActions.map { it.actionId })
+            assertTrue("native_showdown_initial" in selected.tags)
         }
     }
 
@@ -318,6 +410,7 @@ class NativeInitialProductWorldPlannerTest {
             selectionSize = if (format == BattleFormat.SINGLE) 3 else 4,
         ),
         openingEvents: List<BattleObservedEventView> = emptyList(),
+        ownStats: BattleCombatStatRangesView = BattleCombatStatRangesView.exact(100, 100, 100, 100, 100, 100),
     ): BattleDecisionContext {
         val selectionSize = preview.selectionSize
         val allyIds = ALLIES.take(selectionSize)
@@ -333,7 +426,7 @@ class NativeInitialProductWorldPlannerTest {
                     activeSlot = index.takeIf { it < activeCount },
                     species = "mew",
                     types = setOf("psychic"),
-                    stats = BattleCombatStatRangesView.exact(100, 100, 100, 100, 100, 100),
+                    stats = ownStats,
                 )
             } + OPPONENTS.take(activeCount).mapIndexed { index, id ->
                 val previewPokemon = preview.pokemon[index]
