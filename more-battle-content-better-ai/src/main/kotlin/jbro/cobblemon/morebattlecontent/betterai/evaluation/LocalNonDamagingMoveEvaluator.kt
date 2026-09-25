@@ -4,6 +4,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectTarget
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
@@ -61,10 +62,7 @@ internal object LocalNonDamagingMoveEvaluator {
         val declaresMajorStatus = selectedTarget?.side == BattleSide.OPPONENT && effects.any {
             it.kind == BattleMoveEffectKind.STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET
         }
-        val declaresPureRecovery = candidate.facts?.selfHealingFractionRange != null &&
-            effects.all {
-                it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == BattleMoveEffectTarget.USER
-            }
+        val declaresPureRecovery = candidate.facts?.selfHealingFractionRange != null && isPureRecovery(effects)
         val setupPressure = LocalStatStageMarginalEvaluator.candidateScore(
             candidate,
             context,
@@ -141,9 +139,7 @@ internal object LocalNonDamagingMoveEvaluator {
         if (context.memory.sameMoveRepeatCount < MINIMUM_RECOVERY_REPEATS_FOR_HABIT_LOSS) return 0.0
         if (!sameEffect(moveId, context.memory.lastMoveId)) return 0.0
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()
-        val pureRecovery = candidate.facts?.selfHealingFractionRange != null && effects.all {
-            it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == BattleMoveEffectTarget.USER
-        }
+        val pureRecovery = candidate.facts?.selfHealingFractionRange != null && isPureRecovery(effects)
         if (!pureRecovery) return 0.0
         val hp = actor?.hpFraction ?: return 0.0
         if (hp <= RECOVERY_SURVIVAL_HP_THRESHOLD) return 0.0
@@ -191,6 +187,18 @@ internal object LocalNonDamagingMoveEvaluator {
 
     private fun sameEffect(first: String?, second: String?): Boolean =
         first != null && second != null && canonicalEffectId(first) == canonicalEffectId(second)
+
+    private fun isPureRecovery(effects: List<BattleMoveEffectView>): Boolean =
+        effects.any { it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == BattleMoveEffectTarget.USER } &&
+            effects.all { effect ->
+                (effect.kind == BattleMoveEffectKind.HEAL_FRACTION && effect.target == BattleMoveEffectTarget.USER) ||
+                    // Roost's one-turn Flying-type suppression is part of the recovery move, not
+                    // an independent generic status reward. The native engine can value its type
+                    // impact; this fallback must not assign it a flat +20 at full HP.
+                    (effect.kind == BattleMoveEffectKind.VOLATILE_STATUS &&
+                        effect.target == BattleMoveEffectTarget.USER &&
+                        canonicalEffectId(effect.valueId.orEmpty()) == "roost")
+            }
 
     private fun canonicalEffectId(effectId: String): String =
         effectId.substringAfter(':').lowercase().filter { it.isLetterOrDigit() }

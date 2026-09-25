@@ -41,6 +41,9 @@ class Cobblemon173ActionCandidateAdapterTest {
     fun `public move effects use embedded data but suppress a datapack override`() {
         val recover = requireNotNull(Cobblemon173ActionCandidateAdapter.publicMoveEffects("cobblemon:recover"))
         assertTrue(recover.effects.any { it.kind == BattleMoveEffectKind.HEAL_FRACTION })
+        val roost = requireNotNull(Cobblemon173ActionCandidateAdapter.publicMoveEffects("cobblemon:roost"))
+        assertEquals(1, roost.effects.count { it.kind == BattleMoveEffectKind.HEAL_FRACTION })
+        assertTrue(roost.effects.any { it.kind == BattleMoveEffectKind.VOLATILE_STATUS && it.valueId == "roost" })
 
         val movesClass = Moves::class.java
         val instance = movesClass.getField("INSTANCE").get(null)

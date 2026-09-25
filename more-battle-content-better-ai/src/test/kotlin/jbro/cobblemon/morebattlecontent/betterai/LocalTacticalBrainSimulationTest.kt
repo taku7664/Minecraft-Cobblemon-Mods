@@ -34,6 +34,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanIntent
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalScorer
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalNonDamagingMoveEvaluator
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanUpdateOperation
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePlanView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
@@ -53,6 +54,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTeamRole
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTimedEffectView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
 import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
+import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalHighestRankedActionSelector
 import kotlin.random.Random
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -409,6 +411,39 @@ class LocalTacticalBrainSimulationTest {
         val chip = move("small_damage", power = 30.0, facts = damageFacts(0.10))
 
         assertEquals("small_damage", decide(listOf(recovery, chip), allyHp = 1.0).actionId)
+    }
+
+    @Test
+    fun `roost transient self condition does not receive generic status credit on top of healing`() {
+        val roost = move(
+            id = "roost",
+            power = 0.0,
+            damageCategory = BattleMoveDamageCategory.STATUS,
+            effects = effects(
+                BattleMoveEffectView(
+                    kind = BattleMoveEffectKind.HEAL_FRACTION,
+                    target = BattleMoveEffectTarget.USER,
+                    fractionRange = BattleFractionRange(0.5, 0.5),
+                ),
+                BattleMoveEffectView(
+                    kind = BattleMoveEffectKind.VOLATILE_STATUS,
+                    target = BattleMoveEffectTarget.USER,
+                    valueId = "roost",
+                ),
+            ),
+        )
+
+        fun scoreAt(hp: Double, memory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty()): Double {
+            val calculated = PublicBattleTacticalCalculator.calculate(contextOf(listOf(roost), allyHp = hp, memory = memory))
+            val candidate = calculated.candidates.single()
+            assertEquals(0.5, candidate.facts?.selfHealingFractionRange?.minimum)
+            return LocalNonDamagingMoveEvaluator.score(candidate, calculated, 1.0).total
+        }
+
+        assertEquals(0.0, scoreAt(1.0))
+        assertEquals(5.0, scoreAt(0.95), 1e-9)
+        val repeated = BattleTacticalMemoryView(lastMoveId = "cobblemon:roost", sameMoveRepeatCount = 3)
+        assertEquals(0.0, scoreAt(0.95, repeated))
     }
 
     @Test
