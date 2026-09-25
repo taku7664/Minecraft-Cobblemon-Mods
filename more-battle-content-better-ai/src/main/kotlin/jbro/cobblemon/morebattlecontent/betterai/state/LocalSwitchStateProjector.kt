@@ -96,10 +96,12 @@ internal object LocalSwitchStateProjector {
         knownAbilityId = knownAbilityId,
         knownHeldItemId = knownHeldItemId,
         fainted = fainted,
-        knownTypeIds = formState?.knownTypeIds ?: knownTypeIds,
+        knownTypeIds = if (knownTeraTypeId == null) formState?.knownTypeIds ?: knownTypeIds else knownTypeIds,
         combatStats = formState?.combatStats ?: combatStats,
         knownFormStates = knownFormStates,
         actionConstraints = BattlePokemonActionConstraintView.empty(),
         knownVolatileEffectIds = emptySet(),
+        knownBaseStabTypeIds = formState?.knownTypeIds ?: knownBaseStabTypeIds,
+        knownTeraTypeId = knownTeraTypeId,
     )
 }

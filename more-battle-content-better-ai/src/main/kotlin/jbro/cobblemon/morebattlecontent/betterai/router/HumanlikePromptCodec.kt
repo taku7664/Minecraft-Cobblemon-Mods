@@ -195,6 +195,8 @@ internal object HumanlikePromptCodec {
                     "statusId" to pokemon.statusId,
                     "statStages" to pokemon.statStages,
                     "types" to pokemon.knownTypeIds.sorted(),
+                    "baseStabTypes" to pokemon.knownBaseStabTypeIds.sorted(),
+                    "teraType" to pokemon.knownTeraTypeId,
                     "revealedMoves" to pokemon.knownMoveIds.sorted(),
                     "revealedAbility" to pokemon.knownAbilityId,
                     "revealedItem" to pokemon.knownHeldItemId,

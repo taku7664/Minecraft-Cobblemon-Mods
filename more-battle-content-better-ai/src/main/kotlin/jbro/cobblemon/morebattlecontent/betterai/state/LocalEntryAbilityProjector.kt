@@ -94,6 +94,8 @@ internal object LocalEntryAbilityProjector {
             knownFormStates = pokemon.knownFormStates,
             actionConstraints = pokemon.actionConstraints,
             knownVolatileEffectIds = pokemon.knownVolatileEffectIds,
+            knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
+            knownTeraTypeId = pokemon.knownTeraTypeId,
         )
     }
 

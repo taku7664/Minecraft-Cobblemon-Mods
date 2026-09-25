@@ -274,7 +274,8 @@ internal object BattleOpponentMoveInferenceNormalizer {
         details: BattleMoveCandidateView,
     ): BattleOpponentMoveGroup = when {
         details.damageCategory != BattleMoveDamageCategory.STATUS -> {
-            if (pokemon.knownTypeIds.any { canonical(it) == canonical(details.typeId) }) {
+            val offensiveTypes = pokemon.knownBaseStabTypeIds + listOfNotNull(pokemon.knownTeraTypeId)
+            if (offensiveTypes.any { canonical(it) == canonical(details.typeId) }) {
                 BattleOpponentMoveGroup.STAB_ATTACK
             } else {
                 BattleOpponentMoveGroup.COVERAGE_ATTACK
@@ -406,12 +407,16 @@ class BattleOpponentMoveInferenceLedger(
         val speciesId: String,
         val formId: String?,
         val typeIds: List<String>,
+        val baseStabTypeIds: List<String>,
+        val teraTypeId: String?,
     ) {
         companion object {
             fun from(pokemon: BattlePokemonStateView) = PokemonIdentity(
                 canonicalIdentityPart(pokemon.speciesId),
                 pokemon.formId?.let(::canonicalIdentityPart),
                 pokemon.knownTypeIds.map(::canonicalIdentityPart).sorted(),
+                pokemon.knownBaseStabTypeIds.map(::canonicalIdentityPart).sorted(),
+                pokemon.knownTeraTypeId?.let(::canonicalIdentityPart),
             )
 
             private fun canonicalIdentityPart(value: String): String =

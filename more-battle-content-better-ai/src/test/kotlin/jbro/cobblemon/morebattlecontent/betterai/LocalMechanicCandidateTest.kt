@@ -43,6 +43,40 @@ class LocalMechanicCandidateTest {
     }
 
     @Test
+    fun `an already terastallized actor keeps base stab and distinguishes matching tera stab`() {
+        assertEquals(
+            1.5,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("fire"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "fire",
+                moveType = "water",
+            )?.baseSameTypeAttackBonus,
+        )
+        assertEquals(
+            1.5,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("fire"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "fire",
+                moveType = "fire",
+            )?.baseSameTypeAttackBonus,
+        )
+        assertEquals(
+            2.0,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("fire"),
+                baseStabTypes = setOf("fire"),
+                activeTeraType = "fire",
+                moveType = "fire",
+            )?.baseSameTypeAttackBonus,
+        )
+    }
+
+    @Test
     fun `dynamax uses the doubled health it is given`() {
         val doubled = BattleCombatStatRangesView.exact(320, 130, 100, 110, 100, 100)
         val facts = facts(mechanic = mechanic("dynamax", stats = doubled))
@@ -61,15 +95,21 @@ class LocalMechanicCandidateTest {
         transformedActorTypeIds = types, transformedActorCombatStats = stats,
     )
 
-    private fun facts(mechanic: BattleMechanicCandidate?): BattleCandidateFactsView? {
-        val ally = mon(BattleSide.ALLY, setOf("water"))
+    private fun facts(
+        mechanic: BattleMechanicCandidate?,
+        actorTypes: Set<String> = setOf("water"),
+        baseStabTypes: Set<String> = actorTypes,
+        activeTeraType: String? = null,
+        moveType: String = "water",
+    ): BattleCandidateFactsView? {
+        val ally = mon(BattleSide.ALLY, actorTypes, baseStabTypes, activeTeraType)
         val opponent = mon(BattleSide.OPPONENT, setOf("normal"))
         val move = BattleActionCandidate(
             actionId = "surf", kind = BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
             moveId = "cobblemon:surf", targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
             mechanic = mechanic,
             moveDetails = BattleMoveCandidateView(
-                typeId = "water", damageCategory = BattleMoveDamageCategory.SPECIAL, power = 90.0,
+                typeId = moveType, damageCategory = BattleMoveDamageCategory.SPECIAL, power = 90.0,
                 accuracy = 100.0, priority = 0, currentPp = 10,
                 targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
             ),
@@ -89,7 +129,12 @@ class LocalMechanicCandidateTest {
         return PublicBattleTacticalCalculator.calculate(context).candidates.single().facts
     }
 
-    private fun mon(side: BattleSide, types: Set<String>) = BattlePokemonStateView(
+    private fun mon(
+        side: BattleSide,
+        types: Set<String>,
+        baseStabTypes: Set<String> = types,
+        activeTeraType: String? = null,
+    ) = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(), side = side, activeSlot = 0,
         speciesId = "cobblemon:probe", formId = null, level = 50, hpFraction = 1.0,
         statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(),
@@ -103,5 +148,8 @@ class LocalMechanicCandidateTest {
                 BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
             )
         },
+        knownVolatileEffectIds = emptySet(),
+        knownBaseStabTypeIds = baseStabTypes,
+        knownTeraTypeId = activeTeraType,
     )
 }

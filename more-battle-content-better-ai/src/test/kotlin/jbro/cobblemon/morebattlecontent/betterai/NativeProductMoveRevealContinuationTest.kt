@@ -44,6 +44,375 @@ import org.junit.jupiter.api.io.TempDir
 
 class NativeProductMoveRevealContinuationTest {
     @Test
+    fun `public Ogerpon Tera form transition retains zero one and two stab hypotheses`(
+        @TempDir directory: Path,
+    ) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            listOf(
+                "powergem" to listOf(
+                    inferred(0, "powergem", BattleOpponentMoveGroup.COVERAGE_ATTACK),
+                    guessed(1), guessed(2), guessed(3),
+                ),
+                "hornleech" to listOf(
+                    inferred(0, "hornleech", BattleOpponentMoveGroup.STAB_ATTACK),
+                    inferred(1, "powergem", BattleOpponentMoveGroup.COVERAGE_ATTACK),
+                    guessed(2), guessed(3),
+                ),
+                "hornleech" to listOf(
+                    inferred(0, "hornleech", BattleOpponentMoveGroup.STAB_ATTACK),
+                    inferred(1, "ivycudgel", BattleOpponentMoveGroup.STAB_ATTACK),
+                    inferred(2, "powergem", BattleOpponentMoveGroup.COVERAGE_ATTACK),
+                    guessed(3),
+                ),
+            ).forEachIndexed { expectedStabCount, (usedMove, initialSlots) ->
+                val definition = ogerponTeraDefinition(initialSlots.mapNotNull { it.moveId })
+                val root = engine.createBattle(definition)
+                val allyAction = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, root)
+                    .single { it.moveId == "splash" && it.mechanic == null }
+                val opponentAction = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, root)
+                    .single { it.moveId == usedMove && it.mechanic?.mechanicId == "tera" }
+                val actualAfter = engine.branch(
+                    root.snapshotJson,
+                    NativeShowdownChoiceEncoder.encode(allyAction, BattleSide.ALLY, root),
+                    NativeShowdownChoiceEncoder.encode(opponentAction, BattleSide.OPPONENT, root),
+                )
+                val events = listOf(
+                    BattleObservedEventView(
+                        sequence = 1,
+                        turn = root.turn,
+                        kind = BattleObservedEventKind.TERA_TYPE_REVEALED,
+                        actorPokemonId = OPPONENT,
+                        publicValueId = "fire",
+                        actorSlot = 0,
+                    ),
+                    BattleObservedEventView(
+                        sequence = 2,
+                        turn = root.turn,
+                        kind = BattleObservedEventKind.MOVE_USED,
+                        actorPokemonId = OPPONENT,
+                        targetPokemonIds = listOf(ALLY),
+                        publicValueId = usedMove,
+                        actorSlot = 0,
+                    ),
+                    BattleObservedEventView(
+                        sequence = 3,
+                        turn = root.turn,
+                        kind = BattleObservedEventKind.MOVE_USED,
+                        actorPokemonId = ALLY,
+                        publicValueId = "splash",
+                        actorSlot = 0,
+                    ),
+                )
+                val initialInference = BattleOpponentMoveInferenceView(OPPONENT, initialSlots)
+                val currentInference = BattleOpponentMoveInferenceView(
+                    OPPONENT,
+                    initialSlots.map { slot ->
+                        if (slot.moveId == usedMove) {
+                            inferred(
+                                slot.slot,
+                                usedMove,
+                                slot.group,
+                                BattleOpponentMoveKnowledge.CONFIRMED,
+                                BattleOpponentMoveSource.PUBLIC_REVEAL,
+                            )
+                        } else {
+                            slot
+                        }
+                    },
+                )
+                val session = NativeProductSessionState(
+                    battleId = BATTLE,
+                    format = BattleFormat.SINGLE,
+                    rulesFingerprint = engine.rulesFingerprint,
+                    worlds = listOf(NativeProductSessionWorld(
+                        key = NativeSearchWorldKey("ogerpon-$expectedStabCount-stab", 0),
+                        probability = 1.0,
+                        definition = definition,
+                        rootSnapshot = NativeProductRootSnapshot(engine.rulesFingerprint, root),
+                        publicContext = context(root, publicTemplate(definition), catalog(initialInference)),
+                    )),
+                    publicTurn = root.turn,
+                    lastObservedEventSequence = null,
+                    pendingOwnAction = allyAction,
+                )
+
+                val result = NativeProductSessionReconciler { _, action -> action(engine) }.reconcile(
+                    session,
+                    context(
+                        actualAfter,
+                        publicTemplate(definition, events),
+                        catalog(currentInference, listOf(usedMove)),
+                    ),
+                    Long.MAX_VALUE,
+                )
+
+                assertEquals(
+                    NativeProductSessionReconcileStatus.AVAILABLE,
+                    result.status,
+                    "$expectedStabCount STAB root=${result.rootIssues}, observed=${result.observedActionIssues}",
+                )
+                val retained = requireNotNull(result.sessionState).worlds.single()
+                assertEquals("ogerponhearthflametera", retained.rootSnapshot.frame.p2Active.single().species)
+                assertEquals(listOf("Fire"), retained.rootSnapshot.frame.p2Active.single().types)
+                assertEquals(
+                    setOf("Grass", "Fire"),
+                    retained.rootSnapshot.frame.p2Active.single().baseStabTypes.toSet(),
+                )
+                assertEquals("Fire", retained.rootSnapshot.frame.p2Active.single().terastallizedType)
+                assertEquals(
+                    expectedStabCount,
+                    requireNotNull(
+                        retained.publicContext.publicActionCatalog.inferredMovesForPokemon(OPPONENT),
+                    ).slots.count {
+                        it.group == BattleOpponentMoveGroup.STAB_ATTACK &&
+                            it.knowledge != BattleOpponentMoveKnowledge.GUESS
+                    },
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `public form transition retains zero one and two stab native hypotheses`(
+        @TempDir directory: Path,
+    ) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            listOf(
+                listOf(
+                    inferred(0, "kingsshield", BattleOpponentMoveGroup.STATUS_OTHER),
+                    inferred(1, "powergem", BattleOpponentMoveGroup.COVERAGE_ATTACK),
+                    guessed(2),
+                    guessed(3),
+                ),
+                listOf(
+                    inferred(0, "kingsshield", BattleOpponentMoveGroup.STATUS_OTHER),
+                    inferred(1, "shadowball", BattleOpponentMoveGroup.STAB_ATTACK),
+                    inferred(2, "powergem", BattleOpponentMoveGroup.COVERAGE_ATTACK),
+                    guessed(3),
+                ),
+                listOf(
+                    inferred(0, "kingsshield", BattleOpponentMoveGroup.STATUS_OTHER),
+                    inferred(1, "shadowball", BattleOpponentMoveGroup.STAB_ATTACK),
+                    inferred(2, "ironhead", BattleOpponentMoveGroup.STAB_ATTACK),
+                    inferred(3, "powergem", BattleOpponentMoveGroup.COVERAGE_ATTACK),
+                ),
+            ).forEachIndexed { expectedStabCount, initialSlots ->
+                val initialInference = BattleOpponentMoveInferenceView(OPPONENT, initialSlots)
+                val opponentMoves = initialSlots.mapNotNull { it.moveId }
+                val definition = stanceDefinition(opponentMoves)
+                val root = engine.createBattle(definition)
+                val allyAction = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, root)
+                    .single { it.moveId == "splash" && it.mechanic == null }
+                val opponentAction = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, root)
+                    .single { it.moveId == "kingsshield" && it.mechanic == null }
+                val actualAfter = engine.branch(
+                    root.snapshotJson,
+                    NativeShowdownChoiceEncoder.encode(allyAction, BattleSide.ALLY, root),
+                    NativeShowdownChoiceEncoder.encode(opponentAction, BattleSide.OPPONENT, root),
+                )
+                val events = listOf(
+                    BattleObservedEventView(
+                        sequence = 1,
+                        turn = root.turn,
+                        kind = BattleObservedEventKind.MOVE_USED,
+                        actorPokemonId = OPPONENT,
+                        publicValueId = "kingsshield",
+                        actorSlot = 0,
+                    ),
+                    BattleObservedEventView(
+                        sequence = 2,
+                        turn = root.turn,
+                        kind = BattleObservedEventKind.MOVE_USED,
+                        actorPokemonId = ALLY,
+                        publicValueId = "splash",
+                        actorSlot = 0,
+                    ),
+                )
+                val currentInference = BattleOpponentMoveInferenceView(
+                    OPPONENT,
+                    initialSlots.map { slot ->
+                        if (slot.moveId == "kingsshield") {
+                            inferred(
+                                slot.slot,
+                                "kingsshield",
+                                BattleOpponentMoveGroup.STATUS_OTHER,
+                                BattleOpponentMoveKnowledge.CONFIRMED,
+                                BattleOpponentMoveSource.PUBLIC_REVEAL,
+                            )
+                        } else {
+                            slot
+                        }
+                    },
+                )
+                val session = NativeProductSessionState(
+                    battleId = BATTLE,
+                    format = BattleFormat.SINGLE,
+                    rulesFingerprint = engine.rulesFingerprint,
+                    worlds = listOf(NativeProductSessionWorld(
+                        key = NativeSearchWorldKey("form-$expectedStabCount-stab", 0),
+                        probability = 1.0,
+                        definition = definition,
+                        rootSnapshot = NativeProductRootSnapshot(engine.rulesFingerprint, root),
+                        publicContext = context(root, publicTemplate(definition), catalog(initialInference)),
+                    )),
+                    publicTurn = root.turn,
+                    lastObservedEventSequence = null,
+                    pendingOwnAction = allyAction,
+                )
+
+                val result = NativeProductSessionReconciler { _, action -> action(engine) }.reconcile(
+                    session,
+                    context(
+                        actualAfter,
+                        publicTemplate(definition, events),
+                        catalog(currentInference, listOf("kingsshield")),
+                    ),
+                    Long.MAX_VALUE,
+                )
+
+                assertEquals(
+                    NativeProductSessionReconcileStatus.AVAILABLE,
+                    result.status,
+                    "$expectedStabCount STAB root=${result.rootIssues}, observed=${result.observedActionIssues}",
+                )
+                val retained = requireNotNull(result.sessionState).worlds.single()
+                assertEquals(opponentMoves, retained.rootSnapshot.frame.p2Team.single().moves.map { it.id })
+                assertEquals("aegislash", retained.rootSnapshot.frame.p2Active.single().species)
+                assertEquals(
+                    setOf("Steel", "Ghost"),
+                    retained.rootSnapshot.frame.p2Active.single().baseStabTypes.toSet(),
+                )
+                assertEquals(
+                    expectedStabCount,
+                    requireNotNull(
+                        retained.publicContext.publicActionCatalog.inferredMovesForPokemon(OPPONENT),
+                    ).slots.count {
+                        it.group == BattleOpponentMoveGroup.STAB_ATTACK &&
+                            it.knowledge != BattleOpponentMoveKnowledge.GUESS
+                    },
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `public Tera transition retains zero and one stab native hypotheses`(
+        @TempDir directory: Path,
+    ) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            listOf(
+                Triple("powergem", BattleOpponentMoveGroup.COVERAGE_ATTACK, 0),
+                Triple("psychic", BattleOpponentMoveGroup.STAB_ATTACK, 1),
+            ).forEach { (moveId, group, expectedStabCount) ->
+                val definition = teraDefinition(listOf(moveId))
+                val root = engine.createBattle(definition)
+                val allyAction = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, root)
+                    .single { it.moveId == "splash" && it.mechanic == null }
+                val opponentAction = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, root)
+                    .single { it.moveId == moveId && it.mechanic?.mechanicId == "tera" }
+                val actualAfter = engine.branch(
+                    root.snapshotJson,
+                    NativeShowdownChoiceEncoder.encode(allyAction, BattleSide.ALLY, root),
+                    NativeShowdownChoiceEncoder.encode(opponentAction, BattleSide.OPPONENT, root),
+                )
+                val events = listOf(
+                    BattleObservedEventView(
+                        sequence = 1,
+                        turn = root.turn,
+                        kind = BattleObservedEventKind.TERA_TYPE_REVEALED,
+                        actorPokemonId = OPPONENT,
+                        publicValueId = "fire",
+                        actorSlot = 0,
+                    ),
+                    BattleObservedEventView(
+                        sequence = 2,
+                        turn = root.turn,
+                        kind = BattleObservedEventKind.MOVE_USED,
+                        actorPokemonId = OPPONENT,
+                        targetPokemonIds = listOf(ALLY),
+                        publicValueId = moveId,
+                        actorSlot = 0,
+                    ),
+                    BattleObservedEventView(
+                        sequence = 3,
+                        turn = root.turn,
+                        kind = BattleObservedEventKind.MOVE_USED,
+                        actorPokemonId = ALLY,
+                        publicValueId = "splash",
+                        actorSlot = 0,
+                    ),
+                )
+                val initialInference = BattleOpponentMoveInferenceView(OPPONENT, listOf(
+                    inferred(0, moveId, group),
+                    guessed(1),
+                    guessed(2),
+                    guessed(3),
+                ))
+                val currentInference = BattleOpponentMoveInferenceView(OPPONENT, listOf(
+                    inferred(
+                        0,
+                        moveId,
+                        group,
+                        BattleOpponentMoveKnowledge.CONFIRMED,
+                        BattleOpponentMoveSource.PUBLIC_REVEAL,
+                    ),
+                    guessed(1),
+                    guessed(2),
+                    guessed(3),
+                ))
+                val session = NativeProductSessionState(
+                    battleId = BATTLE,
+                    format = BattleFormat.SINGLE,
+                    rulesFingerprint = engine.rulesFingerprint,
+                    worlds = listOf(NativeProductSessionWorld(
+                        key = NativeSearchWorldKey("tera-$expectedStabCount-stab", 0),
+                        probability = 1.0,
+                        definition = definition,
+                        rootSnapshot = NativeProductRootSnapshot(engine.rulesFingerprint, root),
+                        publicContext = context(root, publicTemplate(definition), catalog(initialInference)),
+                    )),
+                    publicTurn = root.turn,
+                    lastObservedEventSequence = null,
+                    pendingOwnAction = allyAction,
+                )
+
+                val result = NativeProductSessionReconciler { _, action -> action(engine) }.reconcile(
+                    session,
+                    context(
+                        actualAfter,
+                        publicTemplate(definition, events),
+                        catalog(currentInference, listOf(moveId)),
+                    ),
+                    Long.MAX_VALUE,
+                )
+
+                assertEquals(
+                    NativeProductSessionReconcileStatus.AVAILABLE,
+                    result.status,
+                    "$moveId root=${result.rootIssues}, observed=${result.observedActionIssues}",
+                )
+                val retained = requireNotNull(result.sessionState).worlds.single()
+                val retainedInference = requireNotNull(
+                    retained.publicContext.publicActionCatalog.inferredMovesForPokemon(OPPONENT),
+                )
+                assertEquals(
+                    expectedStabCount,
+                    retainedInference.slots.count {
+                        it.group == BattleOpponentMoveGroup.STAB_ATTACK &&
+                            it.knowledge != BattleOpponentMoveKnowledge.GUESS
+                    },
+                )
+                assertEquals(listOf(moveId), retained.rootSnapshot.frame.p2Team.single().moves.map { it.id })
+                assertEquals(listOf("Fire"), retained.rootSnapshot.frame.p2Active.single().types)
+                assertEquals(listOf("Psychic"), retained.rootSnapshot.frame.p2Active.single().baseStabTypes)
+            }
+        }
+    }
+
+    @Test
     fun `a newly revealed move replaces its inferred slot before the observed turn is replayed`(
         @TempDir directory: Path,
     ) {
@@ -185,7 +554,7 @@ class NativeProductMoveRevealContinuationTest {
                 inferred(
                     0,
                     "psychic",
-                    BattleOpponentMoveGroup.COVERAGE_ATTACK,
+                    BattleOpponentMoveGroup.STAB_ATTACK,
                     BattleOpponentMoveKnowledge.CONFIRMED,
                     BattleOpponentMoveSource.PUBLIC_REVEAL,
                 ),
@@ -232,6 +601,12 @@ class NativeProductMoveRevealContinuationTest {
             assertEquals(listOf("psychic", "flamethrower"),
                 retained.rootSnapshot.frame.p2Team.single().moves.map { it.id })
             assertEquals(listOf("Fire"), retained.rootSnapshot.frame.p2Active.single().types)
+            assertEquals(listOf("Psychic"), retained.rootSnapshot.frame.p2Active.single().baseStabTypes)
+            assertEquals("Fire", retained.rootSnapshot.frame.p2Active.single().terastallizedType)
+            val publicOpponent = retained.publicContext.state.pokemon.single { it.battlePokemonId == OPPONENT }
+            assertEquals(setOf("fire"), publicOpponent.knownTypeIds)
+            assertEquals(setOf("psychic"), publicOpponent.knownBaseStabTypeIds)
+            assertEquals("fire", publicOpponent.knownTeraTypeId)
             assertTrue(retained.rootSnapshot.frame.p2Active.single().moves.single { it.id == "psychic" }.pp <
                 root.p2Active.single().moves.single { it.id == "psychic" }.pp)
         }
@@ -351,6 +726,12 @@ class NativeProductMoveRevealContinuationTest {
     private fun moveDetails(moveId: String): BattleMoveCandidateView = when (moveId) {
         "psychic" -> BattleMoveCandidateView("psychic", BattleMoveDamageCategory.SPECIAL, 90.0, 100.0, 0, 10)
         "flamethrower" -> BattleMoveCandidateView("fire", BattleMoveDamageCategory.SPECIAL, 90.0, 100.0, 0, 15)
+        "powergem" -> BattleMoveCandidateView("rock", BattleMoveDamageCategory.SPECIAL, 80.0, 100.0, 0, 20)
+        "hornleech" -> BattleMoveCandidateView("grass", BattleMoveDamageCategory.PHYSICAL, 75.0, 100.0, 0, 10)
+        "ivycudgel" -> BattleMoveCandidateView("fire", BattleMoveDamageCategory.PHYSICAL, 100.0, 100.0, 0, 10)
+        "shadowball" -> BattleMoveCandidateView("ghost", BattleMoveDamageCategory.SPECIAL, 80.0, 100.0, 0, 15)
+        "ironhead" -> BattleMoveCandidateView("steel", BattleMoveDamageCategory.PHYSICAL, 80.0, 100.0, 0, 15)
+        "kingsshield" -> BattleMoveCandidateView("steel", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 4, 10)
         "tackle" -> BattleMoveCandidateView("normal", BattleMoveDamageCategory.PHYSICAL, 40.0, 100.0, 0, 35)
         else -> BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 10)
     }
@@ -388,7 +769,7 @@ class NativeProductMoveRevealContinuationTest {
         ),
     )
 
-    private fun teraDefinition() = NativeBattleDefinition(
+    private fun teraDefinition(opponentMoves: List<String> = listOf("psychic", "tackle")) = NativeBattleDefinition(
         formatId = "cobblemonsingles",
         seed = listOf(191, 193, 197, 199),
         p1Team = listOf(NativePokemonSet(
@@ -402,8 +783,52 @@ class NativeProductMoveRevealContinuationTest {
         p2Team = listOf(NativePokemonSet(
             "Tera Opponent",
             "Mew",
-            listOf("psychic", "tackle"),
+            opponentMoves,
             "synchronize",
+            uuid = OPPONENT.toString(),
+            teraType = "Fire",
+            level = 50,
+        )),
+    )
+
+    private fun stanceDefinition(opponentMoves: List<String>) = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(233, 239, 241, 251),
+        p1Team = listOf(NativePokemonSet(
+            "Slow Ally",
+            "Shuckle",
+            listOf("splash"),
+            "sturdy",
+            uuid = ALLY.toString(),
+            level = 50,
+        )),
+        p2Team = listOf(NativePokemonSet(
+            "Form Opponent",
+            "Aegislash-Blade",
+            opponentMoves,
+            "stancechange",
+            uuid = OPPONENT.toString(),
+            level = 50,
+        )),
+    )
+
+    private fun ogerponTeraDefinition(opponentMoves: List<String>) = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(277, 281, 283, 293),
+        p1Team = listOf(NativePokemonSet(
+            "Slow Ally",
+            "Shuckle",
+            listOf("splash"),
+            "sturdy",
+            uuid = ALLY.toString(),
+            level = 50,
+        )),
+        p2Team = listOf(NativePokemonSet(
+            "Mask Opponent",
+            "Ogerpon-Hearthflame",
+            opponentMoves,
+            "moldbreaker",
+            item = "hearthflamemask",
             uuid = OPPONENT.toString(),
             teraType = "Fire",
             level = 50,

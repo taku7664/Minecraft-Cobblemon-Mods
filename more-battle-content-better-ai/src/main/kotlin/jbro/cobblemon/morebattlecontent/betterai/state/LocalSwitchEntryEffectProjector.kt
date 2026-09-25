@@ -93,6 +93,7 @@ internal object LocalSwitchEntryEffectProjector {
         pokemon.level, pokemon.hpFraction, statusId, statStages, pokemon.knownMoveIds, pokemon.knownAbilityId,
         pokemon.knownHeldItemId, pokemon.fainted, pokemon.knownTypeIds, pokemon.combatStats,
         pokemon.knownFormStates, pokemon.actionConstraints, pokemon.knownVolatileEffectIds,
+        pokemon.knownBaseStabTypeIds, pokemon.knownTeraTypeId,
     )
 
     private fun copyField(field: BattleFieldStateView, sideConditions: Map<BattleSide, List<BattleTimedEffectView>>) =

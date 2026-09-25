@@ -237,6 +237,8 @@ internal object LocalDirectHitMechanics {
         knownFormStates = pokemon.knownFormStates,
         actionConstraints = pokemon.actionConstraints,
         knownVolatileEffectIds = if (fainted) emptySet() else pokemon.knownVolatileEffectIds,
+        knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
+        knownTeraTypeId = pokemon.knownTeraTypeId,
     )
 
     private fun midpoint(range: BattleFractionRange): Double = (range.minimum + range.maximum) / 2.0

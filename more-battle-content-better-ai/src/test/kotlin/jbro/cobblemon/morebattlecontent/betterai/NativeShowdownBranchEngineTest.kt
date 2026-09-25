@@ -175,6 +175,8 @@ class NativeShowdownBranchEngineTest {
 
             val afterTera = engine.branch(before.snapshotJson, teraChoice, "move 1")
             assertEquals(listOf("Fire"), afterTera.p1Active.single().types)
+            assertEquals(setOf("Bug", "Steel"), afterTera.p1Active.single().baseStabTypes.toSet())
+            assertEquals("Fire", afterTera.p1Active.single().terastallizedType)
             assertEquals("Fire", afterTera.p1Active.single().sourceSet?.teraType)
             assertTrue(NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, afterTera).none {
                 it.mechanic?.mechanicId == "tera"
@@ -182,7 +184,92 @@ class NativeShowdownBranchEngineTest {
 
             val afterNextTurn = engine.branch(afterTera.snapshotJson, "move 1", "move 1")
             assertEquals(listOf("Fire"), afterNextTurn.p1Active.single().types)
+            assertEquals(setOf("Bug", "Steel"), afterNextTurn.p1Active.single().baseStabTypes.toSet())
+            assertEquals("Fire", afterNextTurn.p1Active.single().terastallizedType)
             assertEquals("Fire", afterNextTurn.p1Active.single().sourceSet?.teraType)
+        }
+    }
+
+    @Test
+    fun `native Tera clears an added type from retained base stab`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(addedTypeBeforeTeraBattle())
+            val setup = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, before).single {
+                it.moveId == "swordsdance" && it.mechanic == null
+            }
+            val addType = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, before).single {
+                it.moveId == "forestscurse" && it.mechanic == null
+            }
+            val withAddedType = engine.branch(
+                before.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(setup, BattleSide.ALLY, before),
+                NativeShowdownChoiceEncoder.encode(addType, BattleSide.OPPONENT, before),
+            )
+
+            assertEquals(setOf("Bug", "Steel", "Grass"), withAddedType.p1Active.single().types.toSet())
+            assertEquals(setOf("Bug", "Steel", "Grass"), withAddedType.p1Active.single().baseStabTypes.toSet())
+
+            val tera = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, withAddedType).single {
+                it.moveId == "bulletpunch" && it.mechanic?.mechanicId == "tera"
+            }
+            val wait = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, withAddedType).single {
+                it.moveId == "splash" && it.mechanic == null
+            }
+            val afterTera = engine.branch(
+                withAddedType.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(tera, BattleSide.ALLY, withAddedType),
+                NativeShowdownChoiceEncoder.encode(wait, BattleSide.OPPONENT, withAddedType),
+            )
+
+            assertEquals(listOf("Fire"), afterTera.p1Active.single().types)
+            assertEquals(setOf("Bug", "Steel"), afterTera.p1Active.single().baseStabTypes.toSet())
+            assertEquals("Fire", afterTera.p1Active.single().terastallizedType)
+        }
+    }
+
+    @Test
+    fun `native stance change updates form without changing its base stab types`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(stanceChangeBattle())
+            assertTrue(before.p1Active.single().species.contains("blade"))
+            val kingShield = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, before).single {
+                it.moveId == "kingsshield" && it.mechanic == null
+            }
+
+            val after = engine.branch(
+                before.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(kingShield, BattleSide.ALLY, before),
+                "move 1",
+            )
+
+            assertEquals("aegislash", after.p1Active.single().species)
+            assertEquals(setOf("Steel", "Ghost"), after.p1Active.single().types.toSet())
+            assertEquals(setOf("Steel", "Ghost"), after.p1Active.single().baseStabTypes.toSet())
+            assertEquals("", after.p1Active.single().terastallizedType)
+        }
+    }
+
+    @Test
+    fun `native Ogerpon Tera changes form while preserving its base stab types`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(ogerponTeraBattle())
+            val teraAction = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, before).single {
+                it.moveId == "ivycudgel" && it.mechanic?.mechanicId == "tera"
+            }
+
+            val after = engine.branch(
+                before.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(teraAction, BattleSide.ALLY, before),
+                "move 1",
+            )
+
+            assertEquals("ogerponhearthflametera", after.p1Active.single().species)
+            assertEquals(listOf("Fire"), after.p1Active.single().types)
+            assertEquals(setOf("Grass", "Fire"), after.p1Active.single().baseStabTypes.toSet())
+            assertEquals("Fire", after.p1Active.single().terastallizedType)
         }
     }
 
@@ -462,6 +549,66 @@ class NativeShowdownBranchEngineTest {
                 uuid = "00000000-0000-0000-0000-000000000002",
             ),
         ),
+    )
+
+    private fun stanceChangeBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(211, 223, 227, 229),
+        p1Team = listOf(NativePokemonSet(
+            name = "Blade",
+            species = "Aegislash-Blade",
+            moves = listOf("kingsshield", "shadowball", "ironhead", "powergem"),
+            ability = "stancechange",
+            uuid = "00000000-0000-0000-0000-000000000001",
+        )),
+        p2Team = listOf(NativePokemonSet(
+            name = "Observer",
+            species = "Shuckle",
+            moves = listOf("splash"),
+            ability = "sturdy",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
+    )
+
+    private fun addedTypeBeforeTeraBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(71, 73, 79, 83),
+        p1Team = listOf(NativePokemonSet(
+            name = "Tera Actor",
+            species = "Scizor",
+            moves = listOf("bulletpunch", "swordsdance"),
+            ability = "technician",
+            teraType = "Fire",
+            uuid = "00000000-0000-0000-0000-000000000001",
+        )),
+        p2Team = listOf(NativePokemonSet(
+            name = "Type Adder",
+            species = "Mew",
+            moves = listOf("forestscurse", "splash"),
+            ability = "synchronize",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
+    )
+
+    private fun ogerponTeraBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(257, 263, 269, 271),
+        p1Team = listOf(NativePokemonSet(
+            name = "Mask",
+            species = "Ogerpon-Hearthflame",
+            moves = listOf("ivycudgel", "hornleech"),
+            ability = "moldbreaker",
+            item = "hearthflamemask",
+            teraType = "Fire",
+            uuid = "00000000-0000-0000-0000-000000000001",
+        )),
+        p2Team = listOf(NativePokemonSet(
+            name = "Observer",
+            species = "Shuckle",
+            moves = listOf("splash"),
+            ability = "sturdy",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
     )
 
     private fun doubleBattle() = NativeBattleDefinition(

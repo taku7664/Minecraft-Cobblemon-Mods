@@ -55,6 +55,36 @@ class LocalPublicVolatileStateTest {
     }
 
     @Test
+    fun `cache key distinguishes defensive base stab and Tera type channels`() {
+        val context = context()
+        val target = active(context)
+        val fingerprint = LocalBattleStateFingerprint()
+        fun withTarget(replacement: BattlePokemonStateView) = context.state.copyState(
+            pokemon = context.state.pokemon.map {
+                if (it.battlePokemonId == target.battlePokemonId) replacement else it
+            },
+        )
+        val teraFire = withTarget(target.copyState(
+            knownTypeIds = setOf("fire"),
+            knownBaseStabTypeIds = setOf("electric"),
+            knownTeraTypeId = "fire",
+        ))
+        val differentBaseStab = withTarget(target.copyState(
+            knownTypeIds = setOf("fire"),
+            knownBaseStabTypeIds = setOf("ghost"),
+            knownTeraTypeId = "fire",
+        ))
+        val differentTera = withTarget(target.copyState(
+            knownTypeIds = setOf("fire"),
+            knownBaseStabTypeIds = setOf("electric"),
+            knownTeraTypeId = "water",
+        ))
+
+        assertNotEquals(fingerprint.of(teraFire), fingerprint.of(differentBaseStab))
+        assertNotEquals(fingerprint.of(teraFire), fingerprint.of(differentTera))
+    }
+
+    @Test
     fun `router receives public effect facts without a failure or action recommendation`() {
         val context = context("|-start|$actor|Substitute")
         val request = JsonParser.parseString(HumanlikePromptCodec.requestJson(

@@ -458,8 +458,11 @@ internal object PublicBattleTacticalCalculator {
         actor: BattlePokemonStateView?,
         candidate: BattleActionCandidate,
     ): Double? {
-        val original = actor?.knownTypeIds?.takeIf { it.isNotEmpty() } ?: return null
-        val transformed = LocalMechanicFormResolution.transformedTypeIds(candidate, actor)
+        val original = actor?.knownBaseStabTypeIds?.takeIf { it.isNotEmpty() } ?: return null
+        val mechanicTypes = LocalMechanicFormResolution.transformedTypeIds(candidate, actor)
+        val transformed = mechanicTypes.ifEmpty {
+            actor.knownTeraTypeId?.let(::setOf).orEmpty()
+        }
         fun matches(types: Collection<String>) = types.any { it.equals(details.typeId, ignoreCase = true) }
         // A Mega swaps the typing rather than adding to it, so the doubling below - which exists for
         // Tera keeping both - must not reach it.

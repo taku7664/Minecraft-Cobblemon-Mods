@@ -738,7 +738,13 @@ internal object LocalTacticalScorer {
         val actor = context.state.pokemon.firstOrNull {
             it.side == BattleSide.ALLY && it.activeSlot == actorSlot && !it.fainted
         } ?: return 1.0
-        return if (actor.knownTypeIds.any { it.equals(moveType, ignoreCase = true) }) 1.5 else 1.0
+        val matchesBase = actor.knownBaseStabTypeIds.any { it.equals(moveType, ignoreCase = true) }
+        val matchesTera = actor.knownTeraTypeId?.equals(moveType, ignoreCase = true) == true
+        return when {
+            matchesBase && matchesTera -> 2.0
+            matchesBase || matchesTera -> 1.5
+            else -> 1.0
+        }
     }
 
     private fun allyActiveHp(context: BattleDecisionContext): Double = activeHp(context, BattleSide.ALLY)

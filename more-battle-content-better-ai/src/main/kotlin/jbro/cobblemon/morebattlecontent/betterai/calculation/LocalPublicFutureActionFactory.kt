@@ -172,7 +172,14 @@ internal object PublicFutureActionFactory {
             } else if (LocalPublicMoveDamageInputs.isUnresolvedDynamicDamage(action)) {
                 LocalPublicTurnOrder.effectivePriority(state, side, action) * 5.0
             } else {
-                val stab = if (actor.knownTypeIds.any { canonicalId(it) == canonicalId(details.typeId) }) 1.5 else 1.0
+                val moveType = canonicalId(details.typeId)
+                val matchesBase = actor.knownBaseStabTypeIds.any { canonicalId(it) == moveType }
+                val matchesTera = actor.knownTeraTypeId?.let(::canonicalId) == moveType
+                val stab = when {
+                    matchesBase && matchesTera -> 2.0
+                    matchesBase || matchesTera -> 1.5
+                    else -> 1.0
+                }
                 val explicitTargets = action.targets.mapNotNull { target ->
                     state.pokemon.firstOrNull {
                         it.side == target.side && it.activeSlot == target.slot && !it.fainted && it.hpFraction > 0.0

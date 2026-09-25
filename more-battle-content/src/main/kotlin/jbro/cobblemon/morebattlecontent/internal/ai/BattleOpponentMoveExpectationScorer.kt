@@ -16,7 +16,13 @@ internal object BattleOpponentMoveExpectationScorer {
         if (move.damageCategory == BattleMoveDamageCategory.STATUS) return 0.0
 
         val hitProbability = (move.accuracy / 100.0).coerceIn(0.0, 1.0)
-        val sameTypeBonus = if (pokemon.knownTypeIds.any { sameId(it, move.typeId) }) STAB else 1.0
+        val matchesBase = pokemon.knownBaseStabTypeIds.any { sameId(it, move.typeId) }
+        val matchesTera = pokemon.knownTeraTypeId?.let { sameId(it, move.typeId) } == true
+        val sameTypeBonus = when {
+            matchesBase && matchesTera -> TERA_MATCHING_STAB
+            matchesBase || matchesTera -> STAB
+            else -> 1.0
+        }
         val baseDamage = move.power * hitProbability * sameTypeBonus *
             categoryFit(pokemon, move.damageCategory) * spreadValue(move.targetPattern, format)
         val secondaryValue = move.effects?.effects.orEmpty().sumOf { effect ->
@@ -116,6 +122,7 @@ internal object BattleOpponentMoveExpectationScorer {
         value.substringAfter(':').lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
 
     private const val STAB = 1.5
+    private const val TERA_MATCHING_STAB = 2.0
     private const val MINIMUM_CATEGORY_FIT = 0.65
     /** Two targets at the native 0.75 spread modifier. */
     private const val DOUBLES_ALL_OPPONENTS_VALUE = 1.5

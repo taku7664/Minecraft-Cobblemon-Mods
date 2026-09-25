@@ -326,6 +326,8 @@ internal data class NativePokemonFrame(
     val level: Int = 50,
     val stats: Map<String, Int> = emptyMap(),
     val sourceSet: NativePokemonSourceSetFrame? = null,
+    val baseStabTypes: List<String> = types,
+    val terastallizedType: String = "",
 )
 
 /** Immutable team-set identity, kept separate from callback-mutated live Pokemon state. */

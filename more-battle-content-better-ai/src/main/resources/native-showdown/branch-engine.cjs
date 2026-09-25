@@ -132,6 +132,8 @@ function pokemonFrame(pokemon, activeSlot) {
     ability: pokemon.ability || '',
     item: pokemon.item || '',
     types: pokemon.getTypes(),
+    baseStabTypes: pokemon.getTypes(false, true),
+    terastallizedType: pokemon.terastallized || '',
     boosts: pokemon.boosts,
     volatiles: Object.keys(pokemon.volatiles).sort(),
     moves: pokemon.moveSlots.map(slot => ({

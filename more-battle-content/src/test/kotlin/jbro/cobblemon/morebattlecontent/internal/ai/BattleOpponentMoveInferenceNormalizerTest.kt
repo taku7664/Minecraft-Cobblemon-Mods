@@ -174,6 +174,32 @@ class BattleOpponentMoveInferenceNormalizerTest {
     }
 
     @Test
+    fun `tera defensive type does not erase the original offensive stab types`() {
+        val pokemon = state(
+            types = setOf("fire"),
+            baseStabTypes = setOf("ghost", "fairy"),
+            teraType = "fire",
+        ).pokemon.single()
+
+        assertEquals(
+            BattleOpponentMoveGroup.STAB_ATTACK,
+            BattleOpponentMoveInferenceNormalizer.group(pokemon, requireNotNull(MOVES["moonblast"])),
+        )
+        assertEquals(
+            BattleOpponentMoveGroup.STAB_ATTACK,
+            BattleOpponentMoveInferenceNormalizer.group(pokemon, requireNotNull(MOVES["shadowball"])),
+        )
+        assertEquals(
+            BattleOpponentMoveGroup.STAB_ATTACK,
+            BattleOpponentMoveInferenceNormalizer.group(pokemon, requireNotNull(MOVES["mysticalfire"])),
+        )
+        assertEquals(
+            BattleOpponentMoveGroup.COVERAGE_ATTACK,
+            BattleOpponentMoveInferenceNormalizer.group(pokemon, requireNotNull(MOVES["powergem"])),
+        )
+    }
+
+    @Test
     fun `ledger keeps the original slots while a pokemon is temporarily transformed`() {
         val actual = mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave"))
         val ledger = BattleOpponentMoveInferenceLedger(MOVES::get)
@@ -245,6 +271,8 @@ class BattleOpponentMoveInferenceNormalizerTest {
         speciesId: String = "flutter-mane",
         formId: String = "normal",
         types: Set<String> = setOf("ghost", "fairy"),
+        baseStabTypes: Set<String> = types,
+        teraType: String? = null,
     ) = BattleStateView(
         battleId = BATTLE_ID,
         format = BattleFormat.SINGLE,
@@ -264,6 +292,9 @@ class BattleOpponentMoveInferenceNormalizerTest {
             knownHeldItemId = null,
             fainted = false,
             knownTypeIds = types,
+            knownVolatileEffectIds = emptySet(),
+            knownBaseStabTypeIds = baseStabTypes,
+            knownTeraTypeId = teraType,
         )),
         field = BattleFieldStateView.empty(),
         remainingPokemonBySide = mapOf(BattleSide.ALLY to 3, BattleSide.OPPONENT to 3),
