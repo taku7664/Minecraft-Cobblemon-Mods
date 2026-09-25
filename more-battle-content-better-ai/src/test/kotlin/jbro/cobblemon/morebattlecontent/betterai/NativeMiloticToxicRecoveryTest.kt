@@ -85,13 +85,11 @@ class NativeMiloticToxicRecoveryTest {
                 encodedMove(root, BattleSide.ALLY, "mirrorcoat"),
                 encodedMove(root, BattleSide.OPPONENT, "toxic"),
             )
-            val firstEvents = listOf(
-                moveEvent(1, root.turn, MILOTIC, "mirrorcoat"),
-                moveEvent(2, root.turn, BLISSEY, "toxic"),
-                BattleObservedEventView(3, root.turn, BattleObservedEventKind.STATUS_CHANGED,
-                    actorPokemonId = MILOTIC, publicValueId = "tox"),
-                residualEvent(4, root.turn, root, expectedFirst),
-            )
+            val firstEvents = observedTurnEvents(root, expectedFirst, 1)
+            assertTrue(firstEvents.any {
+                it.kind == BattleObservedEventKind.STATUS_CHANGED && it.actorPokemonId == MILOTIC &&
+                    it.publicValueId == "tox"
+            }, "Native Toxic must emit a public status event: $firstEvents")
             val reconciler = NativeProductSessionReconciler(
                 nanoTime = { 0L },
                 lease = { _, action -> action(engine) },
@@ -115,11 +113,13 @@ class NativeMiloticToxicRecoveryTest {
                 encodedMove(expectedFirst, BattleSide.ALLY, "mirrorcoat"),
                 encodedMove(expectedFirst, BattleSide.OPPONENT, "splash"),
             )
-            val secondEvents = firstEvents + listOf(
-                moveEvent(5, expectedFirst.turn, MILOTIC, "mirrorcoat"),
-                moveEvent(6, expectedFirst.turn, BLISSEY, "splash"),
-                residualEvent(7, expectedFirst.turn, expectedFirst, expectedSecond),
+            val secondTurnEvents = observedTurnEvents(
+                expectedFirst, expectedSecond, firstEvents.last().sequence + 1,
             )
+            assertTrue(secondTurnEvents.count { it.kind == BattleObservedEventKind.HP_CHANGED } >= 2,
+                "Showdown must expose Leftovers healing and toxic damage as separate public events: " +
+                    secondTurnEvents)
+            val secondEvents = firstEvents + secondTurnEvents
             val second = reconciler.reconcile(
                 requireNotNull(first.sessionState).withPendingOwnAction(secondOwnAction),
                 decisionContext(expectedSecond, secondEvents),
@@ -131,7 +131,7 @@ class NativeMiloticToxicRecoveryTest {
             assertEquals("tox", twiceRetained.p1Active.single().status)
             assertEquals(expectedSecond.p1Active.single().hp, twiceRetained.p1Active.single().hp)
             assertTrue(twiceRetained.p1Active.single().hp < retained.p1Active.single().hp)
-            assertEquals(7L, second.sessionState.lastObservedEventSequence)
+            assertEquals(secondEvents.last().sequence, second.sessionState.lastObservedEventSequence)
         }
     }
 
@@ -317,29 +317,66 @@ class NativeMiloticToxicRecoveryTest {
         combatStats = null,
     )
 
-    private fun moveEvent(sequence: Long, turn: Int, actor: UUID, moveId: String) = BattleObservedEventView(
-        sequence = sequence,
-        turn = turn,
-        kind = BattleObservedEventKind.MOVE_USED,
-        actorPokemonId = actor,
-        publicValueId = moveId,
-        actorSlot = 0,
-    )
-
-    private fun residualEvent(
-        sequence: Long,
-        turn: Int,
+    /** Convert only the public Showdown messages relevant to this fixture, in their emitted order. */
+    private fun observedTurnEvents(
         before: NativeBattleFrame,
         after: NativeBattleFrame,
-    ) = BattleObservedEventView(
-        sequence = sequence,
-        turn = turn,
-        kind = BattleObservedEventKind.HP_CHANGED,
-        actorPokemonId = MILOTIC,
-        hpFractionDelta = after.p1Active.single().hp.toDouble() / after.p1Active.single().maxHp -
-            before.p1Active.single().hp.toDouble() / before.p1Active.single().maxHp,
-        publicSourceEffectId = "tox",
-    )
+        firstSequence: Long,
+    ): List<BattleObservedEventView> {
+        require(after.log.take(before.log.size) == before.log) { "The native log must be append-only" }
+        val events = mutableListOf<BattleObservedEventView>()
+        val turn = before.turn
+        var ownHp = before.p1Active.single().hp.toDouble() / before.p1Active.single().maxHp
+        fun nextSequence() = firstSequence + events.size
+        after.log.drop(before.log.size).forEach { line ->
+            val fields = line.split('|')
+            when (fields.getOrNull(1)) {
+                "move" -> {
+                    val actor = when {
+                        fields.getOrNull(2)?.startsWith("p1a:") == true -> MILOTIC
+                        fields.getOrNull(2)?.startsWith("p2a:") == true -> BLISSEY
+                        else -> return@forEach
+                    }
+                    val move = fields.getOrNull(3)?.lowercase()?.filter(Char::isLetterOrDigit)
+                        ?.takeIf(String::isNotBlank) ?: return@forEach
+                    events += BattleObservedEventView(
+                        sequence = nextSequence(), turn = turn, kind = BattleObservedEventKind.MOVE_USED,
+                        actorPokemonId = actor, publicValueId = move, actorSlot = 0,
+                    )
+                }
+                "-status" -> if (fields.getOrNull(2)?.startsWith("p1a:") == true) {
+                    events += BattleObservedEventView(
+                        sequence = nextSequence(), turn = turn, kind = BattleObservedEventKind.STATUS_CHANGED,
+                        actorPokemonId = MILOTIC, publicValueId = requireNotNull(fields.getOrNull(3)),
+                    )
+                }
+                "-heal", "-damage" -> if (fields.getOrNull(2)?.startsWith("p1a:") == true) {
+                    val hpToken = requireNotNull(fields.getOrNull(3)).substringBefore(' ')
+                    val hpParts = hpToken.split('/')
+                    require(hpParts.size == 2) { "Expected public HP fraction in $line" }
+                    val nextHp = hpParts[0].toDouble() / hpParts[1].toDouble()
+                    val source = fields.firstOrNull { it.startsWith("[from] ") }
+                        ?.removePrefix("[from] ")
+                        ?.substringAfter(':')
+                        ?.lowercase()
+                        ?.filter(Char::isLetterOrDigit)
+                    events += BattleObservedEventView(
+                        sequence = nextSequence(), turn = turn, kind = BattleObservedEventKind.HP_CHANGED,
+                        actorPokemonId = MILOTIC, hpFractionDelta = nextHp - ownHp,
+                        publicSourceEffectId = source,
+                    )
+                    ownHp = nextHp
+                }
+            }
+        }
+        assertTrue(events.isNotEmpty(), "No public events parsed from native turn: ${after.log.drop(before.log.size)}")
+        val nativeHp = after.p1Active.single().hp.toDouble() / after.p1Active.single().maxHp
+        val publicPercent = kotlin.math.ceil(nativeHp * 100.0)
+            .let { if (it == 100.0 && nativeHp < 1.0) 99.0 else it } / 100.0
+        assertEquals(publicPercent, ownHp, 1e-9,
+            "Showdown's public HP is rounded, not the native exact HP")
+        return events
+    }
 
     private fun battle() = NativeBattleDefinition(
         formatId = "cobblemonsingles",
