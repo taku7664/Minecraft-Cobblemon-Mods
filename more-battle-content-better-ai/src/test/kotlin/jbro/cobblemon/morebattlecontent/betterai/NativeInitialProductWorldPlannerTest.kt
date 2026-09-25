@@ -265,6 +265,45 @@ class NativeInitialProductWorldPlannerTest {
         }
     }
 
+    @Test
+    fun `six on six opening with no dated build usage opens a real native root`(@TempDir directory: Path) {
+        val ordinaryPreview = preview(selectionSize = 6)
+        val clodsire = previewPokemon(
+            slot = 0,
+            species = "clodsire",
+            types = setOf("poison", "ground"),
+            moves = mapOf("earthquake" to BattleMoveCandidateView(
+                typeId = "ground", damageCategory = BattleMoveDamageCategory.PHYSICAL,
+                power = 100.0, accuracy = 100.0, priority = 0, currentPp = 10,
+            )),
+            abilityId = "poisonpoint",
+            genderRates = mapOf("M" to 0.5, "F" to 0.5),
+        )
+        val publicPreview = BattleOpponentTeamPreviewView(
+            selectionSize = 6,
+            pokemon = listOf(clodsire) + ordinaryPreview.pokemon.drop(1),
+        )
+        val result = planner(
+            buildUsage = LocalOpponentBuildUsageLookup { _, _ -> null },
+        ).plan(context(preview = publicPreview), BattleTrainerTier.BOSS)
+
+        assertTrue(result.issues.isEmpty(), "issues=${result.issues}")
+        assertTrue(result.worlds.isNotEmpty())
+        assertEquals(1.0, result.worlds.sumOf { it.probability }, 1e-9)
+        assertTrue(result.worlds.all { "generic-public-prior" in it.hypothesisId })
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val frame = engine.createBattle(result.worlds.first().definition)
+            assertEquals(6, frame.p1Team.size)
+            assertEquals(6, frame.p2Team.size)
+            assertEquals("clodsire", frame.p2Active.single().sourceSet?.species)
+            val next = engine.branch(frame.snapshotJson, "move 1", "move 1")
+            assertEquals(frame.turn + 1, next.turn)
+            assertEquals(6, next.p1Team.size)
+            assertEquals(6, next.p2Team.size)
+        }
+    }
+
     private fun planner(
         buildUsage: LocalOpponentBuildUsageLookup = LocalOpponentBuildUsageLookup { _, _ -> BUILD_USAGE },
         moveUsage: LocalMoveUsageLookup = LocalMoveUsageLookup { _, _, _ -> 1.0 },
@@ -427,6 +466,8 @@ class NativeInitialProductWorldPlannerTest {
         species: String,
         types: Set<String>,
         moves: Map<String, BattleMoveCandidateView>,
+        abilityId: String = "synchronize",
+        genderRates: Map<String, Double> = mapOf("N" to 1.0),
     ): BattleOpponentTeamPreviewPokemonView {
         val speciesId = "cobblemon:$species"
         return BattleOpponentTeamPreviewPokemonView(
@@ -446,10 +487,10 @@ class NativeInitialProductWorldPlannerTest {
                 speciesId = speciesId,
                 formId = "normal",
                 abilities = listOf(BattleOpponentPreviewAbilityView(
-                    "synchronize",
+                    abilityId,
                     BattleAbilityAvailability.REGULAR,
                 )),
-                genderRates = mapOf("N" to 1.0),
+                genderRates = genderRates,
                 sourceId = "fixture:form",
             ),
             showdownSpeciesId = species,
