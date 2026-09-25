@@ -64,6 +64,7 @@ public class BattleMoveSelectionMixin {
         }
 
         if (PanelConfig.INSTANCE.getEnableMoveTooltipsEffective()) {
+            MoveTooltipRenderer.INSTANCE.observeSelection(this);
             MoveTooltipRenderer.INSTANCE.clear();
         }
     }

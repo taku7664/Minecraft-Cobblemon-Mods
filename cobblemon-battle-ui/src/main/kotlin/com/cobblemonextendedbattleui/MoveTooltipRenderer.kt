@@ -10,6 +10,7 @@ import com.cobblemon.mod.common.client.battle.ClientBattlePokemon
 import com.cobblemon.mod.common.client.render.drawScaledText
 import com.cobblemon.mod.common.pokemon.Pokemon
 import com.mojang.blaze3d.systems.RenderSystem
+import jbro.cobblemon.battleui.extended.navigation.MoveTooltipMode
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.gui.DrawContext
@@ -78,6 +79,12 @@ object MoveTooltipRenderer {
     private var wasIncreaseFontKeyPressed = false
     private var wasDecreaseFontKeyPressed = false
     private var mixinActiveLastFrame = false
+    private val keyboardTooltipMode = MoveTooltipMode()
+
+    fun observeSelection(selection: Any) = keyboardTooltipMode.observe(selection)
+
+    fun setKeyboardTooltipMode(selection: Any, enabled: Boolean) =
+        keyboardTooltipMode.setEnabled(selection, enabled)
 
     fun setActivePokemonUuid(uuid: UUID?) {
         activePokemonUuid = uuid
@@ -92,6 +99,7 @@ object MoveTooltipRenderer {
     fun resetIfStale() {
         if (!mixinActiveLastFrame) {
             hoveredMove = null
+            keyboardTooltipMode.clear()
         }
         mixinActiveLastFrame = false
     }
@@ -126,7 +134,7 @@ object MoveTooltipRenderer {
 
     /** Selects the same registered tile used by keyboard navigation. */
     fun updateKeyboardFocusState(focusedIndex: Int) {
-        hoveredMove = moveTileBounds.getOrNull(focusedIndex)
+        hoveredMove = if (keyboardTooltipMode.isEnabled) moveTileBounds.getOrNull(focusedIndex) else null
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -194,12 +202,15 @@ object MoveTooltipRenderer {
         val totalHeight = UIUtils.FRAME_INSET + headerCellH + UIUtils.CELL_GAP + powerCellH +
             UIUtils.CELL_GAP + headTotalH + pairedCellH + descTotalH + effectTotalH + UIUtils.FRAME_INSET
 
-        // ── Position above the move tile ──
-        var px = move.x.toInt() + (move.width / 2) - (tooltipWidth / 2)
-        var py = move.y.toInt() - totalHeight - 4
-        if (py < 4) py = move.y.toInt() + move.height + 4
-        px = ViewportClamp.clamp(px, 4, screenWidth, tooltipWidth, 4)
-        py = ViewportClamp.clamp(py, 4, screenHeight, totalHeight, 4)
+        // The tooltip stays beside the entire move column as focus/hover changes.
+        val columnLeft = moveTileBounds.minOfOrNull { it.x.toInt() } ?: move.x.toInt()
+        val columnBottom = moveTileBounds.maxOfOrNull { (it.y + it.height).toInt() }
+            ?: (move.y + move.height).toInt()
+        val anchor = MoveTooltipAnchor.position(
+            columnLeft, columnBottom, tooltipWidth, totalHeight, screenWidth, screenHeight
+        )
+        val px = anchor.x()
+        val py = anchor.y()
 
         // ── Render ──
         context.matrices.push()

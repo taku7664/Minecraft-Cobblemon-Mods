@@ -10,6 +10,7 @@ import com.cobblemon.mod.common.client.gui.battle.widgets.BattleOptionTile;
 import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUIClient;
 import jbro.cobblemon.battleui.extended.BattleInfoPanel;
 import jbro.cobblemon.battleui.extended.BattleDialogue;
+import jbro.cobblemon.battleui.extended.MoveTooltipRenderer;
 import jbro.cobblemon.battleui.extended.navigation.BattleGuiNavigationAccess;
 import jbro.cobblemon.battleui.extended.navigation.BattleCommandLayout;
 import jbro.cobblemon.battleui.extended.navigation.KeyboardTileFocus;
@@ -287,6 +288,25 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             cobblemonBattleUi$gridSelection = selection;
             cobblemonBattleUi$gridIndex = -1;
             KeyboardTileFocus.clear();
+        }
+
+        if (selection instanceof BattleMoveSelection) {
+            boolean tooltipOn = keyCode == GLFW.GLFW_KEY_LEFT || keyCode == GLFW.GLFW_KEY_A;
+            boolean tooltipOff = keyCode == GLFW.GLFW_KEY_RIGHT || keyCode == GLFW.GLFW_KEY_D;
+            if (tooltipOn || tooltipOff) {
+                if (tooltipOn) {
+                    if (!GridMenuNavigator.isIndexInBounds(cobblemonBattleUi$gridIndex, tiles.size())
+                            || !enabled.test(tiles.get(cobblemonBattleUi$gridIndex))) {
+                        List<Boolean> enabledTiles = tiles.stream().map(enabled::test).toList();
+                        cobblemonBattleUi$gridIndex = new BattleMenuNavigator(enabledTiles, -1).move(1);
+                    }
+                    if (cobblemonBattleUi$gridIndex >= 0) {
+                        KeyboardTileFocus.set(tiles.get(cobblemonBattleUi$gridIndex));
+                    }
+                }
+                MoveTooltipRenderer.INSTANCE.setKeyboardTooltipMode(selection, tooltipOn);
+                return true;
+            }
         }
 
         int direction = switch (keyCode) {

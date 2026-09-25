@@ -226,6 +226,20 @@ final class BattleUiAuditContractTest {
     }
 
     @Test
+    void moveTooltipMouseHoverAndKeyboardModeUseSeparateVisibilityPaths() throws Exception {
+        String renderer = read("src/main/kotlin/com/cobblemonextendedbattleui/MoveTooltipRenderer.kt");
+        String moveMixin = read("src/main/java/com/cobblemonextendedbattleui/mixin/BattleMoveSelectionMixin.java");
+        String navigation = read("src/main/java/com/cobblemonextendedbattleui/mixin/BattleGuiNavigationMixin.java");
+
+        assertTrue(moveMixin.contains("if (KeyboardTileFocus.allowsMouseHover())"));
+        assertTrue(renderer.contains("hoveredMove = moveTileBounds.find"));
+        assertTrue(renderer.contains("if (keyboardTooltipMode.isEnabled) moveTileBounds.getOrNull(focusedIndex) else null"));
+        assertTrue(navigation.contains("GLFW.GLFW_KEY_LEFT"));
+        assertTrue(navigation.contains("GLFW.GLFW_KEY_RIGHT"));
+        assertTrue(navigation.contains("MoveTooltipRenderer.INSTANCE.setKeyboardTooltipMode(selection, tooltipOn)"));
+    }
+
+    @Test
     void optionalClothConfigIsGuardedBeforeItsBuilderLoads() throws Exception {
         String integration = read("src/main/kotlin/com/cobblemonextendedbattleui/ModMenuIntegration.kt");
         assertTrue(integration.contains("isModLoaded(\"cloth-config\")"));
