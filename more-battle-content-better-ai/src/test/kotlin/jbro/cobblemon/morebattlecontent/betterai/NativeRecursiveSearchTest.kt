@@ -19,6 +19,7 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownSearchTree
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class NativeRecursiveSearchTest {
@@ -89,12 +90,38 @@ class NativeRecursiveSearchTest {
 
         assertEquals(2, result.depthCompleted)
         assertEquals(false, result.truncated)
-        assertEquals(0.2, rounded(result.rootValues.single().value))
+        assertEquals(0.35, result.rootValues.single().value, 1e-9)
         assertEquals(listOf(1, 2), result.completedIterations.map { it.depth })
         assertEquals(0.2, rounded(result.completedIterations.first().rootValues.single().value))
         assertEquals(5, result.nodesVisited)
         assertEquals(listOf("root", "child", "child", "child", "child"), worker.visitedSnapshots,
             "Iterative deepening must reuse the depth-independent root transition")
+    }
+
+    @Test
+    fun `same final board prefers damage achieved on the first turn`() {
+        val root = frame("root", 1, 100, 100, listOf("tackle", "scratch"), listOf("growl"))
+        val early = frame("early", 2, 100, 50, listOf("quickattack"), listOf("tailwhip"))
+        val late = frame("late", 2, 100, 100, listOf("quickattack"), listOf("tailwhip"))
+        val worker = RecordingWorker(mapOf(
+            BranchKey("root", "move 1", "move 1") to early,
+            BranchKey("root", "move 2", "move 1") to late,
+            BranchKey("early", "move 1", "move 1") to terminal("early-finish", 100, 0),
+            BranchKey("late", "move 1", "move 1") to terminal("late-finish", 100, 0),
+        ))
+
+        val result = NativeRecursiveSearch(
+            tree = NativeShowdownSearchTree(worker, root, template()),
+            world = NativeSearchWorldKey("tempo", randomSampleIndex = 0),
+            evaluate = ::material,
+            nodeLimit = 100,
+        ).evaluate(maxDepth = 2)
+
+        assertEquals(2, result.depthCompleted)
+        assertEquals("tackle", result.bestAction?.moveId)
+        val values = result.rootValues.associate { it.action.moveId to it.value }
+        assertTrue(values.getValue("tackle") > values.getValue("scratch"),
+            "The same final board must not erase the first turn's progress")
     }
 
     @Test
@@ -124,7 +151,7 @@ class NativeRecursiveSearchTest {
 
         assertEquals(2, result.depthCompleted)
         assertEquals(false, result.truncated)
-        assertEquals(0.5, rounded(result.rootValues.single().value))
+        assertEquals(0.705, result.rootValues.single().value, 1e-9)
         assertEquals(8, result.nodesVisited, "The second child cannot improve the first worst response")
         assertEquals(2, worker.visitedSnapshots.count { it == "second" })
     }
@@ -165,9 +192,9 @@ class NativeRecursiveSearchTest {
 
         assertEquals(2, result.depthCompleted)
         assertEquals(false, result.truncated)
-        assertEquals(mapOf("tackle" to 0.5, "scratch" to 0.8), result.rootValues.associate {
-            it.action.moveId to rounded(it.value)
-        })
+        val rootValues = result.rootValues.associate { it.action.moveId to it.value }
+        assertEquals(0.705, rootValues.getValue("tackle"), 1e-9)
+        assertEquals(0.975, rootValues.getValue("scratch"), 1e-9)
         assertEquals("scratch", result.bestAction?.moveId)
         assertEquals(4, worker.visitedSnapshots.count { it == "shared" },
             "A later root candidate must finish the previously pruned shared state")
@@ -245,7 +272,7 @@ class NativeRecursiveSearchTest {
         assertEquals(2, result.depthCompleted)
         assertEquals(false, result.truncated)
         assertEquals(NativeSearchTerminationReason.COMPLETED, result.terminationReason)
-        assertEquals(0.4, rounded(result.rootValues.single().value))
+        assertEquals(0.53, result.rootValues.single().value, 1e-9)
         assertEquals(2, result.nodesVisited)
         assertEquals(listOf("root", "child"), worker.visitedSnapshots)
     }
