@@ -36,8 +36,9 @@
 2. [결정 기록](docs/DECISIONS.md)
 3. [제품 범위와 용어](docs/PRODUCT_SCOPE.md)
 4. [진행도와 콘텐츠](docs/PROGRESSION_AND_CONTENT.md)
-5. [MBC 본체 변경 계약](docs/MBC_CORE_CHANGES.md)
-6. 나머지 세부 문서
+5. [GUI 프레임워크 및 리소스팩 계획](docs/GUI_FRAMEWORK_AND_RESOURCE_PACK.md)
+6. [MBC 본체 변경 계약](docs/MBC_CORE_CHANGES.md)
+7. 나머지 세부 문서
 
 ## 현재 경계
 

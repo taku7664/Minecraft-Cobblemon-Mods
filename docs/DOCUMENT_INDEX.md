@@ -4,7 +4,7 @@
 |---|---|
 | Status | `shared` |
 | Effective | 2026-08-19 |
-| Last reviewed | 2026-09-24 — Better AI 네이티브 Showdown 후속 계약 연결 |
+| Last reviewed | 2026-09-25 — MBC 선언형 UI 프레임워크와 리소스팩 후속 결정 연결 |
 | 주 독자 | 빡대리님과 이후 설계·구현 담당자 |
 | 목적 | 활성 계약, 분석 근거, 폐기 기록과 재개 지점의 라우팅 |
 
@@ -89,6 +89,7 @@
 66. `../better-cobblemon-music/RELIABILITY_UPDATE_2026-08-22.md` — 설정·생성팩·Minecraft 리소스 재로드의 전체 성공/원복, Ogg/Vorbis·경로 검증, 폴링 하한과 선택형 제공자 격리를 확정한 후속 계약
 67. `../better-cobblemon-music/CONFIG_SCHEMA_V2_2026-08-23.md` — 정확한 바이옴 객체와 순서형 태그·경로 규칙, 같은 바이옴 복수곡 재생, 스키마 1 무수정 호환을 확정한 설정 스키마 2 계약
 68. `ROUNDING_BLOCK_ARCHITECTURE_DECISION.md` — Rounding-Block의 Fabric Renderer API 기반 외곽 엣지 라운딩, Sodium·Iris 그림자 호환 경계, 안전 폴백과 단계별 검증 계약 초안
+69. `MORE_BATTLE_CONTENT_DECLARATIVE_UI_FRAMEWORK_DECISION.md` — MBC 공용 선언형 UI 계약, 웹·Minecraft 이중 렌더러, 내장 테마와 선택형 외부 리소스팩, GUI 우선 점진 이행 후속 결정
 
 `MORE_BATTLE_CONTENT_CONTENT_PROPOSAL.md`는 `rejected` 상태의 과거 대안이다. 현재 제품 범위나 구현 우선순위를 결정할 때 사용하지 않는다.
 
@@ -133,6 +134,7 @@
 | 첫 타워 Screen | Play만 노출. 파티·형식·선출·진행·BP·시작/재개/변경 의도를 포함하고 나머지 패널은 유예 |
 | 타워 파티 카드 | 클릭 순서가 실제 출전 순서이며 `(1)~(3/4)` 표시. GUI 초상·이름·배틀 레벨·지닌 도구를 카드에 즉시 노출 |
 | 타워 커스텀 GUI | 바닐라 버튼 텍스처 없이 코드 드로잉 셸·상단 BP·좌측 파티 rail·중앙 진행/설정·우측 상태·하단 행동을 제공. 320×240은 파티 rail과 세로 접힌 본문을 유지 |
+| MBC 선언형 UI | `MbcUI`를 공개 계약으로 두고 owo는 내부 백엔드 후보로만 시험. 기본 테마는 각 JAR에 내장하고 선택형 외부 리소스팩이 안정적 ID의 시각 자산만 덮어씀. League Challenge를 첫 수직 단면으로 구현 |
 | 타워 NPC 팀 | MBC 전용 신규 데이터로 작성. 소드·실드 실제 팀과 외부 모드 데이터는 복제하지 않고 여러 본가 배틀 시설의 공개 패턴만 참고 |
 | 상대 스키마 3 | TERA는 표준 `tera_type`, DYNAMAX는 `dmax_level: 10`과 Boolean `gmax_factor`, MEGA는 정확한 메가스톤을 사용. 승인된 18프로필·72세트를 내장 데이터에 적용 |
 | 팩토리 스키마 4 | 트레이너와 렌탈 풀을 분리하고 501종·폼에 네 개씩 2,004개 완성 프리셋을 제공한다. 기술 4개·특성·도구·성격·EV는 세트에 고정하며 무작위성은 세트 선발에만 적용 |
