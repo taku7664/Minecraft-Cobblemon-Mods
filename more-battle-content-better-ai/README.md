@@ -67,6 +67,13 @@ build while executing another move assumption. This is initial-world plumbing;
 the production `LocalTacticalBrain` cutover and public-event posterior rebuild are
 still pending.
 
+The public preview and exact-own-team contracts also carry Cobblemon's canonical
+Showdown species/form ID. Native world materialization can therefore resolve forms
+such as regional variants from the adapter's public identity instead of inventing
+an ID by concatenating species and form names. Older contract constructors remain
+available and leave the native identity unknown; a later product coordinator must
+fail explicitly when a required identity cannot be resolved.
+
 Exact own Tera types and weighted opponent Tera-type hypotheses are carried through
 the same initial world into the Showdown team set. The native request exposes a Tera
 choice only while legal; executing it changes the live type and the serialized

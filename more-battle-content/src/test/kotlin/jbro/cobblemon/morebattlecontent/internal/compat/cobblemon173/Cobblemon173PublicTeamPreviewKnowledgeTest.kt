@@ -52,6 +52,7 @@ class Cobblemon173PublicTeamPreviewKnowledgeTest {
                     knownTypeIds = setOf("ghost", "fairy"),
                     combatStats = stats,
                     knownFormStates = emptyMap(),
+                    showdownSpeciesId = "fluttermane",
                     buildCandidatePool = BattleOpponentPreviewBuildPoolView(
                         speciesId = species,
                         formId = form,
@@ -75,6 +76,7 @@ class Cobblemon173PublicTeamPreviewKnowledgeTest {
         val pokemon = enriched.pokemon.single()
         assertEquals(raw.selectionSize, enriched.selectionSize)
         assertEquals(2, pokemon.previewSlotId)
+        assertEquals("fluttermane", pokemon.showdownSpeciesId)
         assertEquals(setOf("ghost", "fairy"), pokemon.knownTypeIds)
         assertEquals(stats, pokemon.combatStats)
         assertEquals(setOf("hidden-power", "moonblast", "shadowball"), pokemon.moveCandidatePool?.moveIds)
@@ -106,6 +108,7 @@ class Cobblemon173PublicTeamPreviewKnowledgeTest {
 
         assertTrue(enriched.knownTypeIds.isEmpty())
         assertNull(enriched.combatStats)
+        assertNull(enriched.showdownSpeciesId)
         assertNull(enriched.moveCandidatePool)
         assertNull(enriched.buildCandidatePool)
     }

@@ -291,7 +291,7 @@ class BattleDecisionContractTest {
     }
 
     @Test
-    fun `exact own build carries Tera type while retaining the old constructor ABI`() {
+    fun `exact own build carries native identity and Tera while retaining old constructor ABIs`() {
         val id = UUID.randomUUID()
         val build = BattleExactPokemonBuildView(
             battlePokemonId = id,
@@ -302,11 +302,15 @@ class BattleDecisionContractTest {
             evs = exactSpread(),
             ivs = exactSpread(31),
             teraTypeId = "electric",
+            showdownSpeciesId = "raichualola",
         )
 
         assertEquals("electric", build.teraTypeId)
+        assertEquals("raichualola", build.showdownSpeciesId)
         assertTrue(BattleExactPokemonBuildView::class.java.declaredConstructors.any { it.parameterCount == 7 })
+        assertTrue(BattleExactPokemonBuildView::class.java.declaredConstructors.any { it.parameterCount == 8 })
         assertNull(exactBuild(id).teraTypeId)
+        assertNull(exactBuild(id).showdownSpeciesId)
     }
 
     @Test

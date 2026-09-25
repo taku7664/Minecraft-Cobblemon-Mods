@@ -51,6 +51,7 @@ internal object Cobblemon173PublicSpeciesInferenceKnowledge : PublicSpeciesInfer
             knownTypeIds = form.types.mapTo(linkedSetOf()) { it.name },
             combatStats = level?.let { Cobblemon173PublicStatHypothesis.fromForm(it, form) },
             knownFormStates = level?.let { Cobblemon173KnownFormStates.publicRanges(it, species) }.orEmpty(),
+            showdownSpeciesId = form.showdownId(),
             buildCandidatePool = publicBuildPool(speciesId, formId, form),
         )
     }

@@ -214,7 +214,7 @@ class BattlePokemonFormStateView(
 }
 
 /** A complete source set for one Pokemon owned by the deciding trainer. */
-class BattleExactPokemonBuildView(
+class BattleExactPokemonBuildView private constructor(
     val battlePokemonId: UUID,
     val abilityId: String,
     val heldItemId: String?,
@@ -223,6 +223,8 @@ class BattleExactPokemonBuildView(
     evs: Map<String, Int>,
     ivs: Map<String, Int>,
     val teraTypeId: String?,
+    val showdownSpeciesId: String?,
+    @Suppress("UNUSED_PARAMETER") compatibilityMarker: Unit,
 ) {
     val evs: Map<String, Int> = Collections.unmodifiableMap(LinkedHashMap(evs))
     val ivs: Map<String, Int> = Collections.unmodifiableMap(LinkedHashMap(ivs))
@@ -233,6 +235,9 @@ class BattleExactPokemonBuildView(
         require(natureId.isNotBlank()) { "Exact own nature ID cannot be blank" }
         require(gender in setOf("M", "F", "N")) { "Exact own gender must use a Showdown gender ID" }
         require(teraTypeId == null || teraTypeId.isNotBlank()) { "Exact own Tera type ID cannot be blank" }
+        require(showdownSpeciesId == null || showdownSpeciesId.isNotBlank()) {
+            "Exact own Showdown species ID cannot be blank"
+        }
         require(this.evs.keys == STAT_IDS && this.evs.values.all { it in 0..252 } && this.evs.values.sum() <= 510) {
             "Exact own EVs must contain six legal stats with a total no greater than 510"
         }
@@ -249,7 +254,36 @@ class BattleExactPokemonBuildView(
         gender: String,
         evs: Map<String, Int>,
         ivs: Map<String, Int>,
-    ) : this(battlePokemonId, abilityId, heldItemId, natureId, gender, evs, ivs, null)
+        teraTypeId: String?,
+        showdownSpeciesId: String?,
+    ) : this(
+        battlePokemonId, abilityId, heldItemId, natureId, gender, evs, ivs,
+        teraTypeId, showdownSpeciesId, Unit,
+    )
+
+    constructor(
+        battlePokemonId: UUID,
+        abilityId: String,
+        heldItemId: String?,
+        natureId: String,
+        gender: String,
+        evs: Map<String, Int>,
+        ivs: Map<String, Int>,
+        teraTypeId: String?,
+    ) : this(
+        battlePokemonId, abilityId, heldItemId, natureId, gender, evs, ivs,
+        teraTypeId, null, Unit,
+    )
+
+    constructor(
+        battlePokemonId: UUID,
+        abilityId: String,
+        heldItemId: String?,
+        natureId: String,
+        gender: String,
+        evs: Map<String, Int>,
+        ivs: Map<String, Int>,
+    ) : this(battlePokemonId, abilityId, heldItemId, natureId, gender, evs, ivs, null, null, Unit)
 
     private companion object {
         val STAT_IDS = setOf("hp", "atk", "def", "spa", "spd", "spe")
@@ -280,6 +314,7 @@ class BattleOpponentTeamPreviewPokemonView private constructor(
     knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
     val moveCandidatePool: BattleOpponentPreviewMovePoolView?,
     val buildCandidatePool: BattleOpponentPreviewBuildPoolView?,
+    val showdownSpeciesId: String?,
     @Suppress("UNUSED_PARAMETER") compatibilityMarker: Unit,
 ) {
     val knownTypeIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownTypeIds))
@@ -290,6 +325,7 @@ class BattleOpponentTeamPreviewPokemonView private constructor(
         require(previewSlotId in 0 until BattleOpponentTeamPreviewView.MAX_PREVIEW_SIZE)
         require(speciesId.isNotBlank())
         require(formId == null || formId.isNotBlank())
+        require(showdownSpeciesId == null || showdownSpeciesId.isNotBlank())
         require(level == null || level > 0)
         require(this.knownTypeIds.all(String::isNotBlank))
         require(this.knownFormStates.keys.all(String::isNotBlank))
@@ -330,6 +366,7 @@ class BattleOpponentTeamPreviewPokemonView private constructor(
         knownFormStates,
         null,
         null,
+        null,
         Unit,
     )
 
@@ -351,6 +388,7 @@ class BattleOpponentTeamPreviewPokemonView private constructor(
         combatStats,
         knownFormStates,
         moveCandidatePool,
+        null,
         null,
         Unit,
     )
@@ -374,6 +412,7 @@ class BattleOpponentTeamPreviewPokemonView private constructor(
         knownFormStates,
         null,
         buildCandidatePool,
+        null,
         Unit,
     )
 
@@ -397,6 +436,32 @@ class BattleOpponentTeamPreviewPokemonView private constructor(
         knownFormStates,
         moveCandidatePool,
         buildCandidatePool,
+        null,
+        Unit,
+    )
+
+    constructor(
+        previewSlotId: Int,
+        speciesId: String,
+        formId: String?,
+        level: Int?,
+        knownTypeIds: Set<String> = emptySet(),
+        combatStats: BattleCombatStatRangesView? = null,
+        knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
+        moveCandidatePool: BattleOpponentPreviewMovePoolView?,
+        buildCandidatePool: BattleOpponentPreviewBuildPoolView?,
+        showdownSpeciesId: String?,
+    ) : this(
+        previewSlotId,
+        speciesId,
+        formId,
+        level,
+        knownTypeIds,
+        combatStats,
+        knownFormStates,
+        moveCandidatePool,
+        buildCandidatePool,
+        showdownSpeciesId,
         Unit,
     )
 }

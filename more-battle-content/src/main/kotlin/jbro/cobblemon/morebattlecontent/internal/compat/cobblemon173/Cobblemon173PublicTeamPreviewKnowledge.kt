@@ -12,6 +12,7 @@ internal data class Cobblemon173PublicPreviewFacts(
     val knownTypeIds: Set<String>,
     val combatStats: BattleCombatStatRangesView?,
     val knownFormStates: Map<String, BattlePokemonFormStateView>,
+    val showdownSpeciesId: String? = null,
     val buildCandidatePool: jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentPreviewBuildPoolView? = null,
 )
 
@@ -45,51 +46,18 @@ internal object Cobblemon173PublicTeamPreviewKnowledge {
             val combatStats = publicFacts?.combatStats ?: pokemon.combatStats
             val formStates = publicFacts?.knownFormStates ?: pokemon.knownFormStates
             val buildPool = pokemon.buildCandidatePool ?: publicFacts?.buildCandidatePool
-            if (movePool == null && buildPool == null) {
-                BattleOpponentTeamPreviewPokemonView(
-                    pokemon.previewSlotId,
-                    pokemon.speciesId,
-                    pokemon.formId,
-                    pokemon.level,
-                    knownTypes,
-                    combatStats,
-                    formStates,
-                )
-            } else if (movePool != null && buildPool == null) {
-                BattleOpponentTeamPreviewPokemonView(
-                    pokemon.previewSlotId,
-                    pokemon.speciesId,
-                    pokemon.formId,
-                    pokemon.level,
-                    knownTypes,
-                    combatStats,
-                    formStates,
-                    movePool,
-                )
-            } else if (movePool == null) {
-                BattleOpponentTeamPreviewPokemonView(
-                    pokemon.previewSlotId,
-                    pokemon.speciesId,
-                    pokemon.formId,
-                    pokemon.level,
-                    knownTypes,
-                    combatStats,
-                    formStates,
-                    requireNotNull(buildPool),
-                )
-            } else {
-                BattleOpponentTeamPreviewPokemonView(
-                    pokemon.previewSlotId,
-                    pokemon.speciesId,
-                    pokemon.formId,
-                    pokemon.level,
-                    knownTypes,
-                    combatStats,
-                    formStates,
-                    movePool,
-                    requireNotNull(buildPool),
-                )
-            }
+            BattleOpponentTeamPreviewPokemonView(
+                previewSlotId = pokemon.previewSlotId,
+                speciesId = pokemon.speciesId,
+                formId = pokemon.formId,
+                level = pokemon.level,
+                knownTypeIds = knownTypes,
+                combatStats = combatStats,
+                knownFormStates = formStates,
+                moveCandidatePool = movePool,
+                buildCandidatePool = buildPool,
+                showdownSpeciesId = publicFacts?.showdownSpeciesId ?: pokemon.showdownSpeciesId,
+            )
         },
     )
 }
