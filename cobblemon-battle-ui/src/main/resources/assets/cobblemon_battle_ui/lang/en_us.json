@@ -5,6 +5,7 @@
   "key.cobblemon_battle_ui.cancel_action": "Cancel Battle Action",
   "key.cobblemon_battle_ui.increase_font": "Increase Panel Font Size",
   "key.cobblemon_battle_ui.decrease_font": "Decrease Panel Font Size",
+  "cobblemon_battle_ui.dialogue.continue_hint": "Press %s to continue ▼",
   "cobblemon_battle_ui.champions.title": "BATTLE INFO",
   "cobblemon_battle_ui.champions.close": "TAB  Close",
   "cobblemon_battle_ui.champions.status": "Status",

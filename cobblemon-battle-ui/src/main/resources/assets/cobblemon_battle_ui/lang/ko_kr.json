@@ -5,6 +5,7 @@
   "key.cobblemon_battle_ui.cancel_action": "전투 행동 취소",
   "key.cobblemon_battle_ui.increase_font": "패널 글자 크게",
   "key.cobblemon_battle_ui.decrease_font": "패널 글자 작게",
+  "cobblemon_battle_ui.dialogue.continue_hint": "%s키를 눌러 다음으로 ▼",
   "cobblemon_battle_ui.champions.title": "전투 정보",
   "cobblemon_battle_ui.champions.close": "TAB  닫기",
   "cobblemon_battle_ui.champions.status": "상태",
