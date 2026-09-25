@@ -5,6 +5,7 @@ import kotlin.math.abs
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerTier
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
 
 /** One posterior world and its exact reusable Showdown root at the current public decision point. */
@@ -38,6 +39,7 @@ internal data class NativeProductSessionState(
     val publicTurn: Int,
     val lastObservedEventSequence: Long?,
     val pendingOwnAction: BattleActionCandidate? = null,
+    val trainerTier: BattleTrainerTier = BattleTrainerTier.BOSS,
 ) {
     init {
         require(rulesFingerprint.isNotBlank())

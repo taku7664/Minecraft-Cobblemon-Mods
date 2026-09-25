@@ -26,6 +26,30 @@ import org.junit.jupiter.api.io.TempDir
 
 class NativeShowdownBranchEngineTest {
     @Test
+    fun `native snapshot retains the authoritative executed move order`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(battle("Technician"))
+
+            val first = engine.branch(before.snapshotJson, "move 1", "move 1")
+            val second = engine.branch(first.snapshotJson, "move 1", "move 1")
+
+            assertEquals(
+                listOf(
+                    Triple(1, "00000000-0000-0000-0000-000000000001", "bulletpunch"),
+                    Triple(1, "00000000-0000-0000-0000-000000000002", "splash"),
+                ),
+                first.executedMoveOrder.map { Triple(it.turn, it.pokemonUuid, it.moveId) },
+            )
+            assertEquals(
+                listOf(1, 1, 2, 2),
+                second.executedMoveOrder.map { it.turn },
+                "The structured order ledger must survive Battle toJSON and fromJSON",
+            )
+        }
+    }
+
+    @Test
     fun `move hypothesis rebinding preserves PP and an existing choice lock`(@TempDir directory: Path) {
         val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
         NativeShowdownBranchEngine.open(engineRoot).use { engine ->
@@ -157,6 +181,90 @@ class NativeShowdownBranchEngineTest {
             assertTrue(legal.map {
                 NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, afterSecondMove)
             }.all { it.startsWith("move 2") })
+        }
+    }
+
+    @Test
+    fun `switching clears a choice lock and the next used move creates a fresh lock`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val opening = engine.createBattle(choiceSwitchBattle())
+            val locked = engine.branch(opening.snapshotJson, "move 1", "move 1")
+            assertEquals(
+                setOf("bulletpunch"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, locked).mapNotNull { it.moveId }.toSet(),
+            )
+
+            val toBench = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, locked)
+                .single { it.switchPokemonId?.toString()?.endsWith("0003") == true }
+            val benched = engine.branch(
+                locked.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(toBench, BattleSide.ALLY, locked),
+                "move 1",
+            )
+            val back = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, benched)
+                .single { it.switchPokemonId?.toString()?.endsWith("0001") == true }
+            val returned = engine.branch(
+                benched.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(back, BattleSide.ALLY, benched),
+                "move 1",
+            )
+
+            assertEquals(
+                setOf("bulletpunch", "swordsdance"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, returned).mapNotNull { it.moveId }.toSet(),
+                "A returned Choice holder must not retain its pre-switch lock",
+            )
+            val relocked = engine.branch(returned.snapshotJson, "move 2", "move 1")
+            assertEquals(
+                setOf("swordsdance"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, relocked).mapNotNull { it.moveId }.toSet(),
+            )
+        }
+    }
+
+    @Test
+    fun `trick removing a choice item immediately exposes every move next request`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val opening = engine.createBattle(choiceTrickBattle())
+            assertEquals(
+                setOf("trick", "psychic"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, opening).mapNotNull { it.moveId }.toSet(),
+                "A Choice item must not lock a move before the holder has acted",
+            )
+
+            val afterTrick = engine.branch(opening.snapshotJson, "move 1", "move 1")
+
+            assertEquals("leftovers", afterTrick.p1Active.single().item)
+            assertEquals("choicescarf", afterTrick.p2Active.single().item)
+            assertEquals(
+                setOf("trick", "psychic"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, afterTrick).mapNotNull { it.moveId }.toSet(),
+                "Losing the Choice item must stop its old lock from disabling moves",
+            )
+            assertEquals(
+                setOf("splash"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, afterTrick).mapNotNull { it.moveId }.toSet(),
+                "The recipient used Splash while holding the received Scarf and must be locked by native rules",
+            )
+        }
+    }
+
+    @Test
+    fun `knock off removing a choice item clears its native move restriction`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val opening = engine.createBattle(choiceRemovalBattle())
+            val afterRemoval = engine.branch(opening.snapshotJson, "move 1", "move 1")
+
+            assertEquals("", afterRemoval.p1Active.single().item)
+            assertEquals(
+                setOf("tackle", "swordsdance"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, afterRemoval)
+                    .mapNotNull { it.moveId }.toSet(),
+                "A native Choice lock must stop disabling moves as soon as Knock Off removes the item",
+            )
         }
     }
 
@@ -596,6 +704,76 @@ class NativeShowdownBranchEngineTest {
                 uuid = "00000000-0000-0000-0000-000000000002",
             ),
         ),
+    )
+
+    private fun choiceSwitchBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(307, 311, 313, 317),
+        p1Team = listOf(
+            NativePokemonSet(
+                name = "Choice Actor",
+                species = "Scizor",
+                moves = listOf("bulletpunch", "swordsdance"),
+                ability = "technician",
+                item = "choicescarf",
+                uuid = "00000000-0000-0000-0000-000000000001",
+            ),
+            NativePokemonSet(
+                name = "Bench",
+                species = "Mew",
+                moves = listOf("splash"),
+                ability = "synchronize",
+                uuid = "00000000-0000-0000-0000-000000000003",
+            ),
+        ),
+        p2Team = listOf(NativePokemonSet(
+            name = "Observer",
+            species = "Blissey",
+            moves = listOf("splash"),
+            ability = "naturalcure",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
+    )
+
+    private fun choiceTrickBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(331, 337, 347, 349),
+        p1Team = listOf(NativePokemonSet(
+            name = "Choice Trick",
+            species = "Mew",
+            moves = listOf("trick", "psychic"),
+            ability = "synchronize",
+            item = "choicescarf",
+            uuid = "00000000-0000-0000-0000-000000000001",
+        )),
+        p2Team = listOf(NativePokemonSet(
+            name = "Recipient",
+            species = "Blissey",
+            moves = listOf("splash", "softboiled"),
+            ability = "naturalcure",
+            item = "leftovers",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
+    )
+
+    private fun choiceRemovalBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(353, 359, 367, 373),
+        p1Team = listOf(NativePokemonSet(
+            name = "Choice Holder",
+            species = "Mew",
+            moves = listOf("tackle", "swordsdance"),
+            ability = "synchronize",
+            item = "choicescarf",
+            uuid = "00000000-0000-0000-0000-000000000001",
+        )),
+        p2Team = listOf(NativePokemonSet(
+            name = "Remover",
+            species = "Shuckle",
+            moves = listOf("knockoff"),
+            ability = "sturdy",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
     )
 
     private fun stanceChangeBattle() = NativeBattleDefinition(

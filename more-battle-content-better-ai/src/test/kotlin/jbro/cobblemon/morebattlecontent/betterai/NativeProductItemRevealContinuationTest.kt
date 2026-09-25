@@ -13,6 +13,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerTier
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductRootSnapshot
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionReconcileStatus
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionReconciler
@@ -32,6 +33,124 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
 class NativeProductItemRevealContinuationTest {
+    @Test
+    fun `impossible natural speed order leaves the scarf world and its native move lock`(
+        @TempDir directory: Path,
+    ) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val scarfDefinition = speedDefinition("choicescarf")
+            val plainDefinition = speedDefinition("leftovers")
+            val scarfRoot = engine.createBattle(scarfDefinition)
+            val plainRoot = engine.createBattle(plainDefinition)
+            val allyAction = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, scarfRoot)
+                .single { it.moveId == "splash" && it.mechanic == null }
+            val scarfOpponentAction = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, scarfRoot)
+                .single { it.moveId == "growl" && it.mechanic == null }
+            val plainOpponentAction = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, plainRoot)
+                .single { it.moveId == "growl" && it.mechanic == null }
+
+            assertEquals(
+                setOf("growl", "splash"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, scarfRoot)
+                    .mapNotNull { it.moveId }.toSet(),
+                "A Scarf hypothesis must not start locked before its first action",
+            )
+            val scarfAfter = engine.branch(
+                scarfRoot.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(allyAction, BattleSide.ALLY, scarfRoot),
+                NativeShowdownChoiceEncoder.encode(scarfOpponentAction, BattleSide.OPPONENT, scarfRoot),
+            )
+            val plainAfter = engine.branch(
+                plainRoot.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(allyAction, BattleSide.ALLY, plainRoot),
+                NativeShowdownChoiceEncoder.encode(plainOpponentAction, BattleSide.OPPONENT, plainRoot),
+            )
+            assertEquals(OPPONENT.toString(), scarfAfter.executedMoveOrder.first().pokemonUuid)
+            assertEquals(ALLY.toString(), plainAfter.executedMoveOrder.first().pokemonUuid)
+
+            val events = listOf(
+                BattleObservedEventView(
+                    sequence = 1,
+                    turn = 1,
+                    kind = BattleObservedEventKind.ACTION_ORDER,
+                    actorPokemonId = OPPONENT,
+                    publicValueId = "growl",
+                    baseMovePriority = 0,
+                    actorSlot = 0,
+                ),
+                BattleObservedEventView(
+                    sequence = 2,
+                    turn = 1,
+                    kind = BattleObservedEventKind.MOVE_USED,
+                    actorPokemonId = OPPONENT,
+                    targetPokemonIds = listOf(ALLY),
+                    publicValueId = "growl",
+                    actorSlot = 0,
+                ),
+                BattleObservedEventView(
+                    sequence = 3,
+                    turn = 1,
+                    kind = BattleObservedEventKind.ACTION_ORDER,
+                    actorPokemonId = ALLY,
+                    publicValueId = "splash",
+                    baseMovePriority = 0,
+                    actorSlot = 0,
+                ),
+                BattleObservedEventView(
+                    sequence = 4,
+                    turn = 1,
+                    kind = BattleObservedEventKind.MOVE_USED,
+                    actorPokemonId = ALLY,
+                    publicValueId = "splash",
+                    actorSlot = 0,
+                ),
+            )
+            val openingState = speedPublicState(turn = 1)
+            val currentState = speedPublicState(turn = 2, events = events, allyAttackStage = -1)
+            val currentContext = BattleDecisionContext(
+                requestId = UUID.nameUUIDFromBytes("speed-order-current".toByteArray()),
+                state = currentState,
+                candidates = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, scarfAfter),
+                deadlineEpochMillis = Long.MAX_VALUE,
+            )
+            val initialContext = BattleDecisionContext(
+                requestId = UUID.nameUUIDFromBytes("speed-order-opening".toByteArray()),
+                state = openingState,
+                candidates = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, scarfRoot),
+                deadlineEpochMillis = Long.MAX_VALUE,
+            )
+            val session = NativeProductSessionState(
+                battleId = BATTLE,
+                format = BattleFormat.SINGLE,
+                rulesFingerprint = engine.rulesFingerprint,
+                worlds = listOf(
+                    world(engine.rulesFingerprint, "scarf-world", scarfDefinition, scarfRoot, initialContext),
+                    world(engine.rulesFingerprint, "plain-world", plainDefinition, plainRoot, initialContext),
+                ),
+                publicTurn = 1,
+                lastObservedEventSequence = null,
+                pendingOwnAction = allyAction,
+                trainerTier = BattleTrainerTier.BOSS,
+            )
+
+            val result = NativeProductSessionReconciler { _, action -> action(engine) }
+                .reconcile(session, currentContext, Long.MAX_VALUE)
+
+            assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status,
+                "root=${result.rootIssues}, observed=${result.observedActionIssues}")
+            val retained = requireNotNull(result.sessionState).worlds.single()
+            assertEquals("scarf-world", retained.key.hypothesisId)
+            assertEquals("choicescarf", retained.definition.p2Team.single().item)
+            assertEquals(
+                setOf("growl"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, retained.rootSnapshot.frame)
+                    .mapNotNull { it.moveId }.toSet(),
+                "The inferred Scarf world must keep Showdown's post-use Choice lock",
+            )
+        }
+    }
+
     @Test
     fun `public held item reveal removes the conflicting otherwise identical world`(
         @TempDir directory: Path,
@@ -221,6 +340,61 @@ class NativeProductItemRevealContinuationTest {
         ),
     )
 
+    private fun speedDefinition(item: String) = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(149, 151, 157, 163),
+        p1Team = listOf(NativePokemonSet(
+            name = "Known Fast",
+            species = "Mew",
+            moves = listOf("splash"),
+            ability = "synchronize",
+            uuid = ALLY.toString(),
+            nature = "Timid",
+            level = 50,
+            evs = ZERO_EVS + ("spe" to 252),
+            ivs = PERFECT_IVS,
+        )),
+        p2Team = listOf(NativePokemonSet(
+            name = "Possible Scarf",
+            species = "Mew",
+            moves = listOf("growl", "splash"),
+            ability = "synchronize",
+            item = item,
+            uuid = OPPONENT.toString(),
+            nature = "Serious",
+            level = 50,
+            evs = ZERO_EVS,
+            ivs = PERFECT_IVS,
+        )),
+    )
+
+    private fun speedPublicState(
+        turn: Int,
+        events: List<BattleObservedEventView> = emptyList(),
+        allyAttackStage: Int = 0,
+    ) = BattleStateView(
+        battleId = BATTLE,
+        format = BattleFormat.SINGLE,
+        turn = turn,
+        pokemon = listOf(
+            BattlePokemonStateView(
+                ALLY, BattleSide.ALLY, 0, "cobblemon:mew", null, 50, 1.0, null,
+                if (allyAttackStage == 0) emptyMap() else mapOf("atk" to allyAttackStage),
+                if (events.isEmpty()) emptySet() else setOf("splash"),
+                null, null, false,
+            ),
+            BattlePokemonStateView(
+                OPPONENT, BattleSide.OPPONENT, 0, "cobblemon:mew", null, 50, 1.0, null,
+                emptyMap(), if (events.isEmpty()) emptySet() else setOf("growl"),
+                null, null, false,
+            ),
+        ),
+        field = BattleFieldStateView.empty(),
+        remainingPokemonBySide = BattleSide.entries.associateWith { 1 },
+        observedEvents = events,
+        inferences = emptyList(),
+    )
+
     private fun extractBundledShowdown(targetRoot: Path): Path {
         Files.createDirectories(targetRoot)
         val resource = requireNotNull(javaClass.getResourceAsStream("/data/cobblemon/showdown.zip")) {
@@ -256,5 +430,7 @@ class NativeProductItemRevealContinuationTest {
         val BATTLE: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
         val ALLY: UUID = UUID.fromString("00000000-0000-0000-0000-000000000101")
         val OPPONENT: UUID = UUID.fromString("00000000-0000-0000-0000-000000000201")
+        val ZERO_EVS = setOf("hp", "atk", "def", "spa", "spd", "spe").associateWith { 0 }
+        val PERFECT_IVS = ZERO_EVS.mapValues { 31 }
     }
 }

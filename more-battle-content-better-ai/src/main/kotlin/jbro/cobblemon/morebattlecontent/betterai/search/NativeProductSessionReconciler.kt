@@ -12,6 +12,8 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootIssu
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBranchWorker
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeObservedTurnActionIssue
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeObservedTurnActionMatcher
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeObservedActionOrderConditioner
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeObservedActionOrderStatus
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeOpponentMoveHypothesisRebinder
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRootActionMatcher
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownChoiceEncoder
@@ -196,6 +198,14 @@ internal class NativeProductSessionReconciler(
                         )
                         when (replayed.status) {
                             NativeIntermediateReplayStatus.AVAILABLE -> replayed.frames.forEach { frame ->
+                                val order = NativeObservedActionOrderConditioner.evaluate(
+                                    session.trainerTier,
+                                    currentContext.state,
+                                    frame.frame,
+                                )
+                                if (order.status == NativeObservedActionOrderStatus.CONTRADICTED) {
+                                    return@forEach
+                                }
                                 val postReplayPlan = NativeOpponentMoveHypothesisRebinder.plan(
                                     definition = definition,
                                     previousCatalog = catalog,
@@ -301,6 +311,7 @@ internal class NativeProductSessionReconciler(
                         lastObservedEventSequence = currentContext.state.observedEvents.lastOrNull()?.sequence
                             ?: session.lastObservedEventSequence,
                         pendingOwnAction = null,
+                        trainerTier = session.trainerTier,
                     ),
                 )
             }

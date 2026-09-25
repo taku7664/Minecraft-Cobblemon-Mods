@@ -308,7 +308,21 @@ internal data class NativeBattleFrame(
     val p2RequestJson: String,
     val field: NativeBattleFieldFrame = NativeBattleFieldFrame.empty(),
     val log: List<String>,
+    /** Exact move-message order emitted by the retained Showdown battle, across every completed turn. */
+    val executedMoveOrder: List<NativeExecutedMoveFrame> = emptyList(),
 )
+
+internal data class NativeExecutedMoveFrame(
+    val turn: Int,
+    val pokemonUuid: String,
+    val moveId: String,
+) {
+    init {
+        require(turn >= 0)
+        UUID.fromString(pokemonUuid)
+        require(moveId.isNotBlank())
+    }
+}
 
 internal data class NativePokemonFrame(
     val uuid: String,

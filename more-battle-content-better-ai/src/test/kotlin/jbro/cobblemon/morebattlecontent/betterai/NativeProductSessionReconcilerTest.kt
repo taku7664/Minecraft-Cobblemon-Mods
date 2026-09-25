@@ -11,6 +11,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerTier
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductRootSnapshot
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionReconcileStatus
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionReconciler
@@ -20,6 +21,7 @@ import jbro.cobblemon.morebattlecontent.betterai.search.NativeSearchWorldKey
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBranchWorker
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeExecutedMoveFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMoveFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonSet
@@ -31,6 +33,55 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class NativeProductSessionReconcilerTest {
+    @Test
+    fun `boss removes the native world that contradicts public move order`() {
+        val publicEvents = actionOrderTurnEvents()
+        val matching = frame(
+            "matching",
+            turn = 2,
+            executedMoveOrder = moveOrder(OPPONENT, ALLY),
+        )
+        val contradicted = frame(
+            "contradicted",
+            turn = 2,
+            executedMoveOrder = moveOrder(ALLY, OPPONENT),
+        )
+        val worker = Worker(mapOf("root-scarf" to matching, "root-no-scarf" to contradicted))
+        val reconciler = NativeProductSessionReconciler { _, action -> action(worker) }
+        val prior = session(listOf(
+            world("scarf", "root-scarf", 0.4),
+            world("no-scarf", "root-no-scarf", 0.6),
+        ))
+
+        val result = reconciler.reconcile(prior, context(turn = 2, events = publicEvents), Long.MAX_VALUE)
+
+        assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status)
+        assertEquals(listOf("scarf"), result.sessionState?.worlds?.map { it.key.hypothesisId })
+        assertEquals(1.0, result.sessionState?.worlds?.single()?.probability)
+    }
+
+    @Test
+    fun `introductory keeps both speed worlds despite the same public move order`() {
+        val publicEvents = actionOrderTurnEvents()
+        val worker = Worker(mapOf(
+            "root-scarf" to frame("matching", 2, executedMoveOrder = moveOrder(OPPONENT, ALLY)),
+            "root-no-scarf" to frame("contradicted", 2, executedMoveOrder = moveOrder(ALLY, OPPONENT)),
+        ))
+        val reconciler = NativeProductSessionReconciler { _, action -> action(worker) }
+        val prior = session(
+            worlds = listOf(
+                world("scarf", "root-scarf", 0.4),
+                world("no-scarf", "root-no-scarf", 0.6),
+            ),
+            tier = BattleTrainerTier.INTRODUCTORY,
+        )
+
+        val result = reconciler.reconcile(prior, context(turn = 2, events = publicEvents), Long.MAX_VALUE)
+
+        assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status)
+        assertEquals(setOf("scarf", "no-scarf"), result.sessionState?.worlds?.map { it.key.hypothesisId }?.toSet())
+    }
+
     @Test
     fun `public opponent move advances the retained native root and clears the pending own action`() {
         val next = frame("next", turn = 2)
@@ -255,6 +306,7 @@ class NativeProductSessionReconcilerTest {
     private fun session(
         worlds: List<NativeProductSessionWorld>,
         lastSequence: Long? = null,
+        tier: BattleTrainerTier = BattleTrainerTier.BOSS,
     ) = NativeProductSessionState(
         battleId = BATTLE,
         format = BattleFormat.SINGLE,
@@ -263,6 +315,7 @@ class NativeProductSessionReconcilerTest {
         publicTurn = 1,
         lastObservedEventSequence = lastSequence,
         pendingOwnAction = PRODUCT_TACKLE,
+        trainerTier = tier,
     )
 
     private fun world(
@@ -322,6 +375,39 @@ class NativeProductSessionReconcilerTest {
         actorSlot = 0,
     )
 
+    private fun actionOrderTurnEvents() = listOf(
+        BattleObservedEventView(
+            sequence = 1,
+            turn = 1,
+            kind = BattleObservedEventKind.ACTION_ORDER,
+            actorPokemonId = OPPONENT,
+            publicValueId = "growl",
+            baseMovePriority = 0,
+        ),
+        moveEvent(2),
+        BattleObservedEventView(
+            sequence = 3,
+            turn = 1,
+            kind = BattleObservedEventKind.ACTION_ORDER,
+            actorPokemonId = ALLY,
+            publicValueId = "tackle",
+            baseMovePriority = 0,
+        ),
+        BattleObservedEventView(
+            sequence = 4,
+            turn = 1,
+            kind = BattleObservedEventKind.MOVE_USED,
+            actorPokemonId = ALLY,
+            publicValueId = "tackle",
+            actorSlot = 0,
+        ),
+    )
+
+    private fun moveOrder(first: UUID, second: UUID) = listOf(
+        NativeExecutedMoveFrame(1, first.toString(), if (first == ALLY) "tackle" else "growl"),
+        NativeExecutedMoveFrame(1, second.toString(), if (second == ALLY) "tackle" else "growl"),
+    )
+
     private fun frame(
         snapshot: String,
         turn: Int,
@@ -329,6 +415,7 @@ class NativeProductSessionReconcilerTest {
         opponentMoves: List<String> = listOf("growl"),
         p1RequestJson: String = moveRequest(listOf("tackle")),
         p2RequestJson: String = moveRequest(opponentMoves),
+        executedMoveOrder: List<NativeExecutedMoveFrame> = emptyList(),
     ): NativeBattleFrame {
         val ally = nativePokemon(ALLY, listOf("tackle"), 100)
         val opponent = nativePokemon(OPPONENT, opponentMoves, opponentHp)
@@ -344,6 +431,7 @@ class NativeProductSessionReconcilerTest {
             p1RequestJson = p1RequestJson,
             p2RequestJson = p2RequestJson,
             log = emptyList(),
+            executedMoveOrder = executedMoveOrder,
         )
     }
 

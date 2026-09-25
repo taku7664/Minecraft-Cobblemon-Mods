@@ -208,6 +208,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 },
                 publicTurn = context.state.turn,
                 lastObservedEventSequence = context.state.observedEvents.lastOrNull()?.sequence,
+                trainerTier = profile.difficulty.tier,
             ),
         )
     }

@@ -201,6 +201,29 @@ function deterministicSnapshot(battle) {
   return snapshot;
 }
 
+function ensureExecutedMoveOrder(battle) {
+  if (!Array.isArray(battle.mbcExecutedMoveOrder)) battle.mbcExecutedMoveOrder = [];
+  return battle.mbcExecutedMoveOrder;
+}
+
+function recordExecutedMoveOrder(battle, action) {
+  const history = ensureExecutedMoveOrder(battle);
+  const original = battle.addMove;
+  battle.addMove = function(...parts) {
+    if (parts[0] === 'move' && parts[1] && parts[1].uuid) {
+      const moveId = toID(parts[2]);
+      if (!moveId) throw new Error(`Native executed move is missing its id on turn ${battle.turn}`);
+      history.push({ turn: battle.turn, pokemonUuid: parts[1].uuid, moveId });
+    }
+    return original.apply(this, parts);
+  };
+  try {
+    return action();
+  } finally {
+    delete battle.addMove;
+  }
+}
+
 function frame(battle) {
   return {
     snapshotJson: JSON.stringify(deterministicSnapshot(battle)),
@@ -215,6 +238,7 @@ function frame(battle) {
     p2RequestJson: JSON.stringify(battle.p2.activeRequest || null),
     field: fieldFrame(battle),
     log: deterministicLog(battle.log),
+    executedMoveOrder: ensureExecutedMoveOrder(battle).map(entry => ({ ...entry })),
   };
 }
 
@@ -342,6 +366,7 @@ globalThis.mbcCreateBattle = function(payload) {
     seed: input.seed,
     deserialized: !!input.openingState,
   });
+  ensureExecutedMoveOrder(battle);
   try {
     battle.setPlayer('p1', { name: 'p1', team: input.p1Team.map(set => normalizeSet(set, openingByUuid)) });
     battle.setPlayer('p2', { name: 'p2', team: input.p2Team.map(set => normalizeSet(set, openingByUuid)) });
@@ -379,8 +404,10 @@ globalThis.mbcBranchBattle = function(payload) {
   try {
     const p1Wait = !!(battle.p1.activeRequest && battle.p1.activeRequest.wait);
     const p2Wait = !!(battle.p2.activeRequest && battle.p2.activeRequest.wait);
-    submitRequestedChoice(battle, 'p1', input.p1Choice, p1Wait);
-    submitRequestedChoice(battle, 'p2', input.p2Choice, p2Wait);
+    recordExecutedMoveOrder(battle, () => {
+      submitRequestedChoice(battle, 'p1', input.p1Choice, p1Wait);
+      submitRequestedChoice(battle, 'p2', input.p2Choice, p2Wait);
+    });
     return JSON.stringify(frame(battle));
   } finally {
     battle.destroy();
