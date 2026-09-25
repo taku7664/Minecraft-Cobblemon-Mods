@@ -10,7 +10,11 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainCloseOutcome
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainCloseResult
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainProviderRole
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainRegistry
+import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainSelectionContext
+import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
 import jbro.cobblemon.morebattlecontent.api.presentation.ManagedBattleContentIds
+import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 import jbro.cobblemon.morebattlecontent.api.ai.BrainCapability
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat as BrainBattleFormat
 import jbro.cobblemon.morebattlecontent.internal.battle.attachReplayableCompletionHandler
@@ -25,6 +29,23 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.server.MinecraftServer
 import java.util.UUID
 
+internal data class Cobblemon173ManagedAiBattle(
+    val playerId: UUID,
+    val playerTeam: List<BattlePokemon>,
+    val opponentTeam: List<BattlePokemon>,
+    val trainerDisplayNameKey: String,
+    val trainerPersonaId: String,
+    val trainerAiSkill: Int,
+    val trainerProfile: BattleTrainerProfile,
+    val learningScopeId: UUID,
+    val opponentTeamPreview: BattleOpponentTeamPreviewView,
+    val mechanic: MajorBattleMechanic,
+    val format: BrainBattleFormat,
+    val brainSelectionContext: BattleBrainSelectionContext,
+    val contentId: String,
+    val diagnosticsLabel: String,
+)
+
 internal class Cobblemon173TowerPveBattleRuntime(
     private val playerResolver: (UUID) -> ServerPlayer?,
     private val sessionCompletion: (MinecraftServer, UUID, UUID, TowerBattleOutcome) -> Unit,
@@ -33,17 +54,38 @@ internal class Cobblemon173TowerPveBattleRuntime(
 ) : TowerPveBattleRuntime<BattlePokemon, BattlePokemon> {
     override fun start(
         prepared: TowerPreparedPveBattle<BattlePokemon, BattlePokemon>,
-    ): TowerBattleLaunchResult {
-        val player = playerResolver(prepared.request.playerId) ?: run {
+    ): TowerBattleLaunchResult = startManaged(
+        Cobblemon173ManagedAiBattle(
+            playerId = prepared.request.playerId,
+            playerTeam = prepared.playerTeam,
+            opponentTeam = prepared.opponentTeam,
+            trainerDisplayNameKey = prepared.profile.displayNameKey,
+            trainerPersonaId = prepared.profile.profileId,
+            trainerAiSkill = prepared.profile.aiSkill,
+            trainerProfile = prepared.trainerProfile,
+            learningScopeId = prepared.request.learningScopeId,
+            opponentTeamPreview = prepared.request.playerTeamPreview,
+            mechanic = prepared.mechanic,
+            format = prepared.request.progress.format.toBrainFormat(),
+            brainSelectionContext = prepared.brainSelectionContext,
+            contentId = ManagedBattleContentIds.BATTLE_TOWER,
+            diagnosticsLabel = "Battle Tower",
+        ),
+    )
+
+    internal fun startManaged(prepared: Cobblemon173ManagedAiBattle): TowerBattleLaunchResult {
+        val player = playerResolver(prepared.playerId) ?: run {
             MoreBattleContent.LOGGER.error(
-                "Battle Tower start failed: player {} is not tracked as online",
-                prepared.request.playerId,
+                "{} start failed: player {} is not tracked as online",
+                prepared.diagnosticsLabel,
+                prepared.playerId,
             )
             return TowerBattleLaunchResult.Unavailable
         }
         BattleRegistry.getBattleByParticipatingPlayerId(player.uuid)?.let { existing ->
             MoreBattleContent.LOGGER.error(
-                "Battle Tower start failed: player {} is already registered in battle {}",
+                "{} start failed: player {} is already registered in battle {}",
+                prepared.diagnosticsLabel,
                 player.uuid,
                 existing.battleId,
             )
@@ -55,7 +97,7 @@ internal class Cobblemon173TowerPveBattleRuntime(
         val playerActor = playerParticipant.actor
         val trainerEntity = Cobblemon173VirtualTrainerAnchor.create(player)
         val trainerActorId = trainerEntity.uuid
-        val brainCapability = prepared.request.progress.format.toBrainCapability()
+        val brainCapability = prepared.format.toBrainCapability()
         val primaryBrain = Cobblemon173BrainProviderResolver.create(
             brainRegistry,
             brainCapability,
@@ -72,20 +114,20 @@ internal class Cobblemon173TowerPveBattleRuntime(
         trainerActor = Cobblemon173BrainTrainerBattleActor(
             server = player.server,
             trainerEntity = trainerEntity,
-            trainerName = prepared.profile.displayNameKey,
+            trainerName = prepared.trainerDisplayNameKey,
             actorId = trainerActorId,
             pokemonList = prepared.opponentTeam,
-            battleFormat = prepared.request.progress.format.toBrainFormat(),
+            battleFormat = prepared.format,
             opponentActorId = playerActor.uuid,
             initialOpponentPokemonCount = prepared.playerTeam.size,
-            baselineAi = Cobblemon173BaselineAiFactory.create(prepared.profile.aiSkill),
+            baselineAi = Cobblemon173BaselineAiFactory.create(prepared.trainerAiSkill),
             trainerProfile = prepared.trainerProfile,
-            learningScopeId = prepared.request.learningScopeId,
-            trainerPersonaId = prepared.profile.profileId,
+            learningScopeId = prepared.learningScopeId,
+            trainerPersonaId = prepared.trainerPersonaId,
             primaryBrain = primaryBrain,
             localBrain = localBrain,
             opponentTeamPreview = Cobblemon173PublicTeamPreviewKnowledge.enrich(
-                prepared.request.playerTeamPreview,
+                prepared.opponentTeamPreview,
             ),
             mechanicPolicy = {
                 requireNotNull(
@@ -93,7 +135,7 @@ internal class Cobblemon173TowerPveBattleRuntime(
                         trainerActor.battle.battleId,
                         trainerActorId,
                     ),
-                ) { "Battle Tower mechanic rules were not attached before the trainer requested a choice" }
+                ) { "${prepared.diagnosticsLabel} mechanic rules were not attached before the trainer requested a choice" }
             },
         )
         val canDynamax = prepared.mechanic == jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic.DYNAMAX
@@ -103,7 +145,12 @@ internal class Cobblemon173TowerPveBattleRuntime(
         val ownerRegistration = try {
             Cobblemon173ManagedTrainerPokemonOwners.register(trainerEntity, prepared.opponentTeam)
         } catch (exception: IllegalArgumentException) {
-            MoreBattleContent.LOGGER.error("Battle Tower opponent ownership registration failed for {}", player.uuid, exception)
+            MoreBattleContent.LOGGER.error(
+                "{} opponent ownership registration failed for {}",
+                prepared.diagnosticsLabel,
+                player.uuid,
+                exception,
+            )
             return TowerBattleLaunchResult.Unavailable
         }
 
@@ -113,16 +160,16 @@ internal class Cobblemon173TowerPveBattleRuntime(
                 terminateBattle = {},
             ) {
                 Cobblemon173BattleRuleHooks.beginRegistration(
-                    ManagedBattleContentIds.BATTLE_TOWER,
+                    prepared.contentId,
                     prepared.mechanic,
                     actorIds,
                 )
             }
         } catch (failure: RuntimeException) {
-            MoreBattleContent.LOGGER.error("Battle Tower rule registration failed for {}", player.uuid, failure)
+            MoreBattleContent.LOGGER.error("{} rule registration failed for {}", prepared.diagnosticsLabel, player.uuid, failure)
             return TowerBattleLaunchResult.Unavailable
         } catch (failure: LinkageError) {
-            MoreBattleContent.LOGGER.error("Battle Tower rule registration failed for {}", player.uuid, failure)
+            MoreBattleContent.LOGGER.error("{} rule registration failed for {}", prepared.diagnosticsLabel, player.uuid, failure)
             return TowerBattleLaunchResult.Unavailable
         }
         val result = try {
@@ -136,17 +183,17 @@ internal class Cobblemon173TowerPveBattleRuntime(
                 terminateBattle = { Cobblemon173ManagedBattleTermination.endParticipatingPlayer(player.uuid) },
             ) {
                 BattleRegistry.startBattle(
-                    prepared.request.progress.format.toCobblemonFormat(),
+                    prepared.format.toCobblemonFormat(),
                     BattleSide(playerActor),
                     BattleSide(trainerActor),
                     true,
                 )
             }
         } catch (failure: RuntimeException) {
-            MoreBattleContent.LOGGER.error("Battle Tower battle creation failed for {}", player.uuid, failure)
+            MoreBattleContent.LOGGER.error("{} battle creation failed for {}", prepared.diagnosticsLabel, player.uuid, failure)
             return TowerBattleLaunchResult.Unavailable
         } catch (failure: LinkageError) {
-            MoreBattleContent.LOGGER.error("Battle Tower battle creation failed for {}", player.uuid, failure)
+            MoreBattleContent.LOGGER.error("{} battle creation failed for {}", prepared.diagnosticsLabel, player.uuid, failure)
             return TowerBattleLaunchResult.Unavailable
         }
 
@@ -156,7 +203,8 @@ internal class Cobblemon173TowerPveBattleRuntime(
                 ownerRegistration::close,
             )
             MoreBattleContent.LOGGER.error(
-                "Battle Tower start was refused by Cobblemon for player {}: {}",
+                "{} start was refused by Cobblemon for player {}: {}",
+                prepared.diagnosticsLabel,
                 player.uuid,
                 result,
             )
@@ -175,10 +223,10 @@ internal class Cobblemon173TowerPveBattleRuntime(
                 result.battle
             }
         } catch (failure: RuntimeException) {
-            MoreBattleContent.LOGGER.error("Battle Tower battle result failed for {}", player.uuid, failure)
+            MoreBattleContent.LOGGER.error("{} battle result failed for {}", prepared.diagnosticsLabel, player.uuid, failure)
             return TowerBattleLaunchResult.Unavailable
         } catch (failure: LinkageError) {
-            MoreBattleContent.LOGGER.error("Battle Tower battle result failed for {}", player.uuid, failure)
+            MoreBattleContent.LOGGER.error("{} battle result failed for {}", prepared.diagnosticsLabel, player.uuid, failure)
             return TowerBattleLaunchResult.Unavailable
         }
         return protectManagedBattleStartup(
@@ -199,7 +247,8 @@ internal class Cobblemon173TowerPveBattleRuntime(
                 runManagedCleanupActionsSafely(
                     reportFailure = { failure ->
                         MoreBattleContent.LOGGER.error(
-                            "Battle Tower owner release failed for player {} and battle {}",
+                            "{} owner release failed for player {} and battle {}",
+                            prepared.diagnosticsLabel,
                             player.uuid,
                             ended.battleId,
                             failure,
@@ -211,13 +260,14 @@ internal class Cobblemon173TowerPveBattleRuntime(
             Cobblemon173ManagedPlayerBattleParticipants.attachBattleStores(battle, listOf(playerParticipant))
             if (!Cobblemon173BattleRuleHooks.finishRegistration(battle.battleId)) {
                 MoreBattleContent.LOGGER.error(
-                    "Battle Tower rules did not attach before battle {} started; ending the unprotected battle",
+                    "{} rules did not attach before battle {} started; ending the unprotected battle",
+                    prepared.diagnosticsLabel,
                     battle.battleId,
                 )
                 Cobblemon173ManagedBattleTermination.end(battle.battleId)
                 TowerBattleLaunchResult.Unavailable
             } else {
-                Cobblemon173InitialTurnDiagnostics.watch("Battle Tower", battle)
+                Cobblemon173InitialTurnDiagnostics.watch(prepared.diagnosticsLabel, battle)
                 ShadowTrainerProjectionNetworking.show(player, battle.battleId, trainerActor.initialPos)
                 BattleArenaHologramNetworking.showBetween(player, battle.battleId, player.position(), trainerActor.initialPos)
 
@@ -234,7 +284,8 @@ internal class Cobblemon173TowerPveBattleRuntime(
                     runManagedCleanupActionsSafely(
                         reportFailure = { failure ->
                             MoreBattleContent.LOGGER.error(
-                                "Battle Tower end cleanup failed for player {} and battle {}",
+                                "{} end cleanup failed for player {} and battle {}",
+                                prepared.diagnosticsLabel,
                                 player.uuid,
                                 ended.battleId,
                                 failure,
@@ -269,9 +320,9 @@ internal class Cobblemon173TowerPveBattleRuntime(
         }
     }
 
-    private fun TowerBattleFormat.toCobblemonFormat(): CobblemonBattleFormat = when (this) {
-        TowerBattleFormat.SINGLE -> CobblemonBattleFormat.Companion.GEN_9_SINGLES.copy(adjustLevel = 0)
-        TowerBattleFormat.DOUBLE -> CobblemonBattleFormat.Companion.GEN_9_DOUBLES.copy(adjustLevel = 0)
+    private fun BrainBattleFormat.toCobblemonFormat(): CobblemonBattleFormat = when (this) {
+        BrainBattleFormat.SINGLE -> CobblemonBattleFormat.Companion.GEN_9_SINGLES.copy(adjustLevel = 0)
+        BrainBattleFormat.DOUBLE -> CobblemonBattleFormat.Companion.GEN_9_DOUBLES.copy(adjustLevel = 0)
     }
 
     private fun TowerBattleFormat.toBrainFormat(): BrainBattleFormat = when (this) {
@@ -279,9 +330,9 @@ internal class Cobblemon173TowerPveBattleRuntime(
         TowerBattleFormat.DOUBLE -> BrainBattleFormat.DOUBLE
     }
 
-    private fun TowerBattleFormat.toBrainCapability(): BrainCapability = when (this) {
-        TowerBattleFormat.SINGLE -> BrainCapability.SINGLE
-        TowerBattleFormat.DOUBLE -> BrainCapability.DOUBLE
+    private fun BrainBattleFormat.toBrainCapability(): BrainCapability = when (this) {
+        BrainBattleFormat.SINGLE -> BrainCapability.SINGLE
+        BrainBattleFormat.DOUBLE -> BrainCapability.DOUBLE
     }
 
 }

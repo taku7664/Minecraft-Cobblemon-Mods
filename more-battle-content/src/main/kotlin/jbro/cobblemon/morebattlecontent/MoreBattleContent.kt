@@ -12,6 +12,7 @@ import jbro.cobblemon.morebattlecontent.internal.compat.fabric.PvpLoungeProtecti
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.ManagedServerEphemeralStateCleanup
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.TowerOpponentCatalogResources
 import jbro.cobblemon.morebattlecontent.internal.compat.fabric.BattlePointShopCatalogResources
+import jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173.Cobblemon173AiTestBattleRuntime
 import jbro.cobblemon.morebattlecontent.internal.tower.application.BattleTowerContentApplication
 import jbro.cobblemon.morebattlecontent.internal.tower.network.TowerPlayNetworking
 import jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayEntryContext
@@ -60,6 +61,7 @@ object MoreBattleContent : ModInitializer {
         BattleContentCommands.register(
             CONTENTS,
             openScreen = BattleHubNetworking::open,
+            aiTest = Cobblemon173AiTestBattleRuntime,
         )
         ManagedServerEphemeralStateCleanup.registerServer()
     }

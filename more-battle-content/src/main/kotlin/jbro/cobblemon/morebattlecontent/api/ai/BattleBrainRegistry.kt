@@ -7,6 +7,7 @@ import jbro.cobblemon.morebattlecontent.api.presentation.ManagedBattleContentIds
 object BattleBrainContentIds {
     const val BATTLE_TOWER: String = ManagedBattleContentIds.BATTLE_TOWER
     const val BATTLE_FACTORY: String = ManagedBattleContentIds.BATTLE_FACTORY
+    const val AI_TEST: String = ManagedBattleContentIds.AI_TEST
 }
 
 enum class BattleEncounterRole { REGULAR, BOSS }

@@ -18,15 +18,17 @@ internal object BattleContentCommands {
     fun register(
         service: DefaultBattleContentApplicationService,
         openScreen: (ServerPlayer) -> Boolean = { false },
+        aiTest: AiTestCommandBackend = AiTestCommandBackend { _, _ -> AiTestBattleStartResult.Unavailable },
     ) {
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
-            dispatcher.register(build(service, openScreen))
+            dispatcher.register(build(service, openScreen, aiTest))
         }
     }
 
     fun build(
         service: DefaultBattleContentApplicationService,
         openScreen: (ServerPlayer) -> Boolean = { false },
+        aiTest: AiTestCommandBackend = AiTestCommandBackend { _, _ -> AiTestBattleStartResult.Unavailable },
     ): LiteralArgumentBuilder<CommandSourceStack> = Commands.literal("mbc")
         .executes { command ->
             val result = service.open(requestContext(command.source))
@@ -39,6 +41,7 @@ internal object BattleContentCommands {
         .then(BattlePointCommands.build())
         .then(BattleProgressCommands.tower())
         .then(BattleProgressCommands.factory())
+        .then(AiTestCommands.build(aiTest))
 
     private fun requestContext(source: CommandSourceStack): BattleApplicationRequestContext =
         BattleApplicationRequestContext(
