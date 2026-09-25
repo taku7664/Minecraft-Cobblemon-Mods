@@ -1,0 +1,7 @@
+{
+  "command.cobblemon_more_battle_content_league_challenge.dev.opened": "Opened the League Challenge UI development screen.",
+  "screen.cobblemon_more_battle_content_league_challenge.dev.heading": "League Challenge UI bootstrap",
+  "screen.cobblemon_more_battle_content_league_challenge.dev.status": "The module and client entry route are active. The typed League home fixture is the next implementation step.",
+  "screen.cobblemon_more_battle_content_league_challenge.dev.title": "League Challenge",
+  "screen.cobblemon_more_battle_content_league_challenge.dev.warning": "Development screen only. Progress, badges, level caps, battles, and facility locks are not connected."
+}

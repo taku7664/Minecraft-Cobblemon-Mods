@@ -1,0 +1,7 @@
+{
+  "command.cobblemon_more_battle_content_league_challenge.dev.opened": "League Challenge UI 개발 화면을 열었습니다.",
+  "screen.cobblemon_more_battle_content_league_challenge.dev.heading": "League Challenge UI 착수 기반",
+  "screen.cobblemon_more_battle_content_league_challenge.dev.status": "모듈과 클라이언트 진입 경로가 작동합니다. 다음 단계는 타입이 있는 League 홈 fixture입니다.",
+  "screen.cobblemon_more_battle_content_league_challenge.dev.title": "League Challenge",
+  "screen.cobblemon_more_battle_content_league_challenge.dev.warning": "개발 화면입니다. 진행도, 뱃지, 레벨캡, 전투와 시설 잠금은 아직 연결되지 않았습니다."
+}

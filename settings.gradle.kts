@@ -18,6 +18,7 @@ include(
     "font-glyph-race-fix",
     "more-battle-content",
     "more-battle-content-better-ai",
+    "more-battle-content-league-challenge",
     "player-popup-emotes",
     "pokefusion",
     "rounding-block",
