@@ -81,10 +81,15 @@ public final class MusicCatalogParser {
                 throw CatalogJson.error(path, "must be an object");
             }
             JsonObject value = entry.getValue().getAsJsonObject();
-            CatalogJson.only(value, path, "event", "title");
+            CatalogJson.only(value, path, "event", "title", "legacyPaths");
             String event = CatalogJson.resourceId(CatalogJson.string(value, "event", path), path + ".event");
             String title = CatalogJson.string(value, "title", path);
-            tracks.put(id, new MusicCatalog.Track(event, title));
+            List<String> legacyPaths = List.copyOf(CatalogJson.uniqueStrings(
+                CatalogJson.optionalArray(value, "legacyPaths", path),
+                path + ".legacyPaths",
+                CatalogJson::legacyOggPath
+            ));
+            tracks.put(id, new MusicCatalog.Track(event, title, legacyPaths));
         }
         return tracks;
     }

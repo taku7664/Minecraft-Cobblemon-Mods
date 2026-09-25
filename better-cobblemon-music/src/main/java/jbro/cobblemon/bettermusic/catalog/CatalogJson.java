@@ -12,6 +12,7 @@ final class CatalogJson {
     private static final Pattern RESOURCE_ID = Pattern.compile("[a-z0-9_.-]+:[a-z0-9_./-]+");
     private static final Pattern RESOURCE_PATH = Pattern.compile("[a-z0-9_.-]+(?:/[a-z0-9_.-]+)*");
     private static final Pattern SPECIES = Pattern.compile("[a-z0-9_.-]+(?::[a-z0-9_.-]+)?(?:#[a-z0-9_.-]+)?");
+    private static final Pattern LEGACY_OGG_PATH = Pattern.compile("[a-z0-9_.-]+(?:/[a-z0-9_.-]+)*\\.ogg");
 
     private CatalogJson() {
     }
@@ -103,6 +104,13 @@ final class CatalogJson {
     static String species(String value, String path) {
         if (!SPECIES.matcher(value).matches()) {
             throw error(path, "must be a lowercase species or species#form ID");
+        }
+        return value;
+    }
+
+    static String legacyOggPath(String value, String path) {
+        if (!LEGACY_OGG_PATH.matcher(value).matches()) {
+            throw error(path, "must be a lowercase relative .ogg path");
         }
         return value;
     }

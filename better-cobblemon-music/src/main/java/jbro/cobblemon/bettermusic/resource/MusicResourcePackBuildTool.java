@@ -91,6 +91,10 @@ public final class MusicResourcePackBuildTool {
         }
 
         JsonObject catalog = readObject(layoutFile);
+        JsonObject legacyAliases = catalog.has("legacyAliases")
+            ? requiredObject(catalog, "legacyAliases", "catalog layout")
+            : new JsonObject();
+        catalog.remove("legacyAliases");
         JsonObject tracks = new JsonObject();
         JsonObject playlists = requiredObject(catalog, "playlists", "catalog layout");
         JsonObject sounds = new JsonObject();
@@ -106,6 +110,17 @@ public final class MusicResourcePackBuildTool {
                 JsonObject track = new JsonObject();
                 track.addProperty("event", eventId);
                 track.addProperty("title", title(trackPath));
+                JsonArray legacyPaths = new JsonArray();
+                legacyPaths.add(trackPath + ".ogg");
+                if (legacyAliases.has(trackId)) {
+                    if (!legacyAliases.get(trackId).isJsonArray()) {
+                        throw new IOException("legacyAliases." + trackId + " must be an array");
+                    }
+                    for (var alias : legacyAliases.getAsJsonArray(trackId)) {
+                        legacyPaths.add(alias.getAsString());
+                    }
+                }
+                track.add("legacyPaths", legacyPaths);
                 tracks.add(trackId, track);
                 sounds.add(eventPath, soundDefinition(NAMESPACE + ":" + soundPath, true));
                 String implicitPlaylistId = NAMESPACE + ":track/" + trackPath;
@@ -122,6 +137,11 @@ public final class MusicResourcePackBuildTool {
         }
         if (musicCount == 0) {
             throw new IOException("Resource pack contains no music OGG files under " + MUSIC_PREFIX);
+        }
+        for (String trackId : legacyAliases.keySet()) {
+            if (!tracks.has(trackId)) {
+                throw new IOException("legacyAliases references unknown track " + trackId);
+            }
         }
         addHitSound(sounds, sourceDirectory, "normal");
         addHitSound(sounds, sourceDirectory, "super_effective");

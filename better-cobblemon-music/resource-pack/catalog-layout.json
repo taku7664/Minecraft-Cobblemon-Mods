@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "packId": "cobleserver:official",
   "kind": "base",
+  "legacyAliases": {
+    "cobleserver:battle/pvp/swsh_gym_leader_battle": [
+      "battle/content/swsh_gym_leader_battle.ogg"
+    ],
+    "cobleserver:battle/legendary/frlg_deoxys_battle_music": [
+      "battle/legendary/frlg_deoxys_battle.ogg"
+    ]
+  },
   "playlists": {
     "cobleserver:field_plaza": {
       "tracks": [

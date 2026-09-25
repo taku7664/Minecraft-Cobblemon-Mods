@@ -46,6 +46,10 @@ final class MusicResourcePackBuildToolTest {
             "cobleserver:music.track.field.plains.theme",
             catalog.tracks().get("cobleserver:field/plains/theme").eventId()
         );
+        assertEquals(
+            java.util.List.of("field/plains/theme.ogg"),
+            catalog.tracks().get("cobleserver:field/plains/theme").legacyPaths()
+        );
         assertTrue(catalog.playlists().containsKey("cobleserver:track/field/plains/theme"));
     }
 

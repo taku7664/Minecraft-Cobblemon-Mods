@@ -34,10 +34,11 @@ public record MusicCatalog(
         EXTENSION
     }
 
-    public record Track(String eventId, String title) {
+    public record Track(String eventId, String title, List<String> legacyPaths) {
         public Track {
             Objects.requireNonNull(eventId, "eventId");
             Objects.requireNonNull(title, "title");
+            legacyPaths = List.copyOf(Objects.requireNonNull(legacyPaths, "legacyPaths"));
         }
     }
 
