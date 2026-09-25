@@ -17,10 +17,12 @@ import net.minecraft.network.chat.Component
 @OptIn(ExperimentalMbcUi::class)
 internal class LeagueChallengeDevelopmentScreen(
     private val fixture: LeagueHomeFixture = LeagueHomeFixtureCatalog.require("badges_3")
-) : Screen(text("title")) {
+) : Screen(text("title")), LeagueUiVerificationProbe {
     private lateinit var layout: LeagueHomeLayout
     private lateinit var challengeButton: LeagueHomeActionButton
     private var actionStatus: Component = Component.empty()
+    override var actionDispatched: Boolean = false
+        private set
 
     override fun init() {
         check(MbcUiContractValidator.validate(LeagueHomeContract.definition).isEmpty()) {
@@ -136,6 +138,7 @@ internal class LeagueChallengeDevelopmentScreen(
     }
 
     private fun dispatchChallenge() {
+        actionDispatched = true
         actionStatus = text("dev_action", LeagueHomeContract.OPEN_NEXT_CHALLENGE.value)
     }
 

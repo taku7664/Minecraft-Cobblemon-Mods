@@ -101,9 +101,9 @@ assets/cobblemon_more_battle_content_league_challenge/textures/gui/portraits/*.p
 
 ### 2026-09-25 LGUI-2 중간 증거
 
-`badges_3` fixture의 코드 드로잉과 owo 후보를 실제 Minecraft에서 `320×240`, `427×240`으로 비교했다. 두 후보는 같은 정보 구조와 반응형 배치를 유지했고, owo도 기본 위젯 외형 대신 League 전용 surface와 renderer를 적용할 수 있었다. 캡처와 차이는 [UI_BACKEND_SPIKE_RESULT.md](UI_BACKEND_SPIKE_RESULT.md)에 기록했다.
+`badges_3` fixture의 코드 드로잉과 owo 후보를 실제 Minecraft에서 `320×240`, `427×240`, `640×360`으로 비교했다. 두 후보는 같은 정보 구조와 반응형 배치를 유지했고, owo도 기본 위젯 외형 대신 League 전용 surface와 renderer를 적용할 수 있었다. 640×360에서는 영어·한국어 화면과 키보드 포커스·행동·내레이션 전달·닫기 경로를 각각 확인했다. 캡처와 차이는 [UI_BACKEND_SPIKE_RESULT.md](UI_BACKEND_SPIKE_RESULT.md)에 기록했다.
 
-이는 LGUI-2 완료가 아니다. `640×360`, 한영·긴 문자열, 입력·내레이션, 3D 슬롯·scissor와 성능 증거가 남아 있다. 비교를 위한 League의 직접 owo 참조는 일회성 개발 예외이며 LGUI-3 전에 MBC 비공개 렌더러로 이동하거나 제거해야 한다(MUST).
+이는 LGUI-2 완료가 아니다. 긴 문자열·비활성 상태, 물리 마우스·음성 출력, 3D 슬롯·scissor와 성능 증거가 남아 있다. owo 기본 어댑터는 내부 위젯 내레이션을 바닐라 화면으로 전달하지 않았으므로, 채택 시 MBC 비공개 백엔드가 전달 어댑터를 소유해야 한다(MUST). 비교를 위한 League의 직접 owo 참조는 일회성 개발 예외이며 LGUI-3 전에 MBC 비공개 렌더러로 이동하거나 제거해야 한다(MUST).
 
 ## 8. 시각·기능 검증
 

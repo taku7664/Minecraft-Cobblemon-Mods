@@ -21,16 +21,26 @@ import jbro.cobblemon.morebattlecontent.leaguechallenge.ui.LeagueHomeFixture
 import jbro.cobblemon.morebattlecontent.leaguechallenge.ui.LeagueHomeFixtureCatalog
 import jbro.cobblemon.morebattlecontent.leaguechallenge.ui.LeagueNextChallenge
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.narration.NarratableEntry
+import net.minecraft.client.gui.narration.NarratedElementType
+import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.network.chat.Component
 
 @OptIn(ExperimentalMbcUi::class)
 internal class LeagueChallengeOwoSpikeScreen(
     private val fixture: LeagueHomeFixture = LeagueHomeFixtureCatalog.require("badges_3")
-) : BaseOwoScreen<StackLayout>(text("title")) {
+) : BaseOwoScreen<StackLayout>(text("title")), LeagueUiVerificationProbe {
     private var statusLabel: LabelComponent? = null
+    override var actionDispatched: Boolean = false
+        private set
 
-    override fun createAdapter(): OwoUIAdapter<StackLayout> =
-        OwoUIAdapter.create(this) { horizontal, vertical -> Containers.stack(horizontal, vertical) }
+    override fun createAdapter(): OwoUIAdapter<StackLayout> {
+        val root = Containers.stack(Sizing.fill(100), Sizing.fill(100))
+        return LeagueNarratingOwoAdapter(0, 0, width, height, root, title).also { adapter ->
+            addRenderableWidget(adapter)
+            focused = adapter
+        }
+    }
 
     override fun build(root: StackLayout) {
         check(MbcUiContractValidator.validate(LeagueHomeContract.definition).isEmpty()) {
@@ -72,6 +82,7 @@ internal class LeagueChallengeOwoSpikeScreen(
 
         root.child(
             Components.button(text("challenge")) {
+                actionDispatched = true
                 statusLabel?.text(text("dev_action", LeagueHomeContract.OPEN_NEXT_CHALLENGE.value))
             }.apply {
                 sizing(Sizing.fixed(layout.actionButton.width), Sizing.fixed(layout.actionButton.height))
@@ -205,4 +216,28 @@ internal class LeagueChallengeOwoSpikeScreen(
 
         private fun text(suffix: String, vararg args: Any): Component = Component.translatable(key(suffix), *args)
     }
+}
+
+private class LeagueNarratingOwoAdapter(
+    x: Int,
+    y: Int,
+    width: Int,
+    height: Int,
+    root: StackLayout,
+    private val fallbackTitle: Component
+) : OwoUIAdapter<StackLayout>(x, y, width, height, root) {
+    override fun narrationPriority(): NarratableEntry.NarrationPriority =
+        focusedNarratable()?.narrationPriority() ?: NarratableEntry.NarrationPriority.NONE
+
+    override fun updateNarration(output: NarrationElementOutput) {
+        val focused = focusedNarratable()
+        if (focused != null) {
+            focused.updateNarration(output)
+        } else {
+            output.add(NarratedElementType.TITLE, fallbackTitle)
+        }
+    }
+
+    private fun focusedNarratable(): NarratableEntry? =
+        rootComponent.focusHandler()?.focused() as? NarratableEntry
 }

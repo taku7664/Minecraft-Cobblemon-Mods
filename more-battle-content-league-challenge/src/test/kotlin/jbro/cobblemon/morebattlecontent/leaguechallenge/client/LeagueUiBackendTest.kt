@@ -16,4 +16,16 @@ class LeagueUiBackendTest {
         assertNull(LeagueUiBackend.parseOrNull(null))
         assertNull(LeagueUiBackend.parseOrNull("html"))
     }
+
+    @Test
+    fun `capture locale accepts both bundled languages without case sensitivity`() {
+        assertEquals(LeagueUiLocale.EN_US, LeagueUiLocale.parseOrNull("en_us"))
+        assertEquals(LeagueUiLocale.KO_KR, LeagueUiLocale.parseOrNull("KO_KR"))
+    }
+
+    @Test
+    fun `capture locale rejects absent and unsupported values`() {
+        assertNull(LeagueUiLocale.parseOrNull(null))
+        assertNull(LeagueUiLocale.parseOrNull("ja_jp"))
+    }
 }
