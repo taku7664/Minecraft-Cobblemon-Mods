@@ -39,6 +39,14 @@ internal data class LocalActionMixingContext(
     val decisionRegretBand: Double = 1.0,
     /** The deciding tier's `decisionShortlistWidth`, multiplied into the shortlist fraction. */
     val decisionShortlistWidth: Double = 1.0,
+    /**
+     * The comparison values already came from complete native state transitions.
+     *
+     * When true, old root metadata such as projected switch HP or setup vetoes must not remove a
+     * candidate a second time. Regret-band weighting and trainer personality still choose among the
+     * native-ranked candidates.
+     */
+    val authoritativeSimulationScores: Boolean = false,
 ) {
     companion object {
         fun balanced(
@@ -82,15 +90,20 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
                 best.comparisonValue - rank.comparisonValue <= context.tuning.maximumReasonableScoreGap
         }
         val eligible = selectionUniverse.filter { rank ->
-            canReceiveWeight(
-                rank,
-                rank === best,
-                credibleStayAlternativeExists,
-                context.memory,
-                context.riskBudget,
-                context.alreadyBoostedSetupActionIds,
-                context.overcommittedSetupActionIds,
-            )
+            if (context.authoritativeSimulationScores) {
+                rank.outcome.candidate.kind != BattleActionKind.FORFEIT &&
+                    rank.outcome.candidate.kind != BattleActionKind.WAIT
+            } else {
+                canReceiveWeight(
+                    rank,
+                    rank === best,
+                    credibleStayAlternativeExists,
+                    context.memory,
+                    context.riskBudget,
+                    context.alreadyBoostedSetupActionIds,
+                    context.overcommittedSetupActionIds,
+                )
+            }
         }
         val viable = eligible.ifEmpty {
             listOf(emergencyFallback(selectionUniverse, context.overcommittedSetupActionIds))

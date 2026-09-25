@@ -53,7 +53,7 @@ class NativeInitialProductDecisionEvaluatorTest {
             },
             nowEpochMillis = { 1_000L },
             nanoTime = { 5_000_000L },
-            leafEvaluator = { _, _, _, _ -> error("stub search owns its values") },
+            leafEvaluator = { _, _, _, _ -> 0.05 },
         )
 
         val result = evaluator.evaluate(
@@ -65,7 +65,7 @@ class NativeInitialProductDecisionEvaluatorTest {
 
         assertEquals(NativeInitialProductDecisionStatus.AVAILABLE, result.status)
         assertEquals(listOf("action-a", "action-b"), result.ranked.map { it.outcome.candidate.actionId })
-        assertEquals(listOf(25.0, 10.0), result.ranked.map { it.comparisonValue })
+        assertEquals(listOf(20.0, 5.0), result.ranked.map { it.comparisonValue })
         assertTrue(result.ranked.all { !it.outcome.publiclyInert && !it.outcome.entryFaints })
         assertEquals(7, result.nodesVisited)
         assertEquals(1, result.depthCompleted)

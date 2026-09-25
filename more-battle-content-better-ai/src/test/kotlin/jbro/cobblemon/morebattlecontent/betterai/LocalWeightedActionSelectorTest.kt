@@ -657,6 +657,33 @@ class LocalWeightedActionSelectorTest {
     }
 
     @Test
+    fun `authoritative native scores are not vetoed by handmade outcome metadata`() {
+        val ranked = listOf(
+            rank(
+                "native_best_setup",
+                110.0,
+                moveId = "quiverdance",
+                selfSetup = true,
+                worstResponseHpRetention = 0.0,
+            ),
+            rank("native_attack", 100.0, moveId = "bugbuzz", executableDamageActions = 1),
+        )
+        val legacyContext = mixingContext().copy(
+            overcommittedSetupActionIds = setOf("native_best_setup"),
+        )
+        val nativeContext = legacyContext.copy(authoritativeSimulationScores = true)
+
+        assertEquals(
+            listOf("native_attack"),
+            selector.shortlist(ranked, legacyContext).map { it.outcome.candidate.actionId },
+        )
+        assertEquals(
+            listOf("native_best_setup", "native_attack"),
+            selector.shortlist(ranked, nativeContext).map { it.outcome.candidate.actionId },
+        )
+    }
+
+    @Test
     fun `an overcommitted setup yields to an attack attempt even when neither line is likely to execute`() {
         val ranked = listOf(
             rank("only_progress", 110.0, moveId = "quiverdance", selfSetup = true),

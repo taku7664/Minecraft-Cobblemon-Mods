@@ -38,6 +38,11 @@ internal data class NativeInitialProductDecisionEvaluation(
         require(nodesVisited >= 0)
         require((status == NativeInitialProductDecisionStatus.AVAILABLE) == ranked.isNotEmpty())
         require(status != NativeInitialProductDecisionStatus.PLANNING_FAILED || planIssues.isNotEmpty())
+        require(status != NativeInitialProductDecisionStatus.AVAILABLE ||
+            searchStatus == NativeProductWorldSearchStatus.COMPLETED ||
+            searchStatus == NativeProductWorldSearchStatus.PARTIAL_DEPTH
+        )
+        require(!truncated || searchStatus == NativeProductWorldSearchStatus.PARTIAL_DEPTH)
     }
 }
 
@@ -94,6 +99,25 @@ internal class NativeInitialProductDecisionEvaluator(
                 status = NativeInitialProductDecisionStatus.SEARCH_FAILED,
                 searchStatus = NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH,
             )
+        var rootBaseline = 0.0
+        plan.worlds.forEach { world ->
+            if (nanoTime() - deadlineNanos >= 0L) {
+                return NativeInitialProductDecisionEvaluation(
+                    status = NativeInitialProductDecisionStatus.SEARCH_FAILED,
+                    searchStatus = NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH,
+                )
+            }
+            val value = leafEvaluator(world.publicContext.state, world.publicContext, tuning) {
+                nanoTime() - deadlineNanos < 0L
+            }
+            if (!value.isFinite() || nanoTime() - deadlineNanos >= 0L) {
+                return NativeInitialProductDecisionEvaluation(
+                    status = NativeInitialProductDecisionStatus.SEARCH_FAILED,
+                    searchStatus = NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH,
+                )
+            }
+            rootBaseline += world.probability * value
+        }
         val search = searchWorlds(
             NativeProductWorldSearchRequest(
                 worlds = plan.worlds.map { world ->
@@ -128,7 +152,7 @@ internal class NativeInitialProductDecisionEvaluator(
         }
         return NativeInitialProductDecisionEvaluation(
             status = NativeInitialProductDecisionStatus.AVAILABLE,
-            ranked = NativeProductRankAdapter.rank(search.rootValues),
+            ranked = NativeProductRankAdapter.rank(search.rootValues, rootBaseline),
             depthCompleted = search.depthCompleted,
             nodesVisited = search.nodesVisited,
             truncated = search.status == NativeProductWorldSearchStatus.PARTIAL_DEPTH,
@@ -160,9 +184,13 @@ internal class NativeInitialProductDecisionEvaluator(
 
 /** Keeps product selection metadata but does not import any handmade transition score. */
 internal object NativeProductRankAdapter {
-    fun rank(values: List<NativeRootActionValue>): List<LocalBattleActionRank> =
-        LocalBattleActionPolicy.sort(values.map { value ->
-            val scaled = value.value * BOARD_TO_SCORE
+    fun rank(
+        values: List<NativeRootActionValue>,
+        rootBaseline: Double = 0.0,
+    ): List<LocalBattleActionRank> {
+        require(rootBaseline.isFinite())
+        return LocalBattleActionPolicy.sort(values.map { value ->
+            val scaled = (value.value - rootBaseline) * BOARD_TO_SCORE
             LocalBattleActionRank(
                 outcome = neutralOutcome(value.action, scaled),
                 decisionTier = 0,
@@ -172,6 +200,7 @@ internal object NativeProductRankAdapter {
                 worstResponseHpRetention = 1.0,
             )
         })
+    }
 
     private fun neutralOutcome(
         candidate: BattleActionCandidate,

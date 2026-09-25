@@ -40,14 +40,43 @@ import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadBudget
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadBudgetPolicy
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadDecisionSignature
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalRecursiveLookaheadEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionEvaluation
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionStatus
 import kotlin.math.roundToInt
 
 private const val WEAKER_CHOICE_MARGIN = 0.05
+
+internal fun interface NativeInitialDecisionSource {
+    fun evaluate(
+        context: BattleDecisionContext,
+        profile: BattleTrainerProfile,
+        tuning: LocalDecisionTuning,
+        budget: LocalLookaheadBudget,
+    ): NativeInitialProductDecisionEvaluation
+}
+
+internal class NativeInitialProductDecisionException(
+    val evaluation: NativeInitialProductDecisionEvaluation,
+) : IllegalStateException(
+    buildString {
+        append("Initial native product decision failed: ")
+        append(evaluation.status.name)
+        evaluation.searchStatus?.let { append(" search=").append(it.name) }
+        evaluation.failedWorldId?.let { append(" world=").append(it) }
+        if (evaluation.planIssues.isNotEmpty()) {
+            append(" issues=")
+            append(evaluation.planIssues.joinToString(",") { it.code.name })
+        }
+    },
+)
 
 internal class LocalTacticalBrain(
     private val actionSelector: LocalActionSelector = LocalWeightedActionSelector(),
     private val tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     private val lookaheadBudget: (BattleTrainerTier) -> LocalLookaheadBudget = LocalLookaheadBudgetPolicy::forTier,
+    private val nativeInitialDecision: NativeInitialDecisionSource =
+        NativeInitialDecisionSource(NativeInitialProductDecisionEvaluator()::evaluate),
 ) : BattleBrain {
     override fun openSession(context: BattleBrainOpenContext): BattleBrainSession =
         Session(
@@ -93,8 +122,13 @@ internal class LocalTacticalBrain(
         val decidingProfile = profile.copy(
             personality = profile.personality.copy(riskTolerance = mind.riskBudget),
         )
-        val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
-        baseRanked.singleOrNull()?.let { selected ->
+        difficultyContext.candidates.singleOrNull()?.let {
+            val selected = LocalBattleActionPolicy.rank(
+                difficultyContext,
+                strategy,
+                decidingProfile,
+                tuning,
+            ).single()
             return CompletableFuture.completedFuture(
                 BattleDecision(
                     requestId = context.requestId,
@@ -110,8 +144,10 @@ internal class LocalTacticalBrain(
                 ),
             )
         }
-        val rootRanked = baseRanked
-        fun mixingContext(ranked: List<LocalBattleActionRank>): LocalActionMixingContext {
+        fun mixingContext(
+            ranked: List<LocalBattleActionRank>,
+            authoritativeSimulationScores: Boolean = false,
+        ): LocalActionMixingContext {
             return LocalActionMixingContext(
                 personality = profile.personality,
                 memory = difficultyContext.memory,
@@ -119,7 +155,7 @@ internal class LocalTacticalBrain(
                 riskBudget = mind.riskBudget,
                 decisionRegretBand = decidingProfile.difficulty.decisionRegretBand,
                 decisionShortlistWidth = decidingProfile.difficulty.decisionShortlistWidth,
-                uncertainConditionalActionIds = ranked.asSequence()
+                uncertainConditionalActionIds = if (authoritativeSimulationScores) emptySet() else ranked.asSequence()
                     .filter {
                         LocalTacticalSituationalEvaluator.pendingDamagingMoveRiskPenalty(
                             it.outcome.candidate,
@@ -128,7 +164,7 @@ internal class LocalTacticalBrain(
                     }
                     .map { it.outcome.candidate.actionId }
                     .toSet(),
-                alreadyBoostedSetupActionIds = ranked.asSequence()
+                alreadyBoostedSetupActionIds = if (authoritativeSimulationScores) emptySet() else ranked.asSequence()
                     .filter {
                         LocalTacticalSituationalEvaluator.alreadyBoostedSelfSetup(
                             it.outcome.candidate,
@@ -137,7 +173,7 @@ internal class LocalTacticalBrain(
                     }
                     .map { it.outcome.candidate.actionId }
                     .toSet(),
-                overcommittedSetupActionIds = ranked.asSequence()
+                overcommittedSetupActionIds = if (authoritativeSimulationScores) emptySet() else ranked.asSequence()
                     .filter {
                         LocalTacticalSituationalEvaluator.overcommittedSelfSetup(
                             it.outcome.candidate,
@@ -147,12 +183,74 @@ internal class LocalTacticalBrain(
                     .map { it.outcome.candidate.actionId }
                     .toSet(),
                 tuning = tuning,
+                authoritativeSimulationScores = authoritativeSimulationScores,
             )
         }
         val perspectivePokemonIds = calculatedContext.state.pokemon.asSequence()
             .filter { it.side == BattleSide.ALLY }
             .map { it.battlePokemonId }
             .toList()
+        val budget = lookaheadBudget(profile.difficulty.tier)
+        val nativeInitial = nativeInitialDecision.evaluate(
+            difficultyContext,
+            decidingProfile,
+            tuning,
+            budget,
+        )
+        when (nativeInitial.status) {
+            NativeInitialProductDecisionStatus.AVAILABLE -> {
+                val ranked = nativeInitial.ranked
+                val nativeSearchStatus = requireNotNull(nativeInitial.searchStatus)
+                val seed = LocalActionChoiceSeed.derive(
+                    battleId = battleId,
+                    turn = calculatedContext.state.turn,
+                    ranked = ranked,
+                    perspectivePokemonIds = perspectivePokemonIds,
+                )
+                val selection = actionSelector.choose(
+                    ranked,
+                    seed,
+                    mixingContext(ranked, authoritativeSimulationScores = true),
+                )
+                val selected = selection.rank
+                val confidence = (0.35 + selection.probability * 0.6).coerceIn(0.35, 0.99)
+                return CompletableFuture.completedFuture(
+                    BattleDecision(
+                        requestId = context.requestId,
+                        actionId = selected.outcome.candidate.actionId,
+                        confidence = confidence,
+                        advice = LocalBattleMind.advice(selected, difficultyContext, strategy, profile),
+                        tags = buildSet {
+                            addAll(setOf(
+                                "local_tactical_v4",
+                                "tuning_${tuning.id}",
+                                "native_showdown_initial",
+                                "mixed_top40",
+                                "contextual_human_mix",
+                                "persistent_intent",
+                                "evidence_gated_mixup",
+                                "position_risk_budget",
+                                "choice_pool_${selection.shortlistSize}",
+                                "choice_seed_${selection.seed.toULong().toString(16)}",
+                                "difficulty_${profile.difficulty.tier.name.lowercase()}",
+                                "lookahead_requested_${profile.difficulty.lookaheadPlies}",
+                                "lookahead_turns_${nativeInitial.depthCompleted}",
+                                "lookahead_nodes_${nativeInitial.nodesVisited}",
+                                "native_search_${nativeSearchStatus.name.lowercase(Locale.ROOT)}",
+                            ))
+                            if (nativeInitial.truncated) add("lookahead_truncated")
+                            addAll(decisionDiagnostics(calculatedContext, selected))
+                        },
+                    ),
+                )
+            }
+            NativeInitialProductDecisionStatus.PLANNING_FAILED,
+            NativeInitialProductDecisionStatus.SEARCH_FAILED,
+            -> return CompletableFuture.failedFuture(NativeInitialProductDecisionException(nativeInitial))
+            NativeInitialProductDecisionStatus.NOT_APPLICABLE -> Unit
+        }
+        val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
+        val rootRanked = baseRanked
         val lookahead = LocalRecursiveLookaheadEvaluator.evaluate(
             rootRanked,
             difficultyContext,
@@ -164,7 +262,7 @@ internal class LocalTacticalBrain(
                 LocalWeightedActionSelector().shortlist(refined, mixingContext(refined))
                     .mapTo(linkedSetOf()) { it.outcome.candidate.actionId }
             },
-            budget = lookaheadBudget(profile.difficulty.tier),
+            budget = budget,
             decisionSignature = if (actionSelector !is LocalWeightedActionSelector) null else { tentative ->
                 val refined = LocalRootDecisionPolicy.refine(tentative, difficultyContext).ranked
                 val tentativeSeed = LocalActionChoiceSeed.derive(
@@ -228,66 +326,7 @@ internal class LocalTacticalBrain(
                      ))
                     if (lookahead.truncated) add("lookahead_truncated")
                     if (lookahead.publicResponseIncomplete) add("lookahead_public_response_incomplete")
-                    // What the trainer could see of the Pokemon in front of it. A move is ranked almost
-                    // entirely on the damage it projects, and that needs the defender's types: without
-                    // them every attack scores on base power alone, four moves look nearly equal, and
-                    // the draw can land on one the type chart would have ruled out. When that happens
-                    // the choice looks like a broken evaluation and is really a blind one, so the two
-                    // have to be distinguishable in a log after the fact.
-                    val opponentActive = calculatedContext.state.pokemon.filter {
-                        it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted
-                    }
-                    when {
-                        opponentActive.isEmpty() -> add("opponent_active_absent")
-                        opponentActive.any { it.knownTypeIds.isEmpty() } -> add("opponent_types_unknown")
-                        else -> add("opponent_types_known")
-                    }
-                    if (opponentActive.any { it.combatStats == null }) add("opponent_stats_unknown")
-                    selected.outcome.candidate.let { chosen ->
-                        add("chose_${chosen.kind.name.lowercase()}")
-                        chosen.moveDetails?.typeId?.let { add("chose_type_$it") }
-                    }
-                    val chosenFacts = calculatedContext.candidates
-                        .firstOrNull { it.actionId == selected.outcome.candidate.actionId }?.facts
-                    chosenFacts?.typeChartMultiplier
-                        ?.let { add("chose_type_multiplier_${(it * 100).roundToInt()}") }
-                    // Why this move and not the stronger one, recorded at the moment it is chosen.
-                    //
-                    // A trainer picking a weak attack while a far better one sits in the same move set
-                    // is the complaint that cannot be reproduced on demand: it needs that opponent,
-                    // that team and that matchup to come round again, and in a battle tower it may not.
-                    // So the decision states its own case whenever the move played is not the hardest
-                    // hitting one available - every candidate, its type, what the chart said, and what
-                    // damage was projected. Silent on every turn where the obvious move was taken.
-                    val damaging = calculatedContext.candidates.filter {
-                        it.moveDetails?.damageCategory != null &&
-                            it.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS
-                    }
-                    fun expectedDamage(candidate: BattleActionCandidate): Double =
-                        candidate.facts?.standardDamageFractionRange
-                            ?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.0
-                    val chosenCandidate = calculatedContext.candidates
-                        .firstOrNull { it.actionId == selected.outcome.candidate.actionId }
-                    val strongest = damaging.maxByOrNull(::expectedDamage)
-                    // Only when an attack was chosen over a better attack. Switching or using a status
-                    // move projects no damage by definition, so comparing those against the hardest
-                    // hitting option fired the tag on almost every decision and buried the ones worth
-                    // reading. A trainer that switches instead of attacking is answering a different
-                    // question, not making the mistake this looks for.
-                    val chosenIsAttack = chosenCandidate != null && chosenCandidate in damaging
-                    if (chosenIsAttack && chosenCandidate != null && strongest != null &&
-                        expectedDamage(strongest) > expectedDamage(chosenCandidate) + WEAKER_CHOICE_MARGIN
-                    ) {
-                        add("weaker_attack_chosen")
-                        calculatedContext.candidates.forEach { candidate ->
-                            val moveType = candidate.moveDetails?.typeId ?: return@forEach
-                            val name = candidate.moveId?.substringAfter(':') ?: candidate.actionId
-                            val multiplier = candidate.facts?.typeChartMultiplier
-                                ?.let { (it * 100).roundToInt().toString() } ?: "none"
-                            val damage = (expectedDamage(candidate) * 1000).roundToInt()
-                            add("cand_${name}_${moveType}_x${multiplier}_dmg$damage")
-                        }
-                    }
+                    addAll(decisionDiagnostics(calculatedContext, selected))
                     rootDecision.switchReasonsByActionId[selected.outcome.candidate.actionId]
                         .orEmpty()
                         .forEach { add("switch_reason_${it.name.lowercase()}") }
@@ -298,6 +337,58 @@ internal class LocalTacticalBrain(
     }
 
     override fun closeSession(session: BattleBrainSession, result: BattleBrainCloseResult) = Unit
+
+    private fun decisionDiagnostics(
+        calculatedContext: BattleDecisionContext,
+        selected: LocalBattleActionRank,
+    ): Set<String> = buildSet {
+        // What the trainer could see of the Pokemon in front of it. Without the defender's public
+        // types a weak-looking choice can be blindness rather than a bad evaluation, so preserve the
+        // distinction on native and legacy decisions alike.
+        val opponentActive = calculatedContext.state.pokemon.filter {
+            it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted
+        }
+        when {
+            opponentActive.isEmpty() -> add("opponent_active_absent")
+            opponentActive.any { it.knownTypeIds.isEmpty() } -> add("opponent_types_unknown")
+            else -> add("opponent_types_known")
+        }
+        if (opponentActive.any { it.combatStats == null }) add("opponent_stats_unknown")
+        selected.outcome.candidate.let { chosen ->
+            add("chose_${chosen.kind.name.lowercase()}")
+            chosen.moveDetails?.typeId?.let { add("chose_type_$it") }
+        }
+        val chosenFacts = calculatedContext.candidates
+            .firstOrNull { it.actionId == selected.outcome.candidate.actionId }?.facts
+        chosenFacts?.typeChartMultiplier
+            ?.let { add("chose_type_multiplier_${(it * 100).roundToInt()}") }
+
+        // Record the public one-turn damage comparison only as diagnostics. It never feeds the
+        // native rank back into the handmade projector.
+        val damaging = calculatedContext.candidates.filter {
+            it.moveDetails?.damageCategory != null &&
+                it.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS
+        }
+        fun expectedDamage(candidate: BattleActionCandidate): Double =
+            candidate.facts?.standardDamageFractionRange
+                ?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.0
+        val chosenCandidate = calculatedContext.candidates
+            .firstOrNull { it.actionId == selected.outcome.candidate.actionId }
+        val strongest = damaging.maxByOrNull(::expectedDamage)
+        if (chosenCandidate != null && chosenCandidate in damaging && strongest != null &&
+            expectedDamage(strongest) > expectedDamage(chosenCandidate) + WEAKER_CHOICE_MARGIN
+        ) {
+            add("weaker_attack_chosen")
+            calculatedContext.candidates.forEach { candidate ->
+                val moveType = candidate.moveDetails?.typeId ?: return@forEach
+                val name = candidate.moveId?.substringAfter(':') ?: candidate.actionId
+                val multiplier = candidate.facts?.typeChartMultiplier
+                    ?.let { (it * 100).roundToInt().toString() } ?: "none"
+                val damage = (expectedDamage(candidate) * 1000).roundToInt()
+                add("cand_${name}_${moveType}_x${multiplier}_dmg$damage")
+            }
+        }
+    }
 
     private data class Session(
         override val sessionId: UUID,
