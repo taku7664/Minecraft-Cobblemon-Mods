@@ -80,8 +80,14 @@ internal object NativeDamageObservationConditioner {
             val roll = unused.removeAt(index)
             val observedFraction = -requireNotNull(observation.hpFractionDelta)
             val matchingIndexes = roll.possibleHpLosses.indices.filter { index ->
-                abs(roll.possibleHpLosses[index].toDouble() / roll.maxHp.toDouble() - observedFraction) <=
-                    FRACTION_EPSILON
+                val loss = roll.possibleHpLosses[index]
+                val exactLoss = loss.toDouble() / roll.maxHp.toDouble()
+                val publicAfter = NativeShowdownPublicHp.fraction(roll.hpBefore - loss, roll.maxHp)
+                val displayedLoss = NativeShowdownPublicHp.fraction(roll.hpBefore, roll.maxHp) - publicAfter
+                val exactBeforeToDisplayedAfter = roll.hpBefore.toDouble() / roll.maxHp - publicAfter
+                abs(exactLoss - observedFraction) <= FRACTION_EPSILON ||
+                    abs(displayedLoss - observedFraction) <= FRACTION_EPSILON ||
+                    abs(exactBeforeToDisplayedAfter - observedFraction) <= FRACTION_EPSILON
             }
             if (matchingIndexes.isEmpty()) {
                 return NativeDamageObservationConditioning(

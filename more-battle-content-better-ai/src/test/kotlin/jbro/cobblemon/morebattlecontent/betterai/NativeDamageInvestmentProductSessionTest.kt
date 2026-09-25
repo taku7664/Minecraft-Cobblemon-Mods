@@ -27,6 +27,7 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonSet
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownBranchEngine
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownChoiceEncoder
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownRequestActionFactory
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownPublicHp
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -74,6 +75,11 @@ class NativeDamageInvestmentProductSessionTest {
             val recoilHpLoss = opponentMaxHp - forcedMax.p2Active.single().hp
             assertTrue(recoilHpLoss > 0, "The integration fixture must exercise damage-based recoil")
             val events = observedTurnEvents(observedHpLoss, allyMaxHp, recoilHpLoss, opponentMaxHp)
+            assertTrue(
+                kotlin.math.abs(requireNotNull(events[2].hpFractionDelta) +
+                    observedHpLoss.toDouble() / allyMaxHp) > 1e-9,
+                "This regression must use a rounded public HP delta, not an exact native loss",
+            )
             val currentState = publicState(
                 turn = 2,
                 allyHpFraction = (allyMaxHp - observedHpLoss).toDouble() / allyMaxHp.toDouble(),
@@ -190,7 +196,7 @@ class NativeDamageInvestmentProductSessionTest {
             turn = 1,
             kind = BattleObservedEventKind.HP_CHANGED,
             actorPokemonId = ALLY,
-            hpFractionDelta = -hpLoss.toDouble() / maxHp.toDouble(),
+            hpFractionDelta = NativeShowdownPublicHp.fraction(maxHp - hpLoss, maxHp) - 1.0,
             precedingActionSequence = 2,
             precedingActionActorPokemonId = OPPONENT,
             precedingActionMoveId = "doubleedge",

@@ -7,13 +7,14 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeDamageObservationConditioner
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeDamageObservationStatus
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeDamageRollFrame
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownPublicHp
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class NativeDamageObservationConditionerTest {
     @Test
-    fun `public direct damage receives native roll likelihood instead of exact sampled HP matching`() {
+    fun `public direct damage keeps all rolls consistent with its HP display`() {
         val possible = (40..55).toList()
         val result = NativeDamageObservationConditioner.evaluate(
             frame(possible),
@@ -21,11 +22,67 @@ class NativeDamageObservationConditionerTest {
         )
 
         assertEquals(NativeDamageObservationStatus.CONSISTENT, result.status)
-        assertEquals(1.0 / 16.0, result.likelihood, 1e-12)
+        assertEquals(2.0 / 16.0, result.likelihood, 1e-12)
         assertEquals(setOf(TARGET), result.explainedPokemonIds)
         assertEquals(setOf(3L), result.explainedEventSequences)
         assertEquals(1, result.forcedDamageRolls.size)
         assertEquals(95, result.forcedDamageRolls.single().percent)
+    }
+
+    @Test
+    fun `rounded public HP damage retains every native roll with the same displayed loss`() {
+        // Showdown displays 190/202 as 95/100. Both 47 and 48 damage display 71/100,
+        // so the public event reports a 24-point change even though neither exact loss is 24%.
+        val result = NativeDamageObservationConditioner.evaluate(
+            frame((40..55).toList()).copy(executedDamageRolls = listOf(
+                NativeDamageRollFrame(
+                    turn = 1,
+                    attackerPokemonUuid = ATTACKER.toString(),
+                    targetPokemonUuid = TARGET.toString(),
+                    moveId = "tackle",
+                    hpBefore = 190,
+                    maxHp = 202,
+                    actualHpLoss = 48,
+                    possibleHpLosses = (40..55).toList(),
+                ),
+            )),
+            listOf(damageEvent(delta = -0.24)),
+        )
+
+        assertEquals(NativeDamageObservationStatus.CONSISTENT, result.status)
+        assertEquals(2.0 / 16.0, result.likelihood, 1e-12)
+        assertEquals(92, result.forcedDamageRolls.single().percent)
+    }
+
+    @Test
+    fun `first public HP event can subtract a displayed value from an exact seeded HP`() {
+        val roll = NativeDamageRollFrame(
+            turn = 1,
+            attackerPokemonUuid = ATTACKER.toString(),
+            targetPokemonUuid = TARGET.toString(),
+            moveId = "tackle",
+            hpBefore = 190,
+            maxHp = 202,
+            actualHpLoss = 48,
+            possibleHpLosses = (40..55).toList(),
+        )
+        val delta = NativeShowdownPublicHp.fraction(142, 202) - 190.0 / 202.0
+
+        val result = NativeDamageObservationConditioner.evaluate(
+            frame((40..55).toList()).copy(executedDamageRolls = listOf(roll)),
+            listOf(damageEvent(delta)),
+        )
+
+        assertEquals(NativeDamageObservationStatus.CONSISTENT, result.status)
+        assertEquals(2.0 / 16.0, result.likelihood, 1e-12)
+    }
+
+    @Test
+    fun `wounded HP never displays as full in the bundled Showdown percentage protocol`() {
+        assertEquals(0.99, NativeShowdownPublicHp.fraction(201, 202), 1e-12)
+        assertEquals(1.0, NativeShowdownPublicHp.fraction(202, 202), 1e-12)
+        assertEquals(0.01, NativeShowdownPublicHp.fraction(1, 202), 1e-12)
+        assertEquals(0.0, NativeShowdownPublicHp.fraction(0, 202), 1e-12)
     }
 
     @Test

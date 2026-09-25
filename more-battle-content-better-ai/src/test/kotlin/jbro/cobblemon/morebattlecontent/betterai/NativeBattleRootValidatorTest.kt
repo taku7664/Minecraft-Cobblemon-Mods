@@ -35,6 +35,28 @@ class NativeBattleRootValidatorTest {
     }
 
     @Test
+    fun `rounded opponent HP is accepted but exact own HP and wrong public percentages are rejected`() {
+        val plain = frame()
+        val opponent = plain.p2Team.single().copy(hp = 190, maxHp = 202)
+        val rounded = plain.copy(p2Active = listOf(opponent), p2Team = listOf(opponent))
+        val public = state(opponentHp = 0.95, opponentStats = null)
+
+        assertTrue(NativeBattleRootValidator.validate(definition(), rounded, public).isEmpty())
+        val wrongPercent = state(opponentHp = 0.94, opponentStats = null)
+        assertEquals(
+            setOf(NativeBattleRootIssueCode.HP_MISMATCH),
+            NativeBattleRootValidator.validate(definition(), rounded, wrongPercent).mapTo(linkedSetOf()) { it.code },
+        )
+        val ally = plain.p1Team.single().copy(hp = 94)
+        val wrongOwn = plain.copy(p1Active = listOf(ally), p1Team = listOf(ally))
+        val ownPercent = state(ownHp = 0.95)
+        assertEquals(
+            setOf(NativeBattleRootIssueCode.HP_MISMATCH),
+            NativeBattleRootValidator.validate(definition(), wrongOwn, ownPercent).mapTo(linkedSetOf()) { it.code },
+        )
+    }
+
+    @Test
     fun `unrevealed opponent facts and ranged field duration do not reject a valid root`() {
         val issues = NativeBattleRootValidator.validate(
             definition(),
@@ -313,6 +335,9 @@ class NativeBattleRootValidatorTest {
         weatherTurns: Int? = 3,
         weatherTurnsRange: BattleIntegerRange? = null,
         format: BattleFormat = BattleFormat.SINGLE,
+        ownHp: Double = 1.0,
+        opponentHp: Double = 1.0,
+        opponentStats: BattleCombatStatRangesView? = rangedStats(),
     ) = BattleStateView(
         battleId = BATTLE,
         format = format,
@@ -325,6 +350,7 @@ class NativeBattleRootValidatorTest {
                 "synchronize",
                 "leftovers",
                 exactStats(),
+                ownHp,
             ),
             publicPokemon(
                 OPPONENT,
@@ -332,7 +358,8 @@ class NativeBattleRootValidatorTest {
                 setOf("growl"),
                 opponentAbility,
                 opponentItem,
-                rangedStats(),
+                opponentStats,
+                opponentHp,
             ),
         ),
         field = BattleFieldStateView(
@@ -357,7 +384,8 @@ class NativeBattleRootValidatorTest {
         moves: Set<String>,
         ability: String?,
         item: String?,
-        stats: BattleCombatStatRangesView,
+        stats: BattleCombatStatRangesView?,
+        hp: Double,
     ) = BattlePokemonStateView(
         id,
         side,
@@ -365,7 +393,7 @@ class NativeBattleRootValidatorTest {
         "showdown:mew",
         null,
         50,
-        1.0,
+        hp,
         null,
         emptyMap(),
         moves,
