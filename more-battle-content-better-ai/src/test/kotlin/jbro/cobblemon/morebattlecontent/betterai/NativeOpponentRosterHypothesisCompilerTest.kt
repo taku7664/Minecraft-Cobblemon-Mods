@@ -196,6 +196,25 @@ class NativeOpponentRosterHypothesisCompilerTest {
     }
 
     @Test
+    fun `duplicate opening switch announcements for the same active lead remain initial`() {
+        val lead = opponent("showdown:clodsire")
+        val events = (1L..4L).map { sequence -> BattleObservedEventView(
+            sequence = sequence,
+            turn = 0,
+            kind = BattleObservedEventKind.SWITCHED,
+            actorPokemonId = lead.battlePokemonId,
+        ) }
+
+        val result = NativeOpponentRosterHypothesisCompiler.compile(
+            state(lead, remaining = 6, turn = 0, events = events),
+            preview(6, "clodsire", "zapdos", "zoroark", "torterra", "garchomp", "milotic"),
+        )
+
+        assertTrue(result.issues.isEmpty(), "issues=${result.issues}")
+        assertEquals(1, result.hypotheses.size)
+    }
+
+    @Test
     fun `turn zero move event cannot masquerade as an opening observation`() {
         val lead = opponent("cobblemon:fluttermane")
         val move = BattleObservedEventView(

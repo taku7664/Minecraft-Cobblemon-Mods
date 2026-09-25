@@ -11,17 +11,15 @@ internal object NativeOpeningStateRules {
             .filter { it.activeSlot != null && !it.fainted }
             .map(BattlePokemonStateView::battlePokemonId)
             .toSet()
-        val switchedActors = state.observedEvents.asSequence()
-            .filter { it.kind == BattleObservedEventKind.SWITCHED }
-            .mapNotNull { it.actorPokemonId }
-            .toList()
-        return switchedActors.size == switchedActors.distinct().size &&
-            state.observedEvents.all { event ->
-                event.turn == 0 && event.kind in OPENING_EVENT_KINDS && when (event.kind) {
-                    BattleObservedEventKind.FIELD_EFFECT_CHANGED -> event.actorPokemonId == null
-                    else -> event.actorPokemonId in activePokemonIds
-                }
+        // Cobblemon can repeat the same public opening switch line before the first action.
+        // Repetition does not make the current board noninitial; an inactive actor or any
+        // action/HP event still does. All three opening compilers share this boundary.
+        return state.observedEvents.all { event ->
+            event.turn == 0 && event.kind in OPENING_EVENT_KINDS && when (event.kind) {
+                BattleObservedEventKind.FIELD_EFFECT_CHANGED -> event.actorPokemonId == null
+                else -> event.actorPokemonId in activePokemonIds
             }
+        }
     }
 
     private val OPENING_EVENT_KINDS = setOf(

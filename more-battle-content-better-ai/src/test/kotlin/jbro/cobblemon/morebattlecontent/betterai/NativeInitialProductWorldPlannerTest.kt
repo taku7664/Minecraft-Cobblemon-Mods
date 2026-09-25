@@ -21,6 +21,8 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentPreviewBuildPoolVie
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentPreviewMovePoolView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewPokemonView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonActionCatalogView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
@@ -150,6 +152,33 @@ class NativeInitialProductWorldPlannerTest {
     }
 
     @Test
+    fun `product opening accepts duplicated switch protocol lines before the first action`() {
+        val events = listOf(
+            ALLIES.first(), OPPONENTS.first(), ALLIES.first(), OPPONENTS.first(),
+        ).mapIndexed { index, id -> BattleObservedEventView(
+            sequence = index.toLong() + 1,
+            turn = 0,
+            kind = BattleObservedEventKind.SWITCHED,
+            actorPokemonId = id,
+        ) } + BattleObservedEventView(
+            sequence = 5,
+            turn = 0,
+            kind = BattleObservedEventKind.ABILITY_REVEALED,
+            actorPokemonId = OPPONENTS.first(),
+            publicValueId = "synchronize",
+        )
+
+        val result = planner().plan(
+            context(preview = preview(selectionSize = 6), openingEvents = events),
+            BattleTrainerTier.BOSS,
+        )
+
+        assertTrue(result.issues.isEmpty(), "issues=${result.issues}")
+        assertEquals(1, result.worlds.size)
+        assertEquals(6, result.worlds.single().definition.p2Team.size)
+    }
+
+    @Test
     fun `compiles every singles selection size from one through the full preview`() {
         for (selectionSize in 1..6) {
             val result = planner().plan(
@@ -209,6 +238,7 @@ class NativeInitialProductWorldPlannerTest {
         preview: BattleOpponentTeamPreviewView = preview(
             selectionSize = if (format == BattleFormat.SINGLE) 3 else 4,
         ),
+        openingEvents: List<BattleObservedEventView> = emptyList(),
     ): BattleDecisionContext {
         val selectionSize = preview.selectionSize
         val allyIds = ALLIES.take(selectionSize)
@@ -242,7 +272,7 @@ class NativeInitialProductWorldPlannerTest {
                 BattleSide.ALLY to selectionSize,
                 BattleSide.OPPONENT to selectionSize,
             ),
-            observedEvents = emptyList(),
+            observedEvents = openingEvents,
             inferences = emptyList(),
         )
         val exactOwn = BattleExactOwnTeamView(allyIds.map { id ->

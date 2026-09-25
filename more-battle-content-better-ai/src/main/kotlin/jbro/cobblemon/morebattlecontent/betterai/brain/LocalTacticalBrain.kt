@@ -85,8 +85,10 @@ internal class NativeInitialProductDecisionException(
                 append(";seen:").append(context.state.pokemon.asSequence()
                     .filter { it.side == BattleSide.OPPONENT }
                     .joinToString("|") { "${it.speciesId}/${it.formId}@${it.activeSlot}" })
-                append(";events:").append(context.state.observedEvents.asSequence()
-                    .take(16).joinToString("|") { "${it.kind}@${it.turn}" })
+                append(";events:").append(context.state.observedEvents.size).append(':')
+                append(context.state.observedEvents.asSequence().take(16).joinToString("|") {
+                    "${it.kind}@${it.turn}#${it.actorPokemonId?.toString()?.take(8) ?: "-"}"
+                })
             }
         }
     },
