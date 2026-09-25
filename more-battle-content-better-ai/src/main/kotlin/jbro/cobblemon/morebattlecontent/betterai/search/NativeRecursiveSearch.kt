@@ -74,17 +74,27 @@ internal class NativeRecursiveSearch(
     private val evaluate: (BattleStateView) -> Double,
     private val nodeLimit: Int,
     private val shouldContinue: () -> Boolean = { true },
+    private val cacheEntryLimit: Int = DEFAULT_CACHE_ENTRY_LIMIT,
 ) {
     private var nodesVisited = 0
     private var truncated = false
     private var terminationReason = NativeSearchTerminationReason.COMPLETED
     // A deterministic Showdown transition does not depend on the search horizon. Values do, so
-    // only the value key carries depthRemaining. Both caches are deliberately decision-local.
-    private val branchCache = HashMap<BranchKey, NativeSearchPosition>()
-    private val valueCache = HashMap<ValueKey, Double>()
+    // only the value key carries depthRemaining. Snapshot keys can be large for full teams, so
+    // both decision-local caches evict deterministically rather than retaining every visited node.
+    private val branchCache = object : LinkedHashMap<BranchKey, NativeSearchPosition>(16, 0.75f, true) {
+        override fun removeEldestEntry(
+            eldest: MutableMap.MutableEntry<BranchKey, NativeSearchPosition>?,
+        ): Boolean = size > cacheEntryLimit
+    }
+    private val valueCache = object : LinkedHashMap<ValueKey, Double>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<ValueKey, Double>?): Boolean =
+            size > cacheEntryLimit
+    }
 
     init {
         require(nodeLimit > 0)
+        require(cacheEntryLimit > 0)
     }
 
     fun evaluate(maxDepth: Int): NativeRecursiveSearchResult {
@@ -167,7 +177,7 @@ internal class NativeRecursiveSearch(
             var worstResponse = Double.POSITIVE_INFINITY
             for (opponentAction in opponentActions) {
                 val child = descend(tree.root, allyAction, opponentAction) ?: return null
-                val value = positionValue(child, depth - 1) ?: return null
+                val value = positionValue(child, depth - 1, worstResponse) ?: return null
                 worstResponse = minOf(worstResponse, value)
             }
             values += NativeRootActionValue(allyAction, worstResponse)
@@ -175,7 +185,11 @@ internal class NativeRecursiveSearch(
         return values
     }
 
-    private fun positionValue(position: NativeSearchPosition, depthRemaining: Int): Double? {
+    private fun positionValue(
+        position: NativeSearchPosition,
+        depthRemaining: Int,
+        upperBound: Double,
+    ): Double? {
         if (!timeAvailable()) return null
         if (depthRemaining <= 0 || position.frame.ended) return evaluate(position.state)
         val key = ValueKey(
@@ -194,10 +208,14 @@ internal class NativeRecursiveSearch(
             var worstResponse = Double.POSITIVE_INFINITY
             for (opponentAction in opponentActions) {
                 val child = descend(position, allyAction, opponentAction) ?: return null
-                val value = positionValue(child, depthRemaining - 1) ?: return null
+                val value = positionValue(child, depthRemaining - 1, worstResponse) ?: return null
                 worstResponse = minOf(worstResponse, value)
             }
             best = maxOf(best, worstResponse)
+            // The parent is minimizing responses and already has one worth upperBound. Once this
+            // position can guarantee at least that value, its remaining ally actions cannot lower
+            // the parent's minimum. This is only a lower bound, so never cache a cutoff result.
+            if (best >= upperBound) return best
         }
         val result = if (best.isFinite()) best else evaluate(position.state)
         if (!truncated) valueCache[key] = result
@@ -257,4 +275,8 @@ internal class NativeRecursiveSearch(
         val snapshotJson: String,
         val depthRemaining: Int,
     )
+
+    private companion object {
+        const val DEFAULT_CACHE_ENTRY_LIMIT = 2_048
+    }
 }

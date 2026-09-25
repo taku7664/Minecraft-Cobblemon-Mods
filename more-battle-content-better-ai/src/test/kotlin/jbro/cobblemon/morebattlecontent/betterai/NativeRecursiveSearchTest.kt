@@ -98,6 +98,82 @@ class NativeRecursiveSearchTest {
     }
 
     @Test
+    fun `bounded child search skips irrelevant replies without changing the exact root value`() {
+        val root = frame("root", 1, 100, 100, listOf("tackle"), listOf("growl", "tailwhip"))
+        val first = frame("first", 2, 90, 60, listOf("scratch", "quickattack"), listOf("leer", "growl"))
+        val second = frame("second", 2, 80, 60, listOf("scratch", "quickattack"), listOf("leer", "growl"))
+        val worker = RecordingWorker(mapOf(
+            BranchKey("root", "move 1", "move 1") to first,
+            BranchKey("root", "move 1", "move 2") to second,
+            BranchKey("first", "move 1", "move 1") to terminal("f-1-1", 100, 50),
+            BranchKey("first", "move 1", "move 2") to terminal("f-1-2", 100, 50),
+            BranchKey("first", "move 2", "move 1") to terminal("f-2-1", 90, 50),
+            BranchKey("first", "move 2", "move 2") to terminal("f-2-2", 90, 50),
+            BranchKey("second", "move 1", "move 1") to terminal("s-1-1", 100, 20),
+            BranchKey("second", "move 1", "move 2") to terminal("s-1-2", 100, 30),
+            BranchKey("second", "move 2", "move 1") to terminal("s-2-1", 100, 10),
+            BranchKey("second", "move 2", "move 2") to terminal("s-2-2", 100, 10),
+        ))
+
+        val result = NativeRecursiveSearch(
+            tree = NativeShowdownSearchTree(worker, root, template()),
+            world = NativeSearchWorldKey("bounded-child", randomSampleIndex = 0),
+            evaluate = ::material,
+            nodeLimit = 100,
+        ).evaluate(maxDepth = 2)
+
+        assertEquals(2, result.depthCompleted)
+        assertEquals(false, result.truncated)
+        assertEquals(0.5, rounded(result.rootValues.single().value))
+        assertEquals(8, result.nodesVisited, "The second child cannot improve the first worst response")
+        assertEquals(2, worker.visitedSnapshots.count { it == "second" })
+    }
+
+    @Test
+    fun `a pruned bound is not cached as another product root action exact value`() {
+        val root = frame("root", 1, 100, 100, listOf("tackle", "scratch"), listOf("growl", "tailwhip"))
+        fun child(id: String) = frame(id, 2, 90, 60,
+            listOf("quickattack", "bodyslam"), listOf("leer", "growl"))
+        val first = child("first")
+        val shared = child("shared")
+        val last = child("last")
+        val branches = mutableMapOf(
+            BranchKey("root", "move 1", "move 1") to first,
+            BranchKey("root", "move 1", "move 2") to shared,
+            BranchKey("root", "move 2", "move 1") to shared,
+            BranchKey("root", "move 2", "move 2") to last,
+        )
+        fun fill(id: String, firstValue: Int, secondValue: Int) {
+            for (opponent in 1..2) {
+                branches[BranchKey(id, "move 1", "move $opponent")] =
+                    terminal("$id-1-$opponent", 100, 100 - firstValue)
+                branches[BranchKey(id, "move 2", "move $opponent")] =
+                    terminal("$id-2-$opponent", 100, 100 - secondValue)
+            }
+        }
+        fill("first", 50, 40)
+        fill("shared", 70, 90)
+        fill("last", 80, 70)
+        val worker = RecordingWorker(branches)
+
+        val result = NativeRecursiveSearch(
+            tree = NativeShowdownSearchTree(worker, root, template()),
+            world = NativeSearchWorldKey("root-bound-cache", randomSampleIndex = 0),
+            evaluate = ::material,
+            nodeLimit = 100,
+        ).evaluate(maxDepth = 2)
+
+        assertEquals(2, result.depthCompleted)
+        assertEquals(false, result.truncated)
+        assertEquals(mapOf("tackle" to 0.5, "scratch" to 0.8), result.rootValues.associate {
+            it.action.moveId to rounded(it.value)
+        })
+        assertEquals("scratch", result.bestAction?.moveId)
+        assertEquals(4, worker.visitedSnapshots.count { it == "shared" },
+            "A later root candidate must finish the previously pruned shared state")
+    }
+
+    @Test
     fun `transposed native state reuses its value at the same remaining depth`() {
         val root = frame("root", 1, 100, 100, listOf("tackle", "scratch"), listOf("growl"))
         val shared = frame("shared", 2, 80, 60, listOf("quickattack"), listOf("tailwhip"))
@@ -172,6 +248,29 @@ class NativeRecursiveSearchTest {
         assertEquals(0.4, rounded(result.rootValues.single().value))
         assertEquals(2, result.nodesVisited)
         assertEquals(listOf("root", "child"), worker.visitedSnapshots)
+    }
+
+    @Test
+    fun `evicted native snapshots are replayed only within the deterministic node budget`() {
+        val root = frame("root", 1, 100, 100, listOf("tackle", "scratch"), listOf("growl"))
+        val worker = RecordingWorker(mapOf(
+            BranchKey("root", "move 1", "move 1") to terminal("first", 80, 60),
+            BranchKey("root", "move 2", "move 1") to terminal("second", 70, 50),
+        ))
+
+        val result = NativeRecursiveSearch(
+            tree = NativeShowdownSearchTree(worker, root, template()),
+            world = NativeSearchWorldKey("bounded-cache", randomSampleIndex = 0),
+            evaluate = ::material,
+            nodeLimit = 3,
+            cacheEntryLimit = 1,
+        ).evaluate(maxDepth = 2)
+
+        assertEquals(1, result.depthCompleted)
+        assertEquals(true, result.truncated)
+        assertEquals(NativeSearchTerminationReason.NODE_BUDGET, result.terminationReason)
+        assertEquals(3, result.nodesVisited)
+        assertEquals(listOf("root", "root", "root"), worker.visitedSnapshots)
     }
 
     @Test
