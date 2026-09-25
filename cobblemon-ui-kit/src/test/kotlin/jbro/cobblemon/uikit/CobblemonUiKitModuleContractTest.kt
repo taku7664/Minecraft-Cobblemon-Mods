@@ -17,6 +17,10 @@ class CobblemonUiKitModuleContractTest {
         assertEquals("client", metadata.get("environment").asString)
         assertTrue(metadata.getAsJsonObject("entrypoints").getAsJsonArray("client").size() == 1)
         assertFalse(metadata.getAsJsonObject("entrypoints").has("main"))
+        assertEquals(
+            ">=1.8.1 <1.9.0",
+            metadata.getAsJsonObject("depends").get("cobblemon").asString
+        )
     }
 
     @Test

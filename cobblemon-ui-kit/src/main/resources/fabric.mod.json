@@ -19,6 +19,7 @@
     "fabricloader": ">=0.19.5",
     "fabric-api": "*",
     "fabric-language-kotlin": ">=1.14.1+kotlin.2.4.20",
+    "cobblemon": ">=1.8.1 <1.9.0",
     "minecraft": "~1.21.1",
     "java": ">=21"
   }
