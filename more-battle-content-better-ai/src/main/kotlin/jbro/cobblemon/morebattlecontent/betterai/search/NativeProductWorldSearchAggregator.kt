@@ -11,6 +11,7 @@ internal data class NativeProductWorldSearchInput(
     val probability: Double,
     val definition: NativeBattleDefinition,
     val publicState: BattleStateView,
+    val rootSnapshot: NativeProductRootSnapshot? = null,
     val evaluate: (BattleStateView) -> Double,
 ) {
     init {
@@ -51,6 +52,7 @@ internal enum class NativeProductWorldSearchStatus {
     WORLD_SEARCH_FAILED,
     NO_COMMON_COMPLETED_DEPTH,
     INCONSISTENT_ACTION_SET,
+    INCONSISTENT_RULES_GENERATION,
 }
 
 internal data class NativeProductWorldSearchResult(
@@ -60,6 +62,7 @@ internal data class NativeProductWorldSearchResult(
     val nodesVisited: Int = 0,
     val failedWorldId: String? = null,
     val failedRunStatus: NativeProductSearchRunStatus? = null,
+    val rootSnapshots: Map<NativeSearchWorldKey, NativeProductRootSnapshot> = emptyMap(),
 ) {
     init {
         require(depthCompleted >= 0)
@@ -68,6 +71,8 @@ internal data class NativeProductWorldSearchResult(
         require(rootValues.all { it.value.isFinite() })
         require((status == NativeProductWorldSearchStatus.COMPLETED ||
             status == NativeProductWorldSearchStatus.PARTIAL_DEPTH) == rootValues.isNotEmpty())
+        require((status == NativeProductWorldSearchStatus.COMPLETED ||
+            status == NativeProductWorldSearchStatus.PARTIAL_DEPTH) == rootSnapshots.isNotEmpty())
     }
 
     val bestAction: BattleActionCandidate? = rootValues.maxByOrNull(NativeRootActionValue::value)?.action
@@ -90,7 +95,7 @@ internal class NativeProductWorldSearchAggregator(
         )
         var remainingNodeBudget = request.nodeLimit
         var nodesVisited = 0
-        val completed = mutableListOf<Pair<NativeProductWorldSearchInput, NativeRecursiveSearchResult>>()
+        val completed = mutableListOf<CompletedWorld>()
 
         orderedWorlds.forEachIndexed { index, world ->
             val remainingWorlds = orderedWorlds.size - index
@@ -99,6 +104,7 @@ internal class NativeProductWorldSearchAggregator(
                 NativeProductSearchRequest(
                     definition = world.definition,
                     publicState = world.publicState,
+                    rootSnapshot = world.rootSnapshot,
                     productActions = request.productActions,
                     world = world.key,
                     maxDepth = request.maxDepth,
@@ -130,6 +136,12 @@ internal class NativeProductWorldSearchAggregator(
                     run.status,
                 )
             }
+            val rootSnapshot = run.rootSnapshot ?: return failure(
+                NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
+                world,
+                nodesVisited,
+                run.status,
+            )
             if (visited > worldNodeLimit) {
                 return failure(
                     NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
@@ -138,12 +150,23 @@ internal class NativeProductWorldSearchAggregator(
                     run.status,
                 )
             }
-            completed += world to result
+            completed += CompletedWorld(world, result, rootSnapshot)
         }
 
-        val commonDepth = completed.minOf { it.second.depthCompleted }
+        val firstRulesFingerprint = completed.first().rootSnapshot.rulesFingerprint
+        completed.firstOrNull { it.rootSnapshot.rulesFingerprint != firstRulesFingerprint }?.let { mismatch ->
+            return failure(
+                NativeProductWorldSearchStatus.INCONSISTENT_RULES_GENERATION,
+                mismatch.input,
+                nodesVisited,
+                null,
+            )
+        }
+        val commonDepth = completed.minOf { it.result.depthCompleted }
         val expectedActionIds = request.productActions.map(BattleActionCandidate::actionId)
-        val valuesByWorld = completed.map { (world, result) ->
+        val valuesByWorld = completed.map { completedWorld ->
+            val world = completedWorld.input
+            val result = completedWorld.result
             val iteration = result.completedIterations.single { it.depth == commonDepth }
             val actualIds = iteration.rootValues.map { it.action.actionId }
             if (actualIds.size != expectedActionIds.size || actualIds.toSet() != expectedActionIds.toSet()) {
@@ -164,8 +187,9 @@ internal class NativeProductWorldSearchAggregator(
                 },
             )
         }
-        val fullyCompleted = commonDepth == request.maxDepth && completed.all { (_, result) ->
-            !result.truncated && result.terminationReason == NativeSearchTerminationReason.COMPLETED
+        val fullyCompleted = commonDepth == request.maxDepth && completed.all { completedWorld ->
+            !completedWorld.result.truncated &&
+                completedWorld.result.terminationReason == NativeSearchTerminationReason.COMPLETED
         }
         return NativeProductWorldSearchResult(
             status = if (fullyCompleted) {
@@ -176,6 +200,7 @@ internal class NativeProductWorldSearchAggregator(
             rootValues = aggregated,
             depthCompleted = commonDepth,
             nodesVisited = nodesVisited,
+            rootSnapshots = completed.associate { it.input.key to it.rootSnapshot },
         )
     }
 
@@ -189,5 +214,11 @@ internal class NativeProductWorldSearchAggregator(
         nodesVisited = nodesVisited,
         failedWorldId = world.key.hypothesisId,
         failedRunStatus = runStatus,
+    )
+
+    private data class CompletedWorld(
+        val input: NativeProductWorldSearchInput,
+        val result: NativeRecursiveSearchResult,
+        val rootSnapshot: NativeProductRootSnapshot,
     )
 }

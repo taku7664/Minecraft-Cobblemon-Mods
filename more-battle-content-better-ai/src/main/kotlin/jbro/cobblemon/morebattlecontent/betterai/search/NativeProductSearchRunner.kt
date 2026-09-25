@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai.search
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootIssue
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootValidator
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBranchWorker
@@ -13,6 +14,7 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownSearch
 internal data class NativeProductSearchRequest(
     val definition: NativeBattleDefinition,
     val publicState: BattleStateView,
+    val rootSnapshot: NativeProductRootSnapshot? = null,
     val productActions: List<BattleActionCandidate>,
     val world: NativeSearchWorldKey,
     val maxDepth: Int,
@@ -30,12 +32,24 @@ internal data class NativeProductSearchRequest(
     }
 }
 
+/** A reusable native root is valid only under the immutable rules generation that created it. */
+internal data class NativeProductRootSnapshot(
+    val rulesFingerprint: String,
+    val frame: NativeBattleFrame,
+) {
+    init {
+        require(rulesFingerprint.isNotBlank())
+        require(frame.snapshotJson.isNotBlank())
+    }
+}
+
 internal enum class NativeProductSearchRunStatus {
     COMPLETED,
     DEADLINE_EXHAUSTED,
     RUNTIME_UNAVAILABLE,
     ROOT_STATE_INCONSISTENT,
     ROOT_ACTION_MAPPING_INCOMPLETE,
+    RULES_GENERATION_MISMATCH,
     NATIVE_EXECUTION_FAILURE,
 }
 
@@ -45,17 +59,21 @@ internal data class NativeProductSearchRun(
     val mapping: NativeRootActionMapping? = null,
     val failure: Throwable? = null,
     val rootIssues: List<NativeBattleRootIssue> = emptyList(),
+    val rootSnapshot: NativeProductRootSnapshot? = null,
 )
 
 internal sealed interface NativeLeasedProductSearch
 
 internal data class NativeLeasedProductSearchAttempt(
     val attempt: NativeProductSearchAttempt,
+    val rootSnapshot: NativeProductRootSnapshot,
 ) : NativeLeasedProductSearch
 
 internal data class NativeLeasedInvalidRoot(
     val issues: List<NativeBattleRootIssue>,
 ) : NativeLeasedProductSearch
+
+private data object NativeLeasedRulesGenerationMismatch : NativeLeasedProductSearch
 
 private typealias NativeProductSearchLease = (
     deadlineNanos: Long,
@@ -81,18 +99,23 @@ internal class NativeProductSearchRunner(
 
         val leased = try {
             lease(request.deadlineNanos) { worker ->
-                val root = worker.createBattle(request.definition)
+                val suppliedRoot = request.rootSnapshot
+                if (suppliedRoot != null && suppliedRoot.rulesFingerprint != worker.rulesFingerprint) {
+                    return@lease NativeLeasedRulesGenerationMismatch
+                }
+                val root = suppliedRoot?.frame ?: worker.createBattle(request.definition)
                 val rootIssues = NativeBattleRootValidator.validate(request.definition, root, request.publicState)
                 if (rootIssues.isNotEmpty()) return@lease NativeLeasedInvalidRoot(rootIssues)
                 val tree = NativeShowdownSearchTree(worker, root, request.publicState)
                 NativeLeasedProductSearchAttempt(
-                    NativeRecursiveSearch(
+                    attempt = NativeRecursiveSearch(
                         tree = tree,
                         world = request.world,
                         evaluate = request.evaluate,
                         nodeLimit = request.nodeLimit,
                         shouldContinue = { !deadlineReached(request.deadlineNanos) },
                     ).evaluateProduct(request.productActions, request.maxDepth),
+                    rootSnapshot = suppliedRoot ?: NativeProductRootSnapshot(worker.rulesFingerprint, root),
                 )
             }
         } catch (failure: Exception) {
@@ -121,11 +144,16 @@ internal class NativeProductSearchRunner(
                 rootIssues = leased.issues,
             )
         }
-        val attempt = (leased as NativeLeasedProductSearchAttempt).attempt
+        if (leased === NativeLeasedRulesGenerationMismatch) {
+            return NativeProductSearchRun(NativeProductSearchRunStatus.RULES_GENERATION_MISMATCH)
+        }
+        leased as NativeLeasedProductSearchAttempt
+        val attempt = leased.attempt
         if (!attempt.mapping.complete || attempt.result == null) {
             return NativeProductSearchRun(
                 status = NativeProductSearchRunStatus.ROOT_ACTION_MAPPING_INCOMPLETE,
                 mapping = attempt.mapping,
+                rootSnapshot = leased.rootSnapshot,
             )
         }
         if (attempt.result.terminationReason == NativeSearchTerminationReason.DEADLINE) {
@@ -133,12 +161,14 @@ internal class NativeProductSearchRunner(
                 status = NativeProductSearchRunStatus.DEADLINE_EXHAUSTED,
                 result = attempt.result,
                 mapping = attempt.mapping,
+                rootSnapshot = leased.rootSnapshot,
             )
         }
         return NativeProductSearchRun(
             status = NativeProductSearchRunStatus.COMPLETED,
             result = attempt.result,
             mapping = attempt.mapping,
+            rootSnapshot = leased.rootSnapshot,
         )
     }
 

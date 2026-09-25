@@ -11,6 +11,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeCompletedSearchDepth
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSearchRun
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSearchRunStatus
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductRootSnapshot
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductWorldSearchAggregator
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductWorldSearchInput
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductWorldSearchRequest
@@ -20,6 +21,7 @@ import jbro.cobblemon.morebattlecontent.betterai.search.NativeRootActionValue
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeSearchTerminationReason
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeSearchWorldKey
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonSet
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -47,6 +49,8 @@ class NativeProductWorldSearchAggregatorTest {
             it.action.actionId to it.value
         })
         assertEquals("action-b", result.bestAction?.actionId)
+        assertEquals(setOf(NativeSearchWorldKey("world-a", 0), NativeSearchWorldKey("world-b", 0)),
+            result.rootSnapshots.keys)
     }
 
     @Test
@@ -126,6 +130,25 @@ class NativeProductWorldSearchAggregatorTest {
         assertEquals(10, result.nodesVisited)
     }
 
+    @Test
+    fun `world roots from different rules generations fail the whole posterior`() {
+        val aggregator = NativeProductWorldSearchAggregator { request ->
+            completed(
+                request.productActions,
+                1,
+                1.0,
+                0.0,
+                rulesFingerprint = if (request.world.hypothesisId == "world-a") "rules-a" else "rules-b",
+            )
+        }
+
+        val result = aggregator.search(request())
+
+        assertEquals(NativeProductWorldSearchStatus.INCONSISTENT_RULES_GENERATION, result.status)
+        assertTrue(result.rootValues.isEmpty())
+        assertTrue(result.rootSnapshots.isEmpty())
+    }
+
     private fun request(
         maxDepth: Int = 1,
         nodeLimit: Int = 100,
@@ -154,7 +177,8 @@ class NativeProductWorldSearchAggregatorTest {
         first: Double,
         second: Double,
         nodesVisited: Int = 1,
-    ) = completed(actions, depth, first to second, first to second, nodesVisited)
+        rulesFingerprint: String = "test-rules",
+    ) = completed(actions, depth, first to second, first to second, nodesVisited, rulesFingerprint)
 
     private fun completed(
         actions: List<BattleActionCandidate>,
@@ -162,6 +186,7 @@ class NativeProductWorldSearchAggregatorTest {
         depthOne: Pair<Double, Double>,
         final: Pair<Double, Double>,
         nodesVisited: Int = 1,
+        rulesFingerprint: String = "test-rules",
     ): NativeProductSearchRun {
         val iterations = buildList {
             add(iteration(1, actions, depthOne))
@@ -170,6 +195,7 @@ class NativeProductWorldSearchAggregatorTest {
         return NativeProductSearchRun(
             status = NativeProductSearchRunStatus.COMPLETED,
             result = result(actions, iterations, depth, false, NativeSearchTerminationReason.COMPLETED, nodesVisited),
+            rootSnapshot = NativeProductRootSnapshot(rulesFingerprint, frame(rulesFingerprint)),
         )
     }
 
@@ -186,6 +212,21 @@ class NativeProductWorldSearchAggregatorTest {
             true,
             NativeSearchTerminationReason.DEADLINE,
         ),
+        rootSnapshot = NativeProductRootSnapshot("test-rules", frame("partial")),
+    )
+
+    private fun frame(id: String) = NativeBattleFrame(
+        snapshotJson = id,
+        turn = 1,
+        requestState = "move",
+        ended = false,
+        p1Active = emptyList(),
+        p2Active = emptyList(),
+        p1Team = emptyList(),
+        p2Team = emptyList(),
+        p1RequestJson = "null",
+        p2RequestJson = "null",
+        log = emptyList(),
     )
 
     private fun iteration(

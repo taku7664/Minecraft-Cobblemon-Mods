@@ -43,6 +43,7 @@ import jbro.cobblemon.morebattlecontent.betterai.search.LocalRecursiveLookaheadE
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionEvaluation
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionStatus
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionState
 import kotlin.math.roundToInt
 
 private const val WEAKER_CHOICE_MARGIN = 0.05
@@ -53,8 +54,11 @@ internal fun interface NativeInitialDecisionSource {
         profile: BattleTrainerProfile,
         tuning: LocalDecisionTuning,
         budget: LocalLookaheadBudget,
+        sessionState: NativeProductSessionState?,
     ): NativeInitialProductDecisionEvaluation
 }
+
+private val defaultNativeInitialDecisionEvaluator = NativeInitialProductDecisionEvaluator()
 
 internal class NativeInitialProductDecisionException(
     val evaluation: NativeInitialProductDecisionEvaluation,
@@ -76,7 +80,9 @@ internal class LocalTacticalBrain(
     private val tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     private val lookaheadBudget: (BattleTrainerTier) -> LocalLookaheadBudget = LocalLookaheadBudgetPolicy::forTier,
     private val nativeInitialDecision: NativeInitialDecisionSource =
-        NativeInitialDecisionSource(NativeInitialProductDecisionEvaluator()::evaluate),
+        NativeInitialDecisionSource { context, profile, localTuning, budget, _ ->
+            defaultNativeInitialDecisionEvaluator.evaluate(context, profile, localTuning, budget)
+        },
 ) : BattleBrain {
     override fun openSession(context: BattleBrainOpenContext): BattleBrainSession =
         Session(
@@ -196,6 +202,7 @@ internal class LocalTacticalBrain(
             decidingProfile,
             tuning,
             budget,
+            active?.nativeProductState,
         )
         when (nativeInitial.status) {
             NativeInitialProductDecisionStatus.AVAILABLE -> {
@@ -213,6 +220,9 @@ internal class LocalTacticalBrain(
                     mixingContext(ranked, authoritativeSimulationScores = true),
                 )
                 val selected = selection.rank
+                active?.nativeProductState = requireNotNull(nativeInitial.sessionState) {
+                    "An available native product decision must preserve its reusable roots"
+                }.withPendingOwnAction(selected.outcome.candidate)
                 val confidence = (0.35 + selection.probability * 0.6).coerceIn(0.35, 0.99)
                 return CompletableFuture.completedFuture(
                     BattleDecision(
@@ -336,7 +346,9 @@ internal class LocalTacticalBrain(
         )
     }
 
-    override fun closeSession(session: BattleBrainSession, result: BattleBrainCloseResult) = Unit
+    override fun closeSession(session: BattleBrainSession, result: BattleBrainCloseResult) {
+        (session as? Session)?.nativeProductState = null
+    }
 
     private fun decisionDiagnostics(
         calculatedContext: BattleDecisionContext,
@@ -390,12 +402,13 @@ internal class LocalTacticalBrain(
         }
     }
 
-    private data class Session(
+    private class Session(
         override val sessionId: UUID,
         val battleId: UUID,
         val trainerPersonaId: String?,
         val strategy: BattleStrategyBrief?,
         val trainerProfile: BattleTrainerProfile,
+        var nativeProductState: NativeProductSessionState? = null,
     ) : BattleBrainSession
 
     private fun BattleDecisionContext.withoutActivePlan(): BattleDecisionContext = copy(

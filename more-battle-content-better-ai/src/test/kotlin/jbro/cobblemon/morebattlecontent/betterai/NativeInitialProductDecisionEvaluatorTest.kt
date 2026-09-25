@@ -20,8 +20,11 @@ import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDeci
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionStatus
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductWorldSearchResult
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductWorldSearchStatus
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductRootSnapshot
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeSearchWorldKey
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeRootActionValue
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorld
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlan
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlanIssue
@@ -49,6 +52,7 @@ class NativeInitialProductDecisionEvaluatorTest {
                     ),
                     depthCompleted = 1,
                     nodesVisited = 7,
+                    rootSnapshots = snapshots(),
                 )
             },
             nowEpochMillis = { 1_000L },
@@ -70,6 +74,10 @@ class NativeInitialProductDecisionEvaluatorTest {
         assertEquals(7, result.nodesVisited)
         assertEquals(1, result.depthCompleted)
         assertEquals(255_000_000L, observedDeadline)
+        assertEquals("test-rules", result.sessionState?.rulesFingerprint)
+        assertEquals(listOf("world-1"), result.sessionState?.worlds?.map { it.key.hypothesisId })
+        assertEquals(1, result.sessionState?.publicTurn)
+        assertEquals(null, result.sessionState?.pendingOwnAction)
     }
 
     @Test
@@ -178,6 +186,7 @@ class NativeInitialProductDecisionEvaluatorTest {
                     ),
                     depthCompleted = 1,
                     nodesVisited = 100,
+                    rootSnapshots = snapshots(),
                 )
             },
             nowEpochMillis = { 1_000L },
@@ -195,7 +204,26 @@ class NativeInitialProductDecisionEvaluatorTest {
         assertEquals(1, result.depthCompleted)
         assertEquals(100, result.nodesVisited)
         assertTrue(result.truncated)
+        assertEquals("test-rules", result.sessionState?.rulesFingerprint)
     }
+
+    private fun snapshots() = mapOf(
+        NativeSearchWorldKey("world-1", 0) to NativeProductRootSnapshot("test-rules", frame()),
+    )
+
+    private fun frame() = NativeBattleFrame(
+        snapshotJson = "root",
+        turn = 1,
+        requestState = "move",
+        ended = false,
+        p1Active = emptyList(),
+        p2Active = emptyList(),
+        p1Team = emptyList(),
+        p2Team = emptyList(),
+        p1RequestJson = "null",
+        p2RequestJson = "null",
+        log = emptyList(),
+    )
 
     private fun plan(context: BattleDecisionContext) = NativeInitialProductWorldPlan(
         worlds = listOf(NativeInitialProductWorld(

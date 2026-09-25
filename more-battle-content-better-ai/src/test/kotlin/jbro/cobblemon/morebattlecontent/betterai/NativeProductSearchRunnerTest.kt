@@ -11,6 +11,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSearchRunStatus
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSearchRunner
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductRootSnapshot
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeSearchTerminationReason
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeSearchWorldKey
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
@@ -37,6 +38,36 @@ class NativeProductSearchRunnerTest {
         assertEquals(1, worker.createCalls)
         assertEquals(1, worker.branchCalls)
         assertEquals("product:tackle", run.result?.rootValues?.single()?.action?.actionId)
+        assertEquals("test-rules", run.rootSnapshot?.rulesFingerprint)
+        assertEquals("root", run.rootSnapshot?.frame?.snapshotJson)
+    }
+
+    @Test
+    fun `runner searches a persisted root without recreating the battle`() {
+        val worker = Worker(rootFrame(), terminalFrame())
+        val runner = NativeProductSearchRunner { _, action -> action(worker) }
+        val persisted = NativeProductRootSnapshot("test-rules", rootFrame())
+
+        val run = runner.run(request(productMove("tackle")).copy(rootSnapshot = persisted))
+
+        assertEquals(NativeProductSearchRunStatus.COMPLETED, run.status)
+        assertEquals(0, worker.createCalls)
+        assertEquals(1, worker.branchCalls)
+        assertEquals(persisted, run.rootSnapshot)
+    }
+
+    @Test
+    fun `persisted root from another rules generation fails before native execution`() {
+        val worker = Worker(rootFrame(), terminalFrame())
+        val runner = NativeProductSearchRunner { _, action -> action(worker) }
+        val stale = NativeProductRootSnapshot("stale-rules", rootFrame())
+
+        val run = runner.run(request(productMove("tackle")).copy(rootSnapshot = stale))
+
+        assertEquals(NativeProductSearchRunStatus.RULES_GENERATION_MISMATCH, run.status)
+        assertEquals(0, worker.createCalls)
+        assertEquals(0, worker.branchCalls)
+        assertNull(run.result)
     }
 
     @Test

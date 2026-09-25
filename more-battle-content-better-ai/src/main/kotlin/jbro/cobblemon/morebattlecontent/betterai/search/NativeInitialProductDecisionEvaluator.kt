@@ -32,6 +32,7 @@ internal data class NativeInitialProductDecisionEvaluation(
     val planIssues: List<NativeInitialProductWorldPlanIssue> = emptyList(),
     val searchStatus: NativeProductWorldSearchStatus? = null,
     val failedWorldId: String? = null,
+    val sessionState: NativeProductSessionState? = null,
 ) {
     init {
         require(depthCompleted >= 0)
@@ -43,6 +44,7 @@ internal data class NativeInitialProductDecisionEvaluation(
             searchStatus == NativeProductWorldSearchStatus.PARTIAL_DEPTH
         )
         require(!truncated || searchStatus == NativeProductWorldSearchStatus.PARTIAL_DEPTH)
+        require((status == NativeInitialProductDecisionStatus.AVAILABLE) == (sessionState != null))
     }
 }
 
@@ -157,6 +159,23 @@ internal class NativeInitialProductDecisionEvaluator(
             nodesVisited = search.nodesVisited,
             truncated = search.status == NativeProductWorldSearchStatus.PARTIAL_DEPTH,
             searchStatus = search.status,
+            sessionState = NativeProductSessionState(
+                battleId = context.state.battleId,
+                format = context.state.format,
+                rulesFingerprint = search.rootSnapshots.values.first().rulesFingerprint,
+                worlds = plan.worlds.map { world ->
+                    val key = NativeSearchWorldKey(world.hypothesisId, randomSampleIndex = 0)
+                    NativeProductSessionWorld(
+                        key = key,
+                        probability = world.probability,
+                        definition = world.definition,
+                        rootSnapshot = search.rootSnapshots.getValue(key),
+                        publicContext = world.publicContext,
+                    )
+                },
+                publicTurn = context.state.turn,
+                lastObservedEventSequence = context.state.observedEvents.lastOrNull()?.sequence,
+            ),
         )
     }
 
