@@ -32,6 +32,7 @@ internal object NativeObservedActionOrderConditioner {
         tier: BattleTrainerTier,
         publicState: BattleStateView,
         nativeFrame: NativeBattleFrame,
+        publicTurnOffset: Int = 0,
     ): NativeObservedActionOrderConditioning {
         val requiredTurns = when (tier) {
             BattleTrainerTier.INTRODUCTORY -> return result(NativeObservedActionOrderStatus.DISABLED)
@@ -43,7 +44,7 @@ internal object NativeObservedActionOrderConditioner {
         val sideByPokemon = publicState.pokemon.associate {
             it.battlePokemonId to it.side
         }
-        val nativeByTurn = nativeFrame.executedMoveOrder.groupBy(NativeExecutedMoveFrame::turn)
+        val nativeByTurn = nativeFrame.executedMoveOrder.groupBy { it.turn - publicTurnOffset }
         val comparableTurns = linkedSetOf<Int>()
         var contradicted = false
 

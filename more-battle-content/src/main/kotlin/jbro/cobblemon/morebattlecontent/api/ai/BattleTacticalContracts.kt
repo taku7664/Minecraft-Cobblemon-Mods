@@ -128,9 +128,9 @@ object BattleDifficultyProfiles {
         id = "cobblemon_more_battle_content:standard",
         tier = BattleTrainerTier.STANDARD,
         maximumHypothesesPerPokemon = 6,
-        lookaheadPlies = 2,
+        lookaheadPlies = 1,
         doubleCandidateLimitPerSlot = 5,
-        // Two complete turns, paired with the standard tier's public-learnset slot policy.
+        // One complete turn, paired with the standard tier's public-learnset slot policy.
         foresightWeight = 0.60,
         decisionRegretBand = 4.0,
         decisionShortlistWidth = 1.6,
@@ -153,9 +153,9 @@ object BattleDifficultyProfiles {
         id = "cobblemon_more_battle_content:boss",
         tier = BattleTrainerTier.BOSS,
         maximumHypothesesPerPokemon = 16,
-        lookaheadPlies = 3,
+        lookaheadPlies = 2,
         doubleCandidateLimitPerSlot = 12,
-        // Acts on everything found within the boss tier's three-turn and normalized-slot budget.
+        // Acts on everything found within the boss tier's two-turn and normalized-slot budget.
         foresightWeight = 1.0,
         // The shipped band exactly. Boss is the tier that never plays a move outside what the
         // evaluation calls a genuinely close alternative, and that is now what makes it a Boss.

@@ -118,6 +118,7 @@ internal class NativeIntermediateRequestReplayer(
         events: List<BattleObservedEventView>,
         publicState: BattleStateView,
         deadlineNanos: Long,
+        publicTurnOffset: Int = 0,
     ): NativeIntermediateReplayResult {
         val p1Choice = NativeShowdownChoiceEncoder.encode(submittedAllyAction, BattleSide.ALLY, before)
         val p2Choice = NativeShowdownChoiceEncoder.encode(submittedOpponentAction, BattleSide.OPPONENT, before)
@@ -157,6 +158,7 @@ internal class NativeIntermediateRequestReplayer(
                 publicState = publicState,
                 deadlineNanos = deadlineNanos,
                 intermediateDepth = 0,
+                publicTurnOffset = publicTurnOffset,
             )
             when (advanced.status) {
                 NativeIntermediateReplayStatus.AVAILABLE -> advanced.frames.forEach { compatible.merge(it) }
@@ -184,12 +186,13 @@ internal class NativeIntermediateRequestReplayer(
         publicState: BattleStateView,
         deadlineNanos: Long,
         intermediateDepth: Int,
+        publicTurnOffset: Int,
     ): NativeIntermediateReplayResult {
         if (deadlineReached(deadlineNanos)) return deadlineExhausted()
         val conditioned = conditionDeferred(format, state.frame, state.deferredCommands, state.remainingEvents)
         if (conditioned.issues.isNotEmpty()) return observedMismatch(conditioned.issues)
 
-        val rootIssues = NativeBattleRootValidator.validate(definition, state.frame, publicState)
+        val rootIssues = NativeBattleRootValidator.validate(definition, state.frame, publicState, publicTurnOffset)
         val structural = rootIssues.filter { it.code in STRUCTURAL_ROOT_ISSUES }
         if (structural.isNotEmpty()) {
             return NativeIntermediateReplayResult(
@@ -276,6 +279,7 @@ internal class NativeIntermediateRequestReplayer(
                     publicState = publicState,
                     deadlineNanos = deadlineNanos,
                     intermediateDepth = intermediateDepth + 1,
+                    publicTurnOffset = publicTurnOffset,
                 )
                 when (advanced.status) {
                     NativeIntermediateReplayStatus.AVAILABLE -> advanced.frames.forEach { actionFrames.merge(it) }

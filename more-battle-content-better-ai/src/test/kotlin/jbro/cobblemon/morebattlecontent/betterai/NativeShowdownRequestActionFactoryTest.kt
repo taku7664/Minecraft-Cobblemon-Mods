@@ -2,6 +2,12 @@ package jbro.cobblemon.morebattlecontent.betterai
 
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveCandidateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonActionCatalogView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicMoveKnowledge
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicMoveOptionView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMoveFrame
@@ -85,6 +91,9 @@ class NativeShowdownRequestActionFactoryTest {
         assertEquals(choices, NativeShowdownRequestActionFactory.actions(
             BattleSide.ALLY, frame, maxVoluntarySwitchTargetsPerSlot = 1,
         ).map { NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, frame) }.toSet())
+        assertEquals(choices, NativeShowdownRequestActionFactory.actions(
+            BattleSide.ALLY, frame, maxVoluntarySwitchTargetsPerSlot = 0,
+        ).map { NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, frame) }.toSet())
     }
 
     @Test
@@ -106,6 +115,50 @@ class NativeShowdownRequestActionFactoryTest {
         assertEquals(2, full.count { it.kind == BattleActionKind.SWITCH })
         assertEquals(1, limited.count { it.kind == BattleActionKind.USE_MOVE })
         assertEquals(ALLY_BENCH_TWO, limited.single { it.kind == BattleActionKind.SWITCH }.switchPokemonId)
+    }
+
+    @Test
+    fun `revealed coverage can change the retained future switch without exposing unrevealed moves`() {
+        val active = pokemon(ALLY_LEFT, 0, 100, "tackle")
+        val fire = pokemon(ALLY_BENCH_ONE, null, 80, "tackle").copy(types = listOf("Fire"))
+        val water = pokemon(ALLY_BENCH_TWO, null, 70, "tackle").copy(types = listOf("Water"))
+        val opponent = pokemon(OPPONENT_LEFT, 0, 100, "splash").copy(types = listOf("Water"))
+        val frame = singleFrame("""{"active":[{"moves":[{"id":"tackle","target":"normal"}]}]}""").copy(
+            p1Active = listOf(active), p1Team = listOf(active, fire, water),
+            p2Active = listOf(opponent), p2Team = listOf(opponent),
+        )
+        fun catalog(knowledge: BattlePublicMoveKnowledge) = BattlePublicActionCatalogView(listOf(
+            BattlePokemonActionCatalogView(OPPONENT_LEFT, listOf(BattlePublicMoveOptionView(
+                "energyball", BattleMoveCandidateView("grass", BattleMoveDamageCategory.SPECIAL,
+                    100.0, 100.0, 0, 10), knowledge,
+            ))),
+        ))
+
+        val hidden = NativeShowdownRequestActionFactory.actions(
+            BattleSide.ALLY, frame, 1, publicActionCatalog = catalog(BattlePublicMoveKnowledge.EXACT_OWN))
+        val revealed = NativeShowdownRequestActionFactory.actions(
+            BattleSide.ALLY, frame, 1, publicActionCatalog = catalog(BattlePublicMoveKnowledge.PUBLICLY_REVEALED))
+
+        assertEquals(ALLY_BENCH_TWO, hidden.single { it.kind == BattleActionKind.SWITCH }.switchPokemonId)
+        assertEquals(ALLY_BENCH_ONE, revealed.single { it.kind == BattleActionKind.SWITCH }.switchPokemonId)
+    }
+
+    @Test
+    fun `zero voluntary switch limit keeps moves but not ordinary switches`() {
+        val active = pokemon(ALLY_LEFT, 0, 100, "tackle")
+        val bench = pokemon(ALLY_BENCH_ONE, null, 100, "tackle")
+        val opponent = pokemon(OPPONENT_LEFT, 0, 100, "splash")
+        val frame = singleFrame("""{"active":[{"moves":[{"id":"tackle","target":"normal"}]}]}""").copy(
+            p1Active = listOf(active), p1Team = listOf(active, bench),
+            p2Active = listOf(opponent), p2Team = listOf(opponent),
+        )
+
+        val actions = NativeShowdownRequestActionFactory.actions(
+            BattleSide.ALLY, frame, maxVoluntarySwitchTargetsPerSlot = 0,
+        )
+
+        assertEquals(1, actions.count { it.kind == BattleActionKind.USE_MOVE })
+        assertEquals(0, actions.count { it.kind == BattleActionKind.SWITCH })
     }
 
     @Test

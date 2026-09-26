@@ -59,3 +59,17 @@ at 15 matches the hard growth cap. Lv30 Pokemon kept showing Lv30 because this
 release has no virtual effective-level projection. Display and battle-level
 projection are a separate implementation task; the original deployment record
 above must not be read as proof that they exist.
+
+## Startup linkage repair (later on 2026-09-26)
+
+The client subsequently started with MBC 1.6.23 and League 0.2.1. The installed
+MBC JAR lacked `api/access/BattleContentAccess.class`, so League's server-start
+registration threw `NoClassDefFoundError` before the world could open. The
+secondary CLC shutdown NPE followed the aborted startup. Latest `main` MBC
+changes were merged with the League API and built as MBC 1.6.24; League 0.2.2
+now requires that version. Both remapped JARs were deployed to `cobblemon-dev`
+after the client exited. Prior JARs were moved to
+`codex-deploy-backups/league-20260926-crash-hotfix-2315`. The installed MBC
+JAR contains the missing class and the installed League manifest requires
+MBC 1.6.24 or newer. This is binary/deployment evidence only; successful world
+startup and gameplay still require a client relaunch.

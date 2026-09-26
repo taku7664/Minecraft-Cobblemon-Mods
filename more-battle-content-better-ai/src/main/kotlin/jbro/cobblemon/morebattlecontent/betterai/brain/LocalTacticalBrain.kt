@@ -4,6 +4,7 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
+import org.slf4j.LoggerFactory
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrain
@@ -50,6 +51,7 @@ import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionStat
 import kotlin.math.roundToInt
 
 private const val WEAKER_CHOICE_MARGIN = 0.05
+private val logger = LoggerFactory.getLogger(LocalTacticalBrain::class.java)
 
 internal fun interface NativeInitialDecisionSource {
     fun evaluate(
@@ -63,16 +65,18 @@ internal fun interface NativeInitialDecisionSource {
 
 private val defaultNativeInitialDecisionEvaluator = NativeInitialProductDecisionEvaluator()
 
-internal class NativeInitialProductDecisionException(
-    val evaluation: NativeInitialProductDecisionEvaluation,
+private fun nativeFailureMessage(
+    evaluation: NativeInitialProductDecisionEvaluation,
     context: BattleDecisionContext,
-) : IllegalStateException(
+) : String =
     buildString {
         append("Native product decision failed: ")
         append(evaluation.status.name)
         evaluation.reconciliationStatus?.let { append(" reconcile=").append(it.name) }
         evaluation.searchStatus?.let { append(" search=").append(it.name) }
-        evaluation.failedWorldId?.let { append(" world=").append(it) }
+        evaluation.failedRunStatus?.let { append(" run=").append(it.name) }
+        evaluation.failedRunDetail?.let { append(" detail=").append(it) }
+        evaluation.failedWorldId?.let { append(" world=").append(it.take(120)) }
         if (evaluation.planIssues.isNotEmpty()) {
             append(" issues=")
             append(evaluation.planIssues.joinToString(",") { issue ->
@@ -92,8 +96,7 @@ internal class NativeInitialProductDecisionException(
                 })
             }
         }
-    },
-)
+    }
 
 internal class LocalTacticalBrain(
     private val actionSelector: LocalActionSelector = LocalWeightedActionSelector(),
@@ -213,6 +216,7 @@ internal class LocalTacticalBrain(
             active?.nativeProductState,
         )
         decisionTrace?.nativeSearch(nativeInitial, profile.difficulty.lookaheadPlies, budget)
+        var nativeFallbackStatus: NativeInitialProductDecisionStatus? = null
         when (nativeInitial.status) {
             NativeInitialProductDecisionStatus.AVAILABLE -> {
                 val ranked = nativeInitial.ranked
@@ -273,10 +277,13 @@ internal class LocalTacticalBrain(
             NativeInitialProductDecisionStatus.RECONCILIATION_FAILED,
             NativeInitialProductDecisionStatus.SEARCH_FAILED,
             -> {
-                decisionTrace?.failed(nativeInitial.status.name, nativeInitial.planIssues.joinToString(",") {
+                nativeFallbackStatus = nativeInitial.status
+                active?.nativeProductState = null
+                decisionTrace?.nativeFallback(nativeInitial.status.name, nativeInitial.planIssues.joinToString(",") {
                     it.code.name + (it.detailCode?.let { detail -> "/$detail" } ?: "")
                 })
-                return CompletableFuture.failedFuture(NativeInitialProductDecisionException(nativeInitial, difficultyContext))
+                logger.warn("Native product decision unavailable; using legacy lookahead: {}",
+                    nativeFailureMessage(nativeInitial, difficultyContext))
             }
             NativeInitialProductDecisionStatus.NOT_APPLICABLE -> Unit
         }
@@ -294,12 +301,13 @@ internal class LocalTacticalBrain(
                     actionId = selected.outcome.candidate.actionId,
                     confidence = 1.0,
                     advice = LocalBattleMind.advice(selected, difficultyContext, strategy, profile),
-                    tags = setOf(
-                        "local_tactical_v4",
-                        "tuning_${tuning.id}",
-                        "single_legal_action",
-                        "difficulty_${profile.difficulty.tier.name.lowercase()}",
-                    ),
+                    tags = buildSet {
+                        add("local_tactical_v4")
+                        add("tuning_${tuning.id}")
+                        add("single_legal_action")
+                        add("difficulty_${profile.difficulty.tier.name.lowercase()}")
+                        nativeFallbackStatus?.let { add("native_fallback_${it.name.lowercase(Locale.ROOT)}") }
+                    },
                 ),
             )
         }
@@ -381,6 +389,7 @@ internal class LocalTacticalBrain(
                     "lookahead_elapsed_ms_${lookahead.elapsedMillis}",
                      ))
                     if (lookahead.truncated) add("lookahead_truncated")
+                    nativeFallbackStatus?.let { add("native_fallback_${it.name.lowercase(Locale.ROOT)}") }
                     if (unboundedTestDecision) add("lookahead_time_unbounded_test")
                     if (lookahead.publicResponseIncomplete) add("lookahead_public_response_incomplete")
                     addAll(decisionDiagnostics(calculatedContext, selected))

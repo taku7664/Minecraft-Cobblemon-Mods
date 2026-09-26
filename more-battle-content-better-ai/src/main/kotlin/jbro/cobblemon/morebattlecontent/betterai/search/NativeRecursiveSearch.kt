@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai.search
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalBoardMaterial
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRootActionMapping
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRootActionMatcher
@@ -75,12 +76,18 @@ internal class NativeRecursiveSearch(
     private val world: NativeSearchWorldKey,
     private val evaluate: (BattleStateView) -> Double,
     private val nodeLimit: Int,
+    private val responseMemory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
+    private val responseInformation: Double = 1.0,
+    private val allowSetupAttackExtension: Boolean = false,
+    private val excludeFutureAllyVoluntarySwitches: Boolean = false,
     private val shouldContinue: () -> Boolean = { true },
     private val cacheEntryLimit: Int = DEFAULT_CACHE_ENTRY_LIMIT,
 ) {
     private var nodesVisited = 0
     private var truncated = false
     private var terminationReason = NativeSearchTerminationReason.COMPLETED
+    private var previousRootResponseValues: Map<String, Map<String, Double>> = emptyMap()
+    private var attackOnlyFinalPly = false
     // A deterministic Showdown transition does not depend on the search horizon. Values do, so
     // only the value key carries depthRemaining. Snapshot keys can be large for full teams, so
     // both decision-local caches evict deterministically rather than retaining every visited node.
@@ -96,6 +103,7 @@ internal class NativeRecursiveSearch(
 
     init {
         require(nodeLimit > 0)
+        require(responseInformation.isFinite() && responseInformation in 0.0..1.0)
         require(cacheEntryLimit > 0)
     }
 
@@ -151,12 +159,20 @@ internal class NativeRecursiveSearch(
         var accepted = emptyList<NativeRootActionValue>()
         val completedIterations = mutableListOf<NativeCompletedSearchDepth>()
         var completedDepth = 0
-        for (depth in 1..maxDepth) {
+        var previousIterationNodes = 0
+        var priorIterationNodes = 0
+        val targetDepth = if (allowSetupAttackExtension && maxDepth == 2) 3 else maxDepth
+        for (depth in 1..targetDepth) {
+            if (depth == 3 && !admitAttackExtension(previousIterationNodes, priorIterationNodes)) break
+            if (depth == 3 && allowSetupAttackExtension && maxDepth == 2) valueCache.clear()
+            attackOnlyFinalPly = depth == 3 && allowSetupAttackExtension && maxDepth == 2
             val iteration = evaluateRootDepth(rootActions, depth)
             if (truncated || iteration == null) break
             accepted = iteration
             completedDepth = depth
             completedIterations += NativeCompletedSearchDepth(depth, iteration)
+            priorIterationNodes = previousIterationNodes
+            previousIterationNodes = nodesVisited
         }
         return NativeRecursiveSearchResult(
             rootValues = accepted,
@@ -168,6 +184,14 @@ internal class NativeRecursiveSearch(
         )
     }
 
+    private fun admitAttackExtension(depthTwoTotal: Int, depthOneTotal: Int): Boolean {
+        val firstIncrement = depthOneTotal.coerceAtLeast(1)
+        val secondIncrement = (depthTwoTotal - depthOneTotal).coerceAtLeast(1)
+        val growth = (secondIncrement.toDouble() / firstIncrement).coerceAtLeast(2.0)
+        val estimatedThirdIncrement = secondIncrement * growth * 1.5
+        return estimatedThirdIncrement <= nodeLimit - nodesVisited && timeAvailable()
+    }
+
     private fun evaluateRootDepth(
         rootActions: List<BattleActionCandidate>,
         depth: Int,
@@ -176,9 +200,15 @@ internal class NativeRecursiveSearch(
         if (rootActions.isEmpty() || opponentActions.isEmpty()) return emptyList()
         val rootHpAdvantage = hpAdvantage(tree.root)
         val values = mutableListOf<NativeRootActionValue>()
+        val currentResponseValues = linkedMapOf<String, Map<String, Double>>()
         for (allyAction in rootActions) {
             var worstResponse = Double.POSITIVE_INFINITY
-            for (opponentAction in opponentActions) {
+            val responseValues = linkedMapOf<String, Double>()
+            val orderedResponses = NativeOpponentResponseOrdering.order(
+                opponentActions, responseMemory, responseInformation,
+                previousRootResponseValues[allyAction.actionId].orEmpty(),
+            )
+            for (opponentAction in orderedResponses) {
                 val child = descend(tree.root, allyAction, opponentAction) ?: return null
                 // The deep leaf can give the same final board to an immediate attack and a wasted
                 // recovery turn. Retain first-turn HP progress as a separate tempo term. A
@@ -190,10 +220,13 @@ internal class NativeRecursiveSearch(
                 } else 0.0
                 val value = projectedValue(child, depth - 1, worstResponse - tempo) ?: return null
                 val rootValue = value + tempo
+                responseValues[opponentAction.actionId] = rootValue
                 worstResponse = minOf(worstResponse, rootValue)
             }
+            currentResponseValues[allyAction.actionId] = responseValues
             values += NativeRootActionValue(allyAction, worstResponse)
         }
+        previousRootResponseValues = currentResponseValues
         return values
     }
 
@@ -214,8 +247,16 @@ internal class NativeRecursiveSearch(
         valueCache[key]?.let { return it }
         // Root choices stay complete. Only voluntary switches in simulated continuation
         // requests are narrowed; forced/pivot replacements retain every legal target.
-        val allyActions = tree.actions(position, BattleSide.ALLY, FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT)
-        val opponentActions = tree.actions(position, BattleSide.OPPONENT, FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT)
+        val allyActions = if (attackOnlyFinalPly && depthRemaining == 1) {
+            tree.attackingActions(position)
+        } else {
+            tree.actions(position, BattleSide.ALLY,
+                if (excludeFutureAllyVoluntarySwitches) 0 else FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT)
+        }
+        val opponentActions = NativeOpponentResponseOrdering.order(
+            tree.actions(position, BattleSide.OPPONENT, FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT),
+            responseMemory, responseInformation,
+        )
         if (allyActions.isEmpty() || opponentActions.isEmpty()) return evaluate(position.state) + position.recoilCredit
         var best = Double.NEGATIVE_INFINITY
         for (allyAction in allyActions) {

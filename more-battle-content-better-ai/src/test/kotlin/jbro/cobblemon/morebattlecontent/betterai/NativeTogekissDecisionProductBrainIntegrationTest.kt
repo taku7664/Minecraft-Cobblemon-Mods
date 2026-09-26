@@ -142,7 +142,7 @@ class NativeTogekissDecisionProductBrainIntegrationTest {
             assertEquals(NativeInitialProductDecisionStatus.AVAILABLE, evaluation.status,
                 "Native Togekiss product evaluation failed: $evaluation")
             assertEquals(NativeProductWorldSearchStatus.COMPLETED, evaluation.searchStatus)
-            assertEquals(3, evaluation.depthCompleted)
+            assertEquals(2, evaluation.depthCompleted)
             val attacks = setOf("airslash", "aurasphere")
             assertTrue(evaluation.ranked.first().outcome.candidate.moveId in attacks)
 
@@ -270,7 +270,7 @@ class NativeTogekissDecisionProductBrainIntegrationTest {
                 sessionState = sessionState,
             )
             assertEquals(NativeInitialProductDecisionStatus.AVAILABLE, evaluation.status)
-            assertEquals(3, evaluation.depthCompleted)
+            assertEquals(2, evaluation.depthCompleted)
             var shortlistMoves = emptySet<String>()
             val shippingSelector = LocalWeightedActionSelector()
             val brain = LocalTacticalBrain(

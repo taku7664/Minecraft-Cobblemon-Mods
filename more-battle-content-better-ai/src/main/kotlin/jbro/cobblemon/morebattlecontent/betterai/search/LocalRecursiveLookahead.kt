@@ -476,13 +476,18 @@ internal object LocalRecursiveLookaheadEvaluator {
             forcedReplacementValue(state, depth, history)?.let { return it }
             val key = SearchKey(depth, fingerprint(state), history)
             memo[key]?.let { return it }
-            val ownActions = PublicFutureActionFactory.actions(
+            val futureOwnActions = PublicFutureActionFactory.actions(
                 state,
                 BattleSide.ALLY,
                 context.publicActionCatalog,
                 history,
                 profile.difficulty.doubleCandidateLimitPerSlot,
             )
+            // Advanced still considers switching now. Only its second simulated turn omits
+            // voluntary own switches; forced replacements are resolved above this branch.
+            val ownActions = if (profile.difficulty.tier == BattleTrainerTier.ADVANCED) {
+                futureOwnActions.filterNot { it.containsActionKind(BattleActionKind.SWITCH) }
+            } else futureOwnActions
             val opponentActions = completeOpponentActions(state, history) ?: return stateUtility(state, history)
             if (ownActions.isEmpty() || opponentActions.isEmpty()) {
                 if (opponentActions.isEmpty() && !battleEnded(state)) publicResponseIncomplete = true

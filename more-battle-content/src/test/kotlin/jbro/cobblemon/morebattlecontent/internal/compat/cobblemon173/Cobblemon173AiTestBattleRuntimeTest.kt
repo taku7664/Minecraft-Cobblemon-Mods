@@ -30,7 +30,7 @@ class Cobblemon173AiTestBattleRuntimeTest {
         )
 
         assertEquals(expected, AiTestDifficulty.entries.map { it.trainerProfile().difficulty })
-        assertEquals(listOf(1, 2, 2, 3), AiTestDifficulty.entries.map { it.trainerProfile().difficulty.lookaheadPlies })
+        assertEquals(listOf(1, 1, 2, 2), AiTestDifficulty.entries.map { it.trainerProfile().difficulty.lookaheadPlies })
         assertEquals(1, AiTestDifficulty.INTRODUCTORY.skillLevel)
         assertEquals(5, AiTestDifficulty.BOSS.skillLevel)
         assertEquals(

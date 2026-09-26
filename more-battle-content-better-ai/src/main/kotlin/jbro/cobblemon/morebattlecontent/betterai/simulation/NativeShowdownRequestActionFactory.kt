@@ -4,11 +4,17 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.util.Locale
+import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMechanicCandidate
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicMoveKnowledge
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
+import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.PublicSwitchEntryHazardCalculator
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffectiveness
 
 /** Builds only actions that the synthetic Showdown side's current request makes legal. */
@@ -17,8 +23,10 @@ internal object NativeShowdownRequestActionFactory {
         side: BattleSide,
         frame: NativeBattleFrame,
         maxVoluntarySwitchTargetsPerSlot: Int? = null,
+        publicState: BattleStateView? = null,
+        publicActionCatalog: BattlePublicActionCatalogView? = null,
     ): List<BattleActionCandidate> {
-        require(maxVoluntarySwitchTargetsPerSlot == null || maxVoluntarySwitchTargetsPerSlot > 0)
+        require(maxVoluntarySwitchTargetsPerSlot == null || maxVoluntarySwitchTargetsPerSlot >= 0)
         if (frame.ended) return emptyList()
         val request = parseRequest(requestJson(side, frame))
         require(!request.boolean("teamPreview")) {
@@ -38,8 +46,8 @@ internal object NativeShowdownRequestActionFactory {
             ?: throw IllegalArgumentException("Native Showdown request has no move, switch or wait action")
         // Forced and pivot replacements returned above are never pruned. Only future ordinary
         // move requests receive a bounded voluntary-switch set, before double combinations form.
-        val permittedSwitches = maxVoluntarySwitchTargetsPerSlot?.let { limit ->
-            preferredVoluntarySwitches(side, frame, active, limit)
+        val permittedSwitches = maxVoluntarySwitchTargetsPerSlot?.takeIf { it > 0 }?.let { limit ->
+            preferredVoluntarySwitches(side, frame, active, limit, publicState, publicActionCatalog)
         }
         val bySlot = active.mapIndexed { slot, element ->
             if (element.isJsonNull) {
@@ -47,7 +55,7 @@ internal object NativeShowdownRequestActionFactory {
             } else {
                 val activeRequest = element.asJsonObject
                 moveActions(side, slot, activeRequest, frame) +
-                    if (activeRequest.boolean("trapped")) emptyList() else
+                    if (activeRequest.boolean("trapped") || maxVoluntarySwitchTargetsPerSlot == 0) emptyList() else
                         switchActions(side, slot, frame, permittedSwitches?.get(slot))
             }
         }
@@ -131,18 +139,38 @@ internal object NativeShowdownRequestActionFactory {
         frame: NativeBattleFrame,
         active: com.google.gson.JsonArray,
         limit: Int,
+        publicState: BattleStateView?,
+        publicActionCatalog: BattlePublicActionCatalogView?,
     ): Map<Int, Set<String>> {
         val opposingTypes = activeTeam(opposite(side), frame).asSequence()
             .filter { it.hp > 0 }
             .flatMap { it.types.asSequence() }
             .toSet()
+        val revealedMoves = activeTeam(opposite(side), frame).asSequence()
+            .filter { it.hp > 0 }
+            .flatMap { opponent ->
+                publicActionCatalog?.forPokemon(UUID.fromString(opponent.uuid)).orEmpty().asSequence()
+                    .filter { it.knowledge == BattlePublicMoveKnowledge.PUBLICLY_REVEALED &&
+                        it.details.damageCategory != BattleMoveDamageCategory.STATUS && it.details.power > 0.0 }
+                    .map { option -> opponent to option.details }
+            }.toList()
         val bench = fullTeam(side, frame).asSequence()
             .filter { it.activeSlot == null && it.hp > 0 }
             .sortedWith(compareByDescending<NativePokemonFrame> { pokemon ->
+                val revealedThreat = revealedMoves.maxOfOrNull { (opponent, details) ->
+                    details.power * StandardTypeEffectiveness.multiplier(
+                        details.typeId, pokemon.types.toSet()) *
+                        (if (opponent.types.any { it.equals(details.typeId.substringAfter(':'), true) }) 1.5 else 1.0)
+                }
                 val worstStab = opposingTypes.maxOfOrNull { attackingType ->
                     StandardTypeEffectiveness.multiplier(attackingType, pokemon.types.toSet())
                 } ?: 1.0
-                (pokemon.hp.toDouble() / pokemon.maxHp) / maxOf(0.5, worstStab)
+                val hazardLoss = publicState?.pokemon?.firstOrNull {
+                    it.battlePokemonId.toString() == pokemon.uuid && it.side == side
+                }?.let { PublicSwitchEntryHazardCalculator.hpLoss(publicState, side, it) } ?: 0.0
+                val remainingHp = (pokemon.hp.toDouble() / pokemon.maxHp - hazardLoss).coerceAtLeast(0.0)
+                if (revealedThreat != null) remainingHp / maxOf(40.0, revealedThreat)
+                else remainingHp / maxOf(0.5, worstStab)
             }.thenBy { it.uuid })
             .toList()
         val reserved = mutableSetOf<String>()

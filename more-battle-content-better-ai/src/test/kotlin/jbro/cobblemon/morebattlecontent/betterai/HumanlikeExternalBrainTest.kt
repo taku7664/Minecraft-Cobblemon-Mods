@@ -393,16 +393,17 @@ class HumanlikeExternalBrainTest {
         assertEquals(3, introductoryDigest["maximumHypothesesPerPokemon"].asInt)
         assertEquals(1, introductoryDigest["lookaheadPlies"].asInt)
         assertEquals("STANDARD", standardDigest["tier"].asString)
-        assertEquals(2, standardDigest["lookaheadPlies"].asInt)
+        assertEquals(1, standardDigest["lookaheadPlies"].asInt)
         assertEquals("ADVANCED", advancedDigest["tier"].asString)
         assertEquals(2, advancedDigest["lookaheadPlies"].asInt)
         assertEquals("BOSS", bossDigest["tier"].asString)
         assertEquals(16, bossDigest["maximumHypothesesPerPokemon"].asInt)
-        assertEquals(3, bossDigest["lookaheadPlies"].asInt)
+        assertEquals(2, bossDigest["lookaheadPlies"].asInt)
         assertTrue(introductory.contains("Compare one complete turn"))
-        assertTrue(standard.contains("Compare two complete turns"))
+        assertTrue(standard.contains("Compare one complete turn"))
         assertTrue(advanced.contains("Compare two complete turns"))
-        assertTrue(boss.contains("Compare three complete turns"))
+        assertTrue(advanced.contains("exclude your voluntary switch as a second-turn option"))
+        assertTrue(boss.contains("Compare two complete turns"))
     }
 
     @Test
@@ -833,7 +834,7 @@ class HumanlikeExternalBrainTest {
         assertEquals("opponent1", boardBySpecies.getValue("showdown:a_opponent").asJsonObject["slot"].asString)
         assertEquals("opponent0", candidates[0].getAsJsonArray("targets")[0].asJsonObject["activeAlias"].asString)
         assertEquals("opponent1", candidates[1].getAsJsonArray("targets")[0].asJsonObject["activeAlias"].asString)
-        assertEquals(3, digest.getAsJsonObject("trainer").getAsJsonObject("difficulty")["lookaheadPlies"].asInt)
+        assertEquals(2, digest.getAsJsonObject("trainer").getAsJsonObject("difficulty")["lookaheadPlies"].asInt)
     }
 
     @Test

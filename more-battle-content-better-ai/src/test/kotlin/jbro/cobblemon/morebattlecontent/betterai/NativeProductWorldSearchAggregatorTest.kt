@@ -22,12 +22,30 @@ import jbro.cobblemon.morebattlecontent.betterai.search.NativeSearchTerminationR
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeSearchWorldKey
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootIssue
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootIssueCode
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonSet
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class NativeProductWorldSearchAggregatorTest {
+    @Test
+    fun `failed native root keeps the actionable cause`() {
+        val aggregator = NativeProductWorldSearchAggregator { _ ->
+            NativeProductSearchRun(
+                status = NativeProductSearchRunStatus.ROOT_STATE_INCONSISTENT,
+                rootIssues = listOf(NativeBattleRootIssue(NativeBattleRootIssueCode.MOVESET_MISMATCH)),
+            )
+        }
+
+        val result = aggregator.search(request())
+
+        assertEquals(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED, result.status)
+        assertEquals(NativeProductSearchRunStatus.ROOT_STATE_INCONSISTENT, result.failedRunStatus)
+        assertEquals("MOVESET_MISMATCH", result.failedRunDetail)
+    }
+
     @Test
     fun `aggregates every complete world by posterior probability`() {
         val calls = mutableListOf<String>()

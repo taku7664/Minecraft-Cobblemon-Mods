@@ -2,7 +2,9 @@ package jbro.cobblemon.morebattlecontent.betterai.search
 
 import kotlin.math.abs
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
 
 /** One complete opponent world ready for product-native search. */
@@ -11,6 +13,7 @@ internal data class NativeProductWorldSearchInput(
     val probability: Double,
     val definition: NativeBattleDefinition,
     val publicState: BattleStateView,
+    val publicActionCatalog: BattlePublicActionCatalogView? = null,
     val rootSnapshot: NativeProductRootSnapshot? = null,
     val evaluate: (BattleStateView) -> Double,
 ) {
@@ -23,6 +26,10 @@ internal data class NativeProductWorldSearchRequest(
     val worlds: List<NativeProductWorldSearchInput>,
     val productActions: List<BattleActionCandidate>,
     val maxDepth: Int,
+    val responseMemory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
+    val responseInformation: Double = 1.0,
+    val allowSetupAttackExtension: Boolean = false,
+    val excludeFutureAllyVoluntarySwitches: Boolean = false,
     /** One total deterministic budget shared by every retained world. */
     val nodeLimit: Int,
     val deadlineNanos: Long,
@@ -36,6 +43,7 @@ internal data class NativeProductWorldSearchRequest(
         require(productActions.isNotEmpty())
         require(productActions.map(BattleActionCandidate::actionId).distinct().size == productActions.size)
         require(maxDepth > 0)
+        require(responseInformation.isFinite() && responseInformation in 0.0..1.0)
         require(nodeLimit >= worlds.size) {
             "The native product node budget must reserve at least one node per retained world"
         }
@@ -62,6 +70,7 @@ internal data class NativeProductWorldSearchResult(
     val nodesVisited: Int = 0,
     val failedWorldId: String? = null,
     val failedRunStatus: NativeProductSearchRunStatus? = null,
+    val failedRunDetail: String? = null,
     val rootSnapshots: Map<NativeSearchWorldKey, NativeProductRootSnapshot> = emptyMap(),
 ) {
     init {
@@ -105,10 +114,15 @@ internal class NativeProductWorldSearchAggregator(
                 NativeProductSearchRequest(
                     definition = world.definition,
                     publicState = world.publicState,
+                    publicActionCatalog = world.publicActionCatalog,
                     rootSnapshot = world.rootSnapshot,
                     productActions = request.productActions,
                     world = world.key,
                     maxDepth = request.maxDepth,
+                    responseMemory = request.responseMemory,
+                    responseInformation = request.responseInformation,
+                    allowSetupAttackExtension = request.allowSetupAttackExtension,
+                    excludeFutureAllyVoluntarySwitches = request.excludeFutureAllyVoluntarySwitches,
                     nodeLimit = worldNodeLimit,
                     deadlineNanos = request.deadlineNanos,
                     evaluate = world.evaluate,
@@ -126,7 +140,7 @@ internal class NativeProductWorldSearchAggregator(
                     NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
                     world,
                     nodesVisited,
-                    run.status,
+                    run,
                 )
             }
             if (result == null || result.depthCompleted == 0) {
@@ -134,21 +148,21 @@ internal class NativeProductWorldSearchAggregator(
                     NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH,
                     world,
                     nodesVisited,
-                    run.status,
+                    run,
                 )
             }
             val rootSnapshot = run.rootSnapshot ?: return failure(
                 NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
                 world,
                 nodesVisited,
-                run.status,
+                run,
             )
             if (visited > worldNodeLimit) {
                 return failure(
                     NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
                     world,
                     nodesVisited,
-                    run.status,
+                    run,
                 )
             }
             completed += CompletedWorld(world, result, rootSnapshot)
@@ -209,12 +223,26 @@ internal class NativeProductWorldSearchAggregator(
         status: NativeProductWorldSearchStatus,
         world: NativeProductWorldSearchInput,
         nodesVisited: Int,
-        runStatus: NativeProductSearchRunStatus?,
+        run: NativeProductSearchRun?,
     ) = NativeProductWorldSearchResult(
         status = status,
         nodesVisited = nodesVisited,
         failedWorldId = world.key.hypothesisId,
-        failedRunStatus = runStatus,
+        failedRunStatus = run?.status,
+        failedRunDetail = run?.let { failed ->
+            when {
+                failed.rootIssues.isNotEmpty() -> failed.rootIssues.joinToString(",") { issue ->
+                    issue.code.name + (issue.battlePokemonId?.let { ":${it.toString().take(8)}" } ?: "")
+                }
+                failed.mapping != null -> with(failed.mapping) {
+                    "unmatchedProduct=${unmatchedProductActionIds.size},unmatchedNative=${unmatchedNativeActionIds.size}," +
+                        "ambiguousProduct=${ambiguousProductActionIds.size},ambiguousNative=${ambiguousNativeActionIds.size}"
+                }
+                failed.failure != null -> failed.failure.javaClass.simpleName + ":" +
+                    (failed.failure.message ?: "no message").take(240)
+                else -> null
+            }
+        },
     )
 
     private data class CompletedWorld(

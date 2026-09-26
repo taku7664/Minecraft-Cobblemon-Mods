@@ -1328,7 +1328,7 @@ class LocalRecursiveLookaheadTest {
             BattleTrainerProfile.boss(),
         )
 
-        assertEquals(3, result.depthCompleted)
+        assertEquals(2, result.depthCompleted)
         assertEquals(0, result.branchesPruned)
         assertFalse(result.truncated)
     }
@@ -1600,7 +1600,7 @@ class LocalRecursiveLookaheadTest {
     }
 
     @Test
-    fun `boss completes its configured three turns before a fourth-depth stability check`() {
+    fun `boss completes its configured two turns before a third-depth stability check`() {
         val ownMove = move("own", 0, power = 20.0)
         val state = state(
             ally = pokemon(ALLY_ID, BattleSide.ALLY, 0, 1.0, speed = 100),
@@ -1629,7 +1629,7 @@ class LocalRecursiveLookaheadTest {
             decisionSignature = { signature },
         )
 
-        assertEquals(3, result.depthCompleted)
+        assertEquals(2, result.depthCompleted)
         assertFalse(result.truncated)
         assertEquals(LocalLookaheadTerminationReason.COMPLETED, result.terminationReason)
     }

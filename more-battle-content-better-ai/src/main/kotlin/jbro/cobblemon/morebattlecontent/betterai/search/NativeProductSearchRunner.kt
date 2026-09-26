@@ -1,7 +1,9 @@
 package jbro.cobblemon.morebattlecontent.betterai.search
 
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootIssue
@@ -14,10 +16,15 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownSearch
 internal data class NativeProductSearchRequest(
     val definition: NativeBattleDefinition,
     val publicState: BattleStateView,
+    val publicActionCatalog: BattlePublicActionCatalogView? = null,
     val rootSnapshot: NativeProductRootSnapshot? = null,
     val productActions: List<BattleActionCandidate>,
     val world: NativeSearchWorldKey,
     val maxDepth: Int,
+    val responseMemory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
+    val responseInformation: Double = 1.0,
+    val allowSetupAttackExtension: Boolean = false,
+    val excludeFutureAllyVoluntarySwitches: Boolean = false,
     val nodeLimit: Int,
     val deadlineNanos: Long,
     val evaluate: (BattleStateView) -> Double,
@@ -28,6 +35,7 @@ internal data class NativeProductSearchRequest(
             "Product action ids must be unique"
         }
         require(maxDepth > 0)
+        require(responseInformation.isFinite() && responseInformation in 0.0..1.0)
         require(nodeLimit > 0)
     }
 }
@@ -36,10 +44,12 @@ internal data class NativeProductSearchRequest(
 internal data class NativeProductRootSnapshot(
     val rulesFingerprint: String,
     val frame: NativeBattleFrame,
+    val publicTurnOffset: Int = 0,
 ) {
     init {
         require(rulesFingerprint.isNotBlank())
         require(frame.snapshotJson.isNotBlank())
+        require(publicTurnOffset in 0..1)
     }
 }
 
@@ -104,18 +114,26 @@ internal class NativeProductSearchRunner(
                     return@lease NativeLeasedRulesGenerationMismatch
                 }
                 val root = suppliedRoot?.frame ?: worker.createBattle(request.definition)
-                val rootIssues = NativeBattleRootValidator.validate(request.definition, root, request.publicState)
+                val publicTurnOffset = suppliedRoot?.publicTurnOffset
+                    ?: if (request.publicState.turn == 0 && root.turn == 1) 1 else 0
+                val rootIssues = NativeBattleRootValidator.validate(
+                    request.definition, root, request.publicState, publicTurnOffset)
                 if (rootIssues.isNotEmpty()) return@lease NativeLeasedInvalidRoot(rootIssues)
-                val tree = NativeShowdownSearchTree(worker, root, request.publicState)
+                val tree = NativeShowdownSearchTree(worker, root, request.publicState,
+                    publicTurnOffset, request.publicActionCatalog)
                 NativeLeasedProductSearchAttempt(
                     attempt = NativeRecursiveSearch(
                         tree = tree,
                         world = request.world,
                         evaluate = request.evaluate,
                         nodeLimit = request.nodeLimit,
+                        responseMemory = request.responseMemory,
+                        responseInformation = request.responseInformation,
+                        allowSetupAttackExtension = request.allowSetupAttackExtension,
+                        excludeFutureAllyVoluntarySwitches = request.excludeFutureAllyVoluntarySwitches,
                         shouldContinue = { !deadlineReached(request.deadlineNanos) },
                     ).evaluateProduct(request.productActions, request.maxDepth),
-                    rootSnapshot = suppliedRoot ?: NativeProductRootSnapshot(worker.rulesFingerprint, root),
+                    rootSnapshot = suppliedRoot ?: NativeProductRootSnapshot(worker.rulesFingerprint, root, publicTurnOffset),
                 )
             }
         } catch (failure: Exception) {

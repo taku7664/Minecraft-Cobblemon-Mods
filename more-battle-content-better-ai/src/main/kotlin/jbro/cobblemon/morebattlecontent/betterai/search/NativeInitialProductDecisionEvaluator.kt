@@ -16,6 +16,7 @@ import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionRank
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlan
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlanIssue
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlanner
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeOpeningStateRules
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeProductSeedPolicy
 
 internal enum class NativeInitialProductDecisionStatus {
@@ -36,6 +37,8 @@ internal data class NativeInitialProductDecisionEvaluation(
     val reconciliationStatus: NativeProductSessionReconcileStatus? = null,
     val searchStatus: NativeProductWorldSearchStatus? = null,
     val failedWorldId: String? = null,
+    val failedRunStatus: NativeProductSearchRunStatus? = null,
+    val failedRunDetail: String? = null,
     val sessionState: NativeProductSessionState? = null,
 ) {
     init {
@@ -163,6 +166,7 @@ internal class NativeInitialProductDecisionEvaluator(
                         probability = world.probability,
                         definition = world.definition,
                         publicState = world.publicContext.state,
+                        publicActionCatalog = world.publicContext.publicActionCatalog,
                         evaluate = { state ->
                             leafEvaluator(state, world.publicContext, tuning) {
                                 nanoTime() - deadlineNanos < 0L
@@ -172,6 +176,11 @@ internal class NativeInitialProductDecisionEvaluator(
                 },
                 productActions = context.candidates,
                 maxDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1),
+                responseMemory = context.memory,
+                responseInformation = profile.personality.information,
+                allowSetupAttackExtension = profile.difficulty.tier == BattleTrainerTier.BOSS &&
+                    context.candidates.any { LocalSetupMovePreference.bonus(it, context) > 0.0 },
+                excludeFutureAllyVoluntarySwitches = profile.difficulty.tier == BattleTrainerTier.ADVANCED,
                 nodeLimit = budget.nodeLimit,
                 deadlineNanos = deadlineNanos,
             ),
@@ -185,6 +194,8 @@ internal class NativeInitialProductDecisionEvaluator(
                 nodesVisited = search.nodesVisited,
                 searchStatus = search.status,
                 failedWorldId = search.failedWorldId,
+                failedRunStatus = search.failedRunStatus,
+                failedRunDetail = search.failedRunDetail,
             )
         }
         return NativeInitialProductDecisionEvaluation(
@@ -269,6 +280,7 @@ internal class NativeInitialProductDecisionEvaluator(
                         probability = world.probability,
                         definition = world.definition,
                         publicState = world.publicContext.state,
+                        publicActionCatalog = world.publicContext.publicActionCatalog,
                         rootSnapshot = world.rootSnapshot,
                         evaluate = { state ->
                             leafEvaluator(state, world.publicContext, tuning) {
@@ -279,6 +291,11 @@ internal class NativeInitialProductDecisionEvaluator(
                 },
                 productActions = context.candidates,
                 maxDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1),
+                responseMemory = context.memory,
+                responseInformation = profile.personality.information,
+                allowSetupAttackExtension = profile.difficulty.tier == BattleTrainerTier.BOSS &&
+                    context.candidates.any { LocalSetupMovePreference.bonus(it, context) > 0.0 },
+                excludeFutureAllyVoluntarySwitches = profile.difficulty.tier == BattleTrainerTier.ADVANCED,
                 nodeLimit = budget.nodeLimit,
                 deadlineNanos = deadlineNanos,
             ),
@@ -292,6 +309,8 @@ internal class NativeInitialProductDecisionEvaluator(
                 nodesVisited = search.nodesVisited,
                 searchStatus = search.status,
                 failedWorldId = search.failedWorldId,
+                failedRunStatus = search.failedRunStatus,
+                failedRunDetail = search.failedRunDetail,
             )
         }
         val expectedWorldKeys = reconciled.worlds.mapTo(linkedSetOf()) { it.key }
@@ -325,7 +344,8 @@ internal class NativeInitialProductDecisionEvaluator(
     )
 
     private fun isOpeningCandidate(context: BattleDecisionContext): Boolean =
-        context.state.turn in 0..1 && context.opponentTeamPreview != null && context.exactOwnTeam != null
+        context.state.turn in 0..1 && NativeOpeningStateRules.acceptsObservations(context.state) &&
+            context.opponentTeamPreview != null && context.exactOwnTeam != null
 
     private fun nativeDeadline(externalDeadlineMillis: Long, budgetMillis: Long): Long? {
         val nowMillis = nowEpochMillis()

@@ -6,12 +6,12 @@ import org.junit.jupiter.api.Test
 
 class TowerBattleDifficultyPolicyTest {
     @Test
-    fun `regular opponents use the approved one two two three lookahead ladder`() {
+    fun `regular opponents use the approved one one two two lookahead ladder`() {
         val expected = mapOf(
             TowerStreakStage.INTRODUCTORY to (BattleTrainerTier.INTRODUCTORY to 1),
-            TowerStreakStage.PRACTICAL to (BattleTrainerTier.STANDARD to 2),
+            TowerStreakStage.PRACTICAL to (BattleTrainerTier.STANDARD to 1),
             TowerStreakStage.ADVANCED to (BattleTrainerTier.ADVANCED to 2),
-            TowerStreakStage.PRO to (BattleTrainerTier.BOSS to 3),
+            TowerStreakStage.PRO to (BattleTrainerTier.BOSS to 2),
         )
         expected.forEach { (stage, expectation) ->
             val difficulty = TowerBattleDifficultyPolicy.resolve(stage, TowerOpponentKind.REGULAR, 1).difficulty

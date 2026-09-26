@@ -138,7 +138,7 @@ class TowerPveBattleLauncherTest {
 
         val prepared = starts.single()
         assertEquals(BattleTrainerTier.BOSS, prepared.trainerProfile.difficulty.tier)
-        assertEquals(3, prepared.trainerProfile.difficulty.lookaheadPlies)
+        assertEquals(2, prepared.trainerProfile.difficulty.lookaheadPlies)
         assertEquals(BattleTrainerTier.BOSS, prepared.brainSelectionContext.difficultyTier)
         assertEquals(BattleEncounterRole.REGULAR, prepared.brainSelectionContext.encounterRole)
     }

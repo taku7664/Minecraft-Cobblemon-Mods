@@ -14,7 +14,9 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTimedEffectView
 
 /** Converts a hypothesis-owned native frame into the existing board-evaluation contract. */
 internal object NativeBattleStateAdapter {
-    fun adapt(frame: NativeBattleFrame, template: BattleStateView): BattleStateView {
+    fun adapt(frame: NativeBattleFrame, template: BattleStateView, publicTurnOffset: Int = 0): BattleStateView {
+        require(publicTurnOffset in 0..1)
+        val publicTurn = frame.turn - publicTurnOffset
         val nativeById = (frame.p1Team + frame.p2Team).associateBy { UUID.fromString(it.uuid) }
         require(nativeById.keys == template.pokemon.mapTo(linkedSetOf()) { it.battlePokemonId }) {
             "Native hypothesis roster disagrees with the public evaluation roster"
@@ -29,13 +31,13 @@ internal object NativeBattleStateAdapter {
         return BattleStateView(
             battleId = template.battleId,
             format = template.format,
-            turn = frame.turn,
+            turn = publicTurn,
             pokemon = pokemon,
             field = adaptField(frame.field),
             remainingPokemonBySide = BattleSide.entries.associateWith { side ->
                 pokemon.count { it.side == side && !it.fainted && it.hpFraction > 0.0 }
             },
-            observedEvents = template.observedEvents.filter { it.turn <= frame.turn },
+            observedEvents = template.observedEvents.filter { it.turn <= publicTurn },
             inferences = template.inferences,
         )
     }
