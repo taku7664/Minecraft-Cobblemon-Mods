@@ -4,7 +4,7 @@
 |---|---|
 | Status | `shared` |
 | Effective | 2026-08-19 |
-| Last reviewed | 2026-09-25 — Cobblemon UI 툴킷 경계, 런타임 증거 등급과 Battle UI 단계형 표시 계약 반영 |
+| Last reviewed | 2026-09-26 — Cobblemon UI의 챔퍼·채움·테두리·불투명도 표면 계약 반영 |
 | 주 독자 | 빡대리님과 이후 설계·구현 담당자 |
 | 목적 | 활성 계약, 분석 근거, 폐기 기록과 재개 지점의 라우팅 |
 
@@ -95,6 +95,7 @@
 72. `COBBLEMON_UI_DESIGN_SYSTEM_BOUNDARY_DECISION.md` — MbcUI는 MBC에 남기고, 독립 모드와는 의미 토큰·시각 문법·fixture·캡처 기준만 공유하며 별도 런타임 추출을 유예한 후속 결정
 73. `COBBLEMON_UI_TOOLKIT_AND_RUNTIME_EVIDENCE_AMENDMENT.md` — 72번의 런타임 추출 유예를 갱신해 Cobblemon 전용 공용 위젯·테마 소스 모듈을 정하고, 내장 자산/Visual Pack 경계와 타이틀 fixture·실제 월드 증거 등급을 분리
 74. `COBBLEMON_BATTLE_UI_PHASED_COMMAND_AND_LOG_DECISION.md` — Battle UI를 명령 선택, 연출 내레이션과 별도 전체 기록으로 나누고 구조화된 아군·상대·시스템 사건과 기존 상시 로그 종료 조건을 정의
+75. `COBBLEMON_UI_SURFACE_STYLE_AMENDMENT.md` — 공용 위젯의 사각형·선택 모서리 챔퍼, 채움 없음·단색·세로 그라데이션, 테두리 없음·굵기와 배경 불투명도 계약을 추가하고 역할별 표면 차이를 확정
 
 `MORE_BATTLE_CONTENT_CONTENT_PROPOSAL.md`는 `rejected` 상태의 과거 대안이다. 현재 제품 범위나 구현 우선순위를 결정할 때 사용하지 않는다.
 
