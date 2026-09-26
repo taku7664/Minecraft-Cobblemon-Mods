@@ -30,7 +30,7 @@ def prepare(template: Path, destination: Path) -> None:
         enabled.append(String("file/league-test-kit"))
     data["DataPacks"]["Enabled"] = enabled
     destination.mkdir(parents=True)
-    # Terrain only. In particular: no pokemon/, playerdata/, data/, or CLC accounts.
+    # World chunks only. No pokemon/, playerdata/, data/, or CLC account files.
     for folder in ("region", "entities", "poi"):
         if (template / folder).is_dir():
             shutil.copytree(template / folder, destination / folder)

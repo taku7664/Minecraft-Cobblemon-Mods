@@ -24,7 +24,7 @@ that the leveling tier list was the only config value changed. The approved
 reference fragment is [clc-leveling-tiers.toml](../../../tools/league-test-world/clc-leveling-tiers.toml).
 
 The new `saves/league-cap-test` world was prepared from disposable development
-terrain with no player, Pokemon, CLC account or League progress records copied.
+chunks with no player, player-owned Pokemon storage, CLC account or League progress records copied.
 Its world-local datapack gives a six-Pokemon test party and candies on first
 join and places a terminal at spawn. See [world instructions](../../../tools/league-test-world/README.md).
 The existing `새로운 세계` save and Lv50 party were not edited.

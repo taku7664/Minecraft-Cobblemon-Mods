@@ -21,6 +21,7 @@ Reproduction (Minecraft closed; Python with `nbtlib==2.0.4` installed):
 python tools/league-test-world/prepare.py <disposable-template-world> <profile>/saves/league-cap-test
 ```
 
-The destination MUST not exist. The script copies only terrain and level metadata,
-removes the template's embedded player, and copies no Pokemon, CLC accounts, or
-League progression. Production code is unchanged; this is test infrastructure.
+The destination MUST not exist. The script copies world chunks and level metadata,
+removes the template's embedded player, and copies no player-owned Pokemon
+storage, CLC accounts, or League progression. Production code is unchanged;
+this is test infrastructure.
