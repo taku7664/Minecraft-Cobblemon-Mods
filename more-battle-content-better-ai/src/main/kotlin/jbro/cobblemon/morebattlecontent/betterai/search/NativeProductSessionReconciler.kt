@@ -105,6 +105,9 @@ internal class NativeProductSessionReconciler(
                         return@lease failure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
                     }
                     var root = world.rootSnapshot.frame
+                    val publicTurnOffset = world.rootSnapshot.publicTurnOffset
+                    val nativeEventWindow = if (publicTurnOffset == 0) eventWindow else
+                        eventWindow.map { it.withNativeTurnOffset(publicTurnOffset) }
                     var definition = world.definition
                     var catalog = world.publicContext.publicActionCatalog
                     val deferred = intermediateReplayer.conditionDeferred(
@@ -114,7 +117,7 @@ internal class NativeProductSessionReconciler(
                             allyAction = world.deferredAllyAction,
                             opponentAction = world.deferredOpponentAction,
                         ),
-                        eventWindow,
+                        nativeEventWindow,
                     )
                     if (deferred.issues.isNotEmpty()) {
                         if (firstObservedMismatch == null) {
@@ -195,6 +198,7 @@ internal class NativeProductSessionReconciler(
                             events = currentEvents,
                             publicState = currentContext.state,
                             deadlineNanos = deadlineNanos,
+                            publicTurnOffset = publicTurnOffset,
                         )
                         val actionFrames = linkedMapOf<DescendantIdentity, CompatibleFrame>()
                         when (replayed.status) {
@@ -203,6 +207,7 @@ internal class NativeProductSessionReconciler(
                                     session.trainerTier,
                                     currentContext.state,
                                     frame.frame,
+                                    publicTurnOffset,
                                 )
                                 if (order.status == NativeObservedActionOrderStatus.CONTRADICTED) {
                                     return@forEach
@@ -305,7 +310,8 @@ internal class NativeProductSessionReconciler(
                         key = key,
                         probability = descendant.probability / retainedMass,
                         definition = descendant.definition,
-                        rootSnapshot = NativeProductRootSnapshot(session.rulesFingerprint, descendant.frame),
+                        rootSnapshot = NativeProductRootSnapshot(
+                            session.rulesFingerprint, descendant.frame, previous.rootSnapshot.publicTurnOffset),
                         publicContext = currentContext.copy(
                             publicActionCatalog = descendant.catalog,
                             opponentTeamPreview = currentContext.opponentTeamPreview
@@ -364,6 +370,23 @@ internal class NativeProductSessionReconciler(
     }
 
     private fun deadlineReached(deadlineNanos: Long): Boolean = nanoTime() - deadlineNanos >= 0L
+
+    private fun BattleObservedEventView.withNativeTurnOffset(offset: Int) = BattleObservedEventView(
+        sequence = sequence,
+        turn = turn + offset,
+        kind = kind,
+        actorPokemonId = actorPokemonId,
+        targetPokemonIds = targetPokemonIds,
+        publicValueId = publicValueId,
+        hpFractionDelta = hpFractionDelta,
+        baseMovePriority = baseMovePriority,
+        precedingActionSequence = precedingActionSequence,
+        precedingActionActorPokemonId = precedingActionActorPokemonId,
+        precedingActionMoveId = precedingActionMoveId,
+        publicSourceEffectId = publicSourceEffectId,
+        moveOutcome = moveOutcome,
+        actorSlot = actorSlot,
+    )
 
     private fun failure(
         status: NativeProductSessionReconcileStatus,

@@ -104,6 +104,31 @@ class NativeProductSessionReconcilerTest {
     }
 
     @Test
+    fun `zero based public opening replays its first turn against one based native frames`() {
+        val worker = Worker(mapOf("root" to frame("next", turn = 2)))
+        val openingWorld = world("world", "root", 1.0)
+        val prior = session(listOf(openingWorld.copy(
+            rootSnapshot = openingWorld.rootSnapshot.copy(publicTurnOffset = 1),
+            publicContext = context(turn = 0),
+        ))).copy(publicTurn = 0)
+        val observedMove = BattleObservedEventView(
+            sequence = 1,
+            turn = 0,
+            kind = BattleObservedEventKind.MOVE_USED,
+            actorPokemonId = OPPONENT,
+            publicValueId = "growl",
+            actorSlot = 0,
+        )
+
+        val result = NativeProductSessionReconciler { _, action -> action(worker) }
+            .reconcile(prior, context(turn = 1, events = listOf(observedMove)), Long.MAX_VALUE)
+
+        assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status, result.rootIssues.toString())
+        assertEquals(1, result.sessionState?.worlds?.single()?.rootSnapshot?.publicTurnOffset)
+        assertEquals(1, result.sessionState?.publicTurn)
+    }
+
+    @Test
     fun `random particle contradicting the public board is removed and posterior mass is renormalized`() {
         val matching = frame("matching", turn = 2)
         val mismatching = frame("mismatching", turn = 2, opponentHp = 99)

@@ -325,6 +325,7 @@ class NativeInitialProductWorldPlannerTest {
         // Level-50 Mew with 31 IVs, zero EVs and a neutral nature: 175 HP, 120 elsewhere.
         val openingContext = context(
             preview = publicPreview,
+            turn = 0,
             ownStats = BattleCombatStatRangesView.exact(175, 120, 120, 120, 120, 120),
         )
         val result = planner(
@@ -339,6 +340,7 @@ class NativeInitialProductWorldPlannerTest {
         NativeShowdownBranchEngine.open(engineRoot).use { engine ->
             val world = result.worlds.first()
             val frame = engine.createBattle(world.definition)
+            assertEquals(1, frame.turn)
             assertEquals(6, frame.p1Team.size)
             assertEquals(6, frame.p2Team.size)
             assertEquals("clodsire", frame.p2Active.single().sourceSet?.species)
@@ -347,7 +349,8 @@ class NativeInitialProductWorldPlannerTest {
             assertEquals(6, next.p1Team.size)
             assertEquals(6, next.p2Team.size)
 
-            val tree = NativeShowdownSearchTree(engine, frame, world.publicContext.state)
+            val tree = NativeShowdownSearchTree(engine, frame, world.publicContext.state, publicTurnOffset = 1)
+            assertEquals(0, tree.root.state.turn)
             val productActions = tree.actions(tree.root, BattleSide.ALLY).mapIndexed { index, action ->
                 BattleActionCandidate(
                     actionId = "client-action-$index",
@@ -377,6 +380,7 @@ class NativeInitialProductWorldPlannerTest {
             ))
             assertEquals(NativeProductSearchRunStatus.COMPLETED, search.status,
                 "status=${search.status} rootIssues=${search.rootIssues} failure=${search.failure}")
+            assertEquals(1, search.rootSnapshot?.publicTurnOffset)
             assertTrue(search.mapping?.complete == true)
             assertEquals(1, search.result?.depthCompleted)
 
@@ -430,6 +434,7 @@ class NativeInitialProductWorldPlannerTest {
 
     private fun context(
         format: BattleFormat = BattleFormat.SINGLE,
+        turn: Int = 1,
         preview: BattleOpponentTeamPreviewView = preview(
             selectionSize = if (format == BattleFormat.SINGLE) 3 else 4,
         ),
@@ -442,7 +447,7 @@ class NativeInitialProductWorldPlannerTest {
         val state = BattleStateView(
             battleId = BATTLE,
             format = format,
-            turn = 1,
+            turn = turn,
             pokemon = allyIds.mapIndexed { index, id ->
                 pokemon(
                     id = id,

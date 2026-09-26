@@ -18,6 +18,19 @@ import org.junit.jupiter.api.Test
 
 class NativeObservedActionOrderConditionerTest {
     @Test
+    fun `one based native move order compares against zero based public events`() {
+        val result = NativeObservedActionOrderConditioner.evaluate(
+            BattleTrainerTier.BOSS,
+            state(eventsForTurn(turn = 0, first = OPPONENT, second = ALLY), turn = 0),
+            frame(nativeOrder(turn = 1, first = ALLY, second = OPPONENT)),
+            publicTurnOffset = 1,
+        )
+
+        assertEquals(NativeObservedActionOrderStatus.CONTRADICTED, result.status)
+        assertEquals(setOf(0), result.comparableTurns)
+    }
+
+    @Test
     fun `advanced rejects a world whose native order contradicts one public turn`() {
         val result = NativeObservedActionOrderConditioner.evaluate(
             BattleTrainerTier.ADVANCED,

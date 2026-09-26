@@ -21,12 +21,13 @@ internal class NativeShowdownSearchTree(
     private val worker: NativeBranchWorker,
     rootFrame: NativeBattleFrame,
     publicTemplate: BattleStateView,
+    private val publicTurnOffset: Int = 0,
 ) {
     val rulesFingerprint: String = worker.rulesFingerprint
 
     val root = NativeSearchPosition(
         frame = rootFrame,
-        state = NativeBattleStateAdapter.adapt(rootFrame, publicTemplate),
+        state = NativeBattleStateAdapter.adapt(rootFrame, publicTemplate, publicTurnOffset),
     )
 
     fun actions(
@@ -49,7 +50,7 @@ internal class NativeShowdownSearchTree(
         )
         return NativeSearchPosition(
             frame = nextFrame,
-            state = NativeBattleStateAdapter.adapt(nextFrame, position.state),
+            state = NativeBattleStateAdapter.adapt(nextFrame, position.state, publicTurnOffset),
             // Material still charges the normal HP loss and self-KO. Refund half of the
             // move's recoil HP fraction, leaving 50 points per full HP bar.
             recoilCredit = position.recoilCredit +

@@ -47,6 +47,7 @@ internal object NativeBattleRootValidator {
         definition: NativeBattleDefinition,
         frame: NativeBattleFrame,
         publicState: BattleStateView,
+        publicTurnOffset: Int = 0,
     ): List<NativeBattleRootIssue> {
         val issues = linkedSetOf<NativeBattleRootIssue>()
         val publicFormatId = when (publicState.format) {
@@ -123,7 +124,7 @@ internal object NativeBattleRootValidator {
         }
 
         val adapted = try {
-            NativeBattleStateAdapter.adapt(frame, publicState)
+            NativeBattleStateAdapter.adapt(frame, publicState, publicTurnOffset)
         } catch (_: RuntimeException) {
             issue(issues, NativeBattleRootIssueCode.MALFORMED_FRAME)
             return issues.toList()
