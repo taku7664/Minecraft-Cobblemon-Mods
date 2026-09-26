@@ -29,7 +29,7 @@ dependencies {
     modImplementation("maven.modrinth:pokebadges:A93HZDyB")
     modImplementation("maven.modrinth:cobbled-level-control:uZaphEIC")
     modImplementation("maven.modrinth:matthiesen-core:azvkmoed")
-    modRuntimeOnly("maven.modrinth:forge-config-api-port:N5qzq0XV")
+    modImplementation("maven.modrinth:forge-config-api-port:N5qzq0XV")
     // Loom strips nested libraries from remapped Modrinth artifacts in development.
     runtimeOnly("com.electronwill.night-config:core:3.8.0")
     runtimeOnly("com.electronwill.night-config:toml:3.8.0")

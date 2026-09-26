@@ -9,6 +9,7 @@
 개발 명령 `/mbc-league-ui`는 여전히 별도 fixture를 열며, 실제 진행도를 변경하지 않는다.
 최신 연결 범위와 검증 경계는 [제품 UI 연결](docs/LIVE_UI_WIRING_V1.md), 서버 구현은
 [시스템 구현 및 UI 인계](docs/SYSTEM_IMPLEMENTATION_V1.md)를 따른다.
+[레벨캡·포획·야생 스폰 정책](docs/LEVEL_CAP_POLICY_V2.md)이 해당 문서의 이전 CLC 연동 설명을 갱신한다.
 
 ## 모듈 이름
 

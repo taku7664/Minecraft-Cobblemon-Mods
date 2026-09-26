@@ -39,6 +39,8 @@
   "message.cobblemon_more_battle_content_league_challenge.request_failed": "The League request failed. Ask an administrator to check the server log.",
   "message.cobblemon_more_battle_content_league_challenge.integration_failed": "A League dependency is unavailable. New challenges are locked.",
   "message.cobblemon_more_battle_content_league_challenge.cap_disabled": "Cobbled Level Control's leveling restriction must be enabled.",
+  "message.cobblemon_more_battle_content_league_challenge.catching_cap_disabled": "Cobbled Level Control's catching restriction must be enabled for League wild-level scaling.",
+  "message.cobblemon_more_battle_content_league_challenge.spawn_scaling_conflict": "Disable Cobbled Level Control's wild-spawn scaling; League Challenge provides the inclusive 0–10 reduction.",
   "message.cobblemon_more_battle_content_league_challenge.cap_unmapped": "This League cap has no matching Cobbled Level Control tier. Ask an administrator to align the two data sets.",
   "message.cobblemon_more_battle_content_league_challenge.cap_unavailable": "Level-cap storage is not ready. Try again shortly.",
   "message.cobblemon_more_battle_content_league_challenge.cap_sync_failed": "Could not synchronize the League level cap.",

@@ -221,7 +221,7 @@ object LeagueServer {
     private fun guarded(player: ServerPlayer, action: () -> Unit): Boolean = try { action(); true } catch (failure: RuntimeException) {
         Mod.LOGGER.warn("League request rejected for {}: {}", player.uuid, failure.message)
         val reason = failure.message?.substringBefore(':')
-        val known = setOf("cap_disabled", "cap_unmapped", "cap_unavailable", "cap_sync_failed", "badge_failed",
+        val known = setOf("cap_disabled", "catching_cap_disabled", "spawn_scaling_conflict", "cap_unmapped", "cap_unavailable", "cap_sync_failed", "badge_failed",
             "run_active", "party_required", "rewards_pending", "history_full", "prerequisite", "no_run", "phase_invalid", "level_cap",
             "battle_active", "battle_unavailable", "catalog_unavailable", "terminal_invalid", "terminal_expired",
             "client_missing", "request_conflict", "stale_revision")

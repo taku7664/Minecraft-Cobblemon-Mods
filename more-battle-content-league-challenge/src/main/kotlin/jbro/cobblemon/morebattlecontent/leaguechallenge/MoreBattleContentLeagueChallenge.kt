@@ -13,6 +13,7 @@ object MoreBattleContentLeagueChallenge : ModInitializer {
         LeagueCatalogResources.register()
         LeagueTerminal.register()
         LeagueServer.register()
+        LeagueWildSpawns.register()
         LeagueAdminCommands.register()
     }
 }

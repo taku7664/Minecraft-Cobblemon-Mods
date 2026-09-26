@@ -12,23 +12,34 @@ import jbro.cobblemon.morebattlecontent.leaguechallenge.system.LeagueCatalog
 /** Version-pinned typed adapters; no command execution or reflective API guessing. */
 object LeagueIntegrations {
     fun validateCaps(catalog: LeagueCatalog) {
-        val config = CLCConfig.getLevelingConfig()
-        check(config.doRestrictLeveling()) { "cap_disabled" }
-        LevelCapMapping.resolve(config.tiers(), (listOf(catalog.initialCap) + catalog.challenges.values.map { it.unlockCap }).toSet())
+        val leveling = CLCConfig.getLevelingConfig()
+        val catching = CLCConfig.getCatchingConfig()
+        check(leveling.doRestrictLeveling()) { "cap_disabled" }
+        check(!catching.doNotRestrictCatching()) { "catching_cap_disabled" }
+        check(!CLCConfig.SERVER_CONFIG.scaling_enableScaling.get()) { "spawn_scaling_conflict" }
+        val required = (listOf(catalog.initialCap) + catalog.challenges.values.map { it.unlockCap }).toSet()
+        LevelCapMapping.resolve(leveling.tiers(), required)
+        LevelCapMapping.resolve(catching.tiers(), required)
     }
 
     fun syncCap(player: ServerPlayer, cap: Int) {
-        val config = CLCConfig.getLevelingConfig()
-        check(config.doRestrictLeveling()) { "cap_disabled" }
-        val tier = LevelCapMapping.resolve(config.tiers(), setOf(cap)).getValue(cap)
+        val leveling = CLCConfig.getLevelingConfig()
+        val catching = CLCConfig.getCatchingConfig()
+        check(leveling.doRestrictLeveling()) { "cap_disabled" }
+        check(!catching.doNotRestrictCatching()) { "catching_cap_disabled" }
+        check(!CLCConfig.SERVER_CONFIG.scaling_enableScaling.get()) { "spawn_scaling_conflict" }
+        val levelingTier = LevelCapMapping.resolve(leveling.tiers(), setOf(cap)).getValue(cap)
+        val catchingTier = LevelCapMapping.resolve(catching.tiers(), setOf(cap)).getValue(cap)
         val mod = CobbledLevelControl.INSTANCE
         val store = requireNotNull(mod.storedPlayerAccountRecords) { "cap_unavailable" }
         if (!store.hasPlayerAccountRecord(player.uuid)) store.createNewPlayerAccountRecord(player.uuid)
-        if (store.getPlayerAccountRecord(player.uuid).leveling != tier) {
-            store.editPlayerAccountRecord(player.uuid) { it.setLeveling(tier) }
+        val current = store.getPlayerAccountRecord(player.uuid)
+        if (current.leveling != levelingTier || current.catching != catchingTier) {
+            store.editPlayerAccountRecord(player.uuid) { it.setLeveling(levelingTier); it.setCatching(catchingTier) }
             mod.sendHudSnapshot(player)
         }
-        check(store.getPlayerAccountRecord(player.uuid).leveling == tier) { "cap_sync_failed" }
+        val updated = store.getPlayerAccountRecord(player.uuid)
+        check(updated.leveling == levelingTier && updated.catching == catchingTier) { "cap_sync_failed" }
     }
 
     fun awardBadge(player: ServerPlayer, badge: String): Boolean =
