@@ -101,7 +101,7 @@ internal class AiTestDecisionTrace private constructor(
                 "${number(it.minimum)}..${number(it.maximum)}"
             } ?: "?"
             logger.info(
-                "[BetterAI Trace] battle={} turn={} phase=candidate mode={} rank={} action={} kind={} actor={} move={} moveSlot={} targets={} components={} details={} mechanic={} switch={} score={} gap={} base={} lookahead={} tier={} execution={} drawProbability={} typeMultiplier={} damageFraction={}",
+                "[BetterAI Trace] battle={} turn={} phase=candidate mode={} rank={} action={} kind={} actor={} move={} moveSlot={} targets={} components={} details={} mechanic={} switch={} score={} gap={} base={} lookahead={} tier={} execution={} drawProbability={} excluded={} keepHp={} keepHpConfirmed={} typeMultiplier={} damageFraction={}",
                 battleId, turn, mode, index + 1, candidate.actionId, candidate.kind,
                 candidate.actorSlot ?: "-", candidate.moveId ?: "-", candidate.moveSlot ?: "-",
                 candidate.targets, candidate.componentActionIds, moveDetails,
@@ -110,6 +110,8 @@ internal class AiTestDecisionTrace private constructor(
                 number(ranked.first().comparisonValue - rank.comparisonValue),
                 number(rank.outcome.tacticalUtility), number(rank.lookaheadUtility),
                 rank.decisionTier, number(rank.executionProbability), drawProbability,
+                selection.exclusionsByActionId[candidate.actionId] ?: "-",
+                number(rank.worstResponseHpRetention), number(rank.worstConfirmedResponseHpRetention),
                 candidate.facts?.typeChartMultiplier?.let(::number) ?: "?", damage,
             )
         }

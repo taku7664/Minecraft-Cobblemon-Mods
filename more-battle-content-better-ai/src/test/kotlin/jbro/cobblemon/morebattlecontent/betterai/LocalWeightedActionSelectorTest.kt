@@ -16,6 +16,7 @@ import jbro.cobblemon.morebattlecontent.betterai.policy.LocalPositionRiskBudget
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalTrainerStyleModel
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalWeightedActionSelector
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -456,6 +457,47 @@ class LocalWeightedActionSelectorTest {
     }
 
     @Test
+    fun `best ranked switch is not vetoed by hp loss that only an expected move could cause`() {
+        val ranked = listOf(
+            rank(
+                "best_switch_against_expected_hit",
+                195.0,
+                kind = BattleActionKind.SWITCH,
+                worstResponseHpRetention = 0.33,
+                worstConfirmedResponseHpRetention = 0.90,
+            ),
+            rank("credible_attack", 42.0, executableDamageActions = 1),
+        )
+
+        val selection = selector.choose(ranked, seed = 7L, riskTolerance = 0.5)
+
+        assertEquals("best_switch_against_expected_hit", selection.rank.outcome.candidate.actionId)
+        assertFalse("best_switch_against_expected_hit" in selection.exclusionsByActionId,
+            "${selection.exclusionsByActionId}")
+    }
+
+    @Test
+    fun `selection explains why a best ranked switch received no weight`() {
+        val ranked = listOf(
+            rank(
+                "best_but_bad_switch",
+                110.0,
+                kind = BattleActionKind.SWITCH,
+                worstResponseHpRetention = 0.33,
+            ),
+            rank("credible_attack", 100.0, executableDamageActions = 1),
+        )
+
+        val selection = selector.choose(ranked, seed = 7L, riskTolerance = 1.0)
+
+        assertEquals("credible_attack", selection.rank.outcome.candidate.actionId)
+        assertEquals(
+            "best_switch_confirmed_hp_retention_below_0.50",
+            selection.exclusionsByActionId["best_but_bad_switch"],
+        )
+    }
+
+    @Test
     fun `unsafe best switch remains available when every attack is certain to be stopped`() {
         val ranked = listOf(
             rank(
@@ -714,6 +756,7 @@ class LocalWeightedActionSelectorTest {
         executionProbability: Double = 1.0,
         kind: BattleActionKind = BattleActionKind.USE_MOVE,
         worstResponseHpRetention: Double = 1.0,
+        worstConfirmedResponseHpRetention: Double = worstResponseHpRetention,
         selfSetup: Boolean = false,
     ): LocalBattleActionRank {
         val candidate = BattleActionCandidate(
@@ -772,6 +815,7 @@ class LocalWeightedActionSelectorTest {
             comparisonValue = score,
             executionProbability = executionProbability,
             worstResponseHpRetention = worstResponseHpRetention,
+            worstConfirmedResponseHpRetention = worstConfirmedResponseHpRetention,
         )
     }
 

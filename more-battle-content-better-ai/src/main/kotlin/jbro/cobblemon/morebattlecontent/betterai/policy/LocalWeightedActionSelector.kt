@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai.policy
 
+import java.util.Locale
 import java.util.SplittableRandom
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
@@ -18,6 +19,8 @@ internal data class LocalActionSelection(
     val probability: Double,
     /** Exact draw probabilities; empty only for selectors that do not expose their distribution. */
     val probabilitiesByActionId: Map<String, Double> = emptyMap(),
+    /** Why each ranked action outside the draw received no weight; empty for selectors without a pool. */
+    val exclusionsByActionId: Map<String, String> = emptyMap(),
 )
 
 internal fun interface LocalActionSelector {
@@ -76,6 +79,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         val ranks: List<LocalBattleActionRank>,
         val bestScore: Double,
         val drawGap: Double,
+        val exclusions: Map<String, String>,
     )
 
     /** Exact pre-weight pool used by choose; zero-weight/fallback handling may narrow it further. */
@@ -91,12 +95,16 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
             isCredibleDamagingStay(rank) &&
                 best.comparisonValue - rank.comparisonValue <= context.tuning.maximumReasonableScoreGap
         }
+        val exclusions = linkedMapOf<String, String>()
         val eligible = selectionUniverse.filter { rank ->
-            if (context.authoritativeSimulationScores) {
-                rank.outcome.candidate.kind != BattleActionKind.FORFEIT &&
-                    rank.outcome.candidate.kind != BattleActionKind.WAIT
+            val reason = if (context.authoritativeSimulationScores) {
+                when (rank.outcome.candidate.kind) {
+                    BattleActionKind.FORFEIT -> "forfeit"
+                    BattleActionKind.WAIT -> "wait"
+                    else -> null
+                }
             } else {
-                canReceiveWeight(
+                weightExclusion(
                     rank,
                     rank === best,
                     credibleStayAlternativeExists,
@@ -106,13 +114,18 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
                     context.overcommittedSetupActionIds,
                 )
             }
+            reason?.let { exclusions[rank.outcome.candidate.actionId] = it }
+            reason == null
         }
         val viable = eligible.ifEmpty {
-            listOf(emergencyFallback(selectionUniverse, context.overcommittedSetupActionIds))
+            listOf(emergencyFallback(selectionUniverse, context.overcommittedSetupActionIds)).also { fallback ->
+                exclusions.remove(fallback.single().outcome.candidate.actionId)
+            }
         }
         val countShortlist = viable.take(
             shortlistSize(viable.size, context.tuning, context.decisionShortlistWidth),
         )
+        viable.drop(countShortlist.size).forEach { exclusions[it.outcome.candidate.actionId] = "shortlist_count" }
         val bestScore = countShortlist.first().comparisonValue
         // The tier multiplier is applied after the tuning ceiling, not before it.
         //
@@ -138,10 +151,17 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         // exactly that in the regression suite.
         val absurdGap = allowedGap * ABSURD_REGRET_MULTIPLE
         val shortlist = countShortlist.filter { rank ->
-            bestScore - rank.comparisonValue <= absurdGap * conditionalScale(rank, context) &&
-                isPlausibleRelativeToBest(bestScore, rank.comparisonValue, context.tuning)
-        }.ifEmpty { listOf(countShortlist.first()) }
-        return ChoicePool(shortlist, bestScore, drawGap)
+            val reason = when {
+                bestScore - rank.comparisonValue > absurdGap * conditionalScale(rank, context) -> "regret_gap"
+                !isPlausibleRelativeToBest(bestScore, rank.comparisonValue, context.tuning) -> "score_ratio"
+                else -> null
+            }
+            reason?.let { exclusions[rank.outcome.candidate.actionId] = it }
+            reason == null
+        }.ifEmpty {
+            listOf(countShortlist.first()).also { exclusions.remove(it.single().outcome.candidate.actionId) }
+        }
+        return ChoicePool(shortlist, bestScore, drawGap, exclusions)
     }
 
     override fun choose(
@@ -157,6 +177,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
             return LocalActionSelection(
                 shortlist.single(), seed, 1, 1.0,
                 mapOf(shortlist.single().outcome.candidate.actionId to 1.0),
+                pool.exclusions,
             )
         }
 
@@ -194,6 +215,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
             return LocalActionSelection(
                 shortlist.first(), seed, shortlist.size, 1.0,
                 mapOf(shortlist.first().outcome.candidate.actionId to 1.0),
+                pool.exclusions,
             )
         }
         val probabilities = shortlist.indices.associate { index ->
@@ -211,6 +233,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
                     shortlistSize = shortlist.size,
                     probability = weights[index] / total,
                     probabilitiesByActionId = probabilities,
+                    exclusionsByActionId = pool.exclusions,
                 )
             }
         }
@@ -256,7 +279,8 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
             .coerceAtMost(candidateCount)
     }
 
-    private fun canReceiveWeight(
+    /** Null when the action may receive weight; otherwise a stable reason code for diagnostics. */
+    private fun weightExclusion(
         rank: LocalBattleActionRank,
         bestRanked: Boolean,
         credibleStayAlternativeExists: Boolean,
@@ -264,30 +288,32 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         riskBudget: Double,
         alreadyBoostedSetupActionIds: Set<String>,
         overcommittedSetupActionIds: Set<String>,
-    ): Boolean =
-        !rank.outcome.publiclyInert &&
-            !rank.outcome.entryFaints &&
-            rank.executionProbability >= MINIMUM_EXPLORATORY_EXECUTION_PROBABILITY &&
-            switchIsSafeEnough(rank, bestRanked, credibleStayAlternativeExists, riskBudget, memory) &&
-            selfSetupHasFuture(
-                rank,
-                bestRanked,
-                credibleStayAlternativeExists,
-                memory,
-                alreadyBoostedSetupActionIds,
-                overcommittedSetupActionIds,
-            ) &&
-            rank.outcome.candidate.kind != BattleActionKind.FORFEIT &&
-            rank.outcome.candidate.kind != BattleActionKind.WAIT
+    ): String? = when {
+        rank.outcome.publiclyInert -> "publicly_inert"
+        rank.outcome.entryFaints -> "entry_faints"
+        rank.executionProbability < MINIMUM_EXPLORATORY_EXECUTION_PROBABILITY -> "low_execution_probability"
+        rank.outcome.candidate.kind == BattleActionKind.FORFEIT -> "forfeit"
+        rank.outcome.candidate.kind == BattleActionKind.WAIT -> "wait"
+        else -> switchExclusion(rank, bestRanked, credibleStayAlternativeExists, riskBudget, memory)
+            ?: if (selfSetupHasFuture(
+                    rank,
+                    bestRanked,
+                    credibleStayAlternativeExists,
+                    memory,
+                    alreadyBoostedSetupActionIds,
+                    overcommittedSetupActionIds,
+                )
+            ) null else "setup_without_future"
+    }
 
-    private fun switchIsSafeEnough(
+    private fun switchExclusion(
         rank: LocalBattleActionRank,
         bestRanked: Boolean,
         credibleStayAlternativeExists: Boolean,
         riskBudget: Double,
         memory: BattleTacticalMemoryView,
-    ): Boolean {
-        if (rank.outcome.candidate.kind != BattleActionKind.SWITCH) return true
+    ): String? {
+        if (rank.outcome.candidate.kind != BattleActionKind.SWITCH) return null
         // Damping alone leaves a nonzero chance of arbitrarily long exploratory switch chains.
         // Pressure is accumulated tempo debt, not an exact consecutive-switch counter. Restrict
         // only another recent, lower-ranked exploration while a credible damaging stay exists;
@@ -295,11 +321,22 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         if (!bestRanked && credibleStayAlternativeExists &&
             memory.turnsSinceLastSwitch?.let { it <= 1 } == true &&
             memory.switchPressure >= REPEATED_SWITCH_PRESSURE
-        ) return false
-        if (!bestRanked) return rank.worstResponseHpRetention >= exploratorySwitchHpRetention(riskBudget)
-        if (!credibleStayAlternativeExists) return true
-        return rank.worstResponseHpRetention >= MINIMUM_BEST_SWITCH_HP_RETENTION
+        ) return "repeated_switch_pressure"
+        if (!bestRanked) {
+            val required = exploratorySwitchHpRetention(riskBudget)
+            return if (rank.worstResponseHpRetention >= required) null
+            else "exploratory_switch_hp_retention_below_${format(required)}"
+        }
+        if (!credibleStayAlternativeExists) return null
+        // Overriding the ranking needs confirmed evidence. The full worst case counts expected move
+        // slots at full strength and the score already priced them, so a speculative slot alone
+        // must not veto the best action; live play showed a best switch far ahead of every stay
+        // dropped in favour of much weaker actions.
+        return if (rank.worstConfirmedResponseHpRetention >= MINIMUM_BEST_SWITCH_HP_RETENTION) null
+        else "best_switch_confirmed_hp_retention_below_${format(MINIMUM_BEST_SWITCH_HP_RETENTION)}"
     }
+
+    private fun format(value: Double): String = String.format(Locale.ROOT, "%.2f", value)
 
     private fun isCredibleDamagingStay(rank: LocalBattleActionRank): Boolean =
         rank.outcome.candidate.kind == BattleActionKind.USE_MOVE &&

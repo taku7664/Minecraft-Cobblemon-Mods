@@ -1755,6 +1755,65 @@ class LocalRecursiveLookaheadTest {
         val result = LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, BattleTrainerProfile.boss())
 
         assertTrue(result.ranked.single().worstResponseHpRetention < 0.25)
+        assertTrue(result.ranked.single().worstConfirmedResponseHpRetention < 0.25,
+            "A publicly revealed hit is confirmed evidence and must keep counting")
+    }
+
+    @Test
+    fun `confirmed hp retention ignores a heavy hit that is only an expected move slot`() {
+        val benchId = UUID.fromString("00000000-0000-0000-0000-000000000019")
+        val initial = BattleStateView(
+            battleId = UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            format = BattleFormat.SINGLE,
+            turn = 1,
+            pokemon = listOf(
+                pokemon(ALLY_ID, BattleSide.ALLY, 0, 1.0, speed = 100),
+                pokemon(benchId, BattleSide.ALLY, null, 1.0, speed = 100),
+                pokemon(OPPONENT_ID, BattleSide.OPPONENT, 0, 1.0, speed = 90),
+            ),
+            field = BattleFieldStateView.empty(),
+            remainingPokemonBySide = mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to 1),
+            observedEvents = emptyList(),
+            inferences = emptyList(),
+        )
+        val switch = BattleActionCandidate(
+            actionId = "switch_into_revealed_chip",
+            kind = BattleActionKind.SWITCH,
+            actorSlot = 0,
+            switchPokemonId = benchId,
+        )
+        val chip = moveDetails(power = 10.0)
+        val heavy = moveDetails(power = 100.0)
+        val catalog = BattlePublicActionCatalogView(
+            listOf(
+                BattlePokemonActionCatalogView(
+                    OPPONENT_ID,
+                    listOf(
+                        BattlePublicMoveOptionView(
+                            "cobblemon:revealed_chip",
+                            chip,
+                            BattlePublicMoveKnowledge.PUBLICLY_REVEALED,
+                        ),
+                    ),
+                    moveSetComplete = false,
+                ),
+            ),
+        ).withOpponentMoveInferences(listOf(BattleOpponentMoveInferenceView(OPPONENT_ID, listOf(
+            BattleOpponentMoveSlotView(0, "cobblemon:revealed_chip", BattleOpponentMoveGroup.STAB_ATTACK,
+                BattleOpponentMoveKnowledge.CONFIRMED, BattleOpponentMoveSource.PUBLIC_REVEAL, chip),
+            BattleOpponentMoveSlotView(1, "cobblemon:expected_heavy_hit", BattleOpponentMoveGroup.COVERAGE_ATTACK,
+                BattleOpponentMoveKnowledge.EXPECTED, BattleOpponentMoveSource.LEARNSET_EXPECTATION, heavy),
+        ))))
+        val calculated = PublicBattleTacticalCalculator.calculate(context(initial, listOf(switch), catalog))
+        val ranked = LocalBattleActionPolicy.rank(calculated, null, BattleTrainerProfile.boss())
+
+        val result = LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, BattleTrainerProfile.boss())
+
+        val rank = result.ranked.single()
+        assertTrue(rank.worstResponseHpRetention < 0.5,
+            "The expected heavy hit must still shape the full worst case: ${rank.worstResponseHpRetention}")
+        assertTrue(rank.worstConfirmedResponseHpRetention >= 0.5,
+            "Only the revealed chip damage is confirmed: ${rank.worstConfirmedResponseHpRetention}")
     }
 
     @Test

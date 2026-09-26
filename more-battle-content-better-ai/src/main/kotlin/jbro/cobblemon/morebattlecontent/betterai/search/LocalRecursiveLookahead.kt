@@ -276,11 +276,11 @@ internal object LocalRecursiveLookaheadEvaluator {
                         // measurements into a comparison against the leftover penalty terms.
                         lookaheadUtility = adjustment - withdrawnHeuristicValue,
                         executionProbability = evaluation.ownExecutionProbability,
-                        worstResponseHpRetention = if (responseHpBaseline <= 0.0) {
-                            0.0
-                        } else {
-                            (evaluation.worstResponseRemainingHp / responseHpBaseline).coerceIn(0.0, 1.0)
-                        },
+                        worstResponseHpRetention = retention(evaluation.worstResponseRemainingHp, responseHpBaseline),
+                        // No confirmed reply at all leaves nothing confirmed to lose HP to.
+                        worstConfirmedResponseHpRetention = evaluation.worstConfirmedResponseRemainingHp
+                            ?.let { retention(it, responseHpBaseline) }
+                            ?: 1.0,
                     )
                 }
             }
@@ -466,7 +466,17 @@ internal object LocalRecursiveLookaheadEvaluator {
                     ?: aggregate.ownExecutionProbability
                 val worstResponseRemainingHp = calibratedResponses.minOfOrNull { it.value.ownRemainingHpFraction }
                     ?: aggregate.ownRemainingHpFraction
-                RootActionEvaluation(aggregate.value, executionProbability, worstResponseRemainingHp)
+                // Expected slots are inferred, not observed. They keep their full weight in the worst
+                // case above, but a veto that overrides the ranking needs confirmed evidence.
+                val worstConfirmedResponseRemainingHp = calibratedResponses
+                    .filterNot { it.action.containsTag(EXPECTED_OPPONENT_MOVE_TAG) }
+                    .minOfOrNull { it.value.ownRemainingHpFraction }
+                RootActionEvaluation(
+                    aggregate.value,
+                    executionProbability,
+                    worstResponseRemainingHp,
+                    worstConfirmedResponseRemainingHp,
+                )
             }
         }
 
@@ -916,7 +926,15 @@ internal object LocalRecursiveLookaheadEvaluator {
         val value: Double,
         val ownExecutionProbability: Double,
         val worstResponseRemainingHp: Double,
+        /** Null when every evaluated reply was an expected move slot. */
+        val worstConfirmedResponseRemainingHp: Double?,
     )
+
+    private fun retention(remainingHp: Double, baselineHp: Double): Double =
+        if (baselineHp <= 0.0) 0.0 else (remainingHp / baselineHp).coerceIn(0.0, 1.0)
+
+    private fun BattleActionCandidate.containsTag(tag: String): Boolean =
+        tag in tags || componentActions.any { it.containsTag(tag) }
 
     /**
      * Which root candidates this ply may spend the budget on, or null to allow all of them.
@@ -1007,6 +1025,7 @@ internal object LocalRecursiveLookaheadEvaluator {
     private const val FUTURE_DELTA_DISCOUNT = 0.90
     private const val UNKNOWN_RESPONSE_RESERVE = 0.20
     private const val UNKNOWN_PUBLIC_RESPONSE_TAG = "unknown_public_response"
+    private const val EXPECTED_OPPONENT_MOVE_TAG = "expected_opponent_move"
     private const val STANDARD_MOVE_SLOTS = 4.0
 
     private fun BattleActionCandidate.isUnknownPublicResponse(): Boolean =

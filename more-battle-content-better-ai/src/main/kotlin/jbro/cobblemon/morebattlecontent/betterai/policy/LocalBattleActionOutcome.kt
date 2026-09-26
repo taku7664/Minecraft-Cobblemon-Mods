@@ -63,6 +63,12 @@ internal data class LocalBattleActionRank(
     val lookaheadUtility: Double = 0.0,
     val executionProbability: Double = 1.0,
     val worstResponseHpRetention: Double = 1.0,
+    /**
+     * The same retention measured only against confirmed replies: publicly revealed or tier-read
+     * moves, switches and the unknown-response reserve. Expected move slots are speculative, so they
+     * shape [worstResponseHpRetention] and the score but must not veto the best-ranked action alone.
+     */
+    val worstConfirmedResponseHpRetention: Double = worstResponseHpRetention,
 )
 
 internal object LocalBattleActionPolicy {
