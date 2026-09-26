@@ -43,3 +43,19 @@ The installed profile and new world have not yet been launched together;
 first-join items, screen opening, battle results and cap behavior require
 live testing. The profile's `logs/latest.log` still ends at the pre-deployment
 client shutdown. This record is a deployment/structural check, not gameplay proof.
+
+## First in-world finding (later on 2026-09-26)
+
+The user entered `league-cap-test`. `logs/latest.log` showed the active League
+catalog loading and the setup messages, but six `givepokemon` calls failed with
+the missing-species error. The likely cause is that ordinary function commands
+were parsed before Cobblemon species were ready. The fixture now calls a function macro that
+parses `givepokemon` at execution time; that correction has not yet been run
+in-game. The user's manually given six Pokemon were left unchanged.
+
+The CLC world record had leveling tier 1 (cap 15), and the log displayed CLC
+leveling-tier rejections while candies were tried. The Lv10 Charmander stopping
+at 15 matches the hard growth cap. Lv30 Pokemon kept showing Lv30 because this
+release has no virtual effective-level projection. Display and battle-level
+projection are a separate implementation task; the original deployment record
+above must not be read as proof that they exist.

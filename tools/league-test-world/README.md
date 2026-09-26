@@ -6,6 +6,13 @@ Starly/Bidoof 14), experience candies and rare candies, and places a terminal
 directly ahead. Right-click it with an empty hand. Test cap 15, then beat Roark
 and test growth up to 20. Existing saves and their parties are not copied or edited.
 
+The first deployed test pack had a command parsing error: ordinary function
+commands were parsed before Cobblemon's species registry was ready. The pack now
+uses a function macro so `givepokemon` is parsed at execution time. Players who
+already entered the original test world have the one-shot setup tag; this patch
+does not add Pokemon to their existing party. Use `/pokegive piplup level=14`
+manually there if needed, or create a fresh disposable test world.
+
 테스터: 싱글플레이에서 **League Cap Test - 15 to 20**을 선택한다. 첫 접속 시
 테스트 포켓몬 6마리·사탕이 지급되고 앞에 터미널이 설치된다. 빈손 우클릭으로 홈을
 열고 상한 15 → 강석 승리 → 상한 20 및 성장 재개를 확인한다. 기존 월드는 별개다.

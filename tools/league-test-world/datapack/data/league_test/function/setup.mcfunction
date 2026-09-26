@@ -8,12 +8,12 @@ setblock 3 127 -3 minecraft:torch
 spawnpoint @s 0 127 1
 tp @s 0.5 127 1.5 180 10
 gamemode survival @s
-givepokemon piplup level=14
-givepokemon turtwig level=15
-givepokemon chimchar level=14
-givepokemon shinx level=14
-givepokemon starly level=14
-givepokemon bidoof level=14
+function league_test:give_pokemon {species:"piplup",level:14}
+function league_test:give_pokemon {species:"turtwig",level:15}
+function league_test:give_pokemon {species:"chimchar",level:14}
+function league_test:give_pokemon {species:"shinx",level:14}
+function league_test:give_pokemon {species:"starly",level:14}
+function league_test:give_pokemon {species:"bidoof",level:14}
 give @s cobblemon:exp_candy_xs 32
 give @s cobblemon:exp_candy_s 16
 give @s cobblemon:exp_candy_xl 8
