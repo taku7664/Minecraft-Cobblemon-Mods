@@ -493,12 +493,11 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         /**
          * Decay rate of weight against regret, in units of the baseline adaptive regret band.
          *
-         * One means an action exactly at the edge of the band keeps `1/e` of the best action's
-         * weight. Replaced the pair of weight exponents that shaped the old power-law term; those
-         * were calibrated for a different formula and reusing them here made the risky end far too
-         * flat.
+         * Three means an action exactly at the edge of the band keeps `exp(-3)` of the best action's
+         * weight. With one, a neutral 30-point deficit behind a 100-point leader was still selected
+         * in 38% of seeded draws. Keep the runner-up possible without treating that gap as a near tie.
          */
-        const val BASE_DRAW_SHARPNESS = 1.0
+        const val BASE_DRAW_SHARPNESS = 3.0
         const val PLAN_SHARPNESS = 0.25
         const val RISK_TILT = 2.0
         const val PATTERN_TILT = 0.45
