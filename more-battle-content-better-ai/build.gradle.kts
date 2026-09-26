@@ -294,6 +294,19 @@ tasks.register<JavaExec>("replayNativeFirstDecision") {
     }
 }
 
+tasks.register<JavaExec>("replayDecisionSnapshot") {
+    group = "verification"
+    description = "Replays one decision saved by an AI test battle (logs/betterai-decisions/...)."
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.morebattlecontent.betterai.AiDecisionSnapshotReplay")
+    doFirst {
+        // -Psnapshot=<file> [-PreplayNative] ; legacy-only by default, which is exact for non-native turns.
+        setArgs(listOf(providers.gradleProperty("snapshot").get()) +
+            if (project.hasProperty("replayNative")) listOf("native") else emptyList())
+    }
+}
+
 tasks.register<JavaExec>("compareDamageOracle") {
     group = "verification"
     description = "Compares base damage rolls and KO thresholds against embedded Showdown (requires Node.js)."

@@ -18,6 +18,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainRegistry
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainSelectionPolicy
 import jbro.cobblemon.morebattlecontent.api.ai.BrainCapability
 import jbro.cobblemon.morebattlecontent.api.ai.BrainId
+import jbro.cobblemon.morebattlecontent.betterai.brain.AiTestDecisionSnapshot
 import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.morebattlecontent.betterai.brain.OpenRouterHttpTransport
 import jbro.cobblemon.morebattlecontent.betterai.brain.OpenRouterTacticalBrain
@@ -52,6 +53,8 @@ object MoreBattleContentBetterAi : ModInitializer {
             logger.error("Better AI config could not be loaded; external decisions are disabled: {}", exception.javaClass.name)
             BetterAiConfig()
         }
+        // Only `/mbc test ai-*` battles write snapshots; see AiTestDecisionSnapshot.
+        AiTestDecisionSnapshot.configuredDirectory = loader.gameDir.resolve("logs").resolve("betterai-decisions")
         val summaryPath = loader.gameDir.resolve("logs").resolve(DECISION_SUMMARY_FILE_NAME)
         val summaryExecutor = if (config.logDecisionSummary) createDecisionSummaryExecutor() else null
         val summarySink = if (config.logDecisionSummary) {

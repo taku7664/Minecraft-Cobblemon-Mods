@@ -201,6 +201,18 @@ internal class LocalTacticalBrain(
             .toList()
         val unboundedTestDecision = active?.trainerPersonaId
             ?.startsWith(BattleBrainContentIds.AI_TEST_PERSONA_PREFIX) == true
+        if (unboundedTestDecision) {
+            AiTestDecisionSnapshot.write(AiTestDecisionSnapshot(
+                battleId = battleId,
+                turn = context.state.turn,
+                trainerPersonaId = active?.trainerPersonaId,
+                trainerProfile = profile,
+                strategy = active?.strategy,
+                nativeContinuation = active?.nativeProductState != null,
+                capturedAtEpochMillis = System.currentTimeMillis(),
+                context = context,
+            ))?.let { path -> logger.info("[BetterAI Trace] battle={} turn={} phase=snapshot path={}", battleId, context.state.turn, path) }
+        }
         val decisionTrace = AiTestDecisionTrace.forTestPersona(
             active?.trainerPersonaId, difficultyContext, decisionStartedAtNanos,
         )
