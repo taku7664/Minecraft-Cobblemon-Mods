@@ -56,7 +56,7 @@ class CobblemonUiButton private constructor(
             y,
             width,
             height,
-            style.surface.resolve(spec.surfaceOverrides)
+            spec.resolveSurface(style)
         )
         drawContent(graphics, theme, style)
     }
@@ -77,7 +77,7 @@ class CobblemonUiButton private constructor(
         val indicator = style.selectionIndicator as? UiSelectionIndicator.Sprite
         val indicatorAndGap = if (indicator == null) 0 else iconSize + metrics.iconGap
         val iconAndGap = if (spec.icon == null) 0 else iconSize + metrics.iconGap
-        val titleWidth = (font.width(spec.title) * metrics.titleScale).toInt()
+        val titleWidth = if (spec.iconOnly) 0 else (font.width(spec.title) * metrics.titleScale).toInt()
         val supportingWidth = spec.supportingText?.let {
             (font.width(it) * metrics.supportingScale).toInt()
         } ?: 0
@@ -99,7 +99,9 @@ class CobblemonUiButton private constructor(
             drawSprite(graphics, spec.icon, iconLeft, iconTop, iconSize)
         }
 
-        if (spec.supportingText == null) {
+        if (spec.iconOnly) {
+            return
+        } else if (spec.supportingText == null) {
             drawScaledCentered(
                 graphics,
                 spec.title,

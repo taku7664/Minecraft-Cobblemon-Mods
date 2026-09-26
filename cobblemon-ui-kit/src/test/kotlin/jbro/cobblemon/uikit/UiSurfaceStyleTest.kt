@@ -26,6 +26,24 @@ class UiSurfaceStyleTest {
     }
 
     @Test
+    fun `circle rounded capsule and diamond expose symmetric spans`() {
+        val circle = (0 until 7).map { UiShape.Circle.horizontalSpan(7, 7, it) }
+        val rounded = (0 until 8).map { UiShape.RoundedRectangle(3).horizontalSpan(12, 8, it) }
+        val capsule = (0 until 7).map { UiShape.Capsule.horizontalSpan(12, 7, it) }
+        val diamond = (0 until 7).map { UiShape.Diamond.horizontalSpan(7, 7, it) }
+
+        assertEquals(circle.reversed(), circle)
+        assertTrue(circle.first().start > circle[3].start)
+        assertEquals(rounded.reversed(), rounded)
+        assertTrue(rounded.first().start > rounded[3].start)
+        assertEquals(capsule.reversed(), capsule)
+        assertTrue(capsule.first().start > capsule[3].start)
+        assertEquals(UiHorizontalSpan(3, 4), diamond.first())
+        assertEquals(UiHorizontalSpan(0, 7), diamond[3])
+        assertEquals(diamond.reversed(), diamond)
+    }
+
+    @Test
     fun `surface overrides can remove border and adjust opacity`() {
         val base = UiSurfaceStyle(
             shape = UiShape.Rectangle,
@@ -63,6 +81,7 @@ class UiSurfaceStyleTest {
     fun `invalid surface values are rejected`() {
         assertThrows(IllegalArgumentException::class.java) { UiShape.Chamfer(0) }
         assertThrows(IllegalArgumentException::class.java) { UiShape.Chamfer(2, emptySet()) }
+        assertThrows(IllegalArgumentException::class.java) { UiShape.RoundedRectangle(0) }
         assertThrows(IllegalArgumentException::class.java) { UiBorder.Solid(0xFFFFFFFF.toInt(), 0) }
         assertThrows(IllegalArgumentException::class.java) {
             UiSurfaceStyle(UiShape.Rectangle, UiFill.None, UiBorder.None, 1.1f)

@@ -45,4 +45,35 @@ class UiButtonSpecTest {
         assertTrue(defaultButton.copy(textShadow = true).resolveTextShadow(baseStyle))
         assertFalse(defaultButton.copy(textShadow = false).resolveTextShadow(shadowStyle))
     }
+
+    @Test
+    fun `icon-only presets stay square and retain an accessible label`() {
+        val button = UiButtonSpec.iconOnly(
+            label = Component.literal("Information"),
+            icon = UiIcon("cobblemon_ui_kit", "textures/gui/pixel/info.png"),
+            shape = UiIconButtonShape.CIRCLE,
+            size = UiControlSize.MEDIUM
+        )
+        val style = theme.style(UiButtonVariant.ICON, UiWidgetState.NORMAL)
+
+        assertEquals(24, button.resolveWidth(contentWidth = 200, availableWidth = 80, theme = theme))
+        assertEquals(UiShape.Circle, button.resolveSurface(style).shape)
+        assertEquals("Information", button.title.string)
+        assertTrue(button.iconOnly)
+    }
+
+    @Test
+    fun `icon-only buttons require an icon and icon variant`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            UiButtonSpec(Component.literal("Missing"), iconOnly = true)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            UiButtonSpec(
+                Component.literal("Wrong variant"),
+                icon = UiIcon("cobblemon_ui_kit", "textures/gui/pixel/info.png"),
+                iconOnly = true,
+                variant = UiButtonVariant.PRIMARY
+            )
+        }
+    }
 }

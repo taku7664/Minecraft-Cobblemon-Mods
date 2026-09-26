@@ -160,14 +160,15 @@ internal object GalleryWorldCaptureHarness {
             }
 
             if (topCaptured.get() && !scrollVerified) {
-                val consumed = (1..6).map {
-                    screen.mouseScrolled(
+                var consumed = false
+                repeat(64) {
+                    consumed = screen.mouseScrolled(
                         (client.window.guiScaledWidth / 2).toDouble(),
                         (client.window.guiScaledHeight / 2).toDouble(),
                         0.0,
                         -1.0
-                    )
-                }.any { it }
+                    ) || consumed
+                }
                 check(consumed) { "UI Kit gallery did not consume a viewport scroll" }
                 scrollVerified = true
                 logger.info("Verified UI Kit gallery scroll path")

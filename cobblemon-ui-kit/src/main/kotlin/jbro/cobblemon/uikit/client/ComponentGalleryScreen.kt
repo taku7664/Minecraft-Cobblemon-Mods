@@ -3,16 +3,23 @@ package jbro.cobblemon.uikit.client
 import jbro.cobblemon.uikit.CobblemonUiThemePresets
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiBorder
+import jbro.cobblemon.uikit.UiBadgeSpec
+import jbro.cobblemon.uikit.UiBadgeTone
 import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiControlSize
 import jbro.cobblemon.uikit.UiCorner
 import jbro.cobblemon.uikit.UiFill
 import jbro.cobblemon.uikit.UiIcon
+import jbro.cobblemon.uikit.UiIconButtonShape
+import jbro.cobblemon.uikit.UiListItemSpec
+import jbro.cobblemon.uikit.UiProgressSpec
 import jbro.cobblemon.uikit.UiShape
 import jbro.cobblemon.uikit.UiSurfaceOverrides
 import jbro.cobblemon.uikit.UiSurfaceStyle
+import jbro.cobblemon.uikit.UiTabSpec
 import jbro.cobblemon.uikit.UiThemePreset
+import jbro.cobblemon.uikit.UiToggleSpec
 import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.UiWidthPolicy
 import net.minecraft.client.gui.GuiGraphics
@@ -35,7 +42,7 @@ class ComponentGalleryScreen(
     private var viewportTop = 0
     private var viewportBottom = 0
     private var contentHeight = 0
-    private var scrollOffset = 0
+    private lateinit var scrollViewport: CobblemonUiScrollViewport
 
     override fun init() {
         CobblemonUiThemePresets.install(preset)
@@ -108,6 +115,43 @@ class ComponentGalleryScreen(
         )
 
         cursorY += 10
+        sectionY["shapes"] = cursorY
+        cursorY += 15
+        cursorY = addFlow(
+            contentLeft,
+            contentRight,
+            cursorY,
+            listOf(
+                UiButtonSpec.iconOnly(
+                    text("icon_square"),
+                    UiIcon("cobblemon_ui_kit", "textures/gui/pixel/info.png"),
+                    UiIconButtonShape.SQUARE
+                ),
+                UiButtonSpec.iconOnly(
+                    text("icon_circle"),
+                    UiIcon("cobblemon_ui_kit", "textures/gui/pixel/info.png"),
+                    UiIconButtonShape.CIRCLE
+                ),
+                UiButtonSpec.iconOnly(
+                    text("icon_diamond"),
+                    UiIcon("cobblemon_ui_kit", "textures/gui/pixel/info.png"),
+                    UiIconButtonShape.DIAMOND
+                ),
+                UiButtonSpec(
+                    text("rounded"),
+                    size = UiControlSize.SMALL,
+                    surfaceOverrides = UiSurfaceOverrides(shape = UiShape.RoundedRectangle(6))
+                ),
+                UiButtonSpec(
+                    text("capsule"),
+                    size = UiControlSize.SMALL,
+                    surfaceOverrides = UiSurfaceOverrides(shape = UiShape.Capsule)
+                )
+            ),
+            availableWidth
+        )
+
+        cursorY += 10
         sectionY["states"] = cursorY
         cursorY += 15
         val stateSpecs = UiWidgetState.entries.map { state ->
@@ -121,8 +165,75 @@ class ComponentGalleryScreen(
         cursorY = addStateFlow(contentLeft, contentRight, cursorY, stateSpecs, availableWidth)
 
         cursorY += 10
-        sectionY["list"] = cursorY
-        contentHeight = cursorY + 96
+        sectionY["widgets"] = cursorY
+        cursorY += 15
+
+        var tabX = contentLeft
+        listOf(
+            UiTabSpec(text("tab_gyms"), selected = true, width = UiWidthPolicy.Fixed(74)),
+            UiTabSpec(text("tab_elite"), width = UiWidthPolicy.Fixed(74)),
+            UiTabSpec(text("tab_champion"), width = UiWidthPolicy.Fixed(84))
+        ).forEach { spec ->
+            val tab = CobblemonUiTab.create(tabX, viewportTop + cursorY, availableWidth, spec)
+            addScrollingWidget(tab, cursorY)
+            tabX += tab.width + 4
+        }
+        cursorY += 25
+
+        var badgeX = contentLeft
+        listOf(
+            UiBadgeSpec(text("badge_ready"), UiBadgeTone.SUCCESS),
+            UiBadgeSpec(text("badge_locked"), UiBadgeTone.WARNING),
+            UiBadgeSpec(text("badge_master"), UiBadgeTone.INFO)
+        ).forEach { spec ->
+            val badge = CobblemonUiBadge.create(badgeX, viewportTop + cursorY, spec)
+            addScrollingWidget(badge, cursorY)
+            badgeX += badge.width + 5
+        }
+        cursorY += 22
+
+        val toggle = CobblemonUiToggle.create(
+            contentLeft,
+            viewportTop + cursorY,
+            availableWidth,
+            UiToggleSpec(text("toggle_level_cap"), value = true, width = UiWidthPolicy.Fill)
+        )
+        addScrollingWidget(toggle, cursorY)
+        cursorY += toggle.height + 5
+
+        val listItem = CobblemonUiListItem.create(
+            contentLeft,
+            viewportTop + cursorY,
+            availableWidth,
+            UiListItemSpec(
+                title = text("list_gym"),
+                supportingText = text("list_gym_detail"),
+                icon = UiIcon("cobblemon_ui_kit", "textures/gui/pixel/info.png"),
+                trailingText = text("list_gym_status"),
+                selected = true
+            )
+        )
+        addScrollingWidget(listItem, cursorY)
+        cursorY += listItem.height + 6
+
+        val progress = CobblemonUiProgressBar.create(
+            contentLeft,
+            viewportTop + cursorY,
+            availableWidth,
+            UiProgressSpec(5, 8, text("progress_badges"), showValue = true)
+        )
+        addScrollingWidget(progress, cursorY)
+        cursorY += progress.height
+
+        contentHeight = cursorY + 10
+        scrollViewport = CobblemonUiScrollViewport(
+            shellLeft + 1,
+            viewportTop,
+            shellWidth - 2,
+            viewportBottom - viewportTop,
+            contentHeight
+        )
+        scrollingWidgets.forEach { scrollViewport.register(it.widget, it.contentY) }
 
         val close = CobblemonUiButton.create(
             shellLeft + shellWidth - 78,
@@ -132,8 +243,7 @@ class ComponentGalleryScreen(
             press = ::onClose
         )
         addRenderableWidget(close)
-        scrollOffset = scrollOffset.coerceIn(0, maxScroll())
-        updateWidgetPositions()
+        scrollViewport.updateWidgetPositions()
     }
 
     private fun addFlow(
@@ -214,6 +324,11 @@ class ComponentGalleryScreen(
         return y + rowHeight
     }
 
+    private fun addScrollingWidget(widget: AbstractWidget, contentY: Int) {
+        addWidget(widget)
+        scrollingWidgets += ScrollingWidget(widget, contentY)
+    }
+
     override fun renderBackground(
         graphics: GuiGraphics,
         mouseX: Int,
@@ -246,8 +361,7 @@ class ComponentGalleryScreen(
             drawPixelHeader(graphics)
         }
 
-        graphics.enableScissor(shellLeft + 1, viewportTop, shellLeft + shellWidth - 1, viewportBottom)
-        try {
+        scrollViewport.render(graphics, mouseX, mouseY, partialTick) { scrollOffset ->
             sectionY.forEach { (key, contentY) ->
                 graphics.drawString(
                     font,
@@ -258,65 +372,9 @@ class ComponentGalleryScreen(
                     false
                 )
             }
-            drawListAndProgress(graphics)
-            scrollingWidgets.forEach { entry ->
-                if (entry.widget.visible) entry.widget.render(graphics, mouseX, mouseY, partialTick)
-            }
-        } finally {
-            graphics.disableScissor()
         }
 
         super.render(graphics, mouseX, mouseY, partialTick)
-
-        if (maxScroll() > 0) {
-            val trackTop = viewportTop + 3
-            val trackHeight = viewportBottom - viewportTop - 6
-            val thumbHeight = max(18, trackHeight * (viewportBottom - viewportTop) / contentHeight)
-            val thumbTravel = trackHeight - thumbHeight
-            val thumbTop = trackTop + if (maxScroll() == 0) 0 else thumbTravel * scrollOffset / maxScroll()
-            graphics.fill(shellLeft + shellWidth - 5, trackTop, shellLeft + shellWidth - 3, trackTop + trackHeight, theme.colors.panelAlt)
-            graphics.fill(shellLeft + shellWidth - 5, thumbTop, shellLeft + shellWidth - 3, thumbTop + thumbHeight, theme.colors.accentPrimary)
-        }
-    }
-
-    private fun drawListAndProgress(graphics: GuiGraphics) {
-        val theme = CobblemonUiThemes.registry.snapshot()
-        val top = viewportTop + sectionY.getValue("list") + 15 - scrollOffset
-        val left = shellLeft + 12
-        val right = shellLeft + shellWidth - 12
-        UiSurfaceRenderer.draw(graphics, left, top, right - left, 64, theme.surfaces.panel)
-        repeat(3) { index ->
-            val rowTop = top + 6 + index * 17
-            val rowStyle = theme.surfaces.panelAlt.copy(
-                fill = UiFill.Solid(if (index == 1) theme.colors.panelAlt else theme.colors.shell)
-            )
-            UiSurfaceRenderer.draw(graphics, left + 6, rowTop, right - left - 12, 13, rowStyle)
-            graphics.drawString(font, "${index + 1}. ${text("rank").string}", left + 10, rowTop + 3, theme.colors.textSecondary, false)
-        }
-        val barTop = top + 70
-        UiSurfaceRenderer.draw(
-            graphics,
-            left,
-            barTop,
-            right - left,
-            8,
-            theme.surfaces.panelAlt.copy(
-                shape = UiShape.Chamfer(2),
-                border = UiBorder.Solid(theme.colors.border)
-            )
-        )
-        UiSurfaceRenderer.draw(
-            graphics,
-            left + 1,
-            barTop + 1,
-            (right - left - 2) * 5 / 8,
-            6,
-            UiSurfaceStyle(
-                shape = UiShape.Chamfer(1),
-                fill = UiFill.VerticalGradient(theme.colors.accentGood, 0xFF28794E.toInt()),
-                border = UiBorder.None
-            )
-        )
     }
 
     private fun drawPixelHeader(graphics: GuiGraphics) {
@@ -369,26 +427,9 @@ class ComponentGalleryScreen(
         }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollX: Double, scrollY: Double): Boolean {
-        if (mouseX.toInt() in shellLeft..(shellLeft + shellWidth) && mouseY.toInt() in viewportTop..viewportBottom) {
-            val delta = if (scrollY != 0.0) scrollY else scrollX
-            val next = (scrollOffset - (delta * 18).toInt()).coerceIn(0, maxScroll())
-            if (next != scrollOffset) {
-                scrollOffset = next
-                updateWidgetPositions()
-                return true
-            }
-        }
+        if (scrollViewport.mouseScrolled(mouseX, mouseY, scrollX, scrollY)) return true
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY)
     }
-
-    private fun updateWidgetPositions() {
-        scrollingWidgets.forEach { entry ->
-            entry.widget.y = viewportTop + entry.contentY - scrollOffset
-            entry.widget.visible = entry.widget.y + entry.widget.height > viewportTop && entry.widget.y < viewportBottom
-        }
-    }
-
-    private fun maxScroll(): Int = max(0, contentHeight - (viewportBottom - viewportTop))
 
     companion object {
         private fun text(suffix: String, vararg args: Any): Component =
