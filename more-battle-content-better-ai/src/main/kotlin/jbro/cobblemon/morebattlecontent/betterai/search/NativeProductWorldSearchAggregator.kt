@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.betterai.search
 
 import kotlin.math.abs
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
@@ -12,6 +13,7 @@ internal data class NativeProductWorldSearchInput(
     val probability: Double,
     val definition: NativeBattleDefinition,
     val publicState: BattleStateView,
+    val publicActionCatalog: BattlePublicActionCatalogView? = null,
     val rootSnapshot: NativeProductRootSnapshot? = null,
     val evaluate: (BattleStateView) -> Double,
 ) {
@@ -111,6 +113,7 @@ internal class NativeProductWorldSearchAggregator(
                 NativeProductSearchRequest(
                     definition = world.definition,
                     publicState = world.publicState,
+                    publicActionCatalog = world.publicActionCatalog,
                     rootSnapshot = world.rootSnapshot,
                     productActions = request.productActions,
                     world = world.key,

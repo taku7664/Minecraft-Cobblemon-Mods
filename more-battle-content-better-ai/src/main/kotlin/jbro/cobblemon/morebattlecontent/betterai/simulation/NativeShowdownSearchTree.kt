@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.betterai.simulation
 
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 
@@ -22,6 +23,7 @@ internal class NativeShowdownSearchTree(
     rootFrame: NativeBattleFrame,
     publicTemplate: BattleStateView,
     private val publicTurnOffset: Int = 0,
+    private val publicActionCatalog: BattlePublicActionCatalogView? = null,
 ) {
     val rulesFingerprint: String = worker.rulesFingerprint
 
@@ -35,7 +37,8 @@ internal class NativeShowdownSearchTree(
         side: BattleSide,
         maxVoluntarySwitchTargetsPerSlot: Int? = null,
     ): List<BattleActionCandidate> =
-        NativeShowdownRequestActionFactory.actions(side, position.frame, maxVoluntarySwitchTargetsPerSlot)
+        NativeShowdownRequestActionFactory.actions(
+            side, position.frame, maxVoluntarySwitchTargetsPerSlot, position.state, publicActionCatalog)
 
     fun branch(
         position: NativeSearchPosition,

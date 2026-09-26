@@ -166,6 +166,7 @@ internal class NativeInitialProductDecisionEvaluator(
                         probability = world.probability,
                         definition = world.definition,
                         publicState = world.publicContext.state,
+                        publicActionCatalog = world.publicContext.publicActionCatalog,
                         evaluate = { state ->
                             leafEvaluator(state, world.publicContext, tuning) {
                                 nanoTime() - deadlineNanos < 0L
@@ -277,6 +278,7 @@ internal class NativeInitialProductDecisionEvaluator(
                         probability = world.probability,
                         definition = world.definition,
                         publicState = world.publicContext.state,
+                        publicActionCatalog = world.publicContext.publicActionCatalog,
                         rootSnapshot = world.rootSnapshot,
                         evaluate = { state ->
                             leafEvaluator(state, world.publicContext, tuning) {

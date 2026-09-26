@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.betterai.search
 
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
@@ -15,6 +16,7 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownSearch
 internal data class NativeProductSearchRequest(
     val definition: NativeBattleDefinition,
     val publicState: BattleStateView,
+    val publicActionCatalog: BattlePublicActionCatalogView? = null,
     val rootSnapshot: NativeProductRootSnapshot? = null,
     val productActions: List<BattleActionCandidate>,
     val world: NativeSearchWorldKey,
@@ -116,7 +118,8 @@ internal class NativeProductSearchRunner(
                 val rootIssues = NativeBattleRootValidator.validate(
                     request.definition, root, request.publicState, publicTurnOffset)
                 if (rootIssues.isNotEmpty()) return@lease NativeLeasedInvalidRoot(rootIssues)
-                val tree = NativeShowdownSearchTree(worker, root, request.publicState, publicTurnOffset)
+                val tree = NativeShowdownSearchTree(worker, root, request.publicState,
+                    publicTurnOffset, request.publicActionCatalog)
                 NativeLeasedProductSearchAttempt(
                     attempt = NativeRecursiveSearch(
                         tree = tree,
