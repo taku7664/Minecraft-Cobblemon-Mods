@@ -99,6 +99,7 @@
 76. `COBBLEMON_UI_MAINLINE_THEME_PRESETS_AMENDMENT.md` — 아르세우스 계열을 제외하고 GBA·DS 도트 본가와 가라르·팔데아 문법을 분리한 여섯 내장 테마 후보, 코드·Visual Pack 경계와 같은 월드 비교 게이트를 확정
 77. `COBBLEMON_UI_MAINLINE_THEME_RUNTIME_EVIDENCE.md` — 실제 개발 월드 한 세션에서 여섯 테마의 렌더·포커스·스크롤·닫기를 순회하고, 비교 캡처·25개 단위 테스트와 아직 검증하지 않은 소비자 경계를 기록
 78. `COBBLEMON_UI_PIXEL_LEAGUE_THEME_CORRECTION.md` — 세대명 도트 프리셋을 팔레트 연구로 정정하고, 단일 `pixel_league`의 픽셀 프레임·하드 섀도·내장 커서/아이콘과 스냅샷 경고 개발 캡처 경계를 확정
+79. `COBBLEMON_UI_TEXT_SHADOW_POLICY_AMENDMENT.md` — 공용 버튼 글자 그림자를 기본 해제하고, 테마 기본값과 `UiButtonSpec` 호출부 인자로 필요한 곳만 명시적으로 활성화하는 정책을 확정
 
 `MORE_BATTLE_CONTENT_CONTENT_PROPOSAL.md`는 `rejected` 상태의 과거 대안이다. 현재 제품 범위나 구현 우선순위를 결정할 때 사용하지 않는다.
 

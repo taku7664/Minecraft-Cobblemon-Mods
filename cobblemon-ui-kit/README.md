@@ -40,4 +40,6 @@ $env:COBBLEMON_UI_KIT_ACCEPT_SNAPSHOT_WARNING='1'
 
 The command is not registered outside Fabric's development environment. The gallery demonstrates semantic button variants and sizes, content/fill widths, widget states, a scrollable list surface, progress styling, theme switching, and composable rectangle/chamfer, solid/gradient fill, optional border, and background-opacity styles in English and Korean.
 
+Button text shadow is off by default. A theme may opt a style in with `UiButtonStyle.textShadow`, and a call site may explicitly override it with `UiButtonSpec(textShadow = true)` or `false`. Prefer the shadow-free default on opaque UI surfaces.
+
 This module does not replace vanilla inventory, crafting, chat, or other general Minecraft screens. Its final distribution form remains undecided until both League Challenge and Cobblemon Battle UI consume the runtime contract.
