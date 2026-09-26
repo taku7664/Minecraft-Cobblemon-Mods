@@ -158,7 +158,14 @@ class CobblemonUiBadge private constructor(
             drawIcon(graphics, it, contentLeft, y + (height - 8) / 2, 8)
             contentLeft += 11
         }
-        graphics.drawString(font, spec.label, contentLeft, y + (height - font.lineHeight) / 2, textColor, false)
+        graphics.drawString(
+            font,
+            spec.label,
+            contentLeft,
+            y + (height - font.lineHeight) / 2 + PIXEL_FONT_OPTICAL_OFFSET_Y,
+            textColor,
+            false
+        )
     }
 
     override fun updateWidgetNarration(output: NarrationElementOutput) {
@@ -212,7 +219,14 @@ class CobblemonUiToggle private constructor(
         UiSurfaceRenderer.draw(graphics, x, y, width, height, style.surface)
         val font = Minecraft.getInstance().font
         val padding = 8
-        graphics.drawString(font, spec.label, x + padding, y + (height - font.lineHeight) / 2, style.text, false)
+        graphics.drawString(
+            font,
+            spec.label,
+            x + padding,
+            y + (height - font.lineHeight) / 2 + PIXEL_FONT_OPTICAL_OFFSET_Y,
+            style.text,
+            false
+        )
 
         val trackWidth = 24
         val trackHeight = 12
@@ -341,3 +355,5 @@ private fun resolveWidth(policy: UiWidthPolicy, naturalWidth: Int, availableWidt
     UiWidthPolicy.Fill -> availableWidth
     is UiWidthPolicy.Fixed -> policy.pixels.coerceAtMost(availableWidth)
 }
+
+private const val PIXEL_FONT_OPTICAL_OFFSET_Y = 1
