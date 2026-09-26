@@ -6,6 +6,16 @@
 
 ---
 
+## [2026-09-27 03:10] 실게임 로그 분석 — battle `435db617` (02:25~, 18턴)
+
+근거: `cobblemon-dev/logs/latest.log`의 `[BetterAI Trace]`. 코드 수정은 아직 없다.
+
+- **Selector가 1위 교체를 뺌 (0턴 루카리오 106, 5턴 로즈레이드 135, 6턴 로즈레이드 195 → 모두 확률 0).** 세 건 모두 legacy 경로의 1위 `SWITCH`다. 1위가 적격이면 `bestScore`가 되어 확률이 0일 수 없으므로, 점수 차 필터가 아니라 `LocalWeightedActionSelector.canReceiveWeight`의 적격 판정에서 빠진 것이다. `execution=1.0`이므로 남는 경로는 `entryFaints` 또는 `switchIsSafeEnough`다. 가장 유력한 원인은 `switchIsSafeEnough`의 1위 교체 규칙이다: 최고점과 199점 이내에 피해를 주는 잔류 행동이 있으면 `worstResponseHpRetention >= 0.50`을 요구한다. 이 값은 `LocalRecursiveLookahead`가 모든 상대 응답과 모든 행동 순서에 대해 **평탄한 최솟값**으로 계산하므로, 같은 응답을 비관 가중치로 이미 반영한 점수를 다시 거부권으로 덮는다. 추적 대상 포켓몬이 투영 상태에서 조회되지 않으면 `?: 0.0`으로 HP 0이 되는 경로도 있다. 로그에 retention 값이 없어 둘 중 어느 쪽인지는 미확정이다.
+- **네이티브는 0턴에 한 번 실패한 뒤 전투 끝까지 돌아오지 않았다.** 0턴 실패 뒤 `nativeProductState=null`이 되어 1~17턴은 모두 `NOT_APPLICABLE`, 전부 동결된 수제 투영기로 판단했다.
+- **0턴 `ROOT_ACTION_MAPPING_INCOMPLETE unmatchedNative=4`.** 제품 후보 13개(기술 4×일반/테라 + 교체 5)는 모두 매핑됐고, 네이티브 요청에만 아군 행동 4개가 더 있었다. 기술 수와 같은 4개라서 세션에서 고르지 않은 기믹(다이맥스·메가 등)을 네이티브 규칙이 허용했을 가능성이 있으나, 로그에 개수만 있어 미확정이다. 매핑 검사는 `NativeRecursiveSearch.evaluateProduct`에서 세계 계획·루트 생성 뒤에 실행돼 실패까지 4.2초가 걸렸다. 아군 행동 집합은 상대 가설과 무관하므로 첫 루트에서 한 번만 검사하면 된다.
+- **4턴 13.47초는 탐색 자체가 원인이 아닐 가능성이 높다.** 02:27:05에 `Can't keep up! ... 10120ms behind`가 찍혀 서버 전체가 약 10초 멈췄다. 같은 세션에서 02:22~02:28 사이 멈춤이 10회(최대 36초) 있었고, 네이티브 규칙 준비에 56초가 걸렸다. GC·메모리 압박 등 프로세스 전체 원인을 먼저 확인해야 한다.
+- 로그의 `components=[]`는 점수 분해가 아니라 더블 복합 행동의 구성 ID(`componentActionIds`)라서 싱글에서는 항상 비어 있다.
+
 ## [2026-09-27 02:35] 이슈 — 네이티브 실패 시 레거시 탐색 폴백이 결정 문서와 충돌
 
 - `36cb2641`부터 `LocalTacticalBrain`은 네이티브 판단이 `PLAN_FAILED`·`RECONCILIATION_FAILED`·`SEARCH_FAILED`이면 예외를 올리지 않고 경고 로그와 `native_fallback_*` 태그만 남긴 뒤 수제 탐색으로 판단한다.
