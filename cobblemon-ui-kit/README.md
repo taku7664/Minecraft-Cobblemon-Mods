@@ -19,8 +19,22 @@ $env:COBBLEMON_UI_KIT_MANUAL_GALLERY='1'
 
 Create or enter any world. The gallery opens after the player joins and remains under manual control.
 
-`COBBLEMON_UI_KIT_CAPTURE_WORLD=1` is reserved for automated capture. It deliberately exercises focus, scrolling, close, and then stops the client; do not use it for manual review.
+Choose one of the built-in theme presets before starting the client:
 
-The command is not registered outside Fabric's development environment. The gallery demonstrates semantic button variants and sizes, content/fill widths, widget states, a scrollable list surface, progress styling, and composable rectangle/chamfer, solid/gradient fill, optional border, and background-opacity styles in English and Korean.
+```powershell
+$env:COBBLEMON_UI_KIT_THEME='galar_stadium'
+```
+
+Supported IDs are `league_neon`, `galar_stadium`, `paldea_portal`, `hoenn_pixel`, `johto_touch`, and `unova_pixel`.
+
+`COBBLEMON_UI_KIT_CAPTURE_WORLD=1` is reserved for automated capture. It deliberately exercises focus, scrolling, close, and then stops the client; do not use it for manual review. Add `COBBLEMON_UI_KIT_CAPTURE_ALL_THEMES=1` to capture the top and scrolled state of all six presets in one joined world. For repeatable local capture, pass an existing development world through Minecraft's quick-play argument:
+
+```powershell
+$env:COBBLEMON_UI_KIT_CAPTURE_WORLD='1'
+$env:COBBLEMON_UI_KIT_CAPTURE_ALL_THEMES='1'
+.\gradlew.bat :cobblemon-ui-kit:runClient --no-daemon --configure-on-demand --args="--quickPlaySingleplayer ui-kit-clean"
+```
+
+The command is not registered outside Fabric's development environment. The gallery demonstrates semantic button variants and sizes, content/fill widths, widget states, a scrollable list surface, progress styling, theme switching, and composable rectangle/chamfer, solid/gradient fill, optional border, and background-opacity styles in English and Korean.
 
 This module does not replace vanilla inventory, crafting, chat, or other general Minecraft screens. Its final distribution form remains undecided until both League Challenge and Cobblemon Battle UI consume the runtime contract.
