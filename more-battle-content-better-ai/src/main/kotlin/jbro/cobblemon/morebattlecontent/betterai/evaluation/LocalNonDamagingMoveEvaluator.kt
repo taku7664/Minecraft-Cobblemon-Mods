@@ -5,7 +5,6 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectTarget
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectView
-import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
@@ -40,9 +39,7 @@ internal object LocalNonDamagingMoveEvaluator {
         val recovery = candidate.facts?.selfHealingFractionRange?.let { range ->
             val averageHealing = (range.minimum + range.maximum) / 2.0
             val effectiveHealing = minOf(averageHealing, missingHp)
-            val publicLossAfterPreviousUse = repeatedRecoveryLoss(candidate, context, actor)
-            val repeatedHabitLoss = repeatedPureRecoveryHabitLoss(candidate, context, actor)
-            (effectiveHealing - publicLossAfterPreviousUse - repeatedHabitLoss).coerceAtLeast(0.0) * 100.0
+            effectiveHealing * 100.0
         } ?: 0.0
 
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()
@@ -102,54 +99,6 @@ internal object LocalNonDamagingMoveEvaluator {
         )
     }
 
-    private fun repeatedRecoveryLoss(
-        candidate: BattleActionCandidate,
-        context: BattleDecisionContext,
-        actor: BattlePokemonStateView?,
-    ): Double {
-        val actorId = actor?.battlePokemonId ?: return 0.0
-        val moveId = candidate.moveId ?: return 0.0
-        if (context.memory.sameMoveRepeatCount < 1 || !sameEffect(moveId, context.memory.lastMoveId)) return 0.0
-        val previousUse = context.state.observedEvents.lastOrNull { event ->
-            event.kind == BattleObservedEventKind.MOVE_USED &&
-                event.actorPokemonId == actorId &&
-                sameEffect(event.publicValueId, moveId)
-        } ?: return 0.0
-        return context.state.observedEvents.asSequence()
-            .filter { it.sequence > previousUse.sequence }
-            .filter { it.kind == BattleObservedEventKind.HP_CHANGED && it.actorPokemonId == actorId }
-            .mapNotNull { it.hpFractionDelta }
-            .filter { it < 0.0 }
-            .sumOf { -it }
-            .coerceIn(0.0, 1.0)
-    }
-
-    /**
-     * Stops a healthy actor from endlessly taking the same low-progress recovery line when the
-     * public event stream is too sparse to reconstruct the preceding damage. The pressure scales
-     * smoothly with HP and repetition, and disappears below the survival threshold so that a
-     * genuinely endangered actor can still keep healing.
-     */
-    private fun repeatedPureRecoveryHabitLoss(
-        candidate: BattleActionCandidate,
-        context: BattleDecisionContext,
-        actor: BattlePokemonStateView?,
-    ): Double {
-        val moveId = candidate.moveId ?: return 0.0
-        if (context.memory.sameMoveRepeatCount < MINIMUM_RECOVERY_REPEATS_FOR_HABIT_LOSS) return 0.0
-        if (!sameEffect(moveId, context.memory.lastMoveId)) return 0.0
-        val effects = candidate.moveDetails?.effects?.effects.orEmpty()
-        val pureRecovery = candidate.facts?.selfHealingFractionRange != null && isPureRecovery(effects)
-        if (!pureRecovery) return 0.0
-        val hp = actor?.hpFraction ?: return 0.0
-        if (hp <= RECOVERY_SURVIVAL_HP_THRESHOLD) return 0.0
-        val healthyScale = ((hp - RECOVERY_SURVIVAL_HP_THRESHOLD) /
-            (1.0 - RECOVERY_SURVIVAL_HP_THRESHOLD)).coerceIn(0.0, 1.0)
-        val repeatPressure = (context.memory.sameMoveRepeatCount - 1)
-            .coerceIn(1, MAXIMUM_RECOVERY_REPEAT_PRESSURE)
-        return healthyScale * repeatPressure * RECOVERY_HABIT_LOSS_PER_REPEAT
-    }
-
     private fun additionalScreenOpportunityCost(
         effects: List<jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectView>,
         context: BattleDecisionContext,
@@ -185,9 +134,6 @@ internal object LocalNonDamagingMoveEvaluator {
         }
     }
 
-    private fun sameEffect(first: String?, second: String?): Boolean =
-        first != null && second != null && canonicalEffectId(first) == canonicalEffectId(second)
-
     private fun isPureRecovery(effects: List<BattleMoveEffectView>): Boolean =
         effects.any { it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == BattleMoveEffectTarget.USER } &&
             effects.all { effect ->
@@ -207,9 +153,5 @@ internal object LocalNonDamagingMoveEvaluator {
     private const val MAJOR_STATUS_PRESSURE = 35.0
     private const val ADDITIONAL_SCREEN_OPPORTUNITY_COST = 10.0
     private const val EXPIRING_EFFECT_TURNS = 1
-    private const val MINIMUM_RECOVERY_REPEATS_FOR_HABIT_LOSS = 2
-    private const val RECOVERY_SURVIVAL_HP_THRESHOLD = 0.65
-    private const val RECOVERY_HABIT_LOSS_PER_REPEAT = 0.18
-    private const val MAXIMUM_RECOVERY_REPEAT_PRESSURE = 4
     private val SCREEN_EFFECTS = setOf("reflect", "lightscreen", "auroraveil")
 }

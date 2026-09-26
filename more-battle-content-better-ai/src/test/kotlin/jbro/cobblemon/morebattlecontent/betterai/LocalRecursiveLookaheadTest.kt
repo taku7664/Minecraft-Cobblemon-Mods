@@ -19,7 +19,6 @@ import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadDecisionSi
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadTerminationReason
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalRecursiveLookaheadEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalTurnBranchPruner
-import jbro.cobblemon.morebattlecontent.betterai.state.LocalRecursiveMoveHabit
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalRecursiveSwitchTempo
 import jbro.cobblemon.morebattlecontent.betterai.state.PublicTurnProjection
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
@@ -193,54 +192,6 @@ class LocalRecursiveLookaheadTest {
         assertTrue(enabled.publicResponseIncomplete)
         assertTrue(initial.pokemon.single { it.side == BattleSide.OPPONENT }.knownMoveIds.isEmpty())
         assertTrue(source.publicActionCatalog.forPokemon(OPPONENT_ID).isEmpty())
-    }
-
-    @Test
-    fun `recursive recovery habit uses root memory and keeps low hp survival recovery`() {
-        val initial = state(
-            ally = pokemon(ALLY_ID, BattleSide.ALLY, 0, 0.89, speed = 100),
-            opponents = listOf(pokemon(OPPONENT_ID, BattleSide.OPPONENT, 0, 1.0, speed = 90)),
-        )
-        val recovery = BattleActionCandidate(
-            actionId = "recover",
-            kind = BattleActionKind.USE_MOVE,
-            actorSlot = 0,
-            moveSlot = 0,
-            moveId = "cobblemon:recover",
-            moveDetails = BattleMoveCandidateView(
-                typeId = "normal",
-                damageCategory = BattleMoveDamageCategory.STATUS,
-                power = 0.0,
-                accuracy = 100.0,
-                priority = 0,
-                currentPp = 5,
-                targetPattern = BattleMoveTargetPattern.SELF,
-                effects = BattleMoveEffectsView(
-                    coverage = BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
-                    effects = listOf(
-                        BattleMoveEffectView(
-                            BattleMoveEffectKind.HEAL_FRACTION,
-                            BattleMoveEffectTarget.USER,
-                            fractionRange = BattleFractionRange(0.5, 0.5),
-                        ),
-                    ),
-                    scriptedBehavior = true,
-                ),
-            ),
-        )
-        val history = RecursiveSnapshotActionConstraints.seed(
-            initial,
-            allyLastMoveId = "cobblemon:recover",
-            allySameMoveRepeatCount = 2,
-        )
-
-        assertEquals(2, history.moveStreakByPokemon.getValue(ALLY_ID).count)
-        assertTrue(LocalRecursiveMoveHabit.cost(initial, BattleSide.ALLY, recovery, history) > 0.0)
-        val lowHp = state(
-            ally = pokemon(ALLY_ID, BattleSide.ALLY, 0, 0.25, speed = 100),
-            opponents = listOf(pokemon(OPPONENT_ID, BattleSide.OPPONENT, 0, 1.0, speed = 90)),
-        )
-        assertEquals(0.0, LocalRecursiveMoveHabit.cost(lowHp, BattleSide.ALLY, recovery, history), 1e-9)
     }
 
     @Test

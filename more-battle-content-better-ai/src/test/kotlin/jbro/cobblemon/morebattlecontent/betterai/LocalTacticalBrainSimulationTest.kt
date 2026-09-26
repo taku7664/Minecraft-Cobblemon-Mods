@@ -443,11 +443,11 @@ class LocalTacticalBrainSimulationTest {
         assertEquals(0.0, scoreAt(1.0))
         assertEquals(5.0, scoreAt(0.95), 1e-9)
         val repeated = BattleTacticalMemoryView(lastMoveId = "cobblemon:roost", sameMoveRepeatCount = 3)
-        assertEquals(0.0, scoreAt(0.95, repeated))
+        assertEquals(5.0, scoreAt(0.95, repeated), 1e-9)
     }
 
     @Test
-    fun `recovery loop stops when the public hp loss erased the previous heal`() {
+    fun `previous damage does not reduce the value of current recovery`() {
         val actorId = UUID.randomUUID()
         val recovery = move(
             id = "recover",
@@ -497,7 +497,7 @@ class LocalTacticalBrainSimulationTest {
         )
 
         assertEquals(
-            "small_damage",
+            "recover",
             decide(
                 candidates = listOf(recovery, chip),
                 turn = 5,
@@ -510,7 +510,7 @@ class LocalTacticalBrainSimulationTest {
     }
 
     @Test
-    fun `repeated pure recovery yields at high hp but remains available for low hp survival`() {
+    fun `repeated pure recovery keeps its hp based value`() {
         val recovery = move(
             id = "recover",
             power = 0.0,
@@ -541,7 +541,7 @@ class LocalTacticalBrainSimulationTest {
 
         assertEquals("recover", decide(listOf(recovery, chip), allyHp = 0.82).actionId)
         assertEquals(
-            "small_damage",
+            "recover",
             decide(listOf(recovery, chip), allyHp = 0.82, memory = repeatedRecovery).actionId,
         )
         assertEquals(

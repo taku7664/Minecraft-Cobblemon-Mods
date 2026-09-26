@@ -16,7 +16,6 @@ import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionRank
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleMind
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalResponseValue as TurnValue
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalOpponentResponseValue as OpponentTurnValue
-import jbro.cobblemon.morebattlecontent.betterai.state.LocalRecursiveMoveHabit
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalRecursiveSwitchTempo
 import jbro.cobblemon.morebattlecontent.betterai.state.PublicTurnProjection
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
@@ -695,18 +694,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                             opponentRepeated = history.opponentSwitchedLastTurn,
                         )
                     }
-                    val moveHabitTempo = LocalRecursiveMoveHabit.cost(
-                        state,
-                        BattleSide.OPPONENT,
-                        opponentAction,
-                        history,
-                    ) - LocalRecursiveMoveHabit.cost(
-                        state,
-                        BattleSide.ALLY,
-                        ownAction,
-                        history,
-                    )
-                    (value + switchTempo + moveHabitTempo - uncertaintyReserve) * outcome.probability
+                    (value + switchTempo - uncertaintyReserve) * outcome.probability
                 } / totalProbability
                 orderWeight to TurnValue(
                     value,
