@@ -1014,9 +1014,12 @@ class BattleDecisionContext private constructor(
     val publicActionCatalog: BattlePublicActionCatalogView,
     val opponentTeamPreview: BattleOpponentTeamPreviewView?,
     val exactOwnTeam: BattleExactOwnTeamView?,
+    localOpponentStatSpreads: Map<Int, BattleLocalOpponentStatSpreadView>,
     @Suppress("UNUSED_PARAMETER") compatibilityMarker: Unit,
 ) {
     val candidates: List<BattleActionCandidate> = Collections.unmodifiableList(ArrayList(candidates))
+    val localOpponentStatSpreads: Map<Int, BattleLocalOpponentStatSpreadView> =
+        Collections.unmodifiableMap(LinkedHashMap(localOpponentStatSpreads))
 
     init {
         require(candidates.isNotEmpty())
@@ -1031,6 +1034,9 @@ class BattleDecisionContext private constructor(
                 "Exact own team must cover every ally and cannot contain opponent identities"
             }
         }
+        require(this.localOpponentStatSpreads.keys.all { slot ->
+            opponentTeamPreview?.pokemon?.any { it.previewSlotId == slot } == true
+        }) { "Local opponent stat spreads must refer to preview slots" }
     }
 
     /** Derive a decision view without silently dropping public context added to this contract. */
@@ -1043,6 +1049,7 @@ class BattleDecisionContext private constructor(
         publicActionCatalog: BattlePublicActionCatalogView = this.publicActionCatalog,
         opponentTeamPreview: BattleOpponentTeamPreviewView? = this.opponentTeamPreview,
         exactOwnTeam: BattleExactOwnTeamView? = this.exactOwnTeam,
+        localOpponentStatSpreads: Map<Int, BattleLocalOpponentStatSpreadView> = this.localOpponentStatSpreads,
     ): BattleDecisionContext = BattleDecisionContext(
         requestId,
         state,
@@ -1052,6 +1059,7 @@ class BattleDecisionContext private constructor(
         publicActionCatalog,
         opponentTeamPreview,
         exactOwnTeam,
+        localOpponentStatSpreads,
         Unit,
     )
 
@@ -1072,6 +1080,7 @@ class BattleDecisionContext private constructor(
         publicActionCatalog,
         null,
         null,
+        emptyMap(),
         Unit,
     )
 
@@ -1092,6 +1101,7 @@ class BattleDecisionContext private constructor(
         publicActionCatalog,
         opponentTeamPreview,
         null,
+        emptyMap(),
         Unit,
     )
 }

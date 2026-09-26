@@ -19,16 +19,21 @@ class BattleOpponentPreviewBuildPoolView(
     abilities: List<BattleOpponentPreviewAbilityView>,
     genderRates: Map<String, Double>,
     val sourceId: String,
+    baseStats: Map<String, Int> = emptyMap(),
 ) {
     val abilities: List<BattleOpponentPreviewAbilityView> =
         Collections.unmodifiableList(ArrayList(abilities))
     val genderRates: Map<String, Double> =
         Collections.unmodifiableMap(LinkedHashMap(genderRates))
+    val baseStats: Map<String, Int> = Collections.unmodifiableMap(LinkedHashMap(baseStats))
 
     init {
         require(speciesId.isNotBlank())
         require(formId == null || formId.isNotBlank())
         require(sourceId.isNotBlank())
+        require(this.baseStats.isEmpty() ||
+            this.baseStats.keys == setOf("hp", "atk", "def", "spa", "spd", "spe") &&
+            this.baseStats.values.all { it > 0 }) { "Public base stats must contain six positive stats" }
         require(this.abilities.isNotEmpty()) { "Public build pool requires at least one legal ability" }
         require(this.abilities.map { it.abilityId }.distinct().size == this.abilities.size) {
             "Public build pool cannot contain duplicate ability IDs"

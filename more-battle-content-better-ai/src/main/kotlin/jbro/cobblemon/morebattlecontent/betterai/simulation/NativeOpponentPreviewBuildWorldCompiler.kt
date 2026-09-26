@@ -4,6 +4,7 @@ import java.util.Locale
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewPokemonView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerTier
+import jbro.cobblemon.morebattlecontent.api.ai.BattleLocalOpponentStatSpreadView
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalOpponentBuildUsageEntry
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalOpponentBuildUsageLookup
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalOpponentSpreadUsage
@@ -46,6 +47,7 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
         selectedPreviewSlotIds: List<Int>,
         tier: BattleTrainerTier,
         usage: LocalOpponentBuildUsageLookup,
+        exactStatSpreadsBySlot: Map<Int, BattleLocalOpponentStatSpreadView> = emptyMap(),
     ): NativeOpponentBuildWorldCompilation {
         val selectedSlots = selectedPreviewSlotIds.distinct().sorted()
         val previewBySlot = preview.pokemon.associateBy(BattleOpponentTeamPreviewPokemonView::previewSlotId)
@@ -92,7 +94,7 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
                 return@forEach
             }
             val candidates = compilePokemon(
-                pokemon, source, cap,
+                pokemon, source, cap, tier, exactStatSpreadsBySlot[slot],
                 priorSource = if (observedUsage == null) "generic-public-prior" else "usage-snapshot",
             )
             if (candidates.isEmpty()) {
@@ -149,6 +151,8 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
         pokemon: BattleOpponentTeamPreviewPokemonView,
         usage: LocalOpponentBuildUsageEntry,
         cap: Int,
+        tier: BattleTrainerTier,
+        exactStatSpread: BattleLocalOpponentStatSpreadView?,
         priorSource: String,
     ): List<WeightedBuild> {
         val pool = requireNotNull(pokemon.buildCandidatePool)
@@ -164,9 +168,20 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
             }
             if (usage.noItemRate > 0.0) add(WeightedValue<String?>(null, usage.noItemRate, "none"))
         }.sortedWith(VALUE_ORDER)
-        val spreads = usage.spreads.filter { it.rate > 0.0 }
+        val baseStats = pool.baseStats.takeIf { it.isNotEmpty() }
+        val observedSpreads = usage.spreads.filter { it.rate > 0.0 }
+        val spreads = (if (baseStats == null) observedSpreads else observedSpreads
+            .groupBy { canonical(it.natureId) }
+            .map { (_, candidates) ->
+                LocalOpponentSpreadUsage(
+                    candidates.first().natureId,
+                    LocalOpponentStatAssumption.evs(tier, baseStats, exactStatSpread),
+                    candidates.sumOf { it.rate },
+                )
+            }).asSequence()
             .sortedWith(compareByDescending<LocalOpponentSpreadUsage> { it.rate }
                 .thenBy(::spreadId))
+            .toList()
         val teraTypes = usage.teraTypeRates.entries.asSequence()
             .filter { it.value > 0.0 }
             .map { WeightedValue(canonical(it.key), it.value, canonical(it.key)) }
@@ -223,7 +238,11 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
             }
         }.let { bounded(it, cap) }
         partials = partials.asSequence().flatMap { partial ->
-            ivCandidates(requireNotNull(partial.spread)).asSequence().map { ivs ->
+            (if (baseStats == null) ivCandidates(requireNotNull(partial.spread)) else listOf(
+                WeightedIvs(LocalOpponentStatAssumption.ivs(tier, exactStatSpread), 1.0,
+                    if (exactStatSpread == null || tier == BattleTrainerTier.INTRODUCTORY ||
+                        tier == BattleTrainerTier.STANDARD) "assumed31" else "known"),
+            )).asSequence().map { ivs ->
                 partial.copy(
                     ivs = ivs.values,
                     weight = partial.weight * ivs.weight,

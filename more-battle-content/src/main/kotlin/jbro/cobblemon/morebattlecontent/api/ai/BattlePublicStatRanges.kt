@@ -5,6 +5,34 @@ package jbro.cobblemon.morebattlecontent.api.ai
  * These are not one jointly achievable build and accept no opponent build inputs.
  */
 object BattlePublicStatRanges {
+    /** A local AI hypothesis: IV/EV are fixed, while an unobserved nature remains a range. */
+    fun fromAssumedSpread(
+        level: Int,
+        baseStats: Map<String, Int>,
+        ivs: Map<String, Int>,
+        evs: Map<String, Int>,
+    ): BattleCombatStatRangesView {
+        val stats = setOf("hp", "atk", "def", "spa", "spd", "spe")
+        require(level in 1..100 && baseStats.keys == stats && baseStats.values.all { it > 0 })
+        require(ivs.keys == stats && ivs.values.all { it in 0..31 })
+        require(evs.keys == stats && evs.values.all { it in 0..252 } && evs.values.sum() <= 510)
+        fun nonHp(id: String): BattleIntegerRange {
+            val neutral = nonHpStat(baseStats.getValue(id), level, ivs.getValue(id), evs.getValue(id))
+            return BattleIntegerRange(neutral * 90 / 100, neutral * 110 / 100)
+        }
+        val hp = if (baseStats.getValue("hp") == SHEDINJA_BASE_HP) 1 else
+            hpStat(baseStats.getValue("hp"), level, ivs.getValue("hp"), evs.getValue("hp"))
+        return BattleCombatStatRangesView(
+            maxHp = BattleIntegerRange(hp, hp),
+            attack = nonHp("atk"),
+            defence = nonHp("def"),
+            specialAttack = nonHp("spa"),
+            specialDefence = nonHp("spd"),
+            speed = nonHp("spe"),
+            knowledge = BattleCombatStatKnowledge.LOCAL_OPPONENT_ESTIMATE,
+        )
+    }
+
     fun fromBaseStats(
         level: Int,
         hp: Int,

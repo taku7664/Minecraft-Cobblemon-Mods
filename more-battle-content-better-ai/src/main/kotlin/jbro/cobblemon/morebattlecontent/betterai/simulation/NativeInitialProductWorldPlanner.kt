@@ -137,6 +137,7 @@ internal class NativeInitialProductWorldPlanner(
                 rosterHypothesis.selectedPreviewSlotIds,
                 tier,
                 buildUsageForFormat(context.state.format),
+                context.localOpponentStatSpreads,
             )
             if (buildCompilation.issues.isNotEmpty()) {
                 return failure(

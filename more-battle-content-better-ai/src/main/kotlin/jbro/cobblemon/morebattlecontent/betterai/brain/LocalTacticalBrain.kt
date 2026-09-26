@@ -42,6 +42,7 @@ import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadBudget
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadBudgetPolicy
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadDecisionSignature
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalRecursiveLookaheadEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.simulation.LocalOpponentStatAssumption
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionEvaluation
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionStatus
@@ -122,7 +123,8 @@ internal class LocalTacticalBrain(
         val strategy = active?.strategy.takeUnless {
             profile.difficulty.tier == BattleTrainerTier.INTRODUCTORY
         }
-        val calculatedContext = PublicBattleTacticalCalculator.calculate(context)
+        val assumedContext = LocalOpponentStatAssumption.applyToPublicState(context, profile.difficulty.tier)
+        val calculatedContext = PublicBattleTacticalCalculator.calculate(assumedContext)
             .forPlanOwner(jbro.cobblemon.morebattlecontent.api.ai.BattlePlanOwner.LOCAL_BRAIN)
         val difficultyContext = if (profile.difficulty.tier == BattleTrainerTier.INTRODUCTORY) {
             calculatedContext.withoutActivePlan()

@@ -275,7 +275,7 @@ data class BattleIntegerRange(val minimum: Int, val maximum: Int) {
     }
 }
 
-enum class BattleCombatStatKnowledge { EXACT_OWN, PUBLIC_SPECIES_RANGE }
+enum class BattleCombatStatKnowledge { EXACT_OWN, PUBLIC_SPECIES_RANGE, LOCAL_OPPONENT_ESTIMATE }
 
 data class BattleCombatStatRangesView(
     val maxHp: BattleIntegerRange,

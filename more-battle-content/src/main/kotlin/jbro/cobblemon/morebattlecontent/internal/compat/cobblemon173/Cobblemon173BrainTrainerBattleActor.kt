@@ -24,9 +24,11 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleExactOwnTeamView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionValidator
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
 import jbro.cobblemon.morebattlecontent.api.ai.BattleKnowledgePolicy
+import jbro.cobblemon.morebattlecontent.api.ai.BattleLocalOpponentStatSpreadView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyBrief
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerTier
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleBrainDecisionCoordinator
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleBrainEndpoint
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleDecisionFallbackChain
@@ -172,6 +174,11 @@ internal class Cobblemon173BrainTrainerBattleActor(
                                 observationAdapter.transformedPokemon(),
                             ),
                         ),
+                        localOpponentStatSpreads = if (trainerProfile.difficulty.tier in setOf(
+                                BattleTrainerTier.ADVANCED, BattleTrainerTier.BOSS,
+                            )) {
+                            actualOpponentStatSpreadsByPreviewSlot()
+                        } else emptyMap(),
                     )
                 }
                 val decision = fallbackChain.decide(
@@ -470,6 +477,28 @@ internal class Cobblemon173BrainTrainerBattleActor(
         compatibilityCallOrNull { battle.getActor(opponentActorId) }?.pokemonList.orEmpty().associate { pokemon ->
             pokemon.uuid to pokemon.moveSet.getMoves().mapTo(linkedSetOf()) { move -> move.name }
         }
+
+    /** Match only unique public species/form identities; ambiguity must never assign a private spread to the wrong slot. */
+    private fun actualOpponentStatSpreadsByPreviewSlot(): Map<Int, BattleLocalOpponentStatSpreadView> {
+        val preview = opponentTeamPreview ?: return emptyMap()
+        val actual = compatibilityCallOrNull { battle.getActor(opponentActorId) }?.pokemonList.orEmpty()
+        val exactById = actual.takeIf { it.isNotEmpty() }?.let(Cobblemon173ExactOwnTeamView::from)
+            ?.builds?.associateBy { it.battlePokemonId }.orEmpty()
+        return preview.pokemon.mapNotNull { slot ->
+            val candidates = actual.filter { pokemon ->
+                pokemon.effectedPokemon.species.resourceIdentifier.toString().equals(slot.speciesId, true) &&
+                    (slot.formId == null || pokemon.effectedPokemon.form.name.equals(slot.formId, true))
+            }
+            val duplicateSlots = preview.pokemon.count { other ->
+                other.speciesId.equals(slot.speciesId, true) && other.formId.equals(slot.formId, true)
+            }
+            if (candidates.size != 1 || duplicateSlots != 1) null else {
+                exactById[candidates.single().uuid]?.let { build ->
+                    slot.previewSlotId to BattleLocalOpponentStatSpreadView(build.ivs, build.evs)
+                }
+            }
+        }.toMap()
+    }
 
     private fun logFailure(operation: String, throwable: Throwable) {
         compatibilityCallOrNull {
