@@ -101,7 +101,7 @@ object CobblemonUiDefaultTheme {
     }
 
     val snapshot = UiThemeSnapshot.create(
-        id = "cobblemon_default",
+        id = "league_neon",
         colors = colors,
         typography = typography,
         spacing = spacing,

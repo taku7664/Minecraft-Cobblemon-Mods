@@ -1,5 +1,6 @@
 package jbro.cobblemon.uikit
 
+import jbro.cobblemon.uikit.client.GalleryHarnessConfig
 import jbro.cobblemon.uikit.client.GalleryHarnessMode
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -29,5 +30,30 @@ class GalleryHarnessModeTest {
     @Test
     fun `harness is off by default`() {
         assertEquals(GalleryHarnessMode.OFF, GalleryHarnessMode.fromEnvironment(emptyMap()))
+    }
+
+    @Test
+    fun `capture configuration selects an exact theme preset`() {
+        val config = GalleryHarnessConfig.fromEnvironment(
+            mapOf(
+                "COBBLEMON_UI_KIT_CAPTURE_WORLD" to "1",
+                "COBBLEMON_UI_KIT_THEME" to "hoenn_pixel"
+            )
+        )
+
+        assertEquals(GalleryHarnessMode.CAPTURE, config.mode)
+        assertEquals(UiThemePreset.HOENN_PIXEL, config.preset)
+    }
+
+    @Test
+    fun `unknown capture theme falls back to the league baseline`() {
+        val config = GalleryHarnessConfig.fromEnvironment(
+            mapOf(
+                "COBBLEMON_UI_KIT_CAPTURE_WORLD" to "1",
+                "COBBLEMON_UI_KIT_THEME" to "hisui"
+            )
+        )
+
+        assertEquals(UiThemePreset.LEAGUE_NEON, config.preset)
     }
 }

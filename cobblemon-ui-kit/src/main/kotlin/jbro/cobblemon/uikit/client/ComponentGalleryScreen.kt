@@ -1,5 +1,6 @@
 package jbro.cobblemon.uikit.client
 
+import jbro.cobblemon.uikit.CobblemonUiThemePresets
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiBorder
 import jbro.cobblemon.uikit.UiButtonSpec
@@ -11,6 +12,7 @@ import jbro.cobblemon.uikit.UiIcon
 import jbro.cobblemon.uikit.UiShape
 import jbro.cobblemon.uikit.UiSurfaceOverrides
 import jbro.cobblemon.uikit.UiSurfaceStyle
+import jbro.cobblemon.uikit.UiThemePreset
 import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.UiWidthPolicy
 import net.minecraft.client.gui.GuiGraphics
@@ -20,7 +22,9 @@ import net.minecraft.network.chat.Component
 import kotlin.math.max
 import kotlin.math.min
 
-class ComponentGalleryScreen : Screen(text("title")) {
+class ComponentGalleryScreen(
+    private val preset: UiThemePreset = CobblemonUiThemePresets.currentPreset()
+) : Screen(text("title")) {
     private data class ScrollingWidget(val widget: AbstractWidget, val contentY: Int)
 
     private val scrollingWidgets = mutableListOf<ScrollingWidget>()
@@ -34,6 +38,7 @@ class ComponentGalleryScreen : Screen(text("title")) {
     private var scrollOffset = 0
 
     override fun init() {
+        CobblemonUiThemePresets.install(preset)
         clearWidgets()
         scrollingWidgets.clear()
         sectionY.clear()
@@ -48,6 +53,27 @@ class ComponentGalleryScreen : Screen(text("title")) {
         val availableWidth = contentRight - contentLeft
         var cursorY = 8
 
+        sectionY["themes"] = cursorY
+        cursorY += 15
+        cursorY = addActionFlow(
+            contentLeft,
+            contentRight,
+            cursorY,
+            UiThemePreset.entries.map { candidate ->
+                UiButtonSpec(
+                    title = text("theme.${candidate.id}"),
+                    variant = UiButtonVariant.SECONDARY,
+                    size = UiControlSize.SMALL,
+                    selected = candidate == preset
+                ) to {
+                    CobblemonUiThemePresets.install(candidate)
+                    minecraft?.setScreen(ComponentGalleryScreen(candidate))
+                }
+            },
+            availableWidth
+        )
+
+        cursorY += 10
         sectionY["buttons"] = cursorY
         cursorY += 15
         cursorY = addFlow(
@@ -147,6 +173,32 @@ class ComponentGalleryScreen : Screen(text("title")) {
         return y + rowHeight
     }
 
+    private fun addActionFlow(
+        left: Int,
+        right: Int,
+        startY: Int,
+        specs: List<Pair<UiButtonSpec, () -> Unit>>,
+        availableWidth: Int
+    ): Int {
+        var x = left
+        var y = startY
+        var rowHeight = 0
+        specs.forEach { (spec, press) ->
+            var widget = CobblemonUiButton.create(x, viewportTop + y, availableWidth, spec, press = press)
+            if (x != left && x + widget.width > right) {
+                x = left
+                y += rowHeight + 5
+                rowHeight = 0
+                widget = CobblemonUiButton.create(x, viewportTop + y, availableWidth, spec, press = press)
+            }
+            addWidget(widget)
+            scrollingWidgets += ScrollingWidget(widget, y)
+            x += widget.width + 5
+            rowHeight = max(rowHeight, widget.height)
+        }
+        return y + rowHeight
+    }
+
     private fun addStateFlow(
         left: Int,
         right: Int,
@@ -192,7 +244,14 @@ class ComponentGalleryScreen : Screen(text("title")) {
             theme.surfaces.shell
         )
         graphics.drawString(font, title, shellLeft + 12, shellTop + 10, theme.colors.textPrimary, false)
-        graphics.drawString(font, text("subtitle"), shellLeft + 12, shellTop + 24, theme.colors.textSecondary, false)
+        graphics.drawString(
+            font,
+            text("subtitle", text("theme.${preset.id}")),
+            shellLeft + 12,
+            shellTop + 24,
+            theme.colors.textSecondary,
+            false
+        )
 
         graphics.enableScissor(shellLeft + 1, viewportTop, shellLeft + shellWidth - 1, viewportBottom)
         try {
@@ -290,7 +349,7 @@ class ComponentGalleryScreen : Screen(text("title")) {
     private fun maxScroll(): Int = max(0, contentHeight - (viewportBottom - viewportTop))
 
     companion object {
-        private fun text(suffix: String): Component =
-            Component.translatable("screen.cobblemon_ui_kit.gallery.$suffix")
+        private fun text(suffix: String, vararg args: Any): Component =
+            Component.translatable("screen.cobblemon_ui_kit.gallery.$suffix", *args)
     }
 }
