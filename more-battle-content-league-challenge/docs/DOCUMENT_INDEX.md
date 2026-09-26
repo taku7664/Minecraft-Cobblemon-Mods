@@ -4,7 +4,7 @@
 - 대상: 기획자, MBC 본체 구현자, League Challenge 구현자, 데이터·리소스팩 제작자
 - 최종 갱신: 2026-09-26 — 서버 시스템 인계와 UI Kit 콘텐츠 프리미티브 반영
 
-현재 구현 범위와 남은 UI 연결·배포·실제 월드 검증은 `SYSTEM_IMPLEMENTATION_V1.md`를
+최신 제품 UI 연결은 `LIVE_UI_WIRING_V1.md`, 서버 구현은 `SYSTEM_IMPLEMENTATION_V1.md`를
 먼저 확인한다. 기존 기획 문서는 결정 이력으로 보존하며, 그 안의 과거 미구현 상태나
 레벨캡 제공자 미정 표기를 현재 상태로 해석하지 않는다. 제공자는 CLC로 확정됐다.
 
@@ -12,6 +12,7 @@
 
 | 문서 | 역할 |
 | --- | --- |
+| [LIVE_UI_WIRING_V1.md](LIVE_UI_WIRING_V1.md) | 실제 터미널 홈과 서버 요청 연결, Better AI 진입점 보존, 패키징과 검증 경계를 기록한다. |
 | [SYSTEM_IMPLEMENTATION_V1.md](SYSTEM_IMPLEMENTATION_V1.md) | 구현된 서버 진행도·저장·데이터팩·외부 연동·MBC API 경계, 클라이언트 통신과 UI 인계, 미검증 범위를 기록한다. |
 | [DECISIONS.md](DECISIONS.md) | 지금까지 채택·보류·기각된 결정을 한곳에서 확인한다. |
 | [PRODUCT_SCOPE.md](PRODUCT_SCOPE.md) | 제품 목표, 비목표, 용어와 모듈 경계를 정의한다. |

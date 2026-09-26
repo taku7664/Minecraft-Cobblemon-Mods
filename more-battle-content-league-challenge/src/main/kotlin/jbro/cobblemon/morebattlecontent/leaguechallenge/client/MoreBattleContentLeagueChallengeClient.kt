@@ -12,11 +12,13 @@ import net.minecraft.network.chat.Component
 object MoreBattleContentLeagueChallengeClient : ClientModInitializer {
     override fun onInitializeClient() {
         LeagueClientSession.register()
+        LeagueHomeController.register()
         if (!DevelopmentEnvironmentGate.shouldRegister(FabricLoader.getInstance().isDevelopmentEnvironment)) {
             return
         }
 
         LeagueUiCaptureHarness.installFromEnvironment()
+        LeagueLiveCaptureHarness.installFromEnvironment()
 
         ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
             val command = literal("mbc-league-ui").executes { context ->

@@ -4,6 +4,7 @@
 - Audience: League server maintainer and the separate UI Toolkit/League screen implementer.
 - Updates: [DECISIONS.md](DECISIONS.md), [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), [MBC_CORE_CHANGES.md](MBC_CORE_CHANGES.md), [EXTERNAL_INTEGRATIONS.md](EXTERNAL_INTEGRATIONS.md).
 - These planning baselines remain historical. This document describes implemented behavior; it is not a claim of completed gameplay verification.
+- Client UI status is superseded by [LIVE_UI_WIRING_V1.md](LIVE_UI_WIRING_V1.md); the original handoff below is retained as history.
 
 ## Confirmed and provisional decisions
 

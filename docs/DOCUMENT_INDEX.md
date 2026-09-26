@@ -106,6 +106,7 @@
 83. `COBBLEMON_UI_CONTENT_PRIMITIVES_AMENDMENT.md` — 여러 줄 본문·패널·단계 트랙·순서형 선출·렌더 슬롯·지속 안내·앵커 배치와 스크롤 키보드/드래그 계약을 확정
 84. `BETTER_COBBLEMON_MUSIC_RESOURCE_CATALOG_AND_MAPPING_DECISION.md` — 공식 ZIP의 OGG·사운드 이벤트·기본 카탈로그 소유권, 확장 카탈로그, 안정 ID, `settings.json`·`overrides.json`, 구형 생성팩 종료를 확정한 현행 계약
 85. `../better-cobblemon-music/RCT_ROLE_SUPPORT_RETIREMENT_2026-09-22.md` — RCT 역할 조회와 `battle.roles`·`battle.gym`을 전부 제거하고 NPC 여부만 사용하는 현행 종료 계약
+86. `../more-battle-content-league-challenge/docs/LIVE_UI_WIRING_V1.md` — 실제 터미널 홈과 서버 요청 연결, Better AI 진입점 보존, 임시 UI Kit 내장 배포와 검증 경계
 
 `MORE_BATTLE_CONTENT_CONTENT_PROPOSAL.md`는 `rejected` 상태의 과거 대안이다. 현재 제품 범위나 구현 우선순위를 결정할 때 사용하지 않는다.
 

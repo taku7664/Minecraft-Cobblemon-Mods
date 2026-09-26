@@ -15,11 +15,24 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
     // Same-workspace Loom project: compile current named output, not a cached remap of its old release JAR.
     implementation(project(path = ":more-battle-content", configuration = "namedElements")) { isTransitive = false }
+    runtimeOnly(project(path = ":more-battle-content", configuration = "namedElements")) { isTransitive = false }
+    implementation(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
+    runtimeOnly(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
+    // Provisional self-contained client delivery; Fabric deduplicates the nested mod across consumers.
+    include(project(":cobblemon-ui-kit")) { isTransitive = false }
     modCompileOnly("com.cobblemon:mod:${property("cobblemon_maven_version")}") { isTransitive = false }
     modImplementation("com.cobblemon:fabric:${property("cobblemon_maven_version")}")
+    // Runtime-only companions required by MBC; not bundled into the League release.
+    modRuntimeOnly("maven.modrinth:cobblemon-mega-showdown:${property("mega_showdown_version_id")}")
+    modRuntimeOnly("maven.modrinth:architectury-api:${property("architectury_api_version_id")}")
+    modRuntimeOnly("maven.modrinth:accessories:${property("accessories_version_id")}")
     modImplementation("maven.modrinth:pokebadges:A93HZDyB")
     modImplementation("maven.modrinth:cobbled-level-control:uZaphEIC")
     modImplementation("maven.modrinth:matthiesen-core:azvkmoed")
+    modRuntimeOnly("maven.modrinth:forge-config-api-port:N5qzq0XV")
+    // Loom strips nested libraries from remapped Modrinth artifacts in development.
+    runtimeOnly("com.electronwill.night-config:core:3.8.0")
+    runtimeOnly("com.electronwill.night-config:toml:3.8.0")
     modCompileOnly("maven.modrinth:modmenu:6lgOkclV")
     // The retained development spike needs owo's injected vanilla widget interfaces during compilation.
     modImplementation("io.wispforest:owo-lib:${property("owo_lib_version")}")

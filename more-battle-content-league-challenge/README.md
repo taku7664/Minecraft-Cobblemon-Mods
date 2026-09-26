@@ -5,9 +5,10 @@
 
 서버 진행도·저장, 데이터팩 콘텐츠, PokeBadges·Cobbled Level Control(CLC) 연동,
 전용 터미널, MBC 전투·보상·시설 잠금과 서버·클라이언트 통신을 구현했다.
-실제 League 화면은 아직 서버 상태에 연결하지 않았다. 개발 명령 `/mbc-league-ui`는
-별도 fixture를 열며, 제품 UI나 실제 월드 플레이의 완료 증거가 아니다.
-구현 범위와 UI 연결 방법은 [시스템 구현 및 UI 인계](docs/SYSTEM_IMPLEMENTATION_V1.md)를 따른다.
+전용 터미널의 실제 League 홈은 UI Kit 위젯으로 서버 상태와 도전 요청에 연결했다.
+개발 명령 `/mbc-league-ui`는 여전히 별도 fixture를 열며, 실제 진행도를 변경하지 않는다.
+최신 연결 범위와 검증 경계는 [제품 UI 연결](docs/LIVE_UI_WIRING_V1.md), 서버 구현은
+[시스템 구현 및 UI 인계](docs/SYSTEM_IMPLEMENTATION_V1.md)를 따른다.
 
 ## 모듈 이름
 
@@ -50,7 +51,7 @@
 
 레벨캡 제공자는 사용자 확인을 받은 CLC다. 내장 레벨캡·상대 팀·BP 보상은 데이터팩으로
 교체할 수 있는 초기 콘텐츠이며, 최종 밸런스가 아니다. CLC의 단계별 레벨을 리그 데이터와
-맞춰야 한다. UI Toolkit과 Battle UI는 별도 담당 범위이며 실제 League 화면 연결,
-클라이언트·서버 배포와 실제 월드 검증은 아직 완료하지 않았다.
+맞춰야 한다. UI Toolkit과 Battle UI는 별도 담당 범위다. League는 공용 위젯을 소비하며
+Battle UI를 교체하지 않는다. 배포와 전체 리그 완주 검증은 아직 완료하지 않았다.
 
 기존 기획 문서는 결정 이력으로 보존한다. 현재 구현과 그 한계는 시스템 구현 문서를 먼저 확인한다.

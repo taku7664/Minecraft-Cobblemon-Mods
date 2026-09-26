@@ -19,11 +19,12 @@ object LeagueClientSession {
         return AutoCloseable { listeners -= listener }
     }
 
-    fun send(action: LeagueAction, challengeId: String = "") {
-        val state = current ?: return
-        if (!ClientPlayNetworking.canSend(LeagueIntentPayload.TYPE)) return
+    fun send(action: LeagueAction, challengeId: String = ""): Boolean {
+        val state = current ?: return false
+        if (!ClientPlayNetworking.canSend(LeagueIntentPayload.TYPE)) return false
         ClientPlayNetworking.send(LeagueIntentPayload(state.nonce, UUID.randomUUID(), state.revision,
             state.catalogRevision, action, challengeId))
+        return true
     }
 
     internal fun register() {

@@ -40,6 +40,16 @@ class LeagueChallengeModuleContractTest {
     }
 
     @Test
+    fun `client toolkit is bundled without making dedicated servers depend on a client mod`() {
+        val dependencies = json(resources.resolve("fabric.mod.json")).getAsJsonObject("depends")
+        assertFalse(dependencies.has("cobblemon_ui_kit"))
+        val build = Files.readString(Path.of("build.gradle.kts"))
+        assertTrue(build.contains("include(project(\":cobblemon-ui-kit\"))"))
+        val client = Files.readString(Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/leaguechallenge/client/MoreBattleContentLeagueChallengeClient.kt"))
+        assertTrue(client.indexOf("LeagueHomeController.register()") < client.indexOf("DevelopmentEnvironmentGate.shouldRegister"))
+    }
+
+    @Test
     fun `english and korean translations expose the same bootstrap keys`() {
         val english = language("en_us")
         val korean = language("ko_kr")

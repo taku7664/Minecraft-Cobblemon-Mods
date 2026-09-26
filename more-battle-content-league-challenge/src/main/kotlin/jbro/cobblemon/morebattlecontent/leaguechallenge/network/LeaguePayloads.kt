@@ -12,7 +12,8 @@ data class LeagueChallengeView(val id: String, val nameKey: String, val status: 
 data class LeagueView(val nonce: UUID, val revision: Long, val catalogRevision: Long, val nameKey: String,
     val badges: Int, val rank: String, val cap: Int, val champion: Boolean, val bp: Long,
     val challenges: List<LeagueChallengeView>, val runChallenge: String?, val awaitingNext: Boolean,
-    val pendingRewards: Boolean, val errorKey: String? = null)
+    val pendingRewards: Boolean, val errorKey: String? = null,
+    val openScreen: Boolean = false, val runNameKey: String? = null)
 
 data class LeagueStatePayload(val json: String) : CustomPacketPayload {
     override fun type() = TYPE

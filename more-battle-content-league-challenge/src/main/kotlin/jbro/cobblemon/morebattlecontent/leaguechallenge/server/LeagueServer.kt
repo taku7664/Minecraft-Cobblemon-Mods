@@ -71,6 +71,8 @@ object LeagueServer {
         validate(player, session)
         check(ServerPlayNetworking.canSend(player, LeagueStatePayload.TYPE)) { "client_missing" }
         sessions[player.uuid] = session
+        // Open even when integration setup rejects reconciliation, so its error can be displayed.
+        send(player, openScreen = true)
         reconcile(player)
         send(player)
     }
@@ -137,7 +139,11 @@ object LeagueServer {
                 val latest = storage.read(catalog.id, player.uuid)
                 val completed = LeagueEngine(catalog).finish(latest, run.battleToken, outcome == ManagedPveBattles.Outcome.WIN, System.currentTimeMillis())
                 commit(player.server, catalog.id, player.uuid, completed)
-                player.server.playerList.getPlayer(player.uuid)?.let { online -> reconcileSafely(online); send(online) }
+                player.server.playerList.getPlayer(player.uuid)?.let { online ->
+                    reconcileSafely(online)
+                    // Idempotent callbacks do not repeatedly reopen the screen.
+                    send(online, openScreen = completed != latest)
+                }
             }
             check(id != null) { "battle_unavailable" }
         } catch (failure: RuntimeException) {
@@ -191,7 +197,7 @@ object LeagueServer {
         server.overworld().dataStorage.save()
     }
 
-    private fun send(player: ServerPlayer, errorKey: String? = null) {
+    private fun send(player: ServerPlayer, errorKey: String? = null, openScreen: Boolean = false) {
         val session = sessions[player.uuid] ?: return
         val catalog = LeagueCatalogResources.current ?: return
         val state = LeagueSavedData.get(player.server).read(catalog.id, player.uuid)
@@ -206,7 +212,9 @@ object LeagueServer {
         }
         val view = LeagueView(session.nonce, state.revision, LeagueCatalogResources.revision, catalog.nameKey,
             badges, rank, engine.cap(state), state.champion, BattlePointRewards.balance(player.server, player.uuid), views,
-            state.run?.challengeId, state.run?.awaitingNext ?: false, state.rewards.any { !it.badgeDone || !it.bpDone }, errorKey)
+            state.run?.challengeId, state.run?.awaitingNext ?: false, state.rewards.any { !it.badgeDone || !it.bpDone }, errorKey,
+            openScreen && runCatching { validate(player, session) }.isSuccess,
+            state.run?.let { it.encounters[it.index].nameKey })
         if (ServerPlayNetworking.canSend(player, LeagueStatePayload.TYPE)) ServerPlayNetworking.send(player, LeagueStatePayload(gson.toJson(view)))
     }
 
