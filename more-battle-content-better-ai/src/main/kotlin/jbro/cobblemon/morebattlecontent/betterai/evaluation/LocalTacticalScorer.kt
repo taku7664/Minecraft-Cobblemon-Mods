@@ -149,6 +149,11 @@ internal object LocalTacticalScorer {
             return mechanicResourceAdjustment(candidate) + strategyMoveAdjustment(candidate, context, strategy)
         }
         return -publicAllyCollateral(candidate, context, tuning) -
+            (if (LocalPublicMechanicsKernel.hasUnconfirmedAbilityImmunity(candidate, context)) {
+                UNCERTAIN_ABILITY_IMMUNITY_PENALTY
+            } else {
+                0.0
+            }) + LocalSetupMovePreference.bonus(candidate, context) -
             LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.saturatedStatStagePenalty(candidate, context) -
@@ -237,7 +242,13 @@ internal object LocalTacticalScorer {
             0.0
         }
         val total = pressure + priorityBonus + knockoutBonus + spreadBonus -
-            recoilPenalty - publicAllyCollateral(candidate, context, tuning) -
+            recoilPenalty -
+            (if (LocalPublicMechanicsKernel.hasUnconfirmedAbilityImmunity(candidate, context)) {
+                UNCERTAIN_ABILITY_IMMUNITY_PENALTY
+            } else {
+                0.0
+            }) + LocalSetupMovePreference.bonus(candidate, context) -
+            publicAllyCollateral(candidate, context, tuning) -
             LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.saturatedStatStagePenalty(candidate, context) -
@@ -763,6 +774,7 @@ internal object LocalTacticalScorer {
     private const val SWITCH_OFFENSIVE_PRESSURE_WEIGHT = 40.0
     private const val SWITCH_INITIATIVE_WEIGHT = 12.0
     private const val PUBLIC_KO_THREAT_SWITCH_BONUS = 25.0
+    private const val UNCERTAIN_ABILITY_IMMUNITY_PENALTY = 20.0
     private const val CRITICAL_SWITCH_BONUS = 60.0
     private const val CRITICAL_SWITCH_TARGET_PENALTY = CRITICAL_SWITCH_BONUS
     private const val MEANINGFUL_SWITCH_HEALTH_ADVANTAGE = 0.15

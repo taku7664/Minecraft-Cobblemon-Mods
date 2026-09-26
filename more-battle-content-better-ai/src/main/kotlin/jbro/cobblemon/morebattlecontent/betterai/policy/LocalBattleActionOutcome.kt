@@ -95,7 +95,7 @@ internal object LocalBattleActionPolicy {
             LocalBattleActionRank(
                 outcome = outcome,
                 decisionTier = tier,
-                comparisonValue = tierAdjustment(tier) + legacySecureKnockoutBonus + outcome.tacticalUtility,
+                comparisonValue = tierAdjustment(tier, outcome) + legacySecureKnockoutBonus + outcome.tacticalUtility,
             )
         })
     }
@@ -105,9 +105,13 @@ internal object LocalBattleActionPolicy {
             .thenBy { it.outcome.candidate.actionId },
     )
 
-    private fun tierAdjustment(tier: Int): Double = when (tier) {
+    private fun tierAdjustment(tier: Int, outcome: LocalBattleActionOutcome): Double = when (tier) {
         TIER_FORFEIT -> FORFEIT_TIER_ADJUSTMENT
-        TIER_PUBLICLY_BAD -> PUBLICLY_BAD_TIER_ADJUSTMENT
+        TIER_PUBLICLY_BAD -> if (outcome.publiclyInert && !outcome.entryFaints) {
+            PUBLICLY_INERT_TIER_ADJUSTMENT
+        } else {
+            PUBLICLY_BAD_TIER_ADJUSTMENT
+        }
         TIER_TEMPO_LOSS -> TEMPO_LOSS_TIER_ADJUSTMENT
         TIER_ORDINARY,
         TIER_SECURE_KNOCKOUT,
@@ -203,6 +207,7 @@ internal object LocalBattleActionPolicy {
     private const val TIER_SECURE_KNOCKOUT = 4
     internal const val SECURE_KNOCKOUT_BONUS = 250.0
     private const val TEMPO_LOSS_TIER_ADJUSTMENT = -250.0
+    private const val PUBLICLY_INERT_TIER_ADJUSTMENT = -500.0
     private const val PUBLICLY_BAD_TIER_ADJUSTMENT = -1_000.0
     private const val FORFEIT_TIER_ADJUSTMENT = -10_000.0
     private const val MATERIAL_OFFENSIVE_IMPROVEMENT = 0.25

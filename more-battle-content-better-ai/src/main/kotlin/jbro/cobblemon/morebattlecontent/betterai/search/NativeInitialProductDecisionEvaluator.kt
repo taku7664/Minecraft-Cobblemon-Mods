@@ -9,6 +9,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerTier
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalLookaheadStateEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalSetupMovePreference
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionOutcome
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionPolicy
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionRank
@@ -187,7 +188,7 @@ internal class NativeInitialProductDecisionEvaluator(
         }
         return NativeInitialProductDecisionEvaluation(
             status = NativeInitialProductDecisionStatus.AVAILABLE,
-            ranked = NativeProductRankAdapter.rank(search.rootValues, rootBaseline),
+            ranked = NativeProductRankAdapter.rank(search.rootValues, rootBaseline, context),
             depthCompleted = search.depthCompleted,
             nodesVisited = search.nodesVisited,
             truncated = search.status == NativeProductWorldSearchStatus.PARTIAL_DEPTH,
@@ -306,7 +307,7 @@ internal class NativeInitialProductDecisionEvaluator(
         }
         return NativeInitialProductDecisionEvaluation(
             status = NativeInitialProductDecisionStatus.AVAILABLE,
-            ranked = NativeProductRankAdapter.rank(search.rootValues, rootBaseline),
+            ranked = NativeProductRankAdapter.rank(search.rootValues, rootBaseline, context),
             depthCompleted = search.depthCompleted,
             nodesVisited = search.nodesVisited,
             truncated = search.status == NativeProductWorldSearchStatus.PARTIAL_DEPTH,
@@ -349,14 +350,16 @@ internal object NativeProductRankAdapter {
     fun rank(
         values: List<NativeRootActionValue>,
         rootBaseline: Double = 0.0,
+        context: BattleDecisionContext? = null,
     ): List<LocalBattleActionRank> {
         require(rootBaseline.isFinite())
         return LocalBattleActionPolicy.sort(values.map { value ->
             val scaled = (value.value - rootBaseline) * BOARD_TO_SCORE
+            val setupBonus = context?.let { LocalSetupMovePreference.bonus(value.action, it) } ?: 0.0
             LocalBattleActionRank(
-                outcome = neutralOutcome(value.action, scaled),
+                outcome = neutralOutcome(value.action, scaled + setupBonus),
                 decisionTier = 0,
-                comparisonValue = scaled,
+                comparisonValue = scaled + setupBonus,
                 lookaheadUtility = scaled,
                 executionProbability = 1.0,
                 worstResponseHpRetention = 1.0,

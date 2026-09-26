@@ -17,6 +17,54 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
  * base model into a final damage claim, and it never reads unrevealed opponent state.
  */
 internal object LocalPublicMechanicsKernel {
+    /** Small root-score risk for a legal but unrevealed immunity, without assuming usage rates. */
+    fun hasUnconfirmedAbilityImmunity(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        actingSide: BattleSide = BattleSide.ALLY,
+    ): Boolean {
+        val details = candidate.moveDetails ?: return false
+        if (details.damageCategory == BattleMoveDamageCategory.STATUS || details.power <= 0.0) return false
+        val target = LocalPublicMoveTargets.resolve(candidate, context, actingSide)
+            .singleOrNull()?.takeIf { it.side != actingSide } ?: return false
+        if (publicAbility(target, context) != null) return false
+        val actor = context.state.pokemon.firstOrNull {
+            it.side == actingSide && it.activeSlot == candidate.actorSlot && !it.fainted
+        }
+        if (LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, actor, target, context.state)) return false
+
+        val abilityInferences = context.state.inferences.filter {
+            it.subjectPokemonId == target.battlePokemonId && it.categoryId == ABILITY_INFERENCE_CATEGORY
+        }
+        val ruledOut = abilityInferences.asSequence()
+            .filter { it.confidence == BattleInferenceConfidence.RULED_OUT }
+            .mapNotNull { it.candidateId?.let(::canonical) }
+            .toSet()
+        val inferred = abilityInferences.asSequence()
+            .filter { it.confidence != BattleInferenceConfidence.RULED_OUT }
+            .mapNotNull { it.candidateId?.let(::canonical) }
+            .toSet()
+        val legal = context.opponentTeamPreview?.pokemon.orEmpty().asSequence()
+            .filter {
+                canonical(it.speciesId) == canonical(target.speciesId) &&
+                    it.formId?.let(::canonical) == target.formId?.let(::canonical)
+            }
+            .flatMap { it.buildCandidatePool?.abilities.orEmpty().asSequence() }
+            .map { canonical(it.abilityId) }
+            .toSet()
+        val possible = (if (inferred.isNotEmpty()) inferred else legal) - ruledOut
+        val moveType = canonical(details.typeId)
+        val typeMultiplier = StandardTypeEffectiveness.multiplierForMove(
+            candidate.moveId, details.typeId, target.knownTypeIds,
+        )
+        val hasBlockingCandidate = possible.any { ability ->
+            LocalPublicAbilityState.isActive(context.state, target, ability) &&
+                (ability in TYPE_IMMUNITY_ABILITIES[moveType].orEmpty() ||
+                    ability == WONDER_GUARD && typeMultiplier < 2.0)
+        }
+        return hasBlockingCandidate && !projectMove(candidate, context, actingSide).publiclyNullified
+    }
+
     fun publicDamageMultiplierAgainst(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
