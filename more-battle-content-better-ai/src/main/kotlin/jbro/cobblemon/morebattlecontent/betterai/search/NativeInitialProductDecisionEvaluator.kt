@@ -178,6 +178,8 @@ internal class NativeInitialProductDecisionEvaluator(
                 maxDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1),
                 responseMemory = context.memory,
                 responseInformation = profile.personality.information,
+                allowSetupAttackExtension = profile.difficulty.tier == BattleTrainerTier.BOSS &&
+                    context.candidates.any { LocalSetupMovePreference.bonus(it, context) > 0.0 },
                 excludeFutureAllyVoluntarySwitches = profile.difficulty.tier == BattleTrainerTier.ADVANCED,
                 nodeLimit = budget.nodeLimit,
                 deadlineNanos = deadlineNanos,
@@ -291,6 +293,8 @@ internal class NativeInitialProductDecisionEvaluator(
                 maxDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1),
                 responseMemory = context.memory,
                 responseInformation = profile.personality.information,
+                allowSetupAttackExtension = profile.difficulty.tier == BattleTrainerTier.BOSS &&
+                    context.candidates.any { LocalSetupMovePreference.bonus(it, context) > 0.0 },
                 excludeFutureAllyVoluntarySwitches = profile.difficulty.tier == BattleTrainerTier.ADVANCED,
                 nodeLimit = budget.nodeLimit,
                 deadlineNanos = deadlineNanos,

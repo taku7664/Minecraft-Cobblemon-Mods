@@ -5,7 +5,13 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFieldStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveCandidateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonActionCatalogView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicMoveKnowledge
+import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicMoveOptionView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeRecursiveSearch
@@ -23,6 +29,63 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class NativeRecursiveSearchTest {
+    @Test
+    fun `admitted setup extension compares completed horizon and attacks on final voluntary turn`() {
+        val root = frame("root", 1, 100, 100, listOf("tackle", "swordsdance"), listOf("growl"))
+        val child = frame("child", 2, 100, 100, listOf("tackle", "swordsdance"), listOf("growl"))
+        val grandchild = frame("grandchild", 3, 100, 100,
+            listOf("tackle", "swordsdance"), listOf("growl"))
+        val worker = RecordingWorker(mapOf(
+            BranchKey("root", "move 1", "move 1") to child,
+            BranchKey("root", "move 2", "move 1") to child,
+            BranchKey("child", "move 1", "move 1") to grandchild,
+            BranchKey("child", "move 2", "move 1") to grandchild,
+            BranchKey("grandchild", "move 1", "move 1") to terminal("finish", 100, 20),
+        ))
+        val catalog = BattlePublicActionCatalogView(listOf(BattlePokemonActionCatalogView(ALLY, listOf(
+            BattlePublicMoveOptionView("tackle", BattleMoveCandidateView("normal",
+                BattleMoveDamageCategory.PHYSICAL, 40.0, 100.0, 0, 35),
+                BattlePublicMoveKnowledge.EXACT_OWN),
+            BattlePublicMoveOptionView("swordsdance", BattleMoveCandidateView("normal",
+                BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 20),
+                BattlePublicMoveKnowledge.EXACT_OWN),
+        ))))
+        val result = NativeRecursiveSearch(
+            tree = NativeShowdownSearchTree(worker, root, template(), publicActionCatalog = catalog),
+            world = NativeSearchWorldKey("setup-extension", 0),
+            evaluate = ::material,
+            nodeLimit = 100,
+            allowSetupAttackExtension = true,
+        ).evaluate(2)
+
+        assertEquals(3, result.depthCompleted)
+        assertEquals(listOf(1, 2, 3), result.completedIterations.map { it.depth })
+        assertEquals(2, result.rootValues.size, "Both root actions must be compared at the same horizon")
+        assertEquals(false, result.truncated)
+        assertEquals(1, worker.visitedSnapshots.count { it == "grandchild" })
+    }
+
+    @Test
+    fun `setup extension declines when estimated cost exceeds remaining nodes`() {
+        val root = frame("root", 1, 100, 100, listOf("swordsdance"), listOf("growl"))
+        val child = frame("child", 2, 100, 100, listOf("tackle"), listOf("growl"))
+        val worker = RecordingWorker(mapOf(
+            BranchKey("root", "move 1", "move 1") to child,
+            BranchKey("child", "move 1", "move 1") to terminal("finish", 100, 80),
+        ))
+        val result = NativeRecursiveSearch(
+            tree = NativeShowdownSearchTree(worker, root, template()),
+            world = NativeSearchWorldKey("setup-budget", 0),
+            evaluate = ::material,
+            nodeLimit = 2,
+            allowSetupAttackExtension = true,
+        ).evaluate(2)
+
+        assertEquals(2, result.depthCompleted)
+        assertEquals(false, result.truncated)
+        assertEquals(2, result.nodesVisited)
+    }
+
     @Test
     fun `native recoil charges fifty points per full hp bar`() {
         val root = frame("root", 1, 100, 100, listOf("tackle", "doubleedge"), listOf("splash"))

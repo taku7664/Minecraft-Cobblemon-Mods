@@ -28,6 +28,7 @@ internal data class NativeProductWorldSearchRequest(
     val maxDepth: Int,
     val responseMemory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
     val responseInformation: Double = 1.0,
+    val allowSetupAttackExtension: Boolean = false,
     val excludeFutureAllyVoluntarySwitches: Boolean = false,
     /** One total deterministic budget shared by every retained world. */
     val nodeLimit: Int,
@@ -120,6 +121,7 @@ internal class NativeProductWorldSearchAggregator(
                     maxDepth = request.maxDepth,
                     responseMemory = request.responseMemory,
                     responseInformation = request.responseInformation,
+                    allowSetupAttackExtension = request.allowSetupAttackExtension,
                     excludeFutureAllyVoluntarySwitches = request.excludeFutureAllyVoluntarySwitches,
                     nodeLimit = worldNodeLimit,
                     deadlineNanos = request.deadlineNanos,

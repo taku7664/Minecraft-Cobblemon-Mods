@@ -1,6 +1,8 @@
 package jbro.cobblemon.morebattlecontent.betterai.simulation
 
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
+import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
@@ -39,6 +41,33 @@ internal class NativeShowdownSearchTree(
     ): List<BattleActionCandidate> =
         NativeShowdownRequestActionFactory.actions(
             side, position.frame, maxVoluntarySwitchTargetsPerSlot, position.state, publicActionCatalog)
+
+    /** Attack-only extension uses exact own move metadata; forced replacements remain untouched. */
+    fun attackingActions(position: NativeSearchPosition): List<BattleActionCandidate> {
+        val actions = actions(position, BattleSide.ALLY, 0)
+        if (actions.isEmpty() || actions.all { it.kind == BattleActionKind.SWITCH || it.kind == BattleActionKind.WAIT }) {
+            return actions
+        }
+        fun damaging(action: BattleActionCandidate): Boolean = when (action.kind) {
+            BattleActionKind.USE_MOVE -> {
+                val actor = position.state.pokemon.firstOrNull {
+                    it.side == BattleSide.ALLY && it.activeSlot == action.actorSlot
+                }
+                actor != null && publicActionCatalog?.forPokemon(actor.battlePokemonId)?.any {
+                    it.moveId.substringAfter(':').equals(action.moveId?.substringAfter(':'), true) &&
+                        it.details.damageCategory != BattleMoveDamageCategory.STATUS && it.details.power > 0.0
+                } == true
+            }
+            BattleActionKind.COMPOSITE -> action.componentActions.all { component ->
+                component.kind == BattleActionKind.WAIT || damaging(component)
+            }
+            else -> false
+        }
+        val attacks = actions.filter(::damaging)
+        // A transformed or forced actor may have no catalogued damaging action. Do not turn the
+        // position into an artificial terminal node when the constrained horizon cannot apply.
+        return attacks.ifEmpty { actions }
+    }
 
     fun branch(
         position: NativeSearchPosition,
