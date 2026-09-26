@@ -44,6 +44,8 @@ Reusable contracts live in `UiButtonContract.kt`, `UiSurfaceContract.kt`, `UiWid
 
 `UiStackLayout`, `UiFlowLayout`, `UiGridLayout`, and `UiAnchorLayout` calculate deterministic logical rectangles without depending on Minecraft client classes. `CobblemonUiScrollViewport` supports wheel input, Page Up/Down, Home/End, scrollbar dragging, and focus reveal. Overlays keep different input ownership explicit: a tooltip is informational, a persistent callout remains in layout flow, a dialog is a separate blocking `Screen`, and a toast is queued non-blocking feedback. The UI Kit owns presentation and local interaction state only; consumers remain responsible for domain state and server authority.
 
+`CobblemonUiDialogScreen` accepts an optional `themeOverride` for consumers with a screen-local theme. It installs that snapshot while the dialog is open and restores the previous one on removal.
+
 `CobblemonUiRenderSlot` currently renders a generic texture, an item stack, or a built-in player model using a supplied skin. It does not yet provide a generic Cobblemon Pokemon or Bedrock-model renderer. `CobblemonUiPanel` draws a themed section background and title; it does not own, lay out, or clip child widgets.
 
 Button text shadow is off by default. A theme may opt a style in with `UiButtonStyle.textShadow`, and a call site may explicitly override it with `UiButtonSpec(textShadow = true)` or `false`. Prefer the shadow-free default on opaque UI surfaces.

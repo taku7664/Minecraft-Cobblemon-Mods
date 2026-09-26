@@ -10,6 +10,7 @@ import jbro.cobblemon.uikit.UiOverlayPlacement
 import jbro.cobblemon.uikit.UiOverlayTone
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiSize
+import jbro.cobblemon.uikit.UiThemeSnapshot
 import jbro.cobblemon.uikit.UiToastQueue
 import jbro.cobblemon.uikit.UiToastSpec
 import jbro.cobblemon.uikit.UiTooltipSpec
@@ -66,11 +67,17 @@ class CobblemonUiDialogScreen(
     private val parent: Screen?,
     private val spec: UiDialogSpec,
     private val confirm: () -> Unit,
-    private val cancel: () -> Unit = {}
+    private val cancel: () -> Unit = {},
+    private val themeOverride: UiThemeSnapshot? = null
 ) : Screen(spec.title) {
     private var panel = UiRect(0, 0, 0, 0)
+    private var previousTheme: UiThemeSnapshot? = null
 
     override fun init() {
+        themeOverride?.let { theme ->
+            if (previousTheme == null) previousTheme = CobblemonUiThemes.registry.snapshot()
+            CobblemonUiThemes.registry.install(theme)
+        }
         panel = UiRect((width - 260) / 2, (height - 120) / 2, 260, 120)
         val hasCancel = spec.cancelLabel != null
         val buttonWidth = if (hasCancel) 104 else 120
@@ -130,6 +137,15 @@ class CobblemonUiDialogScreen(
     }
 
     override fun onClose() = closeAsCancel()
+
+    override fun removed() {
+        val original = previousTheme
+        if (original != null && CobblemonUiThemes.registry.snapshot() === themeOverride) {
+            CobblemonUiThemes.registry.install(original)
+        }
+        previousTheme = null
+        super.removed()
+    }
 
     private fun closeAsCancel() {
         cancel()
