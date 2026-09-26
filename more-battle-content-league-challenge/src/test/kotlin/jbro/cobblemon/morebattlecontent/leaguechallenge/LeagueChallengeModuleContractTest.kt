@@ -33,7 +33,7 @@ class LeagueChallengeModuleContractTest {
     fun `system declares approved badge and level cap providers and required MBC API version`() {
         val dependencies = json(resources.resolve("fabric.mod.json")).getAsJsonObject("depends")
 
-        assertEquals(">=1.6.22 <2.0.0", dependencies["cobblemon_more_battle_content"].asString)
+        assertEquals(">=1.6.24 <2.0.0", dependencies["cobblemon_more_battle_content"].asString)
         assertEquals(">=1.8.1 <1.9.0", dependencies["cobblemon"].asString)
         assertEquals(">=1.6.1 <1.7.0", dependencies["pokebadges"].asString)
         assertEquals(">=1.2.0 <1.3.0", dependencies["cobbled_level_control"].asString)
