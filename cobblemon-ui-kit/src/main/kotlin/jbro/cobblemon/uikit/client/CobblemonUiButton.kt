@@ -86,6 +86,7 @@ class CobblemonUiButton private constructor(
         val groupLeft = x + (width - groupWidth) / 2
         val textCenter = groupLeft + indicatorAndGap + iconAndGap + textWidth / 2
         val contentOffsetY = style.pressedOffsetY
+        val textShadow = spec.resolveTextShadow(style)
 
         if (indicator != null) {
             val indicatorTop = y + (height - iconSize) / 2 + contentOffsetY
@@ -105,7 +106,8 @@ class CobblemonUiButton private constructor(
                 textCenter,
                 y + (height - (font.lineHeight * metrics.titleScale).toInt()) / 2 + contentOffsetY,
                 metrics.titleScale,
-                style.text
+                style.text,
+                textShadow
             )
         } else {
             drawScaledCentered(
@@ -114,7 +116,8 @@ class CobblemonUiButton private constructor(
                 textCenter,
                 y + 5 + contentOffsetY,
                 metrics.titleScale,
-                style.text
+                style.text,
+                textShadow
             )
             drawScaledCentered(
                 graphics,
@@ -122,7 +125,8 @@ class CobblemonUiButton private constructor(
                 textCenter,
                 y + height - (font.lineHeight * metrics.supportingScale).toInt() - 5 + contentOffsetY,
                 metrics.supportingScale,
-                style.supportingText
+                style.supportingText,
+                textShadow
             )
         }
     }
@@ -170,18 +174,21 @@ class CobblemonUiButton private constructor(
             centerX: Int,
             top: Int,
             scale: Float,
-            color: Int
+            color: Int,
+            shadow: Boolean
         ) {
             val font = Minecraft.getInstance().font
             graphics.pose().pushPose()
             try {
                 graphics.pose().scale(scale, scale, 1f)
-                graphics.drawCenteredString(
+                val scaledCenterX = (centerX / scale).toInt()
+                graphics.drawString(
                     font,
                     text,
-                    (centerX / scale).toInt(),
+                    scaledCenterX - font.width(text) / 2,
                     (top / scale).toInt(),
-                    color
+                    color,
+                    shadow
                 )
             } finally {
                 graphics.pose().popPose()

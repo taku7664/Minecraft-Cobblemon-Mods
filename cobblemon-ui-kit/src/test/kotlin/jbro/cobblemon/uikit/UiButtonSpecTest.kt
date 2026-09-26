@@ -2,7 +2,9 @@ package jbro.cobblemon.uikit
 
 import net.minecraft.network.chat.Component
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class UiButtonSpecTest {
@@ -30,5 +32,17 @@ class UiButtonSpecTest {
     fun `invalid fixed width and blank title are rejected`() {
         assertThrows(IllegalArgumentException::class.java) { UiWidthPolicy.Fixed(0) }
         assertThrows(IllegalArgumentException::class.java) { UiButtonSpec(Component.literal(" ")) }
+    }
+
+    @Test
+    fun `text shadow defaults off and can be enabled or suppressed per button`() {
+        val baseStyle = theme.style(UiButtonVariant.PRIMARY, UiWidgetState.NORMAL)
+        val shadowStyle = baseStyle.copy(textShadow = true)
+        val defaultButton = UiButtonSpec(Component.literal("Start"))
+
+        assertFalse(defaultButton.resolveTextShadow(baseStyle))
+        assertTrue(defaultButton.resolveTextShadow(shadowStyle))
+        assertTrue(defaultButton.copy(textShadow = true).resolveTextShadow(baseStyle))
+        assertFalse(defaultButton.copy(textShadow = false).resolveTextShadow(shadowStyle))
     }
 }

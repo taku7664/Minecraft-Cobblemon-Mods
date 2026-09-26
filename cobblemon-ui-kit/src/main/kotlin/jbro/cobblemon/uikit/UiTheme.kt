@@ -64,7 +64,8 @@ data class UiButtonStyle(
     val text: Int,
     val supportingText: Int,
     val selectionIndicator: UiSelectionIndicator = UiSelectionIndicator.None,
-    val pressedOffsetY: Int = 0
+    val pressedOffsetY: Int = 0,
+    val textShadow: Boolean = false
 )
 
 sealed interface UiSelectionIndicator {
