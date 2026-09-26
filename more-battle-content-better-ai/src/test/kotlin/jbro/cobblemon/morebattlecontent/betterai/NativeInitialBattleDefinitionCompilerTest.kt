@@ -35,6 +35,57 @@ import org.junit.jupiter.api.Test
 
 class NativeInitialBattleDefinitionCompilerTest {
     @Test
+    fun `own Spiritomb Normal form compiles as the base Showdown species`() {
+        val result = NativeInitialBattleDefinitionCompiler.compile(
+            state = state(allySpecies = "cobblemon:spiritomb", allyForm = "Normal"),
+            catalog = catalog(),
+            identities = listOf(
+                NativePublicPokemonIdentity(ALLY, "cobblemon:spiritomb", "Normal", "spiritombnormal"),
+                identities().last(),
+            ),
+            world = world(),
+            seed = SEED,
+        )
+
+        assertEquals(emptyList<Any>(), result.issues)
+        assertEquals("spiritomb", requireNotNull(result.definition).p1Team.single().species)
+    }
+
+    @Test
+    fun `unknown public form still resolves an exact Normal suffix to the base species`() {
+        val result = NativeInitialBattleDefinitionCompiler.compile(
+            state = state(opponentSpecies = "cobblemon:spiritomb"),
+            catalog = catalog(),
+            identities = listOf(
+                identities().first(),
+                NativePublicPokemonIdentity(OPPONENT, "cobblemon:spiritomb", null, "spiritombnormal"),
+            ),
+            world = world(),
+            seed = SEED,
+        )
+
+        assertEquals(emptyList<Any>(), result.issues)
+        assertEquals("spiritomb", requireNotNull(result.definition).p2Team.single().species)
+    }
+
+    @Test
+    fun `nonstandard Showdown form remains distinct from the base species`() {
+        val result = NativeInitialBattleDefinitionCompiler.compile(
+            state = state(opponentSpecies = "cobblemon:rotom", opponentForm = "Heat"),
+            catalog = catalog(),
+            identities = listOf(
+                identities().first(),
+                NativePublicPokemonIdentity(OPPONENT, "cobblemon:rotom", "Heat", "rotomheat"),
+            ),
+            world = world(),
+            seed = SEED,
+        )
+
+        assertEquals(emptyList<Any>(), result.issues)
+        assertEquals("rotomheat", requireNotNull(result.definition).p2Team.single().species)
+    }
+
+    @Test
     fun `complete public opening compiles one native world without guess slots`() {
         val result = NativeInitialBattleDefinitionCompiler.compile(
             state = state(),
@@ -353,7 +404,10 @@ class NativeInitialBattleDefinitionCompilerTest {
     }
 
     private fun state(
+        allySpecies: String = "cobblemon:pikachu",
+        allyForm: String? = null,
         opponentSpecies: String = "showdown:fluttermane",
+        opponentForm: String? = null,
         remainingOpponent: Int = 1,
         allyHp: Double = 1.0,
         allyStages: Map<String, Int> = emptyMap(),
@@ -369,7 +423,8 @@ class NativeInitialBattleDefinitionCompilerTest {
             pokemon(
                 id = ALLY,
                 side = BattleSide.ALLY,
-                species = "cobblemon:pikachu",
+                species = allySpecies,
+                form = allyForm,
                 hp = allyHp,
                 stages = allyStages,
                 ability = "static",
@@ -380,6 +435,7 @@ class NativeInitialBattleDefinitionCompilerTest {
                 id = OPPONENT,
                 side = BattleSide.OPPONENT,
                 species = opponentSpecies,
+                form = opponentForm,
                 hp = 1.0,
                 ability = opponentAbility,
                 item = opponentItem,
@@ -397,6 +453,7 @@ class NativeInitialBattleDefinitionCompilerTest {
         id: UUID,
         side: BattleSide,
         species: String,
+        form: String? = null,
         hp: Double,
         stages: Map<String, Int> = emptyMap(),
         ability: String?,
@@ -408,7 +465,7 @@ class NativeInitialBattleDefinitionCompilerTest {
         side = side,
         activeSlot = 0,
         speciesId = species,
-        formId = null,
+        formId = form,
         level = 50,
         hpFraction = hp,
         statusId = null,

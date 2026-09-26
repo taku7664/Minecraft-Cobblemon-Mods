@@ -16,6 +16,16 @@ private fun normalizedNativeId(value: String): String = value.substringAfter(':'
     .lowercase(Locale.ROOT)
     .filter(Char::isLetterOrDigit)
 
+internal fun nativeSpeciesId(speciesId: String, showdownSpeciesId: String): String {
+    val supplied = normalizedNativeId(showdownSpeciesId)
+    val publicSpecies = normalizedNativeId(speciesId)
+    // Cobblemon's standard FormData can yield e.g. spiritombnormal while Showdown uses
+    // spiritomb. The public form may also be absent for a disguised active Pokemon, so
+    // resolve only the exact public-species + "normal" spelling, not an arbitrary suffix.
+    // Named forms such as rotomheat retain their own species identity.
+    return if (supplied == publicSpecies + "normal") publicSpecies else supplied
+}
+
 internal enum class NativeBuildKnowledge { EXACT_OWN, PUBLIC_HYPOTHESIS }
 
 /** Species identity resolved only from the public species/form carried by the battle DTO. */
@@ -204,7 +214,7 @@ internal object NativeInitialBattleDefinitionCompiler {
             if (identity != null && build != null && level != null && moves.isNotEmpty()) {
                 sets[id] = NativePokemonSet(
                     name = "native-${id.toString().takeLast(8)}",
-                    species = normalizedNativeId(identity.showdownSpeciesId),
+                    species = nativeSpeciesId(identity.publicSpeciesId, identity.showdownSpeciesId),
                     moves = moves,
                     ability = normalizedNativeId(build.abilityId),
                     uuid = id.toString(),
