@@ -63,13 +63,13 @@ public record MusicCatalog(
         String hitNormal,
         String hitSuperEffective,
         String hitNotVeryEffective,
-        String heartbeat
+        String lowHpAlert
     ) {
         public AudioEvents {
             Objects.requireNonNull(hitNormal, "hitNormal");
             Objects.requireNonNull(hitSuperEffective, "hitSuperEffective");
             Objects.requireNonNull(hitNotVeryEffective, "hitNotVeryEffective");
-            Objects.requireNonNull(heartbeat, "heartbeat");
+            Objects.requireNonNull(lowHpAlert, "lowHpAlert");
         }
     }
 

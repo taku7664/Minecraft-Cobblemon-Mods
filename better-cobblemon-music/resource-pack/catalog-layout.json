@@ -166,6 +166,6 @@
     "hitNormal": "cobleserver:battle.hit.normal",
     "hitSuperEffective": "cobleserver:battle.hit.super_effective",
     "hitNotVeryEffective": "cobleserver:battle.hit.not_very_effective",
-    "heartbeat": "minecraft:entity.warden.heartbeat"
+    "lowHpAlert": "cobleserver:battle.low_hp.alert"
   }
 }

@@ -5,12 +5,12 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 
-final class LastPokemonHeartbeatPlayer {
-    private static final double CADENCE_SECONDS = 1.0;
+final class LastPokemonLowHpAlertPlayer {
+    static final double CADENCE_SECONDS = 0.70;
     private static final float PITCH = 1.0F;
     private static final float BASE_VOLUME = 1.0F;
 
-    private final HeartbeatPulseScheduler scheduler = new HeartbeatPulseScheduler(CADENCE_SECONDS);
+    private final LowHpAlertPulseScheduler scheduler = new LowHpAlertPulseScheduler(CADENCE_SECONDS);
 
     void tick(Minecraft client, double nowSeconds, boolean active, double volumeMultiplier, String eventId) {
         if (!scheduler.shouldPulse(nowSeconds, active)) {

@@ -204,12 +204,24 @@ public final class MusicCatalogParser {
 
     private static MusicCatalog.AudioEvents audioEvents(JsonObject object) {
         String path = "$.audioEvents";
-        CatalogJson.only(object, path, "hitNormal", "hitSuperEffective", "hitNotVeryEffective", "heartbeat");
+        CatalogJson.only(
+            object,
+            path,
+            "hitNormal",
+            "hitSuperEffective",
+            "hitNotVeryEffective",
+            "lowHpAlert",
+            "heartbeat"
+        );
+        if (object.has("lowHpAlert") && object.has("heartbeat")) {
+            throw new CatalogValidationException(path + " cannot declare both lowHpAlert and legacy heartbeat");
+        }
+        String lowHpAlertKey = object.has("lowHpAlert") ? "lowHpAlert" : "heartbeat";
         return new MusicCatalog.AudioEvents(
             event(object, "hitNormal", path),
             event(object, "hitSuperEffective", path),
             event(object, "hitNotVeryEffective", path),
-            event(object, "heartbeat", path)
+            event(object, lowHpAlertKey, path)
         );
     }
 

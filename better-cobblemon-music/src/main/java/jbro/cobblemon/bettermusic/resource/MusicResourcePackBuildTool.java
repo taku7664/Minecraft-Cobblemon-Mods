@@ -146,6 +146,7 @@ public final class MusicResourcePackBuildTool {
         addHitSound(sounds, sourceDirectory, "normal");
         addHitSound(sounds, sourceDirectory, "super_effective");
         addHitSound(sounds, sourceDirectory, "not_very_effective");
+        addLowHpAlert(sounds, sourceDirectory);
         catalog.add("tracks", tracks);
 
         String catalogJson = GSON.toJson(catalog) + System.lineSeparator();
@@ -170,6 +171,14 @@ public final class MusicResourcePackBuildTool {
             throw new IOException("Missing hit sound: " + source);
         }
         sounds.add("battle.hit." + name, soundDefinition("cobleserver:battle/hit/" + name, false));
+    }
+
+    private static void addLowHpAlert(JsonObject sounds, Path sourceDirectory) throws IOException {
+        Path source = sourceDirectory.resolve("assets/cobleserver/sounds/battle/low_hp/alert.ogg");
+        if (!Files.isRegularFile(source)) {
+            throw new IOException("Missing low-HP alert sound: " + source);
+        }
+        sounds.add("battle.low_hp.alert", soundDefinition("cobleserver:battle/low_hp/alert", false));
     }
 
     private static JsonObject soundDefinition(String name, boolean stream) {
