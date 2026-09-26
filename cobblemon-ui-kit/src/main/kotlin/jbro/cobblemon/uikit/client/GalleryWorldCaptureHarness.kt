@@ -25,14 +25,23 @@ internal enum class GalleryHarnessMode {
 
 internal data class GalleryHarnessConfig(
     val mode: GalleryHarnessMode,
-    val preset: UiThemePreset
+    val preset: UiThemePreset,
+    val capturePresets: List<UiThemePreset>
 ) {
     companion object {
-        fun fromEnvironment(environment: Map<String, String>): GalleryHarnessConfig = GalleryHarnessConfig(
-            mode = GalleryHarnessMode.fromEnvironment(environment),
-            preset = UiThemePreset.fromId(environment["COBBLEMON_UI_KIT_THEME"])
+        fun fromEnvironment(environment: Map<String, String>): GalleryHarnessConfig {
+            val preset = UiThemePreset.fromId(environment["COBBLEMON_UI_KIT_THEME"])
                 ?: UiThemePreset.LEAGUE_NEON
-        )
+            return GalleryHarnessConfig(
+                mode = GalleryHarnessMode.fromEnvironment(environment),
+                preset = preset,
+                capturePresets = if (environment["COBBLEMON_UI_KIT_CAPTURE_ALL_THEMES"] == "1") {
+                    UiThemePreset.entries
+                } else {
+                    listOf(preset)
+                }
+            )
+        }
     }
 }
 
@@ -43,7 +52,9 @@ internal object GalleryWorldCaptureHarness {
         val config = GalleryHarnessConfig.fromEnvironment(System.getenv())
         val mode = config.mode
         if (mode == GalleryHarnessMode.OFF) return
-        CobblemonUiThemePresets.install(config.preset)
+        var capturePresetIndex = 0
+        fun activePreset(): UiThemePreset = config.capturePresets[capturePresetIndex]
+        CobblemonUiThemePresets.install(activePreset())
 
         val topCaptured = AtomicBoolean(false)
         val scrolledCaptured = AtomicBoolean(false)
@@ -78,14 +89,14 @@ internal object GalleryWorldCaptureHarness {
                     }
                     return@EndTick
                 }
-                client.setScreen(ComponentGalleryScreen(config.preset))
+                client.setScreen(ComponentGalleryScreen(activePreset()))
                 opened = true
                 logger.info(
                     "Opened UI Kit gallery in world dimension={} player={} mode={} theme={}",
                     client.level!!.dimension().location(),
                     client.player!!.scoreboardName,
                     mode,
-                    config.preset.id
+                    activePreset().id
                 )
                 if (mode == GalleryHarnessMode.MANUAL) {
                     logger.info("Manual UI Kit gallery is ready; automation and automatic shutdown are disabled")
@@ -117,7 +128,7 @@ internal object GalleryWorldCaptureHarness {
 
             if (!topCaptureRequested && ticks >= 15) {
                 topCaptureRequested = true
-                val filename = "ui-kit-world-${config.preset.id}-top-${client.window.guiScaledWidth}x${client.window.guiScaledHeight}.png"
+                val filename = "ui-kit-world-${activePreset().id}-top-${client.window.guiScaledWidth}x${client.window.guiScaledHeight}.png"
                 Screenshot.grab(client.gameDirectory, filename, client.mainRenderTarget) { result ->
                     logger.info("UI Kit world capture {}: {}", filename, result.string)
                     topCaptured.set(true)
@@ -140,7 +151,7 @@ internal object GalleryWorldCaptureHarness {
 
             if (scrollVerified && !scrolledCaptureRequested && ticks >= 25) {
                 scrolledCaptureRequested = true
-                val filename = "ui-kit-world-${config.preset.id}-scrolled-${client.window.guiScaledWidth}x${client.window.guiScaledHeight}.png"
+                val filename = "ui-kit-world-${activePreset().id}-scrolled-${client.window.guiScaledWidth}x${client.window.guiScaledHeight}.png"
                 Screenshot.grab(client.gameDirectory, filename, client.mainRenderTarget) { result ->
                     logger.info("UI Kit world capture {}: {}", filename, result.string)
                     scrolledCaptured.set(true)
@@ -148,10 +159,24 @@ internal object GalleryWorldCaptureHarness {
             }
 
             if (topCaptured.get() && scrolledCaptured.get()) {
-                screen.onClose()
-                check(client.screen !== screen) { "UI Kit gallery did not close through onClose" }
-                logger.info("Verified UI Kit gallery close path with world still loaded={}", client.level != null)
-                client.stop()
+                if (capturePresetIndex < config.capturePresets.lastIndex) {
+                    capturePresetIndex += 1
+                    topCaptured.set(false)
+                    scrolledCaptured.set(false)
+                    verified = false
+                    topCaptureRequested = false
+                    scrollVerified = false
+                    scrolledCaptureRequested = false
+                    ticks = 0
+                    CobblemonUiThemePresets.install(activePreset())
+                    client.setScreen(ComponentGalleryScreen(activePreset()))
+                    logger.info("Continuing UI Kit gallery capture theme={}", activePreset().id)
+                } else {
+                    screen.onClose()
+                    check(client.screen !== screen) { "UI Kit gallery did not close through onClose" }
+                    logger.info("Verified UI Kit gallery close path with world still loaded={}", client.level != null)
+                    client.stop()
+                }
             } else if (ticks >= 240) {
                 error("UI Kit world capture timed out")
             }

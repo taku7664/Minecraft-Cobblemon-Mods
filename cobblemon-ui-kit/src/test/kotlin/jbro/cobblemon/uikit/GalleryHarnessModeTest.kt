@@ -56,4 +56,16 @@ class GalleryHarnessModeTest {
 
         assertEquals(UiThemePreset.LEAGUE_NEON, config.preset)
     }
+
+    @Test
+    fun `capture all configuration walks every built in preset in stable order`() {
+        val config = GalleryHarnessConfig.fromEnvironment(
+            mapOf(
+                "COBBLEMON_UI_KIT_CAPTURE_WORLD" to "1",
+                "COBBLEMON_UI_KIT_CAPTURE_ALL_THEMES" to "1"
+            )
+        )
+
+        assertEquals(UiThemePreset.entries, config.capturePresets)
+    }
 }

@@ -92,7 +92,7 @@ class ComponentGalleryScreen(
                 UiButtonSpec(text("ghost"), variant = UiButtonVariant.GHOST),
                 UiButtonSpec(
                     text("custom_surface"),
-                    variant = UiButtonVariant.SECONDARY,
+                    variant = UiButtonVariant.DANGER,
                     size = UiControlSize.SMALL,
                     surfaceOverrides = UiSurfaceOverrides(
                         shape = UiShape.Chamfer(

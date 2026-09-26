@@ -95,7 +95,7 @@ object CobblemonUiThemePresets {
             buttonRecipes(
                 primary = button(chamfer(4, UiCorner.TOP_LEFT, UiCorner.BOTTOM_LEFT), colors.accentPrimary, 0xFFFFE75A.toInt(), 0xFFD6A900.toInt(), 0xFFFFF08A.toInt(), 0xFF13233B.toInt()),
                 secondary = button(UiShape.Rectangle, 0xFF103A67.toInt(), 0xFF185184.toInt(), 0xFF0A294D.toInt(), colors.accentSecondary, colors.textPrimary),
-                danger = button(chamfer(4, UiCorner.TOP_LEFT, UiCorner.BOTTOM_LEFT), colors.accentDanger, 0xFFFF8579.toInt(), 0xFFC8423B.toInt(), colors.accentCaution, 0xFF251719.toInt()),
+                danger = button(chamfer(4, UiCorner.TOP_LEFT, UiCorner.BOTTOM_LEFT), colors.accentDanger, 0xFFFF8579.toInt(), 0xFFC8423B.toInt(), colors.accentCaution, colors.textPrimary),
                 ghost = button(UiShape.Rectangle, colors.panel, 0xFF185184.toInt(), 0xFF0A294D.toInt(), 0xFF1B5B8C.toInt(), colors.textSecondary, border = false, opacity = 0f),
                 icon = button(chamfer(4), 0xFF0E3158.toInt(), 0xFF185184.toInt(), 0xFF071E39.toInt(), colors.accentPrimary, colors.textPrimary)
             )
