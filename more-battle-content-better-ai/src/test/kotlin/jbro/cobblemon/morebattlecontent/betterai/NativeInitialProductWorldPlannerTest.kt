@@ -396,8 +396,8 @@ class NativeInitialProductWorldPlannerTest {
                 tuning = LocalDecisionTuning.CURRENT,
                 budget = LocalLookaheadBudget(
                     timeMillis = 2_000L,
-                    // This integration check needs a complete first ply. Boss depth three is
-                    // audited separately; a deterministic node cap must not be called depth three.
+                    // This integration check needs a complete first ply. Boss depth two is
+                    // audited separately; a deterministic node cap must not be called depth two.
                     nodeLimit = 500,
                     chanceBranchesPerMove = 1,
                 ),

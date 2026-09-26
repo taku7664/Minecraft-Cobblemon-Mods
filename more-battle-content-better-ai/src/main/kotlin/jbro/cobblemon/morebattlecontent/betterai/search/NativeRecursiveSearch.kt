@@ -75,6 +75,7 @@ internal class NativeRecursiveSearch(
     private val world: NativeSearchWorldKey,
     private val evaluate: (BattleStateView) -> Double,
     private val nodeLimit: Int,
+    private val excludeFutureAllyVoluntarySwitches: Boolean = false,
     private val shouldContinue: () -> Boolean = { true },
     private val cacheEntryLimit: Int = DEFAULT_CACHE_ENTRY_LIMIT,
 ) {
@@ -214,7 +215,8 @@ internal class NativeRecursiveSearch(
         valueCache[key]?.let { return it }
         // Root choices stay complete. Only voluntary switches in simulated continuation
         // requests are narrowed; forced/pivot replacements retain every legal target.
-        val allyActions = tree.actions(position, BattleSide.ALLY, FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT)
+        val allyActions = tree.actions(position, BattleSide.ALLY,
+            if (excludeFutureAllyVoluntarySwitches) 0 else FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT)
         val opponentActions = tree.actions(position, BattleSide.OPPONENT, FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT)
         if (allyActions.isEmpty() || opponentActions.isEmpty()) return evaluate(position.state) + position.recoilCredit
         var best = Double.NEGATIVE_INFINITY

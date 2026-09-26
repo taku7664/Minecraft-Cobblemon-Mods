@@ -2336,15 +2336,15 @@ class LocalLookaheadEvaluationTest {
             source,
             BattleTrainerProfile.balanced(0, BattleDifficultyProfiles.INTRODUCTORY),
         )
-        val standard = LocalRecursiveLookaheadEvaluator.evaluate(
+        val advanced = LocalRecursiveLookaheadEvaluator.evaluate(
             listOf(rank(dragonDance)),
             source,
-            BattleTrainerProfile.balanced(2, BattleDifficultyProfiles.STANDARD),
+            BattleTrainerProfile.balanced(3, BattleDifficultyProfiles.ADVANCED),
         )
 
         assertEquals(1, introductory.depthCompleted)
-        assertEquals(2, standard.depthCompleted)
-        assertTrue(standard.ranked.single().lookaheadUtility > introductory.ranked.single().lookaheadUtility)
+        assertEquals(2, advanced.depthCompleted)
+        assertTrue(advanced.ranked.single().lookaheadUtility > introductory.ranked.single().lookaheadUtility)
     }
 
     @Test

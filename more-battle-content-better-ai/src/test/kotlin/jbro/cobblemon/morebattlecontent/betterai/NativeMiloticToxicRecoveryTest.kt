@@ -231,7 +231,7 @@ class NativeMiloticToxicRecoveryTest {
             assertEquals(NativeInitialProductDecisionStatus.AVAILABLE, evaluation.status,
                 "Product evaluator must accept the retained toxic native root: $evaluation")
             assertEquals(NativeProductWorldSearchStatus.COMPLETED, evaluation.searchStatus)
-            assertEquals(3, evaluation.depthCompleted)
+            assertEquals(2, evaluation.depthCompleted)
             val productSwitch = evaluation.ranked.single {
                 it.outcome.candidate.switchPokemonId == ROSERADE
             }

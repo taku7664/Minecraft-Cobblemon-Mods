@@ -12,9 +12,9 @@ class RootTacticalFixturesTest {
         assertEquals(
             listOf(
                 BattleTrainerTier.INTRODUCTORY to 1,
-                BattleTrainerTier.STANDARD to 2,
+                BattleTrainerTier.STANDARD to 1,
                 BattleTrainerTier.ADVANCED to 2,
-                BattleTrainerTier.BOSS to 3,
+                BattleTrainerTier.BOSS to 2,
             ),
             BattleDifficultyProfiles.entries.map { it.tier to it.lookaheadPlies },
         )
@@ -89,16 +89,19 @@ class RootTacticalFixturesTest {
     }
 
     @Test
-    fun `setup grid exposes boss depth setup windows absent at introductory depth`() {
+    fun `setup grid shows third turn setup windows are beyond current boss depth`() {
         val introductoryDepth = BattleDifficultyProfiles.INTRODUCTORY.lookaheadPlies
         val bossDepth = BattleDifficultyProfiles.BOSS.lookaheadPlies
         val choices = RootTacticalFixtures.all().filter { it.family == "SETUP_WINDOW" }.map { fixture ->
             val introductory = RootObjectiveReference.evaluate(fixture.context, introductoryDepth)
             val boss = RootObjectiveReference.evaluate(fixture.context, bossDepth)
-            assertTrue(introductory.matches && boss.matches)
-            Triple(fixture.id, introductory.isolatedRanking.first(), boss.isolatedRanking.first())
+            val thirdTurn = RootObjectiveReference.evaluate(fixture.context, 3)
+            assertTrue(introductory.matches && boss.matches && thirdTurn.matches)
+            listOf(fixture.id, introductory.isolatedRanking.first(), boss.isolatedRanking.first(),
+                thirdTurn.isolatedRanking.first())
         }
-        assertTrue(choices.all { it.second == "strike" }, "Introductory depth unexpectedly sets up: $choices")
-        assertTrue(choices.any { it.third == "setup" }, "Boss depth finds no setup window: $choices")
+        assertTrue(choices.all { it[1] == "strike" }, "Introductory depth unexpectedly sets up: $choices")
+        assertTrue(choices.all { it[2] == "strike" }, "Boss depth unexpectedly sees third-turn setup: $choices")
+        assertTrue(choices.any { it[3] == "setup" }, "The fixture has no third-turn setup window: $choices")
     }
 }

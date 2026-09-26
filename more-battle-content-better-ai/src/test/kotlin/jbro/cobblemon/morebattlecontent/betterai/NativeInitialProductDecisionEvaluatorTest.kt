@@ -10,6 +10,8 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleFieldStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewPokemonView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
@@ -21,6 +23,7 @@ import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDeci
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionStatus
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductWorldSearchResult
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductWorldSearchStatus
+import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSearchRunStatus
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductRootSnapshot
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionReconciliation
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionReconcileStatus
@@ -106,6 +109,61 @@ class NativeInitialProductDecisionEvaluatorTest {
     }
 
     @Test
+    fun `turn one after a real action does not retry opening compilation`() {
+        var invoked = false
+        val evaluator = NativeInitialProductDecisionEvaluator(
+            planWorlds = { _, _ -> invoked = true; error("must not plan") },
+            searchWorlds = { invoked = true; error("must not search") },
+        )
+        val opening = context(turn = 1)
+        val advanced = opening.copy(state = BattleStateView(
+            battleId = opening.state.battleId,
+            format = opening.state.format,
+            turn = opening.state.turn,
+            pokemon = opening.state.pokemon,
+            field = opening.state.field,
+            remainingPokemonBySide = opening.state.remainingPokemonBySide,
+            observedEvents = listOf(
+                BattleObservedEventView(1, 0, BattleObservedEventKind.MOVE_USED, ALLY, publicValueId = "psychic"),
+            ),
+            inferences = opening.state.inferences,
+        ))
+
+        val result = evaluator.evaluate(
+            advanced,
+            BattleTrainerProfile.balanced(),
+            LocalDecisionTuning.CURRENT,
+            LocalLookaheadBudget(250L, 100, 1),
+        )
+
+        assertEquals(NativeInitialProductDecisionStatus.NOT_APPLICABLE, result.status)
+        assertFalse(invoked)
+    }
+
+    @Test
+    fun `advanced native search omits only future own voluntary switches`() {
+        var excludesFutureSwitches = false
+        val evaluator = NativeInitialProductDecisionEvaluator(
+            planWorlds = { supplied, _ -> plan(supplied) },
+            searchWorlds = { request ->
+                excludesFutureSwitches = request.excludeFutureAllyVoluntarySwitches
+                NativeProductWorldSearchResult(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED)
+            },
+            nowEpochMillis = { 1_000L },
+            leafEvaluator = { _, _, _, _ -> 0.05 },
+        )
+
+        evaluator.evaluate(
+            context(),
+            BattleTrainerProfile.balanced(3),
+            LocalDecisionTuning.CURRENT,
+            LocalLookaheadBudget(250L, 100, 1),
+        )
+
+        assertTrue(excludesFutureSwitches)
+    }
+
+    @Test
     fun `planning failure is explicit and never starts search`() {
         val issue = NativeInitialProductWorldPlanIssue(
             NativeInitialProductWorldPlanIssueCode.PUBLIC_SPECIES_IDENTITY_MISSING,
@@ -160,6 +218,8 @@ class NativeInitialProductDecisionEvaluatorTest {
                     status = NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
                     nodesVisited = 11,
                     failedWorldId = "world-1",
+                    failedRunStatus = NativeProductSearchRunStatus.ROOT_STATE_INCONSISTENT,
+                    failedRunDetail = "HP_MISMATCH",
                 )
             },
             nowEpochMillis = { 1_000L },
@@ -175,6 +235,8 @@ class NativeInitialProductDecisionEvaluatorTest {
         assertEquals(NativeInitialProductDecisionStatus.SEARCH_FAILED, result.status)
         assertEquals(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED, result.searchStatus)
         assertEquals("world-1", result.failedWorldId)
+        assertEquals(NativeProductSearchRunStatus.ROOT_STATE_INCONSISTENT, result.failedRunStatus)
+        assertEquals("HP_MISMATCH", result.failedRunDetail)
         assertEquals(11, result.nodesVisited)
         assertTrue(result.ranked.isEmpty())
     }

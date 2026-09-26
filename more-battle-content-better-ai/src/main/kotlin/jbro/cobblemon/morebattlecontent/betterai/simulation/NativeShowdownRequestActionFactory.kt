@@ -18,7 +18,7 @@ internal object NativeShowdownRequestActionFactory {
         frame: NativeBattleFrame,
         maxVoluntarySwitchTargetsPerSlot: Int? = null,
     ): List<BattleActionCandidate> {
-        require(maxVoluntarySwitchTargetsPerSlot == null || maxVoluntarySwitchTargetsPerSlot > 0)
+        require(maxVoluntarySwitchTargetsPerSlot == null || maxVoluntarySwitchTargetsPerSlot >= 0)
         if (frame.ended) return emptyList()
         val request = parseRequest(requestJson(side, frame))
         require(!request.boolean("teamPreview")) {
@@ -38,7 +38,7 @@ internal object NativeShowdownRequestActionFactory {
             ?: throw IllegalArgumentException("Native Showdown request has no move, switch or wait action")
         // Forced and pivot replacements returned above are never pruned. Only future ordinary
         // move requests receive a bounded voluntary-switch set, before double combinations form.
-        val permittedSwitches = maxVoluntarySwitchTargetsPerSlot?.let { limit ->
+        val permittedSwitches = maxVoluntarySwitchTargetsPerSlot?.takeIf { it > 0 }?.let { limit ->
             preferredVoluntarySwitches(side, frame, active, limit)
         }
         val bySlot = active.mapIndexed { slot, element ->
@@ -47,7 +47,7 @@ internal object NativeShowdownRequestActionFactory {
             } else {
                 val activeRequest = element.asJsonObject
                 moveActions(side, slot, activeRequest, frame) +
-                    if (activeRequest.boolean("trapped")) emptyList() else
+                    if (activeRequest.boolean("trapped") || maxVoluntarySwitchTargetsPerSlot == 0) emptyList() else
                         switchActions(side, slot, frame, permittedSwitches?.get(slot))
             }
         }

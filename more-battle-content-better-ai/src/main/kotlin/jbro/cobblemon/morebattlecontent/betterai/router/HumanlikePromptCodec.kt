@@ -421,13 +421,14 @@ internal object HumanlikePromptCodec {
                 "return UNKNOWN prediction, CLEAR plan, " +
                 "and NONE mindGameIntent. Do not intentionally choose an illegal action."
         BattleTrainerTier.STANDARD ->
-            " Difficulty contract: STANDARD. Compare two complete turns over every supplied public action pair and " +
+            " Difficulty contract: STANDARD. Compare one complete turn over every supplied public action pair and " +
                 "use the supplied strategy. Avoid speculative mind games."
         BattleTrainerTier.ADVANCED ->
             " Difficulty contract: ADVANCED. Compare two complete turns over every supplied public action pair, " +
-                "maintain a short plan, and use calibrated predictions only when public evidence supports them."
+                "exclude your voluntary switch as a second-turn option while retaining forced replacements and " +
+                "opponent switches, maintain a short plan, and use calibrated predictions only when public evidence supports them."
         BattleTrainerTier.BOSS ->
-            " Difficulty contract: BOSS. Play as a champion. Compare three complete turns over every supplied public " +
+            " Difficulty contract: BOSS. Play as a champion. Compare two complete turns over every supplied public " +
                 "action pair, protect win conditions, use the complete strategy brief, and exploit every fair public " +
                 "inference within the supplied hypothesis budget."
     }

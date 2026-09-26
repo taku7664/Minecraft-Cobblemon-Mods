@@ -14,9 +14,9 @@ class BattleTacticalContractTest {
         assertEquals(
             listOf(
                 BattleTrainerTier.INTRODUCTORY to Triple(3, 1, 3),
-                BattleTrainerTier.STANDARD to Triple(6, 2, 5),
+                BattleTrainerTier.STANDARD to Triple(6, 1, 5),
                 BattleTrainerTier.ADVANCED to Triple(10, 2, 8),
-                BattleTrainerTier.BOSS to Triple(16, 3, 12),
+                BattleTrainerTier.BOSS to Triple(16, 2, 12),
             ),
             profiles.map {
                 it.tier to Triple(

@@ -1,11 +1,9 @@
 package jbro.cobblemon.morebattlecontent.betterai
 
-import java.util.concurrent.ExecutionException
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainOpenContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainContentIds
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
 import jbro.cobblemon.morebattlecontent.betterai.brain.LocalTacticalBrain
-import jbro.cobblemon.morebattlecontent.betterai.brain.NativeInitialProductDecisionException
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionSelection
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionSelector
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionMixingContext
@@ -28,7 +26,6 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonSet
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -57,9 +54,9 @@ class NativeInitialProductBrainIntegrationTest {
                 trainerProfile = BattleTrainerProfile.balanced(2),
                 trainerPersonaId = persona,
             ))
-            assertThrows(ExecutionException::class.java) {
-                brain.decide(session, context).toCompletableFuture().get()
-            }
+            val decision = brain.decide(session, context).toCompletableFuture().get()
+            assertTrue("native_fallback_planning_failed" in decision.tags)
+            assertTrue(decision.tags.any { it.startsWith("lookahead_stop_") })
         }
 
         invoke(null)
@@ -112,7 +109,7 @@ class NativeInitialProductBrainIntegrationTest {
     }
 
     @Test
-    fun `opening native planning failure escapes to the outer fallback instead of legacy projection`() {
+    fun `opening native planning failure uses legacy lookahead instead of baseline`() {
         val context = contestedContext()
         val issue = NativeInitialProductWorldPlanIssue(
             NativeInitialProductWorldPlanIssueCode.PUBLIC_SPECIES_IDENTITY_MISSING,
@@ -126,15 +123,10 @@ class NativeInitialProductBrainIntegrationTest {
             },
         )
 
-        val thrown = assertThrows(ExecutionException::class.java) {
-            brain.decide(open(brain, context), context).toCompletableFuture().get()
-        }
+        val decision = brain.decide(open(brain, context), context).toCompletableFuture().get()
 
-        val failure = thrown.cause
-        assertTrue(failure is NativeInitialProductDecisionException)
-        assertEquals(NativeInitialProductDecisionStatus.PLANNING_FAILED,
-            (failure as NativeInitialProductDecisionException).evaluation.status)
-        assertTrue(failure.message!!.contains("PUBLIC_SPECIES_IDENTITY_MISSING"))
+        assertTrue("native_fallback_planning_failed" in decision.tags)
+        assertTrue(decision.tags.any { it.startsWith("lookahead_stop_") })
     }
 
     @Test
@@ -309,7 +301,7 @@ class NativeInitialProductBrainIntegrationTest {
     }
 
     @Test
-    fun `continuation reconciliation failure escapes to the outer fallback without legacy projection`() {
+    fun `continuation reconciliation failure clears native state and uses legacy lookahead`() {
         val context = contestedContext()
         val state = nativeSessionState(context)
         var calls = 0
@@ -338,14 +330,10 @@ class NativeInitialProductBrainIntegrationTest {
         val session = open(brain, context)
         brain.decide(session, context).toCompletableFuture().get()
 
-        val thrown = assertThrows(ExecutionException::class.java) {
-            brain.decide(session, context).toCompletableFuture().get()
-        }
+        val decision = brain.decide(session, context).toCompletableFuture().get()
 
-        val failure = thrown.cause as NativeInitialProductDecisionException
-        assertEquals(NativeInitialProductDecisionStatus.RECONCILIATION_FAILED, failure.evaluation.status)
-        assertEquals(NativeProductSessionReconcileStatus.PUBLIC_EVENT_HISTORY_GAP,
-            failure.evaluation.reconciliationStatus)
+        assertTrue("native_fallback_reconciliation_failed" in decision.tags)
+        assertTrue(decision.tags.any { it.startsWith("lookahead_stop_") })
     }
 
     private fun nativeSessionState(

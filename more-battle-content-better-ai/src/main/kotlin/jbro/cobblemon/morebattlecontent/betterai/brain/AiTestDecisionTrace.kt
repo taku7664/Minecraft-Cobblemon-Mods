@@ -70,11 +70,12 @@ internal class AiTestDecisionTrace private constructor(
 
     fun nativeSearch(result: NativeInitialProductDecisionEvaluation, requestedDepth: Int, budget: LocalLookaheadBudget) {
         logger.info(
-            "[BetterAI Trace] battle={} turn={} phase=search engine=native status={} search={} requestedDepth={} completedDepth={} nodes={} nodeLimit={} timeLimitMs={} truncated={} worlds={} failedWorld={} elapsed_s={}",
+            "[BetterAI Trace] battle={} turn={} phase=search engine=native status={} search={} requestedDepth={} completedDepth={} nodes={} nodeLimit={} timeLimitMs={} truncated={} worlds={} failedWorld={} failedRun={} detail={} elapsed_s={}",
             battleId, turn, result.status, result.searchStatus ?: "-", requestedDepth,
             result.depthCompleted, result.nodesVisited, budget.nodeLimit, budget.timeMillis,
             result.truncated, result.sessionState?.worlds?.size ?: 0,
-            result.failedWorldId ?: "-", elapsedSeconds(),
+            result.failedWorldId ?: "-", result.failedRunStatus ?: "-", result.failedRunDetail ?: "-",
+            elapsedSeconds(),
         )
     }
 
@@ -122,8 +123,8 @@ internal class AiTestDecisionTrace private constructor(
         )
     }
 
-    fun failed(status: String, issues: String) {
-        logger.warn("[BetterAI Trace] battle={} turn={} phase=failed status={} issues={} elapsed_s={}",
+    fun nativeFallback(status: String, issues: String) {
+        logger.warn("[BetterAI Trace] battle={} turn={} phase=native_fallback status={} issues={} next=legacy_lookahead elapsed_s={}",
             battleId, turn, status, issues, elapsedSeconds())
     }
 

@@ -23,6 +23,7 @@ internal data class NativeProductWorldSearchRequest(
     val worlds: List<NativeProductWorldSearchInput>,
     val productActions: List<BattleActionCandidate>,
     val maxDepth: Int,
+    val excludeFutureAllyVoluntarySwitches: Boolean = false,
     /** One total deterministic budget shared by every retained world. */
     val nodeLimit: Int,
     val deadlineNanos: Long,
@@ -62,6 +63,7 @@ internal data class NativeProductWorldSearchResult(
     val nodesVisited: Int = 0,
     val failedWorldId: String? = null,
     val failedRunStatus: NativeProductSearchRunStatus? = null,
+    val failedRunDetail: String? = null,
     val rootSnapshots: Map<NativeSearchWorldKey, NativeProductRootSnapshot> = emptyMap(),
 ) {
     init {
@@ -109,6 +111,7 @@ internal class NativeProductWorldSearchAggregator(
                     productActions = request.productActions,
                     world = world.key,
                     maxDepth = request.maxDepth,
+                    excludeFutureAllyVoluntarySwitches = request.excludeFutureAllyVoluntarySwitches,
                     nodeLimit = worldNodeLimit,
                     deadlineNanos = request.deadlineNanos,
                     evaluate = world.evaluate,
@@ -126,7 +129,7 @@ internal class NativeProductWorldSearchAggregator(
                     NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
                     world,
                     nodesVisited,
-                    run.status,
+                    run,
                 )
             }
             if (result == null || result.depthCompleted == 0) {
@@ -134,21 +137,21 @@ internal class NativeProductWorldSearchAggregator(
                     NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH,
                     world,
                     nodesVisited,
-                    run.status,
+                    run,
                 )
             }
             val rootSnapshot = run.rootSnapshot ?: return failure(
                 NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
                 world,
                 nodesVisited,
-                run.status,
+                run,
             )
             if (visited > worldNodeLimit) {
                 return failure(
                     NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
                     world,
                     nodesVisited,
-                    run.status,
+                    run,
                 )
             }
             completed += CompletedWorld(world, result, rootSnapshot)
@@ -209,12 +212,26 @@ internal class NativeProductWorldSearchAggregator(
         status: NativeProductWorldSearchStatus,
         world: NativeProductWorldSearchInput,
         nodesVisited: Int,
-        runStatus: NativeProductSearchRunStatus?,
+        run: NativeProductSearchRun?,
     ) = NativeProductWorldSearchResult(
         status = status,
         nodesVisited = nodesVisited,
         failedWorldId = world.key.hypothesisId,
-        failedRunStatus = runStatus,
+        failedRunStatus = run?.status,
+        failedRunDetail = run?.let { failed ->
+            when {
+                failed.rootIssues.isNotEmpty() -> failed.rootIssues.joinToString(",") { issue ->
+                    issue.code.name + (issue.battlePokemonId?.let { ":${it.toString().take(8)}" } ?: "")
+                }
+                failed.mapping != null -> with(failed.mapping) {
+                    "unmatchedProduct=${unmatchedProductActionIds.size},unmatchedNative=${unmatchedNativeActionIds.size}," +
+                        "ambiguousProduct=${ambiguousProductActionIds.size},ambiguousNative=${ambiguousNativeActionIds.size}"
+                }
+                failed.failure != null -> failed.failure.javaClass.simpleName + ":" +
+                    (failed.failure.message ?: "no message").take(240)
+                else -> null
+            }
+        },
     )
 
     private data class CompletedWorld(

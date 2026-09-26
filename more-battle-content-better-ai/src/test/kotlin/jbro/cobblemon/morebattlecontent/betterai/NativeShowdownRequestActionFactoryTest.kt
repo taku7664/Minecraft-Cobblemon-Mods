@@ -85,6 +85,9 @@ class NativeShowdownRequestActionFactoryTest {
         assertEquals(choices, NativeShowdownRequestActionFactory.actions(
             BattleSide.ALLY, frame, maxVoluntarySwitchTargetsPerSlot = 1,
         ).map { NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, frame) }.toSet())
+        assertEquals(choices, NativeShowdownRequestActionFactory.actions(
+            BattleSide.ALLY, frame, maxVoluntarySwitchTargetsPerSlot = 0,
+        ).map { NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, frame) }.toSet())
     }
 
     @Test
@@ -106,6 +109,24 @@ class NativeShowdownRequestActionFactoryTest {
         assertEquals(2, full.count { it.kind == BattleActionKind.SWITCH })
         assertEquals(1, limited.count { it.kind == BattleActionKind.USE_MOVE })
         assertEquals(ALLY_BENCH_TWO, limited.single { it.kind == BattleActionKind.SWITCH }.switchPokemonId)
+    }
+
+    @Test
+    fun `zero voluntary switch limit keeps moves but not ordinary switches`() {
+        val active = pokemon(ALLY_LEFT, 0, 100, "tackle")
+        val bench = pokemon(ALLY_BENCH_ONE, null, 100, "tackle")
+        val opponent = pokemon(OPPONENT_LEFT, 0, 100, "splash")
+        val frame = singleFrame("""{"active":[{"moves":[{"id":"tackle","target":"normal"}]}]}""").copy(
+            p1Active = listOf(active), p1Team = listOf(active, bench),
+            p2Active = listOf(opponent), p2Team = listOf(opponent),
+        )
+
+        val actions = NativeShowdownRequestActionFactory.actions(
+            BattleSide.ALLY, frame, maxVoluntarySwitchTargetsPerSlot = 0,
+        )
+
+        assertEquals(1, actions.count { it.kind == BattleActionKind.USE_MOVE })
+        assertEquals(0, actions.count { it.kind == BattleActionKind.SWITCH })
     }
 
     @Test
