@@ -1,5 +1,9 @@
 {
   "screen.cobblemon_more_battle_content_league_challenge.live.title": "League Challenge",
+  "screen.cobblemon_more_battle_content_league_challenge.live.route": "Badge route",
+  "screen.cobblemon_more_battle_content_league_challenge.live.selected_challenge": "Selected challenge",
+  "screen.cobblemon_more_battle_content_league_challenge.live.gyms": "Gyms",
+  "screen.cobblemon_more_battle_content_league_challenge.live.finals": "Elite Four & Champion",
   "screen.cobblemon_more_battle_content_league_challenge.live.summary": "%s  ·  Badges %s/8  ·  Lv. %s  ·  BP %s",
   "screen.cobblemon_more_battle_content_league_challenge.live.waiting": "Waiting for the server…",
   "screen.cobblemon_more_battle_content_league_challenge.live.rewards_pending": "Rewards are still being synchronized. Refresh before continuing.",

@@ -1,5 +1,9 @@
 {
   "screen.cobblemon_more_battle_content_league_challenge.live.title": "리그 챌린지",
+  "screen.cobblemon_more_battle_content_league_challenge.live.route": "뱃지 진행",
+  "screen.cobblemon_more_battle_content_league_challenge.live.selected_challenge": "선택한 도전",
+  "screen.cobblemon_more_battle_content_league_challenge.live.gyms": "체육관",
+  "screen.cobblemon_more_battle_content_league_challenge.live.finals": "사천왕 · 챔피언",
   "screen.cobblemon_more_battle_content_league_challenge.live.summary": "%s · 뱃지 %s/8 · 레벨캡 %s · BP %s",
   "screen.cobblemon_more_battle_content_league_challenge.live.waiting": "서버 응답을 기다리는 중입니다…",
   "screen.cobblemon_more_battle_content_league_challenge.live.rewards_pending": "보상을 동기화 중입니다. 새로고침 후 계속하세요.",

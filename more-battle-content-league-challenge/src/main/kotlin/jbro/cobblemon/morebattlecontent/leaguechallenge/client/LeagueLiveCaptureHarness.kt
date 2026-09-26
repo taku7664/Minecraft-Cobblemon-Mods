@@ -27,6 +27,7 @@ internal object LeagueLiveCaptureHarness {
         logger.info("Enabled disposable-world League UI smoke test")
         val placed = AtomicBoolean(false)
         val captured = AtomicBoolean(false)
+        val captureId = System.currentTimeMillis()
         var pos: BlockPos? = null
         var phase = 0
         var ticks = 0
@@ -91,11 +92,12 @@ internal object LeagueLiveCaptureHarness {
                     logger.info("Sent actual terminal use-item interaction at {}", pos)
                     phase = 2; phaseTick = ticks
                 }
-                2 -> if (client.screen is LeagueHomeScreen && ticks > phaseTick + 20) {
+                // Leave the onboarding toasts time to clear before judging the League frame.
+                2 -> if (client.screen is LeagueHomeScreen && ticks > phaseTick + 240) {
                     val view = checkNotNull(LeagueClientSession.current)
                     revision = view.revision
                     logger.info("Production home received nonce={} badges={} cap={} error={}", view.nonce, view.badges, view.cap, view.errorKey)
-                    Screenshot.grab(client.gameDirectory, "league-live-top.png", client.mainRenderTarget) { captured.set(true) }
+                    Screenshot.grab(client.gameDirectory, "league-live-$captureId-top.png", client.mainRenderTarget) { captured.set(true) }
                     phase = 3
                 }
                 3 -> if (captured.get()) {
@@ -107,7 +109,7 @@ internal object LeagueLiveCaptureHarness {
                     phase = 4; phaseTick = ticks
                 }
                 4 -> if (ticks > phaseTick + 3) {
-                    Screenshot.grab(client.gameDirectory, "league-live-scrolled.png", client.mainRenderTarget) { captured.set(true) }
+                    Screenshot.grab(client.gameDirectory, "league-live-$captureId-scrolled.png", client.mainRenderTarget) { captured.set(true) }
                     phase = 5
                 }
                 5 -> if (captured.get()) {
