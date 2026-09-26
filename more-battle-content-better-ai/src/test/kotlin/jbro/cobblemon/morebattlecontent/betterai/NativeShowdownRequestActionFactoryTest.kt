@@ -82,6 +82,49 @@ class NativeShowdownRequestActionFactoryTest {
             .toSet()
 
         assertEquals(setOf("switch 3, switch 4", "switch 4, switch 3"), choices)
+        assertEquals(choices, NativeShowdownRequestActionFactory.actions(
+            BattleSide.ALLY, frame, maxVoluntarySwitchTargetsPerSlot = 1,
+        ).map { NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, frame) }.toSet())
+    }
+
+    @Test
+    fun `future singles switch limit retains moves and selects one viable bench target`() {
+        val active = pokemon(ALLY_LEFT, 0, 100, "tackle")
+        val weak = pokemon(ALLY_BENCH_ONE, null, 80, "tackle").copy(types = listOf("Fire"))
+        val resistant = pokemon(ALLY_BENCH_TWO, null, 70, "tackle").copy(types = listOf("Water"))
+        val opponent = pokemon(OPPONENT_LEFT, 0, 100, "splash").copy(types = listOf("Water"))
+        val frame = singleFrame("""{"active":[{"moves":[{"id":"tackle","target":"normal"}]}]}""").copy(
+            p1Active = listOf(active), p1Team = listOf(active, weak, resistant),
+            p2Active = listOf(opponent), p2Team = listOf(opponent),
+        )
+
+        val full = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, frame)
+        val limited = NativeShowdownRequestActionFactory.actions(
+            BattleSide.ALLY, frame, maxVoluntarySwitchTargetsPerSlot = 1,
+        )
+
+        assertEquals(2, full.count { it.kind == BattleActionKind.SWITCH })
+        assertEquals(1, limited.count { it.kind == BattleActionKind.USE_MOVE })
+        assertEquals(ALLY_BENCH_TWO, limited.single { it.kind == BattleActionKind.SWITCH }.switchPokemonId)
+    }
+
+    @Test
+    fun `future doubles switch limit reserves distinct targets by active slot`() {
+        val left = pokemon(ALLY_LEFT, 0, 100, "tackle")
+        val right = pokemon(ALLY_RIGHT, 1, 100, "splash")
+        val frame = frame(
+            p1Request = """{"active":[{"moves":[{"id":"tackle","target":"normal"}]},{"moves":[{"id":"splash","target":"self"}]}]}""",
+            p1Active = listOf(left, right),
+            p1Team = listOf(left, right, pokemon(ALLY_BENCH_ONE, null, 100, "tackle"),
+                pokemon(ALLY_BENCH_TWO, null, 100, "tackle")),
+        )
+
+        val choices = NativeShowdownRequestActionFactory.actions(
+            BattleSide.ALLY, frame, maxVoluntarySwitchTargetsPerSlot = 1,
+        ).map { NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, frame) }.toSet()
+
+        assertTrue("switch 3, switch 4" in choices)
+        assertEquals(6, choices.size)
     }
 
     @Test

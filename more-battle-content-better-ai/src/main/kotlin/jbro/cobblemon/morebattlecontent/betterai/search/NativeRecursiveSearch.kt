@@ -212,8 +212,10 @@ internal class NativeRecursiveSearch(
             depthRemaining,
         )
         valueCache[key]?.let { return it }
-        val allyActions = tree.actions(position, BattleSide.ALLY)
-        val opponentActions = tree.actions(position, BattleSide.OPPONENT)
+        // Root choices stay complete. Only voluntary switches in simulated continuation
+        // requests are narrowed; forced/pivot replacements retain every legal target.
+        val allyActions = tree.actions(position, BattleSide.ALLY, FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT)
+        val opponentActions = tree.actions(position, BattleSide.OPPONENT, FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT)
         if (allyActions.isEmpty() || opponentActions.isEmpty()) return evaluate(position.state) + position.recoilCredit
         var best = Double.NEGATIVE_INFINITY
         for (allyAction in allyActions) {
@@ -325,6 +327,7 @@ internal class NativeRecursiveSearch(
     )
 
     private companion object {
+        const val FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT = 1
         const val DEFAULT_CACHE_ENTRY_LIMIT = 2_048
         const val FUTURE_VALUE_WEIGHT = 0.90
         const val ROOT_TEMPO_WEIGHT = 0.75

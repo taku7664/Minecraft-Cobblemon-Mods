@@ -29,8 +29,12 @@ internal class NativeShowdownSearchTree(
         state = NativeBattleStateAdapter.adapt(rootFrame, publicTemplate),
     )
 
-    fun actions(position: NativeSearchPosition, side: BattleSide): List<BattleActionCandidate> =
-        NativeShowdownRequestActionFactory.actions(side, position.frame)
+    fun actions(
+        position: NativeSearchPosition,
+        side: BattleSide,
+        maxVoluntarySwitchTargetsPerSlot: Int? = null,
+    ): List<BattleActionCandidate> =
+        NativeShowdownRequestActionFactory.actions(side, position.frame, maxVoluntarySwitchTargetsPerSlot)
 
     fun branch(
         position: NativeSearchPosition,
