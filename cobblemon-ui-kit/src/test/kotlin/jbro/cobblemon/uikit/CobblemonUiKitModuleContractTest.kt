@@ -56,7 +56,18 @@ class CobblemonUiKitModuleContractTest {
             UiBadgeSpec::class.java,
             UiToggleSpec::class.java,
             UiProgressSpec::class.java,
-            UiScrollState::class.java
+            UiScrollState::class.java,
+            UiStackLayout::class.java,
+            UiFlowLayout::class.java,
+            UiGridLayout::class.java,
+            UiTooltipSpec::class.java,
+            UiDialogSpec::class.java,
+            UiToastSpec::class.java,
+            UiCheckboxSpec::class.java,
+            UiRadioSpec::class.java,
+            UiComboBoxSpec::class.java,
+            UiCardSpec::class.java,
+            UiStatRowSpec::class.java
         )
 
         publicTypes.forEach { type ->

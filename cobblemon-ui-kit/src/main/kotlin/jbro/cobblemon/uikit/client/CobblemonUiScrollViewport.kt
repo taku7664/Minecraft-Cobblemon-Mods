@@ -39,7 +39,10 @@ class CobblemonUiScrollViewport(
         graphics.enableScissor(left, top, left + width, top + height)
         try {
             content(state.offset)
-            entries.forEach { entry ->
+            entries.filterNot { it.widget is CobblemonUiComboBox }.forEach { entry ->
+                if (entry.widget.visible) entry.widget.render(graphics, mouseX, mouseY, partialTick)
+            }
+            entries.filter { it.widget is CobblemonUiComboBox }.forEach { entry ->
                 if (entry.widget.visible) entry.widget.render(graphics, mouseX, mouseY, partialTick)
             }
         } finally {

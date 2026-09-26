@@ -72,12 +72,15 @@ internal object GalleryWorldCaptureHarness {
 
         val topCaptured = AtomicBoolean(false)
         val scrolledCaptured = AtomicBoolean(false)
+        val dialogCaptured = AtomicBoolean(false)
         var scaleApplied = false
         var opened = false
         var verified = false
         var topCaptureRequested = false
         var scrollVerified = false
         var scrolledCaptureRequested = false
+        var dialogTestRequested = false
+        var dialogCaptureRequested = false
         var ticks = 0
         var waitingScreenClass: String? = null
         var snapshotWarningAccepted = false
@@ -131,6 +134,29 @@ internal object GalleryWorldCaptureHarness {
             if (mode == GalleryHarnessMode.MANUAL) return@EndTick
 
             ticks += 1
+            if (dialogTestRequested) {
+                val dialog = client.screen as? CobblemonUiDialogScreen
+                    ?: error("UI Kit dialog closed before capture")
+                if (!dialogCaptureRequested) {
+                    dialogCaptureRequested = true
+                    val filename = "ui-kit-world-${activePreset().id}-dialog-${client.window.guiScaledWidth}x${client.window.guiScaledHeight}.png"
+                    Screenshot.grab(client.gameDirectory, filename, client.mainRenderTarget) { result ->
+                        logger.info("UI Kit world capture {}: {}", filename, result.string)
+                        dialogCaptured.set(true)
+                    }
+                }
+                if (dialogCaptured.get()) {
+                    dialog.onClose()
+                    val gallery = client.screen as? ComponentGalleryScreen
+                        ?: error("UI Kit dialog did not return to its parent gallery")
+                    check(lifecycle.finish()) { "UI Kit gallery capture was already finished" }
+                    gallery.onClose()
+                    check(client.screen !== gallery) { "UI Kit gallery did not close through onClose" }
+                    logger.info("Verified UI Kit dialog cancel and gallery close paths with world still loaded={}", client.level != null)
+                    client.stop()
+                }
+                return@EndTick
+            }
             val screen = client.screen as? ComponentGalleryScreen
                 ?: error("UI Kit gallery closed before capture")
             check(client.level != null && client.player != null) { "UI Kit gallery is not attached to a loaded world" }
@@ -197,11 +223,9 @@ internal object GalleryWorldCaptureHarness {
                     client.setScreen(ComponentGalleryScreen(activePreset()))
                     logger.info("Continuing UI Kit gallery capture theme={}", activePreset().id)
                 } else {
-                    check(lifecycle.finish()) { "UI Kit gallery capture was already finished" }
-                    screen.onClose()
-                    check(client.screen !== screen) { "UI Kit gallery did not close through onClose" }
-                    logger.info("Verified UI Kit gallery close path with world still loaded={}", client.level != null)
-                    client.stop()
+                    dialogTestRequested = true
+                    screen.openDemoDialog()
+                    logger.info("Opened UI Kit dialog for modal input-boundary verification")
                 }
             } else if (ticks >= 240) {
                 error("UI Kit world capture timed out")
