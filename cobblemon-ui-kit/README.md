@@ -42,4 +42,6 @@ The command is not registered outside Fabric's development environment. The gall
 
 Button text shadow is off by default. A theme may opt a style in with `UiButtonStyle.textShadow`, and a call site may explicitly override it with `UiButtonSpec(textShadow = true)` or `false`. Prefer the shadow-free default on opaque UI surfaces.
 
+`UiBorder.PixelFrame` keeps its hard shadow close to the widget with a default logical offset of `1`. Themes may override `shadowOffset`; `pixel_league` uses `2` for the outer shell and `1` for cards and controls so the screen hierarchy remains visible without making each widget look detached.
+
 This module does not replace vanilla inventory, crafting, chat, or other general Minecraft screens. Its final distribution form remains undecided until both League Challenge and Cobblemon Battle UI consume the runtime contract.
