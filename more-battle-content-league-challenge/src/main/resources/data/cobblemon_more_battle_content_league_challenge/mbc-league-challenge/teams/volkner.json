@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "jolteon level=46 moves=thunderbolt,shadowball,thunderwave",
+    "raichu level=46 moves=thunderbolt,focusblast,quickattack",
+    "luxray level=48 moves=thunderfang,crunch,icefang",
+    "electivire level=50 moves=thunderpunch,icepunch,firepunch,earthquake"
+  ]
+}

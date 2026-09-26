@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "turtwig level=20 moves=razorleaf,reflect,curse",
+    "cherrim level=20 moves=magicalleaf,leechseed,growth",
+    "roserade level=22 moves=magicalleaf,stunspore,poisonsting"
+  ]
+}

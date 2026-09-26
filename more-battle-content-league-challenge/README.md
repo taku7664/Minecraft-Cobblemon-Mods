@@ -3,11 +3,11 @@
 `League Challenge`는 `Cobblemon: More Battle Content`(MBC)에 체육관, 뱃지, 계급,
 플레이어별 레벨캡, 사천왕 연전과 챔피언 진행을 추가하는 별도 애드온이다.
 
-현재 Gradle 모듈과 서버·클라이언트 진입점이 있으며, 개발 환경에서만 `/mbc-league-ui`로
-코드 드로잉 League 홈을 열 수 있다. 기본값은 `badges_3`이고 `badges_0`, `badges_2`,
-`badges_3`, `badges_5`, `badges_8`, `champion` 하위 명령으로 경계 상태를 비교할 수 있다.
-진행도, PokeBadges, 레벨캡, 터미널, 전투와 시설 잠금은 아직 연결하지 않았으므로 배포 가능한
-제품 상태가 아니다.
+서버 진행도·저장, 데이터팩 콘텐츠, PokeBadges·Cobbled Level Control(CLC) 연동,
+전용 터미널, MBC 전투·보상·시설 잠금과 서버·클라이언트 통신을 구현했다.
+실제 League 화면은 아직 서버 상태에 연결하지 않았다. 개발 명령 `/mbc-league-ui`는
+별도 fixture를 열며, 제품 UI나 실제 월드 플레이의 완료 증거가 아니다.
+구현 범위와 UI 연결 방법은 [시스템 구현 및 UI 인계](docs/SYSTEM_IMPLEMENTATION_V1.md)를 따른다.
 
 ## 모듈 이름
 
@@ -26,7 +26,9 @@
 ## 핵심 관계
 
 - MBC는 이 애드온 없이 지금처럼 독립적으로 작동해야 한다(MUST).
-- League Challenge는 MBC와 PokeBadges를 필수 의존성으로 사용한다(MUST).
+- League Challenge는 MBC, PokeBadges와 CLC를 필수 의존성으로 사용한다(MUST).
+- MBC는 공통 PvE·보상·시설 접근·트레이너 외형 API를 제공하고, League Challenge는
+  리그 진행도·데이터팩·터미널·서버 처리와 클라이언트 통신을 담당한다.
 - League Challenge가 설치되어 작동하는 동안에는 챔피언이 되기 전까지 MBC 배틀타워와
   배틀팩토리를 잠가야 한다(MUST).
 - 애드온이 없으면 MBC 배틀타워와 배틀팩토리는 기존처럼 바로 이용할 수 있어야 한다(MUST).
@@ -36,14 +38,19 @@
 ## 문서 읽는 순서
 
 1. [문서 색인](docs/DOCUMENT_INDEX.md)
-2. [결정 기록](docs/DECISIONS.md)
-3. [제품 범위와 용어](docs/PRODUCT_SCOPE.md)
-4. [진행도와 콘텐츠](docs/PROGRESSION_AND_CONTENT.md)
-5. [GUI 프레임워크 및 리소스팩 계획](docs/GUI_FRAMEWORK_AND_RESOURCE_PACK.md)
-6. [MBC 본체 변경 계약](docs/MBC_CORE_CHANGES.md)
-7. 나머지 세부 문서
+2. [시스템 구현 및 UI 인계](docs/SYSTEM_IMPLEMENTATION_V1.md)
+3. [결정 기록](docs/DECISIONS.md)
+4. [제품 범위와 용어](docs/PRODUCT_SCOPE.md)
+5. [진행도와 콘텐츠](docs/PROGRESSION_AND_CONTENT.md)
+6. [GUI 프레임워크 및 리소스팩 계획](docs/GUI_FRAMEWORK_AND_RESOURCE_PACK.md)
+7. [MBC 본체 변경 계약](docs/MBC_CORE_CHANGES.md)
+8. 나머지 세부 문서
 
 ## 현재 경계
 
-이 문서들은 구현 방향을 고정하는 기획 기준선이다. 아직 확정되지 않은 레벨캡 수치,
-레벨캡 외부 모드 선택, 기본 상대 팀과 세부 보상은 구현 전에 별도로 결정해야 한다.
+레벨캡 제공자는 사용자 확인을 받은 CLC다. 내장 레벨캡·상대 팀·BP 보상은 데이터팩으로
+교체할 수 있는 초기 콘텐츠이며, 최종 밸런스가 아니다. CLC의 단계별 레벨을 리그 데이터와
+맞춰야 한다. UI Toolkit과 Battle UI는 별도 담당 범위이며 실제 League 화면 연결,
+클라이언트·서버 배포와 실제 월드 검증은 아직 완료하지 않았다.
+
+기존 기획 문서는 결정 이력으로 보존한다. 현재 구현과 그 한계는 시스템 구현 문서를 먼저 확인한다.

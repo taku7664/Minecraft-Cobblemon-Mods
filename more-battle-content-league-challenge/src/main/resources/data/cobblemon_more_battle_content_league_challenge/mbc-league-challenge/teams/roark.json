@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "geodude level=12 moves=rockthrow,tackle,defensecurl",
+    "onix level=12 moves=rockthrow,bind,screech",
+    "cranidos level=14 moves=headbutt,pursuit,leer"
+  ]
+}

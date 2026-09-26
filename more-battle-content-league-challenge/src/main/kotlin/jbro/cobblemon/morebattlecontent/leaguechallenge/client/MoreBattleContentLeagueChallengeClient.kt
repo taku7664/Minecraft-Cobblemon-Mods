@@ -11,6 +11,7 @@ import net.minecraft.network.chat.Component
 
 object MoreBattleContentLeagueChallengeClient : ClientModInitializer {
     override fun onInitializeClient() {
+        LeagueClientSession.register()
         if (!DevelopmentEnvironmentGate.shouldRegister(FabricLoader.getInstance().isDevelopmentEnvironment)) {
             return
         }

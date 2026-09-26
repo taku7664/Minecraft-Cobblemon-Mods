@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "spiritomb level=58 moves=shadowball,darkpulse,psychic",
+    "roserade level=58 moves=energyball,sludgebomb,shadowball",
+    "togekiss level=60 moves=airslash,aurasphere,waterpulse",
+    "lucario level=60 moves=aurasphere,extremespeed,shadowball",
+    "milotic level=58 moves=surf,icebeam,mirrorcoat",
+    "garchomp level=62 moves=dragonclaw,earthquake,flamethrower,gigaimpact"
+  ]
+}

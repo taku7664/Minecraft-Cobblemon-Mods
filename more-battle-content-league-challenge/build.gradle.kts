@@ -13,8 +13,16 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:${property("fabric_loader_version")}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
-    modImplementation(project(":more-battle-content"))
-    modCompileOnly("io.wispforest:owo-lib:${property("owo_lib_version")}")
+    // Same-workspace Loom project: compile current named output, not a cached remap of its old release JAR.
+    implementation(project(path = ":more-battle-content", configuration = "namedElements")) { isTransitive = false }
+    modCompileOnly("com.cobblemon:mod:${property("cobblemon_maven_version")}") { isTransitive = false }
+    modImplementation("com.cobblemon:fabric:${property("cobblemon_maven_version")}")
+    modImplementation("maven.modrinth:pokebadges:A93HZDyB")
+    modImplementation("maven.modrinth:cobbled-level-control:uZaphEIC")
+    modImplementation("maven.modrinth:matthiesen-core:azvkmoed")
+    modCompileOnly("maven.modrinth:modmenu:6lgOkclV")
+    // The retained development spike needs owo's injected vanilla widget interfaces during compilation.
+    modImplementation("io.wispforest:owo-lib:${property("owo_lib_version")}")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("com.google.code.gson:gson:2.11.0")

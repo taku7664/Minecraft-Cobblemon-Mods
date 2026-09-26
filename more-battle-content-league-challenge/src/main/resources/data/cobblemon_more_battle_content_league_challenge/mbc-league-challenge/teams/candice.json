@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "sneasel level=40 moves=icepunch,slash,quickattack",
+    "piloswine level=40 moves=icefang,earthquake,stoneedge",
+    "abomasnow level=42 moves=blizzard,woodhammer,iceshard",
+    "froslass level=44 moves=blizzard,shadowball,confuseray"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "yanmega level=53 moves=bugbuzz,airslash,ancientpower",
+    "scizor level=54 moves=bulletpunch,xscissor,nightslash",
+    "vespiquen level=54 moves=attackorder,defendorder,powergem",
+    "heracross level=54 moves=megahorn,closecombat,stoneedge",
+    "drapion level=57 moves=crosspoison,crunch,icefang"
+  ]
+}

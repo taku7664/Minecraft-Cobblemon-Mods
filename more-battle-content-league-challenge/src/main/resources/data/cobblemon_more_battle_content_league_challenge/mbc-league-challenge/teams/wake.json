@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "gyarados level=33 moves=waterfall,bite,twister",
+    "quagsire level=34 moves=mudshot,waterpulse,yawn",
+    "floatzel level=37 moves=aquajet,icefang,crunch"
+  ]
+}
