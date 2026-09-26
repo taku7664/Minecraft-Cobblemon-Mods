@@ -1,7 +1,7 @@
 #requires -Version 7.0
 
 param(
-    [string]$Version = "0.1.1"
+    [string]$Version = "0.1.2"
 )
 
 $ErrorActionPreference = "Stop"
@@ -75,6 +75,21 @@ if ($settingsSource -notmatch '(?m)^#define\s+BORDER_FOG\s*$') {
 }
 if ($settingsSource -notmatch '(?m)^#define\s+BORDER_FOG_START\s+0\.70\b') {
     $errors.Add("Border fog must default to starting at 70% of render distance")
+}
+if ($settingsSource -notmatch '(?m)^#define\s+HORIZON_HAZE\s*$') {
+    $errors.Add("Casual horizon haze must be enabled by default")
+}
+if ($settingsSource -notmatch '(?m)^#define\s+HORIZON_HAZE_HEIGHT\s+0\.18\b') {
+    $errors.Add("Casual horizon haze must use the intended default width")
+}
+if ($compositeSource -notmatch 'float\s+getHorizonHazeFactor\s*\(\s*vec3\s+viewDirection\s*\)') {
+    $errors.Add("Composite must calculate a view-direction horizon haze")
+}
+if ($compositeSource -notmatch '1\.0\s*-\s*smoothstep\s*\(\s*0\.0\s*,\s*hazeHeight\s*,\s*abs\s*\(\s*viewDirection\.y\s*\)\s*\)') {
+    $errors.Add("Horizon haze must smoothly cover both sides of the sky seam")
+}
+if ($compositeSource -notmatch '(?s)if\s*\(\s*depth\s*>=\s*0\.999999\s*\).*?getHorizonHazeFactor.*?mix\s*\(\s*skyColor\s*,\s*linearFog') {
+    $errors.Add("Sky pixels must receive horizon haze before the early return")
 }
 
 $distortPath = Join-Path $shaderRoot "lib\distort.glsl"
