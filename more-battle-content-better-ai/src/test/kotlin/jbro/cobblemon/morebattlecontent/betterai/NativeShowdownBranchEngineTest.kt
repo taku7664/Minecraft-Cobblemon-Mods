@@ -26,6 +26,26 @@ import org.junit.jupiter.api.io.TempDir
 
 class NativeShowdownBranchEngineTest {
     @Test
+    fun `native branch reports move recoil separately from damage`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val definition = battle("Technician").copy(
+                p1Team = battle("Technician").p1Team.map { it.copy(moves = listOf("doubleedge")) },
+            )
+            val before = engine.createBattle(definition)
+            val after = engine.branch(before.snapshotJson, "move 1", "move 1")
+
+            assertTrue(after.p1Active.single().hp < before.p1Active.single().hp)
+            assertEquals(
+                (before.p1Active.single().hp - after.p1Active.single().hp).toDouble() / before.p1Active.single().maxHp,
+                after.recoilLossP1,
+                1e-9,
+            )
+            assertEquals(0.0, after.recoilLossP2, 1e-9)
+        }
+    }
+
+    @Test
     fun `native snapshot retains the authoritative executed move order`(@TempDir directory: Path) {
         val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
         NativeShowdownBranchEngine.open(engineRoot).use { engine ->

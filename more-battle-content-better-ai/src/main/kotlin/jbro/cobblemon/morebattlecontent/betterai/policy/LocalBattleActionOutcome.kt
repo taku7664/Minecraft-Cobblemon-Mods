@@ -263,7 +263,10 @@ internal object LocalBattleActionOutcomeEvaluator {
         }
         val mechanicsUtilityAdjustment = (expectedDamage - baseExpectedDamage) * DAMAGE_UTILITY_SCALE -
             unprojectedPressureAlreadyScored -
-            (projection.expectedSelfRecoilFraction ?: 0.0) * SELF_HP_UTILITY_SCALE
+            (projection.expectedSelfRecoilFraction ?: 0.0) * SELF_HP_UTILITY_SCALE -
+            if (projection.expectedSelfRecoilFraction != null && projection.expectedSelfRecoilFraction > 0.0 &&
+                projection.actorExpectedHpAfterSelfEffects == 0.0
+            ) SELF_KNOCKOUT_UTILITY else 0.0
         val publiclyInert = isPubliclyInert(candidate, context) ||
             projection.publiclyNullified ||
             isWastedPureRecovery(candidate, projection)
@@ -419,6 +422,7 @@ internal object LocalBattleActionOutcomeEvaluator {
 
     private const val CERTAIN_ACCURACY = 0.999
     private const val DAMAGE_UTILITY_SCALE = 100.0
-    private const val SELF_HP_UTILITY_SCALE = 100.0
+    private const val SELF_HP_UTILITY_SCALE = 50.0
+    private const val SELF_KNOCKOUT_UTILITY = 200.0
     private const val FULL_HP_EPSILON = 1e-9
 }

@@ -215,6 +215,7 @@ function recordExecutionTrace(battle, action, options = {}) {
   let pendingDamageRolls = [];
   let damageCallIndex = 0;
   const directHits = [];
+  battle.mbcBranchRecoil = { p1: 0, p2: 0 };
   const originalAddMove = battle.addMove;
   const originalRandomizer = battle.randomizer;
   const originalAdd = battle.add;
@@ -256,6 +257,13 @@ function recordExecutionTrace(battle, action, options = {}) {
       const previousHp = hpByUuid.get(pokemon.uuid);
       hpByUuid.set(pokemon.uuid, pokemon.hp);
       const hasPublicSource = parts.slice(3).some(part => String(part).startsWith('[from]'));
+      const recoilSource = parts.slice(3).some(part => /^\[from\] recoil$/i.test(String(part)));
+      if (kind === '-damage' && recoilSource && Number.isInteger(previousHp) && previousHp > pokemon.hp) {
+        const side = pokemon.side && pokemon.side.id;
+        if (side === 'p1' || side === 'p2') {
+          battle.mbcBranchRecoil[side] += (previousHp - pokemon.hp) / pokemon.maxhp;
+        }
+      }
       if (kind === '-damage' && currentMove && Number.isInteger(previousHp)) {
         const rollIndex = pendingDamageRolls.findIndex(roll =>
           roll.turn === currentMove.turn &&
@@ -349,6 +357,8 @@ function frame(battle, executedDamageRolls = []) {
       ...entry,
       possibleHpLosses: entry.possibleHpLosses.slice(),
     })),
+    recoilLossP1: battle.mbcBranchRecoil ? battle.mbcBranchRecoil.p1 : 0,
+    recoilLossP2: battle.mbcBranchRecoil ? battle.mbcBranchRecoil.p2 : 0,
   };
 }
 

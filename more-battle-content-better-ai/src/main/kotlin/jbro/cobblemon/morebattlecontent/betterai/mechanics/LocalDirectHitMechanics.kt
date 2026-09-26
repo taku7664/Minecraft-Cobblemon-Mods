@@ -7,6 +7,7 @@ internal data class LocalAppliedDirectHit(
     val state: BattleStateView,
     /** Damage attributed to the move itself. Drain, recoil, and contact reactions use this value. */
     val directDamageFraction: Double,
+    val recoilHpFraction: Double,
 )
 
 /** Resolves one damaging hit, including one-hit survival and disguise consumption. */
@@ -77,7 +78,13 @@ internal object LocalDirectHitMechanics {
                 else -> pokemon
             }
         }
-        return LocalAppliedDirectHit(copyState(state, nextPokemon), directDamage)
+        val actualRecoil = actor?.takeUnless { selfDestructs }?.let {
+            val beforeRecoil = (it.hpFraction + fixedHealing + drainHealing).coerceIn(0.0, 1.0)
+            val afterRecoil = (it.hpFraction + fixedHealing + drainHealing - damageRecoil - maxHpRecoil)
+                .coerceIn(0.0, 1.0)
+            beforeRecoil - afterRecoil
+        } ?: 0.0
+        return LocalAppliedDirectHit(copyState(state, nextPokemon), directDamage, actualRecoil)
     }
 
     private fun resolveTarget(

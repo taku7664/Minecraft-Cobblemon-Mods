@@ -367,6 +367,9 @@ internal data class NativeBattleFrame(
     val executedMoveOrder: List<NativeExecutedMoveFrame> = emptyList(),
     /** Native random-damage support for publicly attributable direct hits. */
     val executedDamageRolls: List<NativeDamageRollFrame> = emptyList(),
+    /** Full-HP fractions lost specifically to move recoil in this branch transition. */
+    val recoilLossP1: Double = 0.0,
+    val recoilLossP2: Double = 0.0,
 )
 
 internal data class NativeExecutedMoveFrame(

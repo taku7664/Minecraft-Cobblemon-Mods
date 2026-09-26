@@ -763,10 +763,14 @@ internal object PublicSingleTurnProjector {
             val reflectedSide = if (side == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
             return PublicMoveOutcomeBranchProjector.project(calculatedAction, calculated, side).flatMap { outcome ->
                 if (!outcome.hit) {
+                    val crashed = applyCrashRecoil(projectedFormState, actor.battlePokemonId, effects)
                     listOf(
                         WeightedState(
-                            state = applyCrashRecoil(projectedFormState, actor.battlePokemonId, effects),
+                            state = crashed,
                             probability = outcome.probability,
+                            expectedScoreAdjustment = crashRecoilRefund(
+                                projectedFormState, crashed, actor.battlePokemonId, side,
+                            ),
                             executedSides = setOf(side),
                             executedMoveIdsByPokemon = effectiveAction.moveId?.let {
                                 mapOf(actor.battlePokemonId to it)
@@ -802,6 +806,9 @@ internal object PublicSingleTurnProjector {
                 WeightedState(
                     state = blockedState,
                     probability = 1.0,
+                    expectedScoreAdjustment = crashRecoilRefund(
+                        protectionState, blockedState, actor.battlePokemonId, side,
+                    ),
                     executedSides = setOf(side),
                     executedMoveIdsByPokemon = effectiveAction.moveId?.let {
                         mapOf(actor.battlePokemonId to it)
@@ -811,10 +818,14 @@ internal object PublicSingleTurnProjector {
         }
         return PublicMoveOutcomeBranchProjector.project(calculatedAction, calculated, side).flatMap { moveOutcome ->
             if (!moveOutcome.hit) {
+                val crashed = applyCrashRecoil(projectedFormState, actor.battlePokemonId, effects)
                 listOf(
                     WeightedState(
-                        state = applyCrashRecoil(projectedFormState, actor.battlePokemonId, effects),
+                        state = crashed,
                         probability = moveOutcome.probability,
+                        expectedScoreAdjustment = crashRecoilRefund(
+                            projectedFormState, crashed, actor.battlePokemonId, side,
+                        ),
                         executedSides = setOf(side),
                         executedMoveIdsByPokemon = effectiveAction.moveId?.let {
                             mapOf(actor.battlePokemonId to it)
@@ -872,6 +883,8 @@ internal object PublicSingleTurnProjector {
                     }
                     effectOutcome.copy(
                         probability = effectOutcome.probability * moveOutcome.probability,
+                        expectedScoreAdjustment = effectOutcome.expectedScoreAdjustment +
+                            recoilRefund(appliedHit.recoilHpFraction, side),
                         directDamage = LocalDirectDamageLedger.hit(
                             actor.battlePokemonId, target?.battlePokemonId, appliedHit.directDamageFraction,
                         ),
@@ -1204,7 +1217,8 @@ internal object PublicSingleTurnProjector {
                                     successfulDamageCalculationPokemonIds =
                                         branch.successfulDamageCalculationPokemonIds + currentActor.battlePokemonId,
                                     expectedScoreAdjustment = branch.expectedScoreAdjustment +
-                                        effectOutcome.expectedScoreAdjustment,
+                                        effectOutcome.expectedScoreAdjustment +
+                                        recoilRefund(applied.recoilHpFraction, side),
                                 )
                             }
                         }
@@ -2179,6 +2193,21 @@ internal object PublicSingleTurnProjector {
         0.0
     }
 
+    private fun recoilRefund(fraction: Double, side: BattleSide): Double =
+        fraction * if (side == BattleSide.ALLY) RECOIL_REFUND else -RECOIL_REFUND
+
+    private fun crashRecoilRefund(
+        before: BattleStateView,
+        after: BattleStateView,
+        actorId: UUID,
+        side: BattleSide,
+    ): Double {
+        val oldHp = before.pokemon.firstOrNull { it.battlePokemonId == actorId }?.hpFraction ?: return 0.0
+        val newHp = after.pokemon.firstOrNull { it.battlePokemonId == actorId }?.hpFraction ?: return 0.0
+        return recoilRefund((oldHp - newHp).coerceAtLeast(0.0), side)
+    }
+
+    private const val RECOIL_REFUND = 0.5
     private const val CERTAIN_PROBABILITY = 0.999_999
     private const val MAX_CHANCE_BRANCHES_PER_MOVE = 64
     private val FORCED_SWITCH_IMMUNITIES = setOf("suctioncups", "guarddog")

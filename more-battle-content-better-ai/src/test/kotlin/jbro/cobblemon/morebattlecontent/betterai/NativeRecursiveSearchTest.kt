@@ -24,6 +24,46 @@ import org.junit.jupiter.api.Test
 
 class NativeRecursiveSearchTest {
     @Test
+    fun `native recoil charges fifty points per full hp bar`() {
+        val root = frame("root", 1, 100, 100, listOf("tackle", "doubleedge"), listOf("splash"))
+        val worker = RecordingWorker(mapOf(
+            BranchKey("root", "move 1", "move 1") to terminal("plain", 100, 70),
+            BranchKey("root", "move 2", "move 1") to terminal("recoil", 80, 70).copy(recoilLossP1 = 0.2),
+        ))
+        val values = NativeRecursiveSearch(
+            tree = NativeShowdownSearchTree(worker, root, template()),
+            world = NativeSearchWorldKey("recoil", 0),
+            evaluate = ::material,
+            nodeLimit = 10,
+        ).evaluate(1).rootValues.associate { it.action.moveId to it.value }
+
+        assertEquals(0.3, values.getValue("tackle"), 1e-9)
+        assertEquals(0.2, values.getValue("doubleedge"), 1e-9)
+    }
+
+    @Test
+    fun `deeper native tempo does not charge recoil a second time`() {
+        val root = frame("root", 1, 100, 100, listOf("tackle", "doubleedge"), listOf("splash"))
+        val plain = frame("plain", 2, 100, 70, listOf("splash"), listOf("splash"))
+        val recoil = frame("recoil", 2, 80, 70, listOf("splash"), listOf("splash"))
+            .copy(recoilLossP1 = 0.2)
+        val worker = RecordingWorker(mapOf(
+            BranchKey("root", "move 1", "move 1") to plain,
+            BranchKey("root", "move 2", "move 1") to recoil,
+            BranchKey("plain", "move 1", "move 1") to terminal("plain-end", 100, 70),
+            BranchKey("recoil", "move 1", "move 1") to terminal("recoil-end", 80, 70),
+        ))
+        val values = NativeRecursiveSearch(
+            tree = NativeShowdownSearchTree(worker, root, template()),
+            world = NativeSearchWorldKey("recoil-depth-two", 0),
+            evaluate = ::material,
+            nodeLimit = 10,
+        ).evaluate(2).rootValues.associate { it.action.moveId to it.value }
+
+        assertEquals(0.1, values.getValue("tackle") - values.getValue("doubleedge"), 1e-9)
+    }
+
+    @Test
     fun `root maximizes the worst native opponent response`() {
         val root = frame(
             snapshot = "root",

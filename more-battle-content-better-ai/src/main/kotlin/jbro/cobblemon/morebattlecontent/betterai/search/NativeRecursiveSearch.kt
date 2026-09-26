@@ -174,7 +174,7 @@ internal class NativeRecursiveSearch(
     ): List<NativeRootActionValue>? {
         val opponentActions = tree.actions(tree.root, BattleSide.OPPONENT)
         if (rootActions.isEmpty() || opponentActions.isEmpty()) return emptyList()
-        val rootHpAdvantage = hpAdvantage(tree.root.frame)
+        val rootHpAdvantage = hpAdvantage(tree.root)
         val values = mutableListOf<NativeRootActionValue>()
         for (allyAction in rootActions) {
             var worstResponse = Double.POSITIVE_INFINITY
@@ -186,7 +186,7 @@ internal class NativeRecursiveSearch(
                 // Knockout/living bonuses stay in the regular evaluation; adding them here again
                 // would make a quick KO worth several extra health bars.
                 val tempo = if (depth > 1) {
-                    (hpAdvantage(child.frame) - rootHpAdvantage) * ROOT_TEMPO_WEIGHT
+                    (hpAdvantage(child) - rootHpAdvantage) * ROOT_TEMPO_WEIGHT
                 } else 0.0
                 val value = projectedValue(child, depth - 1, worstResponse - tempo) ?: return null
                 val rootValue = value + tempo
@@ -203,7 +203,7 @@ internal class NativeRecursiveSearch(
         upperBound: Double,
     ): Double? {
         if (!timeAvailable()) return null
-        if (depthRemaining <= 0 || position.frame.ended) return evaluate(position.state)
+        if (depthRemaining <= 0 || position.frame.ended) return evaluate(position.state) + position.recoilCredit
         val key = ValueKey(
             tree.rulesFingerprint,
             world.hypothesisId,
@@ -214,7 +214,7 @@ internal class NativeRecursiveSearch(
         valueCache[key]?.let { return it }
         val allyActions = tree.actions(position, BattleSide.ALLY)
         val opponentActions = tree.actions(position, BattleSide.OPPONENT)
-        if (allyActions.isEmpty() || opponentActions.isEmpty()) return evaluate(position.state)
+        if (allyActions.isEmpty() || opponentActions.isEmpty()) return evaluate(position.state) + position.recoilCredit
         var best = Double.NEGATIVE_INFINITY
         for (allyAction in allyActions) {
             var worstResponse = Double.POSITIVE_INFINITY
@@ -229,7 +229,7 @@ internal class NativeRecursiveSearch(
             // the parent's minimum. This is only a lower bound, so never cache a cutoff result.
             if (best >= upperBound) return best
         }
-        val result = if (best.isFinite()) best else evaluate(position.state)
+        val result = if (best.isFinite()) best else evaluate(position.state) + position.recoilCredit
         if (!truncated) valueCache[key] = result
         return result
     }
@@ -249,7 +249,7 @@ internal class NativeRecursiveSearch(
         if (depthRemaining <= 0 || child.frame.ended) {
             return positionValue(child, depthRemaining, upperBound)
         }
-        val immediateMaterial = LocalBoardMaterial.evaluate(child.state)
+        val immediateMaterial = LocalBoardMaterial.evaluate(child.state) + child.recoilCredit
         val remainingWeight = FUTURE_VALUE_WEIGHT
         val immediateWeight = 1.0 - remainingWeight
         // The parent's bound is expressed after this affine blend. Map it into the child's units
@@ -263,9 +263,12 @@ internal class NativeRecursiveSearch(
         return immediateWeight * immediateMaterial + remainingWeight * continuation
     }
 
-    private fun hpAdvantage(frame: NativeBattleFrame): Double =
-        frame.p1Team.sumOf { it.hp.toDouble() / it.maxHp } -
-            frame.p2Team.sumOf { it.hp.toDouble() / it.maxHp }
+    private fun hpAdvantage(position: NativeSearchPosition): Double =
+        position.frame.p1Team.sumOf { it.hp.toDouble() / it.maxHp } -
+            position.frame.p2Team.sumOf { it.hp.toDouble() / it.maxHp } +
+            // First-turn tempo measures progress, not the price of a move. Recoil is already
+            // priced in the material value, so remove it completely from this extra tempo term.
+            position.recoilCredit * 2.0
 
     private fun descend(
         position: NativeSearchPosition,

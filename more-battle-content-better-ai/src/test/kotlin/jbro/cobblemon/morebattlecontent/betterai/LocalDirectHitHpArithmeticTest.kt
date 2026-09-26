@@ -8,6 +8,21 @@ import org.junit.jupiter.api.Test
 
 class LocalDirectHitHpArithmeticTest {
     @Test
+    fun `direct hit reports recoil separately from target damage`() {
+        val recoil = BattleMoveEffectView(
+            BattleMoveEffectKind.RECOIL_FRACTION,
+            BattleMoveEffectTarget.USER,
+            fractionRange = BattleFractionRange(1.0 / 3.0, 1.0 / 3.0),
+        )
+        val applied = LocalDirectHitMechanics.apply(
+            state(1.0), UUID(0, 1), UUID(0, 2), 0.6, listOf(recoil), false,
+        )
+
+        assertEquals(0.2, applied.recoilHpFraction, 1e-9)
+        assertEquals(0.8, applied.state.pokemon.first().hpFraction, 1e-9)
+    }
+
+    @Test
     fun `magic room disables sash but not sturdy and preserves the unused item`() {
         for (room in listOf(null, "trickroom", "cobblemon:magic_room")) {
             for (ability in listOf(null, "sturdy")) {
