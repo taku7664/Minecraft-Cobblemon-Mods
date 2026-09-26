@@ -1,0 +1,244 @@
+package jbro.cobblemon.uikit.client
+
+import com.cobblemon.mod.common.client.gui.snapshots.SnapshotWarningScreen
+import jbro.cobblemon.uikit.CobblemonUiThemePresets
+import jbro.cobblemon.uikit.UiThemePreset
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.minecraft.client.Screenshot
+import net.minecraft.client.gui.narration.NarratableEntry
+import org.lwjgl.glfw.GLFW
+import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicBoolean
+
+internal enum class GalleryHarnessMode {
+    OFF,
+    MANUAL,
+    CAPTURE;
+
+    companion object {
+        fun fromEnvironment(environment: Map<String, String>): GalleryHarnessMode = when {
+            environment["COBBLEMON_UI_KIT_CAPTURE_WORLD"] == "1" -> CAPTURE
+            environment["COBBLEMON_UI_KIT_MANUAL_GALLERY"] == "1" -> MANUAL
+            else -> OFF
+        }
+    }
+}
+
+internal data class GalleryHarnessConfig(
+    val mode: GalleryHarnessMode,
+    val preset: UiThemePreset,
+    val capturePresets: List<UiThemePreset>,
+    val acceptSnapshotWarning: Boolean
+) {
+    companion object {
+        fun fromEnvironment(environment: Map<String, String>): GalleryHarnessConfig {
+            val preset = UiThemePreset.fromId(environment["COBBLEMON_UI_KIT_THEME"])
+                ?: UiThemePreset.LEAGUE_NEON
+            return GalleryHarnessConfig(
+                mode = GalleryHarnessMode.fromEnvironment(environment),
+                preset = preset,
+                capturePresets = if (environment["COBBLEMON_UI_KIT_CAPTURE_ALL_THEMES"] == "1") {
+                    UiThemePreset.entries
+                } else {
+                    listOf(preset)
+                },
+                acceptSnapshotWarning = environment["COBBLEMON_UI_KIT_ACCEPT_SNAPSHOT_WARNING"] == "1"
+            )
+        }
+    }
+}
+
+internal class GalleryCaptureLifecycle {
+    var isFinished: Boolean = false
+        private set
+
+    fun finish(): Boolean {
+        if (isFinished) return false
+        isFinished = true
+        return true
+    }
+}
+
+internal object GalleryWorldCaptureHarness {
+    private val logger = LoggerFactory.getLogger("cobblemon_ui_kit")
+
+    fun installFromEnvironment() {
+        val config = GalleryHarnessConfig.fromEnvironment(System.getenv())
+        val mode = config.mode
+        if (mode == GalleryHarnessMode.OFF) return
+        var capturePresetIndex = 0
+        fun activePreset(): UiThemePreset = config.capturePresets[capturePresetIndex]
+        CobblemonUiThemePresets.install(activePreset())
+
+        val topCaptured = AtomicBoolean(false)
+        val scrolledCaptured = AtomicBoolean(false)
+        val dialogCaptured = AtomicBoolean(false)
+        var scaleApplied = false
+        var opened = false
+        var verified = false
+        var topCaptureRequested = false
+        var scrollVerified = false
+        var scrollAppliedTick = 0
+        var scrolledCaptureRequested = false
+        var dialogTestRequested = false
+        var dialogCaptureRequested = false
+        var ticks = 0
+        var waitingScreenClass: String? = null
+        var snapshotWarningAccepted = false
+        val lifecycle = GalleryCaptureLifecycle()
+
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
+            if (lifecycle.isFinished) return@EndTick
+            if (!scaleApplied) {
+                client.options.guiScale().set(2)
+                client.resizeDisplay()
+                scaleApplied = true
+                return@EndTick
+            }
+
+            if (!opened) {
+                val warning = client.screen as? SnapshotWarningScreen
+                if (warning != null && config.acceptSnapshotWarning && !snapshotWarningAccepted) {
+                    snapshotWarningAccepted = true
+                    logger.info("Accepting Cobblemon snapshot warning for this explicit development capture run")
+                    warning.consumer(SnapshotWarningScreen.Acknowledgement.YES, false)
+                    return@EndTick
+                }
+                if (client.level == null || client.player == null || client.screen != null || client.overlay != null) {
+                    val currentScreenClass = client.screen?.javaClass?.name
+                    if (currentScreenClass != null && currentScreenClass != waitingScreenClass) {
+                        waitingScreenClass = currentScreenClass
+                        logger.info(
+                            "Waiting for UI Kit world load screen={} title={} overlay={}",
+                            currentScreenClass,
+                            client.screen?.title?.string,
+                            client.overlay?.javaClass?.name
+                        )
+                    }
+                    return@EndTick
+                }
+                client.setScreen(ComponentGalleryScreen(activePreset()))
+                opened = true
+                logger.info(
+                    "Opened UI Kit gallery in world dimension={} player={} mode={} theme={}",
+                    client.level!!.dimension().location(),
+                    client.player!!.scoreboardName,
+                    mode,
+                    activePreset().id
+                )
+                if (mode == GalleryHarnessMode.MANUAL) {
+                    logger.info("Manual UI Kit gallery is ready; automation and automatic shutdown are disabled")
+                }
+                return@EndTick
+            }
+
+            if (mode == GalleryHarnessMode.MANUAL) return@EndTick
+
+            ticks += 1
+            if (dialogTestRequested) {
+                val dialog = client.screen as? CobblemonUiDialogScreen
+                    ?: error("UI Kit dialog closed before capture")
+                if (!dialogCaptureRequested) {
+                    dialogCaptureRequested = true
+                    val filename = "ui-kit-world-${activePreset().id}-dialog-${client.window.guiScaledWidth}x${client.window.guiScaledHeight}.png"
+                    Screenshot.grab(client.gameDirectory, filename, client.mainRenderTarget) { result ->
+                        logger.info("UI Kit world capture {}: {}", filename, result.string)
+                        dialogCaptured.set(true)
+                    }
+                }
+                if (dialogCaptured.get()) {
+                    dialog.onClose()
+                    val gallery = client.screen as? ComponentGalleryScreen
+                        ?: error("UI Kit dialog did not return to its parent gallery")
+                    check(lifecycle.finish()) { "UI Kit gallery capture was already finished" }
+                    gallery.onClose()
+                    check(client.screen !== gallery) { "UI Kit gallery did not close through onClose" }
+                    logger.info("Verified UI Kit dialog cancel and gallery close paths with world still loaded={}", client.level != null)
+                    client.stop()
+                }
+                return@EndTick
+            }
+            val screen = client.screen as? ComponentGalleryScreen
+                ?: error("UI Kit gallery closed before capture")
+            check(client.level != null && client.player != null) { "UI Kit gallery is not attached to a loaded world" }
+
+            if (!verified && ticks >= 5) {
+                check(screen.narrationMessage.string.isNotBlank()) { "UI Kit gallery narration is blank" }
+                screen.keyPressed(GLFW.GLFW_KEY_TAB, 0, 0)
+                val focused = checkNotNull(screen.focused) { "UI Kit gallery did not focus a widget after TAB" }
+                check(focused is NarratableEntry) { "Focused gallery widget is not narratable" }
+                verified = true
+                logger.info(
+                    "Verified UI Kit gallery world={} focused={} logical={}x{}",
+                    client.level!!.dimension().location(),
+                    focused.javaClass.simpleName,
+                    client.window.guiScaledWidth,
+                    client.window.guiScaledHeight
+                )
+            }
+
+            if (!topCaptureRequested && ticks >= 15) {
+                topCaptureRequested = true
+                val filename = "ui-kit-world-${activePreset().id}-top-${client.window.guiScaledWidth}x${client.window.guiScaledHeight}.png"
+                Screenshot.grab(client.gameDirectory, filename, client.mainRenderTarget) { result ->
+                    logger.info("UI Kit world capture {}: {}", filename, result.string)
+                    topCaptured.set(true)
+                }
+            }
+
+            if (topCaptured.get() && !scrollVerified) {
+                var consumed = false
+                repeat(64) {
+                    consumed = screen.mouseScrolled(
+                        (client.window.guiScaledWidth / 2).toDouble(),
+                        (client.window.guiScaledHeight / 2).toDouble(),
+                        0.0,
+                        -1.0
+                    ) || consumed
+                }
+                check(consumed) { "UI Kit gallery did not consume a viewport scroll" }
+                check(screen.keyPressed(GLFW.GLFW_KEY_PAGE_UP, 0, 0)) {
+                    "UI Kit gallery did not consume keyboard page navigation"
+                }
+                check(screen.keyPressed(GLFW.GLFW_KEY_END, 0, 0)) {
+                    "UI Kit gallery did not restore the final scroll position"
+                }
+                scrollVerified = true
+                scrollAppliedTick = ticks
+                logger.info("Verified UI Kit gallery wheel and keyboard scroll paths")
+            }
+
+            if (scrollVerified && !scrolledCaptureRequested && ticks >= 25 && ticks >= scrollAppliedTick + 2) {
+                scrolledCaptureRequested = true
+                val filename = "ui-kit-world-${activePreset().id}-scrolled-${client.window.guiScaledWidth}x${client.window.guiScaledHeight}.png"
+                Screenshot.grab(client.gameDirectory, filename, client.mainRenderTarget) { result ->
+                    logger.info("UI Kit world capture {}: {}", filename, result.string)
+                    scrolledCaptured.set(true)
+                }
+            }
+
+            if (topCaptured.get() && scrolledCaptured.get()) {
+                if (capturePresetIndex < config.capturePresets.lastIndex) {
+                    capturePresetIndex += 1
+                    topCaptured.set(false)
+                    scrolledCaptured.set(false)
+                    verified = false
+                    topCaptureRequested = false
+                    scrollVerified = false
+                    scrollAppliedTick = 0
+                    scrolledCaptureRequested = false
+                    ticks = 0
+                    CobblemonUiThemePresets.install(activePreset())
+                    client.setScreen(ComponentGalleryScreen(activePreset()))
+                    logger.info("Continuing UI Kit gallery capture theme={}", activePreset().id)
+                } else {
+                    dialogTestRequested = true
+                    screen.openDemoDialog()
+                    logger.info("Opened UI Kit dialog for modal input-boundary verification")
+                }
+            } else if (ticks >= 240) {
+                error("UI Kit world capture timed out")
+            }
+        })
+    }
+}

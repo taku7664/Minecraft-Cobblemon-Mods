@@ -6,6 +6,7 @@ import com.cobblemon.mod.common.client.battle.ClientBattleSide
 import jbro.cobblemon.battleui.extended.BattleStateTracker
 import jbro.cobblemon.battleui.extended.TeamIndicatorUI
 import jbro.cobblemon.battleui.extended.UIUtils
+import jbro.cobblemon.battleui.extended.ui.shared.BattleUiDesignTokens as Ui
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
@@ -97,7 +98,7 @@ object ChampionsBattleInfoOverlay {
         val originX = (screenWidth - BASE_W * scale) / 2f
         val originY = (screenHeight - BASE_H * scale) / 2f
 
-        context.fill(0, 0, screenWidth, screenHeight, color(3, 6, 18, 106))
+        context.fill(0, 0, screenWidth, screenHeight, Ui.SCRIM)
         context.matrices.push()
         context.matrices.translate(originX.toDouble(), originY.toDouble(), UIUtils.MODAL_Z_OFFSET)
         context.matrices.scale(scale, scale, 1f)
@@ -110,16 +111,16 @@ object ChampionsBattleInfoOverlay {
         drawSidePanel(context, activeAllies, SIDE_X_LEFT, false)
         drawEffectsPanel(context, FIELD_X)
         drawSidePanel(context, activeOpponents, SIDE_X_RIGHT, true)
-        drawTextCentered(context, tr("cobblemon_battle_ui.champions.close"), BASE_W / 2, 417, WHITE, 0.95f)
+        drawTextCentered(context, tr("cobblemon_battle_ui.champions.close"), BASE_W / 2, 417, Ui.TEXT_SECONDARY, 0.95f)
     }
 
     private fun drawFrame(context: DrawContext) {
-        context.fill(8, 12, BASE_W - 8, BASE_H - 8, color(8, 10, 45, 236))
-        context.fill(9, 13, BASE_W - 9, 15, VIOLET_EDGE)
-        context.fill(9, BASE_H - 11, BASE_W - 9, BASE_H - 9, color(85, 91, 220, 210))
-        context.fill(346, 10, 494, 51, color(18, 21, 75, 255))
-        drawBorder(context, 346, 10, 148, 41, color(91, 99, 232), 2)
-        drawTextCentered(context, tr("cobblemon_battle_ui.champions.title"), BASE_W / 2, 24, WHITE, 1.2f)
+        context.fill(8, 12, BASE_W - 8, BASE_H - 8, Ui.SHELL)
+        context.fill(9, 13, BASE_W - 9, 15, Ui.ACCENT_PRIMARY)
+        context.fill(9, BASE_H - 11, BASE_W - 9, BASE_H - 9, Ui.ACCENT_SECONDARY)
+        context.fill(346, 10, 494, 51, Ui.HEADER)
+        drawBorder(context, 346, 10, 148, 41, Ui.BORDER_BRIGHT, 2)
+        drawTextCentered(context, tr("cobblemon_battle_ui.champions.title"), BASE_W / 2, 24, Ui.TEXT_PRIMARY, 1.2f)
     }
 
     private fun drawSidePanel(
@@ -128,18 +129,17 @@ object ChampionsBattleInfoOverlay {
         x: Int,
         opponent: Boolean
     ) {
-        val accent = if (opponent) MAGENTA_EDGE else VIOLET_EDGE
-        val header = if (opponent) ENEMY_GLASS else ALLY_GLASS
+        val accent = if (opponent) Ui.ACCENT_DANGER else Ui.ACCENT_PRIMARY
         val title = tr(
             if (opponent) "cobblemon_battle_ui.champions.opponent_active"
             else "cobblemon_battle_ui.champions.your_active"
         )
 
-        context.fill(x, PANEL_Y, x + SIDE_W, PANEL_Y + PANEL_H, color(13, 17, 60, 238))
-        context.fill(x, PANEL_Y, x + SIDE_W, PANEL_Y + 38, header)
+        context.fill(x, PANEL_Y, x + SIDE_W, PANEL_Y + PANEL_H, Ui.PANEL)
+        context.fill(x, PANEL_Y, x + SIDE_W, PANEL_Y + 38, Ui.HEADER)
         context.fill(x, PANEL_Y, x + 5, PANEL_Y + PANEL_H, accent)
-        drawBorder(context, x, PANEL_Y, SIDE_W, PANEL_H, color(80, 86, 180, 220), 1)
-        drawTextCentered(context, title, x + SIDE_W / 2, PANEL_Y + 14, WHITE, 1.15f)
+        drawBorder(context, x, PANEL_Y, SIDE_W, PANEL_H, Ui.BORDER, 1)
+        drawTextCentered(context, title, x + SIDE_W / 2, PANEL_Y + 14, Ui.TEXT_PRIMARY, 1.15f)
 
         if (entries.isEmpty()) {
             drawTextCentered(
@@ -147,7 +147,7 @@ object ChampionsBattleInfoOverlay {
                 tr("cobblemon_battle_ui.champions.no_active"),
                 x + SIDE_W / 2,
                 PANEL_Y + 180,
-                TEXT_DIM,
+                Ui.TEXT_DIM,
                 1.05f
             )
             return
@@ -172,18 +172,18 @@ object ChampionsBattleInfoOverlay {
         height: Int,
         accent: Int
     ) {
-        context.fill(x, y, x + width, y + height, color(17, 22, 73, 246))
+        context.fill(x, y, x + width, y + height, Ui.PANEL_ALT)
         context.fill(x, y, x + 3, y + height, accent)
-        drawBorder(context, x, y, width, height, color(69, 77, 155, 220), 1)
+        drawBorder(context, x, y, width, height, Ui.BORDER, 1)
 
         val nameWidth = if (entry.level == null) width - 28 else width - 84
-        drawText(context, trim(entry.name, nameWidth), x + 14, y + 13, WHITE, if (height >= 200) 1.2f else 1.05f)
-        entry.level?.let { drawTextRight(context, "Lv.$it", x + width - 14, y + 15, TEXT_DIM, 0.95f) }
+        drawText(context, trim(entry.name, nameWidth), x + 14, y + 13, Ui.TEXT_PRIMARY, if (height >= 200) 1.2f else 1.05f)
+        entry.level?.let { drawTextRight(context, "Lv.$it", x + width - 14, y + 15, Ui.TEXT_DIM, 0.95f) }
 
         val status = entry.status?.let { TeamIndicatorUI.getStatusDisplayName(it) }
             ?: tr("cobblemon_battle_ui.champions.normal")
-        drawText(context, tr("cobblemon_battle_ui.champions.status"), x + 14, y + 42, TEXT_LABEL, 0.9f)
-        drawText(context, status, x + 68, y + 42, WHITE, 1.0f)
+        drawText(context, tr("cobblemon_battle_ui.champions.status"), x + 14, y + 42, Ui.TEXT_SECONDARY, 0.9f)
+        drawText(context, status, x + 68, y + 42, Ui.TEXT_PRIMARY, 1.0f)
         drawHpBar(context, x + 14, y + 64, width - 28, entry.hpPercent, height >= 200)
 
         if (height >= 200) {
@@ -195,9 +195,9 @@ object ChampionsBattleInfoOverlay {
 
     private fun drawDetailedConditions(context: DrawContext, entry: PokemonEntry, x: Int, y: Int, width: Int) {
         val volatileText = volatileText(entry.uuid, width - 28)
-        drawText(context, tr("cobblemon_battle_ui.champions.additional_status"), x + 14, y + 103, TEXT_LABEL, 0.9f)
-        drawText(context, volatileText, x + 14, y + 124, WHITE, 1.0f)
-        drawText(context, tr("cobblemon_battle_ui.champions.stat_changes"), x + 14, y + 156, TEXT_LABEL, 0.9f)
+        drawText(context, tr("cobblemon_battle_ui.champions.additional_status"), x + 14, y + 103, Ui.TEXT_SECONDARY, 0.9f)
+        drawText(context, volatileText, x + 14, y + 124, Ui.TEXT_PRIMARY, 1.0f)
+        drawText(context, tr("cobblemon_battle_ui.champions.stat_changes"), x + 14, y + 156, Ui.TEXT_SECONDARY, 0.9f)
         drawDetailedRankRows(context, entry.uuid, x + 14, y + 178, width - 28)
     }
 
@@ -216,7 +216,7 @@ object ChampionsBattleInfoOverlay {
         STAT_ORDER.forEachIndexed { index, stat ->
             val stage = stages[stat] ?: 0
             val rowY = y + index * 15
-            drawText(context, stat.displayName, x, rowY, WHITE, 0.9f)
+            drawText(context, stat.displayName, x, rowY, Ui.TEXT_PRIMARY, 0.9f)
             drawRankTrack(context, x + 72, rowY + 2, stage, 10, 6, 3)
             drawTextRight(context, stageText(stage), x + width, rowY, stageColor(stage), 0.9f)
         }
@@ -237,7 +237,7 @@ object ChampionsBattleInfoOverlay {
             val stage = stages[stat] ?: 0
             val cellX = x + column * columnWidth
             val rowY = y + row * 13
-            drawText(context, stat.abbr, cellX, rowY, WHITE, 0.85f)
+            drawText(context, stat.abbr, cellX, rowY, Ui.TEXT_PRIMARY, 0.85f)
             drawRankTrack(context, cellX + 25, rowY + 2, stage, 5, 5, 2)
             drawTextRight(context, stageText(stage), cellX + columnWidth - 4, rowY, stageColor(stage), 0.85f)
         }
@@ -255,21 +255,21 @@ object ChampionsBattleInfoOverlay {
         val activeCells = kotlin.math.abs(stage).coerceAtMost(6)
         repeat(6) { index ->
             val cellX = x + index * (cellWidth + gap)
-            val cellColor = if (index < activeCells) stageColor(stage) else RANK_EMPTY
+            val cellColor = if (index < activeCells) stageColor(stage) else Ui.BORDER
             context.fill(cellX, y, cellX + cellWidth, y + cellHeight, cellColor)
         }
     }
 
     private fun drawEffectsPanel(context: DrawContext, x: Int) {
-        context.fill(x, PANEL_Y, x + FIELD_W, PANEL_Y + PANEL_H, color(11, 15, 53, 242))
-        context.fill(x, PANEL_Y, x + FIELD_W, PANEL_Y + 38, color(38, 43, 119, 238))
-        drawBorder(context, x, PANEL_Y, FIELD_W, PANEL_H, color(80, 86, 180, 220), 1)
+        context.fill(x, PANEL_Y, x + FIELD_W, PANEL_Y + PANEL_H, Ui.PANEL)
+        context.fill(x, PANEL_Y, x + FIELD_W, PANEL_Y + 38, Ui.HEADER)
+        drawBorder(context, x, PANEL_Y, FIELD_W, PANEL_H, Ui.BORDER, 1)
         drawTextCentered(
             context,
             tr("cobblemon_battle_ui.champions.effects"),
             x + FIELD_W / 2,
             PANEL_Y + 14,
-            WHITE,
+            Ui.TEXT_PRIMARY,
             1.1f
         )
 
@@ -279,7 +279,7 @@ object ChampionsBattleInfoOverlay {
                 tr("cobblemon_battle_ui.ui.no_effects"),
                 x + FIELD_W / 2,
                 PANEL_Y + 180,
-                TEXT_DIM,
+                Ui.TEXT_DIM,
                 1.05f
             )
             return
@@ -288,24 +288,23 @@ object ChampionsBattleInfoOverlay {
         val effectWindow = EffectListLayout.window(effects.size)
         effects.take(effectWindow.visibleEffectCount).forEachIndexed { index, effect ->
             val rowY = PANEL_Y + 48 + index * 36
-            val rowColor = if (effect.opponent) color(72, 21, 57, 228) else color(25, 30, 92, 232)
-            context.fill(x + 10, rowY, x + FIELD_W - 10, rowY + 31, rowColor)
-            context.fill(x + 10, rowY, x + 13, rowY + 31, if (effect.opponent) MAGENTA_EDGE else VIOLET_EDGE)
-            drawText(context, effect.group, x + 21, rowY + 6, TEXT_LABEL, 0.85f)
-            drawText(context, trim(effect.name, 142), x + 88, rowY + 6, WHITE, 1.0f)
-            effect.turns?.let { drawTextRight(context, it, x + FIELD_W - 19, rowY + 7, WHITE, 0.9f) }
+            context.fill(x + 10, rowY, x + FIELD_W - 10, rowY + 31, Ui.PANEL_ALT)
+            context.fill(x + 10, rowY, x + 13, rowY + 31, if (effect.opponent) Ui.ACCENT_DANGER else Ui.ACCENT_PRIMARY)
+            drawText(context, effect.group, x + 21, rowY + 6, Ui.TEXT_SECONDARY, 0.85f)
+            drawText(context, trim(effect.name, 142), x + 88, rowY + 6, Ui.TEXT_PRIMARY, 1.0f)
+            effect.turns?.let { drawTextRight(context, it, x + FIELD_W - 19, rowY + 7, Ui.TEXT_PRIMARY, 0.9f) }
         }
 
         if (effectWindow.hiddenEffectCount > 0) {
             val rowY = PANEL_Y + 48 + effectWindow.visibleEffectCount * 36
-            context.fill(x + 10, rowY, x + FIELD_W - 10, rowY + 31, color(25, 30, 92, 232))
-            context.fill(x + 10, rowY, x + 13, rowY + 31, VIOLET_EDGE)
+            context.fill(x + 10, rowY, x + FIELD_W - 10, rowY + 31, Ui.PANEL_ALT)
+            context.fill(x + 10, rowY, x + 13, rowY + 31, Ui.ACCENT_PRIMARY)
             drawTextCentered(
                 context,
                 tr("cobblemon_battle_ui.champions.more_effects", effectWindow.hiddenEffectCount),
                 x + FIELD_W / 2,
                 rowY + 7,
-                TEXT_DIM,
+                Ui.TEXT_DIM,
                 0.95f
             )
         }
@@ -320,16 +319,16 @@ object ChampionsBattleInfoOverlay {
         detailed: Boolean
     ) {
         val height = if (detailed) 12 else 9
-        context.fill(x, y, x + width, y + height, color(22, 25, 50))
+        context.fill(x, y, x + width, y + height, Ui.TRACK)
         val clamped = hpPercent.coerceIn(0f, 1f)
         val hpColor = when {
-            clamped > .5f -> color(118, 238, 67)
-            clamped > .25f -> color(244, 200, 48)
-            else -> color(230, 67, 67)
+            clamped > .5f -> Ui.ACCENT_GOOD
+            clamped > .25f -> Ui.ACCENT_CAUTION
+            else -> Ui.ACCENT_DANGER
         }
         val fillWidth = ((width - 4) * clamped).toInt()
         context.fill(x + 2, y + 2, x + 2 + fillWidth, y + height - 2, hpColor)
-        drawTextRight(context, "${(clamped * 100).toInt()}%", x + width, y + height + 4, WHITE, 0.9f)
+        drawTextRight(context, "${(clamped * 100).toInt()}%", x + width, y + height + 4, Ui.TEXT_PRIMARY, 0.9f)
     }
 
     private fun volatileText(uuid: UUID, width: Int): String {
@@ -346,9 +345,9 @@ object ChampionsBattleInfoOverlay {
     private fun stageText(stage: Int): String = if (stage > 0) "+$stage" else stage.toString()
 
     private fun stageColor(stage: Int): Int = when {
-        stage > 0 -> BOOST
-        stage < 0 -> DROP
-        else -> TEXT_DIM
+        stage > 0 -> Ui.ACCENT_GOOD
+        stage < 0 -> Ui.ACCENT_PRIMARY
+        else -> Ui.TEXT_DIM
     }
 
     private fun collectEffects(): List<EffectRow> = buildList {
@@ -411,16 +410,4 @@ object ChampionsBattleInfoOverlay {
         context.fill(x + width - thickness, y, x + width, y + height, color)
     }
 
-    private fun color(r: Int, g: Int, b: Int, a: Int = 255): Int = UIUtils.color(r, g, b, a)
-
-    private val WHITE = color(247, 248, 255)
-    private val TEXT_DIM = color(170, 178, 212)
-    private val TEXT_LABEL = color(175, 158, 255)
-    private val ALLY_GLASS = color(35, 31, 112, 242)
-    private val ENEMY_GLASS = color(106, 18, 66, 242)
-    private val VIOLET_EDGE = color(111, 82, 255)
-    private val MAGENTA_EDGE = color(237, 41, 139)
-    private val BOOST = color(113, 255, 144)
-    private val DROP = color(95, 192, 255)
-    private val RANK_EMPTY = color(82, 90, 139, 210)
 }

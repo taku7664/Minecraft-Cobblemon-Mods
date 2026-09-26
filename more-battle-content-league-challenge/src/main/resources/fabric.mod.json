@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "cobblemon_more_battle_content_league_challenge",
+  "version": "${version}",
+  "name": "Cobblemon: More Battle Content - League Challenge",
+  "description": "Gym, badge, rank, Elite Four, and Champion progression for Cobblemon: More Battle Content.",
+  "authors": ["jbro"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.morebattlecontent.leaguechallenge.MoreBattleContentLeagueChallenge"
+      }
+    ],
+    "client": [
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.morebattlecontent.leaguechallenge.client.MoreBattleContentLeagueChallengeClient"
+      }
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "fabric-api": "*",
+    "fabric-language-kotlin": ">=1.14.1+kotlin.2.4.20",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "cobblemon": ">=1.8.1 <1.9.0",
+    "cobblemon_more_battle_content": ">=1.6.21 <2.0.0"
+  }
+}

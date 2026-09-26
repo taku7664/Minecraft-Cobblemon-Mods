@@ -18,9 +18,9 @@ dependencies {
     }
     modImplementation("com.cobblemon:fabric:${property("cobblemon_maven_version")}")
     // Modrinth display versions are shared by Fabric and NeoForge releases.
-    // Pin loader-specific version IDs because Modrinth Maven also omits transitive mod dependencies.
+    // Pin loader-specific version IDs there; use Wisp's Maven for owo so Endec transitives resolve.
     modRuntimeOnly("maven.modrinth:cobblemon-mega-showdown:${property("mega_showdown_version_id")}")
-    modRuntimeOnly("maven.modrinth:owo-lib:${property("owo_lib_version_id")}")
+    modRuntimeOnly("io.wispforest:owo-lib:${property("owo_lib_version")}")
     modRuntimeOnly("maven.modrinth:architectury-api:${property("architectury_api_version_id")}")
     modRuntimeOnly("maven.modrinth:accessories:${property("accessories_version_id")}")
 

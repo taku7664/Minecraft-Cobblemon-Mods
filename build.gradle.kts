@@ -9,6 +9,7 @@ allprojects {
     repositories {
         mavenCentral()
         maven("https://maven.fabricmc.net/")
+        maven("https://maven.wispforest.io/")
         maven("https://api.modrinth.com/maven")
         maven("https://artefacts.cobblemon.com/releases/")
     }

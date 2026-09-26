@@ -3,8 +3,11 @@
 `League Challenge`는 `Cobblemon: More Battle Content`(MBC)에 체육관, 뱃지, 계급,
 플레이어별 레벨캡, 사천왕 연전과 챔피언 진행을 추가하는 별도 애드온이다.
 
-현재 이 폴더에는 합의된 기획과 MBC 선행 변경 계약만 있다. 아직 Gradle 모듈이나 실행 코드는
-만들지 않았다.
+현재 Gradle 모듈과 서버·클라이언트 진입점이 있으며, 개발 환경에서만 `/mbc-league-ui`로
+코드 드로잉 League 홈을 열 수 있다. 기본값은 `badges_3`이고 `badges_0`, `badges_2`,
+`badges_3`, `badges_5`, `badges_8`, `champion` 하위 명령으로 경계 상태를 비교할 수 있다.
+진행도, PokeBadges, 레벨캡, 터미널, 전투와 시설 잠금은 아직 연결하지 않았으므로 배포 가능한
+제품 상태가 아니다.
 
 ## 모듈 이름
 
