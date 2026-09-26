@@ -73,3 +73,7 @@ after the client exited. Prior JARs were moved to
 JAR contains the missing class and the installed League manifest requires
 MBC 1.6.24 or newer. This is binary/deployment evidence only; successful world
 startup and gameplay still require a client relaunch.
+
+At the user's request, the `league-20260926-crash-hotfix-2315` backup directory
+and its two prior JARs were deleted. The active MBC 1.6.24, League 0.2.2, and
+Better AI 1.2.18 JARs remained installed.
