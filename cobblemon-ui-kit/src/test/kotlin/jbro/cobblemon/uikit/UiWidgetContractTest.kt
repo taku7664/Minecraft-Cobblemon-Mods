@@ -32,6 +32,20 @@ class UiWidgetContractTest {
     }
 
     @Test
+    fun `scroll state supports keyboard paging and reveals focused ranges`() {
+        val scroll = UiScrollState(viewportHeight = 80, contentHeight = 240, step = 20)
+
+        assertTrue(scroll.page(1))
+        assertEquals(80, scroll.offset)
+        assertTrue(scroll.ensureVisible(UiVerticalRange(170, 190)))
+        assertEquals(110, scroll.offset)
+        assertTrue(scroll.home())
+        assertEquals(0, scroll.offset)
+        assertTrue(scroll.end())
+        assertEquals(160, scroll.offset)
+    }
+
+    @Test
     fun `tab list badge and toggle reject empty labels`() {
         val blank = Component.literal(" ")
 

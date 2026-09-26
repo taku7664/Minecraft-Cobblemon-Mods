@@ -67,7 +67,14 @@ class CobblemonUiKitModuleContractTest {
             UiRadioSpec::class.java,
             UiComboBoxSpec::class.java,
             UiCardSpec::class.java,
-            UiStatRowSpec::class.java
+            UiStatRowSpec::class.java,
+            UiTextSpec::class.java,
+            UiPanelSpec::class.java,
+            UiStepTrackSpec::class.java,
+            UiCalloutSpec::class.java,
+            UiRenderSlotSpec::class.java,
+            UiOrderedSelectionState::class.java,
+            UiAnchorLayout::class.java
         )
 
         publicTypes.forEach { type ->

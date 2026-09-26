@@ -78,6 +78,7 @@ internal object GalleryWorldCaptureHarness {
         var verified = false
         var topCaptureRequested = false
         var scrollVerified = false
+        var scrollAppliedTick = 0
         var scrolledCaptureRequested = false
         var dialogTestRequested = false
         var dialogCaptureRequested = false
@@ -196,11 +197,18 @@ internal object GalleryWorldCaptureHarness {
                     ) || consumed
                 }
                 check(consumed) { "UI Kit gallery did not consume a viewport scroll" }
+                check(screen.keyPressed(GLFW.GLFW_KEY_PAGE_UP, 0, 0)) {
+                    "UI Kit gallery did not consume keyboard page navigation"
+                }
+                check(screen.keyPressed(GLFW.GLFW_KEY_END, 0, 0)) {
+                    "UI Kit gallery did not restore the final scroll position"
+                }
                 scrollVerified = true
-                logger.info("Verified UI Kit gallery scroll path")
+                scrollAppliedTick = ticks
+                logger.info("Verified UI Kit gallery wheel and keyboard scroll paths")
             }
 
-            if (scrollVerified && !scrolledCaptureRequested && ticks >= 25) {
+            if (scrollVerified && !scrolledCaptureRequested && ticks >= 25 && ticks >= scrollAppliedTick + 2) {
                 scrolledCaptureRequested = true
                 val filename = "ui-kit-world-${activePreset().id}-scrolled-${client.window.guiScaledWidth}x${client.window.guiScaledHeight}.png"
                 Screenshot.grab(client.gameDirectory, filename, client.mainRenderTarget) { result ->
@@ -217,6 +225,7 @@ internal object GalleryWorldCaptureHarness {
                     verified = false
                     topCaptureRequested = false
                     scrollVerified = false
+                    scrollAppliedTick = 0
                     scrolledCaptureRequested = false
                     ticks = 0
                     CobblemonUiThemePresets.install(activePreset())

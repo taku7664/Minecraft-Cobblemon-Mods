@@ -2,8 +2,10 @@ package jbro.cobblemon.uikit.client
 
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiScrollState
+import jbro.cobblemon.uikit.UiVerticalRange
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractWidget
+import org.lwjgl.glfw.GLFW
 
 class CobblemonUiScrollViewport(
     val left: Int,
@@ -17,6 +19,8 @@ class CobblemonUiScrollViewport(
 
     private val entries = mutableListOf<Entry>()
     val state = UiScrollState(height, contentHeight, step)
+    private var draggingScrollbar = false
+    private var lastFocusedWidget: AbstractWidget? = null
 
     init {
         require(width > 0) { "Scroll viewport width must be positive" }
@@ -36,6 +40,7 @@ class CobblemonUiScrollViewport(
         partialTick: Float,
         content: (offset: Int) -> Unit = {}
     ) {
+        revealFocusedWidget()
         graphics.enableScissor(left, top, left + width, top + height)
         try {
             content(state.offset)
@@ -59,6 +64,45 @@ class CobblemonUiScrollViewport(
         return changed
     }
 
+    fun keyPressed(keyCode: Int): Boolean {
+        val changed = when (keyCode) {
+            GLFW.GLFW_KEY_PAGE_UP -> state.page(-1)
+            GLFW.GLFW_KEY_PAGE_DOWN -> state.page(1)
+            GLFW.GLFW_KEY_HOME -> state.home()
+            GLFW.GLFW_KEY_END -> state.end()
+            else -> false
+        }
+        if (changed) updateWidgetPositions()
+        return changed
+    }
+
+    fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT || state.maxOffset <= 0) return false
+        if (mouseX < scrollbarLeft() - 2 || mouseX >= left + width || mouseY < trackTop() || mouseY >= trackTop() + trackHeight()) return false
+        draggingScrollbar = true
+        dragScrollbarTo(mouseY)
+        return true
+    }
+
+    fun mouseDragged(mouseY: Double, button: Int): Boolean {
+        if (!draggingScrollbar || button != GLFW.GLFW_MOUSE_BUTTON_LEFT) return false
+        dragScrollbarTo(mouseY)
+        return true
+    }
+
+    fun mouseReleased(button: Int): Boolean {
+        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT || !draggingScrollbar) return false
+        draggingScrollbar = false
+        return true
+    }
+
+    fun ensureWidgetVisible(widget: AbstractWidget): Boolean {
+        val entry = entries.firstOrNull { it.widget === widget } ?: return false
+        val changed = state.ensureVisible(UiVerticalRange(entry.contentY, entry.contentY + widget.height))
+        if (changed) updateWidgetPositions()
+        return changed
+    }
+
     fun updateWidgetPositions() {
         entries.forEach { entry ->
             entry.widget.y = top + entry.contentY - state.offset
@@ -69,11 +113,31 @@ class CobblemonUiScrollViewport(
     private fun renderScrollbar(graphics: GuiGraphics) {
         if (state.maxOffset <= 0) return
         val theme = CobblemonUiThemes.registry.snapshot()
-        val trackTop = top + 3
-        val trackHeight = height - 6
-        val thumb = state.thumb(trackTop, trackHeight, minimumHeight = 18)
-        val trackLeft = left + width - 3
-        graphics.fill(trackLeft, trackTop, trackLeft + 2, trackTop + trackHeight, theme.colors.panelAlt)
-        graphics.fill(trackLeft, thumb.start, trackLeft + 2, thumb.endExclusive, theme.colors.accentPrimary)
+        val thumb = state.thumb(trackTop(), trackHeight(), minimumHeight = 18)
+        graphics.fill(scrollbarLeft(), trackTop(), scrollbarLeft() + 2, trackTop() + trackHeight(), theme.colors.panelAlt)
+        graphics.fill(scrollbarLeft(), thumb.start, scrollbarLeft() + 2, thumb.endExclusive, theme.colors.accentPrimary)
     }
+
+    private fun revealFocusedWidget() {
+        val focused = entries.firstOrNull { it.widget.isFocused }
+        if (focused?.widget === lastFocusedWidget) return
+        lastFocusedWidget = focused?.widget
+        if (focused == null) return
+        val changed = state.ensureVisible(UiVerticalRange(focused.contentY, focused.contentY + focused.widget.height))
+        if (changed) updateWidgetPositions()
+    }
+
+    private fun dragScrollbarTo(mouseY: Double) {
+        val thumb = state.thumb(trackTop(), trackHeight(), minimumHeight = 18)
+        val thumbHeight = thumb.endExclusive - thumb.start
+        val travel = trackHeight() - thumbHeight
+        if (travel <= 0) return
+        val thumbTop = (mouseY - thumbHeight / 2.0).toInt().coerceIn(trackTop(), trackTop() + travel)
+        state.jumpTo((thumbTop - trackTop()) * state.maxOffset / travel)
+        updateWidgetPositions()
+    }
+
+    private fun trackTop(): Int = top + 3
+    private fun trackHeight(): Int = height - 6
+    private fun scrollbarLeft(): Int = left + width - 3
 }

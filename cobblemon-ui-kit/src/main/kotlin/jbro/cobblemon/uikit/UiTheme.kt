@@ -56,7 +56,10 @@ data class UiButtonMetrics(
 data class UiSurfaceTokens(
     val shell: UiSurfaceStyle,
     val panel: UiSurfaceStyle,
-    val panelAlt: UiSurfaceStyle
+    val panelAlt: UiSurfaceStyle,
+    val shellText: Int? = null,
+    val panelText: Int? = null,
+    val panelAltText: Int? = null
 )
 
 data class UiButtonStyle(

@@ -161,3 +161,60 @@ data class UiGridLayout(
         return result
     }
 }
+
+enum class UiAnchor {
+    TOP_LEFT,
+    TOP_CENTER,
+    TOP_RIGHT,
+    CENTER_LEFT,
+    CENTER,
+    CENTER_RIGHT,
+    BOTTOM_LEFT,
+    BOTTOM_CENTER,
+    BOTTOM_RIGHT
+}
+
+data class UiAnchoredItem(
+    val key: String,
+    val width: Int,
+    val height: Int,
+    val anchor: UiAnchor,
+    val offsetX: Int = 0,
+    val offsetY: Int = 0
+) {
+    init {
+        require(key.isNotBlank()) { "Anchored item key must not be blank" }
+        require(width >= 0 && height >= 0) { "Anchored item size must not be negative" }
+    }
+}
+
+data class UiAnchorLayout(val padding: UiInsets = UiInsets.None) {
+    fun place(width: Int, height: Int, items: List<UiAnchoredItem>): List<UiLayoutPlacement> {
+        require(width >= padding.left + padding.right) { "Anchor layout width is smaller than its padding" }
+        require(height >= padding.top + padding.bottom) { "Anchor layout height is smaller than its padding" }
+        require(items.map(UiAnchoredItem::key).distinct().size == items.size) { "Anchor layout keys must be unique" }
+        val innerWidth = width - padding.left - padding.right
+        val innerHeight = height - padding.top - padding.bottom
+        return items.map { item ->
+            val horizontal = when (item.anchor) {
+                UiAnchor.TOP_LEFT, UiAnchor.CENTER_LEFT, UiAnchor.BOTTOM_LEFT -> 0
+                UiAnchor.TOP_CENTER, UiAnchor.CENTER, UiAnchor.BOTTOM_CENTER -> (innerWidth - item.width) / 2
+                UiAnchor.TOP_RIGHT, UiAnchor.CENTER_RIGHT, UiAnchor.BOTTOM_RIGHT -> innerWidth - item.width
+            }
+            val vertical = when (item.anchor) {
+                UiAnchor.TOP_LEFT, UiAnchor.TOP_CENTER, UiAnchor.TOP_RIGHT -> 0
+                UiAnchor.CENTER_LEFT, UiAnchor.CENTER, UiAnchor.CENTER_RIGHT -> (innerHeight - item.height) / 2
+                UiAnchor.BOTTOM_LEFT, UiAnchor.BOTTOM_CENTER, UiAnchor.BOTTOM_RIGHT -> innerHeight - item.height
+            }
+            UiLayoutPlacement(
+                item.key,
+                UiRect(
+                    padding.left + horizontal + item.offsetX,
+                    padding.top + vertical + item.offsetY,
+                    item.width,
+                    item.height
+                )
+            )
+        }
+    }
+}

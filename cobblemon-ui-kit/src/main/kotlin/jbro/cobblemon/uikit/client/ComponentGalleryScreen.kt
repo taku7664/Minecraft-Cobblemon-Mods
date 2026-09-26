@@ -8,6 +8,7 @@ import jbro.cobblemon.uikit.UiBadgeTone
 import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiCardSpec
+import jbro.cobblemon.uikit.UiCalloutSpec
 import jbro.cobblemon.uikit.UiCheckboxSpec
 import jbro.cobblemon.uikit.UiChoiceOption
 import jbro.cobblemon.uikit.UiComboBoxSpec
@@ -22,13 +23,22 @@ import jbro.cobblemon.uikit.UiLayoutItem
 import jbro.cobblemon.uikit.UiListItemSpec
 import jbro.cobblemon.uikit.UiDialogSpec
 import jbro.cobblemon.uikit.UiOverlayTone
+import jbro.cobblemon.uikit.UiOrderedSelectionState
+import jbro.cobblemon.uikit.UiPanelSpec
+import jbro.cobblemon.uikit.UiPanelTone
 import jbro.cobblemon.uikit.UiProgressSpec
+import jbro.cobblemon.uikit.UiRenderSlotSpec
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiShape
 import jbro.cobblemon.uikit.UiStatRowSpec
+import jbro.cobblemon.uikit.UiStepSpec
+import jbro.cobblemon.uikit.UiStepState
+import jbro.cobblemon.uikit.UiStepTrackSpec
 import jbro.cobblemon.uikit.UiSurfaceOverrides
 import jbro.cobblemon.uikit.UiSurfaceStyle
 import jbro.cobblemon.uikit.UiTabSpec
+import jbro.cobblemon.uikit.UiTextSpec
+import jbro.cobblemon.uikit.UiTextTone
 import jbro.cobblemon.uikit.UiThemePreset
 import jbro.cobblemon.uikit.UiToastSpec
 import jbro.cobblemon.uikit.UiTooltipSpec
@@ -342,6 +352,86 @@ class ComponentGalleryScreen(
         addScrollingWidget(stat, cursorY)
         cursorY += stat.height
 
+        cursorY += 10
+        sectionY["content"] = cursorY
+        cursorY += 15
+
+        val stepTrack = CobblemonUiStepTrack.create(
+            contentLeft,
+            viewportTop + cursorY,
+            availableWidth,
+            UiStepTrackSpec(
+                listOf(
+                    UiStepSpec("coal", text("step_coal"), UiStepState.CLEARED),
+                    UiStepSpec("forest", text("step_forest"), UiStepState.ACTIVE),
+                    UiStepSpec("cobble", text("step_cobble"), UiStepState.AVAILABLE),
+                    UiStepSpec("relic", text("step_relic"), UiStepState.LOCKED)
+                )
+            )
+        )
+        addScrollingWidget(stepTrack, cursorY)
+        cursorY += stepTrack.height + 4
+
+        val orderedState = UiOrderedSelectionState(
+            listOf(
+                UiChoiceOption("lead", text("party_lead")),
+                UiChoiceOption("second", text("party_second")),
+                UiChoiceOption("reserve", text("party_reserve"))
+            ),
+            maximumSelections = 3,
+            initiallySelectedIds = listOf("lead", "second")
+        )
+        val orderedWidth = (availableWidth - 8) / 3
+        orderedState.options.forEachIndexed { index, option ->
+            val ordered = CobblemonUiOrderedChoice.create(
+                contentLeft + index * (orderedWidth + 4),
+                viewportTop + cursorY,
+                orderedWidth,
+                option.id,
+                orderedState
+            )
+            addScrollingWidget(ordered, cursorY)
+        }
+        cursorY += 28
+
+        val panelTop = cursorY
+        val panel = CobblemonUiPanel.create(
+            contentLeft,
+            viewportTop + panelTop,
+            availableWidth,
+            62,
+            UiPanelSpec(text("panel_title"), UiPanelTone.RAISED)
+        )
+        addScrollingWidget(panel, panelTop)
+        val trainerSlot = CobblemonUiRenderSlot.create(
+            contentLeft + 7,
+            viewportTop + panelTop + 18,
+            38,
+            38,
+            UiRenderSlotSpec(text("trainer_slot")),
+            CobblemonUiRenderContent.PlayerSkin(
+                UiIcon("minecraft", "textures/entity/player/wide/steve.png")
+            )
+        )
+        addScrollingWidget(trainerSlot, panelTop + 18)
+        val paragraph = CobblemonUiTextBlock.create(
+            contentLeft + 52,
+            viewportTop + panelTop + 19,
+            availableWidth - 60,
+            UiTextSpec(text("wrapped_rules"), UiTextTone.PANEL_ALT, maxLines = 3)
+        )
+        addScrollingWidget(paragraph, panelTop + 19)
+        cursorY += panel.height + 5
+
+        val callout = CobblemonUiCallout.create(
+            contentLeft,
+            viewportTop + cursorY,
+            availableWidth,
+            UiCalloutSpec(UiOverlayTone.WARNING, text("callout_title"), text("callout_body"))
+        )
+        addScrollingWidget(callout, cursorY)
+        cursorY += callout.height
+
         contentHeight = cursorY + 10
         scrollViewport = CobblemonUiScrollViewport(
             shellLeft + 1,
@@ -557,6 +647,26 @@ class ComponentGalleryScreen(
     override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollX: Double, scrollY: Double): Boolean {
         if (scrollViewport.mouseScrolled(mouseX, mouseY, scrollX, scrollY)) return true
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY)
+    }
+
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        if (scrollViewport.keyPressed(keyCode)) return true
+        return super.keyPressed(keyCode, scanCode, modifiers)
+    }
+
+    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (scrollViewport.mouseClicked(mouseX, mouseY, button)) return true
+        return super.mouseClicked(mouseX, mouseY, button)
+    }
+
+    override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, dragX: Double, dragY: Double): Boolean {
+        if (scrollViewport.mouseDragged(mouseY, button)) return true
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY)
+    }
+
+    override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (scrollViewport.mouseReleased(button)) return true
+        return super.mouseReleased(mouseX, mouseY, button)
     }
 
     internal fun openDemoDialog() {

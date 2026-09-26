@@ -103,6 +103,24 @@ class UiScrollState(
         return true
     }
 
+    fun page(direction: Int): Boolean {
+        if (direction == 0) return false
+        return jumpTo(offset + if (direction > 0) viewportHeight else -viewportHeight)
+    }
+
+    fun home(): Boolean = jumpTo(0)
+
+    fun end(): Boolean = jumpTo(maxOffset)
+
+    fun ensureVisible(range: UiVerticalRange): Boolean {
+        val next = when {
+            range.start < offset -> range.start
+            range.endExclusive > offset + viewportHeight -> range.endExclusive - viewportHeight
+            else -> return false
+        }
+        return jumpTo(next)
+    }
+
     fun thumb(trackTop: Int, trackHeight: Int, minimumHeight: Int = 8): UiVerticalRange {
         require(trackHeight > 0) { "Scroll track height must be positive" }
         require(minimumHeight > 0) { "Scroll thumb minimum height must be positive" }

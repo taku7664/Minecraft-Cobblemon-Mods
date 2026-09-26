@@ -84,4 +84,19 @@ class UiLayoutContractTest {
         assertThrows(IllegalArgumentException::class.java) { UiLayoutItem("", 10, 10) }
         assertThrows(IllegalArgumentException::class.java) { UiGridLayout(0) }
     }
+
+    @Test
+    fun `anchor layout places overlays without screen-specific coordinates`() {
+        val placements = UiAnchorLayout(UiInsets.all(4)).place(
+            100,
+            60,
+            listOf(
+                UiAnchoredItem("top", 20, 10, UiAnchor.TOP_CENTER),
+                UiAnchoredItem("bottom", 30, 12, UiAnchor.BOTTOM_RIGHT)
+            )
+        )
+
+        assertEquals(UiRect(40, 4, 20, 10), placements[0].bounds)
+        assertEquals(UiRect(66, 44, 30, 12), placements[1].bounds)
+    }
 }

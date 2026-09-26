@@ -128,7 +128,9 @@ object CobblemonUiThemePresets {
             surfaces = UiSurfaceTokens(
                 shell = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(colors.shell), shellFrame),
                 panel = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(colors.panel), cardFrame),
-                panelAlt = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(colors.panelAlt), cardFrame)
+                panelAlt = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(colors.panelAlt), cardFrame),
+                panelText = colors.border,
+                panelAltText = colors.border
             ),
             metrics = metrics,
             styles = styles,
