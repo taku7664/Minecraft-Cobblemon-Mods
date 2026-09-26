@@ -38,9 +38,11 @@ $env:COBBLEMON_UI_KIT_ACCEPT_SNAPSHOT_WARNING='1'
 
 `COBBLEMON_UI_KIT_ACCEPT_SNAPSHOT_WARNING=1` is an explicit development-only opt-in. When a Cobblemon snapshot build presents its startup warning, the harness chooses **Yes** for that run without selecting “don't show again”. Stable Cobblemon builds do not exercise this branch.
 
-The command is not registered outside Fabric's development environment. The gallery demonstrates semantic button variants and sizes, square/circle/diamond icon-only buttons, rectangle/chamfer/rounded/capsule/circle/diamond surfaces, tabs, badges, toggles, list items, progress bars, the reusable scroll viewport, theme switching, and composable fill, border, opacity, and shadow styles in English and Korean.
+The command is not registered outside Fabric's development environment. The gallery demonstrates semantic button variants and sizes, square/circle/diamond icon-only buttons, rectangle/chamfer/rounded/capsule/circle/diamond surfaces, tabs, badges, toggles, list items, progress bars, checkbox and radio choices, combo boxes, cards, stat rows, tooltips, modal dialogs, toast notifications, reusable layout and scroll primitives, theme switching, and composable fill, border, opacity, and shadow styles in English and Korean.
 
-Reusable contracts live in `UiButtonContract.kt`, `UiSurfaceContract.kt`, and `UiWidgetContract.kt`. Client widgets are exposed through `CobblemonUiButton`, `CobblemonUiTab`, `CobblemonUiBadge`, `CobblemonUiToggle`, `CobblemonUiListItem`, `CobblemonUiProgressBar`, and `CobblemonUiScrollViewport`.
+Reusable contracts live in `UiButtonContract.kt`, `UiSurfaceContract.kt`, `UiWidgetContract.kt`, `UiLayoutContract.kt`, `UiOverlayContract.kt`, and `UiAdvancedWidgetContract.kt`. Client widgets are exposed through the `CobblemonUi*` classes, including buttons, selection controls, data widgets, layouts, overlays, and the scroll viewport.
+
+`UiStackLayout`, `UiFlowLayout`, and `UiGridLayout` calculate deterministic logical rectangles without depending on Minecraft client classes. Overlays keep different input ownership explicit: a tooltip is informational, a dialog is a separate blocking `Screen`, and a toast is queued non-blocking feedback. The UI Kit owns presentation and local interaction state only; consumers remain responsible for domain state and server authority.
 
 Button text shadow is off by default. A theme may opt a style in with `UiButtonStyle.textShadow`, and a call site may explicitly override it with `UiButtonSpec(textShadow = true)` or `false`. Prefer the shadow-free default on opaque UI surfaces.
 
