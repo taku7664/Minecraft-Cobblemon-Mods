@@ -53,13 +53,24 @@ data class UiButtonMetrics(
     }
 }
 
-data class UiButtonStyle(val background: Int, val border: Int, val text: Int, val supportingText: Int)
+data class UiSurfaceTokens(
+    val shell: UiSurfaceStyle,
+    val panel: UiSurfaceStyle,
+    val panelAlt: UiSurfaceStyle
+)
+
+data class UiButtonStyle(
+    val surface: UiSurfaceStyle,
+    val text: Int,
+    val supportingText: Int
+)
 
 class UiThemeSnapshot private constructor(
     val id: String,
     val colors: UiColorPalette,
     val typography: UiTypography,
     val spacing: UiSpacing,
+    val surfaces: UiSurfaceTokens,
     metrics: Map<UiControlSize, UiButtonMetrics>,
     styles: Map<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>
 ) {
@@ -77,6 +88,7 @@ class UiThemeSnapshot private constructor(
             colors: UiColorPalette,
             typography: UiTypography,
             spacing: UiSpacing,
+            surfaces: UiSurfaceTokens,
             metrics: Map<UiControlSize, UiButtonMetrics>,
             styles: Map<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>
         ): UiThemeSnapshot {
@@ -86,7 +98,7 @@ class UiThemeSnapshot private constructor(
                 UiWidgetState.entries.map { state -> variant to state }
             }
             require(styles.keys.containsAll(requiredStyles)) { "Theme must define every button variant and state" }
-            return UiThemeSnapshot(id, colors, typography, spacing, metrics, styles)
+            return UiThemeSnapshot(id, colors, typography, spacing, surfaces, metrics, styles)
         }
 
         private val THEME_ID = Regex("[a-z][a-z0-9_.-]*")

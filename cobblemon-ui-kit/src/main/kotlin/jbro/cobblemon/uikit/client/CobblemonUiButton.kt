@@ -2,7 +2,6 @@ package jbro.cobblemon.uikit.client
 
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiButtonSpec
-import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiThemeSnapshot
 import jbro.cobblemon.uikit.UiWidgetState
 import net.minecraft.Util
@@ -47,7 +46,14 @@ class CobblemonUiButton private constructor(
         val theme = CobblemonUiThemes.registry.snapshot()
         val state = displayedState()
         val style = theme.style(spec.variant, state)
-        drawSurface(graphics, style.background, style.border)
+        UiSurfaceRenderer.draw(
+            graphics,
+            x,
+            y,
+            width,
+            height,
+            style.surface.resolve(spec.surfaceOverrides)
+        )
         drawContent(graphics, theme, style.text, style.supportingText)
     }
 
@@ -58,17 +64,6 @@ class CobblemonUiButton private constructor(
         isHovered -> UiWidgetState.HOVER
         spec.selected -> UiWidgetState.SELECTED
         else -> UiWidgetState.NORMAL
-    }
-
-    private fun drawSurface(graphics: GuiGraphics, background: Int, border: Int) {
-        graphics.fill(x, y, x + width, y + height, background)
-        graphics.fill(x, y, x + width, y + 1, border)
-        graphics.fill(x, y + height - 1, x + width, y + height, border)
-        graphics.fill(x, y, x + 1, y + height, border)
-        graphics.fill(x + width - 1, y, x + width, y + height, border)
-        if (spec.variant != UiButtonVariant.GHOST) {
-            graphics.fill(x + 1, y + 1, x + 3, y + height - 1, border)
-        }
     }
 
     private fun drawContent(graphics: GuiGraphics, theme: UiThemeSnapshot, textColor: Int, supportingColor: Int) {

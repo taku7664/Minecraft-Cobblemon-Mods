@@ -43,7 +43,13 @@ class CobblemonUiKitModuleContractTest {
             UiThemeSnapshot::class.java,
             UiThemeRegistry::class.java,
             UiButtonStyle::class.java,
-            UiButtonMetrics::class.java
+            UiButtonMetrics::class.java,
+            UiSurfaceTokens::class.java,
+            UiSurfaceStyle::class.java,
+            UiSurfaceOverrides::class.java,
+            UiShape::class.java,
+            UiFill::class.java,
+            UiBorder::class.java
         )
 
         publicTypes.forEach { type ->

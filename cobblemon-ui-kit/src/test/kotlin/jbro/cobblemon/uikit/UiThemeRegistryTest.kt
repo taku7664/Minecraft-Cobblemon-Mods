@@ -15,6 +15,7 @@ class UiThemeRegistryTest {
             colors = CobblemonUiDefaultTheme.colors,
             typography = CobblemonUiDefaultTheme.typography,
             spacing = CobblemonUiDefaultTheme.spacing,
+            surfaces = CobblemonUiDefaultTheme.surfaces,
             metrics = metrics,
             styles = styles
         )
@@ -37,6 +38,7 @@ class UiThemeRegistryTest {
             colors = initial.colors.copy(accentPrimary = 0xFF00AAFF.toInt()),
             typography = initial.typography,
             spacing = initial.spacing,
+            surfaces = initial.surfaces,
             metrics = CobblemonUiDefaultTheme.metrics,
             styles = CobblemonUiDefaultTheme.styles
         )
@@ -56,6 +58,7 @@ class UiThemeRegistryTest {
                 colors = CobblemonUiDefaultTheme.colors,
                 typography = CobblemonUiDefaultTheme.typography,
                 spacing = CobblemonUiDefaultTheme.spacing,
+                surfaces = CobblemonUiDefaultTheme.surfaces,
                 metrics = CobblemonUiDefaultTheme.metrics - UiControlSize.SMALL,
                 styles = CobblemonUiDefaultTheme.styles - (UiButtonVariant.PRIMARY to UiWidgetState.FOCUS)
             )

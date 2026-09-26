@@ -1,10 +1,16 @@
 package jbro.cobblemon.uikit.client
 
 import jbro.cobblemon.uikit.CobblemonUiThemes
+import jbro.cobblemon.uikit.UiBorder
 import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiControlSize
+import jbro.cobblemon.uikit.UiCorner
+import jbro.cobblemon.uikit.UiFill
 import jbro.cobblemon.uikit.UiIcon
+import jbro.cobblemon.uikit.UiShape
+import jbro.cobblemon.uikit.UiSurfaceOverrides
+import jbro.cobblemon.uikit.UiSurfaceStyle
 import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.UiWidthPolicy
 import net.minecraft.client.gui.GuiGraphics
@@ -58,6 +64,23 @@ class ComponentGalleryScreen : Screen(text("title")) {
                     size = UiControlSize.SMALL
                 ),
                 UiButtonSpec(text("ghost"), variant = UiButtonVariant.GHOST),
+                UiButtonSpec(
+                    text("custom_surface"),
+                    variant = UiButtonVariant.SECONDARY,
+                    size = UiControlSize.SMALL,
+                    surfaceOverrides = UiSurfaceOverrides(
+                        shape = UiShape.Chamfer(
+                            5,
+                            setOf(UiCorner.TOP_RIGHT, UiCorner.BOTTOM_LEFT)
+                        ),
+                        fill = UiFill.VerticalGradient(
+                            0xFF7956C8.toInt(),
+                            0xFF223D63.toInt()
+                        ),
+                        border = UiBorder.None,
+                        backgroundOpacity = 0.78f
+                    )
+                ),
                 UiButtonSpec(
                     text("danger"),
                     supportingText = text("supporting"),
@@ -160,8 +183,14 @@ class ComponentGalleryScreen : Screen(text("title")) {
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         val theme = CobblemonUiThemes.registry.snapshot()
         graphics.fill(0, 0, width, height, theme.colors.backdrop)
-        graphics.fill(shellLeft, shellTop, shellLeft + shellWidth, height - 8, theme.colors.shell)
-        outline(graphics, shellLeft, shellTop, shellWidth, height - shellTop - 8, theme.colors.borderBright)
+        UiSurfaceRenderer.draw(
+            graphics,
+            shellLeft,
+            shellTop,
+            shellWidth,
+            height - shellTop - 8,
+            theme.surfaces.shell
+        )
         graphics.drawString(font, title, shellLeft + 12, shellTop + 10, theme.colors.textPrimary, false)
         graphics.drawString(font, text("subtitle"), shellLeft + 12, shellTop + 24, theme.colors.textSecondary, false)
 
@@ -203,17 +232,39 @@ class ComponentGalleryScreen : Screen(text("title")) {
         val top = viewportTop + sectionY.getValue("list") + 15 - scrollOffset
         val left = shellLeft + 12
         val right = shellLeft + shellWidth - 12
-        graphics.fill(left, top, right, top + 64, theme.colors.panel)
-        outline(graphics, left, top, right - left, 64, theme.colors.border)
+        UiSurfaceRenderer.draw(graphics, left, top, right - left, 64, theme.surfaces.panel)
         repeat(3) { index ->
             val rowTop = top + 6 + index * 17
-            graphics.fill(left + 6, rowTop, right - 6, rowTop + 13, if (index == 1) theme.colors.panelAlt else theme.colors.shell)
+            val rowStyle = theme.surfaces.panelAlt.copy(
+                fill = UiFill.Solid(if (index == 1) theme.colors.panelAlt else theme.colors.shell)
+            )
+            UiSurfaceRenderer.draw(graphics, left + 6, rowTop, right - left - 12, 13, rowStyle)
             graphics.drawString(font, "${index + 1}. ${text("rank").string}", left + 10, rowTop + 3, theme.colors.textSecondary, false)
         }
         val barTop = top + 70
-        graphics.fill(left, barTop, right, barTop + 8, theme.colors.panelAlt)
-        graphics.fill(left, barTop, left + (right - left) * 5 / 8, barTop + 8, theme.colors.accentGood)
-        outline(graphics, left, barTop, right - left, 8, theme.colors.border)
+        UiSurfaceRenderer.draw(
+            graphics,
+            left,
+            barTop,
+            right - left,
+            8,
+            theme.surfaces.panelAlt.copy(
+                shape = UiShape.Chamfer(2),
+                border = UiBorder.Solid(theme.colors.border)
+            )
+        )
+        UiSurfaceRenderer.draw(
+            graphics,
+            left + 1,
+            barTop + 1,
+            (right - left - 2) * 5 / 8,
+            6,
+            UiSurfaceStyle(
+                shape = UiShape.Chamfer(1),
+                fill = UiFill.VerticalGradient(theme.colors.accentGood, 0xFF28794E.toInt()),
+                border = UiBorder.None
+            )
+        )
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollX: Double, scrollY: Double): Boolean {
@@ -237,13 +288,6 @@ class ComponentGalleryScreen : Screen(text("title")) {
     }
 
     private fun maxScroll(): Int = max(0, contentHeight - (viewportBottom - viewportTop))
-
-    private fun outline(graphics: GuiGraphics, left: Int, top: Int, width: Int, height: Int, color: Int) {
-        graphics.fill(left, top, left + width, top + 1, color)
-        graphics.fill(left, top + height - 1, left + width, top + height, color)
-        graphics.fill(left, top, left + 1, top + height, color)
-        graphics.fill(left + width - 1, top, left + width, top + height, color)
-    }
 
     companion object {
         private fun text(suffix: String): Component =

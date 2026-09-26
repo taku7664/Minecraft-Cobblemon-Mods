@@ -55,7 +55,8 @@ data class UiButtonSpec(
     val variant: UiButtonVariant = UiButtonVariant.PRIMARY,
     val size: UiControlSize = UiControlSize.MEDIUM,
     val width: UiWidthPolicy = UiWidthPolicy.Content,
-    val selected: Boolean = false
+    val selected: Boolean = false,
+    val surfaceOverrides: UiSurfaceOverrides = UiSurfaceOverrides()
 ) {
     init {
         require(title.string.isNotBlank()) { "Button title must not be blank" }
