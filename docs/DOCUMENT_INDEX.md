@@ -4,7 +4,7 @@
 |---|---|
 | Status | `shared` |
 | Effective | 2026-08-19 |
-| Last reviewed | 2026-09-26 — PixelFrame 위젯 그림자 기본 간격 축소 계약 반영 |
+| Last reviewed | 2026-09-26 — 공용 형태·아이콘 버튼·기본 위젯·스크롤 계약 반영 |
 | 주 독자 | 빡대리님과 이후 설계·구현 담당자 |
 | 목적 | 활성 계약, 분석 근거, 폐기 기록과 재개 지점의 라우팅 |
 
@@ -101,6 +101,7 @@
 78. `COBBLEMON_UI_PIXEL_LEAGUE_THEME_CORRECTION.md` — 세대명 도트 프리셋을 팔레트 연구로 정정하고, 단일 `pixel_league`의 픽셀 프레임·하드 섀도·내장 커서/아이콘과 스냅샷 경고 개발 캡처 경계를 확정
 79. `COBBLEMON_UI_TEXT_SHADOW_POLICY_AMENDMENT.md` — 공용 버튼 글자 그림자를 기본 해제하고, 테마 기본값과 `UiButtonSpec` 호출부 인자로 필요한 곳만 명시적으로 활성화하는 정책을 확정
 80. `COBBLEMON_UI_PIXEL_SHADOW_OFFSET_AMENDMENT.md` — 공용 픽셀 프레임의 하드 섀도를 위젯에 가깝게 두는 기본 간격과 `pixel_league` 셸·카드 계층별 재정의를 확정
+81. `COBBLEMON_UI_WIDGET_PRIMITIVES_AMENDMENT.md` — 원형·라운드·캡슐·마름모 표면, 아이콘 전용 버튼, 탭·배지·토글·리스트·진행 바와 공용 스크롤 뷰포트 계약을 확정
 
 `MORE_BATTLE_CONTENT_CONTENT_PROPOSAL.md`는 `rejected` 상태의 과거 대안이다. 현재 제품 범위나 구현 우선순위를 결정할 때 사용하지 않는다.
 

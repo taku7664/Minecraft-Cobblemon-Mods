@@ -38,7 +38,9 @@ $env:COBBLEMON_UI_KIT_ACCEPT_SNAPSHOT_WARNING='1'
 
 `COBBLEMON_UI_KIT_ACCEPT_SNAPSHOT_WARNING=1` is an explicit development-only opt-in. When a Cobblemon snapshot build presents its startup warning, the harness chooses **Yes** for that run without selecting “don't show again”. Stable Cobblemon builds do not exercise this branch.
 
-The command is not registered outside Fabric's development environment. The gallery demonstrates semantic button variants and sizes, content/fill widths, widget states, a scrollable list surface, progress styling, theme switching, and composable rectangle/chamfer, solid/gradient fill, optional border, and background-opacity styles in English and Korean.
+The command is not registered outside Fabric's development environment. The gallery demonstrates semantic button variants and sizes, square/circle/diamond icon-only buttons, rectangle/chamfer/rounded/capsule/circle/diamond surfaces, tabs, badges, toggles, list items, progress bars, the reusable scroll viewport, theme switching, and composable fill, border, opacity, and shadow styles in English and Korean.
+
+Reusable contracts live in `UiButtonContract.kt`, `UiSurfaceContract.kt`, and `UiWidgetContract.kt`. Client widgets are exposed through `CobblemonUiButton`, `CobblemonUiTab`, `CobblemonUiBadge`, `CobblemonUiToggle`, `CobblemonUiListItem`, `CobblemonUiProgressBar`, and `CobblemonUiScrollViewport`.
 
 Button text shadow is off by default. A theme may opt a style in with `UiButtonStyle.textShadow`, and a call site may explicitly override it with `UiButtonSpec(textShadow = true)` or `false`. Prefer the shadow-free default on opaque UI surfaces.
 
