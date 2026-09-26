@@ -25,7 +25,7 @@ class NativeShowdownWorkerPoolTest {
     @Test
     fun `pool bounds concurrency and retires only after borrowed work returns`(@TempDir directory: Path) {
         val rules = rules(directory)
-        val snapshotRoot = rules.engineRoot
+        val engineRoot = rules.engineRoot
         val worker = FakeWorker(rules.fingerprint, "g1")
         val pool = NativeShowdownWorkerPool.create(rules, listOf(worker))
         val borrowed = CountDownLatch(1)
@@ -50,7 +50,7 @@ class NativeShowdownWorkerPoolTest {
             release.countDown()
             assertEquals("g1", active.get(5, TimeUnit.SECONDS))
             assertTrue(worker.closed.get())
-            assertFalse(Files.exists(snapshotRoot), "Retired generation snapshot must be deleted")
+            assertTrue(Files.exists(engineRoot), "Retiring a worker must not delete the original Showdown tree")
         } finally {
             release.countDown()
             caller.shutdownNow()

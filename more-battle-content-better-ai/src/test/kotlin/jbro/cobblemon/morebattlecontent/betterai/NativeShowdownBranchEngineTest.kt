@@ -633,7 +633,6 @@ class NativeShowdownBranchEngineTest {
             ),
         )
         rules.use {
-            Files.writeString(engineRoot.resolve("index.js"), "throw new Error('mutated source root');")
             NativeShowdownBranchEngine.open(engineRoot, rules).use { engine ->
                 val boosted = engine.createBattle(battle("MBC Test Power"))
                 val neutral = engine.createBattle(battle("No Ability"))

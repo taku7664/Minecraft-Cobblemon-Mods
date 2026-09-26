@@ -4,16 +4,55 @@ import java.nio.file.Files
 import java.nio.file.Path
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRuleRegistry
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRuleRegistryDescriptor
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRulesGeneration
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownBranchEngine
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRulesUnavailableException
 import jbro.cobblemon.morebattlecontent.betterai.simulation.MegaShowdownNativeRulesProvider
 import jbro.cobblemon.morebattlecontent.betterai.simulation.ReflectiveNativeRulesProvider
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
 class NativeRulesGenerationTest {
+    @Test
+    fun `worker rejects an engine changed after rules capture`(@TempDir directory: Path) {
+        Files.createDirectories(directory.resolve("sim"))
+        Files.writeString(directory.resolve("index.js"), "module.exports = true;")
+        Files.writeString(directory.resolve("sim/battle.js"), "module.exports = {};")
+        NativeRulesGeneration.capture(directory).use { rules ->
+            Files.writeString(directory.resolve("index.js"), "throw new Error('mutated source root');")
+            val failure = assertThrows(IllegalStateException::class.java) {
+                NativeShowdownBranchEngine.open(directory, rules).close()
+            }
+            assertTrue(failure.message.orEmpty().contains("changed after capture"))
+        }
+    }
+
+    @Test
+    fun `generation reads the original tree without copying debug maps`(@TempDir directory: Path) {
+        Files.createDirectories(directory.resolve("sim"))
+        Files.writeString(directory.resolve("index.js"), "module.exports = true;")
+        Files.writeString(directory.resolve("sim/battle.js"), "module.exports = {};")
+        Files.writeString(directory.resolve("sim/battle.js.map"), "large debug map")
+
+        NativeRulesGeneration.capture(directory).use { first ->
+            assertEquals(directory.toRealPath(), first.engineRoot)
+            val fingerprint = first.fingerprint
+            Files.writeString(directory.resolve("sim/battle.js.map"), "changed debug map")
+            NativeRulesGeneration.capture(directory).use { changedMap ->
+                assertEquals(fingerprint, changedMap.fingerprint)
+            }
+            Files.writeString(directory.resolve("sim/battle.js"), "module.exports = { changed: true };")
+            NativeRulesGeneration.capture(directory).use { changedCode ->
+                assertNotEquals(fingerprint, changedCode.fingerprint)
+            }
+        }
+        assertTrue(Files.exists(directory.resolve("index.js")))
+    }
+
     @Test
     fun `reflection captures raw callback sources deterministically`(@TempDir directory: Path) {
         Files.createDirectories(directory.resolve("sim"))
