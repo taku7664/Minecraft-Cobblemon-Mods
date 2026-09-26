@@ -80,3 +80,7 @@ cobblemon-ui-kit/run/reference-images/mainline-ui-reference-board.png
 - 독립 Battle UI의 실제 전투 생명주기
 
 최종 League Challenge 기본 프리셋 선택은 이 비교 결과를 본 뒤 빡대리님이 결정한다. 구현자는 현재 기본값인 `league_neon`을 임의로 바꾸면 안 된다.
+
+## 6. 2026-09-26 도트 테마 정정 후속
+
+이 문서의 여섯 프리셋 비교는 팔레트·표면 비교 증거로는 유효하지만 `hoenn_pixel`, `johto_touch`, `unova_pixel`을 완성된 도트 UI라고 증명하지 않는다. 현행 단일 도트 후보와 최신 실제 월드 증거는 `COBBLEMON_UI_PIXEL_LEAGUE_THEME_CORRECTION.md`를 따른다.
