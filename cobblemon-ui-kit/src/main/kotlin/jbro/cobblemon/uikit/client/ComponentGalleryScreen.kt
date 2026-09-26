@@ -261,7 +261,7 @@ class ComponentGalleryScreen(
                     text(key),
                     shellLeft + 12,
                     viewportTop + contentY - scrollOffset,
-                    theme.colors.accentPrimary,
+                    theme.colors.borderBright,
                     false
                 )
             }
