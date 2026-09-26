@@ -2,7 +2,7 @@
 
 - 상태: `non-normative progress record`
 - 기준 브랜치: `feature/league-ui-foundation`
-- 최종 갱신: 2026-09-25
+- 최종 갱신: 2026-09-26
 - 규범 계약: [GUI_FRAMEWORK_AND_RESOURCE_PACK.md](GUI_FRAMEWORK_AND_RESOURCE_PACK.md), [GUI 착수 순서 수정 결정](../../docs/MORE_BATTLE_CONTENT_LEAGUE_UI_BOOTSTRAP_AMENDMENT.md)
 
 이 문서는 완료 증거와 재개 지점만 기록한다. 제품 계약을 새로 만들거나 기존 결정을 수정하지 않는다.
@@ -18,6 +18,7 @@
 | `8e463510` | 독립 `cobblemon-ui-kit` 모듈, 의미 기반 버튼 계약, 불변 테마 스냅샷, Component Gallery | UI Kit `build`, 테스트 12개, JAR 내용 검사 |
 | `b3468c40`, `b8d9113f` | Cobblemon 전용 로드 계약과 Mojang 공식 매핑용 Cobblemon 개발 의존성 정정 | 메타데이터 계약 테스트, Cobblemon 1.8.1 실제 클라이언트 기동 |
 | `de1c4644` | Minecraft 기본 화면 블러가 갤러리 위젯까지 흐리게 만드는 결함 수정 | UI Kit `build`, 테스트 13개, 실제 Cobblemon 월드 상·하단 재캡처 |
+| `110042f8`, `4708033d` | 표면을 모양·채움·테두리·불투명도로 분리하고 선택 모서리 챔퍼, 무테, 세로 그라데이션과 호출부 덮어쓰기를 추가 | UI Kit `build`, 테스트 18개, 실제 Cobblemon 월드 상·하단 재캡처와 이전 캡처 나란히 비교 |
 
 ## 2026-09-25 타이틀 화면 개발 fixture 스파이크
 
@@ -47,6 +48,22 @@ Minecraft 1.21.1 개발 클라이언트의 타이틀 파노라마 위에서 `bad
 처음에는 Modrinth Cobblemon JAR과 Mojang 공식 매핑을 조합해 Kotlin 리플렉션이 intermediary 이름 `net.minecraft.class_2960`을 찾지 못하는 초기화 충돌이 발생했다. MBC와 같은 `com.cobblemon:mod`/`com.cobblemon:fabric` 공식 개발 좌표로 바꾼 뒤 Cobblemon 초기화, 월드 입장과 갤러리 오픈을 다시 확인했다. 이 런타임 검증은 실제 Cobblemon 월드 증거지만 물리 입력 승인, League 터미널, 서버 패킷이나 Battle UI 소비 증거는 아니다.
 
 첫 실제 월드 캡처는 Minecraft 기본 `Screen.renderBackground()` 후처리가 갤러리 본문까지 흐리게 만들어 시각 승인 증거로 사용할 수 없었다. 오른쪽 위 알림과 저장 문구는 선명하지만 제목·버튼·목록만 번지는 차이를 사용자 캡처와 자동 캡처를 나란히 놓아 확인했다. 갤러리가 기본 배경 렌더를 무효화하고 테마의 반투명 backdrop을 직접 그리도록 수정한 뒤 다시 캡처했으며, 제목·버튼·보조 문구·상태 라벨·목록이 선명한 것을 확인했다. `renderTransparentBackground()` 재도입과 기본 `renderBackground()` 상속을 막는 회귀 테스트를 추가했다.
+
+## 2026-09-26 표면 스타일 확장과 실제 월드 재검증
+
+버튼과 패널의 표면을 `shape`, `fill`, `border`, `backgroundOpacity`로 분리했다. 첫 구현은 `Rectangle`과 선택 모서리 `Chamfer`, 채움 없음·단색·세로 그라데이션, 테두리 없음·단색 굵기를 제공한다. 버튼 호출부는 테마 기본 스타일 전체를 복사하지 않고 네 속성 중 필요한 값만 덮어쓸 수 있다. 작은 장식 챔퍼는 시각 모양만 바꾸며 접근 가능한 직사각형 히트박스는 유지한다.
+
+기본 테마는 모든 위젯을 같은 대각선으로 바꾸지 않았다. 실제 월드의 이전·이후 캡처를 나란히 비교한 결과는 다음과 같다.
+
+- 외곽 셸은 네 모서리 6픽셀 챔퍼, 어두운 세로 그라데이션과 2픽셀 밝은 테두리로 바뀌었다.
+- Primary는 우상단·좌하단, Danger는 좌상단·우하단, Icon은 네 모서리에 서로 다른 챔퍼를 사용한다.
+- Secondary와 내부 목록 행은 직사각형을 유지하며, Ghost는 투명색 테두리가 아니라 실제 `border = None`을 사용한다.
+- 갤러리의 `Borderless style` 예시는 호출부에서 챔퍼·무테·0.78 불투명도·보라색 세로 그라데이션을 함께 덮어쓴다.
+- 목록 패널과 진행 막대도 공용 표면 렌더러를 사용하되 목록 행은 직사각형을 유지한다.
+
+자동 하네스 로그에서 오버월드 진입, `CobblemonUiButton` TAB 포커스, 상단 캡처, 스크롤 소비, 하단 캡처와 화면을 닫은 뒤 `world still loaded=true`를 다시 확인했다. 개발 저장 월드는 현재 설치에 없는 Terralith 바이옴 키와 과거 Cobblemon 플레이어 데이터에 대한 복구 경고를 출력했지만, UI Kit 렌더·입력 하네스는 정상 종료했고 Gradle `runClient`도 성공했다. 이 경고는 표면 렌더러의 성공 증거가 아니며 별도 깨끗한 월드 호환성 판정도 아니다.
+
+이 재검증은 코드 렌더 폴백을 확인한 것이다. 임의 각도·다중 중단점 그라데이션, sprite/nine-slice Visual Pack, 큰 비직사각형의 다각형 히트 테스트는 구현하지 않았다.
 
 개발 환경에서 다음 화면 상태를 열 수 있다.
 
