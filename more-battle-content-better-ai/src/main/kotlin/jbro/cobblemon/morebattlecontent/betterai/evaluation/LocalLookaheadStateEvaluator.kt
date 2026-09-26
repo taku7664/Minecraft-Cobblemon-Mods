@@ -24,9 +24,10 @@ internal object LocalLookaheadStateEvaluator {
         calculationCache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
         shouldContinue: () -> Boolean = { true },
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+        includePositionEffects: Boolean = false,
     ): Double {
         val material = LocalBoardMaterial.evaluate(state)
-        if (battleEnded(state)) return material
+        if (battleEnded(state)) return material + LocalTerminalOutcomeValue.evaluate(state)
         val pressure =
             attackPressure(state, BattleSide.ALLY, source, calculationCache, shouldContinue, tuning,
                 capDamageToRemainingHp = tuning.capLeafDamageToRemainingHp) -
@@ -43,7 +44,8 @@ internal object LocalLookaheadStateEvaluator {
             LocalTeamMatchupCoverage.evaluate(state, source, calculationCache, shouldContinue, tuning)
         }
         return material + pressure * tuning.leafPressureWeight + speedControl +
-            teamCoverage * tuning.leafTeamCoverageWeight
+            teamCoverage * tuning.leafTeamCoverageWeight +
+            if (includePositionEffects) LocalImmediateTurnScorer.positionEffectValue(state) else 0.0
     }
 
     fun speedRelation(state: BattleStateView): LocalPublicSpeedRelation {

@@ -243,8 +243,12 @@ internal object LocalRecursiveLookaheadEvaluator {
                         rootSecureKoBaselineCorrection * (1.0 - authority) -
                         rank.outcome.statStageUtility * (1.0 - authority)
                     // Future unknown replacements must not discount an already modelled current turn.
-                    val adjustment = (immediateAdjustment * coverage.immediate + foresightGain * coverage.future)
-                        .coerceIn(-tuning.maximumLookaheadAdjustment, tuning.maximumLookaheadAdjustment)
+                    val rawAdjustment = immediateAdjustment * coverage.immediate + foresightGain * coverage.future
+                    val adjustment = if (kotlin.math.abs(searchBoardGain) >= TERMINAL_SCORE_THRESHOLD) {
+                        rawAdjustment
+                    } else {
+                        rawAdjustment.coerceIn(-tuning.maximumLookaheadAdjustment, tuning.maximumLookaheadAdjustment)
+                    }
                     // Hand over as much of the immediate heuristic's value judgement as this tuning
                     // says the search should own. What is withdrawn is only the part a board search
                     // re-derives; the candidate statements the heuristic makes - penalties, ally
@@ -992,6 +996,7 @@ internal object LocalRecursiveLookaheadEvaluator {
         if (deadlineMillis > currentMillis) deadlineMillis - currentMillis else 0L
 
     private const val BOARD_TO_SCORE = 100.0
+    private const val TERMINAL_SCORE_THRESHOLD = 10_000.0
     private const val MAX_ADJUSTMENT = 800.0
     private const val DEADLINE_MARGIN_MILLIS = 20L
     private const val FUTURE_DELTA_DISCOUNT = 0.90

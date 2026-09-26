@@ -88,6 +88,7 @@ internal class NativeInitialProductDecisionEvaluator(
             source = source,
             shouldContinue = shouldContinue,
             tuning = tuning,
+            includePositionEffects = true,
         )
     },
 ) {
