@@ -4,7 +4,7 @@
 |---|---|
 | Status | `shared` |
 | Effective | 2026-09-25 |
-| Updates | `BETTER_AI_NATIVE_SHOWDOWN_SIMULATION_DECISION.md` |
+| Updates | `../architecture/NATIVE_SHOWDOWN_SIMULATION.md` |
 | Scope | 싱글 6→3·더블 6→4 비공개 선출을 네이티브 Showdown 기준 상태로 만드는 입력 계약 |
 | 주 독자 | 빡대리님과 Better AI·시설전·Cobblemon 호환 계층 구현 및 검증 담당자 |
 

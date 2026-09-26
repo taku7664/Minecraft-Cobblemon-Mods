@@ -4,7 +4,7 @@
 |---|---|
 | Status | `shared` |
 | Effective | 2026-09-25 |
-| Updates | `BETTER_AI_PUBLIC_ACTION_EVIDENCE_DECISION.md` §5, `BETTER_AI_NATIVE_SHOWDOWN_SIMULATION_DECISION.md` §§3·7의 `INF-03`·`AUD-06` |
+| Updates | `../public-facts/PUBLIC_ACTION_EVIDENCE.md` §5, `../architecture/NATIVE_SHOWDOWN_SIMULATION.md` §§3·7의 `INF-03`·`AUD-06` |
 | Scope | 공개 행동 순서로 상대 속도·도구 완결 세계를 좁히고 구애 고정을 네이티브 요청에 유지하는 Better AI 제품 경로 |
 | 주 독자 | 빡대리님과 Better AI·Cobblemon 호환 계층 구현 및 검증 담당자 |
 

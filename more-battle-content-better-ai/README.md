@@ -20,7 +20,9 @@ The JAR is written to `more-battle-content-better-ai/build/libs`.
 
 ## Design contract
 
-- [Difficulty-scaled opponent move inference](docs/DIFFICULTY_MOVE_INFERENCE_PROPOSAL.md)
+All current Better AI contracts are indexed in [docs/README.md](docs/README.md). Work history and open issues are kept in [MEMORY.md](MEMORY.md).
+
+- [Difficulty-scaled opponent move inference](docs/inference/MOVE_INFERENCE_BY_DIFFICULTY.md)
   defines the implemented `name-group-GUESS/EXPECTED/CONFIRMED` slots and
   `1/2/2/3` maximum lookahead. The primary/Router path remains public-only; a dedicated
   normalizer supplies only the tier-approved slots to the local Brain.

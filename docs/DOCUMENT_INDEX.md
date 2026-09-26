@@ -18,9 +18,7 @@
 5. `REPOSITORY_ADDON_HOSTING_AND_DYNAMAX_ATMOSPHERE_DECISION.md` — 두 JAR 저장소 상한 폐기, 독립 Mega Showdown 애드온과 하늘 셰이더 구현 원계약
 6. `MORE_BATTLE_CONTENT_SYSTEM_CONTENT_CONTEXT.md` — 코사원의 본체 시스템·콘텐츠 담당 범위, 불변식, 구현 지도, 통합 경계와 세션 재개 지점
 7. `MORE_BATTLE_CONTENT_GUI_UX_CONTEXT.md` — GUI/UX 전담 범위, 코드 기반 분석, 사용자 결정, 캡처 목록과 세션 재개 지점
-8. `BETTER_AI_WORK_CONTEXT.md` — Better AI 전담 범위, 판단·계산 경계, 현재 구현, 검증 한계와 세션 재개 지점
-8-1. [BETTER_AI_HYBRID_REVIEW_AND_VALIDATION_PLAN.md](BETTER_AI_HYBRID_REVIEW_AND_VALIDATION_PLAN.md) — **비규범 초안.** 독자 AI와 외부 원리 하이브리딩 분석, poke-engine 비교, 잠정 설계 평가, 독립 검증 제안과 미결 사항. 알고리즘 채택·구현 승인을 뜻하지 않음
-8-2. `BETTER_AI_HUMANLIKE_REASONING_PLAN.md` — 2026-08-31까지의 판단 구조 개편 계획·실험 기록. §0의 날짜별 정정과 하네스 한계를 먼저 확인하며, 옛 미완료 목록을 현재 지시로 사용하지 않음
+8. [`../more-battle-content-better-ai/docs/README.md`](../more-battle-content-better-ai/docs/README.md) — Better AI 문서 인덱스. 현행 계약은 모듈 `docs/`의 분류 폴더에, 작업 기록·이슈는 모듈 `MEMORY.md`에 있다. 루트 `docs/`에는 Better AI 문서를 두지 않는다
 9. `MORE_BATTLE_CONTENT_FIGMA_UX_HANDOFF.md` — Figma Draft 링크, 실제 완료·미완료 상태, 최신 Play-only 계약과 정확한 재개 절차
 10. `MORE_BATTLE_CONTENT_TOWER_MECHANIC_SESSION_DECISION.md` — 첫 전투 전 유저가 선택하고 세션 전체에 고정하는 주요 기믹과 기믹별 상대 풀
 11. `MORE_BATTLE_CONTENT_TOWER_RUNTIME_INTEGRATION_DECISION.md` — Mega Showdown 필수 버전과 명시적 포기 패배·강제 종료 무효 경계
@@ -42,33 +40,18 @@
 22. `MORE_BATTLE_CONTENT_BP_STORAGE_DECISION.md` — BP 초기값, 멱등 원장과 NBT 스키마 1
 23. `MORE_BATTLE_CONTENT_CONTENT_SCOPE.md` — 네 콘텐츠의 확정 플레이 규칙
 24. `MORE_BATTLE_CONTENT_DESIGN.md` — More Battle Content 제품군 모듈 경계, 의존 방향과 구현 순서
-25. `BETTER_AI_PUBLIC_MOVE_OUTCOME_DECISION.md` — 원인·숨은 세트로 과장하지 않는 miss·실패·차단·급소·상성·면역·명중 횟수 공개 사건 계약
-26. `BETTER_AI_PUBLIC_EFFECT_OUTCOME_DECISION.md` — Substitute 대체 피해와 Protect 공개 시작만 좁게 보존하는 후속 공개 효과 계약
-27. `BETTER_AI_PUBLIC_ACTION_EVIDENCE_DECISION.md` — 실제 스피드·피해 원인으로 과장하지 않는 공개 행동 순서와 HP 변화 증거 계약
-28. `BETTER_AI_DECISION_QUALITY_MODE_DECISION.md` — Router 호출 횟수를 건드리지 않는 품질·균형·절약 추론 예산과 설정 스키마 2
-29. `BETTER_AI_DECLARATIVE_MOVE_EFFECTS_DECISION.md` — Cobblemon 내장 Showdown 기술의 선언형 효과와 불완전성·데이터팩 덮어쓰기 경계
-30. `BETTER_AI_STANDARD_DAMAGE_PROJECTION_DECISION.md` — 숨은 세트를 읽지 않는 공개 능력치 범위와 표준 피해·난수 KO 자료의 최신 후속 결정
-31. `BETTER_AI_BRAIN_OWNERSHIP_DECISION.md` — Router·로컬을 독립 Brain으로 두고 계산과 판단을 분리하는 후속 결정
-32. `BETTER_AI_HUMANLIKE_DECISION.md` — 계획·예측·상황별 습관·혼합 전략 후속 결정. 호출 소유권과 횟수는 31번 문서가 대체함
-32-1. `BETTER_AI_NATIVE_SHOWDOWN_SIMULATION_DECISION.md` — 수제 상태 전이를 종료하고 공개 정보로 구성한 별도 Showdown 샌드박스·난도별 완결 세트 가설·전체 반례 합격표로 교체하는 후속 계약
-33. `BETTER_AI_DESIGN.md` — Better AI 품질·보안·폴백 원계약
 34. `COBBLEMON_BATTLE_TOWER_REFERENCE_MATRIX.md` — 레퍼런스 채택·변형·폐기 요약
 35. `COBBLEMON_BATTLE_TOWER_REFERENCE_ANALYSIS.md` — 위 요약의 상세 증거와 한계
 36. `REFACTOR_CODE_REVIEW_VALIDATION_2026-08-18.md` — 16:11 작업 사본에서 외부 코드 리뷰 주장을 코드·결정 문서와 대조한 비규범 검증 및 조치 우선순위
 37. `DYNAMAX_STORM_SKY_VISUAL_REVISION_DECISION.md` — 거의 밤인 흑적색 하늘, 정면에서도 보이는 찢어진 진홍 에너지 장막과 바닐라 구름 암전 후속 계약
 38. `MORE_BATTLE_CONTENT_BATTLE_REWARD_AND_HELD_ITEM_PRESENTATION_DECISION.md` — MBC 관리 전투만 일반 경험치를 억제하고 양쪽 전투 복제본의 지닌 도구 외형을 숨기는 계약
 39. `MORE_BATTLE_CONTENT_PVP_ROOM_AND_LOUNGE_DECISION.md` — 공개·비공개 1대1 룸, 다중 기믹, 팀 프리뷰, 진행 중 공개방 관전과 새 배틀 라운지 후속 계약
-40. `BETTER_AI_15_SECOND_ROUTER_DEADLINE_DECISION.md` — 당시 10초 상한을 15초로 바꾼 이력. 현행 상한은 48번 문서가 대체함
 41. `MORE_BATTLE_CONTENT_TABBED_CONTENT_AND_PVP_ROOM_LAYOUT_DECISION.md` — 루트 뒤로가기를 폐기한 고정 콘텐츠 탭, PvP 대기실 재배치, 정면 유휴 모델, 닉네임 포함 관전자와 메가 단독 기본값 후속 계약
 42. `MORE_BATTLE_CONTENT_FIXED_CHROME_AND_PVP_ROOM_OVERLAY_DECISION.md` — 모드명·실제 BP·X가 있는 고정 상단바, 고정 탭 좌표, 타워 패널 내 행동과 PvP 룸 전용 화면의 X/ESC→룸 목록 계약
 43. `MORE_BATTLE_CONTENT_PVP_FIRST_ENTRY_DECISION.md` — `/mbc open`의 설명 허브를 폐기하고 PvP 룸 목록을 기본 선택하는 PvP→타워→팩토리→보스 탭 순서
 43. `MORE_BATTLE_CONTENT_MANAGED_TRAINER_LOOT_SUPPRESSION_CORRECTION.md` — 일반 `PartyStore`로는 막히지 않던 배틀타워·배틀팩토리 상대의 종족·지닌 도구 드롭을 가상 트레이너 소유 상태로 억제하는 정정 계약
 44. `MORE_BATTLE_CONTENT_MANAGED_MECHANIC_BUTTON_VISIBILITY_DECISION.md` — MBC 관리 전투에서 타워 선택 1개·팩토리 0개·PvP 체크 항목만 Cobblemon 기믹 버튼으로 표시하는 계약
 45. `MORE_BATTLE_CONTENT_CLICKABLE_PVP_ROOM_INVITE_DECISION.md` — 채팅 `[입장] [거절]`이 명령어 문자열 없이 룸 참가·초대 거절 패킷을 직접 보내는 계약
-46. `BETTER_AI_DIFFICULTY_ACTIVATION_DECISION.md` — 타워 랭크·챔피언과 팩토리 헤드에 연결한 입문·일반·상급·보스 난도 계약
-47. `BETTER_AI_ROUTER_DECISION_SUMMARY_DECISION.md` — 기본 비활성 JSON 토글로만 요청·기록하는 공개 판단 근거 한 문장 계약
-48. `BETTER_AI_20_SECOND_ROUTER_DEADLINE_DECISION.md` — 15초 상한을 종료하고 본체·Router를 함께 20초로 늘리는 후속 계약
-49. `BETTER_AI_ROUTER_DECISION_JOURNAL_DECISION.md` — 활성 Router 공개 판단 근거를 서버 전용 JSONL에 누적하는 후속 계약
 49. `MORE_BATTLE_CONTENT_BP_SHOP_CATALOG_DECISION.md` — 상점을 첫 탭·기본 화면으로 두고 JSON 기반 임시 44품목, 실제 아이템 툴팁과 서버 권위 구매를 확정한 후속 계약
 50. `MORE_BATTLE_CONTENT_BP_SHOP_HORIZONTAL_SCROLL_DECISION.md` — 홈 대시보드가 폐기한 전체 화면 가로 상점의 과거 구현 기록
 51. `MORE_BATTLE_CONTENT_HOME_DASHBOARD_DECISION.md` — 홈의 좌측 캐릭터·타워 리더보드, 우측 세로 상점과 순위·부분 배포 계약
@@ -78,7 +61,6 @@
 55. `BETTER_COBBLEMON_MUSIC_ARCHITECTURE_AND_MIGRATION_DECISION.md` — Better Cobblemon Music의 새 정체성, 레거시 0.5.3 단계 이식과 데이터 기반 음악 아키텍처 계약
 56. `BETTER_COBBLEMON_MUSIC_RCT_ROLE_MAPPING_CORRECTION.md` — 2026-09-22 폐기된 RCT 역할별 선곡의 과거 결정 기록
 57. `MORE_BATTLE_CONTENT_PLAIN_NPC_NAMES_DECISION.md` — 배틀타워 18프로필과 배틀팩토리 28컨셉의 호칭형 이름을 한·영 일반 사람 이름으로 정정한 후속 계약
-58. `BETTER_AI_ROUTER_BOSS_ACTIVATION_DECISION.md` — 실제 승급 보스·MAX 챔피언·팩토리 헤드만 기본 Router로 선택하고 스키마 3에서 콘텐츠별 모드를 제공하는 후속 계약
 59. `MORE_BATTLE_CONTENT_SHADOW_NPC_NAME_DECISION.md` — 플레이어 Shadow 외형은 유지하고 이름표만 동일 전투의 일반 NPC 이름으로 바꾸는 후속 계약
 60. `BETTER_COBBLEMON_MUSIC_MBC_INTEGRATION_DECISION.md` — 삭제된 선택형 애드온과 구형 생성팩의 과거 결정 기록. 콘텐츠 ID만 현행 본체 연동에 남음
 61. `MORE_BATTLE_CONTENT_ROOT_COMMAND_AND_BP_VICTORY_REWARD_DECISION.md` — `/mbc` 직접 GUI 진입, 구형 콘텐츠 하위 명령 폐기, 권한 레벨 2 BP 관리와 타워·팩토리 승리당 2 BP 멱등 정산 후속 계약
