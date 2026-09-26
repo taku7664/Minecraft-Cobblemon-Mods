@@ -20,6 +20,7 @@ internal object BattleHubNetworking {
     private val towerEntryContexts = HashMap<UUID, TowerPlayEntryContext>()
 
     fun registerServer() {
+        PayloadTypeRegistry.playS2C().register(BattleHubAccessPayload.TYPE, BattleHubAccessPayload.CODEC)
         PayloadTypeRegistry.playS2C().register(BattleHubStatePayload.TYPE, BattleHubStatePayload.CODEC)
         PayloadTypeRegistry.playS2C().register(BattleHubHeaderStatePayload.TYPE, BattleHubHeaderStatePayload.CODEC)
         PayloadTypeRegistry.playC2S().register(BattleHubOpenContentPayload.TYPE, BattleHubOpenContentPayload.CODEC)
@@ -81,6 +82,17 @@ internal object BattleHubNetworking {
         ) {
             if (!ServerPlayNetworking.canSend(player, BattleHubHeaderStatePayload.TYPE)) return@attemptServerUiOperation false
             ServerPlayNetworking.send(player, BattleHubHeaderStatePayload(balance(player)))
+            if (ServerPlayNetworking.canSend(player, BattleHubAccessPayload.TYPE)) {
+                val entries = mapOf(
+                    BattleHubContent.BATTLE_TOWER to jbro.cobblemon.morebattlecontent.api.presentation.ManagedBattleContentIds.BATTLE_TOWER,
+                    BattleHubContent.BATTLE_FACTORY to jbro.cobblemon.morebattlecontent.api.presentation.ManagedBattleContentIds.BATTLE_FACTORY,
+                ).mapNotNull { (content, id) ->
+                    val decision = jbro.cobblemon.morebattlecontent.api.access.BattleContentAccess.check(player, id,
+                        jbro.cobblemon.morebattlecontent.api.access.ContentAccessAction.OPEN)
+                    (decision as? jbro.cobblemon.morebattlecontent.api.access.ContentAccessDecision.Denied)?.let { content to it }
+                }.toMap()
+                ServerPlayNetworking.send(player, BattleHubAccessPayload(entries))
+            }
             true
         }
     }

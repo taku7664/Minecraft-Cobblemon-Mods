@@ -42,6 +42,10 @@ internal object FactoryPlayNetworking {
     }
 
     fun open(player: ServerPlayer): Boolean {
+        if (!jbro.cobblemon.morebattlecontent.api.access.BattleContentAccess.allow(
+                player, jbro.cobblemon.morebattlecontent.api.presentation.ManagedBattleContentIds.BATTLE_FACTORY,
+                jbro.cobblemon.morebattlecontent.api.access.ContentAccessAction.OPEN,
+            )) return false
         if (!ServerPlayNetworking.canSend(player, FactoryPlayStatePayload.TYPE)) return false
         return try {
             val result = backend.status(player)

@@ -20,10 +20,13 @@ internal data class ShadowTrainerProjection(
     val y: Double,
     val z: Double,
     val yaw: Float,
+    val resourceSkin: String? = null,
+    val slim: Boolean = false,
 ) {
     init {
         require(profileName.isNotBlank() && profileName.length <= MAX_PROFILE_NAME_LENGTH)
         require(x.isFinite() && y.isFinite() && z.isFinite() && yaw.isFinite())
+        resourceSkin?.let { jbro.cobblemon.morebattlecontent.api.presentation.TrainerResourceSkin(it, slim) }
     }
 }
 
@@ -51,7 +54,7 @@ internal data class ShowShadowTrainerPayload(
     override fun type(): CustomPacketPayload.Type<ShowShadowTrainerPayload> = TYPE
 
     companion object {
-        val TYPE = CustomPacketPayload.Type<ShowShadowTrainerPayload>(id("shadow_trainer_show"))
+        val TYPE = CustomPacketPayload.Type<ShowShadowTrainerPayload>(id("shadow_trainer_show_v2"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, ShowShadowTrainerPayload> = StreamCodec.of(
             { buffer, payload ->
                 val projection = payload.projection
@@ -62,6 +65,8 @@ internal data class ShowShadowTrainerPayload(
                 buffer.writeDouble(projection.y)
                 buffer.writeDouble(projection.z)
                 buffer.writeFloat(projection.yaw)
+                buffer.writeUtf(projection.resourceSkin ?: "", 256)
+                buffer.writeBoolean(projection.slim)
             },
             { buffer ->
                 ShowShadowTrainerPayload(
@@ -73,6 +78,8 @@ internal data class ShowShadowTrainerPayload(
                         y = buffer.readDouble(),
                         z = buffer.readDouble(),
                         yaw = buffer.readFloat(),
+                        resourceSkin = buffer.readUtf(256).takeIf { it.isNotEmpty() },
+                        slim = buffer.readBoolean(),
                     ),
                 )
             },
@@ -100,7 +107,8 @@ internal object ShadowTrainerProjectionNetworking {
         PayloadTypeRegistry.playS2C().register(HideShadowTrainerPayload.TYPE, HideShadowTrainerPayload.CODEC)
     }
 
-    fun show(player: ServerPlayer, battleId: UUID, position: Vec3) {
+    fun show(player: ServerPlayer, battleId: UUID, position: Vec3,
+        appearance: jbro.cobblemon.morebattlecontent.api.presentation.TrainerResourceSkin? = null) {
         runOptionalProjectionSend(
             action = {
                 if (!ServerPlayNetworking.canSend(player, ShowShadowTrainerPayload.TYPE)) return
@@ -115,6 +123,8 @@ internal object ShadowTrainerProjectionNetworking {
                             y = position.y,
                             z = position.z,
                             yaw = player.yRot + HALF_TURN_DEGREES,
+                            resourceSkin = appearance?.texture,
+                            slim = appearance?.slim ?: false,
                         ),
                     ),
                 )

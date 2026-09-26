@@ -31,6 +31,8 @@ object MoreBattleContent : ModInitializer {
     }
 
     override fun onInitialize() {
+        jbro.cobblemon.morebattlecontent.api.access.BattleContentAccess.registerLifecycle()
+        jbro.cobblemon.morebattlecontent.api.battle.ManagedPveBattles.registerLifecycle()
         HoloBattleTerminalContent.register { player, verification ->
             BattleHubNetworking.open(
                 player,

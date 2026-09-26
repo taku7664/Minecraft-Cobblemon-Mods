@@ -1,4 +1,5 @@
 {
+  "screen.cobblemon_more_battle_content.access.provider_failed": "This content is locked because its access provider is unavailable.",
   "biome.cobblemon_more_battle_content.battle_lounge": "Battle Lounge",
   "command.cobblemon_more_battle_content.open": "Available battle content: %s",
   "command.cobblemon_more_battle_content.pvp.invited": "%s challenged you to a %s PvP battle. Open /mbc to review it.",

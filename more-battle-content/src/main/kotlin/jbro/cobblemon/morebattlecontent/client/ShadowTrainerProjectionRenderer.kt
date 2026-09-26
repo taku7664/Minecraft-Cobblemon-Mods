@@ -121,7 +121,7 @@ internal object ShadowTrainerProjectionRenderer {
         val poseStack = frame.newPoseStack()
         val partialTick = frame.partialTick
         val shadow = shadowPlayer(level, projection)
-        copyVisibleEquipment(sourcePlayer, shadow)
+        if (projection.resourceSkin == null) copyVisibleEquipment(sourcePlayer, shadow)
         place(
             shadow,
             projection,
@@ -155,7 +155,7 @@ internal object ShadowTrainerProjectionRenderer {
     private fun shadowPlayer(level: ClientLevel, projection: ShadowTrainerProjection): ShadowPlayer {
         val cached = shadowPlayer
         if (cached != null && cached.clientLevel === level && renderedBattleId == projection.battleId) return cached
-        return ShadowPlayer(level, GameProfile(projection.profileId, projection.profileName)).also {
+        return ShadowPlayer(level, GameProfile(projection.profileId, projection.profileName), projection).also {
             shadowPlayer = it
             renderedBattleId = projection.battleId
         }
@@ -232,7 +232,15 @@ internal object ShadowTrainerProjectionRenderer {
         renderedBattleId = null
     }
 
-    private class ShadowPlayer(level: ClientLevel, profile: GameProfile) : RemotePlayer(level, profile) {
+    private class ShadowPlayer(level: ClientLevel, profile: GameProfile, private val projection: ShadowTrainerProjection) : RemotePlayer(level, profile) {
+        override fun getSkin(): net.minecraft.client.resources.PlayerSkin {
+            val resource = projection.resourceSkin ?: return super.getSkin()
+            val requested = net.minecraft.resources.ResourceLocation.parse(resource)
+            val texture = if (Minecraft.getInstance().resourceManager.getResource(requested).isPresent) requested
+                else net.minecraft.resources.ResourceLocation.parse("minecraft:textures/entity/player/wide/steve.png")
+            return net.minecraft.client.resources.PlayerSkin(texture, null, null, null,
+                if (projection.slim) net.minecraft.client.resources.PlayerSkin.Model.SLIM else net.minecraft.client.resources.PlayerSkin.Model.WIDE, false)
+        }
         override fun shouldShowName(): Boolean = customName != null
         override fun isInvisibleTo(player: Player): Boolean = false
     }

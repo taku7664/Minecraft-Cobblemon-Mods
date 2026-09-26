@@ -57,7 +57,8 @@ internal abstract class MbcTabbedContentScreen(
     protected fun addContentFrameWidgets(frame: MbcContentFrameLayout = frameLayout()) {
         val tabs = frame.tabButtons(MbcContentTabContract.DISPLAY_ORDER.size)
         MbcContentTabContract.DISPLAY_ORDER.forEachIndexed { index, content ->
-            val unavailable = content == BattleHubContent.BOSS_RAID
+            val denial = MbcBattleHubClientState.denied[content]
+            val unavailable = content == BattleHubContent.BOSS_RAID || denial != null
             addRenderableWidget(
                 MbcStyledButton(
                     tabs[index],
@@ -68,7 +69,11 @@ internal abstract class MbcTabbedContentScreen(
                     if (content != activeContent) {
                         MbcContentNavigation.open(content)
                     }
-                }.also { it.active = !unavailable },
+                }.also {
+                    it.active = !unavailable
+                    if (denial != null) it.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+                        Component.translatable(denial.reasonKey, *denial.arguments.toTypedArray())))
+                },
             )
         }
         addRenderableWidget(

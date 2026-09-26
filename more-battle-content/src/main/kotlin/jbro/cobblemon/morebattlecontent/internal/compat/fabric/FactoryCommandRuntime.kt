@@ -1,5 +1,9 @@
 package jbro.cobblemon.morebattlecontent.internal.compat.fabric
 
+import jbro.cobblemon.morebattlecontent.api.access.BattleContentAccess
+import jbro.cobblemon.morebattlecontent.api.access.ContentAccessAction
+import jbro.cobblemon.morebattlecontent.api.presentation.ManagedBattleContentIds
+
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.internal.command.FactoryCommandBackend
@@ -196,6 +200,7 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
     }
 
     override fun open(player: ServerPlayer): Boolean = withPlayer(player) {
+        if (!BattleContentAccess.allow(player, ManagedBattleContentIds.BATTLE_FACTORY, ContentAccessAction.OPEN)) return@withPlayer false
         FactoryPlayNetworking.open(player)
     }
 
@@ -203,22 +208,22 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
         player: ServerPlayer,
         format: FactoryBattleFormat,
         levelMode: FactoryLevelMode,
-    ): FactoryPlayResult = withPlayer(player) { play.start(player.uuid, format, levelMode) }
+    ): FactoryPlayResult = mutate(player) { play.start(player.uuid, format, levelMode) }
 
     override fun select(player: ServerPlayer, setIds: List<String>): FactoryPlayResult =
-        withPlayer(player) { play.selectDraft(player.uuid, setIds) }
+        mutate(player) { play.selectDraft(player.uuid, setIds) }
 
     override fun revise(player: ServerPlayer): FactoryPlayResult =
-        withPlayer(player) { play.reviseSelection(player.uuid) }
+        mutate(player) { play.reviseSelection(player.uuid) }
 
     override fun battle(player: ServerPlayer, orderedSetIds: List<String>?): FactoryPlayResult =
-        withPlayer(player) { play.beginBattle(player.uuid, orderedSetIds) }
+        mutate(player) { play.beginBattle(player.uuid, orderedSetIds) }
 
     override fun keep(player: ServerPlayer): FactoryPlayResult =
-        withPlayer(player) { play.keepTeam(player.uuid) }
+        mutate(player) { play.keepTeam(player.uuid) }
 
     override fun swap(player: ServerPlayer, outgoingSetId: String, incomingToken: UUID): FactoryPlayResult =
-        withPlayer(player) { play.swap(player.uuid, outgoingSetId, incomingToken) }
+        mutate(player) { play.swap(player.uuid, outgoingSetId, incomingToken) }
 
     override fun status(player: ServerPlayer): FactoryPlayResult =
         withPlayer(player) { FactoryPlayResult.Accepted(play.status(player.uuid)) }
@@ -310,6 +315,12 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
     private inline fun <T> withPlayer(player: ServerPlayer, operation: () -> T): T {
         onlinePlayers[player.uuid] = player
         return operation()
+    }
+
+    private inline fun mutate(player: ServerPlayer, operation: () -> FactoryPlayResult): FactoryPlayResult = withPlayer(player) {
+        if (!BattleContentAccess.allow(player, ManagedBattleContentIds.BATTLE_FACTORY, ContentAccessAction.MUTATE)) {
+            FactoryPlayResult.Rejected(FactoryPlayError.BATTLE_UNAVAILABLE)
+        } else operation()
     }
 
     private fun pushState(playerId: UUID) {

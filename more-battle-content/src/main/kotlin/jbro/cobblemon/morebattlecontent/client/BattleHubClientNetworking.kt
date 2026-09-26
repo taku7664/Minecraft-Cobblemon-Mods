@@ -4,11 +4,16 @@ import jbro.cobblemon.morebattlecontent.internal.hub.BattleHubOpenContentPayload
 import jbro.cobblemon.morebattlecontent.internal.hub.BattleHubContent
 import jbro.cobblemon.morebattlecontent.internal.hub.BattleHubHeaderStatePayload
 import jbro.cobblemon.morebattlecontent.internal.hub.BattleHubStatePayload
+import jbro.cobblemon.morebattlecontent.internal.hub.BattleHubAccessPayload
+import jbro.cobblemon.morebattlecontent.api.access.ContentAccessDecision
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.client.Minecraft
 
 internal object BattleHubClientNetworking {
     fun register() {
+        ClientPlayNetworking.registerGlobalReceiver(BattleHubAccessPayload.TYPE) { payload, context ->
+            context.client().execute { MbcBattleHubClientState.denied = payload.denied }
+        }
         MbcClientSessionReset.onReset("battle hub header") { MbcBattleHubClientState.clear() }
         ClientPlayNetworking.registerGlobalReceiver(BattleHubStatePayload.TYPE) { _, context ->
             context.client().execute {
@@ -39,6 +44,7 @@ internal object MbcContentNavigation {
 }
 
 internal object MbcBattleHubClientState {
+    var denied: Map<BattleHubContent, ContentAccessDecision.Denied> = emptyMap()
     var bpBalance: Long = 0L
         private set
 
@@ -47,6 +53,7 @@ internal object MbcBattleHubClientState {
     }
 
     fun clear() {
+        denied = emptyMap()
         bpBalance = 0L
     }
 }

@@ -50,6 +50,10 @@ internal class Cobblemon173FactoryPveBattleRuntime(
             )
             return FactoryBattleLaunchResult.Unavailable
         }
+        if (!jbro.cobblemon.morebattlecontent.api.access.BattleContentAccess.allow(
+                player, ManagedBattleContentIds.BATTLE_FACTORY,
+                jbro.cobblemon.morebattlecontent.api.access.ContentAccessAction.START,
+            )) return FactoryBattleLaunchResult.Unavailable
         BattleRegistry.getBattleByParticipatingPlayerId(player.uuid)?.let { existing ->
             MoreBattleContent.LOGGER.error(
                 "Battle Factory start failed: player {} is already registered in battle {}",

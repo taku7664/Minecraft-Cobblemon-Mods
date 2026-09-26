@@ -1,5 +1,10 @@
 package jbro.cobblemon.morebattlecontent.internal.tower.network
 
+import jbro.cobblemon.morebattlecontent.api.access.BattleContentAccess
+import jbro.cobblemon.morebattlecontent.api.access.ContentAccessAction
+import jbro.cobblemon.morebattlecontent.api.access.ContentAccessDecision
+import jbro.cobblemon.morebattlecontent.api.presentation.ManagedBattleContentIds
+
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
 import jbro.cobblemon.morebattlecontent.internal.application.BattleContentId
 import jbro.cobblemon.morebattlecontent.internal.battle.BattleCompletionRetryQueue
@@ -97,6 +102,13 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         ServerPlayNetworking.registerGlobalReceiver(TowerPlayIntentPayload.TYPE) { payload, context ->
             val player = context.player()
             onlinePlayers[player.uuid] = player
+            val access = BattleContentAccess.check(player, ManagedBattleContentIds.BATTLE_TOWER, ContentAccessAction.MUTATE)
+            if (access is ContentAccessDecision.Denied && payload.intent !is jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayIntent.Abandon) {
+                ServerPlayNetworking.send(player, TowerPlayRejectedPayload(TowerPlayMutationResult.Rejected(
+                    payload.intent.requestId, payload.intent.expectedRevision, access.reasonKey,
+                )))
+                return@registerGlobalReceiver
+            }
             val result = try {
                 val currentParty = if (payload.intent is jbro.cobblemon.morebattlecontent.internal.tower.ui.TowerPlayIntent.LockTeam) {
                     Cobblemon173TowerPlayOpenRequestFactory.readParty(player)
@@ -202,6 +214,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
         initialFormat: TowerBattleFormat = TowerBattleFormat.SINGLE,
         entryContext: TowerPlayEntryContext? = null,
     ): Boolean {
+        if (!BattleContentAccess.allow(player, ManagedBattleContentIds.BATTLE_TOWER, ContentAccessAction.OPEN)) return false
         if (!ServerPlayNetworking.canSend(player, TowerPlayStatePayload.TYPE)) return false
         return try {
             onlinePlayers[player.uuid] = player
