@@ -143,7 +143,8 @@ internal class NativeProductSessionReconciler(
                     }
                     definition = preReplayPlan.definition
                     catalog = preReplayPlan.catalog
-                    val ownNativeActions = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, root)
+                    val ownNativeActions = NativeShowdownRequestActionFactory.actions(
+                        BattleSide.ALLY, root, allowedMechanics = session.allowedMechanics)
                     val ownMapping = NativeRootActionMatcher.match(
                         session.format,
                         listOf(pendingOwnAction),
@@ -159,7 +160,8 @@ internal class NativeProductSessionReconciler(
                         )
                     }
 
-                    val opponentNativeActions = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, root)
+                    val opponentNativeActions = NativeShowdownRequestActionFactory.actions(
+                        BattleSide.OPPONENT, root, allowedMechanics = session.allowedMechanics)
                     val observed = NativeObservedTurnActionMatcher.match(
                         session.format,
                         BattleSide.OPPONENT,
@@ -334,6 +336,7 @@ internal class NativeProductSessionReconciler(
                             ?: session.lastObservedEventSequence,
                         pendingOwnAction = null,
                         trainerTier = session.trainerTier,
+                        allowedMechanics = session.allowedMechanics,
                     ),
                 )
             }

@@ -26,6 +26,8 @@ internal class NativeShowdownSearchTree(
     publicTemplate: BattleStateView,
     private val publicTurnOffset: Int = 0,
     private val publicActionCatalog: BattlePublicActionCatalogView? = null,
+    /** See [NativeMechanicAllowance]; null keeps every mechanic the native request offers. */
+    private val allowedMechanics: Set<String>? = null,
 ) {
     val rulesFingerprint: String = worker.rulesFingerprint
 
@@ -40,7 +42,8 @@ internal class NativeShowdownSearchTree(
         maxVoluntarySwitchTargetsPerSlot: Int? = null,
     ): List<BattleActionCandidate> =
         NativeShowdownRequestActionFactory.actions(
-            side, position.frame, maxVoluntarySwitchTargetsPerSlot, position.state, publicActionCatalog)
+            side, position.frame, maxVoluntarySwitchTargetsPerSlot, position.state, publicActionCatalog,
+            allowedMechanics)
 
     /** Attack-only extension uses exact own move metadata; forced replacements remain untouched. */
     fun attackingActions(position: NativeSearchPosition): List<BattleActionCandidate> {

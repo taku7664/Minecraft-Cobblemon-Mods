@@ -16,6 +16,7 @@ import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionRank
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlan
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlanIssue
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProductWorldPlanner
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMechanicAllowance
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeOpeningStateRules
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeProductSeedPolicy
 
@@ -40,6 +41,11 @@ internal data class NativeInitialProductDecisionEvaluation(
     val failedRunStatus: NativeProductSearchRunStatus? = null,
     val failedRunDetail: String? = null,
     val sessionState: NativeProductSessionState? = null,
+    /**
+     * Reconciled roots that still match the board after a failed continued search. The Brain keeps
+     * them through the legacy fallback so the next turn can continue natively.
+     */
+    val retainedSessionState: NativeProductSessionState? = null,
 ) {
     init {
         require(depthCompleted >= 0)
@@ -53,6 +59,7 @@ internal data class NativeInitialProductDecisionEvaluation(
         )
         require(!truncated || searchStatus == NativeProductWorldSearchStatus.PARTIAL_DEPTH)
         require((status == NativeInitialProductDecisionStatus.AVAILABLE) == (sessionState != null))
+        require(retainedSessionState == null || status == NativeInitialProductDecisionStatus.SEARCH_FAILED)
     }
 }
 
@@ -108,6 +115,7 @@ internal class NativeInitialProductDecisionEvaluator(
         if (!isOpeningCandidate(context)) {
             return NativeInitialProductDecisionEvaluation(NativeInitialProductDecisionStatus.NOT_APPLICABLE)
         }
+        val allowedMechanics = NativeMechanicAllowance.merge(null, context.candidates)
         val plan = planWorlds(context, profile.difficulty.tier)
         if (plan.issues.isNotEmpty()) {
             return NativeInitialProductDecisionEvaluation(
@@ -181,6 +189,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 allowSetupAttackExtension = profile.difficulty.tier == BattleTrainerTier.BOSS &&
                     context.candidates.any { LocalSetupMovePreference.bonus(it, context) > 0.0 },
                 excludeFutureAllyVoluntarySwitches = profile.difficulty.tier == BattleTrainerTier.ADVANCED,
+                allowedMechanics = allowedMechanics,
                 nodeLimit = budget.nodeLimit,
                 deadlineNanos = deadlineNanos,
             ),
@@ -222,6 +231,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 publicTurn = context.state.turn,
                 lastObservedEventSequence = context.state.observedEvents.lastOrNull()?.sequence,
                 trainerTier = profile.difficulty.tier,
+                allowedMechanics = allowedMechanics,
             ),
         )
     }
@@ -235,6 +245,10 @@ internal class NativeInitialProductDecisionEvaluator(
     ): NativeInitialProductDecisionEvaluation {
         val deadlineNanos = nativeDeadline(context.deadlineEpochMillis, budget.timeMillis)
             ?: return reconciliationFailure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
+        // A session made without an allowance stays unrestricted; otherwise the set only grows.
+        val allowedMechanics = sessionState.allowedMechanics?.let {
+            NativeMechanicAllowance.merge(it, context.candidates)
+        }
         val reconciliation = reconcileSession(sessionState, context, deadlineNanos)
         if (reconciliation.status != NativeProductSessionReconcileStatus.AVAILABLE) {
             return NativeInitialProductDecisionEvaluation(
@@ -246,10 +260,12 @@ internal class NativeInitialProductDecisionEvaluator(
         val reconciled = requireNotNull(reconciliation.sessionState) {
             "An available native reconciliation must return its conditioned session"
         }
+        val retained = reconciled.copy(allowedMechanics = allowedMechanics)
         if (budget.nodeLimit < reconciled.worlds.size) {
             return NativeInitialProductDecisionEvaluation(
                 status = NativeInitialProductDecisionStatus.SEARCH_FAILED,
                 searchStatus = NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH,
+                retainedSessionState = retained,
             )
         }
 
@@ -259,6 +275,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 return NativeInitialProductDecisionEvaluation(
                     status = NativeInitialProductDecisionStatus.SEARCH_FAILED,
                     searchStatus = NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH,
+                    retainedSessionState = retained,
                 )
             }
             val value = leafEvaluator(world.publicContext.state, world.publicContext, tuning) {
@@ -268,6 +285,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 return NativeInitialProductDecisionEvaluation(
                     status = NativeInitialProductDecisionStatus.SEARCH_FAILED,
                     searchStatus = NativeProductWorldSearchStatus.NO_COMMON_COMPLETED_DEPTH,
+                    retainedSessionState = retained,
                 )
             }
             rootBaseline += world.probability * value
@@ -296,6 +314,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 allowSetupAttackExtension = profile.difficulty.tier == BattleTrainerTier.BOSS &&
                     context.candidates.any { LocalSetupMovePreference.bonus(it, context) > 0.0 },
                 excludeFutureAllyVoluntarySwitches = profile.difficulty.tier == BattleTrainerTier.ADVANCED,
+                allowedMechanics = allowedMechanics,
                 nodeLimit = budget.nodeLimit,
                 deadlineNanos = deadlineNanos,
             ),
@@ -311,6 +330,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 failedWorldId = search.failedWorldId,
                 failedRunStatus = search.failedRunStatus,
                 failedRunDetail = search.failedRunDetail,
+                retainedSessionState = retained,
             )
         }
         val expectedWorldKeys = reconciled.worlds.mapTo(linkedSetOf()) { it.key }
@@ -320,6 +340,7 @@ internal class NativeInitialProductDecisionEvaluator(
                 depthCompleted = search.depthCompleted,
                 nodesVisited = search.nodesVisited,
                 searchStatus = NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
+                retainedSessionState = retained,
             )
         }
         val searchedWorlds = reconciled.worlds.map { world ->
@@ -332,7 +353,7 @@ internal class NativeInitialProductDecisionEvaluator(
             nodesVisited = search.nodesVisited,
             truncated = search.status == NativeProductWorldSearchStatus.PARTIAL_DEPTH,
             searchStatus = search.status,
-            sessionState = reconciled.copy(worlds = searchedWorlds),
+            sessionState = retained.copy(worlds = searchedWorlds),
         )
     }
 

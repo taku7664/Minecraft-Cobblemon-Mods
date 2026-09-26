@@ -336,6 +336,52 @@ class NativeInitialProductBrainIntegrationTest {
         assertTrue(decision.tags.any { it.startsWith("lookahead_stop_") })
     }
 
+    @Test
+    fun `failed continued search keeps reconciled roots and replays the legacy choice next turn`() {
+        val context = contestedContext()
+        val opening = nativeSessionState(context)
+        val reconciled = nativeSessionState(context, snapshotJson = "reconciled")
+        val received = mutableListOf<NativeProductSessionState?>()
+        val brain = LocalTacticalBrain(
+            nativeInitialDecision = { _, _, _, _, previous ->
+                received += previous
+                when (received.size) {
+                    1 -> NativeInitialProductDecisionEvaluation(
+                        status = NativeInitialProductDecisionStatus.AVAILABLE,
+                        ranked = NativeProductRankAdapter.rank(context.candidates.mapIndexed { index, action ->
+                            NativeRootActionValue(action, 1.0 - index * 0.1)
+                        }),
+                        depthCompleted = 1,
+                        nodesVisited = 1,
+                        searchStatus = NativeProductWorldSearchStatus.COMPLETED,
+                        sessionState = opening,
+                    )
+                    2 -> NativeInitialProductDecisionEvaluation(
+                        status = NativeInitialProductDecisionStatus.SEARCH_FAILED,
+                        searchStatus = NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED,
+                        retainedSessionState = reconciled,
+                    )
+                    else -> NativeInitialProductDecisionEvaluation(
+                        status = NativeInitialProductDecisionStatus.RECONCILIATION_FAILED,
+                        reconciliationStatus = NativeProductSessionReconcileStatus.PUBLIC_EVENT_HISTORY_GAP,
+                    )
+                }
+            },
+        )
+        val session = open(brain, context)
+        brain.decide(session, context).toCompletableFuture().get()
+
+        val fallback = brain.decide(session, context).toCompletableFuture().get()
+        brain.decide(session, context).toCompletableFuture().get()
+
+        assertTrue("native_fallback_search_failed" in fallback.tags)
+        assertTrue("native_session_retained" in fallback.tags)
+        val carried = requireNotNull(received[2]) { "The reconciled roots must reach the next decision" }
+        assertEquals("reconciled", carried.worlds.single().rootSnapshot.frame.snapshotJson)
+        assertEquals(fallback.actionId, carried.pendingOwnAction?.actionId,
+            "The next reconciliation must replay the action the legacy search actually submitted")
+    }
+
     private fun nativeSessionState(
         context: jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext,
         snapshotJson: String = "root",

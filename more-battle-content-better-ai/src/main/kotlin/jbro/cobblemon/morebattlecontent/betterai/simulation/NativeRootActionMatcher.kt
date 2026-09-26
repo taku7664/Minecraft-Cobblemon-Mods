@@ -87,15 +87,8 @@ internal object NativeRootActionMatcher {
                     .sortedWith(compareBy(TargetSignature::side, TargetSignature::slot))
             },
             switchPokemonId = action.switchPokemonId,
-            mechanicId = action.mechanic?.mechanicId?.let(::canonicalMechanic),
+            mechanicId = action.mechanic?.mechanicId?.let(NativeMechanicAllowance::canonical),
         )
-    }
-
-    private fun canonicalMechanic(value: String): String = when (nativeId(value)) {
-        "mega", "megaevolution" -> "mega"
-        "dynamax", "dmax" -> "dynamax"
-        "tera", "terastallize", "terastallization" -> "tera"
-        else -> nativeId(value)
     }
 
     private fun nativeId(value: String): String = value.substringAfter(':')

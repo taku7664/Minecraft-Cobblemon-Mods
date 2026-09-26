@@ -40,6 +40,8 @@ internal data class NativeProductSessionState(
     val lastObservedEventSequence: Long?,
     val pendingOwnAction: BattleActionCandidate? = null,
     val trainerTier: BattleTrainerTier = BattleTrainerTier.BOSS,
+    /** See [jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMechanicAllowance]; null is unrestricted. */
+    val allowedMechanics: Set<String>? = null,
 ) {
     init {
         require(rulesFingerprint.isNotBlank())

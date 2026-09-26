@@ -25,6 +25,7 @@ internal data class NativeProductSearchRequest(
     val responseInformation: Double = 1.0,
     val allowSetupAttackExtension: Boolean = false,
     val excludeFutureAllyVoluntarySwitches: Boolean = false,
+    val allowedMechanics: Set<String>? = null,
     val nodeLimit: Int,
     val deadlineNanos: Long,
     val evaluate: (BattleStateView) -> Double,
@@ -120,7 +121,7 @@ internal class NativeProductSearchRunner(
                     request.definition, root, request.publicState, publicTurnOffset)
                 if (rootIssues.isNotEmpty()) return@lease NativeLeasedInvalidRoot(rootIssues)
                 val tree = NativeShowdownSearchTree(worker, root, request.publicState,
-                    publicTurnOffset, request.publicActionCatalog)
+                    publicTurnOffset, request.publicActionCatalog, request.allowedMechanics)
                 NativeLeasedProductSearchAttempt(
                     attempt = NativeRecursiveSearch(
                         tree = tree,

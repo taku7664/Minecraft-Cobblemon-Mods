@@ -51,6 +51,35 @@ class NativeShowdownRequestActionFactoryTest {
     }
 
     @Test
+    fun `mechanics the live battle does not permit never become native candidates`() {
+        val frame = frame(
+            p1Request = """
+                {
+                  "active": [
+                    {
+                      "moves": [{"move":"Tackle","id":"tackle","pp":35,"maxpp":35,"target":"normal","disabled":false}],
+                      "canMegaEvo":true,
+                      "canDynamax":true,
+                      "canTerastallize":"Electric"
+                    },
+                    {
+                      "moves": [{"move":"Splash","id":"splash","pp":40,"maxpp":40,"target":"self","disabled":false}]
+                    }
+                  ]
+                }
+            """.trimIndent(),
+        )
+
+        val mechanics = NativeShowdownRequestActionFactory
+            .actions(BattleSide.ALLY, frame, allowedMechanics = setOf("tera"))
+            .flatMap { action -> action.componentActions.ifEmpty { listOf(action) } }
+            .map { it.mechanic?.mechanicId }
+            .toSet()
+
+        assertEquals(setOf(null, "tera"), mechanics)
+    }
+
+    @Test
     fun `disabled native moves never become candidates`() {
         val frame = singleFrame(
             """

@@ -25,6 +25,8 @@ internal object NativeShowdownRequestActionFactory {
         maxVoluntarySwitchTargetsPerSlot: Int? = null,
         publicState: BattleStateView? = null,
         publicActionCatalog: BattlePublicActionCatalogView? = null,
+        /** Canonical mechanic IDs the live battle permits; null leaves native legality unfiltered. */
+        allowedMechanics: Set<String>? = null,
     ): List<BattleActionCandidate> {
         require(maxVoluntarySwitchTargetsPerSlot == null || maxVoluntarySwitchTargetsPerSlot >= 0)
         if (frame.ended) return emptyList()
@@ -54,7 +56,7 @@ internal object NativeShowdownRequestActionFactory {
                 listOf(passAction(side, slot))
             } else {
                 val activeRequest = element.asJsonObject
-                moveActions(side, slot, activeRequest, frame) +
+                moveActions(side, slot, activeRequest, frame, allowedMechanics) +
                     if (activeRequest.boolean("trapped") || maxVoluntarySwitchTargetsPerSlot == 0) emptyList() else
                         switchActions(side, slot, frame, permittedSwitches?.get(slot))
             }
@@ -67,6 +69,7 @@ internal object NativeShowdownRequestActionFactory {
         actorSlot: Int,
         request: JsonObject,
         frame: NativeBattleFrame,
+        allowedMechanics: Set<String>?,
     ): List<BattleActionCandidate> {
         val actor = activeTeam(side, frame).singleOrNull { it.activeSlot == actorSlot }
         requireNotNull(actor) { "Native request names missing active slot $actorSlot for $side" }
@@ -91,7 +94,7 @@ internal object NativeShowdownRequestActionFactory {
                 if (request.enabled("canMegaEvo")) add("mega")
                 if (request.enabled("canDynamax")) add("dynamax")
                 if (request.enabled("canTerastallize")) add("tera")
-            }
+            }.filter { mechanic -> mechanic == null || allowedMechanics == null || mechanic in allowedMechanics }
             targets.flatMap { targetSlots ->
                 mechanics.map { mechanic ->
                     BattleActionCandidate(

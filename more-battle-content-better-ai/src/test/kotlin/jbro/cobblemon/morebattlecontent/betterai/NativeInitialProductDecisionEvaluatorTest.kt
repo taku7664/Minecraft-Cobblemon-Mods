@@ -8,6 +8,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleExactOwnTeamView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleExactPokemonBuildView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFieldStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMechanicCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewPokemonView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventKind
@@ -161,6 +162,85 @@ class NativeInitialProductDecisionEvaluatorTest {
         )
 
         assertTrue(excludesFutureSwitches)
+    }
+
+    @Test
+    fun `opening search only permits mechanics the live candidates offer`() {
+        var allowed: Set<String>? = setOf("unset")
+        val tera = BattleActionCandidate(
+            "action-a-tera", BattleActionKind.USE_MOVE, 0, 0, "psychic",
+            mechanic = BattleMechanicCandidate("cobblemon:terastallize", null, null),
+        )
+        val evaluator = NativeInitialProductDecisionEvaluator(
+            planWorlds = { supplied, _ -> plan(supplied) },
+            searchWorlds = { request ->
+                allowed = request.allowedMechanics
+                NativeProductWorldSearchResult(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED)
+            },
+            nowEpochMillis = { 1_000L },
+            leafEvaluator = { _, _, _, _ -> 0.05 },
+        )
+        val context = context().let { it.copy(candidates = it.candidates + tera) }
+
+        evaluator.evaluate(context, BattleTrainerProfile.boss(), LocalDecisionTuning.CURRENT,
+            LocalLookaheadBudget(250L, 100, 1))
+
+        assertEquals(setOf("tera"), allowed,
+            "Dynamax offered only by the patched native rules must not enter the search")
+    }
+
+    @Test
+    fun `continued search keeps a spent mechanic permitted for the opponent`() {
+        val current = context(turn = 2)
+        val prior = sessionState(context(turn = 1), frame("prior"), pending = ACTIONS.first())
+            .copy(allowedMechanics = setOf("tera"))
+        val reconciled = sessionState(current, frame("reconciled"), pending = null)
+            .copy(allowedMechanics = setOf("tera"))
+        var allowed: Set<String>? = null
+        val evaluator = NativeInitialProductDecisionEvaluator(
+            planWorlds = { _, _ -> error("must not plan") },
+            searchWorlds = { request ->
+                allowed = request.allowedMechanics
+                NativeProductWorldSearchResult(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED)
+            },
+            reconcileSession = { _, _, _ ->
+                NativeProductSessionReconciliation(NativeProductSessionReconcileStatus.AVAILABLE, reconciled)
+            },
+            nowEpochMillis = { 1_000L },
+            nanoTime = { 5_000_000L },
+            leafEvaluator = { _, _, _, _ -> 0.1 },
+        )
+
+        evaluator.evaluate(current, BattleTrainerProfile.boss(), LocalDecisionTuning.CURRENT,
+            LocalLookaheadBudget(250L, 100, 1), prior)
+
+        assertEquals(setOf("tera"), allowed, "Tera is no longer offered to the ally but stays legal for the opponent")
+    }
+
+    @Test
+    fun `failed continued search still returns the reconciled roots for the next turn`() {
+        val current = context(turn = 2)
+        val prior = sessionState(context(turn = 1), frame("prior"), pending = ACTIONS.first())
+            .copy(allowedMechanics = emptySet())
+        val reconciled = sessionState(current, frame("reconciled"), pending = null)
+            .copy(allowedMechanics = emptySet())
+        val evaluator = NativeInitialProductDecisionEvaluator(
+            planWorlds = { _, _ -> error("must not plan") },
+            searchWorlds = { NativeProductWorldSearchResult(NativeProductWorldSearchStatus.WORLD_SEARCH_FAILED) },
+            reconcileSession = { _, _, _ ->
+                NativeProductSessionReconciliation(NativeProductSessionReconcileStatus.AVAILABLE, reconciled)
+            },
+            nowEpochMillis = { 1_000L },
+            nanoTime = { 5_000_000L },
+            leafEvaluator = { _, _, _, _ -> 0.1 },
+        )
+
+        val result = evaluator.evaluate(current, BattleTrainerProfile.boss(), LocalDecisionTuning.CURRENT,
+            LocalLookaheadBudget(250L, 100, 1), prior)
+
+        assertEquals(NativeInitialProductDecisionStatus.SEARCH_FAILED, result.status)
+        assertEquals("reconciled", result.retainedSessionState?.worlds?.single()?.rootSnapshot?.frame?.snapshotJson)
+        assertEquals(null, result.retainedSessionState?.pendingOwnAction)
     }
 
     @Test

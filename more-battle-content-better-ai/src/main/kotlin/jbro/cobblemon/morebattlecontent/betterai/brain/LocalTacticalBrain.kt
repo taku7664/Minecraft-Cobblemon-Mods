@@ -217,6 +217,10 @@ internal class LocalTacticalBrain(
         )
         decisionTrace?.nativeSearch(nativeInitial, profile.difficulty.lookaheadPlies, budget)
         var nativeFallbackStatus: NativeInitialProductDecisionStatus? = null
+        // Roots that reconciled with the current board survive a failed native search. The legacy
+        // choice made this turn becomes their pending action, so the next turn can continue natively
+        // instead of losing native search for the rest of the battle.
+        var retainedNativeState: NativeProductSessionState? = null
         when (nativeInitial.status) {
             NativeInitialProductDecisionStatus.AVAILABLE -> {
                 val ranked = nativeInitial.ranked
@@ -279,6 +283,7 @@ internal class LocalTacticalBrain(
             -> {
                 nativeFallbackStatus = nativeInitial.status
                 active?.nativeProductState = null
+                retainedNativeState = nativeInitial.retainedSessionState
                 decisionTrace?.nativeFallback(nativeInitial.status.name, nativeInitial.planIssues.joinToString(",") {
                     it.code.name + (it.detailCode?.let { detail -> "/$detail" } ?: "")
                 })
@@ -295,6 +300,7 @@ internal class LocalTacticalBrain(
                 tuning,
             ).single()
             decisionTrace?.resolved("single_legal", listOf(selected), LocalActionSelection(selected, 0L, 1, 1.0))
+            retainedNativeState?.let { active?.nativeProductState = it.withPendingOwnAction(selected.outcome.candidate) }
             return CompletableFuture.completedFuture(
                 BattleDecision(
                     requestId = context.requestId,
@@ -307,6 +313,7 @@ internal class LocalTacticalBrain(
                         add("single_legal_action")
                         add("difficulty_${profile.difficulty.tier.name.lowercase()}")
                         nativeFallbackStatus?.let { add("native_fallback_${it.name.lowercase(Locale.ROOT)}") }
+                        if (retainedNativeState != null) add("native_session_retained")
                     },
                 ),
             )
@@ -361,6 +368,7 @@ internal class LocalTacticalBrain(
         )
         val selected = selection.rank
         decisionTrace?.resolved("legacy_lookahead", ranked, selection)
+        retainedNativeState?.let { active?.nativeProductState = it.withPendingOwnAction(selected.outcome.candidate) }
         val confidence = (0.35 + selection.probability * 0.6).coerceIn(0.35, 0.99)
         return CompletableFuture.completedFuture(
             BattleDecision(
@@ -390,6 +398,7 @@ internal class LocalTacticalBrain(
                      ))
                     if (lookahead.truncated) add("lookahead_truncated")
                     nativeFallbackStatus?.let { add("native_fallback_${it.name.lowercase(Locale.ROOT)}") }
+                    if (retainedNativeState != null) add("native_session_retained")
                     if (unboundedTestDecision) add("lookahead_time_unbounded_test")
                     if (lookahead.publicResponseIncomplete) add("lookahead_public_response_incomplete")
                     addAll(decisionDiagnostics(calculatedContext, selected))

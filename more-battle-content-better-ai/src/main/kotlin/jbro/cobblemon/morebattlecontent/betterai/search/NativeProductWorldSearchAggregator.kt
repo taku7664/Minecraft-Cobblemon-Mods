@@ -30,6 +30,8 @@ internal data class NativeProductWorldSearchRequest(
     val responseInformation: Double = 1.0,
     val allowSetupAttackExtension: Boolean = false,
     val excludeFutureAllyVoluntarySwitches: Boolean = false,
+    /** Canonical mechanics the live battle permits; null leaves native legality unfiltered. */
+    val allowedMechanics: Set<String>? = null,
     /** One total deterministic budget shared by every retained world. */
     val nodeLimit: Int,
     val deadlineNanos: Long,
@@ -123,6 +125,7 @@ internal class NativeProductWorldSearchAggregator(
                     responseInformation = request.responseInformation,
                     allowSetupAttackExtension = request.allowSetupAttackExtension,
                     excludeFutureAllyVoluntarySwitches = request.excludeFutureAllyVoluntarySwitches,
+                    allowedMechanics = request.allowedMechanics,
                     nodeLimit = worldNodeLimit,
                     deadlineNanos = request.deadlineNanos,
                     evaluate = world.evaluate,
@@ -236,7 +239,9 @@ internal class NativeProductWorldSearchAggregator(
                 }
                 failed.mapping != null -> with(failed.mapping) {
                     "unmatchedProduct=${unmatchedProductActionIds.size},unmatchedNative=${unmatchedNativeActionIds.size}," +
-                        "ambiguousProduct=${ambiguousProductActionIds.size},ambiguousNative=${ambiguousNativeActionIds.size}"
+                        "ambiguousProduct=${ambiguousProductActionIds.size},ambiguousNative=${ambiguousNativeActionIds.size}" +
+                        idSample("unmatchedProductIds", unmatchedProductActionIds) +
+                        idSample("unmatchedNativeIds", unmatchedNativeActionIds)
                 }
                 failed.failure != null -> failed.failure.javaClass.simpleName + ":" +
                     (failed.failure.message ?: "no message").take(240)
@@ -245,9 +250,16 @@ internal class NativeProductWorldSearchAggregator(
         },
     )
 
+    /** A few IDs are enough to name the mismatch without flooding the log. */
+    private fun idSample(label: String, ids: Set<String>): String =
+        if (ids.isEmpty()) "" else ",$label=" + ids.take(ID_SAMPLE_LIMIT).joinToString("|") +
+            if (ids.size > ID_SAMPLE_LIMIT) "|..." else ""
+
     private data class CompletedWorld(
         val input: NativeProductWorldSearchInput,
         val result: NativeRecursiveSearchResult,
         val rootSnapshot: NativeProductRootSnapshot,
     )
 }
+
+private const val ID_SAMPLE_LIMIT = 6
