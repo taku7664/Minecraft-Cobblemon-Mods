@@ -55,3 +55,37 @@ val unitTest by tasks.registering(JavaExec::class) {
 }
 
 tasks.check { dependsOn(unitTest) }
+
+val generatedMusicResourcePack = layout.buildDirectory.dir("generated/music-resource-pack")
+
+val generateMusicResourcePack by tasks.registering(JavaExec::class) {
+    group = "build"
+    description = "Builds and validates the official Better Cobblemon Music resource pack directory."
+    dependsOn(tasks.classes)
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("jbro.cobblemon.bettermusic.resource.MusicResourcePackBuildTool")
+    val sourceDirectory = layout.projectDirectory.dir("resource-pack/src")
+    val catalogLayout = layout.projectDirectory.file("resource-pack/catalog-layout.json")
+    inputs.dir(sourceDirectory)
+    inputs.file(catalogLayout)
+    outputs.dir(generatedMusicResourcePack)
+    args(
+        sourceDirectory.asFile.absolutePath,
+        catalogLayout.asFile.absolutePath,
+        generatedMusicResourcePack.get().asFile.absolutePath
+    )
+}
+
+val musicResourcePackZip by tasks.registering(Zip::class) {
+    group = "build"
+    description = "Packages the validated official Better Cobblemon Music resource pack."
+    dependsOn(generateMusicResourcePack)
+    from(generatedMusicResourcePack)
+    archiveFileName.set("cobleserver-music-resourcepack-${modVersion}.zip")
+    destinationDirectory.set(layout.buildDirectory.dir("libs"))
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
+}
+
+tasks.check { dependsOn(generateMusicResourcePack) }
+tasks.assemble { dependsOn(musicResourcePackZip) }

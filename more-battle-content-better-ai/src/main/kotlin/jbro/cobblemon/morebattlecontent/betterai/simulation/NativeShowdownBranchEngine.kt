@@ -33,12 +33,36 @@ internal interface NativeBranchWorker : AutoCloseable {
 
     fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame
 
+    fun rebindMoves(snapshotJson: String, rebindings: List<NativeMoveSetRebinding>): NativeBattleFrame
+
     fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame
+
+    /**
+     * Replays an already-observed public turn and asks Showdown for the complete 16-roll support
+     * of each attributable direct hit. Product search must keep using [branch] so this diagnostic
+     * replay cost is paid only while conditioning retained worlds on public evidence.
+     */
+    fun branchWithDamageEvidence(
+        snapshotJson: String,
+        p1Choice: String,
+        p2Choice: String,
+    ): NativeBattleFrame = branch(snapshotJson, p1Choice, p2Choice)
+
+    /** Replays the same native branch with already-conditioned damage rolls. */
+    fun branchWithForcedDamage(
+        snapshotJson: String,
+        p1Choice: String,
+        p2Choice: String,
+        forcedDamageRolls: List<NativeForcedDamageRoll>,
+    ): NativeBattleFrame {
+        throw UnsupportedOperationException("This native worker cannot force observed damage rolls")
+    }
 }
 
 internal class NativeShowdownBranchEngine private constructor(
     private val context: Context,
     private val createBattleFunction: Value,
+    private val rebindMovesFunction: Value,
     private val branchFunction: Value,
     private val gson: Gson,
     override val rulesFingerprint: String,
@@ -48,12 +72,59 @@ internal class NativeShowdownBranchEngine private constructor(
         createBattleFunction.execute(gson.toJson(definition)).asString(),
     )
 
+    override fun rebindMoves(
+        snapshotJson: String,
+        rebindings: List<NativeMoveSetRebinding>,
+    ): NativeBattleFrame {
+        require(snapshotJson.isNotBlank()) { "Native Showdown snapshot cannot be blank" }
+        require(rebindings.isNotEmpty()) { "At least one native move-set rebinding is required" }
+        return decode(
+            rebindMovesFunction.execute(
+                gson.toJson(NativeMoveSetRebindRequest(snapshotJson, rebindings)),
+            ).asString(),
+        )
+    }
+
     override fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame {
+        return branch(snapshotJson, p1Choice, p2Choice, captureDamageRolls = false, emptyList())
+    }
+
+    override fun branchWithDamageEvidence(
+        snapshotJson: String,
+        p1Choice: String,
+        p2Choice: String,
+    ): NativeBattleFrame {
+        return branch(snapshotJson, p1Choice, p2Choice, captureDamageRolls = true, emptyList())
+    }
+
+    override fun branchWithForcedDamage(
+        snapshotJson: String,
+        p1Choice: String,
+        p2Choice: String,
+        forcedDamageRolls: List<NativeForcedDamageRoll>,
+    ): NativeBattleFrame {
+        require(forcedDamageRolls.isNotEmpty()) { "At least one observed damage roll is required" }
+        return branch(snapshotJson, p1Choice, p2Choice, captureDamageRolls = true, forcedDamageRolls)
+    }
+
+    private fun branch(
+        snapshotJson: String,
+        p1Choice: String,
+        p2Choice: String,
+        captureDamageRolls: Boolean,
+        forcedDamageRolls: List<NativeForcedDamageRoll>,
+    ): NativeBattleFrame {
         require(snapshotJson.isNotBlank()) { "Native Showdown snapshot cannot be blank" }
         require(p1Choice.isNotBlank() && p2Choice.isNotBlank()) { "Both native choices are required" }
         return decode(
             branchFunction.execute(
-                gson.toJson(NativeBranchRequest(snapshotJson, p1Choice, p2Choice)),
+                gson.toJson(NativeBranchRequest(
+                    snapshotJson,
+                    p1Choice,
+                    p2Choice,
+                    captureDamageRolls,
+                    forcedDamageRolls,
+                )),
             ).asString(),
         )
     }
@@ -132,15 +203,18 @@ internal class NativeShowdownBranchEngine private constructor(
                 context.eval(Source.newBuilder("js", bridge, "mbc-native-showdown-branch-engine.cjs").build())
                 val bindings = context.getBindings("js")
                 val create = bindings.getMember("mbcCreateBattle")
+                val rebindMoves = bindings.getMember("mbcRebindBattleMoves")
                 val branch = bindings.getMember("mbcBranchBattle")
                 val applyRules = bindings.getMember("mbcApplyRules")
-                check(create?.canExecute() == true && branch?.canExecute() == true && applyRules?.canExecute() == true) {
+                check(create?.canExecute() == true && rebindMoves?.canExecute() == true &&
+                    branch?.canExecute() == true && applyRules?.canExecute() == true) {
                     "Native Showdown bridge did not export its branch functions"
                 }
                 applyRules.execute(Gson().toJson(rules.sources))
                 return NativeShowdownBranchEngine(
                     context,
                     create,
+                    rebindMoves,
                     branch,
                     Gson(),
                     rules.fingerprint,
@@ -151,6 +225,23 @@ internal class NativeShowdownBranchEngine private constructor(
                 throw failure
             }
         }
+    }
+}
+
+/** Replaces only an unresolved synthetic source-set hypothesis, never a live public battle set. */
+internal data class NativeMoveSetRebinding(
+    val pokemonUuid: String,
+    val expectedMoveIds: List<String>,
+    val replacementMoveIds: List<String>,
+) {
+    init {
+        UUID.fromString(pokemonUuid)
+        require(expectedMoveIds.isNotEmpty() && expectedMoveIds.size <= 4)
+        require(replacementMoveIds.isNotEmpty() && replacementMoveIds.size <= 4)
+        require(expectedMoveIds.all(String::isNotBlank) && replacementMoveIds.all(String::isNotBlank))
+        require(expectedMoveIds.distinct().size == expectedMoveIds.size)
+        require(replacementMoveIds.distinct().size == replacementMoveIds.size)
+        require(expectedMoveIds != replacementMoveIds) { "A native move-set rebinding must change the set" }
     }
 }
 
@@ -272,7 +363,60 @@ internal data class NativeBattleFrame(
     val p2RequestJson: String,
     val field: NativeBattleFieldFrame = NativeBattleFieldFrame.empty(),
     val log: List<String>,
+    /** Exact move-message order emitted by the retained Showdown battle, across every completed turn. */
+    val executedMoveOrder: List<NativeExecutedMoveFrame> = emptyList(),
+    /** Native random-damage support for publicly attributable direct hits. */
+    val executedDamageRolls: List<NativeDamageRollFrame> = emptyList(),
+    /** Full-HP fractions lost specifically to move recoil in this branch transition. */
+    val recoilLossP1: Double = 0.0,
+    val recoilLossP2: Double = 0.0,
 )
+
+internal data class NativeExecutedMoveFrame(
+    val turn: Int,
+    val pokemonUuid: String,
+    val moveId: String,
+) {
+    init {
+        require(turn >= 0)
+        UUID.fromString(pokemonUuid)
+        require(moveId.isNotBlank())
+    }
+}
+
+internal data class NativeDamageRollFrame(
+    val turn: Int,
+    val attackerPokemonUuid: String,
+    val targetPokemonUuid: String,
+    val moveId: String,
+    val hpBefore: Int,
+    val maxHp: Int,
+    val actualHpLoss: Int,
+    val possibleHpLosses: List<Int>,
+    val damageCallIndex: Int = 0,
+) {
+    init {
+        require(turn >= 0)
+        UUID.fromString(attackerPokemonUuid)
+        UUID.fromString(targetPokemonUuid)
+        require(moveId.isNotBlank())
+        require(maxHp > 0 && hpBefore in 1..maxHp)
+        require(actualHpLoss in 1..hpBefore)
+        require(possibleHpLosses.isNotEmpty() && possibleHpLosses.all { it in 1..hpBefore })
+        require(actualHpLoss in possibleHpLosses)
+        require(damageCallIndex >= 0)
+    }
+}
+
+internal data class NativeForcedDamageRoll(
+    val damageCallIndex: Int,
+    val percent: Int,
+) {
+    init {
+        require(damageCallIndex >= 0)
+        require(percent in 85..100)
+    }
+}
 
 internal data class NativePokemonFrame(
     val uuid: String,
@@ -290,6 +434,9 @@ internal data class NativePokemonFrame(
     val level: Int = 50,
     val stats: Map<String, Int> = emptyMap(),
     val sourceSet: NativePokemonSourceSetFrame? = null,
+    val baseStabTypes: List<String> = types,
+    val terastallizedType: String = "",
+    val stellarBoostedTypes: List<String> = emptyList(),
 )
 
 /** Immutable team-set identity, kept separate from callback-mutated live Pokemon state. */
@@ -337,6 +484,13 @@ private data class NativeBranchRequest(
     val snapshotJson: String,
     val p1Choice: String,
     val p2Choice: String,
+    val captureDamageRolls: Boolean,
+    val forcedDamageRolls: List<NativeForcedDamageRoll>,
+)
+
+private data class NativeMoveSetRebindRequest(
+    val snapshotJson: String,
+    val rebindings: List<NativeMoveSetRebinding>,
 )
 
 /** Graal CommonJS may read only the chosen, already-unbundled Showdown directory. */

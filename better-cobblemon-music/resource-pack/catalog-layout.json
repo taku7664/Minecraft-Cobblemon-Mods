@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "packId": "cobleserver:official",
+  "kind": "base",
+  "legacyAliases": {
+    "cobleserver:battle/pvp/swsh_gym_leader_battle": [
+      "battle/content/swsh_gym_leader_battle.ogg"
+    ],
+    "cobleserver:battle/legendary/frlg_deoxys_battle_music": [
+      "battle/legendary/frlg_deoxys_battle.ogg"
+    ]
+  },
+  "playlists": {
+    "cobleserver:field_plaza": {
+      "tracks": [
+        "cobleserver:field/plaza/sinnoh_oreburgh_city_midday",
+        "cobleserver:field/plaza/goldenrod_city",
+        "cobleserver:field/plaza/jubilife_city"
+      ]
+    },
+    "cobleserver:battle_pvp": {
+      "tracks": [
+        "cobleserver:battle/pvp/pokemon_champions_arena_battle",
+        "cobleserver:battle/pvp/swsh_elite_leader_battle",
+        "cobleserver:battle/pvp/swsh_gym_leader_battle",
+        "cobleserver:battle/pvp/xy_elite_four_battle"
+      ]
+    },
+    "cobleserver:battle_legendary_generic": {
+      "tracks": [
+        "cobleserver:battle/legendary/oras_dialga_palkia_battle",
+        "cobleserver:battle/legendary/oras_reshiram_zekrom_battle",
+        "cobleserver:battle/legendary/za_darkrai_battle"
+      ]
+    },
+    "cobleserver:battle_groudon_kyogre": {
+      "tracks": [
+        "cobleserver:battle/legendary/oras_groudon_kyogre_battle",
+        "cobleserver:battle/legendary/rse_groudon_kyogre_battle"
+      ]
+    },
+    "cobleserver:battle_regi_trio": {
+      "tracks": [
+        "cobleserver:battle/legendary/oras_regirock_regice_registeel_battle",
+        "cobleserver:battle/legendary/rse_regirock_regice_registeel_battle"
+      ]
+    }
+  },
+  "mappings": {
+    "field": {
+      "default": "cobleserver:track/field/plains/sinnoh_route_201_day",
+      "dimensions": {
+        "cobblemon_policy:plaza": "cobleserver:field_plaza",
+        "minecraft:the_nether": "cobleserver:track/field/nether/sinnoh_stark_mountain",
+        "minecraft:the_end": "cobleserver:track/field/end/distortion_world"
+      },
+      "biomes": {
+        "minecraft:deep_dark": "cobleserver:track/field/deep_dark/johto_ilex_forest",
+        "minecraft:lush_caves": "cobleserver:track/field/cave/johto_dark_cave",
+        "minecraft:dripstone_caves": "cobleserver:track/field/cave/johto_dark_cave",
+        "minecraft:stony_shore": "cobleserver:track/field/beach/pmd_beach_at_dusk",
+        "minecraft:ice_spikes": "cobleserver:track/field/snow/sinnoh_route_216_day",
+        "minecraft:grove": "cobleserver:track/field/snow/sinnoh_route_216_day",
+        "minecraft:cherry_grove": "cobleserver:track/field/forest/viridian_forest"
+      },
+      "biomePathContains": {
+        "river": "cobleserver:track/field/river/sinnoh_lake_theme",
+        "beach": "cobleserver:track/field/beach/pmd_beach_at_dusk",
+        "ocean": "cobleserver:track/field/ocean/dive",
+        "badlands": "cobleserver:track/field/desert/route_111",
+        "desert": "cobleserver:track/field/desert/route_111",
+        "swamp": "cobleserver:track/field/swamp/route_120",
+        "jungle": "cobleserver:track/field/jungle_swamp/alola_lush_jungle",
+        "snow": "cobleserver:track/field/snow/sinnoh_route_216_day",
+        "frozen": "cobleserver:track/field/snow/sinnoh_route_216_day",
+        "peak": "cobleserver:track/field/mountain/unova_route_4",
+        "slope": "cobleserver:track/field/mountain/unova_route_4",
+        "windswept": "cobleserver:track/field/mountain/unova_route_4",
+        "forest": "cobleserver:track/field/forest/viridian_forest",
+        "birch": "cobleserver:track/field/forest/viridian_forest",
+        "taiga": "cobleserver:track/field/forest/viridian_forest"
+      },
+      "underground": "cobleserver:track/field/cave/johto_dark_cave"
+    },
+    "battle": {
+      "wild": "cobleserver:track/battle/wild/johto_wild_pokemon_battle",
+      "trainer": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
+      "pvp": "cobleserver:battle_pvp",
+      "content": {
+        "cobblemon_more_battle_content:battle_tower": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
+        "cobblemon_more_battle_content:battle_factory": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
+        "cobblemon_more_battle_content:pvp": "cobleserver:battle_pvp"
+      },
+      "legendary": "cobleserver:battle_legendary_generic",
+      "ultraBeast": "cobleserver:track/battle/ultra_beast/alola_ultra_beast_battle",
+      "pokemon": [
+        {
+          "species": ["arceus"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/dppt_arceus_battle"
+        },
+        {
+          "species": ["uxie", "mesprit", "azelf"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/dppt_azelf_mesprit_uxie_battle"
+        },
+        {
+          "species": ["dialga", "palkia"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/oras_dialga_palkia_battle"
+        },
+        {
+          "species": ["giratina"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/dppt_giratina_battle"
+        },
+        {
+          "species": ["deoxys"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/frlg_deoxys_battle_music"
+        },
+        {
+          "species": ["entei"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/hgss_entei_battle"
+        },
+        {
+          "species": ["suicune"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/hgss_suicune_battle"
+        },
+        {
+          "species": ["lugia"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/hgss_lugia_battle"
+        },
+        {
+          "species": ["hooh"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/hgss_ho-oh_battle"
+        },
+        {
+          "species": ["groudon", "kyogre"],
+          "only": ["wild"],
+          "playlist": "cobleserver:battle_groudon_kyogre"
+        },
+        {
+          "species": ["regirock", "regice", "registeel"],
+          "only": ["wild"],
+          "playlist": "cobleserver:battle_regi_trio"
+        },
+        {
+          "species": ["reshiram", "zekrom"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/oras_reshiram_zekrom_battle"
+        },
+        {
+          "species": ["darkrai"],
+          "only": ["wild"],
+          "playlist": "cobleserver:track/battle/legendary/za_darkrai_battle"
+        }
+      ]
+    }
+  },
+  "audioEvents": {
+    "hitNormal": "cobleserver:battle.hit.normal",
+    "hitSuperEffective": "cobleserver:battle.hit.super_effective",
+    "hitNotVeryEffective": "cobleserver:battle.hit.not_very_effective",
+    "heartbeat": "minecraft:entity.warden.heartbeat"
+  }
+}

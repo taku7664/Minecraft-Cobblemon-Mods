@@ -11,7 +11,7 @@ MBC owns battle construction, disposable party copies, trainer ownership, battle
 - `api.rewards.BattlePointRewards`: balance and idempotent content reward transactions.
 - `api.presentation.TrainerResourceSkin`: local resource texture and default/slim selection.
 
-Tower's `Cobblemon173TowerPveBattleRuntime` is now an adapter. It and the addon entrypoint share `ManagedPveBattleRuntime`. Factory's opponent-observation path remains specialized; this change does not claim to have migrated Factory's whole runtime.
+Integration update (2026-09-26): preserve `Cobblemon173TowerPveBattleRuntime.startManaged(Cobblemon173ManagedAiBattle)`, used by the standalone Better AI test since c03987a5. The addon-side `ManagedPveBattleRuntime` now adapts to that existing lifecycle-owned engine, so the public API still exposes no Tower types. Preserve `unboundedBrainDecision` for the AI test and central temporary-entity lifecycle registration/cleanup. Factory's opponent-observation path remains specialized.
 
 ## Calling contract
 

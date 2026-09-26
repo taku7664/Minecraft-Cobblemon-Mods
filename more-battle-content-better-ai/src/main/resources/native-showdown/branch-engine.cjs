@@ -132,6 +132,9 @@ function pokemonFrame(pokemon, activeSlot) {
     ability: pokemon.ability || '',
     item: pokemon.item || '',
     types: pokemon.getTypes(),
+    baseStabTypes: pokemon.getTypes(false, true),
+    terastallizedType: pokemon.terastallized || '',
+    stellarBoostedTypes: (pokemon.stellarBoostedTypes || []).slice(),
     boosts: pokemon.boosts,
     volatiles: Object.keys(pokemon.volatiles).sort(),
     moves: pokemon.moveSlots.map(slot => ({
@@ -195,10 +198,147 @@ function deterministicLog(log) {
 function deterministicSnapshot(battle) {
   const snapshot = battle.toJSON();
   snapshot.log = deterministicLog(snapshot.log);
+  delete snapshot.mbcExecutedDamageRolls;
   return snapshot;
 }
 
-function frame(battle) {
+function ensureExecutedMoveOrder(battle) {
+  if (!Array.isArray(battle.mbcExecutedMoveOrder)) battle.mbcExecutedMoveOrder = [];
+  return battle.mbcExecutedMoveOrder;
+}
+
+function recordExecutionTrace(battle, action, options = {}) {
+  const moveHistory = ensureExecutedMoveOrder(battle);
+  const hpByUuid = new Map(battle.sides.flatMap(side => side.pokemon)
+    .map(pokemon => [pokemon.uuid, pokemon.hp]));
+  let currentMove = null;
+  let pendingDamageRolls = [];
+  let damageCallIndex = 0;
+  const directHits = [];
+  battle.mbcBranchRecoil = { p1: 0, p2: 0 };
+  const originalAddMove = battle.addMove;
+  const originalRandomizer = battle.randomizer;
+  const originalAdd = battle.add;
+  battle.addMove = function(...parts) {
+    if (parts[0] === 'move' && parts[1] && parts[1].uuid) {
+      const moveId = toID(parts[2]);
+      if (!moveId) throw new Error(`Native executed move is missing its id on turn ${battle.turn}`);
+      currentMove = { turn: battle.turn, attackerPokemonUuid: parts[1].uuid, moveId };
+      pendingDamageRolls = [];
+      if (options.persistMoveHistory !== false) {
+        moveHistory.push({ turn: battle.turn, pokemonUuid: parts[1].uuid, moveId });
+      }
+    }
+    return originalAddMove.apply(this, parts);
+  };
+  battle.randomizer = function(baseDamage) {
+    const actualDamage = originalRandomizer.apply(this, arguments);
+    if (currentMove && Number.isInteger(baseDamage) && baseDamage > 0) {
+      const callIndex = damageCallIndex++;
+      pendingDamageRolls.push({
+        ...currentMove,
+        callIndex,
+      });
+      const percent = options.forcedDamagePercents && options.forcedDamagePercents.get(callIndex);
+      if (percent !== undefined) {
+        if (!Number.isInteger(percent) || percent < 85 || percent > 100) {
+          throw new Error(`Invalid forced native damage percentage ${percent}`);
+        }
+        return battle.trunc(battle.trunc(baseDamage * percent) / 100);
+      }
+    }
+    return actualDamage;
+  };
+  battle.add = function(...parts) {
+    const result = originalAdd.apply(this, parts);
+    const kind = parts[0];
+    const pokemon = parts[1];
+    if ((kind === '-damage' || kind === '-heal') && pokemon && pokemon.uuid) {
+      const previousHp = hpByUuid.get(pokemon.uuid);
+      hpByUuid.set(pokemon.uuid, pokemon.hp);
+      const hasPublicSource = parts.slice(3).some(part => String(part).startsWith('[from]'));
+      const recoilSource = parts.slice(3).some(part => /^\[from\] recoil$/i.test(String(part)));
+      if (kind === '-damage' && recoilSource && Number.isInteger(previousHp) && previousHp > pokemon.hp) {
+        const side = pokemon.side && pokemon.side.id;
+        if (side === 'p1' || side === 'p2') {
+          battle.mbcBranchRecoil[side] += (previousHp - pokemon.hp) / pokemon.maxhp;
+        }
+      }
+      if (kind === '-damage' && currentMove && Number.isInteger(previousHp)) {
+        const rollIndex = pendingDamageRolls.findIndex(roll =>
+          roll.turn === currentMove.turn &&
+          roll.attackerPokemonUuid === currentMove.attackerPokemonUuid &&
+          roll.moveId === currentMove.moveId);
+        if (rollIndex >= 0) {
+          const roll = pendingDamageRolls.splice(rollIndex, 1)[0];
+          const actualHpLoss = previousHp - pokemon.hp;
+          if (!hasPublicSource && actualHpLoss > 0) {
+            directHits.push({
+              turn: currentMove.turn,
+              attackerPokemonUuid: currentMove.attackerPokemonUuid,
+              targetPokemonUuid: pokemon.uuid,
+              moveId: currentMove.moveId,
+              hpBefore: previousHp,
+              maxHp: pokemon.maxhp,
+              actualHpLoss,
+              damageCallIndex: roll.callIndex,
+            });
+          }
+        }
+      }
+    }
+    return result;
+  };
+  try {
+    action();
+    return directHits;
+  } finally {
+    delete battle.addMove;
+    delete battle.randomizer;
+    delete battle.add;
+  }
+}
+
+function replayDamageRoll(input, targetCallIndex, percent, forcedDamagePercents) {
+  const battle = Battle.fromJSON(JSON.parse(input.snapshotJson));
+  battle.restart(function() {});
+  try {
+    const p1Wait = !!(battle.p1.activeRequest && battle.p1.activeRequest.wait);
+    const p2Wait = !!(battle.p2.activeRequest && battle.p2.activeRequest.wait);
+    const replayPercents = new Map(forcedDamagePercents);
+    replayPercents.set(targetCallIndex, percent);
+    const hits = recordExecutionTrace(battle, () => {
+      submitRequestedChoice(battle, 'p1', input.p1Choice, p1Wait);
+      submitRequestedChoice(battle, 'p2', input.p2Choice, p2Wait);
+    }, {
+      persistMoveHistory: false,
+      forcedDamagePercents: replayPercents,
+    });
+    return hits.find(hit => hit.damageCallIndex === targetCallIndex) || null;
+  } finally {
+    battle.destroy();
+  }
+}
+
+function collectDamageRollEvidence(input, actualHits, forcedDamagePercents) {
+  return actualHits.map(actual => {
+    const possibleHpLosses = [];
+    for (let percent = 85; percent <= 100; percent++) {
+      const replayed = replayDamageRoll(input, actual.damageCallIndex, percent, forcedDamagePercents);
+      if (!replayed || replayed.attackerPokemonUuid !== actual.attackerPokemonUuid ||
+          replayed.targetPokemonUuid !== actual.targetPokemonUuid || replayed.moveId !== actual.moveId) {
+        throw new Error(`Native damage replay lost direct hit ${actual.moveId} at call ${actual.damageCallIndex}`);
+      }
+      possibleHpLosses.push(replayed.actualHpLoss);
+    }
+    if (!possibleHpLosses.includes(actual.actualHpLoss)) {
+      throw new Error(`Actual native damage is outside replayed support for ${actual.moveId}`);
+    }
+    return { ...actual, possibleHpLosses };
+  });
+}
+
+function frame(battle, executedDamageRolls = []) {
   return {
     snapshotJson: JSON.stringify(deterministicSnapshot(battle)),
     turn: battle.turn,
@@ -212,6 +352,13 @@ function frame(battle) {
     p2RequestJson: JSON.stringify(battle.p2.activeRequest || null),
     field: fieldFrame(battle),
     log: deterministicLog(battle.log),
+    executedMoveOrder: ensureExecutedMoveOrder(battle).map(entry => ({ ...entry })),
+    executedDamageRolls: executedDamageRolls.map(entry => ({
+      ...entry,
+      possibleHpLosses: entry.possibleHpLosses.slice(),
+    })),
+    recoilLossP1: battle.mbcBranchRecoil ? battle.mbcBranchRecoil.p1 : 0,
+    recoilLossP2: battle.mbcBranchRecoil ? battle.mbcBranchRecoil.p2 : 0,
   };
 }
 
@@ -227,6 +374,110 @@ function submitRequestedChoice(battle, sideId, choice, requestWasWait) {
   }
 }
 
+function moveSlot(battle, moveId) {
+  const move = battle.dex.moves.get(moveId);
+  if (!move.exists) throw new Error(`Unknown rebound move ${moveId}`);
+  return {
+    move: move.name,
+    id: move.id,
+    pp: move.pp,
+    maxpp: move.pp,
+    target: move.target,
+    disabled: false,
+    disabledSource: '',
+    used: false,
+  };
+}
+
+function rebindPokemonMoves(battle, rebind) {
+  const matches = battle.sides.flatMap(side => side.pokemon)
+    .filter(pokemon => pokemon.uuid === rebind.pokemonUuid);
+  if (matches.length !== 1) {
+    throw new Error(`Move-set rebinding names unknown or duplicate Pokemon ${rebind.pokemonUuid}`);
+  }
+  const pokemon = matches[0];
+  const expected = rebind.expectedMoveIds.map(toID);
+  const replacement = rebind.replacementMoveIds.map(toID);
+  if (!replacement.length || replacement.length > 4 || new Set(replacement).size !== replacement.length) {
+    throw new Error(`Invalid replacement move set for ${rebind.pokemonUuid}`);
+  }
+  const sourceMoves = (pokemon.set.moves || []).map(toID);
+  const baseMoves = pokemon.baseMoveSlots.map(slot => slot.id);
+  const liveMoves = pokemon.moveSlots.map(slot => slot.id);
+  if (pokemon.transformed || JSON.stringify(sourceMoves) !== JSON.stringify(expected) ||
+      JSON.stringify(baseMoves) !== JSON.stringify(expected) ||
+      JSON.stringify(liveMoves) !== JSON.stringify(expected) ||
+      !pokemon.baseMoveSlots.every((slot, index) => slot === pokemon.moveSlots[index])) {
+    throw new Error(`Unsafe history-sensitive move-set rebinding for ${rebind.pokemonUuid}`);
+  }
+  const removed = new Set(expected.filter(moveId => !replacement.includes(moveId)));
+  const historyMoves = [pokemon.lastMove?.id, pokemon.lastMoveUsed?.id, pokemon.moveThisTurn];
+  for (const volatile of Object.values(pokemon.volatiles || {})) historyMoves.push(volatile?.move);
+  if (historyMoves.some(moveId => removed.has(toID(moveId)))) {
+    throw new Error(`Move-set rebinding would erase referenced move history for ${rebind.pokemonUuid}`);
+  }
+  const previousById = new Map(pokemon.moveSlots.map(slot => [slot.id, slot]));
+  const rebound = replacement.map(moveId => previousById.get(moveId) || moveSlot(battle, moveId));
+  pokemon.set.moves = replacement.slice();
+  pokemon.set.movesInfo = rebound.map(slot => ({ pp: slot.maxpp, maxPp: slot.maxpp }));
+  pokemon.baseMoveSlots = rebound;
+  pokemon.moveSlots = rebound.slice();
+  return pokemon;
+}
+
+function refreshMoveDisables(battle, pokemon) {
+  if (!pokemon.isActive || battle.requestState !== 'move') return;
+  pokemon.maybeDisabled = false;
+  for (const slot of pokemon.moveSlots) {
+    slot.disabled = false;
+    slot.disabledSource = '';
+  }
+  battle.runEvent('DisableMove', pokemon);
+  for (const slot of pokemon.moveSlots) {
+    const activeMove = battle.dex.getActiveMove(slot.id);
+    battle.singleEvent('DisableMove', activeMove, null, pokemon);
+    if (activeMove.flags['cantusetwice'] && pokemon.lastMove?.id === slot.id) {
+      pokemon.disableMove(pokemon.lastMove.id);
+    }
+  }
+}
+
+function refreshRequestsAfterRebind(battle, reboundPokemon) {
+  const reboundIds = new Set(reboundPokemon.map(pokemon => pokemon.uuid));
+  const probe = Battle.fromJSON(battle.toJSON());
+  probe.restart(function() {});
+  try {
+    const probeByUuid = new Map(probe.sides.flatMap(side => side.pokemon)
+      .map(pokemon => [pokemon.uuid, pokemon]));
+    for (const uuid of reboundIds) {
+      const pokemon = probeByUuid.get(uuid);
+      if (!pokemon) throw new Error(`Rebound request probe lost Pokemon ${uuid}`);
+      refreshMoveDisables(probe, pokemon);
+    }
+    const requests = probe.getRequests(probe.requestState);
+    const originalByUuid = new Map(battle.sides.flatMap(side => side.pokemon)
+      .map(pokemon => [pokemon.uuid, pokemon]));
+    for (const uuid of reboundIds) {
+      const original = originalByUuid.get(uuid);
+      const checked = probeByUuid.get(uuid);
+      if (original.moveSlots.length !== checked.moveSlots.length ||
+          original.moveSlots.some((slot, index) => slot.id !== checked.moveSlots[index].id)) {
+        throw new Error(`Rebound request probe changed move identity for ${uuid}`);
+      }
+      original.maybeDisabled = checked.maybeDisabled;
+      for (let index = 0; index < original.moveSlots.length; index++) {
+        original.moveSlots[index].disabled = checked.moveSlots[index].disabled;
+        original.moveSlots[index].disabledSource = checked.moveSlots[index].disabledSource;
+      }
+    }
+    for (let index = 0; index < battle.sides.length; index++) {
+      battle.sides[index].activeRequest = requests[index];
+    }
+  } finally {
+    probe.destroy();
+  }
+}
+
 globalThis.mbcCreateBattle = function(payload) {
   const input = JSON.parse(payload);
   const openingByUuid = indexPokemonOpeningState(input.openingState);
@@ -235,6 +486,7 @@ globalThis.mbcCreateBattle = function(payload) {
     seed: input.seed,
     deserialized: !!input.openingState,
   });
+  ensureExecutedMoveOrder(battle);
   try {
     battle.setPlayer('p1', { name: 'p1', team: input.p1Team.map(set => normalizeSet(set, openingByUuid)) });
     battle.setPlayer('p2', { name: 'p2', team: input.p2Team.map(set => normalizeSet(set, openingByUuid)) });
@@ -249,16 +501,48 @@ globalThis.mbcCreateBattle = function(payload) {
   }
 };
 
+globalThis.mbcRebindBattleMoves = function(payload) {
+  const input = JSON.parse(payload);
+  if (!Array.isArray(input.rebindings) || !input.rebindings.length) {
+    throw new Error('At least one native move-set rebinding is required');
+  }
+  const battle = Battle.fromJSON(JSON.parse(input.snapshotJson));
+  battle.restart(function() {});
+  try {
+    const reboundPokemon = input.rebindings.map(rebind => rebindPokemonMoves(battle, rebind));
+    refreshRequestsAfterRebind(battle, reboundPokemon);
+    return JSON.stringify(frame(battle));
+  } finally {
+    battle.destroy();
+  }
+};
+
 globalThis.mbcBranchBattle = function(payload) {
   const input = JSON.parse(payload);
+  const forcedDamagePercents = new Map();
+  for (const forced of input.forcedDamageRolls || []) {
+    if (!Number.isInteger(forced.damageCallIndex) || forced.damageCallIndex < 0 ||
+        !Number.isInteger(forced.percent) || forced.percent < 85 || forced.percent > 100 ||
+        forcedDamagePercents.has(forced.damageCallIndex)) {
+      throw new Error(`Invalid or duplicate forced native damage roll ${JSON.stringify(forced)}`);
+    }
+    forcedDamagePercents.set(forced.damageCallIndex, forced.percent);
+  }
+  if (forcedDamagePercents.size && !input.captureDamageRolls) {
+    throw new Error('Forced native damage rolls require damage evidence capture');
+  }
   const battle = Battle.fromJSON(JSON.parse(input.snapshotJson));
   battle.restart(function() {});
   try {
     const p1Wait = !!(battle.p1.activeRequest && battle.p1.activeRequest.wait);
     const p2Wait = !!(battle.p2.activeRequest && battle.p2.activeRequest.wait);
-    submitRequestedChoice(battle, 'p1', input.p1Choice, p1Wait);
-    submitRequestedChoice(battle, 'p2', input.p2Choice, p2Wait);
-    return JSON.stringify(frame(battle));
+    const actualHits = recordExecutionTrace(battle, () => {
+      submitRequestedChoice(battle, 'p1', input.p1Choice, p1Wait);
+      submitRequestedChoice(battle, 'p2', input.p2Choice, p2Wait);
+    }, { forcedDamagePercents });
+    const damageEvidence = input.captureDamageRolls && actualHits.length ?
+      collectDamageRollEvidence(input, actualHits, forcedDamagePercents) : [];
+    return JSON.stringify(frame(battle, damageEvidence));
   } finally {
     battle.destroy();
   }

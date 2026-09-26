@@ -9,10 +9,16 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMechanicCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTargetSlot
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffectiveness
 
 /** Builds only actions that the synthetic Showdown side's current request makes legal. */
 internal object NativeShowdownRequestActionFactory {
-    fun actions(side: BattleSide, frame: NativeBattleFrame): List<BattleActionCandidate> {
+    fun actions(
+        side: BattleSide,
+        frame: NativeBattleFrame,
+        maxVoluntarySwitchTargetsPerSlot: Int? = null,
+    ): List<BattleActionCandidate> {
+        require(maxVoluntarySwitchTargetsPerSlot == null || maxVoluntarySwitchTargetsPerSlot > 0)
         if (frame.ended) return emptyList()
         val request = parseRequest(requestJson(side, frame))
         require(!request.boolean("teamPreview")) {
@@ -30,13 +36,19 @@ internal object NativeShowdownRequestActionFactory {
         }
         val active = request.getAsJsonArray("active")
             ?: throw IllegalArgumentException("Native Showdown request has no move, switch or wait action")
+        // Forced and pivot replacements returned above are never pruned. Only future ordinary
+        // move requests receive a bounded voluntary-switch set, before double combinations form.
+        val permittedSwitches = maxVoluntarySwitchTargetsPerSlot?.let { limit ->
+            preferredVoluntarySwitches(side, frame, active, limit)
+        }
         val bySlot = active.mapIndexed { slot, element ->
             if (element.isJsonNull) {
                 listOf(passAction(side, slot))
             } else {
                 val activeRequest = element.asJsonObject
                 moveActions(side, slot, activeRequest, frame) +
-                    if (activeRequest.boolean("trapped")) emptyList() else switchActions(side, slot, frame)
+                    if (activeRequest.boolean("trapped")) emptyList() else
+                        switchActions(side, slot, frame, permittedSwitches?.get(slot))
             }
         }
         return combine(side, bySlot)
@@ -98,8 +110,10 @@ internal object NativeShowdownRequestActionFactory {
         side: BattleSide,
         actorSlot: Int,
         frame: NativeBattleFrame,
+        permittedPokemonUuids: Set<String>? = null,
     ): List<BattleActionCandidate> = fullTeam(side, frame).asSequence()
         .filter { it.activeSlot == null && it.hp > 0 }
+        .filter { permittedPokemonUuids == null || it.uuid in permittedPokemonUuids }
         .map { pokemon ->
             BattleActionCandidate(
                 actionId = nativeActionId(side, "slot:$actorSlot:switch:${pokemon.uuid}"),
@@ -110,6 +124,39 @@ internal object NativeShowdownRequestActionFactory {
             )
         }
         .toList()
+
+    /** Cheap ordering proxy, not a claim that the retained switch is globally optimal. */
+    private fun preferredVoluntarySwitches(
+        side: BattleSide,
+        frame: NativeBattleFrame,
+        active: com.google.gson.JsonArray,
+        limit: Int,
+    ): Map<Int, Set<String>> {
+        val opposingTypes = activeTeam(opposite(side), frame).asSequence()
+            .filter { it.hp > 0 }
+            .flatMap { it.types.asSequence() }
+            .toSet()
+        val bench = fullTeam(side, frame).asSequence()
+            .filter { it.activeSlot == null && it.hp > 0 }
+            .sortedWith(compareByDescending<NativePokemonFrame> { pokemon ->
+                val worstStab = opposingTypes.maxOfOrNull { attackingType ->
+                    StandardTypeEffectiveness.multiplier(attackingType, pokemon.types.toSet())
+                } ?: 1.0
+                (pokemon.hp.toDouble() / pokemon.maxHp) / maxOf(0.5, worstStab)
+            }.thenBy { it.uuid })
+            .toList()
+        val reserved = mutableSetOf<String>()
+        return active.mapIndexedNotNull { slot, element ->
+            val request = element.takeIf { it.isJsonObject }?.asJsonObject
+            if (request == null || request.boolean("trapped") || bench.isEmpty()) return@mapIndexedNotNull null
+            // Distinct first choices preserve at least one legal simultaneous double switch.
+            val first = bench.firstOrNull { it.uuid !in reserved } ?: bench.first()
+            reserved += first.uuid
+            val chosen = (listOf(first) + bench.filter { it.uuid != first.uuid }.take(limit - 1))
+                .mapTo(linkedSetOf()) { it.uuid }
+            slot to chosen
+        }.toMap()
+    }
 
     private fun targetVariants(
         target: String,

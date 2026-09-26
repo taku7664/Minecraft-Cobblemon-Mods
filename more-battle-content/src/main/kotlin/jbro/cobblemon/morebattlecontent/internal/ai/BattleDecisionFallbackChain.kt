@@ -33,6 +33,7 @@ internal class BattleBrainDecisionCoordinator(
     fun decide(
         endpoint: BattleBrainEndpoint,
         context: BattleDecisionContext,
+        enforceTimeout: Boolean = true,
     ): CompletionStage<BattleBrainAttempt> {
         val result = CompletableFuture<BattleBrainAttempt>()
         val pendingDecision = AtomicReference<CompletableFuture<BattleDecision>?>()
@@ -46,41 +47,44 @@ internal class BattleBrainDecisionCoordinator(
                 reportBrainFailureSafely(context, failure)
             }
         }
-        val remainingMillis = (context.deadlineEpochMillis - nowEpochMillis())
-            .coerceIn(0L, maximumDecisionMillis)
-        if (remainingMillis == 0L) {
-            result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.DEADLINE_EXPIRED))
-            return result
-        }
-
-        val timeout = try {
-            scheduler.schedule(
-                {
-                    if (result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.TIMEOUT))) {
-                        cancelPendingDecisionSafely()
-                    }
-                },
-                remainingMillis,
-                TimeUnit.MILLISECONDS,
-            )
-        } catch (failure: Exception) {
-            result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))
-            reportBrainFailureSafely(context, failure)
-            return result
-        } catch (failure: LinkageError) {
-            result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))
-            reportBrainFailureSafely(context, failure)
-            return result
+        val timeout = if (enforceTimeout) {
+            val remainingMillis = (context.deadlineEpochMillis - nowEpochMillis())
+                .coerceIn(0L, maximumDecisionMillis)
+            if (remainingMillis == 0L) {
+                result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.DEADLINE_EXPIRED))
+                return result
+            }
+            try {
+                scheduler.schedule(
+                    {
+                        if (result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.TIMEOUT))) {
+                            cancelPendingDecisionSafely()
+                        }
+                    },
+                    remainingMillis,
+                    TimeUnit.MILLISECONDS,
+                )
+            } catch (failure: Exception) {
+                result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))
+                reportBrainFailureSafely(context, failure)
+                return result
+            } catch (failure: LinkageError) {
+                result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))
+                reportBrainFailureSafely(context, failure)
+                return result
+            }
+        } else {
+            null
         }
         result.whenComplete { _, _ ->
             if (result.isCancelled) {
-                timeout.cancel(false)
+                timeout?.cancel(false)
                 cancelPendingDecisionSafely()
             }
         }
         fun failBrain(throwable: Throwable) {
             if (result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))) {
-                timeout.cancel(false)
+                timeout?.cancel(false)
                 reportBrainFailureSafely(context, throwable)
             }
         }
@@ -102,7 +106,7 @@ internal class BattleBrainDecisionCoordinator(
                             } else {
                                 validate(context, decision)
                             }
-                            if (result.complete(attempt)) timeout.cancel(false)
+                            if (result.complete(attempt)) timeout?.cancel(false)
                             if (failed) throwable?.let { reportBrainFailureSafely(context, it) }
                         } catch (exception: Exception) {
                             failBrain(exception)
@@ -117,11 +121,11 @@ internal class BattleBrainDecisionCoordinator(
                 }
             }
         } catch (exception: Exception) {
-            timeout.cancel(false)
+            timeout?.cancel(false)
             result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))
             reportBrainFailureSafely(context, exception)
         } catch (error: LinkageError) {
-            timeout.cancel(false)
+            timeout?.cancel(false)
             result.complete(BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE))
             reportBrainFailureSafely(context, error)
         }
@@ -293,12 +297,17 @@ internal class BattleDecisionFallbackChain(
         local: BattleBrainEndpoint?,
         context: BattleDecisionContext,
         localContext: BattleDecisionContext = context,
+        enforceTimeout: Boolean = true,
     ): CompletionStage<BattleDecisionResolution> {
         if (primary == null && local == null) {
             return CompletableFuture.completedFuture(BattleDecisionResolution.baselineRequired(emptyList()))
         }
-        val primaryAttempt = primary?.let { coordinator.decide(it, context).toCompletableFuture() }
-        val localAttempt = local?.let { coordinator.decide(it, localContext).toCompletableFuture() }
+        val primaryAttempt = primary?.let {
+            coordinator.decide(it, context, enforceTimeout).toCompletableFuture()
+        }
+        val localAttempt = local?.let {
+            coordinator.decide(it, localContext, enforceTimeout).toCompletableFuture()
+        }
 
         if (primaryAttempt == null) {
             val resolution = localAttempt!!.thenApply { attempt ->

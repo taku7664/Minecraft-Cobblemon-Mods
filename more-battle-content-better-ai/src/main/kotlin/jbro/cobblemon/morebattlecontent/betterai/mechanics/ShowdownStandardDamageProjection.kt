@@ -102,8 +102,8 @@ internal object ShowdownStandardDamageProjection {
         require(level > 0)
         require(power.minimum > 0 && power.maximum >= power.minimum)
         require(targetHpFraction.isFinite() && targetHpFraction in 0.0..1.0)
-        // 2.0 is the Terastallized case, where the move matches both the original type and the Tera
-        // type. Showdown treats it as its own modifier rather than a second application of the 1.5.
+        // Besides ordinary and matching-Tera STAB, Stellar gives an off-type move a one-use
+        // 4915/4096 modifier. Keep the exact fixed-point ratio accepted here and below.
         require(stab in SUPPORTED_SAME_TYPE_BONUSES)
         require(typeMultiplier in setOf(0.0, 0.25, 0.5, 1.0, 2.0, 4.0))
         require(spreadMultiplier == 1.0 || spreadMultiplier == 0.75)
@@ -180,6 +180,7 @@ internal object ShowdownStandardDamageProjection {
     private fun applySameTypeBonus(value: Int, stab: Double): Int = when (stab) {
         1.5 -> showdownModify(value, 3, 2)
         2.0 -> showdownModify(value, 2, 1)
+        STELLAR_OTHER_FIRST_USE -> showdownModify(value, 4915, 4096)
         else -> value
     }
 
@@ -194,7 +195,8 @@ internal object ShowdownStandardDamageProjection {
         return ((value.toLong() * modifier + 2047L) / 4096L).toInt()
     }
 
-    private val SUPPORTED_SAME_TYPE_BONUSES = setOf(1.0, 1.5, 2.0)
+    private const val STELLAR_OTHER_FIRST_USE = 4915.0 / 4096.0
+    private val SUPPORTED_SAME_TYPE_BONUSES = setOf(1.0, STELLAR_OTHER_FIRST_USE, 1.5, 2.0)
 
     private fun applyTypeMultiplier(value: Int, multiplier: Double): Int = when (multiplier) {
         0.0 -> 0

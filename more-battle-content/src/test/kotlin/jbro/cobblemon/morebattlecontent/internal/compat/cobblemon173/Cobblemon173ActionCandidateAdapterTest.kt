@@ -7,11 +7,15 @@ import com.cobblemon.mod.common.battles.ShowdownActionRequest
 import com.cobblemon.mod.common.battles.ShowdownMoveset
 import com.cobblemon.mod.common.battles.MoveTarget
 import com.cobblemon.mod.common.api.moves.Moves
+import com.cobblemon.mod.common.api.moves.MoveTemplate
+import com.cobblemon.mod.common.api.moves.categories.DamageCategories
+import com.cobblemon.mod.common.api.types.ElementalTypes
 import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMechanicCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveEffectKind
+import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveDamageCategory
 import jbro.cobblemon.morebattlecontent.api.ai.BattleMoveTargetPattern
 import jbro.cobblemon.morebattlecontent.api.rules.MajorBattleMechanic
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -37,6 +41,9 @@ class Cobblemon173ActionCandidateAdapterTest {
     fun `public move effects use embedded data but suppress a datapack override`() {
         val recover = requireNotNull(Cobblemon173ActionCandidateAdapter.publicMoveEffects("cobblemon:recover"))
         assertTrue(recover.effects.any { it.kind == BattleMoveEffectKind.HEAL_FRACTION })
+        val roost = requireNotNull(Cobblemon173ActionCandidateAdapter.publicMoveEffects("cobblemon:roost"))
+        assertEquals(1, roost.effects.count { it.kind == BattleMoveEffectKind.HEAL_FRACTION })
+        assertTrue(roost.effects.any { it.kind == BattleMoveEffectKind.VOLATILE_STATUS && it.valueId == "roost" })
 
         val movesClass = Moves::class.java
         val instance = movesClass.getField("INSTANCE").get(null)
@@ -150,6 +157,46 @@ class Cobblemon173ActionCandidateAdapterTest {
         assertEquals(120.0, Cobblemon173ActionCandidateAdapter.publicPower(120.0))
         assertNull(Cobblemon173ActionCandidateAdapter.publicPower(-1.0))
         assertNull(Cobblemon173ActionCandidateAdapter.publicPower(Double.NaN))
+    }
+
+    @Test
+    fun `Showdown request move lookup uses ids rather than spaced display names`() {
+        val move = InBattleMove().also {
+            it.id = "stoneedge"
+            it.move = "Stone Edge"
+            it.pp = 3
+        }
+        assertEquals(
+            listOf("stoneedge"),
+            Cobblemon173ActionCandidateAdapter.requestMoveLookupIds(move, null),
+        )
+
+        // Keep a display-name fallback for noncanonical request ids, and normalize Max move names.
+        move.id = "move 3"
+        assertEquals(
+            listOf("move3", "stoneedge"),
+            Cobblemon173ActionCandidateAdapter.requestMoveLookupIds(move, null),
+        )
+        val maxMove = InBattleGimmickMove().also { it.move = "Max Rockfall" }
+        assertEquals(
+            listOf("maxrockfall"),
+            Cobblemon173ActionCandidateAdapter.requestMoveLookupIds(move, maxMove),
+        )
+
+        val lookedUp = mutableListOf<String>()
+        val details = Cobblemon173ActionCandidateAdapter.moveDetails(move, null, MoveTarget.normal) { id ->
+            lookedUp += id
+            if (id == "stoneedge") MoveTemplate(
+                name = id, num = 444, elementalType = ElementalTypes.ROCK,
+                damageCategory = DamageCategories.PHYSICAL, power = 100.0,
+                target = MoveTarget.normal, accuracy = 80.0, pp = 5,
+                priority = 0, critRatio = 1.0, effectChances = emptyArray(), weight = 50F,
+            ) else null
+        }
+        assertEquals(listOf("move3", "stoneedge"), lookedUp)
+        assertEquals(100.0, requireNotNull(details).power)
+        assertEquals(BattleMoveDamageCategory.PHYSICAL, details.damageCategory)
+        assertEquals(3, details.currentPp)
     }
 
     @Test

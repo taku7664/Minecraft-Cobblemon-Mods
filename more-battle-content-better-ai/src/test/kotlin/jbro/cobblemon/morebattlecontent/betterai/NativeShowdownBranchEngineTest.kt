@@ -9,6 +9,7 @@ import java.util.zip.ZipInputStream
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleOpeningState
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMoveSetRebinding
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonOpeningState
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonSet
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRuleRegistry
@@ -24,6 +25,152 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
 class NativeShowdownBranchEngineTest {
+    @Test
+    fun `native branch reports move recoil separately from damage`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val definition = battle("Technician").copy(
+                p1Team = battle("Technician").p1Team.map { it.copy(moves = listOf("doubleedge")) },
+            )
+            val before = engine.createBattle(definition)
+            val after = engine.branch(before.snapshotJson, "move 1", "move 1")
+
+            assertTrue(after.p1Active.single().hp < before.p1Active.single().hp)
+            assertEquals(
+                (before.p1Active.single().hp - after.p1Active.single().hp).toDouble() / before.p1Active.single().maxHp,
+                after.recoilLossP1,
+                1e-9,
+            )
+            assertEquals(0.0, after.recoilLossP2, 1e-9)
+        }
+    }
+
+    @Test
+    fun `native snapshot retains the authoritative executed move order`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(battle("Technician"))
+
+            val first = engine.branch(before.snapshotJson, "move 1", "move 1")
+            val second = engine.branch(first.snapshotJson, "move 1", "move 1")
+
+            assertEquals(
+                listOf(
+                    Triple(1, "00000000-0000-0000-0000-000000000001", "bulletpunch"),
+                    Triple(1, "00000000-0000-0000-0000-000000000002", "splash"),
+                ),
+                first.executedMoveOrder.map { Triple(it.turn, it.pokemonUuid, it.moveId) },
+            )
+            assertEquals(
+                listOf(1, 1, 2, 2),
+                second.executedMoveOrder.map { it.turn },
+                "The structured order ledger must survive Battle toJSON and fromJSON",
+            )
+        }
+    }
+
+    @Test
+    fun `move hypothesis rebinding preserves PP and an existing choice lock`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(battle("Technician", "Choice Scarf"))
+            val afterFirstMove = engine.branch(before.snapshotJson, "move 1", "move 1")
+            val bulletPunchPp = afterFirstMove.p1Active.single().moves.single { it.id == "bulletpunch" }.pp
+            val beforeRebindSnapshot = JsonParser.parseString(afterFirstMove.snapshotJson).asJsonObject
+
+            val rebound = engine.rebindMoves(
+                afterFirstMove.snapshotJson,
+                listOf(NativeMoveSetRebinding(
+                    pokemonUuid = "00000000-0000-0000-0000-000000000001",
+                    expectedMoveIds = listOf("bulletpunch", "swordsdance"),
+                    replacementMoveIds = listOf("bulletpunch", "protect"),
+                )),
+            )
+            val afterRebindSnapshot = JsonParser.parseString(rebound.snapshotJson).asJsonObject
+            val beforePokemon = afterFirstMove.p1Active.single()
+            val afterPokemon = rebound.p1Active.single()
+
+            assertEquals(listOf("bulletpunch", "protect"), rebound.p1Active.single().moves.map { it.id })
+            assertEquals(
+                bulletPunchPp,
+                rebound.p1Active.single().moves.single { it.id == "bulletpunch" }.pp,
+                "An unchanged revealed move must retain its consumed PP",
+            )
+            assertEquals(listOf("bulletpunch", "protect"), rebound.p1Active.single().sourceSet?.moves)
+            assertEquals(
+                setOf("bulletpunch"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, rebound)
+                    .mapNotNull { it.moveId }
+                    .toSet(),
+                "Rebinding another slot must not erase the active Choice lock",
+            )
+            assertTrue(
+                beforeRebindSnapshot.has("prng"),
+                "Native snapshots must expose the authoritative battle PRNG",
+            )
+            assertEquals(
+                beforeRebindSnapshot.get("prng"),
+                afterRebindSnapshot.get("prng"),
+                "Request legality probing must not consume the authoritative battle PRNG",
+            )
+            assertEquals(afterFirstMove.turn, rebound.turn)
+            assertEquals(afterFirstMove.field, rebound.field)
+            assertEquals(afterFirstMove.p2Team, rebound.p2Team)
+            assertEquals(beforePokemon.hp, afterPokemon.hp)
+            assertEquals(beforePokemon.maxHp, afterPokemon.maxHp)
+            assertEquals(beforePokemon.status, afterPokemon.status)
+            assertEquals(beforePokemon.ability, afterPokemon.ability)
+            assertEquals(beforePokemon.item, afterPokemon.item)
+            assertEquals(beforePokemon.types, afterPokemon.types)
+            assertEquals(beforePokemon.boosts, afterPokemon.boosts)
+            assertEquals(beforePokemon.volatiles, afterPokemon.volatiles)
+            assertEquals(beforePokemon.stats, afterPokemon.stats)
+        }
+    }
+
+    @Test
+    fun `move hypothesis rebinding rejects a transformed live move set`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val transformed = engine.createBattle(imposterBattle())
+
+            val failure = assertThrows(RuntimeException::class.java) {
+                engine.rebindMoves(
+                    transformed.snapshotJson,
+                    listOf(NativeMoveSetRebinding(
+                        pokemonUuid = "00000000-0000-0000-0000-000000000031",
+                        expectedMoveIds = listOf("transform"),
+                        replacementMoveIds = listOf("protect"),
+                    )),
+                )
+            }
+
+            assertTrue(failure.message.orEmpty().contains("Unsafe history-sensitive move-set rebinding"))
+        }
+    }
+
+    @Test
+    fun `move hypothesis rebinding cannot erase a move referenced by native history`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(battle("Technician"))
+            val afterBulletPunch = engine.branch(before.snapshotJson, "move 1", "move 1")
+
+            val failure = assertThrows(RuntimeException::class.java) {
+                engine.rebindMoves(
+                    afterBulletPunch.snapshotJson,
+                    listOf(NativeMoveSetRebinding(
+                        pokemonUuid = "00000000-0000-0000-0000-000000000001",
+                        expectedMoveIds = listOf("bulletpunch", "swordsdance"),
+                        replacementMoveIds = listOf("protect", "swordsdance"),
+                    )),
+                )
+            }
+
+            assertTrue(failure.message.orEmpty().contains("erase referenced move history"))
+        }
+    }
+
     @Test
     fun `native request preserves choice lock after the first move`(@TempDir directory: Path) {
         val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
@@ -42,6 +189,106 @@ class NativeShowdownBranchEngineTest {
     }
 
     @Test
+    fun `native request maps a choice lock on the second source slot`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(battle("Technician", "Choice Scarf"))
+            val afterSecondMove = engine.branch(before.snapshotJson, "move 2", "move 1")
+
+            val legal = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, afterSecondMove)
+
+            assertEquals(setOf("swordsdance"), legal.mapNotNull { it.moveId }.toSet())
+            assertTrue(legal.map {
+                NativeShowdownChoiceEncoder.encode(it, BattleSide.ALLY, afterSecondMove)
+            }.all { it.startsWith("move 2") })
+        }
+    }
+
+    @Test
+    fun `switching clears a choice lock and the next used move creates a fresh lock`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val opening = engine.createBattle(choiceSwitchBattle())
+            val locked = engine.branch(opening.snapshotJson, "move 1", "move 1")
+            assertEquals(
+                setOf("bulletpunch"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, locked).mapNotNull { it.moveId }.toSet(),
+            )
+
+            val toBench = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, locked)
+                .single { it.switchPokemonId?.toString()?.endsWith("0003") == true }
+            val benched = engine.branch(
+                locked.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(toBench, BattleSide.ALLY, locked),
+                "move 1",
+            )
+            val back = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, benched)
+                .single { it.switchPokemonId?.toString()?.endsWith("0001") == true }
+            val returned = engine.branch(
+                benched.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(back, BattleSide.ALLY, benched),
+                "move 1",
+            )
+
+            assertEquals(
+                setOf("bulletpunch", "swordsdance"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, returned).mapNotNull { it.moveId }.toSet(),
+                "A returned Choice holder must not retain its pre-switch lock",
+            )
+            val relocked = engine.branch(returned.snapshotJson, "move 2", "move 1")
+            assertEquals(
+                setOf("swordsdance"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, relocked).mapNotNull { it.moveId }.toSet(),
+            )
+        }
+    }
+
+    @Test
+    fun `trick removing a choice item immediately exposes every move next request`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val opening = engine.createBattle(choiceTrickBattle())
+            assertEquals(
+                setOf("trick", "psychic"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, opening).mapNotNull { it.moveId }.toSet(),
+                "A Choice item must not lock a move before the holder has acted",
+            )
+
+            val afterTrick = engine.branch(opening.snapshotJson, "move 1", "move 1")
+
+            assertEquals("leftovers", afterTrick.p1Active.single().item)
+            assertEquals("choicescarf", afterTrick.p2Active.single().item)
+            assertEquals(
+                setOf("trick", "psychic"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, afterTrick).mapNotNull { it.moveId }.toSet(),
+                "Losing the Choice item must stop its old lock from disabling moves",
+            )
+            assertEquals(
+                setOf("splash"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, afterTrick).mapNotNull { it.moveId }.toSet(),
+                "The recipient used Splash while holding the received Scarf and must be locked by native rules",
+            )
+        }
+    }
+
+    @Test
+    fun `knock off removing a choice item clears its native move restriction`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val opening = engine.createBattle(choiceRemovalBattle())
+            val afterRemoval = engine.branch(opening.snapshotJson, "move 1", "move 1")
+
+            assertEquals("", afterRemoval.p1Active.single().item)
+            assertEquals(
+                setOf("tackle", "swordsdance"),
+                NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, afterRemoval)
+                    .mapNotNull { it.moveId }.toSet(),
+                "A native Choice lock must stop disabling moves as soon as Knock Off removes the item",
+            )
+        }
+    }
+
+    @Test
     fun `native Tera choice changes type and survives the next branch depth`(@TempDir directory: Path) {
         val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
         NativeShowdownBranchEngine.open(engineRoot).use { engine ->
@@ -56,6 +303,8 @@ class NativeShowdownBranchEngineTest {
 
             val afterTera = engine.branch(before.snapshotJson, teraChoice, "move 1")
             assertEquals(listOf("Fire"), afterTera.p1Active.single().types)
+            assertEquals(setOf("Bug", "Steel"), afterTera.p1Active.single().baseStabTypes.toSet())
+            assertEquals("Fire", afterTera.p1Active.single().terastallizedType)
             assertEquals("Fire", afterTera.p1Active.single().sourceSet?.teraType)
             assertTrue(NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, afterTera).none {
                 it.mechanic?.mechanicId == "tera"
@@ -63,7 +312,139 @@ class NativeShowdownBranchEngineTest {
 
             val afterNextTurn = engine.branch(afterTera.snapshotJson, "move 1", "move 1")
             assertEquals(listOf("Fire"), afterNextTurn.p1Active.single().types)
+            assertEquals(setOf("Bug", "Steel"), afterNextTurn.p1Active.single().baseStabTypes.toSet())
+            assertEquals("Fire", afterNextTurn.p1Active.single().terastallizedType)
             assertEquals("Fire", afterNextTurn.p1Active.single().sourceSet?.teraType)
+        }
+    }
+
+    @Test
+    fun `native Tera clears an added type from retained base stab`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(addedTypeBeforeTeraBattle())
+            val setup = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, before).single {
+                it.moveId == "swordsdance" && it.mechanic == null
+            }
+            val addType = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, before).single {
+                it.moveId == "forestscurse" && it.mechanic == null
+            }
+            val withAddedType = engine.branch(
+                before.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(setup, BattleSide.ALLY, before),
+                NativeShowdownChoiceEncoder.encode(addType, BattleSide.OPPONENT, before),
+            )
+
+            assertEquals(setOf("Bug", "Steel", "Grass"), withAddedType.p1Active.single().types.toSet())
+            assertEquals(setOf("Bug", "Steel", "Grass"), withAddedType.p1Active.single().baseStabTypes.toSet())
+
+            val tera = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, withAddedType).single {
+                it.moveId == "bulletpunch" && it.mechanic?.mechanicId == "tera"
+            }
+            val wait = NativeShowdownRequestActionFactory.actions(BattleSide.OPPONENT, withAddedType).single {
+                it.moveId == "splash" && it.mechanic == null
+            }
+            val afterTera = engine.branch(
+                withAddedType.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(tera, BattleSide.ALLY, withAddedType),
+                NativeShowdownChoiceEncoder.encode(wait, BattleSide.OPPONENT, withAddedType),
+            )
+
+            assertEquals(listOf("Fire"), afterTera.p1Active.single().types)
+            assertEquals(setOf("Bug", "Steel"), afterTera.p1Active.single().baseStabTypes.toSet())
+            assertEquals("Fire", afterTera.p1Active.single().terastallizedType)
+        }
+    }
+
+    @Test
+    fun `native Stellar records each boosted move type only after its first use`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(stellarBattle())
+            assertTrue(before.p1Active.single().stellarBoostedTypes.isEmpty())
+            val firstPsychic = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, before).single {
+                it.moveId == "psychic" && it.mechanic?.mechanicId == "tera"
+            }
+            val first = engine.branch(
+                before.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(firstPsychic, BattleSide.ALLY, before),
+                "move 1",
+            )
+            assertEquals("Stellar", first.p1Active.single().terastallizedType)
+            assertEquals(listOf("Psychic"), first.p1Active.single().stellarBoostedTypes)
+
+            val repeated = engine.branch(first.snapshotJson, "move 1", "move 1")
+            assertEquals(listOf("Psychic"), repeated.p1Active.single().stellarBoostedTypes)
+
+            val secondType = engine.branch(repeated.snapshotJson, "move 2", "move 1")
+            assertEquals(setOf("Psychic", "Electric"), secondType.p1Active.single().stellarBoostedTypes.toSet())
+        }
+    }
+
+    @Test
+    fun `native Terapagos Stellar keeps every type boost reusable`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(terapagosStellarBattle())
+            val firstTackle = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, before).single {
+                it.moveId == "tackle" && it.mechanic?.mechanicId == "tera"
+            }
+            val first = engine.branch(
+                before.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(firstTackle, BattleSide.ALLY, before),
+                "move 1",
+            )
+            assertEquals("terapagosstellar", first.p1Active.single().species)
+            assertEquals("Stellar", first.p1Active.single().terastallizedType)
+            assertTrue(first.p1Active.single().stellarBoostedTypes.isEmpty())
+
+            val repeated = engine.branch(first.snapshotJson, "move 1", "move 1")
+            assertTrue(repeated.p1Active.single().stellarBoostedTypes.isEmpty())
+        }
+    }
+
+    @Test
+    fun `native stance change updates form without changing its base stab types`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(stanceChangeBattle())
+            assertTrue(before.p1Active.single().species.contains("blade"))
+            val kingShield = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, before).single {
+                it.moveId == "kingsshield" && it.mechanic == null
+            }
+
+            val after = engine.branch(
+                before.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(kingShield, BattleSide.ALLY, before),
+                "move 1",
+            )
+
+            assertEquals("aegislash", after.p1Active.single().species)
+            assertEquals(setOf("Steel", "Ghost"), after.p1Active.single().types.toSet())
+            assertEquals(setOf("Steel", "Ghost"), after.p1Active.single().baseStabTypes.toSet())
+            assertEquals("", after.p1Active.single().terastallizedType)
+        }
+    }
+
+    @Test
+    fun `native Ogerpon Tera changes form while preserving its base stab types`(@TempDir directory: Path) {
+        val engineRoot = extractBundledShowdown(directory.resolve("showdown"))
+        NativeShowdownBranchEngine.open(engineRoot).use { engine ->
+            val before = engine.createBattle(ogerponTeraBattle())
+            val teraAction = NativeShowdownRequestActionFactory.actions(BattleSide.ALLY, before).single {
+                it.moveId == "ivycudgel" && it.mechanic?.mechanicId == "tera"
+            }
+
+            val after = engine.branch(
+                before.snapshotJson,
+                NativeShowdownChoiceEncoder.encode(teraAction, BattleSide.ALLY, before),
+                "move 1",
+            )
+
+            assertEquals("ogerponhearthflametera", after.p1Active.single().species)
+            assertEquals(listOf("Fire"), after.p1Active.single().types)
+            assertEquals(setOf("Grass", "Fire"), after.p1Active.single().baseStabTypes.toSet())
+            assertEquals("Fire", after.p1Active.single().terastallizedType)
         }
     }
 
@@ -343,6 +724,176 @@ class NativeShowdownBranchEngineTest {
                 uuid = "00000000-0000-0000-0000-000000000002",
             ),
         ),
+    )
+
+    private fun choiceSwitchBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(307, 311, 313, 317),
+        p1Team = listOf(
+            NativePokemonSet(
+                name = "Choice Actor",
+                species = "Scizor",
+                moves = listOf("bulletpunch", "swordsdance"),
+                ability = "technician",
+                item = "choicescarf",
+                uuid = "00000000-0000-0000-0000-000000000001",
+            ),
+            NativePokemonSet(
+                name = "Bench",
+                species = "Mew",
+                moves = listOf("splash"),
+                ability = "synchronize",
+                uuid = "00000000-0000-0000-0000-000000000003",
+            ),
+        ),
+        p2Team = listOf(NativePokemonSet(
+            name = "Observer",
+            species = "Blissey",
+            moves = listOf("splash"),
+            ability = "naturalcure",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
+    )
+
+    private fun choiceTrickBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(331, 337, 347, 349),
+        p1Team = listOf(NativePokemonSet(
+            name = "Choice Trick",
+            species = "Mew",
+            moves = listOf("trick", "psychic"),
+            ability = "synchronize",
+            item = "choicescarf",
+            uuid = "00000000-0000-0000-0000-000000000001",
+        )),
+        p2Team = listOf(NativePokemonSet(
+            name = "Recipient",
+            species = "Blissey",
+            moves = listOf("splash", "softboiled"),
+            ability = "naturalcure",
+            item = "leftovers",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
+    )
+
+    private fun choiceRemovalBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(353, 359, 367, 373),
+        p1Team = listOf(NativePokemonSet(
+            name = "Choice Holder",
+            species = "Mew",
+            moves = listOf("tackle", "swordsdance"),
+            ability = "synchronize",
+            item = "choicescarf",
+            uuid = "00000000-0000-0000-0000-000000000001",
+        )),
+        p2Team = listOf(NativePokemonSet(
+            name = "Remover",
+            species = "Shuckle",
+            moves = listOf("knockoff"),
+            ability = "sturdy",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
+    )
+
+    private fun stanceChangeBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(211, 223, 227, 229),
+        p1Team = listOf(NativePokemonSet(
+            name = "Blade",
+            species = "Aegislash-Blade",
+            moves = listOf("kingsshield", "shadowball", "ironhead", "powergem"),
+            ability = "stancechange",
+            uuid = "00000000-0000-0000-0000-000000000001",
+        )),
+        p2Team = listOf(NativePokemonSet(
+            name = "Observer",
+            species = "Shuckle",
+            moves = listOf("splash"),
+            ability = "sturdy",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
+    )
+
+    private fun addedTypeBeforeTeraBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(71, 73, 79, 83),
+        p1Team = listOf(NativePokemonSet(
+            name = "Tera Actor",
+            species = "Scizor",
+            moves = listOf("bulletpunch", "swordsdance"),
+            ability = "technician",
+            teraType = "Fire",
+            uuid = "00000000-0000-0000-0000-000000000001",
+        )),
+        p2Team = listOf(NativePokemonSet(
+            name = "Type Adder",
+            species = "Mew",
+            moves = listOf("forestscurse", "splash"),
+            ability = "synchronize",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
+    )
+
+    private fun stellarBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(89, 97, 101, 103),
+        p1Team = listOf(NativePokemonSet(
+            name = "Stellar Actor",
+            species = "Mew",
+            moves = listOf("psychic", "thunderbolt"),
+            ability = "synchronize",
+            teraType = "Stellar",
+            uuid = "00000000-0000-0000-0000-000000000001",
+        )),
+        p2Team = listOf(NativePokemonSet(
+            name = "Observer",
+            species = "Blissey",
+            moves = listOf("splash"),
+            ability = "naturalcure",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
+    )
+
+    private fun terapagosStellarBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(107, 109, 113, 127),
+        p1Team = listOf(NativePokemonSet(
+            name = "Terapagos",
+            species = "Terapagos-Terastal",
+            moves = listOf("tackle"),
+            ability = "terashell",
+            teraType = "Stellar",
+            uuid = "00000000-0000-0000-0000-000000000001",
+        )),
+        p2Team = listOf(NativePokemonSet(
+            name = "Observer",
+            species = "Blissey",
+            moves = listOf("splash"),
+            ability = "naturalcure",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
+    )
+
+    private fun ogerponTeraBattle() = NativeBattleDefinition(
+        formatId = "cobblemonsingles",
+        seed = listOf(257, 263, 269, 271),
+        p1Team = listOf(NativePokemonSet(
+            name = "Mask",
+            species = "Ogerpon-Hearthflame",
+            moves = listOf("ivycudgel", "hornleech"),
+            ability = "moldbreaker",
+            item = "hearthflamemask",
+            teraType = "Fire",
+            uuid = "00000000-0000-0000-0000-000000000001",
+        )),
+        p2Team = listOf(NativePokemonSet(
+            name = "Observer",
+            species = "Shuckle",
+            moves = listOf("splash"),
+            ability = "sturdy",
+            uuid = "00000000-0000-0000-0000-000000000002",
+        )),
     )
 
     private fun doubleBattle() = NativeBattleDefinition(

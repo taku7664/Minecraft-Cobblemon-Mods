@@ -14,6 +14,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerTier
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadBudget
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionEvaluator
@@ -82,6 +83,7 @@ class NativeInitialProductDecisionEvaluatorTest {
         assertEquals(listOf("world-1"), result.sessionState?.worlds?.map { it.key.hypothesisId })
         assertEquals(1, result.sessionState?.publicTurn)
         assertEquals(null, result.sessionState?.pendingOwnAction)
+        assertEquals(BattleTrainerTier.INTRODUCTORY, result.sessionState?.trainerTier)
     }
 
     @Test

@@ -12,16 +12,12 @@ public final class BetterMusicClientCommands {
     private BetterMusicClientCommands() {
     }
 
-    public static void register(
-        BetterMusicConfigManager configManager,
-        GeneratedMusicPackController packController
-    ) {
+    public static void register(BetterMusicConfigManager configManager) {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
             dispatcher.register(
                 literal("bcm")
                     .then(literal("reload").executes(context -> reload(
                         configManager,
-                        packController,
                         context.getSource()
                     )))
             )
@@ -30,34 +26,30 @@ public final class BetterMusicClientCommands {
 
     private static int reload(
         BetterMusicConfigManager configManager,
-        GeneratedMusicPackController packController,
         FabricClientCommandSource source
     ) {
-        var result = configManager.prepareReload();
-        if (result.success()) {
-            var snapshot = result.snapshot().orElseThrow();
-            var client = net.minecraft.client.Minecraft.getInstance();
-            packController.prepareAndReload(
-                snapshot,
-                () -> configManager.activate(snapshot)
-            ).thenAcceptAsync(packFailure -> {
-                if (packFailure.isPresent()) {
-                    source.sendError(Component.translatable(
-                        "better_cobblemon_music.command.reload.failure",
-                        packFailure.orElseThrow()
-                    ));
-                    return;
-                }
+        var client = net.minecraft.client.Minecraft.getInstance();
+        long before = configManager.lastReload().revision();
+        client.reloadResourcePacks().whenCompleteAsync((ignored, failure) -> {
+            if (failure != null) {
+                source.sendError(Component.translatable(
+                    "better_cobblemon_music.command.reload.failure",
+                    failure.getMessage()
+                ));
+                return;
+            }
+            var result = configManager.lastReload();
+            if (result.outcome() == BetterMusicConfigManager.Outcome.APPLIED && result.revision() > before) {
                 source.sendFeedback(Component.translatable(
                     "better_cobblemon_music.command.reload.success"
                 ).withStyle(ChatFormatting.GREEN));
-            }, client);
-            return 1;
-        }
-        source.sendError(Component.translatable(
-            "better_cobblemon_music.command.reload.failure",
-            result.message()
-        ));
-        return 0;
+                return;
+            }
+            source.sendError(Component.translatable(
+                "better_cobblemon_music.command.reload.failure",
+                result.message()
+            ));
+        }, client);
+        return 1;
     }
 }

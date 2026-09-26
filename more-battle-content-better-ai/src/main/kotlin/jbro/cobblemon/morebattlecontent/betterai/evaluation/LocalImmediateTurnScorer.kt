@@ -49,7 +49,8 @@ internal object LocalImmediateTurnScorer {
         val beforeField = positionField(before)
         val afterField = positionField(after)
         return LocalImmediateTurnScore(
-            materialDelta = afterMaterial - beforeMaterial,
+            materialDelta = afterMaterial - beforeMaterial +
+                LocalTerminalOutcomeValue.evaluate(after) - LocalTerminalOutcomeValue.evaluate(before),
             stageDelta = stageDelta,
             statusDelta = afterStatus - beforeStatus,
             speedControlDelta = speedControlDelta,
@@ -73,6 +74,9 @@ internal object LocalImmediateTurnScorer {
         tuning,
         shouldContinue,
     ).total * probability.coerceIn(0.0, 1.0)
+
+    /** Native search has no immediate-delta scorer, so retain durable public effects at its leaf. */
+    fun positionEffectValue(state: BattleStateView): Double = positionStatus(state) + positionField(state)
 
     private fun positionStatus(state: BattleStateView): Double =
         sideStatusBurden(state, BattleSide.OPPONENT) - sideStatusBurden(state, BattleSide.ALLY)

@@ -8,6 +8,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
 internal data class NativeSearchPosition(
     val frame: NativeBattleFrame,
     val state: BattleStateView,
+    val recoilCredit: Double = 0.0,
 )
 
 /**
@@ -28,8 +29,12 @@ internal class NativeShowdownSearchTree(
         state = NativeBattleStateAdapter.adapt(rootFrame, publicTemplate),
     )
 
-    fun actions(position: NativeSearchPosition, side: BattleSide): List<BattleActionCandidate> =
-        NativeShowdownRequestActionFactory.actions(side, position.frame)
+    fun actions(
+        position: NativeSearchPosition,
+        side: BattleSide,
+        maxVoluntarySwitchTargetsPerSlot: Int? = null,
+    ): List<BattleActionCandidate> =
+        NativeShowdownRequestActionFactory.actions(side, position.frame, maxVoluntarySwitchTargetsPerSlot)
 
     fun branch(
         position: NativeSearchPosition,
@@ -45,6 +50,14 @@ internal class NativeShowdownSearchTree(
         return NativeSearchPosition(
             frame = nextFrame,
             state = NativeBattleStateAdapter.adapt(nextFrame, position.state),
+            // Material still charges the normal HP loss and self-KO. Refund half of the
+            // move's recoil HP fraction, leaving 50 points per full HP bar.
+            recoilCredit = position.recoilCredit +
+                (nextFrame.recoilLossP1 - nextFrame.recoilLossP2) * RECOIL_REFUND,
         )
+    }
+
+    private companion object {
+        const val RECOIL_REFUND = 0.5
     }
 }

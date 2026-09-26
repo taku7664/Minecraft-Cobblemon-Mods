@@ -54,7 +54,7 @@ internal data class NativeOpponentRosterCompilation(
     }
 }
 
-/** Deterministically enumerates private 3/4-selection worlds from an opaque public team preview. */
+/** Deterministically enumerates private selection worlds from an opaque public team preview. */
 internal object NativeOpponentRosterHypothesisCompiler {
     fun compile(
         state: BattleStateView,
@@ -64,17 +64,17 @@ internal object NativeOpponentRosterHypothesisCompiler {
         val issues = linkedSetOf<NativeOpponentRosterIssue>()
         val revealed = state.pokemon.filter { it.side == BattleSide.OPPONENT }
             .sortedBy { it.battlePokemonId.toString() }
-        val expectedSelectionSize = when (state.format) {
-            BattleFormat.SINGLE -> 3
-            BattleFormat.DOUBLE -> 4
+        val selectionRuleSupported = when (state.format) {
+            BattleFormat.SINGLE -> true
+            BattleFormat.DOUBLE ->
+                preview.pokemon.size == BattleOpponentTeamPreviewView.MAX_PREVIEW_SIZE &&
+                    preview.selectionSize in setOf(4, preview.pokemon.size)
         }
         val expectedActiveSlots = when (state.format) {
             BattleFormat.SINGLE -> setOf(0)
             BattleFormat.DOUBLE -> setOf(0, 1)
         }
-        if (preview.pokemon.size != BattleOpponentTeamPreviewView.MAX_PREVIEW_SIZE ||
-            preview.selectionSize != expectedSelectionSize
-        ) {
+        if (!selectionRuleSupported) {
             issues += NativeOpponentRosterIssue(NativeOpponentRosterIssueCode.UNSUPPORTED_SELECTION_RULE)
         }
         if (state.turn !in 0..1 ||
@@ -217,9 +217,15 @@ internal object NativeOpponentRosterHypothesisCompiler {
     ): Boolean {
         val revealedForm = revealed.formId
         val previewForm = preview.formId
-        return normalizedId(revealed.speciesId) == normalizedId(preview.speciesId) &&
+        val species = normalizedId(revealed.speciesId)
+        val baseIdentity = species == normalizedId(preview.speciesId) &&
             (revealedForm == null || previewForm == null ||
                 normalizedId(revealedForm) == normalizedId(previewForm))
+        // A Showdown switch line names the form (for example Zoroark-Hisui), while the
+        // Cobblemon team preview names the base species plus a separate form.
+        val showdownIdentity = revealed.speciesId.startsWith("showdown:") &&
+            preview.showdownSpeciesId?.let { species == normalizedId(it) } == true
+        return baseIdentity || showdownIdentity
     }
 
     /**

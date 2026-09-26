@@ -6,3 +6,5 @@
 #define SATURATION 1.15 // [0.90 1.00 1.08 1.15 1.25]
 #define BLOOM_STRENGTH 0.07 // [0.00 0.04 0.07 0.10 0.14]
 #define FOG_STRENGTH 0.65 // [0.00 0.35 0.65 0.85 1.00]
+#define BORDER_FOG
+#define BORDER_FOG_START 0.70 // [0.55 0.60 0.65 0.70 0.75 0.80 0.85]

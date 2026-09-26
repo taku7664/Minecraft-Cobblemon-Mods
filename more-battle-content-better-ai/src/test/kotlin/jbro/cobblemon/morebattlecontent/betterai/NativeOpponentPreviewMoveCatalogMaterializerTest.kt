@@ -22,6 +22,49 @@ import org.junit.jupiter.api.Test
 
 class NativeOpponentPreviewMoveCatalogMaterializerTest {
     @Test
+    fun `boss preview move marginals form a normalized bounded zero one two stab posterior`() {
+        val result = NativeOpponentPreviewMoveCatalogMaterializer.materialize(
+            roster = roster(),
+            preview = preview(),
+            sourceCatalog = BattlePublicActionCatalogView(emptyList()),
+            tier = BattleTrainerTier.BOSS,
+            usage = LocalMoveUsageLookup { _, _, move ->
+                when (move) {
+                    "moonblast", "shadowball" -> 0.5
+                    else -> 0.4
+                }
+            },
+        )
+
+        assertTrue(result.issues.isEmpty())
+        assertEquals(16, result.worlds.size)
+        assertEquals(1.0, result.worlds.sumOf { it.probability }, 1e-9)
+        val massByShape = result.worlds.groupBy { world ->
+            requireNotNull(world.catalog.inferredMovesForPokemon(BENCH_A)).slots.count {
+                it.group == BattleOpponentMoveGroup.STAB_ATTACK &&
+                    it.knowledge == BattleOpponentMoveKnowledge.EXPECTED
+            }
+        }.mapValues { (_, worlds) -> worlds.sumOf { it.probability } }
+        assertEquals(setOf(0, 1, 2), massByShape.keys)
+        assertEquals(0.25, massByShape.getValue(0), 1e-9)
+        assertEquals(0.50, massByShape.getValue(1), 1e-9)
+        assertEquals(0.25, massByShape.getValue(2), 1e-9)
+        val oneStabVariants = result.worlds.map { world ->
+            requireNotNull(world.catalog.inferredMovesForPokemon(BENCH_A)).slots
+                .filter {
+                    it.group == BattleOpponentMoveGroup.STAB_ATTACK &&
+                        it.knowledge == BattleOpponentMoveKnowledge.EXPECTED
+                }
+                .mapNotNull { it.moveId }
+                .toSet()
+        }.filter { it.size == 1 }.toSet()
+        assertEquals(
+            setOf(setOf("moonblast"), setOf("shadowball")),
+            oneStabVariants,
+        )
+    }
+
+    @Test
     fun `selected synthetic bench receives public slots while revealed live inference wins`() {
         val roster = roster()
         val live = BattleOpponentMoveInferenceView(ACTIVE, listOf(
@@ -54,7 +97,7 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
         )
 
         assertTrue(result.issues.isEmpty())
-        val catalog = requireNotNull(result.catalog)
+        val catalog = result.worlds.single().catalog
         assertEquals(live.slots, catalog.inferredMovesForPokemon(ACTIVE)?.slots)
         assertEquals(
             setOf(ACTIVE, BENCH_A, BENCH_B),
@@ -131,7 +174,7 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
             usage = null,
         )
 
-        assertNull(result.catalog)
+        assertTrue(result.worlds.isEmpty())
         assertEquals(
             listOf(NativeOpponentPreviewMoveCatalogIssueCode.NORMALIZED_MOVESET_INCOMPLETE),
             result.issues.map { it.code },
@@ -198,7 +241,7 @@ class NativeOpponentPreviewMoveCatalogMaterializerTest {
             null,
         )
 
-        assertNull(result.catalog)
+        assertTrue(result.worlds.isEmpty())
         assertTrue(result.issues.any { it.previewSlotId == 2 })
     }
 

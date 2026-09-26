@@ -15,6 +15,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
         tier: BattleTrainerTier,
         actualMoveIds: Map<UUID, Set<String>>,
         previous: Map<UUID, BattleOpponentMoveInferenceView> = emptyMap(),
+        rebuildSlotPreferences: Map<UUID, BattleOpponentMoveInferenceView> = emptyMap(),
         ignoredRevealPokemonIds: Set<UUID> = emptySet(),
         moveDetails: (String) -> BattleMoveCandidateView?,
     ): List<BattleOpponentMoveInferenceView> {
@@ -33,6 +34,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
                         actualMoveIds[pokemon.battlePokemonId].orEmpty(),
                         moveDetails,
                         includePublicReveals = pokemon.battlePokemonId !in ignoredRevealPokemonIds,
+                        slotPreference = rebuildSlotPreferences[pokemon.battlePokemonId],
                     )
                 } else if (pokemon.battlePokemonId in ignoredRevealPokemonIds) {
                     prior
@@ -51,6 +53,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
         actualMoveIds: Set<String>,
         moveDetails: (String) -> BattleMoveCandidateView?,
         includePublicReveals: Boolean,
+        slotPreference: BattleOpponentMoveInferenceView?,
     ): BattleOpponentMoveInferenceView {
         val slots = mutableListOf<BattleOpponentMoveSlotView>()
         val revealed = if (includePublicReveals) revealedMoves(pokemon, catalog, moveDetails) else emptyList()
@@ -89,7 +92,48 @@ internal object BattleOpponentMoveInferenceNormalizer {
             fillFixedPolicy(slots, pokemon, format, learnset, policy)
         }
         fillGuesses(slots, BattleOpponentMoveGroup.OTHER, MAX_MOVE_SLOTS - slots.size)
-        return BattleOpponentMoveInferenceView(pokemon.battlePokemonId, slots)
+        return BattleOpponentMoveInferenceView(
+            pokemon.battlePokemonId,
+            preservePublicRevealSlots(slots, slotPreference, revealed.mapTo(linkedSetOf()) { it.first }),
+        )
+    }
+
+    /**
+     * A type or form transition invalidates inferred groups, but it does not erase which logical
+     * slot a publicly revealed move already occupied. Rebuild every non-public slot from the new
+     * public identity and then put surviving public reveals back in their stable slots.
+     */
+    private fun preservePublicRevealSlots(
+        fresh: List<BattleOpponentMoveSlotView>,
+        preference: BattleOpponentMoveInferenceView?,
+        revealedMoveIds: Set<String>,
+    ): List<BattleOpponentMoveSlotView> {
+        preference ?: return fresh
+        val placed = arrayOfNulls<BattleOpponentMoveSlotView>(MAX_MOVE_SLOTS)
+        val placedMoveIds = linkedSetOf<String>()
+        preference.slots.asSequence()
+            .filter { it.knowledge == BattleOpponentMoveKnowledge.CONFIRMED }
+            .filter { it.source == BattleOpponentMoveSource.PUBLIC_REVEAL }
+            .filter { preferred -> revealedMoveIds.any { sameMove(preferred.moveId, it) } }
+            .forEach { preferred ->
+                val refreshed = fresh.singleOrNull { candidate ->
+                    preferred.moveId?.let { sameMove(candidate.moveId, it) } == true
+                } ?: return@forEach
+                placed[preferred.slot] = refreshed.copy(slot = preferred.slot)
+                refreshed.moveId?.let(placedMoveIds::add)
+            }
+        val remaining = fresh.filterNot { candidate ->
+            candidate.moveId?.let { move -> placedMoveIds.any { sameMove(it, move) } } == true
+        }.iterator()
+        placed.indices.forEach { slot ->
+            if (placed[slot] == null && remaining.hasNext()) {
+                placed[slot] = remaining.next().copy(slot = slot)
+            }
+        }
+        check(placed.all { it != null } && !remaining.hasNext()) {
+            "Rebuilt opponent move slots must remain a complete four-slot inference"
+        }
+        return placed.map { requireNotNull(it) }
     }
 
     private fun fillFixedPolicy(
@@ -230,7 +274,8 @@ internal object BattleOpponentMoveInferenceNormalizer {
         details: BattleMoveCandidateView,
     ): BattleOpponentMoveGroup = when {
         details.damageCategory != BattleMoveDamageCategory.STATUS -> {
-            if (pokemon.knownTypeIds.any { canonical(it) == canonical(details.typeId) }) {
+            val offensiveTypes = pokemon.knownBaseStabTypeIds + listOfNotNull(pokemon.knownTeraTypeId)
+            if (offensiveTypes.any { canonical(it) == canonical(details.typeId) }) {
                 BattleOpponentMoveGroup.STAB_ATTACK
             } else {
                 BattleOpponentMoveGroup.COVERAGE_ATTACK
@@ -335,10 +380,23 @@ class BattleOpponentMoveInferenceLedger(
             .filter { it.side == BattleSide.OPPONENT && !it.fainted }
             .associate { pokemon -> pokemon.battlePokemonId to PokemonIdentity.from(pokemon) }
         val reusable = byPokemon.filterKeys { pokemonId ->
-            identities[pokemonId] == currentIdentities[pokemonId]
+            pokemonId in currentIdentities && (
+                pokemonId in ignoredRevealPokemonIds || identities[pokemonId] == currentIdentities[pokemonId]
+            )
+        }
+        val rebuildSlotPreferences = byPokemon.filterKeys { pokemonId ->
+            pokemonId !in ignoredRevealPokemonIds &&
+                pokemonId in currentIdentities && identities[pokemonId] != currentIdentities[pokemonId]
         }
         val updated = BattleOpponentMoveInferenceNormalizer.normalize(
-            state, catalog, tier, actualMoveIds, reusable, ignoredRevealPokemonIds, moveDetails,
+            state = state,
+            catalog = catalog,
+            tier = tier,
+            actualMoveIds = actualMoveIds,
+            previous = reusable,
+            rebuildSlotPreferences = rebuildSlotPreferences,
+            ignoredRevealPokemonIds = ignoredRevealPokemonIds,
+            moveDetails = moveDetails,
         )
         byPokemon = updated.associateBy { it.battlePokemonId }
         identities = currentIdentities.filterKeys(byPokemon::containsKey)
@@ -348,11 +406,17 @@ class BattleOpponentMoveInferenceLedger(
     private data class PokemonIdentity(
         val speciesId: String,
         val formId: String?,
+        val typeIds: List<String>,
+        val baseStabTypeIds: List<String>,
+        val teraTypeId: String?,
     ) {
         companion object {
             fun from(pokemon: BattlePokemonStateView) = PokemonIdentity(
                 canonicalIdentityPart(pokemon.speciesId),
                 pokemon.formId?.let(::canonicalIdentityPart),
+                pokemon.knownTypeIds.map(::canonicalIdentityPart).sorted(),
+                pokemon.knownBaseStabTypeIds.map(::canonicalIdentityPart).sorted(),
+                pokemon.knownTeraTypeId?.let(::canonicalIdentityPart),
             )
 
             private fun canonicalIdentityPart(value: String): String =

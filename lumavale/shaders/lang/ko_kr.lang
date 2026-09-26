@@ -5,7 +5,8 @@ profile.comment=가벼움은 성능을 우선하고, 포근함은 기본 분위�
 
 screen.LIGHTING=조명
 screen.SHADOWS=그림자
-screen.COLOR=색감과 대기
+screen.COLOR=색감
+screen.ATMOSPHERE=대기 효과
 
 option.EXPOSURE=노출
 option.BLOCKLIGHT_STRENGTH=따뜻한 광원 세기
@@ -16,3 +17,7 @@ option.shadowMapResolution=그림자 해상도
 option.SATURATION=채도
 option.BLOOM_STRENGTH=블룸 세기
 option.FOG_STRENGTH=대기 효과 세기
+option.BORDER_FOG=경계 안개
+option.BORDER_FOG.comment=먼 지형을 렌더 거리 끝에 닿기 전 하늘색으로 완전히 감춥니다.
+option.BORDER_FOG_START=경계 안개 시작 지점
+option.BORDER_FOG_START.comment=렌더 거리의 어느 지점부터 경계 안개가 시작될지 설정합니다.

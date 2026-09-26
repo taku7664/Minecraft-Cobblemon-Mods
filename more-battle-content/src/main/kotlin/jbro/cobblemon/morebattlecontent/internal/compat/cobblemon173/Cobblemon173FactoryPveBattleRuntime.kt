@@ -184,11 +184,37 @@ internal class Cobblemon173FactoryPveBattleRuntime(
             MoreBattleContent.LOGGER.error("Battle Factory battle result failed for {}", player.uuid, failure)
             return FactoryBattleLaunchResult.Unavailable
         }
+        try {
+            protectManagedBattleStartup(
+                releasePendingRegistration = {
+                    runManagedCleanupActions(
+                        { Cobblemon173BattleRuleHooks.finishRegistration(null) },
+                        { Cobblemon173BattleRuleHooks.unregister(battle.battleId) },
+                        ownerRegistration::close,
+                    )
+                },
+                terminateBattle = { Cobblemon173ManagedBattleTermination.end(battle.battleId) },
+            ) {
+                Cobblemon173ManagedBattleLifecycles.register(
+                    player.uuid,
+                    battle.battleId,
+                    prepared.playerTeam,
+                    prepared.opponentTeam.values,
+                )
+            }
+        } catch (failure: RuntimeException) {
+            MoreBattleContent.LOGGER.error("Battle Factory lifecycle registration failed for {}", player.uuid, failure)
+            return FactoryBattleLaunchResult.Unavailable
+        } catch (failure: LinkageError) {
+            MoreBattleContent.LOGGER.error("Battle Factory lifecycle registration failed for {}", player.uuid, failure)
+            return FactoryBattleLaunchResult.Unavailable
+        }
         return protectManagedBattleStartup(
             releasePendingRegistration = {
                 runManagedCleanupActions(
                     { Cobblemon173BattleRuleHooks.finishRegistration(null) },
                     { Cobblemon173BattleRuleHooks.unregister(battle.battleId) },
+                    { Cobblemon173ManagedBattleLifecycles.abortAndForceRelease(battle.battleId) },
                     ownerRegistration::close,
                 )
             },
@@ -208,6 +234,7 @@ internal class Cobblemon173FactoryPveBattleRuntime(
                             failure,
                         )
                     },
+                    { Cobblemon173ManagedBattleLifecycles.battleEnded(ended.battleId) },
                     ownerRegistration::close,
                 )
             }

@@ -1,7 +1,7 @@
 #requires -Version 7.0
 
 param(
-    [string]$Version = "0.1.0"
+    [string]$Version = "0.1.1"
 )
 
 $ErrorActionPreference = "Stop"
@@ -60,6 +60,21 @@ if ($compositeSource -notmatch 'uniform\s+sampler2DShadow\s+shadowtex0\s*;') {
 }
 if ($compositeSource -match 'texture\s*\(\s*shadowtex0\s*,\s*[^\r\n]*\)\.r') {
     $errors.Add("Composite must not manually compare raw shadowtex0 depth")
+}
+if ($compositeSource -notmatch 'smoothstep\s*\(\s*BORDER_FOG_START\s*,\s*0\.98\s*,') {
+    $errors.Add("Border fog must fully hide terrain before the render-distance edge")
+}
+if ($compositeSource -notmatch '(?s)#ifdef\s+BORDER_FOG.*?return\s+clamp\s*\(\s*borderFog\s*,\s*0\.0\s*,\s*1\.0\s*\)') {
+    $errors.Add("Border fog must be optional and return a full-range blend factor")
+}
+
+$settingsPath = Join-Path $shaderRoot "lib\settings.glsl"
+$settingsSource = Get-Content -LiteralPath $settingsPath -Raw
+if ($settingsSource -notmatch '(?m)^#define\s+BORDER_FOG\s*$') {
+    $errors.Add("Border fog must be enabled by default")
+}
+if ($settingsSource -notmatch '(?m)^#define\s+BORDER_FOG_START\s+0\.70\b') {
+    $errors.Add("Border fog must default to starting at 70% of render distance")
 }
 
 $distortPath = Join-Path $shaderRoot "lib\distort.glsl"

@@ -103,6 +103,9 @@ internal object LocalContactAfterHitMechanics {
         knownFormStates = pokemon.knownFormStates,
         actionConstraints = pokemon.actionConstraints,
         knownVolatileEffectIds = if (fainted) emptySet() else pokemon.knownVolatileEffectIds,
+        knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds,
+        knownTeraTypeId = pokemon.knownTeraTypeId,
+        knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,
     )
 
     private fun canonical(value: String?): String? = value

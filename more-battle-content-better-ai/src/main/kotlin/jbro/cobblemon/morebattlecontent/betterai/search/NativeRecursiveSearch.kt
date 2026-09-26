@@ -3,8 +3,10 @@ package jbro.cobblemon.morebattlecontent.betterai.search
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalBoardMaterial
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRootActionMapping
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRootActionMatcher
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeSearchPosition
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownSearchTree
 
@@ -74,17 +76,27 @@ internal class NativeRecursiveSearch(
     private val evaluate: (BattleStateView) -> Double,
     private val nodeLimit: Int,
     private val shouldContinue: () -> Boolean = { true },
+    private val cacheEntryLimit: Int = DEFAULT_CACHE_ENTRY_LIMIT,
 ) {
     private var nodesVisited = 0
     private var truncated = false
     private var terminationReason = NativeSearchTerminationReason.COMPLETED
     // A deterministic Showdown transition does not depend on the search horizon. Values do, so
-    // only the value key carries depthRemaining. Both caches are deliberately decision-local.
-    private val branchCache = HashMap<BranchKey, NativeSearchPosition>()
-    private val valueCache = HashMap<ValueKey, Double>()
+    // only the value key carries depthRemaining. Snapshot keys can be large for full teams, so
+    // both decision-local caches evict deterministically rather than retaining every visited node.
+    private val branchCache = object : LinkedHashMap<BranchKey, NativeSearchPosition>(16, 0.75f, true) {
+        override fun removeEldestEntry(
+            eldest: MutableMap.MutableEntry<BranchKey, NativeSearchPosition>?,
+        ): Boolean = size > cacheEntryLimit
+    }
+    private val valueCache = object : LinkedHashMap<ValueKey, Double>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<ValueKey, Double>?): Boolean =
+            size > cacheEntryLimit
+    }
 
     init {
         require(nodeLimit > 0)
+        require(cacheEntryLimit > 0)
     }
 
     fun evaluate(maxDepth: Int): NativeRecursiveSearchResult {
@@ -162,22 +174,36 @@ internal class NativeRecursiveSearch(
     ): List<NativeRootActionValue>? {
         val opponentActions = tree.actions(tree.root, BattleSide.OPPONENT)
         if (rootActions.isEmpty() || opponentActions.isEmpty()) return emptyList()
+        val rootHpAdvantage = hpAdvantage(tree.root)
         val values = mutableListOf<NativeRootActionValue>()
         for (allyAction in rootActions) {
             var worstResponse = Double.POSITIVE_INFINITY
             for (opponentAction in opponentActions) {
                 val child = descend(tree.root, allyAction, opponentAction) ?: return null
-                val value = positionValue(child, depth - 1) ?: return null
-                worstResponse = minOf(worstResponse, value)
+                // The deep leaf can give the same final board to an immediate attack and a wasted
+                // recovery turn. Retain first-turn HP progress as a separate tempo term. A
+                // shallow search already sees that progress directly, so only deeper roots need it.
+                // Knockout/living bonuses stay in the regular evaluation; adding them here again
+                // would make a quick KO worth several extra health bars.
+                val tempo = if (depth > 1) {
+                    (hpAdvantage(child) - rootHpAdvantage) * ROOT_TEMPO_WEIGHT
+                } else 0.0
+                val value = projectedValue(child, depth - 1, worstResponse - tempo) ?: return null
+                val rootValue = value + tempo
+                worstResponse = minOf(worstResponse, rootValue)
             }
             values += NativeRootActionValue(allyAction, worstResponse)
         }
         return values
     }
 
-    private fun positionValue(position: NativeSearchPosition, depthRemaining: Int): Double? {
+    private fun positionValue(
+        position: NativeSearchPosition,
+        depthRemaining: Int,
+        upperBound: Double,
+    ): Double? {
         if (!timeAvailable()) return null
-        if (depthRemaining <= 0 || position.frame.ended) return evaluate(position.state)
+        if (depthRemaining <= 0 || position.frame.ended) return evaluate(position.state) + position.recoilCredit
         val key = ValueKey(
             tree.rulesFingerprint,
             world.hypothesisId,
@@ -186,23 +212,65 @@ internal class NativeRecursiveSearch(
             depthRemaining,
         )
         valueCache[key]?.let { return it }
-        val allyActions = tree.actions(position, BattleSide.ALLY)
-        val opponentActions = tree.actions(position, BattleSide.OPPONENT)
-        if (allyActions.isEmpty() || opponentActions.isEmpty()) return evaluate(position.state)
+        // Root choices stay complete. Only voluntary switches in simulated continuation
+        // requests are narrowed; forced/pivot replacements retain every legal target.
+        val allyActions = tree.actions(position, BattleSide.ALLY, FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT)
+        val opponentActions = tree.actions(position, BattleSide.OPPONENT, FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT)
+        if (allyActions.isEmpty() || opponentActions.isEmpty()) return evaluate(position.state) + position.recoilCredit
         var best = Double.NEGATIVE_INFINITY
         for (allyAction in allyActions) {
             var worstResponse = Double.POSITIVE_INFINITY
             for (opponentAction in opponentActions) {
                 val child = descend(position, allyAction, opponentAction) ?: return null
-                val value = positionValue(child, depthRemaining - 1) ?: return null
+                val value = projectedValue(child, depthRemaining - 1, worstResponse) ?: return null
                 worstResponse = minOf(worstResponse, value)
             }
             best = maxOf(best, worstResponse)
+            // The parent is minimizing responses and already has one worth upperBound. Once this
+            // position can guarantee at least that value, its remaining ally actions cannot lower
+            // the parent's minimum. This is only a lower bound, so never cache a cutoff result.
+            if (best >= upperBound) return best
         }
-        val result = if (best.isFinite()) best else evaluate(position.state)
+        val result = if (best.isFinite()) best else evaluate(position.state) + position.recoilCredit
         if (!truncated) valueCache[key] = result
         return result
     }
+
+    /**
+     * Preserve the value of progress already realized this turn. A leaf-only horizon makes
+     * "damage now, finish next turn" tie with "idle now, deal all damage next turn" whenever the
+     * final board is the same; that gave near-full-HP Roost an unearned share of the root draw.
+     * Intermediate material is cheap to read from the native state; the full positional evaluator
+     * remains at the leaf. An ended battle has no later turn to discount.
+     */
+    private fun projectedValue(
+        child: NativeSearchPosition,
+        depthRemaining: Int,
+        upperBound: Double,
+    ): Double? {
+        if (depthRemaining <= 0 || child.frame.ended) {
+            return positionValue(child, depthRemaining, upperBound)
+        }
+        val immediateMaterial = LocalBoardMaterial.evaluate(child.state) + child.recoilCredit
+        val remainingWeight = FUTURE_VALUE_WEIGHT
+        val immediateWeight = 1.0 - remainingWeight
+        // The parent's bound is expressed after this affine blend. Map it into the child's units
+        // before pruning; otherwise a cutoff may contaminate another root action's exact score.
+        val childBound = if (upperBound.isFinite()) {
+            (upperBound - immediateWeight * immediateMaterial) / remainingWeight
+        } else {
+            upperBound
+        }
+        val continuation = positionValue(child, depthRemaining, childBound) ?: return null
+        return immediateWeight * immediateMaterial + remainingWeight * continuation
+    }
+
+    private fun hpAdvantage(position: NativeSearchPosition): Double =
+        position.frame.p1Team.sumOf { it.hp.toDouble() / it.maxHp } -
+            position.frame.p2Team.sumOf { it.hp.toDouble() / it.maxHp } +
+            // First-turn tempo measures progress, not the price of a move. Recoil is already
+            // priced in the material value, so remove it completely from this extra tempo term.
+            position.recoilCredit * 2.0
 
     private fun descend(
         position: NativeSearchPosition,
@@ -257,4 +325,11 @@ internal class NativeRecursiveSearch(
         val snapshotJson: String,
         val depthRemaining: Int,
     )
+
+    private companion object {
+        const val FUTURE_VOLUNTARY_SWITCH_TARGETS_PER_SLOT = 1
+        const val DEFAULT_CACHE_ENTRY_LIMIT = 2_048
+        const val FUTURE_VALUE_WEIGHT = 0.90
+        const val ROOT_TEMPO_WEIGHT = 0.75
+    }
 }

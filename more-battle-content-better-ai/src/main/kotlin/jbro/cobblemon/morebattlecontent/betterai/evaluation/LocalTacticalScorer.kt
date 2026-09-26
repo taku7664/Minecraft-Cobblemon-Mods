@@ -21,6 +21,7 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilitySta
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicMechanicsKernel
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicStab
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalRiskAttitude
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffectiveness
@@ -144,8 +145,15 @@ internal object LocalTacticalScorer {
         profile: BattleTrainerProfile,
         tuning: LocalDecisionTuning,
     ): Double {
-        if (candidate.moveDetails == null) return strategyMoveAdjustment(candidate, context, strategy)
+        if (candidate.moveDetails == null) {
+            return mechanicResourceAdjustment(candidate) + strategyMoveAdjustment(candidate, context, strategy)
+        }
         return -publicAllyCollateral(candidate, context, tuning) -
+            (if (LocalPublicMechanicsKernel.hasUnconfirmedAbilityImmunity(candidate, context)) {
+                UNCERTAIN_ABILITY_IMMUNITY_PENALTY
+            } else {
+                0.0
+            }) + LocalSetupMovePreference.bonus(candidate, context) -
             LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.saturatedStatStagePenalty(candidate, context) -
@@ -169,7 +177,9 @@ internal object LocalTacticalScorer {
         tuning: LocalDecisionTuning,
     ): LocalTacticalScore {
         val details = candidate.moveDetails
-            ?: return LocalTacticalScore(5.0 + strategyMoveAdjustment(candidate, context, strategy))
+            ?: return LocalTacticalScore(
+                5.0 + mechanicResourceAdjustment(candidate) + strategyMoveAdjustment(candidate, context, strategy),
+            )
         val facts = candidate.facts
         val damageRange = facts?.standardDamageFractionRange
         val accuracy = LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY)
@@ -232,7 +242,13 @@ internal object LocalTacticalScorer {
             0.0
         }
         val total = pressure + priorityBonus + knockoutBonus + spreadBonus -
-            recoilPenalty - publicAllyCollateral(candidate, context, tuning) -
+            recoilPenalty -
+            (if (LocalPublicMechanicsKernel.hasUnconfirmedAbilityImmunity(candidate, context)) {
+                UNCERTAIN_ABILITY_IMMUNITY_PENALTY
+            } else {
+                0.0
+            }) + LocalSetupMovePreference.bonus(candidate, context) -
+            publicAllyCollateral(candidate, context, tuning) -
             LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.saturatedStatStagePenalty(candidate, context) -
@@ -738,7 +754,7 @@ internal object LocalTacticalScorer {
         val actor = context.state.pokemon.firstOrNull {
             it.side == BattleSide.ALLY && it.activeSlot == actorSlot && !it.fainted
         } ?: return 1.0
-        return if (actor.knownTypeIds.any { it.equals(moveType, ignoreCase = true) }) 1.5 else 1.0
+        return LocalPublicStab.multiplier(candidate, actor, moveType) ?: 1.0
     }
 
     private fun allyActiveHp(context: BattleDecisionContext): Double = activeHp(context, BattleSide.ALLY)
@@ -758,6 +774,7 @@ internal object LocalTacticalScorer {
     private const val SWITCH_OFFENSIVE_PRESSURE_WEIGHT = 40.0
     private const val SWITCH_INITIATIVE_WEIGHT = 12.0
     private const val PUBLIC_KO_THREAT_SWITCH_BONUS = 25.0
+    private const val UNCERTAIN_ABILITY_IMMUNITY_PENALTY = 20.0
     private const val CRITICAL_SWITCH_BONUS = 60.0
     private const val CRITICAL_SWITCH_TARGET_PENALTY = CRITICAL_SWITCH_BONUS
     private const val MEANINGFUL_SWITCH_HEALTH_ADVANTAGE = 0.15

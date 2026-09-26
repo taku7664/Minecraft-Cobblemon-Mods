@@ -72,11 +72,13 @@ internal object NativeOpponentRosterStateMaterializer {
         resolveShowdownSpecies: (speciesId: String, formId: String?) -> String?,
     ): NativeOpponentRosterMaterialization {
         val issues = linkedSetOf<NativeOpponentRosterMaterializationIssue>()
-        val expectedSelectionSize = when (state.format) {
-            BattleFormat.SINGLE -> 3
-            BattleFormat.DOUBLE -> 4
+        val selectionRuleSupported = when (state.format) {
+            BattleFormat.SINGLE -> true
+            BattleFormat.DOUBLE ->
+                preview.pokemon.size == BattleOpponentTeamPreviewView.MAX_PREVIEW_SIZE &&
+                    preview.selectionSize in setOf(4, preview.pokemon.size)
         }
-        if (preview.selectionSize != expectedSelectionSize ||
+        if (!selectionRuleSupported ||
             hypothesis.selectedPreviewSlotIds.size != preview.selectionSize ||
             state.remainingPokemonBySide.getValue(BattleSide.OPPONENT) != preview.selectionSize
         ) {
@@ -256,9 +258,13 @@ internal object NativeOpponentRosterStateMaterializer {
     ): Boolean {
         val publicForm = pokemon.formId
         val previewForm = preview.formId
-        return normalizedSpeciesId(pokemon.speciesId) == normalizedSpeciesId(preview.speciesId) &&
+        val species = normalizedSpeciesId(pokemon.speciesId)
+        val baseIdentity = species == normalizedSpeciesId(preview.speciesId) &&
             (publicForm == null || previewForm == null ||
                 normalizedSpeciesId(publicForm) == normalizedSpeciesId(previewForm))
+        val showdownIdentity = pokemon.speciesId.startsWith("showdown:") &&
+            preview.showdownSpeciesId?.let { species == normalizedSpeciesId(it) } == true
+        return baseIdentity || showdownIdentity
     }
 
     private fun issue(

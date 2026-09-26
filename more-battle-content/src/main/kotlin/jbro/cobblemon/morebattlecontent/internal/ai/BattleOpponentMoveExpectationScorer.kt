@@ -1,6 +1,5 @@
 package jbro.cobblemon.morebattlecontent.internal.ai
 
-import java.util.Locale
 import jbro.cobblemon.morebattlecontent.api.ai.*
 
 /**
@@ -16,7 +15,12 @@ internal object BattleOpponentMoveExpectationScorer {
         if (move.damageCategory == BattleMoveDamageCategory.STATUS) return 0.0
 
         val hitProbability = (move.accuracy / 100.0).coerceIn(0.0, 1.0)
-        val sameTypeBonus = if (pokemon.knownTypeIds.any { sameId(it, move.typeId) }) STAB else 1.0
+        val sameTypeBonus = BattlePublicStabRules.conservativeMultiplier(
+            pokemon.knownBaseStabTypeIds,
+            pokemon.knownTeraTypeId,
+            pokemon.knownStellarBoostedTypeIds,
+            move.typeId,
+        ) ?: 1.0
         val baseDamage = move.power * hitProbability * sameTypeBonus *
             categoryFit(pokemon, move.damageCategory) * spreadValue(move.targetPattern, format)
         val secondaryValue = move.effects?.effects.orEmpty().sumOf { effect ->
@@ -111,11 +115,6 @@ internal object BattleOpponentMoveExpectationScorer {
     private fun BattleFractionRange.midpoint(): Double = (minimum + maximum) / 2.0
     private fun Double?.orZero(): Double = this ?: 0.0
     private fun Double?.orDefault(default: Double): Double = this ?: default
-    private fun sameId(left: String, right: String): Boolean = canonical(left) == canonical(right)
-    private fun canonical(value: String): String =
-        value.substringAfter(':').lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
-
-    private const val STAB = 1.5
     private const val MINIMUM_CATEGORY_FIT = 0.65
     /** Two targets at the native 0.75 spread modifier. */
     private const val DOUBLES_ALL_OPPONENTS_VALUE = 1.5

@@ -137,7 +137,33 @@ internal object LocalStatStageMarginalEvaluator {
             ).score
         }
         val fallback = fallbackScore(before, applyStageChanges(before, unresolved))
-        return resolvedScore + fallback
+        // An unknown opposing physical set does not make our own Body Press unknowable.
+        // Preserve that calculable offensive part while the fallback covers only the
+        // unresolved defensive part of the same Defense stage change.
+        val bodyPressScore = unresolved.filter { it.stat == DEFENSE }.sumOf { change ->
+            val attacker = before.pokemon.firstOrNull { it.battlePokemonId == change.pokemonId }
+            val hasBodyPress = source.publicActionCatalog.forPokemon(change.pokemonId).any {
+                canonical(it.moveId) == "bodypress"
+            }
+            if (!hasBodyPress || !attacker.hasPublicCombatStats() ||
+                active(before, opposite(change.side)).none { it.hasPublicCombatStats() }
+            ) {
+                0.0
+            } else {
+                val changed = applyStageChanges(before, listOf(change))
+                val beforePressure = LocalLookaheadStateEvaluator.attackPressure(
+                    before, change.side, source, calculationCache, tuning = tuning,
+                    capDamageToRemainingHp = true,
+                )
+                val afterPressure = LocalLookaheadStateEvaluator.attackPressure(
+                    changed, change.side, source, calculationCache, tuning = tuning,
+                    capDamageToRemainingHp = true,
+                )
+                (afterPressure - beforePressure) *
+                    (if (change.side == BattleSide.ALLY) 1.0 else -1.0) * SCORE_PER_BOARD_POINT
+            }
+        }
+        return resolvedScore + fallback + bodyPressScore
     }
 
     /** Values only rank changes while preserving the actual post-turn HP, field and active slots. */
@@ -383,6 +409,7 @@ internal object LocalStatStageMarginalEvaluator {
 
     private const val CERTAIN_PROBABILITY = 0.999_999
     private const val FALLBACK_SCORE_PER_STAGE = 4.0
+    private const val SCORE_PER_BOARD_POINT = 100.0
     private const val ATTACK = "attack"
     private const val DEFENSE = "defense"
     private const val SPECIAL_ATTACK = "specialattack"

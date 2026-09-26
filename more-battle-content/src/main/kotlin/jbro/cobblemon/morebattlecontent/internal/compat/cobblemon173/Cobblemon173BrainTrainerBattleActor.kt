@@ -24,9 +24,11 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleExactOwnTeamView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionValidator
 import jbro.cobblemon.morebattlecontent.api.ai.BattleFormat
 import jbro.cobblemon.morebattlecontent.api.ai.BattleKnowledgePolicy
+import jbro.cobblemon.morebattlecontent.api.ai.BattleLocalOpponentStatSpreadView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStrategyBrief
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerProfile
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerTier
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleBrainDecisionCoordinator
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleBrainEndpoint
 import jbro.cobblemon.morebattlecontent.internal.ai.BattleDecisionFallbackChain
@@ -65,6 +67,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
     private val knowledgePolicy: BattleKnowledgePolicy = BattleKnowledgePolicy.FAIR_INFERENCE,
     private val opponentTeamPreview: BattleOpponentTeamPreviewView? = null,
     private val exactOwnTeam: BattleExactOwnTeamView = Cobblemon173ExactOwnTeamView.from(pokemonList),
+    private val unboundedDecisionTime: Boolean = false,
 ) : TrainerBattleActor(trainerName, actorId, pokemonList, baselineAi), EntityBackedBattleActor<ArmorStand> {
     override val entity: ArmorStand = trainerEntity
     override val initialPos: Vec3 = trainerEntity.position()
@@ -146,7 +149,10 @@ internal class Cobblemon173BrainTrainerBattleActor(
                     requestId = UUID.randomUUID(),
                     state = state,
                     candidates = preparation.candidates,
-                    deadlineEpochMillis = safeDeadline(System.currentTimeMillis()),
+                    deadlineEpochMillis = Cobblemon173BrainDecisionTiming.deadline(
+                        System.currentTimeMillis(),
+                        unboundedDecisionTime,
+                    ),
                     memory = tacticalMemory.view(state.turn),
                     publicActionCatalog = publicCatalog,
                 ).copy(
@@ -168,6 +174,11 @@ internal class Cobblemon173BrainTrainerBattleActor(
                                 observationAdapter.transformedPokemon(),
                             ),
                         ),
+                        localOpponentStatSpreads = if (trainerProfile.difficulty.tier in setOf(
+                                BattleTrainerTier.ADVANCED, BattleTrainerTier.BOSS,
+                            )) {
+                            actualOpponentStatSpreadsByPreviewSlot()
+                        } else emptyMap(),
                     )
                 }
                 val decision = fallbackChain.decide(
@@ -175,6 +186,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
                     endpoint(localBrain, localSession),
                     context,
                     localContext,
+                    enforceTimeout = !unboundedDecisionTime,
                 ).toCompletableFuture()
                 pendingDecision.set(decision)
                 if (closeResult.get() != null && pendingDecision.compareAndSet(decision, null)) {
@@ -460,18 +472,33 @@ internal class Cobblemon173BrainTrainerBattleActor(
         }
     }
 
-    private fun safeDeadline(now: Long): Long =
-        if (now > Long.MAX_VALUE - BattleBrainDefaults.DECISION_TIMEOUT_MILLIS) {
-            Long.MAX_VALUE
-        } else {
-            now + BattleBrainDefaults.DECISION_TIMEOUT_MILLIS
-        }
-
     /** Read once at the normalization boundary; callers receive only the tier-approved slots. */
     private fun actualOpponentMoveIds(): Map<UUID, Set<String>> =
         compatibilityCallOrNull { battle.getActor(opponentActorId) }?.pokemonList.orEmpty().associate { pokemon ->
             pokemon.uuid to pokemon.moveSet.getMoves().mapTo(linkedSetOf()) { move -> move.name }
         }
+
+    /** Match only unique public species/form identities; ambiguity must never assign a private spread to the wrong slot. */
+    private fun actualOpponentStatSpreadsByPreviewSlot(): Map<Int, BattleLocalOpponentStatSpreadView> {
+        val preview = opponentTeamPreview ?: return emptyMap()
+        val actual = compatibilityCallOrNull { battle.getActor(opponentActorId) }?.pokemonList.orEmpty()
+        val exactById = actual.takeIf { it.isNotEmpty() }?.let(Cobblemon173ExactOwnTeamView::from)
+            ?.builds?.associateBy { it.battlePokemonId }.orEmpty()
+        return preview.pokemon.mapNotNull { slot ->
+            val candidates = actual.filter { pokemon ->
+                pokemon.effectedPokemon.species.resourceIdentifier.toString().equals(slot.speciesId, true) &&
+                    (slot.formId == null || pokemon.effectedPokemon.form.name.equals(slot.formId, true))
+            }
+            val duplicateSlots = preview.pokemon.count { other ->
+                other.speciesId.equals(slot.speciesId, true) && other.formId.equals(slot.formId, true)
+            }
+            if (candidates.size != 1 || duplicateSlots != 1) null else {
+                exactById[candidates.single().uuid]?.let { build ->
+                    slot.previewSlotId to BattleLocalOpponentStatSpreadView(build.ivs, build.evs)
+                }
+            }
+        }.toMap()
+    }
 
     private fun logFailure(operation: String, throwable: Throwable) {
         compatibilityCallOrNull {
@@ -525,5 +552,13 @@ internal class Cobblemon173BrainTrainerBattleActor(
             brainExecutor = BattleBrainExecutors.worker(),
         )
         val fallbackChain = BattleDecisionFallbackChain(coordinator)
+    }
+}
+
+internal object Cobblemon173BrainDecisionTiming {
+    fun deadline(now: Long, unbounded: Boolean): Long = when {
+        unbounded -> Long.MAX_VALUE
+        now > Long.MAX_VALUE - BattleBrainDefaults.DECISION_TIMEOUT_MILLIS -> Long.MAX_VALUE
+        else -> now + BattleBrainDefaults.DECISION_TIMEOUT_MILLIS
     }
 }

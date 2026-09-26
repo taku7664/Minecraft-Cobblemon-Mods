@@ -7,6 +7,7 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAbilitySta
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicAccuracy
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalPublicStab
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffectiveness
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveActionHistory
 import jbro.cobblemon.morebattlecontent.betterai.state.RecursiveMoveUseKey
@@ -172,7 +173,7 @@ internal object PublicFutureActionFactory {
             } else if (LocalPublicMoveDamageInputs.isUnresolvedDynamicDamage(action)) {
                 LocalPublicTurnOrder.effectivePriority(state, side, action) * 5.0
             } else {
-                val stab = if (actor.knownTypeIds.any { canonicalId(it) == canonicalId(details.typeId) }) 1.5 else 1.0
+                val stab = LocalPublicStab.multiplier(action, actor, details.typeId) ?: 1.0
                 val explicitTargets = action.targets.mapNotNull { target ->
                     state.pokemon.firstOrNull {
                         it.side == target.side && it.activeSlot == target.slot && !it.fainted && it.hpFraction > 0.0

@@ -67,6 +67,11 @@ class NativeShowdownSearchTreeTest {
         override fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame =
             error("This test starts from an existing native frame")
 
+        override fun rebindMoves(
+            snapshotJson: String,
+            rebindings: List<jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMoveSetRebinding>,
+        ): NativeBattleFrame = error("search tree must not rebind move hypotheses")
+
         override fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame {
             snapshots += snapshotJson
             choices += p1Choice to p2Choice

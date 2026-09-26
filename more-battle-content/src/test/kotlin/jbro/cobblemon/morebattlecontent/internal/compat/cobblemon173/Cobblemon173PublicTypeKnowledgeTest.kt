@@ -17,8 +17,76 @@ class Cobblemon173PublicTypeKnowledgeTest {
         val tera = change("|-terastallize|p2a: Target|Water")!!
         assertEquals(PublicTypeChangeKind.TERA, tera.kind)
         assertEquals(setOf("water"), tera.types)
+        assertEquals(setOf("stellar"), change("|-terastallize|p2a: Target|Stellar")!!.types)
         assertNull(change("|-start|p1a: User|substitute"))
         assertNull(change("|move|p1a: User|Soak|p2a: Target"))
+    }
+
+    @Test
+    fun `Stellar Tera preserves defensive and base stab types while remaining publicly identified`() {
+        val id = UUID(0, 7)
+        val knowledge = Cobblemon173PublicTypeKnowledge()
+        val stellar = change("|-terastallize|p2a: Target|Stellar")!!
+
+        assertEquals(setOf("electric"), knowledge.apply(id, setOf("electric"), stellar))
+        assertEquals(setOf("electric"), knowledge.baseStabTypes(id))
+        assertEquals("stellar", knowledge.teraType(id))
+        assertEquals(setOf("electric"), knowledge.snapshot()[id])
+        assertEquals(setOf("electric"), knowledge.clear(id))
+        assertEquals("stellar", knowledge.teraType(id))
+    }
+
+    @Test
+    fun `public Stellar consumption starts exact then becomes unknown without inventing a move type`() {
+        for (side in BattleSide.entries) {
+            val first = pokemon(side, UUID(0, 11))
+            val other = pokemon(side, UUID(0, 12))
+            val observer = Cobblemon173PublicBattleObserver(3)
+            observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, first))
+            observer.observe(Cobblemon173PublicObservation.TypesChanged(
+                1,
+                first,
+                change("|-terastallize|p2a: Target|Stellar")!!,
+            ))
+
+            val activated = observer.publicSnapshot()
+            val activatedPokemon = activated.pokemon.single()
+            assertEquals(emptySet<String>(), activatedPokemon.knownStellarBoostedTypeIds)
+            assertEquals(emptySet<String>(), activated.stellarBoostedTypeStates[first.battlePokemonId])
+
+            observer.observe(Cobblemon173PublicObservation.MoveUsed(1, first, "thunderbolt", emptyList()))
+            val used = observer.publicSnapshot()
+            assertNull(used.pokemon.single().knownStellarBoostedTypeIds)
+            assertTrue(used.stellarBoostedTypeStates.containsKey(first.battlePokemonId))
+            assertNull(used.stellarBoostedTypeStates[first.battlePokemonId])
+
+            observer.observe(Cobblemon173PublicObservation.PokemonPresented(2, other))
+            observer.observe(Cobblemon173PublicObservation.PokemonPresented(3, first))
+            val returned = observer.publicSnapshot()
+            assertEquals("stellar", returned.pokemon.single {
+                it.battlePokemonId == first.battlePokemonId
+            }.knownTeraTypeId)
+            assertNull(returned.pokemon.single {
+                it.battlePokemonId == first.battlePokemonId
+            }.knownStellarBoostedTypeIds)
+        }
+    }
+
+    @Test
+    fun `Tera clears an added type instead of preserving it as base stab`() {
+        val id = UUID(0, 8)
+        val knowledge = Cobblemon173PublicTypeKnowledge()
+
+        assertEquals(
+            setOf("electric", "grass"),
+            knowledge.apply(id, setOf("electric"), change("|-start|p2a: Target|typeadd|Grass")!!),
+        )
+        assertEquals(
+            setOf("water"),
+            knowledge.apply(id, setOf("electric"), change("|-terastallize|p2a: Target|Water")!!),
+        )
+        assertEquals(setOf("electric"), knowledge.baseStabTypes(id))
+        assertEquals("water", knowledge.teraType(id))
     }
 
     @Test
@@ -36,6 +104,8 @@ class Cobblemon173PublicTypeKnowledgeTest {
 
             val revealed = observer.publicSnapshot()
             assertEquals(setOf("water"), revealed.pokemon.single().knownTypeIds)
+            assertEquals(setOf("electric"), revealed.pokemon.single().knownBaseStabTypeIds)
+            assertEquals("water", revealed.pokemon.single().knownTeraTypeId)
             assertEquals(
                 listOf(BattleObservedEventKind.TERA_TYPE_REVEALED),
                 revealed.events.filter { it.kind == BattleObservedEventKind.TERA_TYPE_REVEALED }.map { it.kind },
@@ -50,13 +120,28 @@ class Cobblemon173PublicTypeKnowledgeTest {
                 setOf("water"),
                 observer.publicSnapshot().pokemon.single { it.battlePokemonId == first.battlePokemonId }.knownTypeIds,
             )
+            assertEquals(
+                setOf("electric"),
+                observer.publicSnapshot().pokemon.single {
+                    it.battlePokemonId == first.battlePokemonId
+                }.knownBaseStabTypeIds,
+            )
             observer.observe(Cobblemon173PublicObservation.PokemonPresented(3, first))
             val returned = observer.publicSnapshot()
             assertEquals(
                 setOf("water"),
                 returned.pokemon.single { it.battlePokemonId == first.battlePokemonId }.knownTypeIds,
             )
+            assertEquals(
+                setOf("electric"),
+                returned.pokemon.single { it.battlePokemonId == first.battlePokemonId }.knownBaseStabTypeIds,
+            )
+            assertEquals(
+                "water",
+                returned.pokemon.single { it.battlePokemonId == first.battlePokemonId }.knownTeraTypeId,
+            )
             assertEquals(setOf("water"), returned.typeOverrides[first.battlePokemonId])
+            assertEquals(setOf("electric"), returned.baseStabTypeOverrides[first.battlePokemonId])
         }
     }
 
@@ -76,6 +161,7 @@ class Cobblemon173PublicTypeKnowledgeTest {
 
         assertTrue(snapshot.events.none { it.kind == BattleObservedEventKind.TERA_TYPE_REVEALED })
         assertEquals(mapOf(first.battlePokemonId to "water"), snapshot.teraTypes)
+        assertEquals(mapOf(first.battlePokemonId to setOf("electric")), snapshot.baseStabTypeOverrides)
 
         val assembled = Cobblemon173BattleStateAssembler.assemble(
             battleId = UUID(0, 99),
@@ -86,6 +172,10 @@ class Cobblemon173PublicTypeKnowledgeTest {
             inferenceKnowledge = { _, _ -> emptyList() },
         )
         val inference = assembled.inferences.single { it.categoryId == "tera_type" }
+        val assembledPokemon = assembled.pokemon.single { it.battlePokemonId == first.battlePokemonId }
+        assertEquals(setOf("water"), assembledPokemon.knownTypeIds)
+        assertEquals(setOf("electric"), assembledPokemon.knownBaseStabTypeIds)
+        assertEquals("water", assembledPokemon.knownTeraTypeId)
         assertEquals(first.battlePokemonId, inference.subjectPokemonId)
         assertEquals("water", inference.candidateId)
         assertEquals(BattleInferenceConfidence.CONFIRMED, inference.confidence)
@@ -137,9 +227,12 @@ class Cobblemon173PublicTypeKnowledgeTest {
         observer.observe(Cobblemon173PublicObservation.PokemonPresented(0, first))
         observer.observe(Cobblemon173PublicObservation.TypesChanged(1, first, change("|-start|p1a: User|typechange|Water")!!))
         assertEquals(setOf("water"), assembled().knownTypeIds)
+        assertEquals(setOf("water"), assembled().knownBaseStabTypeIds)
+        assertNull(assembled().knownTeraTypeId)
         observer.observe(Cobblemon173PublicObservation.TypesChanged(1, first,
             change("|-start|p1a: User|typechange|[from] move: Reflect Type")!!))
         assertTrue(assembled().knownTypeIds.isEmpty(), "UNKNOWN must not fall back to the original species types")
+        assertTrue(assembled().knownBaseStabTypeIds.isEmpty())
         observer.observe(Cobblemon173PublicObservation.TypesChanged(1, first,
             change("|-start|p1a: User|typechange|Electric|[silent]")!!))
         assertEquals(setOf("electric"), assembled().knownTypeIds)

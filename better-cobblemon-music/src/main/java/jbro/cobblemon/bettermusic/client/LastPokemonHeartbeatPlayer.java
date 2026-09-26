@@ -2,7 +2,8 @@ package jbro.cobblemon.bettermusic.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.sounds.SoundEvents;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
 
 final class LastPokemonHeartbeatPlayer {
     private static final double CADENCE_SECONDS = 1.0;
@@ -11,7 +12,7 @@ final class LastPokemonHeartbeatPlayer {
 
     private final HeartbeatPulseScheduler scheduler = new HeartbeatPulseScheduler(CADENCE_SECONDS);
 
-    void tick(Minecraft client, double nowSeconds, boolean active, double volumeMultiplier) {
+    void tick(Minecraft client, double nowSeconds, boolean active, double volumeMultiplier, String eventId) {
         if (!scheduler.shouldPulse(nowSeconds, active)) {
             return;
         }
@@ -20,7 +21,7 @@ final class LastPokemonHeartbeatPlayer {
             return;
         }
         client.getSoundManager().play(SimpleSoundInstance.forUI(
-            SoundEvents.WARDEN_HEARTBEAT,
+            SoundEvent.createVariableRangeEvent(ResourceLocation.parse(eventId)),
             PITCH,
             volume
         ));

@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.betterai.simulation
 
 import java.util.Locale
+import java.util.PriorityQueue
 import java.util.UUID
 import kotlin.math.abs
 import jbro.cobblemon.morebattlecontent.api.ai.BattleDecisionContext
@@ -107,7 +108,12 @@ internal class NativeInitialProductWorldPlanner(
             )
         }
 
-        val candidates = mutableListOf<PreparedWorld>()
+        val limit = worldLimit(tier, preview.selectionSize)
+        val candidates = PriorityQueue<PendingWorld>(minOf(maxOf(1, limit), 64), WORST_FIRST)
+        val seenIds = hashSetOf<String>()
+        var duplicateId = false
+        var candidateCount = 0
+        var priorMass = 0.0
         rosterCompilation.hypotheses.forEach { rosterHypothesis ->
             val materialization = NativeOpponentRosterStateMaterializer.materialize(
                 context.state,
@@ -127,7 +133,7 @@ internal class NativeInitialProductWorldPlanner(
                 tier,
                 moveUsageForFormat(context.state.format),
             )
-            val catalog = moveMaterialization.catalog ?: return failure(
+            if (moveMaterialization.issues.isNotEmpty()) return failure(
                 NativeInitialProductWorldPlanIssueCode.MOVE_CATALOG_MATERIALIZATION_FAILED,
                 rosterHypothesis.hypothesisId,
                 moveMaterialization.issues.map { it.code.name },
@@ -137,74 +143,89 @@ internal class NativeInitialProductWorldPlanner(
                 rosterHypothesis.selectedPreviewSlotIds,
                 tier,
                 buildUsageForFormat(context.state.format),
+                context.localOpponentStatSpreads,
             )
             if (buildCompilation.issues.isNotEmpty()) {
                 return failure(
                     NativeInitialProductWorldPlanIssueCode.BUILD_WORLD_COMPILATION_FAILED,
                     rosterHypothesis.hypothesisId,
-                    buildCompilation.issues.map { it.code.name },
+                    buildCompilation.issues.map { issue ->
+                        issue.code.name + (issue.previewSlotId?.let { "@slot$it" } ?: "")
+                    },
                 )
             }
-            buildCompilation.worlds.forEach { buildWorld ->
-                val assembly = NativeInitialBattleWorldAssembler.assemble(
-                    roster,
-                    rosterHypothesis,
-                    exactOwnTeam,
-                    buildWorld,
-                    catalog,
+            moveMaterialization.worlds.forEach { moveWorld ->
+                val prepared = NativeInitialBattleWorldAssembler.prepare(
+                    roster, rosterHypothesis, exactOwnTeam, moveWorld.catalog,
                 )
-                val world = assembly.world ?: return failure(
-                    NativeInitialProductWorldPlanIssueCode.INITIAL_WORLD_ASSEMBLY_FAILED,
-                    rosterHypothesis.hypothesisId,
-                    assembly.issues.map { it.code.name },
-                )
-                candidates += PreparedWorld(
-                    world = world,
-                    roster = roster,
-                    catalogContext = context.copy(
-                        state = roster.state,
-                        publicActionCatalog = catalog,
-                    ),
-                )
+                buildCompilation.worlds.forEach { buildWorld ->
+                    val assemblyIssues = NativeInitialBattleWorldAssembler.validationIssues(prepared, buildWorld)
+                    if (assemblyIssues.isNotEmpty()) return failure(
+                        NativeInitialProductWorldPlanIssueCode.INITIAL_WORLD_ASSEMBLY_FAILED,
+                        rosterHypothesis.hypothesisId,
+                        assemblyIssues.map { it.code.name },
+                    )
+                    val hypothesisId = NativeInitialBattleWorldAssembler.hypothesisId(prepared, buildWorld)
+                    val probability = (rosterHypothesis.probability * buildWorld.probability) * moveWorld.probability
+                    candidateCount++
+                    priorMass += probability
+                    if (!seenIds.add(hypothesisId)) duplicateId = true
+                    val candidate = PendingWorld(
+                        hypothesisId, probability, prepared, buildWorld, moveWorld,
+                    )
+                    if (limit > 0) {
+                        if (candidates.size < limit) candidates.add(candidate)
+                        else if (BEST_FIRST.compare(candidate, candidates.peek()) < 0) {
+                            candidates.remove()
+                            candidates.add(candidate)
+                        }
+                    }
+                }
             }
         }
 
-        val priorIssue = validatePrior(candidates)
+        val priorIssue = validatePrior(candidateCount, duplicateId, priorMass)
         if (priorIssue != null) return NativeInitialProductWorldPlan(emptyList(), listOf(priorIssue))
-        val limit = worldLimit(tier, preview.selectionSize)
         if (limit <= 0) return failure(NativeInitialProductWorldPlanIssueCode.WORLD_PRIOR_INVALID)
-        val retained = candidates.sortedWith(
-            compareByDescending<PreparedWorld> { it.world.probability }
-                .thenBy { it.world.hypothesisId },
-        ).take(limit)
-        val retainedMass = retained.sumOf { it.world.probability }
+        val retained = candidates.toList().sortedWith(BEST_FIRST)
+        val retainedMass = retained.sumOf(PendingWorld::probability)
         if (!retainedMass.isFinite() || retainedMass <= 0.0) {
             return failure(NativeInitialProductWorldPlanIssueCode.WORLD_PRIOR_INVALID)
         }
 
         val worlds = retained.map { prepared ->
-            val probability = prepared.world.probability / retainedMass
+            val assembly = NativeInitialBattleWorldAssembler.assemblePrepared(
+                prepared.preparation, prepared.buildWorld,
+            )
+            val assembled = assembly.world ?: return failure(
+                NativeInitialProductWorldPlanIssueCode.INITIAL_WORLD_ASSEMBLY_FAILED,
+                prepared.preparation.rosterHypothesis.hypothesisId,
+                assembly.issues.map { it.code.name },
+            )
+            val roster = prepared.preparation.roster
+            val catalogContext = context.copy(state = roster.state, publicActionCatalog = prepared.moveWorld.catalog)
+            val probability = prepared.probability / retainedMass
             val compilation = NativeInitialBattleDefinitionCompiler.compile(
-                state = prepared.roster.state,
-                catalog = prepared.catalogContext.publicActionCatalog,
-                identities = prepared.roster.identities,
-                world = prepared.world.copy(probability = probability),
+                state = roster.state,
+                catalog = prepared.moveWorld.catalog,
+                identities = roster.identities,
+                world = assembled.copy(probability = probability),
                 seed = NativeProductSeedPolicy.derive(
                     context.state.battleId,
-                    prepared.world.hypothesisId,
+                    prepared.hypothesisId,
                     randomSampleIndex = 0,
                 ),
             )
             val definition = compilation.definition ?: return failure(
                 NativeInitialProductWorldPlanIssueCode.BATTLE_DEFINITION_COMPILATION_FAILED,
-                prepared.world.hypothesisId,
+                prepared.hypothesisId,
                 compilation.issues.map { it.code.name },
             )
             NativeInitialProductWorld(
-                hypothesisId = prepared.world.hypothesisId,
+                hypothesisId = prepared.hypothesisId,
                 probability = probability,
                 definition = definition,
-                publicContext = prepared.catalogContext,
+                publicContext = catalogContext,
             )
         }
         return NativeInitialProductWorldPlan(worlds, emptyList())
@@ -260,11 +281,10 @@ internal class NativeInitialProductWorldPlanner(
         )
     }
 
-    private fun validatePrior(candidates: List<PreparedWorld>): NativeInitialProductWorldPlanIssue? {
-        if (candidates.isEmpty() || candidates.map { it.world.hypothesisId }.distinct().size != candidates.size) {
+    private fun validatePrior(count: Int, duplicateId: Boolean, sum: Double): NativeInitialProductWorldPlanIssue? {
+        if (count == 0 || duplicateId) {
             return NativeInitialProductWorldPlanIssue(NativeInitialProductWorldPlanIssueCode.WORLD_PRIOR_INVALID)
         }
-        val sum = candidates.sumOf { it.world.probability }
         return if (!sum.isFinite() || abs(sum - 1.0) > NORMALIZATION_EPSILON) {
             NativeInitialProductWorldPlanIssue(NativeInitialProductWorldPlanIssueCode.WORLD_PRIOR_INVALID)
         } else {
@@ -283,10 +303,12 @@ internal class NativeInitialProductWorldPlanner(
         },
     )
 
-    private data class PreparedWorld(
-        val world: NativeBattleWorldHypothesis,
-        val roster: NativeMaterializedOpponentRoster,
-        val catalogContext: BattleDecisionContext,
+    private data class PendingWorld(
+        val hypothesisId: String,
+        val probability: Double,
+        val preparation: NativeInitialBattleWorldAssembler.Preparation,
+        val buildWorld: NativeOpponentPreviewBuildWorld,
+        val moveWorld: NativeOpponentPreviewMoveCatalogWorld,
     )
 
     private data class PublicSpeciesKey(val speciesId: String, val formId: String)
@@ -298,6 +320,8 @@ internal class NativeInitialProductWorldPlanner(
 
     private companion object {
         const val NORMALIZATION_EPSILON = 1e-9
+        val BEST_FIRST = compareByDescending<PendingWorld> { it.probability }.thenBy { it.hypothesisId }
+        val WORST_FIRST = BEST_FIRST.reversed()
 
         fun defaultWorldLimit(tier: BattleTrainerTier, selectionSize: Int): Int = when (tier) {
             BattleTrainerTier.INTRODUCTORY -> 3

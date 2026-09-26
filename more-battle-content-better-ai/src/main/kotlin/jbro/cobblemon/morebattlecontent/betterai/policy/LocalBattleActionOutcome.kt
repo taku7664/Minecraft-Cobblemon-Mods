@@ -95,7 +95,7 @@ internal object LocalBattleActionPolicy {
             LocalBattleActionRank(
                 outcome = outcome,
                 decisionTier = tier,
-                comparisonValue = tierAdjustment(tier) + legacySecureKnockoutBonus + outcome.tacticalUtility,
+                comparisonValue = tierAdjustment(tier, outcome) + legacySecureKnockoutBonus + outcome.tacticalUtility,
             )
         })
     }
@@ -105,9 +105,13 @@ internal object LocalBattleActionPolicy {
             .thenBy { it.outcome.candidate.actionId },
     )
 
-    private fun tierAdjustment(tier: Int): Double = when (tier) {
+    private fun tierAdjustment(tier: Int, outcome: LocalBattleActionOutcome): Double = when (tier) {
         TIER_FORFEIT -> FORFEIT_TIER_ADJUSTMENT
-        TIER_PUBLICLY_BAD -> PUBLICLY_BAD_TIER_ADJUSTMENT
+        TIER_PUBLICLY_BAD -> if (outcome.publiclyInert && !outcome.entryFaints) {
+            PUBLICLY_INERT_TIER_ADJUSTMENT
+        } else {
+            PUBLICLY_BAD_TIER_ADJUSTMENT
+        }
         TIER_TEMPO_LOSS -> TEMPO_LOSS_TIER_ADJUSTMENT
         TIER_ORDINARY,
         TIER_SECURE_KNOCKOUT,
@@ -203,6 +207,7 @@ internal object LocalBattleActionPolicy {
     private const val TIER_SECURE_KNOCKOUT = 4
     internal const val SECURE_KNOCKOUT_BONUS = 250.0
     private const val TEMPO_LOSS_TIER_ADJUSTMENT = -250.0
+    private const val PUBLICLY_INERT_TIER_ADJUSTMENT = -500.0
     private const val PUBLICLY_BAD_TIER_ADJUSTMENT = -1_000.0
     private const val FORFEIT_TIER_ADJUSTMENT = -10_000.0
     private const val MATERIAL_OFFENSIVE_IMPROVEMENT = 0.25
@@ -258,7 +263,10 @@ internal object LocalBattleActionOutcomeEvaluator {
         }
         val mechanicsUtilityAdjustment = (expectedDamage - baseExpectedDamage) * DAMAGE_UTILITY_SCALE -
             unprojectedPressureAlreadyScored -
-            (projection.expectedSelfRecoilFraction ?: 0.0) * SELF_HP_UTILITY_SCALE
+            (projection.expectedSelfRecoilFraction ?: 0.0) * SELF_HP_UTILITY_SCALE -
+            if (projection.expectedSelfRecoilFraction != null && projection.expectedSelfRecoilFraction > 0.0 &&
+                projection.actorExpectedHpAfterSelfEffects == 0.0
+            ) SELF_KNOCKOUT_UTILITY else 0.0
         val publiclyInert = isPubliclyInert(candidate, context) ||
             projection.publiclyNullified ||
             isWastedPureRecovery(candidate, projection)
@@ -414,6 +422,7 @@ internal object LocalBattleActionOutcomeEvaluator {
 
     private const val CERTAIN_ACCURACY = 0.999
     private const val DAMAGE_UTILITY_SCALE = 100.0
-    private const val SELF_HP_UTILITY_SCALE = 100.0
+    private const val SELF_HP_UTILITY_SCALE = 50.0
+    private const val SELF_KNOCKOUT_UTILITY = 200.0
     private const val FULL_HP_EPSILON = 1e-9
 }

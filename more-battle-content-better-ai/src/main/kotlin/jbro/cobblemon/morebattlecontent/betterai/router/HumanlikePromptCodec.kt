@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai.router
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonNull
 import com.google.gson.JsonParser
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalStallingProtectionRules
@@ -37,7 +38,7 @@ internal object HumanlikePromptCodec {
                 val summaryDoctrine = if (config.logDecisionSummary) DECISION_SUMMARY_DOCTRINE else ""
                 add(message("system", SYSTEM_DOCTRINE + ACTION_CONSTRAINT_DOCTRINE + VOLATILE_DOCTRINE + TRANSFORM_PP_DOCTRINE + MIXED_STRATEGY_DOCTRINE +
                     difficultyDoctrine(open.trainerProfile.difficulty.tier) + summaryDoctrine))
-                add(message("user", gson.toJson(digest(open, context))))
+                add(message("user", digestJson(open, context)))
             })
             add("provider", JsonObject().apply {
                 addProperty("require_parameters", config.requireStructuredOutput || reasoningRequested)
@@ -47,6 +48,20 @@ internal object HumanlikePromptCodec {
             }
         }
         return gson.toJson(root)
+    }
+
+    private fun digestJson(open: BattleBrainOpenContext, context: BattleDecisionContext): String {
+        val tree = gson.toJsonTree(digest(open, context)).asJsonObject
+        val board = tree.getAsJsonArray("board")
+        context.state.pokemon.forEachIndexed { index, pokemon ->
+            board[index].asJsonObject.add(
+                "stellarBoostedTypes",
+                pokemon.knownStellarBoostedTypeIds?.sorted()?.let(gson::toJsonTree)
+                    ?: JsonNull.INSTANCE,
+            )
+        }
+        // JsonElement.toString keeps the explicitly meaningful JSON null; Gson.toJson omits it.
+        return tree.toString()
     }
 
     fun parseDecision(
@@ -195,6 +210,8 @@ internal object HumanlikePromptCodec {
                     "statusId" to pokemon.statusId,
                     "statStages" to pokemon.statStages,
                     "types" to pokemon.knownTypeIds.sorted(),
+                    "baseStabTypes" to pokemon.knownBaseStabTypeIds.sorted(),
+                    "teraType" to pokemon.knownTeraTypeId,
                     "revealedMoves" to pokemon.knownMoveIds.sorted(),
                     "revealedAbility" to pokemon.knownAbilityId,
                     "revealedItem" to pokemon.knownHeldItemId,

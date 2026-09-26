@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.internal.compat.cobblemon173
 
 import com.cobblemon.mod.common.api.abilities.Abilities
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.cobblemon.mod.common.api.pokemon.experience.ExperienceGroups
 import com.cobblemon.mod.common.pokemon.Pokemon
 import com.cobblemon.mod.common.pokemon.Species
@@ -12,6 +13,7 @@ import net.minecraft.server.Bootstrap
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 
 class Cobblemon173TowerRegisteredTeamSnapshotStoreTest {
@@ -24,6 +26,7 @@ class Cobblemon173TowerRegisteredTeamSnapshotStoreTest {
             it.labels += "legendary"
             it.initialize()
         }
+        PokemonSpecies.reload(mapOf(species.resourceIdentifier to species))
         val pokemon = Pokemon().apply {
             uuid = UUID.randomUUID()
             this.species = species
@@ -44,6 +47,7 @@ class Cobblemon173TowerRegisteredTeamSnapshotStoreTest {
             it.forms += alternate
             it.initialize()
         }
+        PokemonSpecies.reload(mapOf(species.resourceIdentifier to species))
         val pokemon = Pokemon().apply {
             uuid = UUID.randomUUID()
             this.species = species
@@ -56,6 +60,8 @@ class Cobblemon173TowerRegisteredTeamSnapshotStoreTest {
     }
 
     companion object {
+        private var previousSpecies = emptyMap<ResourceLocation, Species>()
+
         @JvmStatic
         @BeforeAll
         fun bootstrap() {
@@ -63,7 +69,12 @@ class Cobblemon173TowerRegisteredTeamSnapshotStoreTest {
             Bootstrap.bootStrap()
             ExperienceGroups.registerDefaults()
             if (Abilities.count() == 0) Abilities.register(Abilities.DUMMY)
+            previousSpecies = PokemonSpecies.species.associateBy { it.resourceIdentifier }
         }
+
+        @JvmStatic
+        @AfterAll
+        fun restoreSpecies() { PokemonSpecies.reload(previousSpecies) }
 
         private val formNameField = FormData::class.java.getDeclaredField("name").apply { isAccessible = true }
     }

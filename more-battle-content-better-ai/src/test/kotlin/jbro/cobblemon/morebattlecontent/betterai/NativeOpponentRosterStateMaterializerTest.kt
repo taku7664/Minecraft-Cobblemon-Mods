@@ -133,6 +133,32 @@ class NativeOpponentRosterStateMaterializerTest {
     }
 
     @Test
+    fun `showdown form appearance is not misclassified as an Illusion`() {
+        val lead = pokemon(LEAD, BattleSide.OPPONENT, 0, "showdown:zoroarkhisui")
+        val preview = BattleOpponentTeamPreviewView(1, listOf(
+            BattleOpponentTeamPreviewPokemonView(
+                previewSlotId = 0,
+                speciesId = "cobblemon:zoroark",
+                formId = "Hisuian",
+                level = 50,
+                moveCandidatePool = null,
+                buildCandidatePool = null,
+                showdownSpeciesId = "Zoroark-Hisui",
+            ),
+        ))
+
+        val result = NativeOpponentRosterStateMaterializer.materialize(
+            state(lead, remainingOpponent = 1),
+            preview,
+            hypothesis(selected = listOf(0), assignments = mapOf(LEAD to 0)),
+            { _, _ -> "zoroarkhisui" },
+        )
+
+        assertTrue(result.issues.isEmpty(), "issues=${result.issues}")
+        assertEquals("zoroarkhisui", result.roster!!.identities.single().showdownSpeciesId)
+    }
+
+    @Test
     fun `double opening preserves both public leads and adds only two selected benches`() {
         val left = pokemon(LEAD, BattleSide.OPPONENT, 0, "cobblemon:fluttermane")
         val right = pokemon(RIGHT_LEAD, BattleSide.OPPONENT, 1, "cobblemon:urshifu")

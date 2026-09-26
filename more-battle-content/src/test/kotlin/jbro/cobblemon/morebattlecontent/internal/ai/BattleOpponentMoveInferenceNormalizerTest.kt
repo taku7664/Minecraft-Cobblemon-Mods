@@ -148,6 +148,83 @@ class BattleOpponentMoveInferenceNormalizerTest {
     }
 
     @Test
+    fun `ledger rebuilds non confirmed slots when the same battle pokemon changes public types`() {
+        val actual = mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave"))
+        val ledger = BattleOpponentMoveInferenceLedger(MOVES::get)
+        val initial = state(revealed = setOf("thunderwave"))
+        val before = ledger.update(initial, catalog(initial), BattleTrainerTier.STANDARD, actual).single()
+        val changed = state(revealed = setOf("thunderwave"), types = setOf("rock"))
+
+        val rebuilt = ledger.update(changed, catalog(changed), BattleTrainerTier.STANDARD, actual).single()
+
+        assertEquals(
+            before.slots.single { it.moveId == "thunderwave" }.slot,
+            rebuilt.slots.single { it.moveId == "thunderwave" }.slot,
+            "a public reveal must keep its logical slot while the remaining hypotheses are rebuilt",
+        )
+        assertEquals(BattleOpponentMoveKnowledge.CONFIRMED,
+            rebuilt.slots.single { it.moveId == "thunderwave" }.knowledge)
+        assertEquals(BattleOpponentMoveGroup.STAB_ATTACK,
+            rebuilt.slots.single { it.moveId == "powergem" }.group)
+        assertEquals(BattleOpponentMoveGroup.COVERAGE_ATTACK,
+            rebuilt.slots.single { it.moveId == "moonblast" }.group)
+        assertFalse(rebuilt.slots.any {
+            it.moveId == "moonblast" && it.group == BattleOpponentMoveGroup.STAB_ATTACK
+        })
+    }
+
+    @Test
+    fun `tera defensive type does not erase the original offensive stab types`() {
+        val pokemon = state(
+            types = setOf("fire"),
+            baseStabTypes = setOf("ghost", "fairy"),
+            teraType = "fire",
+        ).pokemon.single()
+
+        assertEquals(
+            BattleOpponentMoveGroup.STAB_ATTACK,
+            BattleOpponentMoveInferenceNormalizer.group(pokemon, requireNotNull(MOVES["moonblast"])),
+        )
+        assertEquals(
+            BattleOpponentMoveGroup.STAB_ATTACK,
+            BattleOpponentMoveInferenceNormalizer.group(pokemon, requireNotNull(MOVES["shadowball"])),
+        )
+        assertEquals(
+            BattleOpponentMoveGroup.STAB_ATTACK,
+            BattleOpponentMoveInferenceNormalizer.group(pokemon, requireNotNull(MOVES["mysticalfire"])),
+        )
+        assertEquals(
+            BattleOpponentMoveGroup.COVERAGE_ATTACK,
+            BattleOpponentMoveInferenceNormalizer.group(pokemon, requireNotNull(MOVES["powergem"])),
+        )
+    }
+
+    @Test
+    fun `ledger keeps the original slots while a pokemon is temporarily transformed`() {
+        val actual = mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave"))
+        val ledger = BattleOpponentMoveInferenceLedger(MOVES::get)
+        val original = state()
+        val before = ledger.update(original, catalog(original), BattleTrainerTier.STANDARD, actual).single()
+        val transformed = state(
+            revealed = setOf("mysticalfire"),
+            speciesId = "temporary-copy",
+            formId = "copied",
+            types = setOf("fire"),
+        )
+
+        val duringTransform = ledger.update(
+            transformed,
+            catalog(transformed),
+            BattleTrainerTier.STANDARD,
+            actual,
+            ignoredRevealPokemonIds = setOf(OPPONENT_ID),
+        ).single()
+
+        assertEquals(signatures(before), signatures(duringTransform))
+        assertFalse(duringTransform.slots.any { it.moveId == "mysticalfire" })
+    }
+
+    @Test
     fun `a self stat setup move may include a drawback stage`() {
         val shellSmash = BattleMoveCandidateView(
             "normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 24,
@@ -184,14 +261,18 @@ class BattleOpponentMoveInferenceNormalizerTest {
         return BattlePublicActionCatalogView(
             entries = listOf(BattlePokemonActionCatalogView(OPPONENT_ID, revealed)),
             candidatePools = listOf(BattlePublicMoveCandidatePoolView(
-                OPPONENT_ID, "flutter-mane", "normal", MOVES.keys, "fixture:learnset", MOVES,
+                OPPONENT_ID, pokemon.speciesId, pokemon.formId, MOVES.keys, "fixture:learnset", MOVES,
             )),
         )
     }
 
     private fun state(
         revealed: Set<String> = emptySet(),
+        speciesId: String = "flutter-mane",
         formId: String = "normal",
+        types: Set<String> = setOf("ghost", "fairy"),
+        baseStabTypes: Set<String> = types,
+        teraType: String? = null,
     ) = BattleStateView(
         battleId = BATTLE_ID,
         format = BattleFormat.SINGLE,
@@ -200,7 +281,7 @@ class BattleOpponentMoveInferenceNormalizerTest {
             battlePokemonId = OPPONENT_ID,
             side = BattleSide.OPPONENT,
             activeSlot = 0,
-            speciesId = "flutter-mane",
+            speciesId = speciesId,
             formId = formId,
             level = 50,
             hpFraction = 1.0,
@@ -210,7 +291,10 @@ class BattleOpponentMoveInferenceNormalizerTest {
             knownAbilityId = null,
             knownHeldItemId = null,
             fainted = false,
-            knownTypeIds = setOf("ghost", "fairy"),
+            knownTypeIds = types,
+            knownVolatileEffectIds = emptySet(),
+            knownBaseStabTypeIds = baseStabTypes,
+            knownTeraTypeId = teraType,
         )),
         field = BattleFieldStateView.empty(),
         remainingPokemonBySide = mapOf(BattleSide.ALLY to 3, BattleSide.OPPONENT to 3),

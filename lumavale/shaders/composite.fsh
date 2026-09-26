@@ -69,6 +69,23 @@ vec3 reconstructFeetPosition(float depth) {
     return (gbufferModelViewInverse * viewPosition).xyz;
 }
 
+float getAtmosphereFogFactor(float distanceFromCamera) {
+    float atmosphereFog = smoothstep(far * 0.38, far * 0.94, distanceFromCamera) * FOG_STRENGTH;
+    atmosphereFog *= mix(0.82, 1.18, rainStrength);
+    return clamp(atmosphereFog, 0.0, 0.92);
+}
+
+float getBorderFogFactor(float distanceFromCamera) {
+#ifdef BORDER_FOG
+    float distanceRatio = distanceFromCamera / max(far, 1.0);
+    float borderFog = smoothstep(BORDER_FOG_START, 0.98, distanceRatio);
+    borderFog *= borderFog;
+    return clamp(borderFog, 0.0, 1.0);
+#else
+    return 0.0;
+#endif
+}
+
 float filteredShadow(vec3 feetPosition, float normalDotLight) {
     vec4 shadowViewPosition = shadowModelView * vec4(feetPosition, 1.0);
     vec4 baseClip = shadowProjection * shadowViewPosition;
@@ -124,8 +141,9 @@ void main() {
     float solarElevation = sin(sunAngle * TAU);
     float dayAmount = smoothstep(-0.08, 0.08, solarElevation);
     float distanceFromCamera = length(feetPosition);
-    float fogFactor = smoothstep(far * 0.38, far * 0.94, distanceFromCamera) * FOG_STRENGTH;
-    fogFactor *= mix(0.82, 1.18, rainStrength);
+    float atmosphereFogFactor = getAtmosphereFogFactor(distanceFromCamera);
+    float borderFogFactor = getBorderFogFactor(distanceFromCamera);
+    vec3 linearFog = toLinear(fogColor) * mix(0.72, 1.0, dayAmount);
 
     if (isPrelitCloud) {
         vec3 stableCloudFog = mix(
@@ -134,7 +152,8 @@ void main() {
             dayAmount
         );
         vec3 shadedCloud = toLinear(base.rgb) * EXPOSURE;
-        shadedCloud = mix(shadedCloud, stableCloudFog, clamp(fogFactor, 0.0, 0.92));
+        shadedCloud = mix(shadedCloud, stableCloudFog, atmosphereFogFactor);
+        shadedCloud = mix(shadedCloud, linearFog, borderFogFactor);
         gl_FragData[0] = vec4(shadedCloud, base.a);
         return;
     }
@@ -173,8 +192,8 @@ void main() {
     lighting += warmBlockLight;
 
     vec3 shaded = toLinear(base.rgb) * lighting * EXPOSURE;
-    vec3 linearFog = toLinear(fogColor) * mix(0.72, 1.0, dayAmount);
-    shaded = mix(shaded, linearFog, clamp(fogFactor, 0.0, 0.92));
+    shaded = mix(shaded, linearFog, atmosphereFogFactor);
+    shaded = mix(shaded, linearFog, borderFogFactor);
 
     gl_FragData[0] = vec4(shaded, base.a);
 }

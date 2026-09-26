@@ -71,7 +71,7 @@ class NativeOpponentPreviewBuildWorldCompilerTest {
     }
 
     @Test
-    fun `fails closed when selected public build knowledge or usage is missing`() {
+    fun `missing public build knowledge still fails closed`() {
         val missingPool = NativeOpponentPreviewBuildWorldCompiler.compile(
             preview = BattleOpponentTeamPreviewView(1, listOf(
                 BattleOpponentTeamPreviewPokemonView(0, "addon:unknown", null, 50),
@@ -80,19 +80,56 @@ class NativeOpponentPreviewBuildWorldCompilerTest {
             tier = BattleTrainerTier.BOSS,
             usage = usage(),
         )
+
+        assertTrue(missingPool.worlds.isEmpty())
+        assertEquals(listOf(NativeOpponentBuildWorldIssueCode.PUBLIC_BUILD_POOL_MISSING),
+            missingPool.issues.map { it.code })
+    }
+
+    @Test
+    fun `species absent from dated usage keeps legal public build worlds with explicit generic provenance`() {
+        val tapuBulu = previewPokemon(
+            0, "tapubulu",
+            listOf(BattleOpponentPreviewAbilityView("grassysurge", BattleAbilityAvailability.REGULAR)),
+            mapOf("N" to 1.0),
+            types = setOf("grass", "fairy"),
+        )
         val missingUsage = NativeOpponentPreviewBuildWorldCompiler.compile(
-            preview = BattleOpponentTeamPreviewView(1, listOf(preview().pokemon.first())),
+            preview = BattleOpponentTeamPreviewView(1, listOf(tapuBulu)),
             selectedPreviewSlotIds = listOf(0),
             tier = BattleTrainerTier.BOSS,
             usage = LocalOpponentBuildUsageLookup { _, _ -> null },
         )
 
-        assertTrue(missingPool.worlds.isEmpty())
-        assertTrue(missingUsage.worlds.isEmpty())
-        assertEquals(listOf(NativeOpponentBuildWorldIssueCode.PUBLIC_BUILD_POOL_MISSING),
-            missingPool.issues.map { it.code })
-        assertEquals(listOf(NativeOpponentBuildWorldIssueCode.BUILD_USAGE_MISSING),
-            missingUsage.issues.map { it.code })
+        assertTrue(missingUsage.issues.isEmpty())
+        assertTrue(missingUsage.worlds.isNotEmpty())
+        assertTrue(missingUsage.worlds.size <= 16)
+        assertEquals(1.0, missingUsage.worlds.sumOf { it.probability }, 1e-12)
+        assertTrue(missingUsage.worlds.all { "generic-public-prior" in it.hypothesisId })
+        assertTrue(missingUsage.worlds.flatMap { it.builds }.all {
+            it.abilityId == "grassysurge" && it.teraTypeId in setOf("grass", "fairy") &&
+                it.evs.values.sum() <= 510
+        })
+    }
+
+    @Test
+    fun `missing usage for non-base form remains explicit instead of inventing required form items`() {
+        val unusual = BattleOpponentTeamPreviewPokemonView(
+            previewSlotId = 0, speciesId = "cobblemon:giratina", formId = "origin", level = 50,
+            knownTypeIds = setOf("ghost", "dragon"),
+            buildCandidatePool = BattleOpponentPreviewBuildPoolView(
+                speciesId = "cobblemon:giratina", formId = "origin",
+                abilities = listOf(BattleOpponentPreviewAbilityView("levitate", BattleAbilityAvailability.REGULAR)),
+                genderRates = mapOf("N" to 1.0), sourceId = "fixture:origin",
+            ),
+        )
+        val result = NativeOpponentPreviewBuildWorldCompiler.compile(
+            BattleOpponentTeamPreviewView(1, listOf(unusual)), listOf(0), BattleTrainerTier.BOSS,
+            LocalOpponentBuildUsageLookup { _, _ -> null },
+        )
+
+        assertTrue(result.worlds.isEmpty())
+        assertEquals(listOf(NativeOpponentBuildWorldIssueCode.BUILD_USAGE_MISSING), result.issues.map { it.code })
     }
 
     @Test
@@ -130,11 +167,13 @@ class NativeOpponentPreviewBuildWorldCompilerTest {
         species: String,
         abilities: List<BattleOpponentPreviewAbilityView>,
         genders: Map<String, Double>,
+        types: Set<String> = emptySet(),
     ) = BattleOpponentTeamPreviewPokemonView(
         previewSlotId = slot,
         speciesId = "cobblemon:$species",
         formId = "normal",
         level = 50,
+        knownTypeIds = types,
         buildCandidatePool = BattleOpponentPreviewBuildPoolView(
             speciesId = "cobblemon:$species",
             formId = "normal",

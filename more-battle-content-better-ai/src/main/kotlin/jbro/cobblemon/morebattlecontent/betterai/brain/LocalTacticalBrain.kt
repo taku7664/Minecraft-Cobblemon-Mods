@@ -7,6 +7,7 @@ import java.util.concurrent.CompletionStage
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrain
+import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainContentIds
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainCloseResult
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainOpenContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainSession
@@ -28,6 +29,7 @@ import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTactica
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalSituationalEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionChoiceSeed
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionSelection
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionMixingContext
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalActionSelector
 import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionPolicy
@@ -40,6 +42,7 @@ import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadBudget
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadBudgetPolicy
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalLookaheadDecisionSignature
 import jbro.cobblemon.morebattlecontent.betterai.search.LocalRecursiveLookaheadEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.simulation.LocalOpponentStatAssumption
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionEvaluation
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionStatus
@@ -62,6 +65,7 @@ private val defaultNativeInitialDecisionEvaluator = NativeInitialProductDecision
 
 internal class NativeInitialProductDecisionException(
     val evaluation: NativeInitialProductDecisionEvaluation,
+    context: BattleDecisionContext,
 ) : IllegalStateException(
     buildString {
         append("Native product decision failed: ")
@@ -71,7 +75,22 @@ internal class NativeInitialProductDecisionException(
         evaluation.failedWorldId?.let { append(" world=").append(it) }
         if (evaluation.planIssues.isNotEmpty()) {
             append(" issues=")
-            append(evaluation.planIssues.joinToString(",") { it.code.name })
+            append(evaluation.planIssues.joinToString(",") { issue ->
+                issue.code.name + (issue.detailCode?.let { "/$it" } ?: "")
+            })
+            if (evaluation.planIssues.any { it.code.name == "ROSTER_COMPILATION_FAILED" }) {
+                append(" public_roster=")
+                append("turn:").append(context.state.turn)
+                append(";remaining:").append(context.state.remainingPokemonBySide[BattleSide.OPPONENT])
+                append(";selection:").append(context.opponentTeamPreview?.selectionSize)
+                append(";seen:").append(context.state.pokemon.asSequence()
+                    .filter { it.side == BattleSide.OPPONENT }
+                    .joinToString("|") { "${it.speciesId}/${it.formId}@${it.activeSlot}" })
+                append(";events:").append(context.state.observedEvents.size).append(':')
+                append(context.state.observedEvents.asSequence().take(16).joinToString("|") {
+                    "${it.kind}@${it.turn}#${it.actorPokemonId?.toString()?.take(8) ?: "-"}"
+                })
+            }
         }
     },
 )
@@ -98,12 +117,14 @@ internal class LocalTacticalBrain(
         session: BattleBrainSession,
         context: BattleDecisionContext,
     ): CompletionStage<BattleDecision> {
+        val decisionStartedAtNanos = System.nanoTime()
         val active = session as? Session
         val profile = active?.trainerProfile ?: BattleTrainerProfile.balanced()
         val strategy = active?.strategy.takeUnless {
             profile.difficulty.tier == BattleTrainerTier.INTRODUCTORY
         }
-        val calculatedContext = PublicBattleTacticalCalculator.calculate(context)
+        val assumedContext = LocalOpponentStatAssumption.applyToPublicState(context, profile.difficulty.tier)
+        val calculatedContext = PublicBattleTacticalCalculator.calculate(assumedContext)
             .forPlanOwner(jbro.cobblemon.morebattlecontent.api.ai.BattlePlanOwner.LOCAL_BRAIN)
         val difficultyContext = if (profile.difficulty.tier == BattleTrainerTier.INTRODUCTORY) {
             calculatedContext.withoutActivePlan()
@@ -175,7 +196,14 @@ internal class LocalTacticalBrain(
             .filter { it.side == BattleSide.ALLY }
             .map { it.battlePokemonId }
             .toList()
-        val budget = lookaheadBudget(profile.difficulty.tier)
+        val unboundedTestDecision = active?.trainerPersonaId
+            ?.startsWith(BattleBrainContentIds.AI_TEST_PERSONA_PREFIX) == true
+        val decisionTrace = AiTestDecisionTrace.forTestPersona(
+            active?.trainerPersonaId, difficultyContext, decisionStartedAtNanos,
+        )
+        val budget = lookaheadBudget(profile.difficulty.tier).let { configured ->
+            if (unboundedTestDecision) configured.copy(timeMillis = Long.MAX_VALUE) else configured
+        }
         val continuingNative = active?.nativeProductState != null
         val nativeInitial = nativeInitialDecision.evaluate(
             difficultyContext,
@@ -184,6 +212,7 @@ internal class LocalTacticalBrain(
             budget,
             active?.nativeProductState,
         )
+        decisionTrace?.nativeSearch(nativeInitial, profile.difficulty.lookaheadPlies, budget)
         when (nativeInitial.status) {
             NativeInitialProductDecisionStatus.AVAILABLE -> {
                 val ranked = nativeInitial.ranked
@@ -200,6 +229,7 @@ internal class LocalTacticalBrain(
                     mixingContext(ranked, authoritativeSimulationScores = true),
                 )
                 val selected = selection.rank
+                decisionTrace?.resolved(if (continuingNative) "native_continuation" else "native_initial", ranked, selection)
                 active?.nativeProductState = requireNotNull(nativeInitial.sessionState) {
                     "An available native product decision must preserve its reusable roots"
                 }.withPendingOwnAction(selected.outcome.candidate)
@@ -232,6 +262,7 @@ internal class LocalTacticalBrain(
                             } else {
                                 "native_showdown_initial"
                             })
+                            if (unboundedTestDecision) add("lookahead_time_unbounded_test")
                             if (nativeInitial.truncated) add("lookahead_truncated")
                             addAll(decisionDiagnostics(calculatedContext, selected))
                         },
@@ -241,7 +272,12 @@ internal class LocalTacticalBrain(
             NativeInitialProductDecisionStatus.PLANNING_FAILED,
             NativeInitialProductDecisionStatus.RECONCILIATION_FAILED,
             NativeInitialProductDecisionStatus.SEARCH_FAILED,
-            -> return CompletableFuture.failedFuture(NativeInitialProductDecisionException(nativeInitial))
+            -> {
+                decisionTrace?.failed(nativeInitial.status.name, nativeInitial.planIssues.joinToString(",") {
+                    it.code.name + (it.detailCode?.let { detail -> "/$detail" } ?: "")
+                })
+                return CompletableFuture.failedFuture(NativeInitialProductDecisionException(nativeInitial, difficultyContext))
+            }
             NativeInitialProductDecisionStatus.NOT_APPLICABLE -> Unit
         }
         difficultyContext.candidates.singleOrNull()?.let {
@@ -251,6 +287,7 @@ internal class LocalTacticalBrain(
                 decidingProfile,
                 tuning,
             ).single()
+            decisionTrace?.resolved("single_legal", listOf(selected), LocalActionSelection(selected, 0L, 1, 1.0))
             return CompletableFuture.completedFuture(
                 BattleDecision(
                     requestId = context.requestId,
@@ -300,6 +337,7 @@ internal class LocalTacticalBrain(
                 )
             },
         )
+        decisionTrace?.legacySearch(lookahead, profile.difficulty.lookaheadPlies, budget)
         val rootDecision = LocalRootDecisionPolicy.refine(lookahead.ranked, difficultyContext)
         val ranked = rootDecision.ranked
         val seed = LocalActionChoiceSeed.derive(
@@ -314,6 +352,7 @@ internal class LocalTacticalBrain(
             mixingContext(ranked),
         )
         val selected = selection.rank
+        decisionTrace?.resolved("legacy_lookahead", ranked, selection)
         val confidence = (0.35 + selection.probability * 0.6).coerceIn(0.35, 0.99)
         return CompletableFuture.completedFuture(
             BattleDecision(
@@ -342,6 +381,7 @@ internal class LocalTacticalBrain(
                     "lookahead_elapsed_ms_${lookahead.elapsedMillis}",
                      ))
                     if (lookahead.truncated) add("lookahead_truncated")
+                    if (unboundedTestDecision) add("lookahead_time_unbounded_test")
                     if (lookahead.publicResponseIncomplete) add("lookahead_public_response_incomplete")
                     addAll(decisionDiagnostics(calculatedContext, selected))
                     rootDecision.switchReasonsByActionId[selected.outcome.candidate.actionId]

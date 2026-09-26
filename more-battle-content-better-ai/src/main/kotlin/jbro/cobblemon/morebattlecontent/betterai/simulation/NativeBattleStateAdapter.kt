@@ -71,6 +71,9 @@ internal object NativeBattleStateAdapter {
                 mustRecharge = "mustrecharge" in native.volatiles,
             ),
             knownVolatileEffectIds = native.volatiles.mapTo(linkedSetOf(), ::nativeId),
+            knownBaseStabTypeIds = native.baseStabTypes.mapTo(linkedSetOf(), ::nativeId),
+            knownTeraTypeId = native.terastallizedType.takeIf(String::isNotBlank)?.let(::nativeId),
+            knownStellarBoostedTypeIds = native.stellarBoostedTypes.mapTo(linkedSetOf(), ::nativeId),
         )
     }
 

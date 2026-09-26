@@ -41,7 +41,7 @@ class LocalWeightedActionSelectorTest {
             digest.update(("${choice.rank.outcome.candidate.actionId}:${choice.seed}:${choice.shortlistSize}:" +
                 "${choice.probability.toBits()}\n").toByteArray(Charsets.UTF_8))
         }
-        assertEquals("0ba98d6b98e5e98ad27c4c1cbb43116d1264840388841fae61932c23bf00c425",
+        assertEquals("2609f5096555b1e525b3263b65f307680b9c900e15c9f8dacc277c07f800a583",
             digest.digest().joinToString("") { "%02x".format(it) })
     }
 
@@ -154,7 +154,7 @@ class LocalWeightedActionSelectorTest {
             selector.choose(ranked, seed, introductory).rank.outcome.candidate.actionId == "weak_but_plausible"
         }
 
-        assertTrue(weakSelections in 3_000..4_000, "weak selections=$weakSelections")
+        assertTrue(weakSelections in 1_000..1_700, "weak selections=$weakSelections")
     }
 
     @Test
@@ -183,6 +183,16 @@ class LocalWeightedActionSelectorTest {
         assertTrue(counts.getValue("best") > counts.getValue("runner_up"))
         assertTrue(counts.getValue("runner_up") > 0)
         assertEquals(null, counts["excluded"])
+    }
+
+    @Test
+    fun `a thirty point deficit remains possible but rarely beats the leader`() {
+        val ranked = listOf(rank("best", 100.0), rank("runner_up", 70.0))
+        val runnerUpSelections = (0L until 10_000L).count { seed ->
+            selector.choose(ranked, seed, riskTolerance = 0.5).rank.outcome.candidate.actionId == "runner_up"
+        }
+
+        assertTrue(runnerUpSelections in 1_500..2_300, "runner-up selections=$runnerUpSelections")
     }
 
     @Test

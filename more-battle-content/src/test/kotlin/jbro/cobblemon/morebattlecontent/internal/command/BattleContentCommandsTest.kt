@@ -13,7 +13,14 @@ class BattleContentCommandsTest {
 
         assertEquals("mbc", root.name)
         assertNotNull(root.command)
-        assertEquals(setOf("bp", "tower", "factory"), root.children.map { it.name }.toSet())
+        assertEquals(setOf("bp", "tower", "factory", "test"), root.children.map { it.name }.toSet())
+
+        val aiTest = root.getChild("test")
+        assertEquals(
+            setOf("ai-입문", "ai-표준", "ai-상급", "ai-보스"),
+            aiTest.children.map { it.name }.toSet(),
+        )
+        assertEquals(AiTestCommands.ADMIN_PERMISSION_LEVEL, 2)
 
         val bp = root.getChild("bp")
         assertEquals(setOf("get", "history", "add", "remove", "set"), bp.children.map { it.name }.toSet())

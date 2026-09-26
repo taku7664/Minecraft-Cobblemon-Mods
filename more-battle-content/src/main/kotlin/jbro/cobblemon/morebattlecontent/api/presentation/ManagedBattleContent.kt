@@ -7,6 +7,7 @@ object ManagedBattleContentIds {
     const val BATTLE_TOWER: String = "cobblemon_more_battle_content:battle_tower"
     const val BATTLE_FACTORY: String = "cobblemon_more_battle_content:battle_factory"
     const val PVP: String = "cobblemon_more_battle_content:pvp"
+    const val AI_TEST: String = "cobblemon_more_battle_content:ai_test"
 
     private val CONTENT_ID = Regex("[a-z0-9_.-]+:[a-z0-9/._-]+")
 

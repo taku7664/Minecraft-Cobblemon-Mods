@@ -39,6 +39,7 @@ internal object BattleDecisionDiagnostics {
     private val PUBLIC_DIAGNOSTIC_TAGS = setOf(
         "lookahead_truncated",
         "lookahead_public_response_incomplete",
+        "lookahead_time_unbounded_test",
         // The trainer had a stronger attack available and played a weaker one. Everything the decision
         // saw is tagged alongside it, so the report does not depend on meeting that trainer again.
         "weaker_attack_chosen",

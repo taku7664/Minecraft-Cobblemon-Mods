@@ -3,7 +3,9 @@
 Optional server-side tactical AI for Cobblemon: More Battle Content. It keeps external-provider and local-brain decision paths separate and falls back safely when a provider is unavailable.
 
 - Mod ID: `cobblemon_more_battle_content_better_ai`
-- Side: server only
+- Side: server logic. Install it in a dedicated server's `mods` directory, or in the client profile's
+  `mods` directory when the profile hosts a single-player integrated server. A remote multiplayer
+  client does not need its own copy.
 - Requires: Fabric Loader 0.19.5+, Fabric Language Kotlin 1.14.1+kotlin.2.4.20+, and Cobblemon: More Battle Content 1.6.21+
 
 ## Build
@@ -980,3 +982,11 @@ healing larger than the hit, and overkill capping: restoring target HP does not
 retroactively reduce damage attributed to the move. This does not resolve the
 separate target-HP/actor-HP conversion used by drain and recoil, or validate every
 berry's activation threshold and healing amount.
+# Live AI test decision log
+
+Run `watch-ai-log.bat` from this folder to follow the `cobblemon-dev` client's
+`latest.log` in a terminal. The watcher also follows a new client launch. It
+shows each `/mbc test ai-*` decision's public knowledge, inferred move slots,
+candidate scores, selected action, selection probability, and Brain elapsed
+seconds. The core battle-resolution line supplies the full coordinator elapsed
+time. Normal Tower and Factory decisions do not emit the detailed trace.

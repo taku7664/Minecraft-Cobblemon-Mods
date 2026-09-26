@@ -136,7 +136,13 @@ internal object NativeBattleRootValidator {
             if (actual.side != public.side) issue(issues, NativeBattleRootIssueCode.SIDE_MISMATCH, id)
             if (actual.activeSlot != public.activeSlot) issue(issues, NativeBattleRootIssueCode.ACTIVE_SLOT_MISMATCH, id)
             if (actual.level != public.level) issue(issues, NativeBattleRootIssueCode.LEVEL_MISMATCH, id)
-            if (abs(actual.hpFraction - public.hpFraction) > FRACTION_EPSILON || actual.fainted != public.fainted) {
+            val exactHpMatches = abs(actual.hpFraction - public.hpFraction) <= FRACTION_EPSILON
+            val publicOpponentHpMatches = public.side == BattleSide.OPPONENT &&
+                frame.p2Team.firstOrNull { it.uuid == id.toString() }?.let { native ->
+                    abs(NativeShowdownPublicHp.fraction(native.hp, native.maxHp) - public.hpFraction) <=
+                        FRACTION_EPSILON
+                } == true
+            if ((!exactHpMatches && !publicOpponentHpMatches) || actual.fainted != public.fainted) {
                 issue(issues, NativeBattleRootIssueCode.HP_MISMATCH, id)
             }
             if (statusId(actual.statusId) != statusId(public.statusId)) {

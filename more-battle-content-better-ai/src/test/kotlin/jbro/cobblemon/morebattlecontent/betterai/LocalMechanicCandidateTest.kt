@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.betterai
 
 import jbro.cobblemon.morebattlecontent.api.ai.*
 import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalBattleActionPolicy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -16,6 +17,40 @@ import java.util.UUID
  * plain move every time and the AI can never use the mechanic it was given.
  */
 class LocalMechanicCandidateTest {
+    @Test
+    fun `missing move metadata cannot make a free terastallization tie`() {
+        val plain = BattleActionCandidate(
+            actionId = "stoneedge:base", kind = BattleActionKind.USE_MOVE,
+            actorSlot = 0, moveSlot = 0, moveId = "stoneedge",
+        )
+        val tera = BattleActionCandidate(
+            actionId = "stoneedge:tera", kind = BattleActionKind.USE_MOVE,
+            actorSlot = 0, moveSlot = 0, moveId = "stoneedge",
+            mechanic = mechanic("tera", types = setOf("ground")),
+        )
+        val context = BattleDecisionContext(
+            requestId = UUID.randomUUID(),
+            state = BattleStateView(
+                battleId = UUID.randomUUID(), format = BattleFormat.SINGLE, turn = 3,
+                pokemon = listOf(
+                    mon(BattleSide.ALLY, setOf("ground", "dragon")),
+                    mon(BattleSide.OPPONENT, setOf("electric", "flying")),
+                ),
+                field = BattleFieldStateView.empty(),
+                remainingPokemonBySide = BattleSide.entries.associateWith { 2 },
+                observedEvents = emptyList(), inferences = emptyList(),
+            ),
+            candidates = listOf(plain, tera), deadlineEpochMillis = Long.MAX_VALUE,
+            memory = BattleTacticalMemoryView.empty(),
+            publicActionCatalog = BattlePublicActionCatalogView(emptyList()),
+        )
+
+        val byId = LocalBattleActionPolicy.rank(context, null, BattleTrainerProfile.balanced())
+            .associateBy { it.outcome.candidate.actionId }
+        assertEquals(5.0, byId.getValue(plain.actionId).comparisonValue)
+        assertEquals(-20.0, byId.getValue(tera.actionId).comparisonValue)
+    }
+
     @Test
     fun `a mechanic candidate projects damage instead of nothing`() {
         val plain = facts(mechanic = null)
@@ -43,6 +78,123 @@ class LocalMechanicCandidateTest {
     }
 
     @Test
+    fun `an already terastallized actor keeps base stab and distinguishes matching tera stab`() {
+        assertEquals(
+            1.5,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("fire"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "fire",
+                moveType = "water",
+            )?.baseSameTypeAttackBonus,
+        )
+        assertEquals(
+            1.5,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("fire"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "fire",
+                moveType = "fire",
+            )?.baseSameTypeAttackBonus,
+        )
+        assertEquals(
+            2.0,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("fire"),
+                baseStabTypes = setOf("fire"),
+                activeTeraType = "fire",
+                moveType = "fire",
+            )?.baseSameTypeAttackBonus,
+        )
+    }
+
+    @Test
+    fun `Stellar uses its first type boost once and then returns to ordinary stab`() {
+        assertEquals(
+            2.0,
+            facts(
+                mechanic = mechanic("tera", types = setOf("stellar")),
+                baseStabTypes = setOf("water"),
+                moveType = "water",
+            )?.baseSameTypeAttackBonus,
+            "The move that activates Stellar still receives the unused base-type boost.",
+        )
+        assertEquals(
+            2.0,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("water"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "stellar",
+                stellarBoostedTypes = emptySet(),
+                moveType = "water",
+            )?.baseSameTypeAttackBonus,
+        )
+        assertEquals(
+            1.5,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("water"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "stellar",
+                stellarBoostedTypes = setOf("water"),
+                moveType = "water",
+            )?.baseSameTypeAttackBonus,
+        )
+        assertEquals(
+            4915.0 / 4096.0,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("water"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "stellar",
+                stellarBoostedTypes = emptySet(),
+                moveType = "fire",
+            )?.baseSameTypeAttackBonus,
+        )
+        assertEquals(
+            1.0,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("water"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "stellar",
+                stellarBoostedTypes = setOf("fire"),
+                moveType = "fire",
+            )?.baseSameTypeAttackBonus,
+        )
+    }
+
+    @Test
+    fun `unknown Stellar consumption uses the public lower bound instead of inventing a fresh boost`() {
+        assertEquals(
+            1.5,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("water"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "stellar",
+                stellarBoostedTypes = null,
+                moveType = "water",
+            )?.baseSameTypeAttackBonus,
+        )
+        assertEquals(
+            1.0,
+            facts(
+                mechanic = null,
+                actorTypes = setOf("water"),
+                baseStabTypes = setOf("water"),
+                activeTeraType = "stellar",
+                stellarBoostedTypes = null,
+                moveType = "fire",
+            )?.baseSameTypeAttackBonus,
+        )
+    }
+
+    @Test
     fun `dynamax uses the doubled health it is given`() {
         val doubled = BattleCombatStatRangesView.exact(320, 130, 100, 110, 100, 100)
         val facts = facts(mechanic = mechanic("dynamax", stats = doubled))
@@ -61,15 +213,22 @@ class LocalMechanicCandidateTest {
         transformedActorTypeIds = types, transformedActorCombatStats = stats,
     )
 
-    private fun facts(mechanic: BattleMechanicCandidate?): BattleCandidateFactsView? {
-        val ally = mon(BattleSide.ALLY, setOf("water"))
+    private fun facts(
+        mechanic: BattleMechanicCandidate?,
+        actorTypes: Set<String> = setOf("water"),
+        baseStabTypes: Set<String> = actorTypes,
+        activeTeraType: String? = null,
+        stellarBoostedTypes: Set<String>? = null,
+        moveType: String = "water",
+    ): BattleCandidateFactsView? {
+        val ally = mon(BattleSide.ALLY, actorTypes, baseStabTypes, activeTeraType, stellarBoostedTypes)
         val opponent = mon(BattleSide.OPPONENT, setOf("normal"))
         val move = BattleActionCandidate(
             actionId = "surf", kind = BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
             moveId = "cobblemon:surf", targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)),
             mechanic = mechanic,
             moveDetails = BattleMoveCandidateView(
-                typeId = "water", damageCategory = BattleMoveDamageCategory.SPECIAL, power = 90.0,
+                typeId = moveType, damageCategory = BattleMoveDamageCategory.SPECIAL, power = 90.0,
                 accuracy = 100.0, priority = 0, currentPp = 10,
                 targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
             ),
@@ -89,7 +248,13 @@ class LocalMechanicCandidateTest {
         return PublicBattleTacticalCalculator.calculate(context).candidates.single().facts
     }
 
-    private fun mon(side: BattleSide, types: Set<String>) = BattlePokemonStateView(
+    private fun mon(
+        side: BattleSide,
+        types: Set<String>,
+        baseStabTypes: Set<String> = types,
+        activeTeraType: String? = null,
+        stellarBoostedTypes: Set<String>? = null,
+    ) = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(), side = side, activeSlot = 0,
         speciesId = "cobblemon:probe", formId = null, level = 50, hpFraction = 1.0,
         statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(),
@@ -103,5 +268,9 @@ class LocalMechanicCandidateTest {
                 BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
             )
         },
+        knownVolatileEffectIds = emptySet(),
+        knownBaseStabTypeIds = baseStabTypes,
+        knownTeraTypeId = activeTeraType,
+        knownStellarBoostedTypeIds = stellarBoostedTypes,
     )
 }

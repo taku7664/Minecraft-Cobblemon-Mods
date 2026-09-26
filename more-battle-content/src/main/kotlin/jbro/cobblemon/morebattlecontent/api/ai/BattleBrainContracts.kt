@@ -138,6 +138,9 @@ class BattlePokemonStateView(
     knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
     val actionConstraints: BattlePokemonActionConstraintView = BattlePokemonActionConstraintView.empty(),
     knownVolatileEffectIds: Set<String>,
+    knownBaseStabTypeIds: Set<String> = knownTypeIds,
+    val knownTeraTypeId: String? = null,
+    knownStellarBoostedTypeIds: Set<String>? = null,
 ) {
     /** Preserve the original JVM constructor and Kotlin default-argument constructor. */
     constructor(
@@ -160,13 +163,73 @@ class BattlePokemonStateView(
         actionConstraints: BattlePokemonActionConstraintView = BattlePokemonActionConstraintView.empty(),
     ) : this(battlePokemonId, side, activeSlot, speciesId, formId, level, hpFraction, statusId,
         statStages, knownMoveIds, knownAbilityId, knownHeldItemId, fainted, knownTypeIds,
-        combatStats, knownFormStates, actionConstraints, emptySet())
+        combatStats, knownFormStates, actionConstraints, emptySet(), knownTypeIds, null, null)
+
+    /** Preserve the JVM constructor added with public volatile-effect knowledge. */
+    constructor(
+        battlePokemonId: UUID,
+        side: BattleSide,
+        activeSlot: Int?,
+        speciesId: String,
+        formId: String?,
+        level: Int?,
+        hpFraction: Double,
+        statusId: String?,
+        statStages: Map<String, Int>,
+        knownMoveIds: Set<String>,
+        knownAbilityId: String?,
+        knownHeldItemId: String?,
+        fainted: Boolean,
+        knownTypeIds: Set<String>,
+        combatStats: BattleCombatStatRangesView?,
+        knownFormStates: Map<String, BattlePokemonFormStateView>,
+        actionConstraints: BattlePokemonActionConstraintView,
+        knownVolatileEffectIds: Set<String>,
+    ) : this(battlePokemonId, side, activeSlot, speciesId, formId, level, hpFraction, statusId,
+        statStages, knownMoveIds, knownAbilityId, knownHeldItemId, fainted, knownTypeIds,
+        combatStats, knownFormStates, actionConstraints, knownVolatileEffectIds, knownTypeIds, null, null)
+
+    /** Preserve the JVM constructor added with separate base-STAB and Tera identity. */
+    constructor(
+        battlePokemonId: UUID,
+        side: BattleSide,
+        activeSlot: Int?,
+        speciesId: String,
+        formId: String?,
+        level: Int?,
+        hpFraction: Double,
+        statusId: String?,
+        statStages: Map<String, Int>,
+        knownMoveIds: Set<String>,
+        knownAbilityId: String?,
+        knownHeldItemId: String?,
+        fainted: Boolean,
+        knownTypeIds: Set<String>,
+        combatStats: BattleCombatStatRangesView?,
+        knownFormStates: Map<String, BattlePokemonFormStateView>,
+        actionConstraints: BattlePokemonActionConstraintView,
+        knownVolatileEffectIds: Set<String>,
+        knownBaseStabTypeIds: Set<String>,
+        knownTeraTypeId: String?,
+    ) : this(battlePokemonId, side, activeSlot, speciesId, formId, level, hpFraction, statusId,
+        statStages, knownMoveIds, knownAbilityId, knownHeldItemId, fainted, knownTypeIds,
+        combatStats, knownFormStates, actionConstraints, knownVolatileEffectIds, knownBaseStabTypeIds,
+        knownTeraTypeId, null)
 
     /** Observed active effects only. Absence is not proof of complete volatile knowledge or future persistence. */
     val knownVolatileEffectIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownVolatileEffectIds))
     val statStages: Map<String, Int> = Collections.unmodifiableMap(LinkedHashMap(statStages))
     val knownMoveIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownMoveIds))
     val knownTypeIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownTypeIds))
+    /** Types retaining ordinary STAB before an active Terastallization; excludes the Tera type. */
+    val knownBaseStabTypeIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownBaseStabTypeIds))
+    /**
+     * Exact effective move types whose one-use Stellar boost has been consumed, or null when public
+     * observation cannot determine the consumption state. An empty set is therefore meaningful.
+     */
+    val knownStellarBoostedTypeIds: Set<String>? = knownStellarBoostedTypeIds?.let {
+        Collections.unmodifiableSet(LinkedHashSet(it))
+    }
     val knownFormStates: Map<String, BattlePokemonFormStateView> =
         Collections.unmodifiableMap(LinkedHashMap(knownFormStates))
 
@@ -176,6 +239,9 @@ class BattlePokemonStateView(
         require(hpFraction in 0.0..1.0)
         require(speciesId.isNotBlank())
         require(this.knownTypeIds.all { it.isNotBlank() })
+        require(this.knownBaseStabTypeIds.all { it.isNotBlank() })
+        require(knownTeraTypeId == null || knownTeraTypeId.isNotBlank())
+        require(this.knownStellarBoostedTypeIds?.all { it.isNotBlank() } != false)
         require(this.knownFormStates.keys.all { it.isNotBlank() })
         require(this.knownVolatileEffectIds.all { it.isNotBlank() })
     }
@@ -948,9 +1014,12 @@ class BattleDecisionContext private constructor(
     val publicActionCatalog: BattlePublicActionCatalogView,
     val opponentTeamPreview: BattleOpponentTeamPreviewView?,
     val exactOwnTeam: BattleExactOwnTeamView?,
+    localOpponentStatSpreads: Map<Int, BattleLocalOpponentStatSpreadView>,
     @Suppress("UNUSED_PARAMETER") compatibilityMarker: Unit,
 ) {
     val candidates: List<BattleActionCandidate> = Collections.unmodifiableList(ArrayList(candidates))
+    val localOpponentStatSpreads: Map<Int, BattleLocalOpponentStatSpreadView> =
+        Collections.unmodifiableMap(LinkedHashMap(localOpponentStatSpreads))
 
     init {
         require(candidates.isNotEmpty())
@@ -965,6 +1034,9 @@ class BattleDecisionContext private constructor(
                 "Exact own team must cover every ally and cannot contain opponent identities"
             }
         }
+        require(this.localOpponentStatSpreads.keys.all { slot ->
+            opponentTeamPreview?.pokemon?.any { it.previewSlotId == slot } == true
+        }) { "Local opponent stat spreads must refer to preview slots" }
     }
 
     /** Derive a decision view without silently dropping public context added to this contract. */
@@ -977,6 +1049,7 @@ class BattleDecisionContext private constructor(
         publicActionCatalog: BattlePublicActionCatalogView = this.publicActionCatalog,
         opponentTeamPreview: BattleOpponentTeamPreviewView? = this.opponentTeamPreview,
         exactOwnTeam: BattleExactOwnTeamView? = this.exactOwnTeam,
+        localOpponentStatSpreads: Map<Int, BattleLocalOpponentStatSpreadView> = this.localOpponentStatSpreads,
     ): BattleDecisionContext = BattleDecisionContext(
         requestId,
         state,
@@ -986,6 +1059,7 @@ class BattleDecisionContext private constructor(
         publicActionCatalog,
         opponentTeamPreview,
         exactOwnTeam,
+        localOpponentStatSpreads,
         Unit,
     )
 
@@ -1006,6 +1080,7 @@ class BattleDecisionContext private constructor(
         publicActionCatalog,
         null,
         null,
+        emptyMap(),
         Unit,
     )
 
@@ -1026,6 +1101,7 @@ class BattleDecisionContext private constructor(
         publicActionCatalog,
         opponentTeamPreview,
         null,
+        emptyMap(),
         Unit,
     )
 }

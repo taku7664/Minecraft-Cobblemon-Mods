@@ -62,12 +62,71 @@ class NativeOpponentRosterHypothesisCompilerTest {
     }
 
     @Test
-    fun `selection rule must be six to three singles or six to four doubles`() {
-        val lead = opponent("cobblemon:fluttermane")
+    fun `six on six singles test battle keeps the complete preview roster`() {
+        val lead = opponent("cobblemon:torterra")
+        val preview = preview(6, "torterra", "zoroark", "celebi", "houndoom", "milotic", "togekiss")
+
+        val result = NativeOpponentRosterHypothesisCompiler.compile(
+            state(lead, remaining = 6),
+            preview,
+        )
+
+        assertTrue(result.issues.isEmpty())
+        assertEquals(1, result.hypotheses.size)
+        assertEquals((0..5).toList(), result.hypotheses.single().selectedPreviewSlotIds)
+        assertEquals(0, result.hypotheses.single().revealedAssignments[lead.battlePokemonId])
+        assertEquals(1.0, result.hypotheses.single().probability, 1e-12)
+    }
+
+    @Test
+    fun `showdown switch form identity matches the public Cobblemon preview form`() {
+        val lead = opponent("showdown:zoroarkhisui")
+        val preview = BattleOpponentTeamPreviewView(1, listOf(
+            BattleOpponentTeamPreviewPokemonView(
+                previewSlotId = 0,
+                speciesId = "cobblemon:zoroark",
+                formId = "Hisuian",
+                level = 50,
+                moveCandidatePool = null,
+                buildCandidatePool = null,
+                showdownSpeciesId = "Zoroark-Hisui",
+            ),
+        ))
+
+        val result = NativeOpponentRosterHypothesisCompiler.compile(state(lead, remaining = 1), preview)
+
+        assertTrue(result.issues.isEmpty(), "issues=${result.issues}")
+        assertEquals(0, result.hypotheses.single().revealedAssignments.getValue(lead.battlePokemonId))
+    }
+
+    @Test
+    fun `singles accepts every selection size exposed by the preview`() {
+        val species = arrayOf("torterra", "zoroark", "celebi", "houndoom", "milotic", "togekiss")
+        for (selectionSize in 1..species.size) {
+            val lead = opponent("cobblemon:torterra")
+            val result = NativeOpponentRosterHypothesisCompiler.compile(
+                state(lead, remaining = selectionSize),
+                preview(selectionSize, *species),
+            )
+
+            assertTrue(result.issues.isEmpty(), "selectionSize=$selectionSize issues=${result.issues}")
+            assertTrue(result.hypotheses.isNotEmpty(), "selectionSize=$selectionSize")
+            assertTrue(result.hypotheses.all { hypothesis ->
+                hypothesis.selectedPreviewSlotIds.size == selectionSize &&
+                    0 in hypothesis.selectedPreviewSlotIds
+            }, "selectionSize=$selectionSize hypotheses=${result.hypotheses}")
+            assertEquals(1.0, result.hypotheses.sumOf { it.probability }, 1e-12)
+        }
+    }
+
+    @Test
+    fun `unsupported double selection size remains explicit`() {
+        val left = opponent("cobblemon:fluttermane", slot = 0)
+        val right = opponent("cobblemon:urshifu", slot = 1)
 
         val invalid = NativeOpponentRosterHypothesisCompiler.compile(
-            state(lead, remaining = 4),
-            preview(4, "fluttermane", "urshifu", "rillaboom", "incineroar", "amoonguss", "landorus"),
+            state(left, right, remaining = 3, format = BattleFormat.DOUBLE),
+            preview(3, "fluttermane", "urshifu", "rillaboom", "incineroar", "amoonguss", "landorus"),
         )
 
         assertTrue(invalid.hypotheses.isEmpty())
@@ -134,6 +193,25 @@ class NativeOpponentRosterHypothesisCompilerTest {
 
         assertTrue(result.issues.isEmpty())
         assertEquals(10, result.hypotheses.size)
+    }
+
+    @Test
+    fun `duplicate opening switch announcements for the same active lead remain initial`() {
+        val lead = opponent("showdown:clodsire")
+        val events = (1L..4L).map { sequence -> BattleObservedEventView(
+            sequence = sequence,
+            turn = 0,
+            kind = BattleObservedEventKind.SWITCHED,
+            actorPokemonId = lead.battlePokemonId,
+        ) }
+
+        val result = NativeOpponentRosterHypothesisCompiler.compile(
+            state(lead, remaining = 6, turn = 0, events = events),
+            preview(6, "clodsire", "zapdos", "zoroark", "torterra", "garchomp", "milotic"),
+        )
+
+        assertTrue(result.issues.isEmpty(), "issues=${result.issues}")
+        assertEquals(1, result.hypotheses.size)
     }
 
     @Test

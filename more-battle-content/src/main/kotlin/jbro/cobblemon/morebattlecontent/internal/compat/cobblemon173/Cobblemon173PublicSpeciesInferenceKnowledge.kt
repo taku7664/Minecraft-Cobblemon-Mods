@@ -12,6 +12,7 @@ import jbro.cobblemon.morebattlecontent.internal.ai.PublicSpeciesInferenceKnowle
 import jbro.cobblemon.morebattlecontent.internal.ai.PublicSpeciesMoveKnowledge
 import jbro.cobblemon.morebattlecontent.internal.ai.PublicSpeciesMovePool
 import com.cobblemon.mod.common.pokemon.FormData
+import com.cobblemon.mod.common.api.pokemon.stats.Stats
 import net.minecraft.resources.ResourceLocation
 
 /** Resolves rule pools from the publicly presented species/form, never a live Pokemon's set. */
@@ -84,6 +85,14 @@ internal object Cobblemon173PublicSpeciesInferenceKnowledge : PublicSpeciesInfer
                 abilities = abilities,
                 genderRates = genderRates,
                 sourceId = "cobblemon:1.7.3/form_abilities_and_gender_ratio",
+                baseStats = mapOf(
+                    "hp" to requireNotNull(form.baseStats[Stats.HP]),
+                    "atk" to requireNotNull(form.baseStats[Stats.ATTACK]),
+                    "def" to requireNotNull(form.baseStats[Stats.DEFENCE]),
+                    "spa" to requireNotNull(form.baseStats[Stats.SPECIAL_ATTACK]),
+                    "spd" to requireNotNull(form.baseStats[Stats.SPECIAL_DEFENCE]),
+                    "spe" to requireNotNull(form.baseStats[Stats.SPEED]),
+                ),
             )
         }
     }

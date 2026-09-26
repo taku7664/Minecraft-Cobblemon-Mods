@@ -11,6 +11,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattleObservedEventView
 import jbro.cobblemon.morebattlecontent.api.ai.BattlePokemonStateView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerTier
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductRootSnapshot
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionReconcileStatus
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionReconciler
@@ -20,6 +21,9 @@ import jbro.cobblemon.morebattlecontent.betterai.search.NativeSearchWorldKey
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBranchWorker
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeDamageRollFrame
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeExecutedMoveFrame
+import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeForcedDamageRoll
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMoveFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativePokemonSet
@@ -31,6 +35,55 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class NativeProductSessionReconcilerTest {
+    @Test
+    fun `boss removes the native world that contradicts public move order`() {
+        val publicEvents = actionOrderTurnEvents()
+        val matching = frame(
+            "matching",
+            turn = 2,
+            executedMoveOrder = moveOrder(OPPONENT, ALLY),
+        )
+        val contradicted = frame(
+            "contradicted",
+            turn = 2,
+            executedMoveOrder = moveOrder(ALLY, OPPONENT),
+        )
+        val worker = Worker(mapOf("root-scarf" to matching, "root-no-scarf" to contradicted))
+        val reconciler = NativeProductSessionReconciler { _, action -> action(worker) }
+        val prior = session(listOf(
+            world("scarf", "root-scarf", 0.4),
+            world("no-scarf", "root-no-scarf", 0.6),
+        ))
+
+        val result = reconciler.reconcile(prior, context(turn = 2, events = publicEvents), Long.MAX_VALUE)
+
+        assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status)
+        assertEquals(listOf("scarf"), result.sessionState?.worlds?.map { it.key.hypothesisId })
+        assertEquals(1.0, result.sessionState?.worlds?.single()?.probability)
+    }
+
+    @Test
+    fun `introductory keeps both speed worlds despite the same public move order`() {
+        val publicEvents = actionOrderTurnEvents()
+        val worker = Worker(mapOf(
+            "root-scarf" to frame("matching", 2, executedMoveOrder = moveOrder(OPPONENT, ALLY)),
+            "root-no-scarf" to frame("contradicted", 2, executedMoveOrder = moveOrder(ALLY, OPPONENT)),
+        ))
+        val reconciler = NativeProductSessionReconciler { _, action -> action(worker) }
+        val prior = session(
+            worlds = listOf(
+                world("scarf", "root-scarf", 0.4),
+                world("no-scarf", "root-no-scarf", 0.6),
+            ),
+            tier = BattleTrainerTier.INTRODUCTORY,
+        )
+
+        val result = reconciler.reconcile(prior, context(turn = 2, events = publicEvents), Long.MAX_VALUE)
+
+        assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status)
+        assertEquals(setOf("scarf", "no-scarf"), result.sessionState?.worlds?.map { it.key.hypothesisId }?.toSet())
+    }
+
     @Test
     fun `public opponent move advances the retained native root and clears the pending own action`() {
         val next = frame("next", turn = 2)
@@ -71,6 +124,47 @@ class NativeProductSessionReconcilerTest {
     }
 
     @Test
+    fun `public direct damage weights build worlds and reconciles sampled HP before reuse`() {
+        val highSupport = List(4) { 25 } + List(12) { 30 }
+        val lowSupport = listOf(25) + List(15) { 15 }
+        val high = frame(
+            "high-sampled",
+            turn = 2,
+            opponentHp = 70,
+            executedDamageRolls = listOf(damageRoll(actual = 30, possible = highSupport)),
+        )
+        val low = frame(
+            "low-sampled",
+            turn = 2,
+            opponentHp = 85,
+            executedDamageRolls = listOf(damageRoll(actual = 15, possible = lowSupport)),
+        )
+        val worker = Worker(mapOf("root-high" to high, "root-low" to low))
+        val reconciler = NativeProductSessionReconciler { _, action -> action(worker) }
+        val prior = session(listOf(
+            world("high", "root-high", 0.5, sample = 0),
+            world("low", "root-low", 0.5, sample = 1),
+        ))
+
+        val result = reconciler.reconcile(
+            prior,
+            context(turn = 2, events = directDamageTurnEvents(), opponentHpFraction = 0.75),
+            Long.MAX_VALUE,
+        )
+
+        assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status, result.rootIssues.toString())
+        val worlds = requireNotNull(result.sessionState).worlds.associateBy { it.key.hypothesisId }
+        assertEquals(0.8, requireNotNull(worlds["high"]).probability, 1e-12)
+        assertEquals(0.2, requireNotNull(worlds["low"]).probability, 1e-12)
+        assertTrue(worlds.values.all { world ->
+            world.rootSnapshot.frame.p2Active.single().hp == 75 &&
+                world.rootSnapshot.frame.p2Team.single().hp == 75
+        })
+        assertEquals(5, worker.forcedDamageCalls,
+            "Every supported native roll must be replayed before identical HP snapshots are merged")
+    }
+
+    @Test
     fun `unobserved opponent command keeps distinct compatible descendants with unique lineage`() {
         val opponentMoves = listOf("growl", "protect")
         val root = frame("root", turn = 1, opponentMoves = opponentMoves)
@@ -95,6 +189,32 @@ class NativeProductSessionReconcilerTest {
         assertEquals(2, worlds.map { it.key }.distinct().size)
         assertTrue(worlds.all { it.key.lineage.isNotBlank() })
         assertEquals(2, worker.branchCalls)
+    }
+
+    @Test
+    fun `incompatible unobserved opponent commands still consume prior probability`() {
+        val opponentMoves = listOf("growl", "protect")
+        val rootA = frame("root-a", turn = 1, opponentMoves = opponentMoves)
+        val rootB = frame("root-b", turn = 1, opponentMoves = opponentMoves)
+        val worker = Worker(mapOf(
+            "root-a|move 1" to frame("a-compatible", turn = 2, opponentMoves = opponentMoves),
+            "root-a|move 2" to frame("a-incompatible", turn = 2, opponentHp = 99,
+                opponentMoves = opponentMoves),
+            "root-b|move 1" to frame("b-compatible-1", turn = 2, opponentMoves = opponentMoves),
+            "root-b|move 2" to frame("b-compatible-2", turn = 2, opponentMoves = opponentMoves),
+        ))
+        val prior = session(listOf(
+            world("a", "root-a", 0.5, definition = definition(opponentMoves), rootFrame = rootA),
+            world("b", "root-b", 0.5, definition = definition(opponentMoves), rootFrame = rootB),
+        ))
+
+        val result = NativeProductSessionReconciler { _, action -> action(worker) }
+            .reconcile(prior, context(turn = 2), Long.MAX_VALUE)
+
+        assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status, result.rootIssues.toString())
+        val worlds = requireNotNull(result.sessionState).worlds
+        assertEquals(1.0 / 3.0, worlds.filter { it.key.hypothesisId == "a" }.sumOf { it.probability }, 1e-12)
+        assertEquals(2.0 / 3.0, worlds.filter { it.key.hypothesisId == "b" }.sumOf { it.probability }, 1e-12)
     }
 
     @Test
@@ -234,14 +354,49 @@ class NativeProductSessionReconcilerTest {
     ) : NativeBranchWorker {
         override val rulesFingerprint: String = rules
         var branchCalls = 0
+        var forcedDamageCalls = 0
         val choices = mutableListOf<Pair<String, String>>()
 
         override fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame = error("must reuse root")
+
+        override fun rebindMoves(
+            snapshotJson: String,
+            rebindings: List<jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMoveSetRebinding>,
+        ): NativeBattleFrame = error("fixture does not expect move-set rebinding")
 
         override fun branch(snapshotJson: String, p1Choice: String, p2Choice: String): NativeBattleFrame {
             branchCalls++
             choices += p1Choice to p2Choice
             return requireNotNull(results["$snapshotJson|$p2Choice"] ?: results[snapshotJson])
+        }
+
+        override fun branchWithForcedDamage(
+            snapshotJson: String,
+            p1Choice: String,
+            p2Choice: String,
+            forcedDamageRolls: List<NativeForcedDamageRoll>,
+        ): NativeBattleFrame {
+            forcedDamageCalls++
+            val original = requireNotNull(results["$snapshotJson|$p2Choice"] ?: results[snapshotJson])
+            val forcedByCall = forcedDamageRolls.associateBy(NativeForcedDamageRoll::damageCallIndex)
+            val conditionedRolls = original.executedDamageRolls.map { roll ->
+                val forced = forcedByCall[roll.damageCallIndex] ?: return@map roll
+                val hpLoss = roll.possibleHpLosses[forced.percent - 85]
+                roll.copy(actualHpLoss = hpLoss)
+            }
+            val hpById = conditionedRolls.associate { roll ->
+                roll.targetPokemonUuid to (roll.hpBefore - roll.actualHpLoss)
+            }
+            fun patched(pokemon: NativePokemonFrame): NativePokemonFrame =
+                hpById[pokemon.uuid]?.let { pokemon.copy(hp = it) } ?: pokemon
+            return original.copy(
+                snapshotJson = "$snapshotJson|forced-damage",
+                p1Active = original.p1Active.map(::patched),
+                p2Active = original.p2Active.map(::patched),
+                p1Team = original.p1Team.map(::patched),
+                p2Team = original.p2Team.map(::patched),
+                executedDamageRolls = conditionedRolls,
+            )
         }
 
         override fun close() = Unit
@@ -250,6 +405,7 @@ class NativeProductSessionReconcilerTest {
     private fun session(
         worlds: List<NativeProductSessionWorld>,
         lastSequence: Long? = null,
+        tier: BattleTrainerTier = BattleTrainerTier.BOSS,
     ) = NativeProductSessionState(
         battleId = BATTLE,
         format = BattleFormat.SINGLE,
@@ -258,6 +414,7 @@ class NativeProductSessionReconcilerTest {
         publicTurn = 1,
         lastObservedEventSequence = lastSequence,
         pendingOwnAction = PRODUCT_TACKLE,
+        trainerTier = tier,
     )
 
     private fun world(
@@ -282,20 +439,25 @@ class NativeProductSessionReconcilerTest {
     private fun context(
         turn: Int,
         events: List<BattleObservedEventView> = emptyList(),
+        opponentHpFraction: Double = 1.0,
     ) = BattleDecisionContext(
         requestId = UUID.nameUUIDFromBytes("request-$turn".toByteArray()),
-        state = state(turn, events),
+        state = state(turn, events, opponentHpFraction),
         candidates = listOf(PRODUCT_TACKLE),
         deadlineEpochMillis = Long.MAX_VALUE,
     )
 
-    private fun state(turn: Int, events: List<BattleObservedEventView>) = BattleStateView(
+    private fun state(
+        turn: Int,
+        events: List<BattleObservedEventView>,
+        opponentHpFraction: Double,
+    ) = BattleStateView(
         battleId = BATTLE,
         format = BattleFormat.SINGLE,
         turn = turn,
         pokemon = listOf(
             publicPokemon(ALLY, BattleSide.ALLY),
-            publicPokemon(OPPONENT, BattleSide.OPPONENT),
+            publicPokemon(OPPONENT, BattleSide.OPPONENT, opponentHpFraction),
         ),
         field = BattleFieldStateView.empty(),
         remainingPokemonBySide = mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1),
@@ -303,8 +465,8 @@ class NativeProductSessionReconcilerTest {
         inferences = emptyList(),
     )
 
-    private fun publicPokemon(id: UUID, side: BattleSide) = BattlePokemonStateView(
-        id, side, 0, "cobblemon:mew", null, 50, 1.0, null,
+    private fun publicPokemon(id: UUID, side: BattleSide, hpFraction: Double = 1.0) = BattlePokemonStateView(
+        id, side, 0, "cobblemon:mew", null, 50, hpFraction, null,
         emptyMap(), emptySet(), null, null, false, setOf("psychic"),
     )
 
@@ -317,6 +479,72 @@ class NativeProductSessionReconcilerTest {
         actorSlot = 0,
     )
 
+    private fun actionOrderTurnEvents() = listOf(
+        BattleObservedEventView(
+            sequence = 1,
+            turn = 1,
+            kind = BattleObservedEventKind.ACTION_ORDER,
+            actorPokemonId = OPPONENT,
+            publicValueId = "growl",
+            baseMovePriority = 0,
+        ),
+        moveEvent(2),
+        BattleObservedEventView(
+            sequence = 3,
+            turn = 1,
+            kind = BattleObservedEventKind.ACTION_ORDER,
+            actorPokemonId = ALLY,
+            publicValueId = "tackle",
+            baseMovePriority = 0,
+        ),
+        BattleObservedEventView(
+            sequence = 4,
+            turn = 1,
+            kind = BattleObservedEventKind.MOVE_USED,
+            actorPokemonId = ALLY,
+            publicValueId = "tackle",
+            actorSlot = 0,
+        ),
+    )
+
+    private fun directDamageTurnEvents() = listOf(
+        BattleObservedEventView(
+            sequence = 1,
+            turn = 1,
+            kind = BattleObservedEventKind.MOVE_USED,
+            actorPokemonId = ALLY,
+            publicValueId = "tackle",
+            actorSlot = 0,
+        ),
+        BattleObservedEventView(
+            sequence = 2,
+            turn = 1,
+            kind = BattleObservedEventKind.HP_CHANGED,
+            actorPokemonId = OPPONENT,
+            hpFractionDelta = -0.25,
+            precedingActionSequence = 1,
+            precedingActionActorPokemonId = ALLY,
+            precedingActionMoveId = "tackle",
+        ),
+        moveEvent(3),
+    )
+
+    private fun damageRoll(actual: Int, possible: List<Int>) = NativeDamageRollFrame(
+        turn = 1,
+        attackerPokemonUuid = ALLY.toString(),
+        targetPokemonUuid = OPPONENT.toString(),
+        moveId = "tackle",
+        hpBefore = 100,
+        maxHp = 100,
+        actualHpLoss = actual,
+        possibleHpLosses = possible,
+    )
+
+    private fun moveOrder(first: UUID, second: UUID) = listOf(
+        NativeExecutedMoveFrame(1, first.toString(), if (first == ALLY) "tackle" else "growl"),
+        NativeExecutedMoveFrame(1, second.toString(), if (second == ALLY) "tackle" else "growl"),
+    )
+
     private fun frame(
         snapshot: String,
         turn: Int,
@@ -324,6 +552,8 @@ class NativeProductSessionReconcilerTest {
         opponentMoves: List<String> = listOf("growl"),
         p1RequestJson: String = moveRequest(listOf("tackle")),
         p2RequestJson: String = moveRequest(opponentMoves),
+        executedMoveOrder: List<NativeExecutedMoveFrame> = emptyList(),
+        executedDamageRolls: List<NativeDamageRollFrame> = emptyList(),
     ): NativeBattleFrame {
         val ally = nativePokemon(ALLY, listOf("tackle"), 100)
         val opponent = nativePokemon(OPPONENT, opponentMoves, opponentHp)
@@ -339,6 +569,8 @@ class NativeProductSessionReconcilerTest {
             p1RequestJson = p1RequestJson,
             p2RequestJson = p2RequestJson,
             log = emptyList(),
+            executedMoveOrder = executedMoveOrder,
+            executedDamageRolls = executedDamageRolls,
         )
     }
 
