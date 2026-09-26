@@ -2,7 +2,7 @@
 
 - 상태: `planning baseline`
 - 대상: 기획자, MBC 본체 구현자, League Challenge 구현자, 데이터·리소스팩 제작자
-- 최종 갱신: 2026-09-25 — Cobblemon UI 툴킷 후속 결정과 타이틀 fixture 증거 경계 반영
+- 최종 갱신: 2026-09-26 — League 콘텐츠 프리미티브와 실제 월드 하단 검증 반영
 
 ## 문서 목록
 
@@ -22,6 +22,7 @@
 | [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | 선행 작업, 구현 단계, 검증 범위와 완료 조건을 정리한다. |
 | [../../docs/MORE_BATTLE_CONTENT_LEAGUE_UI_BOOTSTRAP_AMENDMENT.md](../../docs/MORE_BATTLE_CONTENT_LEAGUE_UI_BOOTSTRAP_AMENDMENT.md) | 최소 모듈부터 시작하는 GUI 착수 순서와 실험 API 승격·롤백 경계를 정의한다. |
 | [../../docs/COBBLEMON_UI_TOOLKIT_AND_RUNTIME_EVIDENCE_AMENDMENT.md](../../docs/COBBLEMON_UI_TOOLKIT_AND_RUNTIME_EVIDENCE_AMENDMENT.md) | MBC 내부 전용 경계를 갱신한 Cobblemon 공용 위젯·테마 소스 모듈과 런타임 증거 등급을 정의한다. |
+| [../../docs/COBBLEMON_UI_CONTENT_PRIMITIVES_AMENDMENT.md](../../docs/COBBLEMON_UI_CONTENT_PRIMITIVES_AMENDMENT.md) | League 화면용 본문·패널·단계·순서형 선출·렌더 슬롯·지속 안내와 스크롤 입력 계약을 정의한다. |
 | [../../docs/COBBLEMON_BATTLE_UI_PHASED_COMMAND_AND_LOG_DECISION.md](../../docs/COBBLEMON_BATTLE_UI_PHASED_COMMAND_AND_LOG_DECISION.md) | Battle UI의 선택·연출·전체 기록 분리와 공용 툴킷 소비 계약을 정의한다. |
 
 ## 문서 우선순위
