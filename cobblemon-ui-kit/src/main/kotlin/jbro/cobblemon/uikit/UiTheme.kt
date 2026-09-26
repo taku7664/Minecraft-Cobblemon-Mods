@@ -56,7 +56,10 @@ data class UiButtonMetrics(
 data class UiSurfaceTokens(
     val shell: UiSurfaceStyle,
     val panel: UiSurfaceStyle,
-    val panelAlt: UiSurfaceStyle
+    val panelAlt: UiSurfaceStyle,
+    val shellText: Int? = null,
+    val panelText: Int? = null,
+    val panelAltText: Int? = null
 )
 
 data class UiButtonStyle(
@@ -64,7 +67,8 @@ data class UiButtonStyle(
     val text: Int,
     val supportingText: Int,
     val selectionIndicator: UiSelectionIndicator = UiSelectionIndicator.None,
-    val pressedOffsetY: Int = 0
+    val pressedOffsetY: Int = 0,
+    val textShadow: Boolean = false
 )
 
 sealed interface UiSelectionIndicator {

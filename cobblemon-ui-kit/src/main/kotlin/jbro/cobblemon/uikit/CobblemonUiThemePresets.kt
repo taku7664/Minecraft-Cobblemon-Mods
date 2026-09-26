@@ -56,14 +56,14 @@ object CobblemonUiThemePresets {
             highlightColor = colors.borderBright,
             shadeColor = 0xFF8D7038.toInt(),
             shadowColor = 0xC8080B0F.toInt(),
-            shadowOffset = 3
+            shadowOffset = 2
         )
         val cardFrame = UiBorder.PixelFrame(
             outerColor = colors.border,
             highlightColor = 0xFFFFFFFF.toInt(),
             shadeColor = 0xFF8C9A91.toInt(),
             shadowColor = 0xA8080B0F.toInt(),
-            shadowOffset = 2
+            shadowOffset = 1
         )
         val selector = UiSelectionIndicator.Sprite(
             UiIcon("cobblemon_ui_kit", "textures/gui/pixel/selector.png")
@@ -128,7 +128,9 @@ object CobblemonUiThemePresets {
             surfaces = UiSurfaceTokens(
                 shell = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(colors.shell), shellFrame),
                 panel = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(colors.panel), cardFrame),
-                panelAlt = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(colors.panelAlt), cardFrame)
+                panelAlt = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(colors.panelAlt), cardFrame),
+                panelText = colors.border,
+                panelAltText = colors.border
             ),
             metrics = metrics,
             styles = styles,

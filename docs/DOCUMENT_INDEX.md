@@ -4,7 +4,7 @@
 |---|---|
 | Status | `shared` |
 | Effective | 2026-08-19 |
-| Last reviewed | 2026-09-26 — 본가·도트 세대별 Cobblemon UI 테마 프리셋 계약 반영 |
+| Last reviewed | 2026-09-26 — League 콘텐츠 프리미티브와 스크롤 입력 계약 반영 |
 | 주 독자 | 빡대리님과 이후 설계·구현 담당자 |
 | 목적 | 활성 계약, 분석 근거, 폐기 기록과 재개 지점의 라우팅 |
 
@@ -99,6 +99,11 @@
 76. `COBBLEMON_UI_MAINLINE_THEME_PRESETS_AMENDMENT.md` — 아르세우스 계열을 제외하고 GBA·DS 도트 본가와 가라르·팔데아 문법을 분리한 여섯 내장 테마 후보, 코드·Visual Pack 경계와 같은 월드 비교 게이트를 확정
 77. `COBBLEMON_UI_MAINLINE_THEME_RUNTIME_EVIDENCE.md` — 실제 개발 월드 한 세션에서 여섯 테마의 렌더·포커스·스크롤·닫기를 순회하고, 비교 캡처·25개 단위 테스트와 아직 검증하지 않은 소비자 경계를 기록
 78. `COBBLEMON_UI_PIXEL_LEAGUE_THEME_CORRECTION.md` — 세대명 도트 프리셋을 팔레트 연구로 정정하고, 단일 `pixel_league`의 픽셀 프레임·하드 섀도·내장 커서/아이콘과 스냅샷 경고 개발 캡처 경계를 확정
+79. `COBBLEMON_UI_TEXT_SHADOW_POLICY_AMENDMENT.md` — 공용 버튼 글자 그림자를 기본 해제하고, 테마 기본값과 `UiButtonSpec` 호출부 인자로 필요한 곳만 명시적으로 활성화하는 정책을 확정
+80. `COBBLEMON_UI_PIXEL_SHADOW_OFFSET_AMENDMENT.md` — 공용 픽셀 프레임의 하드 섀도를 위젯에 가깝게 두는 기본 간격과 `pixel_league` 셸·카드 계층별 재정의를 확정
+81. `COBBLEMON_UI_WIDGET_PRIMITIVES_AMENDMENT.md` — 원형·라운드·캡슐·마름모 표면, 아이콘 전용 버튼, 탭·배지·토글·리스트·진행 바와 공용 스크롤 뷰포트 계약을 확정
+82. `COBBLEMON_UI_LAYOUT_OVERLAY_WIDGETS_AMENDMENT.md` — 스택·플로·그리드 배치, 툴팁·모달·토스트, 체크박스·라디오·콤보박스와 카드·통계 행 계약을 확정
+83. `COBBLEMON_UI_CONTENT_PRIMITIVES_AMENDMENT.md` — 여러 줄 본문·패널·단계 트랙·순서형 선출·렌더 슬롯·지속 안내·앵커 배치와 스크롤 키보드/드래그 계약을 확정
 
 `MORE_BATTLE_CONTENT_CONTENT_PROPOSAL.md`는 `rejected` 상태의 과거 대안이다. 현재 제품 범위나 구현 우선순위를 결정할 때 사용하지 않는다.
 

@@ -134,6 +134,13 @@ object UiSurfaceRenderer {
 
     private fun UiShape.inset(pixels: Int): UiShape = when (this) {
         UiShape.Rectangle -> UiShape.Rectangle
+        UiShape.Circle -> UiShape.Circle
+        UiShape.Capsule -> UiShape.Capsule
+        UiShape.Diamond -> UiShape.Diamond
+        is UiShape.RoundedRectangle -> {
+            val innerRadius = radiusPixels - pixels
+            if (innerRadius > 0) UiShape.RoundedRectangle(innerRadius) else UiShape.Rectangle
+        }
         is UiShape.Chamfer -> {
             val innerCut = cutPixels - pixels
             if (innerCut > 0) UiShape.Chamfer(innerCut, corners) else UiShape.Rectangle

@@ -25,6 +25,12 @@ enum class UiWidgetState {
     SELECTED
 }
 
+enum class UiIconButtonShape(val shape: UiShape) {
+    SQUARE(UiShape.Rectangle),
+    CIRCLE(UiShape.Circle),
+    DIAMOND(UiShape.Diamond)
+}
+
 sealed interface UiWidthPolicy {
     data object Content : UiWidthPolicy
     data object Fill : UiWidthPolicy
@@ -56,10 +62,18 @@ data class UiButtonSpec(
     val size: UiControlSize = UiControlSize.MEDIUM,
     val width: UiWidthPolicy = UiWidthPolicy.Content,
     val selected: Boolean = false,
-    val surfaceOverrides: UiSurfaceOverrides = UiSurfaceOverrides()
+    val surfaceOverrides: UiSurfaceOverrides = UiSurfaceOverrides(),
+    val textShadow: Boolean? = null,
+    val iconOnly: Boolean = false,
+    val iconButtonShape: UiIconButtonShape = UiIconButtonShape.SQUARE
 ) {
     init {
         require(title.string.isNotBlank()) { "Button title must not be blank" }
+        if (iconOnly) {
+            require(icon != null) { "Icon-only button must provide an icon" }
+            require(variant == UiButtonVariant.ICON) { "Icon-only button must use the icon variant" }
+            require(supportingText == null) { "Icon-only button must not provide supporting text" }
+        }
     }
 
     fun resolveWidth(contentWidth: Int, availableWidth: Int, theme: UiThemeSnapshot): Int {
@@ -68,6 +82,7 @@ data class UiButtonSpec(
         val metrics = theme.metrics(size)
         val iconWidth = if (icon == null) 0 else metrics.iconSize + metrics.iconGap
         val naturalWidth = contentWidth + iconWidth + metrics.horizontalPadding * 2
+        if (iconOnly) return resolveHeight(theme).coerceAtMost(availableWidth)
         return when (val policy = width) {
             UiWidthPolicy.Content -> naturalWidth.coerceAtMost(availableWidth)
             UiWidthPolicy.Fill -> availableWidth
@@ -77,4 +92,31 @@ data class UiButtonSpec(
 
     fun resolveHeight(theme: UiThemeSnapshot): Int =
         if (supportingText == null) theme.metrics(size).height else theme.metrics(size).supportingHeight
+
+    fun resolveTextShadow(style: UiButtonStyle): Boolean = textShadow ?: style.textShadow
+
+    fun resolveSurface(style: UiButtonStyle): UiSurfaceStyle {
+        val resolved = style.surface.resolve(surfaceOverrides)
+        return if (iconOnly) resolved.copy(shape = iconButtonShape.shape) else resolved
+    }
+
+    companion object {
+        fun iconOnly(
+            label: Component,
+            icon: UiIcon,
+            shape: UiIconButtonShape = UiIconButtonShape.SQUARE,
+            size: UiControlSize = UiControlSize.MEDIUM,
+            selected: Boolean = false,
+            surfaceOverrides: UiSurfaceOverrides = UiSurfaceOverrides()
+        ): UiButtonSpec = UiButtonSpec(
+            title = label,
+            icon = icon,
+            variant = UiButtonVariant.ICON,
+            size = size,
+            selected = selected,
+            surfaceOverrides = surfaceOverrides,
+            iconOnly = true,
+            iconButtonShape = shape
+        )
+    }
 }
