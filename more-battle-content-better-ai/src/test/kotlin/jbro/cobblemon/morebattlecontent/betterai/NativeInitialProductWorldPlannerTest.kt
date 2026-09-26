@@ -130,6 +130,30 @@ class NativeInitialProductWorldPlannerTest {
     }
 
     @Test
+    fun `bounded plan retains the exhaustive top worlds and their normalized probabilities`() {
+        val source = context(preview = dualTypePreview())
+        fun withLimit(limit: Int) = NativeInitialProductWorldPlanner(
+            moveUsageForFormat = { LocalMoveUsageLookup { _, _, _ -> 0.5 } },
+            buildUsageForFormat = { LocalOpponentBuildUsageLookup { _, _ -> BUILD_USAGE } },
+            worldLimit = { _, _ -> limit },
+        ).plan(source, BattleTrainerTier.STANDARD)
+
+        val exhaustive = withLimit(Int.MAX_VALUE)
+        val bounded = withLimit(5)
+
+        assertTrue(exhaustive.issues.isEmpty(), exhaustive.issues.toString())
+        assertTrue(bounded.issues.isEmpty(), bounded.issues.toString())
+        assertTrue(exhaustive.worlds.size > 5)
+        val expected = exhaustive.worlds.take(5)
+        val mass = expected.sumOf { it.probability }
+        assertEquals(expected.map { it.hypothesisId }, bounded.worlds.map { it.hypothesisId })
+        expected.zip(bounded.worlds).forEach { (original, selected) ->
+            assertEquals(original.probability / mass, selected.probability, 1e-12)
+            assertEquals(original.definition.p2Team, selected.definition.p2Team)
+        }
+    }
+
+    @Test
     fun `compiles the same product contract for public doubles four selection`() {
         val result = planner().plan(context(BattleFormat.DOUBLE), BattleTrainerTier.BOSS)
 

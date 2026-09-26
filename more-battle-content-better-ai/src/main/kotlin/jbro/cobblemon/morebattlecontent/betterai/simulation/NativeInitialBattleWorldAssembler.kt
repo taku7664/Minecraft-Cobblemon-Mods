@@ -71,20 +71,40 @@ internal data class NativeInitialBattleWorldAssembly(
 
 /** Joins exact self knowledge and public opponent-slot hypotheses without crossing the boundary. */
 internal object NativeInitialBattleWorldAssembler {
+    /** Validation and move compilation depend on the roster and move catalog, not on a build world. */
+    internal class Preparation internal constructor(
+        val roster: NativeMaterializedOpponentRoster,
+        val rosterHypothesis: NativeOpponentRosterHypothesis,
+        val exactById: Map<UUID, BattleExactPokemonBuildView>,
+        val opponentMoveSets: Map<UUID, NativeOpponentMoveSetHypothesis>,
+        val moveFingerprint: String?,
+        val structuralIssues: List<NativeInitialWorldAssemblyIssue>,
+        val moveIssues: List<NativeInitialWorldAssemblyIssue>,
+    )
+
     fun assemble(
         roster: NativeMaterializedOpponentRoster,
         rosterHypothesis: NativeOpponentRosterHypothesis,
         exactOwnTeam: BattleExactOwnTeamView,
         opponentWorld: NativeOpponentPreviewBuildWorld,
         catalog: BattlePublicActionCatalogView,
-    ): NativeInitialBattleWorldAssembly {
-        val issues = linkedSetOf<NativeInitialWorldAssemblyIssue>()
+    ): NativeInitialBattleWorldAssembly = assemblePrepared(
+        prepare(roster, rosterHypothesis, exactOwnTeam, catalog), opponentWorld,
+    )
+
+    fun prepare(
+        roster: NativeMaterializedOpponentRoster,
+        rosterHypothesis: NativeOpponentRosterHypothesis,
+        exactOwnTeam: BattleExactOwnTeamView,
+        catalog: BattlePublicActionCatalogView,
+    ): Preparation {
+        val structuralIssues = linkedSetOf<NativeInitialWorldAssemblyIssue>()
         val allyIds = roster.state.pokemon.asSequence()
             .filter { it.side == BattleSide.ALLY }
             .mapTo(linkedSetOf()) { it.battlePokemonId }
         val exactById = exactOwnTeam.builds.associateBy(BattleExactPokemonBuildView::battlePokemonId)
         if (exactById.keys != allyIds) {
-            issues += NativeInitialWorldAssemblyIssue(NativeInitialWorldAssemblyIssueCode.EXACT_OWN_TEAM_MISMATCH)
+            structuralIssues += NativeInitialWorldAssemblyIssue(NativeInitialWorldAssemblyIssueCode.EXACT_OWN_TEAM_MISMATCH)
         }
 
         val selectedSlots = roster.opponentPreviewSlotByPokemonId.values.toSet()
@@ -96,16 +116,10 @@ internal object NativeInitialBattleWorldAssembler {
                 roster.opponentPreviewSlotByPokemonId[pokemonId] == slot
             }
         if (selectedSlots != rosterHypothesis.selectedPreviewSlotIds.toSet() || !revealedAssignmentsMatch) {
-            issues += NativeInitialWorldAssemblyIssue(NativeInitialWorldAssemblyIssueCode.ROSTER_HYPOTHESIS_MISMATCH)
-        }
-        val previewBuildBySlot = opponentWorld.builds.associateBy(NativeOpponentPreviewBuildHypothesis::previewSlotId)
-        selectedSlots.sorted().filterNot(previewBuildBySlot::containsKey).forEach { slot ->
-            issues += NativeInitialWorldAssemblyIssue(
-                NativeInitialWorldAssemblyIssueCode.OPPONENT_PREVIEW_BUILD_MISSING,
-                previewSlotId = slot,
-            )
+            structuralIssues += NativeInitialWorldAssemblyIssue(NativeInitialWorldAssemblyIssueCode.ROSTER_HYPOTHESIS_MISMATCH)
         }
         val opponentMoveSets = linkedMapOf<UUID, NativeOpponentMoveSetHypothesis>()
+        val moveIssues = linkedSetOf<NativeInitialWorldAssemblyIssue>()
         roster.state.pokemon.asSequence().filter { it.side == BattleSide.OPPONENT }.forEach { pokemon ->
             val slot = roster.opponentPreviewSlotByPokemonId.getValue(pokemon.battlePokemonId)
             val compiled = NativeMoveHypothesisCompiler.compile(pokemon, catalog)
@@ -118,34 +132,66 @@ internal object NativeInitialBattleWorldAssembler {
                         NativeInitialWorldAssemblyIssueCode.OPPONENT_MOVESET_INCOMPLETE
                     else -> NativeInitialWorldAssemblyIssueCode.OPPONENT_EXECUTABLE_MOVE_MISSING
                 }
-                issues += NativeInitialWorldAssemblyIssue(code, pokemon.battlePokemonId, slot)
+                moveIssues += NativeInitialWorldAssemblyIssue(code, pokemon.battlePokemonId, slot)
             } else {
                 opponentMoveSets[pokemon.battlePokemonId] = complete
             }
         }
-        if (issues.isNotEmpty()) return NativeInitialBattleWorldAssembly(null, issues.toList())
+        val moveFingerprint = if (moveIssues.isNotEmpty()) null else
+            roster.opponentPreviewSlotByPokemonId.entries.sortedBy { it.value }
+                .joinToString("|") { (pokemonId, slot) ->
+                    "s$slot=${opponentMoveSets.getValue(pokemonId).fingerprint}"
+                }
+        return Preparation(
+            roster, rosterHypothesis, exactById, opponentMoveSets, moveFingerprint,
+            structuralIssues.toList(), moveIssues.toList(),
+        )
+    }
 
-        val builds = roster.state.pokemon.map { pokemon ->
+    /** Also run for discarded candidates so malformed low-probability worlds still fail closed. */
+    fun validationIssues(
+        prepared: Preparation,
+        opponentWorld: NativeOpponentPreviewBuildWorld,
+    ): List<NativeInitialWorldAssemblyIssue> {
+        val selectedSlots = prepared.roster.opponentPreviewSlotByPokemonId.values.toSet()
+        val presentSlots = opponentWorld.builds.mapTo(linkedSetOf(), NativeOpponentPreviewBuildHypothesis::previewSlotId)
+        val buildIssues = selectedSlots.sorted().filterNot(presentSlots::contains).map { slot ->
+            NativeInitialWorldAssemblyIssue(
+                NativeInitialWorldAssemblyIssueCode.OPPONENT_PREVIEW_BUILD_MISSING,
+                previewSlotId = slot,
+            )
+        }
+        return prepared.structuralIssues + buildIssues + prepared.moveIssues
+    }
+
+    fun hypothesisId(prepared: Preparation, opponentWorld: NativeOpponentPreviewBuildWorld): String =
+        "${prepared.rosterHypothesis.hypothesisId}+${opponentWorld.hypothesisId}+moves:" +
+            requireNotNull(prepared.moveFingerprint) { "A complete move set is required for a world ID" }
+
+    fun assemblePrepared(
+        prepared: Preparation,
+        opponentWorld: NativeOpponentPreviewBuildWorld,
+    ): NativeInitialBattleWorldAssembly {
+        val issues = validationIssues(prepared, opponentWorld)
+        if (issues.isNotEmpty()) return NativeInitialBattleWorldAssembly(null, issues)
+        val previewBuildBySlot = opponentWorld.builds.associateBy(NativeOpponentPreviewBuildHypothesis::previewSlotId)
+        val builds = prepared.roster.state.pokemon.map { pokemon ->
             when (pokemon.side) {
-                BattleSide.ALLY -> exactBuild(requireNotNull(exactById[pokemon.battlePokemonId]))
+                BattleSide.ALLY -> exactBuild(requireNotNull(prepared.exactById[pokemon.battlePokemonId]))
                 BattleSide.OPPONENT -> {
-                    val slot = roster.opponentPreviewSlotByPokemonId.getValue(pokemon.battlePokemonId)
+                    val slot = prepared.roster.opponentPreviewSlotByPokemonId.getValue(pokemon.battlePokemonId)
                     publicBuild(
                         pokemon.battlePokemonId,
                         previewBuildBySlot.getValue(slot),
-                        opponentMoveSets.getValue(pokemon.battlePokemonId),
+                        prepared.opponentMoveSets.getValue(pokemon.battlePokemonId),
                     )
                 }
             }
         }
-        val moveFingerprint = roster.opponentPreviewSlotByPokemonId.entries.sortedBy { it.value }
-            .joinToString("|") { (pokemonId, slot) ->
-                "s$slot=${opponentMoveSets.getValue(pokemonId).fingerprint}"
-            }
         return NativeInitialBattleWorldAssembly(
             world = NativeBattleWorldHypothesis(
-                hypothesisId = "${rosterHypothesis.hypothesisId}+${opponentWorld.hypothesisId}+moves:$moveFingerprint",
-                probability = rosterHypothesis.probability * opponentWorld.probability,
+                hypothesisId = hypothesisId(prepared, opponentWorld),
+                probability = prepared.rosterHypothesis.probability * opponentWorld.probability,
                 pokemon = builds,
             ),
             issues = emptyList(),
