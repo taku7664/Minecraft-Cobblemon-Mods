@@ -2,6 +2,7 @@ package jbro.cobblemon.morebattlecontent.betterai.search
 
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleRootIssue
@@ -18,6 +19,8 @@ internal data class NativeProductSearchRequest(
     val productActions: List<BattleActionCandidate>,
     val world: NativeSearchWorldKey,
     val maxDepth: Int,
+    val responseMemory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
+    val responseInformation: Double = 1.0,
     val excludeFutureAllyVoluntarySwitches: Boolean = false,
     val nodeLimit: Int,
     val deadlineNanos: Long,
@@ -29,6 +32,7 @@ internal data class NativeProductSearchRequest(
             "Product action ids must be unique"
         }
         require(maxDepth > 0)
+        require(responseInformation.isFinite() && responseInformation in 0.0..1.0)
         require(nodeLimit > 0)
     }
 }
@@ -119,6 +123,8 @@ internal class NativeProductSearchRunner(
                         world = request.world,
                         evaluate = request.evaluate,
                         nodeLimit = request.nodeLimit,
+                        responseMemory = request.responseMemory,
+                        responseInformation = request.responseInformation,
                         excludeFutureAllyVoluntarySwitches = request.excludeFutureAllyVoluntarySwitches,
                         shouldContinue = { !deadlineReached(request.deadlineNanos) },
                     ).evaluateProduct(request.productActions, request.maxDepth),

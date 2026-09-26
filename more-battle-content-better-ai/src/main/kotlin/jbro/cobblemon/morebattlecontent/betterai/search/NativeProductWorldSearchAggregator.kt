@@ -3,6 +3,7 @@ package jbro.cobblemon.morebattlecontent.betterai.search
 import kotlin.math.abs
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
+import jbro.cobblemon.morebattlecontent.api.ai.BattleTacticalMemoryView
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleDefinition
 
 /** One complete opponent world ready for product-native search. */
@@ -23,6 +24,8 @@ internal data class NativeProductWorldSearchRequest(
     val worlds: List<NativeProductWorldSearchInput>,
     val productActions: List<BattleActionCandidate>,
     val maxDepth: Int,
+    val responseMemory: BattleTacticalMemoryView = BattleTacticalMemoryView.empty(),
+    val responseInformation: Double = 1.0,
     val excludeFutureAllyVoluntarySwitches: Boolean = false,
     /** One total deterministic budget shared by every retained world. */
     val nodeLimit: Int,
@@ -37,6 +40,7 @@ internal data class NativeProductWorldSearchRequest(
         require(productActions.isNotEmpty())
         require(productActions.map(BattleActionCandidate::actionId).distinct().size == productActions.size)
         require(maxDepth > 0)
+        require(responseInformation.isFinite() && responseInformation in 0.0..1.0)
         require(nodeLimit >= worlds.size) {
             "The native product node budget must reserve at least one node per retained world"
         }
@@ -111,6 +115,8 @@ internal class NativeProductWorldSearchAggregator(
                     productActions = request.productActions,
                     world = world.key,
                     maxDepth = request.maxDepth,
+                    responseMemory = request.responseMemory,
+                    responseInformation = request.responseInformation,
                     excludeFutureAllyVoluntarySwitches = request.excludeFutureAllyVoluntarySwitches,
                     nodeLimit = worldNodeLimit,
                     deadlineNanos = request.deadlineNanos,
