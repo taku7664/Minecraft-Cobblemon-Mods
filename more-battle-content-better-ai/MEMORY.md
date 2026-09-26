@@ -6,6 +6,12 @@
 
 ---
 
+## [2026-09-27 05:02] 클라이언트 설치 — Better AI 1.2.21
+
+- 셀렉터 수정·네이티브 기믹 제한·세션 유지·판단 저장을 포함한 1.2.21을 `cobblemon-dev/mods`에 설치했다. 본체(MBC 1.6.24)는 그대로다(요구 범위 `>=1.6.21 <2.0.0`).
+- JDK 21 `jar --validate` 통과, 빌드·설치 SHA-256 `EF975E9AA4E7998C3E0424CE4A17845424242C15AD8A3D2EE157E586D28FBC54` 일치. 직전 1.2.20은 `codex-deploy-backups/20260927-selector-native-allowance`에 보관했다.
+- 설치 시 클라이언트는 꺼져 있었다. 설치 확인일 뿐 실게임 검증은 아니다. 다음 `/mbc test ai-boss`에서 확인할 것: 0턴이 `native_showdown_initial`로 가는지, `excluded=` 사유, `logs/betterai-decisions/` 저장 파일, 테라 판단.
+
 ## [2026-09-27 05:00] 네이티브 기믹 제한, 폴백 뒤 재진입, 판단 저장·재생
 
 - **0턴 매핑 실패 원인 확정**: Mega Showdown이 패치한 `side.js`의 `canDynamaxNow()`는 9세대에서 아직 다이맥스를 안 쓴 쪽이면 허용한다. 실제 전투는 MBC가 막지만 네이티브 샌드박스는 몰라서, 스피리텀에게 다이맥스 기술 4개를 더 만들었다(`unmatchedNative=4`). 상대에게도 가짜 다이맥스 분기가 생기고 있었다.
