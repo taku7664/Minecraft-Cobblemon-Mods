@@ -6,6 +6,22 @@
 
 ---
 
+## [2026-09-27 04:45] 셀렉터 1위 교체 제외 수정
+
+- 원인: 현재 튜닝(`CURRENT`)은 예상 기술 가설(`lookaheadMoveHypotheses=true`)을 켜 둔다. 셀렉터의 1위 교체 거부 규칙(체력 유지율 0.50 미만)이 상대가 보여 준 적 없는 예상(EXPECTED) 기술의 최악 피해까지 그대로 셌다. 점수는 그 응답을 확신도 보정과 비관 가중치로 이미 반영했는데, 거부 규칙이 한 번 더 덮어썼다.
+- 수정: 확정 응답(공개 기술, 난도 열람 기술, 교체, 미확인 응답)만으로 잰 `worstConfirmedResponseHpRetention`을 추가하고, 1위 교체 거부는 이 값만 본다. 후순위 교체의 탐색 안전 기준은 그대로다.
+- 로그: 후보마다 `excluded=<사유> keepHp=… keepHpConfirmed=…`를 찍는다. 사유 코드는 `best_switch_confirmed_hp_retention_below_0.50`, `exploratory_switch_hp_retention_below_*`, `repeated_switch_pressure`, `setup_without_future`, `shortlist_count`, `regret_gap`, `score_ratio` 등이다.
+- 검증: 새 테스트·보강 테스트 5개가 수정 전 실패, 수정 후 통과했다. 전체 1,152개 중 실패 13개. HEAD 베이스라인(12개 실패)과 비교해 차이 1개(`LocalDoublesSearchBudgetTest`)는 단독 재실행에서 통과한 시간 의존 흔들림이다.
+- HEAD에서도 실패하는 기존 12개(최근 커밋이 동작을 바꾸고 테스트를 갱신하지 않은 것으로 보임): 강제 교체 2개(`LocalRecursiveLookaheadTest`), 재료값·확정 승리 가산 관련(`LocalMaterialOwnershipTest`, `LocalLookaheadEvaluationTest`, `LocalForesightOwnershipTest`), 네이티브 깊이 관련(`NativeDefensiveSetupProductBrainIntegrationTest`, `NativeSuckerPunchProductBrainIntegrationTest`), `LocalCooperativeCandidateCoverageTest`, `LocalTurnOrderPessimismTest`, `LocalForesightScenarioTest`, `LocalTacticalBrainSimulationTest`, 랭크업 폴백 1개. 별도 정리 과제.
+- 문서 정정: 탐색 깊이 표를 코드 기준(입문 1·표준 1·상급 2·보스 2)으로 고쳤다. 폴백 정책 개정(§1.1)도 반영했다.
+
+## [2026-09-27 03:40] 과제 — 셀렉터와 점수의 역할 분리
+
+- 셀렉터(`LocalWeightedActionSelector`)가 전술 판단까지 하고 있다: 교체 후 남는 체력(`switchExclusion`), 앞날 없는 랭크업(`selfSetupHasFuture`), 행동 확률 하한. 8/25 탐색이 없던 시절 점수를 보완하려고 넣은 안전장치가 탐색 도입 뒤에도 남아, 점수와 선택이 같은 위험을 따로 판단한다.
+- 방향(빡대리님 동의): 전술 판단은 점수로 옮기고, 셀렉터에는 의미 없는 행동 거르기(효과 없음·진입 즉사·기권·대기)와 성격 가중만 남긴다.
+- 선행 조건: 실게임 판단 스냅샷 저장·재생 도구. 점수 변경 전후를 같은 입력으로 비교한 뒤 진행한다.
+- 예: 0턴 루카리오 교체는 확정 기술(매지컬샤인) 기준으로도 체력이 절반 미만으로 남아 제외가 타당하다. 그런데 점수가 이 위험을 반영하지 못해 1위가 된다.
+
 ## [2026-09-27 03:10] 실게임 로그 분석 — battle `435db617` (02:25~, 18턴)
 
 근거: `cobblemon-dev/logs/latest.log`의 `[BetterAI Trace]`. 코드 수정은 아직 없다.
@@ -22,6 +38,7 @@
 - `b8fa5683`도 Showdown 워커가 최대 10초 안에 준비되지 않으면 로컬 탐색으로 넘어간다.
 - [`NATIVE_SHOWDOWN_SIMULATION.md`](docs/architecture/NATIVE_SHOWDOWN_SIMULATION.md) §1.1은 같은 판단을 구형 수제 투영기로 조용히 다시 실행하는 것을 금지(MUST NOT)한다.
 - 결정 필요: 정책 변경으로 문서를 개정할지, 임시 조치로 보고 되돌릴지 빡대리님이 정한다.
+- **해결(2026-09-27):** 빡대리님이 경험 우선으로 폴백 유지를 결정했다. `NATIVE_SHOWDOWN_SIMULATION.md` §1.1을 폴백 필수·로그 필수로 개정했다. 한 번 폴백한 뒤 네이티브가 전투 끝까지 돌아오지 않는 문제는 별도 과제로 남는다.
 
 ## [2026-09-27 02:35] 이슈 — 실게임 검증 미완료
 
@@ -64,7 +81,8 @@
 
 **수제 탐색 단계(2026-08-27~09-07)의 기각·미채택 상태** — 네이티브 전환 뒤 재측정하지 않았다.
 - 기각: 구조 역전 `searchAuthority=1.0`(42.1%), 리프 가중치 재조정(42.1~48.3%), 가지치기 강화(48.6%), 선공 KO 가산점, 메가를 변신 전 능력치로 근사, 더블 노드 예산 증액(3배 비용), 더블 확률 분기 축소(깊이 변화 0), 급소 확률 반영(모든 확정 생존이 사라짐).
-- 기본 false로 남은 실험 옵션: `revalidateUnsearchedRootLeaders`, `revalidateRootChoicePool`, 가설 기술(`lookaheadMoveHypotheses`), CAP3·선공기 예약(`hypotheticalPriorityReservation=NONE`), 팀 대응 범위(`leafTeamCoverageWeight=0`).
+- 기본 false로 남은 실험 옵션: `revalidateUnsearchedRootLeaders`, `revalidateRootChoicePool`, 팀 대응 범위(`leafTeamCoverageWeight=0`).
+- 정정(2026-09-27 코드 확인): 구 문서의 "가설 기술 기본 false"는 낡은 기록이다. 현재 `LocalDecisionTuning.CURRENT`는 `lookaheadMoveHypotheses=true`, `hypotheticalMoveLimitPerSlot=4`, `hypotheticalPriorityReservation=CONDITION_GROUPS`다.
 - 채택: 말단 피해를 대상 잔여 HP로 제한(`capLeafDamageToRemainingHp=true`).
 - native 정책 40전 비교(CAP3 대 full 22:18, 팀 대응 24:16, 우선도 그룹 23:17, 피해 제한 22:18)는 모두 Hoeffding 구간상 우월성을 확정하지 못했다.
 

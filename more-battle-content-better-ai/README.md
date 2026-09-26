@@ -24,7 +24,7 @@ All current Better AI contracts are indexed in [docs/README.md](docs/README.md).
 
 - [Difficulty-scaled opponent move inference](docs/inference/MOVE_INFERENCE_BY_DIFFICULTY.md)
   defines the implemented `name-group-GUESS/EXPECTED/CONFIRMED` slots and
-  `1/2/2/3` maximum lookahead. The primary/Router path remains public-only; a dedicated
+  `1/1/2/2` maximum lookahead (per `BattleDifficultyProfile`). The primary/Router path remains public-only; a dedicated
   normalizer supplies only the tier-approved slots to the local Brain.
 
 ## Opponent move and build usage snapshots
