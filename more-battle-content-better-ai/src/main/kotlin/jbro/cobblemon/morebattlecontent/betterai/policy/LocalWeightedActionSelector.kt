@@ -16,6 +16,8 @@ internal data class LocalActionSelection(
     val seed: Long,
     val shortlistSize: Int,
     val probability: Double,
+    /** Exact draw probabilities; empty only for selectors that do not expose their distribution. */
+    val probabilitiesByActionId: Map<String, Double> = emptyMap(),
 )
 
 internal fun interface LocalActionSelector {
@@ -152,7 +154,10 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         val bestScore = pool.bestScore
         val drawGap = pool.drawGap
         if (shortlist.size == 1) {
-            return LocalActionSelection(shortlist.single(), seed, 1, 1.0)
+            return LocalActionSelection(
+                shortlist.single(), seed, 1, 1.0,
+                mapOf(shortlist.single().outcome.candidate.actionId to 1.0),
+            )
         }
 
         val style = context.style
@@ -186,7 +191,13 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         }
         val total = weights.sum()
         if (!total.isFinite() || total <= 0.0) {
-            return LocalActionSelection(shortlist.first(), seed, shortlist.size, 1.0)
+            return LocalActionSelection(
+                shortlist.first(), seed, shortlist.size, 1.0,
+                mapOf(shortlist.first().outcome.candidate.actionId to 1.0),
+            )
+        }
+        val probabilities = shortlist.indices.associate { index ->
+            shortlist[index].outcome.candidate.actionId to weights[index] / total
         }
 
         val draw = SplittableRandom(seed).nextDouble(total)
@@ -199,6 +210,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
                     seed = seed,
                     shortlistSize = shortlist.size,
                     probability = weights[index] / total,
+                    probabilitiesByActionId = probabilities,
                 )
             }
         }

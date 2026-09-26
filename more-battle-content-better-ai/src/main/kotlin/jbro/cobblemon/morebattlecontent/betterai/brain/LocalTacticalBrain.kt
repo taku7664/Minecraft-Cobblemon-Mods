@@ -212,6 +212,7 @@ internal class LocalTacticalBrain(
             budget,
             active?.nativeProductState,
         )
+        decisionTrace?.nativeSearch(nativeInitial, profile.difficulty.lookaheadPlies, budget)
         when (nativeInitial.status) {
             NativeInitialProductDecisionStatus.AVAILABLE -> {
                 val ranked = nativeInitial.ranked
@@ -336,6 +337,7 @@ internal class LocalTacticalBrain(
                 )
             },
         )
+        decisionTrace?.legacySearch(lookahead, profile.difficulty.lookaheadPlies, budget)
         val rootDecision = LocalRootDecisionPolicy.refine(lookahead.ranked, difficultyContext)
         val ranked = rootDecision.ranked
         val seed = LocalActionChoiceSeed.derive(

@@ -9,7 +9,15 @@ $creationTicks = $null
 $firstAttach = $true
 
 function Show-AiLine([string]$Line) {
-    if ($Line.Contains('[BetterAI Trace]')) {
+    if ($Line.Contains('[BetterAI Trace]') -and $Line.Contains('phase=selected')) {
+        Write-Host $Line -ForegroundColor Green
+    } elseif ($Line.Contains('[BetterAI Trace]') -and $Line.Contains('phase=search')) {
+        Write-Host $Line -ForegroundColor Yellow
+    } elseif ($Line.Contains('[BetterAI Trace]') -and $Line.Contains('phase=confirmed')) {
+        Write-Host $Line -ForegroundColor Magenta
+    } elseif ($Line.Contains('[BetterAI Trace]') -and $Line.Contains('phase=events')) {
+        Write-Host $Line -ForegroundColor DarkGray
+    } elseif ($Line.Contains('[BetterAI Trace]')) {
         Write-Host $Line -ForegroundColor Cyan
     } elseif ($Line.Contains('Brain decision resolved:')) {
         Write-Host $Line -ForegroundColor Green
