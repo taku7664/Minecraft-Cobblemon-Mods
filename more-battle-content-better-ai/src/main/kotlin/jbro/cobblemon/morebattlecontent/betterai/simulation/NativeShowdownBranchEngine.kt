@@ -163,6 +163,7 @@ internal class NativeShowdownBranchEngine private constructor(
             require(sourceRoot == rules.sourceEngineRoot) {
                 "Native rules generation belongs to a different Showdown directory"
             }
+            rules.verifySourceUnchanged()
             val normalizedRoot = rules.engineRoot
             require(normalizedRoot.resolve("sim/battle.js").toFile().isFile) {
                 "Showdown sim/battle.js is missing under $normalizedRoot"
@@ -211,6 +212,7 @@ internal class NativeShowdownBranchEngine private constructor(
                     "Native Showdown bridge did not export its branch functions"
                 }
                 applyRules.execute(Gson().toJson(rules.sources))
+                rules.verifySourceUnchanged()
                 return NativeShowdownBranchEngine(
                     context,
                     create,

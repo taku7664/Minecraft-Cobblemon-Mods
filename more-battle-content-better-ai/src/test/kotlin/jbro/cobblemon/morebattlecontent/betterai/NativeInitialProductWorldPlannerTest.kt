@@ -61,6 +61,20 @@ import org.junit.jupiter.api.io.TempDir
 
 class NativeInitialProductWorldPlannerTest {
     @Test
+    fun `planner normalizes Cobblemon Normal forms before materializing a world`() {
+        val result = planner().plan(
+            context(preview = preview(normalShowdownSuffix = true), ownShowdownSpeciesId = "mewnormal"),
+            BattleTrainerTier.INTRODUCTORY,
+        )
+
+        assertTrue(result.issues.isEmpty(), result.issues.toString())
+        result.worlds.forEach { world ->
+            assertTrue(world.definition.p1Team.all { it.species == "mew" })
+            assertTrue(world.definition.p2Team.all { !it.species.endsWith("normal") })
+        }
+    }
+
+    @Test
     fun `boss product worlds retain zero one and two stab shapes for one dual type preview`(
         @TempDir directory: Path,
     ) {
@@ -440,6 +454,7 @@ class NativeInitialProductWorldPlannerTest {
         ),
         openingEvents: List<BattleObservedEventView> = emptyList(),
         ownStats: BattleCombatStatRangesView = BattleCombatStatRangesView.exact(100, 100, 100, 100, 100, 100),
+        ownShowdownSpeciesId: String = "mew",
     ): BattleDecisionContext {
         val selectionSize = preview.selectionSize
         val allyIds = ALLIES.take(selectionSize)
@@ -486,7 +501,7 @@ class NativeInitialProductWorldPlannerTest {
                 evs = ZERO_EVS,
                 ivs = PERFECT_IVS,
                 teraTypeId = "psychic",
-                showdownSpeciesId = "mew",
+                showdownSpeciesId = ownShowdownSpeciesId,
             )
         })
         val catalog = BattlePublicActionCatalogView(allyIds.map { id ->
@@ -518,6 +533,7 @@ class NativeInitialProductWorldPlannerTest {
     private fun preview(
         selectionSize: Int = 3,
         missingShowdownSlot: Int? = null,
+        normalShowdownSuffix: Boolean = false,
     ) = BattleOpponentTeamPreviewView(
         selectionSize = selectionSize,
         pokemon = PREVIEW_SPECIES.mapIndexed { slot, (species, type) ->
@@ -545,7 +561,8 @@ class NativeInitialProductWorldPlannerTest {
                     genderRates = mapOf("N" to 1.0),
                     sourceId = "fixture:form",
                 ),
-                showdownSpeciesId = species.takeUnless { slot == missingShowdownSlot },
+                showdownSpeciesId = species.takeUnless { slot == missingShowdownSlot }
+                    ?.let { if (normalShowdownSuffix) "${it}normal" else it },
             )
         },
     )

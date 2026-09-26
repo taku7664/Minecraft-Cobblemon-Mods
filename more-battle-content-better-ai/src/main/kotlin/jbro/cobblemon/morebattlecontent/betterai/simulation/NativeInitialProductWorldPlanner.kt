@@ -247,7 +247,9 @@ internal class NativeInitialProductWorldPlanner(
                 return
             }
             val key = PublicSpeciesKey(canonical(speciesId), canonical(formId.orEmpty()))
-            val nativeId = canonical(showdownSpeciesId)
+            // Use the preview/own-team species here, before a disguise can replace the
+            // observed active species with a different public identity.
+            val nativeId = nativeSpeciesId(speciesId, showdownSpeciesId)
             val previous = values.putIfAbsent(key, nativeId)
             if (previous != null && previous != nativeId) {
                 issues += NativeInitialProductWorldPlanIssue(

@@ -21,3 +21,7 @@ option.BORDER_FOG=경계 안개
 option.BORDER_FOG.comment=먼 지형을 렌더 거리 끝에 닿기 전 하늘색으로 완전히 감춥니다.
 option.BORDER_FOG_START=경계 안개 시작 지점
 option.BORDER_FOG_START.comment=렌더 거리의 어느 지점부터 경계 안개가 시작될지 설정합니다.
+option.HORIZON_HAZE=수평선 안개
+option.HORIZON_HAZE.comment=부드럽고 단순한 색 그라데이션으로 하늘 아래쪽의 딱딱한 경계선을 감춥니다.
+option.HORIZON_HAZE_HEIGHT=수평선 안개 폭
+option.HORIZON_HAZE_HEIGHT.comment=수평선 위아래로 안개가 퍼지는 범위를 조절합니다.

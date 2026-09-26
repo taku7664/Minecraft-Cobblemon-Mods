@@ -86,6 +86,28 @@ float getBorderFogFactor(float distanceFromCamera) {
 #endif
 }
 
+float getHorizonHazeFactor(vec3 viewDirection) {
+#ifdef HORIZON_HAZE
+    float hazeHeight = HORIZON_HAZE_HEIGHT * mix(0.90, 1.20, rainStrength);
+    float softHaze = 1.0 - smoothstep(0.0, hazeHeight, abs(viewDirection.y));
+    softHaze = softHaze * softHaze * (3.0 - 2.0 * softHaze);
+
+    // The narrow opaque core removes Minecraft's hard lower-sky seam.
+    float seamCover = 1.0 - smoothstep(0.0, 0.012, abs(viewDirection.y));
+    return clamp(max(seamCover, softHaze * 0.72), 0.0, 1.0);
+#else
+    return 0.0;
+#endif
+}
+
+vec3 getCasualFogColor(float dayAmount) {
+    vec3 vanillaFog = toLinear(fogColor) * mix(0.72, 1.0, dayAmount);
+    vec3 nightFog = toLinear(vec3(0.18, 0.22, 0.34));
+    vec3 dayFog = toLinear(vec3(0.62, 0.69, 0.72));
+    vec3 paletteFog = mix(nightFog, dayFog, dayAmount);
+    return mix(vanillaFog, paletteFog, 0.20);
+}
+
 float filteredShadow(vec3 feetPosition, float normalDotLight) {
     vec4 shadowViewPosition = shadowModelView * vec4(feetPosition, 1.0);
     vec4 baseClip = shadowProjection * shadowViewPosition;
@@ -128,8 +150,16 @@ vec3 daylightColor(float elevation) {
 void main() {
     vec4 base = texture(colortex0, texcoord);
     float depth = texture(depthtex0, texcoord).r;
+    float solarElevation = sin(sunAngle * TAU);
+    float dayAmount = smoothstep(-0.08, 0.08, solarElevation);
+    vec3 linearFog = getCasualFogColor(dayAmount);
+
     if (depth >= 0.999999) {
-        gl_FragData[0] = vec4(toLinear(base.rgb) * EXPOSURE, base.a);
+        vec3 viewDirection = normalize(reconstructFeetPosition(1.0));
+        float horizonHazeFactor = getHorizonHazeFactor(viewDirection);
+        vec3 skyColor = toLinear(base.rgb) * EXPOSURE;
+        skyColor = mix(skyColor, linearFog, horizonHazeFactor);
+        gl_FragData[0] = vec4(skyColor, base.a);
         return;
     }
 
@@ -138,12 +168,12 @@ void main() {
     bool isPrelitCloud = lightData.b > 0.5;
     vec3 feetPosition = reconstructFeetPosition(depth);
 
-    float solarElevation = sin(sunAngle * TAU);
-    float dayAmount = smoothstep(-0.08, 0.08, solarElevation);
     float distanceFromCamera = length(feetPosition);
     float atmosphereFogFactor = getAtmosphereFogFactor(distanceFromCamera);
     float borderFogFactor = getBorderFogFactor(distanceFromCamera);
-    vec3 linearFog = toLinear(fogColor) * mix(0.72, 1.0, dayAmount);
+    float horizonHazeFactor = getHorizonHazeFactor(normalize(feetPosition));
+    float distantHorizonHaze = horizonHazeFactor *
+        smoothstep(far * 0.28, far * 0.82, distanceFromCamera) * 0.65;
 
     if (isPrelitCloud) {
         vec3 stableCloudFog = mix(
@@ -153,6 +183,7 @@ void main() {
         );
         vec3 shadedCloud = toLinear(base.rgb) * EXPOSURE;
         shadedCloud = mix(shadedCloud, stableCloudFog, atmosphereFogFactor);
+        shadedCloud = mix(shadedCloud, linearFog, distantHorizonHaze);
         shadedCloud = mix(shadedCloud, linearFog, borderFogFactor);
         gl_FragData[0] = vec4(shadedCloud, base.a);
         return;
@@ -193,6 +224,7 @@ void main() {
 
     vec3 shaded = toLinear(base.rgb) * lighting * EXPOSURE;
     shaded = mix(shaded, linearFog, atmosphereFogFactor);
+    shaded = mix(shaded, linearFog, distantHorizonHaze);
     shaded = mix(shaded, linearFog, borderFogFactor);
 
     gl_FragData[0] = vec4(shaded, base.a);
