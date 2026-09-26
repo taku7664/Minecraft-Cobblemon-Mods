@@ -83,7 +83,7 @@ sealed interface UiBorder {
         val highlightColor: Int,
         val shadeColor: Int,
         val shadowColor: Int,
-        val shadowOffset: Int = 2
+        val shadowOffset: Int = 1
     ) : UiBorder {
         init {
             require(shadowOffset >= 0) { "Pixel frame shadow offset must not be negative" }

@@ -48,6 +48,18 @@ class UiSurfaceStyleTest {
     }
 
     @Test
+    fun `pixel frame keeps its default shadow close to the widget`() {
+        val frame = UiBorder.PixelFrame(
+            outerColor = 0xFF111111.toInt(),
+            highlightColor = 0xFFFFFFFF.toInt(),
+            shadeColor = 0xFF777777.toInt(),
+            shadowColor = 0xFF000000.toInt()
+        )
+
+        assertEquals(1, frame.shadowOffset)
+    }
+
+    @Test
     fun `invalid surface values are rejected`() {
         assertThrows(IllegalArgumentException::class.java) { UiShape.Chamfer(0) }
         assertThrows(IllegalArgumentException::class.java) { UiShape.Chamfer(2, emptySet()) }

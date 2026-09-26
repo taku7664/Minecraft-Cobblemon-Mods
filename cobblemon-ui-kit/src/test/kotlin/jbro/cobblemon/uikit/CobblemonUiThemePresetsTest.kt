@@ -70,6 +70,8 @@ class CobblemonUiThemePresetsTest {
 
         assertTrue(snapshot.surfaces.shell.border is UiBorder.PixelFrame)
         assertTrue(snapshot.surfaces.panel.border is UiBorder.PixelFrame)
+        assertEquals(2, (snapshot.surfaces.shell.border as UiBorder.PixelFrame).shadowOffset)
+        assertEquals(1, (snapshot.surfaces.panel.border as UiBorder.PixelFrame).shadowOffset)
         assertTrue(snapshot.surfaces.shell.fill is UiFill.Solid)
         assertNotEquals(CobblemonUiDefaultTheme.metrics, UiControlSize.entries.associateWith(snapshot::metrics))
 
