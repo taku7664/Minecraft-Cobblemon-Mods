@@ -18,16 +18,20 @@ internal data class NativeDamageObservationConditioning(
     val likelihood: Double,
     val explainedPokemonIds: Set<UUID> = emptySet(),
     val explainedEventSequences: Set<Long> = emptySet(),
-    val forcedDamageRolls: List<NativeForcedDamageRoll> = emptyList(),
+    val forcedDamageRollOptions: List<List<NativeForcedDamageRoll>> = emptyList(),
 ) {
     init {
         require(likelihood.isFinite() && likelihood in 0.0..1.0)
         require((status == NativeDamageObservationStatus.CONTRADICTED) == (likelihood == 0.0))
         require(status == NativeDamageObservationStatus.CONSISTENT || explainedPokemonIds.isEmpty())
         require(status == NativeDamageObservationStatus.CONSISTENT || explainedEventSequences.isEmpty())
-        require(status == NativeDamageObservationStatus.CONSISTENT || forcedDamageRolls.isEmpty())
-        require(forcedDamageRolls.map(NativeForcedDamageRoll::damageCallIndex).distinct().size ==
-            forcedDamageRolls.size)
+        require(status == NativeDamageObservationStatus.CONSISTENT || forcedDamageRollOptions.isEmpty())
+        require(forcedDamageRollOptions.all { it.isNotEmpty() })
+        require(forcedDamageRollOptions.map { it.first().damageCallIndex }.distinct().size ==
+            forcedDamageRollOptions.size)
+        require(forcedDamageRollOptions.all { options ->
+            options.all { it.damageCallIndex == options.first().damageCallIndex }
+        })
     }
 }
 
@@ -36,6 +40,7 @@ internal object NativeDamageObservationConditioner {
     fun evaluate(
         frame: NativeBattleFrame,
         events: List<BattleObservedEventView>,
+        requireActualRollMatch: Boolean = false,
     ): NativeDamageObservationConditioning {
         val observations = events.asSequence()
             .filter { event ->
@@ -60,7 +65,7 @@ internal object NativeDamageObservationConditioner {
         var likelihood = 1.0
         val explained = linkedSetOf<UUID>()
         val explainedSequences = linkedSetOf<Long>()
-        val forced = mutableListOf<NativeForcedDamageRoll>()
+        val forcedOptions = mutableListOf<List<NativeForcedDamageRoll>>()
         observations.forEach { observation ->
             val targetId = requireNotNull(observation.actorPokemonId)
             val attackerId = requireNotNull(observation.precedingActionActorPokemonId)
@@ -80,16 +85,10 @@ internal object NativeDamageObservationConditioner {
             val roll = unused.removeAt(index)
             val observedFraction = -requireNotNull(observation.hpFractionDelta)
             val matchingIndexes = roll.possibleHpLosses.indices.filter { index ->
-                val loss = roll.possibleHpLosses[index]
-                val exactLoss = loss.toDouble() / roll.maxHp.toDouble()
-                val publicAfter = NativeShowdownPublicHp.fraction(roll.hpBefore - loss, roll.maxHp)
-                val displayedLoss = NativeShowdownPublicHp.fraction(roll.hpBefore, roll.maxHp) - publicAfter
-                val exactBeforeToDisplayedAfter = roll.hpBefore.toDouble() / roll.maxHp - publicAfter
-                abs(exactLoss - observedFraction) <= FRACTION_EPSILON ||
-                    abs(displayedLoss - observedFraction) <= FRACTION_EPSILON ||
-                    abs(exactBeforeToDisplayedAfter - observedFraction) <= FRACTION_EPSILON
+                matchesObservedLoss(roll.hpBefore, roll.maxHp, roll.possibleHpLosses[index], observedFraction)
             }
-            if (matchingIndexes.isEmpty()) {
+            if (matchingIndexes.isEmpty() || (requireActualRollMatch &&
+                    !matchesObservedLoss(roll.hpBefore, roll.maxHp, roll.actualHpLoss, observedFraction))) {
                 return NativeDamageObservationConditioning(
                     NativeDamageObservationStatus.CONTRADICTED,
                     likelihood = 0.0,
@@ -98,23 +97,35 @@ internal object NativeDamageObservationConditioner {
             likelihood *= matchingIndexes.size.toDouble() / roll.possibleHpLosses.size.toDouble()
             explained += targetId
             explainedSequences += observation.sequence
-            forced += NativeForcedDamageRoll(
-                damageCallIndex = roll.damageCallIndex,
-                percent = 85 + matchingIndexes.first(),
-            )
+            forcedOptions += matchingIndexes.map { matchingIndex ->
+                NativeForcedDamageRoll(
+                    damageCallIndex = roll.damageCallIndex,
+                    percent = 85 + matchingIndex,
+                )
+            }
         }
         return NativeDamageObservationConditioning(
             NativeDamageObservationStatus.CONSISTENT,
             likelihood = likelihood,
             explainedPokemonIds = explained,
             explainedEventSequences = explainedSequences,
-            forcedDamageRolls = forced,
+            forcedDamageRollOptions = forcedOptions,
         )
     }
 
     private fun nativeId(value: String): String = value.substringAfter(':')
         .lowercase(Locale.ROOT)
         .filter(Char::isLetterOrDigit)
+
+    private fun matchesObservedLoss(hpBefore: Int, maxHp: Int, loss: Int, observedFraction: Double): Boolean {
+        val exactLoss = loss.toDouble() / maxHp.toDouble()
+        val publicAfter = NativeShowdownPublicHp.fraction(hpBefore - loss, maxHp)
+        val displayedLoss = NativeShowdownPublicHp.fraction(hpBefore, maxHp) - publicAfter
+        val exactBeforeToDisplayedAfter = hpBefore.toDouble() / maxHp - publicAfter
+        return abs(exactLoss - observedFraction) <= FRACTION_EPSILON ||
+            abs(displayedLoss - observedFraction) <= FRACTION_EPSILON ||
+            abs(exactBeforeToDisplayedAfter - observedFraction) <= FRACTION_EPSILON
+    }
 
     private const val FRACTION_EPSILON = 1e-9
 }

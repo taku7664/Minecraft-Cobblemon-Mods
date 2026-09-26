@@ -160,7 +160,8 @@ class NativeProductSessionReconcilerTest {
             world.rootSnapshot.frame.p2Active.single().hp == 75 &&
                 world.rootSnapshot.frame.p2Team.single().hp == 75
         })
-        assertEquals(2, worker.forcedDamageCalls)
+        assertEquals(5, worker.forcedDamageCalls,
+            "Every supported native roll must be replayed before identical HP snapshots are merged")
     }
 
     @Test
@@ -188,6 +189,32 @@ class NativeProductSessionReconcilerTest {
         assertEquals(2, worlds.map { it.key }.distinct().size)
         assertTrue(worlds.all { it.key.lineage.isNotBlank() })
         assertEquals(2, worker.branchCalls)
+    }
+
+    @Test
+    fun `incompatible unobserved opponent commands still consume prior probability`() {
+        val opponentMoves = listOf("growl", "protect")
+        val rootA = frame("root-a", turn = 1, opponentMoves = opponentMoves)
+        val rootB = frame("root-b", turn = 1, opponentMoves = opponentMoves)
+        val worker = Worker(mapOf(
+            "root-a|move 1" to frame("a-compatible", turn = 2, opponentMoves = opponentMoves),
+            "root-a|move 2" to frame("a-incompatible", turn = 2, opponentHp = 99,
+                opponentMoves = opponentMoves),
+            "root-b|move 1" to frame("b-compatible-1", turn = 2, opponentMoves = opponentMoves),
+            "root-b|move 2" to frame("b-compatible-2", turn = 2, opponentMoves = opponentMoves),
+        ))
+        val prior = session(listOf(
+            world("a", "root-a", 0.5, definition = definition(opponentMoves), rootFrame = rootA),
+            world("b", "root-b", 0.5, definition = definition(opponentMoves), rootFrame = rootB),
+        ))
+
+        val result = NativeProductSessionReconciler { _, action -> action(worker) }
+            .reconcile(prior, context(turn = 2), Long.MAX_VALUE)
+
+        assertEquals(NativeProductSessionReconcileStatus.AVAILABLE, result.status, result.rootIssues.toString())
+        val worlds = requireNotNull(result.sessionState).worlds
+        assertEquals(1.0 / 3.0, worlds.filter { it.key.hypothesisId == "a" }.sumOf { it.probability }, 1e-12)
+        assertEquals(2.0 / 3.0, worlds.filter { it.key.hypothesisId == "b" }.sumOf { it.probability }, 1e-12)
     }
 
     @Test

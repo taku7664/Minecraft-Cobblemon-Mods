@@ -25,8 +25,7 @@ class NativeDamageObservationConditionerTest {
         assertEquals(2.0 / 16.0, result.likelihood, 1e-12)
         assertEquals(setOf(TARGET), result.explainedPokemonIds)
         assertEquals(setOf(3L), result.explainedEventSequences)
-        assertEquals(1, result.forcedDamageRolls.size)
-        assertEquals(95, result.forcedDamageRolls.single().percent)
+        assertEquals(listOf(95, 96), result.forcedDamageRollOptions.single().map { it.percent })
     }
 
     @Test
@@ -51,7 +50,17 @@ class NativeDamageObservationConditionerTest {
 
         assertEquals(NativeDamageObservationStatus.CONSISTENT, result.status)
         assertEquals(2.0 / 16.0, result.likelihood, 1e-12)
-        assertEquals(92, result.forcedDamageRolls.single().percent)
+        assertEquals(listOf(92, 93), result.forcedDamageRollOptions.single().map { it.percent })
+    }
+
+    @Test
+    fun `forced native replay must actually land in the observed public HP bucket`() {
+        val supportedButNotExecuted = NativeDamageObservationConditioner.evaluate(
+            frame((40..55).toList()),
+            listOf(damageEvent(delta = -0.25)),
+            requireActualRollMatch = true,
+        )
+        assertEquals(NativeDamageObservationStatus.CONTRADICTED, supportedButNotExecuted.status)
     }
 
     @Test

@@ -172,7 +172,7 @@ internal class NativeProductSessionReconciler(
                     }
 
                     val ownChoice = NativeShowdownChoiceEncoder.encode(ownNativeAction, BattleSide.ALLY, root)
-                    val compatibleFrames = linkedMapOf<DescendantIdentity, CompatibleFrame>()
+                    val compatibleByAction = mutableListOf<List<CompatibleFrame>>()
                     for (opponentAction in observed.actions) {
                         if (deadlineReached(deadlineNanos)) {
                             return@lease failure(NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED)
@@ -196,6 +196,7 @@ internal class NativeProductSessionReconciler(
                             publicState = currentContext.state,
                             deadlineNanos = deadlineNanos,
                         )
+                        val actionFrames = linkedMapOf<DescendantIdentity, CompatibleFrame>()
                         when (replayed.status) {
                             NativeIntermediateReplayStatus.AVAILABLE -> replayed.frames.forEach { frame ->
                                 val order = NativeObservedActionOrderConditioner.evaluate(
@@ -225,7 +226,11 @@ internal class NativeProductSessionReconciler(
                                     deferredAllyAction = frame.deferredCommands.allyAction,
                                     deferredOpponentAction = frame.deferredCommands.opponentAction,
                                 )
-                                compatibleFrames.putIfAbsent(compatible.identity, compatible)
+                                val previous = actionFrames[compatible.identity]
+                                actionFrames[compatible.identity] = if (previous == null) compatible else {
+                                    compatible.copy(observationLikelihood =
+                                        previous.observationLikelihood + compatible.observationLikelihood)
+                                }
                             }
                             NativeIntermediateReplayStatus.DEADLINE_EXHAUSTED -> return@lease failure(
                                 NativeProductSessionReconcileStatus.DEADLINE_EXHAUSTED,
@@ -242,21 +247,31 @@ internal class NativeProductSessionReconciler(
                             }
                             NativeIntermediateReplayStatus.NO_CONSISTENT_WORLD -> Unit
                         }
+                        if (actionFrames.isNotEmpty()) compatibleByAction += actionFrames.values.toList()
                     }
-                    if (compatibleFrames.isEmpty()) continue
+                    if (compatibleByAction.isEmpty()) continue
 
                     // No public action evidence distinguishes these descendants. Until a versioned
-                    // opponent-policy likelihood exists, preserve them with the uninformative prior
-                    // instead of inventing one command or multiplying the parent probability mass.
-                    val probability = world.probability / compatibleFrames.size.toDouble()
-                    compatibleFrames.values.forEach { compatible ->
+                    // opponent-policy likelihood exists, divide the prior across all publicly possible
+                    // commands. Incompatible commands carry zero evidence likelihood; dividing only
+                    // by survivors would erase that evidence against this build world.
+                    // A single command may produce several exact HP states under one public percent;
+                    // those states carry their native damage-roll likelihood, not another uniform split.
+                    val probability = world.probability / observed.actions.size.toDouble()
+                    val weightedFrames = linkedMapOf<DescendantIdentity, Pair<CompatibleFrame, Double>>()
+                    compatibleByAction.forEach { frames -> frames.forEach { compatible ->
+                        val mass = probability * compatible.observationLikelihood
+                        val previous = weightedFrames[compatible.identity]
+                        weightedFrames[compatible.identity] = compatible to (mass + (previous?.second ?: 0.0))
+                    } }
+                    weightedFrames.values.forEach { (compatible, mass) ->
                         descendants += Descendant(
                             world = world,
                             frame = compatible.frame,
                             definition = compatible.definition,
                             catalog = compatible.catalog,
-                            probability = probability * compatible.observationLikelihood,
-                            split = compatibleFrames.size > 1,
+                            probability = mass,
+                            split = weightedFrames.size > 1,
                             deferredAllyAction = compatible.deferredAllyAction,
                             deferredOpponentAction = compatible.deferredOpponentAction,
                         )
@@ -397,7 +412,6 @@ internal class NativeProductSessionReconciler(
 
         val identity = DescendantIdentity(
             frame.snapshotJson,
-            observationLikelihood,
             deferredAllyAction?.actionId,
             deferredOpponentAction?.actionId,
         )
@@ -405,7 +419,6 @@ internal class NativeProductSessionReconciler(
 
     private data class DescendantIdentity(
         val snapshotJson: String,
-        val observationLikelihood: Double,
         val deferredAllyActionId: String?,
         val deferredOpponentActionId: String?,
     )
