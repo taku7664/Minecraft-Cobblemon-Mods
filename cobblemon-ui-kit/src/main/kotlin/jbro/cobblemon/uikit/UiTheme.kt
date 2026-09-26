@@ -62,7 +62,21 @@ data class UiSurfaceTokens(
 data class UiButtonStyle(
     val surface: UiSurfaceStyle,
     val text: Int,
-    val supportingText: Int
+    val supportingText: Int,
+    val selectionIndicator: UiSelectionIndicator = UiSelectionIndicator.None,
+    val pressedOffsetY: Int = 0
+)
+
+sealed interface UiSelectionIndicator {
+    data object None : UiSelectionIndicator
+    data class Sprite(val icon: UiIcon) : UiSelectionIndicator
+}
+
+data class UiPixelDecorations(
+    val titleBar: Int,
+    val titleBarShade: Int,
+    val ditherLight: Int,
+    val ditherDark: Int
 )
 
 class UiThemeSnapshot private constructor(
@@ -71,6 +85,7 @@ class UiThemeSnapshot private constructor(
     val typography: UiTypography,
     val spacing: UiSpacing,
     val surfaces: UiSurfaceTokens,
+    val pixelDecorations: UiPixelDecorations?,
     metrics: Map<UiControlSize, UiButtonMetrics>,
     styles: Map<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>
 ) {
@@ -90,7 +105,8 @@ class UiThemeSnapshot private constructor(
             spacing: UiSpacing,
             surfaces: UiSurfaceTokens,
             metrics: Map<UiControlSize, UiButtonMetrics>,
-            styles: Map<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>
+            styles: Map<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>,
+            pixelDecorations: UiPixelDecorations? = null
         ): UiThemeSnapshot {
             require(THEME_ID.matches(id)) { "Invalid theme id: $id" }
             require(metrics.keys.containsAll(UiControlSize.entries)) { "Theme must define every control size" }
@@ -98,7 +114,7 @@ class UiThemeSnapshot private constructor(
                 UiWidgetState.entries.map { state -> variant to state }
             }
             require(styles.keys.containsAll(requiredStyles)) { "Theme must define every button variant and state" }
-            return UiThemeSnapshot(id, colors, typography, spacing, surfaces, metrics, styles)
+            return UiThemeSnapshot(id, colors, typography, spacing, surfaces, pixelDecorations, metrics, styles)
         }
 
         private val THEME_ID = Regex("[a-z][a-z0-9_.-]*")

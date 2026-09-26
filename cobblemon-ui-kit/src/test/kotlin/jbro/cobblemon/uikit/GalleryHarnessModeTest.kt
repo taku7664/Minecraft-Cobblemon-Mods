@@ -1,6 +1,7 @@
 package jbro.cobblemon.uikit
 
 import jbro.cobblemon.uikit.client.GalleryHarnessConfig
+import jbro.cobblemon.uikit.client.GalleryCaptureLifecycle
 import jbro.cobblemon.uikit.client.GalleryHarnessMode
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -67,5 +68,31 @@ class GalleryHarnessModeTest {
         )
 
         assertEquals(UiThemePreset.entries, config.capturePresets)
+    }
+
+    @Test
+    fun `snapshot warning acknowledgement requires explicit development opt in`() {
+        val disabled = GalleryHarnessConfig.fromEnvironment(
+            mapOf("COBBLEMON_UI_KIT_CAPTURE_WORLD" to "1")
+        )
+        val enabled = GalleryHarnessConfig.fromEnvironment(
+            mapOf(
+                "COBBLEMON_UI_KIT_CAPTURE_WORLD" to "1",
+                "COBBLEMON_UI_KIT_ACCEPT_SNAPSHOT_WARNING" to "1"
+            )
+        )
+
+        assertEquals(false, disabled.acceptSnapshotWarning)
+        assertEquals(true, enabled.acceptSnapshotWarning)
+    }
+
+    @Test
+    fun `capture completion is terminal and idempotent across later ticks`() {
+        val lifecycle = GalleryCaptureLifecycle()
+
+        assertEquals(false, lifecycle.isFinished)
+        assertEquals(true, lifecycle.finish())
+        assertEquals(true, lifecycle.isFinished)
+        assertEquals(false, lifecycle.finish())
     }
 }

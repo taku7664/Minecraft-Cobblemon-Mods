@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
 import java.nio.file.Path
+import javax.imageio.ImageIO
 
 class CobblemonUiKitModuleContractTest {
     @Test
@@ -74,6 +75,21 @@ class CobblemonUiKitModuleContractTest {
         assertTrue(source.contains("theme.colors.backdrop"))
         assertTrue(source.contains("override fun renderBackground("))
         assertTrue(source.contains(") = Unit"))
+    }
+
+    @Test
+    fun `pixel theme ships deterministic nearest neighbor sprites`() {
+        listOf(
+            "assets/cobblemon_ui_kit/textures/gui/pixel/info.png",
+            "assets/cobblemon_ui_kit/textures/gui/pixel/selector.png"
+        ).forEach { path ->
+            val stream = javaClass.classLoader.getResourceAsStream(path)
+            assertNotNull(stream, "Missing pixel sprite: $path")
+            val image = stream!!.use(ImageIO::read)
+            assertNotNull(image, "Unreadable pixel sprite: $path")
+            assertEquals(8, image.width, path)
+            assertEquals(8, image.height, path)
+        }
     }
 
     private fun resourceJson(path: String): JsonObject {

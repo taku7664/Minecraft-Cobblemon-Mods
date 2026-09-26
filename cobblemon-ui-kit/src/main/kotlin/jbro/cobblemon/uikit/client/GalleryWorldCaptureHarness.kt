@@ -1,5 +1,6 @@
 package jbro.cobblemon.uikit.client
 
+import com.cobblemon.mod.common.client.gui.snapshots.SnapshotWarningScreen
 import jbro.cobblemon.uikit.CobblemonUiThemePresets
 import jbro.cobblemon.uikit.UiThemePreset
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -26,7 +27,8 @@ internal enum class GalleryHarnessMode {
 internal data class GalleryHarnessConfig(
     val mode: GalleryHarnessMode,
     val preset: UiThemePreset,
-    val capturePresets: List<UiThemePreset>
+    val capturePresets: List<UiThemePreset>,
+    val acceptSnapshotWarning: Boolean
 ) {
     companion object {
         fun fromEnvironment(environment: Map<String, String>): GalleryHarnessConfig {
@@ -39,9 +41,21 @@ internal data class GalleryHarnessConfig(
                     UiThemePreset.entries
                 } else {
                     listOf(preset)
-                }
+                },
+                acceptSnapshotWarning = environment["COBBLEMON_UI_KIT_ACCEPT_SNAPSHOT_WARNING"] == "1"
             )
         }
+    }
+}
+
+internal class GalleryCaptureLifecycle {
+    var isFinished: Boolean = false
+        private set
+
+    fun finish(): Boolean {
+        if (isFinished) return false
+        isFinished = true
+        return true
     }
 }
 
@@ -66,8 +80,11 @@ internal object GalleryWorldCaptureHarness {
         var scrolledCaptureRequested = false
         var ticks = 0
         var waitingScreenClass: String? = null
+        var snapshotWarningAccepted = false
+        val lifecycle = GalleryCaptureLifecycle()
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
+            if (lifecycle.isFinished) return@EndTick
             if (!scaleApplied) {
                 client.options.guiScale().set(2)
                 client.resizeDisplay()
@@ -76,6 +93,13 @@ internal object GalleryWorldCaptureHarness {
             }
 
             if (!opened) {
+                val warning = client.screen as? SnapshotWarningScreen
+                if (warning != null && config.acceptSnapshotWarning && !snapshotWarningAccepted) {
+                    snapshotWarningAccepted = true
+                    logger.info("Accepting Cobblemon snapshot warning for this explicit development capture run")
+                    warning.consumer(SnapshotWarningScreen.Acknowledgement.YES, false)
+                    return@EndTick
+                }
                 if (client.level == null || client.player == null || client.screen != null || client.overlay != null) {
                     val currentScreenClass = client.screen?.javaClass?.name
                     if (currentScreenClass != null && currentScreenClass != waitingScreenClass) {
@@ -172,6 +196,7 @@ internal object GalleryWorldCaptureHarness {
                     client.setScreen(ComponentGalleryScreen(activePreset()))
                     logger.info("Continuing UI Kit gallery capture theme={}", activePreset().id)
                 } else {
+                    check(lifecycle.finish()) { "UI Kit gallery capture was already finished" }
                     screen.onClose()
                     check(client.screen !== screen) { "UI Kit gallery did not close through onClose" }
                     logger.info("Verified UI Kit gallery close path with world still loaded={}", client.level != null)

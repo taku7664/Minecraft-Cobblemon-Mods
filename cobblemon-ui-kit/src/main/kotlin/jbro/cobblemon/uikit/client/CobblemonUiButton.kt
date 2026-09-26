@@ -2,6 +2,9 @@ package jbro.cobblemon.uikit.client
 
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiButtonSpec
+import jbro.cobblemon.uikit.UiButtonStyle
+import jbro.cobblemon.uikit.UiIcon
+import jbro.cobblemon.uikit.UiSelectionIndicator
 import jbro.cobblemon.uikit.UiThemeSnapshot
 import jbro.cobblemon.uikit.UiWidgetState
 import net.minecraft.Util
@@ -11,6 +14,7 @@ import net.minecraft.client.gui.components.AbstractButton
 import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
+import net.minecraft.resources.ResourceLocation
 import kotlin.math.max
 
 class CobblemonUiButton private constructor(
@@ -54,7 +58,7 @@ class CobblemonUiButton private constructor(
             height,
             style.surface.resolve(spec.surfaceOverrides)
         )
-        drawContent(graphics, theme, style.text, style.supportingText)
+        drawContent(graphics, theme, style)
     }
 
     private fun displayedState(): UiWidgetState = forcedState ?: when {
@@ -66,35 +70,32 @@ class CobblemonUiButton private constructor(
         else -> UiWidgetState.NORMAL
     }
 
-    private fun drawContent(graphics: GuiGraphics, theme: UiThemeSnapshot, textColor: Int, supportingColor: Int) {
+    private fun drawContent(graphics: GuiGraphics, theme: UiThemeSnapshot, style: UiButtonStyle) {
         val font = Minecraft.getInstance().font
         val metrics = theme.metrics(spec.size)
-        val iconAndGap = if (spec.icon == null) 0 else metrics.iconSize + metrics.iconGap
+        val iconSize = minOf(metrics.iconSize, PIXEL_SPRITE_SIZE)
+        val indicator = style.selectionIndicator as? UiSelectionIndicator.Sprite
+        val indicatorAndGap = if (indicator == null) 0 else iconSize + metrics.iconGap
+        val iconAndGap = if (spec.icon == null) 0 else iconSize + metrics.iconGap
         val titleWidth = (font.width(spec.title) * metrics.titleScale).toInt()
         val supportingWidth = spec.supportingText?.let {
             (font.width(it) * metrics.supportingScale).toInt()
         } ?: 0
         val textWidth = max(titleWidth, supportingWidth)
-        val groupWidth = iconAndGap + textWidth
+        val groupWidth = indicatorAndGap + iconAndGap + textWidth
         val groupLeft = x + (width - groupWidth) / 2
-        val textCenter = groupLeft + iconAndGap + textWidth / 2
+        val textCenter = groupLeft + indicatorAndGap + iconAndGap + textWidth / 2
+        val contentOffsetY = style.pressedOffsetY
+
+        if (indicator != null) {
+            val indicatorTop = y + (height - iconSize) / 2 + contentOffsetY
+            drawSprite(graphics, indicator.icon, groupLeft, indicatorTop, iconSize)
+        }
 
         if (spec.icon != null) {
-            val iconTop = y + (height - metrics.iconSize) / 2
-            graphics.fill(
-                groupLeft,
-                iconTop,
-                groupLeft + metrics.iconSize,
-                iconTop + metrics.iconSize,
-                theme.colors.accentSecondary
-            )
-            graphics.fill(
-                groupLeft + 2,
-                iconTop + 2,
-                groupLeft + metrics.iconSize - 2,
-                iconTop + metrics.iconSize - 2,
-                theme.colors.textPrimary
-            )
+            val iconLeft = groupLeft + indicatorAndGap
+            val iconTop = y + (height - iconSize) / 2 + contentOffsetY
+            drawSprite(graphics, spec.icon, iconLeft, iconTop, iconSize)
         }
 
         if (spec.supportingText == null) {
@@ -102,25 +103,47 @@ class CobblemonUiButton private constructor(
                 graphics,
                 spec.title,
                 textCenter,
-                y + (height - (font.lineHeight * metrics.titleScale).toInt()) / 2,
+                y + (height - (font.lineHeight * metrics.titleScale).toInt()) / 2 + contentOffsetY,
                 metrics.titleScale,
-                textColor
+                style.text
             )
         } else {
-            drawScaledCentered(graphics, spec.title, textCenter, y + 5, metrics.titleScale, textColor)
+            drawScaledCentered(
+                graphics,
+                spec.title,
+                textCenter,
+                y + 5 + contentOffsetY,
+                metrics.titleScale,
+                style.text
+            )
             drawScaledCentered(
                 graphics,
                 spec.supportingText,
                 textCenter,
-                y + height - (font.lineHeight * metrics.supportingScale).toInt() - 5,
+                y + height - (font.lineHeight * metrics.supportingScale).toInt() - 5 + contentOffsetY,
                 metrics.supportingScale,
-                supportingColor
+                style.supportingText
             )
         }
     }
 
+    private fun drawSprite(graphics: GuiGraphics, icon: UiIcon, left: Int, top: Int, size: Int) {
+        graphics.blit(
+            ResourceLocation.fromNamespaceAndPath(icon.namespace, icon.path),
+            left,
+            top,
+            0f,
+            0f,
+            size,
+            size,
+            PIXEL_SPRITE_SIZE,
+            PIXEL_SPRITE_SIZE
+        )
+    }
+
     companion object {
         private const val PRESSED_MILLIS = 120L
+        private const val PIXEL_SPRITE_SIZE = 8
 
         fun create(
             x: Int,

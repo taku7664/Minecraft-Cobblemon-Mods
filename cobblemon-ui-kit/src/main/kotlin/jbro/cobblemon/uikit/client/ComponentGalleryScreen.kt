@@ -85,7 +85,7 @@ class ComponentGalleryScreen(
                 UiButtonSpec(text("secondary"), variant = UiButtonVariant.SECONDARY),
                 UiButtonSpec(
                     text("icon"),
-                    icon = UiIcon("cobblemon_ui_kit", "textures/gui/icons/info.png"),
+                    icon = UiIcon("cobblemon_ui_kit", "textures/gui/pixel/info.png"),
                     variant = UiButtonVariant.ICON,
                     size = UiControlSize.SMALL
                 ),
@@ -94,18 +94,7 @@ class ComponentGalleryScreen(
                     text("custom_surface"),
                     variant = UiButtonVariant.DANGER,
                     size = UiControlSize.SMALL,
-                    surfaceOverrides = UiSurfaceOverrides(
-                        shape = UiShape.Chamfer(
-                            5,
-                            setOf(UiCorner.TOP_RIGHT, UiCorner.BOTTOM_LEFT)
-                        ),
-                        fill = UiFill.VerticalGradient(
-                            0xFF7956C8.toInt(),
-                            0xFF223D63.toInt()
-                        ),
-                        border = UiBorder.None,
-                        backgroundOpacity = 0.78f
-                    )
+                    surfaceOverrides = customSurfaceOverrides()
                 ),
                 UiButtonSpec(
                     text("danger"),
@@ -243,15 +232,19 @@ class ComponentGalleryScreen(
             height - shellTop - 8,
             theme.surfaces.shell
         )
-        graphics.drawString(font, title, shellLeft + 12, shellTop + 10, theme.colors.textPrimary, false)
-        graphics.drawString(
-            font,
-            text("subtitle", text("theme.${preset.id}")),
-            shellLeft + 12,
-            shellTop + 24,
-            theme.colors.textSecondary,
-            false
-        )
+        if (theme.pixelDecorations == null) {
+            graphics.drawString(font, title, shellLeft + 12, shellTop + 10, theme.colors.textPrimary, false)
+            graphics.drawString(
+                font,
+                text("subtitle", text("theme.${preset.id}")),
+                shellLeft + 12,
+                shellTop + 24,
+                theme.colors.textSecondary,
+                false
+            )
+        } else {
+            drawPixelHeader(graphics)
+        }
 
         graphics.enableScissor(shellLeft + 1, viewportTop, shellLeft + shellWidth - 1, viewportBottom)
         try {
@@ -325,6 +318,55 @@ class ComponentGalleryScreen(
             )
         )
     }
+
+    private fun drawPixelHeader(graphics: GuiGraphics) {
+        val theme = CobblemonUiThemes.registry.snapshot()
+        val pixels = checkNotNull(theme.pixelDecorations)
+        val left = shellLeft + 6
+        val top = shellTop + 6
+        val right = shellLeft + shellWidth - 6
+        graphics.fill(left, top, right, top + 28, pixels.titleBar)
+        graphics.fill(left, top + 27, right, top + 28, pixels.titleBarShade)
+        repeat(4) { row ->
+            var x = left + (row and 1)
+            while (x < right) {
+                graphics.fill(x, top + row, x + 1, top + row + 1, if ((x + row) % 2 == 0) pixels.ditherLight else pixels.ditherDark)
+                x += 2
+            }
+        }
+        graphics.drawString(font, title, left + 6, top + 7, theme.colors.textPrimary, false)
+        graphics.drawString(
+            font,
+            text("subtitle", text("theme.${preset.id}")),
+            left + 6,
+            top + 18,
+            theme.colors.textSecondary,
+            false
+        )
+    }
+
+    private fun customSurfaceOverrides(): UiSurfaceOverrides =
+        if (preset == UiThemePreset.PIXEL_LEAGUE) {
+            UiSurfaceOverrides(
+                shape = UiShape.Rectangle,
+                fill = UiFill.Solid(0xFF8B633F.toInt()),
+                border = UiBorder.None,
+                backgroundOpacity = 0.82f
+            )
+        } else {
+            UiSurfaceOverrides(
+                shape = UiShape.Chamfer(
+                    5,
+                    setOf(UiCorner.TOP_RIGHT, UiCorner.BOTTOM_LEFT)
+                ),
+                fill = UiFill.VerticalGradient(
+                    0xFF7956C8.toInt(),
+                    0xFF223D63.toInt()
+                ),
+                border = UiBorder.None,
+                backgroundOpacity = 0.78f
+            )
+        }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollX: Double, scrollY: Double): Boolean {
         if (mouseX.toInt() in shellLeft..(shellLeft + shellWidth) && mouseY.toInt() in viewportTop..viewportBottom) {

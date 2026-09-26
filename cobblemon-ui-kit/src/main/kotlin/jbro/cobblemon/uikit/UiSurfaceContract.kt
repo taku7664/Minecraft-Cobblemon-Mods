@@ -77,6 +77,18 @@ sealed interface UiBorder {
             require(width > 0) { "Border width must be positive" }
         }
     }
+
+    data class PixelFrame(
+        val outerColor: Int,
+        val highlightColor: Int,
+        val shadeColor: Int,
+        val shadowColor: Int,
+        val shadowOffset: Int = 2
+    ) : UiBorder {
+        init {
+            require(shadowOffset >= 0) { "Pixel frame shadow offset must not be negative" }
+        }
+    }
 }
 
 data class UiSurfaceStyle(

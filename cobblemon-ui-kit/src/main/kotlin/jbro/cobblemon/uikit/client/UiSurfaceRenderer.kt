@@ -18,10 +18,52 @@ object UiSurfaceRenderer {
         style: UiSurfaceStyle
     ) {
         if (width <= 0 || height <= 0) return
-        drawFill(graphics, x, y, width, height, style.shape, style.fill, style.backgroundOpacity)
         val border = style.border
-        if (border is UiBorder.Solid) {
-            drawBorder(graphics, x, y, width, height, style.shape, border)
+        if (border is UiBorder.PixelFrame && border.shadowOffset > 0) {
+            drawFill(
+                graphics,
+                x + border.shadowOffset,
+                y + border.shadowOffset,
+                width,
+                height,
+                style.shape,
+                UiFill.Solid(border.shadowColor),
+                style.backgroundOpacity
+            )
+        }
+        drawFill(graphics, x, y, width, height, style.shape, style.fill, style.backgroundOpacity)
+        when (border) {
+            UiBorder.None -> Unit
+            is UiBorder.Solid -> drawBorder(graphics, x, y, width, height, style.shape, border)
+            is UiBorder.PixelFrame -> drawPixelFrame(graphics, x, y, width, height, style.shape, border)
+        }
+    }
+
+    private fun drawPixelFrame(
+        graphics: GuiGraphics,
+        x: Int,
+        y: Int,
+        width: Int,
+        height: Int,
+        shape: UiShape,
+        frame: UiBorder.PixelFrame
+    ) {
+        drawBorder(graphics, x, y, width, height, shape, UiBorder.Solid(frame.outerColor))
+        if (width <= 4 || height <= 4) return
+
+        val innerShape = shape.inset(1)
+        drawBorder(
+            graphics,
+            x + 1,
+            y + 1,
+            width - 2,
+            height - 2,
+            innerShape,
+            UiBorder.Solid(frame.highlightColor)
+        )
+        if (shape is UiShape.Rectangle) {
+            graphics.fill(x + 2, y + height - 2, x + width - 1, y + height - 1, frame.shadeColor)
+            graphics.fill(x + width - 2, y + 2, x + width - 1, y + height - 1, frame.shadeColor)
         }
     }
 

@@ -2,6 +2,7 @@ package jbro.cobblemon.uikit
 
 enum class UiThemePreset(val id: String) {
     LEAGUE_NEON("league_neon"),
+    PIXEL_LEAGUE("pixel_league"),
     GALAR_STADIUM("galar_stadium"),
     PALDEA_PORTAL("paldea_portal"),
     HOENN_PIXEL("hoenn_pixel"),
@@ -16,6 +17,7 @@ enum class UiThemePreset(val id: String) {
 object CobblemonUiThemePresets {
     private val snapshots: Map<UiThemePreset, UiThemeSnapshot> = linkedMapOf(
         UiThemePreset.LEAGUE_NEON to CobblemonUiDefaultTheme.snapshot,
+        UiThemePreset.PIXEL_LEAGUE to pixelLeague(),
         UiThemePreset.GALAR_STADIUM to galarStadium(),
         UiThemePreset.PALDEA_PORTAL to paldeaPortal(),
         UiThemePreset.HOENN_PIXEL to hoennPixel(),
@@ -31,6 +33,113 @@ object CobblemonUiThemePresets {
 
     fun currentPreset(): UiThemePreset =
         UiThemePreset.fromId(CobblemonUiThemes.registry.snapshot().id) ?: UiThemePreset.LEAGUE_NEON
+
+    private fun pixelLeague(): UiThemeSnapshot {
+        val colors = UiColorPalette(
+            backdrop = 0xE0121820.toInt(),
+            shell = 0xFF31566D.toInt(),
+            panel = 0xFFF1E9C9.toInt(),
+            panelAlt = 0xFFBFD3D4.toInt(),
+            border = 0xFF17212B.toInt(),
+            borderBright = 0xFFFFE69A.toInt(),
+            accentPrimary = 0xFF3F8FC4.toInt(),
+            accentSecondary = 0xFFD75845.toInt(),
+            accentCaution = 0xFFF3C84D.toInt(),
+            accentDanger = 0xFFB6423A.toInt(),
+            accentGood = 0xFF63A75A.toInt(),
+            textPrimary = 0xFFFFF6D5.toInt(),
+            textSecondary = 0xFFD7E9E7.toInt(),
+            textDim = 0xFF71848B.toInt()
+        )
+        val shellFrame = UiBorder.PixelFrame(
+            outerColor = colors.border,
+            highlightColor = colors.borderBright,
+            shadeColor = 0xFF8D7038.toInt(),
+            shadowColor = 0xC8080B0F.toInt(),
+            shadowOffset = 3
+        )
+        val cardFrame = UiBorder.PixelFrame(
+            outerColor = colors.border,
+            highlightColor = 0xFFFFFFFF.toInt(),
+            shadeColor = 0xFF8C9A91.toInt(),
+            shadowColor = 0xA8080B0F.toInt(),
+            shadowOffset = 2
+        )
+        val selector = UiSelectionIndicator.Sprite(
+            UiIcon("cobblemon_ui_kit", "textures/gui/pixel/selector.png")
+        )
+        val metrics = mapOf(
+            UiControlSize.SMALL to UiButtonMetrics(20, 28, 10, 8, 3, 0.75f, 0.65f),
+            UiControlSize.MEDIUM to UiButtonMetrics(26, 36, 12, 8, 4, 1f, 0.75f),
+            UiControlSize.LARGE to UiButtonMetrics(36, 46, 14, 8, 4, 1.1f, 0.8f)
+        )
+        val styles = buildMap {
+            addPixelVariant(
+                UiButtonVariant.PRIMARY,
+                normal = colors.accentPrimary,
+                hover = 0xFF62AFE0.toInt(),
+                pressed = 0xFF2B668E.toInt(),
+                selected = 0xFF5577B9.toInt(),
+                text = colors.textPrimary,
+                frame = cardFrame,
+                selector = selector,
+                disabled = 0xFF65747C.toInt()
+            )
+            addPixelVariant(
+                UiButtonVariant.SECONDARY,
+                normal = 0xFFF5EFD7.toInt(),
+                hover = 0xFFFFFFFF.toInt(),
+                pressed = 0xFFD1C9AA.toInt(),
+                selected = colors.accentCaution,
+                text = colors.border,
+                frame = cardFrame,
+                selector = selector,
+                disabled = 0xFFAAA991.toInt()
+            )
+            addPixelVariant(
+                UiButtonVariant.DANGER,
+                normal = colors.accentDanger,
+                hover = 0xFFD75C4F.toInt(),
+                pressed = 0xFF7E2A27.toInt(),
+                selected = colors.accentSecondary,
+                text = colors.textPrimary,
+                frame = cardFrame,
+                selector = selector,
+                disabled = 0xFF775D58.toInt()
+            )
+            addPixelVariant(
+                UiButtonVariant.ICON,
+                normal = colors.accentCaution,
+                hover = 0xFFFFE07A.toInt(),
+                pressed = 0xFFB88C2C.toInt(),
+                selected = colors.accentGood,
+                text = colors.border,
+                frame = cardFrame,
+                selector = selector,
+                disabled = 0xFF99916D.toInt()
+            )
+            addPixelGhost(colors, selector)
+        }
+        return UiThemeSnapshot.create(
+            id = UiThemePreset.PIXEL_LEAGUE.id,
+            colors = colors,
+            typography = UiTypography(titleScale = 1f, bodyScale = 1f, supportingScale = 0.75f),
+            spacing = UiSpacing(xs = 2, small = 4, medium = 6, large = 10),
+            surfaces = UiSurfaceTokens(
+                shell = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(colors.shell), shellFrame),
+                panel = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(colors.panel), cardFrame),
+                panelAlt = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(colors.panelAlt), cardFrame)
+            ),
+            metrics = metrics,
+            styles = styles,
+            pixelDecorations = UiPixelDecorations(
+                titleBar = 0xFF243D53.toInt(),
+                titleBarShade = 0xFF152735.toInt(),
+                ditherLight = 0xFF416B7E.toInt(),
+                ditherDark = 0xFF2A4B60.toInt()
+            )
+        )
+    }
 
     private fun galarStadium(): UiThemeSnapshot {
         val colors = UiColorPalette(
@@ -223,6 +332,72 @@ object CobblemonUiThemePresets {
             recipes.forEach { (variant, recipe) -> addVariant(variant, recipe, colors) }
         }
     )
+
+    private fun MutableMap<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>.addPixelVariant(
+        variant: UiButtonVariant,
+        normal: Int,
+        hover: Int,
+        pressed: Int,
+        selected: Int,
+        text: Int,
+        frame: UiBorder.PixelFrame,
+        selector: UiSelectionIndicator,
+        disabled: Int
+    ) {
+        fun pixelStyle(
+            fill: Int,
+            textColor: Int = text,
+            indicator: UiSelectionIndicator = UiSelectionIndicator.None,
+            pressedOffsetY: Int = 0
+        ) = UiButtonStyle(
+            surface = UiSurfaceStyle(
+                shape = UiShape.Rectangle,
+                fill = UiFill.Solid(fill),
+                border = frame
+            ),
+            text = textColor,
+            supportingText = textColor,
+            selectionIndicator = indicator,
+            pressedOffsetY = pressedOffsetY
+        )
+
+        put(variant to UiWidgetState.NORMAL, pixelStyle(normal))
+        put(variant to UiWidgetState.HOVER, pixelStyle(hover))
+        put(variant to UiWidgetState.FOCUS, pixelStyle(hover, indicator = selector))
+        put(variant to UiWidgetState.PRESSED, pixelStyle(pressed, pressedOffsetY = 1))
+        put(variant to UiWidgetState.DISABLED, pixelStyle(disabled, 0xFF4E5659.toInt()))
+        put(variant to UiWidgetState.SELECTED, pixelStyle(selected, indicator = selector))
+    }
+
+    private fun MutableMap<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>.addPixelGhost(
+        colors: UiColorPalette,
+        selector: UiSelectionIndicator
+    ) {
+        fun ghost(
+            fill: Int,
+            opacity: Float,
+            indicator: UiSelectionIndicator = UiSelectionIndicator.None,
+            pressedOffsetY: Int = 0
+        ) = UiButtonStyle(
+            surface = UiSurfaceStyle(
+                shape = UiShape.Rectangle,
+                fill = UiFill.Solid(fill),
+                border = UiBorder.None,
+                backgroundOpacity = opacity
+            ),
+            text = if (opacity < 0.5f) colors.textSecondary else colors.textPrimary,
+            supportingText = colors.textSecondary,
+            selectionIndicator = indicator,
+            pressedOffsetY = pressedOffsetY
+        )
+
+        put(UiButtonVariant.GHOST to UiWidgetState.NORMAL, ghost(colors.shell, 0f))
+        put(UiButtonVariant.GHOST to UiWidgetState.HOVER, ghost(colors.panelAlt, 0.75f))
+        put(UiButtonVariant.GHOST to UiWidgetState.FOCUS, ghost(colors.panelAlt, 0.85f, selector))
+        put(UiButtonVariant.GHOST to UiWidgetState.PRESSED, ghost(colors.border, 0.7f, pressedOffsetY = 1))
+        put(UiButtonVariant.GHOST to UiWidgetState.DISABLED, ghost(colors.shell, 0f))
+        put(UiButtonVariant.GHOST to UiWidgetState.SELECTED, ghost(colors.accentPrimary, 1f, selector))
+    }
 
     private fun buttonRecipes(
         primary: ButtonRecipe,
