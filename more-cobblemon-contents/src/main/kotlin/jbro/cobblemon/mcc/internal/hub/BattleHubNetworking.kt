@@ -6,6 +6,7 @@ import jbro.cobblemon.mcc.api.access.ContentAccessAction
 import jbro.cobblemon.mcc.api.access.ContentAccessDecision
 import jbro.cobblemon.mcc.internal.bp.BattlePointService
 import jbro.cobblemon.mcc.internal.presentation.attemptServerUiOperation
+import jbro.cobblemon.mcc.internal.record.BattleRecordService
 import jbro.cobblemon.mcc.internal.terminal.TerminalInteractionResult
 import java.util.UUID
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
@@ -21,6 +22,7 @@ object BattleHubNetworking {
         PayloadTypeRegistry.playS2C().register(BattleHubAccessPayload.TYPE, BattleHubAccessPayload.CODEC)
         PayloadTypeRegistry.playS2C().register(BattleHubStatePayload.TYPE, BattleHubStatePayload.CODEC)
         PayloadTypeRegistry.playS2C().register(BattleHubHeaderStatePayload.TYPE, BattleHubHeaderStatePayload.CODEC)
+        PayloadTypeRegistry.playS2C().register(BattleHubDashboardPayload.TYPE, BattleHubDashboardPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(BattleHubOpenContentPayload.TYPE, BattleHubOpenContentPayload.CODEC)
         ServerPlayNetworking.registerGlobalReceiver(BattleHubOpenContentPayload.TYPE) { payload, context ->
             val player = context.player()
@@ -59,6 +61,7 @@ object BattleHubNetworking {
                 terminalContexts[player.uuid] = terminal
             }
             sendHeader(player)
+            sendDashboard(player)
             ServerPlayNetworking.send(player, BattleHubStatePayload)
             true
         }
@@ -84,6 +87,15 @@ object BattleHubNetworking {
             }
             true
         }
+    }
+
+    private fun sendDashboard(player: ServerPlayer) {
+        if (!ServerPlayNetworking.canSend(player, BattleHubDashboardPayload.TYPE)) return
+        val records = BattleRecordService.forPlayer(player.server, player.uuid)
+            .sortedWith(compareBy({ it.key.category.contentId }, { it.key.category.formatId }))
+            .take(BattleHubDashboardPayload.MAX_RECORDS)
+            .map(BattleHubRecordView::from)
+        ServerPlayNetworking.send(player, BattleHubDashboardPayload(records))
     }
 
     fun clear() = terminalContexts.clear()

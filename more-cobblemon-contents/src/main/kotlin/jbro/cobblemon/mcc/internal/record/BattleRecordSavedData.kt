@@ -117,6 +117,10 @@ object BattleRecordService {
     fun all(server: MinecraftServer, category: BattleRecordCategory): List<BattleRecordStats> =
         data(server).all(category)
 
+    /** Every record category the player has, across all contents. */
+    fun forPlayer(server: MinecraftServer, playerId: java.util.UUID): List<BattleRecordStats> =
+        data(server).all().filter { it.key.playerId == playerId }
+
     fun recordOutcome(
         server: MinecraftServer,
         key: BattleRecordKey,
