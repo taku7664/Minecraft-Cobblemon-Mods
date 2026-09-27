@@ -13,7 +13,7 @@ import jbro.cobblemon.mcc.internal.battle.rules.ManagedSubmittedMechanic
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleMechanic
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleMechanicVisibilityNetworking
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleContentNetworking
-import jbro.cobblemon.mcc.internal.pvp.network.PvpPlayNetworking
+import jbro.cobblemon.mcc.internal.battle.ManagedTurnInterceptors
 import java.util.UUID
 
 internal object Cobblemon173BattleRuleHooks {
@@ -63,7 +63,7 @@ internal object Cobblemon173BattleRuleHooks {
                     )
                 }
             },
-            { PvpPlayNetworking.forgetBattleTurn(battle.battleId) },
+            { ManagedTurnInterceptors.forget(battle.battleId) },
             { hideClientMechanicPolicy(battle) },
         )
     }

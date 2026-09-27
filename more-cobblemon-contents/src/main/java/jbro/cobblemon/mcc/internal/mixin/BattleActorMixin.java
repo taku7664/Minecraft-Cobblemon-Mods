@@ -6,9 +6,9 @@ import com.cobblemon.mod.common.exception.IllegalActionChoiceException;
 import java.util.ArrayList;
 import java.util.List;
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173BattleRuleHooks;
-import jbro.cobblemon.mcc.internal.pvp.PvpTurnCapture;
-import jbro.cobblemon.mcc.internal.pvp.PvpTurnResponseCardinality;
-import jbro.cobblemon.mcc.internal.pvp.network.PvpPlayNetworking;
+import jbro.cobblemon.mcc.internal.battle.ManagedTurnCapture;
+import jbro.cobblemon.mcc.internal.battle.ManagedTurnInterceptors;
+import jbro.cobblemon.mcc.internal.battle.ManagedTurnResponseCardinality;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,7 +24,7 @@ abstract class BattleActorMixin {
     @Unique
     private boolean mcc$managedTurnCompleted;
     @Unique
-    private PvpTurnCapture mcc$pvpTurnCapture;
+    private ManagedTurnCapture mcc$turnCapture;
 
     @Inject(method = "setActionResponses", at = @At("HEAD"), cancellable = true)
     private void mcc$validateManagedRules(
@@ -43,21 +43,21 @@ abstract class BattleActorMixin {
         if (rejection != null) {
             throw new IllegalActionChoiceException(actor, rejection);
         }
-        PvpTurnCapture capture = PvpPlayNetworking.captureBattleTurn(actor);
+        ManagedTurnCapture capture = ManagedTurnInterceptors.capture(actor);
         boolean managedRules = Cobblemon173BattleRuleHooks.isRegisteredBattle(actor.getBattle().getBattleId());
         if (capture == null && !managedRules) {
             return;
         }
         if (capture != null && capture.getTimedOut()) {
-            PvpPlayNetworking.resolveTimedOutBattleTurn(actor, capture);
+            capture.resolveTimedOut(actor);
             callbackInfo.cancel();
             return;
         }
         int activeChoices = actor.getRequest().getActive() == null ? 0 : actor.getRequest().getActive().size();
         int forcedSwitchChoices = actor.getRequest().getForceSwitch().size();
-        if (!PvpTurnResponseCardinality.accepts(activeChoices, forcedSwitchChoices, responses.size())) {
+        if (!ManagedTurnResponseCardinality.accepts(activeChoices, forcedSwitchChoices, responses.size())) {
             if (capture != null) {
-                PvpPlayNetworking.rejectBattleTurn(capture);
+                capture.reject();
             }
             throw new IllegalActionChoiceException(actor, "Managed action response count does not match the request");
         }
@@ -70,7 +70,7 @@ abstract class BattleActorMixin {
             if (capture != null) {
                 ManagedTurnFailureRecovery.releaseReservation(
                     failure,
-                    () -> PvpPlayNetworking.rejectBattleTurn(capture)
+                    capture::reject
                 );
             }
             throw failure;
@@ -78,7 +78,7 @@ abstract class BattleActorMixin {
         mcc$validatingManagedTurn = true;
         mcc$managedTurnValidated = false;
         mcc$managedTurnCompleted = false;
-        mcc$pvpTurnCapture = capture;
+        mcc$turnCapture = capture;
         try {
             actor.setActionResponses(responses);
             mcc$completeManagedTurn(actor, capture, originalRequest, originalResponses, submittedResponses);
@@ -86,7 +86,7 @@ abstract class BattleActorMixin {
             mcc$failManagedTurn(actor, capture, originalRequest, originalResponses, failure);
             throw failure;
         } finally {
-            mcc$pvpTurnCapture = null;
+            mcc$turnCapture = null;
             mcc$managedTurnCompleted = false;
             mcc$managedTurnValidated = false;
             mcc$validatingManagedTurn = false;
@@ -115,7 +115,7 @@ abstract class BattleActorMixin {
     @Unique
     private void mcc$failManagedTurn(
         BattleActor actor,
-        PvpTurnCapture capture,
+        ManagedTurnCapture capture,
         Object originalRequest,
         List<ShowdownActionResponse> originalResponses,
         Throwable failure
@@ -130,7 +130,7 @@ abstract class BattleActorMixin {
             canRestoreResponses,
             () -> {
                 if (capture != null) {
-                    PvpPlayNetworking.rejectBattleTurn(capture);
+                    capture.reject();
                 }
             },
             () -> {
@@ -144,7 +144,7 @@ abstract class BattleActorMixin {
     @Unique
     private void mcc$completeManagedTurn(
         BattleActor actor,
-        PvpTurnCapture capture,
+        ManagedTurnCapture capture,
         Object originalRequest,
         List<ShowdownActionResponse> originalResponses,
         List<ShowdownActionResponse> submittedResponses
@@ -156,11 +156,11 @@ abstract class BattleActorMixin {
         if (mcc$managedTurnValidated && !sameRequestReopened) {
             Cobblemon173BattleRuleHooks.recordAccepted(actor, submittedResponses);
             if (capture != null) {
-                PvpPlayNetworking.acceptBattleTurn(capture);
+                capture.accept();
             }
         } else {
             if (capture != null) {
-                PvpPlayNetworking.rejectBattleTurn(capture);
+                capture.reject();
             }
             actor.getResponses().clear();
             actor.getResponses().addAll(originalResponses);

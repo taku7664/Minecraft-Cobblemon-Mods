@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.internal.pvp.network
 
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
+import jbro.cobblemon.mcc.internal.battle.ManagedTurnInterceptors
 import java.util.UUID
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.internal.command.PvpCommandBackend
@@ -137,6 +138,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
 
     fun registerServer() {
         sessions
+        ManagedTurnInterceptors.register(PvpManagedTurnInterceptor)
         PayloadTypeRegistry.playS2C().register(PvpSelectionStatePayload.TYPE, PvpSelectionStatePayload.CODEC)
         PayloadTypeRegistry.playS2C().register(PvpSelectionRejectedPayload.TYPE, PvpSelectionRejectedPayload.CODEC)
         PayloadTypeRegistry.playS2C().register(PvpSelectionClosedPayload.TYPE, PvpSelectionClosedPayload.CODEC)

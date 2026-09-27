@@ -4,7 +4,7 @@ import com.cobblemon.mod.common.api.battles.model.PokemonBattle;
 import com.cobblemon.mod.common.battles.BattleFormat;
 import com.cobblemon.mod.common.battles.BattleSide;
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173BattleRuleHooks;
-import jbro.cobblemon.mcc.internal.pvp.network.PvpPlayNetworking;
+import jbro.cobblemon.mcc.internal.battle.ManagedTurnInterceptors;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -28,7 +28,7 @@ abstract class PokemonBattleMixin {
     }
 
     @Inject(method = "tick", at = @At("RETURN"))
-    private void mcc$observePvpTurnRequests(CallbackInfo callbackInfo) {
-        PvpPlayNetworking.observeBattleTurn((PokemonBattle) (Object) this);
+    private void mcc$observeTurnRequests(CallbackInfo callbackInfo) {
+        ManagedTurnInterceptors.observe((PokemonBattle) (Object) this);
     }
 }

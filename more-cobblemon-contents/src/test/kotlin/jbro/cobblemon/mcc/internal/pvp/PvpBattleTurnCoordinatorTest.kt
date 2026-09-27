@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.internal.pvp
 
 import java.util.UUID
+import jbro.cobblemon.mcc.internal.battle.ManagedTurnResponseCardinality
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -16,11 +17,11 @@ class PvpBattleTurnCoordinatorTest {
 
     @Test
     fun `response count must exactly cover every requested slot`() {
-        assertTrue(PvpTurnResponseCardinality.accepts(activeChoices = 1, forcedSwitchChoices = 1, responseCount = 1))
-        assertTrue(PvpTurnResponseCardinality.accepts(activeChoices = 2, forcedSwitchChoices = 0, responseCount = 2))
-        assertFalse(PvpTurnResponseCardinality.accepts(activeChoices = 2, forcedSwitchChoices = 0, responseCount = 1))
-        assertFalse(PvpTurnResponseCardinality.accepts(activeChoices = 2, forcedSwitchChoices = 0, responseCount = 3))
-        assertFalse(PvpTurnResponseCardinality.accepts(activeChoices = 1, forcedSwitchChoices = 2, responseCount = 1))
+        assertTrue(ManagedTurnResponseCardinality.accepts(activeChoices = 1, forcedSwitchChoices = 1, responseCount = 1))
+        assertTrue(ManagedTurnResponseCardinality.accepts(activeChoices = 2, forcedSwitchChoices = 0, responseCount = 2))
+        assertFalse(ManagedTurnResponseCardinality.accepts(activeChoices = 2, forcedSwitchChoices = 0, responseCount = 1))
+        assertFalse(ManagedTurnResponseCardinality.accepts(activeChoices = 2, forcedSwitchChoices = 0, responseCount = 3))
+        assertFalse(ManagedTurnResponseCardinality.accepts(activeChoices = 1, forcedSwitchChoices = 2, responseCount = 1))
     }
 
     @Test

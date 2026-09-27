@@ -2,14 +2,6 @@ package jbro.cobblemon.mcc.internal.pvp
 
 import java.util.UUID
 
-internal object PvpTurnResponseCardinality {
-    @JvmStatic
-    fun accepts(activeChoices: Int, forcedSwitchChoices: Int, responseCount: Int): Boolean {
-        require(activeChoices >= 0 && forcedSwitchChoices >= 0 && responseCount >= 0)
-        return responseCount == maxOf(activeChoices, forcedSwitchChoices)
-    }
-}
-
 internal class PvpTurnCapture internal constructor(
     internal val coordinatorIdentity: Any,
     internal val battleId: UUID,
