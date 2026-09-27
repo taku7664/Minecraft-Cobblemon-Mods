@@ -23,7 +23,10 @@ internal object PvpPlayClientNetworking {
     private val loungeExitRequest = PendingClientRequest()
 
     fun register() {
-        MccClientSessionReset.onReset("PvP room client state", PvpRoomClientState::clear)
+        MccClientSessionReset.onReset("PvP room client state") {
+            PvpRoomClientState.clear()
+            PvpHubClient.clear()
+        }
         ClientPlayNetworking.registerGlobalReceiver(PvpLoungeSpectatorStatePayload.TYPE) { payload, context ->
             context.client().execute {
                 val closeForConfirmedExit = !payload.active && loungeExitRequest.complete(accepted = true)
@@ -79,66 +82,31 @@ internal object PvpPlayClientNetworking {
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpRoomListStatePayload.TYPE) { payload, context ->
             context.client().execute {
-                val previous = context.client().screen
-                if (previous is PvpRoomScreen || PvpRoomClientState.lastRoom?.roomId?.let { roomId ->
-                        payload.rooms.none { it.roomId == roomId }
-                    } == true
-                ) {
+                if (PvpRoomClientState.lastRoom?.roomId?.let { roomId -> payload.rooms.none { it.roomId == roomId } } == true) {
                     PvpRoomClientState.lastRoom = null
                 }
-                PvpRoomClientState.lastRooms = payload.rooms
+                PvpHubClient.acceptRooms(payload.rooms)
                 PvpRoomHudOverlay.refreshControls()
-                context.client().setScreen(PvpRoomListScreen(payload.rooms))
             }
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpRoomStatePayload.TYPE) { payload, context ->
             context.client().execute {
-                PvpRoomClientState.lastRoom = payload.room
+                PvpHubClient.acceptRoom(payload.requestId, payload.room, payload.reopen)
                 PvpRoomHudOverlay.refreshControls()
-                when (val current = context.client().screen) {
-                    is PvpRoomScreen -> current.applyState(payload.requestId, payload.room)
-                    is PvpRoomListScreen -> if (PvpRoomNavigationContract.shouldOpen(payload.requestId, PvpRoomClientState.pendingOpenRequests, payload.reopen)) {
-                        context.client().setScreen(PvpRoomScreen(payload.room, current))
-                    }
-                    else -> if (PvpRoomNavigationContract.shouldOpen(payload.requestId, PvpRoomClientState.pendingOpenRequests, payload.reopen)) {
-                        context.client().setScreen(PvpRoomScreen(payload.room, PvpRoomListScreen(PvpRoomClientState.lastRooms)))
-                    }
-                }
             }
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpRoomRejectedPayload.TYPE) { payload, context ->
-            context.client().execute {
-                PvpRoomClientState.pendingOpenRequests.remove(payload.requestId)
-                when (val current = context.client().screen) {
-                    is PvpRoomListScreen -> current.applyRejected(payload.messageKey)
-                    is PvpRoomScreen -> current.applyRejected(payload.requestId, payload.messageKey)
-                    else -> context.client().player?.displayClientMessage(Component.translatable(payload.messageKey), false)
-                }
-            }
+            context.client().execute { PvpHubClient.rejectRoom(payload.requestId, payload.messageKey) }
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpSelectionStatePayload.TYPE) { payload, context ->
-            context.client().execute {
-                val current = context.client().screen
-                if (payload.requestId == null) {
-                    context.client().setScreen(PvpSelectionScreen(payload.state))
-                } else if (current is PvpSelectionScreen) {
-                    current.applyAccepted(payload.requestId, payload.state)
-                }
-            }
+            context.client().execute { PvpHubClient.acceptSelection(payload.requestId, payload.state) }
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpSelectionRejectedPayload.TYPE) { payload, context ->
-            context.client().execute {
-                (context.client().screen as? PvpSelectionScreen)?.applyRejected(
-                    payload.requestId,
-                    payload.matchId,
-                    payload.messageKey,
-                )
-            }
+            context.client().execute { PvpHubClient.rejectSelection(payload.requestId, payload.matchId, payload.messageKey) }
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpSelectionClosedPayload.TYPE) { payload, context ->
             context.client().execute {
-                val current = context.client().screen as? PvpSelectionScreen
-                if (current?.matchId == payload.matchId) context.client().setScreen(null)
+                PvpHubClient.closeSelection(payload.matchId)
                 context.client().player?.displayClientMessage(Component.translatable(payload.messageKey), false)
             }
         }

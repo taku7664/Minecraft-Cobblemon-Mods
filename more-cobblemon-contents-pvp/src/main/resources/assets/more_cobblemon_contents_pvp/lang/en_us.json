@@ -108,5 +108,7 @@
   "screen.more_cobblemon_contents.pvp.closed.battle_started": "Starting the PvP battle.",
   "screen.more_cobblemon_contents.pvp.lounge.rescued": "Returned you to the overworld spawn: the battle lounge had no record of where you came from.",
   "screen.more_cobblemon_contents.hub.tab.pvp": "PvP",
-  "screen.more_cobblemon_contents.hub.unavailable.pvp": "The PvP screen could not be opened."
+  "screen.more_cobblemon_contents.hub.unavailable.pvp": "The PvP screen could not be opened.",
+  "screen.more_cobblemon_contents.pvp.room.settings": "Room settings",
+  "screen.more_cobblemon_contents.pvp.room.back_to_list": "Rooms"
 }

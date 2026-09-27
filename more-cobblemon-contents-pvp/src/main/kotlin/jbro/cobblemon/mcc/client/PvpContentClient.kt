@@ -13,13 +13,12 @@ object PvpContentClient : ClientModInitializer {
         PvpLoungeSpectatorControls.register()
         PvpRoomHudOverlay.register()
         PvpPlayClientNetworking.register()
-        // Opens the content's own screen until its hub tab is rebuilt on the hub.
         MccHubTabs.register(
             MccHubTab(
                 ManagedBattleContentIds.PVP,
                 Component.translatable(MccDashboardPresentation.contentNameKey(ManagedBattleContentIds.PVP)),
                 order = 120,
-                kind = MccHubTabKind.Screen { MccHubTabs.requestContent(ManagedBattleContentIds.PVP) },
+                kind = MccHubTabKind.Embedded(::PvpHubTab),
             ),
         )
     }

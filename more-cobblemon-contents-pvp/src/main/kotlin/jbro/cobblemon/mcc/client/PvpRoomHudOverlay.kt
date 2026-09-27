@@ -159,10 +159,8 @@ internal object PvpRoomHudOverlay {
         installedButtons[screen] = listOf(open, toggle)
     }
 
-    private fun openRoom(client: Minecraft) {
-        val room = PvpRoomClientState.lastRoom ?: return
-        client.setScreen(PvpRoomScreen(room, PvpRoomListScreen(PvpRoomClientState.lastRooms)))
-    }
+    @Suppress("UNUSED_PARAMETER")
+    private fun openRoom(client: Minecraft) = PvpHubClient.showLastRoom()
 
     private fun clearInstalledButtons() {
         installedButtons.forEach { (screen, buttons) -> Screens.getButtons(screen).removeAll(buttons.toSet()) }

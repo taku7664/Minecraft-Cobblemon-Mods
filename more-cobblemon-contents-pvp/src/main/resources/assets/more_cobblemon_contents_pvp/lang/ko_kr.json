@@ -108,5 +108,7 @@
   "screen.more_cobblemon_contents.pvp.closed.battle_started": "PvP 배틀을 시작합니다.",
   "screen.more_cobblemon_contents.pvp.lounge.rescued": "배틀 라운지에 돌아갈 위치 기록이 없어 오버월드 스폰으로 이동했습니다.",
   "screen.more_cobblemon_contents.hub.tab.pvp": "PvP",
-  "screen.more_cobblemon_contents.hub.unavailable.pvp": "PvP 화면을 열 수 없습니다."
+  "screen.more_cobblemon_contents.hub.unavailable.pvp": "PvP 화면을 열 수 없습니다.",
+  "screen.more_cobblemon_contents.pvp.room.settings": "방 설정",
+  "screen.more_cobblemon_contents.pvp.room.back_to_list": "방 목록"
 }

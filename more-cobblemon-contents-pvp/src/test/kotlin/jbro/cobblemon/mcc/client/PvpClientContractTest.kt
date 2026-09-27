@@ -26,15 +26,6 @@ class PvpClientContractTest {
     }
 
     @Test
-    fun `pvp room list sits in the shared hub frame and the room keeps its own screen`() {
-        val frame = MccContentFrameLayout.calculate(844, 470)
-
-        assertEquals(frame.content, PvpRoomListLayout.calculate(frame.content).shell)
-        assertTrue(MccTabbedContentScreen::class.java.isAssignableFrom(PvpRoomListScreen::class.java))
-        assertFalse(MccTabbedContentScreen::class.java.isAssignableFrom(PvpRoomScreen::class.java))
-    }
-
-    @Test
     fun `pvp room state reset removes previous server rooms and pending navigation`() {
         val roomId = UUID.randomUUID()
         val hostId = UUID.randomUUID()
