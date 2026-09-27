@@ -5,6 +5,19 @@
 
 ---
 
+## [2026-09-27 19:40] Core 분리 준비 1~3단계 — 정리, 엔진 통합, 서버 등록 구조 (컴파일만 확인)
+
+- **검증 상태:** 각 커밋마다 `compileKotlin`·`compileJava`·`compileTestKotlin`만 통과시켰다. 빡대리님 지시로 테스트는 돌리지 않았고 게임 안에서도 확인하지 않았다. 소스 텍스트를 읽는 테스트(`ManagedBattleLifecycleWiringTest`, `ManagedServerCatalogCleanupRegistrationTest`)와 ID 리터럴을 쓰는 테스트는 새 구조에 맞춰 고쳐 두었다.
+- **1단계 정리(`6d53e583`):** 호출처가 없던 `Cobblemon173TowerBattleTeamMaterializer` 삭제.
+- **2단계 엔진 통합(`cf6a0690`):** `Cobblemon173ManagedAiBattleEngine`이 공용 PvE 흐름(접근 검사, 임시 파티, 가상 트레이너, Brain, 선봉 선택, 규칙·수명 주기 등록, 연출, 종료 정리)을 소유한다. 결과는 중립 타입 `PveLaunchResult`·`PveOutcome`과 `onEnded` 콜백으로 준다. 팩토리 전용이던 차이는 엔진 선택 항목이 됐다: `strategyBrief`, 선택형 `learningScopeId`, 관측 어댑터를 붙이는 `onBattleStarted` 훅. 타워·팩토리·`ManagedPveBattles`·AI 테스트는 얇은 어댑터다. 팩토리에도 선봉 선택이 불리지만 상대 미리보기가 없어 팀 순서를 그대로 돌려준다.
+- **규칙 레지스트리(`d86384f3`):** `internal/tower/rules` → `internal/battle/rules`. `ManagedBattleRuleRegistry`, `ManagedBattleRuleRegistrationWindow`, `ManagedSubmittedMechanic`, `ManagedActionSubmission`, `ManagedActorMechanicState`, `ManagedRuleRejection`.
+- **PvP 턴 가로채기(`366e4207`):** `BattleActorMixin`·`PokemonBattleMixin`·규칙 훅은 `ManagedTurnInterceptors`만 부른다(캡처→수락·거절·시간 초과 해결, 매 tick 관측, 종료 시 정리). PvP는 `PvpManagedTurnInterceptor`를 네트워킹 시작 때 등록한다. 응답 개수 검사는 `ManagedTurnResponseCardinality`로 Core에 옮겼다.
+- **콘텐츠 ID 통일(`c02c1307`):** 기록·애플리케이션·BP가 네임스페이스 ID(`more_cobblemon_contents:battle_tower` 등) 하나를 쓴다. 기록 카테고리와 `BattleContentId`는 네임스페이스 형식만 허용한다. BP 출처는 콘텐츠 ID 그대로, 사유는 경로 부분(`battle_tower_3_streak_win`)이라 문자열은 전과 같다.
+- **Hub 등록(`00607553`):** `BattleHubEntries`에 콘텐츠 ID·접근 콘텐츠 ID·여는 함수를 등록한다. 타워·팩토리·PvP·상점(`BattleHubIds.SHOP`)이 각자 등록한다. 열기·접근 페이로드는 enum 서수 대신 ID 문자열을 보낸다. 터미널 진입 정보는 공용 `TerminalInteractionResult.Verified`로 Hub가 보관하고, 그 Hub 세션에서 여는 항목에 넘긴다. 전에는 타워가 성공적으로 열리면 지웠는데, 지금은 Hub를 다시 열거나 연결이 끊길 때까지 유지한다. 클라이언트 탭은 4단계 전까지 `BattleHubContent` enum을 ID로 변환해 쓴다.
+- **`/mcc` 하위 명령(`a9b1f331`):** BP는 루트에 두고, 타워 연승·팩토리 층·AI 테스트 명령은 `MccCommandContributors`로 각자 등록한다.
+- **종료 정리와 이벤트 단계(`6c2581a7`):** 타워·팩토리 카탈로그 비우기는 각 리소스 등록 코드가 `ManagedServerEphemeralStateCleanup.register`로 추가한다. 엔티티 정리 backstop은 DISCONNECT·SERVER_STOPPING·SERVER_STOPPED의 `managed_battle_backstop` 단계(기본 단계 뒤)에서 돈다.
+- **남은 결합:** 홈 리더보드(보드 8개 하드코딩, 상한 8)와 클라이언트 탭은 4단계 Hub UI 개편에서 다룬다. `MoreCobblemonContents`·`MoreCobblemonContentsClient`가 각 콘텐츠 초기화를 직접 부르는 것은 5단계 모듈 분리 때 각 모드 초기화로 옮긴다.
+
 ## [2026-09-27 18:05] 애드온 경계 제거 — `b6812d31`, `0e4121a1` (빌드·테스트 미실행)
 
 - **`api.ai` → `internal.ai`(`b6812d31`):** AI 계약(`BattleBrainRegistry`, 전투 상태 뷰, 판단 계약 등 13개 파일)과 테스트 6개를 `jbro.cobblemon.mcc.internal.ai`로 옮기고 참조 411개 파일을 바꿨다. 두 패키지 사이에 겹치는 최상위 선언은 없었다. 공개 API `ManagedPveBattles`의 시그니처에는 이 타입들이 드러나지 않는다(내부 구현에서만 사용). `docs/betterai/` 계약 문서의 패키지 표기도 함께 바꿨고, 과거 기록인 `docs/betterai/MEMORY.md`는 그대로 두었다.
