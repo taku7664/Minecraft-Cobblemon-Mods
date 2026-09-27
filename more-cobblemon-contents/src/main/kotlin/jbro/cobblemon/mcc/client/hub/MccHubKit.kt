@@ -1,0 +1,452 @@
+package jbro.cobblemon.mcc.client.hub
+
+import jbro.cobblemon.uikit.CobblemonUiThemePresets
+import jbro.cobblemon.uikit.CobblemonUiThemes
+import jbro.cobblemon.uikit.UiButtonSpec
+import jbro.cobblemon.uikit.UiButtonVariant
+import jbro.cobblemon.uikit.UiControlSize
+import jbro.cobblemon.uikit.UiDialogSpec
+import jbro.cobblemon.uikit.UiOverlayTone
+import jbro.cobblemon.uikit.UiPanelSpec
+import jbro.cobblemon.uikit.UiPanelTone
+import jbro.cobblemon.uikit.UiRect
+import jbro.cobblemon.uikit.UiScrollState
+import jbro.cobblemon.uikit.UiThemePreset
+import jbro.cobblemon.uikit.UiThemeSnapshot
+import jbro.cobblemon.uikit.UiWidthPolicy
+import jbro.cobblemon.uikit.client.CobblemonUiButton
+import jbro.cobblemon.uikit.client.CobblemonUiDialogScreen
+import jbro.cobblemon.uikit.client.CobblemonUiPanel
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.AbstractWidget
+import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.narration.NarratedElementType
+import net.minecraft.client.gui.narration.NarrationElementOutput
+import net.minecraft.network.chat.Component
+import net.minecraft.world.item.ItemStack
+
+/**
+ * The pieces every embedded hub tab is built from, so each content reads as part of the same hub at any size:
+ * a summary strip, raised cards with a title band, choice rows and a footer of actions. Everything is laid out
+ * from the rectangle it is given; nothing assumes where in the content area it sits.
+ */
+object MccHubKit {
+    /** Space between neighbouring pieces. */
+    const val GAP = 3
+
+    /** Height of a summary strip. */
+    const val STRIP_HEIGHT = 20
+
+    /** A medium Pixel League control. */
+    const val CONTROL_HEIGHT = 26
+
+    /** A footer: a rule, then one row of medium controls with a little room around it. */
+    const val FOOTER_HEIGHT = CONTROL_HEIGHT + 4
+
+    /** Rows a card spends on its frame and title band above and below its body. */
+    const val CARD_CHROME_HEIGHT = 27
+
+    private const val TITLE_BAND_HEIGHT = 15
+
+    enum class CardTone {
+        /** The card the tab is about: a warm title band. */
+        FEATURE,
+
+        /** Supporting information: a neutral title band. */
+        INFO,
+    }
+
+    /** One footer control. [minWidth] widens a short label, typically the tab's primary action. */
+    class Action(
+        val label: Component,
+        val variant: UiButtonVariant = UiButtonVariant.SECONDARY,
+        val enabled: Boolean = true,
+        val tooltip: Component? = null,
+        val minWidth: Int = 0,
+        val press: () -> Unit,
+    )
+
+    class Choice(val id: String, val label: Component)
+
+    /** Adds a raised card titled [title] over [rect] and returns the body inside its frame. */
+    fun card(host: MccHubContentHost, rect: UiRect, title: Component, tone: CardTone = CardTone.INFO): UiRect {
+        host.add(CobblemonUiPanel.create(rect.x, rect.y, rect.width, rect.height, UiPanelSpec(tone = UiPanelTone.RAISED)))
+        host.add(TitleBand(rect, title, tone))
+        return cardBody(rect)
+    }
+
+    /** The body [card] would return for [rect], for layouts that size a card around its content. */
+    fun cardBody(rect: UiRect): UiRect = UiRect(
+        rect.x + 6,
+        rect.y + 2 + TITLE_BAND_HEIGHT + 5,
+        (rect.width - 12).coerceAtLeast(1),
+        (rect.height - CARD_CHROME_HEIGHT).coerceAtLeast(1),
+    )
+
+    /**
+     * A strip across [rect]: an optional item icon and [start] on the left, [end] right-aligned. [progress]
+     * (done, total) draws that many small segments just before [end], for a set or a series.
+     */
+    fun strip(
+        host: MccHubContentHost,
+        rect: UiRect,
+        start: Component,
+        end: Component? = null,
+        icon: ItemStack? = null,
+        progress: Pair<Int, Int>? = null,
+    ) {
+        host.add(Strip(rect, start, end, icon, progress))
+    }
+
+    /**
+     * A footer across [rect]: a rule, [start] actions from the left and [end] actions packed against the right.
+     * End actions keep their natural width; start actions share what is left.
+     */
+    fun footer(host: MccHubContentHost, rect: UiRect, start: List<Action>, end: List<Action>) {
+        host.add(Rule(rect))
+        val y = rect.y + (rect.height - CONTROL_HEIGHT + 1) / 2 + 1
+        var right = rect.right
+        end.asReversed().forEach { action ->
+            val button = button(action, 0, y, (rect.width / 2).coerceAtLeast(40))
+            button.x = right - button.width
+            right = button.x - 4
+            host.add(button)
+        }
+        var left = rect.x
+        start.forEach { action ->
+            val room = right - left - 4
+            if (room < 24) return@forEach
+            val button = host.add(button(action, left, y, room))
+            left += button.width + 4
+        }
+    }
+
+    /** Height of a [choice] that puts its title on a line above the options. */
+    const val STACKED_CHOICE_HEIGHT = CONTROL_HEIGHT + 12
+
+    /**
+     * One setting across [rect]. When every option fits beside the title, all of them are shown and the chosen one
+     * is marked; when they fit only on their own and [rect] is [STACKED_CHOICE_HEIGHT] tall, the title goes on a
+     * line above them; otherwise a single control moves to the next option on press, showing "[title]: choice", or
+     * just the choice under a title line when [rect] is that tall.
+     */
+    fun choice(
+        host: MccHubContentHost,
+        rect: UiRect,
+        title: Component,
+        options: List<Choice>,
+        selectedId: String?,
+        enabled: Boolean,
+        tooltip: Component? = null,
+        select: (String) -> Unit,
+    ) {
+        require(options.isNotEmpty()) { "A hub choice needs options" }
+        val font = Minecraft.getInstance().font
+        val titleWidth = font.width(title) + 6
+        val natural = options.sumOf { font.width(it.label) + 20 } + (options.size - 1) * 2
+        val inline = titleWidth + natural <= rect.width
+        val stacked = !inline && natural <= rect.width && rect.height >= STACKED_CHOICE_HEIGHT
+        if (inline || stacked) {
+            val row = if (inline) {
+                host.add(Label(UiRect(rect.x, rect.y, titleWidth, CONTROL_HEIGHT), title))
+                UiRect(rect.x + titleWidth, rect.y, rect.width - titleWidth, CONTROL_HEIGHT)
+            } else {
+                host.add(Label(UiRect(rect.x, rect.y, rect.width, 10), title))
+                UiRect(rect.x, rect.y + 12, rect.width, CONTROL_HEIGHT)
+            }
+            val width = (row.width - (options.size - 1) * 2) / options.size
+            options.forEachIndexed { index, option ->
+                val selected = option.id == selectedId
+                val button = CobblemonUiButton.create(row.x + index * (width + 2), row.y, width,
+                    UiButtonSpec(option.label, variant = UiButtonVariant.SECONDARY, size = UiControlSize.MEDIUM,
+                        width = UiWidthPolicy.Fixed(width), selected = selected)) { if (!selected) select(option.id) }
+                button.active = enabled
+                tooltip?.let { button.setTooltip(Tooltip.create(it)) }
+                host.add(button)
+            }
+            return
+        }
+        val index = options.indexOfFirst { it.id == selectedId }
+        val current = options.getOrNull(index)?.label ?: Component.literal("-")
+        // A tall row keeps its title on the line above, like the other rows around it.
+        val titled = rect.height >= STACKED_CHOICE_HEIGHT
+        if (titled) host.add(Label(UiRect(rect.x, rect.y, rect.width, 10), title))
+        val label = if (titled) current else Component.empty().append(title).append(Component.literal(": ")).append(current)
+        val button = CobblemonUiButton.create(rect.x, if (titled) rect.y + 12 else rect.y, rect.width,
+            UiButtonSpec(fitted(label, rect.width - 16), variant = UiButtonVariant.SECONDARY, size = UiControlSize.MEDIUM,
+                width = UiWidthPolicy.Fixed(rect.width))) {
+            select(options[(index + 1).mod(options.size)].id)
+        }
+        button.active = enabled && options.size > 1
+        tooltip?.let { button.setTooltip(Tooltip.create(it)) }
+        host.add(button)
+    }
+
+    /** A quiet centered line for a tab still waiting for its server state, or with nothing to show. */
+    fun placeholder(host: MccHubContentHost, rect: UiRect, text: Component) {
+        host.add(Placeholder(rect, text))
+    }
+
+    /**
+     * Asks before an irreversible action in a dialog over the hub; the hub comes back when it closes.
+     * [confirm] runs only on the confirming button.
+     */
+    fun confirm(title: Component, body: Component, confirmLabel: Component, backLabel: Component, confirm: () -> Unit) {
+        val client = Minecraft.getInstance()
+        val parent = client.screen ?: return
+        client.setScreen(CobblemonUiDialogScreen(parent,
+            UiDialogSpec(title, body, confirmLabel, backLabel, UiOverlayTone.DANGER),
+            confirm = confirm,
+            themeOverride = CobblemonUiThemePresets.snapshot(UiThemePreset.PIXEL_LEAGUE)))
+    }
+
+    /** A titled paragraph of a [document]. */
+    class Section(val title: Component?, val body: Component)
+
+    /** Something in a tab that scrolls under the mouse wheel; the tab forwards its wheel events here. */
+    fun interface Scrollable {
+        fun scroll(mouseX: Double, mouseY: Double, delta: Double): Boolean
+    }
+
+    /**
+     * Wrapped [sections] that scroll inside [rect], with a thin bar when they overflow. The offset lives with the
+     * tab ([offset] in, [offsetChanged] out) so a rebuild keeps the reading position.
+     */
+    fun document(
+        host: MccHubContentHost,
+        rect: UiRect,
+        sections: List<Section>,
+        offset: Int,
+        offsetChanged: (Int) -> Unit,
+    ): Scrollable = host.add(Document(rect, sections, offset, offsetChanged))
+
+    /** Wrapped text inside [rect]; lines that do not fit are dropped from the end. */
+    fun text(host: MccHubContentHost, rect: UiRect, text: Component, color: (UiThemeSnapshot) -> Int = ::panelText) {
+        host.add(TextBlock(rect, text, color))
+    }
+
+    /** The text colour for a raised card body. */
+    fun panelText(theme: UiThemeSnapshot): Int = theme.surfaces.panelAltText ?: theme.colors.textPrimary
+
+    /** [text] cut to [width] pixels, for labels whose room is decided by the layout. */
+    fun fitted(text: Component, width: Int): Component {
+        val font = Minecraft.getInstance().font
+        if (font.width(text) <= width) return text
+        return Component.literal(font.plainSubstrByWidth(text.string, (width - font.width("…")).coerceAtLeast(0)) + "…")
+    }
+
+    /** Splits [rect] into columns whose widths follow [weights], [GAP] apart. */
+    fun columns(rect: UiRect, vararg weights: Int): List<UiRect> {
+        val total = weights.sum().coerceAtLeast(1)
+        val room = rect.width - GAP * (weights.size - 1)
+        var x = rect.x
+        return weights.mapIndexed { index, weight ->
+            val width = if (index == weights.lastIndex) rect.right - x else room * weight / total
+            UiRect(x, rect.y, width.coerceAtLeast(1), rect.height).also { x += width + GAP }
+        }
+    }
+
+    private fun button(action: Action, x: Int, y: Int, availableWidth: Int): CobblemonUiButton {
+        val font = Minecraft.getInstance().font
+        val width = if (action.minWidth > font.width(action.label) + 24) {
+            UiWidthPolicy.Fixed(action.minWidth.coerceAtMost(availableWidth))
+        } else {
+            UiWidthPolicy.Content
+        }
+        val button = CobblemonUiButton.create(x, y, availableWidth,
+            UiButtonSpec(action.label, variant = action.variant, size = UiControlSize.MEDIUM, width = width), press = action.press)
+        button.active = action.enabled
+        action.tooltip?.let { button.setTooltip(Tooltip.create(it)) }
+        return button
+    }
+
+    private class TitleBand(private val card: UiRect, private val title: Component, private val tone: CardTone) :
+        AbstractWidget(card.x, card.y, card.width, TITLE_BAND_HEIGHT + 2, title) {
+        init { active = false }
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+            val theme = CobblemonUiThemes.registry.snapshot()
+            val band = when (tone) {
+                CardTone.FEATURE -> theme.colors.accentCaution
+                CardTone.INFO -> theme.colors.borderBright
+            }
+            graphics.fill(card.x + 2, card.y + 2, card.right - 2, card.y + 2 + TITLE_BAND_HEIGHT, band)
+            drawLine(graphics, title, card.x + 7, card.y + 5, card.width - 14, theme.colors.shell)
+        }
+        override fun updateWidgetNarration(output: NarrationElementOutput) {
+            output.add(NarratedElementType.TITLE, title)
+        }
+    }
+
+    private class Strip(
+        private val rect: UiRect,
+        private val start: Component,
+        private val end: Component?,
+        private val icon: ItemStack?,
+        private val progress: Pair<Int, Int>?,
+    ) : AbstractWidget(rect.x, rect.y, rect.width, rect.height, start) {
+        init { active = false }
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+            val theme = CobblemonUiThemes.registry.snapshot()
+            val font = Minecraft.getInstance().font
+            graphics.fill(rect.x, rect.y, rect.right, rect.bottom, theme.pixelDecorations?.titleBar ?: theme.colors.panel)
+            graphics.fill(rect.x, rect.bottom - 1, rect.right, rect.bottom, theme.colors.border)
+            val textY = rect.y + (rect.height - 1 - font.lineHeight) / 2 + 1
+            var left = rect.x + 6
+            if (icon != null) {
+                graphics.renderItem(icon, rect.x + 3, rect.y + (rect.height - 16) / 2)
+                left = rect.x + 23
+            }
+            var right = rect.right - 6
+            end?.let {
+                right -= font.width(it)
+                graphics.drawString(font, it, right, textY, theme.colors.textPrimary, false)
+                right -= 6
+            }
+            progress?.let { (done, total) ->
+                val segment = 7
+                right -= total * (segment + 2) - 2
+                (0 until total).forEach { index ->
+                    val x = right + index * (segment + 2)
+                    val top = rect.y + (rect.height - 1 - 6) / 2
+                    graphics.fill(x, top, x + segment, top + 6, theme.colors.border)
+                    graphics.fill(x + 1, top + 1, x + segment - 1, top + 5,
+                        if (index < done) theme.colors.accentCaution else theme.colors.shell)
+                }
+                right -= 6
+            }
+            drawLine(graphics, start, left, textY, right - left, theme.colors.textPrimary)
+        }
+        override fun updateWidgetNarration(output: NarrationElementOutput) {
+            output.add(NarratedElementType.TITLE, start)
+        }
+    }
+
+    private class Label(private val rect: UiRect, private val label: Component) :
+        AbstractWidget(rect.x, rect.y, rect.width, rect.height, label) {
+        init { active = false }
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+            val theme = CobblemonUiThemes.registry.snapshot()
+            val font = Minecraft.getInstance().font
+            val y = if (rect.height <= font.lineHeight + 2) rect.y else rect.y + (rect.height - font.lineHeight) / 2 + 1
+            drawLine(graphics, label, rect.x, y, rect.width, panelText(theme))
+        }
+        override fun updateWidgetNarration(output: NarrationElementOutput) {
+            output.add(NarratedElementType.TITLE, label)
+        }
+    }
+
+    private class TextBlock(
+        private val rect: UiRect,
+        private val text: Component,
+        private val color: (UiThemeSnapshot) -> Int,
+    ) : AbstractWidget(rect.x, rect.y, rect.width, rect.height, text) {
+        init { active = false }
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+            val font = Minecraft.getInstance().font
+            val lineHeight = font.lineHeight + 1
+            val colour = color(CobblemonUiThemes.registry.snapshot())
+            font.split(text, rect.width.coerceAtLeast(1)).take((rect.height / lineHeight).coerceAtLeast(1))
+                .forEachIndexed { index, line -> graphics.drawString(font, line, rect.x, rect.y + index * lineHeight, colour, false) }
+        }
+        override fun updateWidgetNarration(output: NarrationElementOutput) {
+            output.add(NarratedElementType.TITLE, text)
+        }
+    }
+
+    private class Document(
+        private val rect: UiRect,
+        sections: List<Section>,
+        offset: Int,
+        private val offsetChanged: (Int) -> Unit,
+    ) : AbstractWidget(rect.x, rect.y, rect.width, rect.height, Component.empty()), Scrollable {
+        private class Line(val text: net.minecraft.util.FormattedCharSequence, val title: Boolean, val gapBefore: Int)
+
+        private val lines: List<Line>
+        private val scroll: UiScrollState
+
+        init {
+            active = false
+            val font = Minecraft.getInstance().font
+            val width = (rect.width - 6).coerceAtLeast(1)
+            lines = buildList {
+                sections.forEachIndexed { index, section ->
+                    val gap = if (index == 0) 0 else 6
+                    section.title?.let { title -> font.split(title, width).forEachIndexed { line, text -> add(Line(text, true, if (line == 0) gap else 0)) } }
+                    font.split(section.body, width).forEachIndexed { line, text ->
+                        add(Line(text, false, if (line == 0 && section.title == null) gap else 0))
+                    }
+                }
+            }
+            scroll = UiScrollState(rect.height, lines.sumOf { it.gapBefore + LINE_HEIGHT }, LINE_HEIGHT * 3).also { it.jumpTo(offset) }
+        }
+
+        override fun scroll(mouseX: Double, mouseY: Double, delta: Double): Boolean {
+            if (mouseX < rect.x || mouseX >= rect.right || mouseY < rect.y || mouseY >= rect.bottom) return false
+            val moved = scroll.scroll(delta)
+            if (moved) offsetChanged(scroll.offset)
+            return moved
+        }
+
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+            val theme = CobblemonUiThemes.registry.snapshot()
+            val font = Minecraft.getInstance().font
+            graphics.enableScissor(rect.x, rect.y, rect.right, rect.bottom)
+            try {
+                var y = rect.y - scroll.offset
+                lines.forEach { line ->
+                    y += line.gapBefore
+                    if (y + LINE_HEIGHT >= rect.y && y <= rect.bottom) {
+                        graphics.drawString(font, line.text, rect.x, y,
+                            if (line.title) theme.colors.accentPrimary else panelText(theme), false)
+                    }
+                    y += LINE_HEIGHT
+                }
+            } finally {
+                graphics.disableScissor()
+            }
+            if (scroll.maxOffset > 0) {
+                graphics.fill(rect.right - 2, rect.y, rect.right, rect.bottom, theme.colors.border)
+                val thumb = scroll.thumb(rect.y, rect.height)
+                graphics.fill(rect.right - 2, thumb.start, rect.right, thumb.endExclusive, theme.colors.accentPrimary)
+            }
+        }
+
+        override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
+
+        private companion object {
+            const val LINE_HEIGHT = 10
+        }
+    }
+
+    private class Placeholder(private val rect: UiRect, private val text: Component) :
+        AbstractWidget(rect.x, rect.y, rect.width, rect.height, text) {
+        init { active = false }
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+            val theme = CobblemonUiThemes.registry.snapshot()
+            val font = Minecraft.getInstance().font
+            val lines = font.split(text, (rect.width - 16).coerceAtLeast(1))
+            val top = rect.y + (rect.height - lines.size * (font.lineHeight + 1)) / 2
+            lines.forEachIndexed { index, line ->
+                graphics.drawString(font, line, rect.x + (rect.width - font.width(line)) / 2,
+                    top + index * (font.lineHeight + 1), theme.colors.textDim, false)
+            }
+        }
+        override fun updateWidgetNarration(output: NarrationElementOutput) {
+            output.add(NarratedElementType.TITLE, text)
+        }
+    }
+
+    private class Rule(private val rect: UiRect) : AbstractWidget(rect.x, rect.y, rect.width, 1, Component.empty()) {
+        init { active = false }
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+            graphics.fill(rect.x, rect.y, rect.right, rect.y + 1, CobblemonUiThemes.registry.snapshot().colors.borderBright)
+        }
+        override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
+    }
+
+    private fun drawLine(graphics: GuiGraphics, text: Component, x: Int, y: Int, width: Int, color: Int) {
+        if (width <= 0) return
+        graphics.drawString(Minecraft.getInstance().font, fitted(text, width), x, y, color, false)
+    }
+}

@@ -176,11 +176,30 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
         var current: MccHubScreen? = null
             private set
 
-        /** Shows the hub on [tabId], switching tabs when the hub is already the screen. */
+        /**
+         * Shows the hub on [tabId] with fresh content: opens the hub, switches to the tab, or rebuilds the tab
+         * when it is already the one shown.
+         */
         fun open(tabId: String) {
             val client = Minecraft.getInstance()
             val hub = current
-            if (hub != null && client.screen === hub) hub.selectTab(tabId) else client.setScreen(MccHubScreen(tabId))
+            when {
+                hub == null || client.screen !== hub -> client.setScreen(MccHubScreen(tabId))
+                hub.selectedTabId == tabId -> hub.rebuild()
+                else -> hub.selectTab(tabId)
+            }
+        }
+
+        /** Rebuilds the hub if it is the screen and [tabId] is the tab shown, after that tab's state changed. */
+        fun refresh(tabId: String) {
+            val hub = current ?: return
+            if (Minecraft.getInstance().screen === hub && hub.selectedTabId == tabId) hub.rebuild()
+        }
+
+        /** Whether the hub is the screen and shows [tabId]. */
+        fun showing(tabId: String): Boolean {
+            val hub = current ?: return false
+            return Minecraft.getInstance().screen === hub && hub.selectedTabId == tabId
         }
     }
 }
