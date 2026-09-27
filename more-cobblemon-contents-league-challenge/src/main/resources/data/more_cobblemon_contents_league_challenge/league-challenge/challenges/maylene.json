@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "trainer": "more_cobblemon_contents_league_challenge:maylene",
+  "reward": "more_cobblemon_contents_league_challenge:maylene",
+  "badge": "pokebadges:cobble_sinnoh_badge",
+  "format": "SINGLE",
+  "mechanic": "NONE"
+}

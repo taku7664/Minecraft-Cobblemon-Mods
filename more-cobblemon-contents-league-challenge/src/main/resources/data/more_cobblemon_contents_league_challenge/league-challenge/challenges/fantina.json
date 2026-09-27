@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "trainer": "more_cobblemon_contents_league_challenge:fantina",
+  "reward": "more_cobblemon_contents_league_challenge:fantina",
+  "badge": "pokebadges:relic_sinnoh_badge",
+  "format": "SINGLE",
+  "mechanic": "NONE"
+}

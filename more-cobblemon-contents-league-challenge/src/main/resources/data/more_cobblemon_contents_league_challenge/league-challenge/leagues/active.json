@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "progress_id": "more_cobblemon_contents_league_challenge:sinnoh",
+  "name_key": "league.more_cobblemon_contents_league_challenge.sinnoh",
+  "initial_cap": 15,
+  "gyms": [
+    "more_cobblemon_contents_league_challenge:roark",
+    "more_cobblemon_contents_league_challenge:gardenia",
+    "more_cobblemon_contents_league_challenge:fantina",
+    "more_cobblemon_contents_league_challenge:maylene",
+    "more_cobblemon_contents_league_challenge:wake",
+    "more_cobblemon_contents_league_challenge:byron",
+    "more_cobblemon_contents_league_challenge:candice",
+    "more_cobblemon_contents_league_challenge:volkner"
+  ],
+  "finals": [
+    "more_cobblemon_contents_league_challenge:aaron",
+    "more_cobblemon_contents_league_challenge:bertha",
+    "more_cobblemon_contents_league_challenge:flint",
+    "more_cobblemon_contents_league_challenge:lucian",
+    "more_cobblemon_contents_league_challenge:cynthia"
+  ]
+}

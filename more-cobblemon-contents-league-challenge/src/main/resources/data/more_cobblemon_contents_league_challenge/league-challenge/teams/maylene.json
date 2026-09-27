@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "meditite level=28 moves=drainpunch,confusion,detect",
+    "machoke level=29 moves=karatechop,rocktomb,focusenergy",
+    "lucario level=32 moves=drainpunch,metalclaw,bonerush"
+  ]
+}
