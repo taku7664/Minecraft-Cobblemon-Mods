@@ -7,6 +7,11 @@
 
 ---
 
+## [2026-09-27 13:35] 변화기 분류와 보스 분류 읽기 — `9dab864b`, 1.6.26 클라이언트 설치
+
+- Better AI용 상대 기술 추론(`BattleOpponentMoveInferenceNormalizer`)에 변화기 분류(`BattleStatusMoveCategory`, 슬롯 `statusCategory`)를 추가했다. 보스 정책만 숨은 변화기의 분류를 읽는다(`readsHiddenStatusCategories`). 상세는 Better AI `MEMORY.md` 같은 시각 항목.
+- 본체 993/993 통과. `cobblemon-dev/mods`에 1.6.26(SHA-256 `48EE1507650FBA0AB81B45ED5CAE319C3FA0077BE5A5CEB11406CF1E79C59C56`) 설치, 1.6.25는 `codex-deploy-backups/20260927-status-move-categories`. dev-server는 실행 중이라 미배포(1.6.25 유지).
+
 ## [2026-09-27 12:45] 1.6.25 클라이언트 설치 — `a6b4b01e`
 
 - 저장 제외 수정(`d67d312e`)을 담은 본체 1.6.25를 빌드했다. `unitTest` 988개 통과, JDK 21 `jar --validate` 통과, 재매핑된 Mixin 대상이 `class_1297.method_5786`(saveAsPassenger)임을 확인했다. SHA-256 `963CD83CD51A73B1442A578A056E62F262FF527A215EC447304756AB5E80B8F8`.
