@@ -33,7 +33,6 @@ object MccHubCaptureHarness {
         val locale = System.getenv("MCC_HUB_CAPTURE_LOCALE")?.trim()?.takeIf { it.isNotEmpty() } ?: "ko_kr"
         val guiScale = System.getenv("MCC_HUB_CAPTURE_GUI_SCALE")?.trim()?.toIntOrNull()?.takeIf { it in 1..4 }
         val openContent = System.getenv("MCC_HUB_CAPTURE_OPEN")?.trim()?.takeIf { it.isNotEmpty() }
-        registerPreviewTabs()
 
         var guiScaleApplied = guiScale == null
         val languageReady = AtomicBoolean(false)
@@ -70,6 +69,8 @@ object MccHubCaptureHarness {
             if (!opened) {
                 // The dashboard draws the real player entity, so the hub opens only inside a loaded world.
                 if (client.level == null || client.player == null || client.screen != null || client.overlay != null) return@EndTick
+                // Content mods register their own tabs during client init, which has finished by now.
+                registerPreviewTabs()
                 MccBattleHubClientState.update(if (fixture == "empty") 0 else 1_284)
                 MccBattleHubClientState.dashboard = records
                 client.setScreen(MccHubScreen())
