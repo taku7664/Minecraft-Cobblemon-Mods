@@ -1,6 +1,5 @@
 package jbro.cobblemon.mcc.client.hub
 
-import jbro.cobblemon.uikit.CobblemonUiThemePresets
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
@@ -12,7 +11,6 @@ import jbro.cobblemon.uikit.UiPanelSpec
 import jbro.cobblemon.uikit.UiPanelTone
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiScrollState
-import jbro.cobblemon.uikit.UiThemePreset
 import jbro.cobblemon.uikit.UiThemeSnapshot
 import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.UiWidthPolicy
@@ -220,13 +218,16 @@ object MccHubKit {
         else -> ChoiceMode.COMPACT
     }
 
-    /** [actions] as equally wide medium controls side by side across [rect], for settings that toggle on press. */
-    fun buttonRow(host: MccHubContentHost, rect: UiRect, actions: List<Action>) {
+    /**
+     * [actions] as equally wide controls side by side across [rect], for settings that toggle on press. A tight
+     * area passes [UiControlSize.SMALL]; [controlHeight] tells how tall a row of that size is.
+     */
+    fun buttonRow(host: MccHubContentHost, rect: UiRect, actions: List<Action>, size: UiControlSize = UiControlSize.MEDIUM) {
         if (actions.isEmpty()) return
         val width = (rect.width - (actions.size - 1) * 2) / actions.size
         actions.forEachIndexed { index, action ->
             val button = CobblemonUiButton.create(rect.x + index * (width + 2), rect.y, width,
-                UiButtonSpec(fitted(action.label, width - 12), variant = action.variant, size = UiControlSize.MEDIUM,
+                UiButtonSpec(fitted(action.label, width - 12), variant = action.variant, size = size,
                     width = UiWidthPolicy.Fixed(width)), press = action.press)
             button.active = action.enabled
             action.tooltip?.let { button.setTooltip(Tooltip.create(it)) }
@@ -238,8 +239,17 @@ object MccHubKit {
      * [entries] as rows that scroll inside [rect] under the mouse wheel. The offset lives with the tab ([offset] in,
      * [offsetChanged] out); the tab forwards its wheel events to the returned [Scrollable].
      */
-    fun scrollList(host: MccHubContentHost, rect: UiRect, entries: List<ListEntry>, offset: Int, offsetChanged: (Int) -> Unit): Scrollable =
-        host.add(ScrollList(rect, entries, offset, offsetChanged))
+    fun scrollList(
+        host: MccHubContentHost,
+        rect: UiRect,
+        entries: List<ListEntry>,
+        offset: Int,
+        size: UiControlSize = UiControlSize.MEDIUM,
+        offsetChanged: (Int) -> Unit,
+    ): Scrollable = host.add(ScrollList(rect, entries, offset, size, offsetChanged))
+
+    /** The height of one control of [size] in the current theme. */
+    fun controlHeight(size: UiControlSize): Int = CobblemonUiThemes.registry.snapshot().metrics(size).height
 
     /** The height [choices] would take for [rows] across [width] with [availableHeight] to spare. */
     fun choicesHeight(width: Int, availableHeight: Int, rows: List<ChoiceRow>): Int {
@@ -362,7 +372,7 @@ object MccHubKit {
         client.setScreen(CobblemonUiDialogScreen(parent,
             UiDialogSpec(title, body, confirmLabel, backLabel, UiOverlayTone.DANGER),
             confirm = confirm,
-            themeOverride = CobblemonUiThemePresets.snapshot(UiThemePreset.PIXEL_LEAGUE)))
+            themeOverride = MccHubTheme.snapshot()))
     }
 
     /** A titled paragraph of a [document]. */
@@ -624,9 +634,10 @@ object MccHubKit {
         private val rect: UiRect,
         private val entries: List<ListEntry>,
         offset: Int,
+        size: UiControlSize,
         private val offsetChanged: (Int) -> Unit,
     ) : AbstractWidget(rect.x, rect.y, rect.width, rect.height, Component.empty()), Scrollable {
-        private val rowHeight = CobblemonUiThemes.registry.snapshot().metrics(UiControlSize.MEDIUM).let { metrics ->
+        private val rowHeight = CobblemonUiThemes.registry.snapshot().metrics(size).let { metrics ->
             if (entries.any { it.supporting != null }) metrics.supportingHeight else metrics.height
         }
         private val step = rowHeight + 2
