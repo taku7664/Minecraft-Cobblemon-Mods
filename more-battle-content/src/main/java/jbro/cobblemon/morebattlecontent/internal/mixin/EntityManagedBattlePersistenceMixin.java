@@ -11,7 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Chunk storage writes an entity only when {@code save} (and therefore {@code saveAsPassenger}) returns
- * true, so refusing here keeps MBC battle Pokemon out of pause saves, autosaves and chunk unloads.
+ * true, so refusing here keeps battle clones and MBC battle Pokemon out of pause saves, autosaves,
+ * chunk unloads and the final save of a stopping server.
  */
 @Mixin(Entity.class)
 abstract class EntityManagedBattlePersistenceMixin {

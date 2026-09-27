@@ -22,15 +22,35 @@ class ManagedBattleEntityPersistencePolicyTest {
     }
 
     @Test
+    fun `battle clone is never saved after its battle and lifecycle entry are gone`() {
+        // Singleplayer quit: the battle is over and cleanup could not find the entity to discard it.
+        assertTrue(isTransient(battleClone = true, battleId = null, lifecycleOwned = false))
+        assertTrue(isTransient(battleClone = true, battleId = otherBattle, lifecycleOwned = false))
+    }
+
+    @Test
     fun `battles and entities outside MBC keep Cobblemon persistence`() {
         assertFalse(isTransient(battleId = otherBattle, lifecycleOwned = false))
         assertFalse(isTransient(battleId = null, lifecycleOwned = false))
     }
 
     @Test
+    fun `registries are not queried for a battle clone`() {
+        var queried = false
+        ManagedBattleEntityPersistencePolicy.isTransient(
+            isBattleClone = true,
+            battleId = managedBattle,
+            isManagedBattle = { queried = true; true },
+            isLifecycleOwned = { queried = true; false },
+        )
+        assertFalse(queried)
+    }
+
+    @Test
     fun `lifecycle ownership is not queried when the battle already decides`() {
         var queried = false
         ManagedBattleEntityPersistencePolicy.isTransient(
+            isBattleClone = false,
             battleId = managedBattle,
             isManagedBattle = { it == managedBattle },
             isLifecycleOwned = { queried = true; false },
@@ -47,10 +67,15 @@ class ManagedBattleEntityPersistencePolicyTest {
         assertTrue(mixin.contains("method = \"saveAsPassenger\""))
         assertTrue(mixin.contains("Cobblemon173ManagedBattleEntityPersistence.isTransient(pokemonEntity)"))
         assertTrue(mixin.contains("callbackInfo.setReturnValue(false)"))
+        val adapter = Files.readString(
+            Path.of("src/main/kotlin/jbro/cobblemon/morebattlecontent/internal/compat/cobblemon173/Cobblemon173ManagedBattleEntityPersistence.kt"),
+        )
+        assertTrue(adapter.contains("isBattleClone = entity.isBattleClone()"))
     }
 
-    private fun isTransient(battleId: UUID?, lifecycleOwned: Boolean): Boolean =
+    private fun isTransient(battleId: UUID?, lifecycleOwned: Boolean, battleClone: Boolean = false): Boolean =
         ManagedBattleEntityPersistencePolicy.isTransient(
+            isBattleClone = battleClone,
             battleId = battleId,
             isManagedBattle = { it == managedBattle },
             isLifecycleOwned = { lifecycleOwned },

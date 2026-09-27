@@ -4,11 +4,12 @@ import com.cobblemon.mod.common.entity.pokemon.PokemonEntity
 import jbro.cobblemon.morebattlecontent.MoreBattleContent
 import jbro.cobblemon.morebattlecontent.internal.battle.ManagedBattleEntityPersistencePolicy
 
-/** Keeps MBC-managed battle Pokemon out of chunk storage so a killed process cannot resurrect them. */
+/** Keeps battle clones and MBC-managed battle Pokemon out of chunk storage so no quit or kill can resurrect them. */
 internal object Cobblemon173ManagedBattleEntityPersistence {
     @JvmStatic
     fun isTransient(entity: PokemonEntity): Boolean = try {
         ManagedBattleEntityPersistencePolicy.isTransient(
+            isBattleClone = entity.isBattleClone(),
             battleId = entity.battleId,
             isManagedBattle = Cobblemon173BattleRuleHooks::isRegisteredBattle,
             isLifecycleOwned = { Cobblemon173ManagedBattleLifecycles.owns(entity.pokemon) },
