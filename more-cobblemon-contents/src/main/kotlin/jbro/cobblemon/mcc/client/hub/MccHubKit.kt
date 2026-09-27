@@ -6,6 +6,7 @@ import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiControlSize
 import jbro.cobblemon.uikit.UiDialogSpec
+import jbro.cobblemon.uikit.UiListItemSpec
 import jbro.cobblemon.uikit.UiOverlayTone
 import jbro.cobblemon.uikit.UiPanelSpec
 import jbro.cobblemon.uikit.UiPanelTone
@@ -16,6 +17,7 @@ import jbro.cobblemon.uikit.UiThemeSnapshot
 import jbro.cobblemon.uikit.UiWidthPolicy
 import jbro.cobblemon.uikit.client.CobblemonUiButton
 import jbro.cobblemon.uikit.client.CobblemonUiDialogScreen
+import jbro.cobblemon.uikit.client.CobblemonUiListItem
 import jbro.cobblemon.uikit.client.CobblemonUiPanel
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
@@ -122,65 +124,165 @@ object MccHubKit {
         }
     }
 
-    /** Height of a [choice] that puts its title on a line above the options. */
+    /** Height of a titled choice row: a title line above one row of controls. */
     const val STACKED_CHOICE_HEIGHT = CONTROL_HEIGHT + 12
 
     /**
-     * One setting across [rect]. When every option fits beside the title, all of them are shown and the chosen one
-     * is marked; when they fit only on their own and [rect] is [STACKED_CHOICE_HEIGHT] tall, the title goes on a
-     * line above them; otherwise a single control moves to the next option on press, showing "[title]: choice", or
-     * just the choice under a title line when [rect] is that tall.
+     * One setting of a [choices] group. A row with [selectedIds] picks any number of options: pressing one reports
+     * it so the tab can toggle it, and its options are always shown since they cannot collapse to one control.
      */
-    fun choice(
-        host: MccHubContentHost,
-        rect: UiRect,
-        title: Component,
-        options: List<Choice>,
-        selectedId: String?,
-        enabled: Boolean,
-        tooltip: Component? = null,
-        select: (String) -> Unit,
+    class ChoiceRow(
+        val title: Component,
+        val options: List<Choice>,
+        val selectedId: String?,
+        val enabled: Boolean,
+        val tooltip: Component? = null,
+        val selectedIds: Set<String>? = null,
+        val select: (String) -> Unit,
     ) {
-        require(options.isNotEmpty()) { "A hub choice needs options" }
-        val font = Minecraft.getInstance().font
-        val titleWidth = font.width(title) + 6
-        val natural = options.sumOf { font.width(it.label) + 20 } + (options.size - 1) * 2
-        val inline = titleWidth + natural <= rect.width
-        val stacked = !inline && natural <= rect.width && rect.height >= STACKED_CHOICE_HEIGHT
-        if (inline || stacked) {
-            val row = if (inline) {
-                host.add(Label(UiRect(rect.x, rect.y, titleWidth, CONTROL_HEIGHT), title))
-                UiRect(rect.x + titleWidth, rect.y, rect.width - titleWidth, CONTROL_HEIGHT)
-            } else {
-                host.add(Label(UiRect(rect.x, rect.y, rect.width, 10), title))
-                UiRect(rect.x, rect.y + 12, rect.width, CONTROL_HEIGHT)
-            }
-            val width = (row.width - (options.size - 1) * 2) / options.size
-            options.forEachIndexed { index, option ->
-                val selected = option.id == selectedId
-                val button = CobblemonUiButton.create(row.x + index * (width + 2), row.y, width,
-                    UiButtonSpec(option.label, variant = UiButtonVariant.SECONDARY, size = UiControlSize.MEDIUM,
-                        width = UiWidthPolicy.Fixed(width), selected = selected)) { if (!selected) select(option.id) }
-                button.active = enabled
-                tooltip?.let { button.setTooltip(Tooltip.create(it)) }
-                host.add(button)
-            }
-            return
+        val multiple: Boolean get() = selectedIds != null
+
+        init {
+            require(options.isNotEmpty()) { "A hub choice needs options" }
         }
-        val index = options.indexOfFirst { it.id == selectedId }
-        val current = options.getOrNull(index)?.label ?: Component.literal("-")
-        // A tall row keeps its title on the line above, like the other rows around it.
-        val titled = rect.height >= STACKED_CHOICE_HEIGHT
-        if (titled) host.add(Label(UiRect(rect.x, rect.y, rect.width, 10), title))
-        val label = if (titled) current else Component.empty().append(title).append(Component.literal(": ")).append(current)
-        val button = CobblemonUiButton.create(rect.x, if (titled) rect.y + 12 else rect.y, rect.width,
+    }
+
+    /**
+     * Settings stacked down [rect], laid out as one group so every row's controls start at the same x:
+     * - when every row fits beside its title, the titles share one label column and all options follow it;
+     * - otherwise, when [rect] is tall enough, each title sits on a line above its row and the controls start at
+     *   the left edge, with all options shown or, when they do not fit, one control that moves to the next option;
+     * - otherwise every row is one such control reading "title: choice".
+     * Returns the y just below the last row.
+     */
+    fun choices(host: MccHubContentHost, rect: UiRect, rows: List<ChoiceRow>): Int {
+        if (rows.isEmpty()) return rect.y
+        val font = Minecraft.getInstance().font
+        val labelWidth = rows.maxOf { font.width(it.title) } + 8
+        fun natural(row: ChoiceRow) = row.options.sumOf { font.width(it.label) + 20 } + (row.options.size - 1) * 2
+        val inline = inlineChoices(rect.width, rows)
+        val titled = !inline && rect.height >= rows.size * (STACKED_CHOICE_HEIGHT + GAP) - GAP
+        var y = rect.y
+        rows.forEach { row ->
+            when {
+                inline -> {
+                    host.add(Label(UiRect(rect.x, y, labelWidth, CONTROL_HEIGHT), row.title))
+                    options(host, UiRect(rect.x + labelWidth, y, rect.width - labelWidth, CONTROL_HEIGHT), row)
+                    y += CONTROL_HEIGHT + GAP
+                }
+                titled -> {
+                    host.add(Label(UiRect(rect.x, y, rect.width, 10), row.title))
+                    val controls = UiRect(rect.x, y + 12, rect.width, CONTROL_HEIGHT)
+                    if (row.multiple || natural(row) <= rect.width) options(host, controls, row) else cycle(host, controls, row, row.currentLabel())
+                    y += STACKED_CHOICE_HEIGHT + GAP
+                }
+                // Without a title line a pick-any row keeps all its options and names itself in their tooltip.
+                row.multiple -> {
+                    options(host, UiRect(rect.x, y, rect.width, CONTROL_HEIGHT), row, row.tooltip ?: row.title)
+                    y += CONTROL_HEIGHT + GAP
+                }
+                else -> {
+                    val label = Component.empty().append(row.title).append(Component.literal(": ")).append(row.currentLabel())
+                    cycle(host, UiRect(rect.x, y, rect.width, CONTROL_HEIGHT), row, label)
+                    y += CONTROL_HEIGHT + GAP
+                }
+            }
+        }
+        return y - GAP
+    }
+
+    /** The height [choices] would take for [rows] across [width] with [availableHeight] to spare. */
+    fun choicesHeight(width: Int, availableHeight: Int, rows: List<ChoiceRow>): Int {
+        if (rows.isEmpty()) return 0
+        val titled = !inlineChoices(width, rows) && availableHeight >= rows.size * (STACKED_CHOICE_HEIGHT + GAP) - GAP
+        return rows.size * ((if (titled) STACKED_CHOICE_HEIGHT else CONTROL_HEIGHT) + GAP) - GAP
+    }
+
+    private fun inlineChoices(width: Int, rows: List<ChoiceRow>): Boolean {
+        val font = Minecraft.getInstance().font
+        val labelWidth = rows.maxOf { font.width(it.title) } + 8
+        return rows.all { row -> labelWidth + row.options.sumOf { font.width(it.label) + 20 } + (row.options.size - 1) * 2 <= width }
+    }
+
+    private fun ChoiceRow.currentLabel(): Component = options.firstOrNull { it.id == selectedId }?.label ?: Component.literal("-")
+
+    private fun options(host: MccHubContentHost, rect: UiRect, row: ChoiceRow, tooltip: Component? = row.tooltip) {
+        val width = (rect.width - (row.options.size - 1) * 2) / row.options.size
+        row.options.forEachIndexed { index, option ->
+            val selected = row.selectedIds?.contains(option.id) ?: (option.id == row.selectedId)
+            val button = CobblemonUiButton.create(rect.x + index * (width + 2), rect.y, width,
+                UiButtonSpec(fitted(option.label, width - 8), variant = UiButtonVariant.SECONDARY, size = UiControlSize.MEDIUM,
+                    width = UiWidthPolicy.Fixed(width), selected = selected)) { if (row.multiple || !selected) row.select(option.id) }
+            button.active = row.enabled
+            tooltip?.let { button.setTooltip(Tooltip.create(it)) }
+            host.add(button)
+        }
+    }
+
+    private fun cycle(host: MccHubContentHost, rect: UiRect, row: ChoiceRow, label: Component) {
+        val index = row.options.indexOfFirst { it.id == row.selectedId }
+        val button = CobblemonUiButton.create(rect.x, rect.y, rect.width,
             UiButtonSpec(fitted(label, rect.width - 16), variant = UiButtonVariant.SECONDARY, size = UiControlSize.MEDIUM,
                 width = UiWidthPolicy.Fixed(rect.width))) {
-            select(options[(index + 1).mod(options.size)].id)
+            row.select(row.options[(index + 1).mod(row.options.size)].id)
         }
-        button.active = enabled && options.size > 1
-        tooltip?.let { button.setTooltip(Tooltip.create(it)) }
+        button.active = row.enabled && row.options.size > 1
+        row.tooltip?.let { button.setTooltip(Tooltip.create(it)) }
         host.add(button)
+    }
+
+    /** One row of a [pagedList]. */
+    class ListEntry(
+        val title: Component,
+        val supporting: Component? = null,
+        val trailing: Component? = null,
+        val selected: Boolean = false,
+        val enabled: Boolean = true,
+        val tooltip: Component? = null,
+        val press: () -> Unit,
+    )
+
+    /**
+     * [entries] as full-width list rows down [rect], a page at a time. When they overflow, the bottom line holds
+     * a page switcher; [page] comes from the tab and [pageChanged] reports a switch. [empty] fills an empty list.
+     */
+    fun pagedList(
+        host: MccHubContentHost,
+        rect: UiRect,
+        entries: List<ListEntry>,
+        page: Int,
+        empty: Component,
+        pageChanged: (Int) -> Unit,
+    ) {
+        if (entries.isEmpty()) {
+            placeholder(host, rect, empty)
+            return
+        }
+        val metrics = CobblemonUiThemes.registry.snapshot().metrics(UiControlSize.MEDIUM)
+        val step = (if (entries.any { it.supporting != null }) metrics.supportingHeight else metrics.height) + 2
+        var perPage = ((rect.height + 2) / step).coerceAtLeast(1)
+        if (entries.size > perPage) perPage = ((rect.height - CONTROL_HEIGHT - GAP + 2) / step).coerceAtLeast(1)
+        val pages = (entries.size + perPage - 1) / perPage
+        val current = page.coerceIn(0, pages - 1)
+        entries.drop(current * perPage).take(perPage).forEachIndexed { index, entry ->
+            val item = CobblemonUiListItem.create(rect.x, rect.y + index * step, rect.width,
+                UiListItemSpec(fitted(entry.title, rect.width - 40), entry.supporting?.let { fitted(it, rect.width - 20) },
+                    trailingText = entry.trailing, selected = entry.selected), entry.press)
+            item.active = entry.enabled
+            entry.tooltip?.let { item.setTooltip(Tooltip.create(it)) }
+            host.add(item)
+        }
+        if (pages <= 1) return
+        val y = rect.bottom - CONTROL_HEIGHT
+        val previous = CobblemonUiButton.create(rect.x, y, 40, UiButtonSpec(Component.literal("<"), size = UiControlSize.MEDIUM,
+            width = UiWidthPolicy.Fixed(40))) { pageChanged(current - 1) }
+        previous.active = current > 0
+        host.add(previous)
+        val next = CobblemonUiButton.create(rect.right - 40, y, 40, UiButtonSpec(Component.literal(">"), size = UiControlSize.MEDIUM,
+            width = UiWidthPolicy.Fixed(40))) { pageChanged(current + 1) }
+        next.active = current < pages - 1
+        host.add(next)
+        host.add(Placeholder(UiRect(rect.x + 44, y, rect.width - 88, CONTROL_HEIGHT), Component.literal("${current + 1} / $pages")))
     }
 
     /** A quiet centered line for a tab still waiting for its server state, or with nothing to show. */

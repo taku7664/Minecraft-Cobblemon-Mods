@@ -139,32 +139,28 @@ internal class TowerHubTab : MccHubTabContent {
         val state = controller.state
         val body = MccHubKit.card(host, layout.setup, tower("section.status"))
         val selecting = state.phase == TowerPlayPhase.SELECTING && !controller.isPending
-        // Tall cards give each setting a title line of its own so its options can spread out below it.
-        val rowHeight = if (body.height >= (MccHubKit.STACKED_CHOICE_HEIGHT + MccHubKit.GAP) * 3 + 20) {
-            MccHubKit.STACKED_CHOICE_HEIGHT
-        } else {
-            MccHubKit.CONTROL_HEIGHT
-        }
-        var y = body.y
-        fun row() = UiRect(body.x, y, body.width, rowHeight).also { y += rowHeight + MccHubKit.GAP }
-        MccHubKit.choice(host, row(), tower("section.format"),
-            TowerBattleFormat.entries.map { MccHubKit.Choice(it.recordId, tower("format.${it.recordId}")) },
-            state.format.recordId, selecting, tower("format.tooltip", state.format.selectionSize)) { id ->
-            if (controller.changeFormat(TowerBattleFormat.entries.first { it.recordId == id })) host.rebuild()
-        }
-        MccHubKit.choice(host, row(), tower("section.mechanic"),
-            MajorBattleMechanic.entries.map { MccHubKit.Choice(it.id, tower("mechanic.${it.id}")) },
-            state.selectedMechanic?.id, selecting && !state.mechanicLocked,
-            state.selectedMechanic?.let { tower("mechanic.tooltip", tower("mechanic.${it.id}")) }) { id ->
-            if (controller.changeMechanic(MajorBattleMechanic.entries.first { it.id == id })) host.rebuild()
-        }
-        MccHubKit.choice(host, row(), tower("section.legendary_class"),
-            TowerLegendaryClassOption.entries.map { MccHubKit.Choice(it.name.lowercase(), Component.translatable(it.translationKey)) },
-            TowerLegendaryClassOption.entries.first { it.allowed == state.legendaryClassAllowed }.name.lowercase(),
-            selecting && !state.legendaryClassLocked, tower("legendary_class.tooltip")) { id ->
-            val option = TowerLegendaryClassOption.entries.first { it.name.lowercase() == id }
-            if (controller.changeLegendaryClassAllowed(option.allowed)) host.rebuild()
-        }
+        // The settings keep at least one summary line below them; a tall card lets them take title lines.
+        val settings = UiRect(body.x, body.y, body.width, (body.height - 20).coerceAtLeast(MccHubKit.CONTROL_HEIGHT))
+        val y = MccHubKit.choices(host, settings, listOf(
+            MccHubKit.ChoiceRow(tower("section.format"),
+                TowerBattleFormat.entries.map { MccHubKit.Choice(it.recordId, tower("format.${it.recordId}")) },
+                state.format.recordId, selecting, tower("format.tooltip", state.format.selectionSize)) { id ->
+                if (controller.changeFormat(TowerBattleFormat.entries.first { it.recordId == id })) host.rebuild()
+            },
+            MccHubKit.ChoiceRow(tower("section.mechanic"),
+                MajorBattleMechanic.entries.map { MccHubKit.Choice(it.id, tower("mechanic.${it.id}")) },
+                state.selectedMechanic?.id, selecting && !state.mechanicLocked,
+                state.selectedMechanic?.let { tower("mechanic.tooltip", tower("mechanic.${it.id}")) }) { id ->
+                if (controller.changeMechanic(MajorBattleMechanic.entries.first { it.id == id })) host.rebuild()
+            },
+            MccHubKit.ChoiceRow(tower("section.legendary_class"),
+                TowerLegendaryClassOption.entries.map { MccHubKit.Choice(it.name.lowercase(), Component.translatable(it.translationKey)) },
+                TowerLegendaryClassOption.entries.first { it.allowed == state.legendaryClassAllowed }.name.lowercase(),
+                selecting && !state.legendaryClassLocked, tower("legendary_class.tooltip")) { id ->
+                val option = TowerLegendaryClassOption.entries.first { it.name.lowercase() == id }
+                if (controller.changeLegendaryClassAllowed(option.allowed)) host.rebuild()
+            },
+        )) + MccHubKit.GAP + 2
         val feedback = controller.fieldFeedbackKeys.firstOrNull() ?: controller.feedbackKey ?: state.errorKeys.firstOrNull()
         val summary = when {
             controller.isPending -> tower("processing")
