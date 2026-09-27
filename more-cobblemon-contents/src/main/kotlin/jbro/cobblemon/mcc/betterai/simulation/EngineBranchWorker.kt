@@ -41,8 +41,9 @@ internal class EngineBranchWorker(
 
     private val dex: EngineDex = runtime.second
 
-    // Snapshots are only valid on a worker with the same species data, so the species digest is part of it.
-    override val rulesFingerprint: String = (fingerprint ?: ("ai-engine:" + dexFingerprint())) + ":species=" + runtime.first
+    // A pool worker carries its generation's fingerprint unchanged: the pool requires them to be equal, and it is
+    // rebuilt on reload, which rereads the species. A standalone worker names its species data itself.
+    override val rulesFingerprint: String = fingerprint ?: ("ai-engine:" + dexFingerprint() + ":species=" + runtime.first)
 
     override fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame {
         val token = JsonObject().apply {

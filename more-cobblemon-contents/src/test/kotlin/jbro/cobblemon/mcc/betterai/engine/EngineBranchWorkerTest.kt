@@ -162,4 +162,10 @@ class EngineBranchWorkerTest {
         }
         assertEquals(comparable(fresh), comparable(again))
     }
+
+    @Test
+    fun `a pool worker keeps its generation's fingerprint`() {
+        // NativeShowdownWorkerPool.create refuses workers whose fingerprint differs from the generation's.
+        EngineBranchWorker(fingerprint = "generation-1").use { assertEquals("generation-1", it.rulesFingerprint) }
+    }
 }
