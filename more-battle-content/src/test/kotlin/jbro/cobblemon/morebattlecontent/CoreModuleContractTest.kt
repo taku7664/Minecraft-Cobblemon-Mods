@@ -43,6 +43,7 @@ class CoreModuleContractTest {
         assertTrue(mixinRoot.getAsJsonArray("mixins").map { it.asString }.contains("PlayerBattleActorMixin"))
         assertTrue(mixinRoot.getAsJsonArray("mixins").map { it.asString }.contains("PokemonBattleMixin"))
         assertTrue(mixinRoot.getAsJsonArray("mixins").map { it.asString }.contains("PokemonMixin"))
+        assertTrue(mixinRoot.getAsJsonArray("mixins").map { it.asString }.contains("EntityManagedBattlePersistenceMixin"))
 
         assertDoesNotThrow { Class.forName(main["value"].asString) }
         assertDoesNotThrow { Class.forName(client["value"].asString) }

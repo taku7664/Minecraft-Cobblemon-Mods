@@ -1,6 +1,7 @@
 package jbro.cobblemon.morebattlecontent.internal.battle
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -71,6 +72,35 @@ class ManagedBattleLifecycleRegistryTest {
         }
         registry.register("player", "other-battle", listOf("other"))
         assertEquals(2, registry.size())
+    }
+
+    @Test
+    fun `targets stay owned through the recall window and are released with their entry`() {
+        val registry = ManagedBattleLifecycleRegistry<String, String, StringBuilder>()
+        val opponent = StringBuilder("opponent")
+        val lookalike = StringBuilder("opponent")
+        registry.register("player", "battle", listOf(opponent))
+
+        assertTrue(registry.ownsTarget(opponent))
+        assertFalse(registry.ownsTarget(lookalike))
+
+        registry.markEnded("battle")
+        registry.advanceEnded(graceTicks = 20) { false }
+        assertTrue(registry.ownsTarget(opponent))
+
+        registry.advanceEnded(graceTicks = 20) { true }
+        assertFalse(registry.ownsTarget(opponent))
+    }
+
+    @Test
+    fun `claimed battles stop owning their targets`() {
+        val registry = ManagedBattleLifecycleRegistry<String, String, String>()
+        val opponent = "opponent"
+        registry.register("player", "battle", listOf(opponent))
+
+        registry.takePlayer("player")
+
+        assertFalse(registry.ownsTarget(opponent))
     }
 
     @Test

@@ -69,6 +69,12 @@ internal class ManagedBattleLifecycleRegistry<P : Any, B : Any, T : Any> {
         return claimed
     }
 
+    /** Identity lookup: a target stays owned from registration until its entry is claimed or released. */
+    @Synchronized
+    fun ownsTarget(target: T): Boolean = entriesByBattle.values.any { entry ->
+        entry.targets.any { owned -> owned === target }
+    }
+
     @Synchronized
     fun takeAll(): List<Entry<P, B, T>> = entriesByBattle.values.toList().also {
         entriesByBattle.clear()

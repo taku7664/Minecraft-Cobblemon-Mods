@@ -24,6 +24,8 @@ internal object Cobblemon173ManagedBattleLifecycles {
         registry.register(playerId, battleId, targets)
     }
 
+    fun owns(pokemon: Pokemon): Boolean = registry.ownsTarget(pokemon)
+
     fun battleEnded(battleId: UUID) {
         registry.markEnded(battleId)
     }

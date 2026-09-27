@@ -7,14 +7,22 @@
 
 ---
 
-## [2026-09-27 03:33] 이슈 — 강제 종료 뒤 MBC 상대 포켓몬이 야생으로 남음 (원인 확정, 미수정)
+## [2026-09-27 03:50] 수정 — MBC 전투 포켓몬을 청크 저장에서 제외 (미배포)
+
+- `EntityManagedBattlePersistenceMixin`: `Entity.saveAsPassenger` HEAD에서 MBC 관리 전투 포켓몬이면 `false`를 돌려준다. 청크 저장은 `EntityStorage.storeEntities` → `Entity.save` → `saveAsPassenger`의 반환값으로만 기록 여부를 정하므로(1.21.1 바이트코드 확인), ESC 일시정지 저장·자동 저장·청크 언로드 모두에 적용된다. `shouldBeSaved()`는 이 경로에서 쓰이지 않아 대상으로 삼지 않았다. PokemonEntity는 `save`·`saveAsPassenger`를 재정의하지 않는다.
+- 판정(`ManagedBattleEntityPersistencePolicy`): 엔티티의 `battleId`가 MBC 규칙 레지스트리(`Cobblemon173BattleRuleHooks`)에 등록돼 있거나, 전투 종료 뒤 회수 대기 중인 포켓몬을 생명주기 레지스트리가 아직 소유하면(`ManagedBattleLifecycleRegistry.ownsTarget`, 동일 객체 비교) 저장하지 않는다. MBC 밖 전투와 엔티티는 기존 저장을 유지한다. 판정 중 예외가 나면 로그를 남기고 저장을 허용한다.
+- 범위: 타워·팩토리·AI 테스트·애드온 PvE는 전투 중과 회수 대기 중 모두, PvP는 전투 중만 적용된다. PvP 복제본은 생명주기 레지스트리에 등록되지 않으므로 종료 직후 약 1.5초 회수 대기 중 저장과 강제 종료가 겹치는 경우는 남는다.
+- 검증: `:more-battle-content:unitTest` 988개 통과(정책·배선 테스트 5개와 레지스트리 테스트 2개를 추가하고, 모듈 계약 테스트에 Mixin 등록 확인을 넣었다). 다른 세션의 Better AI 하네스(PID 35168)가 `build/libs/cobblemon-more-battle-content-1.6.24.jar`을 잠가 정식 `remapJar`는 실패했다. 임시 버전명으로 재매핑한 JAR에서 Mixin 대상이 `class_1297.method_5786`(saveAsPassenger)으로 바뀌고 `jar --validate`가 통과함을 확인한 뒤 임시 JAR은 지웠다. `build/libs`의 1.6.24 JAR은 수정 전 빌드다.
+- 남은 일: 개발 월드에 이미 남은 4마리는 이 수정으로 사라지지 않는다. 실게임에서 "전투 중 ESC → 강제 종료 → 재접속"으로 재현 검증하지 않았다.
+
+## [2026-09-27 03:33] 이슈 — 강제 종료 뒤 MBC 상대 포켓몬이 야생으로 남음 (원인 확정)
 
 - **현상:** 개발 월드 `새로운 세계`의 `entities/r.-2.-1.mca`, 좌표 약 (-648, 95, -161)에 난천 팀 4마리(로즈레이드 2, 미라몽, 토게키스)가 레벨 50·`OriginalTrainerType=NPC`·`HeldItemVisible=0`인 채 떠돌고 있다. NBT에는 `BattleId`가 없고 `PokemonData`는 `["uncatchable"]`뿐이다. 로즈레이드가 둘이므로 최소 두 전투에서 샜다.
 - **Cobblemon 1.8.1 결함(바이트코드 확인):** `safeCopyOf`가 복제본에 붙이는 `battleClone` 표식은 저장 때 `PokemonData`에 `"battleClone"`으로 기록되지만, 로드 때 `PokemonProperties.parse`가 키를 `toLowerCase(Locale.ROOT)`로 바꾼 뒤 등록 키 `{"battleClone"}`과 대조하므로 일치하지 않아 버려진다. 소문자 키인 `uncatchable`만 살아남는다.
 - **연쇄:** 로드된 엔티티는 전투가 레지스트리에 없어 `BattleId`도 버리고, battle clone도 아니므로 Cobblemon tick의 안전장치(`!isBattling && beamMode==0 && isBattleClone → discard`)가 작동하지 않는다. 소유자 앵커도 메모리에만 있어 결과적으로 야생 포켓몬이 된다.
 - **`eacf8a78`이 막지 못하는 경로:** 이 수정은 `SERVER_STOPPING`과 `DISCONNECT`에서 살아 있는 엔티티를 `discard()`한다. 그러나 싱글플레이는 ESC 일시정지마다 `Saving and pausing game...`으로 청크를 저장하고, 5분 주기 자동 저장도 있다. 전투 중 이런 저장이 한 번이라도 있은 뒤 프로세스가 강제 종료되면 종료 훅이 돌지 않으므로, 디스크의 복제본이 다음 로드 때 야생으로 되살아난다. 정상 종료는 마지막 저장 전에 엔티티를 지우므로 막힌다.
 - **확인하지 못한 것:** 남은 4마리가 `eacf8a78` 이전 사고(2026-09-26 03:40)에서 생긴 것인지 이후 강제 종료에서 생긴 것인지는 보존 로그로 가릴 수 없다. `2026-09-26-7.log`가 전투 중에 끝난 것은 강제 종료가 아니라 자정 로그 회전이었다. 플레이어 쪽 복제본이 같은 방식으로 남는지는 확인하지 않았다.
-- **수정 방향(미구현):** (1) MBC 관리 전투 엔티티가 청크 저장에 기록되지 않게 막는다. (2) 생성 때 `Pokemon.persistentData`에 대소문자 문제가 없는 MBC 표식을 넣고, 엔티티 로드 시 활성 MBC 전투에 속하지 않으면 제거한다. (2)는 이미 월드에 남은 개체도 정리한다.
+- **수정 방향:** (1) MBC 관리 전투 엔티티가 청크 저장에 기록되지 않게 막는다 — 03:50 항목에서 구현. (2) 생성 때 `Pokemon.persistentData`에 대소문자 문제가 없는 MBC 표식을 넣고, 엔티티 로드 시 활성 MBC 전투에 속하지 않으면 제거한다. (2)는 이미 월드에 남은 개체도 정리한다 — 미구현.
 
 ## [2026-09-27 03:05] 이슈 — 계약 문서와 코드의 불일치
 
