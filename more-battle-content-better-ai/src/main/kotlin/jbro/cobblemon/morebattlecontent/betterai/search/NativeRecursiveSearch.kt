@@ -1,5 +1,6 @@
 package jbro.cobblemon.morebattlecontent.betterai.search
 
+import java.util.UUID
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleStateView
@@ -10,6 +11,7 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeRootActionMatc
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeSearchPosition
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeShowdownSearchTree
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalOpponentThreat
 
 /** Identifies one public opponent hypothesis evaluated with one common random sample. */
 internal data class NativeSearchWorldKey(
@@ -82,6 +84,8 @@ internal class NativeRecursiveSearch(
     private val excludeFutureAllyVoluntarySwitches: Boolean = false,
     private val shouldContinue: () -> Boolean = { true },
     private val cacheEntryLimit: Int = DEFAULT_CACHE_ENTRY_LIMIT,
+    /** AI-only threat multipliers; see [LocalOpponentThreat]. Never used to pick opponent replies. */
+    private val opponentThreatWeights: Map<UUID, Double> = emptyMap(),
 ) {
     private var nodesVisited = 0
     private var truncated = false
@@ -201,8 +205,10 @@ internal class NativeRecursiveSearch(
         val rootHpAdvantage = hpAdvantage(tree.root)
         val values = mutableListOf<NativeRootActionValue>()
         val currentResponseValues = linkedMapOf<String, Map<String, Double>>()
+        val rootThreat = LocalOpponentThreat.materialAdjustment(tree.root.state, opponentThreatWeights)
         for (allyAction in rootActions) {
             var worstResponse = Double.POSITIVE_INFINITY
+            var worstThreatDelta = 0.0
             val responseValues = linkedMapOf<String, Double>()
             val orderedResponses = NativeOpponentResponseOrdering.order(
                 opponentActions, responseMemory, responseInformation,
@@ -221,10 +227,15 @@ internal class NativeRecursiveSearch(
                 val value = projectedValue(child, depth - 1, worstResponse - tempo) ?: return null
                 val rootValue = value + tempo
                 responseValues[opponentAction.actionId] = rootValue
-                worstResponse = minOf(worstResponse, rootValue)
+                if (rootValue < worstResponse) {
+                    worstResponse = rootValue
+                    worstThreatDelta = LocalOpponentThreat.materialAdjustment(child.state, opponentThreatWeights) - rootThreat
+                }
             }
             currentResponseValues[allyAction.actionId] = responseValues
-            values += NativeRootActionValue(allyAction, worstResponse)
+            // The opponent's reply was chosen by the plain value above; only the AI's own evaluation
+            // of the outcome it leads to carries the threat priority.
+            values += NativeRootActionValue(allyAction, worstResponse + worstThreatDelta)
         }
         previousRootResponseValues = currentResponseValues
         return values

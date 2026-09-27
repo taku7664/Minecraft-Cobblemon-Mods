@@ -8,6 +8,7 @@ import jbro.cobblemon.morebattlecontent.betterai.calculation.PublicFutureActionF
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalImmediateTurnScorer
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalLookaheadStateEvaluator
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalOpponentThreat
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.morebattlecontent.betterai.outcome.PublicSingleTurnProjector
@@ -83,6 +84,8 @@ internal object LocalRecursiveLookaheadEvaluator {
         decisionSignature: ((List<LocalBattleActionRank>) -> LocalLookaheadDecisionSignature)? = null,
         /** Override only for synthetic fixtures; production selects the bundled table by battle format. */
         moveUsageForFormat: (BattleFormat) -> LocalMoveUsageLookup? = LocalOpponentMoveUsage::forFormat,
+        /** Per-opponent threat multipliers for the AI's own root evaluation; see [LocalOpponentThreat]. */
+        opponentThreatWeights: Map<UUID, Double> = emptyMap(),
     ): LocalLookaheadEvaluation {
         val requestedDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1)
         val moveUsage = moveUsageForFormat(context.state.format)
@@ -168,6 +171,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 actionCalculationCache = actionCalculationCache,
                 clockMillis = clockMillis,
                 moveUsage = moveUsage,
+                opponentThreatWeights = opponentThreatWeights,
             )
             // Which candidates this ply is allowed to spend the budget on.
             //
@@ -267,14 +271,17 @@ internal object LocalRecursiveLookaheadEvaluator {
                         .averageOrNull()
                         ?: rank.outcome.switchPostEntryHp
                         ?: 1.0
+                    // AI-only threat priority on the root turn, added after the opponent's responses
+                    // were weighed by the plain value.
+                    val threatAdjustment = evaluation.threatDelta * BOARD_TO_SCORE * coverage.immediate
                     rank.copy(
-                        comparisonValue = rank.comparisonValue - withdrawnHeuristicValue + adjustment,
+                        comparisonValue = rank.comparisonValue - withdrawnHeuristicValue + adjustment + threatAdjustment,
                         // Everything the search changed relative to the pure heuristic ranking, the
                         // withdrawal included. Reporting only the added term made
                         // `comparisonValue - lookaheadUtility` stop meaning "the heuristic's answer"
                         // the moment any value was withdrawn, which silently turned the influence
                         // measurements into a comparison against the leftover penalty terms.
-                        lookaheadUtility = adjustment - withdrawnHeuristicValue,
+                        lookaheadUtility = adjustment - withdrawnHeuristicValue + threatAdjustment,
                         executionProbability = evaluation.ownExecutionProbability,
                         worstResponseHpRetention = retention(evaluation.worstResponseRemainingHp, responseHpBaseline),
                         // No confirmed reply at all leaves nothing confirmed to lose HP to.
@@ -405,6 +412,7 @@ internal object LocalRecursiveLookaheadEvaluator {
         private val actionCalculationCache: LocalProjectedActionCalculationCache,
         private val clockMillis: () -> Long,
         private val moveUsage: LocalMoveUsageLookup?,
+        private val opponentThreatWeights: Map<UUID, Double> = emptyMap(),
     ) {
         var nodesVisited: Int = 0
             private set
@@ -476,6 +484,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     executionProbability,
                     worstResponseRemainingHp,
                     worstConfirmedResponseRemainingHp,
+                    aggregate.threatDelta,
                 )
             }
         }
@@ -639,6 +648,8 @@ internal object LocalRecursiveLookaheadEvaluator {
                 val orderWeight = outcomes.first().orderProbability
                 var executionProbability = 0.0
                 var remainingHpFraction = 0.0
+                var threatDelta = 0.0
+                val turnStartThreat = if (rootTurn) LocalOpponentThreat.materialAdjustment(state, opponentThreatWeights) else 0.0
                 val value = outcomes.sumOf { rawOutcome ->
                     val outcome = rawOutcome.copy(
                         state = RecursiveSnapshotActionConstraints.clearFromProjectedState(rawOutcome.state),
@@ -652,6 +663,10 @@ internal object LocalRecursiveLookaheadEvaluator {
                         outcome.state.pokemon.firstOrNull { it.battlePokemonId == id }?.hpFraction
                     }.averageOrNull() ?: 0.0
                     remainingHpFraction += trackedHp * outcome.probability
+                    if (rootTurn) {
+                        threatDelta += (LocalOpponentThreat.materialAdjustment(outcome.state, opponentThreatWeights) -
+                            turnStartThreat) * outcome.probability
+                    }
                     val immediateTurnScore = LocalImmediateTurnScorer.score(
                         state,
                         outcome.state,
@@ -719,6 +734,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     value,
                     (executionProbability / totalProbability).coerceIn(0.0, 1.0),
                     (remainingHpFraction / totalProbability).coerceIn(0.0, 1.0),
+                    threatDelta / totalProbability,
                 )
             }
             // Turn order is chance, not choice, and it used to be collapsed by a flat minimum - full
@@ -759,6 +775,14 @@ internal object LocalRecursiveLookaheadEvaluator {
                 ownExecutionProbability = meanExecution * (1.0 - pessimism) +
                     worstOrder.second.ownExecutionProbability * pessimism,
                 ownRemainingHpFraction = orderExpectations.minOf { it.second.ownRemainingHpFraction },
+                threatDelta = run {
+                    val meanThreat = if (weightTotal > 0.0) {
+                        orderExpectations.sumOf { it.first * it.second.threatDelta } / weightTotal
+                    } else {
+                        orderExpectations.sumOf { it.second.threatDelta } / orderExpectations.size
+                    }
+                    meanThreat * (1.0 - pessimism) + worstOrder.second.threatDelta * pessimism
+                },
             )
         }
 
@@ -928,6 +952,7 @@ internal object LocalRecursiveLookaheadEvaluator {
         val worstResponseRemainingHp: Double,
         /** Null when every evaluated reply was an expected move slot. */
         val worstConfirmedResponseRemainingHp: Double?,
+        val threatDelta: Double = 0.0,
     )
 
     private fun retention(remainingHp: Double, baselineHp: Double): Double =

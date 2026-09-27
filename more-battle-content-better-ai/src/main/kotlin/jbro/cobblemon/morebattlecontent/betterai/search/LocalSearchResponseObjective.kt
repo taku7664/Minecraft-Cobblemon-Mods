@@ -6,6 +6,13 @@ internal data class LocalResponseValue(
     val value: Double,
     val ownExecutionProbability: Double,
     val ownRemainingHpFraction: Double,
+    /**
+     * Change of the AI's threat-weighted material over the root turn, in material units.
+     *
+     * Never used to choose or weight the opponent's responses: those weights come from [value] alone,
+     * so the modelled opponent keeps acting on its own interests. The root adds this afterwards.
+     */
+    val threatDelta: Double = 0.0,
 )
 internal data class LocalOpponentResponseValue(val action: BattleActionCandidate, val value: LocalResponseValue)
 
@@ -55,12 +62,14 @@ internal object LocalSearchResponseObjective {
             ownRemainingHpFraction = weightedCategories.minOf { (_, response) ->
                 response.ownRemainingHpFraction
             },
+            threatDelta = weightedCategories.sumOf { (mass, response) -> response.threatDelta * mass } / learnedTotal,
         )
         return LocalResponseValue(
             value = robust.value * (1.0 - learned.influence) + modeled.value * learned.influence,
             ownExecutionProbability = robust.ownExecutionProbability * (1.0 - learned.influence) +
                 modeled.ownExecutionProbability * learned.influence,
             ownRemainingHpFraction = minOf(robust.ownRemainingHpFraction, modeled.ownRemainingHpFraction),
+            threatDelta = robust.threatDelta * (1.0 - learned.influence) + modeled.threatDelta * learned.influence,
         )
     }
 
@@ -78,6 +87,7 @@ internal object LocalSearchResponseObjective {
                     turns[index].ownExecutionProbability * weights[index]
                 } / weightTotal,
                 ownRemainingHpFraction = turns.minOf(LocalResponseValue::ownRemainingHpFraction),
+                threatDelta = turns.indices.sumOf { index -> turns[index].threatDelta * weights[index] } / weightTotal,
             )
         } else {
             worst
@@ -88,6 +98,7 @@ internal object LocalSearchResponseObjective {
             ownExecutionProbability = expected.ownExecutionProbability * (1.0 - worstWeight) +
                 worst.ownExecutionProbability * worstWeight,
             ownRemainingHpFraction = minOf(expected.ownRemainingHpFraction, worst.ownRemainingHpFraction),
+            threatDelta = expected.threatDelta * (1.0 - worstWeight) + worst.threatDelta * worstWeight,
         )
     }
 

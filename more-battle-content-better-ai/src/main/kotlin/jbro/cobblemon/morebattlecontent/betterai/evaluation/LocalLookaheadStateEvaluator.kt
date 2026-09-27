@@ -107,7 +107,11 @@ internal object LocalLookaheadStateEvaluator {
         // Leaf value measures realizable primary-target HP loss. Exposure/switch callers retain
         // raw damage pressure. This does not turn the existing max pressure into a joint-turn sum.
         capDamageToRemainingHp: Boolean = false,
-    ): Double = PublicFutureActionFactory.actions(state, side, source.publicActionCatalog)
+        // Threat estimation may count the opponent's expected move slots; the leaf keeps known moves.
+        includeMoveHypotheses: Boolean = false,
+    ): Double = PublicFutureActionFactory.actions(
+        state, side, source.publicActionCatalog, includeMoveHypotheses = includeMoveHypotheses,
+    )
         .flatMap { action ->
             if (action.kind == BattleActionKind.COMPOSITE) action.componentActions else listOf(action)
         }

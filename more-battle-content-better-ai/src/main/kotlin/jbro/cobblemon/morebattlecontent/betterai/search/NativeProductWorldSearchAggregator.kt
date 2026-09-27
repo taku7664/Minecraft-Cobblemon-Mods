@@ -32,6 +32,7 @@ internal data class NativeProductWorldSearchRequest(
     val excludeFutureAllyVoluntarySwitches: Boolean = false,
     /** Canonical mechanics the live battle permits; null leaves native legality unfiltered. */
     val allowedMechanics: Set<String>? = null,
+    val opponentThreatWeights: Map<java.util.UUID, Double> = emptyMap(),
     /** One total deterministic budget shared by every retained world. */
     val nodeLimit: Int,
     val deadlineNanos: Long,
@@ -126,6 +127,7 @@ internal class NativeProductWorldSearchAggregator(
                     allowSetupAttackExtension = request.allowSetupAttackExtension,
                     excludeFutureAllyVoluntarySwitches = request.excludeFutureAllyVoluntarySwitches,
                     allowedMechanics = request.allowedMechanics,
+                    opponentThreatWeights = request.opponentThreatWeights,
                     nodeLimit = worldNodeLimit,
                     deadlineNanos = request.deadlineNanos,
                     evaluate = world.evaluate,

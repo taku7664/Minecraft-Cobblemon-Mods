@@ -26,6 +26,7 @@ internal data class NativeProductSearchRequest(
     val allowSetupAttackExtension: Boolean = false,
     val excludeFutureAllyVoluntarySwitches: Boolean = false,
     val allowedMechanics: Set<String>? = null,
+    val opponentThreatWeights: Map<java.util.UUID, Double> = emptyMap(),
     val nodeLimit: Int,
     val deadlineNanos: Long,
     val evaluate: (BattleStateView) -> Double,
@@ -133,6 +134,7 @@ internal class NativeProductSearchRunner(
                         allowSetupAttackExtension = request.allowSetupAttackExtension,
                         excludeFutureAllyVoluntarySwitches = request.excludeFutureAllyVoluntarySwitches,
                         shouldContinue = { !deadlineReached(request.deadlineNanos) },
+                        opponentThreatWeights = request.opponentThreatWeights,
                     ).evaluateProduct(request.productActions, request.maxDepth),
                     rootSnapshot = suppliedRoot ?: NativeProductRootSnapshot(worker.rulesFingerprint, root, publicTurnOffset),
                 )

@@ -48,12 +48,14 @@ import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDeci
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionStatus
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionState
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalOpponentThreat
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalOpponentMoveUsage
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalStatusMoveBinder
 import kotlin.math.roundToInt
 
 private const val WEAKER_CHOICE_MARGIN = 0.05
 private const val NATIVE_TEST_TIME_LIMIT_MILLIS = 10_000L
+private const val THREAT_TIME_LIMIT_NANOS = 300_000_000L
 private val logger = LoggerFactory.getLogger(LocalTacticalBrain::class.java)
 
 internal fun interface NativeInitialDecisionSource {
@@ -350,6 +352,7 @@ internal class LocalTacticalBrain(
             )
         }
         val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
+        val threatStartedAtNanos = System.nanoTime()
         val rootRanked = baseRanked
         val lookahead = LocalRecursiveLookaheadEvaluator.evaluate(
             rootRanked,
@@ -363,6 +366,11 @@ internal class LocalTacticalBrain(
                     .mapTo(linkedSetOf()) { it.outcome.candidate.actionId }
             },
             budget = budget,
+            opponentThreatWeights = LocalOpponentThreat.weights(
+                difficultyContext,
+                profile.difficulty.tier,
+                shouldContinue = { System.nanoTime() - threatStartedAtNanos < THREAT_TIME_LIMIT_NANOS },
+            ),
             decisionSignature = if (actionSelector !is LocalWeightedActionSelector) null else { tentative ->
                 val refined = LocalRootDecisionPolicy.refine(tentative, difficultyContext).ranked
                 val tentativeSeed = LocalActionChoiceSeed.derive(

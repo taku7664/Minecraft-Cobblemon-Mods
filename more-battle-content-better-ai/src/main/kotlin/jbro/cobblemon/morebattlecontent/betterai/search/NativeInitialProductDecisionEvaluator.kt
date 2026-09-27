@@ -19,6 +19,7 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProduct
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMechanicAllowance
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeOpeningStateRules
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeProductSeedPolicy
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalOpponentThreat
 
 internal enum class NativeInitialProductDecisionStatus {
     NOT_APPLICABLE,
@@ -190,6 +191,7 @@ internal class NativeInitialProductDecisionEvaluator(
                     context.candidates.any { LocalSetupMovePreference.bonus(it, context) > 0.0 },
                 excludeFutureAllyVoluntarySwitches = profile.difficulty.tier == BattleTrainerTier.ADVANCED,
                 allowedMechanics = allowedMechanics,
+                opponentThreatWeights = threatWeights(context, profile, budget),
                 nodeLimit = budget.nodeLimit,
                 deadlineNanos = deadlineNanos,
             ),
@@ -315,6 +317,7 @@ internal class NativeInitialProductDecisionEvaluator(
                     context.candidates.any { LocalSetupMovePreference.bonus(it, context) > 0.0 },
                 excludeFutureAllyVoluntarySwitches = profile.difficulty.tier == BattleTrainerTier.ADVANCED,
                 allowedMechanics = allowedMechanics,
+                opponentThreatWeights = threatWeights(context, profile, budget),
                 nodeLimit = budget.nodeLimit,
                 deadlineNanos = deadlineNanos,
             ),
@@ -357,6 +360,16 @@ internal class NativeInitialProductDecisionEvaluator(
         )
     }
 
+    /** Computed from the real decision context, so weights key the real battle Pokemon IDs. */
+    private fun threatWeights(
+        context: BattleDecisionContext,
+        profile: BattleTrainerProfile,
+        budget: LocalLookaheadBudget,
+    ): Map<java.util.UUID, Double> {
+        val stopAt = nanoTime() + minOf(budget.timeMillis, THREAT_TIME_LIMIT_MILLIS) * NANOS_PER_MILLI
+        return LocalOpponentThreat.weights(context, profile.difficulty.tier) { nanoTime() - stopAt < 0L }
+    }
+
     private fun reconciliationFailure(
         status: NativeProductSessionReconcileStatus,
     ) = NativeInitialProductDecisionEvaluation(
@@ -384,6 +397,7 @@ internal class NativeInitialProductDecisionEvaluator(
 
     private companion object {
         const val NANOS_PER_MILLI = 1_000_000L
+        const val THREAT_TIME_LIMIT_MILLIS = 300L
     }
 }
 
