@@ -20,6 +20,7 @@ import jbro.cobblemon.morebattlecontent.api.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.morebattlecontent.api.ai.BattleSide
 import jbro.cobblemon.morebattlecontent.api.ai.BattleTrainerTier
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalMoveUsageLookup
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalStatusMoveBinder
 
 internal enum class NativeOpponentPreviewMoveCatalogIssueCode {
     SELECTED_PREVIEW_SLOT_MISSING,
@@ -202,8 +203,22 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
             slots += guessed(slots.size, BattleOpponentMoveGroup.STATUS_OTHER)
         }
         while (slots.size < MAX_MOVE_SLOTS) slots += guessed(slots.size, BattleOpponentMoveGroup.OTHER)
-        return BattleOpponentMoveInferenceView(pokemon.battlePokemonId, slots)
+        return bindStatus(BattleOpponentMoveInferenceView(pokemon.battlePokemonId, slots), preview, tier, usage)
     }
+
+    private fun bindStatus(
+        inference: BattleOpponentMoveInferenceView,
+        preview: BattleOpponentTeamPreviewPokemonView,
+        tier: BattleTrainerTier,
+        usage: LocalMoveUsageLookup?,
+    ): BattleOpponentMoveInferenceView = LocalStatusMoveBinder.bind(
+        inference,
+        preview.speciesId,
+        preview.formId,
+        requireNotNull(preview.moveCandidatePool).moveDetails,
+        tier,
+        usage,
+    )
 
     private fun inferenceCandidates(
         pokemon: BattlePokemonStateView,
@@ -241,7 +256,7 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
                 slots += guessed(slots.size, BattleOpponentMoveGroup.STATUS_OTHER)
             }
             while (slots.size < MAX_MOVE_SLOTS) slots += guessed(slots.size, BattleOpponentMoveGroup.OTHER)
-            val inference = BattleOpponentMoveInferenceView(pokemon.battlePokemonId, slots)
+            val inference = bindStatus(BattleOpponentMoveInferenceView(pokemon.battlePokemonId, slots), preview, tier, usage)
             val selectedIds = selectedStab.mapTo(hashSetOf()) { (moveId, _) -> canonical(moveId) }
             val weight = stab.fold(1.0) { product, (moveId, _) ->
                 val rate = (usage?.rate(preview.speciesId, preview.formId, moveId) ?: DEFAULT_PRESENCE_RATE)

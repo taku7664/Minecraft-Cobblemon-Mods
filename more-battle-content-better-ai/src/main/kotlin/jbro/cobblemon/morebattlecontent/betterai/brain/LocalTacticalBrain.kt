@@ -48,6 +48,8 @@ import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDeci
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionEvaluator
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionStatus
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionState
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalOpponentMoveUsage
+import jbro.cobblemon.morebattlecontent.betterai.state.LocalStatusMoveBinder
 import kotlin.math.roundToInt
 
 private const val WEAKER_CHOICE_MARGIN = 0.05
@@ -126,7 +128,15 @@ internal class LocalTacticalBrain(
         val strategy = active?.strategy.takeUnless {
             profile.difficulty.tier == BattleTrainerTier.INTRODUCTORY
         }
-        val assumedContext = LocalOpponentStatAssumption.applyToPublicState(context, profile.difficulty.tier)
+        // Name the opponent status moves this tier believes in before anything reads the catalog, so
+        // the legacy search, the native worlds and the session reconciliation all see the same slots.
+        val boundContext = context.copy(publicActionCatalog = LocalStatusMoveBinder.bindCatalog(
+            context.state,
+            context.publicActionCatalog,
+            profile.difficulty.tier,
+            LocalOpponentMoveUsage.forFormat(context.state.format),
+        ))
+        val assumedContext = LocalOpponentStatAssumption.applyToPublicState(boundContext, profile.difficulty.tier)
         val calculatedContext = PublicBattleTacticalCalculator.calculate(assumedContext)
             .forPlanOwner(jbro.cobblemon.morebattlecontent.api.ai.BattlePlanOwner.LOCAL_BRAIN)
         val difficultyContext = if (profile.difficulty.tier == BattleTrainerTier.INTRODUCTORY) {
