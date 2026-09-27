@@ -185,15 +185,18 @@ class BattleActions(private val battle: Battle) {
     }
 
     /** The "inside" move caller: the move's effects, not the act of choosing it (Sleep Talk, Magic Bounce ...). */
-    fun useMove(move: ActiveMove, pokemon: Pokemon, target: Pokemon?, sourceEffect: EffectLike? = null, maxMove: String? = null): Any? {
+    /** [targetUndefined]: the caller gave no target (JS `undefined`), so one is picked at random after ModifyTarget. */
+    fun useMove(move: ActiveMove, pokemon: Pokemon, target: Pokemon?, sourceEffect: EffectLike? = null, maxMove: String? = null,
+                targetUndefined: Boolean = false): Any? {
         pokemon.moveThisTurnResult = Unit
         val oldMoveResult = pokemon.moveThisTurnResult
-        val moveResult = useMoveInner(move, pokemon, target, sourceEffect, maxMove)
+        val moveResult = useMoveInner(move, pokemon, target, sourceEffect, maxMove, targetUndefined)
         if (oldMoveResult === pokemon.moveThisTurnResult) pokemon.moveThisTurnResult = moveResult
         return moveResult
     }
 
-    fun useMoveInner(moveIn: ActiveMove, pokemon: Pokemon, targetIn: Pokemon?, sourceEffectIn: EffectLike? = null, maxMove: String? = null): Any? {
+    fun useMoveInner(moveIn: ActiveMove, pokemon: Pokemon, targetIn: Pokemon?, sourceEffectIn: EffectLike? = null, maxMove: String? = null,
+                     targetUndefined: Boolean = false): Any? {
         var target = targetIn
         var sourceEffect = sourceEffectIn
         if (sourceEffect == null && battle.effect?.id?.isNotEmpty() == true) sourceEffect = battle.effect
@@ -212,7 +215,7 @@ class BattleActions(private val battle: Battle) {
             if (!move.hasBounced) move.pranksterBoosted = active.pranksterBoosted
         }
         val baseTarget = move.target
-        val targetRelay = linkedMapOf<String, Any?>("target" to target)
+        val targetRelay = linkedMapOf<String, Any?>("target" to if (targetUndefined && target == null) Unit else target)
         @Suppress("UNCHECKED_CAST")
         val modifiedTarget = battle.runEvent("ModifyTarget", pokemon, target, move, targetRelay, true) as? Map<String, Any?>
         if (modifiedTarget != null && modifiedTarget.containsKey("target") && modifiedTarget["target"] !== Unit) {
