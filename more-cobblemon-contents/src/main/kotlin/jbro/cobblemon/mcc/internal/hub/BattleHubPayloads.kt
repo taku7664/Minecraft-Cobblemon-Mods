@@ -1,17 +1,24 @@
 package jbro.cobblemon.mcc.internal.hub
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.ResourceLocation
 
-internal enum class BattleHubContent {
-    BATTLE_TOWER,
-    BATTLE_FACTORY,
-    PVP,
-    BOSS_RAID,
-    SHOP,
+/** Client tab identities until the hub tabs become registrable; [id] is what travels on the wire. */
+internal enum class BattleHubContent(val id: String) {
+    BATTLE_TOWER(ManagedBattleContentIds.BATTLE_TOWER),
+    BATTLE_FACTORY(ManagedBattleContentIds.BATTLE_FACTORY),
+    PVP(ManagedBattleContentIds.PVP),
+    BOSS_RAID(BattleHubIds.BOSS_RAID),
+    SHOP(BattleHubIds.SHOP),
+    ;
+
+    companion object {
+        fun fromId(id: String): BattleHubContent? = entries.firstOrNull { it.id == id }
+    }
 }
 
 internal data object BattleHubStatePayload : CustomPacketPayload {
@@ -36,18 +43,20 @@ internal data class BattleHubHeaderStatePayload(val bpBalance: Long) : CustomPac
     }
 }
 
-internal data class BattleHubOpenContentPayload(val content: BattleHubContent) : CustomPacketPayload {
+internal data class BattleHubOpenContentPayload(val contentId: String) : CustomPacketPayload {
+    init {
+        require(ManagedBattleContentIds.isValid(contentId)) { "Invalid battle hub content: $contentId" }
+    }
+
     override fun type(): CustomPacketPayload.Type<BattleHubOpenContentPayload> = TYPE
 
     companion object {
+        const val MAX_CONTENT_ID_LENGTH = 128
+
         val TYPE = CustomPacketPayload.Type<BattleHubOpenContentPayload>(id("battle_hub_open_content"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, BattleHubOpenContentPayload> = StreamCodec.of(
-            { buffer, payload -> buffer.writeVarInt(payload.content.ordinal) },
-            { buffer ->
-                val ordinal = buffer.readVarInt()
-                require(ordinal in BattleHubContent.entries.indices) { "Invalid battle hub content: $ordinal" }
-                BattleHubOpenContentPayload(BattleHubContent.entries[ordinal])
-            },
+            { buffer, payload -> buffer.writeUtf(payload.contentId, MAX_CONTENT_ID_LENGTH) },
+            { buffer -> BattleHubOpenContentPayload(buffer.readUtf(MAX_CONTENT_ID_LENGTH)) },
         )
     }
 }

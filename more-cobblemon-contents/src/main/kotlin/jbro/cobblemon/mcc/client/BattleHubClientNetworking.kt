@@ -12,7 +12,11 @@ import net.minecraft.client.Minecraft
 internal object BattleHubClientNetworking {
     fun register() {
         ClientPlayNetworking.registerGlobalReceiver(BattleHubAccessPayload.TYPE) { payload, context ->
-            context.client().execute { MccBattleHubClientState.denied = payload.denied }
+            context.client().execute {
+                MccBattleHubClientState.denied = payload.denied.mapNotNull { (contentId, denial) ->
+                    BattleHubContent.fromId(contentId)?.let { content -> content to denial }
+                }.toMap()
+            }
         }
         MccClientSessionReset.onReset("battle hub header") { MccBattleHubClientState.clear() }
         ClientPlayNetworking.registerGlobalReceiver(BattleHubStatePayload.TYPE) { _, context ->
@@ -35,10 +39,10 @@ internal object MccContentNavigation {
                 ShopPlayClientNetworking.open()
             } else {
                 Minecraft.getInstance().setScreen(PvpRoomListScreen(emptyList()))
-                BattleHubClientNetworking.open(BattleHubOpenContentPayload(BattleHubContent.PVP))
+                BattleHubClientNetworking.open(BattleHubOpenContentPayload(BattleHubContent.PVP.id))
             }
         } else {
-            BattleHubClientNetworking.open(BattleHubOpenContentPayload(content))
+            BattleHubClientNetworking.open(BattleHubOpenContentPayload(content.id))
         }
     }
 }

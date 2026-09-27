@@ -16,7 +16,6 @@ import jbro.cobblemon.mcc.internal.compat.fabric.BattlePointShopCatalogResources
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173AiTestBattleRuntime
 import jbro.cobblemon.mcc.internal.tower.application.BattleTowerContentApplication
 import jbro.cobblemon.mcc.internal.tower.network.TowerPlayNetworking
-import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayEntryContext
 import jbro.cobblemon.mcc.internal.pvp.network.PvpPlayNetworking
 import jbro.cobblemon.mcc.internal.hub.BattleHubNetworking
 import jbro.cobblemon.mcc.internal.shadow.ShadowTrainerProjectionNetworking
@@ -36,19 +35,7 @@ object MoreCobblemonContents : ModInitializer {
     override fun onInitialize() {
         jbro.cobblemon.mcc.api.access.BattleContentAccess.registerLifecycle()
         jbro.cobblemon.mcc.api.battle.ManagedPveBattles.registerLifecycle()
-        HoloBattleTerminalContent.register { player, verification ->
-            BattleHubNetworking.open(
-                player,
-                TowerPlayEntryContext.VerifiedTerminal(
-                    entryContextId = verification.entryContextId,
-                    terminalId = verification.terminalId,
-                    dimensionId = verification.dimensionId,
-                    x = verification.x,
-                    y = verification.y,
-                    z = verification.z,
-                ),
-            )
-        }
+        HoloBattleTerminalContent.register { player, verification -> BattleHubNetworking.open(player, verification) }
         TowerOpponentCatalogResources.register()
         FactoryCatalogResources.register()
         BattlePointShopCatalogResources.register()

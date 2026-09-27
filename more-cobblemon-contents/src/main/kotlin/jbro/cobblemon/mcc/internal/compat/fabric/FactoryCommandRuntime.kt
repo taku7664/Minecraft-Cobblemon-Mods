@@ -1,6 +1,8 @@
 package jbro.cobblemon.mcc.internal.compat.fabric
 
 import jbro.cobblemon.mcc.api.access.BattleContentAccess
+import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
+import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
 import jbro.cobblemon.mcc.api.access.ContentAccessAction
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 
@@ -131,6 +133,7 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
 
     fun registerServer() {
         play
+        BattleHubEntries.register(BattleHubEntry(ManagedBattleContentIds.BATTLE_FACTORY) { player, _ -> open(player) })
         FactoryPlayNetworking.registerServer(this)
         ServerLifecycleEvents.SERVER_STARTING.register { server -> currentServer = server }
         ServerLifecycleEvents.SERVER_STOPPING.register { server ->

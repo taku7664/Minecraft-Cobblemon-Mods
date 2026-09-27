@@ -6,27 +6,31 @@ import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.ResourceLocation
 
-/** Separate optional channel keeps the existing hub/header protocol compatible. */
-internal data class BattleHubAccessPayload(val denied: Map<BattleHubContent, ContentAccessDecision.Denied>) : CustomPacketPayload {
+/** Hub entries the player may not open, keyed by hub content ID. */
+internal data class BattleHubAccessPayload(val denied: Map<String, ContentAccessDecision.Denied>) : CustomPacketPayload {
     override fun type() = TYPE
     companion object {
+        const val MAX_ENTRIES = 64
+
         val TYPE = CustomPacketPayload.Type<BattleHubAccessPayload>(ResourceLocation.parse("more_cobblemon_contents:hub_access_v1"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, BattleHubAccessPayload> = StreamCodec.of(
             { b, p ->
+                require(p.denied.size <= MAX_ENTRIES) { "Too many hub access entries" }
                 b.writeVarInt(p.denied.size)
-                p.denied.forEach { (content, reason) ->
-                    b.writeEnum(content); b.writeUtf(reason.reasonKey, 256); b.writeUtf(reason.code, 128)
+                p.denied.forEach { (contentId, reason) ->
+                    b.writeUtf(contentId, BattleHubOpenContentPayload.MAX_CONTENT_ID_LENGTH)
+                    b.writeUtf(reason.reasonKey, 256); b.writeUtf(reason.code, 128)
                     b.writeVarInt(reason.arguments.size); reason.arguments.forEach { b.writeUtf(it, 256) }
                 }
             },
             { b ->
-                val size = b.readVarInt().also { require(it in 0..BattleHubContent.entries.size) }
-                val result = linkedMapOf<BattleHubContent, ContentAccessDecision.Denied>()
+                val size = b.readVarInt().also { require(it in 0..MAX_ENTRIES) }
+                val result = linkedMapOf<String, ContentAccessDecision.Denied>()
                 repeat(size) {
-                    val content = b.readEnum(BattleHubContent::class.java)
+                    val contentId = b.readUtf(BattleHubOpenContentPayload.MAX_CONTENT_ID_LENGTH)
                     val key = b.readUtf(256); val code = b.readUtf(128)
                     val count = b.readVarInt().also { require(it in 0..8) }
-                    require(result.put(content, ContentAccessDecision.Denied(key, code, List(count) { b.readUtf(256) })) == null)
+                    require(result.put(contentId, ContentAccessDecision.Denied(key, code, List(count) { b.readUtf(256) })) == null)
                 }
                 BattleHubAccessPayload(result)
             })

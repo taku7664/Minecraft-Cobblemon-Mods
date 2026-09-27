@@ -1,6 +1,9 @@
 package jbro.cobblemon.mcc.internal.tower.network
 
 import jbro.cobblemon.mcc.api.access.BattleContentAccess
+import jbro.cobblemon.mcc.internal.terminal.TerminalInteractionResult
+import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
+import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
 import jbro.cobblemon.mcc.api.access.ContentAccessAction
 import jbro.cobblemon.mcc.api.access.ContentAccessDecision
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
@@ -96,6 +99,11 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
 
     fun registerServer() {
         sessions
+        BattleHubEntries.register(
+            BattleHubEntry(ManagedBattleContentIds.BATTLE_TOWER) { player, terminal ->
+                open(player, entryContext = terminal?.let(::terminalEntryContext))
+            },
+        )
         PayloadTypeRegistry.playS2C().register(TowerPlayStatePayload.TYPE, TowerPlayStatePayload.CODEC)
         PayloadTypeRegistry.playS2C().register(TowerPlayRejectedPayload.TYPE, TowerPlayRejectedPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(TowerPlayIntentPayload.TYPE, TowerPlayIntentPayload.CODEC)
@@ -208,6 +216,15 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
             }
         }
     }
+
+    private fun terminalEntryContext(terminal: TerminalInteractionResult.Verified) = TowerPlayEntryContext.VerifiedTerminal(
+        entryContextId = terminal.entryContextId,
+        terminalId = terminal.terminalId,
+        dimensionId = terminal.dimensionId,
+        x = terminal.x,
+        y = terminal.y,
+        z = terminal.z,
+    )
 
     fun open(
         player: ServerPlayer,

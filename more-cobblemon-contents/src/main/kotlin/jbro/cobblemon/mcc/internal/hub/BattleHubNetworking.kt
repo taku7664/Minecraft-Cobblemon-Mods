@@ -1,14 +1,12 @@
 package jbro.cobblemon.mcc.internal.hub
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.api.access.BattleContentAccess
+import jbro.cobblemon.mcc.api.access.ContentAccessAction
+import jbro.cobblemon.mcc.api.access.ContentAccessDecision
 import jbro.cobblemon.mcc.internal.bp.BattlePointService
-import jbro.cobblemon.mcc.internal.bp.shop.ShopPlayNetworking
-import jbro.cobblemon.mcc.internal.compat.fabric.FactoryCommandRuntime
-import jbro.cobblemon.mcc.internal.command.PvpCommandStatus
-import jbro.cobblemon.mcc.internal.pvp.network.PvpPlayNetworking
 import jbro.cobblemon.mcc.internal.presentation.attemptServerUiOperation
-import jbro.cobblemon.mcc.internal.tower.network.TowerPlayNetworking
-import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayEntryContext
+import jbro.cobblemon.mcc.internal.terminal.TerminalInteractionResult
 import java.util.UUID
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
@@ -17,7 +15,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 
 internal object BattleHubNetworking {
-    private val towerEntryContexts = HashMap<UUID, TowerPlayEntryContext>()
+    private val terminalContexts = HashMap<UUID, TerminalInteractionResult.Verified>()
 
     fun registerServer() {
         PayloadTypeRegistry.playS2C().register(BattleHubAccessPayload.TYPE, BattleHubAccessPayload.CODEC)
@@ -27,51 +25,45 @@ internal object BattleHubNetworking {
         ServerPlayNetworking.registerGlobalReceiver(BattleHubOpenContentPayload.TYPE) { payload, context ->
             val player = context.player()
             val opened = attemptServerUiOperation(
-                reportFailure = { failure -> reportFailure(player, "content ${payload.content}", failure) },
+                reportFailure = { failure -> reportFailure(player, "content ${payload.contentId}", failure) },
             ) {
-                when (payload.content) {
-                    BattleHubContent.BATTLE_TOWER -> TowerPlayNetworking.open(
-                        player,
-                        entryContext = towerEntryContexts[player.uuid],
-                    ).also { success -> if (success) towerEntryContexts.remove(player.uuid) }
-                    BattleHubContent.BATTLE_FACTORY -> FactoryCommandRuntime.open(player)
-                    BattleHubContent.PVP -> PvpPlayNetworking.open(player).status == PvpCommandStatus.APPLIED
-                    BattleHubContent.BOSS_RAID -> false
-                    BattleHubContent.SHOP -> ShopPlayNetworking.open(player)
-                }
+                BattleHubEntries.get(payload.contentId)?.open?.invoke(player, terminalContexts[player.uuid]) ?: false
             }
             if (!opened) {
                 attemptServerUiOperation(
                     reportFailure = { failure -> reportFailure(player, "unavailable response", failure) },
                 ) {
                     player.sendSystemMessage(
-                        Component.translatable("screen.${MoreCobblemonContents.MOD_ID}.hub.unavailable.${payload.content.name.lowercase()}"),
+                        Component.translatable(
+                            "screen.${MoreCobblemonContents.MOD_ID}.hub.unavailable.${payload.contentId.substringAfter(':')}",
+                        ),
                     )
                     true
                 }
             }
         }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
-            towerEntryContexts.remove(handler.player.uuid)
+            terminalContexts.remove(handler.player.uuid)
         }
     }
 
-    fun open(player: ServerPlayer, towerEntryContext: TowerPlayEntryContext? = null): Boolean {
+    /** Opens the hub; a verified [terminal] stays attached to the entries opened during this hub session. */
+    fun open(player: ServerPlayer, terminal: TerminalInteractionResult.Verified? = null): Boolean {
         val opened = attemptServerUiOperation(
             reportFailure = { failure -> reportFailure(player, "open", failure) },
         ) {
             if (!ServerPlayNetworking.canSend(player, BattleHubStatePayload.TYPE)) return@attemptServerUiOperation false
-            if (towerEntryContext == null) {
-                towerEntryContexts.remove(player.uuid)
+            if (terminal == null) {
+                terminalContexts.remove(player.uuid)
             } else {
-                towerEntryContexts[player.uuid] = towerEntryContext
+                terminalContexts[player.uuid] = terminal
             }
             sendHeader(player)
             ServerPlayNetworking.send(player, BattleHubStatePayload)
             true
         }
-        if (!opened && towerEntryContext != null) {
-            towerEntryContexts.remove(player.uuid, towerEntryContext)
+        if (!opened && terminal != null) {
+            terminalContexts.remove(player.uuid, terminal)
         }
         return opened
     }
@@ -83,21 +75,18 @@ internal object BattleHubNetworking {
             if (!ServerPlayNetworking.canSend(player, BattleHubHeaderStatePayload.TYPE)) return@attemptServerUiOperation false
             ServerPlayNetworking.send(player, BattleHubHeaderStatePayload(balance(player)))
             if (ServerPlayNetworking.canSend(player, BattleHubAccessPayload.TYPE)) {
-                val entries = mapOf(
-                    BattleHubContent.BATTLE_TOWER to jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds.BATTLE_TOWER,
-                    BattleHubContent.BATTLE_FACTORY to jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds.BATTLE_FACTORY,
-                ).mapNotNull { (content, id) ->
-                    val decision = jbro.cobblemon.mcc.api.access.BattleContentAccess.check(player, id,
-                        jbro.cobblemon.mcc.api.access.ContentAccessAction.OPEN)
-                    (decision as? jbro.cobblemon.mcc.api.access.ContentAccessDecision.Denied)?.let { content to it }
+                val denied = BattleHubEntries.all().mapNotNull { entry ->
+                    val accessContentId = entry.accessContentId ?: return@mapNotNull null
+                    val decision = BattleContentAccess.check(player, accessContentId, ContentAccessAction.OPEN)
+                    (decision as? ContentAccessDecision.Denied)?.let { entry.contentId to it }
                 }.toMap()
-                ServerPlayNetworking.send(player, BattleHubAccessPayload(entries))
+                ServerPlayNetworking.send(player, BattleHubAccessPayload(denied))
             }
             true
         }
     }
 
-    fun clear() = towerEntryContexts.clear()
+    fun clear() = terminalContexts.clear()
 
     private fun balance(player: ServerPlayer): Long = BattlePointService.balance(player.server, player.uuid)
 

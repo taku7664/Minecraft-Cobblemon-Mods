@@ -1,6 +1,9 @@
 package jbro.cobblemon.mcc.internal.bp.shop
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.internal.hub.BattleHubIds
+import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
+import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
 import jbro.cobblemon.mcc.internal.bp.BattlePointApplyResult
 import jbro.cobblemon.mcc.internal.bp.BattlePointAtomicApplier
 import jbro.cobblemon.mcc.internal.bp.BattlePointRequest
@@ -25,6 +28,7 @@ import net.minecraft.server.level.ServerPlayer
 
 internal object ShopPlayNetworking {
     fun registerServer() {
+        BattleHubEntries.register(BattleHubEntry(BattleHubIds.SHOP, accessContentId = null) { player, _ -> open(player) })
         PayloadTypeRegistry.playS2C().register(ShopStatePayload.TYPE, ShopStatePayload.CODEC)
         PayloadTypeRegistry.playS2C().register(HomeLeaderboardStatePayload.TYPE, HomeLeaderboardStatePayload.CODEC)
         PayloadTypeRegistry.playS2C().register(HomeLeaderboardCatalogPayload.TYPE, HomeLeaderboardCatalogPayload.CODEC)

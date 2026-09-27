@@ -14,7 +14,7 @@ class BattleHubPayloadsTest {
         val header = BattleHubHeaderStatePayload(275L)
         assertEquals(header, roundTrip(BattleHubHeaderStatePayload.CODEC, header))
         BattleHubContent.entries.forEach { content ->
-            val payload = BattleHubOpenContentPayload(content)
+            val payload = BattleHubOpenContentPayload(content.id)
             assertEquals(payload, roundTrip(BattleHubOpenContentPayload.CODEC, payload))
         }
     }
