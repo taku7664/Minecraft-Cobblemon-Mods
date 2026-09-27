@@ -202,6 +202,45 @@ object MccHubKit {
         return y - GAP
     }
 
+    enum class ChoiceMode {
+        /** Every row fits beside one shared label column. */
+        INLINE,
+
+        /** Each row's title sits on its own line above its controls. */
+        TITLED,
+
+        /** Each row is one control reading "title: choice". */
+        COMPACT,
+    }
+
+    /** How [choices] would lay [rows] out across [width] with [availableHeight] to spare. */
+    fun choiceMode(width: Int, availableHeight: Int, rows: List<ChoiceRow>): ChoiceMode = when {
+        rows.isEmpty() || inlineChoices(width, rows) -> ChoiceMode.INLINE
+        availableHeight >= rows.size * (STACKED_CHOICE_HEIGHT + GAP) - GAP -> ChoiceMode.TITLED
+        else -> ChoiceMode.COMPACT
+    }
+
+    /** [actions] as equally wide medium controls side by side across [rect], for settings that toggle on press. */
+    fun buttonRow(host: MccHubContentHost, rect: UiRect, actions: List<Action>) {
+        if (actions.isEmpty()) return
+        val width = (rect.width - (actions.size - 1) * 2) / actions.size
+        actions.forEachIndexed { index, action ->
+            val button = CobblemonUiButton.create(rect.x + index * (width + 2), rect.y, width,
+                UiButtonSpec(fitted(action.label, width - 12), variant = action.variant, size = UiControlSize.MEDIUM,
+                    width = UiWidthPolicy.Fixed(width)), press = action.press)
+            button.active = action.enabled
+            action.tooltip?.let { button.setTooltip(Tooltip.create(it)) }
+            host.add(button)
+        }
+    }
+
+    /**
+     * [entries] as rows that scroll inside [rect] under the mouse wheel. The offset lives with the tab ([offset] in,
+     * [offsetChanged] out); the tab forwards its wheel events to the returned [Scrollable].
+     */
+    fun scrollList(host: MccHubContentHost, rect: UiRect, entries: List<ListEntry>, offset: Int, offsetChanged: (Int) -> Unit): Scrollable =
+        host.add(ScrollList(rect, entries, offset, offsetChanged))
+
     /** The height [choices] would take for [rows] across [width] with [availableHeight] to spare. */
     fun choicesHeight(width: Int, availableHeight: Int, rows: List<ChoiceRow>): Int {
         if (rows.isEmpty()) return 0
@@ -556,16 +595,13 @@ object MccHubKit {
     /** A list row with a UI kit icon and trailing actions, styled like the UI kit's own list items. */
     private class Row(private val rect: UiRect, private val entry: ListEntry) :
         AbstractButton(rect.x, rect.y, rect.width, rect.height, entry.title) {
-        private val actionRects: List<UiRect> = entry.actions.indices.map { index ->
-            val size = (rect.height - 6).coerceAtMost(18)
-            UiRect(rect.right - 4 - (entry.actions.size - index) * (size + 2) + 2, rect.y + (rect.height - size) / 2, size, size)
-        }
+        private val actionRects = actionRects(rect, entry)
 
         /** Keyboard activation and clicks outside the actions press the row itself. */
         override fun onPress() = entry.press()
 
         override fun onClick(mouseX: Double, mouseY: Double) {
-            val index = actionRects.indexOfFirst { mouseX >= it.x && mouseX < it.right && mouseY >= it.y && mouseY < it.bottom }
+            val index = actionRects.indexOfFirst { it.contains(mouseX, mouseY) }
             if (index < 0) {
                 onPress()
                 return
@@ -576,49 +612,68 @@ object MccHubKit {
 
         override fun updateWidgetNarration(output: NarrationElementOutput) = defaultButtonNarrationText(output)
 
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) =
+            drawEntry(graphics, rect, entry, active, isHovered, mouseX, mouseY, partialTick)
+    }
+
+    /**
+     * [entries] as rows that scroll inside [rect] under the mouse wheel, clipped at its edges, with a thin bar when
+     * they overflow. A click goes to the row under it, or to that row's action.
+     */
+    private class ScrollList(
+        private val rect: UiRect,
+        private val entries: List<ListEntry>,
+        offset: Int,
+        private val offsetChanged: (Int) -> Unit,
+    ) : AbstractWidget(rect.x, rect.y, rect.width, rect.height, Component.empty()), Scrollable {
+        private val rowHeight = CobblemonUiThemes.registry.snapshot().metrics(UiControlSize.MEDIUM).let { metrics ->
+            if (entries.any { it.supporting != null }) metrics.supportingHeight else metrics.height
+        }
+        private val step = rowHeight + 2
+        private val scroll = UiScrollState(rect.height, entries.size * step - 2, step).also { it.jumpTo(offset) }
+        private val rowWidth = if (scroll.maxOffset > 0) rect.width - 5 else rect.width
+
+        private fun rowBounds(index: Int) = UiRect(rect.x, rect.y + index * step - scroll.offset, rowWidth, rowHeight)
+
+        override fun scroll(mouseX: Double, mouseY: Double, delta: Double): Boolean {
+            if (!rect.contains(mouseX, mouseY)) return false
+            val moved = scroll.scroll(delta)
+            if (moved) offsetChanged(scroll.offset)
+            return moved
+        }
+
+        override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+            if (button != 0 || !rect.contains(mouseX, mouseY)) return false
+            val index = entries.indices.firstOrNull { rowBounds(it).contains(mouseX, mouseY) } ?: return false
+            val entry = entries[index]
+            if (!entry.enabled) return false
+            playDownSound(Minecraft.getInstance().soundManager)
+            val action = actionRects(rowBounds(index), entry).indexOfFirst { it.contains(mouseX, mouseY) }
+            if (action < 0) entry.press() else if (entry.actions[action].enabled) entry.actions[action].press()
+            return true
+        }
+
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
             val theme = CobblemonUiThemes.registry.snapshot()
-            val font = Minecraft.getInstance().font
-            val state = when {
-                !active -> UiWidgetState.DISABLED
-                isHovered -> UiWidgetState.HOVER
-                entry.selected -> UiWidgetState.SELECTED
-                else -> UiWidgetState.NORMAL
+            graphics.enableScissor(rect.x, rect.y, rect.right, rect.bottom)
+            try {
+                entries.forEachIndexed { index, entry ->
+                    val bounds = rowBounds(index)
+                    if (bounds.bottom < rect.y || bounds.y > rect.bottom) return@forEachIndexed
+                    val hovered = rect.contains(mouseX.toDouble(), mouseY.toDouble()) && bounds.contains(mouseX.toDouble(), mouseY.toDouble())
+                    drawEntry(graphics, bounds, entry, entry.enabled, hovered, mouseX, mouseY, partialTick)
+                }
+            } finally {
+                graphics.disableScissor()
             }
-            val style = theme.style(UiButtonVariant.SECONDARY, state)
-            UiSurfaceRenderer.draw(graphics, x, y, width, height, style.surface)
-            var left = x + 6
-            entry.icon?.let { icon ->
-                val size = (height - 6).coerceAtMost(16)
-                CobblemonUiRenderSlot.drawContent(graphics, UiRect(left, y + (height - size) / 2, size, size), icon, partialTick)
-                left += size + 5
-            }
-            var right = (actionRects.firstOrNull()?.x ?: (x + width - 2)) - 4
-            actionRects.forEachIndexed { index, bounds ->
-                val action = entry.actions[index]
-                val hovered = mouseX >= bounds.x && mouseX < bounds.right && mouseY >= bounds.y && mouseY < bounds.bottom
-                val actionStyle = theme.style(UiButtonVariant.SECONDARY, when {
-                    !active || !action.enabled -> UiWidgetState.DISABLED
-                    hovered -> UiWidgetState.HOVER
-                    else -> UiWidgetState.NORMAL
-                })
-                UiSurfaceRenderer.draw(graphics, bounds.x, bounds.y, bounds.width, bounds.height, actionStyle.surface)
-                graphics.drawString(font, action.label, bounds.x + (bounds.width - font.width(action.label) + 1) / 2,
-                    bounds.y + (bounds.height - font.lineHeight) / 2 + 1, actionStyle.text, false)
-            }
-            entry.trailing?.let { trailing ->
-                val width = font.width(trailing)
-                graphics.drawString(font, trailing, right - width, y + (height - font.lineHeight) / 2 + 1, style.supportingText, false)
-                right -= width + 6
-            }
-            val textWidth = right - left
-            if (entry.supporting == null) {
-                graphics.drawString(font, fitted(entry.title, textWidth), left, y + (height - font.lineHeight) / 2 + 1, style.text, false)
-            } else {
-                graphics.drawString(font, fitted(entry.title, textWidth), left, y + 4, style.text, false)
-                graphics.drawString(font, fitted(entry.supporting, textWidth), left, y + height - font.lineHeight - 3, style.supportingText, false)
+            if (scroll.maxOffset > 0) {
+                graphics.fill(rect.right - 3, rect.y, rect.right, rect.bottom, theme.colors.border)
+                val thumb = scroll.thumb(rect.y, rect.height)
+                graphics.fill(rect.right - 3, thumb.start, rect.right, thumb.endExclusive, theme.colors.accentPrimary)
             }
         }
+
+        override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
     }
 
     /** The page switcher's "page / pages", on one line between its arrows. */
@@ -660,6 +715,67 @@ object MccHubKit {
             graphics.fill(rect.x, rect.y, rect.right, rect.y + 1, CobblemonUiThemes.registry.snapshot().colors.borderBright)
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
+    }
+
+    private fun UiRect.contains(mouseX: Double, mouseY: Double): Boolean = mouseX >= x && mouseX < right && mouseY >= y && mouseY < bottom
+
+    private fun actionRects(bounds: UiRect, entry: ListEntry): List<UiRect> = entry.actions.indices.map { index ->
+        val size = (bounds.height - 6).coerceAtMost(18)
+        UiRect(bounds.right - 4 - (entry.actions.size - index) * (size + 2) + 2, bounds.y + (bounds.height - size) / 2, size, size)
+    }
+
+    /** One list entry as a UI kit list row: icon, title and supporting line, trailing text and actions. */
+    private fun drawEntry(
+        graphics: GuiGraphics,
+        bounds: UiRect,
+        entry: ListEntry,
+        enabled: Boolean,
+        hovered: Boolean,
+        mouseX: Int,
+        mouseY: Int,
+        partialTick: Float,
+    ) {
+        val theme = CobblemonUiThemes.registry.snapshot()
+        val font = Minecraft.getInstance().font
+        val state = when {
+            !enabled -> UiWidgetState.DISABLED
+            hovered -> UiWidgetState.HOVER
+            entry.selected -> UiWidgetState.SELECTED
+            else -> UiWidgetState.NORMAL
+        }
+        val style = theme.style(UiButtonVariant.SECONDARY, state)
+        UiSurfaceRenderer.draw(graphics, bounds.x, bounds.y, bounds.width, bounds.height, style.surface)
+        var left = bounds.x + 6
+        entry.icon?.let { icon ->
+            val size = (bounds.height - 6).coerceAtMost(16)
+            CobblemonUiRenderSlot.drawContent(graphics, UiRect(left, bounds.y + (bounds.height - size) / 2, size, size), icon, partialTick)
+            left += size + 5
+        }
+        val actions = actionRects(bounds, entry)
+        var right = (actions.firstOrNull()?.x ?: (bounds.right - 2)) - 4
+        actions.forEachIndexed { index, action ->
+            val row = entry.actions[index]
+            val actionStyle = theme.style(UiButtonVariant.SECONDARY, when {
+                !enabled || !row.enabled -> UiWidgetState.DISABLED
+                action.contains(mouseX.toDouble(), mouseY.toDouble()) -> UiWidgetState.HOVER
+                else -> UiWidgetState.NORMAL
+            })
+            UiSurfaceRenderer.draw(graphics, action.x, action.y, action.width, action.height, actionStyle.surface)
+            graphics.drawString(font, row.label, action.x + (action.width - font.width(row.label) + 1) / 2,
+                action.y + (action.height - font.lineHeight) / 2 + 1, actionStyle.text, false)
+        }
+        entry.trailing?.let { trailing ->
+            val width = font.width(trailing)
+            graphics.drawString(font, trailing, right - width, bounds.y + (bounds.height - font.lineHeight) / 2 + 1, style.supportingText, false)
+            right -= width + 6
+        }
+        val textWidth = right - left
+        if (entry.supporting == null) {
+            graphics.drawString(font, fitted(entry.title, textWidth), left, bounds.y + (bounds.height - font.lineHeight) / 2 + 1, style.text, false)
+        } else {
+            graphics.drawString(font, fitted(entry.title, textWidth), left, bounds.y + 4, style.text, false)
+            graphics.drawString(font, fitted(entry.supporting, textWidth), left, bounds.bottom - font.lineHeight - 3, style.supportingText, false)
+        }
     }
 
     private fun drawLine(graphics: GuiGraphics, text: Component, x: Int, y: Int, width: Int, color: Int) {
