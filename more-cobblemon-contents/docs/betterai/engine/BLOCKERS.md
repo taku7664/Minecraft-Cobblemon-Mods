@@ -14,7 +14,6 @@
 
 ## 엔진 핵심
 
-- **`onModifyMove`가 `false`를 돌려주는 경우.** 지옥찌르기와 중력의 `onModifyMove`는 소리·공중 기술을 막을 때 `false`를 돌려준다. Showdown의 `useMoveInner`는 이때 기술을 중단하지만, 엔진의 `useMoveInner`는 아직 `move === false`를 처리하지 않는다. 다른 기술이 소리 기술이나 공중 기술을 불러낼 때만 차이가 나서 지금까지의 비교 테스트에는 드러나지 않았다.
 - **코트체인지의 난전(free-for-all) 분기**는 옮기지 않았다. 싱글과 더블만 지원한다.
 
 ## 게임 연결

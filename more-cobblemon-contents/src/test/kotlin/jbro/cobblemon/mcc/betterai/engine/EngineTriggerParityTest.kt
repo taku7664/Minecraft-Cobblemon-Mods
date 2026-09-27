@@ -80,6 +80,25 @@ class EngineTriggerParityTest {
     )
 
     @Test
+    fun `gravity cancels a move another move calls`() = check(
+        RefScenario("gravity-sleeptalk",
+            listOf(mon("Snorlax", "rest", "sleeptalk", "fly", "highjumpkick", ability = "Thick Fat", item = "Leftovers")),
+            listOf(mon("Porygon2", "gravity", "throatchop", "triattack", "recover", item = "Eviolite", ability = "Download"),
+                mon("Exploud", "boomburst", "hypervoice", "sleeptalk", "rest", ability = "Scrappy")),
+            // Snorlax is hurt first so Rest puts it to sleep; Sleep Talk then calls High Jump Kick under Gravity.
+            listOf("move 4" to "move 3", "move 1" to "move 1", "move 2" to "move 4", "move 2" to "move 3", "move 2" to "move 4",
+                "move 2" to "move 3")),
+        RefScenario("gravity-sleeptalk-doubles",
+            listOf(mon("Snorlax", "rest", "sleeptalk", "highjumpkick", "bodyslam", ability = "Thick Fat"),
+                mon("Exploud", "rest", "sleeptalk", "boomburst", "hypervoice", ability = "Scrappy")),
+            listOf(mon("Porygon2", "gravity", "throatchop", "triattack", "recover", item = "Eviolite", ability = "Download"),
+                mon("Kingambit", "throatchop", "suckerpunch", "ironhead", "protect", ability = "Defiant")),
+            listOf("move 3 1, move 3" to "move 3 1, move 3 1", "move 1, move 4" to "move 1, move 4", "move 2, move 4" to "move 4, move 1 2",
+                "move 2, move 3" to "move 3 1, move 3 1", "move 2, move 4" to "move 4, move 4"),
+            gameType = "doubles"),
+    )
+
+    @Test
     fun `terastallization and paradox boosts fire`() = check(
         RefScenario("tera-paradox",
             listOf(mon("Iron Hands", "drainpunch", "wildcharge", "fakeout", "icepunch", ability = "Quark Drive", item = "Assault Vest", tera = "Grass"),

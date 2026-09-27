@@ -233,7 +233,14 @@ class BattleActions(private val battle: Battle) {
         battle.singleEvent("ModifyMove", move, null, pokemon, target, move, move)
         if (baseTarget != move.target) target = battle.getRandomTarget(pokemon, move)
         move = battle.runEvent("ModifyType", pokemon, target, move, move) as? ActiveMove ?: move
-        move = battle.runEvent("ModifyMove", pokemon, target, move, move) as? ActiveMove ?: move
+        val modified = battle.runEvent("ModifyMove", pokemon, target, move, move)
+        if (modified == false) {
+            // Throat Chop and Gravity cancel the move this way. Showdown still compares `false.target` with the
+            // old target and asks for a random target for the empty move `false` resolves to (a roll in doubles).
+            battle.getRandomTarget(pokemon, dex.activeMove(""))
+            return false
+        }
+        move = modified as? ActiveMove ?: move
         if (baseTarget != move.target) target = battle.getRandomTarget(pokemon, move)
         if (pokemon.fainted) return false
         var attrs = ""
