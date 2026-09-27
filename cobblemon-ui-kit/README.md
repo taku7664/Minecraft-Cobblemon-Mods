@@ -25,7 +25,27 @@ Choose one of the built-in theme presets before starting the client:
 $env:COBBLEMON_UI_KIT_THEME='galar_stadium'
 ```
 
-Supported IDs are `league_neon`, `pixel_league`, `galar_stadium`, `paldea_portal`, `hoenn_pixel`, `johto_touch`, and `unova_pixel`. `pixel_league` is the actual sprite-backed pixel UI candidate; the three generation-named presets remain palette studies.
+Supported IDs are `league_neon`, `pixel_league`, `galar_stadium`, `paldea_portal`, `hoenn_pixel`, `johto_touch`, `unova_pixel`, `tower_lobby`, `tower_elevator`, `tower_sunburst`, `factory_showroom`, `factory_night`, and `factory_terminal`. `pixel_league` is the actual sprite-backed pixel UI candidate; the three generation-named presets remain palette studies.
+
+## Styles and palettes
+
+A theme can also be composed from a style and a palette, so one set of colours can be drawn in different shapes:
+
+```kotlin
+val theme = CobblemonUiThemeComposer.compose(UiThemeStyle.DS_WINDOW, UiPalettePreset.TOWER_LOBBY)
+CobblemonUiThemes.registry.install(theme) // id "ds_window.tower_lobby"
+```
+
+`UiPalettePreset` holds six `UiThemePalette`s taken from the Generation IV Battle Tower (`tower_lobby`, `tower_elevator`, `tower_sunburst`) and Battle Factory (`factory_showroom`, `factory_night`, `factory_terminal`). `UiThemeStyle.PIXEL_FRAME` draws a palette in Pixel League's square pixel frames; the `tower_*` and `factory_*` presets above are exactly that pairing. `UiThemeStyle.DS_WINDOW` draws it like a Generation IV DS menu:
+
+- windows are rounded rectangles with a `UiBorder.WindowFrame` (an outline, a coloured band and an inner line);
+- a choice is marked by `UiSelectionIndicator.Outline`, a cursor frame over an unchanged fill, instead of a repainted button;
+- text carries a pale one-pixel drop shadow from `UiButtonStyle.textShadowColor` (not Minecraft's black shadow);
+- panel titles sit over a rule (`UiPanelTitleStyle.RULE`) and list rows are unframed lines (`UiThemeSnapshot.listRowStyle`).
+
+Every composed theme keeps Pixel League's control sizes (small 20, medium 26, large 36; full-size text at every size, since pixel Hangul breaks apart when scaled down), so a screen laid out for one fits all of them.
+
+A screen that draws a control's surface itself must also call `UiSurfaceRenderer.drawSelection` with the style's `selectionIndicator`, or a DS window selection is invisible. `CobblemonUiListRows` draws a list row (icon, title, supporting line, trailing text and small actions) the way `CobblemonUiListItem` does, for screens that own the row widget. `CobblemonUiPanel` draws a title in the theme's `UiPanelTitleStyle` (text, band or rule), takes `UiPanelSpec.featured` for the emphasised colour and an optional render-slot icon; `UiTextRenderer` draws text with a theme's coloured shadow.
 
 `COBBLEMON_UI_KIT_CAPTURE_WORLD=1` is reserved for automated capture. It deliberately exercises focus, scrolling, close, and then stops the client; do not use it for manual review. Add `COBBLEMON_UI_KIT_CAPTURE_ALL_THEMES=1` to capture the top and scrolled state of all six presets in one joined world. For repeatable local capture, pass an existing development world through Minecraft's quick-play argument:
 

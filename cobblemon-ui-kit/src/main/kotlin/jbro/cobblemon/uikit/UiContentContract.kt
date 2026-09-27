@@ -27,7 +27,9 @@ enum class UiPanelTone { SHELL, PANEL, RAISED }
 data class UiPanelSpec(
     val title: Component? = null,
     val tone: UiPanelTone = UiPanelTone.PANEL,
-    val padding: UiInsets = UiInsets.all(6)
+    val padding: UiInsets = UiInsets.all(6),
+    /** The panel the screen is about; a band or rule title takes the theme's caution colour. */
+    val featured: Boolean = false
 ) {
     init {
         require(title == null || title.string.isNotBlank()) { "Panel title must not be blank" }

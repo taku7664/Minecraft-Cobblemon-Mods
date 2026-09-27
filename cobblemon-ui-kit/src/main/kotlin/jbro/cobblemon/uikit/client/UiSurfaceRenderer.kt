@@ -2,6 +2,7 @@ package jbro.cobblemon.uikit.client
 
 import jbro.cobblemon.uikit.UiBorder
 import jbro.cobblemon.uikit.UiFill
+import jbro.cobblemon.uikit.UiSelectionIndicator
 import jbro.cobblemon.uikit.UiShape
 import jbro.cobblemon.uikit.UiSurfaceStyle
 import jbro.cobblemon.uikit.horizontalSpan
@@ -36,7 +37,50 @@ object UiSurfaceRenderer {
             UiBorder.None -> Unit
             is UiBorder.Solid -> drawBorder(graphics, x, y, width, height, style.shape, border)
             is UiBorder.PixelFrame -> drawPixelFrame(graphics, x, y, width, height, style.shape, border)
+            is UiBorder.WindowFrame -> drawWindowFrame(graphics, x, y, width, height, style.shape, border)
         }
+    }
+
+    /**
+     * Draws [indicator] over a widget drawn at these bounds in [shape]: an [UiSelectionIndicator.Outline] cursor
+     * frame. Other indicators are the widget's own business and draw nothing here.
+     */
+    fun drawSelection(
+        graphics: GuiGraphics,
+        x: Int,
+        y: Int,
+        width: Int,
+        height: Int,
+        shape: UiShape,
+        indicator: UiSelectionIndicator
+    ) {
+        if (indicator !is UiSelectionIndicator.Outline || width <= 0 || height <= 0) return
+        drawBorder(graphics, x, y, width, height, shape, UiBorder.Solid(indicator.color, indicator.width))
+    }
+
+    /**
+     * The indicator to draw over a widget in [state]: a selected widget that is hovered, focused or pressed keeps
+     * its [selected] cursor outline, so the choice stays visible under the mouse.
+     */
+    fun indicatorFor(state: UiSelectionIndicator, selected: UiSelectionIndicator?, isSelected: Boolean): UiSelectionIndicator =
+        if (isSelected && state !is UiSelectionIndicator.Outline && selected is UiSelectionIndicator.Outline) selected else state
+
+    private fun drawWindowFrame(
+        graphics: GuiGraphics,
+        x: Int,
+        y: Int,
+        width: Int,
+        height: Int,
+        shape: UiShape,
+        frame: UiBorder.WindowFrame
+    ) {
+        drawBorder(graphics, x, y, width, height, shape, UiBorder.Solid(frame.outerColor))
+        if (width <= 2 || height <= 2) return
+        drawBorder(graphics, x + 1, y + 1, width - 2, height - 2, shape.inset(1), UiBorder.Solid(frame.bandColor, frame.bandWidth))
+        val inner = 1 + frame.bandWidth
+        val innerColor = frame.innerColor ?: return
+        if (width <= inner * 2 || height <= inner * 2) return
+        drawBorder(graphics, x + inner, y + inner, width - inner * 2, height - inner * 2, shape.inset(inner), UiBorder.Solid(innerColor))
     }
 
     private fun drawPixelFrame(

@@ -59,8 +59,21 @@ data class UiSurfaceTokens(
     val panelAlt: UiSurfaceStyle,
     val shellText: Int? = null,
     val panelText: Int? = null,
-    val panelAltText: Int? = null
+    val panelAltText: Int? = null,
+    val panelTitle: UiPanelTitleStyle = UiPanelTitleStyle.TEXT
 )
+
+/** How a titled panel shows its title. */
+enum class UiPanelTitleStyle {
+    /** Plain text at the panel's padding. */
+    TEXT,
+
+    /** A filled band across the top; a featured panel takes the caution colour, others the bright border. */
+    BAND,
+
+    /** Title text over a rule in those colours, as a DS menu window heads its list. */
+    RULE
+}
 
 data class UiButtonStyle(
     val surface: UiSurfaceStyle,
@@ -68,12 +81,27 @@ data class UiButtonStyle(
     val supportingText: Int,
     val selectionIndicator: UiSelectionIndicator = UiSelectionIndicator.None,
     val pressedOffsetY: Int = 0,
-    val textShadow: Boolean = false
+    val textShadow: Boolean = false,
+    /**
+     * A one-pixel drop shadow in this colour under the text, like the pale shadow of DS menu text. It is drawn
+     * instead of Minecraft's black shadow and does not depend on [textShadow].
+     */
+    val textShadowColor: Int? = null
 )
 
 sealed interface UiSelectionIndicator {
     data object None : UiSelectionIndicator
     data class Sprite(val icon: UiIcon) : UiSelectionIndicator
+
+    /**
+     * A [width]-pixel cursor frame in [color] around the whole widget, following its shape, over an unchanged
+     * fill: the DS menu cursor, which marks a choice without repainting it.
+     */
+    data class Outline(val color: Int, val width: Int = 2) : UiSelectionIndicator {
+        init {
+            require(width > 0) { "Selection outline width must be positive" }
+        }
+    }
 }
 
 data class UiPixelDecorations(
@@ -91,15 +119,21 @@ class UiThemeSnapshot private constructor(
     val surfaces: UiSurfaceTokens,
     val pixelDecorations: UiPixelDecorations?,
     metrics: Map<UiControlSize, UiButtonMetrics>,
-    styles: Map<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>
+    styles: Map<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>,
+    listRowStyles: Map<UiWidgetState, UiButtonStyle>?
 ) {
     private val metricsBySize = metrics.toMap()
     private val stylesByState = styles.toMap()
+    private val listRowsByState = listRowStyles?.toMap()
 
     fun metrics(size: UiControlSize): UiButtonMetrics = metricsBySize.getValue(size)
 
     fun style(variant: UiButtonVariant, state: UiWidgetState): UiButtonStyle =
         stylesByState.getValue(variant to state)
+
+    /** A list row in [state]; themes without their own row styles draw rows as secondary buttons. */
+    fun listRowStyle(state: UiWidgetState): UiButtonStyle =
+        listRowsByState?.get(state) ?: style(UiButtonVariant.SECONDARY, state)
 
     companion object {
         fun create(
@@ -110,7 +144,8 @@ class UiThemeSnapshot private constructor(
             surfaces: UiSurfaceTokens,
             metrics: Map<UiControlSize, UiButtonMetrics>,
             styles: Map<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>,
-            pixelDecorations: UiPixelDecorations? = null
+            pixelDecorations: UiPixelDecorations? = null,
+            listRowStyles: Map<UiWidgetState, UiButtonStyle>? = null
         ): UiThemeSnapshot {
             require(THEME_ID.matches(id)) { "Invalid theme id: $id" }
             require(metrics.keys.containsAll(UiControlSize.entries)) { "Theme must define every control size" }
@@ -118,7 +153,10 @@ class UiThemeSnapshot private constructor(
                 UiWidgetState.entries.map { state -> variant to state }
             }
             require(styles.keys.containsAll(requiredStyles)) { "Theme must define every button variant and state" }
-            return UiThemeSnapshot(id, colors, typography, spacing, surfaces, pixelDecorations, metrics, styles)
+            require(listRowStyles == null || listRowStyles.keys.containsAll(UiWidgetState.entries)) {
+                "List row styles must cover every state"
+            }
+            return UiThemeSnapshot(id, colors, typography, spacing, surfaces, pixelDecorations, metrics, styles, listRowStyles)
         }
 
         private val THEME_ID = Regex("[a-z][a-z0-9_.-]*")

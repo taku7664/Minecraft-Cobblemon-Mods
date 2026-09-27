@@ -21,218 +21,6 @@ enum class UiThemePreset(val id: String) {
 }
 
 object CobblemonUiThemePresets {
-    private val TOWER_LOBBY = FramedPixelColors(
-        backdrop = 0xE0141C26.toInt(),
-        shell = 0xFF5A6E84.toInt(),
-        titleBar = 0xFF34435A.toInt(),
-        titleBarShade = 0xFF222C3C.toInt(),
-        panel = 0xFFEEF1F2.toInt(),
-        panelAlt = 0xFFD6DADC.toInt(),
-        panelText = 0xFF283440.toInt(),
-        border = 0xFF283440.toInt(),
-        frameHighlight = 0xFFFFFFFF.toInt(),
-        frameShade = 0xFF9AA6B0.toInt(),
-        trim = 0xFFC04038.toInt(),
-        infoBand = 0xFF8098B0.toInt(),
-        featureBand = 0xFFC04038.toInt(),
-        primary = 0xFF2C9CCC.toInt(),
-        primaryHover = 0xFF44C4DC.toInt(),
-        primaryPressed = 0xFF1E7AA6.toInt(),
-        primaryText = 0xFFFFFFFF.toInt(),
-        secondary = 0xFFF6F7F7.toInt(),
-        secondaryHover = 0xFFFFFFFF.toInt(),
-        secondaryPressed = 0xFFC8CED2.toInt(),
-        secondaryText = 0xFF283440.toInt(),
-        selected = 0xFFECBC2C.toInt(),
-        selectedText = 0xFF3A2C08.toInt(),
-        danger = 0xFFC04038.toInt(),
-        dangerHover = 0xFFE05040.toInt(),
-        dangerPressed = 0xFF883840.toInt(),
-        good = 0xFF4FA860.toInt(),
-        disabled = 0xFFA8B0B6.toInt(),
-        text = 0xFFF2F5F8.toInt(),
-        textSecondary = 0xFFD6DEE6.toInt(),
-        textDim = 0xFFA9B8C8.toInt()
-    )
-
-    private val TOWER_ELEVATOR = FramedPixelColors(
-        backdrop = 0xE00C121A.toInt(),
-        shell = 0xFF2B3A4E.toInt(),
-        titleBar = 0xFF1D2838.toInt(),
-        titleBarShade = 0xFF121A26.toInt(),
-        panel = 0xFFE4F1F5.toInt(),
-        panelAlt = 0xFFC6E0E8.toInt(),
-        panelText = 0xFF16202C.toInt(),
-        border = 0xFF16202C.toInt(),
-        frameHighlight = 0xFFFFFFFF.toInt(),
-        frameShade = 0xFF84A8B8.toInt(),
-        trim = 0xFFC04038.toInt(),
-        infoBand = 0xFF84DCEC.toInt(),
-        featureBand = 0xFF2C9CCC.toInt(),
-        primary = 0xFF2C9CCC.toInt(),
-        primaryHover = 0xFF44C4DC.toInt(),
-        primaryPressed = 0xFF1E7AA6.toInt(),
-        primaryText = 0xFFFFFFFF.toInt(),
-        secondary = 0xFFF2F8FA.toInt(),
-        secondaryHover = 0xFFFFFFFF.toInt(),
-        secondaryPressed = 0xFFBFD4DC.toInt(),
-        secondaryText = 0xFF16202C.toInt(),
-        selected = 0xFF44C4DC.toInt(),
-        selectedText = 0xFF0B2A33.toInt(),
-        danger = 0xFFC04038.toInt(),
-        dangerHover = 0xFFE05040.toInt(),
-        dangerPressed = 0xFF883840.toInt(),
-        good = 0xFF4FA860.toInt(),
-        disabled = 0xFF8A9CA8.toInt(),
-        text = 0xFFEAF6FA.toInt(),
-        textSecondary = 0xFFC4DCE6.toInt(),
-        textDim = 0xFF8FA6B8.toInt()
-    )
-
-    private val TOWER_SUNBURST = FramedPixelColors(
-        backdrop = 0xE01A1E24.toInt(),
-        shell = 0xFF586878.toInt(),
-        titleBar = 0xFF3F4D5C.toInt(),
-        titleBarShade = 0xFF2C3642.toInt(),
-        panel = 0xFFF3EEDC.toInt(),
-        panelAlt = 0xFFDEDBC4.toInt(),
-        panelText = 0xFF2A3038.toInt(),
-        border = 0xFF2A3038.toInt(),
-        frameHighlight = 0xFFFFFFF4.toInt(),
-        frameShade = 0xFFB0A884.toInt(),
-        trim = 0xFFE8B828.toInt(),
-        infoBand = 0xFFC07038.toInt(),
-        featureBand = 0xFFE05040.toInt(),
-        primary = 0xFFE05040.toInt(),
-        primaryHover = 0xFFF06050.toInt(),
-        primaryPressed = 0xFFA83228.toInt(),
-        primaryText = 0xFFFFFFFF.toInt(),
-        secondary = 0xFFFAF7EC.toInt(),
-        secondaryHover = 0xFFFFFFFF.toInt(),
-        secondaryPressed = 0xFFD8D2B8.toInt(),
-        secondaryText = 0xFF2A3038.toInt(),
-        selected = 0xFFE8D020.toInt(),
-        selectedText = 0xFF3A3000.toInt(),
-        danger = 0xFFA83228.toInt(),
-        dangerHover = 0xFFC8443A.toInt(),
-        dangerPressed = 0xFF7A2420.toInt(),
-        good = 0xFF5A9A48.toInt(),
-        disabled = 0xFFB4B09C.toInt(),
-        text = 0xFFF4F2EA.toInt(),
-        textSecondary = 0xFFDCDCD0.toInt(),
-        textDim = 0xFFB0BCC4.toInt()
-    )
-
-    private val FACTORY_SHOWROOM = FramedPixelColors(
-        backdrop = 0xE0101828.toInt(),
-        shell = 0xFF34507A.toInt(),
-        titleBar = 0xFF242444.toInt(),
-        titleBarShade = 0xFF181830.toInt(),
-        panel = 0xFFEEF7FA.toInt(),
-        panelAlt = 0xFFC4E4EC.toInt(),
-        panelText = 0xFF1F2A44.toInt(),
-        border = 0xFF1F2A44.toInt(),
-        frameHighlight = 0xFFFFFFFF.toInt(),
-        frameShade = 0xFF84A4AC.toInt(),
-        trim = 0xFF7CBCE4.toInt(),
-        infoBand = 0xFFA4D4D4.toInt(),
-        featureBand = 0xFF7CBCE4.toInt(),
-        primary = 0xFF2F7FC4.toInt(),
-        primaryHover = 0xFF4C9CE0.toInt(),
-        primaryPressed = 0xFF20609C.toInt(),
-        primaryText = 0xFFFFFFFF.toInt(),
-        secondary = 0xFFF6FBFD.toInt(),
-        secondaryHover = 0xFFFFFFFF.toInt(),
-        secondaryPressed = 0xFFC4DCE4.toInt(),
-        secondaryText = 0xFF1F2A44.toInt(),
-        selected = 0xFF7CBCE4.toInt(),
-        selectedText = 0xFF10223A.toInt(),
-        danger = 0xFFC0504A.toInt(),
-        dangerHover = 0xFFD86860.toInt(),
-        dangerPressed = 0xFF8C3A36.toInt(),
-        good = 0xFF4FA878.toInt(),
-        disabled = 0xFF9CB0BC.toInt(),
-        text = 0xFFEEF6FB.toInt(),
-        textSecondary = 0xFFC8DCEA.toInt(),
-        textDim = 0xFF9FB6CC.toInt()
-    )
-
-    private val FACTORY_NIGHT = FramedPixelColors(
-        backdrop = 0xE0080A14.toInt(),
-        shell = 0xFF1E2640.toInt(),
-        titleBar = 0xFF151A30.toInt(),
-        titleBarShade = 0xFF0C1020.toInt(),
-        panel = 0xFF2C3A5E.toInt(),
-        panelAlt = 0xFF24304F.toInt(),
-        panelText = 0xFFE4EEF8.toInt(),
-        border = 0xFF0C1020.toInt(),
-        frameHighlight = 0xFF4A5E8C.toInt(),
-        frameShade = 0xFF18203A.toInt(),
-        trim = 0xFF6CB4DC.toInt(),
-        infoBand = 0xFF3A4C78.toInt(),
-        featureBand = 0xFF6CB4DC.toInt(),
-        primary = 0xFF3C9CE0.toInt(),
-        primaryHover = 0xFF5CB4F0.toInt(),
-        primaryPressed = 0xFF2A74AC.toInt(),
-        primaryText = 0xFFFFFFFF.toInt(),
-        secondary = 0xFF3A4C78.toInt(),
-        secondaryHover = 0xFF4A5E8C.toInt(),
-        secondaryPressed = 0xFF2A3860.toInt(),
-        secondaryText = 0xFFEEF6FB.toInt(),
-        selected = 0xFF6CB4DC.toInt(),
-        selectedText = 0xFF0C1A2C.toInt(),
-        danger = 0xFFC8504A.toInt(),
-        dangerHover = 0xFFE06A62.toInt(),
-        dangerPressed = 0xFF8C3632.toInt(),
-        good = 0xFF5CC08C.toInt(),
-        disabled = 0xFF2A3452.toInt(),
-        text = 0xFFEEF6FB.toInt(),
-        textSecondary = 0xFFB8C8E0.toInt(),
-        textDim = 0xFF8FA0C0.toInt()
-    )
-
-    private val FACTORY_TERMINAL = FramedPixelColors(
-        backdrop = 0xE0121A1E.toInt(),
-        shell = 0xFF6A7A86.toInt(),
-        titleBar = 0xFF2E3A44.toInt(),
-        titleBarShade = 0xFF1E2830.toInt(),
-        panel = 0xFFEEF2F3.toInt(),
-        panelAlt = 0xFFD4DDE0.toInt(),
-        panelText = 0xFF25303A.toInt(),
-        border = 0xFF25303A.toInt(),
-        frameHighlight = 0xFFFFFFFF.toInt(),
-        frameShade = 0xFF98A6AE.toInt(),
-        trim = 0xFF58C080.toInt(),
-        infoBand = 0xFFA4D4D4.toInt(),
-        featureBand = 0xFF58C080.toInt(),
-        primary = 0xFF2F9A68.toInt(),
-        primaryHover = 0xFF44B47E.toInt(),
-        primaryPressed = 0xFF20744E.toInt(),
-        primaryText = 0xFFFFFFFF.toInt(),
-        secondary = 0xFFF7F9FA.toInt(),
-        secondaryHover = 0xFFFFFFFF.toInt(),
-        secondaryPressed = 0xFFCCD6DA.toInt(),
-        secondaryText = 0xFF25303A.toInt(),
-        selected = 0xFF7FD6A0.toInt(),
-        selectedText = 0xFF0E3320.toInt(),
-        danger = 0xFFC0504A.toInt(),
-        dangerHover = 0xFFD86860.toInt(),
-        dangerPressed = 0xFF8C3A36.toInt(),
-        good = 0xFF58C080.toInt(),
-        disabled = 0xFFA8B4BA.toInt(),
-        text = 0xFFF2F6F7.toInt(),
-        textSecondary = 0xFFD2DCE0.toInt(),
-        textDim = 0xFFB6C2CA.toInt()
-    )
-
-    private val PIXEL_METRICS: Map<UiControlSize, UiButtonMetrics> = mapOf(
-        // Pixel glyphs, Hangul above all, break apart below full size, so the small control only loses height:
-        // twenty pixels with full-size text, like a vanilla button.
-        UiControlSize.SMALL to UiButtonMetrics(20, 28, 10, 8, 3, 1f, 0.65f),
-        UiControlSize.MEDIUM to UiButtonMetrics(26, 36, 12, 8, 4, 1f, 0.75f),
-        UiControlSize.LARGE to UiButtonMetrics(36, 46, 14, 8, 4, 1.1f, 0.8f)
-    )
-
     private val snapshots: Map<UiThemePreset, UiThemeSnapshot> = linkedMapOf(
         UiThemePreset.LEAGUE_NEON to CobblemonUiDefaultTheme.snapshot,
         UiThemePreset.PIXEL_LEAGUE to pixelLeague(),
@@ -241,12 +29,12 @@ object CobblemonUiThemePresets {
         UiThemePreset.HOENN_PIXEL to hoennPixel(),
         UiThemePreset.JOHTO_TOUCH to johtoTouch(),
         UiThemePreset.UNOVA_PIXEL to unovaPixel(),
-        UiThemePreset.TOWER_LOBBY to framedPixel(UiThemePreset.TOWER_LOBBY, TOWER_LOBBY),
-        UiThemePreset.TOWER_ELEVATOR to framedPixel(UiThemePreset.TOWER_ELEVATOR, TOWER_ELEVATOR),
-        UiThemePreset.TOWER_SUNBURST to framedPixel(UiThemePreset.TOWER_SUNBURST, TOWER_SUNBURST),
-        UiThemePreset.FACTORY_SHOWROOM to framedPixel(UiThemePreset.FACTORY_SHOWROOM, FACTORY_SHOWROOM),
-        UiThemePreset.FACTORY_NIGHT to framedPixel(UiThemePreset.FACTORY_NIGHT, FACTORY_NIGHT),
-        UiThemePreset.FACTORY_TERMINAL to framedPixel(UiThemePreset.FACTORY_TERMINAL, FACTORY_TERMINAL)
+        UiThemePreset.TOWER_LOBBY to CobblemonUiThemeComposer.compose(UiThemeStyle.PIXEL_FRAME, UiPalettePreset.TOWER_LOBBY, UiThemePreset.TOWER_LOBBY.id),
+        UiThemePreset.TOWER_ELEVATOR to CobblemonUiThemeComposer.compose(UiThemeStyle.PIXEL_FRAME, UiPalettePreset.TOWER_ELEVATOR, UiThemePreset.TOWER_ELEVATOR.id),
+        UiThemePreset.TOWER_SUNBURST to CobblemonUiThemeComposer.compose(UiThemeStyle.PIXEL_FRAME, UiPalettePreset.TOWER_SUNBURST, UiThemePreset.TOWER_SUNBURST.id),
+        UiThemePreset.FACTORY_SHOWROOM to CobblemonUiThemeComposer.compose(UiThemeStyle.PIXEL_FRAME, UiPalettePreset.FACTORY_SHOWROOM, UiThemePreset.FACTORY_SHOWROOM.id),
+        UiThemePreset.FACTORY_NIGHT to CobblemonUiThemeComposer.compose(UiThemeStyle.PIXEL_FRAME, UiPalettePreset.FACTORY_NIGHT, UiThemePreset.FACTORY_NIGHT.id),
+        UiThemePreset.FACTORY_TERMINAL to CobblemonUiThemeComposer.compose(UiThemeStyle.PIXEL_FRAME, UiPalettePreset.FACTORY_TERMINAL, UiThemePreset.FACTORY_TERMINAL.id)
     )
 
     fun snapshot(preset: UiThemePreset): UiThemeSnapshot = snapshots.getValue(preset)
@@ -292,7 +80,7 @@ object CobblemonUiThemePresets {
         val selector = UiSelectionIndicator.Sprite(
             UiIcon("cobblemon_ui_kit", "textures/gui/pixel/selector.png")
         )
-        val metrics = PIXEL_METRICS
+        val metrics = UiPixelMetrics.sizes
         val styles = buildMap {
             addPixelVariant(
                 UiButtonVariant.PRIMARY,
@@ -350,7 +138,8 @@ object CobblemonUiThemePresets {
                 panel = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(colors.panel), cardFrame),
                 panelAlt = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(colors.panelAlt), cardFrame),
                 panelText = colors.border,
-                panelAltText = colors.border
+                panelAltText = colors.border,
+                panelTitle = UiPanelTitleStyle.BAND
             ),
             metrics = metrics,
             styles = styles,
@@ -538,62 +327,9 @@ object CobblemonUiThemePresets {
         )
     }
 
-    /**
-     * The colours of a theme built like Pixel League: pixel frames and the same control sizes, so screens laid out
-     * for Pixel League fit it unchanged. Card title bands take [featureBand] and [infoBand]; [trim] lights the shell
-     * frame and the header rules.
-     */
-    private class FramedPixelColors(
-        val backdrop: Int,
-        val shell: Int,
-        val titleBar: Int,
-        val titleBarShade: Int,
-        val panel: Int,
-        val panelAlt: Int,
-        val panelText: Int,
-        val border: Int,
-        val frameHighlight: Int,
-        val frameShade: Int,
-        val trim: Int,
-        val infoBand: Int,
-        val featureBand: Int,
-        val primary: Int,
-        val primaryHover: Int,
-        val primaryPressed: Int,
-        val primaryText: Int,
-        val secondary: Int,
-        val secondaryHover: Int,
-        val secondaryPressed: Int,
-        val secondaryText: Int,
-        val selected: Int,
-        val selectedText: Int,
-        val danger: Int,
-        val dangerHover: Int,
-        val dangerPressed: Int,
-        val good: Int,
-        val disabled: Int,
-        val text: Int,
-        val textSecondary: Int,
-        val textDim: Int
-    )
-
-    private fun framedPixel(preset: UiThemePreset, c: FramedPixelColors): UiThemeSnapshot {
-        val colors = UiColorPalette(
-            backdrop = c.backdrop,
-            shell = c.shell,
-            panel = c.panel,
-            panelAlt = c.panelAlt,
-            border = c.border,
-            borderBright = c.infoBand,
-            accentPrimary = c.primary,
-            accentSecondary = c.trim,
-            accentCaution = c.featureBand,
-            accentDanger = c.danger,
-            accentGood = c.good,
-            textPrimary = c.text,
-            textSecondary = c.textSecondary,
-            textDim = c.textDim
-        )
+    /** [c] in Pixel League's frames and control sizes, under the theme id [id]. */
+    internal fun framedPixel(id: String, c: UiThemePalette): UiThemeSnapshot {
+        val colors = c.colors()
         val shellFrame = UiBorder.PixelFrame(c.border, c.trim, c.frameShade, 0xC8080B0F.toInt(), 2)
         val cardFrame = UiBorder.PixelFrame(c.border, c.frameHighlight, c.frameShade, 0xA8080B0F.toInt(), 1)
         val selector = UiSelectionIndicator.Sprite(UiIcon("cobblemon_ui_kit", "textures/gui/pixel/selector.png"))
@@ -609,7 +345,7 @@ object CobblemonUiThemePresets {
             addPixelGhost(colors, selector)
         }
         return UiThemeSnapshot.create(
-            id = preset.id,
+            id = id,
             colors = colors,
             typography = UiTypography(titleScale = 1f, bodyScale = 1f, supportingScale = 0.75f),
             spacing = UiSpacing(xs = 2, small = 4, medium = 6, large = 10),
@@ -618,9 +354,10 @@ object CobblemonUiThemePresets {
                 panel = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(c.panel), cardFrame),
                 panelAlt = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(c.panelAlt), cardFrame),
                 panelText = c.panelText,
-                panelAltText = c.panelText
+                panelAltText = c.panelText,
+                panelTitle = UiPanelTitleStyle.BAND
             ),
-            metrics = PIXEL_METRICS,
+            metrics = UiPixelMetrics.sizes,
             styles = styles,
             pixelDecorations = UiPixelDecorations(c.titleBar, c.titleBarShade, c.shell, c.titleBarShade)
         )
@@ -643,7 +380,7 @@ object CobblemonUiThemePresets {
         }
     )
 
-    private fun MutableMap<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>.addPixelVariant(
+    internal fun MutableMap<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>.addPixelVariant(
         variant: UiButtonVariant,
         normal: Int,
         hover: Int,
@@ -680,7 +417,7 @@ object CobblemonUiThemePresets {
         put(variant to UiWidgetState.SELECTED, pixelStyle(selected, selectedText, indicator = selector))
     }
 
-    private fun MutableMap<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>.addPixelGhost(
+    internal fun MutableMap<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>.addPixelGhost(
         colors: UiColorPalette,
         selector: UiSelectionIndicator
     ) {

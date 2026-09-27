@@ -7,6 +7,10 @@ import jbro.cobblemon.uikit.UiOrderedSelectionState
 import jbro.cobblemon.uikit.UiOverlayTone
 import jbro.cobblemon.uikit.UiPanelSpec
 import jbro.cobblemon.uikit.UiPanelTone
+import jbro.cobblemon.uikit.UiPanelTitleStyle
+import jbro.cobblemon.uikit.UiRect
+import jbro.cobblemon.uikit.UiSurfaceTokens
+import jbro.cobblemon.uikit.UiThemeSnapshot
 import jbro.cobblemon.uikit.UiShape
 import jbro.cobblemon.uikit.UiStepState
 import jbro.cobblemon.uikit.UiStepTrackSpec
@@ -87,7 +91,8 @@ class CobblemonUiPanel private constructor(
     y: Int,
     width: Int,
     height: Int,
-    val spec: UiPanelSpec
+    val spec: UiPanelSpec,
+    private val icon: CobblemonUiRenderContent?
 ) : AbstractWidget(x, y, width, height, spec.title ?: Component.empty()) {
     init {
         active = false
@@ -101,16 +106,38 @@ class CobblemonUiPanel private constructor(
             UiPanelTone.RAISED -> theme.surfaces.panelAlt to (theme.surfaces.panelAltText ?: theme.colors.textPrimary)
         }
         UiSurfaceRenderer.draw(graphics, x, y, width, height, surface)
-        spec.title?.let {
-            graphics.drawString(
-                Minecraft.getInstance().font,
-                it,
-                x + spec.padding.left,
-                y + spec.padding.top,
-                textColor,
-                false
-            )
+        val title = spec.title ?: return
+        val font = Minecraft.getInstance().font
+        val accent = if (spec.featured) theme.colors.accentCaution else theme.colors.borderBright
+        when (theme.surfaces.panelTitle) {
+            UiPanelTitleStyle.TEXT -> graphics.drawString(font, title, x + spec.padding.left, y + spec.padding.top, textColor, false)
+            UiPanelTitleStyle.BAND -> {
+                val inset = frameInset(surface)
+                graphics.fill(x + inset, y + inset, x + width - inset, y + inset + TITLE_BAND_HEIGHT, accent)
+                drawTitle(graphics, title, y + inset + (TITLE_BAND_HEIGHT - font.lineHeight) / 2, onColor(theme, accent), null, partialTick)
+            }
+            UiPanelTitleStyle.RULE -> {
+                val inset = frameInset(surface)
+                val ruleTop = y + inset + TITLE_BAND_HEIGHT - 2
+                graphics.fill(x + inset + 3, ruleTop, x + width - inset - 3, ruleTop + 2, accent)
+                drawTitle(graphics, title, ruleTop - font.lineHeight - 1, textColor, theme.surfaces.panelTitleShadow(), partialTick)
+            }
         }
+    }
+
+    private fun drawTitle(graphics: GuiGraphics, title: Component, top: Int, color: Int, shadow: Int?, partialTick: Float) {
+        val font = Minecraft.getInstance().font
+        var left = x + TITLE_INSET
+        icon?.let {
+            val size = ICON_SIZE
+            CobblemonUiRenderSlot.drawContent(graphics, UiRect(left - 2, top + (font.lineHeight - size) / 2 - 1, size, size), it, partialTick)
+            left += size + 2
+        }
+        val room = x + width - TITLE_INSET - left
+        if (room <= 0) return
+        val fitted = if (font.width(title) <= room) title
+            else Component.literal(font.plainSubstrByWidth(title.string, (room - font.width("…")).coerceAtLeast(0)) + "…")
+        UiTextRenderer.draw(graphics, font, fitted, left, top, color, shadow)
     }
 
     override fun updateWidgetNarration(output: NarrationElementOutput) {
@@ -118,10 +145,43 @@ class CobblemonUiPanel private constructor(
     }
 
     companion object {
-        fun create(x: Int, y: Int, width: Int, height: Int, spec: UiPanelSpec = UiPanelSpec()): CobblemonUiPanel {
+        /** Rows a band or rule title takes below the panel frame, before the body. */
+        const val TITLE_BAND_HEIGHT = 15
+        private const val TITLE_INSET = 7
+        private const val ICON_SIZE = 13
+
+        /**
+         * A panel over these bounds. A band or rule title (see [UiPanelTitleStyle]) may carry an [icon] drawn by the
+         * render slot before the title text.
+         */
+        fun create(
+            x: Int,
+            y: Int,
+            width: Int,
+            height: Int,
+            spec: UiPanelSpec = UiPanelSpec(),
+            icon: CobblemonUiRenderContent? = null
+        ): CobblemonUiPanel {
             require(width > 0 && height > 0) { "Panel size must be positive" }
-            return CobblemonUiPanel(x, y, width, height, spec)
+            return CobblemonUiPanel(x, y, width, height, spec, icon)
         }
+
+        /** Pixels a surface's frame takes on each side, where a title band starts. */
+        fun frameInset(surface: UiSurfaceStyle): Int = when (val border = surface.border) {
+            UiBorder.None -> 0
+            is UiBorder.Solid -> border.width
+            is UiBorder.PixelFrame -> 2
+            is UiBorder.WindowFrame -> border.thickness
+        }
+
+        /** Dark text on a light [background] and light text on a dark one. */
+        fun onColor(theme: UiThemeSnapshot, background: Int): Int {
+            val luma = (background ushr 16 and 0xFF) * 299 + (background ushr 8 and 0xFF) * 587 + (background and 0xFF) * 114
+            return if (luma >= 150_000) theme.colors.border else theme.colors.textPrimary
+        }
+
+        private fun UiSurfaceTokens.panelTitleShadow(): Int? =
+            CobblemonUiThemes.registry.snapshot().listRowStyle(UiWidgetState.NORMAL).textShadowColor
     }
 }
 
