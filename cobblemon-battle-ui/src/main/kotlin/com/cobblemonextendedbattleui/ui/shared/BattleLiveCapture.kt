@@ -2,6 +2,7 @@ package jbro.cobblemon.battleui.extended.ui.shared
 
 import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.api.pokemon.PokemonProperties
+import com.cobblemon.mod.common.api.pokemon.status.Statuses
 import com.cobblemon.mod.common.battles.BattleBuilder
 import com.cobblemon.mod.common.battles.BattleFormat
 import com.cobblemon.mod.common.battles.ErroredBattleStart
@@ -307,6 +308,10 @@ internal object BattleLiveCapture {
                         check(party.add(pokemon)) { "Could not add $species to disposable fixture party" }
                     }
                 }
+            }
+            if (System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_STATUS") == "burn") {
+                // Player parties are not auto-healed by this fixture's trainer battle.
+                checkNotNull(party.toList().firstOrNull()).applyStatus(Statuses.BURN)
             }
             CobblemonExtendedBattleUI.LOGGER.info("Live fixture party count: {}", party.toList().size)
             val world = player.serverWorld

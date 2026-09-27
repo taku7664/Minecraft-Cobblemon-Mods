@@ -56,8 +56,8 @@ public final class BattleScreenGeometry {
             throw new IllegalArgumentException("Target selection supports two or three slots per side");
         }
         int width = Math.min(184, Math.max(0, screenWidth - 20));
-        int height = slotsPerSide == 3 ? 94 : 74;
-        int minY = slotsPerSide == 3 ? 105 : 88;
+        int height = slotsPerSide == 3 ? 84 : 74;
+        int minY = slotsPerSide == 3 ? 126 : 88;
         int y = Math.max(0, Math.min(Math.max(minY, screenHeight - height - 56), screenHeight - height - 8));
         return new UiRect(Math.max(0, (screenWidth - width) / 2), y, width, height);
     }
@@ -68,8 +68,10 @@ public final class BattleScreenGeometry {
         }
         UiRect panel = targetPanel(screenWidth, screenHeight, slotsPerSide);
         int width = (panel.width() - 18) / 2;
+        int rowStep = slotsPerSide == 3 ? 20 : 24;
+        int rowHeight = slotsPerSide == 3 ? 19 : 22;
         return new UiRect(panel.x() + 6 + row * (width + 6),
-                panel.y() + 22 + column * 24, width, 22);
+                panel.y() + 22 + column * rowStep, width, rowHeight);
     }
 
     public static UiRect targetBack(int screenWidth, int screenHeight, int slotsPerSide) {
@@ -87,5 +89,17 @@ public final class BattleScreenGeometry {
             return 0;
         }
         return (slotsPerActor - rank - 1) * 4;
+    }
+
+    /** Preserve the native first-row anchor while giving each 30 px HUD a 3 px gap. */
+    public static int compactHudVerticalOffset(float nativeY, int slotsPerActor, int actorsPerSide) {
+        if (slotsPerActor < 2 || actorsPerSide != 1) {
+            return 0;
+        }
+        int rank = Math.round((nativeY - 10f) / 30f);
+        if (rank < 0 || rank >= slotsPerActor || Math.abs(nativeY - (10 + rank * 30)) > 0.5f) {
+            return 0;
+        }
+        return rank * 3;
     }
 }

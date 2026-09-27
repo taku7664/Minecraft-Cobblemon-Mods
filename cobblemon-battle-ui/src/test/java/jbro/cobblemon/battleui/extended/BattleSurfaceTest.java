@@ -12,6 +12,13 @@ class BattleSurfaceTest {
         assertEquals(4, BattleSurfaceRenderer.inset(23, 24, 4, false, true));
     }
 
+    @Test void asymmetricCornerCutsKeepOppositeEdgesIndependent() {
+        assertEquals(3, BattleSurfaceRenderer.insetAsymmetric(0, 30, 3, 10));
+        assertEquals(0, BattleSurfaceRenderer.insetAsymmetric(10, 30, 3, 10));
+        assertEquals(5, BattleSurfaceRenderer.insetAsymmetric(24, 30, 3, 10));
+        assertEquals(10, BattleSurfaceRenderer.insetAsymmetric(29, 30, 3, 10));
+    }
+
     @Test void opacityPreservesRgbAndMultipliesExistingAlpha() {
         assertEquals(0x40123456, BattleSurfaceRenderer.withOpacity(0x80123456, .5f));
         assertEquals(0x00123456, BattleSurfaceRenderer.withOpacity(0x80123456, 0f));

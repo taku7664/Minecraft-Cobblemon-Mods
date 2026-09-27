@@ -15,7 +15,7 @@ import java.util.UUID
 internal object BattleScreenDraft {
     private const val CARD_W = 184
     private const val CARD_H = 50
-    private const val COMPACT_CARD_W = 136
+    private const val COMPACT_CARD_W = 156
 
     private data class SamplePokemon(val species: String, val hp: Float, val level: Int = 50,
                                      val fainted: Boolean = false, val burned: Boolean = false)
@@ -34,8 +34,8 @@ internal object BattleScreenDraft {
             val opponents = listOf(SamplePokemon("charizard", .36f), SamplePokemon("venusaur", .54f, burned = true),
                 SamplePokemon("blastoise", .67f))
             repeat(count) { index ->
-                drawHud(context, 10, 22 + index * 26, allies[index], true, korean, compact = true)
-                drawHud(context, width - COMPACT_CARD_W - 10, 22 + index * 26, opponents[index], false, korean, compact = true)
+                drawHud(context, 10, 22 + index * 33, allies[index], true, korean, compact = true)
+                drawHud(context, width - COMPACT_CARD_W - 10, 22 + index * 33, opponents[index], false, korean, compact = true)
             }
             if (page == "draft-target" || page == "draft-target-triple")
                 drawTarget(context, width, height, korean, count)
@@ -64,10 +64,13 @@ internal object BattleScreenDraft {
         val accent = if (self) BattleUiTheme.CYAN else BattleUiTheme.PURPLE
         val corners = if (self) 0b1001 else 0b0110
         val cardWidth = if (compact) COMPACT_CARD_W else CARD_W
-        val height = if (compact) 24 else CARD_H
+        val height = if (compact) 30 else CARD_H
+        val directionalCuts = if (self) BattleCornerCuts(topLeft = 3, bottomRight = 10)
+            else BattleCornerCuts(topRight = 3, bottomLeft = 10)
         BattleSurfaceRenderer.draw(context, x, y, cardWidth, height,
-            BattleUiTheme.panel.copy(top = 0xE01A3045.toInt(), bottom = 0xDC0D1A2B.toInt(), border = accent, cut = 5, corners = corners))
-        val portraitSize = if (compact) 18 else 30
+            BattleUiTheme.panel.copy(top = 0xE01A3045.toInt(), bottom = 0xDC0D1A2B.toInt(), border = accent,
+                cut = 5, corners = corners, cornerCuts = directionalCuts))
+        val portraitSize = if (compact) 22 else 30
         val portraitX = if (self) x + 7 else x + cardWidth - portraitSize - 7
         val portraitY = y + if (compact) 3 else 6
         BattleSurfaceRenderer.draw(context, portraitX, portraitY, portraitSize, portraitSize,
@@ -83,20 +86,30 @@ internal object BattleScreenDraft {
         if (compact) {
             text(context, font.trimToWidth(name, contentRight - contentX - 26), contentX, y + 3, BattleUiTheme.TEXT)
             rightText(context, "${sample.level}", contentRight, y + 3, BattleUiTheme.MUTED)
-            if (sample.burned) text(context, if (korean) "화상" else "BRN", contentX, y + 14, BattleUiTheme.DANGER)
-            val barLeft = contentX + if (sample.burned) 23 else 0
-            val barRight = contentRight - if (self) 43 else 31
-            context.fill(barLeft, y + 16, barRight, y + 20, BattleUiTheme.TRACK)
-            context.fill(barLeft + 1, y + 17,
-                barLeft + 1 + ((barRight - barLeft - 2) * sample.hp).toInt(), y + 19, hpColor(sample.hp))
+            val barRight = minOf(contentX + 60, contentRight - if (self) 43 else 31)
+            context.fill(contentX, y + 15, barRight, y + 19, BattleUiTheme.TRACK)
+            context.fill(contentX + 1, y + 16,
+                contentX + 1 + ((barRight - contentX - 2) * sample.hp).toInt(), y + 18, hpColor(sample.hp))
             rightText(context, if (self) "${(sample.hp * 120).toInt()}/120" else "${(sample.hp * 100).toInt()}%",
                 contentRight, y + 14, BattleUiTheme.TEXT)
+            if (sample.burned) {
+                val label = if (korean) "화상" else "BRN"
+                context.fill(contentX, y + 19, contentX + font.getWidth(label) + 4, y + 28,
+                    BattleStatusPalette.background(Statuses.BURN.showdownName))
+                text(context, label, contentX + 2, y + 19, 0xFF182337.toInt())
+            }
             return
         }
         val role = if (self) (if (korean) "내 포켓몬" else "YOUR POKÉMON")
             else (if (korean) "상대 포켓몬" else "OPPONENT")
         text(context, role, contentX, y + 4, accent)
-        if (sample.burned) rightText(context, if (korean) "화상" else "BRN", contentRight, y + 4, BattleUiTheme.DANGER)
+        if (sample.burned) {
+            val label = if (korean) "화상" else "BRN"
+            val badgeX = contentRight - font.getWidth(label) - 4
+            context.fill(badgeX, y + 3, contentRight, y + 12,
+                BattleStatusPalette.background(Statuses.BURN.showdownName))
+            text(context, label, badgeX + 2, y + 3, 0xFF182337.toInt())
+        }
         text(context, font.trimToWidth(name, contentRight - contentX - 37), contentX, y + 15, BattleUiTheme.TEXT)
         rightText(context, "${sample.level}", contentRight, y + 15, BattleUiTheme.MUTED)
         val barY = y + 31

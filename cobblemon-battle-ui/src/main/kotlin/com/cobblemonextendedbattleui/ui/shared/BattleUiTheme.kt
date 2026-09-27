@@ -27,6 +27,19 @@ object BattleUiTheme {
     val transcriptOpponent = BattleSurface(0xFF28233B.toInt(), 0xFF1A2135.toInt(), 0xFF514969.toInt(), 1, 5, 0b0101)
 }
 
+/** Main opaque colors sampled from Cobblemon 1.8.1 battle_status_*.png textures. */
+object BattleStatusPalette {
+    @JvmStatic
+    fun background(showdownName: String): Int = when (showdownName) {
+        "brn" -> 0xFFE57034.toInt()
+        "psn", "tox" -> 0xFFBA5CD8.toInt()
+        "par" -> 0xFFDAA52F.toInt()
+        "slp" -> 0xFF8D8AA4.toInt()
+        "frz" -> 0xFF5AA4F5.toInt()
+        else -> 0xFF71859A.toInt()
+    }
+}
+
 /** Corner bits clockwise from top-left. Opacity multiplies fill alpha only. */
 data class BattleSurface(
     val top: Int,
@@ -35,11 +48,20 @@ data class BattleSurface(
     val borderWidth: Int = 1,
     val cut: Int = 3,
     val corners: Int = 15,
-    val backgroundOpacity: Float = 1f
+    val backgroundOpacity: Float = 1f,
+    val cornerCuts: BattleCornerCuts? = null
 ) {
     init {
         require(cut >= 0 && borderWidth >= 0)
         require(corners in 0..15)
         require(backgroundOpacity in 0f..1f)
+    }
+}
+
+/** Independent corner sizes for surfaces that need a directional silhouette. */
+data class BattleCornerCuts(val topLeft: Int = 0, val topRight: Int = 0,
+                            val bottomRight: Int = 0, val bottomLeft: Int = 0) {
+    init {
+        require(topLeft >= 0 && topRight >= 0 && bottomRight >= 0 && bottomLeft >= 0)
     }
 }

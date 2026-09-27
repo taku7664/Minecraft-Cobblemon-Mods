@@ -19,6 +19,7 @@ import kotlin.math.ceil
 /** Replaces only the ordinary HUD tile; Cobblemon still owns capture-ball animation. */
 object BattleHudRenderer {
     private const val WIDTH = 184
+    private const val COMPACT_WIDTH = 156
     private val caughtIndicator = Identifier.of("cobblemon", "textures/gui/battle/battle_owned_indicator.png")
 
     @JvmStatic
@@ -28,24 +29,28 @@ object BattleHudRenderer {
              selected: Boolean, hovered: Boolean, compact: Boolean,
              actorName: Text?, flatHealth: Boolean, dexState: PokedexEntryProgress) {
         val client = MinecraftClient.getInstance()
+        val width = if (compact) COMPACT_WIDTH else WIDTH
         val nativeWidth = if (compact) BattleOverlay.COMPACT_TILE_WIDTH else BattleOverlay.TILE_WIDTH
         val battleType = CobblemonClient.battle?.battleFormat?.battleType
         val slotIndent = if (compact && battleType != null) {
             BattleScreenGeometry.compactHudSlotIndent(nativeY,
                 battleType.slotsPerActor, battleType.actorsPerSide)
         } else 0
-        val x = (nativeX + if (reversed) 2 - (WIDTH - nativeWidth) + slotIndent else -2 - slotIndent).toInt()
-        val y = nativeY.toInt() + if (compact) 12 else 18
-        val height = if (compact) 28 else 50
+        val x = (nativeX + if (reversed) 2 - (width - nativeWidth) + slotIndent else -2 - slotIndent).toInt()
+        val verticalOffset = if (compact && battleType != null) BattleScreenGeometry.compactHudVerticalOffset(
+            nativeY, battleType.slotsPerActor, battleType.actorsPerSide) else 0
+        val y = nativeY.toInt() + (if (compact) 12 else 18) + verticalOffset
+        val height = if (compact) 30 else 50
         val accent = if (reversed) BattleUiTheme.PURPLE else BattleUiTheme.CYAN
-        BattleSurfaceRenderer.draw(context, x, y, WIDTH, height,
+        BattleSurfaceRenderer.draw(context, x, y, width, height,
             BattleUiTheme.panel.copy(top = 0xE01A3045.toInt(), bottom = 0xDC0D1A2B.toInt(),
                 border = if (selected || hovered) BattleUiTheme.FOCUS else accent,
-                borderWidth = if (selected || hovered) 2 else 1, cut = 5,
-                corners = if (reversed) 0b0110 else 0b1001), opacity)
+                borderWidth = if (selected || hovered) 2 else 1,
+                cornerCuts = if (reversed) BattleCornerCuts(topRight = 3, bottomLeft = 10)
+                    else BattleCornerCuts(topLeft = 3, bottomRight = 10)), opacity)
 
         val portraitSize = if (compact) 22 else 30
-        val portraitX = if (reversed) x + WIDTH - portraitSize - 7 else x + 7
+        val portraitX = if (reversed) x + width - portraitSize - 7 else x + 7
         val portraitY = y + if (compact) 3 else 6
         BattleSurfaceRenderer.draw(context, portraitX, portraitY, portraitSize, portraitSize,
             BattleUiTheme.panel.copy(border = accent, cut = 4,
@@ -58,7 +63,7 @@ object BattleHudRenderer {
             { BattleSurfaceRenderer.withOpacity(it, opacity) }, 1f)
 
         val contentX = if (reversed) x + 9 else x + portraitSize + 13
-        val contentRight = if (reversed) portraitX - 7 else x + WIDTH - 10
+        val contentRight = if (reversed) portraitX - 7 else x + width - 10
         val font = client.textRenderer
         val textColor = BattleSurfaceRenderer.withOpacity(BattleUiTheme.TEXT, opacity)
         val muted = BattleSurfaceRenderer.withOpacity(BattleUiTheme.MUTED, opacity)
@@ -67,21 +72,22 @@ object BattleHudRenderer {
             Text.translatable("cobblemon_battle_ui.switch.status.$key").string
         }
         if (compact) {
-            val suffixWidth = if (statusLabel == null) 26 else 55
-            context.drawText(font, font.trimToWidth(displayName.string, contentRight - contentX - suffixWidth),
+            context.drawText(font, font.trimToWidth(displayName.string, contentRight - contentX - 26),
                 contentX, y + 3, textColor, false)
-            if (statusLabel != null) rightText(context, font.trimToWidth(statusLabel, 26), contentRight - 24,
-                y + 3, BattleSurfaceRenderer.withOpacity(BattleUiTheme.DANGER, opacity))
             rightText(context, "$level", contentRight, y + 3, muted)
-            drawHp(context, contentX, contentRight - if (flatHealth) 43 else 31,
-                y + 17, ratio, opacity)
+            drawHp(context, contentX, minOf(contentX + 60, contentRight - if (flatHealth) 43 else 31),
+                y + 15, ratio, opacity, 4)
             rightText(context, if (flatHealth) "${health.toInt()}/$maxHealth" else "${ceil(ratio * 100).toInt()}%",
-                contentRight, y + 16, textColor)
+                contentRight, y + 14, textColor)
+            if (statusLabel != null) drawStatus(context, font.trimToWidth(statusLabel, 35),
+                contentX, y + 19, status, opacity)
         } else {
             val role = Text.translatable(if (reversed) "cobblemon_battle_ui.hud.opponent" else "cobblemon_battle_ui.hud.self")
             context.drawText(font, role, contentX, y + 4, BattleSurfaceRenderer.withOpacity(accent, opacity), false)
-            if (statusLabel != null) rightText(context, font.trimToWidth(statusLabel, 35), contentRight,
-                y + 4, BattleSurfaceRenderer.withOpacity(BattleUiTheme.DANGER, opacity))
+            if (statusLabel != null) {
+                val label = font.trimToWidth(statusLabel, 35)
+                drawStatus(context, label, contentRight - font.getWidth(label) - 4, y + 3, status, opacity)
+            }
             val genderSymbol = when (gender) {
                 Gender.MALE -> "♂"
                 Gender.FEMALE -> "♀"
@@ -98,23 +104,32 @@ object BattleHudRenderer {
         }
         if (dexState == PokedexEntryProgress.OWNED) {
             context.matrices.push()
-            context.matrices.translate((x + if (reversed) 3 else WIDTH - 8).toFloat(), (y + 3).toFloat(), 0f)
+            context.matrices.translate((x + if (reversed) 3 else width - 8).toFloat(), (y + 3).toFloat(), 0f)
             context.matrices.scale(.5f, .5f, 1f)
             context.drawTexture(caughtIndicator, 0, 0, 0f, 0f, 10, 10, 10, 10)
             context.matrices.pop()
         }
-        if (actorName != null) context.drawText(font, font.trimToWidth(actorName.string, WIDTH), x,
+        if (actorName != null) context.drawText(font, font.trimToWidth(actorName.string, width), x,
             y - 9, muted, false)
     }
 
-    private fun drawHp(context: DrawContext, left: Int, right: Int, y: Int, ratio: Float, opacity: Float) {
-        context.fill(left, y, right, y + 6, BattleSurfaceRenderer.withOpacity(BattleUiTheme.TRACK, opacity))
+    private fun drawStatus(context: DrawContext, label: String, x: Int, y: Int,
+                           status: PersistentStatus, opacity: Float) {
+        val font = MinecraftClient.getInstance().textRenderer
+        context.fill(x, y, x + font.getWidth(label) + 4, y + 9,
+            BattleSurfaceRenderer.withOpacity(BattleStatusPalette.background(status.showdownName), opacity))
+        context.drawText(font, label, x + 2, y, BattleSurfaceRenderer.withOpacity(0xFF182337.toInt(), opacity), false)
+    }
+
+    private fun drawHp(context: DrawContext, left: Int, right: Int, y: Int, ratio: Float, opacity: Float,
+                       height: Int = 6) {
+        context.fill(left, y, right, y + height, BattleSurfaceRenderer.withOpacity(BattleUiTheme.TRACK, opacity))
         val color = when {
             ratio > .5f -> BattleUiTheme.GOOD
             ratio > .25f -> BattleUiTheme.FOCUS
             else -> BattleUiTheme.DANGER
         }
-        context.fill(left + 1, y + 1, left + 1 + ((right - left - 2) * ratio).toInt(), y + 5,
+        context.fill(left + 1, y + 1, left + 1 + ((right - left - 2) * ratio).toInt(), y + height - 1,
             BattleSurfaceRenderer.withOpacity(color, opacity))
     }
 

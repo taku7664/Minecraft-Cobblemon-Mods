@@ -8,21 +8,31 @@ object BattleSurfaceRenderer {
     @JvmStatic
     fun draw(context: DrawContext, x: Int, y: Int, width: Int, height: Int, style: BattleSurface, opacity: Float = 1f) {
         if (width <= 0 || height <= 0 || opacity <= 0f) return
-        val cut = minOf(style.cut, (width - 1) / 2, (height - 1) / 2)
+        val limit = minOf((width - 1) / 2, (height - 1) / 2)
+        val cuts = style.cornerCuts ?: BattleCornerCuts(
+            if (style.corners and 1 != 0) style.cut else 0,
+            if (style.corners and 2 != 0) style.cut else 0,
+            if (style.corners and 4 != 0) style.cut else 0,
+            if (style.corners and 8 != 0) style.cut else 0)
+        val tl = cuts.topLeft.coerceAtMost(limit)
+        val tr = cuts.topRight.coerceAtMost(limit)
+        val br = cuts.bottomRight.coerceAtMost(limit)
+        val bl = cuts.bottomLeft.coerceAtMost(limit)
         val border = style.borderWidth.coerceAtMost((minOf(width, height) + 1) / 2)
         val innerWidth = width - border * 2
         val innerHeight = height - border * 2
         for (row in 0 until height) {
-            val left = inset(row, height, cut, style.corners and 1 != 0, style.corners and 8 != 0)
-            val right = width - inset(row, height, cut, style.corners and 2 != 0, style.corners and 4 != 0)
+            val left = insetAsymmetric(row, height, tl, bl)
+            val right = width - insetAsymmetric(row, height, tr, br)
             val edgeColor = withOpacity(style.border, opacity)
             if (border > 0 && (innerWidth <= 0 || innerHeight <= 0 || row < border || row >= height - border)) {
                 context.fill(x + left, y + row, x + right, y + row + 1, edgeColor)
                 continue
             }
-            val innerCut = (cut - border).coerceAtLeast(0)
-            val start = (border + inset(row - border, innerHeight, innerCut, style.corners and 1 != 0, style.corners and 8 != 0)).coerceIn(left, right)
-            val end = (width - border - inset(row - border, innerHeight, innerCut, style.corners and 2 != 0, style.corners and 4 != 0)).coerceIn(start, right)
+            val start = (border + insetAsymmetric(row - border, innerHeight,
+                (tl - border).coerceAtLeast(0), (bl - border).coerceAtLeast(0))).coerceIn(left, right)
+            val end = (width - border - insetAsymmetric(row - border, innerHeight,
+                (tr - border).coerceAtLeast(0), (br - border).coerceAtLeast(0))).coerceIn(start, right)
             if (start > left) context.fill(x + left, y + row, x + start, y + row + 1, edgeColor)
             if (end < right) context.fill(x + end, y + row, x + right, y + row + 1, edgeColor)
             val fill = interpolate(style.top, style.bottom, if (height == 1) 0f else row.toFloat() / (height - 1))
@@ -35,6 +45,12 @@ object BattleSurfaceRenderer {
     fun inset(row: Int, height: Int, cut: Int, top: Boolean, bottom: Boolean): Int = maxOf(
         if (top) (cut - row).coerceAtLeast(0) else 0,
         if (bottom) (cut - (height - row - 1)).coerceAtLeast(0) else 0
+    )
+
+    @JvmStatic
+    fun insetAsymmetric(row: Int, height: Int, topCut: Int, bottomCut: Int): Int = maxOf(
+        (topCut - row).coerceAtLeast(0),
+        (bottomCut - (height - row - 1)).coerceAtLeast(0)
     )
 
     @JvmStatic
