@@ -14,7 +14,7 @@ import jbro.cobblemon.mcc.internal.pvp.PvpBattleLaunchResult
 import jbro.cobblemon.mcc.internal.pvp.PvpBattleRuntime
 import jbro.cobblemon.mcc.internal.pvp.PvpPreparedBattle
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
-import jbro.cobblemon.mcc.internal.tower.rules.TowerSubmittedMechanic
+import jbro.cobblemon.mcc.internal.battle.rules.ManagedSubmittedMechanic
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
@@ -80,10 +80,10 @@ internal class Cobblemon173PvpBattleRuntime(
                     ManagedBattleContentIds.PVP,
                     mechanics.mapTo(LinkedHashSet()) { mechanic ->
                         when (mechanic) {
-                            PvpBattleMechanic.MEGA -> TowerSubmittedMechanic.MEGA
-                            PvpBattleMechanic.DYNAMAX -> TowerSubmittedMechanic.DYNAMAX
-                            PvpBattleMechanic.TERA -> TowerSubmittedMechanic.TERA
-                            PvpBattleMechanic.Z_MOVE -> TowerSubmittedMechanic.Z_MOVE
+                            PvpBattleMechanic.MEGA -> ManagedSubmittedMechanic.MEGA
+                            PvpBattleMechanic.DYNAMAX -> ManagedSubmittedMechanic.DYNAMAX
+                            PvpBattleMechanic.TERA -> ManagedSubmittedMechanic.TERA
+                            PvpBattleMechanic.Z_MOVE -> ManagedSubmittedMechanic.Z_MOVE
                         }
                     },
                     actorIds,

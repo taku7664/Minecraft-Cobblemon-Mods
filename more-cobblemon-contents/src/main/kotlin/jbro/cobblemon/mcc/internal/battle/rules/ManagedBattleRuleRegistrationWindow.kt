@@ -1,20 +1,20 @@
-package jbro.cobblemon.mcc.internal.tower.rules
+package jbro.cobblemon.mcc.internal.battle.rules
 
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import java.util.UUID
 
-internal class TowerBattleRuleRegistrationWindow(
-    private val registry: TowerBattleRuleRegistry,
+internal class ManagedBattleRuleRegistrationWindow(
+    private val registry: ManagedBattleRuleRegistry,
 ) {
     private val pending = ThreadLocal<Pending?>()
 
     fun begin(contentId: String, mechanic: MajorBattleMechanic?, actorIds: Set<UUID>) {
-        check(pending.get() == null) { "A Battle Tower rule registration is already pending on this thread" }
+        check(pending.get() == null) { "A managed battle rule registration is already pending on this thread" }
         require(actorIds.isNotEmpty()) { "actorIds must not be empty" }
         pending.set(Pending(contentId, mechanic, null, actorIds.toSet()))
     }
 
-    fun beginMultiple(contentId: String, mechanics: Set<TowerSubmittedMechanic>, actorIds: Set<UUID>) {
+    fun beginMultiple(contentId: String, mechanics: Set<ManagedSubmittedMechanic>, actorIds: Set<UUID>) {
         check(pending.get() == null) { "A regulated battle rule registration is already pending on this thread" }
         require(actorIds.isNotEmpty()) { "actorIds must not be empty" }
         pending.set(Pending(contentId, null, mechanics.toSet(), actorIds.toSet()))
@@ -48,7 +48,7 @@ internal class TowerBattleRuleRegistrationWindow(
     private class Pending(
         val contentId: String,
         val mechanic: MajorBattleMechanic?,
-        val mechanics: Set<TowerSubmittedMechanic>?,
+        val mechanics: Set<ManagedSubmittedMechanic>?,
         val actorIds: Set<UUID>,
         var attachedBattleId: UUID? = null,
     )

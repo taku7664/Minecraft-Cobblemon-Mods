@@ -1,4 +1,4 @@
-package jbro.cobblemon.mcc.internal.tower.rules
+package jbro.cobblemon.mcc.internal.battle.rules
 
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -8,10 +8,10 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
-class TowerBattleRuleRegistryTest {
+class ManagedBattleRuleRegistryTest {
     @Test
     fun `allowed mechanic snapshot distinguishes unmanaged factory tower and pvp battles`() {
-        val registry = TowerBattleRuleRegistry()
+        val registry = ManagedBattleRuleRegistry()
         val actors = setOf(UUID.randomUUID(), UUID.randomUUID())
         val factoryBattle = UUID.randomUUID()
         val towerBattle = UUID.randomUUID()
@@ -19,18 +19,18 @@ class TowerBattleRuleRegistryTest {
 
         assertNull(registry.allowedMechanics(UUID.randomUUID()))
         assertTrue(registry.register(factoryBattle, null, actors))
-        assertEquals(emptySet<TowerSubmittedMechanic>(), registry.allowedMechanics(factoryBattle))
+        assertEquals(emptySet<ManagedSubmittedMechanic>(), registry.allowedMechanics(factoryBattle))
         assertTrue(registry.register(towerBattle, MajorBattleMechanic.TERA, actors))
-        assertEquals(setOf(TowerSubmittedMechanic.TERA), registry.allowedMechanics(towerBattle))
+        assertEquals(setOf(ManagedSubmittedMechanic.TERA), registry.allowedMechanics(towerBattle))
         assertTrue(
             registry.registerMultiple(
                 pvpBattle,
-                setOf(TowerSubmittedMechanic.MEGA, TowerSubmittedMechanic.Z_MOVE),
+                setOf(ManagedSubmittedMechanic.MEGA, ManagedSubmittedMechanic.Z_MOVE),
                 actors,
             ),
         )
         assertEquals(
-            setOf(TowerSubmittedMechanic.MEGA, TowerSubmittedMechanic.Z_MOVE),
+            setOf(ManagedSubmittedMechanic.MEGA, ManagedSubmittedMechanic.Z_MOVE),
             registry.allowedMechanics(pvpBattle),
         )
     }
@@ -41,13 +41,13 @@ class TowerBattleRuleRegistryTest {
 
     @Test
     fun `untracked battles are not changed`() {
-        val registry = TowerBattleRuleRegistry()
+        val registry = ManagedBattleRuleRegistry()
 
         assertNull(
             registry.rejectionReason(
                 battleId,
                 playerActorId,
-                TowerActionSubmission(hasBagItem = true, mechanics = listOf(TowerSubmittedMechanic.UNSUPPORTED)),
+                ManagedActionSubmission(hasBagItem = true, mechanics = listOf(ManagedSubmittedMechanic.UNSUPPORTED)),
             ),
         )
     }
@@ -57,19 +57,19 @@ class TowerBattleRuleRegistryTest {
         val registry = registered(MajorBattleMechanic.MEGA)
 
         assertEquals(
-            TowerRuleRejection.BAG_ITEMS_DISABLED,
+            ManagedRuleRejection.BAG_ITEMS_DISABLED,
             registry.rejectionReason(
                 battleId,
                 playerActorId,
-                TowerActionSubmission(hasBagItem = true),
+                ManagedActionSubmission(hasBagItem = true),
             ),
         )
         assertEquals(
-            TowerRuleRejection.ACTOR_NOT_REGISTERED,
+            ManagedRuleRejection.ACTOR_NOT_REGISTERED,
             registry.rejectionReason(
                 battleId,
                 UUID.randomUUID(),
-                TowerActionSubmission(),
+                ManagedActionSubmission(),
             ),
         )
     }
@@ -82,41 +82,41 @@ class TowerBattleRuleRegistryTest {
             registry.rejectionReason(
                 battleId,
                 playerActorId,
-                TowerActionSubmission(mechanics = listOf(TowerSubmittedMechanic.DYNAMAX)),
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.DYNAMAX)),
             ),
         )
         assertEquals(
-            TowerRuleRejection.WRONG_MECHANIC,
+            ManagedRuleRejection.WRONG_MECHANIC,
             registry.rejectionReason(
                 battleId,
                 playerActorId,
-                TowerActionSubmission(mechanics = listOf(TowerSubmittedMechanic.MEGA)),
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.MEGA)),
             ),
         )
         assertEquals(
-            TowerRuleRejection.WRONG_MECHANIC,
+            ManagedRuleRejection.WRONG_MECHANIC,
             registry.rejectionReason(
                 battleId,
                 playerActorId,
-                TowerActionSubmission(mechanics = listOf(TowerSubmittedMechanic.UNSUPPORTED)),
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.UNSUPPORTED)),
             ),
         )
     }
 
     @Test
     fun `a regulated battle without a selected mechanic rejects every gimmick`() {
-        val registry = TowerBattleRuleRegistry()
+        val registry = ManagedBattleRuleRegistry()
         assertTrue(registry.register(battleId, null, setOf(playerActorId, trainerActorId)))
 
         assertEquals(
-            TowerRuleRejection.WRONG_MECHANIC,
+            ManagedRuleRejection.WRONG_MECHANIC,
             registry.rejectionReason(
                 battleId,
                 playerActorId,
-                TowerActionSubmission(mechanics = listOf(TowerSubmittedMechanic.MEGA)),
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.MEGA)),
             ),
         )
-        assertEquals(TowerActorMechanicState(null, false), registry.actorMechanicState(battleId, playerActorId))
+        assertEquals(ManagedActorMechanicState(null, false), registry.actorMechanicState(battleId, playerActorId))
     }
 
     @Test
@@ -124,11 +124,11 @@ class TowerBattleRuleRegistryTest {
         val registry = registered(MajorBattleMechanic.TERA)
 
         assertEquals(
-            TowerRuleRejection.MULTIPLE_MECHANICS,
+            ManagedRuleRejection.MULTIPLE_MECHANICS,
             registry.rejectionReason(
                 battleId,
                 playerActorId,
-                TowerActionSubmission(mechanics = listOf(TowerSubmittedMechanic.TERA, TowerSubmittedMechanic.TERA)),
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.TERA, ManagedSubmittedMechanic.TERA)),
             ),
         )
     }
@@ -136,57 +136,57 @@ class TowerBattleRuleRegistryTest {
     @Test
     fun `successful mechanic use is consumed independently for each side`() {
         val registry = registered(MajorBattleMechanic.MEGA)
-        val mega = TowerActionSubmission(mechanics = listOf(TowerSubmittedMechanic.MEGA))
+        val mega = ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.MEGA))
 
         assertTrue(registry.recordAccepted(battleId, playerActorId, mega))
         assertEquals(
-            TowerRuleRejection.MECHANIC_ALREADY_USED,
+            ManagedRuleRejection.MECHANIC_ALREADY_USED,
             registry.rejectionReason(battleId, playerActorId, mega),
         )
         assertNull(registry.rejectionReason(battleId, trainerActorId, mega))
         assertEquals(
-            TowerActorMechanicState(MajorBattleMechanic.MEGA, consumed = true),
+            ManagedActorMechanicState(MajorBattleMechanic.MEGA, consumed = true),
             registry.actorMechanicState(battleId, playerActorId),
         )
         assertEquals(
-            TowerActorMechanicState(MajorBattleMechanic.MEGA, consumed = false),
+            ManagedActorMechanicState(MajorBattleMechanic.MEGA, consumed = false),
             registry.actorMechanicState(battleId, trainerActorId),
         )
     }
 
     @Test
     fun `pvp policy permits every enabled mechanic once per side including z moves`() {
-        val registry = TowerBattleRuleRegistry()
+        val registry = ManagedBattleRuleRegistry()
         assertTrue(
             registry.registerMultiple(
                 battleId,
                 setOf(
-                    TowerSubmittedMechanic.MEGA,
-                    TowerSubmittedMechanic.DYNAMAX,
-                    TowerSubmittedMechanic.TERA,
-                    TowerSubmittedMechanic.Z_MOVE,
+                    ManagedSubmittedMechanic.MEGA,
+                    ManagedSubmittedMechanic.DYNAMAX,
+                    ManagedSubmittedMechanic.TERA,
+                    ManagedSubmittedMechanic.Z_MOVE,
                 ),
                 setOf(playerActorId, trainerActorId),
             ),
         )
-        val firstTurn = TowerActionSubmission(
-            mechanics = listOf(TowerSubmittedMechanic.MEGA, TowerSubmittedMechanic.Z_MOVE),
+        val firstTurn = ManagedActionSubmission(
+            mechanics = listOf(ManagedSubmittedMechanic.MEGA, ManagedSubmittedMechanic.Z_MOVE),
         )
         assertNull(registry.rejectionReason(battleId, playerActorId, firstTurn))
         assertTrue(registry.recordAccepted(battleId, playerActorId, firstTurn))
         assertEquals(
-            TowerRuleRejection.MECHANIC_ALREADY_USED,
+            ManagedRuleRejection.MECHANIC_ALREADY_USED,
             registry.rejectionReason(
                 battleId,
                 playerActorId,
-                TowerActionSubmission(mechanics = listOf(TowerSubmittedMechanic.Z_MOVE)),
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.Z_MOVE)),
             ),
         )
         assertNull(
             registry.rejectionReason(
                 battleId,
                 playerActorId,
-                TowerActionSubmission(mechanics = listOf(TowerSubmittedMechanic.TERA)),
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.TERA)),
             ),
         )
         assertNull(registry.rejectionReason(battleId, trainerActorId, firstTurn))
@@ -194,53 +194,53 @@ class TowerBattleRuleRegistryTest {
 
     @Test
     fun `pvp policy rejects disabled mechanics and duplicate use in one submission`() {
-        val registry = TowerBattleRuleRegistry()
+        val registry = ManagedBattleRuleRegistry()
         registry.registerMultiple(
             battleId,
-            setOf(TowerSubmittedMechanic.MEGA, TowerSubmittedMechanic.Z_MOVE),
+            setOf(ManagedSubmittedMechanic.MEGA, ManagedSubmittedMechanic.Z_MOVE),
             setOf(playerActorId, trainerActorId),
         )
 
         assertEquals(
-            TowerRuleRejection.WRONG_MECHANIC,
+            ManagedRuleRejection.WRONG_MECHANIC,
             registry.rejectionReason(
                 battleId,
                 playerActorId,
-                TowerActionSubmission(mechanics = listOf(TowerSubmittedMechanic.TERA)),
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.TERA)),
             ),
         )
         assertEquals(
-            TowerRuleRejection.MULTIPLE_MECHANICS,
+            ManagedRuleRejection.MULTIPLE_MECHANICS,
             registry.rejectionReason(
                 battleId,
                 playerActorId,
-                TowerActionSubmission(mechanics = listOf(TowerSubmittedMechanic.MEGA, TowerSubmittedMechanic.MEGA)),
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.MEGA, ManagedSubmittedMechanic.MEGA)),
             ),
         )
     }
 
     @Test
     fun `registered mechanics cannot be changed through the caller collection`() {
-        val registry = TowerBattleRuleRegistry()
-        val enabled = linkedSetOf(TowerSubmittedMechanic.MEGA)
+        val registry = ManagedBattleRuleRegistry()
+        val enabled = linkedSetOf(ManagedSubmittedMechanic.MEGA)
         assertTrue(registry.registerMultiple(battleId, enabled, setOf(playerActorId, trainerActorId)))
 
         enabled.clear()
-        enabled += TowerSubmittedMechanic.TERA
+        enabled += ManagedSubmittedMechanic.TERA
 
         assertNull(
             registry.rejectionReason(
                 battleId,
                 playerActorId,
-                TowerActionSubmission(mechanics = listOf(TowerSubmittedMechanic.MEGA)),
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.MEGA)),
             ),
         )
         assertEquals(
-            TowerRuleRejection.WRONG_MECHANIC,
+            ManagedRuleRejection.WRONG_MECHANIC,
             registry.rejectionReason(
                 battleId,
                 playerActorId,
-                TowerActionSubmission(mechanics = listOf(TowerSubmittedMechanic.TERA)),
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.TERA)),
             ),
         )
     }
@@ -266,7 +266,7 @@ class TowerBattleRuleRegistryTest {
             registry.rejectionReason(
                 battleId,
                 playerActorId,
-                TowerActionSubmission(hasBagItem = true),
+                ManagedActionSubmission(hasBagItem = true),
             ),
         )
     }
@@ -280,11 +280,11 @@ class TowerBattleRuleRegistryTest {
         registry.clear()
 
         assertTrue(registry.registeredBattleIds().isEmpty())
-        assertNull(registry.rejectionReason(battleId, playerActorId, TowerActionSubmission(hasBagItem = true)))
+        assertNull(registry.rejectionReason(battleId, playerActorId, ManagedActionSubmission(hasBagItem = true)))
     }
 
-    private fun registered(mechanic: MajorBattleMechanic): TowerBattleRuleRegistry =
-        TowerBattleRuleRegistry().also {
+    private fun registered(mechanic: MajorBattleMechanic): ManagedBattleRuleRegistry =
+        ManagedBattleRuleRegistry().also {
             assertTrue(it.register(battleId, mechanic, setOf(playerActorId, trainerActorId)))
         }
 }

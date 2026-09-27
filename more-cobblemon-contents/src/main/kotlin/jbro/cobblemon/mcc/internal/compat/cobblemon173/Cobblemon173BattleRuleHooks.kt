@@ -6,10 +6,10 @@ import com.cobblemon.mod.common.battles.BagItemActionResponse
 import com.cobblemon.mod.common.battles.MoveActionResponse
 import com.cobblemon.mod.common.battles.ShowdownActionResponse
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
-import jbro.cobblemon.mcc.internal.tower.rules.TowerActionSubmission
-import jbro.cobblemon.mcc.internal.tower.rules.TowerBattleRuleRegistry
-import jbro.cobblemon.mcc.internal.tower.rules.TowerBattleRuleRegistrationWindow
-import jbro.cobblemon.mcc.internal.tower.rules.TowerSubmittedMechanic
+import jbro.cobblemon.mcc.internal.battle.rules.ManagedActionSubmission
+import jbro.cobblemon.mcc.internal.battle.rules.ManagedBattleRuleRegistry
+import jbro.cobblemon.mcc.internal.battle.rules.ManagedBattleRuleRegistrationWindow
+import jbro.cobblemon.mcc.internal.battle.rules.ManagedSubmittedMechanic
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleMechanic
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleMechanicVisibilityNetworking
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleContentNetworking
@@ -17,8 +17,8 @@ import jbro.cobblemon.mcc.internal.pvp.network.PvpPlayNetworking
 import java.util.UUID
 
 internal object Cobblemon173BattleRuleHooks {
-    private val registry = TowerBattleRuleRegistry.global
-    private val registrationWindow = TowerBattleRuleRegistrationWindow(registry)
+    private val registry = ManagedBattleRuleRegistry.global
+    private val registrationWindow = ManagedBattleRuleRegistrationWindow(registry)
 
     @JvmStatic
     fun rejectionMessage(actor: BattleActor, responses: List<ShowdownActionResponse>): String? =
@@ -35,7 +35,7 @@ internal object Cobblemon173BattleRuleHooks {
     fun beginRegistration(contentId: String, mechanic: MajorBattleMechanic?, actorIds: Set<UUID>) =
         registrationWindow.begin(contentId, mechanic, actorIds)
 
-    fun beginRegistrationMultiple(contentId: String, mechanics: Set<TowerSubmittedMechanic>, actorIds: Set<UUID>) =
+    fun beginRegistrationMultiple(contentId: String, mechanics: Set<ManagedSubmittedMechanic>, actorIds: Set<UUID>) =
         registrationWindow.beginMultiple(contentId, mechanics, actorIds)
 
     @JvmStatic
@@ -100,24 +100,24 @@ internal object Cobblemon173BattleRuleHooks {
     fun mechanicPolicy(battleId: UUID, actorId: UUID): Cobblemon173MechanicPolicy? =
         registry.actorMechanicState(battleId, actorId)?.let { Cobblemon173MechanicPolicy(it.selected, it.consumed) }
 
-    internal fun inspect(responses: List<ShowdownActionResponse>) = TowerActionSubmission(
+    internal fun inspect(responses: List<ShowdownActionResponse>) = ManagedActionSubmission(
         hasBagItem = responses.any { it is BagItemActionResponse },
         mechanics = responses.mapNotNull { (it as? MoveActionResponse)?.gimmickID }.map { gimmickId ->
             when (gimmickId) {
-                "mega" -> TowerSubmittedMechanic.MEGA
-                "max" -> TowerSubmittedMechanic.DYNAMAX
-                "terastal" -> TowerSubmittedMechanic.TERA
-                "zmove" -> TowerSubmittedMechanic.Z_MOVE
-                else -> TowerSubmittedMechanic.UNSUPPORTED
+                "mega" -> ManagedSubmittedMechanic.MEGA
+                "max" -> ManagedSubmittedMechanic.DYNAMAX
+                "terastal" -> ManagedSubmittedMechanic.TERA
+                "zmove" -> ManagedSubmittedMechanic.Z_MOVE
+                else -> ManagedSubmittedMechanic.UNSUPPORTED
             }
         },
     )
 }
 
-private fun TowerSubmittedMechanic.toManagedMechanic(): ManagedBattleMechanic? = when (this) {
-    TowerSubmittedMechanic.MEGA -> ManagedBattleMechanic.MEGA
-    TowerSubmittedMechanic.DYNAMAX -> ManagedBattleMechanic.DYNAMAX
-    TowerSubmittedMechanic.TERA -> ManagedBattleMechanic.TERA
-    TowerSubmittedMechanic.Z_MOVE -> ManagedBattleMechanic.Z_MOVE
-    TowerSubmittedMechanic.UNSUPPORTED -> null
+private fun ManagedSubmittedMechanic.toManagedMechanic(): ManagedBattleMechanic? = when (this) {
+    ManagedSubmittedMechanic.MEGA -> ManagedBattleMechanic.MEGA
+    ManagedSubmittedMechanic.DYNAMAX -> ManagedBattleMechanic.DYNAMAX
+    ManagedSubmittedMechanic.TERA -> ManagedBattleMechanic.TERA
+    ManagedSubmittedMechanic.Z_MOVE -> ManagedBattleMechanic.Z_MOVE
+    ManagedSubmittedMechanic.UNSUPPORTED -> null
 }

@@ -1,4 +1,4 @@
-package jbro.cobblemon.mcc.internal.tower.rules
+package jbro.cobblemon.mcc.internal.battle.rules
 
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
@@ -10,13 +10,13 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
-class TowerBattleRuleRegistrationWindowTest {
+class ManagedBattleRuleRegistrationWindowTest {
     private val actorIds = setOf(UUID.randomUUID(), UUID.randomUUID())
 
     @Test
     fun `matching constructed battle is registered before start returns`() {
-        val registry = TowerBattleRuleRegistry()
-        val window = TowerBattleRuleRegistrationWindow(registry)
+        val registry = ManagedBattleRuleRegistry()
+        val window = ManagedBattleRuleRegistrationWindow(registry)
         val battleId = UUID.randomUUID()
 
         window.begin(ManagedBattleContentIds.BATTLE_TOWER, MajorBattleMechanic.MEGA, actorIds)
@@ -28,15 +28,15 @@ class TowerBattleRuleRegistrationWindowTest {
             registry.recordAccepted(
                 battleId,
                 actorIds.first(),
-                TowerActionSubmission(mechanics = listOf(TowerSubmittedMechanic.MEGA)),
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.MEGA)),
             ),
         )
     }
 
     @Test
     fun `unrelated battle cannot claim pending rules and failed start cleans attached rules`() {
-        val registry = TowerBattleRuleRegistry()
-        val window = TowerBattleRuleRegistrationWindow(registry)
+        val registry = ManagedBattleRuleRegistry()
+        val window = ManagedBattleRuleRegistrationWindow(registry)
         val battleId = UUID.randomUUID()
 
         window.begin(ManagedBattleContentIds.BATTLE_FACTORY, MajorBattleMechanic.TERA, actorIds)
@@ -48,14 +48,14 @@ class TowerBattleRuleRegistrationWindowTest {
             registry.rejectionReason(
                 battleId,
                 actorIds.first(),
-                TowerActionSubmission(hasBagItem = true),
+                ManagedActionSubmission(hasBagItem = true),
             ),
         )
     }
 
     @Test
     fun `nested starts on one server thread are rejected and finish always clears the window`() {
-        val window = TowerBattleRuleRegistrationWindow(TowerBattleRuleRegistry())
+        val window = ManagedBattleRuleRegistrationWindow(ManagedBattleRuleRegistry())
 
         window.begin(ManagedBattleContentIds.BATTLE_TOWER, MajorBattleMechanic.DYNAMAX, actorIds)
         assertThrows(IllegalStateException::class.java) {

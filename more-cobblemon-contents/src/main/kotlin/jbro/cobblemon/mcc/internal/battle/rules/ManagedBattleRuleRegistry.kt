@@ -1,4 +1,4 @@
-package jbro.cobblemon.mcc.internal.tower.rules
+package jbro.cobblemon.mcc.internal.battle.rules
 
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
@@ -6,12 +6,12 @@ import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-internal data class TowerActionSubmission(
+internal data class ManagedActionSubmission(
     val hasBagItem: Boolean = false,
-    val mechanics: List<TowerSubmittedMechanic> = emptyList(),
+    val mechanics: List<ManagedSubmittedMechanic> = emptyList(),
 )
 
-internal enum class TowerSubmittedMechanic {
+internal enum class ManagedSubmittedMechanic {
     MEGA,
     DYNAMAX,
     TERA,
@@ -19,7 +19,7 @@ internal enum class TowerSubmittedMechanic {
     UNSUPPORTED,
 }
 
-internal enum class TowerRuleRejection(val message: String) {
+internal enum class ManagedRuleRejection(val message: String) {
     ACTOR_NOT_REGISTERED("This actor is not registered for this regulated battle"),
     BAG_ITEMS_DISABLED("Bag items cannot be used in this regulated battle"),
     MULTIPLE_MECHANICS("A side can use at most one major mechanic per battle"),
@@ -27,12 +27,12 @@ internal enum class TowerRuleRejection(val message: String) {
     MECHANIC_ALREADY_USED("This side has already used its major mechanic in this battle"),
 }
 
-internal data class TowerActorMechanicState(
+internal data class ManagedActorMechanicState(
     val selected: MajorBattleMechanic?,
     val consumed: Boolean,
 )
 
-internal class TowerBattleRuleRegistry {
+internal class ManagedBattleRuleRegistry {
     private val battles = ConcurrentHashMap<UUID, BattleRules>()
 
     fun register(
@@ -44,29 +44,29 @@ internal class TowerBattleRuleRegistry {
         require(actorIds.isNotEmpty()) { "actorIds must not be empty" }
         require(ManagedBattleContentIds.isValid(contentId)) { "contentId must be a lowercase namespaced ID" }
         val expected = when (mechanic) {
-            MajorBattleMechanic.MEGA -> TowerSubmittedMechanic.MEGA
-            MajorBattleMechanic.DYNAMAX -> TowerSubmittedMechanic.DYNAMAX
-            MajorBattleMechanic.TERA -> TowerSubmittedMechanic.TERA
+            MajorBattleMechanic.MEGA -> ManagedSubmittedMechanic.MEGA
+            MajorBattleMechanic.DYNAMAX -> ManagedSubmittedMechanic.DYNAMAX
+            MajorBattleMechanic.TERA -> ManagedSubmittedMechanic.TERA
             null -> null
         }
         return battles.putIfAbsent(
             battleId,
-            BattleRules(contentId, setOfNotNull(expected), actorIds, selectedForTower = mechanic, allowMultiplePerTurn = false),
+            BattleRules(contentId, setOfNotNull(expected), actorIds, selectedMechanic = mechanic, allowMultiplePerTurn = false),
         ) == null
     }
 
     fun registerMultiple(
         battleId: UUID,
-        mechanics: Set<TowerSubmittedMechanic>,
+        mechanics: Set<ManagedSubmittedMechanic>,
         actorIds: Set<UUID>,
         contentId: String = UNSPECIFIED_CONTENT_ID,
     ): Boolean {
         require(actorIds.isNotEmpty()) { "actorIds must not be empty" }
-        require(TowerSubmittedMechanic.UNSUPPORTED !in mechanics) { "Unsupported mechanics cannot be enabled" }
+        require(ManagedSubmittedMechanic.UNSUPPORTED !in mechanics) { "Unsupported mechanics cannot be enabled" }
         require(ManagedBattleContentIds.isValid(contentId)) { "contentId must be a lowercase namespaced ID" }
         return battles.putIfAbsent(
             battleId,
-            BattleRules(contentId, mechanics, actorIds, selectedForTower = null, allowMultiplePerTurn = true),
+            BattleRules(contentId, mechanics, actorIds, selectedMechanic = null, allowMultiplePerTurn = true),
         ) == null
     }
 
@@ -78,7 +78,7 @@ internal class TowerBattleRuleRegistry {
 
     fun clear() = battles.clear()
 
-    fun allowedMechanics(battleId: UUID): Set<TowerSubmittedMechanic>? =
+    fun allowedMechanics(battleId: UUID): Set<ManagedSubmittedMechanic>? =
         battles[battleId]?.snapshotAllowedMechanics()
 
     fun contentId(battleId: UUID): String? = battles[battleId]?.contentId
@@ -86,66 +86,66 @@ internal class TowerBattleRuleRegistry {
     fun rejectionReason(
         battleId: UUID,
         actorId: UUID,
-        submission: TowerActionSubmission,
-    ): TowerRuleRejection? = battles[battleId]?.rejectionReason(actorId, submission)
+        submission: ManagedActionSubmission,
+    ): ManagedRuleRejection? = battles[battleId]?.rejectionReason(actorId, submission)
 
     fun recordAccepted(
         battleId: UUID,
         actorId: UUID,
-        submission: TowerActionSubmission,
+        submission: ManagedActionSubmission,
     ): Boolean = battles[battleId]?.recordAccepted(actorId, submission) ?: false
 
-    fun actorMechanicState(battleId: UUID, actorId: UUID): TowerActorMechanicState? =
+    fun actorMechanicState(battleId: UUID, actorId: UUID): ManagedActorMechanicState? =
         battles[battleId]?.actorMechanicState(actorId)
 
     private class BattleRules(
         val contentId: String,
-        allowedMechanics: Set<TowerSubmittedMechanic>,
+        allowedMechanics: Set<ManagedSubmittedMechanic>,
         actorIds: Set<UUID>,
-        private val selectedForTower: MajorBattleMechanic?,
+        private val selectedMechanic: MajorBattleMechanic?,
         private val allowMultiplePerTurn: Boolean,
     ) {
         private val allowedMechanics = Collections.unmodifiableSet(LinkedHashSet(allowedMechanics))
-        private val actors = actorIds.associateWith { LinkedHashSet<TowerSubmittedMechanic>() }.toMutableMap()
+        private val actors = actorIds.associateWith { LinkedHashSet<ManagedSubmittedMechanic>() }.toMutableMap()
 
-        fun snapshotAllowedMechanics(): Set<TowerSubmittedMechanic> = allowedMechanics.toSet()
+        fun snapshotAllowedMechanics(): Set<ManagedSubmittedMechanic> = allowedMechanics.toSet()
 
         @Synchronized
-        fun rejectionReason(actorId: UUID, submission: TowerActionSubmission): TowerRuleRejection? {
-            val consumed = actors[actorId] ?: return TowerRuleRejection.ACTOR_NOT_REGISTERED
-            if (submission.hasBagItem) return TowerRuleRejection.BAG_ITEMS_DISABLED
+        fun rejectionReason(actorId: UUID, submission: ManagedActionSubmission): ManagedRuleRejection? {
+            val consumed = actors[actorId] ?: return ManagedRuleRejection.ACTOR_NOT_REGISTERED
+            if (submission.hasBagItem) return ManagedRuleRejection.BAG_ITEMS_DISABLED
             if ((!allowMultiplePerTurn && submission.mechanics.size > 1) ||
                 submission.mechanics.distinct().size != submission.mechanics.size
             ) {
-                return TowerRuleRejection.MULTIPLE_MECHANICS
+                return ManagedRuleRejection.MULTIPLE_MECHANICS
             }
-            if (submission.mechanics.any { it !in allowedMechanics }) return TowerRuleRejection.WRONG_MECHANIC
-            if (submission.mechanics.any { it in consumed }) return TowerRuleRejection.MECHANIC_ALREADY_USED
+            if (submission.mechanics.any { it !in allowedMechanics }) return ManagedRuleRejection.WRONG_MECHANIC
+            if (submission.mechanics.any { it in consumed }) return ManagedRuleRejection.MECHANIC_ALREADY_USED
             return null
         }
 
         @Synchronized
-        fun recordAccepted(actorId: UUID, submission: TowerActionSubmission): Boolean {
+        fun recordAccepted(actorId: UUID, submission: ManagedActionSubmission): Boolean {
             if (rejectionReason(actorId, submission) != null) return false
             actors.getValue(actorId).addAll(submission.mechanics)
             return true
         }
 
         @Synchronized
-        fun actorMechanicState(actorId: UUID): TowerActorMechanicState? =
+        fun actorMechanicState(actorId: UUID): ManagedActorMechanicState? =
             actors[actorId]?.let { consumed ->
-                val expected = when (selectedForTower) {
-                    MajorBattleMechanic.MEGA -> TowerSubmittedMechanic.MEGA
-                    MajorBattleMechanic.DYNAMAX -> TowerSubmittedMechanic.DYNAMAX
-                    MajorBattleMechanic.TERA -> TowerSubmittedMechanic.TERA
+                val expected = when (selectedMechanic) {
+                    MajorBattleMechanic.MEGA -> ManagedSubmittedMechanic.MEGA
+                    MajorBattleMechanic.DYNAMAX -> ManagedSubmittedMechanic.DYNAMAX
+                    MajorBattleMechanic.TERA -> ManagedSubmittedMechanic.TERA
                     null -> null
                 }
-                TowerActorMechanicState(selectedForTower, expected != null && expected in consumed)
+                ManagedActorMechanicState(selectedMechanic, expected != null && expected in consumed)
             }
     }
 
     internal companion object {
         private const val UNSPECIFIED_CONTENT_ID = "more_cobblemon_contents:managed"
-        val global = TowerBattleRuleRegistry()
+        val global = ManagedBattleRuleRegistry()
     }
 }

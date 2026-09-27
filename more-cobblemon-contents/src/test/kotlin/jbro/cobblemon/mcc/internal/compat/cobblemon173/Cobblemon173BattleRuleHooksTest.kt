@@ -1,8 +1,8 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
 import com.cobblemon.mod.common.battles.MoveActionResponse
-import jbro.cobblemon.mcc.internal.tower.rules.TowerActionSubmission
-import jbro.cobblemon.mcc.internal.tower.rules.TowerSubmittedMechanic
+import jbro.cobblemon.mcc.internal.battle.rules.ManagedActionSubmission
+import jbro.cobblemon.mcc.internal.battle.rules.ManagedSubmittedMechanic
 import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -18,7 +18,7 @@ class Cobblemon173BattleRuleHooksTest {
         )
 
         assertEquals(
-            TowerActionSubmission(hasBagItem = false, mechanics = listOf(TowerSubmittedMechanic.MEGA)),
+            ManagedActionSubmission(hasBagItem = false, mechanics = listOf(ManagedSubmittedMechanic.MEGA)),
             Cobblemon173BattleRuleHooks.inspect(responses),
         )
     }
