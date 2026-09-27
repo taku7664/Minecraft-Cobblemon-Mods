@@ -38,7 +38,7 @@ internal object BattleScreenDraft {
                 drawHud(context, width - COMPACT_CARD_W - 10, 22 + index * 33, opponents[index], false, korean, compact = true)
             }
             if (page == "draft-target" || page == "draft-target-triple")
-                drawTarget(context, width, height, korean, count)
+                drawTarget(context, width, height, count)
             return
         }
         drawHud(context, 10, 28, SamplePokemon("pikachu", .72f), true, korean)
@@ -190,58 +190,26 @@ internal object BattleScreenDraft {
     }
 
     /** Functionless target-page proposal, deliberately separate from Cobblemon's input path. */
-    private fun drawTarget(context: DrawContext, width: Int, height: Int, korean: Boolean, slots: Int) {
-        val panel = BattleScreenGeometry.targetPanel(width, height, slots)
-        // Targeting needs labels and focus, not a second HP dashboard or an enclosing shell.
-        text(context, if (korean) "대상 선택" else "SELECT TARGET", panel.x() + 6, panel.y() + 2,
-            BattleUiTheme.TEXT)
-        val back = BattleScreenGeometry.targetBack(width, height, slots)
-        BattleSurfaceRenderer.draw(context, back.x(), back.y(), back.width(), back.height(),
-            BattleUiTheme.secondary.copy(border = BattleUiTheme.CYAN, cut = 3, corners = 0b1010))
-        centerText(context, if (korean) "뒤로" else "BACK", back.x() + back.width() / 2,
-            back.y() + 2, BattleUiTheme.TEXT)
-        text(context, if (korean) "아군" else "ALLY", panel.x() + 6,
-            panel.y() + 12, BattleUiTheme.TEXT)
-        text(context, if (korean) "상대" else "OPPONENT",
-            BattleScreenGeometry.targetTile(width, height, slots, 1, 0).x(),
-            panel.y() + 12, BattleUiTheme.TEXT)
+    private fun drawTarget(context: DrawContext, width: Int, height: Int, slots: Int) {
+        BattleTargetRenderer.drawChrome(context, width, height, slots)
         val opponents = if (slots == 2) listOf("squirtle", "charizard")
             else listOf("squirtle", "charizard", "meowth")
         val allies = if (slots == 2) listOf("pikachu", "bulbasaur")
             else listOf("pikachu", "bulbasaur", "eevee")
         allies.forEachIndexed { column, species ->
-            drawTargetCard(context, BattleScreenGeometry.targetTile(width, height, slots, 0, column),
-                species, true, false, column == 0)
+            BattleTargetRenderer.drawCard(context, BattleScreenGeometry.targetTile(width, height, slots, 0, column),
+                previewTargetCard(species, ally = true, selectable = column != 0, focused = false))
         }
         opponents.forEachIndexed { column, species ->
-            drawTargetCard(context, BattleScreenGeometry.targetTile(width, height, slots, 1, column),
-                species, false, column == 1, false)
+            BattleTargetRenderer.drawCard(context, BattleScreenGeometry.targetTile(width, height, slots, 1, column),
+                previewTargetCard(species, ally = false, selectable = true, focused = column == 1))
         }
     }
 
-    private fun drawTargetCard(context: DrawContext, rect: jbro.cobblemon.battleui.navigation.UiRect,
-                               species: String, ally: Boolean, focused: Boolean, unavailable: Boolean) {
-        val x = rect.x()
-        val y = rect.y()
-        val portraitSize = 16
-        val portraitX = x + rect.width() - portraitSize - 4
-        val accent = if (focused) BattleUiTheme.FOCUS else if (ally) BattleUiTheme.CYAN else BattleUiTheme.PURPLE
-        BattleSurfaceRenderer.draw(context, x, y, rect.width(), rect.height(),
-            BattleUiTheme.panel.copy(border = accent, borderWidth = if (focused) 2 else 1,
-                cut = 3, corners = 0b1001), if (unavailable) .7f else 1f)
-        val name = Text.translatable("cobblemon.species.$species.name").string
-        val font = MinecraftClient.getInstance().textRenderer
-        text(context, font.trimToWidth(name, portraitX - x - if (unavailable) 20 else 10),
-            x + if (unavailable) 15 else 5, y + 7,
-            if (unavailable) BattleUiTheme.MUTED else BattleUiTheme.TEXT)
-        if (unavailable) text(context, "×", x + 5, y + 7, BattleUiTheme.DANGER)
-        BattleSurfaceRenderer.draw(context, portraitX, y + 3, portraitSize, portraitSize,
-            BattleUiTheme.panel.copy(border = accent, cut = 3))
-        PokemonModelRenderer.drawPokemonModel(context, portraitX + 1, y + 4,
-            portraitSize - 2, null,
-            Identifier.of("cobblemon", species), emptySet(), UUID.nameUUIDFromBytes(species.toByteArray()),
-            false, null, ally, { it }, 1f)
-    }
+    private fun previewTargetCard(species: String, ally: Boolean, selectable: Boolean,
+                                  focused: Boolean) = BattleTargetCard(
+        Identifier.of("cobblemon", species), emptySet(), UUID.nameUUIDFromBytes(species.toByteArray()),
+        Text.translatable("cobblemon.species.$species.name"), ally, selectable, false, focused)
 
     private fun hpColor(hp: Float) = when {
         hp > .5f -> BattleUiTheme.GOOD

@@ -28,7 +28,7 @@
     "BattleSwitchTileScaleMixin",
     "BattleSwitchTileAccessor",
     "BattleSwitchSelectionMixin",
-    "BattleTargetTileScaleMixin"
+    "BattleTargetSelectionMixin"
   ],
   "injectors": {
     "defaultRequire": 1

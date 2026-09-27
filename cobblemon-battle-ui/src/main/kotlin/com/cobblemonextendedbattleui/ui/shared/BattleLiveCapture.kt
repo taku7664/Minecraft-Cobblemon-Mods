@@ -7,6 +7,7 @@ import com.cobblemon.mod.common.battles.BattleBuilder
 import com.cobblemon.mod.common.battles.BattleFormat
 import com.cobblemon.mod.common.battles.ErroredBattleStart
 import com.cobblemon.mod.common.battles.ForfeitActionResponse
+import com.cobblemon.mod.common.battles.MoveActionResponse
 import com.cobblemon.mod.common.battles.SuccessfulBattleStart
 import com.cobblemon.mod.common.api.storage.party.NPCPartyStore
 import com.cobblemon.mod.common.api.npc.NPCClasses
@@ -57,7 +58,9 @@ internal object BattleLiveCapture {
         require(page in setOf("command", "moves", "target", "switch", "forfeit"))
         val trainerBattle = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TRAINER") == "1"
         val acceptForfeit = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_FORFEIT_ACCEPT") == "1"
+        val targetSubmit = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TARGET_SUBMIT")?.takeIf { it.isNotBlank() }
         require(!acceptForfeit || (trainerBattle && page == "forfeit"))
+        require(targetSubmit == null || (page == "target" && targetSubmit in setOf("mouse", "keyboard", "back")))
         val battleFormatName = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_BATTLE_FORMAT") ?: "single"
         val battleFormat = when (battleFormatName) {
             "single" -> BattleFormat.GEN_9_SINGLES
@@ -79,6 +82,64 @@ internal object BattleLiveCapture {
             if (screenshotPending) {
                 if (!screenshotSaved.get()) return@register
                 val screen = client.currentScreen as? BattleGUI
+                if (targetSubmit != null) {
+                    if (targetSubmit == "back" && backPending) {
+                        if (screen?.getCurrentActionSelection() !is BattleMoveSelection) {
+                            check(++ticks < 40) { "Visible target Back did not return to move selection" }
+                            return@register
+                        }
+                        CobblemonExtendedBattleUI.LOGGER.info("Live target Back mouse navigation verified")
+                        screenshotPending = false
+                        client.scheduleStop()
+                        return@register
+                    }
+                    val targetSelection = checkNotNull(screen?.getCurrentActionSelection() as? BattleTargetSelection)
+                    val cards = BattleTargetRenderer.bounds(targetSelection,
+                        client.window.scaledWidth, client.window.scaledHeight)
+                    if (targetSubmit == "back") {
+                        val slots = targetSelection.request.activePokemon.getSidePokemon().count()
+                        val back = BattleScreenGeometry.targetBack(client.window.scaledWidth,
+                            client.window.scaledHeight, slots)
+                        check(screen.mouseClicked((back.x() + back.width() / 2).toDouble(),
+                            (back.y() + back.height() / 2).toDouble(), 0))
+                        backPending = true
+                        ticks = 0
+                        return@register
+                    }
+                    if (targetSubmit == "mouse") {
+                        val disabled = targetSelection.targetTiles.indexOfFirst { !it.selectable }
+                        if (disabled >= 0) {
+                            val bound = cards[disabled]
+                            check(screen.mouseClicked((bound.x() + bound.width() / 2).toDouble(),
+                                (bound.y() + bound.height() / 2).toDouble(), 0))
+                            check(targetSelection.request.response == null) {
+                                "Disabled visual target submitted a battle response"
+                            }
+                        }
+                        val chosen = targetSelection.targetTiles.indexOfFirst { tile ->
+                            tile.selectable && !tile.target.isAllied(targetSelection.request.activePokemon)
+                        }
+                        check(chosen >= 0) { "No selectable opponent target in live fixture" }
+                        val bound = cards[chosen]
+                        check(screen.mouseClicked((bound.x() + bound.width() / 2).toDouble(),
+                            (bound.y() + bound.height() / 2).toDouble(), 0)) {
+                            "Visible target card center did not accept a mouse click"
+                        }
+                    } else {
+                        val focused = KeyboardTileFocus.focusedIndex(targetSelection.targetTiles)
+                        check(focused >= 0 && targetSelection.targetTiles[focused].selectable)
+                        check(screen.keyPressed(GLFW.GLFW_KEY_Z, 0, 0)) {
+                            "Focused target did not accept keyboard confirmation"
+                        }
+                    }
+                    check(targetSelection.request.response is MoveActionResponse) {
+                        "Target choice did not become Cobblemon's native move response"
+                    }
+                    CobblemonExtendedBattleUI.LOGGER.info("Live target {} submission verified", targetSubmit)
+                    screenshotPending = false
+                    client.scheduleStop()
+                    return@register
+                }
                 if (acceptForfeit) {
                     if (!backPending) {
                         val confirmation = checkNotNull(screen?.getCurrentActionSelection() as? ForfeitConfirmationSelection)
@@ -218,7 +279,17 @@ internal object BattleLiveCapture {
                 when (selection) {
                     is BattleGeneralActionSelection -> check(selection.tiles.any { it.isFocused })
                     is BattleMoveSelection -> check(KeyboardTileFocus.focusedIndex(selection.moveTiles) >= 0)
-                    is BattleTargetSelection -> check(KeyboardTileFocus.focusedIndex(selection.targetTiles) >= 0)
+                    is BattleTargetSelection -> {
+                        val cards = BattleTargetRenderer.bounds(selection,
+                            client.window.scaledWidth, client.window.scaledHeight)
+                        val initial = KeyboardTileFocus.focusedIndex(selection.targetTiles)
+                        check(initial >= 0)
+                        check(screen.keyPressed(GLFW.GLFW_KEY_RIGHT, 0, 0))
+                        val right = KeyboardTileFocus.focusedIndex(selection.targetTiles)
+                        check(right >= 0 && cards[right].x() > cards[initial].x()) {
+                            "Right navigation did not reach the visible opponent column"
+                        }
+                    }
                     is BattleSwitchPokemonSelection -> check(KeyboardTileFocus.focusedIndex(selection.tiles) >= 0)
                     is ForfeitConfirmationSelection -> {
                         check(screen.keyPressed(GLFW.GLFW_KEY_LEFT, 0, 0))

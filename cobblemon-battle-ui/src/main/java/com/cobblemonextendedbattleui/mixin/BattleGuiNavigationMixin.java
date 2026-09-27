@@ -21,7 +21,9 @@ import jbro.cobblemon.battleui.navigation.BattleMenuNavigator;
 import jbro.cobblemon.battleui.navigation.FocusOwnership;
 import jbro.cobblemon.battleui.navigation.GridMenuNavigator;
 import jbro.cobblemon.battleui.navigation.BattleScreenGeometry;
+import jbro.cobblemon.battleui.navigation.SpatialMenuNavigator;
 import jbro.cobblemon.battleui.navigation.UiRect;
+import jbro.cobblemon.battleui.extended.ui.shared.BattleTargetRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import org.lwjgl.glfw.GLFW;
@@ -408,14 +410,50 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             int scanCode
     ) {
         List<? extends BattleTargetSelection.TargetTile> tiles = selection.getTargetTiles();
-        return cobblemonBattleUi$handleGridKeys(
-                selection,
-                tiles,
-                BattleTargetSelection.TargetTile::getSelectable,
-                keyCode,
-                scanCode,
-                BattleTargetSelection.TargetTile::onClick
-        );
+        if (!BattleTargetRenderer.supports(selection)) {
+            return cobblemonBattleUi$handleGridKeys(selection, tiles,
+                    BattleTargetSelection.TargetTile::getSelectable, keyCode, scanCode,
+                    BattleTargetSelection.TargetTile::onClick);
+        }
+        if (cobblemonBattleUi$gridSelection != selection) {
+            cobblemonBattleUi$gridSelection = selection;
+            cobblemonBattleUi$gridIndex = -1;
+            KeyboardTileFocus.clear();
+        }
+        int dx = switch (keyCode) {
+            case GLFW.GLFW_KEY_LEFT, GLFW.GLFW_KEY_A -> -1;
+            case GLFW.GLFW_KEY_RIGHT, GLFW.GLFW_KEY_D -> 1;
+            default -> 0;
+        };
+        int dy = switch (keyCode) {
+            case GLFW.GLFW_KEY_UP, GLFW.GLFW_KEY_W -> -1;
+            case GLFW.GLFW_KEY_DOWN, GLFW.GLFW_KEY_S -> 1;
+            default -> 0;
+        };
+        MinecraftClient client = MinecraftClient.getInstance();
+        List<UiRect> bounds = BattleTargetRenderer.bounds(selection,
+                client.getWindow().getScaledWidth(), client.getWindow().getScaledHeight());
+        List<Boolean> enabled = tiles.stream().map(BattleTargetSelection.TargetTile::getSelectable).toList();
+        if (dx != 0 || dy != 0) {
+            cobblemonBattleUi$gridIndex = SpatialMenuNavigator.move(bounds, enabled,
+                    cobblemonBattleUi$gridIndex, dx, dy);
+            if (cobblemonBattleUi$gridIndex >= 0) {
+                KeyboardTileFocus.set(tiles.get(cobblemonBattleUi$gridIndex));
+            }
+            return true;
+        }
+        if (!CobblemonExtendedBattleUIClient.INSTANCE.getSelectActionKey().matchesKey(keyCode, scanCode)) {
+            return false;
+        }
+        cobblemonBattleUi$gridIndex = SpatialMenuNavigator.move(bounds, enabled,
+                cobblemonBattleUi$gridIndex, 0, 0);
+        if (cobblemonBattleUi$gridIndex >= 0) {
+            KeyboardTileFocus.set(tiles.get(cobblemonBattleUi$gridIndex));
+            if (cobblemonBattleUi$trySubmit(selection)) {
+                tiles.get(cobblemonBattleUi$gridIndex).onClick();
+            }
+        }
+        return true;
     }
 
     @Unique

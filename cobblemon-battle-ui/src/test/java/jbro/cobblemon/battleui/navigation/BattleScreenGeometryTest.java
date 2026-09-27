@@ -87,4 +87,16 @@ class BattleScreenGeometryTest {
         assertTrue(BattleScreenGeometry.targetPanel(427, 240, 3).y() +
                 BattleScreenGeometry.targetPanel(427, 240, 3).height() < 217);
     }
+
+    @Test
+    void targetCardsPreserveNativeSideAndFieldPositionOrdering() {
+        assertEquals(new UiRect(127, 148, 83, 19),
+                BattleScreenGeometry.targetTileForIndex(427, 240, 3, 0, true));
+        assertEquals(new UiRect(127, 188, 83, 19),
+                BattleScreenGeometry.targetTileForIndex(427, 240, 3, 2, true));
+        assertEquals(new UiRect(216, 188, 83, 19),
+                BattleScreenGeometry.targetTileForIndex(427, 240, 3, 3, false));
+        assertEquals(new UiRect(216, 148, 83, 19),
+                BattleScreenGeometry.targetTileForIndex(427, 240, 3, 5, false));
+    }
 }

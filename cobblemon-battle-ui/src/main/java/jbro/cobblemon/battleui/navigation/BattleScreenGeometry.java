@@ -50,7 +50,7 @@ public final class BattleScreenGeometry {
         return new UiRect(panel.x() + 116, panel.y() + 50, 68, 24);
     }
 
-    /** Non-interactive draft: one narrow column per side, below the HUD and above the hotbar. */
+    /** Shared draft/live target grid: one narrow column per side, below the HUD and above the hotbar. */
     public static UiRect targetPanel(int screenWidth, int screenHeight, int slotsPerSide) {
         if (slotsPerSide < 2 || slotsPerSide > 3) {
             throw new IllegalArgumentException("Target selection supports two or three slots per side");
@@ -72,6 +72,17 @@ public final class BattleScreenGeometry {
         int rowHeight = slotsPerSide == 3 ? 19 : 22;
         return new UiRect(panel.x() + 6 + row * (width + 6),
                 panel.y() + 22 + column * rowStep, width, rowHeight);
+    }
+
+    /** Mirrors Cobblemon's opponent field order without relying on list index as visual row. */
+    public static UiRect targetTileForIndex(int screenWidth, int screenHeight, int slotsPerSide,
+                                            int index, boolean ally) {
+        if (index < 0 || index >= slotsPerSide * 2) {
+            throw new IllegalArgumentException("Target index must be inside the active battle field");
+        }
+        int fieldPosition = index % slotsPerSide;
+        return targetTile(screenWidth, screenHeight, slotsPerSide, ally ? 0 : 1,
+                ally ? fieldPosition : slotsPerSide - 1 - fieldPosition);
     }
 
     public static UiRect targetBack(int screenWidth, int screenHeight, int slotsPerSide) {
