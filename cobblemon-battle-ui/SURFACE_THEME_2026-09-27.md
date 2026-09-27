@@ -65,3 +65,11 @@ Remove-Item Env:COBBLEMON_BATTLE_UI_CAPTURE, Env:COBBLEMON_BATTLE_UI_CAPTURE_LAN
 ## 클라이언트 배포 기록
 
 소스 `a22eb0ce` 기준으로 116개 테스트와 최종 빌드를 통과한 `cobblemon-battle-ui-0.1.8.jar`를 `cobblemon-dev/mods`의 동명 JAR에 배포했다. 대상 프로필의 Java 프로세스가 실행 중이지 않은 상태에서 교체했으며 빌드 파일과 배포 파일의 SHA-256은 모두 `B0BBE96140A3C2E00108C390094D050BE6C004405E4AEE706044FB89E8E85DC8`이다. 서버 배포는 하지 않았다. 위 캡처는 분리된 개발 클라이언트에서 얻었으며, 배포된 전체 모드팩의 실전 전투 검증을 대신하지 않는다.
+
+### 기존 UI 리소스팩 비활성화
+
+2026-09-27 사용자 확인 후 `cobblemon-dev/options.txt`의 `resourcePacks` JSON 배열에서 `file/CobbleNostalgia v1.0_HP_Bar.zip` 항목 하나만 제거했다. 나머지 16개 활성 항목의 순서와 다른 설정은 유지했다. `incompatibleResourcePacks`도 변경하지 않았다. 대상 클라이언트 프로세스가 실행 중이지 않음을 확인한 뒤 편집했다.
+
+`resourcepacks/CobbleNostalgia v1.0_HP_Bar.zip` 원본은 삭제하지 않았다. 복구하려면 게임의 리소스팩 설정에서 다시 활성화하고, 기존처럼 Galmuri 다음·Whimscape x Cobblemon 이전의 우선순위로 놓으면 된다. 이 팩은 전투 UI뿐 아니라 PC·포켓몬 정보·인벤토리도 포함하므로 해당 팩의 외형 변경도 함께 해제된다. 번역·음악·폰트·Whimscape 팩은 유지한다.
+
+검증: 설정 JSON 파싱 및 대상 항목 제거, 원본 ZIP 보존, 해당 줄을 제외한 설정 전체의 SHA-256 동일 여부를 확인했다. Battle UI JAR는 위 배포 해시와 동일한 파일을 유지한다. 이번 변경 후 게임을 재실행하거나 실제 전투를 확인한 것은 아니다.
