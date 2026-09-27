@@ -29,6 +29,7 @@ object LeagueServer {
         val requests: LinkedHashMap<UUID, LeagueIntentPayload> = linkedMapOf())
     private val sessions = mutableMapOf<UUID, Session>()
     private val lastRequestTick = mutableMapOf<UUID, Int>()
+    private val sentRanks = mutableMapOf<UUID, String>()
     private var access: AutoCloseable? = null
     private val gson = Gson()
     private const val CONTENT = ManagedBattleContentIds.LEAGUE_CHALLENGE
@@ -37,6 +38,7 @@ object LeagueServer {
     fun register() {
         BattleHubEntries.register(BattleHubEntry(CONTENT) { player, _ -> openFromHub(player) })
         PayloadTypeRegistry.playS2C().register(LeagueStatePayload.TYPE, LeagueStatePayload.CODEC)
+        PayloadTypeRegistry.playS2C().register(LeagueRankPayload.TYPE, LeagueRankPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(LeagueIntentPayload.TYPE, LeagueIntentPayload.CODEC)
         ServerPlayNetworking.registerGlobalReceiver(LeagueIntentPayload.TYPE) { payload, context ->
             handle(context.player(), payload)
@@ -50,11 +52,12 @@ object LeagueServer {
             }
         }
         ServerLifecycleEvents.SERVER_STARTED.register { LeagueSavedData.get(it).cancelInterruptedRuns() }
-        ServerLifecycleEvents.SERVER_STOPPED.register { access?.close(); access = null; sessions.clear(); lastRequestTick.clear(); LeagueCatalogResources.clear() }
+        ServerLifecycleEvents.SERVER_STOPPED.register { access?.close(); access = null; sessions.clear(); lastRequestTick.clear(); sentRanks.clear(); LeagueCatalogResources.clear() }
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ -> reconcileSafely(handler.player) }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, server ->
             sessions.remove(handler.player.uuid)
             lastRequestTick.remove(handler.player.uuid)
+            sentRanks.remove(handler.player.uuid)
             LeagueCatalogResources.current?.let { catalog ->
                 try {
                     val storage = LeagueSavedData.get(server)
@@ -193,6 +196,8 @@ object LeagueServer {
         val catalog = requireNotNull(LeagueCatalogResources.current) { "catalog_unavailable" }
         val storage = LeagueSavedData.get(player.server)
         var state = storage.read(catalog.id, player.uuid)
+        // Before the integration steps below, which can fail and must not keep the header's rank stale.
+        syncRank(player, rank(catalog, state))
         LeagueIntegrations.syncCap(player, LeagueEngine(catalog).cap(state))
         // Player data and world SavedData do not share one disk transaction. Repair badges from wins.
         for (id in catalog.gyms.filter { it in state.cleared }) {
@@ -210,6 +215,18 @@ object LeagueServer {
         }
     }
 
+    private fun rank(catalog: LeagueCatalog, state: LeagueProgress): String {
+        val badges = LeagueEngine(catalog).badgeCount(state)
+        return when { state.champion -> "CHAMPION"; badges == 8 -> "MASTER_BALL"; badges >= 5 -> "ULTRA_BALL"; badges >= 3 -> "GREAT_BALL"; else -> "POKE_BALL" }
+    }
+
+    /** Tells the client its rank when it changed; reconcile repeats this, so admin edits reach it too. */
+    private fun syncRank(player: ServerPlayer, rank: String) {
+        if (sentRanks[player.uuid] == rank || !ServerPlayNetworking.canSend(player, LeagueRankPayload.TYPE)) return
+        ServerPlayNetworking.send(player, LeagueRankPayload(rank))
+        sentRanks[player.uuid] = rank
+    }
+
     private fun reconcileSafely(player: ServerPlayer) {
         try { reconcile(player) } catch (failure: RuntimeException) {
             Mod.LOGGER.debug("League sync deferred for {}: {}", player.uuid, failure.message)
@@ -219,6 +236,9 @@ object LeagueServer {
     private fun commit(server: MinecraftServer, league: String, player: UUID, state: LeagueProgress) {
         LeagueSavedData.get(server).write(league, player, state)
         server.overworld().dataStorage.save()
+        val catalog = LeagueCatalogResources.current
+        val online = server.playerList.getPlayer(player)
+        if (catalog != null && catalog.id == league && online != null) syncRank(online, rank(catalog, state))
     }
 
     private fun send(player: ServerPlayer, errorKey: String? = null, openScreen: Boolean = false) {
@@ -227,7 +247,7 @@ object LeagueServer {
         val state = LeagueSavedData.get(player.server).read(catalog.id, player.uuid)
         val engine = LeagueEngine(catalog)
         val badges = engine.badgeCount(state)
-        val rank = when { state.champion -> "CHAMPION"; badges == 8 -> "MASTER_BALL"; badges >= 5 -> "ULTRA_BALL"; badges >= 3 -> "GREAT_BALL"; else -> "POKE_BALL" }
+        val rank = rank(catalog, state)
         val views = (catalog.gyms + catalog.finals.first()).map { id ->
             val index = catalog.gyms.indexOf(id)
             val available = if (index >= 0) catalog.gyms.take(index).all { it in state.cleared } else badges == 8

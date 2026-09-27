@@ -48,7 +48,7 @@ internal class LeagueHubTab : MccHubTabContent {
             Component.empty().append(rankName(view)).append(Component.literal(" · ")).append(Component.translatable(view.nameKey)),
             Component.empty().append(leagueCopy("header_badges", view.badges)).append(Component.literal("  "))
                 .append(leagueCopy("header_cap", view.cap)),
-            ItemStack(rankItem(view) ?: Items.NETHER_STAR))
+            rankStack(view.rank))
         addRoute(host, layout, presentation)
         val detail = MccHubKit.card(host, layout.detail, leagueCopy("dashboard_challenge"), MccHubKit.CardTone.FEATURE)
         host.add(ChallengeBody(detail, view, presentation.focused))
@@ -151,13 +151,14 @@ internal class LeagueHubTab : MccHubTabContent {
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
             val theme = CobblemonUiThemes.registry.snapshot()
             val text = MccHubKit.panelText(theme)
-            val box = (body.height - REWARD_ROWS).coerceAtMost(body.width * 2 / 5).coerceIn(30, 96)
+            // Whole-number item scales up to three keep the badge sprite crisp; a bigger frame would only blur it.
+            val box = (body.height - REWARD_ROWS).coerceAtMost(body.width * 2 / 5).coerceIn(30, 56)
             val top = body.y + ((body.height - box - REWARD_ROWS) / 3).coerceAtLeast(0)
             graphics.fill(body.x, top, body.x + box, top + box, theme.colors.borderBright)
             graphics.fill(body.x + 2, top + 2, body.x + box - 2, top + box - 2, theme.colors.shell)
             val badge = badgeStack(selected?.badgeId)
             if (badge != null) {
-                val scale = (((box - 6) / 16f) * 2).toInt().coerceIn(2, 10) / 2f
+                val scale = ((box - 6) / 16).coerceIn(1, 3).toFloat()
                 val pose = graphics.pose()
                 pose.pushPose()
                 pose.translate(body.x + (box - 16 * scale) / 2.0, top + (box - 16 * scale) / 2.0, 0.0)
@@ -216,18 +217,22 @@ internal class LeagueHubTab : MccHubTabContent {
     }
 
     private companion object {
-        fun rankName(view: LeagueView): Component =
-            Component.translatable("screen.more_cobblemon_contents_league_challenge.home.rank." + view.rank.lowercase(Locale.ROOT))
-
-        fun rankItem(view: LeagueView) = when (view.rank) {
-            "POKE_BALL" -> "poke_ball"
-            "GREAT_BALL" -> "great_ball"
-            "ULTRA_BALL" -> "ultra_ball"
-            "MASTER_BALL" -> "master_ball"
-            else -> null
-        }?.let { BuiltInRegistries.ITEM.getOptional(ResourceLocation.fromNamespaceAndPath("cobblemon", it)).orElse(null) }
+        fun rankName(view: LeagueView): Component = rankName(view.rank)
     }
 }
+
+internal fun rankName(rank: String): Component =
+    Component.translatable("screen.more_cobblemon_contents_league_challenge.home.rank." + rank.lowercase(Locale.ROOT))
+
+/** The rank's ball, or a nether star for the champion (and for a rank this client does not know). */
+internal fun rankStack(rank: String): ItemStack = when (rank) {
+    "POKE_BALL" -> "poke_ball"
+    "GREAT_BALL" -> "great_ball"
+    "ULTRA_BALL" -> "ultra_ball"
+    "MASTER_BALL" -> "master_ball"
+    else -> null
+}?.let { BuiltInRegistries.ITEM.getOptional(ResourceLocation.fromNamespaceAndPath("cobblemon", it)).orElse(null) }
+    ?.let(::ItemStack) ?: ItemStack(Items.NETHER_STAR)
 
 internal fun leagueCopy(key: String, vararg args: Any): Component =
     Component.translatable("screen.more_cobblemon_contents_league_challenge.live.$key", *args)
