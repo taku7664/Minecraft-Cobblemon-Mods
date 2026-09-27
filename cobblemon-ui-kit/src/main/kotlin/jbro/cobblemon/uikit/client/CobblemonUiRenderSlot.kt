@@ -14,6 +14,7 @@ import net.minecraft.client.gui.components.PlayerFaceRenderer
 import net.minecraft.client.gui.narration.NarratedElementType
 import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.client.model.PlayerModel
+import net.minecraft.client.model.VillagerModel
 import net.minecraft.client.model.geom.ModelLayers
 import net.minecraft.client.renderer.LightTexture
 import net.minecraft.client.renderer.texture.OverlayTexture
@@ -38,6 +39,17 @@ sealed interface CobblemonUiRenderContent {
     /** A player's own skin, looked up every frame so a skin that finishes downloading later still appears. */
     data class PlayerProfile(
         val profile: GameProfile,
+        val framing: UiModelFraming = UiModelFraming.PORTRAIT
+    ) : CobblemonUiRenderContent
+
+    /**
+     * A villager as its base skin, a [type] biome overlay and a [profession] overlay, the way vanilla layers them:
+     * `textures/entity/villager/type/<type>.png` and `textures/entity/villager/profession/<profession>.png` in each
+     * id's namespace. Cobblemon's nurse is `cobblemon:nurse_joy`.
+     */
+    data class Villager(
+        val profession: ResourceLocation,
+        val type: ResourceLocation = ResourceLocation.withDefaultNamespace("plains"),
         val framing: UiModelFraming = UiModelFraming.PORTRAIT
     ) : CobblemonUiRenderContent
 
@@ -147,6 +159,11 @@ class CobblemonUiRenderSlot private constructor(
                             UiModelPlacement.calculate(bounds, content.framing)
                         )
                     }
+                    is CobblemonUiRenderContent.Villager -> renderVillager(
+                        graphics,
+                        content,
+                        UiModelPlacement.calculate(bounds, content.framing, UiModelPlacement.VILLAGER_HEAD)
+                    )
                     is CobblemonUiRenderContent.PlayerFace -> {
                         val size = min(bounds.width, bounds.height)
                         PlayerFaceRenderer.draw(graphics, Minecraft.getInstance().skinManager.getInsecureSkin(content.profile),
@@ -205,6 +222,38 @@ class CobblemonUiRenderSlot private constructor(
                 val buffer = graphics.bufferSource().getBuffer(model.renderType(texture))
                 model.renderToBuffer(pose, buffer, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY)
                 graphics.flush()
+            } finally {
+                pose.popPose()
+            }
+        }
+
+        private var villagerModel: VillagerModel<net.minecraft.world.entity.npc.Villager>? = null
+
+        private fun renderVillager(graphics: GuiGraphics, content: CobblemonUiRenderContent.Villager, placement: UiModelPlacement) {
+            val model = villagerModel ?: VillagerModel<net.minecraft.world.entity.npc.Villager>(
+                Minecraft.getInstance().entityModels.bakeLayer(ModelLayers.VILLAGER)
+            ).also {
+                it.young = false
+                it.hatVisible(true)
+                villagerModel = it
+            }
+            val layers = listOf(
+                ResourceLocation.withDefaultNamespace("textures/entity/villager/villager.png"),
+                ResourceLocation.fromNamespaceAndPath(content.type.namespace, "textures/entity/villager/type/${content.type.path}.png"),
+                ResourceLocation.fromNamespaceAndPath(content.profession.namespace, "textures/entity/villager/profession/${content.profession.path}.png")
+            )
+            val scale = placement.scale.toFloat()
+            val pose = graphics.pose()
+            graphics.flush()
+            pose.pushPose()
+            try {
+                pose.translate(placement.centerX.toDouble(), placement.originY.toDouble(), 80.0)
+                pose.scale(scale, scale, -scale)
+                layers.forEach { texture ->
+                    model.renderToBuffer(pose, graphics.bufferSource().getBuffer(model.renderType(texture)),
+                        LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY)
+                    graphics.flush()
+                }
             } finally {
                 pose.popPose()
             }

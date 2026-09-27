@@ -81,6 +81,15 @@ class UiContentContractTest {
     }
 
     @Test
+    fun `full body framing keeps a villager's taller head inside the slot`() {
+        val bounds = UiRect(0, 0, 80, 160)
+        val placement = UiModelPlacement.calculate(bounds, UiModelFraming.FULL_BODY, UiModelPlacement.VILLAGER_HEAD)
+
+        assertTrue(placement.originY - placement.scale * UiModelPlacement.VILLAGER_HEAD >= bounds.y)
+        assertTrue(placement.originY + placement.scale * UiModelPlacement.BODY <= bounds.bottom)
+    }
+
+    @Test
     fun `portrait framing pins the head to the top and crops below the chest`() {
         val bounds = UiRect(0, 0, 38, 38)
         val placement = UiModelPlacement.calculate(bounds, UiModelFraming.PORTRAIT)

@@ -101,18 +101,32 @@ data class UiModelPlacement(val centerX: Int, val originY: Float, val scale: Int
         private const val MAX_SCALE = 120
         private const val WIDTH_USAGE = 0.88f
 
-        fun calculate(bounds: UiRect, framing: UiModelFraming): UiModelPlacement {
+        /** How far a player model reaches above its neck pivot, in model units. */
+        const val PLAYER_HEAD = 0.5f
+
+        /** How far a player or villager model reaches below its neck pivot, down to the feet. */
+        const val BODY = 1.5f
+
+        /** A villager's taller head. */
+        const val VILLAGER_HEAD = 0.625f
+
+        /**
+         * Places a humanoid model that reaches [head] units above its neck pivot and [body] units below it. A portrait
+         * shows the head and one unit below the neck; a full body shows everything.
+         */
+        fun calculate(bounds: UiRect, framing: UiModelFraming, head: Float = PLAYER_HEAD, body: Float = BODY): UiModelPlacement {
             val widthScale = (bounds.width * WIDTH_USAGE).toInt()
             val centerX = bounds.x + bounds.width / 2
             return when (framing) {
                 // Pinned to the top so the head stays whole while the slot crops somewhere below the chest.
                 UiModelFraming.PORTRAIT -> {
-                    val scale = min((bounds.height * 0.90f / 1.5f).toInt(), widthScale).coerceIn(1, MAX_SCALE)
-                    UiModelPlacement(centerX, bounds.y + scale / 2f, scale)
+                    val scale = min((bounds.height * 0.90f / (head + 1f)).toInt(), widthScale).coerceIn(1, MAX_SCALE)
+                    UiModelPlacement(centerX, bounds.y + head * scale, scale)
                 }
                 UiModelFraming.FULL_BODY -> {
-                    val scale = min((bounds.height * 0.94f / 2f).toInt(), widthScale).coerceIn(1, MAX_SCALE)
-                    UiModelPlacement(centerX, bounds.y + (bounds.height - scale * 2) / 2f + scale / 2f, scale)
+                    val span = head + body
+                    val scale = min((bounds.height * 0.94f / span).toInt(), widthScale).coerceIn(1, MAX_SCALE)
+                    UiModelPlacement(centerX, bounds.y + (bounds.height - scale * span) / 2f + head * scale, scale)
                 }
             }
         }
