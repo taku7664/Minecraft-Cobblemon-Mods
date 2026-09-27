@@ -245,9 +245,17 @@ class ActiveMove(val template: MoveData) : HitData {
     /** Handlers a handler attaches to the move while it is in use, like Fling's `move.onHit = ...`. */
     val dynamicHandlers: HashMap<String, Any?> = HashMap()
 
-    override fun handler(callbackName: String): Any? =
-        if (dynamicHandlers.containsKey(callbackName)) dynamicHandlers[callbackName] else template.handler(callbackName)
-    override fun declares(callbackName: String): Boolean = callbackName in dynamicHandlers || template.declares(callbackName)
+    /**
+     * A handler set on this move while it is in use wins over the template's: Fling's `move.onHit`
+     * (dynamicHandlers) or Piercing Drill's `move.onBasePower` (a function stored in extra).
+     */
+    override fun handler(callbackName: String): Any? = when {
+        dynamicHandlers.containsKey(callbackName) -> dynamicHandlers[callbackName]
+        extra[callbackName] is Function1<*, *> -> extra[callbackName]
+        else -> template.handler(callbackName)
+    }
+    override fun declares(callbackName: String): Boolean =
+        callbackName in dynamicHandlers || extra[callbackName] is Function1<*, *> || template.declares(callbackName)
     override fun data(field: String): Any? = if (extra.containsKey(field)) extra[field] else template.data(field)
     override fun flag(name: String): Boolean = Js.truthy(flags[name])
 

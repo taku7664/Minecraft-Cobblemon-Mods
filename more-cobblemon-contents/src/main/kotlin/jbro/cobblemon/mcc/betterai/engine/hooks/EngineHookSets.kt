@@ -16,5 +16,7 @@ object EngineHookSets {
         jbro.cobblemon.mcc.betterai.engine.effects.PortAbilitiesADeps,
         jbro.cobblemon.mcc.betterai.engine.effects.PortMovesA,
         jbro.cobblemon.mcc.betterai.engine.effects.PortMovesA2,
+        jbro.cobblemon.mcc.betterai.engine.effects.PortAbilitiesB,
+        jbro.cobblemon.mcc.betterai.engine.effects.PortItemsC,
     )
 }
