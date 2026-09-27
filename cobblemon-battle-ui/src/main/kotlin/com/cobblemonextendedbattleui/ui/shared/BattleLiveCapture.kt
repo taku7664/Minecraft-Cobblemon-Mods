@@ -12,6 +12,7 @@ import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleSwitchPokemonSelection
 import com.cobblemon.mod.common.client.gui.battle.subscreen.ForfeitConfirmationSelection
 import com.cobblemon.mod.common.client.gui.battle.widgets.BattleOptionTile
+import com.cobblemon.mod.common.client.gui.party.PartyTutorialToasts
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity
 import com.cobblemon.mod.common.util.isPartyBusy
 import jbro.cobblemon.battleui.extended.BattleDialogue
@@ -44,6 +45,8 @@ internal object BattleLiveCapture {
     fun install() {
         val page = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_SCREEN") ?: "command"
         require(page in setOf("command", "moves", "switch", "forfeit"))
+        val captureWaitTicks = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_WAIT_TICKS")?.toInt() ?: 80
+        require(captureWaitTicks in 20..400)
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             if (!started || client.world == null || client.player == null) return@register
             if (++elapsedTicks > 600) {
@@ -95,6 +98,10 @@ internal object BattleLiveCapture {
             if (!rootSeen && selection is BattleGeneralActionSelection) {
                 rootSeen = true
                 ticks = 0
+                if (System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_COMPLETE_PARTY_TUTORIAL") == "1") {
+                    // Only the opt-in fixture: compare the stable battle layout after Cobblemon's onboarding.
+                    PartyTutorialToasts.onArrowKeySwitchedSlot()
+                }
                 CobblemonExtendedBattleUI.LOGGER.info("Live battle root command selection became visible")
                 selection.tiles.forEachIndexed { index, tile ->
                     CobblemonExtendedBattleUI.LOGGER.info(
@@ -144,7 +151,7 @@ internal object BattleLiveCapture {
                 navigationChecked = true
                 CobblemonExtendedBattleUI.LOGGER.info("Live battle keyboard navigation verified on '{}'", page)
             }
-            if (++ticks < 80) return@register
+            if (++ticks < captureWaitTicks) return@register
             screenshotPending = true
             val label = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_LABEL") ?: "live"
             require(label.matches(Regex("[a-z0-9-]+")))
