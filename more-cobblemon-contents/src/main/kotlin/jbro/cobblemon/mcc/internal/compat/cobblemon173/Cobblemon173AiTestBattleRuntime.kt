@@ -114,7 +114,7 @@ internal object Cobblemon173AiTestBattleRuntime : AiTestCommandBackend {
 
     private const val CYNTHIA_TEAM_SIZE = 6
     private const val BETTER_AI_PROVIDER_ID =
-        "more_cobblemon_contents_better_ai:local_tactical"
+        "more_cobblemon_contents:local_tactical"
 }
 
 internal object CynthiaAiTestFixture {

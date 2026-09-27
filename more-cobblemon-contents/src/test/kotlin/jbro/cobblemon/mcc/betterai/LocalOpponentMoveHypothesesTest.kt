@@ -1,0 +1,271 @@
+package jbro.cobblemon.mcc.betterai
+
+import jbro.cobblemon.mcc.betterai.evaluation.LocalHypothesisPriorityReservation
+import java.util.UUID
+import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.betterai.state.*
+import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory
+import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Test
+
+class LocalOpponentMoveHypothesesTest {
+    @Test
+    fun `dynamic ability priority is retained under a hypothetical move cap`() {
+        val ally = BattlePokemonStateView(UUID.randomUUID(), BattleSide.ALLY, 0, "target", null, 50,
+            1.0, null, emptyMap(), emptySet(), null, null, false, setOf("normal"))
+        val galeWings = BattlePokemonStateView(UUID.randomUUID(), BattleSide.OPPONENT, 0, "talonflame", null, 50,
+            1.0, null, emptyMap(), emptySet(), "galewings", null, false, setOf("fire", "flying"))
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 1, listOf(ally, galeWings),
+            BattleFieldStateView.empty(), BattleSide.entries.associateWith { 1 }, emptyList(), emptyList())
+        val flying = details.copy(typeId = "flying", power = 60.0, priority = 0)
+        val slow = details.copy(typeId = "normal", power = 400.0, priority = 0)
+        val source = BattlePublicActionCatalogView(emptyList(), candidatePools = listOf(
+            BattlePublicMoveCandidatePoolView(galeWings.battlePokemonId, "talonflame", null,
+                setOf("airslash", "hyperbeam"), "fixture", mapOf("airslash" to flying, "hyperbeam" to slow))))
+
+        val actions = PublicFutureActionFactory.actions(
+            state, BattleSide.OPPONENT, source,
+            includeMoveHypotheses = true,
+            hypotheticalMoveLimitPerSlot = 1,
+            hypotheticalPriorityReservation = LocalHypothesisPriorityReservation.SINGLE,
+            unknownMovePokemonIds = setOf(galeWings.battlePokemonId),
+        )
+
+        assertEquals(setOf("airslash"), actions.filter { it.kind == BattleActionKind.USE_MOVE }.mapNotNull { it.moveId }.toSet())
+    }
+
+    @Test
+    fun `priority reservation retains targets and respects entry PP and committed slots`() {
+        val allies = (0..1).map { slot -> BattlePokemonStateView(UUID.randomUUID(), BattleSide.ALLY,
+            slot, "target", null, 50, 1.0, null, emptyMap(), emptySet(), null, null, false) }
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.DOUBLE, 1, allies + pokemon,
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to 1),
+            emptyList(), emptyList())
+        val templates = mapOf("slow" to details.copy(power = 400.0),
+            "quickattack" to details.copy(priority = 1),
+            "fakeout" to details.copy(power = 1000.0, priority = 3),
+            "protect" to details.copy(power = 0.0, priority = 4,
+                damageCategory = BattleMoveDamageCategory.STATUS, targetPattern = BattleMoveTargetPattern.SELF))
+        val source = BattlePublicActionCatalogView(emptyList(), candidatePools = listOf(
+            BattlePublicMoveCandidatePoolView(id, "probe", null, templates.keys, "fixture", templates)))
+        fun actions(history: RecursiveActionHistory,
+            reservation: LocalHypothesisPriorityReservation = LocalHypothesisPriorityReservation.SINGLE) = PublicFutureActionFactory.actions(
+            state, BattleSide.OPPONENT, source, history, includeMoveHypotheses = true,
+            hypotheticalMoveLimitPerSlot = 1, hypotheticalPriorityReservation = reservation,
+            unknownMovePokemonIds = setOf(id))
+        fun assertMove(history: RecursiveActionHistory, expected: String) {
+            for (reservation in listOf(LocalHypothesisPriorityReservation.SINGLE, LocalHypothesisPriorityReservation.CONDITION_GROUPS)) {
+                val moves = actions(history, reservation).filter { it.kind == BattleActionKind.USE_MOVE }
+                assertEquals(listOf(expected, expected), moves.map { it.moveId })
+                assertEquals(setOf(0, 1), moves.flatMap { it.targets }.map { it.slot }.toSet())
+                assertEquals(1, actions(history, reservation).count { "unknown_public_response" in it.tags })
+            }
+        }
+        assertMove(RecursiveActionHistory(), "fakeout")
+        val acted = RecursiveActionHistory(actedSinceEntryPokemonIds = setOf(id))
+        assertMove(acted, "quickattack")
+        assertEquals(setOf("slow"), actions(acted, LocalHypothesisPriorityReservation.NONE).mapNotNull { it.moveId }.toSet())
+        val exhausted = acted.copy(moveUses = mapOf(RecursiveMoveUseKey(id, "quickattack") to 8))
+        assertMove(exhausted, "slow")
+        val committed = LocalOpponentMoveHypotheses.assume(pokemon, source, acted, "quickattack")
+            .copy(moveUses = exhausted.moveUses)
+        assertFalse(actions(committed).any { it.kind == BattleActionKind.USE_MOVE })
+        assertFalse(actions(committed, LocalHypothesisPriorityReservation.CONDITION_GROUPS).any { it.kind == BattleActionKind.USE_MOVE })
+        assertEquals(8, source.candidatePools.single().moveDetails.getValue("quickattack").currentPp)
+        assertTrue(source.entries.isEmpty())
+        assertTrue(acted.assumedOpponentMoveIds.isEmpty())
+    }
+
+    @Test
+    fun `hypothesis cap counts move IDs not targets and preserves nonhypothetical responses`() {
+        val allies = (0..1).map { slot -> BattlePokemonStateView(UUID.randomUUID(), BattleSide.ALLY,
+            slot, "target", null, 50, 1.0, null, emptyMap(), emptySet(), null, null, false) }
+        val bench = BattlePokemonStateView(UUID.randomUUID(), BattleSide.OPPONENT, null,
+            "probe", null, 50, 1.0, null, emptyMap(), emptySet(), null, null, false)
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.DOUBLE, 1, allies + pokemon + bench,
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to 2),
+            emptyList(), emptyList())
+        val source = BattlePublicActionCatalogView(listOf(BattlePokemonActionCatalogView(id,
+            listOf(BattlePublicMoveOptionView("a", details.copy(power = 1.0),
+                BattlePublicMoveKnowledge.PUBLICLY_REVEALED)), moveSetComplete = false)),
+            candidatePools = catalog.candidatePools)
+        fun actions(cap: Int) = PublicFutureActionFactory.actions(state, BattleSide.OPPONENT, source,
+            unknownMovePokemonIds = setOf(id), includeMoveHypotheses = true,
+            hypotheticalMoveLimitPerSlot = cap)
+        fun signatures(actions: List<BattleActionCandidate>) = actions.map {
+            listOf(it.actionId, it.kind, it.actorSlot, it.moveSlot, it.moveId,
+                it.targets.map { target -> target.side to target.slot }, it.switchPokemonId,
+                it.moveDetails, it.tags)
+        }
+        val unlimited = actions(Int.MAX_VALUE)
+        val limited = actions(1)
+        val hypothetical = limited.filter { "hypothetical_public_move" in it.tags }
+        assertEquals(listOf("d", "d"), hypothetical.map { it.moveId })
+        assertEquals(setOf(0, 1), hypothetical.flatMap { it.targets }.map { it.slot }.toSet())
+        assertEquals(signatures(unlimited.filterNot { "hypothetical_public_move" in it.tags }),
+            signatures(limited.filterNot { "hypothetical_public_move" in it.tags }))
+        assertTrue(limited.any { it.kind == BattleActionKind.SWITCH })
+        assertTrue(limited.any { "unknown_public_response" in it.tags })
+        assertEquals(2, limited.count { it.moveId == "a" })
+        assertEquals(signatures(limited), signatures(actions(1)))
+        assertEquals(setOf("d", "e"), source.candidatePools.single().moveIds)
+        assertEquals(signatures(unlimited), signatures(actions(2)))
+        assertThrows(IllegalArgumentException::class.java) { actions(0) }
+    }
+
+    @Test
+    fun `double joint hypotheses keep separate fourth slots and PP across the next turn`() {
+        val secondId = UUID.randomUUID()
+        fun member(memberId: UUID, side: BattleSide, slot: Int) = BattlePokemonStateView(memberId, side,
+            slot, "probe", null, 50, 1.0, null, emptyMap(), setOf("a", "b", "c"), null, null, false)
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.DOUBLE, 1,
+            listOf(member(UUID.randomUUID(), BattleSide.ALLY, 0), member(UUID.randomUUID(), BattleSide.ALLY, 1),
+                pokemon, member(secondId, BattleSide.OPPONENT, 1)), BattleFieldStateView.empty(),
+            mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to 2), emptyList(), emptyList())
+        val doubleCatalog = BattlePublicActionCatalogView(emptyList(), candidatePools = catalog.candidatePools +
+            BattlePublicMoveCandidatePoolView(secondId, "probe", null, setOf("d", "e"), "fixture",
+                mapOf("d" to details, "e" to details)))
+        val prior = RecursiveActionHistory(moveUses = mapOf(
+            RecursiveMoveUseKey(id, "d") to 6, RecursiveMoveUseKey(secondId, "e") to 7))
+        fun actions(history: RecursiveActionHistory, limit: Int = Int.MAX_VALUE) = PublicFutureActionFactory.actions(
+            state, BattleSide.OPPONENT, doubleCatalog, history, candidateLimitPerSlot = limit,
+            unknownMovePokemonIds = setOf(id, secondId), includeMoveHypotheses = true)
+        val joint = actions(prior).first { it.componentActions.map { component -> component.moveId } == listOf("d", "e") }
+        val committed = LocalOpponentMoveHypotheses.assumeAction(state, doubleCatalog, prior, joint)
+        assertEquals(mapOf(id to setOf("d"), secondId to setOf("e")), committed.assumedOpponentMoveIds)
+        assertEquals(listOf(2, 1), joint.componentActions.map { it.moveDetails?.currentPp })
+        val spent = LocalBranchMoveInputs.afterExecutedMoves(committed, mapOf(id to "d", secondId to "e"))
+        val next = actions(spent)
+        val nextMoves = next.flatMap { it.componentActions }.filter { it.kind == BattleActionKind.USE_MOVE }
+        assertTrue(nextMoves.isNotEmpty())
+        assertTrue(nextMoves.all { it.actorSlot == 0 && it.moveId == "d" && it.moveDetails?.currentPp == 1 })
+        assertTrue(next.any { turn -> turn.componentActions.all { "unknown_public_response" in it.tags } })
+        assertEquals(4, actions(committed, limit = 2).size)
+        assertTrue(prior.assumedOpponentMoveIds.isEmpty())
+        assertEquals(6, prior.moveUses[RecursiveMoveUseKey(id, "d")])
+        assertTrue(doubleCatalog.entries.isEmpty())
+    }
+
+    @Test
+    fun `a hypothesized charge can finish at zero PP without reopening a move slot`() {
+        val ally = BattlePokemonStateView(UUID.randomUUID(), BattleSide.ALLY, 0, "target", null, 50,
+            1.0, null, emptyMap(), emptySet(), null, null, false)
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 1, listOf(ally, pokemon),
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1), emptyList(), emptyList())
+        val assumed = LocalOpponentMoveHypotheses.assume(pokemon, catalog, RecursiveActionHistory(), "d")
+        val charging = assumed.copy(moveUses = mapOf(RecursiveMoveUseKey(id, "d") to 8),
+            chargingMoveByPokemon = mapOf(id to "d"))
+        fun actions(history: RecursiveActionHistory) = PublicFutureActionFactory.actions(state, BattleSide.OPPONENT,
+            catalog, history, unknownMovePokemonIds = setOf(id), includeMoveHypotheses = true)
+        val continuation = actions(charging).single()
+        assertEquals("d", continuation.moveId)
+        assertEquals(0, continuation.moveDetails?.currentPp)
+        val committed = LocalOpponentMoveHypotheses.assumeAction(state, catalog, charging, continuation)
+        val finished = LocalBranchMoveInputs.afterExecutedMoves(committed, mapOf(id to "d"))
+            .copy(chargingMoveByPokemon = emptyMap())
+        assertEquals(8, finished.moveUses[RecursiveMoveUseKey(id, "d")])
+        assertFalse(actions(finished).any { it.kind == BattleActionKind.USE_MOVE })
+        assertEquals(setOf("d"), finished.assumedOpponentMoveIds[id])
+    }
+
+    @Test
+    fun `opt-in future actions use marked hypotheses and retain unknown response`() {
+        val ally = BattlePokemonStateView(UUID.randomUUID(), BattleSide.ALLY, 0, "target", null, 50,
+            1.0, null, emptyMap(), emptySet(), null, null, false)
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 1, listOf(ally, pokemon),
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1),
+            emptyList(), emptyList())
+        val root = RecursiveActionHistory(moveUses = mapOf(RecursiveMoveUseKey(id, "d") to 2))
+        fun actions(history: RecursiveActionHistory, enabled: Boolean) = PublicFutureActionFactory.actions(
+            state, BattleSide.OPPONENT, catalog, history, unknownMovePokemonIds = setOf(id),
+            includeMoveHypotheses = enabled)
+        assertTrue(LocalDecisionTuning.CURRENT.lookaheadMoveHypotheses)
+        assertEquals(4, LocalDecisionTuning.CURRENT.hypotheticalMoveLimitPerSlot)
+        assertEquals(LocalHypothesisPriorityReservation.CONDITION_GROUPS,
+            LocalDecisionTuning.CURRENT.hypotheticalPriorityReservation)
+        assertFalse(actions(root, false).any { it.kind == BattleActionKind.USE_MOVE })
+        val enabled = actions(root, true)
+        assertTrue(enabled.any { "unknown_public_response" in it.tags })
+        val move = enabled.single { it.moveId == "d" }
+        assertTrue("hypothetical_public_move" in move.tags)
+        assertEquals(6, move.moveDetails?.currentPp)
+        assertEquals(listOf(BattleTargetSlot(BattleSide.ALLY, 0)), move.targets)
+        val committed = LocalOpponentMoveHypotheses.assumeAction(state, catalog, root, move)
+        assertEquals(setOf("d"), actions(committed, true).mapNotNull { it.moveId }.toSet())
+        assertTrue(root.assumedOpponentMoveIds.isEmpty())
+        assertTrue(catalog.forPokemon(id).isEmpty())
+    }
+
+    private val id = UUID.randomUUID()
+    private val pokemon = BattlePokemonStateView(id, BattleSide.OPPONENT, 0, "probe", null, 50, 1.0,
+        null, emptyMap(), setOf("a", "b", "c"), null, null, false)
+    private val details = BattleMoveCandidateView("normal", BattleMoveDamageCategory.PHYSICAL, 40.0, 100.0, 0, 8)
+    private val catalog = BattlePublicActionCatalogView(emptyList(), candidatePools = listOf(
+        BattlePublicMoveCandidatePoolView(id, "probe", null, setOf("d", "e"), "fixture",
+            mapOf("d" to details, "e" to details))))
+
+    @Test
+    fun `a selected hypothesis fills the fourth slot even without execution and isolates siblings`() {
+        val root = RecursiveActionHistory()
+        assertEquals(setOf("d", "e"), LocalOpponentMoveHypotheses.options(pokemon, catalog, root).keys)
+        val left = LocalOpponentMoveHypotheses.assume(pokemon, catalog, root, "d")
+        val right = LocalOpponentMoveHypotheses.assume(pokemon, catalog, root, "e")
+        assertTrue(left.moveUses.isEmpty())
+        assertEquals(setOf("d"), LocalOpponentMoveHypotheses.options(pokemon, catalog, left).keys)
+        assertEquals(setOf("e"), LocalOpponentMoveHypotheses.options(pokemon, catalog, right).keys)
+        assertTrue(root.assumedOpponentMoveIds.isEmpty())
+        assertNotEquals(left, right)
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 1, listOf(pokemon),
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 0, BattleSide.OPPONENT to 1),
+            emptyList(), emptyList())
+        val wait = BattleActionCandidate("wait", BattleActionKind.WAIT)
+        val outcome = PublicTurnProjection(state, listOf(BattleSide.ALLY, BattleSide.OPPONENT),
+            stateBeforeResidual = state, directDamage = LocalDirectDamageLedger.EMPTY)
+        val next = RecursiveHistoryProjector.project(left, state, outcome, wait, wait)
+        assertTrue(next.moveUses.isEmpty())
+        assertEquals(left.assumedOpponentMoveIds, next.assumedOpponentMoveIds)
+        assertEquals(setOf("d"), LocalOpponentMoveHypotheses.options(pokemon, catalog, next).keys)
+        assertThrows(IllegalArgumentException::class.java) {
+            LocalOpponentMoveHypotheses.assume(pokemon, catalog, left, "e")
+        }
+        assertEquals(setOf("a", "b", "c"), pokemon.knownMoveIds)
+    }
+
+    @Test
+    fun `unavailable templates and exhausted PP do not invent executable moves`() {
+        assertTrue(LocalOpponentMoveHypotheses.options(pokemon, BattlePublicActionCatalogView.empty(),
+            RecursiveActionHistory()).isEmpty())
+        val history = RecursiveActionHistory(moveUses = mapOf(RecursiveMoveUseKey(id, "d") to 8))
+        assertEquals(setOf("e"), LocalOpponentMoveHypotheses.options(pokemon, catalog, history).keys)
+        val wrongForm = BattlePublicActionCatalogView(emptyList(), candidatePools = listOf(
+            BattlePublicMoveCandidatePoolView(id, "other", null, setOf("d"), "fixture", mapOf("d" to details))))
+        assertTrue(LocalOpponentMoveHypotheses.options(pokemon, wrongForm, RecursiveActionHistory()).isEmpty())
+    }
+
+    @Test
+    fun `normalized expected slots create concrete branches while guesses create none`() {
+        val ally = BattlePokemonStateView(UUID.randomUUID(), BattleSide.ALLY, 0, "target", null, 50,
+            1.0, null, emptyMap(), emptySet(), null, null, false)
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 1, listOf(ally, pokemon),
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 1, BattleSide.OPPONENT to 1),
+            emptyList(), emptyList())
+        val normalized = catalog.withOpponentMoveInferences(listOf(BattleOpponentMoveInferenceView(id, listOf(
+            BattleOpponentMoveSlotView(0, "d", BattleOpponentMoveGroup.COVERAGE_ATTACK,
+                BattleOpponentMoveKnowledge.EXPECTED, BattleOpponentMoveSource.LEARNSET_EXPECTATION, details),
+            BattleOpponentMoveSlotView(1, null, BattleOpponentMoveGroup.STATUS_OTHER,
+                BattleOpponentMoveKnowledge.GUESS, BattleOpponentMoveSource.GROUP_GUESS),
+        ))))
+
+        val actions = PublicFutureActionFactory.actions(
+            state, BattleSide.OPPONENT, normalized,
+            unknownMovePokemonIds = setOf(id), includeMoveHypotheses = true,
+        )
+
+        val moves = actions.filter { it.kind == BattleActionKind.USE_MOVE }
+        assertEquals(listOf("d"), moves.map { it.moveId })
+        assertTrue("expected_opponent_move" in moves.single().tags)
+        assertFalse(actions.any { it.moveId == "e" })
+        assertTrue(actions.any { "unknown_public_response" in it.tags })
+    }
+}

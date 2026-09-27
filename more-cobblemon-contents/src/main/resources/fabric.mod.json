@@ -3,7 +3,7 @@
   "id": "more_cobblemon_contents",
   "version": "${version}",
   "name": "More Cobblemon Contents",
-  "description": "Battle Tower, Battle Factory, PvP, and boss raid content for Cobblemon.",
+  "description": "Battle Tower, Battle Factory, PvP and League content for Cobblemon, with a built-in tactical AI.",
   "authors": ["jbro"],
   "license": "MIT",
   "environment": "*",
@@ -12,6 +12,10 @@
       {
         "adapter": "kotlin",
         "value": "jbro.cobblemon.mcc.MoreCobblemonContents"
+      },
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.mcc.betterai.MoreCobblemonContentsBetterAi"
       }
     ],
     "client": [
