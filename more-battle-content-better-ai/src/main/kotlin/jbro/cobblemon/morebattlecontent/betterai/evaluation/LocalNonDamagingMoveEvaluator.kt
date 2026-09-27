@@ -33,6 +33,8 @@ internal object LocalNonDamagingMoveEvaluator {
         context: BattleDecisionContext,
         accuracy: Double,
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+        /** How far the trainer matches the status to the target; see [LocalStatusTargetFit]. */
+        statusFitScale: Double = 0.0,
     ): Score {
         val actor = actor(candidate, context)
         val missingHp = (1.0 - (actor?.hpFraction ?: 1.0)).coerceIn(0.0, 1.0)
@@ -82,7 +84,11 @@ internal object LocalNonDamagingMoveEvaluator {
             declaresMajorStatus && target?.statusId != null -> 0.0
             statusProbability != null -> {
                 val targetHpWeight = target?.hpFraction?.let { 0.5 + it * 0.5 } ?: 1.0
-                statusProbability * MAJOR_STATUS_PRESSURE * targetHpWeight
+                val statusId = effects.firstOrNull {
+                    it.kind == BattleMoveEffectKind.STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET
+                }?.valueId
+                val fit = LocalStatusTargetFit.multiplier(statusId, target, context, statusFitScale)
+                statusProbability * MAJOR_STATUS_PRESSURE * targetHpWeight * fit
             }
             declaresPureRecovery -> 0.0
             setupPressure != null -> {

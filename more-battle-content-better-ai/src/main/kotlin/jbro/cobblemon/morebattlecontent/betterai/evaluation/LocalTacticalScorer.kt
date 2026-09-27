@@ -184,7 +184,10 @@ internal object LocalTacticalScorer {
         val damageRange = facts?.standardDamageFractionRange
         val accuracy = LocalPublicAccuracy.probability(candidate, context, BattleSide.ALLY)
         val nonDamagingScore = if (details.damageCategory == BattleMoveDamageCategory.STATUS) {
-            LocalNonDamagingMoveEvaluator.score(candidate, context, accuracy, tuning)
+            LocalNonDamagingMoveEvaluator.score(
+                candidate, context, accuracy, tuning,
+                statusFitScale = LocalStatusTargetFit.scale(profile.difficulty.tier),
+            )
         } else {
             null
         }
