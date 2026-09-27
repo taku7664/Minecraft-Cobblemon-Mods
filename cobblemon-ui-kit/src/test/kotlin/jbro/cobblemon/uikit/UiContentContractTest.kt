@@ -68,4 +68,24 @@ class UiContentContractTest {
             UiCalloutSpec(UiOverlayTone.WARNING, Component.literal(" "))
         }
     }
+
+    @Test
+    fun `full body framing keeps the whole model inside a tall slot`() {
+        val bounds = UiRect(10, 20, 100, 200)
+        val placement = UiModelPlacement.calculate(bounds, UiModelFraming.FULL_BODY)
+
+        assertEquals(60, placement.centerX)
+        assertEquals(88, placement.scale)
+        assertTrue(placement.originY - placement.scale * 0.5f >= bounds.y)
+        assertTrue(placement.originY + placement.scale * 1.5f <= bounds.bottom)
+    }
+
+    @Test
+    fun `portrait framing pins the head to the top and crops below the chest`() {
+        val bounds = UiRect(0, 0, 38, 38)
+        val placement = UiModelPlacement.calculate(bounds, UiModelFraming.PORTRAIT)
+
+        assertEquals(0f, placement.originY - placement.scale * 0.5f)
+        assertTrue(placement.originY + placement.scale * 1.5f > bounds.bottom)
+    }
 }

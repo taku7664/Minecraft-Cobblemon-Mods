@@ -1,7 +1,11 @@
 package jbro.cobblemon.uikit.client
 
 import jbro.cobblemon.uikit.CobblemonUiThemes
+import com.mojang.authlib.GameProfile
 import jbro.cobblemon.uikit.UiIcon
+import jbro.cobblemon.uikit.UiModelFraming
+import jbro.cobblemon.uikit.UiModelPlacement
+import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiRenderSlotSpec
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
@@ -12,6 +16,7 @@ import net.minecraft.client.model.PlayerModel
 import net.minecraft.client.model.geom.ModelLayers
 import net.minecraft.client.renderer.LightTexture
 import net.minecraft.client.renderer.texture.OverlayTexture
+import net.minecraft.client.resources.PlayerSkin as MinecraftPlayerSkin
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.entity.LivingEntity
@@ -22,7 +27,17 @@ sealed interface CobblemonUiRenderContent {
     data object Empty : CobblemonUiRenderContent
     data class Texture(val texture: UiIcon) : CobblemonUiRenderContent
     data class Item(val stack: ItemStack) : CobblemonUiRenderContent
-    data class PlayerSkin(val texture: UiIcon, val slim: Boolean = false) : CobblemonUiRenderContent
+    data class PlayerSkin(
+        val texture: UiIcon,
+        val slim: Boolean = false,
+        val framing: UiModelFraming = UiModelFraming.PORTRAIT
+    ) : CobblemonUiRenderContent
+
+    /** A player's own skin, looked up every frame so a skin that finishes downloading later still appears. */
+    data class PlayerProfile(
+        val profile: GameProfile,
+        val framing: UiModelFraming = UiModelFraming.PORTRAIT
+    ) : CobblemonUiRenderContent
 }
 
 class CobblemonUiRenderSlot private constructor(
@@ -50,7 +65,21 @@ class CobblemonUiRenderSlot private constructor(
                 CobblemonUiRenderContent.Empty -> renderFallback(graphics, left, top, innerWidth, innerHeight)
                 is CobblemonUiRenderContent.Texture -> renderTexture(graphics, content.texture, left, top, innerWidth, innerHeight)
                 is CobblemonUiRenderContent.Item -> graphics.renderItem(content.stack, left + (innerWidth - 16) / 2, top + (innerHeight - 16) / 2)
-                is CobblemonUiRenderContent.PlayerSkin -> renderPlayer(graphics, content, left, top, innerWidth, innerHeight)
+                is CobblemonUiRenderContent.PlayerSkin -> renderPlayer(
+                    graphics,
+                    ResourceLocation.fromNamespaceAndPath(content.texture.namespace, content.texture.path),
+                    content.slim,
+                    UiModelPlacement.calculate(UiRect(left, top, innerWidth, innerHeight), content.framing)
+                )
+                is CobblemonUiRenderContent.PlayerProfile -> {
+                    val skin = Minecraft.getInstance().skinManager.getInsecureSkin(content.profile)
+                    renderPlayer(
+                        graphics,
+                        skin.texture(),
+                        skin.model() == MinecraftPlayerSkin.Model.SLIM,
+                        UiModelPlacement.calculate(UiRect(left, top, innerWidth, innerHeight), content.framing)
+                    )
+                }
             }
         } finally {
             graphics.disableScissor()
@@ -81,23 +110,15 @@ class CobblemonUiRenderSlot private constructor(
         )
     }
 
-    private fun renderPlayer(
-        graphics: GuiGraphics,
-        content: CobblemonUiRenderContent.PlayerSkin,
-        left: Int,
-        top: Int,
-        innerWidth: Int,
-        innerHeight: Int
-    ) {
-        val model = playerModel(content.slim)
-        val scale = min((innerHeight * 0.90f / 1.5f).toInt(), (innerWidth * 0.88f).toInt()).coerceIn(1, 120)
+    private fun renderPlayer(graphics: GuiGraphics, texture: ResourceLocation, slim: Boolean, placement: UiModelPlacement) {
+        val model = playerModel(slim)
+        val scale = placement.scale.toFloat()
         val pose = graphics.pose()
         graphics.flush()
         pose.pushPose()
         try {
-            pose.translate((left + innerWidth / 2).toDouble(), (top + scale / 2f).toDouble(), 80.0)
-            pose.scale(scale.toFloat(), scale.toFloat(), -scale.toFloat())
-            val texture = ResourceLocation.fromNamespaceAndPath(content.texture.namespace, content.texture.path)
+            pose.translate(placement.centerX.toDouble(), placement.originY.toDouble(), 80.0)
+            pose.scale(scale, scale, -scale)
             val buffer = graphics.bufferSource().getBuffer(model.renderType(texture))
             model.renderToBuffer(pose, buffer, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY)
             graphics.flush()

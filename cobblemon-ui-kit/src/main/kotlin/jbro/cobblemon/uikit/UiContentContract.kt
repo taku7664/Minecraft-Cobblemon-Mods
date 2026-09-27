@@ -1,6 +1,7 @@
 package jbro.cobblemon.uikit
 
 import net.minecraft.network.chat.Component
+import kotlin.math.min
 
 enum class UiTextAlignment { START, CENTER, END }
 enum class UiTextTone { PRIMARY, SECONDARY, MUTED, SUCCESS, WARNING, DANGER, PANEL, PANEL_ALT }
@@ -85,6 +86,36 @@ data class UiRenderSlotSpec(
     init {
         require(accessibleLabel.string.isNotBlank()) { "Render slot label must not be blank" }
         require(padding >= 0) { "Render slot padding must not be negative" }
+    }
+}
+
+/** How a render slot frames a player-shaped model: head and chest, or the whole body. */
+enum class UiModelFraming { PORTRAIT, FULL_BODY }
+
+/**
+ * Where a player-shaped model sits inside a slot. The model origin is its neck pivot: the head extends half a
+ * [scale] above [originY] and the feet reach one and a half below it.
+ */
+data class UiModelPlacement(val centerX: Int, val originY: Float, val scale: Int) {
+    companion object {
+        private const val MAX_SCALE = 120
+        private const val WIDTH_USAGE = 0.88f
+
+        fun calculate(bounds: UiRect, framing: UiModelFraming): UiModelPlacement {
+            val widthScale = (bounds.width * WIDTH_USAGE).toInt()
+            val centerX = bounds.x + bounds.width / 2
+            return when (framing) {
+                // Pinned to the top so the head stays whole while the slot crops somewhere below the chest.
+                UiModelFraming.PORTRAIT -> {
+                    val scale = min((bounds.height * 0.90f / 1.5f).toInt(), widthScale).coerceIn(1, MAX_SCALE)
+                    UiModelPlacement(centerX, bounds.y + scale / 2f, scale)
+                }
+                UiModelFraming.FULL_BODY -> {
+                    val scale = min((bounds.height * 0.94f / 2f).toInt(), widthScale).coerceIn(1, MAX_SCALE)
+                    UiModelPlacement(centerX, bounds.y + (bounds.height - scale * 2) / 2f + scale / 2f, scale)
+                }
+            }
+        }
     }
 }
 
