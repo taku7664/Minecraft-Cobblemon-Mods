@@ -222,5 +222,7 @@
   "trainer.more_cobblemon_contents.tower_trainer_119": "Tower Ace Kai Sullivan",
   "trainer.more_cobblemon_contents.tower_trainer_120": "Tower Ace Lena Sullivan",
   "screen.more_cobblemon_contents.hub.tab.battle_tower": "Battle Tower",
-  "screen.more_cobblemon_contents.hub.unavailable.battle_tower": "The Battle Tower screen could not be opened."
+  "screen.more_cobblemon_contents.hub.unavailable.battle_tower": "The Battle Tower screen could not be opened.",
+  "screen.more_cobblemon_contents.tower.guide.open": "Guide",
+  "screen.more_cobblemon_contents.tower.section.legendary_class": "Legendary"
 }

@@ -9,28 +9,20 @@ internal object TowerPlayClientNetworking {
     fun register() {
         ClientPlayNetworking.registerGlobalReceiver(TowerPlayStatePayload.TYPE) { payload, context ->
             context.client().execute {
-                val current = context.client().screen
-                if (payload.requestId == null) {
-                    context.client().setScreen(TowerPlayScreen(payload.state))
+                val requestId = payload.requestId
+                if (requestId == null) {
+                    TowerHubClient.acceptOpened(payload.state)
                 } else {
-                    current.towerPlayScreen()?.applyAccepted(payload.requestId, payload.state)
+                    TowerHubClient.acceptResult(jbro.cobblemon.mcc.internal.tower.ui.TowerPlayMutationResult.Accepted(requestId, payload.state))
                 }
             }
         }
         ClientPlayNetworking.registerGlobalReceiver(TowerPlayRejectedPayload.TYPE) { payload, context ->
-            context.client().execute {
-                context.client().screen.towerPlayScreen()?.applyRejected(payload.result)
-            }
+            context.client().execute { TowerHubClient.acceptResult(payload.result) }
         }
     }
 
     fun send(payload: TowerPlayIntentPayload) {
         ClientPlayNetworking.send(payload)
     }
-}
-
-private fun net.minecraft.client.gui.screens.Screen?.towerPlayScreen(): TowerPlayScreen? = when (this) {
-    is TowerPlayScreen -> this
-    is TowerGuideScreen -> towerPlayScreen
-    else -> null
 }

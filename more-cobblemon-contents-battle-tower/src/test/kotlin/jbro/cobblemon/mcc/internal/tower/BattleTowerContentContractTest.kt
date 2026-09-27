@@ -2,11 +2,6 @@ package jbro.cobblemon.mcc.internal.tower
 
 import java.nio.file.Files
 import java.nio.file.Path
-import jbro.cobblemon.mcc.client.MccContentFrameLayout
-import jbro.cobblemon.mcc.client.MccScreen
-import jbro.cobblemon.mcc.client.MccTabbedContentScreen
-import jbro.cobblemon.mcc.client.TowerPlayLayout
-import jbro.cobblemon.mcc.client.TowerPlayScreen
 import jbro.cobblemon.mcc.internal.command.AiTestCommands
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotSame
@@ -55,15 +50,6 @@ class BattleTowerContentContractTest {
         )
         assertEquals(AiTestCommands.ADMIN_PERMISSION_LEVEL, 2)
 
-    }
-
-    @Test
-    fun `tower screen sits in the shared hub frame`() {
-        val frame = MccContentFrameLayout.calculate(844, 470)
-
-        assertEquals(frame.content, TowerPlayLayout.calculate(frame.content).shell)
-        assertTrue(MccScreen::class.java.isAssignableFrom(TowerPlayScreen::class.java))
-        assertTrue(MccTabbedContentScreen::class.java.isAssignableFrom(TowerPlayScreen::class.java))
     }
 
     @Test

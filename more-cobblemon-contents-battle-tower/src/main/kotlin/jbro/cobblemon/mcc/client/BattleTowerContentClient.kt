@@ -11,13 +11,12 @@ import net.fabricmc.api.ClientModInitializer
 object BattleTowerContentClient : ClientModInitializer {
     override fun onInitializeClient() {
         TowerPlayClientNetworking.register()
-        // Opens the content's own screen until its hub tab is rebuilt on the hub.
         MccHubTabs.register(
             MccHubTab(
                 ManagedBattleContentIds.BATTLE_TOWER,
                 Component.translatable(MccDashboardPresentation.contentNameKey(ManagedBattleContentIds.BATTLE_TOWER)),
                 order = 100,
-                kind = MccHubTabKind.Screen { MccHubTabs.requestContent(ManagedBattleContentIds.BATTLE_TOWER) },
+                kind = MccHubTabKind.Embedded(::TowerHubTab),
             ),
         )
     }

@@ -222,5 +222,7 @@
   "trainer.more_cobblemon_contents.tower_trainer_119": "타워 에이스 임시우",
   "trainer.more_cobblemon_contents.tower_trainer_120": "타워 에이스 임채원",
   "screen.more_cobblemon_contents.hub.tab.battle_tower": "배틀타워",
-  "screen.more_cobblemon_contents.hub.unavailable.battle_tower": "배틀타워 화면을 열 수 없습니다."
+  "screen.more_cobblemon_contents.hub.unavailable.battle_tower": "배틀타워 화면을 열 수 없습니다.",
+  "screen.more_cobblemon_contents.tower.guide.open": "가이드",
+  "screen.more_cobblemon_contents.tower.section.legendary_class": "전설급"
 }
