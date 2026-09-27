@@ -66,6 +66,7 @@ internal object PvpHubClient {
         private set
     var listPage = 0
     var pickerPage = 0
+    var mechanicsOffset = 0
     private var openedByServer = false
 
     fun acceptRooms(rooms: List<PvpRoomSummaryView>) {
@@ -149,6 +150,7 @@ internal object PvpHubClient {
         view = next
         inviting = invite
         pickerPage = 0
+        mechanicsOffset = 0
         MccHubScreen.refresh(CONTENT)
     }
 
@@ -159,6 +161,7 @@ internal object PvpHubClient {
         selection = null
         listPage = 0
         pickerPage = 0
+        mechanicsOffset = 0
     }
 
     /** True once after the server opened the hub on PvP, whose fresh state the tab then uses. */
@@ -176,6 +179,11 @@ internal object PvpHubClient {
 
 /** PvP inside the MCC hub: browse rooms, sit down in one, and pick a team when the match forms. */
 internal class PvpHubTab : MccHubTabContent {
+    private var scrollable: MccHubKit.Scrollable? = null
+
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollY: Double): Boolean =
+        scrollable?.scroll(mouseX, mouseY, scrollY) == true
+
     override fun shown() {
         if (PvpHubClient.takeOpenedByServer()) return
         when (PvpHubClient.view) {
@@ -188,6 +196,7 @@ internal class PvpHubTab : MccHubTabContent {
     }
 
     override fun build(host: MccHubContentHost, bounds: UiRect) {
+        scrollable = null
         val layout = PvpHubLayout.calculate(bounds)
         val selection = PvpHubClient.selection
         val room = PvpHubClient.room
@@ -242,7 +251,14 @@ internal class PvpHubTab : MccHubTabContent {
 
         val body = MccHubKit.card(host, settings, room("settings"))
         val editable = isHost && lobby && idle
-        var y = MccHubKit.choices(host, UiRect(body.x, body.y, body.width, (body.height - 20).coerceAtLeast(MccHubKit.CONTROL_HEIGHT)), listOf(
+        val settingsArea = UiRect(body.x, body.y, body.width, (body.height - 20).coerceAtLeast(MccHubKit.CONTROL_HEIGHT))
+        val mechanics = state.settings.immutableEnabledMechanics
+        fun toggleMechanic(mechanic: PvpBattleMechanic) {
+            val next = LinkedHashSet(mechanics)
+            if (!next.add(mechanic)) next.remove(mechanic)
+            updateSettings(controller, state.settings.copy(enabledMechanics = next))
+        }
+        val rows = listOf(
             MccHubKit.ChoiceRow(room("group.visibility"),
                 PvpRoomVisibility.entries.map { MccHubKit.Choice(it.name.lowercase(), room("visibility.${it.name.lowercase()}")) },
                 state.settings.visibility.name.lowercase(), editable) { id ->
@@ -255,19 +271,44 @@ internal class PvpHubTab : MccHubTabContent {
             },
             MccHubKit.ChoiceRow(room("group.mechanics"),
                 PvpBattleMechanic.entries.map { MccHubKit.Choice(it.id, room("mechanic.${it.id}")) }, null, editable,
-                selectedIds = state.settings.immutableEnabledMechanics.mapTo(HashSet()) { it.id }) { id ->
-                val mechanics = LinkedHashSet(state.settings.immutableEnabledMechanics)
-                val mechanic = PvpBattleMechanic.entries.first { it.id == id }
-                if (!mechanics.add(mechanic)) mechanics.remove(mechanic)
-                updateSettings(controller, state.settings.copy(enabledMechanics = mechanics))
+                selectedIds = mechanics.mapTo(HashSet()) { it.id }) { id ->
+                toggleMechanic(PvpBattleMechanic.entries.first { it.id == id })
             },
-        )) + MccHubKit.GAP + 2
-        controller.feedbackKey?.let { key ->
-            MccHubKit.text(host, UiRect(body.x, y, body.width, 10), Component.translatable(key)) { it.colors.accentDanger }
-            y += 13
+        )
+        if (MccHubKit.choiceMode(settingsArea.width, settingsArea.height, rows) == MccHubKit.ChoiceMode.COMPACT) {
+            // A short card toggles visibility and format side by side, and lists one mechanic per row below them.
+            val toggles = UiRect(body.x, body.y, body.width, MccHubKit.CONTROL_HEIGHT)
+            val visibility = state.settings.visibility
+            val format = state.settings.format
+            MccHubKit.buttonRow(host, toggles, listOf(
+                MccHubKit.Action(room("visibility.${visibility.name.lowercase()}"), enabled = editable, tooltip = room("group.visibility")) {
+                    updateSettings(controller, state.settings.copy(visibility = PvpRoomVisibility.entries[(visibility.ordinal + 1) % PvpRoomVisibility.entries.size]))
+                },
+                MccHubKit.Action(room("format.${format.recordId}"), enabled = editable, tooltip = room("group.format")) {
+                    updateSettings(controller, state.settings.copy(format = PvpBattleFormat.entries[(format.ordinal + 1) % PvpBattleFormat.entries.size]))
+                },
+            ))
+            var listBottom = body.bottom
+            controller.feedbackKey?.let { key ->
+                MccHubKit.text(host, UiRect(body.x, body.bottom - 10, body.width, 10), Component.translatable(key)) { it.colors.accentDanger }
+                listBottom -= 13
+            }
+            scrollable = MccHubKit.scrollList(host,
+                UiRect(body.x, toggles.bottom + MccHubKit.GAP, body.width, (listBottom - toggles.bottom - MccHubKit.GAP).coerceAtLeast(1)),
+                PvpBattleMechanic.entries.map { mechanic ->
+                    val enabled = mechanic in mechanics
+                    MccHubKit.ListEntry(room("mechanic.${mechanic.id}"), trailing = if (enabled) Component.literal("✓") else null,
+                        selected = enabled, enabled = editable, tooltip = room("group.mechanics")) { toggleMechanic(mechanic) }
+                }, PvpHubClient.mechanicsOffset) { PvpHubClient.mechanicsOffset = it }
+        } else {
+            var y = MccHubKit.choices(host, settingsArea, rows) + MccHubKit.GAP + 2
+            controller.feedbackKey?.let { key ->
+                MccHubKit.text(host, UiRect(body.x, y, body.width, 10), Component.translatable(key)) { it.colors.accentDanger }
+                y += 13
+            }
+            val spectators = UiRect(body.x, y, body.width, (body.bottom - y).coerceAtLeast(0))
+            if (spectators.height >= 10 && state.spectators.isNotEmpty()) host.add(Faces(spectators, state.spectators))
         }
-        val spectators = UiRect(body.x, y, body.width, (body.bottom - y).coerceAtLeast(0))
-        if (spectators.height >= 10 && state.spectators.isNotEmpty()) host.add(Faces(spectators, state.spectators))
 
         val members = (listOfNotNull(state.leftPlayer, state.rightPlayer) + state.spectators).distinctBy(PvpRoomMemberView::playerId)
         val manageable = isHost && lobby && idle && (state.inviteCandidates.isNotEmpty() || members.any { it.playerId != state.hostId })
