@@ -24,7 +24,7 @@ object MoreCobblemonContentsLeagueChallengeClient : ClientModInitializer {
                 ManagedBattleContentIds.LEAGUE_CHALLENGE,
                 Component.translatable(MccDashboardPresentation.contentNameKey(ManagedBattleContentIds.LEAGUE_CHALLENGE)),
                 order = 90,
-                kind = MccHubTabKind.Screen { MccHubTabs.requestContent(ManagedBattleContentIds.LEAGUE_CHALLENGE) },
+                kind = MccHubTabKind.Embedded(::LeagueHubTab),
             ),
         )
         if (!DevelopmentEnvironmentGate.shouldRegister(FabricLoader.getInstance().isDevelopmentEnvironment)) {

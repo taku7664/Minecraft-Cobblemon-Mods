@@ -9,6 +9,7 @@ import jbro.cobblemon.mcc.api.rewards.BattlePointRewards
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
+import jbro.cobblemon.mcc.internal.hub.BattleHubNetworking
 import jbro.cobblemon.mcc.league.MoreCobblemonContentsLeagueChallenge as Mod
 import jbro.cobblemon.mcc.league.network.*
 import jbro.cobblemon.mcc.league.system.*
@@ -70,22 +71,27 @@ object LeagueServer {
     fun open(player: ServerPlayer, pos: BlockPos): Boolean = guarded(player) {
         if (!requestAllowed(player)) return@guarded
         val entity = player.level().getBlockEntity(pos) as? TerminalEntity ?: error("terminal_invalid")
+        // The terminal opens the MCC hub on its League tab, so the hub header needs current BP and locks.
+        BattleHubNetworking.sendHeader(player)
         start(player, Session(TerminalAnchor(entity.terminalId, player.level().dimension().location().toString(),
-            pos.x, pos.y, pos.z), touched = player.server.tickCount.toLong()))
+            pos.x, pos.y, pos.z), touched = player.server.tickCount.toLong()), openScreen = true)
     }
 
-    /** The hub already let the player reach League from where they stand, so no terminal anchors the session. */
+    /**
+     * The League tab of an open hub asks for its state; the hub already let the player reach League from where
+     * they stand, so no terminal anchors the session and no screen is opened.
+     */
     fun openFromHub(player: ServerPlayer): Boolean = guarded(player) {
         if (!requestAllowed(player)) return@guarded
-        start(player, Session(null, touched = player.server.tickCount.toLong()))
+        start(player, Session(null, touched = player.server.tickCount.toLong()), openScreen = false)
     }
 
-    private fun start(player: ServerPlayer, session: Session) {
+    private fun start(player: ServerPlayer, session: Session, openScreen: Boolean) {
         validate(player, session)
         check(ServerPlayNetworking.canSend(player, LeagueStatePayload.TYPE)) { "client_missing" }
         sessions[player.uuid] = session
-        // Open even when integration setup rejects reconciliation, so its error can be displayed.
-        send(player, openScreen = true)
+        // Send before reconciling, so an integration setup error can still be displayed.
+        send(player, openScreen = openScreen)
         reconcile(player)
         send(player)
     }

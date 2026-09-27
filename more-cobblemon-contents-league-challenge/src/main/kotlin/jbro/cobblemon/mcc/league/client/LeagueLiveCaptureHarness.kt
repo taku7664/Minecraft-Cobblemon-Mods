@@ -95,7 +95,7 @@ internal object LeagueLiveCaptureHarness {
                     phase = 2; phaseTick = ticks
                 }
                 // Development screenshots capture the real screen without first-join tutorial overlays.
-                2 -> if (client.screen is LeagueHomeScreen && ticks > phaseTick + 20) {
+                2 -> if (leagueTabShown(client) && LeagueHomeController.state.view != null && ticks > phaseTick + 20) {
                     if (!tutorialCleared) {
                         client.toasts.clear()
                         tutorialCleared = true
@@ -110,7 +110,7 @@ internal object LeagueLiveCaptureHarness {
                     phase = 3
                 }
                 3 -> if (captured.get()) {
-                    val screen = client.screen as LeagueHomeScreen
+                    val screen = checkNotNull(client.screen)
                     val second = checkNotNull(LeagueClientSession.current).challenges[1]
                     val route = screen.children().filterIsInstance<AbstractButton>().single {
                         it.message.string == Component.translatable(second.nameKey).string
@@ -129,9 +129,9 @@ internal object LeagueLiveCaptureHarness {
                     phase = 5
                 }
                 5 -> if (captured.get()) {
-                    val screen = client.screen as LeagueHomeScreen
+                    val screen = checkNotNull(client.screen)
                     val refresh = screen.children().filterIsInstance<CobblemonUiButton>()
-                        .single { it.message.string == LeagueHomeScreen.copy("refresh").string }
+                        .single { it.message.string == leagueCopy("refresh").string }
                     check(screen.mouseClicked(refresh.x + refresh.width / 2.0, refresh.y + refresh.height / 2.0, 0))
                     check(LeagueHomeController.state.pending)
                     phase = 6
@@ -143,12 +143,18 @@ internal object LeagueLiveCaptureHarness {
                     phase = 7; phaseTick = ticks
                 }
                 7 -> if (ticks > phaseTick + 10) {
-                    check(client.screen !is LeagueHomeScreen) { "Background state reopened dismissed home" }
-                    logger.info("PASS terminal packet -> production home -> route selection/focus -> server refresh -> close; progression unchanged")
+                    check(!leagueTabShown(client)) { "Background state reopened dismissed home" }
+                    logger.info("PASS terminal packet -> hub League tab -> route selection/focus -> server refresh -> close; progression unchanged")
                     client.stop()
                     phase = 8
                 }
             }
         })
     }
+}
+
+/** The terminal lands on the hub's League tab rather than a League screen of its own. */
+private fun leagueTabShown(client: net.minecraft.client.Minecraft): Boolean {
+    val hub = jbro.cobblemon.mcc.client.hub.MccHubScreen.current ?: return false
+    return client.screen === hub && hub.selectedTabId == LeagueHomeController.CONTENT
 }
