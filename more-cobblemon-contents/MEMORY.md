@@ -5,6 +5,17 @@
 
 ---
 
+## [2026-09-27 21:40] 모든 콘텐츠 탭을 Hub 안에 그리기 — `850e9ceb`~`693368e3` (개발 클라이언트 캡처 확인, 실서버 미확인)
+
+- **방향(빡대리님):** 탭을 누르면 창을 따로 여는 게 아니라 Hub 오른쪽 패널 안에 각 모듈이 그린다. Embedded 탭은 패널 안 어디에 붙여도 어울려야 한다. 렌더링은 MCC가 아니라 `cobblemon-ui-kit`이 맡는다. 세로로 쌓인 설정 줄은 버튼 시작 x가 같아야 한다.
+- **공통 부품(`MccHubKit`, `MccHubPortraitCards`):** 요약 줄(진행 칸 선택), 제목 띠가 있는 RAISED 카드, 선택 묶음 `choices`(공통 제목 열 → 제목 위 줄 → 넘기는 버튼 순으로 묶음 전체가 같이 전환, 여러 개 선택 줄 지원, `choicesHeight`로 미리 측정), 페이지 목록, 스크롤 문서, 대기 문구, 확인 대화 상자, 규칙선과 MEDIUM 버튼의 하단 줄, 포켓몬 카드 격자(초상화가 가장 커지는 열 수를 고르고 카드 모양에 따라 초상화를 옆이나 위에 둔다). 모두 받은 사각형만으로 배치한다. 가장 작은 콘텐츠 영역은 427×240 GUI에서 약 305×184, 가장 큰 영역은 약 590×340이다.
+- **탭 계약:** `MccHubTabContent.shown()`/`hidden()`, `MccHubScreen.open(tabId)`(열기·전환·재구성), `refresh(tabId)`, `showing(tabId)`. 각 모듈은 클라이언트 상태 객체(`TowerHubClient`·`FactoryHubClient`·`PvpHubClient`·`LeagueHomeController`)를 두고, 요청하지 않은 서버 상태가 오면 Hub를 그 탭으로 연다. 서버가 연 직후의 `shown()`은 상태를 다시 요청하지 않는다.
+- **모듈:** 타워(진행 줄, 파티 격자, 설정 카드, 탭 안 가이드), 팩토리(단계별 카드, 렌탈·순서·교환 격자, 짧은 옵션 카드는 내용 높이로 세로 가운데), PvP(방 목록, 좌석 전신 모델과 설정·관전자 얼굴, 초대·방장 위임, 남은 시간이 갱신되는 선출), League(요약 줄, 경로, 뱃지 틀이 커지는 도전 카드). 옛 전용 화면과 `MccPokemonPortraitRenderer`는 지웠다. 상점은 아직 옛 화면이라 `MccTabbedContentScreen`·`MccContentFrameLayout`·`BattleHubContent`·`MccPlayerModelRenderer`가 남아 있다.
+- **ui-kit 0.2.0:** 플레이어 모델 `PORTRAIT`/`FULL_BODY`, `PlayerProfile`, `PlayerFace`, `Pokemon`, `PartyPokemon`, `drawContent`. `EntityModel.young` 기본값이 `true`라 전에는 아기 비율로 그려졌다(대두의 원인).
+- **캡처 하네스 추가 옵션:** `MCC_HUB_CAPTURE_OPEN=<탭 ID>`(탭 버튼처럼 선택), `MCC_HUB_CAPTURE_PRESS=<번역 키,...>`(버튼을 차례로 누르고 매번 캡처), `MCC_HUB_CAPTURE_PARTY=<종,...>`(통합 서버로 파티 채우기). 알림은 매 틱 지운다. 각 모듈의 `run/saves/mcc-hub-capture`를 쓴다.
+- **테스트:** Core 테스트는 세션 시작 때 Minecraft를 한 번 bootstrap한다(`MinecraftTestBootstrap`). 전에는 폼 보존 테스트가 먼저 돌며 우연히 bootstrap해 주어서, 그 테스트를 모듈로 옮기자 `Cobblemon173ExactOwnTeamViewTest`가 컨테이너 단위로 실패했다.
+- **확인하지 않은 것:** 실서버 연결, 팩토리 교환·출전 순서 단계와 PvP 선출 화면의 실제 캡처, League 터미널 진입과 전투 뒤 복귀.
+
 ## [2026-09-28 19:20] 새 Hub와 대시보드 탭 — `5d2c773e`, `0d315edd`, `55a438d6` (개발 클라이언트 캡처 확인)
 
 - **방향(빡대리님):** Hub UI는 `cobblemon-ui-kit` 기반, 탭은 좌측. 순서는 대시보드 → 상점 → 모듈 순. 작업·캡처 기본 로케일은 한국어.
