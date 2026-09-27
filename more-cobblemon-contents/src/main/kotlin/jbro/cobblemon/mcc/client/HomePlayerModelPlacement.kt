@@ -21,7 +21,7 @@ internal data class HomePlayerModelPlacement(
     }
 }
 
-internal object PlayerModelCentering {
+object PlayerModelCentering {
     fun centerY(top: Int, bottomExclusive: Int): Int {
         require(bottomExclusive > top) { "Player model viewport must have positive height" }
         return top + (bottomExclusive - top) / 2

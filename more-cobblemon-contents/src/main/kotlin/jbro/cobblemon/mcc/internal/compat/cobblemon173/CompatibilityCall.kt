@@ -2,7 +2,7 @@ package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
 import java.lang.reflect.InvocationTargetException
 
-internal inline fun <T> compatibilityCallOrElse(
+inline fun <T> compatibilityCallOrElse(
     fallback: (Throwable) -> T,
     action: () -> T,
 ): T = try {
@@ -20,5 +20,5 @@ internal inline fun <T> compatibilityCallOrElse(
     fallback(failure)
 }
 
-internal inline fun <T> compatibilityCallOrNull(action: () -> T): T? =
+inline fun <T> compatibilityCallOrNull(action: () -> T): T? =
     compatibilityCallOrElse(fallback = { null }, action = action)

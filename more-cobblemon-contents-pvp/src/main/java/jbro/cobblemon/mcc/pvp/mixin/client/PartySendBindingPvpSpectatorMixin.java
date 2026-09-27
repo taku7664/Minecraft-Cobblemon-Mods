@@ -1,4 +1,4 @@
-package jbro.cobblemon.mcc.internal.mixin.client;
+package jbro.cobblemon.mcc.pvp.mixin.client;
 
 import com.cobblemon.mod.common.client.keybind.keybinds.PartySendBinding;
 import jbro.cobblemon.mcc.client.PvpLoungeSpectatorControls;

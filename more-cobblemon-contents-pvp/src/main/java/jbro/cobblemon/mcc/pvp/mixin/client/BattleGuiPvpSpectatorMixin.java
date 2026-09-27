@@ -1,4 +1,4 @@
-package jbro.cobblemon.mcc.internal.mixin.client;
+package jbro.cobblemon.mcc.pvp.mixin.client;
 
 import com.cobblemon.mod.common.client.gui.battle.BattleGUI;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleBackButton;

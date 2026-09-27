@@ -1,4 +1,4 @@
-package jbro.cobblemon.mcc.internal.mixin.client
+package jbro.cobblemon.mcc.pvp.mixin.client
 
 import jbro.cobblemon.mcc.client.PvpInviteChatClickHandler
 import net.minecraft.client.gui.screens.Screen

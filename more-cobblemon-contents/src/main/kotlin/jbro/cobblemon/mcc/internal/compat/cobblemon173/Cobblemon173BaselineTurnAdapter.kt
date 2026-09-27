@@ -5,7 +5,7 @@ import com.cobblemon.mod.common.api.battles.model.ai.BattleAI
 import com.cobblemon.mod.common.battles.ShowdownActionResponse
 
 /** Delegates one complete Cobblemon request to its own baseline AI and validates every returned response. */
-internal object Cobblemon173BaselineTurnAdapter {
+object Cobblemon173BaselineTurnAdapter {
     fun choose(actor: BattleActor, baseline: BattleAI): Cobblemon173BaselineTurnResult {
         val request = actor.request
             ?: return Cobblemon173BaselineTurnResult.failed(Cobblemon173BaselineTurnStatus.NO_REQUEST)
@@ -43,7 +43,7 @@ internal object Cobblemon173BaselineTurnAdapter {
     }
 }
 
-internal enum class Cobblemon173BaselineTurnStatus {
+enum class Cobblemon173BaselineTurnStatus {
     READY,
     NO_ACTION_REQUIRED,
     NO_REQUEST,
@@ -51,7 +51,7 @@ internal enum class Cobblemon173BaselineTurnStatus {
     FAILED,
 }
 
-internal class Cobblemon173BaselineTurnResult private constructor(
+class Cobblemon173BaselineTurnResult private constructor(
     val status: Cobblemon173BaselineTurnStatus,
     responses: List<ShowdownActionResponse>,
 ) {

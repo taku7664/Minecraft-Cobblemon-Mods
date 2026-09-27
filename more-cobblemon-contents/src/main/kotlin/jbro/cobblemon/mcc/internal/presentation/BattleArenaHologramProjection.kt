@@ -12,7 +12,7 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.phys.Vec3
 
-internal data class BattleArenaHologramProjection(
+data class BattleArenaHologramProjection(
     val battleId: UUID,
     val centerX: Double,
     val centerY: Double,
@@ -115,7 +115,7 @@ internal data class HideBattleArenaHologramPayload(
     }
 }
 
-internal object BattleArenaHologramNetworking {
+object BattleArenaHologramNetworking {
     fun registerServer() {
         PayloadTypeRegistry.playS2C().register(ShowBattleArenaHologramPayload.TYPE, ShowBattleArenaHologramPayload.CODEC)
         PayloadTypeRegistry.playS2C().register(HideBattleArenaHologramPayload.TYPE, HideBattleArenaHologramPayload.CODEC)

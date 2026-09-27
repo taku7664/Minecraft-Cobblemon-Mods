@@ -3,7 +3,7 @@ package jbro.cobblemon.mcc.internal.compat.cobblemon173
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 
 /** Applies MCC-only presentation rules to disposable Cobblemon battle copies. */
-internal object Cobblemon173BattlePokemonAppearance {
+object Cobblemon173BattlePokemonAppearance {
     fun hideHeldItem(battlePokemon: BattlePokemon) {
         hideHeldItem(
             object : Cobblemon173BattlePokemonAppearanceTarget {

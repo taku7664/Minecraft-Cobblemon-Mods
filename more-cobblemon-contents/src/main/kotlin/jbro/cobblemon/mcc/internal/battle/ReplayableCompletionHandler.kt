@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * registration. Registering first closes the gap between the completion check and callback install;
  * the atomic gate then collapses a concurrent callback and the replay into one delivery.
  */
-internal fun <T> attachReplayableCompletionHandler(
+fun <T> attachReplayableCompletionHandler(
     completion: T,
     register: ((T) -> Unit) -> Unit,
     isComplete: () -> Boolean,

@@ -22,7 +22,7 @@ data class MccRect(
     }
 }
 
-internal data class MccPartyCardContentLayout(
+data class MccPartyCardContentLayout(
     val index: Int,
     val portrait: MccRect,
     val textLeft: Int,

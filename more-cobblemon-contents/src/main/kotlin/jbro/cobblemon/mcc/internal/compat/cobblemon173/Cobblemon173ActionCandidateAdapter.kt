@@ -438,7 +438,7 @@ internal object Cobblemon173ActionCandidateAdapter {
         get() = if (this == BattleFormat.SINGLE) 1 else 2
 }
 
-internal data class Cobblemon173MechanicPolicy(
+data class Cobblemon173MechanicPolicy(
     val selected: MajorBattleMechanic?,
     val consumed: Boolean,
 )

@@ -6,7 +6,7 @@ import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import java.util.UUID
 
-internal data class Cobblemon173ManagedPlayerBattleParticipant<R, A>(
+data class Cobblemon173ManagedPlayerBattleParticipant<R, A>(
     val roster: R,
     val actor: A,
 )
@@ -15,7 +15,7 @@ internal data class Cobblemon173ManagedPlayerBattleParticipant<R, A>(
  * Single construction boundary for every MCC-controlled player side.
  * The temporary roster is complete before Cobblemon captures the actor's world position.
  */
-internal object Cobblemon173ManagedPlayerBattleParticipants {
+object Cobblemon173ManagedPlayerBattleParticipants {
     fun prepare(
         playerId: UUID,
         team: List<BattlePokemon>,

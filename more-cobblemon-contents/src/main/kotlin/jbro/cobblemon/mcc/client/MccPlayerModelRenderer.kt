@@ -17,7 +17,7 @@ internal object MccPlayerModelSpec {
     const val ADVANCES_IDLE_ANIMATION = true
 }
 
-internal class MccPlayerModelRenderer {
+class MccPlayerModelRenderer {
     private val cachedPlayers = mutableMapOf<UUID, RemotePlayer>()
 
     fun retain(playerIds: Set<UUID>) {

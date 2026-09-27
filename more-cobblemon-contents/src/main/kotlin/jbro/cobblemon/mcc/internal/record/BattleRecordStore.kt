@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.internal.record
 
-internal class BattleRecordStore(initialRecords: Collection<BattleRecordStats> = emptyList()) {
+class BattleRecordStore(initialRecords: Collection<BattleRecordStats> = emptyList()) {
     private val records = LinkedHashMap<BattleRecordKey, BattleRecordStats>()
 
     init {

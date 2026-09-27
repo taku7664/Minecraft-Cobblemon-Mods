@@ -5,7 +5,7 @@ import com.cobblemon.mod.common.api.scheduling.afterOnServer
 import jbro.cobblemon.mcc.MoreCobblemonContents
 
 /** Emits one bounded diagnostic only when an MCC-managed battle never reaches its first turn. */
-internal object Cobblemon173InitialTurnDiagnostics {
+object Cobblemon173InitialTurnDiagnostics {
     fun watch(content: String, battle: PokemonBattle) {
         afterOnServer(DIAGNOSTIC_DELAY_SECONDS) {
             if (!battle.ended && battle.turn == 0) {

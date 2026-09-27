@@ -2,7 +2,7 @@ package jbro.cobblemon.mcc.internal.spectate
 
 import java.util.UUID
 
-internal enum class RemoteSpectateResult {
+enum class RemoteSpectateResult {
     STARTED,
     ALREADY_SPECTATING,
     SELF_SPECTATE,

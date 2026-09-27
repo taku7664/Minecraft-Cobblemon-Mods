@@ -1,7 +1,6 @@
 package jbro.cobblemon.mcc
 
 import net.fabricmc.api.ModInitializer
-import jbro.cobblemon.mcc.internal.pvp.PvpContent
 import jbro.cobblemon.mcc.internal.tower.BattleTowerContent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -33,7 +32,6 @@ object MoreCobblemonContents : ModInitializer {
         BattlePointShopCatalogResources.register()
         // Content mods call these from their own initializers once they are split out.
         BattleTowerContent.initialize()
-        PvpContent.initialize()
         ShopPlayNetworking.registerServer()
         BattleHubNetworking.registerServer()
         ShadowTrainerProjectionNetworking.registerServer()

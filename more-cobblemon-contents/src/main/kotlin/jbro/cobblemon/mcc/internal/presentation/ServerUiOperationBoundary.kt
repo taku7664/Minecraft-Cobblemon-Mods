@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.internal.presentation
 
 /** Converts an optional server UI integration failure into a closed result without escaping its event callback. */
-internal fun attemptServerUiOperation(
+fun attemptServerUiOperation(
     reportFailure: (Throwable) -> Unit,
     operation: () -> Boolean,
 ): Boolean = try {

@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
-internal fun <T> protectManagedBattleStartup(
+fun <T> protectManagedBattleStartup(
     releasePendingRegistration: () -> Unit,
     terminateBattle: () -> Unit,
     setup: () -> T,
@@ -12,7 +12,7 @@ internal fun <T> protectManagedBattleStartup(
     abortFailedManagedBattleStartup(failure, releasePendingRegistration, terminateBattle)
 }
 
-internal fun runManagedCleanupActions(vararg actions: () -> Unit) {
+fun runManagedCleanupActions(vararg actions: () -> Unit) {
     var failure: Throwable? = null
     actions.forEach { action ->
         try {
@@ -41,7 +41,7 @@ fun runManagedCleanupActionsSafely(
     }
 }
 
-internal fun <T> runManagedCleanupForEachSafely(
+fun <T> runManagedCleanupForEachSafely(
     items: Iterable<T>,
     reportFailure: (T, Throwable) -> Unit,
     action: (T) -> Unit,

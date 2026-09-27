@@ -142,7 +142,7 @@ internal object ManagedBattleMechanicVisibilityNetworking {
     }
 }
 
-internal object ManagedBattleContentNetworking {
+object ManagedBattleContentNetworking {
     fun registerServer() {
         PayloadTypeRegistry.playS2C().register(ShowManagedBattleContentPayload.TYPE, ShowManagedBattleContentPayload.CODEC)
         PayloadTypeRegistry.playS2C().register(HideManagedBattleContentPayload.TYPE, HideManagedBattleContentPayload.CODEC)

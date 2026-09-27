@@ -11,7 +11,7 @@ internal data class ManagedActionSubmission(
     val mechanics: List<ManagedSubmittedMechanic> = emptyList(),
 )
 
-internal enum class ManagedSubmittedMechanic {
+enum class ManagedSubmittedMechanic {
     MEGA,
     DYNAMAX,
     TERA,

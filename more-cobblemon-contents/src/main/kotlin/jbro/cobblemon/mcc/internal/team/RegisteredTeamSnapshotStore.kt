@@ -3,7 +3,7 @@ package jbro.cobblemon.mcc.internal.team
 import java.util.Collections
 import java.util.UUID
 
-internal sealed interface TeamSnapshotCaptureResult {
+sealed interface TeamSnapshotCaptureResult {
     data object Stored : TeamSnapshotCaptureResult
     data object SourceUnavailable : TeamSnapshotCaptureResult
     data class CaptureFailed(val cause: Throwable) : TeamSnapshotCaptureResult
@@ -11,7 +11,7 @@ internal sealed interface TeamSnapshotCaptureResult {
     data class SnapshotFailed(val memberId: UUID, val cause: Throwable) : TeamSnapshotCaptureResult
 }
 
-internal sealed interface TeamSnapshotMaterializationResult<out B> {
+sealed interface TeamSnapshotMaterializationResult<out B> {
     class Created<B>(members: Collection<B>) : TeamSnapshotMaterializationResult<B> {
         val members: List<B> = Collections.unmodifiableList(ArrayList(members))
     }
@@ -22,7 +22,7 @@ internal sealed interface TeamSnapshotMaterializationResult<out B> {
     data class CopyFailed(val memberId: UUID, val cause: Throwable) : TeamSnapshotMaterializationResult<Nothing>
 }
 
-internal class RegisteredTeamSnapshotStore<S, R, T, B>(
+class RegisteredTeamSnapshotStore<S, R, T, B>(
     private val sourcesFor: (UUID) -> Collection<S>?,
     private val registrationOf: (S) -> R,
     private val memberIdOf: (R) -> UUID,

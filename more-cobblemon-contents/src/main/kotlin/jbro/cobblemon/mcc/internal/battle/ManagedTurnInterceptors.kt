@@ -6,7 +6,7 @@ import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 
 /** Lets a content pace or time out player turns at the shared managed action-response gate. */
-internal interface ManagedTurnInterceptor {
+interface ManagedTurnInterceptor {
     /** This interceptor's claim on [actor]'s current request, or null when it does not own the turn. */
     fun capture(actor: BattleActor): ManagedTurnCapture?
 
@@ -18,7 +18,7 @@ internal interface ManagedTurnInterceptor {
 }
 
 /** One captured turn; exactly one of [accept], [reject] or [resolveTimedOut] settles it. */
-internal interface ManagedTurnCapture {
+interface ManagedTurnCapture {
     val timedOut: Boolean
 
     fun resolveTimedOut(actor: BattleActor)
@@ -28,7 +28,7 @@ internal interface ManagedTurnCapture {
     fun reject()
 }
 
-internal object ManagedTurnInterceptors {
+object ManagedTurnInterceptors {
     private val interceptors = CopyOnWriteArrayList<ManagedTurnInterceptor>()
 
     fun register(interceptor: ManagedTurnInterceptor): AutoCloseable {
@@ -46,7 +46,7 @@ internal object ManagedTurnInterceptors {
     fun forget(battleId: UUID) = interceptors.forEach { it.forget(battleId) }
 }
 
-internal object ManagedTurnResponseCardinality {
+object ManagedTurnResponseCardinality {
     @JvmStatic
     fun accepts(activeChoices: Int, forcedSwitchChoices: Int, responseCount: Int): Boolean {
         require(activeChoices >= 0 && forcedSwitchChoices >= 0 && responseCount >= 0)

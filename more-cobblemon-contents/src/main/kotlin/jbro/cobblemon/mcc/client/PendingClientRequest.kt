@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.client
 
-internal class PendingClientRequest {
+class PendingClientRequest {
     var isPending = false
         private set
 

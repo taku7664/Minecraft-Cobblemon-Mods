@@ -15,7 +15,7 @@ import jbro.cobblemon.mcc.internal.spectate.beginSpectatingAtomically
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
-internal object Cobblemon173RemoteSpectate : SpectateCommandBackend {
+object Cobblemon173RemoteSpectate : SpectateCommandBackend {
     override fun spectate(viewer: ServerPlayer, target: ServerPlayer): RemoteSpectateResult =
         compatibilityCallOrElse(
             fallback = { failure ->

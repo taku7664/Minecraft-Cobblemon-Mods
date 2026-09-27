@@ -16,7 +16,7 @@ import jbro.cobblemon.mcc.internal.battle.ManagedBattleContentNetworking
 import jbro.cobblemon.mcc.internal.battle.ManagedTurnInterceptors
 import java.util.UUID
 
-internal object Cobblemon173BattleRuleHooks {
+object Cobblemon173BattleRuleHooks {
     private val registry = ManagedBattleRuleRegistry.global
     private val registrationWindow = ManagedBattleRuleRegistrationWindow(registry)
 

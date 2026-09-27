@@ -9,7 +9,6 @@ class MccContentFrameLayoutTest {
     fun `all tab contents share one fixed header tab strip and body`() {
         val frame = MccContentFrameLayout.calculate(844, 470)
         val tower = TowerPlayLayout.calculate(frame.content)
-        val rooms = PvpRoomListLayout.calculate(frame.content)
 
         assertTrue(frame.shell.contains(frame.header))
         assertTrue(frame.shell.contains(frame.tabs))
@@ -20,7 +19,6 @@ class MccContentFrameLayoutTest {
         assertTrue(frame.header.bottom < frame.tabs.top)
         assertTrue(frame.tabs.bottom < frame.content.top)
         assertEquals(frame.content, tower.shell)
-        assertEquals(frame.content, rooms.shell)
     }
 
     @Test

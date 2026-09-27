@@ -43,7 +43,7 @@ internal class ClientSessionResetRegistry {
 }
 
 /** Clears every piece of client state that belongs to one server or client world. */
-internal object MccClientSessionReset {
+object MccClientSessionReset {
     private val registry = ClientSessionResetRegistry()
 
     fun registerEvents() {

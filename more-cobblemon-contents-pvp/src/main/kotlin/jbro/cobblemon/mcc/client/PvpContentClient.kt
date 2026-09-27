@@ -1,7 +1,8 @@
 package jbro.cobblemon.mcc.client
 
-internal object PvpContentClient {
-    fun initialize() {
+import net.fabricmc.api.ClientModInitializer
+object PvpContentClient : ClientModInitializer {
+    override fun onInitializeClient() {
         PvpLoungeSpectatorControls.register()
         PvpRoomHudOverlay.register()
         PvpPlayClientNetworking.register()
