@@ -1,0 +1,135 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "gardevoir_preset_1",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:gardevoir",
+      "ability_id": "cobblemon:synchronize",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:moonblast",
+        "cobblemon:psychic",
+        "cobblemon:psyshock"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:moonblast"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "gardevoir_preset_2",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:gardevoir",
+      "ability_id": "cobblemon:trace",
+      "held_item_id": "cobblemon:weakness_policy",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:focusblast",
+        "cobblemon:moonblast",
+        "cobblemon:psychic",
+        "cobblemon:psyshock"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:focusblast",
+        "cobblemon:moonblast"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "gardevoir_preset_3",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:gardevoir",
+      "ability_id": "cobblemon:trace",
+      "held_item_id": "cobblemon:expert_belt",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:moonblast",
+        "cobblemon:mysticalfire",
+        "cobblemon:psychic",
+        "cobblemon:psyshock"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:moonblast",
+        "cobblemon:mysticalfire"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "gardevoir_preset_4",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:gardevoir",
+      "ability_id": "cobblemon:trace",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:focusblast",
+        "cobblemon:moonblast",
+        "cobblemon:psychic"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:focusblast"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

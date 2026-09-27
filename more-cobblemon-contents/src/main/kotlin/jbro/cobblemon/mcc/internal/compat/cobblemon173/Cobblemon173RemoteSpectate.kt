@@ -1,0 +1,80 @@
+package jbro.cobblemon.mcc.internal.compat.cobblemon173
+
+import com.cobblemon.mod.common.Cobblemon
+import com.cobblemon.mod.common.battles.BattleRegistry
+import com.cobblemon.mod.common.net.messages.client.battle.BattleEndPacket
+import com.cobblemon.mod.common.net.serverhandling.battle.SpectateBattleHandler
+import java.util.UUID
+import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.internal.battle.ManagedBattleContentNetworking
+import jbro.cobblemon.mcc.internal.command.SpectateCommandBackend
+import jbro.cobblemon.mcc.internal.spectate.RemoteSpectateGateway
+import jbro.cobblemon.mcc.internal.spectate.RemoteSpectateResult
+import jbro.cobblemon.mcc.internal.spectate.RemoteSpectateService
+import jbro.cobblemon.mcc.internal.spectate.beginSpectatingAtomically
+import net.minecraft.server.MinecraftServer
+import net.minecraft.server.level.ServerPlayer
+
+internal object Cobblemon173RemoteSpectate : SpectateCommandBackend {
+    override fun spectate(viewer: ServerPlayer, target: ServerPlayer): RemoteSpectateResult =
+        compatibilityCallOrElse(
+            fallback = { failure ->
+                reportManagedCleanupFailureSafely(failure) {
+                    MoreCobblemonContents.LOGGER.error(
+                        "Remote spectating failed for viewer {} and target {}",
+                        viewer.uuid,
+                        target.uuid,
+                        it,
+                    )
+                }
+                RemoteSpectateResult.BATTLE_UNAVAILABLE
+            },
+            action = {
+                RemoteSpectateService(CobblemonGateway(viewer.server)).spectate(viewer.uuid, target.uuid)
+            },
+        )
+
+    private class CobblemonGateway(
+        private val server: MinecraftServer,
+    ) : RemoteSpectateGateway {
+        override fun isSpectatingEnabled(): Boolean = Cobblemon.config.allowSpectating
+
+        override fun participatingBattleId(playerId: UUID): UUID? =
+            BattleRegistry.getBattleByParticipatingPlayerId(playerId)?.battleId
+
+        override fun isManagedBattle(battleId: UUID): Boolean =
+            Cobblemon173BattleRuleHooks.isRegisteredBattle(battleId)
+
+        override fun spectatedManagedBattleId(playerId: UUID): UUID? =
+            Cobblemon173BattleRuleHooks.registeredBattleIds().firstOrNull { battleId ->
+                BattleRegistry.getBattle(battleId)?.spectators?.contains(playerId) == true
+            }
+
+        override fun beginSpectating(battleId: UUID, targetId: UUID, viewerId: UUID): Boolean {
+            val target = server.playerList.getPlayer(targetId) ?: return false
+            val viewer = server.playerList.getPlayer(viewerId) ?: return false
+            val battle = BattleRegistry.getBattleByParticipatingPlayerId(targetId) ?: return false
+            if (battle.battleId != battleId || !isManagedBattle(battleId)) return false
+            if (BattleRegistry.getBattleByParticipatingPlayerId(viewerId) != null) return false
+
+            return beginSpectatingAtomically(
+                start = { SpectateBattleHandler.spectateBattle(target, viewer) },
+                isStarted = {
+                    BattleRegistry.getBattle(battleId) === battle && viewerId in battle.spectators
+                },
+                complete = {
+                    Cobblemon173BattleRuleHooks.contentId(battleId)?.let { contentId ->
+                        ManagedBattleContentNetworking.showTo(viewer, battleId, contentId)
+                    }
+                },
+                rollback = {
+                    runManagedCleanupActions(
+                        { battle.spectators.remove(viewerId) },
+                        { ManagedBattleContentNetworking.hideFrom(viewer, battleId) },
+                        { BattleEndPacket().sendToPlayer(viewer) },
+                    )
+                },
+            )
+        }
+    }
+}

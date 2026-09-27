@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "encounters": [
+    {
+      "encounter_id": "mega_double_tier_boss_12",
+      "trainer_ids": [
+        "trainer_105",
+        "trainer_106",
+        "trainer_107",
+        "trainer_108"
+      ],
+      "stage_ids": [
+        "introductory",
+        "practical",
+        "advanced"
+      ],
+      "format": "double",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "mega",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "mega_double_boss",
+      "pool_id": "mega_tier_2"
+    }
+  ]
+}

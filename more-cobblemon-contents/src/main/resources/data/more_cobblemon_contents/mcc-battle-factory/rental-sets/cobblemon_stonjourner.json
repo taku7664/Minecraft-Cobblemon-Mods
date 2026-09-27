@@ -1,0 +1,141 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "stonjourner_preset_1",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:stonjourner",
+      "ability_id": "cobblemon:powerspot",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:heatcrash",
+        "cobblemon:rockpolish",
+        "cobblemon:stoneedge"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:rockpolish"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "stonjourner_preset_2",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:stonjourner",
+      "ability_id": "cobblemon:powerspot",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:rockpolish",
+        "cobblemon:stealthrock",
+        "cobblemon:stoneedge"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:rockpolish"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "stonjourner_preset_3",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:stonjourner",
+      "ability_id": "cobblemon:powerspot",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:heatcrash",
+        "cobblemon:stealthrock",
+        "cobblemon:stoneedge"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:stoneedge"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "stonjourner_preset_4",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:stonjourner",
+      "ability_id": "cobblemon:powerspot",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:heatcrash",
+        "cobblemon:rockpolish",
+        "cobblemon:stealthrock",
+        "cobblemon:stoneedge"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:rockpolish",
+        "cobblemon:stoneedge"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

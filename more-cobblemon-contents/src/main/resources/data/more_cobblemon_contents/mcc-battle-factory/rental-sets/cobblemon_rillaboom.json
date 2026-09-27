@@ -1,0 +1,137 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "rillaboom_preset_1",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:rillaboom",
+      "ability_id": "cobblemon:overgrow",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:grassyglide",
+        "cobblemon:highhorsepower",
+        "cobblemon:swordsdance",
+        "cobblemon:woodhammer"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:highhorsepower",
+        "cobblemon:swordsdance"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "rillaboom_preset_2",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:rillaboom",
+      "ability_id": "cobblemon:grassysurge",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:grassyglide",
+        "cobblemon:knockoff",
+        "cobblemon:swordsdance",
+        "cobblemon:woodhammer"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:swordsdance",
+        "cobblemon:woodhammer"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "rillaboom_preset_3",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:rillaboom",
+      "ability_id": "cobblemon:grassysurge",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:grassyglide",
+        "cobblemon:swordsdance",
+        "cobblemon:uturn",
+        "cobblemon:woodhammer"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "pivot"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:swordsdance",
+        "cobblemon:uturn"
+      ],
+      "lead_priority": 70,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "rillaboom_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:rillaboom",
+      "ability_id": "cobblemon:grassysurge",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:grassyglide",
+        "cobblemon:highhorsepower",
+        "cobblemon:knockoff",
+        "cobblemon:woodhammer"
+      ],
+      "roles": [
+        "weakness_cover"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:highhorsepower",
+        "cobblemon:woodhammer"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

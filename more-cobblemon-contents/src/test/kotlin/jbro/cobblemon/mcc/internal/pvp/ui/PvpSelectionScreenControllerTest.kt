@@ -1,0 +1,99 @@
+package jbro.cobblemon.mcc.internal.pvp.ui
+
+import java.util.UUID
+import jbro.cobblemon.mcc.internal.pvp.PvpBattleFormat
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+
+class PvpSelectionScreenControllerTest {
+    private val matchId = UUID.fromString("11111111-1111-1111-1111-111111111111")
+    private val ids = (1..6).map { UUID(0, it.toLong()) }
+
+    @Test
+    fun `selection remains private locally until exact team is submitted`() {
+        val sent = ArrayList<PvpSelectionIntent>()
+        val controller = PvpSelectionScreenController(state(), sent::add)
+
+        ids.take(3).forEach { assertTrue(controller.toggle(it)) }
+        assertFalse(controller.toggle(ids[3]))
+        assertTrue(controller.submit())
+
+        val intent = sent.single() as PvpSelectionIntent.Submit
+        assertEquals(ids.take(3), intent.pokemonIds)
+        assertTrue(controller.isPending)
+    }
+
+    @Test
+    fun `server rejection unlocks controls without changing local selection`() {
+        val sent = ArrayList<PvpSelectionIntent>()
+        val controller = PvpSelectionScreenController(state(), sent::add)
+        ids.take(3).forEach(controller::toggle)
+        controller.submit()
+        val requestId = sent.single().requestId
+
+        controller.applyRejected(requestId, "pvp.error")
+
+        assertFalse(controller.isPending)
+        assertEquals(ids.take(3).toSet(), controller.selectedPokemonIds)
+        assertEquals("pvp.error", controller.feedbackKey)
+    }
+
+    @Test
+    fun `failed send releases the pending PvP selection`() {
+        val failure = AssertionError("network send failed")
+        val controller = PvpSelectionScreenController(state(), { throw failure })
+        ids.take(3).forEach(controller::toggle)
+
+        assertEquals(failure, assertThrows<AssertionError> { controller.submit() })
+        assertFalse(controller.isPending)
+    }
+
+    @Test
+    fun `ready player can request unready before the opponent locks`() {
+        val sent = ArrayList<PvpSelectionIntent>()
+        val controller = PvpSelectionScreenController(state().copy(waitingForOpponent = true), sent::add)
+
+        assertTrue(controller.unready())
+        assertTrue(sent.single() is PvpSelectionIntent.Unready)
+        assertTrue(controller.isPending)
+    }
+
+    @Test
+    fun `spectator preview cannot submit participant actions`() {
+        val sent = ArrayList<PvpSelectionIntent>()
+        val controller = PvpSelectionScreenController(
+            state().copy(
+                spectatorMode = true,
+                ownParty = emptyList(),
+                opponentParty = emptyList(),
+                selectedPokemonIds = emptySet(),
+                spectatorLeftParty = (1..3).map { PvpSelectionOpponentSlot("cobblemon:left_$it") },
+                spectatorRightParty = (1..3).map { PvpSelectionOpponentSlot("cobblemon:right_$it") },
+            ),
+            sent::add,
+        )
+
+        assertFalse(controller.toggle(ids.first()))
+        assertFalse(controller.submit())
+        assertFalse(controller.retry())
+        assertFalse(controller.unready())
+        assertFalse(controller.cancel())
+        assertTrue(sent.isEmpty())
+    }
+
+    private fun state() = PvpSelectionViewState(
+        matchId = matchId,
+        format = PvpBattleFormat.SINGLE,
+        opponentName = "Opponent",
+        ownParty = ids.mapIndexed { index, id ->
+            PvpSelectionPartySlot(id, "cobblemon:species_$index", null, 50, 50)
+        },
+        opponentParty = (1..3).map { PvpSelectionOpponentSlot("cobblemon:opponent_$it") },
+        selectedPokemonIds = emptySet(),
+        selectionDeadlineEpochMillis = 100_000L,
+        waitingForOpponent = false,
+    )
+}

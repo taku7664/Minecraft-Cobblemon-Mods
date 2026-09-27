@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "encounters": [
+    {
+      "encounter_id": "tera_single_tier_boss_24",
+      "trainer_ids": [
+        "trainer_117",
+        "trainer_118",
+        "trainer_119",
+        "trainer_120"
+      ],
+      "stage_ids": [
+        "introductory",
+        "practical",
+        "advanced"
+      ],
+      "format": "single",
+      "opponent_kind": "tier_boss",
+      "mechanic_id": "tera",
+      "weight": 100,
+      "ai_skill": 4,
+      "theme": "tera_single_boss",
+      "pool_id": "tera_tier_2"
+    }
+  ]
+}

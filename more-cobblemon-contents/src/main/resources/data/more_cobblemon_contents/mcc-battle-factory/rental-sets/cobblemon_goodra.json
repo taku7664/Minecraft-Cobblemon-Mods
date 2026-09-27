@@ -1,0 +1,265 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "goodra_preset_1",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:goodra",
+      "ability_id": "cobblemon:gooey",
+      "held_item_id": "cobblemon:assault_vest",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake",
+        "cobblemon:fireblast",
+        "cobblemon:knockoff"
+      ],
+      "roles": [
+        "wallbreaker"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "goodra_preset_2",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:goodra",
+      "ability_id": "cobblemon:sapsipper",
+      "held_item_id": "cobblemon:clear_amulet",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake",
+        "cobblemon:fireblast",
+        "cobblemon:powerwhip"
+      ],
+      "roles": [
+        "wallbreaker"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "goodra_preset_3",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:goodra",
+      "ability_id": "cobblemon:sapsipper",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake",
+        "cobblemon:fireblast",
+        "cobblemon:scald"
+      ],
+      "roles": [
+        "wallbreaker"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "goodra_preset_4",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:goodra",
+      "ability_id": "cobblemon:sapsipper",
+      "held_item_id": "cobblemon:choice_scarf",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake",
+        "cobblemon:fireblast",
+        "cobblemon:sludgebomb"
+      ],
+      "roles": [
+        "wallbreaker"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "goodrahisui_preset_1",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:goodra",
+      "form_id": "hisui",
+      "ability_id": "cobblemon:gooey",
+      "held_item_id": "cobblemon:wide_lens",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:dragontail",
+        "cobblemon:earthquake",
+        "cobblemon:fireblast"
+      ],
+      "roles": [
+        "wallbreaker"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "goodrahisui_preset_2",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:goodra",
+      "form_id": "hisui",
+      "ability_id": "cobblemon:sapsipper",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:dragontail",
+        "cobblemon:earthquake",
+        "cobblemon:hydropump"
+      ],
+      "roles": [
+        "wallbreaker"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "goodrahisui_preset_3",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:goodra",
+      "form_id": "hisui",
+      "ability_id": "cobblemon:sapsipper",
+      "held_item_id": "cobblemon:assault_vest",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:dragontail",
+        "cobblemon:earthquake",
+        "cobblemon:knockoff"
+      ],
+      "roles": [
+        "wallbreaker"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "goodrahisui_preset_4",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:goodra",
+      "form_id": "hisui",
+      "ability_id": "cobblemon:sapsipper",
+      "held_item_id": "cobblemon:weakness_policy",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:dragontail",
+        "cobblemon:earthquake",
+        "cobblemon:thunderbolt"
+      ],
+      "roles": [
+        "wallbreaker"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dracometeor",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

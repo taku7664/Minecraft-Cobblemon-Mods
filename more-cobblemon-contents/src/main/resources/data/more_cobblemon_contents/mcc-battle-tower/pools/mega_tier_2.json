@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "pools": [
+    {
+      "pool_id": "mega_tier_2",
+      "mechanic_id": "mega",
+      "set_tiers": [
+        2
+      ]
+    }
+  ]
+}

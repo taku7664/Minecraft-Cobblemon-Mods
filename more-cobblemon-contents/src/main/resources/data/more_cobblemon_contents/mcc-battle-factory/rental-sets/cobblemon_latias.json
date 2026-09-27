@@ -1,0 +1,141 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "latias_preset_1",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:latias",
+      "ability_id": "cobblemon:levitate",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:aurasphere",
+        "cobblemon:calmmind",
+        "cobblemon:dracometeor",
+        "cobblemon:psyshock"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:aurasphere",
+        "cobblemon:calmmind"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "latias_preset_2",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:latias",
+      "ability_id": "cobblemon:levitate",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:dracometeor",
+        "cobblemon:psyshock",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:dracometeor"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "latias_preset_3",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:latias",
+      "ability_id": "cobblemon:levitate",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:aurasphere",
+        "cobblemon:dracometeor",
+        "cobblemon:psyshock",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:aurasphere",
+        "cobblemon:dracometeor"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "latias_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:latias",
+      "ability_id": "cobblemon:levitate",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:aurasphere",
+        "cobblemon:calmmind",
+        "cobblemon:dracometeor",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:aurasphere",
+        "cobblemon:calmmind"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    }
+  ]
+}

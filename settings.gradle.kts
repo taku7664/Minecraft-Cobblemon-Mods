@@ -20,6 +20,7 @@ include(
     "more-battle-content",
     "more-battle-content-better-ai",
     "more-battle-content-league-challenge",
+    "more-cobblemon-contents",
     "player-popup-emotes",
     "pokefusion",
     "rounding-block",

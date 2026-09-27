@@ -1,0 +1,135 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "jirachi_preset_1",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:jirachi",
+      "ability_id": "cobblemon:serenegrace",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:bodyslam",
+        "cobblemon:ironhead",
+        "cobblemon:protect",
+        "cobblemon:wish"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bodyslam",
+        "cobblemon:ironhead"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "jirachi_preset_2",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:jirachi",
+      "ability_id": "cobblemon:serenegrace",
+      "held_item_id": "cobblemon:expert_belt",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:bodyslam",
+        "cobblemon:drainpunch",
+        "cobblemon:ironhead",
+        "cobblemon:uturn"
+      ],
+      "roles": [
+        "pivot"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bodyslam",
+        "cobblemon:drainpunch"
+      ],
+      "lead_priority": 70,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "jirachi_preset_3",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:jirachi",
+      "ability_id": "cobblemon:serenegrace",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:firepunch",
+        "cobblemon:healingwish",
+        "cobblemon:ironhead",
+        "cobblemon:uturn"
+      ],
+      "roles": [
+        "pivot"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:firepunch",
+        "cobblemon:ironhead"
+      ],
+      "lead_priority": 70,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "jirachi_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:jirachi",
+      "ability_id": "cobblemon:serenegrace",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:bodyslam",
+        "cobblemon:drainpunch",
+        "cobblemon:ironhead",
+        "cobblemon:stealthrock"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bodyslam",
+        "cobblemon:drainpunch"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

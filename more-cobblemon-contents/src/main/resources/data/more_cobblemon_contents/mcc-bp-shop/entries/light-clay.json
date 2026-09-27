@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "entry_id": "light_clay",
+      "item_id": "cobblemon:light_clay",
+      "item_count": 1,
+      "price_bp": 15,
+      "sort_order": 390
+    }
+  ]
+}

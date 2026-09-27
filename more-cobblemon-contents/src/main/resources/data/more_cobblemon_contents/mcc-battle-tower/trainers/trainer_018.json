@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "trainer_018",
+      "display_name_key": "trainer.more_cobblemon_contents.tower_trainer_018",
+      "team_style": "physical_pressure",
+      "signature_species_ids": [
+        "cobblemon:abomasnow",
+        "cobblemon:ampharos",
+        "cobblemon:crabominable"
+      ]
+    }
+  ]
+}

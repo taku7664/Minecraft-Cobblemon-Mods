@@ -1,0 +1,141 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "salamence_preset_1",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:salamence",
+      "ability_id": "cobblemon:moxie",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:dualwingbeat",
+        "cobblemon:earthquake",
+        "cobblemon:outrage"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "salamence_preset_2",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:salamence",
+      "ability_id": "cobblemon:intimidate",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:dualwingbeat",
+        "cobblemon:outrage",
+        "cobblemon:roost"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dragondance",
+        "cobblemon:outrage"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "salamence_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:salamence",
+      "ability_id": "cobblemon:intimidate",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:dualwingbeat",
+        "cobblemon:earthquake",
+        "cobblemon:outrage",
+        "cobblemon:roost"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:outrage"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "salamence_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:salamence",
+      "ability_id": "cobblemon:intimidate",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:dualwingbeat",
+        "cobblemon:earthquake",
+        "cobblemon:roost"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

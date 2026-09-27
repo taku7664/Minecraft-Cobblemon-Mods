@@ -1,0 +1,138 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "greattusk_preset_1",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:greattusk",
+      "ability_id": "cobblemon:protosynthesis",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:bulkup",
+        "cobblemon:closecombat",
+        "cobblemon:earthquake",
+        "cobblemon:icespinner"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bulkup",
+        "cobblemon:closecombat"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "greattusk_preset_2",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:greattusk",
+      "ability_id": "cobblemon:protosynthesis",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:closecombat",
+        "cobblemon:headlongrush",
+        "cobblemon:icespinner",
+        "cobblemon:knockoff"
+      ],
+      "roles": [
+        "weakness_cover"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:headlongrush"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "greattusk_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:greattusk",
+      "ability_id": "cobblemon:protosynthesis",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:bulkup",
+        "cobblemon:closecombat",
+        "cobblemon:earthquake",
+        "cobblemon:rapidspin"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bulkup",
+        "cobblemon:closecombat"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "greattusk_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:greattusk",
+      "ability_id": "cobblemon:protosynthesis",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:closecombat",
+        "cobblemon:headlongrush",
+        "cobblemon:icespinner",
+        "cobblemon:rapidspin"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:headlongrush"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

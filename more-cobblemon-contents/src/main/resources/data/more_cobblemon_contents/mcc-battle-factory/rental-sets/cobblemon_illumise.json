@@ -1,0 +1,137 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "illumise_preset_1",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:illumise",
+      "ability_id": "cobblemon:tintedlens",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:bugbuzz",
+        "cobblemon:encore",
+        "cobblemon:roost",
+        "cobblemon:thunderwave"
+      ],
+      "roles": [
+        "speed_control",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bugbuzz"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "illumise_preset_2",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:illumise",
+      "ability_id": "cobblemon:prankster",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:bugbuzz",
+        "cobblemon:encore",
+        "cobblemon:roost",
+        "cobblemon:thunderwave"
+      ],
+      "roles": [
+        "speed_control",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bugbuzz"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "illumise_preset_3",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:illumise",
+      "ability_id": "cobblemon:prankster",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:bugbuzz",
+        "cobblemon:encore",
+        "cobblemon:roost",
+        "cobblemon:thunderwave"
+      ],
+      "roles": [
+        "speed_control",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bugbuzz"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "illumise_preset_4",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:illumise",
+      "ability_id": "cobblemon:prankster",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:bugbuzz",
+        "cobblemon:encore",
+        "cobblemon:roost",
+        "cobblemon:thunderwave"
+      ],
+      "roles": [
+        "speed_control",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bugbuzz"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,2513 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "arceus_preset_1",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:extremespeed",
+        "cobblemon:shadowclaw",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:extremespeed"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceus_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:extremespeed",
+        "cobblemon:recover",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:extremespeed"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceus_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:extremespeed",
+        "cobblemon:recover",
+        "cobblemon:shadowclaw",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:extremespeed",
+        "cobblemon:shadowclaw"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceus_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:extremespeed",
+        "cobblemon:recover",
+        "cobblemon:shadowclaw"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:extremespeed"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusbug_preset_1",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:arceus",
+      "form_id": "bug",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:icebeam",
+        "cobblemon:judgment"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusbug_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "bug",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusbug_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "bug",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:icebeam",
+        "cobblemon:judgment"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusbug_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "bug",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusdark_preset_1",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "dark",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast",
+        "cobblemon:judgment",
+        "cobblemon:sludgebomb"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusdark_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "dark",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusdark_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "dark",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast",
+        "cobblemon:recover",
+        "cobblemon:sludgebomb"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusdark_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "dark",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:judgment",
+        "cobblemon:recover",
+        "cobblemon:sludgebomb"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:judgment"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusdragon_preset_1",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "dragon",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:extremespeed",
+        "cobblemon:outrage",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:extremespeed"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusdragon_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "dragon",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast",
+        "cobblemon:judgment",
+        "cobblemon:sludgebomb"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusdragon_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "dragon",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:gunkshot",
+        "cobblemon:outrage",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:gunkshot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusdragon_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "dragon",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:extremespeed",
+        "cobblemon:gunkshot",
+        "cobblemon:outrage",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:extremespeed",
+        "cobblemon:gunkshot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceuselectric_preset_1",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "electric",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:icebeam",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:icebeam"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceuselectric_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "electric",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:icebeam",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:icebeam"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceuselectric_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "electric",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:icebeam",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:icebeam"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceuselectric_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "electric",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:icebeam",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:icebeam"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusfairy_preset_1",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "fairy",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusfairy_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "fairy",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusfairy_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "fairy",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusfairy_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "fairy",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusfighting_preset_1",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "fighting",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:bodypress",
+        "cobblemon:cosmicpower",
+        "cobblemon:recover",
+        "cobblemon:storedpower"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bodypress"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusfighting_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "fighting",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:bodypress",
+        "cobblemon:cosmicpower",
+        "cobblemon:recover",
+        "cobblemon:storedpower"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bodypress"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusfighting_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "fighting",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:bodypress",
+        "cobblemon:cosmicpower",
+        "cobblemon:recover",
+        "cobblemon:storedpower"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bodypress"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusfighting_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "fighting",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:bodypress",
+        "cobblemon:cosmicpower",
+        "cobblemon:recover",
+        "cobblemon:storedpower"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bodypress"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusfire_preset_1",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:arceus",
+      "form_id": "fire",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:extremespeed",
+        "cobblemon:flareblitz",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:extremespeed"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusfire_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "fire",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:icebeam",
+        "cobblemon:judgment"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusfire_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "fire",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:flareblitz",
+        "cobblemon:liquidation",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:flareblitz"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusfire_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "fire",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:icebeam",
+        "cobblemon:thunderbolt"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusflying_preset_1",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "flying",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusflying_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "flying",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusflying_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "flying",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusflying_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "flying",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusghost_preset_1",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "ghost",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:focusblast",
+        "cobblemon:judgment",
+        "cobblemon:recover",
+        "cobblemon:willowisp"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:focusblast",
+        "cobblemon:judgment"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusghost_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "ghost",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:focusblast",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:focusblast"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusghost_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "ghost",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:focusblast",
+        "cobblemon:judgment",
+        "cobblemon:recover",
+        "cobblemon:willowisp"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:focusblast",
+        "cobblemon:judgment"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusghost_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "ghost",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:focusblast",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:focusblast"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusgrass_preset_1",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:arceus",
+      "form_id": "grass",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:icebeam",
+        "cobblemon:judgment"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusgrass_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "grass",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusgrass_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "grass",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:icebeam",
+        "cobblemon:judgment"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusgrass_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "grass",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusground_preset_1",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "ground",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast",
+        "cobblemon:icebeam",
+        "cobblemon:judgment"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusground_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "ground",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:extremespeed",
+        "cobblemon:stoneedge",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:extremespeed"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusground_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "ground",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast",
+        "cobblemon:icebeam",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusground_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "ground",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusice_preset_1",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:arceus",
+      "form_id": "ice",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:judgment",
+        "cobblemon:thunderbolt"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusice_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "ice",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusice_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "ice",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:recover",
+        "cobblemon:thunderbolt"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusice_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "ice",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:judgment",
+        "cobblemon:recover",
+        "cobblemon:thunderbolt"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:judgment"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceuspoison_preset_1",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:arceus",
+      "form_id": "poison",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake",
+        "cobblemon:flareblitz",
+        "cobblemon:gunkshot"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceuspoison_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "poison",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake",
+        "cobblemon:gunkshot",
+        "cobblemon:liquidation"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dragondance",
+        "cobblemon:earthquake"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceuspoison_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "poison",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:flareblitz",
+        "cobblemon:gunkshot",
+        "cobblemon:liquidation"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dragondance",
+        "cobblemon:flareblitz"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceuspoison_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "poison",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:flareblitz",
+        "cobblemon:gunkshot",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:flareblitz"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceuspsychic_preset_1",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "psychic",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:bodypress",
+        "cobblemon:cosmicpower",
+        "cobblemon:recover",
+        "cobblemon:storedpower"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bodypress"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceuspsychic_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "psychic",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:bodypress",
+        "cobblemon:cosmicpower",
+        "cobblemon:recover",
+        "cobblemon:storedpower"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bodypress"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceuspsychic_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "psychic",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:bodypress",
+        "cobblemon:cosmicpower",
+        "cobblemon:recover",
+        "cobblemon:storedpower"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bodypress"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceuspsychic_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "psychic",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:bodypress",
+        "cobblemon:cosmicpower",
+        "cobblemon:recover",
+        "cobblemon:storedpower"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bodypress"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusrock_preset_1",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:arceus",
+      "form_id": "rock",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:fireblast",
+        "cobblemon:judgment"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "arceusrock_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "rock",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:fireblast",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusrock_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "rock",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceusrock_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "rock",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceussteel_preset_1",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "steel",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:judgment",
+        "cobblemon:recover",
+        "cobblemon:willowisp"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:judgment"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceussteel_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "steel",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceussteel_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "steel",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:impish",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:judgment",
+        "cobblemon:recover",
+        "cobblemon:willowisp"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:judgment"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 252,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceussteel_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "steel",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:earthpower"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceuswater_preset_1",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "water",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:icebeam",
+        "cobblemon:judgment",
+        "cobblemon:recover"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:icebeam"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceuswater_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "water",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:icebeam",
+        "cobblemon:judgment",
+        "cobblemon:willowisp"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:icebeam"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceuswater_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "water",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:icebeam",
+        "cobblemon:judgment",
+        "cobblemon:recover",
+        "cobblemon:willowisp"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:icebeam",
+        "cobblemon:judgment"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "arceuswater_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:arceus",
+      "form_id": "water",
+      "ability_id": "cobblemon:multitype",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:icebeam",
+        "cobblemon:recover",
+        "cobblemon:willowisp"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:icebeam"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    }
+  ]
+}

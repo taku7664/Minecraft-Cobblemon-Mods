@@ -1,0 +1,137 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "spidops_preset_1",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:spidops",
+      "ability_id": "cobblemon:insomnia",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:circlethrow",
+        "cobblemon:knockoff",
+        "cobblemon:spikes",
+        "cobblemon:uturn"
+      ],
+      "roles": [
+        "pivot",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:uturn"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "spidops_preset_2",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:spidops",
+      "ability_id": "cobblemon:stakeout",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:circlethrow",
+        "cobblemon:knockoff",
+        "cobblemon:stickyweb",
+        "cobblemon:uturn"
+      ],
+      "roles": [
+        "pivot",
+        "speed_control"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:uturn"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "spidops_preset_3",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:spidops",
+      "ability_id": "cobblemon:stakeout",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:circlethrow",
+        "cobblemon:knockoff",
+        "cobblemon:toxicspikes",
+        "cobblemon:uturn"
+      ],
+      "roles": [
+        "pivot",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:uturn"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "spidops_preset_4",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:spidops",
+      "ability_id": "cobblemon:stakeout",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:careful",
+      "moves": [
+        "cobblemon:circlethrow",
+        "cobblemon:spikes",
+        "cobblemon:stickyweb",
+        "cobblemon:uturn"
+      ],
+      "roles": [
+        "pivot",
+        "speed_control",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:uturn"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 4,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 252,
+        "speed": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "reshiram_preset_1",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:reshiram",
+      "ability_id": "cobblemon:turboblaze",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor",
+        "cobblemon:earthpower",
+        "cobblemon:roar"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "reshiram_preset_2",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:reshiram",
+      "ability_id": "cobblemon:turboblaze",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:dragondance",
+        "cobblemon:flareblitz",
+        "cobblemon:outrage",
+        "cobblemon:stoneedge"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dragondance",
+        "cobblemon:flareblitz"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "reshiram_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:reshiram",
+      "ability_id": "cobblemon:turboblaze",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor",
+        "cobblemon:earthpower",
+        "cobblemon:willowisp"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "reshiram_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:reshiram",
+      "ability_id": "cobblemon:turboblaze",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor",
+        "cobblemon:roar",
+        "cobblemon:willowisp"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:blueflare",
+        "cobblemon:dracometeor"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

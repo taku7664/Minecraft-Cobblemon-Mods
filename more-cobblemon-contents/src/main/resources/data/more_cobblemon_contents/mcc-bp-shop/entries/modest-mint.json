@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "entry_id": "modest_mint",
+      "item_id": "cobblemon:modest_mint",
+      "item_count": 1,
+      "price_bp": 50,
+      "sort_order": 90
+    }
+  ]
+}

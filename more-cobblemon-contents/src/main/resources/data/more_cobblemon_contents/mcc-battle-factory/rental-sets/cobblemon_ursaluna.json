@@ -1,0 +1,273 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "ursaluna_preset_1",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:ursaluna",
+      "ability_id": "cobblemon:bulletproof",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:crunch",
+        "cobblemon:facade",
+        "cobblemon:headlongrush",
+        "cobblemon:trailblaze"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:crunch",
+        "cobblemon:facade"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "ursaluna_preset_2",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:ursaluna",
+      "ability_id": "cobblemon:guts",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:facade",
+        "cobblemon:headlongrush",
+        "cobblemon:throatchop",
+        "cobblemon:trailblaze"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:facade",
+        "cobblemon:headlongrush"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "ursaluna_preset_3",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:ursaluna",
+      "ability_id": "cobblemon:guts",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:crunch",
+        "cobblemon:facade",
+        "cobblemon:headlongrush",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:crunch",
+        "cobblemon:facade"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "ursaluna_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:ursaluna",
+      "ability_id": "cobblemon:guts",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:facade",
+        "cobblemon:headlongrush",
+        "cobblemon:swordsdance",
+        "cobblemon:throatchop"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:facade",
+        "cobblemon:headlongrush"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "ursalunabloodmoon_preset_1",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:ursaluna",
+      "form_id": "bloodmoon",
+      "ability_id": "cobblemon:mindseye",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:calm",
+      "moves": [
+        "cobblemon:bloodmoon",
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:moonlight"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bloodmoon",
+        "cobblemon:calmmind"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 4,
+        "special_defense": 252,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "ursalunabloodmoon_preset_2",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:ursaluna",
+      "form_id": "bloodmoon",
+      "ability_id": "cobblemon:mindseye",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:calm",
+      "moves": [
+        "cobblemon:bloodmoon",
+        "cobblemon:calmmind",
+        "cobblemon:moonlight",
+        "cobblemon:vacuumwave"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bloodmoon",
+        "cobblemon:calmmind"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 4,
+        "special_defense": 252,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "ursalunabloodmoon_preset_3",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:ursaluna",
+      "form_id": "bloodmoon",
+      "ability_id": "cobblemon:mindseye",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:calm",
+      "moves": [
+        "cobblemon:bloodmoon",
+        "cobblemon:calmmind",
+        "cobblemon:earthpower",
+        "cobblemon:moonlight"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bloodmoon",
+        "cobblemon:calmmind"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 4,
+        "special_defense": 252,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "ursalunabloodmoon_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:ursaluna",
+      "form_id": "bloodmoon",
+      "ability_id": "cobblemon:mindseye",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:calm",
+      "moves": [
+        "cobblemon:bloodmoon",
+        "cobblemon:calmmind",
+        "cobblemon:moonlight",
+        "cobblemon:vacuumwave"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bloodmoon",
+        "cobblemon:calmmind"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 4,
+        "special_defense": 252,
+        "speed": 0
+      }
+    }
+  ]
+}

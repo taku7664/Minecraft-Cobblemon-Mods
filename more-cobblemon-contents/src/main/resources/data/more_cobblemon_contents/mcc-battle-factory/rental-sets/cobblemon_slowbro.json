@@ -1,0 +1,266 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "slowbro_preset_1",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:slowbro",
+      "ability_id": "cobblemon:oblivious",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:psychicnoise",
+        "cobblemon:psyshock",
+        "cobblemon:scald"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:psychicnoise"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "slowbro_preset_2",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:slowbro",
+      "ability_id": "cobblemon:regenerator",
+      "held_item_id": "cobblemon:white_herb",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:bodypress",
+        "cobblemon:futuresight",
+        "cobblemon:psychicnoise",
+        "cobblemon:scald"
+      ],
+      "roles": [
+        "wallbreaker"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:bodypress",
+        "cobblemon:futuresight"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "slowbro_preset_3",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:slowbro",
+      "ability_id": "cobblemon:regenerator",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:psychicnoise",
+        "cobblemon:psyshock",
+        "cobblemon:scald",
+        "cobblemon:slackoff"
+      ],
+      "roles": [
+        "weakness_cover"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:psychicnoise",
+        "cobblemon:psyshock"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "slowbro_preset_4",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:slowbro",
+      "ability_id": "cobblemon:regenerator",
+      "held_item_id": "cobblemon:choice_scarf",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:fireblast",
+        "cobblemon:futuresight",
+        "cobblemon:psychicnoise",
+        "cobblemon:scald"
+      ],
+      "roles": [
+        "wallbreaker"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:fireblast",
+        "cobblemon:futuresight"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "slowbrogalar_preset_1",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:slowbro",
+      "form_id": "galar",
+      "ability_id": "cobblemon:quickdraw",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:fireblast",
+        "cobblemon:psychic",
+        "cobblemon:shellsidearm"
+      ],
+      "roles": [
+        "wallbreaker"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:fireblast"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "slowbrogalar_preset_2",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:slowbro",
+      "form_id": "galar",
+      "ability_id": "cobblemon:regenerator",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:fireblast",
+        "cobblemon:psychic",
+        "cobblemon:shellsidearm",
+        "cobblemon:trickroom"
+      ],
+      "roles": [
+        "speed_control"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:fireblast",
+        "cobblemon:psychic"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "slowbrogalar_preset_3",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:slowbro",
+      "form_id": "galar",
+      "ability_id": "cobblemon:regenerator",
+      "held_item_id": "cobblemon:assault_vest",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:foulplay",
+        "cobblemon:psychic",
+        "cobblemon:shellsidearm"
+      ],
+      "roles": [
+        "wallbreaker"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:foulplay"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "slowbrogalar_preset_4",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:slowbro",
+      "form_id": "galar",
+      "ability_id": "cobblemon:regenerator",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:earthquake",
+        "cobblemon:psychic",
+        "cobblemon:shellsidearm",
+        "cobblemon:slackoff"
+      ],
+      "roles": [
+        "weakness_cover"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:earthquake",
+        "cobblemon:psychic"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "pincurchin_preset_1",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:pincurchin",
+      "ability_id": "cobblemon:lightningrod",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:calm",
+      "moves": [
+        "cobblemon:recover",
+        "cobblemon:scald",
+        "cobblemon:spikes",
+        "cobblemon:thunderbolt"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:scald",
+        "cobblemon:thunderbolt"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 4,
+        "special_defense": 252,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "pincurchin_preset_2",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:pincurchin",
+      "ability_id": "cobblemon:electricsurge",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:calm",
+      "moves": [
+        "cobblemon:recover",
+        "cobblemon:scald",
+        "cobblemon:thunderbolt",
+        "cobblemon:toxicspikes"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:scald",
+        "cobblemon:thunderbolt"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 4,
+        "special_defense": 252,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "pincurchin_preset_3",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:pincurchin",
+      "ability_id": "cobblemon:electricsurge",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:calm",
+      "moves": [
+        "cobblemon:scald",
+        "cobblemon:spikes",
+        "cobblemon:thunderbolt",
+        "cobblemon:toxicspikes"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:scald",
+        "cobblemon:thunderbolt"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 4,
+        "special_defense": 252,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "pincurchin_preset_4",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:pincurchin",
+      "ability_id": "cobblemon:electricsurge",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:calm",
+      "moves": [
+        "cobblemon:recover",
+        "cobblemon:spikes",
+        "cobblemon:thunderbolt",
+        "cobblemon:toxicspikes"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:thunderbolt"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 4,
+        "special_defense": 252,
+        "speed": 0
+      }
+    }
+  ]
+}

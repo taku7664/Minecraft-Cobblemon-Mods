@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "trainers": [
+    {
+      "trainer_id": "trainer_029",
+      "display_name_key": "trainer.more_cobblemon_contents.tower_trainer_029",
+      "team_style": "endurance",
+      "signature_species_ids": [
+        "cobblemon:abomasnow",
+        "cobblemon:camerupt",
+        "cobblemon:charizard"
+      ]
+    }
+  ]
+}

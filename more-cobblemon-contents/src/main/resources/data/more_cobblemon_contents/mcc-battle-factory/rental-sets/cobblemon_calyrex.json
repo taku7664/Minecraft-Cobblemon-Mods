@@ -1,0 +1,410 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "calyrex_preset_1",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:calyrex",
+      "ability_id": "cobblemon:unnerve",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:gigadrain",
+        "cobblemon:psychic",
+        "cobblemon:psyshock"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:gigadrain"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "calyrex_preset_2",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:calyrex",
+      "ability_id": "cobblemon:unnerve",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:encore",
+        "cobblemon:gigadrain",
+        "cobblemon:psychic"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:gigadrain"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "calyrex_preset_3",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:calyrex",
+      "ability_id": "cobblemon:unnerve",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:encore",
+        "cobblemon:gigadrain",
+        "cobblemon:psyshock"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:gigadrain"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "calyrex_preset_4",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:calyrex",
+      "ability_id": "cobblemon:unnerve",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:bold",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:gigadrain",
+        "cobblemon:leechseed",
+        "cobblemon:psychic"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:gigadrain"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 252,
+        "attack": 0,
+        "defense": 252,
+        "special_attack": 4,
+        "special_defense": 0,
+        "speed": 0
+      }
+    },
+    {
+      "set_id": "calyrexice_preset_1",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:calyrex",
+      "form_id": "ice",
+      "ability_id": "cobblemon:asoneglastrier",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:agility",
+        "cobblemon:closecombat",
+        "cobblemon:glaciallance",
+        "cobblemon:highhorsepower"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:agility",
+        "cobblemon:closecombat"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "calyrexice_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:calyrex",
+      "form_id": "ice",
+      "ability_id": "cobblemon:asoneglastrier",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:closecombat",
+        "cobblemon:glaciallance",
+        "cobblemon:highhorsepower",
+        "cobblemon:trickroom"
+      ],
+      "roles": [
+        "speed_control"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:glaciallance"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "calyrexice_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:calyrex",
+      "form_id": "ice",
+      "ability_id": "cobblemon:asoneglastrier",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:agility",
+        "cobblemon:closecombat",
+        "cobblemon:glaciallance",
+        "cobblemon:highhorsepower"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:agility",
+        "cobblemon:closecombat"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "calyrexice_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:calyrex",
+      "form_id": "ice",
+      "ability_id": "cobblemon:asoneglastrier",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:closecombat",
+        "cobblemon:glaciallance",
+        "cobblemon:highhorsepower",
+        "cobblemon:trickroom"
+      ],
+      "roles": [
+        "speed_control"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:glaciallance"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "calyrexshadow_preset_1",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:calyrex",
+      "form_id": "shadow",
+      "ability_id": "cobblemon:asonespectrier",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:astralbarrage",
+        "cobblemon:nastyplot",
+        "cobblemon:pollenpuff",
+        "cobblemon:psyshock"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:astralbarrage",
+        "cobblemon:nastyplot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "calyrexshadow_preset_2",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:calyrex",
+      "form_id": "shadow",
+      "ability_id": "cobblemon:asonespectrier",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:astralbarrage",
+        "cobblemon:nastyplot",
+        "cobblemon:psyshock",
+        "cobblemon:trick"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:astralbarrage",
+        "cobblemon:nastyplot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "calyrexshadow_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:calyrex",
+      "form_id": "shadow",
+      "ability_id": "cobblemon:asonespectrier",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:astralbarrage",
+        "cobblemon:pollenpuff",
+        "cobblemon:psyshock",
+        "cobblemon:trick"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:astralbarrage",
+        "cobblemon:pollenpuff"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "calyrexshadow_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:calyrex",
+      "form_id": "shadow",
+      "ability_id": "cobblemon:asonespectrier",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:astralbarrage",
+        "cobblemon:nastyplot",
+        "cobblemon:pollenpuff",
+        "cobblemon:trick"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:astralbarrage",
+        "cobblemon:nastyplot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

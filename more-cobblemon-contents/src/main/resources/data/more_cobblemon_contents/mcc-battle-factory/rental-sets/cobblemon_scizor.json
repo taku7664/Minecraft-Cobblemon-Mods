@@ -1,0 +1,136 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "scizor_preset_1",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:scizor",
+      "ability_id": "cobblemon:swarm",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:bulletpunch",
+        "cobblemon:closecombat",
+        "cobblemon:knockoff",
+        "cobblemon:uturn"
+      ],
+      "roles": [
+        "pivot"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:uturn"
+      ],
+      "lead_priority": 70,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "scizor_preset_2",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:scizor",
+      "ability_id": "cobblemon:technician",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:bugbite",
+        "cobblemon:bulletpunch",
+        "cobblemon:closecombat",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:swordsdance"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "scizor_preset_3",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:scizor",
+      "ability_id": "cobblemon:technician",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:bulletpunch",
+        "cobblemon:closecombat",
+        "cobblemon:defog",
+        "cobblemon:uturn"
+      ],
+      "roles": [
+        "pivot",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:closecombat",
+        "cobblemon:uturn"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "scizor_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:scizor",
+      "ability_id": "cobblemon:technician",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:bugbite",
+        "cobblemon:bulletpunch",
+        "cobblemon:knockoff",
+        "cobblemon:swordsdance"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:swordsdance"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "flareon_preset_1",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:flareon",
+      "ability_id": "cobblemon:guts",
+      "held_item_id": "cobblemon:assault_vest",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:facade",
+        "cobblemon:flareblitz",
+        "cobblemon:quickattack",
+        "cobblemon:trailblaze"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:facade",
+        "cobblemon:flareblitz"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "flareon_preset_2",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:flareon",
+      "ability_id": "cobblemon:flashfire",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:facade",
+        "cobblemon:flareblitz",
+        "cobblemon:trailblaze",
+        "cobblemon:willowisp"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:facade",
+        "cobblemon:flareblitz"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "flareon_preset_3",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:flareon",
+      "ability_id": "cobblemon:flashfire",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:flareblitz",
+        "cobblemon:quickattack",
+        "cobblemon:trailblaze",
+        "cobblemon:willowisp"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner",
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:flareblitz",
+        "cobblemon:trailblaze"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "flareon_preset_4",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:flareon",
+      "ability_id": "cobblemon:flashfire",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:adamant",
+      "moves": [
+        "cobblemon:facade",
+        "cobblemon:flareblitz",
+        "cobblemon:quickattack",
+        "cobblemon:willowisp"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:facade",
+        "cobblemon:flareblitz"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

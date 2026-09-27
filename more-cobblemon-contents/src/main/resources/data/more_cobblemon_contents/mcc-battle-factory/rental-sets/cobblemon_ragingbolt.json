@@ -1,0 +1,135 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "ragingbolt_preset_1",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:ragingbolt",
+      "ability_id": "cobblemon:protosynthesis",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:thunderbolt",
+        "cobblemon:thunderclap",
+        "cobblemon:voltswitch"
+      ],
+      "roles": [
+        "pivot"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dracometeor",
+        "cobblemon:thunderbolt"
+      ],
+      "lead_priority": 70,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "ragingbolt_preset_2",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:ragingbolt",
+      "ability_id": "cobblemon:protosynthesis",
+      "held_item_id": "cobblemon:focus_sash",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:dragonpulse",
+        "cobblemon:thunderbolt",
+        "cobblemon:thunderclap"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:dragonpulse"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "ragingbolt_preset_3",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:ragingbolt",
+      "ability_id": "cobblemon:protosynthesis",
+      "held_item_id": "cobblemon:choice_scarf",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:dracometeor",
+        "cobblemon:thunderbolt",
+        "cobblemon:thunderclap",
+        "cobblemon:voltswitch"
+      ],
+      "roles": [
+        "pivot"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:dracometeor",
+        "cobblemon:thunderbolt"
+      ],
+      "lead_priority": 70,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "ragingbolt_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:ragingbolt",
+      "ability_id": "cobblemon:protosynthesis",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:modest",
+      "moves": [
+        "cobblemon:calmmind",
+        "cobblemon:dragonpulse",
+        "cobblemon:thunderbolt",
+        "cobblemon:thunderclap"
+      ],
+      "roles": [
+        "wallbreaker",
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:calmmind",
+        "cobblemon:dragonpulse"
+      ],
+      "lead_priority": 40,
+      "preservation_priority": 85,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

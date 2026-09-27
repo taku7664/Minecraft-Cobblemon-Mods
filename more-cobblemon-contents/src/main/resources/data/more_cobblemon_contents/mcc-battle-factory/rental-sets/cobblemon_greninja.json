@@ -1,0 +1,265 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "greninja_preset_1",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:greninja",
+      "ability_id": "cobblemon:torrent",
+      "held_item_id": "cobblemon:wide_lens",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:darkpulse",
+        "cobblemon:gunkshot",
+        "cobblemon:hydropump",
+        "cobblemon:icebeam"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:darkpulse",
+        "cobblemon:gunkshot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "greninja_preset_2",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:greninja",
+      "ability_id": "cobblemon:protean",
+      "held_item_id": "cobblemon:rocky_helmet",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:darkpulse",
+        "cobblemon:gunkshot",
+        "cobblemon:hydropump",
+        "cobblemon:uturn"
+      ],
+      "roles": [
+        "pivot"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:darkpulse",
+        "cobblemon:gunkshot"
+      ],
+      "lead_priority": 70,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "greninja_preset_3",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:greninja",
+      "ability_id": "cobblemon:protean",
+      "held_item_id": "cobblemon:assault_vest",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:darkpulse",
+        "cobblemon:hydropump",
+        "cobblemon:icebeam",
+        "cobblemon:uturn"
+      ],
+      "roles": [
+        "pivot"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:darkpulse",
+        "cobblemon:hydropump"
+      ],
+      "lead_priority": 70,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "greninja_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:greninja",
+      "ability_id": "cobblemon:protean",
+      "held_item_id": "cobblemon:heavy_duty_boots",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:darkpulse",
+        "cobblemon:grassknot",
+        "cobblemon:gunkshot",
+        "cobblemon:hydropump"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:darkpulse",
+        "cobblemon:gunkshot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "greninjabond_preset_1",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:greninja",
+      "form_id": "bond",
+      "ability_id": "cobblemon:battlebond",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:darkpulse",
+        "cobblemon:gunkshot",
+        "cobblemon:hydropump",
+        "cobblemon:icebeam"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:darkpulse",
+        "cobblemon:gunkshot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "greninjabond_preset_2",
+      "pool_group": "advanced",
+      "variant": 2,
+      "species_id": "cobblemon:greninja",
+      "form_id": "bond",
+      "ability_id": "cobblemon:battlebond",
+      "held_item_id": "cobblemon:life_orb",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:darkpulse",
+        "cobblemon:gunkshot",
+        "cobblemon:hydropump",
+        "cobblemon:icebeam"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:darkpulse",
+        "cobblemon:gunkshot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "greninjabond_preset_3",
+      "pool_group": "advanced",
+      "variant": 3,
+      "species_id": "cobblemon:greninja",
+      "form_id": "bond",
+      "ability_id": "cobblemon:battlebond",
+      "held_item_id": "cobblemon:life_orb",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:darkpulse",
+        "cobblemon:gunkshot",
+        "cobblemon:hydropump",
+        "cobblemon:icebeam"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:darkpulse",
+        "cobblemon:gunkshot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "greninjabond_preset_4",
+      "pool_group": "advanced",
+      "variant": 4,
+      "species_id": "cobblemon:greninja",
+      "form_id": "bond",
+      "ability_id": "cobblemon:battlebond",
+      "held_item_id": "cobblemon:expert_belt",
+      "nature_id": "cobblemon:timid",
+      "moves": [
+        "cobblemon:darkpulse",
+        "cobblemon:gunkshot",
+        "cobblemon:hydropump",
+        "cobblemon:icebeam"
+      ],
+      "roles": [
+        "cleaner"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:darkpulse",
+        "cobblemon:gunkshot"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 60,
+      "evs": {
+        "hp": 4,
+        "attack": 0,
+        "defense": 0,
+        "special_attack": 252,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}

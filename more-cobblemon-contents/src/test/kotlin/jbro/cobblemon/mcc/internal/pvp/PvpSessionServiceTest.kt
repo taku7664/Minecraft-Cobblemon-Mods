@@ -1,0 +1,573 @@
+package jbro.cobblemon.mcc.internal.pvp
+
+import java.util.UUID
+import jbro.cobblemon.mcc.internal.record.BattleRecordStore
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+class PvpSessionServiceTest {
+    private val first = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+    private val second = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+    private val matchId = UUID.fromString("11111111-1111-1111-1111-111111111111")
+    private val battleId = UUID.fromString("99999999-9999-9999-9999-999999999999")
+
+    @Test
+    fun `accepted challenge snapshots both teams launches once and records one paired result`() {
+        val snapshots = RecordingSnapshots()
+        var launches = 0
+        val records = BattleRecordStore()
+        val service = service(snapshots, records) {
+            launches++
+            PvpBattleLaunchResult.Started(battleId)
+        }
+        service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
+        service.accept(matchId, second)
+        assertEquals(PvpTeamRegistrationMutation.STORED, service.registerTeam(matchId, first, team(first, 1)))
+        assertEquals(PvpTeamRegistrationMutation.STORED, service.registerTeam(matchId, second, team(second, 4)))
+        val view = requireNotNull(service.viewFor(first))
+        assertEquals(second, view.opponentId)
+        assertEquals(ids(first, 1), view.ownTeam.members.map(PvpPokemonRegistration::pokemonId))
+        assertEquals(listOf("cobblemon:species4", "cobblemon:species5", "cobblemon:species6"), view.opponentPreview.speciesIds)
+
+        assertEquals(PvpSelectionMutation.SELECTION_STORED, service.select(matchId, first, ids(first, 1)))
+        assertEquals(PvpSelectionMutation.WAITING_FOR_OPPONENT, service.ready(matchId, first))
+        assertEquals(PvpSelectionMutation.SELECTION_STORED, service.select(matchId, second, ids(second, 4)))
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.ready(matchId, second))
+        assertEquals(1, launches)
+        val completion = PvpBattleCompletionSink { winner, loser, format ->
+            PvpBattleRecordService(records::recordCompletedBattles).recordResult(winner, loser, format)
+        }
+        assertTrue(service.completeBattle(matchId, battleId, first, second, completion))
+        assertFalse(service.completeBattle(matchId, battleId, first, second, completion))
+
+        assertEquals(setOf(first, second), snapshots.discarded)
+        assertEquals(1, records.get(recordKey(first)).totalWins)
+        assertEquals(1, records.get(recordKey(second)).totalLosses)
+    }
+
+    @Test
+    fun `failed launch remains ready and can be retried without resnapshotting`() {
+        val snapshots = RecordingSnapshots()
+        var available = false
+        val service = service(snapshots, BattleRecordStore()) {
+            if (available) PvpBattleLaunchResult.Started(battleId) else PvpBattleLaunchResult.Unavailable
+        }
+        ready(service)
+
+        assertEquals(PvpSelectionMutation.SELECTION_STORED, service.select(matchId, second, ids(second, 4)))
+        assertEquals(PvpSelectionMutation.BATTLE_UNAVAILABLE, service.ready(matchId, second))
+        available = true
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.launchReady(matchId))
+        assertEquals(2, snapshots.captured.size)
+    }
+
+    @Test
+    fun `launch exception remains ready and can be retried`() {
+        val snapshots = RecordingSnapshots()
+        var attempts = 0
+        val service = service(snapshots, BattleRecordStore()) {
+            attempts++
+            if (attempts == 1) throw IllegalStateException("runtime start failed")
+            PvpBattleLaunchResult.Started(battleId)
+        }
+        ready(service)
+
+        assertEquals(PvpSelectionMutation.SELECTION_STORED, service.select(matchId, second, ids(second, 4)))
+        assertEquals(PvpSelectionMutation.BATTLE_UNAVAILABLE, service.ready(matchId, second))
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.launchReady(matchId))
+        assertEquals(2, attempts)
+        assertEquals(2, snapshots.captured.size)
+    }
+
+    @Test
+    fun `registration failure and cancellation fail closed and discard captured snapshots`() {
+        val snapshots = RecordingSnapshots(rejectedPlayer = second)
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
+        service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
+        service.accept(matchId, second)
+
+        assertEquals(PvpTeamRegistrationMutation.STORED, service.registerTeam(matchId, first, team(first, 1)))
+        assertEquals(PvpTeamRegistrationMutation.SNAPSHOT_REJECTED, service.registerTeam(matchId, second, team(second, 4)))
+        assertTrue(service.cancel(matchId, first) is PvpChallengeMutationResult.Applied)
+        assertEquals(setOf(first, second), snapshots.discarded)
+    }
+
+    @Test
+    fun `room match preparation rolls back a rejected second snapshot`() {
+        val snapshots = RecordingSnapshots(rejectedPlayer = second)
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
+        val request = PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE)
+
+        assertFalse(service.prepareRoomMatch(request, team(first, 1), team(second, 4)))
+
+        assertNull(service.challenge(matchId))
+        assertNull(service.challengeFor(first))
+        assertEquals(setOf(first, second), snapshots.discarded)
+        assertTrue(service.invite(request) is PvpChallengeMutationResult.Applied)
+    }
+
+    @Test
+    fun `room match preparation exception preserves failure and releases ownership`() {
+        val failure = NoSuchMethodError("snapshot API drift")
+        val snapshots = RecordingSnapshots(snapshotFailure = second to failure)
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
+        val request = PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE)
+
+        assertSame(
+            failure,
+            assertThrows(NoSuchMethodError::class.java) {
+                service.prepareRoomMatch(request, team(first, 1), team(second, 4))
+            },
+        )
+        assertNull(service.challenge(matchId))
+        assertNull(service.challengeFor(first))
+        assertEquals(setOf(first, second), snapshots.discarded)
+    }
+
+    @Test
+    fun `accepted match preparation exception preserves failure and releases ownership`() {
+        val failure = NoSuchMethodError("snapshot API drift")
+        val snapshots = RecordingSnapshots(snapshotFailure = second to failure)
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
+        service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
+
+        assertSame(
+            failure,
+            assertThrows(NoSuchMethodError::class.java) {
+                service.acceptRegisteredMatch(matchId, second, team(first, 1), team(second, 4))
+            },
+        )
+        assertNull(service.challenge(matchId))
+        assertNull(service.challengeFor(first))
+        assertEquals(setOf(first, second), snapshots.discarded)
+    }
+
+    @Test
+    fun `accept timer failure preserves the cause and releases both players`() {
+        val failure = NoSuchMethodError("timer API drift")
+        val service = PvpSessionService(
+            snapshots = RecordingSnapshots(),
+            launcher = PvpBattleLauncher(
+                RecordingSnapshots(),
+                PvpBattleRuntime { PvpBattleLaunchResult.Unavailable },
+            ),
+            timeSource = object : PvpTimeSource {
+                override fun epochMillis(): Long = throw failure
+
+                override fun monotonicMillis(): Long = throw failure
+            },
+        )
+        val request = PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE)
+        service.invite(request)
+
+        assertSame(failure, assertThrows(NoSuchMethodError::class.java) { service.accept(matchId, second) })
+        assertNull(service.challenge(matchId))
+        assertNull(service.challengeFor(first))
+        assertNull(service.viewFor(first))
+        assertTrue(service.invite(request) is PvpChallengeMutationResult.Applied)
+    }
+
+    @Test
+    fun `target rejection discards the settled challenge and frees its id for reuse`() {
+        val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
+        val request = PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE)
+        service.invite(request)
+
+        assertTrue(service.reject(matchId, second) is PvpChallengeMutationResult.Applied)
+        assertNull(service.challenge(matchId))
+        assertTrue(service.invite(request) is PvpChallengeMutationResult.Applied)
+    }
+
+    @Test
+    fun `battle cancellation releases both players without recording a result`() {
+        val snapshots = RecordingSnapshots()
+        val records = BattleRecordStore()
+        val service = service(snapshots, records) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        assertEquals(PvpSelectionMutation.SELECTION_STORED, service.select(matchId, second, ids(second, 4)))
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.ready(matchId, second))
+
+        assertTrue(service.cancelBattle(matchId, battleId))
+        assertFalse(service.cancelBattle(matchId, battleId))
+        assertTrue(records.all().isEmpty())
+        assertEquals(setOf(first, second), snapshots.discarded)
+        assertTrue(
+            service.invite(PvpChallengeRequest(UUID.randomUUID(), first, second, PvpBattleFormat.SINGLE)) is
+                PvpChallengeMutationResult.Applied,
+        )
+    }
+
+    @Test
+    fun `entry deadline auto selects registered order and starts when both players time out`() {
+        var now = 0L
+        val snapshots = RecordingSnapshots()
+        var prepared: PvpPreparedBattle<String>? = null
+        val service = PvpSessionService(
+            snapshots = snapshots,
+            launcher = PvpBattleLauncher(snapshots, PvpBattleRuntime { battle ->
+                prepared = battle
+                PvpBattleLaunchResult.Started(battleId)
+            }),
+            timeSource = object : PvpTimeSource {
+                override fun epochMillis(): Long = now
+                override fun monotonicMillis(): Long = now
+            },
+        )
+        service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
+        service.accept(matchId, second)
+        service.registerTeam(matchId, first, team(first, 1))
+        service.registerTeam(matchId, second, team(second, 4))
+
+        now = 90_000L
+        val resolution = service.expireEntrySelections().single()
+
+        assertEquals(setOf(first, second), resolution.autoSelectedPlayerIds)
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, resolution.launchResult)
+        assertEquals(ids(first, 1), prepared?.request?.firstSelection?.members?.map(PvpPokemonRegistration::pokemonId))
+        assertEquals(ids(second, 4), prepared?.request?.secondSelection?.members?.map(PvpPokemonRegistration::pokemonId))
+        assertTrue(service.expireEntrySelections().isEmpty())
+    }
+
+    @Test
+    fun `synchronous battle end during launch stays retryable until battle ownership is committed`() {
+        val snapshots = RecordingSnapshots()
+        val pending = PendingPvpCompletion(matchId, battleId, first, second)
+        val queue = PvpCompletionRetryQueue(currentTimeMillis = { 1_000L })
+        lateinit var service: PvpSessionService<String>
+        service = PvpSessionService(
+            snapshots = snapshots,
+            launcher = PvpBattleLauncher(
+                snapshots,
+                PvpBattleRuntime {
+                    assertTrue(service.isLaunchPending(matchId))
+                    assertFalse(queue.submit(pending) { false })
+                    PvpBattleLaunchResult.Started(battleId)
+                },
+            ),
+        )
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.ready(matchId, second))
+        assertFalse(service.isLaunchPending(matchId))
+        assertEquals(1, queue.size())
+
+        queue.retryDue(force = true) { completion ->
+            service.completeBattle(
+                completion.matchId,
+                completion.battleId,
+                checkNotNull(completion.winnerId),
+                checkNotNull(completion.loserId),
+                PvpBattleCompletionSink { _, _, _ -> },
+            )
+        }
+
+        assertEquals(0, queue.size())
+        assertNull(service.challenge(matchId))
+    }
+
+    @Test
+    fun `a ready player can unready and edit until both players are ready`() {
+        val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
+        service.accept(matchId, second)
+        service.registerTeam(matchId, first, team(first, 1))
+        service.registerTeam(matchId, second, team(second, 4))
+        service.select(matchId, first, ids(first, 1))
+
+        assertEquals(PvpSelectionMutation.WAITING_FOR_OPPONENT, service.ready(matchId, first))
+        assertTrue(requireNotNull(service.viewFor(first)).ready)
+        assertTrue(service.unready(matchId, first))
+        assertFalse(requireNotNull(service.viewFor(first)).ready)
+        assertEquals(PvpSelectionMutation.SELECTION_STORED, service.select(matchId, first, ids(first, 1).reversed()))
+    }
+
+    @Test
+    fun `replayed selection from a ready player is rejected without throwing`() {
+        val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
+        ready(service)
+
+        assertEquals(
+            PvpSelectionMutation.INVALID_STATE,
+            service.select(matchId, first, ids(first, 1)),
+        )
+    }
+
+    @Test
+    fun `unready player is auto selected when the original entry deadline expires`() {
+        var now = 0L
+        val snapshots = RecordingSnapshots()
+        val service = PvpSessionService(
+            snapshots = snapshots,
+            launcher = PvpBattleLauncher(
+                snapshots,
+                PvpBattleRuntime { PvpBattleLaunchResult.Started(battleId) },
+            ),
+            timeSource = object : PvpTimeSource {
+                override fun epochMillis(): Long = now
+                override fun monotonicMillis(): Long = now
+            },
+        )
+        service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
+        service.accept(matchId, second)
+        service.registerTeam(matchId, first, team(first, 1))
+        service.registerTeam(matchId, second, team(second, 4))
+        service.select(matchId, first, ids(first, 1).reversed())
+        assertEquals(PvpSelectionMutation.WAITING_FOR_OPPONENT, service.ready(matchId, first))
+        assertTrue(service.unready(matchId, first))
+
+        now = 90_000L
+        val resolution = service.expireEntrySelections().single()
+
+        assertEquals(setOf(first, second), resolution.autoSelectedPlayerIds)
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, resolution.launchResult)
+        assertEquals(battleId, service.battleIdFor(matchId))
+    }
+
+    @Test
+    fun `spectator preview exposes both public rosters without either private selection`() {
+        val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Unavailable }
+        service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
+        service.accept(matchId, second)
+        service.registerTeam(matchId, first, team(first, 1))
+        service.registerTeam(matchId, second, team(second, 4))
+        service.select(matchId, first, ids(first, 1).reversed())
+
+        val preview = requireNotNull(service.spectatorPreview(matchId))
+
+        assertEquals(listOf("cobblemon:species1", "cobblemon:species2", "cobblemon:species3"), preview.leftTeam.speciesIds)
+        assertEquals(listOf("cobblemon:species4", "cobblemon:species5", "cobblemon:species6"), preview.rightTeam.speciesIds)
+    }
+
+    @Test
+    fun `a completed match frees its id so the same room can host a rematch`() {
+        val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.ready(matchId, second))
+        assertTrue(
+            service.completeBattle(matchId, battleId, first, second, PvpBattleCompletionSink { _, _, _ -> }),
+        )
+
+        assertNull(service.challenge(matchId))
+        assertTrue(
+            service.invite(PvpChallengeRequest(matchId, second, first, PvpBattleFormat.SINGLE)) is
+                PvpChallengeMutationResult.Applied,
+        )
+        assertTrue(service.accept(matchId, first) is PvpChallengeMutationResult.Applied)
+    }
+
+    @Test
+    fun `record failure keeps settlement retryable until the paired record succeeds`() {
+        val snapshots = RecordingSnapshots()
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.ready(matchId, second))
+
+        assertThrows(IllegalStateException::class.java) {
+            service.completeBattle(
+                matchId,
+                battleId,
+                first,
+                second,
+                PvpBattleCompletionSink { _, _, _ -> error("record store unavailable") },
+            )
+        }
+
+        assertEquals(PvpChallengePhase.ACTIVE, service.challenge(matchId)?.phase)
+        assertEquals(battleId, service.battleIdFor(matchId))
+        assertTrue(
+            service.completeBattle(matchId, battleId, first, second, PvpBattleCompletionSink { _, _, _ -> }),
+        )
+        assertNull(service.challenge(matchId))
+        assertNull(service.battleIdFor(matchId))
+        assertEquals(setOf(first, second), snapshots.discarded)
+        assertTrue(
+            service.invite(PvpChallengeRequest(matchId, second, first, PvpBattleFormat.SINGLE)) is
+                PvpChallengeMutationResult.Applied,
+        )
+    }
+
+    @Test
+    fun `disconnect during an active battle terminates and cancels the match before releasing participants`() {
+        val snapshots = RecordingSnapshots()
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.ready(matchId, second))
+        var terminated: UUID? = null
+
+        assertEquals(matchId, service.disconnectActiveBattle(first) { terminated = it })
+
+        assertEquals(battleId, terminated)
+        assertNull(service.challenge(matchId))
+        assertNull(service.battleIdFor(matchId))
+        assertEquals(setOf(first, second), snapshots.discarded)
+    }
+
+    @Test
+    fun `server shutdown clears active matches timers and snapshots`() {
+        val snapshots = RecordingSnapshots()
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        service.ready(matchId, second)
+
+        assertEquals(mapOf(matchId to battleId), service.activeBattles())
+        service.clear()
+
+        assertTrue(service.activeBattles().isEmpty())
+        assertNull(service.challengeFor(first))
+        assertNull(service.battleIdFor(matchId))
+        assertEquals(setOf(first, second), snapshots.discarded)
+    }
+
+    @Test
+    fun `snapshot compatibility failure cannot skip another player during server shutdown`() {
+        val failure = NoSuchMethodError("snapshot API drift")
+        val snapshots = RecordingSnapshots(discardFailure = first to failure)
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        service.ready(matchId, second)
+
+        val thrown = assertThrows(NoSuchMethodError::class.java) {
+            service.clear()
+        }
+
+        assertSame(failure, thrown)
+        assertTrue(service.activeBattles().isEmpty())
+        assertNull(service.challengeFor(first))
+        assertEquals(setOf(first, second), snapshots.discarded)
+    }
+
+    @Test
+    fun `snapshot cleanup failure cannot leave a cancelled battle active or block a rematch`() {
+        val snapshots = RecordingSnapshots(discardFailure = first to IllegalStateException("snapshot store unavailable"))
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.ready(matchId, second))
+
+        assertThrows(IllegalStateException::class.java) {
+            service.cancelBattle(matchId, battleId)
+        }
+
+        assertNull(service.challenge(matchId))
+        assertNull(service.battleIdFor(matchId))
+        assertEquals(setOf(first, second), snapshots.discarded)
+        assertTrue(
+            service.invite(PvpChallengeRequest(matchId, second, first, PvpBattleFormat.SINGLE)) is
+                PvpChallengeMutationResult.Applied,
+        )
+    }
+
+    @Test
+    fun `snapshot compatibility failure cannot skip the other player cleanup`() {
+        val failure = NoSuchMethodError("snapshot API drift")
+        val snapshots = RecordingSnapshots(discardFailure = first to failure)
+        val service = service(snapshots, BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        assertEquals(PvpSelectionMutation.BATTLE_STARTED, service.ready(matchId, second))
+
+        val thrown = assertThrows(NoSuchMethodError::class.java) {
+            service.cancelBattle(matchId, battleId)
+        }
+
+        assertSame(failure, thrown)
+        assertNull(service.challenge(matchId))
+        assertNull(service.battleIdFor(matchId))
+        assertEquals(setOf(first, second), snapshots.discarded)
+    }
+
+    @Test
+    fun `a cancelled match frees its id so the same room can start again`() {
+        val service = service(RecordingSnapshots(), BattleRecordStore()) { PvpBattleLaunchResult.Started(battleId) }
+        ready(service)
+        service.select(matchId, second, ids(second, 4))
+        service.ready(matchId, second)
+        assertTrue(service.cancelBattle(matchId, battleId))
+
+        assertNull(service.challenge(matchId))
+        assertTrue(
+            service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.DOUBLE)) is
+                PvpChallengeMutationResult.Applied,
+        )
+    }
+
+    private fun ready(service: PvpSessionService<String>) {
+        service.invite(PvpChallengeRequest(matchId, first, second, PvpBattleFormat.SINGLE))
+        service.accept(matchId, second)
+        service.registerTeam(matchId, first, team(first, 1))
+        service.registerTeam(matchId, second, team(second, 4))
+        service.select(matchId, first, ids(first, 1))
+        service.ready(matchId, first)
+    }
+
+    private fun service(
+        snapshots: RecordingSnapshots,
+        records: BattleRecordStore,
+        runtime: (PvpPreparedBattle<String>) -> PvpBattleLaunchResult,
+    ) = PvpSessionService(
+        snapshots = snapshots,
+        launcher = PvpBattleLauncher(snapshots, PvpBattleRuntime(runtime)),
+    )
+
+    private fun team(playerId: UUID, start: Int): PvpRegisteredTeam =
+        (PvpTeamRules.register(
+            (start until start + 3).map { index -> pokemon(playerId, index) },
+            PvpBattleFormat.SINGLE,
+        ) as PvpTeamRegistrationResult.Accepted).team
+
+    private fun ids(playerId: UUID, start: Int): List<UUID> =
+        (start until start + 3).map { index -> pokemonId(playerId, index) }
+
+    private fun pokemon(playerId: UUID, index: Int) = PvpPokemonRegistration(
+        pokemonId(playerId, index),
+        "cobblemon:species$index",
+        "cobblemon:item$index",
+        50,
+    )
+
+    private fun pokemonId(playerId: UUID, index: Int) = UUID(playerId.mostSignificantBits, index.toLong())
+
+    private fun recordKey(playerId: UUID) = jbro.cobblemon.mcc.internal.record.BattleRecordKey(
+        playerId,
+        jbro.cobblemon.mcc.internal.record.BattleRecordCategory("pvp", "single"),
+    )
+
+    private class RecordingSnapshots(
+        private val rejectedPlayer: UUID? = null,
+        private val discardFailure: Pair<UUID, Throwable>? = null,
+        private val snapshotFailure: Pair<UUID, Throwable>? = null,
+    ) : PvpSessionSnapshots<String>, PvpBattleTeamMaterializer<String> {
+        val captured = LinkedHashSet<UUID>()
+        val discarded = LinkedHashSet<UUID>()
+
+        override fun snapshot(playerId: UUID, team: PvpRegisteredTeam): PvpRegisteredTeamSnapshotResult =
+            if (playerId == rejectedPlayer) {
+                PvpRegisteredTeamSnapshotResult.Rejected(team.members.first().pokemonId)
+            } else {
+                snapshotFailure?.takeIf { it.first == playerId }?.second?.let { throw it }
+                captured += playerId
+                PvpRegisteredTeamSnapshotResult.Stored
+            }
+
+        override fun materialize(
+            playerId: UUID,
+            selection: PvpSelectedTeam,
+        ): PvpRegisteredBattleTeamResult<String> = PvpRegisteredBattleTeamResult.Created(listOf("copy-$playerId"))
+
+        override fun discard(playerId: UUID) {
+            discarded += playerId
+            discardFailure?.takeIf { it.first == playerId }?.second?.let { throw it }
+        }
+    }
+}

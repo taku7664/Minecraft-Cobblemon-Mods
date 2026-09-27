@@ -1,0 +1,134 @@
+{
+  "schema_version": 4,
+  "rental_sets": [
+    {
+      "set_id": "ariados_preset_1",
+      "pool_group": "starter",
+      "variant": 1,
+      "species_id": "cobblemon:ariados",
+      "ability_id": "cobblemon:swarm",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:knockoff",
+        "cobblemon:megahorn",
+        "cobblemon:poisonjab",
+        "cobblemon:suckerpunch"
+      ],
+      "roles": [
+        "weakness_cover"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:megahorn",
+        "cobblemon:poisonjab"
+      ],
+      "lead_priority": 60,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "ariados_preset_2",
+      "pool_group": "intermediate",
+      "variant": 1,
+      "species_id": "cobblemon:ariados",
+      "ability_id": "cobblemon:sniper",
+      "held_item_id": "cobblemon:sitrus_berry",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:knockoff",
+        "cobblemon:megahorn",
+        "cobblemon:poisonjab",
+        "cobblemon:stickyweb"
+      ],
+      "roles": [
+        "speed_control"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:megahorn",
+        "cobblemon:poisonjab"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "ariados_preset_3",
+      "pool_group": "intermediate",
+      "variant": 2,
+      "species_id": "cobblemon:ariados",
+      "ability_id": "cobblemon:sniper",
+      "held_item_id": "cobblemon:leftovers",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:knockoff",
+        "cobblemon:megahorn",
+        "cobblemon:poisonjab",
+        "cobblemon:toxicspikes"
+      ],
+      "roles": [
+        "field_support",
+        "disruptor"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:megahorn",
+        "cobblemon:poisonjab"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    },
+    {
+      "set_id": "ariados_preset_4",
+      "pool_group": "advanced",
+      "variant": 1,
+      "species_id": "cobblemon:ariados",
+      "ability_id": "cobblemon:sniper",
+      "held_item_id": "cobblemon:mental_herb",
+      "nature_id": "cobblemon:jolly",
+      "moves": [
+        "cobblemon:megahorn",
+        "cobblemon:poisonjab",
+        "cobblemon:stickyweb",
+        "cobblemon:suckerpunch"
+      ],
+      "roles": [
+        "speed_control"
+      ],
+      "preferred_move_ids": [
+        "cobblemon:megahorn",
+        "cobblemon:poisonjab"
+      ],
+      "lead_priority": 85,
+      "preservation_priority": 70,
+      "evs": {
+        "hp": 4,
+        "attack": 252,
+        "defense": 0,
+        "special_attack": 0,
+        "special_defense": 0,
+        "speed": 252
+      }
+    }
+  ]
+}
