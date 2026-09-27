@@ -17,6 +17,7 @@ import com.cobblemon.mod.common.util.isPartyBusy
 import jbro.cobblemon.battleui.extended.BattleDialogue
 import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUI
 import jbro.cobblemon.battleui.extended.navigation.KeyboardTileFocus
+import jbro.cobblemon.battleui.navigation.BattleScreenGeometry
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.client.MinecraftClient
@@ -34,6 +35,7 @@ internal object BattleLiveCapture {
     private var rootSeen = false
     private var pageOpened = false
     private var navigationChecked = false
+    private var backPending = false
     private val screenshotSaved = AtomicBoolean(false)
     private var pendingOpponent: PokemonEntity? = null
     private var pendingPlayerId: UUID? = null
@@ -50,11 +52,31 @@ internal object BattleLiveCapture {
                 return@register
             }
             if (screenshotPending) {
-                if (screenshotSaved.getAndSet(false)) {
-                    CobblemonExtendedBattleUI.LOGGER.info("Live battle command capture saved")
-                    screenshotPending = false
-                    client.scheduleStop()
+                if (!screenshotSaved.get()) return@register
+                val screen = client.currentScreen as? BattleGUI
+                if (screen != null && page != "command") {
+                    if (!backPending) {
+                        if (page == "forfeit") {
+                            val back = BattleScreenGeometry.forfeitCancel(client.window.scaledWidth,
+                                client.window.scaledHeight)
+                            check(screen.mouseClicked((back.x() + back.width() / 2).toDouble(),
+                                (back.y() + back.height() / 2).toDouble(), 0))
+                        } else {
+                            check(screen.keyPressed(GLFW.GLFW_KEY_ESCAPE, 0, 0))
+                        }
+                        backPending = true
+                        ticks = 0
+                        return@register
+                    }
+                    if (screen.getCurrentActionSelection() !is BattleGeneralActionSelection) {
+                        check(++ticks < 40) { "$page did not return to root within 40 ticks" }
+                        return@register
+                    }
+                    CobblemonExtendedBattleUI.LOGGER.info("Live battle '{}' back/cancel verified", page)
                 }
+                CobblemonExtendedBattleUI.LOGGER.info("Live battle '{}' capture saved", page)
+                screenshotPending = false
+                client.scheduleStop()
                 return@register
             }
             if (client.currentScreen == null && CobblemonClient.battle?.mustChoose == true) {

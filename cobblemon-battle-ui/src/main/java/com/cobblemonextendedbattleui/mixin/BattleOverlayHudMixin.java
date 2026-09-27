@@ -28,7 +28,7 @@ public abstract class BattleOverlayHudMixin {
             boolean isFlatHealth, PokedexEntryProgress dexState, CallbackInfo ci) {
         // The native path alone knows how to animate a Poké Ball during capture.
         if (ballState != null) return;
-        BattleHudRenderer.draw(context, y, reversed, species, level, displayName, gender,
+        BattleHudRenderer.draw(context, x, y, reversed, species, level, displayName, gender,
                 status, state, opacity, maxHealth, health, isSelected, isHovered, isCompact,
                 actorDisplayName, isFlatHealth, dexState);
         ci.cancel();

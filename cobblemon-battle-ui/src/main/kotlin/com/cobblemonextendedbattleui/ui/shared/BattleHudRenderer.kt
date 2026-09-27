@@ -5,26 +5,30 @@ import com.cobblemon.mod.common.pokemon.Gender
 import com.cobblemon.mod.common.pokemon.Species
 import com.cobblemon.mod.common.pokemon.status.PersistentStatus
 import com.cobblemon.mod.common.client.render.models.blockbench.PosableState
+import com.cobblemon.mod.common.client.gui.battle.BattleOverlay
 import jbro.cobblemon.battleui.extended.pokemon.render.PokemonModelRenderer
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
+import net.minecraft.util.Identifier
 import java.util.UUID
 import kotlin.math.ceil
 
 /** Replaces only the ordinary HUD tile; Cobblemon still owns capture-ball animation. */
 object BattleHudRenderer {
     private const val WIDTH = 184
+    private val caughtIndicator = Identifier.of("cobblemon", "textures/gui/battle/battle_owned_indicator.png")
 
     @JvmStatic
-    fun draw(context: DrawContext, nativeY: Float, reversed: Boolean, species: Species,
+    fun draw(context: DrawContext, nativeX: Float, nativeY: Float, reversed: Boolean, species: Species,
              level: Int, displayName: Text, gender: Gender, status: PersistentStatus?,
              state: PosableState, opacity: Float, maxHealth: Int, health: Float,
              selected: Boolean, hovered: Boolean, compact: Boolean,
              actorName: Text?, flatHealth: Boolean, dexState: PokedexEntryProgress) {
         val client = MinecraftClient.getInstance()
-        val x = if (reversed) client.window.scaledWidth - WIDTH - 10 else 10
-        val y = nativeY.toInt() + 18
+        val nativeWidth = if (compact) BattleOverlay.COMPACT_TILE_WIDTH else BattleOverlay.TILE_WIDTH
+        val x = (nativeX + if (reversed) 2 - (WIDTH - nativeWidth) else -2).toInt()
+        val y = nativeY.toInt() + if (compact) 12 else 18
         val height = if (compact) 28 else 50
         val accent = if (reversed) BattleUiTheme.PURPLE else BattleUiTheme.CYAN
         BattleSurfaceRenderer.draw(context, x, y, WIDTH, height,
@@ -86,9 +90,11 @@ object BattleHudRenderer {
                 contentRight, y + 40, textColor)
         }
         if (dexState == PokedexEntryProgress.OWNED) {
-            context.fill(x + if (reversed) 3 else WIDTH - 5, y + 3,
-                x + if (reversed) 6 else WIDTH - 2, y + 6,
-                BattleSurfaceRenderer.withOpacity(BattleUiTheme.FOCUS, opacity))
+            context.matrices.push()
+            context.matrices.translate((x + if (reversed) 3 else WIDTH - 8).toFloat(), (y + 3).toFloat(), 0f)
+            context.matrices.scale(.5f, .5f, 1f)
+            context.drawTexture(caughtIndicator, 0, 0, 0f, 0f, 10, 10, 10, 10)
+            context.matrices.pop()
         }
         if (actorName != null) context.drawText(font, font.trimToWidth(actorName.string, WIDTH), x,
             y - 9, muted, false)
