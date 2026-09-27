@@ -1,8 +1,8 @@
 package jbro.cobblemon.mcc.internal.factory
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleStrategyObjective
-import jbro.cobblemon.mcc.api.ai.BattleTeamRole
+import jbro.cobblemon.mcc.internal.ai.BattleStrategyObjective
+import jbro.cobblemon.mcc.internal.ai.BattleTeamRole
 import jbro.cobblemon.mcc.internal.record.BattleRecordStats
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull

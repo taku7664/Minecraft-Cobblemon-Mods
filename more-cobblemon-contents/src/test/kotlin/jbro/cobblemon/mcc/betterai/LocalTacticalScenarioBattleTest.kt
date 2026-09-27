@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventKind
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse

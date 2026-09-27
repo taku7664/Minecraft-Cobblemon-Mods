@@ -9,9 +9,9 @@ import com.google.gson.stream.JsonWriter
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleStrategyBrief
-import jbro.cobblemon.mcc.api.ai.BattleTrainerProfile
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleStrategyBrief
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import org.slf4j.LoggerFactory
 
 /**

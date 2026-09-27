@@ -5,15 +5,15 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption.CREATE_NEW
 import java.util.UUID
 import java.util.zip.ZipInputStream
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleFieldStateView
-import jbro.cobblemon.mcc.api.ai.BattleFormat
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventKind
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFieldStateView
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.betterai.search.NativeProductRootSnapshot
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionReconcileStatus
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionReconciler
@@ -725,7 +725,7 @@ class NativeProductForcedSwitchContinuationTest {
     private fun context(
         frame: jbro.cobblemon.mcc.betterai.simulation.NativeBattleFrame,
         template: BattleStateView,
-        candidates: List<jbro.cobblemon.mcc.api.ai.BattleActionCandidate>,
+        candidates: List<jbro.cobblemon.mcc.internal.ai.BattleActionCandidate>,
     ) = BattleDecisionContext(
         requestId = UUID.nameUUIDFromBytes("request:${frame.snapshotJson}".toByteArray()),
         state = NativeBattleStateAdapter.adapt(frame, template),
@@ -904,7 +904,7 @@ class NativeProductForcedSwitchContinuationTest {
         )),
     )
 
-    private fun jbro.cobblemon.mcc.api.ai.BattleActionCandidate.moveIdsBySlot(): List<String?> =
+    private fun jbro.cobblemon.mcc.internal.ai.BattleActionCandidate.moveIdsBySlot(): List<String?> =
         if (kind == BattleActionKind.COMPOSITE) {
             componentActions.sortedBy { it.actorSlot }.map { it.moveId }
         } else {
@@ -933,7 +933,7 @@ class NativeProductForcedSwitchContinuationTest {
         definition: NativeBattleDefinition,
         opening: jbro.cobblemon.mcc.betterai.simulation.NativeBattleFrame,
         openingContext: BattleDecisionContext,
-        pendingOwnAction: jbro.cobblemon.mcc.api.ai.BattleActionCandidate,
+        pendingOwnAction: jbro.cobblemon.mcc.internal.ai.BattleActionCandidate,
     ) = NativeProductSessionState(
         battleId = BATTLE,
         format = openingContext.state.format,

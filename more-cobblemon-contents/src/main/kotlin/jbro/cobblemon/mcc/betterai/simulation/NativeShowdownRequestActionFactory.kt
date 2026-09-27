@@ -5,15 +5,15 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.util.Locale
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleMechanicCandidate
-import jbro.cobblemon.mcc.api.ai.BattleMoveDamageCategory
-import jbro.cobblemon.mcc.api.ai.BattlePublicActionCatalogView
-import jbro.cobblemon.mcc.api.ai.BattlePublicMoveKnowledge
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
-import jbro.cobblemon.mcc.api.ai.BattleTargetSlot
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleMechanicCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleTargetSlot
 import jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchEntryHazardCalculator
 import jbro.cobblemon.mcc.betterai.mechanics.StandardTypeEffectiveness
 

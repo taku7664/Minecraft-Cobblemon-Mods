@@ -1,11 +1,11 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleMoveDamageCategory
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectKind
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
 /**
  * How likely one side is to act before the other, from public information alone.

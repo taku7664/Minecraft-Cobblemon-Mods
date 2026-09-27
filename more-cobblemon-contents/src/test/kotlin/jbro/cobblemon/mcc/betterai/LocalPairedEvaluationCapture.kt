@@ -2,8 +2,8 @@ package jbro.cobblemon.mcc.betterai
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventKind
-import jbro.cobblemon.mcc.api.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import java.nio.file.Files
 import java.nio.file.Path

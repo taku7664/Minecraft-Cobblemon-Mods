@@ -1,12 +1,12 @@
 package jbro.cobblemon.mcc.betterai
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattlePredictedResponse
-import jbro.cobblemon.mcc.api.ai.BattleSituation
-import jbro.cobblemon.mcc.api.ai.BattleTacticalMemoryView
-import jbro.cobblemon.mcc.api.ai.BattleTendencyView
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattlePredictedResponse
+import jbro.cobblemon.mcc.internal.ai.BattleSituation
+import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
+import jbro.cobblemon.mcc.internal.ai.BattleTendencyView
 import jbro.cobblemon.mcc.betterai.search.NativeOpponentResponseOrdering
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

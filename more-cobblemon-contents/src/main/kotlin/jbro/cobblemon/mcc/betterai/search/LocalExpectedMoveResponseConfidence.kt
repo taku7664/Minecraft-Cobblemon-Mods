@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai.search
 
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 
 /** Applies confidence to an expected reply's effect, never to its absolute signed score. */
 internal object LocalExpectedMoveResponseConfidence {

@@ -1,9 +1,9 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 
 internal data class LocalImmediateTurnScore(

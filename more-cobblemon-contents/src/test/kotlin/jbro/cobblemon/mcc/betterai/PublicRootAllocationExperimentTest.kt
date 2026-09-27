@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 class PublicRootAllocationExperimentTest {
     @Test
     fun `unrevealed first turn is not accepted as a meaningful allocation comparison`() {
-        val contexts = mutableListOf<jbro.cobblemon.mcc.api.ai.BattleDecisionContext>()
+        val contexts = mutableListOf<jbro.cobblemon.mcc.internal.ai.BattleDecisionContext>()
         LocalTacticalScenarioBattle.run(LocalSelfPlayMeasurement.definitions(1, 20260906).single(),
             maximumTurns = 1, recordedContexts = contexts)
         assertTrue(contexts.isNotEmpty())

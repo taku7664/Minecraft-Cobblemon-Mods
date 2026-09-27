@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai
 
 import com.google.gson.JsonParser
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.evaluation.LocalIdleUtilityMoveRules

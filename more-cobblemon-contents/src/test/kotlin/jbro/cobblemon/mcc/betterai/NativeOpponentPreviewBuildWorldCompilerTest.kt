@@ -1,11 +1,11 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.BattleAbilityAvailability
-import jbro.cobblemon.mcc.api.ai.BattleOpponentPreviewAbilityView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentPreviewBuildPoolView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewPokemonView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewView
-import jbro.cobblemon.mcc.api.ai.BattleTrainerTier
+import jbro.cobblemon.mcc.internal.ai.BattleAbilityAvailability
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentPreviewAbilityView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentPreviewBuildPoolView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.betterai.simulation.NativeOpponentBuildWorldIssueCode
 import jbro.cobblemon.mcc.betterai.simulation.NativeOpponentPreviewBuildWorldCompiler
 import jbro.cobblemon.mcc.betterai.state.LocalOpponentBuildUsageEntry

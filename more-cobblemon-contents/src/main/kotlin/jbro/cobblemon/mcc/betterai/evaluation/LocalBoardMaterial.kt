@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
 /**
  * Shared material units for turn deltas and leaf positions, including actual removals.

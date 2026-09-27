@@ -1,11 +1,11 @@
 package jbro.cobblemon.mcc.internal.tower
 
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
-import jbro.cobblemon.mcc.api.ai.BattleBrainContentIds
-import jbro.cobblemon.mcc.api.ai.BattleEncounterRole
-import jbro.cobblemon.mcc.api.ai.BattleTrainerTier
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewPokemonView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewView
+import jbro.cobblemon.mcc.internal.ai.BattleBrainContentIds
+import jbro.cobblemon.mcc.internal.ai.BattleEncounterRole
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.mcc.internal.tower.opponent.TowerOpponentCatalog
 import jbro.cobblemon.mcc.internal.tower.opponent.TowerOpponentProfile
 import jbro.cobblemon.mcc.internal.tower.opponent.TowerOpponentRandom

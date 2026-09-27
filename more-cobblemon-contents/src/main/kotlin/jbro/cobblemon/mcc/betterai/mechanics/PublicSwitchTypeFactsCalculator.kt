@@ -1,9 +1,9 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 
 /**
  * Publishes type-chart mechanics for a legal switch without assigning utility, rank, or advice.

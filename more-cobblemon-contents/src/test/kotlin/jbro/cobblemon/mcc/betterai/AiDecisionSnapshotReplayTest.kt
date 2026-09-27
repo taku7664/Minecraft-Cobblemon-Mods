@@ -3,9 +3,9 @@ package jbro.cobblemon.mcc.betterai
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleFormat
-import jbro.cobblemon.mcc.api.ai.BattleTrainerProfile
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import jbro.cobblemon.mcc.betterai.brain.AiTestDecisionSnapshot
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull

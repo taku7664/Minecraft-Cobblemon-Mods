@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionPolicy
 import jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudget
 import jbro.cobblemon.mcc.betterai.search.LocalRecursiveLookaheadEvaluator

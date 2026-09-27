@@ -1,12 +1,12 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleBrainOpenContext
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleDifficultyProfile
-import jbro.cobblemon.mcc.api.ai.BattleDifficultyProfiles
-import jbro.cobblemon.mcc.api.ai.BattleTrainerPersonality
-import jbro.cobblemon.mcc.api.ai.BattleTrainerProfile
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleBrainOpenContext
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfile
+import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfiles
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerPersonality
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning

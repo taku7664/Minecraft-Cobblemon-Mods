@@ -2,11 +2,11 @@ package jbro.cobblemon.mcc.internal.factory
 
 import java.util.Collections
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleBrainContentIds
-import jbro.cobblemon.mcc.api.ai.BattleBrainSelectionContext
-import jbro.cobblemon.mcc.api.ai.BattleEncounterRole
-import jbro.cobblemon.mcc.api.ai.BattleStrategyBrief
-import jbro.cobblemon.mcc.api.ai.BattleTrainerProfile
+import jbro.cobblemon.mcc.internal.ai.BattleBrainContentIds
+import jbro.cobblemon.mcc.internal.ai.BattleBrainSelectionContext
+import jbro.cobblemon.mcc.internal.ai.BattleEncounterRole
+import jbro.cobblemon.mcc.internal.ai.BattleStrategyBrief
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 
 internal class FactoryBattleLaunchRequest(
     val playerId: UUID,

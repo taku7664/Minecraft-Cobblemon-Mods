@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import org.junit.jupiter.api.Test
 
 /**

@@ -2,11 +2,11 @@ package jbro.cobblemon.mcc.betterai.brain
 
 import java.util.Locale
 import org.slf4j.LoggerFactory
-import jbro.cobblemon.mcc.api.ai.BattleBrainContentIds
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleInferenceConfidence
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveSource
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleBrainContentIds
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveSource
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelection
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank
 import jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudget

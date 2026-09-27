@@ -1,10 +1,10 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
-import jbro.cobblemon.mcc.api.ai.BattlePokemonActionConstraintView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleCombatStatRangesView
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonActionConstraintView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
 /**
  * Structural copies of the immutable public state views.

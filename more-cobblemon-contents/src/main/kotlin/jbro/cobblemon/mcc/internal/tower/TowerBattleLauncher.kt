@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.internal.tower
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 
 internal data class TowerBattleLaunchRequest(

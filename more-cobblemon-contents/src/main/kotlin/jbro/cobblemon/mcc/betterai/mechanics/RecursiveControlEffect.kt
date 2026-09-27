@@ -1,9 +1,9 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleMoveCandidateView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 
 /**
  * Multi-turn control a move imposes on a Pokemon: charging, recharging, taunt, encore, trapping.

@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
 /** A finished win outranks every nonterminal material advantage; a double KO is a draw. */
 internal object LocalTerminalOutcomeValue {

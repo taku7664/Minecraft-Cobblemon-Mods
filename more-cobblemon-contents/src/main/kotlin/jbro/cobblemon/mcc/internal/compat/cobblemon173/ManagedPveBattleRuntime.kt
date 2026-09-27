@@ -1,8 +1,8 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleBrainRegistry
-import jbro.cobblemon.mcc.api.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleBrainRegistry
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.tower.TowerBattleLaunchResult
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer

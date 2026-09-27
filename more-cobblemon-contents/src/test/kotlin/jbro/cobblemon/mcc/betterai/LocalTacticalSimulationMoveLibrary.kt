@@ -1,15 +1,15 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.BattleFractionRange
-import jbro.cobblemon.mcc.api.ai.BattleMoveCandidateView
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectCoverage
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectTarget
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectView
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectsView
-import jbro.cobblemon.mcc.api.ai.BattleMoveRequirementKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveRequirementView
-import jbro.cobblemon.mcc.api.ai.BattleMoveTargetPattern
+import jbro.cobblemon.mcc.internal.ai.BattleFractionRange
+import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectCoverage
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectsView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveRequirementKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveRequirementView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules
 
 /** Shared declarative mechanics for complete-preset battle simulations. */

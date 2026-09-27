@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai.search
 
-import jbro.cobblemon.mcc.api.ai.BattleTrainerTier
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 
 internal data class LocalLookaheadBudget(
     val timeMillis: Long,

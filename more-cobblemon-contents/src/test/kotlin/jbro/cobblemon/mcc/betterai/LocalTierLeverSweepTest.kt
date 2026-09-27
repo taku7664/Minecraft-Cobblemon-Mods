@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.BattleDifficultyProfile
-import jbro.cobblemon.mcc.api.ai.BattleDifficultyProfiles
+import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfile
+import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfiles
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 

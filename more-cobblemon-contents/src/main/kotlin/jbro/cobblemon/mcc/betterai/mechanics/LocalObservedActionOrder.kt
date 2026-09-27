@@ -1,10 +1,10 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleInferenceBasis
-import jbro.cobblemon.mcc.api.ai.BattleInferenceConfidence
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceBasis
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
 /**
  * Interprets only public, same-priority action-order observations.

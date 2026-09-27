@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import java.util.UUID
 
 /** Explicit spectator-message arguments only; adjacent attacks are not evidence of causality. */

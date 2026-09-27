@@ -2,7 +2,7 @@ package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 
 internal data class ManagedPvePrepared(

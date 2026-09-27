@@ -3,12 +3,12 @@ package jbro.cobblemon.mcc.betterai.simulation
 import java.util.Collections
 import java.util.Locale
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveGroup
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveKnowledge
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveSource
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattlePublicActionCatalogView
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveGroup
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveSource
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 
 /**
  * The only opponent-move input admitted to a native Showdown hypothesis.

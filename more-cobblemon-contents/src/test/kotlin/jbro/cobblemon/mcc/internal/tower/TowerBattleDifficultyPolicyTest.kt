@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.internal.tower
 
-import jbro.cobblemon.mcc.api.ai.BattleTrainerTier
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

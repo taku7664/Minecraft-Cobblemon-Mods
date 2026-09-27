@@ -1,11 +1,11 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleMoveDamageCategory
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveTargetPattern
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
 /** One-turn team guards that block only the move classes declared by Showdown. */
 internal object LocalSideGuardRules {

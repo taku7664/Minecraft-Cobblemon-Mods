@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai
 
 import java.io.StringReader
-import jbro.cobblemon.mcc.api.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.betterai.state.LocalOpponentBuildUsage
 import jbro.cobblemon.mcc.betterai.state.LocalOpponentBuildUsageTable
 import org.junit.jupiter.api.Assertions.assertEquals

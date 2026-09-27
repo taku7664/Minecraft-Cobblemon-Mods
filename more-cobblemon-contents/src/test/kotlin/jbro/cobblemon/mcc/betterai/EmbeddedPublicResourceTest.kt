@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai
 
 import com.google.gson.JsonParser
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.util.UUID

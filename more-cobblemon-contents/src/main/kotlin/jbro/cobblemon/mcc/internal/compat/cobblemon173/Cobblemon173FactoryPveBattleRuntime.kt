@@ -8,13 +8,13 @@ import com.cobblemon.mod.common.battles.actor.PlayerBattleActor
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import java.util.UUID
 import jbro.cobblemon.mcc.MoreCobblemonContents
-import jbro.cobblemon.mcc.api.ai.BattleBrainCloseOutcome
-import jbro.cobblemon.mcc.api.ai.BattleBrainCloseResult
-import jbro.cobblemon.mcc.api.ai.BattleBrainProviderRole
-import jbro.cobblemon.mcc.api.ai.BattleBrainRegistry
+import jbro.cobblemon.mcc.internal.ai.BattleBrainCloseOutcome
+import jbro.cobblemon.mcc.internal.ai.BattleBrainCloseResult
+import jbro.cobblemon.mcc.internal.ai.BattleBrainProviderRole
+import jbro.cobblemon.mcc.internal.ai.BattleBrainRegistry
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
-import jbro.cobblemon.mcc.api.ai.BrainCapability
-import jbro.cobblemon.mcc.api.ai.BattleFormat as BrainBattleFormat
+import jbro.cobblemon.mcc.internal.ai.BrainCapability
+import jbro.cobblemon.mcc.internal.ai.BattleFormat as BrainBattleFormat
 import jbro.cobblemon.mcc.internal.battle.attachReplayableCompletionHandler
 import jbro.cobblemon.mcc.internal.factory.FactoryBattleLaunchResult
 import jbro.cobblemon.mcc.internal.factory.FactoryBattleFormat

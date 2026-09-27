@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.search.LocalOpponentResponseModel
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue

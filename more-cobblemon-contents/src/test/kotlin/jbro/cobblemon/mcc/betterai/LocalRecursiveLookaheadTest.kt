@@ -3,7 +3,7 @@ package jbro.cobblemon.mcc.betterai
 import jbro.cobblemon.mcc.betterai.evaluation.LocalHypothesisPriorityReservation
 import jbro.cobblemon.mcc.betterai.evaluation.LocalStatStageMarginalEvaluator
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.mcc.betterai.calculation.LocalForcedReplacementResolver
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator

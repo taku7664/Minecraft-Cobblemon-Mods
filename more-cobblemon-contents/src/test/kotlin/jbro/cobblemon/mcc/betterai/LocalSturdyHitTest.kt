@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDirectHitMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalAppliedDirectHit
 import org.junit.jupiter.api.Assertions.*

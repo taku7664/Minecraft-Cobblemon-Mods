@@ -2,11 +2,11 @@ package jbro.cobblemon.mcc.betterai.simulation
 
 import java.util.Locale
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveInferenceView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveKnowledge
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveSlotView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveSource
-import jbro.cobblemon.mcc.api.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveInferenceView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveSlotView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveSource
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
 
 internal data class NativeOpponentMoveRebindPlan(
     val definition: NativeBattleDefinition,

@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import kotlin.random.Random
 
 internal enum class EvaluationSplit { TUNING, HOLDOUT }

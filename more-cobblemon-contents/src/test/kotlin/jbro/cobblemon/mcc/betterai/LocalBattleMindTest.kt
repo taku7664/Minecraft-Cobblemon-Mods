@@ -1,18 +1,18 @@
 package jbro.cobblemon.mcc.betterai
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleFieldStateView
-import jbro.cobblemon.mcc.api.ai.BattleFormat
-import jbro.cobblemon.mcc.api.ai.BattlePlanIntent
-import jbro.cobblemon.mcc.api.ai.BattlePlanOwner
-import jbro.cobblemon.mcc.api.ai.BattlePlanView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
-import jbro.cobblemon.mcc.api.ai.BattleTacticalMemoryView
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFieldStateView
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattlePlanIntent
+import jbro.cobblemon.mcc.internal.ai.BattlePlanOwner
+import jbro.cobblemon.mcc.internal.ai.BattlePlanView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleMind
 import jbro.cobblemon.mcc.betterai.policy.LocalPositionRiskBudget
 import jbro.cobblemon.mcc.betterai.policy.LocalTrainerStyleModel
@@ -129,7 +129,7 @@ class LocalBattleMindTest {
             deadlineEpochMillis = Long.MAX_VALUE,
         )
 
-        val mind = LocalBattleMind.assess(null, battleId, context, jbro.cobblemon.mcc.api.ai.BattleTrainerProfile.balanced())
+        val mind = LocalBattleMind.assess(null, battleId, context, jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile.balanced())
 
         assertEquals(0.0, mind.positionAdvantage, 0.000_001)
     }

@@ -5,7 +5,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonNull
 import com.google.gson.JsonParser
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules
 import jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchIncomingThreatCalculator
 import jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchTypeFactsCalculator

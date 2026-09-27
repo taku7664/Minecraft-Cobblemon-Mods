@@ -1,12 +1,12 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
-import jbro.cobblemon.mcc.api.ai.BattleBrain
-import jbro.cobblemon.mcc.api.ai.BattleBrainProviderRole
-import jbro.cobblemon.mcc.api.ai.BattleBrainProvider
-import jbro.cobblemon.mcc.api.ai.BattleBrainRegistry
-import jbro.cobblemon.mcc.api.ai.BattleBrainSelectionContext
-import jbro.cobblemon.mcc.api.ai.BrainCapability
+import jbro.cobblemon.mcc.internal.ai.BattleBrain
+import jbro.cobblemon.mcc.internal.ai.BattleBrainProviderRole
+import jbro.cobblemon.mcc.internal.ai.BattleBrainProvider
+import jbro.cobblemon.mcc.internal.ai.BattleBrainRegistry
+import jbro.cobblemon.mcc.internal.ai.BattleBrainSelectionContext
+import jbro.cobblemon.mcc.internal.ai.BrainCapability
 
 internal object Cobblemon173BrainProviderResolver {
     fun create(

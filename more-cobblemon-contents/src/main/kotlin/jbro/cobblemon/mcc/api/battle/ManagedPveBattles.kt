@@ -8,7 +8,7 @@ import com.cobblemon.mod.common.pokemon.Pokemon
 import com.google.gson.JsonParser
 import java.util.UUID
 import jbro.cobblemon.mcc.MoreCobblemonContents
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.*

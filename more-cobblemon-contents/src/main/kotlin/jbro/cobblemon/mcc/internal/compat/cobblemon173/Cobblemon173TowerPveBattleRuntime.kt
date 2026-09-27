@@ -6,17 +6,17 @@ import com.cobblemon.mod.common.battles.BattleSide
 import com.cobblemon.mod.common.battles.SuccessfulBattleStart
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import jbro.cobblemon.mcc.MoreCobblemonContents
-import jbro.cobblemon.mcc.api.ai.BattleBrainCloseOutcome
-import jbro.cobblemon.mcc.api.ai.BattleBrainCloseResult
-import jbro.cobblemon.mcc.api.ai.BattleBrainProviderRole
-import jbro.cobblemon.mcc.api.ai.BattleBrainRegistry
-import jbro.cobblemon.mcc.api.ai.BattleBrainSelectionContext
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewView
-import jbro.cobblemon.mcc.api.ai.BattleTrainerProfile
+import jbro.cobblemon.mcc.internal.ai.BattleBrainCloseOutcome
+import jbro.cobblemon.mcc.internal.ai.BattleBrainCloseResult
+import jbro.cobblemon.mcc.internal.ai.BattleBrainProviderRole
+import jbro.cobblemon.mcc.internal.ai.BattleBrainRegistry
+import jbro.cobblemon.mcc.internal.ai.BattleBrainSelectionContext
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
-import jbro.cobblemon.mcc.api.ai.BrainCapability
-import jbro.cobblemon.mcc.api.ai.BattleFormat as BrainBattleFormat
+import jbro.cobblemon.mcc.internal.ai.BrainCapability
+import jbro.cobblemon.mcc.internal.ai.BattleFormat as BrainBattleFormat
 import jbro.cobblemon.mcc.internal.battle.attachReplayableCompletionHandler
 import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
 import jbro.cobblemon.mcc.internal.tower.TowerBattleLaunchResult

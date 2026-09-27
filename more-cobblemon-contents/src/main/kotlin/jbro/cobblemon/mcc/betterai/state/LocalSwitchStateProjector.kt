@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai.state
 
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState
 
 /** Applies the public, event-free part of a single switch for scoring and recursive projection. */

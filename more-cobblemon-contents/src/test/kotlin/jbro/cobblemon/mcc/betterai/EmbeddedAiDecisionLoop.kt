@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai
 
 import com.google.gson.JsonObject
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelector
 import jbro.cobblemon.mcc.betterai.policy.LocalWeightedActionSelector

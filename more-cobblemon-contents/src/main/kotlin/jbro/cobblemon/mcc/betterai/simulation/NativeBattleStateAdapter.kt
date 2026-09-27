@@ -2,15 +2,15 @@ package jbro.cobblemon.mcc.betterai.simulation
 
 import java.util.Locale
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleCombatStatKnowledge
-import jbro.cobblemon.mcc.api.ai.BattleCombatStatRangesView
-import jbro.cobblemon.mcc.api.ai.BattleFieldStateView
-import jbro.cobblemon.mcc.api.ai.BattleIntegerRange
-import jbro.cobblemon.mcc.api.ai.BattlePokemonActionConstraintView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
-import jbro.cobblemon.mcc.api.ai.BattleTimedEffectView
+import jbro.cobblemon.mcc.internal.ai.BattleCombatStatKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
+import jbro.cobblemon.mcc.internal.ai.BattleFieldStateView
+import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonActionConstraintView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView
 
 /** Converts a hypothesis-owned native frame into the existing board-evaluation contract. */
 internal object NativeBattleStateAdapter {

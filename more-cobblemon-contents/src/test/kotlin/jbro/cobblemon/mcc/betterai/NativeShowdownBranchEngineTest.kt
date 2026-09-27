@@ -6,7 +6,7 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption.APPEND
 import java.nio.file.StandardOpenOption.CREATE_NEW
 import java.util.zip.ZipInputStream
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleOpeningState
 import jbro.cobblemon.mcc.betterai.simulation.NativeMoveSetRebinding

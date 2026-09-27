@@ -1,14 +1,14 @@
 package jbro.cobblemon.mcc.betterai
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveCandidateView
-import jbro.cobblemon.mcc.api.ai.BattleMoveDamageCategory
-import jbro.cobblemon.mcc.api.ai.BattlePokemonActionCatalogView
-import jbro.cobblemon.mcc.api.ai.BattlePublicActionCatalogView
-import jbro.cobblemon.mcc.api.ai.BattlePublicMoveKnowledge
-import jbro.cobblemon.mcc.api.ai.BattlePublicMoveOptionView
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveOptionView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.mcc.betterai.simulation.NativeMoveFrame
 import jbro.cobblemon.mcc.betterai.simulation.NativePokemonFrame

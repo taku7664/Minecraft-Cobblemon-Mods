@@ -12,7 +12,7 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.Executor
 import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.TimeUnit
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.outcome.PublicMechanicalActionGate
 import jbro.cobblemon.mcc.betterai.policy.forPlanOwner
@@ -108,7 +108,7 @@ internal class OpenRouterTacticalBrain(
     override fun decide(session: BattleBrainSession, context: BattleDecisionContext): CompletionStage<BattleDecision> {
         val active = session as? Session ?: return CompletableFuture.failedFuture(IllegalArgumentException("Unknown session"))
         val calculatedContext = PublicBattleTacticalCalculator.calculate(context)
-            .forPlanOwner(jbro.cobblemon.mcc.api.ai.BattlePlanOwner.PRIMARY_BRAIN)
+            .forPlanOwner(jbro.cobblemon.mcc.internal.ai.BattlePlanOwner.PRIMARY_BRAIN)
             .let(PublicMechanicalActionGate::removeNullifiedWhenPossible)
         if (calculatedContext.candidates.size == 1) {
             return CompletableFuture.completedFuture(

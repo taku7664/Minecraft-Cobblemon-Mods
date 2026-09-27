@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai
 
 import com.google.gson.JsonObject
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.state.LocalEndTurnStateProjector
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test

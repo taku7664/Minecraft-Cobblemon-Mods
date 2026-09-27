@@ -1,14 +1,14 @@
 package jbro.cobblemon.mcc.betterai
 
 import com.google.gson.JsonParser
-import jbro.cobblemon.mcc.api.ai.BattleBrainContentIds
-import jbro.cobblemon.mcc.api.ai.BattleBrainProviderRole
-import jbro.cobblemon.mcc.api.ai.BattleBrainRegistry
-import jbro.cobblemon.mcc.api.ai.BattleBrainSelectionContext
-import jbro.cobblemon.mcc.api.ai.BattleEncounterRole
-import jbro.cobblemon.mcc.api.ai.BattleTrainerTier
-import jbro.cobblemon.mcc.api.ai.BrainCapability
-import jbro.cobblemon.mcc.api.ai.BrainId
+import jbro.cobblemon.mcc.internal.ai.BattleBrainContentIds
+import jbro.cobblemon.mcc.internal.ai.BattleBrainProviderRole
+import jbro.cobblemon.mcc.internal.ai.BattleBrainRegistry
+import jbro.cobblemon.mcc.internal.ai.BattleBrainSelectionContext
+import jbro.cobblemon.mcc.internal.ai.BattleEncounterRole
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
+import jbro.cobblemon.mcc.internal.ai.BrainCapability
+import jbro.cobblemon.mcc.internal.ai.BrainId
 import jbro.cobblemon.mcc.betterai.router.BetterAiConfig
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals

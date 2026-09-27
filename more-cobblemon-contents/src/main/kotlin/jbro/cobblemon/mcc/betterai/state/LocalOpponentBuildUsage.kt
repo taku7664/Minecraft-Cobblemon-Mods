@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets
 import java.util.Collections
 import java.util.Locale
 import kotlin.math.abs
-import jbro.cobblemon.mcc.api.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import org.slf4j.LoggerFactory
 
 internal data class LocalOpponentBuildUsageSource(

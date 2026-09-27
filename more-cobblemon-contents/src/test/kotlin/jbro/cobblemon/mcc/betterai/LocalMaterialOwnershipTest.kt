@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.evaluation.LocalImmediateTurnScorer
 import jbro.cobblemon.mcc.betterai.evaluation.LocalLookaheadStateEvaluator
 import org.junit.jupiter.api.Assertions.assertEquals

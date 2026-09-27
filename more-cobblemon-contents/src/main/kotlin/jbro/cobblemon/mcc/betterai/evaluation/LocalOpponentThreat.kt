@@ -1,17 +1,17 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleFormat
-import jbro.cobblemon.mcc.api.ai.BattleMoveDamageCategory
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveGroup
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveKnowledge
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattlePublicActionCatalogView
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
-import jbro.cobblemon.mcc.api.ai.BattleTrainerTier
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveGroup
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
@@ -265,7 +265,7 @@ internal object LocalOpponentThreat {
             slot.group == BattleOpponentMoveGroup.PURE_SETUP && slot.knowledge != BattleOpponentMoveKnowledge.GUESS
         } || catalog.forPokemon(foe.battlePokemonId).any { move ->
             move.details.damageCategory == BattleMoveDamageCategory.STATUS &&
-                jbro.cobblemon.mcc.api.ai.BattleStatusMoveCategories.isPureSelfSetup(move.details)
+                jbro.cobblemon.mcc.internal.ai.BattleStatusMoveCategories.isPureSelfSetup(move.details)
         }
 
     /**

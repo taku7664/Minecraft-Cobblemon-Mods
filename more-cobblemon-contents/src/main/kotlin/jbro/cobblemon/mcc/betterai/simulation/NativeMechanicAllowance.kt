@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
 import java.util.Locale
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 
 /**
  * Which battle mechanics the live battle actually permits, as seen through the product candidates.

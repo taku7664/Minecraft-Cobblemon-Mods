@@ -1,14 +1,14 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleMoveCandidateView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonActionCatalogView
-import jbro.cobblemon.mcc.api.ai.BattlePublicActionCatalogView
-import jbro.cobblemon.mcc.api.ai.BattlePublicMoveKnowledge
-import jbro.cobblemon.mcc.api.ai.BattlePublicMoveOptionView
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
-import jbro.cobblemon.mcc.api.ai.BattlePublicMoveCandidatePoolView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveOptionView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveCandidatePoolView
 import jbro.cobblemon.mcc.internal.ai.PublicSpeciesMoveKnowledge
 
 /** Builds future-action templates from the same public state given to every Brain. */
@@ -23,7 +23,7 @@ internal object Cobblemon173PublicActionCatalog {
         moveKnowledge: PublicSpeciesMoveKnowledge = Cobblemon173PublicSpeciesInferenceKnowledge,
         moveDetails: (String) -> BattleMoveCandidateView? = Cobblemon173ActionCandidateAdapter::publicMoveDetails,
     ): BattlePublicActionCatalogView {
-        fun entry(pokemon: jbro.cobblemon.mcc.api.ai.BattlePokemonStateView, original: Boolean): BattlePokemonActionCatalogView {
+        fun entry(pokemon: jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView, original: Boolean): BattlePokemonActionCatalogView {
             val knowledge = when (pokemon.side) {
                 BattleSide.ALLY -> BattlePublicMoveKnowledge.EXACT_OWN
                 BattleSide.OPPONENT -> BattlePublicMoveKnowledge.PUBLICLY_REVEALED

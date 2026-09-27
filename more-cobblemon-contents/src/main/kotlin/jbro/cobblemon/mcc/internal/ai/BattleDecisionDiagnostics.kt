@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.internal.ai
 
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 
 /** Builds a bounded, secret-free summary for one resolved Brain decision. */
 internal object BattleDecisionDiagnostics {

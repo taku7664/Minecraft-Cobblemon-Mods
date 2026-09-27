@@ -5,14 +5,14 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption.CREATE_NEW
 import java.util.UUID
 import java.util.zip.ZipInputStream
-import jbro.cobblemon.mcc.api.ai.BattleBrainOpenContext
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleFieldStateView
-import jbro.cobblemon.mcc.api.ai.BattleFormat
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
-import jbro.cobblemon.mcc.api.ai.BattleTrainerProfile
+import jbro.cobblemon.mcc.internal.ai.BattleBrainOpenContext
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFieldStateView
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelection
@@ -293,7 +293,7 @@ class NativeDefensiveSetupProductBrainIntegrationTest {
         val definition: NativeBattleDefinition,
         val frame: NativeBattleFrame,
         val tree: NativeShowdownSearchTree,
-        val candidates: List<jbro.cobblemon.mcc.api.ai.BattleActionCandidate>,
+        val candidates: List<jbro.cobblemon.mcc.internal.ai.BattleActionCandidate>,
         val search: jbro.cobblemon.mcc.betterai.search.NativeRecursiveSearchResult,
     )
 

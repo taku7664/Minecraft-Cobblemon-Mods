@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 
 /**
  * Reconstructs and advances the public badly-poisoned damage counter.

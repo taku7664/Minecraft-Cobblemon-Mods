@@ -3,7 +3,7 @@ package jbro.cobblemon.mcc.betterai
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import jbro.cobblemon.mcc.api.ai.BattleIntegerRange
+import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
 import jbro.cobblemon.mcc.betterai.mechanics.ShowdownStandardDamageProjection
 import java.nio.file.Files
 import java.nio.file.Path

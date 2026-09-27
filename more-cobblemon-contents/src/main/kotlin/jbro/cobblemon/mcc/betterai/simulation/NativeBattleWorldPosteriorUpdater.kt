@@ -3,9 +3,9 @@ package jbro.cobblemon.mcc.betterai.simulation
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.abs
-import jbro.cobblemon.mcc.api.ai.BattleInferenceBasis
-import jbro.cobblemon.mcc.api.ai.BattleInferenceConfidence
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceBasis
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
 internal enum class NativeBattleWorldPosteriorIssueCode {
     NO_PRIOR_WORLDS,

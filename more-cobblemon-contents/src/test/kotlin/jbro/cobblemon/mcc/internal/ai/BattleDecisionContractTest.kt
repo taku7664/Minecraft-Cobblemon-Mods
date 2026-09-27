@@ -1,4 +1,4 @@
-package jbro.cobblemon.mcc.api.ai
+package jbro.cobblemon.mcc.internal.ai
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse

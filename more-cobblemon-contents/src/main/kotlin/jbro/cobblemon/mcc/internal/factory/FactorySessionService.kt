@@ -2,7 +2,7 @@ package jbro.cobblemon.mcc.internal.factory
 
 import java.util.Collections
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleStrategyBrief
+import jbro.cobblemon.mcc.internal.ai.BattleStrategyBrief
 import jbro.cobblemon.mcc.internal.battle.settleBeforeTerminatingBattle
 
 internal class FactorySessionSnapshot(

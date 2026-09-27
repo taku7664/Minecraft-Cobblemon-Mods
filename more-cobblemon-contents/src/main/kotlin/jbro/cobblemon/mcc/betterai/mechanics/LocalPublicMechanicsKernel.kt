@@ -1,14 +1,14 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleFormat
-import jbro.cobblemon.mcc.api.ai.BattleInferenceConfidence
-import jbro.cobblemon.mcc.api.ai.BattleMoveDamageCategory
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveTargetPattern
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 
 /**
  * Deterministic local projection of damage modifiers that are already public and unambiguous.
@@ -272,7 +272,7 @@ internal object LocalPublicMechanicsKernel {
 
     private fun projectStatusMove(
         candidate: BattleActionCandidate,
-        details: jbro.cobblemon.mcc.api.ai.BattleMoveCandidateView,
+        details: jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView,
         context: BattleDecisionContext,
         actingSide: BattleSide,
         ignoresAbility: Boolean,
@@ -280,7 +280,7 @@ internal object LocalPublicMechanicsKernel {
         val declared = details.effects?.effects.orEmpty().filter { (it.probability ?: 1.0) > 0.0 }
         val targetStatuses = declared.filter {
             it.kind == BattleMoveEffectKind.STATUS &&
-                it.target == jbro.cobblemon.mcc.api.ai.BattleMoveEffectTarget.SELECTED_TARGET &&
+                it.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.SELECTED_TARGET &&
                 it.valueId != null
         }
         if (targetStatuses.isEmpty() || targetStatuses.size != declared.size) {

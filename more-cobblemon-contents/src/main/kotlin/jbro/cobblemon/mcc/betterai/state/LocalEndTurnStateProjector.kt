@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai.state
 
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.LocalBadPoisonCounter
 import jbro.cobblemon.mcc.betterai.mechanics.LocalHpArithmetic
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics

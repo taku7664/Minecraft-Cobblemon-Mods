@@ -1,4 +1,4 @@
-package jbro.cobblemon.mcc.api.ai
+package jbro.cobblemon.mcc.internal.ai
 
 /**
  * Independent per-stat bounds from the visibly revealed species/form and level.

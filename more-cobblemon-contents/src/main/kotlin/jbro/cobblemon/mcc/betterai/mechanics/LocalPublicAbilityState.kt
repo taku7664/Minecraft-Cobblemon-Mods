@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
 /** Whether a publicly known ability is active after deterministic suppression rules. */
 internal object LocalPublicAbilityState {

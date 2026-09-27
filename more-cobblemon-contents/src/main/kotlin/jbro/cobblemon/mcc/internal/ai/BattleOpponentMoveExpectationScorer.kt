@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.internal.ai
 
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 
 /**
  * Ranks a learnset attack as a set-level expectation, not as a turn-specific action choice.

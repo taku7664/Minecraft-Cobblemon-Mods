@@ -1,10 +1,10 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
-import jbro.cobblemon.mcc.api.ai.BattleDamageFractionRange
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleFractionRange
-import jbro.cobblemon.mcc.api.ai.BattleIntegerRange
-import jbro.cobblemon.mcc.api.ai.BattleKnockoutAssessment
+import jbro.cobblemon.mcc.internal.ai.BattleDamageFractionRange
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleFractionRange
+import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
+import jbro.cobblemon.mcc.internal.ai.BattleKnockoutAssessment
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt

@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.internal.ai
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 

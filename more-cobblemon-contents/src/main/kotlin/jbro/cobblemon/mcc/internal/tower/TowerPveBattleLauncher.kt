@@ -12,10 +12,10 @@ import jbro.cobblemon.mcc.internal.tower.opponent.TowerPokemonSet
 import jbro.cobblemon.mcc.internal.selection.RecentSelectionHistory
 import java.util.Collections
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleBrainContentIds
-import jbro.cobblemon.mcc.api.ai.BattleBrainSelectionContext
-import jbro.cobblemon.mcc.api.ai.BattleEncounterRole
-import jbro.cobblemon.mcc.api.ai.BattleTrainerProfile
+import jbro.cobblemon.mcc.internal.ai.BattleBrainContentIds
+import jbro.cobblemon.mcc.internal.ai.BattleBrainSelectionContext
+import jbro.cobblemon.mcc.internal.ai.BattleEncounterRole
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 
 internal class TowerPreparedPveBattle<P, O>(
     val request: TowerBattleLaunchRequest,

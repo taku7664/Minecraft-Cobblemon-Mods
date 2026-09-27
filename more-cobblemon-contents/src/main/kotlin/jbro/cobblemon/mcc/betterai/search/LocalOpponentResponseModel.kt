@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai.search
 
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import kotlin.math.abs
 
 /**

@@ -1,14 +1,14 @@
-package jbro.cobblemon.mcc.api.ai
+package jbro.cobblemon.mcc.internal.ai
 
-import jbro.cobblemon.mcc.api.ai.BattleFractionRange
-import jbro.cobblemon.mcc.api.ai.BattleIntegerRange
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectCoverage
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectTarget
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectView
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectsView
-import jbro.cobblemon.mcc.api.ai.BattleMoveRequirementKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveRequirementView
+import jbro.cobblemon.mcc.internal.ai.BattleFractionRange
+import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectCoverage
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectsView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveRequirementKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveRequirementView
 
 /** Extracts only static object-literal facts. JavaScript callbacks are never executed or guessed. */
 object BattleDeclarativeMoveEffects {

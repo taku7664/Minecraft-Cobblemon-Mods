@@ -2,7 +2,7 @@ package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
 import java.nio.charset.StandardCharsets
 import java.util.zip.ZipInputStream
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectsView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectsView
 
 /** Reads the exact Pokemon Showdown move bundle shipped inside Cobblemon 1.7.3. */
 internal object Cobblemon173ShowdownMoveEffects {

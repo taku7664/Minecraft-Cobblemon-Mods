@@ -1,12 +1,12 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectTarget
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules
 
 /**
@@ -106,7 +106,7 @@ internal object LocalNonDamagingMoveEvaluator {
     }
 
     private fun additionalScreenOpportunityCost(
-        effects: List<jbro.cobblemon.mcc.api.ai.BattleMoveEffectView>,
+        effects: List<jbro.cobblemon.mcc.internal.ai.BattleMoveEffectView>,
         context: BattleDecisionContext,
     ): Double {
         val setsAlliedScreen = effects.any {

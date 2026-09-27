@@ -1,15 +1,15 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
-import jbro.cobblemon.mcc.api.ai.BattleTargetSlot
-import jbro.cobblemon.mcc.api.ai.BattlePublicActionCatalogView
-import jbro.cobblemon.mcc.api.ai.BattlePublicMoveOptionView
-import jbro.cobblemon.mcc.api.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleTargetSlot
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveOptionView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
 
 /**
  * Reuses an equal projected state's public tactical calculation within one search.
@@ -61,7 +61,7 @@ internal class LocalProjectedActionCalculationCache(
             moveDetails = action.moveDetails,
             tags = action.tags,
             catalog = catalog?.let { source -> catalogKeys.getOrPut(source) {
-                fun entries(values: List<jbro.cobblemon.mcc.api.ai.BattlePokemonActionCatalogView>) =
+                fun entries(values: List<jbro.cobblemon.mcc.internal.ai.BattlePokemonActionCatalogView>) =
                     values.map { CatalogEntryKey(it.battlePokemonId, it.moves, it.moveSetComplete) }
                 CatalogKey(entries(source.entries), entries(source.originalEntries))
             } },

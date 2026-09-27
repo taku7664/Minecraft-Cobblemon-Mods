@@ -1,58 +1,58 @@
 package jbro.cobblemon.mcc.betterai
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleBrainOpenContext
-import jbro.cobblemon.mcc.api.ai.BattleBrainSession
-import jbro.cobblemon.mcc.api.ai.BattleCalculationCoverage
-import jbro.cobblemon.mcc.api.ai.BattleCandidateFactsView
-import jbro.cobblemon.mcc.api.ai.BattleDamageFractionRange
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleFieldStateView
-import jbro.cobblemon.mcc.api.ai.BattleFormat
-import jbro.cobblemon.mcc.api.ai.BattleFractionRange
-import jbro.cobblemon.mcc.api.ai.BattleInferenceBasis
-import jbro.cobblemon.mcc.api.ai.BattleInferenceConfidence
-import jbro.cobblemon.mcc.api.ai.BattleInferenceView
-import jbro.cobblemon.mcc.api.ai.BattleKnockoutAssessment
-import jbro.cobblemon.mcc.api.ai.BattleKnowledgePolicy
-import jbro.cobblemon.mcc.api.ai.BattleMechanicCandidate
-import jbro.cobblemon.mcc.api.ai.BattleMoveCandidateView
-import jbro.cobblemon.mcc.api.ai.BattleMoveDamageCategory
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectCoverage
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectTarget
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectView
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectsView
-import jbro.cobblemon.mcc.api.ai.BattleMoveOutcomeKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveOutcomeView
-import jbro.cobblemon.mcc.api.ai.BattleMoveRequirementKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveRequirementView
-import jbro.cobblemon.mcc.api.ai.BattleMoveTargetPattern
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventKind
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventView
-import jbro.cobblemon.mcc.api.ai.BattlePlanIntent
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleBrainOpenContext
+import jbro.cobblemon.mcc.internal.ai.BattleBrainSession
+import jbro.cobblemon.mcc.internal.ai.BattleCalculationCoverage
+import jbro.cobblemon.mcc.internal.ai.BattleCandidateFactsView
+import jbro.cobblemon.mcc.internal.ai.BattleDamageFractionRange
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFieldStateView
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleFractionRange
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceBasis
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceView
+import jbro.cobblemon.mcc.internal.ai.BattleKnockoutAssessment
+import jbro.cobblemon.mcc.internal.ai.BattleKnowledgePolicy
+import jbro.cobblemon.mcc.internal.ai.BattleMechanicCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectCoverage
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectsView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveOutcomeKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveOutcomeView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveRequirementKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveRequirementView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventView
+import jbro.cobblemon.mcc.internal.ai.BattlePlanIntent
 import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.mcc.betterai.evaluation.LocalNonDamagingMoveEvaluator
-import jbro.cobblemon.mcc.api.ai.BattlePlanUpdateOperation
-import jbro.cobblemon.mcc.api.ai.BattlePlanView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonActionCatalogView
-import jbro.cobblemon.mcc.api.ai.BattlePublicActionCatalogView
-import jbro.cobblemon.mcc.api.ai.BattlePublicMoveKnowledge
-import jbro.cobblemon.mcc.api.ai.BattlePublicMoveOptionView
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStandardDamageModel
-import jbro.cobblemon.mcc.api.ai.BattleStateView
-import jbro.cobblemon.mcc.api.ai.BattleStrategyBrief
-import jbro.cobblemon.mcc.api.ai.BattleStrategyObjective
-import jbro.cobblemon.mcc.api.ai.BattleTacticalMemoryView
-import jbro.cobblemon.mcc.api.ai.BattleTargetSlot
-import jbro.cobblemon.mcc.api.ai.BattleTeamMemberPlan
-import jbro.cobblemon.mcc.api.ai.BattleTeamRole
-import jbro.cobblemon.mcc.api.ai.BattleTimedEffectView
-import jbro.cobblemon.mcc.api.ai.BattleTrainerProfile
+import jbro.cobblemon.mcc.internal.ai.BattlePlanUpdateOperation
+import jbro.cobblemon.mcc.internal.ai.BattlePlanView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveOptionView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStandardDamageModel
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleStrategyBrief
+import jbro.cobblemon.mcc.internal.ai.BattleStrategyObjective
+import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
+import jbro.cobblemon.mcc.internal.ai.BattleTargetSlot
+import jbro.cobblemon.mcc.internal.ai.BattleTeamMemberPlan
+import jbro.cobblemon.mcc.internal.ai.BattleTeamRole
+import jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.policy.LocalHighestRankedActionSelector
@@ -2224,7 +2224,7 @@ class LocalTacticalBrainSimulationTest {
                         kind = BattleMoveEffectKind.SIDE_CONDITION,
                         target = target,
                         valueId = effectId,
-                        amountRange = maximumStacks?.let { jbro.cobblemon.mcc.api.ai.BattleIntegerRange(1, it) },
+                        amountRange = maximumStacks?.let { jbro.cobblemon.mcc.internal.ai.BattleIntegerRange(1, it) },
                     ),
                 ),
                 scriptedBehavior = false,

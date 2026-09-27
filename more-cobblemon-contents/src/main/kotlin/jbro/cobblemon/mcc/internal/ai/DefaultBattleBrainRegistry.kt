@@ -1,10 +1,10 @@
 package jbro.cobblemon.mcc.internal.ai
 
-import jbro.cobblemon.mcc.api.ai.BattleBrainProvider
-import jbro.cobblemon.mcc.api.ai.BattleBrainRegistrationStatus
-import jbro.cobblemon.mcc.api.ai.BattleBrainRegistry
-import jbro.cobblemon.mcc.api.ai.BrainCapability
-import jbro.cobblemon.mcc.api.ai.BrainId
+import jbro.cobblemon.mcc.internal.ai.BattleBrainProvider
+import jbro.cobblemon.mcc.internal.ai.BattleBrainRegistrationStatus
+import jbro.cobblemon.mcc.internal.ai.BattleBrainRegistry
+import jbro.cobblemon.mcc.internal.ai.BrainCapability
+import jbro.cobblemon.mcc.internal.ai.BrainId
 
 internal class DefaultBattleBrainRegistry : BattleBrainRegistry {
     private val providers = linkedMapOf<BrainId, BattleBrainProvider>()

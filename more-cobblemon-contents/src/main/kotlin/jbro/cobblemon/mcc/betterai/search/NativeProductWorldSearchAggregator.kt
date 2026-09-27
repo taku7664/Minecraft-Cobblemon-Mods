@@ -1,10 +1,10 @@
 package jbro.cobblemon.mcc.betterai.search
 
 import kotlin.math.abs
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattlePublicActionCatalogView
-import jbro.cobblemon.mcc.api.ai.BattleStateView
-import jbro.cobblemon.mcc.api.ai.BattleTacticalMemoryView
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleDefinition
 
 /** One complete opponent world ready for product-native search. */

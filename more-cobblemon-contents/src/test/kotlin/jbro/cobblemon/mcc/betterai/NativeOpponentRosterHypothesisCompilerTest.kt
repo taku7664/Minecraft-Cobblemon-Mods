@@ -1,15 +1,15 @@
 package jbro.cobblemon.mcc.betterai
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleFieldStateView
-import jbro.cobblemon.mcc.api.ai.BattleFormat
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewPokemonView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewView
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventKind
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleFieldStateView
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.betterai.simulation.NativeOpponentRosterHypothesisCompiler
 import jbro.cobblemon.mcc.betterai.simulation.NativeOpponentRosterIssueCode
 import org.junit.jupiter.api.Assertions.assertEquals

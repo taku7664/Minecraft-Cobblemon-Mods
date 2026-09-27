@@ -1,10 +1,10 @@
 package jbro.cobblemon.mcc.betterai.search
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
-import jbro.cobblemon.mcc.api.ai.BattleTacticalMemoryView
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
 import jbro.cobblemon.mcc.betterai.evaluation.LocalBoardMaterial
 import jbro.cobblemon.mcc.betterai.simulation.NativeRootActionMapping
 import jbro.cobblemon.mcc.betterai.simulation.NativeRootActionMatcher

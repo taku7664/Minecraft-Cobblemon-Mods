@@ -1,11 +1,11 @@
 package jbro.cobblemon.mcc.betterai.policy
 
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleMoveDamageCategory
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectTarget
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchEntryHazardCalculator
 import jbro.cobblemon.mcc.betterai.state.LocalSwitchStateProjector
 
@@ -113,7 +113,7 @@ internal object LocalRootDecisionPolicy {
         )
     }
 
-    private fun switchComponents(rank: LocalBattleActionRank): List<Pair<jbro.cobblemon.mcc.api.ai.BattleActionCandidate, LocalBattleActionOutcome>> =
+    private fun switchComponents(rank: LocalBattleActionRank): List<Pair<jbro.cobblemon.mcc.internal.ai.BattleActionCandidate, LocalBattleActionOutcome>> =
         atomicComponents(rank).filter { it.first.kind == BattleActionKind.SWITCH }
 
     private fun componentForSlot(
@@ -123,7 +123,7 @@ internal object LocalRootDecisionPolicy {
 
     private fun atomicComponents(
         rank: LocalBattleActionRank,
-    ): List<Pair<jbro.cobblemon.mcc.api.ai.BattleActionCandidate, LocalBattleActionOutcome>> {
+    ): List<Pair<jbro.cobblemon.mcc.internal.ai.BattleActionCandidate, LocalBattleActionOutcome>> {
         val candidate = rank.outcome.candidate
         if (candidate.kind != BattleActionKind.COMPOSITE) return listOf(candidate to rank.outcome)
         val outcomesById = rank.outcome.componentOutcomes.associateBy { it.candidate.actionId }

@@ -2,10 +2,10 @@ package jbro.cobblemon.mcc.betterai.simulation
 
 import java.util.Locale
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleExactOwnTeamView
-import jbro.cobblemon.mcc.api.ai.BattleExactPokemonBuildView
-import jbro.cobblemon.mcc.api.ai.BattlePublicActionCatalogView
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleExactOwnTeamView
+import jbro.cobblemon.mcc.internal.ai.BattleExactPokemonBuildView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 
 /** One complete public build assumption for an opaque team-preview slot. */
 internal data class NativeOpponentPreviewBuildHypothesis(

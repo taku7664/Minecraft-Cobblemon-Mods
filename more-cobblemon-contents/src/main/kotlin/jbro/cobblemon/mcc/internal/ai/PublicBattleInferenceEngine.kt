@@ -1,13 +1,13 @@
 package jbro.cobblemon.mcc.internal.ai
 
-import jbro.cobblemon.mcc.api.ai.BattleAbilityAvailability
-import jbro.cobblemon.mcc.api.ai.BattleInferenceBasis
-import jbro.cobblemon.mcc.api.ai.BattleInferenceConfidence
-import jbro.cobblemon.mcc.api.ai.BattleInferenceView
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventKind
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleAbilityAvailability
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceBasis
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceView
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 
 internal fun interface PublicSpeciesInferenceKnowledge {
     /** Returns every ability allowed by public species/form rules, or null when the rule data is unavailable. */

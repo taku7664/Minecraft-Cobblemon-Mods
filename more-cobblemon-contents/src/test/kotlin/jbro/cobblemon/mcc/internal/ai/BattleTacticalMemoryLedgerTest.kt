@@ -1,28 +1,28 @@
 package jbro.cobblemon.mcc.internal.ai
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleBrainOpenContext
-import jbro.cobblemon.mcc.api.ai.BattleDecisionAdvice
-import jbro.cobblemon.mcc.api.ai.BattleDecisionReason
-import jbro.cobblemon.mcc.api.ai.BattleFieldStateView
-import jbro.cobblemon.mcc.api.ai.BattleFormat
-import jbro.cobblemon.mcc.api.ai.BattleMindGameIntent
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventKind
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventView
-import jbro.cobblemon.mcc.api.ai.BattlePlanIntent
-import jbro.cobblemon.mcc.api.ai.BattlePlanOwner
-import jbro.cobblemon.mcc.api.ai.BattlePlanUpdate
-import jbro.cobblemon.mcc.api.ai.BattlePlanView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattlePredictedResponse
-import jbro.cobblemon.mcc.api.ai.BattlePrediction
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
-import jbro.cobblemon.mcc.api.ai.BattleTeamRole
-import jbro.cobblemon.mcc.api.ai.BattleSituation
-import jbro.cobblemon.mcc.api.ai.BattleTendencyView
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleBrainOpenContext
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionAdvice
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionReason
+import jbro.cobblemon.mcc.internal.ai.BattleFieldStateView
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleMindGameIntent
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventView
+import jbro.cobblemon.mcc.internal.ai.BattlePlanIntent
+import jbro.cobblemon.mcc.internal.ai.BattlePlanOwner
+import jbro.cobblemon.mcc.internal.ai.BattlePlanUpdate
+import jbro.cobblemon.mcc.internal.ai.BattlePlanView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePredictedResponse
+import jbro.cobblemon.mcc.internal.ai.BattlePrediction
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleTeamRole
+import jbro.cobblemon.mcc.internal.ai.BattleSituation
+import jbro.cobblemon.mcc.internal.ai.BattleTendencyView
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -531,7 +531,7 @@ class BattleTacticalMemoryLedgerTest {
                     BattlePlanView(
                         BattlePlanIntent.PRESERVE_CORE,
                         expiresAtTurn = 8,
-                        abortIf = setOf(jbro.cobblemon.mcc.api.ai.BattlePlanAbortCondition.ACTIVE_BELOW_CRITICAL_HP),
+                        abortIf = setOf(jbro.cobblemon.mcc.internal.ai.BattlePlanAbortCondition.ACTIVE_BELOW_CRITICAL_HP),
                     ),
                 ),
             ),

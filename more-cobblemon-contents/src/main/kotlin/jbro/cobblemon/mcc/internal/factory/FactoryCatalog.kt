@@ -2,8 +2,8 @@ package jbro.cobblemon.mcc.internal.factory
 
 import java.io.Reader
 import java.util.Collections
-import jbro.cobblemon.mcc.api.ai.BattleStrategyObjective
-import jbro.cobblemon.mcc.api.ai.BattleTeamRole
+import jbro.cobblemon.mcc.internal.ai.BattleStrategyObjective
+import jbro.cobblemon.mcc.internal.ai.BattleTeamRole
 import jbro.cobblemon.mcc.internal.battle.LegendaryClassPolicy
 
 /** A complete, immutable rental preset. Randomness chooses this preset, never its contents. */

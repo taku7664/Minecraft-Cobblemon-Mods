@@ -1,8 +1,8 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.BattleCombatStatKnowledge
-import jbro.cobblemon.mcc.api.ai.BattleCombatStatRangesView
-import jbro.cobblemon.mcc.api.ai.BattleIntegerRange
+import jbro.cobblemon.mcc.internal.ai.BattleCombatStatKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
+import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
 
 /**
  * An opponent spread that is public but has no width.

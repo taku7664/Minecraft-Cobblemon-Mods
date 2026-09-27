@@ -1,14 +1,14 @@
 package jbro.cobblemon.mcc.betterai
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleMoveCandidateView
-import jbro.cobblemon.mcc.api.ai.BattleMoveDamageCategory
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveGroup
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveInferenceView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveKnowledge
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveSlotView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveSource
-import jbro.cobblemon.mcc.api.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveGroup
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveInferenceView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveSlotView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveSource
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.mcc.betterai.simulation.NativeOpponentMoveHypothesisRebinder
 import jbro.cobblemon.mcc.betterai.simulation.NativePokemonSet

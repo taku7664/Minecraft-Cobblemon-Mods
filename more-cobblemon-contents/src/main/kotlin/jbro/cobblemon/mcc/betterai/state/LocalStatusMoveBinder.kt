@@ -1,17 +1,17 @@
 package jbro.cobblemon.mcc.betterai.state
 
 import java.util.Locale
-import jbro.cobblemon.mcc.api.ai.BattleMoveCandidateView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveGroup
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveInferenceView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveKnowledge
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveSlotView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentMoveSource
-import jbro.cobblemon.mcc.api.ai.BattlePublicActionCatalogView
-import jbro.cobblemon.mcc.api.ai.BattleStateView
-import jbro.cobblemon.mcc.api.ai.BattleStatusMoveCategories
-import jbro.cobblemon.mcc.api.ai.BattleStatusMoveCategory
-import jbro.cobblemon.mcc.api.ai.BattleTrainerTier
+import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveGroup
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveInferenceView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveSlotView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveSource
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleStatusMoveCategories
+import jbro.cobblemon.mcc.internal.ai.BattleStatusMoveCategory
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 
 /**
  * Names the opponent status moves a tier believes in, so they can actually be simulated.

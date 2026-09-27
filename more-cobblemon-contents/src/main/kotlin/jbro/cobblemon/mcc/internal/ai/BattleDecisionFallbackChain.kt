@@ -7,13 +7,13 @@ import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
-import jbro.cobblemon.mcc.api.ai.BattleBrain
-import jbro.cobblemon.mcc.api.ai.BattleBrainDefaults
-import jbro.cobblemon.mcc.api.ai.BattleBrainSession
-import jbro.cobblemon.mcc.api.ai.BattleDecision
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleDecisionValidationStatus
-import jbro.cobblemon.mcc.api.ai.BattleDecisionValidator
+import jbro.cobblemon.mcc.internal.ai.BattleBrain
+import jbro.cobblemon.mcc.internal.ai.BattleBrainDefaults
+import jbro.cobblemon.mcc.internal.ai.BattleBrainSession
+import jbro.cobblemon.mcc.internal.ai.BattleDecision
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionValidationStatus
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionValidator
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import java.util.concurrent.ConcurrentHashMap
 

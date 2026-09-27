@@ -3,7 +3,7 @@ package jbro.cobblemon.mcc.betterai
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory
 import jbro.cobblemon.mcc.betterai.calculation.PublicMoveOutcomeBranchProjector

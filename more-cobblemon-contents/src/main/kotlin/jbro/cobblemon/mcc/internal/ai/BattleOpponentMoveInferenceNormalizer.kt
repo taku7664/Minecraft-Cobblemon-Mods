@@ -2,7 +2,7 @@ package jbro.cobblemon.mcc.internal.ai
 
 import java.util.Locale
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 
 /**
  * Converts the learnset, public reveals and the tier's strictly limited hidden evidence into four

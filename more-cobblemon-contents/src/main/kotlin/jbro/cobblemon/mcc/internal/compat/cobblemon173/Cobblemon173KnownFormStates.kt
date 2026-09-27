@@ -5,8 +5,8 @@ import com.cobblemon.mod.common.api.pokemon.stats.Stats
 import com.cobblemon.mod.common.pokemon.FormData
 import com.cobblemon.mod.common.pokemon.Pokemon
 import com.cobblemon.mod.common.pokemon.Species
-import jbro.cobblemon.mcc.api.ai.BattleCombatStatRangesView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonFormStateView
+import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonFormStateView
 
 /** Publicly describes battle forms; exact spreads are used only for the local trainer's Pokemon. */
 internal object Cobblemon173KnownFormStates {

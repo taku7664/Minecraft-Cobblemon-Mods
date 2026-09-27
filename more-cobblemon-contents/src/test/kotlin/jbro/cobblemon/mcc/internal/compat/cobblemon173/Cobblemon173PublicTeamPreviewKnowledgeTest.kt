@@ -1,15 +1,15 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
-import jbro.cobblemon.mcc.api.ai.BattleCombatStatRangesView
-import jbro.cobblemon.mcc.api.ai.BattleCombatStatKnowledge
-import jbro.cobblemon.mcc.api.ai.BattleIntegerRange
-import jbro.cobblemon.mcc.api.ai.BattleMoveCandidateView
-import jbro.cobblemon.mcc.api.ai.BattleMoveDamageCategory
-import jbro.cobblemon.mcc.api.ai.BattleAbilityAvailability
-import jbro.cobblemon.mcc.api.ai.BattleOpponentPreviewAbilityView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentPreviewBuildPoolView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewPokemonView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewView
+import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
+import jbro.cobblemon.mcc.internal.ai.BattleCombatStatKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
+import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleAbilityAvailability
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentPreviewAbilityView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentPreviewBuildPoolView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.mcc.internal.ai.PublicSpeciesMoveKnowledge
 import jbro.cobblemon.mcc.internal.ai.PublicSpeciesMovePool
 import org.junit.jupiter.api.Assertions.assertEquals

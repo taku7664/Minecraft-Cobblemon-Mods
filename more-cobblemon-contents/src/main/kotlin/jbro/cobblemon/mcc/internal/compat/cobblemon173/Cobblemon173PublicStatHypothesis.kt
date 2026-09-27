@@ -2,8 +2,8 @@ package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
 import com.cobblemon.mod.common.api.pokemon.stats.Stats
 import com.cobblemon.mod.common.pokemon.FormData
-import jbro.cobblemon.mcc.api.ai.BattleCombatStatRangesView
-import jbro.cobblemon.mcc.api.ai.BattlePublicStatRanges
+import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicStatRanges
 
 /** Builds combat-stat facts without accepting opponent IVs, EVs, nature, item, or ability. */
 internal object Cobblemon173PublicStatHypothesis {

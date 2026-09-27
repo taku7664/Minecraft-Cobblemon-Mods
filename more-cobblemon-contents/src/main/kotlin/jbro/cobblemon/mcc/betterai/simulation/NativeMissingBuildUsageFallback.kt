@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
 import java.util.Locale
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewPokemonView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
 import jbro.cobblemon.mcc.betterai.state.LocalOpponentBuildUsageEntry
 import jbro.cobblemon.mcc.betterai.state.LocalOpponentSpreadUsage
 

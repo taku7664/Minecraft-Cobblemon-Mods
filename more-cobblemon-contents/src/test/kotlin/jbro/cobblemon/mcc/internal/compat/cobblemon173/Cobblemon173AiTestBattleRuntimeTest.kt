@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
-import jbro.cobblemon.mcc.api.ai.BattleDifficultyProfiles
+import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfiles
 import jbro.cobblemon.mcc.internal.command.AiTestDifficulty
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

@@ -4,9 +4,9 @@ import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.cobblemon.mod.common.pokemon.abilities.HiddenAbility
 import com.cobblemon.mod.common.pokemon.Species
 import java.util.Locale
-import jbro.cobblemon.mcc.api.ai.BattleAbilityAvailability
-import jbro.cobblemon.mcc.api.ai.BattleOpponentPreviewAbilityView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentPreviewBuildPoolView
+import jbro.cobblemon.mcc.internal.ai.BattleAbilityAvailability
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentPreviewAbilityView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentPreviewBuildPoolView
 import jbro.cobblemon.mcc.internal.ai.PublicAbilityPossibility
 import jbro.cobblemon.mcc.internal.ai.PublicSpeciesInferenceKnowledge
 import jbro.cobblemon.mcc.internal.ai.PublicSpeciesMoveKnowledge

@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai.search
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.calculation.LocalForcedReplacementResolution
 import jbro.cobblemon.mcc.betterai.calculation.LocalForcedReplacementResolver
 import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory

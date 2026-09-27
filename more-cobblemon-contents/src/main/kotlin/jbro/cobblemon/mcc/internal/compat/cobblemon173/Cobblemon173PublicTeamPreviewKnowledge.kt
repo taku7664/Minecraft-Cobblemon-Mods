@@ -1,11 +1,11 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
-import jbro.cobblemon.mcc.api.ai.BattleCombatStatRangesView
-import jbro.cobblemon.mcc.api.ai.BattleMoveCandidateView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentPreviewMovePoolView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewPokemonView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonFormStateView
+import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentPreviewMovePoolView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonFormStateView
 import jbro.cobblemon.mcc.internal.ai.PublicSpeciesMoveKnowledge
 
 internal data class Cobblemon173PublicPreviewFacts(
@@ -13,7 +13,7 @@ internal data class Cobblemon173PublicPreviewFacts(
     val combatStats: BattleCombatStatRangesView?,
     val knownFormStates: Map<String, BattlePokemonFormStateView>,
     val showdownSpeciesId: String? = null,
-    val buildCandidatePool: jbro.cobblemon.mcc.api.ai.BattleOpponentPreviewBuildPoolView? = null,
+    val buildCandidatePool: jbro.cobblemon.mcc.internal.ai.BattleOpponentPreviewBuildPoolView? = null,
 )
 
 /** Enriches opaque preview slots without accepting any live or registered Pokemon object. */

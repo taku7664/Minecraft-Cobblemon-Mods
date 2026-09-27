@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.internal.factory
 
-import jbro.cobblemon.mcc.api.ai.BattleStrategyObjective
-import jbro.cobblemon.mcc.api.ai.BattleTeamRole
+import jbro.cobblemon.mcc.internal.ai.BattleStrategyObjective
+import jbro.cobblemon.mcc.internal.ai.BattleTeamRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

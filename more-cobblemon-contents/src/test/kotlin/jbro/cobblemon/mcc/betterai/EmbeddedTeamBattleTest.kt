@@ -7,7 +7,7 @@ import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import java.util.UUID
 
 @EnabledIfSystemProperty(named = "betterai.oracle", matches = "true")

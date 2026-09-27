@@ -1,18 +1,18 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleFormat
-import jbro.cobblemon.mcc.api.ai.BattleKnockoutAssessment
-import jbro.cobblemon.mcc.api.ai.BattleMoveDamageCategory
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectTarget
-import jbro.cobblemon.mcc.api.ai.BattleMoveOutcomeKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveRequirementKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveRequirementView
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventKind
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleKnockoutAssessment
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget
+import jbro.cobblemon.mcc.internal.ai.BattleMoveOutcomeKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveRequirementKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveRequirementView
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMechanicsKernel
@@ -609,7 +609,7 @@ internal object LocalTacticalSituationalEvaluator {
         first != null && second != null && canonicalEffectId(first) == canonicalEffectId(second)
 
     private fun activeEffectBlocksRefresh(
-        active: jbro.cobblemon.mcc.api.ai.BattleTimedEffectView?,
+        active: jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView?,
         effectId: String,
     ): Boolean = active != null && active.remainingTurns != EXPIRING_EFFECT_TURNS &&
         sameEffect(active.effectId, effectId)

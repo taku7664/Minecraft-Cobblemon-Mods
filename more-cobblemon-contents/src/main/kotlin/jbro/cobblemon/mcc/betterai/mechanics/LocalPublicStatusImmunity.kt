@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
 /** Checks only status immunities proven by public type or a known/confirmed ability. */
 internal object LocalPublicStatusImmunity {

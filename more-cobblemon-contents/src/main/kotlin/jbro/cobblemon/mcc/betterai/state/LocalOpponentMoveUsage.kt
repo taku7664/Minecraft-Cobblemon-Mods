@@ -7,7 +7,7 @@ import java.io.Reader
 import java.nio.charset.StandardCharsets
 import java.util.Collections
 import java.util.Locale
-import jbro.cobblemon.mcc.api.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import org.slf4j.LoggerFactory
 
 /** Marginal probability that a species carries a move; it is not a turn-choice probability. */

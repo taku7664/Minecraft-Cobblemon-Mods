@@ -8,7 +8,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.jar.JarFile
 import java.util.zip.ZipInputStream
-import jbro.cobblemon.mcc.api.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import kotlin.math.floor
 import kotlin.random.Random
 

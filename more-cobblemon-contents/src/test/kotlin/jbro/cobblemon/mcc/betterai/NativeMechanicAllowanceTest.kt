@@ -1,8 +1,8 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleMechanicCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleMechanicCandidate
 import jbro.cobblemon.mcc.betterai.simulation.NativeMechanicAllowance
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

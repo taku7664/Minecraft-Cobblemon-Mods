@@ -1,9 +1,9 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleCombatStatRangesView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonFormStateView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonFormStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 
 /**
  * The form a mechanic puts the actor into, when the public state already describes that form.

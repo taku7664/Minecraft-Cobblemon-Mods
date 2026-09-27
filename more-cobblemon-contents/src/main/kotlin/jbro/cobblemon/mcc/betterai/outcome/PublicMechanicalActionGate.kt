@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai.outcome
 
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 
 /**
  * Removes actions that public battle mechanics prove cannot affect the opponent.

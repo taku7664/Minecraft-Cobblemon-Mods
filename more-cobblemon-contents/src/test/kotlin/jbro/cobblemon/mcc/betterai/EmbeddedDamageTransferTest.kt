@@ -2,7 +2,7 @@ package jbro.cobblemon.mcc.betterai
 
 import java.nio.file.Path
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDirectHitMechanics
 import kotlin.math.roundToInt
 import org.junit.jupiter.api.Assertions.*

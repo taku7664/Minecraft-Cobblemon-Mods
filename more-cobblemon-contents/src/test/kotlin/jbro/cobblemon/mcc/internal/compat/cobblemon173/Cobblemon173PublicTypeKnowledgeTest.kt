@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
 import com.cobblemon.mod.common.api.battles.interpreter.BattleMessage
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.util.UUID

@@ -45,8 +45,8 @@ class EmbeddedPolicyComparisonTest {
     fun `comparison profiles preserve default and support explicit boss without changing personality`() {
         val default = EmbeddedPolicyComparison.profileForSkill(0)
         val boss = EmbeddedPolicyComparison.profileForSkill(5)
-        assertEquals(jbro.cobblemon.mcc.api.ai.BattleTrainerTier.INTRODUCTORY, default.difficulty.tier)
-        assertEquals(jbro.cobblemon.mcc.api.ai.BattleTrainerTier.BOSS, boss.difficulty.tier)
+        assertEquals(jbro.cobblemon.mcc.internal.ai.BattleTrainerTier.INTRODUCTORY, default.difficulty.tier)
+        assertEquals(jbro.cobblemon.mcc.internal.ai.BattleTrainerTier.BOSS, boss.difficulty.tier)
         assertEquals(default.personality, boss.personality)
         assertEquals(5, boss.skillLevel)
         assertThrows(IllegalArgumentException::class.java) { EmbeddedPolicyComparison.profileForSkill(6) }

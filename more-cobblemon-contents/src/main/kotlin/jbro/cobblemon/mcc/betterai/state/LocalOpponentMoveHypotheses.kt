@@ -2,7 +2,7 @@ package jbro.cobblemon.mcc.betterai.state
 
 import java.util.Collections
 import java.util.Locale
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 
 /** Lazy moveset hypotheses. Usage is a move-presence prior, never a turn-choice distribution. */
 internal object LocalOpponentMoveHypotheses {

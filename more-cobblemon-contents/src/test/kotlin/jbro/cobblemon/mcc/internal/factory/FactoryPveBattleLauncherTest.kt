@@ -1,9 +1,9 @@
 package jbro.cobblemon.mcc.internal.factory
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleBrainContentIds
-import jbro.cobblemon.mcc.api.ai.BattleEncounterRole
-import jbro.cobblemon.mcc.api.ai.BattleTrainerTier
+import jbro.cobblemon.mcc.internal.ai.BattleBrainContentIds
+import jbro.cobblemon.mcc.internal.ai.BattleEncounterRole
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -180,12 +180,12 @@ class FactoryPveBattleLauncherTest {
 
     private fun opponent() = (7..9).associate { index -> UUID(1, index.toLong()) to rental(index) }
 
-    private fun strategyBrief() = jbro.cobblemon.mcc.api.ai.BattleStrategyBrief(
+    private fun strategyBrief() = jbro.cobblemon.mcc.internal.ai.BattleStrategyBrief(
         strategyId = "mcc:test_factory",
         displayNameKey = "strategy.mcc.test_factory.name",
         descriptionKey = "strategy.mcc.test_factory.description",
         aiSummary = "Apply balanced pressure.",
-        objectives = setOf(jbro.cobblemon.mcc.api.ai.BattleStrategyObjective.BALANCED_PRESSURE),
+        objectives = setOf(jbro.cobblemon.mcc.internal.ai.BattleStrategyObjective.BALANCED_PRESSURE),
     )
 
     private fun rental(index: Int) = FactoryRentalSet(

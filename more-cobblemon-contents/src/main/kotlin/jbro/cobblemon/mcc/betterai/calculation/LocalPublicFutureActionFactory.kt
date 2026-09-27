@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai.calculation
 
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.evaluation.LocalHypothesisPriorityReservation
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveDamageInputs
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState

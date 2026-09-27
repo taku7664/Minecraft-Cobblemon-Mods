@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
-import jbro.cobblemon.mcc.api.ai.BattleIntegerRange
+import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
 
 /**
  * Public Gen 9 effect-duration facts from the Showdown data bundled with Cobblemon 1.7.3.

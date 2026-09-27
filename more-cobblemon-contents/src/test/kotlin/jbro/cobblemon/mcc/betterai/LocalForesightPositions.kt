@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 
 /**
  * The foresight positions, reachable from more than one test.

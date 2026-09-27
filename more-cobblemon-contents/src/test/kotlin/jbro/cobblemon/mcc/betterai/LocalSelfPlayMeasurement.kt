@@ -1,8 +1,8 @@
 package jbro.cobblemon.mcc.betterai
 
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
-import jbro.cobblemon.mcc.api.ai.BattleDifficultyProfile
-import jbro.cobblemon.mcc.api.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfile
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import kotlin.random.Random
 
 internal data class LocalSelfPlayTally(

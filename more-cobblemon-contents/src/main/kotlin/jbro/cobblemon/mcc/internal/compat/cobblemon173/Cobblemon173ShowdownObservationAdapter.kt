@@ -8,12 +8,12 @@ import com.cobblemon.mod.common.api.moves.Moves
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import java.util.Locale
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleFormat
-import jbro.cobblemon.mcc.api.ai.BattleMoveOutcomeKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveOutcomeView
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleMoveOutcomeKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveOutcomeView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import net.minecraft.core.registries.BuiltInRegistries
 
 /** Direct Cobblemon 1.7.3 bridge. Only public Showdown messages may add opponent knowledge. */

@@ -4,8 +4,8 @@ import com.cobblemon.mod.common.api.pokemon.stats.Stat
 import com.cobblemon.mod.common.api.pokemon.stats.Stats
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import com.cobblemon.mod.common.pokemon.PokemonStats
-import jbro.cobblemon.mcc.api.ai.BattleExactOwnTeamView
-import jbro.cobblemon.mcc.api.ai.BattleExactPokemonBuildView
+import jbro.cobblemon.mcc.internal.ai.BattleExactOwnTeamView
+import jbro.cobblemon.mcc.internal.ai.BattleExactPokemonBuildView
 import net.minecraft.core.registries.BuiltInRegistries
 
 /** Captures the trainer's own immutable opening sets before battle callbacks can mutate public state. */

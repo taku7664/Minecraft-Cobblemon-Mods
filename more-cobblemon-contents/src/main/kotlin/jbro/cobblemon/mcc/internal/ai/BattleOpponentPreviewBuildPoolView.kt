@@ -1,4 +1,4 @@
-package jbro.cobblemon.mcc.api.ai
+package jbro.cobblemon.mcc.internal.ai
 
 import java.util.Collections
 import kotlin.math.abs

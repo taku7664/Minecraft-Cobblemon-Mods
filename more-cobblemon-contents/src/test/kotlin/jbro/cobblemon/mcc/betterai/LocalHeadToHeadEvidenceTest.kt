@@ -9,7 +9,7 @@ class LocalHeadToHeadEvidenceTest {
     @Test
     fun `tuning and difficulty runners both preserve turn limited pair outcomes`() {
         val tuning = jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT
-        val tier = jbro.cobblemon.mcc.api.ai.BattleDifficultyProfiles.INTRODUCTORY
+        val tier = jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfiles.INTRODUCTORY
         val tallies = listOf(
             LocalSelfPlayMeasurement.headToHead("tuning", tuning, tuning, battles = 1, seed = 42, maximumTurns = 1),
             LocalSelfPlayMeasurement.tierDuel("tier", tier, tier, battles = 1, seed = 42, maximumTurns = 1),

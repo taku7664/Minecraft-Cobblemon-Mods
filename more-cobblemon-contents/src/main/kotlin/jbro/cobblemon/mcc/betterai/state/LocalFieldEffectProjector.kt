@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai.state
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.LocalSideConditionRules
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicFieldMechanics
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityState

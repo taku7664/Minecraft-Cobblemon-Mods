@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai
 
 import com.google.gson.JsonParser
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.LocalBattleStateFingerprint
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.router.BetterAiConfig

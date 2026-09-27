@@ -1,11 +1,11 @@
 package jbro.cobblemon.mcc.betterai.search
 
 import java.security.MessageDigest
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventView
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventKind
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventView
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleDefinition
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleRootIssue
@@ -409,7 +409,7 @@ internal class NativeProductSessionReconciler(
         val world: NativeProductSessionWorld,
         val frame: NativeBattleFrame,
         val definition: NativeBattleDefinition,
-        val catalog: jbro.cobblemon.mcc.api.ai.BattlePublicActionCatalogView,
+        val catalog: jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView,
         val probability: Double,
         val split: Boolean,
         val deferredAllyAction: BattleActionCandidate?,
@@ -426,7 +426,7 @@ internal class NativeProductSessionReconciler(
     private data class CompatibleFrame(
         val frame: NativeBattleFrame,
         val definition: NativeBattleDefinition,
-        val catalog: jbro.cobblemon.mcc.api.ai.BattlePublicActionCatalogView,
+        val catalog: jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView,
         val observationLikelihood: Double,
         val deferredAllyAction: BattleActionCandidate?,
         val deferredOpponentAction: BattleActionCandidate?,

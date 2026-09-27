@@ -1,9 +1,9 @@
 package jbro.cobblemon.mcc.internal.factory
 
 import java.util.Collections
-import jbro.cobblemon.mcc.api.ai.BattleStrategyBrief
-import jbro.cobblemon.mcc.api.ai.BattleTeamMemberPlan
-import jbro.cobblemon.mcc.api.ai.BattleTeamRole
+import jbro.cobblemon.mcc.internal.ai.BattleStrategyBrief
+import jbro.cobblemon.mcc.internal.ai.BattleTeamMemberPlan
+import jbro.cobblemon.mcc.internal.ai.BattleTeamRole
 import kotlin.random.Random
 
 internal interface FactoryCatalogRandom {

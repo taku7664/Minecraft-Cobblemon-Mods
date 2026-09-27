@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai
 
 import com.google.gson.JsonParser
-import jbro.cobblemon.mcc.api.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -19,10 +19,10 @@ class EmbeddedFormatBoundaryTest {
 
     @Test
     fun `single and double format boundaries are explicit`() {
-        assertEquals(jbro.cobblemon.mcc.api.ai.BattleFormat.SINGLE,
+        assertEquals(jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE,
             EmbeddedTeamInput.battleFormat(JsonParser.parseString(
                 """{"format":"SINGLE","publicLog":["|gametype|singles"]}""").asJsonObject))
-        assertEquals(jbro.cobblemon.mcc.api.ai.BattleFormat.DOUBLE,
+        assertEquals(jbro.cobblemon.mcc.internal.ai.BattleFormat.DOUBLE,
             EmbeddedTeamInput.battleFormat(JsonParser.parseString(
                 """{"format":"DOUBLE","publicLog":["|gametype|doubles"],"request":{"active":[{},{}]}}""").asJsonObject))
 

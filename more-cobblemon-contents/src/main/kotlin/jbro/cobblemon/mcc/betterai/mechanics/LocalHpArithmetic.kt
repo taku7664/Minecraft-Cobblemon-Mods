@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 

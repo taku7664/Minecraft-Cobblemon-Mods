@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.internal.ai
 
-import jbro.cobblemon.mcc.api.ai.BattleTrainerTier
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 
 /**
  * Balance knobs for the four inference stages. Slot construction reads this policy; it does not

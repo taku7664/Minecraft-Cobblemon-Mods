@@ -1,9 +1,9 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
 import java.util.Locale
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattlePublicStabRules
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicStabRules
 
 /** One public STAB interpretation for every local fallback consumer. */
 internal object LocalPublicStab {

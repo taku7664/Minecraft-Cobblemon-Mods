@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai.search
 
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleTacticalMemoryView
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
 
 /** Changes visit order only; no public or hypothetical opponent response is discarded. */
 internal object NativeOpponentResponseOrdering {

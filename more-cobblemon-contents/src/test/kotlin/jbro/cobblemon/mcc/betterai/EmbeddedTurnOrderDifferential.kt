@@ -3,7 +3,7 @@ package jbro.cobblemon.mcc.betterai
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.GsonBuilder
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.mcc.betterai.outcome.PublicSingleTurnProjector

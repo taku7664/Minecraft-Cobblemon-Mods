@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 
 /** Shared target interpretation for primary damage facts, modifiers and leaf HP caps.
  * Preserves the calculator's public ability rules; this is not a complete engine target resolver.

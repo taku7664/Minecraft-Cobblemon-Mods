@@ -1,9 +1,9 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleTacticalMemoryView
-import jbro.cobblemon.mcc.api.ai.BattleTrainerPersonality
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerPersonality
 import jbro.cobblemon.mcc.betterai.policy.LocalActionMixingContext
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionOutcome
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank

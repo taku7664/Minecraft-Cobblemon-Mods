@@ -8,7 +8,7 @@ import java.util.concurrent.CompletionException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.brain.OpenRouterTacticalBrain
 import jbro.cobblemon.mcc.betterai.brain.OpenRouterTransport
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator

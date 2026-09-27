@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 
 /** Applies Aegislash's publicly known form transition before move effects and damage are projected. */
 internal object LocalStanceChangeStateProjector {

@@ -10,25 +10,25 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import jbro.cobblemon.mcc.MoreCobblemonContents
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleBrain
-import jbro.cobblemon.mcc.api.ai.BattleBrainCloseResult
-import jbro.cobblemon.mcc.api.ai.BattleBrainDefaults
-import jbro.cobblemon.mcc.api.ai.BattleBrainOpenContext
-import jbro.cobblemon.mcc.api.ai.BattleBrainSession
-import jbro.cobblemon.mcc.api.ai.BattleDecision
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleDecisionValidationStatus
-import jbro.cobblemon.mcc.api.ai.BattleExactOwnTeamView
-import jbro.cobblemon.mcc.api.ai.BattleDecisionValidator
-import jbro.cobblemon.mcc.api.ai.BattleFormat
-import jbro.cobblemon.mcc.api.ai.BattleKnowledgePolicy
-import jbro.cobblemon.mcc.api.ai.BattleLocalOpponentStatSpreadView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewView
-import jbro.cobblemon.mcc.api.ai.BattleStrategyBrief
-import jbro.cobblemon.mcc.api.ai.BattleTrainerProfile
-import jbro.cobblemon.mcc.api.ai.BattleTrainerTier
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleBrain
+import jbro.cobblemon.mcc.internal.ai.BattleBrainCloseResult
+import jbro.cobblemon.mcc.internal.ai.BattleBrainDefaults
+import jbro.cobblemon.mcc.internal.ai.BattleBrainOpenContext
+import jbro.cobblemon.mcc.internal.ai.BattleBrainSession
+import jbro.cobblemon.mcc.internal.ai.BattleDecision
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionValidationStatus
+import jbro.cobblemon.mcc.internal.ai.BattleExactOwnTeamView
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionValidator
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleKnowledgePolicy
+import jbro.cobblemon.mcc.internal.ai.BattleLocalOpponentStatSpreadView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
+import jbro.cobblemon.mcc.internal.ai.BattleStrategyBrief
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.internal.ai.BattleBrainDecisionCoordinator
 import jbro.cobblemon.mcc.internal.ai.BattleBrainEndpoint
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionFallbackChain
@@ -288,8 +288,8 @@ internal class Cobblemon173BrainTrainerBattleActor(
             val submitted = submitPreparedResponses(expectedRequest, selectedResponses)
             if (submitted) {
                 val planOwner = when (finalizedResolution.source) {
-                    BattleDecisionSource.PRIMARY_BRAIN -> jbro.cobblemon.mcc.api.ai.BattlePlanOwner.PRIMARY_BRAIN
-                    BattleDecisionSource.LOCAL_BRAIN -> jbro.cobblemon.mcc.api.ai.BattlePlanOwner.LOCAL_BRAIN
+                    BattleDecisionSource.PRIMARY_BRAIN -> jbro.cobblemon.mcc.internal.ai.BattlePlanOwner.PRIMARY_BRAIN
+                    BattleDecisionSource.LOCAL_BRAIN -> jbro.cobblemon.mcc.internal.ai.BattlePlanOwner.LOCAL_BRAIN
                     else -> null
                 }
                 attemptBattleDecisionCompletion(

@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.internal.factory
 
-import jbro.cobblemon.mcc.api.ai.BattleTrainerProfile
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 
 internal object FactoryBattleDifficultyPolicy {
     fun resolve(

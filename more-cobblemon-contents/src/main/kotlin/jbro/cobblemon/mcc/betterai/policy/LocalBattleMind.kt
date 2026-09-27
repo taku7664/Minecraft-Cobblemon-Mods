@@ -2,7 +2,7 @@ package jbro.cobblemon.mcc.betterai.policy
 
 import java.util.SplittableRandom
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
 import kotlin.math.roundToInt
 

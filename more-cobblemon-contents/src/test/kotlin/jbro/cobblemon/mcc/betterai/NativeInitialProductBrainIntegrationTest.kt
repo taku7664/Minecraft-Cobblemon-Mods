@@ -1,8 +1,8 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.BattleBrainOpenContext
-import jbro.cobblemon.mcc.api.ai.BattleBrainContentIds
-import jbro.cobblemon.mcc.api.ai.BattleTrainerProfile
+import jbro.cobblemon.mcc.internal.ai.BattleBrainOpenContext
+import jbro.cobblemon.mcc.internal.ai.BattleBrainContentIds
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelection
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelector
@@ -384,7 +384,7 @@ class NativeInitialProductBrainIntegrationTest {
     }
 
     private fun nativeSessionState(
-        context: jbro.cobblemon.mcc.api.ai.BattleDecisionContext,
+        context: jbro.cobblemon.mcc.internal.ai.BattleDecisionContext,
         snapshotJson: String = "root",
     ): NativeProductSessionState {
         val ally = context.state.pokemon.first { it.side.name == "ALLY" }
@@ -429,7 +429,7 @@ class NativeInitialProductBrainIntegrationTest {
     private fun contestedContext() =
         LocalContestedDecisionCatalog.all(LocalTacticalBrainSimulationTest()).first().context
 
-    private fun open(brain: LocalTacticalBrain, context: jbro.cobblemon.mcc.api.ai.BattleDecisionContext) =
+    private fun open(brain: LocalTacticalBrain, context: jbro.cobblemon.mcc.internal.ai.BattleDecisionContext) =
         brain.openSession(BattleBrainOpenContext(
             battleId = context.state.battleId,
             format = context.state.format,

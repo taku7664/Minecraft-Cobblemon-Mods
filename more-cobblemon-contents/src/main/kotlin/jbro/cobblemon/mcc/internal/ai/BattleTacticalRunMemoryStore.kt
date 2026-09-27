@@ -2,7 +2,7 @@ package jbro.cobblemon.mcc.internal.ai
 
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import jbro.cobblemon.mcc.api.ai.BattleTendencyView
+import jbro.cobblemon.mcc.internal.ai.BattleTendencyView
 
 /** Volatile run memory. The owning content session MUST discard its scope when that session closes. */
 internal object BattleTacticalRunMemoryStore {

@@ -3,11 +3,11 @@ package jbro.cobblemon.mcc.betterai.policy
 import java.util.Locale
 import java.util.SplittableRandom
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectKind
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectTarget
-import jbro.cobblemon.mcc.api.ai.BattleTacticalMemoryView
-import jbro.cobblemon.mcc.api.ai.BattleTrainerPersonality
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget
+import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerPersonality
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import kotlin.math.ceil
 import kotlin.math.exp

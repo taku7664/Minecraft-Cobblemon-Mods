@@ -1,8 +1,8 @@
 package jbro.cobblemon.mcc.betterai
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventKind
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventView
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventView
 import jbro.cobblemon.mcc.betterai.simulation.NativeBattleFrame
 import jbro.cobblemon.mcc.betterai.simulation.NativeDamageObservationConditioner
 import jbro.cobblemon.mcc.betterai.simulation.NativeDamageObservationStatus

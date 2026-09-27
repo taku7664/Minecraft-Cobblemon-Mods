@@ -1,10 +1,10 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.betterai.mechanics.PublicActiveOpponentTypeChartMultiplier
 import jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchTypeFactsCalculator
 import jbro.cobblemon.mcc.betterai.state.LocalSwitchStateProjector
@@ -127,7 +127,7 @@ internal object LocalPublicPositionFacts {
         }
 
     private fun revealedMoveDamageExposure(
-        state: jbro.cobblemon.mcc.api.ai.BattleStateView,
+        state: jbro.cobblemon.mcc.internal.ai.BattleStateView,
         context: BattleDecisionContext,
     ): Double? = LocalLookaheadStateEvaluator.attackPressure(state, BattleSide.OPPONENT, context)
         .takeIf { it > 0.0 }

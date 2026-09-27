@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.BattlePokemonActionConstraintView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonActionConstraintView
 
 /** Singles public-message lifecycle; neither requests nor hidden engine state enter this tracker. */
 internal class EmbeddedPublicActionConstraints {

@@ -1,9 +1,9 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.BattleDamageFractionRange
-import jbro.cobblemon.mcc.api.ai.BattleFractionRange
-import jbro.cobblemon.mcc.api.ai.BattleIntegerRange
-import jbro.cobblemon.mcc.api.ai.BattleKnockoutAssessment
+import jbro.cobblemon.mcc.internal.ai.BattleDamageFractionRange
+import jbro.cobblemon.mcc.internal.ai.BattleFractionRange
+import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
+import jbro.cobblemon.mcc.internal.ai.BattleKnockoutAssessment
 import jbro.cobblemon.mcc.betterai.mechanics.ShowdownStandardDamageProjection
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

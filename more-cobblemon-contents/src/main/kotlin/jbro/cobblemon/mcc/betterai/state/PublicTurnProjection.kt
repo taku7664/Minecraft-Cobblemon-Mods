@@ -1,8 +1,8 @@
 package jbro.cobblemon.mcc.betterai.state
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.betterai.mechanics.RecursiveControlEffect
 
 /**

@@ -2,8 +2,8 @@ package jbro.cobblemon.mcc.internal.tower.ui
 
 import java.util.Collections
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewPokemonView
-import jbro.cobblemon.mcc.api.ai.BattleOpponentTeamPreviewView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
+import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.tower.TowerBattleLaunchRequest
 import jbro.cobblemon.mcc.internal.tower.TowerBattleLauncher

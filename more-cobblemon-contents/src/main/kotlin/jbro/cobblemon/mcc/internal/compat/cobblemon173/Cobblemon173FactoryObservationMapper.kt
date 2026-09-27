@@ -2,7 +2,7 @@ package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
 import java.util.Locale
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.factory.FactoryOpponentObservation
 import jbro.cobblemon.mcc.internal.factory.FactoryRentalSet
 

@@ -2,9 +2,9 @@ package jbro.cobblemon.mcc.betterai.mechanics
 
 import java.util.Locale
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleMoveDamageCategory
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
 /** Records the one-use Stellar type boost only after Showdown calculates damaging-move damage. */
 internal object LocalStellarBoostStateProjector {

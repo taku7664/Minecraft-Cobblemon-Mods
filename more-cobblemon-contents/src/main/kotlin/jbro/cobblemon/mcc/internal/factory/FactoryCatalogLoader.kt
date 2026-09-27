@@ -6,8 +6,8 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.io.Reader
-import jbro.cobblemon.mcc.api.ai.BattleStrategyObjective
-import jbro.cobblemon.mcc.api.ai.BattleTeamRole
+import jbro.cobblemon.mcc.internal.ai.BattleStrategyObjective
+import jbro.cobblemon.mcc.internal.ai.BattleTeamRole
 import jbro.cobblemon.mcc.internal.ai.BattleAiSkillRange
 import jbro.cobblemon.mcc.internal.validation.IdentifierSyntax
 

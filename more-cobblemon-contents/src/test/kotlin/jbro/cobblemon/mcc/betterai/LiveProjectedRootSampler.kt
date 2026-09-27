@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.evaluation.LocalLookaheadStateEvaluator
 import jbro.cobblemon.mcc.betterai.outcome.ChanceEffectProjectionMode
 import jbro.cobblemon.mcc.betterai.outcome.PublicSingleTurnProjector

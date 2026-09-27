@@ -1,10 +1,10 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
-import jbro.cobblemon.mcc.api.ai.BattleDecisionContext
-import jbro.cobblemon.mcc.api.ai.BattleLocalOpponentStatSpreadView
-import jbro.cobblemon.mcc.api.ai.BattlePublicStatRanges
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleTrainerTier
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleLocalOpponentStatSpreadView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicStatRanges
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
 
 /** Tier-specific IV/EV knowledge, shared by public fallback scoring and native build worlds. */

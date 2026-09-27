@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 
 /** Resolves every deterministic accuracy modifier exposed by the public battle state. */
 internal object LocalPublicAccuracy {

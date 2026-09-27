@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.search.LocalExpectedMoveResponseConfidence
 import jbro.cobblemon.mcc.betterai.search.LocalOpponentResponseValue
 import jbro.cobblemon.mcc.betterai.search.LocalResponseValue

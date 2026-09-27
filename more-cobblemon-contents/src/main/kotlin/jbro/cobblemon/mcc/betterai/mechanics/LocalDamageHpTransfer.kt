@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleFractionRange
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleFractionRange
 import kotlin.math.roundToLong
 
 /** Converts damage in the target's HP units to a drain/recoil change in the user's units. */

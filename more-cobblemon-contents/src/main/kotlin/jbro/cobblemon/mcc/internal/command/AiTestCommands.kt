@@ -3,9 +3,9 @@ package jbro.cobblemon.mcc.internal.command
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import java.util.UUID
 import jbro.cobblemon.mcc.MoreCobblemonContents
-import jbro.cobblemon.mcc.api.ai.BattleDifficultyProfile
-import jbro.cobblemon.mcc.api.ai.BattleDifficultyProfiles
-import jbro.cobblemon.mcc.api.ai.BattleTrainerProfile
+import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfile
+import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfiles
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import net.minecraft.network.chat.Component

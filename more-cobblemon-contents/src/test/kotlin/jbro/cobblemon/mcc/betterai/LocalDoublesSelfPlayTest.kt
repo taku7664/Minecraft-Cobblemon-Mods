@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -65,7 +65,7 @@ class LocalDoublesSelfPlayTest {
         val definition = LocalSelfPlayMeasurement
             .definitions(count = 1, seed = 771, format = BattleFormat.DOUBLE)
             .single()
-        val recorded = mutableListOf<jbro.cobblemon.mcc.api.ai.BattleDecisionContext>()
+        val recorded = mutableListOf<jbro.cobblemon.mcc.internal.ai.BattleDecisionContext>()
         LocalTacticalScenarioBattle.run(definition, maximumTurns = 20, recordedContexts = recorded)
         val everyDecisionHadAnActor = recorded.all { context ->
             context.candidates.all { candidate ->

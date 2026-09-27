@@ -2,7 +2,7 @@ package jbro.cobblemon.mcc.internal.factory
 
 import com.google.gson.JsonParser
 import java.io.StringReader
-import jbro.cobblemon.mcc.api.ai.BattleTeamRole
+import jbro.cobblemon.mcc.internal.ai.BattleTeamRole
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame

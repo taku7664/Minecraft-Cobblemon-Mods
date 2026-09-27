@@ -3,8 +3,8 @@ package jbro.cobblemon.mcc.betterai
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Locale
-import jbro.cobblemon.mcc.api.ai.BattleBrainOpenContext
-import jbro.cobblemon.mcc.api.ai.BattleDecision
+import jbro.cobblemon.mcc.internal.ai.BattleBrainOpenContext
+import jbro.cobblemon.mcc.internal.ai.BattleDecision
 import jbro.cobblemon.mcc.betterai.brain.AiTestDecisionSnapshot
 import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelection

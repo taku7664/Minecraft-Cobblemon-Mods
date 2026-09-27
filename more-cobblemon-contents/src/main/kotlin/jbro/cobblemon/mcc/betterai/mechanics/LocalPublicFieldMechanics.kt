@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
-import jbro.cobblemon.mcc.api.ai.BattleStateView
-import jbro.cobblemon.mcc.api.ai.BattleTimedEffectView
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView
 
 /** Shared field gates for mechanics whose answer must agree across damage, speed, items and grounding. */
 internal object LocalPublicFieldMechanics {

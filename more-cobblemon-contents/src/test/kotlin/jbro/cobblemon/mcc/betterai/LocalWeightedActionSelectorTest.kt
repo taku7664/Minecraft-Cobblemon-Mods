@@ -1,12 +1,12 @@
 package jbro.cobblemon.mcc.betterai
 
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleCandidateFactsView
-import jbro.cobblemon.mcc.api.ai.BattlePlanIntent
-import jbro.cobblemon.mcc.api.ai.BattlePlanView
-import jbro.cobblemon.mcc.api.ai.BattleTacticalMemoryView
-import jbro.cobblemon.mcc.api.ai.BattleTrainerPersonality
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleCandidateFactsView
+import jbro.cobblemon.mcc.internal.ai.BattlePlanIntent
+import jbro.cobblemon.mcc.internal.ai.BattlePlanView
+import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerPersonality
 import jbro.cobblemon.mcc.betterai.policy.LocalActionMixingContext
 import jbro.cobblemon.mcc.betterai.policy.LocalActionChoiceSeed
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionOutcome
@@ -766,20 +766,20 @@ class LocalWeightedActionSelectorTest {
             moveSlot = if (kind == BattleActionKind.USE_MOVE) 0 else null,
             moveId = if (kind == BattleActionKind.USE_MOVE) moveId else null,
             moveDetails = if (selfSetup) {
-                jbro.cobblemon.mcc.api.ai.BattleMoveCandidateView(
+                jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView(
                     typeId = "dark",
-                    damageCategory = jbro.cobblemon.mcc.api.ai.BattleMoveDamageCategory.STATUS,
+                    damageCategory = jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS,
                     power = 0.0,
                     accuracy = 100.0,
                     priority = 0,
                     currentPp = 10,
-                    targetPattern = jbro.cobblemon.mcc.api.ai.BattleMoveTargetPattern.SELF,
-                    effects = jbro.cobblemon.mcc.api.ai.BattleMoveEffectsView(
-                        coverage = jbro.cobblemon.mcc.api.ai.BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                    targetPattern = jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern.SELF,
+                    effects = jbro.cobblemon.mcc.internal.ai.BattleMoveEffectsView(
+                        coverage = jbro.cobblemon.mcc.internal.ai.BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
                         effects = listOf(
-                            jbro.cobblemon.mcc.api.ai.BattleMoveEffectView(
-                                kind = jbro.cobblemon.mcc.api.ai.BattleMoveEffectKind.STAT_STAGE,
-                                target = jbro.cobblemon.mcc.api.ai.BattleMoveEffectTarget.USER,
+                            jbro.cobblemon.mcc.internal.ai.BattleMoveEffectView(
+                                kind = jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.STAT_STAGE,
+                                target = jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.USER,
                                 probability = 1.0,
                                 statStages = mapOf("special_attack" to 2),
                             ),

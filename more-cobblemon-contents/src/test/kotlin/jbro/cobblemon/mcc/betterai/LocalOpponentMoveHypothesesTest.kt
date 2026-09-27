@@ -2,7 +2,7 @@ package jbro.cobblemon.mcc.betterai
 
 import jbro.cobblemon.mcc.betterai.evaluation.LocalHypothesisPriorityReservation
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.*
+import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.state.*
 import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning

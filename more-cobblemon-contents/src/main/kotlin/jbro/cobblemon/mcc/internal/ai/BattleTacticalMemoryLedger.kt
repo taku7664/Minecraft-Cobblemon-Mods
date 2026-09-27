@@ -1,25 +1,25 @@
 package jbro.cobblemon.mcc.internal.ai
 
-import jbro.cobblemon.mcc.api.ai.BattleActionCandidate
-import jbro.cobblemon.mcc.api.ai.BattleActionKind
-import jbro.cobblemon.mcc.api.ai.BattleBrainOpenContext
-import jbro.cobblemon.mcc.api.ai.BattleDecisionAdvice
-import jbro.cobblemon.mcc.api.ai.BattleFormat
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventKind
-import jbro.cobblemon.mcc.api.ai.BattlePlanUpdateOperation
-import jbro.cobblemon.mcc.api.ai.BattlePlanOwner
-import jbro.cobblemon.mcc.api.ai.BattlePlanView
-import jbro.cobblemon.mcc.api.ai.BattlePlanAbortCondition
-import jbro.cobblemon.mcc.api.ai.BattleKnockoutAssessment
-import jbro.cobblemon.mcc.api.ai.BattleMoveEffectKind
-import jbro.cobblemon.mcc.api.ai.BattlePredictedResponse
-import jbro.cobblemon.mcc.api.ai.BattlePrediction
-import jbro.cobblemon.mcc.api.ai.BattlePredictionCalibrationView
-import jbro.cobblemon.mcc.api.ai.BattleSide
-import jbro.cobblemon.mcc.api.ai.BattleStateView
-import jbro.cobblemon.mcc.api.ai.BattleTacticalMemoryView
-import jbro.cobblemon.mcc.api.ai.BattleTendencyView
-import jbro.cobblemon.mcc.api.ai.BattleSituation
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.internal.ai.BattleBrainOpenContext
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionAdvice
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
+import jbro.cobblemon.mcc.internal.ai.BattlePlanUpdateOperation
+import jbro.cobblemon.mcc.internal.ai.BattlePlanOwner
+import jbro.cobblemon.mcc.internal.ai.BattlePlanView
+import jbro.cobblemon.mcc.internal.ai.BattlePlanAbortCondition
+import jbro.cobblemon.mcc.internal.ai.BattleKnockoutAssessment
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
+import jbro.cobblemon.mcc.internal.ai.BattlePredictedResponse
+import jbro.cobblemon.mcc.internal.ai.BattlePrediction
+import jbro.cobblemon.mcc.internal.ai.BattlePredictionCalibrationView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleTacticalMemoryView
+import jbro.cobblemon.mcc.internal.ai.BattleTendencyView
+import jbro.cobblemon.mcc.internal.ai.BattleSituation
 
 /** Server-owned memory. It commits only metadata paired with an action that was actually submitted. */
 class BattleTacticalMemoryLedger(
@@ -246,7 +246,7 @@ class BattleTacticalMemoryLedger(
 
     private fun resolveControlProgress(
         state: BattleStateView,
-        newEvents: List<jbro.cobblemon.mcc.api.ai.BattleObservedEventView>,
+        newEvents: List<jbro.cobblemon.mcc.internal.ai.BattleObservedEventView>,
         observation: PendingObservation,
     ) {
         if (!observation.controlOnly) {
@@ -332,7 +332,7 @@ class BattleTacticalMemoryLedger(
         }
     }
 
-    private fun abortPlanIfNeeded(state: BattleStateView, newEvents: List<jbro.cobblemon.mcc.api.ai.BattleObservedEventView>) {
+    private fun abortPlanIfNeeded(state: BattleStateView, newEvents: List<jbro.cobblemon.mcc.internal.ai.BattleObservedEventView>) {
         val plan = activePlan ?: return
         val activeAllyHp = state.pokemon.filter {
             it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted
@@ -387,7 +387,7 @@ class BattleTacticalMemoryLedger(
         val moves = atomic.filter { it.kind == BattleActionKind.USE_MOVE }
         if (moves.isEmpty() || atomic.any { it.kind == BattleActionKind.SWITCH }) return false
         return moves.all { action ->
-            action.moveDetails?.damageCategory == jbro.cobblemon.mcc.api.ai.BattleMoveDamageCategory.STATUS ||
+            action.moveDetails?.damageCategory == jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS ||
                 action.moveDetails == null && action.facts?.standardDamageFractionRange == null
         }
     }

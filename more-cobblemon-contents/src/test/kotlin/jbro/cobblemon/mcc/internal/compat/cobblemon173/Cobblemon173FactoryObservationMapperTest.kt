@@ -1,8 +1,8 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
 import java.util.UUID
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.factory.FactoryRentalSet
 import jbro.cobblemon.mcc.internal.factory.FactoryStatSpread
 import org.junit.jupiter.api.Assertions.assertEquals

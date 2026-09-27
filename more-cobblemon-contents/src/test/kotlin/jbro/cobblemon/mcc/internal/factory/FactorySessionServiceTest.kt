@@ -192,12 +192,12 @@ class FactorySessionServiceTest {
 
     private fun opponent() = (7..9).associate { index -> UUID(1, index.toLong()) to rental(index) }
 
-    private fun strategyBrief() = jbro.cobblemon.mcc.api.ai.BattleStrategyBrief(
+    private fun strategyBrief() = jbro.cobblemon.mcc.internal.ai.BattleStrategyBrief(
         "mcc:test_factory",
         "strategy.mcc.test_factory.name",
         "strategy.mcc.test_factory.description",
         "Apply balanced pressure.",
-        setOf(jbro.cobblemon.mcc.api.ai.BattleStrategyObjective.BALANCED_PRESSURE),
+        setOf(jbro.cobblemon.mcc.internal.ai.BattleStrategyObjective.BALANCED_PRESSURE),
     )
 
     private fun rental(index: Int) = FactoryRentalSet(

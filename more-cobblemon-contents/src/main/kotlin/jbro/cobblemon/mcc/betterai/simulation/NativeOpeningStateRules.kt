@@ -1,8 +1,8 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventKind
-import jbro.cobblemon.mcc.api.ai.BattlePokemonStateView
-import jbro.cobblemon.mcc.api.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
 /** Shared boundary for observations that can exist before the first native simulated turn. */
 internal object NativeOpeningStateRules {

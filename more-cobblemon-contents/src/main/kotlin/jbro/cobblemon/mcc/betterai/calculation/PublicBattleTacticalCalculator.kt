@@ -1,8 +1,8 @@
 package jbro.cobblemon.mcc.betterai.calculation
 
-import jbro.cobblemon.mcc.api.ai.*
-import jbro.cobblemon.mcc.api.ai.BattleInferenceConfidence
-import jbro.cobblemon.mcc.api.ai.BattleInferenceView
+import jbro.cobblemon.mcc.internal.ai.*
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceView
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDeclaredMultiHit
 import jbro.cobblemon.mcc.betterai.mechanics.LocalFullHealthSurvivalRules
 import jbro.cobblemon.mcc.betterai.mechanics.LocalKnownStatMechanics

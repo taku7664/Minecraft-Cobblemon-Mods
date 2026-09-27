@@ -3,8 +3,8 @@ package jbro.cobblemon.mcc.betterai.simulation
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.abs
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventKind
-import jbro.cobblemon.mcc.api.ai.BattleObservedEventView
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventView
 
 internal enum class NativeDamageObservationStatus {
     NO_APPLICABLE_OBSERVATION,
