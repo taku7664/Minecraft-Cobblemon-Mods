@@ -5,6 +5,14 @@
 
 ---
 
+## [2026-09-27 17:45] Better AI 합병 — `54b32a24`, `2afbd2cd`, `56984ff0`
+
+- **선봉 선택 이식(`54b32a24`):** MCC 복사 뒤 MBC에 들어온 코드 변경은 `50e9075b`(`BattleBrain.chooseLeads`, `BattleLeadChoiceContext`, `Cobblemon173LeadChoice`, `startManaged` 호출) 하나였다. 같은 이름 규칙으로 패치를 옮겼고, MBC HEAD 전체를 이름만 바꾼 결과와 MCC를 파일 단위로 비교해 의도한 두 파일(빌드 group, 테스트 fixture) 외에는 같음을 확인했다.
+- **합병(`2afbd2cd`):** Better AI를 커밋 `f238a0c2` 시점 HEAD에서 복사해 `jbro.cobblemon.mcc.betterai`로 넣었다. 모드 ID는 MCC 하나로 합쳤다. 제공자 ID는 `more_cobblemon_contents:local_tactical`·`:openrouter_humanlike`, 사용률 데이터는 `data/more_cobblemon_contents/opponent_{build,move}_usage/`, 설정 디렉터리는 `config/more-cobblemon-contents`다. `MoreCobblemonContentsBetterAi`는 `fabric.mod.json`의 두 번째 main 엔트리포인트로 기존 초기화를 그대로 돈다. AI 테스트의 Better AI 확인 ID도 새 값으로 바꿨다. 빌드에 gson·graal-sdk 의존성, 오프라인 평가 태스크(`captureBaseline` 등), `-Ptests`·`-Psweeps`·`-Poracle`, 그리고 `-Pscope=core|ai`(본체만 또는 AI만)를 추가했다.
+- **문서(`56984ff0`):** Better AI `docs/`는 `docs/betterai/`로, README는 `docs/betterai/OVERVIEW.md`, 작업 기록은 `docs/betterai/MEMORY.md`로 옮기고 깨진 상대 링크를 고쳤다. 라이브 보스 테스트에서 나온 미해결 이슈(0턴 에이스 테라, 에이스 선봉, 네이티브 탐색 실패와 제안 수정 3가지)는 그 기록의 2026-09-27 항목에 있다.
+- **검증:** Better AI는 기존 제작자가 검증을 마친 상태로 인계받았으므로 동작 테스트는 다시 돌리지 않았다(전체 실행은 도중에 중단). 확인한 것은 합병으로 바뀐 부분이다. Better AI 테스트 코드까지 컴파일 통과, `-Pscope=core` 997개 통과, JAR(SHA-256 `47FDDA2305CA9B7E498AE30C6EBFF9229F502AABA2F8D80A16C58FE3B017C184`)에 두 엔트리포인트 클래스·betterai 클래스 642개·사용률 JSON·`native-showdown/branch-engine.cjs`가 있고 새 제공자 ID가 박혀 있으며 옛 이름은 0건, JDK 21 `jar --validate` 통과.
+- **미배포:** 개발 환경 결정 대기(MCC 전용 프로필 또는 `cobblemon-dev`의 MBC 교체).
+
 ## [2026-09-27 16:25] 시작 — MBC를 복사해 MCC 0.1.0 모듈 생성
 
 - **방향(빡대리님):** MBC는 그대로 두고, 코드를 복사해 이름만 바꾼 새 프로젝트 More Cobblemon Contents(MCC)에서 재구성을 시작한다. 버전은 0.1.0부터.
