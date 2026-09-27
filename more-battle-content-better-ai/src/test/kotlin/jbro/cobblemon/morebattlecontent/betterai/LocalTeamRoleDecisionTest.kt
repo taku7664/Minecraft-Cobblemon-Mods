@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test
 /** A synthetic tuning situation with explicit public bench knowledge, not a native win-rate test. */
 class LocalTeamRoleDecisionTest {
     @Test
-    fun `one turn material scoring cannot distinguish equal sacrifices by future role`() {
+    fun `one turn material cannot distinguish equal sacrifices but the boss role weight keeps the only answer`() {
         val source = fixture()
         val calculated = PublicBattleTacticalCalculator.calculate(source)
         val enemyAttack = PublicFutureActionFactory.actions(source.state, BattleSide.OPPONENT,
@@ -31,9 +31,10 @@ class LocalTeamRoleDecisionTest {
 
         val current = trace(source, LocalDecisionTuning.CURRENT)
         val team = trace(source, LocalDecisionTuning.CURRENT.copy(id = "current_team_coverage", leafTeamCoverageWeight = 0.25))
-        // Fatal exploratory switches are excluded: the tied first candidate is the sole fallback.
-        assertSoleSelection(current, "sacrifice_answer")
-        assertSoleSelection(team, "sacrifice_answer")
+        // Material alone ties them. The Dark type is the only answer to the Ghost on the opponent's
+        // bench, so the boss role weight (THREAT_AND_MECHANIC_VALUE 1.2) spends the Normal type instead.
+        assertSoleSelection(current, "sacrifice_redundant")
+        assertSoleSelection(team, "sacrifice_redundant")
         assertEquals(current.ranked.map { it.comparisonValue }, team.ranked.map { it.comparisonValue })
         assertEquals(current.ranked.associate { it.outcome.candidate.actionId to it.outcome.tacticalUtility },
             team.ranked.associate { it.outcome.candidate.actionId to it.outcome.tacticalUtility })
@@ -52,7 +53,7 @@ class LocalTeamRoleDecisionTest {
         println("TEAM_ROLE_DEPTH2 before=$before after=$after")
         assertTrue(after.getValue("sacrifice_redundant") - after.getValue("sacrifice_answer") >
             before.getValue("sacrifice_redundant") - before.getValue("sacrifice_answer"))
-        assertSoleSelection(current, "sacrifice_answer")
+        assertSoleSelection(current, "sacrifice_redundant")
         assertSoleSelection(team, "sacrifice_redundant")
         assertEquals(current.ranked.associate { it.outcome.candidate.actionId to it.outcome.tacticalUtility },
             team.ranked.associate { it.outcome.candidate.actionId to it.outcome.tacticalUtility })
@@ -68,8 +69,9 @@ class LocalTeamRoleDecisionTest {
         current.ranked.zip(team.ranked).forEach { (before, after) ->
             assertEquals(before.comparisonValue, after.comparisonValue, 1e-9)
         }
-        assertSoleSelection(current, "sacrifice_answer")
-        assertSoleSelection(team, "sacrifice_answer")
+        // The role weight is a root-turn judgement, so it applies at zero foresight too.
+        assertSoleSelection(current, "sacrifice_redundant")
+        assertSoleSelection(team, "sacrifice_redundant")
     }
 
     private fun assertSoleSelection(trace: LocalDecisionTraceSelector.Trace, actionId: String) {

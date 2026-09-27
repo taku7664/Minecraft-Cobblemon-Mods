@@ -154,6 +154,9 @@ internal object LocalRecursiveLookaheadEvaluator {
         // turn in front of it, which is not what a difficulty setting should mean.
         val singlePlyGain = mutableMapOf<String, Double>()
         val singlePlyCoverage = mutableMapOf<String, Double>()
+        // The threat adjustment belongs to the root turn, so it takes the one-ply response weighting;
+        // deeper values reweighing the same replies would leak foresight through a zero future weight.
+        val singlePlyThreat = mutableMapOf<String, Double>()
         var acceptedCoverage = emptyMap<String, LocalLookaheadCoverage>()
         var previousDepthCost: LocalCompletedDepthCost? = null
         var previousDecisionSignature: LocalLookaheadDecisionSignature? = null
@@ -189,6 +192,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                         ?: return rank
                     singlePlyGain[id] = (immediate.value - baseline) * BOARD_TO_SCORE
                     singlePlyCoverage[id] = search.publicResponseCoverage
+                    singlePlyThreat[id] = immediate.threatDelta
                 }
                 val evaluation = search.rootActionValue(context.state, rank.outcome.candidate, depth)
                 return if (evaluation == null) rank else {
@@ -203,6 +207,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     val actionId = rank.outcome.candidate.actionId
                     if (depth == 1) singlePlyGain[actionId] = searchBoardGain
                     if (depth == 1) singlePlyCoverage[actionId] = search.publicResponseCoverage
+                    if (depth == 1) singlePlyThreat[actionId] = evaluation.threatDelta
                     val immediateGain = singlePlyGain[actionId] ?: searchBoardGain
                     val coverage = LocalLookaheadCoverage(
                         singlePlyCoverage[actionId] ?: search.publicResponseCoverage,
@@ -273,7 +278,8 @@ internal object LocalRecursiveLookaheadEvaluator {
                         ?: 1.0
                     // AI-only threat priority on the root turn, added after the opponent's responses
                     // were weighed by the plain value.
-                    val threatAdjustment = evaluation.threatDelta * BOARD_TO_SCORE * coverage.immediate
+                    val threatAdjustment = (singlePlyThreat[actionId] ?: evaluation.threatDelta) *
+                        BOARD_TO_SCORE * coverage.immediate
                     rank.copy(
                         comparisonValue = rank.comparisonValue - withdrawnHeuristicValue + adjustment + threatAdjustment,
                         // Everything the search changed relative to the pure heuristic ranking, the

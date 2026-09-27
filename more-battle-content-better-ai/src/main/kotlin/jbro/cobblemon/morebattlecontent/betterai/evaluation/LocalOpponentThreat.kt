@@ -34,6 +34,13 @@ import jbro.cobblemon.morebattlecontent.betterai.state.LocalSwitchStateProjector
  *
  * Weights are normalized to a mean of one so the scale of the evaluation does not move. Opponents
  * the AI has not seen, and any it cannot evaluate, stay at 1.0.
+ *
+ * Advanced and Boss singles also weigh the AI's own living Pokemon by their role: an ally that is
+ * the only answer to a dangerous opponent is worth keeping, one with nothing left to answer is worth
+ * less, so spending it to bring in a teammate safely becomes a real option. The ace judgement can be
+ * wrong, so this band is narrower than the threat band and shrinks toward 1.0 by how much of the
+ * opponent's team and moves the AI has actually seen. Ally entries share the same map, keyed by
+ * their own battle Pokemon IDs.
  */
 internal object LocalOpponentThreat {
     data class Band(val minimum: Double, val maximum: Double)
@@ -61,10 +68,22 @@ internal object LocalOpponentThreat {
             damageThreats(context, allies, foes, tier == BattleTrainerTier.BOSS, cache, shouldContinue)
         } else null
         return if (damage != null) {
-            normalize(damage, band(tier), if (tier == BattleTrainerTier.BOSS) BOSS_RAW_MAXIMUM else ADVANCED_RAW_MAXIMUM)
+            val threats = normalize(
+                damage.threats,
+                band(tier),
+                if (tier == BattleTrainerTier.BOSS) BOSS_RAW_MAXIMUM else ADVANCED_RAW_MAXIMUM,
+            )
+            threats + allyRoles(damage, roleBand(tier), roleConfidence(context))
         } else {
             normalize(typeThreats(allies, foes), band(tier), 1.0)
         }
+    }
+
+    /** Narrower than [band]: the AI may misjudge which of its Pokemon is the ace. */
+    fun roleBand(tier: BattleTrainerTier): Band = when (tier) {
+        BattleTrainerTier.INTRODUCTORY, BattleTrainerTier.STANDARD -> Band(1.0, 1.0)
+        BattleTrainerTier.ADVANCED -> Band(0.9, 1.15)
+        BattleTrainerTier.BOSS -> Band(0.85, 1.2)
     }
 
     /**
@@ -73,10 +92,11 @@ internal object LocalOpponentThreat {
      */
     fun materialAdjustment(state: BattleStateView, weights: Map<UUID, Double>): Double {
         if (weights.isEmpty()) return 0.0
-        return -state.pokemon.sumOf { pokemon ->
+        return state.pokemon.sumOf { pokemon ->
             val weight = weights[pokemon.battlePokemonId] ?: return@sumOf 0.0
-            if (pokemon.side != BattleSide.OPPONENT || pokemon.fainted || pokemon.hpFraction <= 0.0) 0.0
-            else (weight - 1.0) * (pokemon.hpFraction + LIVING_POKEMON_VALUE)
+            if (pokemon.fainted || pokemon.hpFraction <= 0.0) return@sumOf 0.0
+            val extra = (weight - 1.0) * (pokemon.hpFraction + LIVING_POKEMON_VALUE)
+            if (pokemon.side == BattleSide.OPPONENT) -extra else extra
         }
     }
 
@@ -94,6 +114,13 @@ internal object LocalOpponentThreat {
         foe.battlePokemonId to exposed.toDouble() / allies.size
     }
 
+    /** Raw threat per foe, and which allies can answer each foe, from the same duels. */
+    private class DamageTable(
+        val threats: Map<UUID, Double>,
+        val answersByFoe: Map<UUID, Set<UUID>>,
+        val allyIds: List<UUID>,
+    )
+
     private fun damageThreats(
         context: BattleDecisionContext,
         allies: List<BattlePokemonStateView>,
@@ -101,12 +128,14 @@ internal object LocalOpponentThreat {
         boss: Boolean,
         cache: LocalProjectedActionCalculationCache,
         shouldContinue: () -> Boolean,
-    ): Map<UUID, Double>? {
+    ): DamageTable? {
         val result = linkedMapOf<UUID, Double>()
+        val answersByFoe = linkedMapOf<UUID, Set<UUID>>()
         for (foe in foes) {
             var attackScore = 0.0
             var evaluated = 0
             var answers = 0
+            val answering = linkedSetOf<UUID>()
             for (ally in allies) {
                 if (!shouldContinue()) return null
                 val duel = duel(context, ally, foe, cache, shouldContinue) ?: continue
@@ -119,9 +148,13 @@ internal object LocalOpponentThreat {
                 }
                 if (fasterCertain(foe, ally)) score *= FASTER_MULTIPLIER
                 attackScore += score
-                if (duel.outgoing / foe.hpFraction.coerceAtLeast(MINIMUM_HP) >= 0.5) answers++
+                val hitsHard = duel.outgoing / foe.hpFraction.coerceAtLeast(MINIMUM_HP) >= 0.5
+                if (hitsHard) answers++
+                // A role needs the ally to land its hit: it survives one attack or surely moves first.
+                if (hitsHard && (incoming < 1.0 || fasterCertain(ally, foe))) answering += ally.battlePokemonId
             }
             if (evaluated == 0) continue
+            answersByFoe[foe.battlePokemonId] = answering
             var threat = attackScore / evaluated
             if (boss) {
                 threat *= when (answers) {
@@ -133,7 +166,48 @@ internal object LocalOpponentThreat {
             }
             result[foe.battlePokemonId] = threat
         }
-        return result.takeIf { it.size >= 2 }
+        if (result.size < 2) return null
+        return DamageTable(result, answersByFoe, allies.map { it.battlePokemonId })
+    }
+
+    /**
+     * An ally's share of answering the opponent's threats: the sole answer to the most dangerous foe
+     * has the largest role, an ally answering nothing has none. Mapped onto the band, normalized to a
+     * mean of one, then pulled toward 1.0 by [confidence].
+     */
+    private fun allyRoles(table: DamageTable, band: Band, confidence: Double): Map<UUID, Double> =
+        roleWeights(table.threats, table.answersByFoe, table.allyIds, band, confidence)
+
+    internal fun roleWeights(
+        threats: Map<UUID, Double>,
+        answersByFoe: Map<UUID, Set<UUID>>,
+        allyIds: List<UUID>,
+        band: Band,
+        confidence: Double,
+    ): Map<UUID, Double> {
+        if (band.minimum == band.maximum || confidence <= 0.0 || allyIds.size < 2) return emptyMap()
+        val totalThreat = threats.values.sum()
+        if (totalThreat <= 0.0) return emptyMap()
+        val raw = allyIds.associateWith { allyId ->
+            threats.entries.sumOf { (foeId, threat) ->
+                val answering = answersByFoe[foeId].orEmpty()
+                if (allyId in answering) threat / answering.size else 0.0
+            } / totalThreat
+        }
+        return normalize(raw, band, 1.0).mapValues { (_, weight) -> 1.0 + (weight - 1.0) * confidence }
+    }
+
+    /**
+     * How much of the opponent the role judgement rests on: the share of its remaining team seen,
+     * half-credited until those Pokemon have shown moves.
+     */
+    private fun roleConfidence(context: BattleDecisionContext): Double {
+        val state = context.state
+        val seen = living(state, BattleSide.OPPONENT)
+        val remaining = state.remainingPokemonBySide.getValue(BattleSide.OPPONENT).coerceAtLeast(seen.size)
+        if (remaining == 0 || seen.isEmpty()) return 0.0
+        val revealed = seen.count { it.knownMoveIds.isNotEmpty() }.toDouble() / seen.size
+        return seen.size.toDouble() / remaining * (0.5 + 0.5 * revealed)
     }
 
     private data class Duel(val incoming: Double, val outgoing: Double)
