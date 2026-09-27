@@ -14,6 +14,7 @@ import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalTacticalSituati
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalBadPoisonCounter
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalContactAfterHitMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalDirectHitMechanics
+import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalMechanicActivationProjector
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalKnownStatMechanics
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalObservedActionOrder
 import jbro.cobblemon.morebattlecontent.betterai.mechanics.LocalProjectedActionCalculationCache
@@ -88,6 +89,10 @@ internal object PublicSingleTurnProjector {
                 calculationCache,
             )
         }
+
+        // Mechanics resolve after switches and before any move, and persist beyond this turn.
+        switchedState = LocalMechanicActivationProjector.beforeMoves(switchedState, BattleSide.ALLY, allyAction)
+        switchedState = LocalMechanicActivationProjector.beforeMoves(switchedState, BattleSide.OPPONENT, opponentAction)
 
         val moveActions = turnActions.filter { it.action.kind == BattleActionKind.USE_MOVE }
         val initiallyActivePokemonIds = activePokemonIds(initialState)

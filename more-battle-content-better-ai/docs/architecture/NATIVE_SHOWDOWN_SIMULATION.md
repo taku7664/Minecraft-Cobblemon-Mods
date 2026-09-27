@@ -20,7 +20,7 @@
 
 ### 1.1 기존 수제 투영기의 종료 규칙
 
-- `PublicSingleTurnProjector`와 `LocalSwitchStateProjector`는 2026-09-24부터 새 전투 규칙을 추가하지 않는 동결된 이행 코드다(MUST NOT).
+- `PublicSingleTurnProjector`와 `LocalSwitchStateProjector`는 2026-09-24부터 새 전투 규칙을 추가하지 않는 동결된 이행 코드다(MUST NOT). 단, 이미 계산하던 테라·메가 상태를 다음 턴으로 넘기는 수정은 예외다([`THREAT_AND_MECHANIC_VALUE.md`](../behavior/THREAT_AND_MECHANIC_VALUE.md) §3, 2026-09-27).
 - 네이티브 경로가 아래 합격표를 전부 통과하기 전에는 교체 완료를 선언해서는 안 된다(MUST NOT).
 - 네이티브 판단이 계획·조정·검색 실패, 규칙 세대 불일치 또는 워커 미준비로 결과를 내지 못하면, 같은 요청을 구형 수제 탐색으로 판단해야 한다(MUST). 플레이 경험이 우선이므로 판단 자체를 실패시켜 상위 폴백으로 넘기지 않는다. (2026-09-27 개정: 이전의 "명시적 실패, 수제 재실행 금지" 조항을 대체한다.)
 - 이 폴백은 조용히 일어나서는 안 된다(MUST NOT). 실패 상태·원인과 `native_fallback_*` 결정 태그를 로그에 남겨야 한다(MUST).
