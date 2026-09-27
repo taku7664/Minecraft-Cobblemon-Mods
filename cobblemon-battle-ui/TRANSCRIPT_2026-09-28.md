@@ -62,3 +62,12 @@ $env:COBBLEMON_BATTLE_UI_CAPTURE_LABEL = 'transcript-verified'
 - [한국어 기본](docs/captures/2026-09-28/battle-ui-transcript-verified-log-ko_kr.png), [긴 기록](docs/captures/2026-09-28/battle-ui-transcript-verified-log-long-ko_kr.png), [빈 기록](docs/captures/2026-09-28/battle-ui-transcript-verified-log-empty-ko_kr.png)
 - [영어 작은 창](docs/captures/2026-09-28/battle-ui-transcript-verified-small-log-en_us.png), [긴 기록](docs/captures/2026-09-28/battle-ui-transcript-verified-small-log-long-en_us.png), [빈 기록](docs/captures/2026-09-28/battle-ui-transcript-verified-small-log-empty-en_us.png)
 - 개발 로그에는 Cobblemon 초기화의 data fixer 누락 및 새 개발 플레이어의 `.old` 데이터 파일 누락 메시지가 있었다. 캡처는 모두 생성됐으며 개발 클라이언트는 수정 후 정상 종료했다. 사용자 프로필 세이브를 연 검사가 아니다.
+
+## 클라이언트 배포
+
+- 소스 커밋: `4f7a91f1`, `codex/battle-dialogue-ui` 원격 동기화 확인.
+- 대상: `C:\Users\박주형\AppData\Roaming\ModrinthApp\profiles\cobblemon-dev`.
+- 대상 클라이언트가 실행 중이지 않은 상태에서 `mods/cobblemon-battle-ui-0.1.9.jar` 적용. 동일 모듈의 활성 JAR은 이 파일 하나다.
+- 빌드·배포 SHA-256: `5E8384543719C67BD3DC90C26EB4EE4DA74F08E559D0A9A106A57D6A44D9F1D4`.
+- 기존 0.1.8은 프로필 내 `.codex-backups/battle-ui-2026-09-28-transcript/cobblemon-battle-ui-0.1.8.jar`로 이동하여 보존했다. 이전 해시는 `091F1FA0013C18F646E7834C2CCF00E20E6FA43B4D27F48475B6FDE9F6BFC566`이다.
+- 사용자 설정·리소스팩·서버 JAR은 변경하지 않았다. 배포 후 전체 모드팩 실전은 아직 확인하지 않았다. 다음 실행에서 전투 화면의 왼쪽 Shift로 사용할 수 있다.
