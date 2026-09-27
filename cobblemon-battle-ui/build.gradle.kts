@@ -20,6 +20,10 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
     modImplementation("maven.modrinth:cobblemon:${property("cobblemon_version_id")}")
+    // Modrinth metadata does not expose Cobblemon's development runtime libraries.
+    // Versions match the official Cobblemon 1.8.1 Fabric POM; never bundle these in our JAR.
+    runtimeOnly("org.graalvm.js:js:22.3.0")
+    runtimeOnly("org.mongodb:mongodb-driver-sync:4.10.2")
 
     modCompileOnly("com.terraformersmc:modmenu:11.0.3")
     modCompileOnly("me.shedaniel.cloth:cloth-config-fabric:15.0.140")
