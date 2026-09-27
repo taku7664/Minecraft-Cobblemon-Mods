@@ -1,10 +1,19 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
+import com.cobblemon.mod.common.api.abilities.Abilities
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
+import com.cobblemon.mod.common.api.pokemon.experience.ExperienceGroups
 import com.cobblemon.mod.common.api.pokemon.stats.Stats
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
 import com.cobblemon.mod.common.pokemon.Pokemon
+import com.cobblemon.mod.common.pokemon.Species
+import net.minecraft.SharedConstants
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.Bootstrap
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
 class Cobblemon173ExactOwnTeamViewTest {
@@ -31,5 +40,31 @@ class Cobblemon173ExactOwnTeamViewTest {
         assertEquals(252, build?.evs?.get("spe"))
         assertEquals(31, build?.ivs?.get("atk"))
         assertNull(build?.heldItemId)
+    }
+
+    companion object {
+        private var previousSpecies = emptyMap<ResourceLocation, Species>()
+
+        // Pokemon() picks a random registered species, so the test must not rely on another test's registry.
+        @JvmStatic
+        @BeforeAll
+        fun registerSpecies() {
+            SharedConstants.tryDetectVersion()
+            Bootstrap.bootStrap()
+            ExperienceGroups.registerDefaults()
+            if (Abilities.count() == 0) Abilities.register(Abilities.DUMMY)
+            previousSpecies = PokemonSpecies.species.associateBy { it.resourceIdentifier }
+            val species = Species().also {
+                it.name = "Bulbasaur"
+                it.resourceIdentifier = ResourceLocation.parse("cobblemon:bulbasaur")
+                it.implemented = true
+                it.initialize()
+            }
+            PokemonSpecies.reload(mapOf(species.resourceIdentifier to species))
+        }
+
+        @JvmStatic
+        @AfterAll
+        fun restoreSpecies() { PokemonSpecies.reload(previousSpecies) }
     }
 }
