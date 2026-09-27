@@ -5,6 +5,7 @@ import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.client.MccBattleHubClientState
 import jbro.cobblemon.mcc.internal.hub.BattleHubRecordView
+import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiThemePreset
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.loader.api.FabricLoader
@@ -26,7 +27,8 @@ import java.util.concurrent.atomic.AtomicReference
  * after each, to reach later phases of a tab.
  * `MCC_HUB_CAPTURE_PARTY=<species,...>` first tops the player's party up to that many Pokemon through the integrated
  * server, so party-driven tabs show real portraits.
- * `MCC_HUB_CAPTURE_THEME=<UI kit theme id>` draws the hub in another theme, and names the captures after it.
+ * `MCC_HUB_CAPTURE_THEME=<UI kit theme id,...>` draws the hub in the first theme, names the captures after it, and
+ * once the last step is captured redraws the tab in each further theme and captures it again, all in one launch.
  */
 object MccHubCaptureHarness {
     private val logger = MoreCobblemonContents.LOGGER
@@ -42,9 +44,11 @@ object MccHubCaptureHarness {
         val locale = System.getenv("MCC_HUB_CAPTURE_LOCALE")?.trim()?.takeIf { it.isNotEmpty() } ?: "ko_kr"
         val guiScale = System.getenv("MCC_HUB_CAPTURE_GUI_SCALE")?.trim()?.toIntOrNull()?.takeIf { it in 1..4 }
         val openContent = System.getenv("MCC_HUB_CAPTURE_OPEN")?.trim()?.takeIf { it.isNotEmpty() }
-        System.getenv("MCC_HUB_CAPTURE_THEME")?.trim()?.takeIf { it.isNotEmpty() }?.let { id ->
-            MccHubTheme.preset = checkNotNull(UiThemePreset.fromId(id)) { "Unknown hub capture theme $id" }
-        }
+        val themes = ArrayDeque(System.getenv("MCC_HUB_CAPTURE_THEME")?.split(',')?.map(String::trim)?.filter(String::isNotEmpty)
+            .orEmpty().map { id -> checkNotNull(UiThemePreset.fromId(id)) { "Unknown hub capture theme $id" } })
+        themes.removeFirstOrNull()?.let { MccHubTheme.preset = it }
+        var themeTicks = 0
+        val themeCaptured = AtomicBoolean(true)
         val partyFixture = System.getenv("MCC_HUB_CAPTURE_PARTY")?.split(',')?.map(String::trim)?.filter(String::isNotEmpty).orEmpty()
         var partyRequested = partyFixture.isEmpty()
         val presses = ArrayDeque(System.getenv("MCC_HUB_CAPTURE_PRESS")?.split(',')?.map(String::trim)?.filter(String::isNotEmpty).orEmpty())
@@ -53,7 +57,7 @@ object MccHubCaptureHarness {
         val pressCaptured = AtomicBoolean(true)
         var partyWait = 0
 
-        val themeSuffix = if (MccHubTheme.preset == UiThemePreset.PIXEL_LEAGUE) "" else "-${MccHubTheme.preset.id}"
+        fun themeSuffix() = if (MccHubTheme.preset == UiThemePreset.PIXEL_LEAGUE) "" else "-${MccHubTheme.preset.id}"
         var guiScaleApplied = guiScale == null
         val languageReady = AtomicBoolean(false)
         val languageFailure = AtomicReference<Throwable?>()
@@ -131,7 +135,7 @@ object MccHubCaptureHarness {
             if (!requested && ticks >= 20) {
                 requested = true
                 val name = "mcc-hub-$fixture-${client.languageManager.selected}-" +
-                    "${client.window.guiScaledWidth}x${client.window.guiScaledHeight}$themeSuffix.png"
+                    "${client.window.guiScaledWidth}x${client.window.guiScaledHeight}${themeSuffix()}.png"
                 Screenshot.grab(client.gameDirectory, name, client.mainRenderTarget) { result ->
                     logger.info("Hub capture {}: {}", name, result.string)
                     captured.set(true)
@@ -160,7 +164,7 @@ object MccHubCaptureHarness {
                 if (!contentCaptureRequested && contentTicks >= if (embedded) 40 else 20) {
                     contentCaptureRequested = true
                     val name = "mcc-hub-open-${openContent.substringAfter(':')}-${client.languageManager.selected}-" +
-                        "${client.window.guiScaledWidth}x${client.window.guiScaledHeight}$themeSuffix.png"
+                        "${client.window.guiScaledWidth}x${client.window.guiScaledHeight}${themeSuffix()}.png"
                     Screenshot.grab(client.gameDirectory, name, client.mainRenderTarget) { result ->
                         logger.info("Hub content capture {} ({}): {}", name, screen?.javaClass?.simpleName, result.string)
                         contentCaptured.set(true)
@@ -172,7 +176,7 @@ object MccHubCaptureHarness {
                     if (--pressTicks == 0) {
                         pressCaptured.set(false)
                         val name = "mcc-hub-open-${openContent.substringAfter(':')}-step$pressStep-${client.languageManager.selected}-" +
-                            "${client.window.guiScaledWidth}x${client.window.guiScaledHeight}$themeSuffix.png"
+                            "${client.window.guiScaledWidth}x${client.window.guiScaledHeight}${themeSuffix()}.png"
                         Screenshot.grab(client.gameDirectory, name, client.mainRenderTarget) { result ->
                             logger.info("Hub step capture {}: {}", name, result.string)
                             pressCaptured.set(true)
@@ -182,6 +186,28 @@ object MccHubCaptureHarness {
                 }
                 val key = presses.removeFirstOrNull()
                 if (key == null) {
+                    if (!themeCaptured.get()) return@EndTick
+                    if (themeTicks > 0) {
+                        // A few ticks for the rebuilt widgets and their models to draw in the new theme.
+                        if (--themeTicks == 0) {
+                            themeCaptured.set(false)
+                            val name = "mcc-hub-open-${openContent.substringAfter(':')}-${client.languageManager.selected}-" +
+                                "${client.window.guiScaledWidth}x${client.window.guiScaledHeight}${themeSuffix()}.png"
+                            Screenshot.grab(client.gameDirectory, name, client.mainRenderTarget) { result ->
+                                logger.info("Hub theme capture {}: {}", name, result.string)
+                                themeCaptured.set(true)
+                            }
+                        }
+                        return@EndTick
+                    }
+                    val theme = themes.removeFirstOrNull()
+                    if (theme != null) {
+                        MccHubTheme.preset = theme
+                        CobblemonUiThemes.registry.install(MccHubTheme.snapshot())
+                        checkNotNull(client.screen as? MccHubScreen) { "Hub closed before the $theme capture" }.rebuild()
+                        themeTicks = 10
+                        return@EndTick
+                    }
                     closed = true
                     client.stop()
                     return@EndTick

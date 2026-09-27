@@ -435,6 +435,12 @@ object MccHubKit {
         return button
     }
 
+    /** Dark text on a light band and light text on a dark one, whatever colour the theme gives the band. */
+    private fun onBand(theme: UiThemeSnapshot, band: Int): Int {
+        val luma = (band ushr 16 and 0xFF) * 299 + (band ushr 8 and 0xFF) * 587 + (band and 0xFF) * 114
+        return if (luma >= 150_000) theme.colors.border else theme.colors.textPrimary
+    }
+
     private class TitleBand(
         private val card: UiRect,
         private val title: Component,
@@ -454,7 +460,7 @@ object MccHubKit {
                 CobblemonUiRenderSlot.drawContent(graphics, UiRect(card.x + 4, card.y + 3, 13, 13), icon, partialTick)
                 left = card.x + 20
             }
-            drawLine(graphics, title, left, card.y + 5, card.right - 7 - left, theme.colors.shell)
+            drawLine(graphics, title, left, card.y + 5, card.right - 7 - left, onBand(theme, band))
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) {
             output.add(NarratedElementType.TITLE, title)
