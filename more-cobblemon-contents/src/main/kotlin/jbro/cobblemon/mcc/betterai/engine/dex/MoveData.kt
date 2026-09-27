@@ -4,8 +4,8 @@ import com.google.gson.JsonObject
 import jbro.cobblemon.mcc.betterai.engine.Js
 
 /** A move's Showdown data (`sim/dex-moves.js` DataMove), the template every [ActiveMove][jbro.cobblemon.mcc.betterai.engine.sim.ActiveMove] copies. */
-class MoveData(id: String, raw: JsonObject) : Effect(
-    id, raw.get("name")?.asString ?: id, "Move", raw, "move:$id", EngineDex.hooksOf(raw),
+class MoveData(id: String, raw: JsonObject, hookKey: String = "move:$id") : Effect(
+    id, raw.get("name")?.asString ?: id, "Move", raw, hookKey, EngineDex.hooksOf(raw),
 ) {
     val type: String = string("type") ?: "???"
     val category: String = string("category") ?: "Physical"

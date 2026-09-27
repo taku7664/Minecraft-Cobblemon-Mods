@@ -242,9 +242,12 @@ class ActiveMove(val template: MoveData) : HitData {
     var moveHitData: HashMap<String, MoveHitData>? = null
     /** Anything else a handler sets on the move. */
     val extra: HashMap<String, Any?> = HashMap()
+    /** Handlers a handler attaches to the move while it is in use, like Fling's `move.onHit = ...`. */
+    val dynamicHandlers: HashMap<String, Any?> = HashMap()
 
-    override fun handler(callbackName: String): Any? = template.handler(callbackName)
-    override fun declares(callbackName: String): Boolean = template.declares(callbackName)
+    override fun handler(callbackName: String): Any? =
+        if (dynamicHandlers.containsKey(callbackName)) dynamicHandlers[callbackName] else template.handler(callbackName)
+    override fun declares(callbackName: String): Boolean = callbackName in dynamicHandlers || template.declares(callbackName)
     override fun data(field: String): Any? = if (extra.containsKey(field)) extra[field] else template.data(field)
     override fun flag(name: String): Boolean = Js.truthy(flags[name])
 
@@ -303,6 +306,7 @@ class ActiveMove(val template: MoveData) : HitData {
         c.statusRoll = statusRoll; c.lastHit = lastHit
         c.moveHitData = moveHitData?.let { HashMap(it) }
         c.extra.putAll(extra)
+        c.dynamicHandlers.putAll(dynamicHandlers)
         return c
     }
 }
