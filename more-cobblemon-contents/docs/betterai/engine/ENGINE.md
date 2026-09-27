@@ -8,6 +8,13 @@ Better AI가 수를 읽을 때 쓰는 자체 전투 엔진이다. 실시간으�
 - 수제 계산기는 빠르지만 규칙을 더할수록 틀려도 알아챌 방법이 없어서 동결되어 있었다.
 - 옮긴 엔진은 JVM에서 빠르게 돌고, 같은 시드를 주면 Showdown과 로그가 한 줄도 다르지 않아야 한다는 기준으로 검증한다. 규칙을 더해도 틀리면 테스트가 바로 잡는다.
 
+## 현재 상태
+
+- 구현 현황 표의 모든 항목을 옮겼다. 기술 749개(다이맥스 기술 포함), 특성 312개, 도구 299개이며, 모두 전수 검사에서 Showdown과 똑같이 재생된다. 표의 효과 행 3,096개와 훅 148종이 모두 "적용 완료"다.
+- 실제 대회 형식의 전투를 끝까지 비교한다. 싱글 3대3(BSS 사용률) 60전과 더블 4대4(VGC 사용률) 60전이 로그뿐 아니라 팀 순서, HP, 요청 내용, 난수 상태까지 매 턴 일치한다.
+- 게임의 네이티브 탐색은 기본으로 이 엔진을 쓴다(`EngineBranchWorker`). 가설 세계 추론과 탐색 트리는 그대로이고 분기를 계산하는 엔진만 바뀌었다. 예전 GraalJS 경로는 `-Dmcc.betterai.nativeWorker=showdown`으로 되살릴 수 있다.
+- 분기 하나에 약 0.9ms가 걸린다. GraalJS는 약 49ms, Node의 Showdown은 약 2.7ms였다.
+
 ## 구조
 
 `src/main/kotlin/jbro/cobblemon/mcc/betterai/engine/`
@@ -21,6 +28,8 @@ Better AI가 수를 읽을 때 쓰는 자체 전투 엔진이다. 실시간으�
 | `dex/` | Showdown 데이터(기술, 특성, 도구, 상태 조건, 도감, 상성표) |
 | `hooks/EngineHooks.kt` | 훅 등록 구조. 핸들러는 `condition:par`, `move:protect/condition`, `ability:intimidate`, `item:leftovers` 같은 키로 찾는다 |
 | `effects/` | 옮긴 핸들러. 기본 상태 조건은 `BaseConditions.kt`, 나머지는 사용률 순으로 나눠 옮긴다 |
+| `sim/BattleCopier.kt` | 탐색용 전투 복제(`battle.fork()`). 생성자를 거치지 않고 가변 객체만 깊게 복사한다 |
+| `../simulation/EngineBranchWorker.kt` | 네이티브 탐색의 분기 작업자를 이 엔진으로 구현한 어댑터. 스냅샷은 "전투 정의 + 선택 기록" 토큰이고, 최근 전투는 캐시하며 나머지는 재생해서 복원한다 |
 
 옮긴 기준은 개발 서버가 실제로 돌리는 Showdown이다. Cobblemon과 Mega Showdown이 고친 부분(알파 보정, uuid가 들어간 로그, 메가진화 해제, 9세대 다이맥스, 테라스탈 자속 보정)도 그대로 따른다. 9세대 규칙만 옮기며, Z기술은 제외한다.
 
@@ -40,6 +49,12 @@ bash more-cobblemon-contents/tools/ai-engine/export-dex.sh
 
 - `EngineCoreParityTest`: 피해·급소·교체·기절·상태이상·동속·테라스탈·메가진화·다이맥스·더블배틀처럼 엔진 핵심을 다양한 시드로 비교한다.
 - `EngineSweepTest`: 구현 현황 표의 모든 항목을 사용률 순으로 일반 전투에 넣어 비교한다. 선언한 핸들러를 모두 옮겼고 로그가 모두 같으면 통과이며, 통과한 항목은 커버리지 파일에 기록되어 표에서 노란색이 된다. `sweep-baseline.txt`에 있는 항목이 실패하면 테스트가 깨진다(후퇴 방지).
+- `EngineTriggerParityTest`: 사용률 상위 효과가 실제로 발동하도록 조건을 만든 전투(방어, 속이기, 기습, 도발, 트릭룸, 기합의띠, 대타출동, 스텔스록, 테라스탈, 고대활성 등).
+- `EngineTournamentParityTest`: 사용률 데이터의 실제 세트로 꾸린 싱글 3대3과 더블 4대4 전투를 레벨 50으로 끝까지 진행한다. 엔진이 무작위 합법 선택으로 전투를 치르고, Showdown이 그 선택을 재생한다.
+- `EngineBranchWorkerTest`: 네이티브 탐색이 받는 프레임(팀, 필드, 요청, 기술 순서)을 예전 GraalJS 작업자와 한 턴씩 비교한다.
+- `EngineForkTest`, `EngineSpeedTest`: 복제한 전투가 원본과 똑같이 이어지는지, 분기 속도가 충분한지 확인한다.
+
+심판 도구는 로그 말고도 매 턴 팀 순서, HP, 요청 내용, 난수 상태를 비교한다. 차이가 나면 해당 전투를 난수 추적을 켜고 다시 돌려, 양쪽의 난수 호출이 처음 갈라지는 지점과 호출 위치를 보고서에 적는다. 로그에 드러나지 않는 차이(예: 반동 턴의 무작위 대상 선택)도 이렇게 찾는다.
 
 워크트리에는 개발 서버가 없으므로 경로를 직접 넘긴다.
 
@@ -61,4 +76,10 @@ bash more-cobblemon-contents/tools/ai-engine/export-dex.sh
 
 ## 작업 순서
 
-`tools/ai-engine/priority.cjs`가 표와 같은 기준으로 항목을 고르고 Smogon 사용률(BSS·VGC 2025-12) 순으로 정렬해 `src/test/resources/ai-engine/priority.json`을 만든다. 핸들러는 이 순서대로 옮긴다.
+`tools/ai-engine/priority.cjs`가 표와 같은 기준으로 항목을 고르고 Smogon 사용률(BSS·VGC 2025-12) 순으로 정렬해 `src/test/resources/ai-engine/priority.json`을 만든다. 핸들러는 이 순서대로 옮긴다. 9세대 데이터에서 "Past"로 표시된 일반 다이맥스 기술은 Mega Showdown이 다이맥스를 유지하므로 목록에 포함한다.
+
+표는 전수 검사가 남긴 커버리지 파일로 다시 만든다.
+
+```bash
+bash more-cobblemon-contents/tools/ai-engine-coverage/generate.sh
+```
