@@ -1,31 +1,30 @@
 package jbro.cobblemon.mcc.client.hub
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.client.HomePlayerModelPlacement
 import jbro.cobblemon.mcc.client.MccBattleHubClientState
+import jbro.cobblemon.mcc.client.MccPlayerModelRenderer
+import jbro.cobblemon.mcc.client.MccRect
 import jbro.cobblemon.uikit.CobblemonUiThemes
-import jbro.cobblemon.uikit.UiIcon
 import jbro.cobblemon.uikit.UiPanelSpec
 import jbro.cobblemon.uikit.UiPanelTone
 import jbro.cobblemon.uikit.UiRect
-import jbro.cobblemon.uikit.UiRenderSlotSpec
 import jbro.cobblemon.uikit.UiScrollState
 import jbro.cobblemon.uikit.UiThemeSnapshot
 import jbro.cobblemon.uikit.client.CobblemonUiPanel
-import jbro.cobblemon.uikit.client.CobblemonUiRenderContent
-import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
+import jbro.cobblemon.uikit.client.UiSurfaceRenderer
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.narration.NarratedElementType
 import net.minecraft.client.gui.narration.NarrationElementOutput
-import net.minecraft.client.resources.DefaultPlayerSkin
-import net.minecraft.client.resources.PlayerSkin
 import net.minecraft.client.resources.language.I18n
 import net.minecraft.network.chat.Component
 import java.text.NumberFormat
 
 /** First hub tab: the viewer as a trainer, their BP and their records across every content. */
 class MccDashboardTab : MccHubTabContent {
+    private val modelRenderer = MccPlayerModelRenderer()
     private var scrollOffset = 0
     private var records: RecordsList? = null
 
@@ -37,13 +36,7 @@ class MccDashboardTab : MccHubTabContent {
         host.add(CobblemonUiPanel.create(layout.trainer.x, layout.trainer.y, layout.trainer.width, layout.trainer.height,
             UiPanelSpec(tone = UiPanelTone.RAISED)))
         host.add(TrainerCard(layout))
-        val skin = viewerSkin()
-        host.add(
-            CobblemonUiRenderSlot.create(layout.model.x, layout.model.y, layout.model.width, layout.model.height,
-                UiRenderSlotSpec(dashboardText("trainer")),
-                CobblemonUiRenderContent.PlayerSkin(UiIcon(skin.texture().namespace, skin.texture().path),
-                    slim = skin.model() == PlayerSkin.Model.SLIM)),
-        )
+        host.add(TrainerModel(layout.model, modelRenderer))
         host.add(CobblemonUiPanel.create(layout.records.x, layout.records.y, layout.records.width, layout.records.height,
             UiPanelSpec(tone = UiPanelTone.RAISED)))
         records = host.add(RecordsList(layout, presentation, scrollOffset) { scrollOffset = it })
@@ -51,6 +44,33 @@ class MccDashboardTab : MccHubTabContent {
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollY: Double): Boolean =
         records?.scroll(mouseX, mouseY, scrollY) == true
+
+    /** The viewer's real player entity, idle-animated, framed like a raised card. */
+    private class TrainerModel(private val bounds: UiRect, private val renderer: MccPlayerModelRenderer) :
+        AbstractWidget(bounds.x, bounds.y, bounds.width, bounds.height, dashboardText("trainer")) {
+        init {
+            active = false
+        }
+
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+            val theme = CobblemonUiThemes.registry.snapshot()
+            UiSurfaceRenderer.draw(graphics, bounds.x, bounds.y, bounds.width, bounds.height, theme.surfaces.panelAlt)
+            val player = Minecraft.getInstance().player ?: return
+            val viewport = MccRect(bounds.x + 2, bounds.y + 2, bounds.width - 4, bounds.height - 4)
+            val placement = HomePlayerModelPlacement.calculate(viewport, player.bbHeight)
+            graphics.enableScissor(viewport.left, viewport.top, viewport.right, viewport.bottom)
+            try {
+                renderer.retain(setOf(player.uuid))
+                renderer.render(graphics, player.uuid, player.gameProfile, placement.centerX, placement.centerY, placement.scale)
+            } finally {
+                graphics.disableScissor()
+            }
+        }
+
+        override fun updateWidgetNarration(output: NarrationElementOutput) {
+            output.add(NarratedElementType.TITLE, Component.literal(viewerName()))
+        }
+    }
 
     private class TrainerCard(private val layout: MccDashboardLayout) : AbstractWidget(
         layout.trainer.x, layout.trainer.y, layout.trainer.width, layout.trainer.height, dashboardText("trainer"),
@@ -180,11 +200,6 @@ class MccDashboardTab : MccHubTabContent {
     }
 
     private companion object {
-        fun viewerSkin(): PlayerSkin {
-            val client = Minecraft.getInstance()
-            return client.player?.skin ?: DefaultPlayerSkin.get(client.user.profileId)
-        }
-
         fun viewerName(): String {
             val client = Minecraft.getInstance()
             return client.player?.gameProfile?.name ?: client.user.name
