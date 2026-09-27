@@ -1,0 +1,10 @@
+package jbro.cobblemon.mcc.betterai.engine.hooks
+
+import jbro.cobblemon.mcc.betterai.engine.effects.BaseConditions
+
+/** Every group of ported handlers, installed once when the first hook is looked up. */
+object EngineHookSets {
+    val all: List<HookSet> = listOf(
+        BaseConditions,
+    )
+}
