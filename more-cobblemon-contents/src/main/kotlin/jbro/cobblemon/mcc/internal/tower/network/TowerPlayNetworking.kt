@@ -1,6 +1,8 @@
 package jbro.cobblemon.mcc.internal.tower.network
 
 import jbro.cobblemon.mcc.api.access.BattleContentAccess
+import jbro.cobblemon.mcc.internal.command.MccCommandContributors
+import jbro.cobblemon.mcc.internal.command.BattleProgressCommands
 import jbro.cobblemon.mcc.internal.terminal.TerminalInteractionResult
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
@@ -99,6 +101,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
 
     fun registerServer() {
         sessions
+        MccCommandContributors.register { BattleProgressCommands.tower() }
         BattleHubEntries.register(
             BattleHubEntry(ManagedBattleContentIds.BATTLE_TOWER) { player, terminal ->
                 open(player, entryContext = terminal?.let(::terminalEntryContext))

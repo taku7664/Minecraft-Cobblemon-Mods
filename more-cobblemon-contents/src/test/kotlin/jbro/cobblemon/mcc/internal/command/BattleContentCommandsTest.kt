@@ -9,7 +9,14 @@ import org.junit.jupiter.api.Test
 class BattleContentCommandsTest {
     @Test
     fun `mcc command opens the GUI directly and exposes BP and admin progress operations`() {
-        val root = BattleContentCommands.build(DefaultBattleContentApplicationService(emptyList())).build()
+        val root = BattleContentCommands.build(
+            DefaultBattleContentApplicationService(emptyList()),
+            contributors = listOf(
+                MccCommandContributor { BattleProgressCommands.tower() },
+                MccCommandContributor { BattleProgressCommands.factory() },
+                MccCommandContributor { AiTestCommands.build() },
+            ),
+        ).build()
 
         assertEquals("mcc", root.name)
         assertNotNull(root.command)

@@ -1,6 +1,8 @@
 package jbro.cobblemon.mcc
 
 import net.fabricmc.api.ModInitializer
+import jbro.cobblemon.mcc.internal.command.MccCommandContributors
+import jbro.cobblemon.mcc.internal.command.AiTestCommands
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import jbro.cobblemon.mcc.internal.application.DefaultBattleContentApplicationService
@@ -50,11 +52,11 @@ object MoreCobblemonContents : ModInitializer {
         ManagedBattleMechanicVisibilityNetworking.registerServer()
         ManagedBattleContentNetworking.registerServer()
         // Register after feature handlers so their result settlement runs before the final entity backstop.
+        MccCommandContributors.register { AiTestCommands.build(Cobblemon173AiTestBattleRuntime) }
         ManagedBattleLifecycleEvents.registerServer()
         BattleContentCommands.register(
             CONTENTS,
             openScreen = BattleHubNetworking::open,
-            aiTest = Cobblemon173AiTestBattleRuntime,
         )
         ManagedServerEphemeralStateCleanup.registerServer()
         MoreCobblemonContentsBetterAi.initialize()
