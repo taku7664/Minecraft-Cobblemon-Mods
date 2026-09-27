@@ -30,3 +30,34 @@ Battle UI는 짙은 남색 표면, 청록 외곽선, 작은 대각선 모서리�
 - 새 순수 테스트는 선택 모서리, 기존 알파와 불투명도 곱, 그라데이션 양끝·중간 알파를 확인한다.
 - 첫 컴파일의 Cobblemon 화면 불투명도 `Double`/렌더러 `Float` 불일치는 명시적 변환으로 수정했다.
 - 실제 전투 화면·물리 입력·배포 증거는 검증 후 이 문서에 추가한다. 빌드 성공으로 대체하지 않는다.
+
+## 추가 검증: 개발 클라이언트 캡처
+
+위 검증 항목을 보완한다. Minecraft 1.21.1 / Fabric Loader 0.19.5 / Cobblemon 1.8.1 개발 클라이언트에서 새 테스트 월드를 생성하고, `minecraft:overworld`에 플레이어가 진입한 뒤 실제 렌더러에 샘플 데이터를 공급했다. 해상도는 1600×900, GUI 배율은 2다. 기존 사용자 세이브와 서버는 변경하지 않았다.
+
+- [한국어 명령·기술·대사](docs/captures/2026-09-27/battle-ui-theme-controls-ko_kr.png)
+- [한국어 TAB 정보창](docs/captures/2026-09-27/battle-ui-theme-info-ko_kr.png)
+- [영어 명령·기술·대사](docs/captures/2026-09-27/battle-ui-theme-controls-en_us.png)
+- [영어 TAB 정보창](docs/captures/2026-09-27/battle-ui-theme-info-en_us.png)
+
+관찰 결과: 남색 그라데이션, 청록 챔퍼 외곽선, 역할별 명령 버튼, 기술 타입색, 금색 포커스, 0 PP 비활성 표시, 대사와 진행 키 안내, 포켓몬 모델과 HP가 렌더링됐다. 샘플 문구는 양 언어에서 잘리지 않았다. 한글 기본 글꼴은 영문보다 가늘게 보이며, 폰트 자체를 교체한 것은 아니다.
+
+검증 한계: 이 화면은 실제 전투 화면의 전체 배치나 물리 입력 테스트가 아닌 렌더링 확인 화면이다. 기술·명령은 생산 렌더러를 호출하지만 별도 갤러리 위치에 배치하며, 대사 큐를 직접 진행하지 않는다. TAB 정보창은 단일 출전 포켓몬과 효과 없음 상태다. 전체 팀, 더블·트리플, 효과 목록, 팝업 툴팁과 실제 서버 전투 입력은 이 캡처로 검증되지 않았다.
+
+재현은 프로젝트 루트의 PowerShell에서 실행한다. 언어를 `en_us` 또는 `ko_kr`로 설정한다.
+
+```powershell
+$env:COBBLEMON_BATTLE_UI_CAPTURE = '1'
+$env:COBBLEMON_BATTLE_UI_CAPTURE_LANGUAGE = 'ko_kr'
+.\gradlew.bat --no-daemon --configure-on-demand :cobblemon-battle-ui:runClient
+Remove-Item Env:COBBLEMON_BATTLE_UI_CAPTURE, Env:COBBLEMON_BATTLE_UI_CAPTURE_LANGUAGE
+```
+
+하네스는 개발 환경과 명시적 환경 변수의 두 조건이 있어야 등록된다. 새 크리에이티브 테스트 월드를 `run/saves`에 생성하고 두 장을 `run/screenshots`에 저장한 후 클라이언트를 종료한다. 이 테스트 월드에 한해 Cobblemon snapshot 경고를 승인한다. 배포 JAR에서는 자동 화면·월드 생성·캡처·종료가 활성화되지 않는다. UI 확인 하네스에는 테스트 선작성 대신 실제 클라이언트 캡처를 사용했고, 기존 116개 단위 테스트는 별도로 재실행했다.
+
+실행 중 확인한 문제와 수정:
+
+- Modrinth 의존성 정보만으로는 개발 실행에 필요한 Graal 클래스가 누락됐다. 공식 Cobblemon POM과 동일한 Graal JS 22.3.0 / MongoDB 4.10.2를 개발 runtime에만 추가했다. 배포 JAR에 포함하지 않는다.
+- 최초 타이틀 화면 캡처에서는 기술 레지스트리가 비어 있었고 포켓몬은 대체 아이콘으로 표시됐다. 월드 진입 후 캡처하도록 바꾸고, 기술 누락을 조용히 생략하지 않고 실패로 처리했다.
+- 확인 화면의 `pokemon` / `bag` 번역 키는 실제 Cobblemon 키인 `switch` / `capture`로 정정했다. 최종 캡처에는 번역 키가 노출되지 않는다.
+- 개발 로그에는 Cobblemon의 data fixer, 선택적 Adorn mixin, 신규 플레이어 데이터 파일 부재 등의 경고·오류 메시지가 남았다. 로그 전체가 오류 없는 상태라고 주장하지 않는다. 양 언어 실행 모두 월드 진입, 캡처 저장, 정상 종료와 Gradle 성공을 확인했다.

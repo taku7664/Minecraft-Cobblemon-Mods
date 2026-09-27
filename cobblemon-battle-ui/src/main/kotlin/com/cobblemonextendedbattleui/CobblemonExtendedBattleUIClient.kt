@@ -27,6 +27,7 @@ object CobblemonExtendedBattleUIClient : ClientModInitializer {
         registerKeybindings()
         registerHudRenderer()
         verifyBattleUiMixinTargets()
+        jbro.cobblemon.battleui.extended.ui.shared.BattleThemeCapture.install()
 
         CobblemonExtendedBattleUI.LOGGER.info("Cobblemon: Battle UI client initialized!")
     }

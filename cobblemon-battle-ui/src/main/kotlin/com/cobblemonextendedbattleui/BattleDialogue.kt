@@ -43,7 +43,11 @@ object BattleDialogue {
         val battle = CobblemonClient.battle ?: return
         val client = MinecraftClient.getInstance()
         if (battle.minimised || client.options.hudHidden || BattleInfoPanel.isExpanded) return
+        renderMessage(context, message)
+    }
 
+    internal fun renderMessage(context: DrawContext, message: Text) {
+        val client = MinecraftClient.getInstance()
         val screenWidth = client.window.scaledWidth
         val screenHeight = client.window.scaledHeight
         val width = minOf(440, screenWidth - 24).coerceAtLeast(40)

@@ -79,6 +79,26 @@ object ChampionsBattleInfoOverlay {
 
     fun onOpened() = Unit
 
+    /** Synthetic data, using the production renderer; never changes a live battle. */
+    internal fun renderPreview(context: DrawContext) {
+        check(net.fabricmc.loader.api.FabricLoader.getInstance().isDevelopmentEnvironment)
+        val savedAllies = activeAllies
+        val savedOpponents = activeOpponents
+        try {
+            fun entry(species: String, hp: Float) = PokemonEntry(
+                UUID.nameUUIDFromBytes(species.toByteArray()),
+                Text.translatable("cobblemon.species.$species.name").string,
+                hp, null, 50, Identifier.of("cobblemon", species), emptySet()
+            )
+            activeAllies = listOf(entry("pikachu", .72f))
+            activeOpponents = listOf(entry("charizard", .36f))
+            render(context)
+        } finally {
+            activeAllies = savedAllies
+            activeOpponents = savedOpponents
+        }
+    }
+
     @Suppress("UNUSED_PARAMETER")
     fun sync(
         playerSide: ClientBattleSide,
