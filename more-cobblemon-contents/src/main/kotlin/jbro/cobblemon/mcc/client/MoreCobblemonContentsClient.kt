@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.client
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.client.hub.MccDashboardTab
+import jbro.cobblemon.mcc.client.hub.MccHubCaptureHarness
 import jbro.cobblemon.mcc.client.hub.MccHubTab
 import jbro.cobblemon.mcc.client.hub.MccHubTabKind
 import jbro.cobblemon.mcc.client.hub.MccHubTabs
@@ -22,6 +23,7 @@ object MoreCobblemonContentsClient : ClientModInitializer {
             order = 0, kind = MccHubTabKind.Embedded(::MccDashboardTab), accessContentId = null))
         MccHubTabs.register(MccHubTab(BattleHubIds.SHOP, Component.translatable("screen.${MoreCobblemonContents.MOD_ID}.hub.tab.shop"),
             order = 10, kind = MccHubTabKind.Screen { MccContentNavigation.open(BattleHubContent.SHOP) }, accessContentId = null))
+        MccHubCaptureHarness.installFromEnvironment()
         ShopPlayClientNetworking.register()
         ShadowTrainerProjectionRenderer.register()
         ManagedBattleMechanicVisibilityClient.register()
