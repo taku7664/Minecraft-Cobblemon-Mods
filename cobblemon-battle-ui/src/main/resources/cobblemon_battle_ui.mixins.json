@@ -19,10 +19,13 @@
     "KeyboardBattleNavigationMixin",
     "BattleGuiNavigationMixin",
     "BattleGeneralActionSelectionMixin",
+    "BattleForfeitSelectionMixin",
     "BattleOptionTileAccessor",
     "BattleOptionTileMixin",
     "BattleMoveTileScaleMixin",
     "BattleSwitchTileScaleMixin",
+    "BattleSwitchTileAccessor",
+    "BattleSwitchSelectionMixin",
     "BattleTargetTileScaleMixin"
   ],
   "injectors": {

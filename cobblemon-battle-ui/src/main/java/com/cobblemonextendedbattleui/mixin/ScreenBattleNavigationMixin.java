@@ -6,6 +6,7 @@ import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleGeneralActionS
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleSwitchPokemonSelection;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleTargetSelection;
+import com.cobblemon.mod.common.client.gui.battle.subscreen.ForfeitConfirmationSelection;
 import jbro.cobblemon.battleui.extended.navigation.BattleGuiNavigationAccess;
 import jbro.cobblemon.battleui.extended.BattleInfoPanel;
 import jbro.cobblemon.battleui.extended.BattleDialogue;
@@ -57,6 +58,11 @@ public abstract class ScreenBattleNavigationMixin {
         boolean cancel = keyCode == GLFW.GLFW_KEY_ESCAPE
                 || CobblemonExtendedBattleUIClient.INSTANCE.getCancelActionKey().matchesKey(keyCode, scanCode);
         if (cancel && selection != null) {
+            if (selection instanceof ForfeitConfirmationSelection) {
+                battleGUI.changeActionSelection(null);
+                cir.setReturnValue(true);
+                return;
+            }
             if (selection instanceof BattleSwitchPokemonSelection
                     && selection.getRequest().getForceSwitch()) {
                 cir.setReturnValue(true);

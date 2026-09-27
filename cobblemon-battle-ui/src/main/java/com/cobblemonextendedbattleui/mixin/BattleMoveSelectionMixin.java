@@ -8,7 +8,7 @@ import jbro.cobblemon.battleui.extended.MoveTooltipRenderer;
 import jbro.cobblemon.battleui.extended.BattleInfoPanel;
 import jbro.cobblemon.battleui.extended.PanelConfig;
 import jbro.cobblemon.battleui.extended.navigation.KeyboardTileFocus;
-import jbro.cobblemon.battleui.navigation.BattleMenuLayout;
+import jbro.cobblemon.battleui.navigation.BattleScreenGeometry;
 import jbro.cobblemon.battleui.navigation.UiRect;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -27,10 +27,6 @@ import java.util.UUID;
  */
 @Mixin(value = BattleMoveSelection.class, remap = false)
 public class BattleMoveSelectionMixin {
-    private static final int BUTTON_GAP = 4;
-    private static final int RIGHT_MARGIN = 12;
-    private static final int BOTTOM_MARGIN = 10;
-
     @Shadow
     public List<MoveTile> moveTiles;
 
@@ -46,14 +42,9 @@ public class BattleMoveSelectionMixin {
         }
 
         MinecraftClient client = MinecraftClient.getInstance();
-        List<UiRect> bounds = BattleMenuLayout.vertical(
+        List<UiRect> bounds = BattleScreenGeometry.moveTiles(
                 client.getWindow().getScaledWidth(),
                 client.getWindow().getScaledHeight(),
-                BattleMoveSelection.MOVE_WIDTH,
-                BattleMoveSelection.MOVE_HEIGHT,
-                BUTTON_GAP,
-                RIGHT_MARGIN,
-                BOTTOM_MARGIN,
                 moveTiles.size()
         );
         for (int index = 0; index < moveTiles.size(); index++) {
@@ -98,8 +89,8 @@ public class BattleMoveSelectionMixin {
             MoveTooltipRenderer.INSTANCE.registerMoveTile(
                 tile.getX(),
                 tile.getY(),
-                BattleMoveSelection.MOVE_WIDTH,
-                BattleMoveSelection.MOVE_HEIGHT,
+                BattleScreenGeometry.MOVE_WIDTH,
+                BattleScreenGeometry.MOVE_HEIGHT,
                 tile.getMoveTemplate(),
                 tile.getMove().getPp(),
                 tile.getMove().getMaxpp()

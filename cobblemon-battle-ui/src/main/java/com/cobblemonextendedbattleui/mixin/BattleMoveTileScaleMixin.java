@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection;
 import jbro.cobblemon.battleui.extended.navigation.KeyboardTileFocus;
 import jbro.cobblemon.battleui.extended.ui.shared.BattleControlRenderer;
 import jbro.cobblemon.battleui.navigation.SmoothButtonScale;
+import jbro.cobblemon.battleui.navigation.BattleScreenGeometry;
 import net.minecraft.client.gui.DrawContext;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -11,6 +12,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = BattleMoveSelection.MoveTile.class, remap = false)
 public abstract class BattleMoveTileScaleMixin {
@@ -37,14 +39,21 @@ public abstract class BattleMoveTileScaleMixin {
         ci.cancel();
     }
 
+    @Inject(method = "isHovered", at = @At("HEAD"), cancellable = true)
+    private void cobblemonBattleUi$expandedHover(double mouseX, double mouseY,
+            CallbackInfoReturnable<Boolean> cir) {
+        cir.setReturnValue(mouseX >= getX() && mouseX < getX() + BattleScreenGeometry.MOVE_WIDTH
+                && mouseY >= getY() && mouseY < getY() + BattleScreenGeometry.MOVE_HEIGHT);
+    }
+
     @Unique
     private void cobblemonBattleUi$beginTransform(DrawContext context, boolean emphasized) {
         long now = System.nanoTime();
         double elapsed = Math.min(0.05, (now - cobblemonBattleUi$lastFrame) / 1_000_000_000.0);
         cobblemonBattleUi$lastFrame = now;
         cobblemonBattleUi$currentScale = cobblemonBattleUi$scale.advance(cobblemonBattleUi$currentScale, emphasized, elapsed);
-        float centerX = getX() + BattleMoveSelection.MOVE_WIDTH / 2.0f;
-        float centerY = getY() + BattleMoveSelection.MOVE_HEIGHT / 2.0f;
+        float centerX = getX() + BattleScreenGeometry.MOVE_WIDTH / 2.0f;
+        float centerY = getY() + BattleScreenGeometry.MOVE_HEIGHT / 2.0f;
         float scale = (float) cobblemonBattleUi$currentScale;
         context.getMatrices().push();
         context.getMatrices().translate(centerX, centerY, 0.0f);

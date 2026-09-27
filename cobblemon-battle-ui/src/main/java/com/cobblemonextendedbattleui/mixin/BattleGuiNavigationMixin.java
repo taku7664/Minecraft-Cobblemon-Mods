@@ -6,6 +6,7 @@ import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleGeneralActionS
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleSwitchPokemonSelection;
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleTargetSelection;
+import com.cobblemon.mod.common.client.gui.battle.subscreen.ForfeitConfirmationSelection;
 import com.cobblemon.mod.common.client.gui.battle.widgets.BattleOptionTile;
 import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUIClient;
 import jbro.cobblemon.battleui.extended.BattleInfoPanel;
@@ -14,10 +15,13 @@ import jbro.cobblemon.battleui.extended.MoveTooltipRenderer;
 import jbro.cobblemon.battleui.extended.navigation.BattleGuiNavigationAccess;
 import jbro.cobblemon.battleui.extended.navigation.BattleCommandLayout;
 import jbro.cobblemon.battleui.extended.navigation.KeyboardTileFocus;
+import jbro.cobblemon.battleui.extended.navigation.ForfeitSelectionAccess;
 import jbro.cobblemon.battleui.navigation.ActionSubmissionGate;
 import jbro.cobblemon.battleui.navigation.BattleMenuNavigator;
 import jbro.cobblemon.battleui.navigation.FocusOwnership;
 import jbro.cobblemon.battleui.navigation.GridMenuNavigator;
+import jbro.cobblemon.battleui.navigation.BattleScreenGeometry;
+import jbro.cobblemon.battleui.navigation.UiRect;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import org.lwjgl.glfw.GLFW;
@@ -173,6 +177,11 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             KeyboardTileFocus.useKeyboard();
         }
 
+        if (currentSelection instanceof ForfeitConfirmationSelection confirmation
+                && cobblemonBattleUi$handleForfeitKeys(confirmation, keyCode, scanCode)) {
+            return true;
+        }
+
         if (currentSelection instanceof BattleSwitchPokemonSelection switchSelection
                 && cobblemonBattleUi$handleSwitchKeys(switchSelection, keyCode, scanCode)) {
             return true;
@@ -232,6 +241,37 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
     }
 
     @Unique
+    private boolean cobblemonBattleUi$handleForfeitKeys(ForfeitConfirmationSelection selection,
+            int keyCode, int scanCode) {
+        if (cobblemonBattleUi$gridSelection != selection) {
+            cobblemonBattleUi$gridSelection = selection;
+            cobblemonBattleUi$gridIndex = 1; // Never default keyboard confirmation to forfeiting.
+        }
+        int choice = switch (keyCode) {
+            case GLFW.GLFW_KEY_LEFT, GLFW.GLFW_KEY_A, GLFW.GLFW_KEY_UP, GLFW.GLFW_KEY_W -> 0;
+            case GLFW.GLFW_KEY_RIGHT, GLFW.GLFW_KEY_D, GLFW.GLFW_KEY_DOWN, GLFW.GLFW_KEY_S -> 1;
+            default -> -1;
+        };
+        if (choice >= 0) {
+            cobblemonBattleUi$gridIndex = choice;
+            ((ForfeitSelectionAccess) (Object) selection).cobblemonBattleUi$setFocusedChoice(choice);
+            return true;
+        }
+        if (!CobblemonExtendedBattleUIClient.INSTANCE.getSelectActionKey().matchesKey(keyCode, scanCode)) {
+            return false;
+        }
+        if (cobblemonBattleUi$trySubmit(selection)) {
+            MinecraftClient client = MinecraftClient.getInstance();
+            UiRect bound = cobblemonBattleUi$gridIndex == 0
+                    ? BattleScreenGeometry.forfeitAccept(client.getWindow().getScaledWidth(), client.getWindow().getScaledHeight())
+                    : BattleScreenGeometry.forfeitCancel(client.getWindow().getScaledWidth(), client.getWindow().getScaledHeight());
+            selection.mousePrimaryClicked(bound.x() + bound.width() / 2.0,
+                    bound.y() + bound.height() / 2.0);
+        }
+        return true;
+    }
+
+    @Unique
     private BattleGeneralActionSelection cobblemonBattleUi$getGeneralSelection() {
         BattleActionSelection selection = getCurrentActionSelection();
         return selection instanceof BattleGeneralActionSelection general ? general : null;
@@ -264,7 +304,8 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
         return cobblemonBattleUi$handleGridKeys(
                 selection,
                 tiles,
-                tile -> !tile.isFainted() && !tile.isCurrentlyInBattle(),
+                tile -> selection.isReviving() ? tile.isFainted()
+                        : !tile.isFainted() && !tile.isCurrentlyInBattle(),
                 keyCode,
                 scanCode,
                 tile -> selection.mousePrimaryClicked(tile.getX() + 1.0, tile.getY() + 1.0)

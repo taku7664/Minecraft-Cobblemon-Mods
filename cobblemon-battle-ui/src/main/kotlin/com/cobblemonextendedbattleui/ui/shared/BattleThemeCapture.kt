@@ -7,6 +7,8 @@ import jbro.cobblemon.battleui.extended.MoveTooltipRenderer
 import jbro.cobblemon.battleui.navigation.BattleMenuLayout
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection
 import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUI
+import jbro.cobblemon.battleui.extended.mixin.BattleSwitchTileAccessor
+import jbro.cobblemon.battleui.extended.navigation.ForfeitSelectionAccess
 import jbro.cobblemon.battleui.extended.ui.champions.ChampionsBattleInfoOverlay
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.loader.api.FabricLoader
@@ -67,6 +69,16 @@ internal object BattleThemeCapture {
             if (created && !opened && client.world != null && client.player != null && client.currentScreen == null && client.overlay == null) {
                 opened = true
                 CobblemonExtendedBattleUI.LOGGER.info("Battle UI fixture opened in loaded world {}", client.world!!.registryKey.value)
+                if (System.getenv("COBBLEMON_BATTLE_UI_VERIFY_SELECTION_MIXINS") == "1") {
+                    val loader = Thread.currentThread().contextClassLoader
+                    val forfeit = Class.forName(
+                        "com.cobblemon.mod.common.client.gui.battle.subscreen.ForfeitConfirmationSelection", false, loader)
+                    val switchTile = Class.forName(
+                        "com.cobblemon.mod.common.client.gui.battle.subscreen.BattleSwitchPokemonSelection${'$'}SwitchTile", false, loader)
+                    check(ForfeitSelectionAccess::class.java.isAssignableFrom(forfeit)) { "Forfeit navigation mixin missing" }
+                    check(BattleSwitchTileAccessor::class.java.isAssignableFrom(switchTile)) { "Switch hitbox accessor mixin missing" }
+                    CobblemonExtendedBattleUI.LOGGER.info("Battle UI selection mixins applied to Cobblemon 1.8.1 classes")
+                }
                 if (System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TRANSCRIPT_ONLY") == "1") {
                     jbro.cobblemon.battleui.extended.ui.transcript.TranscriptInputFixture.verify()
                 }
@@ -76,8 +88,14 @@ internal object BattleThemeCapture {
     }
 
     private class CaptureScreen : Screen(Text.literal("Battle UI rendering fixture")) {
-        private val pages = if (System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TRANSCRIPT_ONLY") == "1")
-            listOf("log", "log-long", "log-empty") else listOf("controls", "info", "info-double", "info-triple", "tooltip")
+        private val pages = when {
+            System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_DRAFT_ONLY") == "1" ->
+                listOf("draft-menu-rail", "draft-menu-blade", "draft-moves", "draft-hud-double",
+                    "draft-hud-triple", "draft-switch", "draft-forfeit")
+            System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TRANSCRIPT_ONLY") == "1" ->
+                listOf("log", "log-long", "log-empty")
+            else -> listOf("controls", "info", "info-double", "info-triple", "tooltip")
+        }
         private var page = 0
         private var ticks = 0
         private var pending = false
@@ -94,7 +112,9 @@ internal object BattleThemeCapture {
                 if (page >= pages.size) mc.scheduleStop()
                 return
             }
-            if (++ticks < 40) return
+            val waitTicks = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_WAIT_TICKS")?.toInt() ?: 40
+            require(waitTicks in 20..400)
+            if (++ticks < waitTicks) return
             pending = true
             val label = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_LABEL") ?: "theme"
             require(label.matches(Regex("[a-z0-9-]+")))
@@ -109,6 +129,10 @@ internal object BattleThemeCapture {
 
         override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
             if (page !in pages.indices) return
+            if (pages[page].startsWith("draft-")) {
+                BattleScreenDraft.render(context, pages[page], width, height)
+                return
+            }
             context.fillGradient(0, 0, width, height, 0xFF182A39.toInt(), 0xFF080E17.toInt())
             context.drawText(textRenderer, "DEVELOPMENT FIXTURE / ${client!!.options.language} / not a live battle", 12, 10, BattleUiTheme.MUTED, false)
             if (pages[page].startsWith("log")) {
