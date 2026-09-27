@@ -45,12 +45,35 @@ function choose(side, input) {
   const state = side.requestState;
   if (!state) return;
   let choice = input || 'default';
-  // Showdown's own auto-switch crashes on an undefined slot, so name the first healthy bench Pokemon.
-  if (state === 'switch' && !choice.startsWith('switch')) choice = firstSwitch(side);
+  // Showdown's own auto-switch crashes on an undefined slot, so a move or default choice at a switch
+  // request becomes an explicit one. Choices made of switches and passes are kept as given.
+  if (state === 'switch' && (choice === 'default' || choice.includes('move'))) choice = firstSwitch(side);
   try {
     if (side.choose(choice)) return;
-  } catch (e) { /* fall back below */ }
-  side.choose('default');
+  } catch (e) {
+    rejections.push(`turn ${side.battle.turn} ${side.id}: '${choice}' rejected (${e.message})`);
+  }
+  side.choose(state === 'switch' ? firstSwitch(side) : 'default');
+}
+
+let rejections = [];
+
+// State the protocol log does not show, compared after every step: team order, HP, and the request's
+// move list with targets (which reveals move locks). The engine harness builds the same line.
+function stateLine(battle) {
+  return battle.sides.map((side) => {
+    const team = side.pokemon.map((p) => `${p.uuid}:${p.hp}:${p.fainted ? 'F' : ''}`).join(',');
+    const request = side.activeRequest;
+    let moves = '';
+    if (request && request.active) {
+      moves = request.active.map((a) => a ? a.moves.map((m) => `${m.id}/${m.target || ''}/${m.disabled ? 1 : 0}`).join('+') : '-').join('|');
+    } else if (request && request.forceSwitch) {
+      moves = 'switch:' + request.forceSwitch.map((f) => f ? 1 : 0).join('');
+    } else if (request && request.wait) {
+      moves = 'wait';
+    }
+    return `${side.id}[${team}]{${moves}}`;
+  }).join(' ') + ' rng=' + battle.prng.seed.join('.');
 }
 
 function run(scenario) {
@@ -58,6 +81,21 @@ function run(scenario) {
     gameType: scenario.gameType || 'singles', ruleset: [] };
   const battle = new runtime.Battle({ format, seed: scenario.seed, strictChoices: true });
   const result = { id: scenario.id };
+  rejections = [];
+  result.rejections = rejections;
+  result.states = [];
+  if (scenario.traceRng) {
+    result.rngTrace = [];
+    const prng = battle.prng;
+    const original = prng.next.bind(prng);
+    prng.next = function(from, to) {
+      const value = original(from, to);
+      const frames = new Error().stack.split('\n').slice(2, 8).map((l) => (l.match(/at ([^ ]+)/) || [])[1]).filter(Boolean)
+        .filter((f) => !/PRNG\.|Battle\.random|Battle\.sample|randomChance|shuffle/.test(f)).slice(0, 2);
+      result.rngTrace.push(`${from === undefined ? 'null' : from},${to === undefined ? 'null' : to}=${value} @${frames.join('<')}`);
+      return value;
+    };
+  }
   try {
     battle.setPlayer('p1', { name: 'p1', team: scenario.p1.map(fillSet) });
     battle.setPlayer('p2', { name: 'p2', team: scenario.p2.map(fillSet) });
@@ -65,6 +103,7 @@ function run(scenario) {
       if (battle.ended) break;
       choices.forEach((input, i) => choose(battle.sides[i], input));
       battle.commitDecisions();
+      result.states.push(stateLine(battle));
     }
   } catch (error) {
     result.error = String(error && error.stack || error);

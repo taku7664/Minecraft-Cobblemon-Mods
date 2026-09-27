@@ -66,10 +66,13 @@ data class RefScenario(
     val turns: List<Pair<String, String>>,
     val seed: IntArray = intArrayOf(1, 2, 3, 4),
     val gameType: String = "singles",
+    /** Record every PRNG roll on both sides, to find where the random sequences part. */
+    val traceRng: Boolean = false,
 ) {
     fun toJson(): JsonObject = JsonObject().apply {
         addProperty("id", id)
         addProperty("gameType", gameType)
+        if (traceRng) addProperty("traceRng", true)
         add("seed", JsonArray().also { a -> seed.forEach { a.add(it) } })
         add("p1", JsonArray().also { a -> p1.forEachIndexed { i, s -> a.add(s.toJson("p1", i)) } })
         add("p2", JsonArray().also { a -> p2.forEachIndexed { i, s -> a.add(s.toJson("p2", i)) } })
@@ -79,7 +82,9 @@ data class RefScenario(
     fun withSeed(seed: IntArray, suffix: String = seed.joinToString("-")) = copy(id = "$id@$suffix", seed = seed)
 }
 
-class RefResult(val id: String, val log: List<String>, val error: String?, val ended: Boolean, val turn: Int, val missingHooks: Set<String> = emptySet())
+class RefResult(val id: String, val log: List<String>, val error: String?, val ended: Boolean, val turn: Int,
+                val missingHooks: Set<String> = emptySet(), val rejections: List<String> = emptyList(),
+                val states: List<String> = emptyList(), val rngTrace: List<String> = emptyList())
 
 /** Runs scenarios on the dev server's Showdown and on the engine. */
 object EngineReferee {
@@ -134,6 +139,9 @@ object EngineReferee {
             r.get("id").asString to RefResult(
                 r.get("id").asString, r.getAsJsonArray("log").map { it.asString },
                 r.get("error")?.takeIf { !it.isJsonNull }?.asString, r.get("ended").asBoolean, r.get("turn").asInt,
+                rejections = r.getAsJsonArray("rejections")?.map { it.asString } ?: emptyList(),
+                states = r.getAsJsonArray("states")?.map { it.asString } ?: emptyList(),
+                rngTrace = r.getAsJsonArray("rngTrace")?.map { it.asString } ?: emptyList(),
             )
         }
     }
@@ -141,6 +149,8 @@ object EngineReferee {
     fun engine(scenario: RefScenario): RefResult {
         val battle = Battle(dex, BattleOptions(gameType = scenario.gameType, seed = scenario.seed))
         var error: String? = null
+        val states = ArrayList<String>()
+        val rng = if (scenario.traceRng) ArrayList<String>().also { battle.prng.trace = it } else null
         try {
             battle.setPlayer("p1", "p1", scenario.p1.mapIndexed { i, s -> s.toSet("p1", i) })
             battle.setPlayer("p2", "p2", scenario.p2.mapIndexed { i, s -> s.toSet("p2", i) })
@@ -149,11 +159,13 @@ object EngineReferee {
                 choose(battle.sides[0], a)
                 choose(battle.sides[1], b)
                 battle.commitDecisions()
+                states += stateLine(battle)
             }
         } catch (e: Throwable) {
             error = e.stackTraceToString().lines().take(12).joinToString("\n")
         }
-        return RefResult(scenario.id, battle.log.filter { !it.startsWith("|t:|") }, error, battle.ended, battle.turn, battle.missingHooks.toSet())
+        return RefResult(scenario.id, battle.log.filter { !it.startsWith("|t:|") }, error, battle.ended, battle.turn,
+            battle.missingHooks.toSet(), states = states, rngTrace = rng ?: emptyList())
     }
 
     /** Mirrors the referee script: skip a waiting side, auto-replace a fainted one, fall back when rejected. */
@@ -161,21 +173,38 @@ object EngineReferee {
         val state = side.requestState
         if (state.isEmpty()) return
         var choice = input.ifEmpty { "default" }
-        if (state == "switch" && !choice.startsWith("switch")) {
-            // One choice per active slot: slots that must be replaced take the next healthy bench Pokemon.
-            val used = HashSet<Int>()
-            choice = side.active.joinToString(", ") { pokemon ->
-                if (pokemon == null || !Js.truthy(pokemon.switchFlag)) return@joinToString "pass"
-                val bench = (side.active.size until side.pokemon.size).firstOrNull { !side.pokemon[it].fainted && it !in used }
-                if (bench == null) "pass" else "switch ${bench + 1}".also { used.add(bench) }
-            }
-        }
+        if (state == "switch" && (choice == "default" || "move" in choice)) choice = firstSwitch(side)
         try {
             if (side.choose(choice)) return
         } catch (_: IllegalArgumentException) {
             // fall back below
         }
-        side.choose("default")
+        side.choose(if (state == "switch") firstSwitch(side) else "default")
+    }
+
+    /** Mirrors the referee's stateLine: team order, HP, and each request's moves with targets. */
+    private fun stateLine(battle: Battle): String = battle.sides.joinToString(" ") { side ->
+        val team = side.pokemon.joinToString(",") { "${it.uuid}:${it.hp}:${if (it.fainted) "F" else ""}" }
+        val request = side.activeRequest
+        val moves = when {
+            request?.active != null -> request.active.joinToString("|") { a ->
+                a?.moves?.joinToString("+") { m -> "${m.id}/${m.target}/${if (Js.truthy(m.disabled)) 1 else 0}" } ?: "-"
+            }
+            request?.forceSwitch != null -> "switch:" + request.forceSwitch.joinToString("") { if (it) "1" else "0" }
+            request?.wait == true -> "wait"
+            else -> ""
+        }
+        "${side.id}[$team]{$moves}"
+    } + " rng=" + battle.prng.seed.joinToString(".")
+
+    /** One choice per active slot: slots that must be replaced take the next healthy bench Pokemon. */
+    private fun firstSwitch(side: Side): String {
+        val used = HashSet<Int>()
+        return side.active.joinToString(", ") { pokemon ->
+            if (pokemon == null || !Js.truthy(pokemon.switchFlag)) return@joinToString "pass"
+            val bench = (side.active.size until side.pokemon.size).firstOrNull { !side.pokemon[it].fainted && it !in used }
+            if (bench == null) "pass" else "switch ${bench + 1}".also { used.add(bench) }
+        }
     }
 
     /** The first line where the logs part ways, with context, or null when they match. */
@@ -183,12 +212,32 @@ object EngineReferee {
         val a = showdown.log
         val b = engine.log
         val first = (0 until maxOf(a.size, b.size)).firstOrNull { a.getOrNull(it) != b.getOrNull(it) }
-        if (first == null && showdown.error == null && engine.error == null) return null
+        val firstState = (0 until maxOf(showdown.states.size, engine.states.size))
+            .firstOrNull { showdown.states.getOrNull(it) != engine.states.getOrNull(it) }
+        if (first == null && firstState == null && showdown.error == null && engine.error == null) return null
         val from = maxOf(0, (first ?: a.size) - 6)
         val to = (first ?: a.size) + 4
         return buildString {
             appendLine("scenario ${showdown.id}: logs differ at line ${first ?: "-"}")
             showdown.error?.let { appendLine("showdown error: $it") }
+            showdown.rejections.forEach { appendLine("showdown $it") }
+            if (showdown.rngTrace.isNotEmpty() || engine.rngTrace.isNotEmpty()) {
+                val a = showdown.rngTrace
+                val b = engine.rngTrace
+                val at = (0 until maxOf(a.size, b.size)).firstOrNull { a.getOrNull(it)?.substringBefore(" @") != b.getOrNull(it)?.substringBefore(" @") }
+                if (at != null) {
+                    appendLine("rolls part at call $at:")
+                    for (i in maxOf(0, at - 4)..minOf(at + 2, maxOf(a.size, b.size) - 1)) {
+                        appendLine("  $i showdown: ${a.getOrNull(i)}")
+                        appendLine("  $i engine:   ${b.getOrNull(i)}")
+                    }
+                }
+            }
+            if (firstState != null) {
+                appendLine("hidden state differs after step $firstState:")
+                appendLine("  showdown: ${showdown.states.getOrNull(firstState)}")
+                appendLine("  engine:   ${engine.states.getOrNull(firstState)}")
+            }
             engine.error?.let { appendLine("engine error: $it") }
             if (engine.missingHooks.isNotEmpty()) appendLine("unported handlers reached: ${engine.missingHooks}")
             for (i in from until minOf(to, maxOf(a.size, b.size))) {

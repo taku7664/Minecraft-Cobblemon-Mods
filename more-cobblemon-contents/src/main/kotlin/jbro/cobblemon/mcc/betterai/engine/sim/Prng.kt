@@ -12,26 +12,41 @@ class Prng private constructor(private var state: Long, val startingSeed: IntArr
 
     fun copy(): Prng = Prng(state, startingSeed.copyOf())
 
+    /** When set, every roll is appended as "from,to=result @caller" (referee debugging only). */
+    var trace: MutableList<String>? = null
+
+    private fun record(from: Any?, to: Any?, result: Any) {
+        val list = trace ?: return
+        val caller = StackWalker.getInstance().walk { frames ->
+            frames.map { "${it.className.substringAfterLast('.')}.${it.methodName}" }
+                .filter { !it.startsWith("Prng.") && !it.startsWith("Battle.random") && !it.startsWith("Battle.sample") }
+                .limit(2).toList().joinToString("<")
+        }
+        list += "$from,$to=$result @$caller"
+    }
+
     private fun step(): Long {
         state = state * A + C
         return state ushr 32
     }
 
     /** `random()`: a real number in [0, 1). */
-    fun next(): Double = step().toDouble() / TWO_32
+    fun next(): Double = (step().toDouble() / TWO_32).also { record(null, null, it) }
 
     /** `random(n)`: an integer in [0, n). */
     fun next(n: Int): Int {
         val result = step()
-        if (n == 0) return (result.toDouble() / TWO_32).let { it.toInt() }
-        return ((result * n) ushr 32).toInt()
+        val value = if (n == 0) (result.toDouble() / TWO_32).toInt() else ((result * n) ushr 32).toInt()
+        record(n, null, value)
+        return value
     }
 
     /** `random(m, n)`: an integer in [m, n). */
     fun next(from: Int, to: Int): Int {
         val result = step()
-        if (to == 0) return if (from == 0) 0 else ((result * from) ushr 32).toInt()
-        return ((result * (to - from)) ushr 32).toInt() + from
+        val value = if (to == 0) (if (from == 0) 0 else ((result * from) ushr 32).toInt()) else ((result * (to - from)) ushr 32).toInt() + from
+        record(from, to, value)
+        return value
     }
 
     fun randomChance(numerator: Int, denominator: Int): Boolean = next(denominator) < numerator
