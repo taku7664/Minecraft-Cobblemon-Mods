@@ -50,15 +50,12 @@ class CobblemonUiButton private constructor(
         val theme = CobblemonUiThemes.registry.snapshot()
         val state = displayedState()
         val style = theme.style(spec.variant, state)
-        UiSurfaceRenderer.draw(
-            graphics,
-            x,
-            y,
-            width,
-            height,
-            spec.resolveSurface(style)
-        )
+        val surface = spec.resolveSurface(style)
+        UiSurfaceRenderer.draw(graphics, x, y, width, height, surface)
         drawContent(graphics, theme, style)
+        val selected = if (spec.selected && state != UiWidgetState.DISABLED) theme.style(spec.variant, UiWidgetState.SELECTED).selectionIndicator else null
+        UiSurfaceRenderer.drawSelection(graphics, x, y, width, height, surface.shape,
+            UiSurfaceRenderer.indicatorFor(style.selectionIndicator, selected, spec.selected))
     }
 
     private fun displayedState(): UiWidgetState = forcedState ?: when {
@@ -109,7 +106,8 @@ class CobblemonUiButton private constructor(
                 y + (height - (font.lineHeight * metrics.titleScale).toInt()) / 2 + contentOffsetY,
                 metrics.titleScale,
                 style.text,
-                textShadow
+                textShadow,
+                style.textShadowColor
             )
         } else {
             drawScaledCentered(
@@ -119,7 +117,8 @@ class CobblemonUiButton private constructor(
                 y + 5 + contentOffsetY,
                 metrics.titleScale,
                 style.text,
-                textShadow
+                textShadow,
+                style.textShadowColor
             )
             drawScaledCentered(
                 graphics,
@@ -128,7 +127,8 @@ class CobblemonUiButton private constructor(
                 y + height - (font.lineHeight * metrics.supportingScale).toInt() - 5 + contentOffsetY,
                 metrics.supportingScale,
                 style.supportingText,
-                textShadow
+                textShadow,
+                style.textShadowColor
             )
         }
     }
@@ -177,21 +177,16 @@ class CobblemonUiButton private constructor(
             top: Int,
             scale: Float,
             color: Int,
-            shadow: Boolean
+            shadow: Boolean,
+            shadowColor: Int?
         ) {
             val font = Minecraft.getInstance().font
             graphics.pose().pushPose()
             try {
                 graphics.pose().scale(scale, scale, 1f)
                 val scaledCenterX = (centerX / scale).toInt()
-                graphics.drawString(
-                    font,
-                    text,
-                    scaledCenterX - font.width(text) / 2,
-                    (top / scale).toInt(),
-                    color,
-                    shadow
-                )
+                UiTextRenderer.draw(graphics, font, text, scaledCenterX - font.width(text) / 2, (top / scale).toInt(),
+                    color, shadowColor, shadow)
             } finally {
                 graphics.pose().popPose()
             }

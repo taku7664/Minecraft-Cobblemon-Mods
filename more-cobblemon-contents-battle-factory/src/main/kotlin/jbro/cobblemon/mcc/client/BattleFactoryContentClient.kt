@@ -17,6 +17,7 @@ object BattleFactoryContentClient : ClientModInitializer {
                 Component.translatable(MccDashboardPresentation.contentNameKey(ManagedBattleContentIds.BATTLE_FACTORY)),
                 order = 110,
                 kind = MccHubTabKind.Embedded(::FactoryHubTab),
+                icon = MccHubTabs.itemIcon("cobblemon:pc"),
             ),
         )
     }

@@ -7,7 +7,13 @@ enum class UiThemePreset(val id: String) {
     PALDEA_PORTAL("paldea_portal"),
     HOENN_PIXEL("hoenn_pixel"),
     JOHTO_TOUCH("johto_touch"),
-    UNOVA_PIXEL("unova_pixel");
+    UNOVA_PIXEL("unova_pixel"),
+    TOWER_LOBBY("tower_lobby"),
+    TOWER_ELEVATOR("tower_elevator"),
+    TOWER_SUNBURST("tower_sunburst"),
+    FACTORY_SHOWROOM("factory_showroom"),
+    FACTORY_NIGHT("factory_night"),
+    FACTORY_TERMINAL("factory_terminal");
 
     companion object {
         fun fromId(id: String?): UiThemePreset? = entries.firstOrNull { it.id == id }
@@ -22,7 +28,13 @@ object CobblemonUiThemePresets {
         UiThemePreset.PALDEA_PORTAL to paldeaPortal(),
         UiThemePreset.HOENN_PIXEL to hoennPixel(),
         UiThemePreset.JOHTO_TOUCH to johtoTouch(),
-        UiThemePreset.UNOVA_PIXEL to unovaPixel()
+        UiThemePreset.UNOVA_PIXEL to unovaPixel(),
+        UiThemePreset.TOWER_LOBBY to CobblemonUiThemeComposer.compose(UiThemeStyle.PIXEL_FRAME, UiPalettePreset.TOWER_LOBBY, UiThemePreset.TOWER_LOBBY.id),
+        UiThemePreset.TOWER_ELEVATOR to CobblemonUiThemeComposer.compose(UiThemeStyle.PIXEL_FRAME, UiPalettePreset.TOWER_ELEVATOR, UiThemePreset.TOWER_ELEVATOR.id),
+        UiThemePreset.TOWER_SUNBURST to CobblemonUiThemeComposer.compose(UiThemeStyle.PIXEL_FRAME, UiPalettePreset.TOWER_SUNBURST, UiThemePreset.TOWER_SUNBURST.id),
+        UiThemePreset.FACTORY_SHOWROOM to CobblemonUiThemeComposer.compose(UiThemeStyle.PIXEL_FRAME, UiPalettePreset.FACTORY_SHOWROOM, UiThemePreset.FACTORY_SHOWROOM.id),
+        UiThemePreset.FACTORY_NIGHT to CobblemonUiThemeComposer.compose(UiThemeStyle.PIXEL_FRAME, UiPalettePreset.FACTORY_NIGHT, UiThemePreset.FACTORY_NIGHT.id),
+        UiThemePreset.FACTORY_TERMINAL to CobblemonUiThemeComposer.compose(UiThemeStyle.PIXEL_FRAME, UiPalettePreset.FACTORY_TERMINAL, UiThemePreset.FACTORY_TERMINAL.id)
     )
 
     fun snapshot(preset: UiThemePreset): UiThemeSnapshot = snapshots.getValue(preset)
@@ -68,11 +80,7 @@ object CobblemonUiThemePresets {
         val selector = UiSelectionIndicator.Sprite(
             UiIcon("cobblemon_ui_kit", "textures/gui/pixel/selector.png")
         )
-        val metrics = mapOf(
-            UiControlSize.SMALL to UiButtonMetrics(20, 28, 10, 8, 3, 0.75f, 0.65f),
-            UiControlSize.MEDIUM to UiButtonMetrics(26, 36, 12, 8, 4, 1f, 0.75f),
-            UiControlSize.LARGE to UiButtonMetrics(36, 46, 14, 8, 4, 1.1f, 0.8f)
-        )
+        val metrics = UiPixelMetrics.sizes
         val styles = buildMap {
             addPixelVariant(
                 UiButtonVariant.PRIMARY,
@@ -130,7 +138,8 @@ object CobblemonUiThemePresets {
                 panel = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(colors.panel), cardFrame),
                 panelAlt = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(colors.panelAlt), cardFrame),
                 panelText = colors.border,
-                panelAltText = colors.border
+                panelAltText = colors.border,
+                panelTitle = UiPanelTitleStyle.BAND
             ),
             metrics = metrics,
             styles = styles,
@@ -318,6 +327,42 @@ object CobblemonUiThemePresets {
         )
     }
 
+    /** [c] in Pixel League's frames and control sizes, under the theme id [id]. */
+    internal fun framedPixel(id: String, c: UiThemePalette): UiThemeSnapshot {
+        val colors = c.colors()
+        val shellFrame = UiBorder.PixelFrame(c.border, c.trim, c.frameShade, 0xC8080B0F.toInt(), 2)
+        val cardFrame = UiBorder.PixelFrame(c.border, c.frameHighlight, c.frameShade, 0xA8080B0F.toInt(), 1)
+        val selector = UiSelectionIndicator.Sprite(UiIcon("cobblemon_ui_kit", "textures/gui/pixel/selector.png"))
+        val styles = buildMap {
+            addPixelVariant(UiButtonVariant.PRIMARY, c.primary, c.primaryHover, c.primaryPressed, c.selected, c.primaryText,
+                cardFrame, selector, c.disabled, c.selectedText)
+            addPixelVariant(UiButtonVariant.SECONDARY, c.secondary, c.secondaryHover, c.secondaryPressed, c.selected,
+                c.secondaryText, cardFrame, selector, c.disabled, c.selectedText)
+            addPixelVariant(UiButtonVariant.DANGER, c.danger, c.dangerHover, c.dangerPressed, c.selected, 0xFFFFFFFF.toInt(),
+                cardFrame, selector, c.disabled, c.selectedText)
+            addPixelVariant(UiButtonVariant.ICON, c.secondary, c.secondaryHover, c.secondaryPressed, c.selected,
+                c.secondaryText, cardFrame, selector, c.disabled, c.selectedText)
+            addPixelGhost(colors, selector)
+        }
+        return UiThemeSnapshot.create(
+            id = id,
+            colors = colors,
+            typography = UiTypography(titleScale = 1f, bodyScale = 1f, supportingScale = 0.75f),
+            spacing = UiSpacing(xs = 2, small = 4, medium = 6, large = 10),
+            surfaces = UiSurfaceTokens(
+                shell = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(c.shell), shellFrame),
+                panel = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(c.panel), cardFrame),
+                panelAlt = UiSurfaceStyle(UiShape.Rectangle, UiFill.Solid(c.panelAlt), cardFrame),
+                panelText = c.panelText,
+                panelAltText = c.panelText,
+                panelTitle = UiPanelTitleStyle.BAND
+            ),
+            metrics = UiPixelMetrics.sizes,
+            styles = styles,
+            pixelDecorations = UiPixelDecorations(c.titleBar, c.titleBarShade, c.shell, c.titleBarShade)
+        )
+    }
+
     private fun createTheme(
         preset: UiThemePreset,
         colors: UiColorPalette,
@@ -335,7 +380,7 @@ object CobblemonUiThemePresets {
         }
     )
 
-    private fun MutableMap<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>.addPixelVariant(
+    internal fun MutableMap<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>.addPixelVariant(
         variant: UiButtonVariant,
         normal: Int,
         hover: Int,
@@ -344,7 +389,8 @@ object CobblemonUiThemePresets {
         text: Int,
         frame: UiBorder.PixelFrame,
         selector: UiSelectionIndicator,
-        disabled: Int
+        disabled: Int,
+        selectedText: Int = text
     ) {
         fun pixelStyle(
             fill: Int,
@@ -368,10 +414,10 @@ object CobblemonUiThemePresets {
         put(variant to UiWidgetState.FOCUS, pixelStyle(hover, indicator = selector))
         put(variant to UiWidgetState.PRESSED, pixelStyle(pressed, pressedOffsetY = 1))
         put(variant to UiWidgetState.DISABLED, pixelStyle(disabled, 0xFF4E5659.toInt()))
-        put(variant to UiWidgetState.SELECTED, pixelStyle(selected, indicator = selector))
+        put(variant to UiWidgetState.SELECTED, pixelStyle(selected, selectedText, indicator = selector))
     }
 
-    private fun MutableMap<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>.addPixelGhost(
+    internal fun MutableMap<Pair<UiButtonVariant, UiWidgetState>, UiButtonStyle>.addPixelGhost(
         colors: UiColorPalette,
         selector: UiSelectionIndicator
     ) {

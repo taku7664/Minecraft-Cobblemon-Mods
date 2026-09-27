@@ -135,6 +135,25 @@ sealed interface UiBorder {
         }
     }
 
+    /**
+     * A DS menu window frame: a one-pixel [outerColor] outline, a [bandWidth] band of [bandColor] inside it and,
+     * when [innerColor] is set, a one-pixel line between the band and the fill. It follows the surface shape, so a
+     * rounded rectangle gives the rounded window of the Generation IV menus.
+     */
+    data class WindowFrame(
+        val outerColor: Int,
+        val bandColor: Int,
+        val bandWidth: Int = 2,
+        val innerColor: Int? = null
+    ) : UiBorder {
+        init {
+            require(bandWidth > 0) { "Window frame band width must be positive" }
+        }
+
+        /** Pixels the frame takes on each side. */
+        val thickness: Int get() = 1 + bandWidth + if (innerColor == null) 0 else 1
+    }
+
     data class PixelFrame(
         val outerColor: Int,
         val highlightColor: Int,

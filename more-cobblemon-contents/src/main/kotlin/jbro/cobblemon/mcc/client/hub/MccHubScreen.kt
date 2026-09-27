@@ -2,7 +2,6 @@ package jbro.cobblemon.mcc.client.hub
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.client.MccBattleHubClientState
-import jbro.cobblemon.uikit.CobblemonUiThemePresets
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
@@ -10,12 +9,12 @@ import jbro.cobblemon.uikit.UiControlSize
 import jbro.cobblemon.uikit.UiPanelSpec
 import jbro.cobblemon.uikit.UiPanelTone
 import jbro.cobblemon.uikit.UiRect
-import jbro.cobblemon.uikit.UiThemePreset
 import jbro.cobblemon.uikit.UiThemeSnapshot
 import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.UiWidthPolicy
 import jbro.cobblemon.uikit.client.CobblemonUiButton
 import jbro.cobblemon.uikit.client.CobblemonUiPanel
+import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractWidget
@@ -39,7 +38,7 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
 
     override fun init() {
         if (previousTheme == null) previousTheme = CobblemonUiThemes.registry.snapshot()
-        CobblemonUiThemePresets.install(UiThemePreset.PIXEL_LEAGUE)
+        CobblemonUiThemes.registry.install(MccHubTheme.snapshot())
         current = this
         rebuild()
     }
@@ -48,13 +47,17 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
 
     override fun rebuild() {
         clearWidgets()
-        val layout = MccHubLayout.calculate(width, height)
+        val layout = MccHubLayout.calculate(width, height, MccHubTabs.all().size)
         addRenderableWidget(
             CobblemonUiPanel.create(layout.shell.x, layout.shell.y, layout.shell.width, layout.shell.height,
                 UiPanelSpec(tone = UiPanelTone.SHELL)),
         )
-        addRenderableWidget(HubHeader(layout))
-        addRenderableWidget(RailBackdrop(layout.rail))
+        val badges = headerBadges(layout)
+        addRenderableWidget(HubHeader(layout, badges.minOfOrNull { it.x - 6 } ?: layout.balance.x))
+        // After the header, whose fill would otherwise cover their labels.
+        badges.forEach(::addRenderableWidget)
+        addRenderableWidget(CobblemonUiPanel.create(layout.rail.x, layout.rail.y, layout.rail.width, layout.rail.height,
+            UiPanelSpec(tone = UiPanelTone.PANEL)))
         addTabs(layout)
         addRenderableWidget(
             CobblemonUiButton.create(layout.closeButton.x, layout.closeButton.y, layout.closeButton.width,
@@ -72,6 +75,31 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
         activeContent?.build(this, layout.content)
     }
 
+    /**
+     * Places the content mods' header badges right-aligned before the BP balance, with labels when the brand
+     * still fits beside them and as bare icons otherwise.
+     */
+    private fun headerBadges(layout: MccHubLayout): List<HeaderBadge> {
+        val badges = MccHubHeaderBadges.current()
+        if (badges.isEmpty()) return emptyList()
+        val font = Minecraft.getInstance().font
+        val header = layout.header
+        val right = layout.balance.x - 10
+        val labelled = badges.map { BADGE_ICON + BADGE_ICON_GAP + font.width(it.label) }
+        val brandEnd = header.x + 8 + font.width(hubText("brand")) + 14
+        val withLabels = right - labelled.sum() - (badges.size - 1) * BADGE_GAP >= brandEnd
+        var x = right
+        return badges.indices.reversed().map { index ->
+            val width = if (withLabels) labelled[index] else BADGE_ICON
+            x -= width
+            val badge = badges[index]
+            HeaderBadge(UiRect(x, header.y + 2, width, header.height - 4), badge, withLabels).also { widget ->
+                (badge.tooltip ?: badge.label.takeUnless { withLabels })?.let { widget.setTooltip(Tooltip.create(it)) }
+                x -= BADGE_GAP
+            }
+        }
+    }
+
     /** Switches to [tabId] as if its rail button was pressed; unknown tabs are ignored. */
     fun selectTab(tabId: String) {
         MccHubTabs.get(tabId)?.let(::select)
@@ -80,20 +108,14 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
     private fun addTabs(layout: MccHubLayout) {
         val tabs = MccHubTabs.all().take(layout.visibleTabCount())
         tabs.forEachIndexed { index, tab ->
-            val bounds = layout.tabButton(index)
             val denial = tab.accessContentId?.let(MccBattleHubClientState.deniedById::get)
-            val button = CobblemonUiButton.create(
-                bounds.x,
-                bounds.y,
-                bounds.width,
-                UiButtonSpec(tab.label, variant = UiButtonVariant.SECONDARY, size = UiControlSize.MEDIUM,
-                    width = UiWidthPolicy.Fixed(bounds.width), selected = tab.id == selectedTabId),
-                forcedState = if (denial != null) UiWidgetState.DISABLED else null,
-            ) { select(tab) }
-            if (denial != null) {
-                button.setTooltip(Tooltip.create(Component.translatable(denial.reasonKey, *denial.arguments.toTypedArray())))
-            }
-            addRenderableWidget(button)
+            addRenderableWidget(MccHubKit.row(layout.tabButton(index), MccHubKit.ListEntry(
+                tab.label,
+                selected = tab.id == selectedTabId,
+                enabled = denial == null,
+                tooltip = denial?.let { Component.translatable(it.reasonKey, *it.arguments.toTypedArray()) },
+                icon = tab.icon,
+            ) { select(tab) }))
         }
     }
 
@@ -115,13 +137,34 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
         shownContent?.hidden()
         shownContent = null
         val original = previousTheme
-        if (original != null && CobblemonUiThemes.registry.snapshot().id == UiThemePreset.PIXEL_LEAGUE.id) {
+        if (original != null && CobblemonUiThemes.registry.snapshot().id == MccHubTheme.id) {
             CobblemonUiThemes.registry.install(original)
         }
         previousTheme = null
     }
 
-    private class HubHeader(private val layout: MccHubLayout) : AbstractWidget(
+    private class HeaderBadge(private val rect: UiRect, private val badge: MccHubHeaderBadge, private val labelled: Boolean) :
+        AbstractWidget(rect.x, rect.y, rect.width, rect.height, badge.label) {
+        init {
+            active = false
+        }
+
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+            val theme = CobblemonUiThemes.registry.snapshot()
+            val font = Minecraft.getInstance().font
+            // The header's bottom border takes its last two pixels, so content centres above it.
+            val middle = rect.y + (rect.height - 2) / 2 + 1
+            CobblemonUiRenderSlot.drawContent(graphics, UiRect(rect.x, middle - BADGE_ICON / 2, BADGE_ICON, BADGE_ICON), badge.icon, partialTick)
+            if (labelled) {
+                graphics.drawString(font, badge.label, rect.x + BADGE_ICON + BADGE_ICON_GAP, middle - font.lineHeight / 2 + 1,
+                    theme.colors.textPrimary, false)
+            }
+        }
+
+        override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
+    }
+
+    private class HubHeader(private val layout: MccHubLayout, private val brandLimit: Int) : AbstractWidget(
         layout.header.x, layout.header.y, layout.header.width, layout.header.height, Component.empty(),
     ) {
         init {
@@ -133,10 +176,10 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
             val font = Minecraft.getInstance().font
             val header = layout.header
             graphics.fill(header.x, header.y, header.right, header.bottom, theme.pixelDecorations?.titleBar ?: theme.colors.panel)
-            graphics.fill(header.x, header.bottom - 2, header.right, header.bottom, theme.colors.border)
+            graphics.fill(header.x, header.bottom - 2, header.right, header.bottom, theme.colors.accentSecondary)
 
             val brand = hubText("brand")
-            val brandRoom = (layout.balance.x - header.x - 14).coerceAtLeast(1)
+            val brandRoom = (brandLimit - header.x - 14).coerceAtLeast(1)
             val scale = listOf(layout.brandScale, 1.5f, 1f).first { font.width(brand) * it <= brandRoom }
             val pose = graphics.pose()
             pose.pushPose()
@@ -156,22 +199,11 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
         override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
     }
 
-    private class RailBackdrop(private val rail: UiRect) :
-        AbstractWidget(rail.x, rail.y, rail.width, rail.height, Component.empty()) {
-        init {
-            active = false
-        }
-
-        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-            val theme = CobblemonUiThemes.registry.snapshot()
-            graphics.fill(rail.x, rail.y, rail.right, rail.bottom, theme.pixelDecorations?.titleBar ?: theme.colors.shell)
-            graphics.fill(rail.right - 1, rail.y, rail.right, rail.bottom, theme.colors.borderBright)
-        }
-
-        override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
-    }
-
     companion object {
+        private const val BADGE_ICON = 16
+        private const val BADGE_ICON_GAP = 3
+        private const val BADGE_GAP = 8
+
         /** The open hub, so fresh server state can rebuild it in place. */
         var current: MccHubScreen? = null
             private set
@@ -194,6 +226,12 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
         fun refresh(tabId: String) {
             val hub = current ?: return
             if (Minecraft.getInstance().screen === hub && hub.selectedTabId == tabId) hub.rebuild()
+        }
+
+        /** Rebuilds the hub if it is the screen, after a header badge changed. */
+        fun refreshHeader() {
+            val hub = current ?: return
+            if (Minecraft.getInstance().screen === hub) hub.rebuild()
         }
 
         /** Whether the hub is the screen and shows [tabId]. */

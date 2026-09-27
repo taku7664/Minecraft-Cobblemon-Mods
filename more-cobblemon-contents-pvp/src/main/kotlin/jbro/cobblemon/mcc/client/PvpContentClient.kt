@@ -19,6 +19,7 @@ object PvpContentClient : ClientModInitializer {
                 Component.translatable(MccDashboardPresentation.contentNameKey(ManagedBattleContentIds.PVP)),
                 order = 120,
                 kind = MccHubTabKind.Embedded(::PvpHubTab),
+                icon = MccHubTabs.itemIcon("cobblemon:link_cable"),
             ),
         )
     }

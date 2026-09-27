@@ -7,6 +7,7 @@ import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.client.CobblemonUiRenderContent
 import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
 import jbro.cobblemon.uikit.client.UiSurfaceRenderer
+import jbro.cobblemon.uikit.client.UiTextRenderer
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractButton
@@ -96,13 +97,17 @@ object MccHubPortraitCards {
             val first = MccHubKit.fitted(primary, text.width)
             val second = MccHubKit.fitted(secondary, text.width)
             val firstColor = if (marked) theme.colors.accentCaution else style.text
+            val shadow = style.textShadowColor
             if (cell.stacked) {
-                graphics.drawString(font, first, text.x + (text.width - font.width(first)) / 2, text.y, firstColor, false)
-                graphics.drawString(font, second, text.x + (text.width - font.width(second)) / 2, text.y + 10, style.text, false)
+                UiTextRenderer.draw(graphics, font, first, text.x + (text.width - font.width(first)) / 2, text.y, firstColor, shadow)
+                UiTextRenderer.draw(graphics, font, second, text.x + (text.width - font.width(second)) / 2, text.y + 10, style.text, shadow)
             } else {
-                graphics.drawString(font, first, text.x, text.y, firstColor, false)
-                graphics.drawString(font, second, text.x, text.y + 10, style.text, false)
+                UiTextRenderer.draw(graphics, font, first, text.x, text.y, firstColor, shadow)
+                UiTextRenderer.draw(graphics, font, second, text.x, text.y + 10, style.text, shadow)
             }
+            // A marked card keeps its cursor while hovered; themes that fill the selection draw nothing more here.
+            val indicator = if (marked) theme.style(UiButtonVariant.SECONDARY, UiWidgetState.SELECTED).selectionIndicator else style.selectionIndicator
+            UiSurfaceRenderer.drawSelection(graphics, x, y, width, height, style.surface.shape, indicator)
         }
 
         private fun animated(content: CobblemonUiRenderContent, animate: Boolean): CobblemonUiRenderContent = when (content) {

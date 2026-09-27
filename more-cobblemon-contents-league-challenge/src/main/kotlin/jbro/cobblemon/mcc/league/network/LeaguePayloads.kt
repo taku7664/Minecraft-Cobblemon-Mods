@@ -25,6 +25,16 @@ data class LeagueStatePayload(val json: String) : CustomPacketPayload {
     }
 }
 
+/** The player's League rank alone, kept current for the hub header whether or not the League tab is open. */
+data class LeagueRankPayload(val rank: String) : CustomPacketPayload {
+    override fun type() = TYPE
+    companion object {
+        val TYPE = CustomPacketPayload.Type<LeagueRankPayload>(ResourceLocation.fromNamespaceAndPath(Mod.MOD_ID, "rank_v1"))
+        val CODEC: StreamCodec<RegistryFriendlyByteBuf, LeagueRankPayload> = StreamCodec.of(
+            { buffer, payload -> buffer.writeUtf(payload.rank, 64) }, { LeagueRankPayload(it.readUtf(64)) })
+    }
+}
+
 data class LeagueIntentPayload(val nonce: UUID, val requestId: UUID, val revision: Long,
     val catalogRevision: Long, val action: LeagueAction, val challengeId: String = "") : CustomPacketPayload {
     override fun type() = TYPE

@@ -276,8 +276,9 @@ internal class PvpHubTab : MccHubTabContent {
             },
         )
         if (MccHubKit.choiceMode(settingsArea.width, settingsArea.height, rows) == MccHubKit.ChoiceMode.COMPACT) {
-            // A short card toggles visibility and format side by side, and lists one mechanic per row below them.
-            val toggles = UiRect(body.x, body.y, body.width, MccHubKit.CONTROL_HEIGHT)
+            // A short card toggles visibility and format side by side, and lists one mechanic per row below them,
+            // all with small controls so the four mechanics fit without scrolling where they can.
+            val toggles = UiRect(body.x, body.y, body.width, MccHubKit.controlHeight(UiControlSize.SMALL))
             val visibility = state.settings.visibility
             val format = state.settings.format
             MccHubKit.buttonRow(host, toggles, listOf(
@@ -287,7 +288,7 @@ internal class PvpHubTab : MccHubTabContent {
                 MccHubKit.Action(room("format.${format.recordId}"), enabled = editable, tooltip = room("group.format")) {
                     updateSettings(controller, state.settings.copy(format = PvpBattleFormat.entries[(format.ordinal + 1) % PvpBattleFormat.entries.size]))
                 },
-            ))
+            ), UiControlSize.SMALL)
             var listBottom = body.bottom
             controller.feedbackKey?.let { key ->
                 MccHubKit.text(host, UiRect(body.x, body.bottom - 10, body.width, 10), Component.translatable(key)) { it.colors.accentDanger }
@@ -299,7 +300,7 @@ internal class PvpHubTab : MccHubTabContent {
                     val enabled = mechanic in mechanics
                     MccHubKit.ListEntry(room("mechanic.${mechanic.id}"), trailing = if (enabled) Component.literal("✓") else null,
                         selected = enabled, enabled = editable, tooltip = room("group.mechanics")) { toggleMechanic(mechanic) }
-                }, PvpHubClient.mechanicsOffset) { PvpHubClient.mechanicsOffset = it }
+                }, PvpHubClient.mechanicsOffset, UiControlSize.SMALL) { PvpHubClient.mechanicsOffset = it }
         } else {
             var y = MccHubKit.choices(host, settingsArea, rows) + MccHubKit.GAP + 2
             controller.feedbackKey?.let { key ->

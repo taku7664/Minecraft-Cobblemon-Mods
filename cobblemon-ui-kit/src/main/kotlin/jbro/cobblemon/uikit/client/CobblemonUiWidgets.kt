@@ -78,7 +78,7 @@ class CobblemonUiListItem private constructor(
             spec.selected -> UiWidgetState.SELECTED
             else -> UiWidgetState.NORMAL
         }
-        val style = theme.style(UiButtonVariant.SECONDARY, state)
+        val style = theme.listRowStyle(state)
         UiSurfaceRenderer.draw(graphics, x, y, width, height, style.surface)
 
         val font = Minecraft.getInstance().font
@@ -91,13 +91,17 @@ class CobblemonUiListItem private constructor(
             contentLeft += iconSize + metrics.iconGap
         }
         val titleTop = if (spec.supportingText == null) y + (height - font.lineHeight) / 2 else y + 5
-        graphics.drawString(font, spec.title, contentLeft, titleTop, style.text, style.textShadow)
+        UiTextRenderer.draw(graphics, font, spec.title, contentLeft, titleTop, style.text, style.textShadowColor, style.textShadow)
         spec.supportingText?.let {
-            graphics.drawString(font, it, contentLeft, y + height - font.lineHeight - 4, style.supportingText, false)
+            UiTextRenderer.draw(graphics, font, it, contentLeft, y + height - font.lineHeight - 4, style.supportingText, style.textShadowColor)
         }
         spec.trailingText?.let {
-            graphics.drawString(font, it, x + width - padding - font.width(it), y + (height - font.lineHeight) / 2, style.supportingText, false)
+            UiTextRenderer.draw(graphics, font, it, x + width - padding - font.width(it), y + (height - font.lineHeight) / 2,
+                style.supportingText, style.textShadowColor)
         }
+        UiSurfaceRenderer.drawSelection(graphics, x, y, width, height, style.surface.shape,
+            UiSurfaceRenderer.indicatorFor(style.selectionIndicator,
+                theme.listRowStyle(UiWidgetState.SELECTED).selectionIndicator, spec.selected && active))
     }
 
     companion object {
