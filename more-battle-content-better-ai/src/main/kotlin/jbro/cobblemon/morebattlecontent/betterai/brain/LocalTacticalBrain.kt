@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionCandidate
 import jbro.cobblemon.morebattlecontent.api.ai.BattleActionKind
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrain
+import jbro.cobblemon.morebattlecontent.api.ai.BattleLeadChoiceContext
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainContentIds
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainCloseResult
 import jbro.cobblemon.morebattlecontent.api.ai.BattleBrainOpenContext
@@ -49,6 +50,7 @@ import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDeci
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeInitialProductDecisionStatus
 import jbro.cobblemon.morebattlecontent.betterai.search.NativeProductSessionState
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalOpponentThreat
+import jbro.cobblemon.morebattlecontent.betterai.policy.LocalLeadChoice
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalOpponentMoveUsage
 import jbro.cobblemon.morebattlecontent.betterai.state.LocalStatusMoveBinder
 import kotlin.math.roundToInt
@@ -452,6 +454,21 @@ internal class LocalTacticalBrain(
 
     override fun closeSession(session: BattleBrainSession, result: BattleBrainCloseResult) {
         (session as? Session)?.nativeProductState = null
+    }
+
+    override fun chooseLeads(context: BattleLeadChoiceContext): List<UUID>? {
+        val choice = LocalLeadChoice.choose(context) ?: return null
+        val species = context.ownTeam.associate { it.battlePokemonId to it.speciesId.substringAfter(':') }
+        logger.info(
+            "[BetterAI Lead] persona={} tier={} leads={} scores={}",
+            context.trainerPersonaId,
+            context.trainerProfile.difficulty.tier,
+            choice.leads.map { species[it] },
+            choice.scores.entries.joinToString(prefix = "{", postfix = "}") { (id, score) ->
+                "${species[id]}=${String.format(Locale.ROOT, "%.2f", score)}"
+            },
+        )
+        return choice.leads
     }
 
     private fun decisionDiagnostics(

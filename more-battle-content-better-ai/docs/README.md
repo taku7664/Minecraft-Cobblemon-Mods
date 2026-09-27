@@ -64,6 +64,7 @@
 | [`DIFFICULTY_ACTIVATION.md`](behavior/DIFFICULTY_ACTIVATION.md) | 2026-08-19 | 타워·팩토리의 입문·일반·상급·보스 난도 매핑 |
 | [`HUMANLIKE.md`](behavior/HUMANLIKE.md) | 2026-08-18 | 계획·예측·상황별 습관·혼합 전략. 호출 정책 등 일부 조항은 문서 상단의 대체 목록 참고 |
 | [`THREAT_AND_MECHANIC_VALUE.md`](behavior/THREAT_AND_MECHANIC_VALUE.md) | 2026-09-27 | 상대별 위협도, 내 포켓몬 역할 가치, 기믹 보존 가치(-25점 폐기)와 테라 담당 보정, 수제 경로의 테라·메가 상태 유지, 상태이상 대상 궁합, 확실한 KO 우선 |
+| [`LEAD_CHOICE.md`](behavior/LEAD_CHOICE.md) | 2026-09-27 | 팀 프리뷰를 보고 선봉 고르기. 본체 `BattleBrain.chooseLeads` 계약과 난이도별 대면 점수 |
 
 ## 2026-09-27 정리에서 없앤 문서
 
