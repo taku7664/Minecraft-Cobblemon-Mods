@@ -34,6 +34,8 @@ val modVersion = version.toString()
 
 tasks.processResources {
     inputs.property("version", modVersion)
+    // Editor tooling can drop state folders into src; they never belong in the jar.
+    exclude("**/.omc/**")
     filesMatching("fabric.mod.json") { expand("version" to modVersion) }
 }
 
