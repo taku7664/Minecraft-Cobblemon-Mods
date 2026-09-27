@@ -45,10 +45,36 @@ class LocalMechanicCandidateTest {
             publicActionCatalog = BattlePublicActionCatalogView(emptyList()),
         )
 
-        val byId = LocalBattleActionPolicy.rank(context, null, BattleTrainerProfile.balanced())
+        // A last Pokemon gives nothing up by terastallizing, so with no move data the two only tie.
+        val alone = LocalBattleActionPolicy.rank(context, null, BattleTrainerProfile.balanced())
+            .associateBy { it.outcome.candidate.actionId }
+        assertEquals(5.0, alone.getValue(plain.actionId).comparisonValue)
+        assertEquals(5.0, alone.getValue(tera.actionId).comparisonValue)
+
+        // With a benched ally whose Tera Ground would dodge this Electric attacker, spending it here
+        // for no visible gain costs that future option.
+        val benchId = UUID.randomUUID()
+        val bench = mon(BattleSide.ALLY, setOf("water")).let {
+            BattlePokemonStateView(benchId, it.side, null, it.speciesId, null, it.level, 1.0, null,
+                emptyMap(), emptySet(), null, null, false, it.knownTypeIds, it.combatStats,
+                knownVolatileEffectIds = emptySet())
+        }
+        val evs = setOf("hp", "atk", "def", "spa", "spd", "spe").associateWith { 0 }
+        val withBench = context.copy(
+            state = BattleStateView(context.state.battleId, context.state.format, context.state.turn,
+                context.state.pokemon + bench, context.state.field, context.state.remainingPokemonBySide,
+                emptyList(), emptyList()),
+            exactOwnTeam = BattleExactOwnTeamView(listOf(
+                BattleExactPokemonBuildView(context.state.pokemon.first { it.side == BattleSide.ALLY }.battlePokemonId,
+                    "sandveil", null, "serious", "N", evs, evs.mapValues { 31 }, "ground", "probe"),
+                BattleExactPokemonBuildView(benchId, "torrent", null, "serious", "N", evs, evs.mapValues { 31 },
+                    "ground", "probe"),
+            )),
+        )
+        val byId = LocalBattleActionPolicy.rank(withBench, null, BattleTrainerProfile.balanced(2))
             .associateBy { it.outcome.candidate.actionId }
         assertEquals(5.0, byId.getValue(plain.actionId).comparisonValue)
-        assertEquals(-20.0, byId.getValue(tera.actionId).comparisonValue)
+        assertTrue(byId.getValue(tera.actionId).comparisonValue < 5.0, "${byId.getValue(tera.actionId).comparisonValue}")
     }
 
     @Test

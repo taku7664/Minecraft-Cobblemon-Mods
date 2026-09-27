@@ -19,6 +19,7 @@ import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeInitialProduct
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeMechanicAllowance
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeOpeningStateRules
 import jbro.cobblemon.morebattlecontent.betterai.simulation.NativeProductSeedPolicy
+import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalMechanicOptionValue
 import jbro.cobblemon.morebattlecontent.betterai.evaluation.LocalOpponentThreat
 
 internal enum class NativeInitialProductDecisionStatus {
@@ -211,7 +212,7 @@ internal class NativeInitialProductDecisionEvaluator(
         }
         return NativeInitialProductDecisionEvaluation(
             status = NativeInitialProductDecisionStatus.AVAILABLE,
-            ranked = NativeProductRankAdapter.rank(search.rootValues, rootBaseline, context),
+            ranked = NativeProductRankAdapter.rank(search.rootValues, rootBaseline, context, profile),
             depthCompleted = search.depthCompleted,
             nodesVisited = search.nodesVisited,
             truncated = search.status == NativeProductWorldSearchStatus.PARTIAL_DEPTH,
@@ -351,7 +352,7 @@ internal class NativeInitialProductDecisionEvaluator(
         }
         return NativeInitialProductDecisionEvaluation(
             status = NativeInitialProductDecisionStatus.AVAILABLE,
-            ranked = NativeProductRankAdapter.rank(search.rootValues, rootBaseline, context),
+            ranked = NativeProductRankAdapter.rank(search.rootValues, rootBaseline, context, profile),
             depthCompleted = search.depthCompleted,
             nodesVisited = search.nodesVisited,
             truncated = search.status == NativeProductWorldSearchStatus.PARTIAL_DEPTH,
@@ -407,11 +408,17 @@ internal object NativeProductRankAdapter {
         values: List<NativeRootActionValue>,
         rootBaseline: Double = 0.0,
         context: BattleDecisionContext? = null,
+        profile: BattleTrainerProfile? = null,
     ): List<LocalBattleActionRank> {
         require(rootBaseline.isFinite())
         return LocalBattleActionPolicy.sort(values.map { value ->
             val scaled = (value.value - rootBaseline) * BOARD_TO_SCORE
-            val setupBonus = context?.let { LocalSetupMovePreference.bonus(value.action, it) } ?: 0.0
+            // Native search sees a mechanic only within its horizon; the value of keeping it for a
+            // later turn is priced here, the same way the legacy scorer prices it.
+            val mechanicCost = if (context != null && profile != null) {
+                LocalMechanicOptionValue.cost(value.action, context, profile)
+            } else 0.0
+            val setupBonus = (context?.let { LocalSetupMovePreference.bonus(value.action, it) } ?: 0.0) - mechanicCost
             LocalBattleActionRank(
                 outcome = neutralOutcome(value.action, scaled + setupBonus),
                 decisionTier = 0,

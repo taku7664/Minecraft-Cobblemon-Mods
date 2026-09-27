@@ -146,7 +146,7 @@ internal object LocalTacticalScorer {
         tuning: LocalDecisionTuning,
     ): Double {
         if (candidate.moveDetails == null) {
-            return mechanicResourceAdjustment(candidate) + strategyMoveAdjustment(candidate, context, strategy)
+            return mechanicResourceAdjustment(candidate, context, profile) + strategyMoveAdjustment(candidate, context, strategy)
         }
         return -publicAllyCollateral(candidate, context, tuning) -
             (if (LocalPublicMechanicsKernel.hasUnconfirmedAbilityImmunity(candidate, context)) {
@@ -164,7 +164,7 @@ internal object LocalTacticalScorer {
             LocalTacticalSituationalEvaluator.consecutiveUseForbiddenPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.forcedTempoPenalty(candidate, context) +
             LocalInferredMoveGuessScorer.score(candidate, context) +
-            mechanicResourceAdjustment(candidate) +
+            mechanicResourceAdjustment(candidate, context, profile) +
             selfPatternAdjustment(candidate, context, profile) +
             strategyMoveAdjustment(candidate, context, strategy)
     }
@@ -178,7 +178,7 @@ internal object LocalTacticalScorer {
     ): LocalTacticalScore {
         val details = candidate.moveDetails
             ?: return LocalTacticalScore(
-                5.0 + mechanicResourceAdjustment(candidate) + strategyMoveAdjustment(candidate, context, strategy),
+                5.0 + mechanicResourceAdjustment(candidate, context, profile) + strategyMoveAdjustment(candidate, context, strategy),
             )
         val facts = candidate.facts
         val damageRange = facts?.standardDamageFractionRange
@@ -259,7 +259,7 @@ internal object LocalTacticalScorer {
             LocalTacticalSituationalEvaluator.consecutiveUseForbiddenPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.forcedTempoPenalty(candidate, context) +
             LocalInferredMoveGuessScorer.score(candidate, context) +
-            mechanicResourceAdjustment(candidate) +
+            mechanicResourceAdjustment(candidate, context, profile) +
             selfPatternAdjustment(candidate, context, profile) +
             strategyMoveAdjustment(candidate, context, strategy)
         return LocalTacticalScore(
@@ -445,8 +445,12 @@ internal object LocalTacticalScorer {
         return if (member != null && plan.targetRole in member.roles) PLAN_TARGET_BONUS else 0.0
     }
 
-    private fun mechanicResourceAdjustment(candidate: BattleActionCandidate): Double =
-        if (candidate.mechanic == null) 0.0 else UNJUSTIFIED_MECHANIC_PENALTY
+    /** The situational value of keeping the mechanic, not a flat charge; see [LocalMechanicOptionValue]. */
+    private fun mechanicResourceAdjustment(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        profile: BattleTrainerProfile,
+    ): Double = if (candidate.mechanic == null) 0.0 else -LocalMechanicOptionValue.cost(candidate, context, profile)
 
     private fun strategyMoveAdjustment(
         candidate: BattleActionCandidate,
@@ -784,7 +788,6 @@ internal object LocalTacticalScorer {
     private const val THREE_TURN_SWITCH_PENALTY = 5.0
     private const val SWITCH_FATIGUE_PER_PRESSURE = 3.0
     private const val MAX_SWITCH_FATIGUE_PENALTY = 15.0
-    private const val UNJUSTIFIED_MECHANIC_PENALTY = -25.0
     private const val PLAN_TARGET_BONUS = 30.0
     private const val SELF_PATTERN_BREAK_PENALTY = 20.0
     private const val SPREAD_DAMAGE_MODIFIER = 0.75
