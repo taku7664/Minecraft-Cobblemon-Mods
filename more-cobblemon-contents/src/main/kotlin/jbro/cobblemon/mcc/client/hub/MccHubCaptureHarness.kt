@@ -16,6 +16,8 @@ import java.util.concurrent.atomic.AtomicReference
  * `dense`); optionally `MCC_HUB_CAPTURE_LOCALE` (default `ko_kr`, or `en_us`) and `MCC_HUB_CAPTURE_GUI_SCALE` (1-4).
  * Launch with `--quickPlaySingleplayer <world>`: once the world is loaded the hub opens with fixture data,
  * is captured to `screenshots/`, closed through its ESC path, and the client stops.
+ * With `MCC_HUB_CAPTURE_OPEN=<content id>` the hub instead asks the server for that content, as its tab does,
+ * and the screen the server opens is captured too.
  */
 object MccHubCaptureHarness {
     private val logger = MoreCobblemonContents.LOGGER
@@ -30,6 +32,7 @@ object MccHubCaptureHarness {
         // Korean is the working locale; set MCC_HUB_CAPTURE_LOCALE=en_us to check English layouts.
         val locale = System.getenv("MCC_HUB_CAPTURE_LOCALE")?.trim()?.takeIf { it.isNotEmpty() } ?: "ko_kr"
         val guiScale = System.getenv("MCC_HUB_CAPTURE_GUI_SCALE")?.trim()?.toIntOrNull()?.takeIf { it in 1..4 }
+        val openContent = System.getenv("MCC_HUB_CAPTURE_OPEN")?.trim()?.takeIf { it.isNotEmpty() }
         registerPreviewTabs()
 
         var guiScaleApplied = guiScale == null
@@ -41,6 +44,10 @@ object MccHubCaptureHarness {
         var closed = false
         val captured = AtomicBoolean(false)
         var ticks = 0
+        var contentRequested = false
+        var contentTicks = 0
+        var contentCaptureRequested = false
+        val contentCaptured = AtomicBoolean(false)
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
             if (!guiScaleApplied) {
                 client.options.guiScale().set(checkNotNull(guiScale))
@@ -81,6 +88,34 @@ object MccHubCaptureHarness {
                     captured.set(true)
                 }
             }
+            if (requested && captured.get() && openContent != null) {
+                if (!contentRequested) {
+                    MccHubTabs.requestContent(openContent)
+                    contentRequested = true
+                    logger.info("Requested hub content {}", openContent)
+                    return@EndTick
+                }
+                val screen = client.screen
+                if (screen == null || screen is MccHubScreen) {
+                    if (ticks >= 400) error("Hub content $openContent did not open a screen")
+                    return@EndTick
+                }
+                contentTicks += 1
+                if (!contentCaptureRequested && contentTicks >= 20) {
+                    contentCaptureRequested = true
+                    val name = "mcc-hub-open-${openContent.substringAfter(':')}-${client.languageManager.selected}-" +
+                        "${client.window.guiScaledWidth}x${client.window.guiScaledHeight}.png"
+                    Screenshot.grab(client.gameDirectory, name, client.mainRenderTarget) { result ->
+                        logger.info("Hub content capture {} ({}): {}", name, screen.javaClass.simpleName, result.string)
+                        contentCaptured.set(true)
+                    }
+                }
+                if (contentCaptured.get()) {
+                    closed = true
+                    client.stop()
+                }
+                return@EndTick
+            }
             if (requested && captured.get()) {
                 val screen = checkNotNull(client.screen)
                 screen.onClose()
@@ -94,14 +129,15 @@ object MccHubCaptureHarness {
         })
     }
 
-    /** Shows the content tabs in the rail even when the capture runs without the content mods. */
+    /** Shows the content tabs in the rail even when the capture runs without the content mods and their names. */
     private fun registerPreviewTabs() {
         listOf(
+            ManagedBattleContentIds.LEAGUE_CHALLENGE to 90,
             ManagedBattleContentIds.BATTLE_TOWER to 100,
             ManagedBattleContentIds.BATTLE_FACTORY to 110,
             ManagedBattleContentIds.PVP to 120,
         ).filter { (id, _) -> MccHubTabs.get(id) == null }.forEach { (id, order) ->
-            MccHubTabs.register(MccHubTab(id, Component.translatable(MccDashboardPresentation.contentNameKey(id)), order,
+            MccHubTabs.register(MccHubTab(id, Component.translatableWithFallback(MccDashboardPresentation.contentNameKey(id), id.substringAfter(':')), order,
                 MccHubTabKind.Screen {}))
         }
     }
