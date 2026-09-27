@@ -7,6 +7,8 @@ import jbro.cobblemon.battleui.extended.BattleStateTracker
 import jbro.cobblemon.battleui.extended.TeamIndicatorUI
 import jbro.cobblemon.battleui.extended.UIUtils
 import jbro.cobblemon.battleui.extended.PanelConfig
+import jbro.cobblemon.battleui.extended.ui.shared.BattleSurfaceRenderer
+import jbro.cobblemon.battleui.extended.ui.shared.BattleUiTheme
 import jbro.cobblemon.battleui.extended.pokemon.render.PokemonModelRenderer
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
@@ -134,21 +136,17 @@ object ChampionsBattleInfoOverlay {
     }
 
     private fun drawFrame(context: DrawContext) {
-        context.fill(8, 12, BASE_W - 8, BASE_H - 8, color(8, 10, 45, 236))
-        context.fill(9, 13, BASE_W - 9, 15, VIOLET_EDGE)
-        context.fill(9, BASE_H - 11, BASE_W - 9, BASE_H - 9, color(85, 91, 220, 210))
-        context.fill(406, 10, 554, 51, color(18, 21, 75, 255))
-        drawBorder(context, 406, 10, 148, 41, color(91, 99, 232), 2)
+        BattleSurfaceRenderer.draw(context, 8, 12, BASE_W - 16, BASE_H - 20, BattleUiTheme.shell)
+        BattleSurfaceRenderer.draw(context, 406, 10, 148, 41, BattleUiTheme.panel.copy(border = BattleUiTheme.CYAN, cut = 5))
         drawTextCentered(context, tr("cobblemon_battle_ui.champions.title"), BASE_W / 2, 24, WHITE, 1.2f)
     }
 
     private fun drawTeamRail(context: DrawContext, team: List<TeamIndicatorUI.TeamPreview>, x: Int, opponent: Boolean) {
         val accent = if (opponent) MAGENTA_EDGE else VIOLET_EDGE
-        context.fill(x, PANEL_Y, x + TEAM_W, PANEL_Y + PANEL_H, color(13, 17, 60, 238))
-        drawBorder(context, x, PANEL_Y, TEAM_W, PANEL_H, color(80, 86, 180, 220), 1)
+        BattleSurfaceRenderer.draw(context, x, PANEL_Y, TEAM_W, PANEL_H, BattleUiTheme.panel)
         team.take(6).forEachIndexed { index, pokemon ->
             val slotY = PANEL_Y + 16 + index * 52
-            context.fill(x + 3, slotY, x + TEAM_W - 3, slotY + 42, color(17, 22, 73, 246))
+            context.fill(x + 3, slotY, x + TEAM_W - 3, slotY + 42, BattleUiTheme.PANEL_ALT)
             context.fill(x + 3, slotY, x + 5, slotY + 42, accent)
             PokemonModelRenderer.drawPokemonModel(
                 context, x + 7, slotY + 5, 30, pokemon.renderablePokemon,
@@ -171,10 +169,10 @@ object ChampionsBattleInfoOverlay {
             else "cobblemon_battle_ui.champions.your_active"
         )
 
-        context.fill(x, PANEL_Y, x + SIDE_W, PANEL_Y + PANEL_H, color(13, 17, 60, 238))
-        context.fill(x, PANEL_Y, x + SIDE_W, PANEL_Y + 38, header)
-        context.fill(x, PANEL_Y, x + 5, PANEL_Y + PANEL_H, accent)
-        drawBorder(context, x, PANEL_Y, SIDE_W, PANEL_H, color(80, 86, 180, 220), 1)
+        BattleSurfaceRenderer.draw(context, x, PANEL_Y, SIDE_W, PANEL_H, BattleUiTheme.panel)
+        BattleSurfaceRenderer.draw(context, x + 1, PANEL_Y + 1, SIDE_W - 2, 37,
+            BattleUiTheme.panel.copy(top = header, bottom = BattleUiTheme.PANEL, borderWidth = 0, cut = 3, corners = 3))
+        context.fill(x + 7, PANEL_Y + 37, x + SIDE_W - 7, PANEL_Y + 38, accent)
         drawTextCentered(context, title, x + SIDE_W / 2, PANEL_Y + 14, WHITE, 1.15f)
 
         if (entries.isEmpty()) {
@@ -209,9 +207,8 @@ object ChampionsBattleInfoOverlay {
         accent: Int,
         opponent: Boolean
     ) {
-        context.fill(x, y, x + width, y + height, color(17, 22, 73, 246))
-        context.fill(x, y, x + 3, y + height, accent)
-        drawBorder(context, x, y, width, height, color(69, 77, 155, 220), 1)
+        BattleSurfaceRenderer.draw(context, x, y, width, height, BattleUiTheme.panel.copy(cut = 0))
+        context.fill(x + 1, y + 8, x + 3, y + height - 8, accent)
 
         drawPortrait(context, entry, x + 10, y + 12, 38, opponent)
         val headerX = x + 54
@@ -233,8 +230,7 @@ object ChampionsBattleInfoOverlay {
     }
 
     private fun drawPortrait(context: DrawContext, entry: PokemonEntry, x: Int, y: Int, size: Int, opponent: Boolean) {
-        context.fill(x, y, x + size, y + size, color(26, 30, 87, 240))
-        drawBorder(context, x, y, size, size, color(80, 86, 180, 220), 1)
+        BattleSurfaceRenderer.draw(context, x, y, size, size, BattleUiTheme.panel.copy(cut = 4))
         PokemonModelRenderer.drawPokemonModel(
             context, x + 2, y + 2, size - 4, null, entry.speciesIdentifier,
             entry.aspects, entry.uuid, entry.hpPercent <= 0f, entry.status,
@@ -310,9 +306,9 @@ object ChampionsBattleInfoOverlay {
     }
 
     private fun drawEffectsPanel(context: DrawContext, x: Int) {
-        context.fill(x, PANEL_Y, x + FIELD_W, PANEL_Y + PANEL_H, color(11, 15, 53, 242))
-        context.fill(x, PANEL_Y, x + FIELD_W, PANEL_Y + 38, color(38, 43, 119, 238))
-        drawBorder(context, x, PANEL_Y, FIELD_W, PANEL_H, color(80, 86, 180, 220), 1)
+        BattleSurfaceRenderer.draw(context, x, PANEL_Y, FIELD_W, PANEL_H, BattleUiTheme.panel)
+        BattleSurfaceRenderer.draw(context, x + 1, PANEL_Y + 1, FIELD_W - 2, 37,
+            BattleUiTheme.panel.copy(borderWidth = 0, corners = 3))
         drawTextCentered(
             context,
             tr("cobblemon_battle_ui.champions.effects"),
@@ -337,7 +333,7 @@ object ChampionsBattleInfoOverlay {
         val effectWindow = EffectListLayout.window(effects.size)
         effects.take(effectWindow.visibleEffectCount).forEachIndexed { index, effect ->
             val rowY = PANEL_Y + 48 + index * 36
-            val rowColor = if (effect.opponent) color(72, 21, 57, 228) else color(25, 30, 92, 232)
+            val rowColor = if (effect.opponent) color(44, 28, 53, 240) else BattleUiTheme.PANEL_ALT
             context.fill(x + 10, rowY, x + FIELD_W - 10, rowY + 31, rowColor)
             context.fill(x + 10, rowY, x + 13, rowY + 31, if (effect.opponent) MAGENTA_EDGE else VIOLET_EDGE)
             drawText(context, effect.group, x + 21, rowY + 6, TEXT_LABEL, 0.85f)
@@ -347,7 +343,7 @@ object ChampionsBattleInfoOverlay {
 
         if (effectWindow.hiddenEffectCount > 0) {
             val rowY = PANEL_Y + 48 + effectWindow.visibleEffectCount * 36
-            context.fill(x + 10, rowY, x + FIELD_W - 10, rowY + 31, color(25, 30, 92, 232))
+            context.fill(x + 10, rowY, x + FIELD_W - 10, rowY + 31, BattleUiTheme.PANEL_ALT)
             context.fill(x + 10, rowY, x + 13, rowY + 31, VIOLET_EDGE)
             drawTextCentered(
                 context,
@@ -369,12 +365,12 @@ object ChampionsBattleInfoOverlay {
         detailed: Boolean
     ) {
         val height = if (detailed) 12 else 9
-        context.fill(x, y, x + width, y + height, color(22, 25, 50))
+        context.fill(x, y, x + width, y + height, BattleUiTheme.TRACK)
         val clamped = hpPercent.coerceIn(0f, 1f)
         val hpColor = when {
-            clamped > .5f -> color(118, 238, 67)
-            clamped > .25f -> color(244, 200, 48)
-            else -> color(230, 67, 67)
+            clamped > .5f -> BattleUiTheme.GOOD
+            clamped > .25f -> BattleUiTheme.FOCUS
+            else -> BattleUiTheme.DANGER
         }
         val fillWidth = ((width - 4) * clamped).toInt()
         context.fill(x + 2, y + 2, x + 2 + fillWidth, y + height - 2, hpColor)
@@ -455,23 +451,16 @@ object ChampionsBattleInfoOverlay {
         UIUtils.drawText(context, text, centerX - width / 2f, y.toFloat(), color, textScale)
     }
 
-    private fun drawBorder(context: DrawContext, x: Int, y: Int, width: Int, height: Int, color: Int, thickness: Int) {
-        context.fill(x, y, x + width, y + thickness, color)
-        context.fill(x, y + height - thickness, x + width, y + height, color)
-        context.fill(x, y, x + thickness, y + height, color)
-        context.fill(x + width - thickness, y, x + width, y + height, color)
-    }
-
     private fun color(r: Int, g: Int, b: Int, a: Int = 255): Int = UIUtils.color(r, g, b, a)
 
-    private val WHITE = color(247, 248, 255)
-    private val TEXT_DIM = color(170, 178, 212)
-    private val TEXT_LABEL = color(175, 158, 255)
-    private val ALLY_GLASS = color(35, 31, 112, 242)
-    private val ENEMY_GLASS = color(106, 18, 66, 242)
-    private val VIOLET_EDGE = color(111, 82, 255)
-    private val MAGENTA_EDGE = color(237, 41, 139)
-    private val BOOST = color(113, 255, 144)
-    private val DROP = color(95, 192, 255)
-    private val RANK_EMPTY = color(82, 90, 139, 210)
+    private val WHITE = BattleUiTheme.TEXT
+    private val TEXT_DIM = BattleUiTheme.MUTED
+    private val TEXT_LABEL = BattleUiTheme.CYAN
+    private val ALLY_GLASS = color(27, 61, 78, 242)
+    private val ENEMY_GLASS = color(57, 36, 79, 242)
+    private val VIOLET_EDGE = BattleUiTheme.CYAN
+    private val MAGENTA_EDGE = BattleUiTheme.PURPLE
+    private val BOOST = BattleUiTheme.GOOD
+    private val DROP = BattleUiTheme.DANGER
+    private val RANK_EMPTY = BattleUiTheme.BORDER
 }

@@ -2,7 +2,7 @@ package jbro.cobblemon.battleui.extended.mixin;
 
 import com.cobblemon.mod.common.client.gui.battle.widgets.BattleOptionTile;
 import jbro.cobblemon.battleui.extended.navigation.KeyboardTileFocus;
-import jbro.cobblemon.battleui.navigation.FocusBorderRenderer;
+import jbro.cobblemon.battleui.extended.ui.shared.BattleControlRenderer;
 import jbro.cobblemon.battleui.navigation.SmoothButtonScale;
 import net.minecraft.client.gui.DrawContext;
 import org.spongepowered.asm.mixin.Mixin;
@@ -36,7 +36,7 @@ public abstract class BattleOptionTileMixin {
     @Shadow
     public abstract boolean isHovered(double mouseX, double mouseY);
 
-    @Inject(method = "render", at = @At("HEAD"), remap = true)
+    @Inject(method = "render", at = @At("HEAD"), remap = true, cancellable = true)
     private void cobblemonBattleUi$beginSmoothScale(
             DrawContext context,
             int mouseX,
@@ -63,24 +63,11 @@ public abstract class BattleOptionTileMixin {
         context.getMatrices().translate(centerX, centerY, 0.0f);
         context.getMatrices().scale(scale, scale, 1.0f);
         context.getMatrices().translate(-centerX, -centerY, 0.0f);
-    }
-
-    @Inject(method = "render", at = @At("RETURN"), remap = true)
-    private void cobblemonBattleUi$endSmoothScale(
-            DrawContext context,
-            int mouseX,
-            int mouseY,
-            float delta,
-            CallbackInfo ci
-    ) {
-        FocusBorderRenderer.draw(
-                context,
-                getX(),
-                getY(),
-                BattleOptionTile.OPTION_WIDTH,
-                BattleOptionTile.OPTION_HEIGHT,
-                cobblemonBattleUi$currentScale
-        );
-        context.getMatrices().pop();
+        try {
+            BattleControlRenderer.option(context, (BattleOptionTile) (Object) this, emphasized);
+        } finally {
+            context.getMatrices().pop();
+        }
+        ci.cancel();
     }
 }

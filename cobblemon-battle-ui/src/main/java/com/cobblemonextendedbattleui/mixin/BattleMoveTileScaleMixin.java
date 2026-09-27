@@ -2,7 +2,7 @@ package jbro.cobblemon.battleui.extended.mixin;
 
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection;
 import jbro.cobblemon.battleui.extended.navigation.KeyboardTileFocus;
-import jbro.cobblemon.battleui.navigation.FocusBorderRenderer;
+import jbro.cobblemon.battleui.extended.ui.shared.BattleControlRenderer;
 import jbro.cobblemon.battleui.navigation.SmoothButtonScale;
 import net.minecraft.client.gui.DrawContext;
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,25 +23,18 @@ public abstract class BattleMoveTileScaleMixin {
     @Shadow public abstract boolean isHovered(double mouseX, double mouseY);
     @Shadow public abstract boolean getSelectable();
 
-    @Inject(method = "render", at = @At("HEAD"))
+    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void cobblemonBattleUi$begin(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         boolean emphasized = getSelectable() && (KeyboardTileFocus.allowsMouseHover()
                 ? isHovered(mouseX, mouseY)
                 : KeyboardTileFocus.isFocused(this));
         cobblemonBattleUi$beginTransform(context, emphasized);
-    }
-
-    @Inject(method = "render", at = @At("RETURN"))
-    private void cobblemonBattleUi$end(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-        FocusBorderRenderer.draw(
-                context,
-                getX(),
-                getY(),
-                BattleMoveSelection.MOVE_WIDTH,
-                BattleMoveSelection.MOVE_HEIGHT,
-                cobblemonBattleUi$currentScale
-        );
-        context.getMatrices().pop();
+        try {
+            BattleControlRenderer.move(context, (BattleMoveSelection.MoveTile) (Object) this, emphasized);
+        } finally {
+            context.getMatrices().pop();
+        }
+        ci.cancel();
     }
 
     @Unique

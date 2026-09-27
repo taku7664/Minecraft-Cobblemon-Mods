@@ -3,6 +3,8 @@ package jbro.cobblemon.battleui.extended
 import com.cobblemon.mod.common.api.types.ElementalType
 import com.cobblemon.mod.common.client.render.drawScaledText
 import jbro.cobblemon.battleui.extended.ui.shared.NineSliceRenderer
+import jbro.cobblemon.battleui.extended.ui.shared.BattleSurfaceRenderer
+import jbro.cobblemon.battleui.extended.ui.shared.BattleUiTheme
 import com.mojang.blaze3d.systems.RenderSystem
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
@@ -395,23 +397,18 @@ object UIUtils {
     const val DIVIDER_H = 5
 
     // Cell colors (Cobblemon dark blue-tinted palette)
-    val CELL_BG = color(22, 27, 34)
-    val CELL_BORDER = color(50, 58, 72)
-    val ROW_DIVIDER_COLOR = color(38, 45, 58)
+    val CELL_BG = BattleUiTheme.PANEL_ALT
+    val CELL_BORDER = BattleUiTheme.BORDER
+    val ROW_DIVIDER_COLOR = BattleUiTheme.BORDER
 
     /** Shared 9-slice insets for the popup frame texture. */
     val POPUP_FRAME_INSETS = NineSliceRenderer.SliceInsets(POPUP_SLICE)
 
     /**
-     * Renders a 9-slice frame using the shared popup_frame.png texture.
+     * Renders the same chamfered navy surface used by battle narration and TAB.
      */
     fun renderPopupFrame(context: DrawContext, x: Int, y: Int, width: Int, height: Int) {
-        NineSliceRenderer.render(
-            context, POPUP_FRAME_TEXTURE,
-            x, y, width, height,
-            POPUP_TEX_W, POPUP_TEX_H,
-            POPUP_FRAME_INSETS
-        )
+        BattleSurfaceRenderer.draw(context, x, y, width, height, BattleUiTheme.shell.copy(cut = 4, borderWidth = 1))
     }
 
     /**

@@ -22,7 +22,7 @@ import java.util.UUID
 
 /**
  * Renders tooltips for moves in the Fight selection menu.
- * Uses cell-based layout with 9-slice texture frame tinted by move type color.
+ * Uses a navy chamfered frame; move type remains visible in the header.
  */
 object MoveTooltipRenderer {
 
@@ -216,13 +216,10 @@ object MoveTooltipRenderer {
         context.matrices.push()
         context.matrices.translate(0.0, 0.0, UIUtils.POPUP_Z_OFFSET)
 
-        // 9-slice frame tinted with move type color
-        val r = ((data.typeColor shr 16) and 0xFF) / 255f
-        val g = ((data.typeColor shr 8) and 0xFF) / 255f
-        val b = (data.typeColor and 0xFF) / 255f
+        // Keep the shared navy shell independent of the move's type hue.
         RenderSystem.enableBlend()
         RenderSystem.defaultBlendFunc()
-        RenderSystem.setShaderColor(r, g, b, 1f)
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
         UIUtils.renderPopupFrame(context, px, py, tooltipWidth, totalHeight)
         context.draw()
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
