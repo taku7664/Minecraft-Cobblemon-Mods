@@ -7,6 +7,13 @@
 
 ---
 
+## [2026-09-27 16:45] 추가 — AI 선봉 선택 API — `50e9075b`, 1.6.28 클라이언트·서버 배포
+
+- **내용:** `BattleBrain.chooseLeads(BattleLeadChoiceContext): List<UUID>?`(기본 null = 순서 유지)와 `BattleLeadChoiceContext`를 `api.ai`에 추가했다. `Cobblemon173TowerPveBattleRuntime.startManaged`가 행동 주체를 만들기 전에 `Cobblemon173LeadChoice.order`로 주 Brain → 로컬 Brain 순으로 묻고, 선봉만 앞으로 옮긴다. 잘못된 답·예외는 원래 순서를 유지한다. 플레이어 프리뷰가 있는 타워·AI 테스트·League(`ManagedPveBattles`)에 적용되고, 팩토리는 프리뷰가 없어 그대로다. Better AI 1.2.24가 이 API를 구현한다(계약은 Better AI `docs/behavior/LEAD_CHOICE.md`).
+- **15:30 결정과의 관계:** 이 변경은 Better AI 테스트 작업(빡대리님 승인 계획)의 일부로 `api.ai`와 Cynthia AI 테스트 동작(선봉이 더 이상 항상 미카루게가 아님)을 바꿨다. MCC는 그 전(`f3304822`)에서 복사됐으므로 합병 때 위 API·`Cobblemon173LeadChoice`·`startManaged` 호출을 MCC로 옮겨야 한다.
+- **검증:** `unitTest` 997개 통과(`Cobblemon173LeadChoiceTest` 추가). 1.6.28 JAR SHA-256 `4865ADBDC900FBC3EDDEC61BB9B76DB5FCF33E730EFEFB3C14D792FD313EE731`, `jar --validate` 통과.
+- **배포:** 백업 `dev-server/deployment-backups/20260927-164414-role-status-lead/{client,server}/`. 클라이언트·서버 모두 꺼져 있음을 확인하고 1.6.27 → 1.6.28로 교체했다. 서버는 재기동하지 않았다. 실게임 미검증.
+
 ## [2026-09-27 15:30] 결정 — Core 분리 순서와 Hub UI 방향
 
 - Better AI는 테스트 중이므로 합병을 맨 뒤로 미룬다. 그전까지 `api.ai`·`internal.ai`와 Cynthia AI 테스트의 동작은 바꾸지 않는다.
