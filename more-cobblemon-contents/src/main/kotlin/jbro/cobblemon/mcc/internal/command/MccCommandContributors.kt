@@ -5,11 +5,11 @@ import java.util.concurrent.CopyOnWriteArrayList
 import net.minecraft.commands.CommandSourceStack
 
 /** Adds one subcommand under `/mcc`; contents register theirs while initializing, before commands are built. */
-internal fun interface MccCommandContributor {
+fun interface MccCommandContributor {
     fun build(): LiteralArgumentBuilder<CommandSourceStack>
 }
 
-internal object MccCommandContributors {
+object MccCommandContributors {
     private val contributors = CopyOnWriteArrayList<MccCommandContributor>()
 
     fun register(contributor: MccCommandContributor): AutoCloseable {

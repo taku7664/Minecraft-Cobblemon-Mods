@@ -28,7 +28,7 @@ internal fun runManagedCleanupActions(vararg actions: () -> Unit) {
     failure?.let { throw it }
 }
 
-internal fun runManagedCleanupActionsSafely(
+fun runManagedCleanupActionsSafely(
     reportFailure: (Throwable) -> Unit,
     vararg actions: () -> Unit,
 ) {
@@ -54,7 +54,7 @@ internal fun <T> runManagedCleanupForEachSafely(
     }
 }
 
-internal fun reportManagedCleanupFailureSafely(failure: Throwable, reportFailure: (Throwable) -> Unit) {
+fun reportManagedCleanupFailureSafely(failure: Throwable, reportFailure: (Throwable) -> Unit) {
     try {
         reportFailure(failure)
     } catch (_: RuntimeException) {

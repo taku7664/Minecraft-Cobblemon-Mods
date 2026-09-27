@@ -21,7 +21,6 @@ class ManagedBattleLifecycleWiringTest {
     fun `every PvE content starts battles through the shared engine`() {
         listOf(
             "Cobblemon173TowerPveBattleRuntime.kt",
-            "Cobblemon173FactoryPveBattleRuntime.kt",
             "ManagedPveBattleRuntime.kt",
             "Cobblemon173AiTestBattleRuntime.kt",
         ).forEach { fileName ->

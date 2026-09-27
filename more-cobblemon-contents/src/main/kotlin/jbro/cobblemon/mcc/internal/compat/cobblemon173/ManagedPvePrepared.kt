@@ -22,8 +22,8 @@ internal data class ManagedPvePrepared(
 )
 
 internal enum class PveFormat { SINGLE, DOUBLE }
-internal enum class PveOutcome { WIN, LOSS }
-internal sealed interface PveLaunchResult {
+enum class PveOutcome { WIN, LOSS }
+sealed interface PveLaunchResult {
     data class Started(val battleId: UUID) : PveLaunchResult
     data object Unavailable : PveLaunchResult
 }

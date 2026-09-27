@@ -15,7 +15,7 @@ internal object BattleHubIds {
  * One screen the hub can open. [open] receives the verified terminal the hub was opened from, or null for
  * a command entry. [accessContentId] names the content whose OPEN policy gates the entry; null never gates.
  */
-internal class BattleHubEntry(
+class BattleHubEntry(
     val contentId: String,
     val accessContentId: String? = contentId,
     val open: (ServerPlayer, TerminalInteractionResult.Verified?) -> Boolean,
@@ -28,7 +28,7 @@ internal class BattleHubEntry(
     }
 }
 
-internal object BattleHubEntries {
+object BattleHubEntries {
     private val entries = LinkedHashMap<String, BattleHubEntry>()
 
     @Synchronized

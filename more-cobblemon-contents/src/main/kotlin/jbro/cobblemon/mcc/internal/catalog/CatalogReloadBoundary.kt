@@ -1,7 +1,7 @@
 package jbro.cobblemon.mcc.internal.catalog
 
 /** Prevents one optional catalog from aborting the enclosing server-data reload. */
-internal fun runCatalogReloadSafely(
+fun runCatalogReloadSafely(
     reload: () -> Unit,
     reportFailure: (Throwable) -> Unit,
 ) {

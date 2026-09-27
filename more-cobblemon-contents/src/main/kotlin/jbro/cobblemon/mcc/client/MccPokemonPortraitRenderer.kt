@@ -20,7 +20,7 @@ internal inline fun <T> portraitLookupOrNull(action: () -> T): T? = try {
     null
 }
 
-internal data class MccPokemonPortraitIdentity(
+data class MccPokemonPortraitIdentity(
     val stateKey: String,
     val speciesId: String,
     val formId: String?,
@@ -51,7 +51,7 @@ internal data class MccPokemonPortraitIdentity(
     }
 }
 
-internal class MccPokemonPortraitRenderer {
+class MccPokemonPortraitRenderer {
     private val states = HashMap<String, FloatingState>()
 
     /**

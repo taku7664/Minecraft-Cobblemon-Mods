@@ -5,7 +5,7 @@ import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.MoreCobblemonContents
 
 @JvmInline
-internal value class BattleContentId(val value: String) : Comparable<BattleContentId> {
+value class BattleContentId(val value: String) : Comparable<BattleContentId> {
     init {
         require(ManagedBattleContentIds.isValid(value)) { "Invalid battle content ID: $value" }
     }

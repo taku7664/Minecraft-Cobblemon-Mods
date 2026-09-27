@@ -65,7 +65,7 @@ internal class BattlePointSavedData(
     }
 }
 
-internal object BattlePointService {
+object BattlePointService {
     fun isAvailable(server: MinecraftServer): Boolean = data(server).isAvailable
 
     fun balance(server: MinecraftServer, playerId: UUID): Long = data(server).balance(playerId)

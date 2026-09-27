@@ -13,7 +13,6 @@ object MoreCobblemonContentsClient : ClientModInitializer {
         ShopPlayClientNetworking.register()
         // Content mods call these from their own client initializers once they are split out.
         BattleTowerContentClient.initialize()
-        BattleFactoryContentClient.initialize()
         PvpContentClient.initialize()
         ShadowTrainerProjectionRenderer.register()
         ManagedBattleMechanicVisibilityClient.register()

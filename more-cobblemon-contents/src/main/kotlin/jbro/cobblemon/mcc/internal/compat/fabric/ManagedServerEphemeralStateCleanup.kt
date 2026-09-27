@@ -10,7 +10,7 @@ import jbro.cobblemon.mcc.internal.hub.BattleHubNetworking
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 
 /** Final backstop for process-wide references that must never cross integrated-server lifetimes. */
-internal object ManagedServerEphemeralStateCleanup {
+object ManagedServerEphemeralStateCleanup {
     private val contentActions = CopyOnWriteArrayList<() -> Unit>()
 
     /** Contents add their own process-wide state (catalog stores and the like) to the same backstop. */

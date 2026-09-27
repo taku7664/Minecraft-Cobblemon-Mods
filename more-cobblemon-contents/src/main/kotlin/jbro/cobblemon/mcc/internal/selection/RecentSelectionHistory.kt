@@ -2,7 +2,7 @@ package jbro.cobblemon.mcc.internal.selection
 
 import java.util.Collections
 
-internal class RecentSelectionHistory<K, V>(private val capacity: Int) {
+class RecentSelectionHistory<K, V>(private val capacity: Int) {
     private val selections = HashMap<K, ArrayDeque<V>>()
 
     init {

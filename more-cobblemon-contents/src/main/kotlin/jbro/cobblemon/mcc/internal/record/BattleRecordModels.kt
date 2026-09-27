@@ -3,7 +3,7 @@ package jbro.cobblemon.mcc.internal.record
 import java.util.UUID
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 
-internal data class BattleRecordCategory(
+data class BattleRecordCategory(
     val contentId: String,
     val formatId: String,
 ) {
@@ -14,20 +14,20 @@ internal data class BattleRecordCategory(
 }
 
 @JvmInline
-internal value class BattleRecordMetricId(val value: String) {
+value class BattleRecordMetricId(val value: String) {
     init {
         require(RECORD_ID.matches(value)) { "Invalid record metric ID: $value" }
     }
 }
 
-internal data class BattleRecordKey(
+data class BattleRecordKey(
     val playerId: UUID,
     val category: BattleRecordCategory,
 )
 
-internal enum class BattleRecordOutcome { WIN, LOSS }
+enum class BattleRecordOutcome { WIN, LOSS }
 
-internal data class BattleRecordCompletion(
+data class BattleRecordCompletion(
     val key: BattleRecordKey,
     val outcome: BattleRecordOutcome,
     val progressMetrics: Map<BattleRecordMetricId, Long> = emptyMap(),
@@ -39,13 +39,13 @@ internal data class BattleRecordCompletion(
     }
 }
 
-internal object BattleRecordMetrics {
+object BattleRecordMetrics {
     val CURRENT_FLOOR = BattleRecordMetricId("current_floor")
     val HIGHEST_FLOOR = BattleRecordMetricId("highest_floor")
     val BEST_SCORE = BattleRecordMetricId("best_score")
 }
 
-internal data class BattleRecordStats(
+data class BattleRecordStats(
     val key: BattleRecordKey,
     val totalWins: Long = 0,
     val totalLosses: Long = 0,

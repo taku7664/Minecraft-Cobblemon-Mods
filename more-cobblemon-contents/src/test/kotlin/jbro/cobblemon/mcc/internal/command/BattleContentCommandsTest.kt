@@ -13,14 +13,13 @@ class BattleContentCommandsTest {
             DefaultBattleContentApplicationService(emptyList()),
             contributors = listOf(
                 MccCommandContributor { jbro.cobblemon.mcc.internal.tower.TowerProgressCommands.build() },
-                MccCommandContributor { jbro.cobblemon.mcc.internal.factory.FactoryProgressCommands.build() },
                 MccCommandContributor { AiTestCommands.build() },
             ),
         ).build()
 
         assertEquals("mcc", root.name)
         assertNotNull(root.command)
-        assertEquals(setOf("bp", "tower", "factory", "test"), root.children.map { it.name }.toSet())
+        assertEquals(setOf("bp", "tower", "test"), root.children.map { it.name }.toSet())
 
         val aiTest = root.getChild("test")
         assertEquals(
@@ -67,36 +66,7 @@ class BattleContentCommandsTest {
             towerReset.getChild("player").getChild("format").children.map { it.name }.toSet(),
         )
 
-        val factoryFloor = root.getChild("factory").getChild("floor")
-        assertEquals(setOf("get", "set", "reset"), factoryFloor.children.map { it.name }.toSet())
-        val factoryGet = factoryFloor.getChild("get")
-        assertEquals(setOf("player"), factoryGet.children.map { it.name }.toSet())
-        assertEquals(
-            setOf("level_mode"),
-            factoryGet.getChild("player").getChild("format").children.map { it.name }.toSet(),
-        )
-        val factorySet = factoryFloor.getChild("set")
-        assertEquals(setOf("player"), factorySet.children.map { it.name }.toSet())
-        assertEquals(
-            setOf("format"),
-            factorySet.getChild("player").children.map { it.name }.toSet(),
-        )
-        assertEquals(
-            setOf("level_mode"),
-            factorySet.getChild("player").getChild("format").children.map { it.name }.toSet(),
-        )
-        assertEquals(
-            setOf("value"),
-            factorySet.getChild("player").getChild("format").getChild("level_mode").children.map { it.name }.toSet(),
-        )
-        val factoryReset = factoryFloor.getChild("reset")
-        assertEquals(setOf("player"), factoryReset.children.map { it.name }.toSet())
-        assertEquals(
-            setOf("scope"),
-            factoryReset.getChild("player").getChild("format").getChild("level_mode").children.map { it.name }.toSet(),
-        )
         assertEquals(2, BattleProgressCommands.ADMIN_PERMISSION_LEVEL)
         assertNotSame(root.getChild("tower").requirement, towerSet.requirement)
-        assertNotSame(root.getChild("factory").requirement, factorySet.requirement)
     }
 }

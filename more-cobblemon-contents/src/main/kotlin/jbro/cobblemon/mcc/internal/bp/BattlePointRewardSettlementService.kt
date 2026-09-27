@@ -3,7 +3,7 @@ package jbro.cobblemon.mcc.internal.bp
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.application.BattleContentId
 
-internal data class BattlePointRewardSettlement(
+data class BattlePointRewardSettlement(
     val settlementId: UUID,
     val playerId: UUID,
     val contentId: BattleContentId,
@@ -16,7 +16,7 @@ internal data class BattlePointRewardSettlement(
     }
 }
 
-internal class BattlePointRewardSettlementService(
+class BattlePointRewardSettlementService(
     private val applyRequest: (BattlePointRequest) -> BattlePointApplyResult,
 ) {
     fun settleVictory(
@@ -48,7 +48,7 @@ internal class BattlePointRewardSettlementService(
     }
 }
 
-internal fun BattlePointApplyResult.requireAcceptedReward(): BattlePointApplyResult = also {
+fun BattlePointApplyResult.requireAcceptedReward(): BattlePointApplyResult = also {
     check(status == BattlePointApplyStatus.APPLIED || status == BattlePointApplyStatus.ALREADY_APPLIED) {
         "Battle Point reward settlement was rejected: $status"
     }

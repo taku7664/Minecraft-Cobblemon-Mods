@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.client
 
-internal data class MccRect(
+data class MccRect(
     val left: Int,
     val top: Int,
     val width: Int,

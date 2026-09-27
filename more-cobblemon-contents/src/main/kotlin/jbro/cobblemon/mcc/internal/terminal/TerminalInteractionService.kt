@@ -22,7 +22,7 @@ internal data class TerminalInteractionSnapshot(
     }
 }
 
-internal enum class TerminalInteractionRejection {
+enum class TerminalInteractionRejection {
     DIFFERENT_DIMENSION,
     INVALID_POSITION,
     TOO_FAR,
@@ -31,7 +31,7 @@ internal enum class TerminalInteractionRejection {
     NOT_PERMITTED,
 }
 
-internal sealed interface TerminalInteractionResult {
+sealed interface TerminalInteractionResult {
     data class Verified(
         val terminalId: UUID,
         val entryContextId: UUID,

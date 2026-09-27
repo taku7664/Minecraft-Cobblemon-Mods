@@ -109,7 +109,7 @@ internal class BattleRecordSavedData(
     }
 }
 
-internal object BattleRecordService {
+object BattleRecordService {
     fun isAvailable(server: MinecraftServer): Boolean = data(server).isAvailable
 
     fun get(server: MinecraftServer, key: BattleRecordKey): BattleRecordStats = data(server).get(key)

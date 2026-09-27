@@ -30,7 +30,7 @@ import net.minecraft.server.level.ServerPlayer
 import java.util.UUID
 
 /** One player against a Brain-driven virtual trainer; every PvE content starts its battles through this. */
-internal data class Cobblemon173ManagedAiBattle(
+data class Cobblemon173ManagedAiBattle(
     val playerId: UUID,
     val playerTeam: List<BattlePokemon>,
     val opponentTeam: List<BattlePokemon>,
@@ -51,7 +51,7 @@ internal data class Cobblemon173ManagedAiBattle(
 )
 
 /** How a started battle ended for the player; a null outcome means it ended without a winner. */
-internal data class Cobblemon173ManagedAiBattleEnd(
+data class Cobblemon173ManagedAiBattleEnd(
     val server: MinecraftServer,
     val playerId: UUID,
     val battleId: UUID,
@@ -59,7 +59,7 @@ internal data class Cobblemon173ManagedAiBattleEnd(
     val playerActor: PlayerBattleActor,
 )
 
-internal class Cobblemon173ManagedAiBattleEngine(
+class Cobblemon173ManagedAiBattleEngine(
     private val playerResolver: (UUID) -> ServerPlayer?,
     private val brainRegistry: BattleBrainRegistry = BattleBrainRegistry.global(),
 ) {

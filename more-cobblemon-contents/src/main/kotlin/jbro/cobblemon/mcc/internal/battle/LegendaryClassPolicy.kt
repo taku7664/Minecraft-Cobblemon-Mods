@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.internal.battle
 
-internal enum class LegendaryClassCategory {
+enum class LegendaryClassCategory {
     LEGENDARY,
     MYTHICAL,
     ULTRA_BEAST,
@@ -8,7 +8,7 @@ internal enum class LegendaryClassCategory {
 }
 
 /** Shared species classification used by facilities without coupling their progression rules. */
-internal object LegendaryClassPolicy {
+object LegendaryClassPolicy {
     fun categoryFor(speciesId: String, labels: Collection<String> = emptySet()): LegendaryClassCategory? {
         val species = speciesId.substringAfter(':').lowercase()
         val normalizedLabels = labels.mapTo(HashSet()) { it.lowercase().replace('-', '_') }

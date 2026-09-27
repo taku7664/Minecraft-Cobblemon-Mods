@@ -34,7 +34,6 @@ class MccGuiStyleContractTest {
     @Test
     fun `MCC screens override Minecraft background rendering`() {
         assertTrue(MccScreen::class.java.isAssignableFrom(TowerPlayScreen::class.java))
-        assertTrue(MccScreen::class.java.isAssignableFrom(FactoryPlayScreen::class.java))
         assertTrue(MccScreen::class.java.isAssignableFrom(MccConfirmScreen::class.java))
         assertTrue(MccScreen::class.java.declaredMethods.any { it.name == "renderBackground" })
     }
@@ -42,7 +41,6 @@ class MccGuiStyleContractTest {
     @Test
     fun `content screens keep the shared battle tabs instead of a back screen`() {
         assertTrue(MccTabbedContentScreen::class.java.isAssignableFrom(TowerPlayScreen::class.java))
-        assertTrue(MccTabbedContentScreen::class.java.isAssignableFrom(FactoryPlayScreen::class.java))
         assertTrue(MccTabbedContentScreen::class.java.isAssignableFrom(PvpRoomListScreen::class.java))
         assertFalse(MccTabbedContentScreen::class.java.isAssignableFrom(PvpRoomScreen::class.java))
     }

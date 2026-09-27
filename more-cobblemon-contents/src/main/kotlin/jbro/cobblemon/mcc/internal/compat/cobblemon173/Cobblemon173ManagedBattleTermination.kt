@@ -4,7 +4,7 @@ import com.cobblemon.mod.common.battles.BattleRegistry
 import java.util.UUID
 
 /** Ends an MCC-owned battle while its disconnecting player and temporary party are still resolvable. */
-internal object Cobblemon173ManagedBattleTermination {
+object Cobblemon173ManagedBattleTermination {
     fun endParticipatingPlayer(playerId: UUID) {
         val battleId = BattleRegistry.getBattleByParticipatingPlayerId(playerId)?.battleId ?: return
         end(battleId)

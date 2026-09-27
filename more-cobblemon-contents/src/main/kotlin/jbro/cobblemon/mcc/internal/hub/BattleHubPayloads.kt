@@ -8,7 +8,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.ResourceLocation
 
 /** Client tab identities until the hub tabs become registrable; [id] is what travels on the wire. */
-internal enum class BattleHubContent(val id: String) {
+enum class BattleHubContent(val id: String) {
     BATTLE_TOWER(ManagedBattleContentIds.BATTLE_TOWER),
     BATTLE_FACTORY(ManagedBattleContentIds.BATTLE_FACTORY),
     PVP(ManagedBattleContentIds.PVP),

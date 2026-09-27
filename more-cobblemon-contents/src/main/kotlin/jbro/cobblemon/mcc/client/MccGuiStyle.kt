@@ -9,7 +9,7 @@ import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
-internal object MccGuiPalette {
+object MccGuiPalette {
     val BACKDROP = 0xFF080C16u.toInt()
     val BACKDROP_LINE = 0x182FE4E4u.toInt()
     val SHELL = 0xFF080E1Du.toInt()
@@ -32,14 +32,14 @@ internal object MccGuiPalette {
     val TEXT_DIM = 0xFF71859Au.toInt()
 }
 
-internal enum class MccButtonTone {
+enum class MccButtonTone {
     PRIMARY,
     SECONDARY,
     DANGER,
     NEUTRAL,
 }
 
-internal abstract class MccScreen(title: Component) : Screen(title) {
+abstract class MccScreen(title: Component) : Screen(title) {
     final override fun renderBackground(
         graphics: GuiGraphics,
         mouseX: Int,
@@ -48,7 +48,7 @@ internal abstract class MccScreen(title: Component) : Screen(title) {
     ) = Unit
 }
 
-internal abstract class MccTabbedContentScreen(
+abstract class MccTabbedContentScreen(
     title: Component,
     private val activeContent: BattleHubContent?,
 ) : MccScreen(title) {
@@ -103,7 +103,7 @@ internal abstract class MccTabbedContentScreen(
     }
 }
 
-internal object MccGuiSurface {
+object MccGuiSurface {
     fun drawBackdrop(graphics: GuiGraphics, width: Int, height: Int) {
         graphics.fill(0, 0, width, height, MccGuiPalette.BACKDROP)
         for (top in 0 until height step 14) {
@@ -198,7 +198,7 @@ internal object MccGuiSurface {
     }
 }
 
-internal class MccStyledButton(
+class MccStyledButton(
     bounds: MccRect,
     message: Component,
     private val tone: MccButtonTone = MccButtonTone.NEUTRAL,
@@ -250,7 +250,7 @@ internal class MccStyledButton(
     }
 }
 
-internal class MccConfirmScreen(
+class MccConfirmScreen(
     private val parent: Screen,
     title: Component,
     private val body: Component,

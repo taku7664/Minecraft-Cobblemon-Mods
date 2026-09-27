@@ -8,7 +8,7 @@ import net.minecraft.commands.SharedSuggestionProvider
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 
-internal sealed interface BattleProgressSetResult {
+sealed interface BattleProgressSetResult {
     data class Applied(
         val previousCurrent: Long,
         val previousBest: Long,
@@ -20,21 +20,21 @@ internal sealed interface BattleProgressSetResult {
     data object StorageUnavailable : BattleProgressSetResult
 }
 
-internal enum class BattleProgressResetScope(val id: String) {
+enum class BattleProgressResetScope(val id: String) {
     CURRENT("current"),
     ALL("all"),
 }
 
-internal enum class BattleProgressAdminAction(val id: String, val messageId: String) {
+enum class BattleProgressAdminAction(val id: String, val messageId: String) {
     GET("get", "queried"),
     SET("set", "changed"),
     RESET("reset", "reset"),
 }
 
 /** Shared pieces of the admin progress subcommands that each content contributes under `/mcc`. */
-internal object BattleProgressCommands {
+object BattleProgressCommands {
     internal const val ADMIN_PERMISSION_LEVEL = 2
-    internal const val MAX_PROGRESS_VALUE = Int.MAX_VALUE - 1
+    const val MAX_PROGRESS_VALUE = Int.MAX_VALUE - 1
 
     fun resetScopeArgument() = Commands.argument("scope", StringArgumentType.word())
         .suggests { _, builder -> SharedSuggestionProvider.suggest(BattleProgressResetScope.entries.map { it.id }, builder) }

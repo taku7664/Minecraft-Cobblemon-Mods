@@ -2,12 +2,12 @@ package jbro.cobblemon.mcc.internal.catalog
 
 import java.io.Reader
 
-internal data class CatalogResourceInput(
+data class CatalogResourceInput(
     val resourceId: String,
     val openReader: () -> Reader,
 )
 
-internal fun closeCatalogResourcesSafely(resources: Iterable<AutoCloseable>) {
+fun closeCatalogResourcesSafely(resources: Iterable<AutoCloseable>) {
     resources.forEach { resource ->
         try {
             resource.close()

@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.internal.validation
 
-internal object IdentifierSyntax {
+object IdentifierSyntax {
     private val stableId = Regex("[a-z0-9][a-z0-9_.-]*")
     private val resourceId = Regex("[a-z0-9_.-]+:[a-z0-9/._-]+")
 

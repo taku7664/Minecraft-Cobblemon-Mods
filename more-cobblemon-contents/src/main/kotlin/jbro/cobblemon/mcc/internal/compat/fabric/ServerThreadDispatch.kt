@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.internal.compat.fabric
 
-internal fun dispatchToServerThread(
+fun dispatchToServerThread(
     isServerThread: Boolean,
     schedule: ((() -> Unit) -> Unit),
     action: () -> Unit,

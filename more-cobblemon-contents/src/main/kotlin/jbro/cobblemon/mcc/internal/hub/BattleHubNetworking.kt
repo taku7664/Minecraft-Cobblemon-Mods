@@ -14,7 +14,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 
-internal object BattleHubNetworking {
+object BattleHubNetworking {
     private val terminalContexts = HashMap<UUID, TerminalInteractionResult.Verified>()
 
     fun registerServer() {

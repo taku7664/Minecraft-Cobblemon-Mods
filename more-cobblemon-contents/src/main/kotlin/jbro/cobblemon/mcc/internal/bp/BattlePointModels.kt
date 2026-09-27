@@ -3,13 +3,13 @@ package jbro.cobblemon.mcc.internal.bp
 import java.util.UUID
 
 @JvmInline
-internal value class BattlePointSourceId(val value: String) {
+value class BattlePointSourceId(val value: String) {
     init {
         require(SOURCE_ID.matches(value)) { "Invalid Battle Point source ID: $value" }
     }
 }
 
-internal enum class BattlePointTransactionKind {
+enum class BattlePointTransactionKind {
     CONTENT_REWARD,
     ADMIN_ADD,
     ADMIN_REMOVE,
@@ -17,7 +17,7 @@ internal enum class BattlePointTransactionKind {
     SHOP_PURCHASE,
 }
 
-internal sealed interface BattlePointOperation {
+sealed interface BattlePointOperation {
     val requestedValue: Long
     val kind: BattlePointTransactionKind
 
@@ -62,7 +62,7 @@ internal sealed interface BattlePointOperation {
     }
 }
 
-internal data class BattlePointRequest(
+data class BattlePointRequest(
     val transactionId: UUID,
     val playerId: UUID,
     val operation: BattlePointOperation,
@@ -76,7 +76,7 @@ internal data class BattlePointRequest(
     }
 }
 
-internal data class BattlePointTransaction(
+data class BattlePointTransaction(
     val transactionId: UUID,
     val playerId: UUID,
     val kind: BattlePointTransactionKind,
@@ -144,7 +144,7 @@ internal class BattlePointAccount(
         "BattlePointAccount(playerId=$playerId, balance=$balance, transactions=$transactions)"
 }
 
-internal enum class BattlePointApplyStatus {
+enum class BattlePointApplyStatus {
     APPLIED,
     ALREADY_APPLIED,
     TRANSACTION_CONFLICT,
@@ -155,7 +155,7 @@ internal enum class BattlePointApplyStatus {
     UNAVAILABLE,
 }
 
-internal data class BattlePointApplyResult(
+data class BattlePointApplyResult(
     val status: BattlePointApplyStatus,
     val balance: Long,
     val transaction: BattlePointTransaction? = null,

@@ -9,7 +9,7 @@ import java.util.UUID
  * Settling first makes that callback observe an already-finished battle. Termination is still
  * attempted when settlement fails so a persistence failure cannot leave a live orphan battle.
  */
-internal inline fun settleBeforeTerminatingBattle(
+inline fun settleBeforeTerminatingBattle(
     battleId: UUID,
     settle: (UUID) -> Unit,
     terminate: (UUID) -> Unit,
@@ -24,7 +24,8 @@ internal inline fun settleBeforeTerminatingBattle(
     terminate(battleId)
 }
 
-private inline fun terminateAfterSettlementFailure(
+@PublishedApi
+internal inline fun terminateAfterSettlementFailure(
     battleId: UUID,
     settlementFailure: Throwable,
     terminate: (UUID) -> Unit,

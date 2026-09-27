@@ -9,7 +9,7 @@ import com.cobblemon.mod.common.pokemon.Pokemon
  * PokemonProperties applies `form` before initialization. Cobblemon then recalculates aspects during
  * initialization and selects the standard form again unless the selected form's aspects are retained.
  */
-internal object Cobblemon173CatalogPokemonCreator {
+object Cobblemon173CatalogPokemonCreator {
     fun create(properties: PokemonProperties, catalogFormId: String?): Pokemon {
         return preserve(properties.create(), catalogFormId)
     }

@@ -1,6 +1,6 @@
 package jbro.cobblemon.mcc.client
 
-internal class MccContentFrameLayout private constructor(
+class MccContentFrameLayout private constructor(
     val shell: MccRect,
     val header: MccRect,
     val helpButton: MccRect,
@@ -20,7 +20,7 @@ internal class MccContentFrameLayout private constructor(
         }
     }
 
-    internal companion object {
+    companion object {
         fun calculate(screenWidth: Int, screenHeight: Int): MccContentFrameLayout {
             val shellWidth = (screenWidth - SCREEN_MARGIN * 2).coerceAtMost(MAX_SHELL_WIDTH)
             val shellHeight = (screenHeight - SCREEN_MARGIN * 2).coerceAtMost(MAX_SHELL_HEIGHT)

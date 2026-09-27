@@ -9,7 +9,6 @@ class ManagedServerCatalogCleanupRegistrationTest {
     @Test
     fun `server stop backstop clears every process wide catalog`() {
         assertTrue(source("ManagedServerEphemeralStateCleanup.kt").contains("BattlePointShopCatalogResources.store::clear"))
-        assertTrue(source("FactoryCatalogResources.kt").contains("ManagedServerEphemeralStateCleanup.register(store::clear)"))
         assertTrue(source("TowerOpponentCatalogResources.kt").contains("ManagedServerEphemeralStateCleanup.register(store::clear)"))
     }
 

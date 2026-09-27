@@ -17,7 +17,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import net.minecraft.core.registries.BuiltInRegistries
 
 /** Direct Cobblemon 1.7.3 bridge. Only public Showdown messages may add opponent knowledge. */
-internal class Cobblemon173ShowdownObservationAdapter(
+class Cobblemon173ShowdownObservationAdapter(
     private val opponentActorId: UUID,
     initialOpponentPokemonCount: Int,
     maximumRecentEvents: Int = 128,
