@@ -3,23 +3,20 @@ package jbro.cobblemon.mcc.internal.compat.cobblemon173
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleBrainRegistry
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
-import jbro.cobblemon.mcc.internal.tower.TowerBattleLaunchResult
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
-/** Addon adapter to the lifecycle-owned engine also used by Tower and Better AI test battles. */
+/** Addon adapter over the shared managed AI battle engine used by every PvE content. */
 internal class ManagedPveBattleRuntime(
     playerResolver: (UUID) -> ServerPlayer?,
-    sessionCompletion: (MinecraftServer, UUID, UUID, PveOutcome) -> Unit,
-    sessionCancellation: (MinecraftServer, UUID, UUID) -> Unit,
+    private val sessionCompletion: (MinecraftServer, UUID, UUID, PveOutcome) -> Unit,
+    private val sessionCancellation: (MinecraftServer, UUID, UUID) -> Unit,
     brainRegistry: BattleBrainRegistry = BattleBrainRegistry.global(),
 ) {
-    private val runtime = Cobblemon173TowerPveBattleRuntime(playerResolver,
-        { server, player, battle, outcome -> sessionCompletion(server, player, battle, PveOutcome.valueOf(outcome.name)) },
-        sessionCancellation, brainRegistry)
+    private val engine = Cobblemon173ManagedAiBattleEngine(playerResolver, brainRegistry)
 
-    fun startManaged(prepared: ManagedPvePrepared): PveLaunchResult {
-        val result = runtime.startManaged(Cobblemon173ManagedAiBattle(
+    fun startManaged(prepared: ManagedPvePrepared): PveLaunchResult = engine.start(
+        Cobblemon173ManagedAiBattle(
             playerId = prepared.playerId,
             playerTeam = prepared.playerTeam,
             opponentTeam = prepared.opponentTeam,
@@ -35,10 +32,13 @@ internal class ManagedPveBattleRuntime(
             contentId = prepared.contentId,
             diagnosticsLabel = "Managed PvE",
             appearance = prepared.appearance,
-        ))
-        return when (result) {
-            is TowerBattleLaunchResult.Started -> PveLaunchResult.Started(result.battleId)
-            TowerBattleLaunchResult.Unavailable -> PveLaunchResult.Unavailable
+        ),
+    ) { end ->
+        val outcome = end.outcome
+        if (outcome == null) {
+            sessionCancellation(end.server, end.playerId, end.battleId)
+        } else {
+            sessionCompletion(end.server, end.playerId, end.battleId, outcome)
         }
     }
 }

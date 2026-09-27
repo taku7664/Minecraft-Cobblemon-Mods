@@ -20,7 +20,6 @@ import jbro.cobblemon.mcc.internal.command.AiTestBattleStartResult
 import jbro.cobblemon.mcc.internal.command.AiTestCommandBackend
 import jbro.cobblemon.mcc.internal.command.AiTestDifficulty
 import jbro.cobblemon.mcc.internal.tower.TOWER_BATTLE_LEVEL_CAP
-import jbro.cobblemon.mcc.internal.tower.TowerBattleLaunchResult
 import jbro.cobblemon.mcc.internal.tower.opponent.TowerPokemonSet
 import jbro.cobblemon.mcc.internal.tower.opponent.TowerStatSpread
 import net.minecraft.server.level.ServerPlayer
@@ -50,12 +49,10 @@ internal object Cobblemon173AiTestBattleRuntime : AiTestCommandBackend {
                     )
                 },
             )
-            val runtime = Cobblemon173TowerPveBattleRuntime(
+            val engine = Cobblemon173ManagedAiBattleEngine(
                 playerResolver = { playerId -> player.server.playerList.getPlayer(playerId) },
-                sessionCompletion = { _, _, _, _ -> },
-                sessionCancellation = { _, _, _ -> },
             )
-            val launch = runtime.startManaged(
+            val launch = engine.start(
                 Cobblemon173ManagedAiBattle(
                     playerId = player.uuid,
                     playerTeam = party.map { pokemon -> battleCopy(player, pokemon) },
@@ -79,10 +76,11 @@ internal object Cobblemon173AiTestBattleRuntime : AiTestCommandBackend {
                     diagnosticsLabel = "Cynthia Better AI test",
                     unboundedBrainDecision = true,
                 ),
+                onEnded = {},
             )
             when (launch) {
-                is TowerBattleLaunchResult.Started -> AiTestBattleStartResult.Started(launch.battleId)
-                TowerBattleLaunchResult.Unavailable -> AiTestBattleStartResult.Unavailable
+                is PveLaunchResult.Started -> AiTestBattleStartResult.Started(launch.battleId)
+                PveLaunchResult.Unavailable -> AiTestBattleStartResult.Unavailable
             }
         } catch (failure: RuntimeException) {
             MoreCobblemonContents.LOGGER.error("Cynthia Better AI test battle could not start for {}", player.uuid, failure)

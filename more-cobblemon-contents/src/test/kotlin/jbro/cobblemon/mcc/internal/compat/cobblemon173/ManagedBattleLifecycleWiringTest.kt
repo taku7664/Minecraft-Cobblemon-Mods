@@ -7,31 +7,28 @@ import org.junit.jupiter.api.Test
 
 class ManagedBattleLifecycleWiringTest {
     @Test
-    fun `AI test uses the same lifecycle registered runtime as tower battles`() {
-        val aiTestSource = source("Cobblemon173AiTestBattleRuntime.kt")
-        val towerSource = source("Cobblemon173TowerPveBattleRuntime.kt")
+    fun `the shared engine owns the central lifecycle registration`() {
+        val engine = source("Cobblemon173ManagedAiBattleEngine.kt")
 
-        assertTrue(aiTestSource.contains("runtime.startManaged("))
-        assertTrue(towerSource.contains("Cobblemon173ManagedBattleLifecycles.register("))
-        assertTrue(towerSource.contains("Cobblemon173ManagedBattleLifecycles.battleEnded("))
+        assertTrue(engine.contains("Cobblemon173ManagedBattleLifecycles.register("))
+        assertTrue(engine.contains("Cobblemon173ManagedBattleLifecycles.battleEnded("))
+        assertTrue(engine.contains("Cobblemon173ManagedBattleLifecycles.abortAndForceRelease("))
+        assertTrue(engine.contains("unboundedDecisionTime = prepared.unboundedBrainDecision"))
+        assertTrue(engine.contains("prepared.appearance"))
     }
 
     @Test
-    fun `factory battles register the central lifecycle too`() {
-        val factorySource = source("Cobblemon173FactoryPveBattleRuntime.kt")
-
-        assertTrue(factorySource.contains("Cobblemon173ManagedBattleLifecycles.register("))
-        assertTrue(factorySource.contains("Cobblemon173ManagedBattleLifecycles.battleEnded("))
-    }
-
-    @Test
-    fun `addon adapter retains Better AI entrypoint and unbounded decision option`() {
-        val adapter = source("ManagedPveBattleRuntime.kt")
-        val tower = source("Cobblemon173TowerPveBattleRuntime.kt")
-        assertTrue(adapter.contains("runtime.startManaged(Cobblemon173ManagedAiBattle("))
-        assertTrue(tower.contains("unboundedDecisionTime = prepared.unboundedBrainDecision"))
-        assertTrue(tower.contains("Cobblemon173ManagedBattleLifecycles.abortAndForceRelease("))
-        assertTrue(tower.contains("prepared.appearance"))
+    fun `every PvE content starts battles through the shared engine`() {
+        listOf(
+            "Cobblemon173TowerPveBattleRuntime.kt",
+            "Cobblemon173FactoryPveBattleRuntime.kt",
+            "ManagedPveBattleRuntime.kt",
+            "Cobblemon173AiTestBattleRuntime.kt",
+        ).forEach { fileName ->
+            val adapter = source(fileName)
+            assertTrue(adapter.contains("Cobblemon173ManagedAiBattleEngine("), fileName)
+            assertTrue(adapter.contains("engine.start("), fileName)
+        }
     }
 
     private fun source(fileName: String): String = Files.readString(
