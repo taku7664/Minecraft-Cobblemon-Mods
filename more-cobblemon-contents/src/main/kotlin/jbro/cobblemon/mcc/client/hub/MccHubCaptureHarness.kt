@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.client.hub
 
+import com.cobblemon.mod.common.client.CobblemonClient
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.client.MccBattleHubClientState
@@ -18,6 +19,8 @@ import java.util.concurrent.atomic.AtomicReference
  * is captured to `screenshots/`, closed through its ESC path, and the client stops.
  * With `MCC_HUB_CAPTURE_OPEN=<tab id>` the hub then selects that tab as its rail button would: an embedded tab
  * is captured inside the hub once its server state had time to arrive, a screen tab once the server opened it.
+ * `MCC_HUB_CAPTURE_PARTY=<species,...>` first tops the player's party up to that many Pokemon through the integrated
+ * server, so party-driven tabs show real portraits.
  */
 object MccHubCaptureHarness {
     private val logger = MoreCobblemonContents.LOGGER
@@ -33,6 +36,9 @@ object MccHubCaptureHarness {
         val locale = System.getenv("MCC_HUB_CAPTURE_LOCALE")?.trim()?.takeIf { it.isNotEmpty() } ?: "ko_kr"
         val guiScale = System.getenv("MCC_HUB_CAPTURE_GUI_SCALE")?.trim()?.toIntOrNull()?.takeIf { it in 1..4 }
         val openContent = System.getenv("MCC_HUB_CAPTURE_OPEN")?.trim()?.takeIf { it.isNotEmpty() }
+        val partyFixture = System.getenv("MCC_HUB_CAPTURE_PARTY")?.split(',')?.map(String::trim)?.filter(String::isNotEmpty).orEmpty()
+        var partyRequested = partyFixture.isEmpty()
+        var partyWait = 0
 
         var guiScaleApplied = guiScale == null
         val languageReady = AtomicBoolean(false)
@@ -69,6 +75,21 @@ object MccHubCaptureHarness {
             if (!opened) {
                 // The dashboard draws the real player entity, so the hub opens only inside a loaded world.
                 if (client.level == null || client.player == null || client.screen != null || client.overlay != null) return@EndTick
+                if (!partyRequested) {
+                    val server = checkNotNull(client.singleplayerServer) { "The party fixture needs a singleplayer world" }
+                    val name = checkNotNull(client.player).gameProfile.name
+                    val have = CobblemonClient.storage.party.count { it != null }
+                    partyFixture.drop(have).forEach { species ->
+                        server.execute {
+                            server.commands.performPrefixedCommand(server.createCommandSourceStack(), "givepokemonother $name $species level=50")
+                        }
+                    }
+                    logger.info("Hub capture party had {} Pokemon; gave {}", have, partyFixture.drop(have))
+                    partyRequested = true
+                    return@EndTick
+                }
+                // The party sync reaches the client a few ticks after the server gives the Pokemon.
+                if (partyFixture.isNotEmpty() && partyWait++ < 40) return@EndTick
                 // Content mods register their own tabs during client init, which has finished by now.
                 registerPreviewTabs()
                 MccBattleHubClientState.update(if (fixture == "empty") 0 else 1_284)
