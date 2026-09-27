@@ -4,13 +4,10 @@ import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.client.MccBattleHubClientState
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiModelFraming
-import jbro.cobblemon.uikit.UiPanelSpec
-import jbro.cobblemon.uikit.UiPanelTone
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiRenderSlotSpec
 import jbro.cobblemon.uikit.UiScrollState
 import jbro.cobblemon.uikit.UiThemeSnapshot
-import jbro.cobblemon.uikit.client.CobblemonUiPanel
 import jbro.cobblemon.uikit.client.CobblemonUiRenderContent
 import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
 import net.minecraft.client.Minecraft
@@ -32,23 +29,21 @@ class MccDashboardTab : MccHubTabContent {
         val presentation = MccDashboardPresentation.from(MccBattleHubClientState.dashboard.orEmpty()) { contentId ->
             MccHubTabs.get(contentId)?.order ?: Int.MAX_VALUE
         }
-        host.add(CobblemonUiPanel.create(layout.trainer.x, layout.trainer.y, layout.trainer.width, layout.trainer.height,
-            UiPanelSpec(tone = UiPanelTone.RAISED)))
-        host.add(TrainerCard(layout))
+        MccHubKit.card(host, layout.trainer, dashboardText("trainer"), MccHubKit.CardTone.FEATURE)
+        host.add(TrainerName(layout))
         val client = Minecraft.getInstance()
         host.add(CobblemonUiRenderSlot.create(layout.model.x, layout.model.y, layout.model.width, layout.model.height,
             UiRenderSlotSpec(Component.literal(viewerName())),
             CobblemonUiRenderContent.PlayerProfile(client.player?.gameProfile ?: client.gameProfile, UiModelFraming.FULL_BODY)))
-        host.add(CobblemonUiPanel.create(layout.records.x, layout.records.y, layout.records.width, layout.records.height,
-            UiPanelSpec(tone = UiPanelTone.RAISED)))
+        MccHubKit.card(host, layout.records, dashboardText("records"))
         records = host.add(RecordsList(layout, presentation, scrollOffset) { scrollOffset = it })
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollY: Double): Boolean =
         records?.scroll(mouseX, mouseY, scrollY) == true
 
-    private class TrainerCard(private val layout: MccDashboardLayout) : AbstractWidget(
-        layout.trainer.x, layout.trainer.y, layout.trainer.width, layout.trainer.height, dashboardText("trainer"),
+    private class TrainerName(private val layout: MccDashboardLayout) : AbstractWidget(
+        layout.model.x, layout.nameLine, layout.model.width, 10, dashboardText("trainer"),
     ) {
         init {
             active = false
@@ -56,7 +51,6 @@ class MccDashboardTab : MccHubTabContent {
 
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
             val theme = CobblemonUiThemes.registry.snapshot()
-            drawStrip(graphics, theme, layout.trainerStrip, dashboardText("trainer"), theme.colors.accentCaution)
             val font = Minecraft.getInstance().font
             val name = font.plainSubstrByWidth(viewerName(), layout.trainer.width - 16)
             graphics.drawString(font, name, layout.trainer.x + (layout.trainer.width - font.width(name)) / 2,
@@ -73,7 +67,8 @@ class MccDashboardTab : MccHubTabContent {
         private val presentation: MccDashboardPresentation,
         initialOffset: Int,
         private val offsetChanged: (Int) -> Unit,
-    ) : AbstractWidget(layout.records.x, layout.records.y, layout.records.width, layout.records.height, dashboardText("records")) {
+    ) : AbstractWidget(layout.summary.x, layout.summary.y, layout.summary.width, layout.rows.bottom - layout.summary.y,
+        dashboardText("records")) {
         private val scroll = UiScrollState(
             layout.rows.height,
             presentation.rows.size * MccDashboardLayout.ROW_HEIGHT,
@@ -94,7 +89,6 @@ class MccDashboardTab : MccHubTabContent {
 
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
             val theme = CobblemonUiThemes.registry.snapshot()
-            drawStrip(graphics, theme, layout.recordsStrip, dashboardText("records"), theme.colors.borderBright)
             drawSummary(graphics, theme)
             if (presentation.rows.isEmpty()) {
                 drawEmpty(graphics, theme)
@@ -185,12 +179,7 @@ class MccDashboardTab : MccHubTabContent {
         fun translatedOr(key: String, fallback: String): Component =
             if (I18n.exists(key)) Component.translatable(key) else Component.literal(fallback)
 
-        fun panelText(theme: UiThemeSnapshot): Int = theme.surfaces.panelAltText ?: theme.colors.textPrimary
-
-        fun drawStrip(graphics: GuiGraphics, theme: UiThemeSnapshot, strip: UiRect, title: Component, color: Int) {
-            graphics.fill(strip.x, strip.y, strip.right, strip.bottom, color)
-            drawFitted(graphics, title, strip.x + 5, strip.y + 4, strip.width - 10, theme.colors.shell)
-        }
+        fun panelText(theme: UiThemeSnapshot): Int = MccHubKit.panelText(theme)
     }
 }
 

@@ -58,37 +58,31 @@ data class MccDashboardPresentation(
     }
 }
 
-/** Logical layout of the dashboard inside the hub content area. */
+/** Logical layout of the dashboard inside whatever rectangle of the hub content area it is given. */
 data class MccDashboardLayout(
     val trainer: UiRect,
-    val trainerStrip: UiRect,
     val model: UiRect,
     val nameLine: Int,
-    val detailLine: Int,
     val records: UiRect,
-    val recordsStrip: UiRect,
     val summary: UiRect,
     val rows: UiRect,
 ) {
     companion object {
         const val ROW_HEIGHT = 22
-        private const val GAP = 5
-        private const val STRIP_HEIGHT = 15
+        private const val NAME_ROWS = 13
 
         fun calculate(bounds: UiRect): MccDashboardLayout {
-            val trainerWidth = (bounds.width * 34 / 100).coerceIn(96, 150).coerceAtMost((bounds.width - GAP - 60).coerceAtLeast(1))
+            val gap = MccHubKit.GAP
+            val trainerWidth = (bounds.width * 34 / 100).coerceIn(96, 150).coerceAtMost((bounds.width - gap - 60).coerceAtLeast(1))
             val trainer = UiRect(bounds.x, bounds.y, trainerWidth, bounds.height)
-            val records = UiRect(trainer.right + GAP, bounds.y, (bounds.width - trainerWidth - GAP).coerceAtLeast(1), bounds.height)
-            val trainerStrip = UiRect(trainer.x + 2, trainer.y + 2, (trainer.width - 4).coerceAtLeast(1), STRIP_HEIGHT)
-            val modelTop = trainerStrip.bottom + 5
-            val model = UiRect(trainer.x + 8, modelTop, (trainer.width - 16).coerceAtLeast(1),
-                (trainer.bottom - 20 - modelTop).coerceAtLeast(16))
-            val recordsStrip = UiRect(records.x + 2, records.y + 2, (records.width - 4).coerceAtLeast(1), STRIP_HEIGHT)
-            val summary = UiRect(records.x + 6, recordsStrip.bottom + 4, (records.width - 12).coerceAtLeast(1), 22)
-            val rowsTop = summary.bottom + 4
-            val rows = UiRect(records.x + 4, rowsTop, (records.width - 8).coerceAtLeast(1), (records.bottom - 4 - rowsTop).coerceAtLeast(1))
-            return MccDashboardLayout(trainer, trainerStrip, model, model.bottom + 5, model.bottom + 16,
-                records, recordsStrip, summary, rows)
+            val records = UiRect(trainer.right + gap, bounds.y, (bounds.width - trainerWidth - gap).coerceAtLeast(1), bounds.height)
+            val trainerBody = MccHubKit.cardBody(trainer)
+            val model = UiRect(trainerBody.x, trainerBody.y, trainerBody.width, (trainerBody.height - NAME_ROWS).coerceAtLeast(16))
+            val recordsBody = MccHubKit.cardBody(records)
+            val summary = UiRect(recordsBody.x, recordsBody.y, recordsBody.width, 22)
+            val rows = UiRect(recordsBody.x - 2, summary.bottom + 4, recordsBody.width + 4,
+                (recordsBody.bottom + 2 - summary.bottom - 4).coerceAtLeast(1))
+            return MccDashboardLayout(trainer, model, model.bottom + 4, records, summary, rows)
         }
     }
 }
