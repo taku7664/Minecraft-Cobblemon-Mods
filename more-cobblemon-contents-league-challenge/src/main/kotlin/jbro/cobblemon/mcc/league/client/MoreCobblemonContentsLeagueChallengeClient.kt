@@ -28,6 +28,7 @@ object MoreCobblemonContentsLeagueChallengeClient : ClientModInitializer {
                 Component.translatable(MccDashboardPresentation.contentNameKey(ManagedBattleContentIds.LEAGUE_CHALLENGE)),
                 order = 90,
                 kind = MccHubTabKind.Embedded(::LeagueHubTab),
+                icon = MccHubTabs.itemIcon("cobblemon:poke_ball"),
             ),
         )
         MccHubHeaderBadges.register(order = 90) {

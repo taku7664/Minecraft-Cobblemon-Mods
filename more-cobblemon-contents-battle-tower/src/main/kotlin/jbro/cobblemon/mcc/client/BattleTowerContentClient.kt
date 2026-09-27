@@ -17,6 +17,7 @@ object BattleTowerContentClient : ClientModInitializer {
                 Component.translatable(MccDashboardPresentation.contentNameKey(ManagedBattleContentIds.BATTLE_TOWER)),
                 order = 100,
                 kind = MccHubTabKind.Embedded(::TowerHubTab),
+                icon = MccHubTabs.itemIcon("cobblemon:black_belt"),
             ),
         )
     }
