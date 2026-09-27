@@ -24,6 +24,7 @@ data class LeagueCatalog(
     val gyms: List<String>,
     val finals: List<String>,
     val challenges: Map<String, Challenge>,
+    val wildLevel: WildLevelRule = WildLevelRule(),
 ) {
     init {
         requireId(id)

@@ -20,6 +20,24 @@ class LeagueCatalogParserTest {
         assertEquals(6, catalog.challenges.getValue("$ns:cynthia").team.size)
     }
 
+    @Test fun `the bundled league spawns wild Pokemon ten below the cap, seven either way, leaning by four chunk areas`() {
+        assertEquals(WildLevelRule(belowCap = 10, spread = 7, regionChunks = 4), LeagueCatalogParser.parse(resources(), "$ns:active").wildLevel)
+    }
+
+    @Test fun `wild level fields are optional and each falls back alone`() {
+        val resources = resources()
+        val root = JsonParser.parseString(resources.getValue("leagues").getValue("$ns:active")).asJsonObject
+        root.remove("wild_level")
+        resources["leagues"] = mapOf("$ns:active" to root.toString())
+        assertEquals(WildLevelRule(), LeagueCatalogParser.parse(resources, "$ns:active").wildLevel)
+        root.add("wild_level", JsonParser.parseString("{\"spread\":3}"))
+        resources["leagues"] = mapOf("$ns:active" to root.toString())
+        assertEquals(WildLevelRule(spread = 3), LeagueCatalogParser.parse(resources, "$ns:active").wildLevel)
+        root.add("wild_level", JsonParser.parseString("{\"region_chunks\":0}"))
+        resources["leagues"] = mapOf("$ns:active" to root.toString())
+        assertThrows(IllegalArgumentException::class.java) { LeagueCatalogParser.parse(resources, "$ns:active") }
+    }
+
     @Test fun `missing team rejects whole catalog`() {
         val resources = resources()
         resources["teams"] = resources.getValue("teams") - "$ns:cynthia"

@@ -3,6 +3,11 @@
   "progress_id": "more_cobblemon_contents_league_challenge:sinnoh",
   "name_key": "league.more_cobblemon_contents_league_challenge.sinnoh",
   "initial_cap": 15,
+  "wild_level": {
+    "below_cap": 10,
+    "spread": 7,
+    "region_chunks": 4
+  },
   "gyms": [
     "more_cobblemon_contents_league_challenge:roark",
     "more_cobblemon_contents_league_challenge:gardenia",
