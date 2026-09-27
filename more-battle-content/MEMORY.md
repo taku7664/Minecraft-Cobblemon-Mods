@@ -7,6 +7,12 @@
 
 ---
 
+## [2026-09-27 15:30] 결정 — Core 분리 순서와 Hub UI 방향
+
+- Better AI는 테스트 중이므로 합병을 맨 뒤로 미룬다. 그전까지 `api.ai`·`internal.ai`와 Cynthia AI 테스트의 동작은 바꾸지 않는다.
+- 기존 월드 데이터는 보존하지 않는다. 콘텐츠 모드는 자기 모드 ID로 네임스페이스·번역 키·BP 출처·기록 ID·`battle_lounge` 차원을 새로 가져가도 된다.
+- Hub UI는 크게 다시 만든다. League가 쓰는 `cobblemon-ui-kit`을 기반으로 하고 탭을 좌측으로 옮긴다. 탭 순서는 1) 트레이너 정보(항상 첫 번째), 2) 상점, 3) 애드온별 탭이다.
+
 ## [2026-09-27 15:10] 분석 — MBC Core 분리와 Better AI 합병 준비
 
 빡대리님 방향: MBC를 Core(전투·BP 등 API)와 콘텐츠 모드(Battle Tower, Battle Factory, PvP, League)로 나누고, Better AI를 Core에 합친다. 옛 설계 문서(`DESIGN.md`의 단일 JAR·AI 분리 결정 등)는 제약으로 삼지 않는다. 아래는 코드 대조로 확인한 사실이다.
