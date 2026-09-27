@@ -89,6 +89,7 @@ val unitTest by tasks.registering(JavaExec::class) {
         ?: rootProject.file("dev-server/showdown").absolutePath
     systemProperty("aiengine.showdown", showdownRoot)
     systemProperty("aiengine.tools", file("tools/ai-engine").absolutePath)
+    systemProperty("aiengine.sweepOnly", (project.findProperty("sweepOnly") as String?) ?: "")
     systemProperty("aiengine.coverage", layout.buildDirectory.file("reports/ai-engine-coverage.json").get().asFile.absolutePath)
     // Narrow a run to a few classes: ./gradlew :more-cobblemon-contents:unitTest -Ptests=LocalDoublesProjectionTest
     if (project.hasProperty("tests")) {

@@ -78,11 +78,17 @@ class EngineSweepTest {
     @Test
     fun `workbook entries replay like Showdown`() {
         EngineReferee.assumeAvailable()
-        val entries = priority("moves").map(::moveEntry) + priority("abilities").map(::abilityEntry) + priority("items").map(::itemEntry)
+        // -PsweepOnly=<file of ids, one per line> narrows the sweep while porting a batch.
+        val only = System.getProperty("aiengine.sweepOnly")?.takeIf { it.isNotBlank() }?.let { f ->
+            Files.readAllLines(Path.of(f)).map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+        }
+        fun keep(id: String) = only == null || id in only
+        val entries = priority("moves").filter(::keep).map(::moveEntry) + priority("abilities").filter(::keep).map(::abilityEntry) +
+            priority("items").filter(::keep).map(::itemEntry)
         val reference = entries.flatMap { it.scenarios }.chunked(400).fold(HashMap<String, RefResult>()) { acc, chunk ->
             acc.putAll(EngineReferee.showdown(chunk)); acc
         }
-        EngineCoverage.clear("EngineSweepTest")
+        if (only == null) EngineCoverage.clear("EngineSweepTest")
         val passed = ArrayList<String>()
         val report = StringBuilder("# AI engine referee sweep\n\n")
         val failures = LinkedHashMap<String, MutableList<String>>()
@@ -116,7 +122,7 @@ class EngineSweepTest {
         Files.writeString(reports.resolve("ai-engine-sweep-pass.txt"), passed.joinToString("\n", postfix = "\n"))
         val baseline = javaClass.getResourceAsStream("/ai-engine/sweep-baseline.txt")?.reader()?.use { r -> r.readLines().filter { it.isNotBlank() } }
             ?: emptyList()
-        val regressed = baseline.filter { it !in passed }
+        val regressed = baseline.filter { it !in passed && (only == null || it.substringAfter(":") in only) }
         assertTrue(regressed.isEmpty()) { "Entries that used to replay like Showdown no longer do: $regressed" }
     }
 }
