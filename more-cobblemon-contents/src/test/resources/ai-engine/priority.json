@@ -6906,6 +6906,142 @@
    "hooks": []
   },
   {
+   "id": "maxairstream",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxdarkness",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxflare",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxflutterby",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxgeyser",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxguard",
+   "usage": 0,
+   "hooks": [
+    "onPrepareHit",
+    "onHit",
+    "condition.onStart",
+    "condition.onTryHit"
+   ]
+  },
+  {
+   "id": "maxhailstorm",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxknuckle",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxlightning",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxmindstorm",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxooze",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxovergrowth",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxphantasm",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxquake",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxrockfall",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxstarfall",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxsteelspike",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxstrike",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxwyrmwind",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
    "id": "milkdrink",
    "usage": 0,
    "hooks": []

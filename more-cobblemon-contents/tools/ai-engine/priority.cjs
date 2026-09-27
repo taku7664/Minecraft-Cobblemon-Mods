@@ -30,7 +30,8 @@ function order(table, keep, usage) {
 }
 const result = {
   abilities: order(dex.abilities, (a) => a.num > 0 && !excluded.includes(a.isNonstandard) && a.isNonstandard !== 'Past', score(buildFiles, (e) => e.abilities)),
-  moves: order(dex.moves, (m) => !m.isZ && !excluded.includes(m.isNonstandard) && m.isNonstandard !== 'Past', score(moveFiles, (e) => e)),
+  // Max Moves are "Past" in gen 9 data, but Mega Showdown keeps Dynamax, so they stay on the list.
+  moves: order(dex.moves, (m) => !m.isZ && !excluded.includes(m.isNonstandard) && (m.isNonstandard !== 'Past' || m.isMax), score(moveFiles, (e) => e)),
   items: order(dex.items, (i) => !i.zMove && !excluded.includes(i.isNonstandard) && (i.isNonstandard !== 'Past' || i.megaStone), score(buildFiles, (e) => e.items)),
 };
 const out = path.join(moduleDir, 'src/test/resources/ai-engine/priority.json');

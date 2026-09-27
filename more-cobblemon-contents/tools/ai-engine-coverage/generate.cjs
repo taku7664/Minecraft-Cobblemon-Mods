@@ -319,7 +319,7 @@ const abilityRows = Object.entries(Abilities)
   .filter(([, a]) => a.num > 0 && !excludedStandard.includes(a.isNonstandard) && a.isNonstandard !== 'Past')
   .flatMap(([id, a]) => entityRows('특성', id, a, korean('ability', id), abilityRank[id], (abilityText[id] || {}).shortDesc || ''));
 const moveRows = Object.entries(Moves)
-  .filter(([, m]) => !m.isZ && !excludedStandard.includes(m.isNonstandard) && m.isNonstandard !== 'Past')
+  .filter(([, m]) => !m.isZ && !excludedStandard.includes(m.isNonstandard) && (m.isNonstandard !== 'Past' || m.isMax))
   .flatMap(([id, m]) => entityRows('기술', id, m, korean('move', id), moveRank[id], (moveText[id] || {}).shortDesc || ''));
 const itemRows = Object.entries(Items)
   .filter(([, i]) => !i.zMove && !excludedStandard.includes(i.isNonstandard) && (i.isNonstandard !== 'Past' || i.megaStone))
