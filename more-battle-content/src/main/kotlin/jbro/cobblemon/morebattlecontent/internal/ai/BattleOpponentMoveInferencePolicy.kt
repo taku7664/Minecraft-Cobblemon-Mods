@@ -13,10 +13,18 @@ internal data class BattleOpponentMoveInferencePolicy(
     val confirmedHiddenSetupSlots: Int,
     val guessedStatusSlots: Int,
     val preserveActualAttackStatusCounts: Boolean,
+    /** Reads which [BattleStatusMoveCategory] each hidden status move has, never its name. */
+    val readsHiddenStatusCategories: Boolean = false,
 ) {
     val readsHiddenSet: Boolean
         get() = confirmedHiddenStabSlots > 0 || confirmedHiddenSetupSlots > 0 ||
-            preserveActualAttackStatusCounts
+            preserveActualAttackStatusCounts || readsHiddenStatusCategories
+
+    init {
+        require(!readsHiddenStatusCategories || preserveActualAttackStatusCounts) {
+            "Status categories refine the actual status count and cannot be read without it"
+        }
+    }
 
     init {
         listOf(
@@ -66,6 +74,7 @@ internal object BattleOpponentMoveInferencePolicies {
             confirmedHiddenSetupSlots = 1,
             guessedStatusSlots = 0,
             preserveActualAttackStatusCounts = true,
+            readsHiddenStatusCategories = true,
         ),
     )
 

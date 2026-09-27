@@ -37,9 +37,17 @@ data class BattleOpponentMoveSlotView(
     val knowledge: BattleOpponentMoveKnowledge,
     val source: BattleOpponentMoveSource,
     val details: BattleMoveCandidateView? = null,
+    /**
+     * Refines [BattleOpponentMoveGroup.STATUS_OTHER]. A guessed status slot carries it only when the
+     * tier may read the hidden move's category; concrete status slots carry their own category.
+     */
+    val statusCategory: BattleStatusMoveCategory? = null,
 ) {
     init {
         require(slot in 0 until MAX_MOVE_SLOTS)
+        require(statusCategory == null || group == BattleOpponentMoveGroup.STATUS_OTHER) {
+            "Only a status slot can carry a status move category"
+        }
         require(moveId == null || moveId.isNotBlank())
         when (knowledge) {
             BattleOpponentMoveKnowledge.GUESS -> {

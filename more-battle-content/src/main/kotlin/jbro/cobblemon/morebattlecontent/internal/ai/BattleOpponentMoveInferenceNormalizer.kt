@@ -163,7 +163,11 @@ internal object BattleOpponentMoveInferenceNormalizer {
         val currentAttackCount = slots.count { it.group.isAttack() }
         val currentStatusCount = slots.count { !it.group.isAttack() }
         val statusGuesses = (actualStatusCount - currentStatusCount).coerceAtLeast(0)
-        fillGuesses(slots, BattleOpponentMoveGroup.STATUS_OTHER, statusGuesses)
+        if (policy.readsHiddenStatusCategories) {
+            fillCategorizedStatusGuesses(slots, actual, statusGuesses)
+        } else {
+            fillGuesses(slots, BattleOpponentMoveGroup.STATUS_OTHER, statusGuesses)
+        }
 
         val attacksNeeded = (actualAttackCount - currentAttackCount).coerceAtLeast(0)
         val coverage = ranked(learnset, pokemon, format, BattleOpponentMoveGroup.COVERAGE_ATTACK)
@@ -193,10 +197,18 @@ internal object BattleOpponentMoveInferenceNormalizer {
         }.toMutableList()
         revealedMoves(pokemon, catalog, moveDetails).forEach { (moveId, details) ->
             val moveGroup = group(pokemon, details)
+            val category = BattleStatusMoveCategories.classify(moveId, details)
             val exact = slots.indexOfFirst { sameMove(it.moveId, moveId) }
             val replacement = when {
                 exact >= 0 -> exact
-                else -> slots.indexOfFirst { it.knowledge == BattleOpponentMoveKnowledge.GUESS && it.group == moveGroup }
+                else -> slots.indexOfFirst {
+                    it.knowledge == BattleOpponentMoveKnowledge.GUESS && it.group == moveGroup &&
+                        category != null && it.statusCategory == category
+                }.takeIf { it >= 0 }
+                    ?: slots.indexOfFirst {
+                        it.knowledge == BattleOpponentMoveKnowledge.GUESS && it.group == moveGroup && it.statusCategory == null
+                    }.takeIf { it >= 0 }
+                    ?: slots.indexOfFirst { it.knowledge == BattleOpponentMoveKnowledge.GUESS && it.group == moveGroup }
                     .takeIf { it >= 0 }
                     ?: slots.indexOfFirst { it.knowledge == BattleOpponentMoveKnowledge.EXPECTED && it.group == moveGroup }
                         .takeIf { it >= 0 }
@@ -286,13 +298,8 @@ internal object BattleOpponentMoveInferenceNormalizer {
         else -> BattleOpponentMoveGroup.OTHER
     }
 
-    private fun isPureSetup(details: BattleMoveCandidateView): Boolean {
-        val effects = details.effects?.effects.orEmpty()
-        return effects.isNotEmpty() && effects.all { effect ->
-            effect.kind == BattleMoveEffectKind.STAT_STAGE && effect.target == BattleMoveEffectTarget.USER &&
-                effect.statStages.isNotEmpty()
-        } && effects.any { effect -> effect.statStages.values.any { it > 0 } }
-    }
+    private fun isPureSetup(details: BattleMoveCandidateView): Boolean =
+        BattleStatusMoveCategories.isPureSelfSetup(details)
 
     private fun addExpected(
         slots: MutableList<BattleOpponentMoveSlotView>,
@@ -322,6 +329,35 @@ internal object BattleOpponentMoveInferenceNormalizer {
         }
     }
 
+    /**
+     * One guess per hidden status move that no concrete slot already represents, labelled with that
+     * move's group and category only. The move's name stays behind this boundary.
+     */
+    private fun fillCategorizedStatusGuesses(
+        slots: MutableList<BattleOpponentMoveSlotView>,
+        actual: List<Pair<String, BattleMoveCandidateView>>,
+        count: Int,
+    ) {
+        val before = slots.size
+        actual.asSequence()
+            .filter { (id, details) -> details.damageCategory == BattleMoveDamageCategory.STATUS && !slots.containsMove(id) }
+            .sortedBy { canonical(it.first) }
+            .take(minOf(count, MAX_MOVE_SLOTS - slots.size))
+            .forEach { (id, details) ->
+                val category = BattleStatusMoveCategories.classify(id, details)
+                slots += BattleOpponentMoveSlotView(
+                    slot = slots.size,
+                    moveId = null,
+                    group = if (category == null) BattleOpponentMoveGroup.PURE_SETUP else BattleOpponentMoveGroup.STATUS_OTHER,
+                    knowledge = BattleOpponentMoveKnowledge.GUESS,
+                    source = BattleOpponentMoveSource.GROUP_GUESS,
+                    statusCategory = category,
+                )
+            }
+        // Unresolvable hidden moves still occupy their slots as uncategorized guesses.
+        fillGuesses(slots, BattleOpponentMoveGroup.STATUS_OTHER, count - (slots.size - before))
+    }
+
     private fun addConcrete(
         slots: MutableList<BattleOpponentMoveSlotView>,
         moveId: String,
@@ -346,7 +382,14 @@ internal object BattleOpponentMoveInferenceNormalizer {
         group: BattleOpponentMoveGroup,
         knowledge: BattleOpponentMoveKnowledge,
         source: BattleOpponentMoveSource,
-    ) = BattleOpponentMoveSlotView(slot, moveId, group, knowledge, source, details)
+    ) = BattleOpponentMoveSlotView(
+        slot, moveId, group, knowledge, source, details,
+        statusCategory = if (group == BattleOpponentMoveGroup.STATUS_OTHER) {
+            BattleStatusMoveCategories.classify(moveId, details)
+        } else {
+            null
+        },
+    )
 
     private fun List<BattleOpponentMoveSlotView>.containsMove(moveId: String): Boolean =
         any { sameMove(it.moveId, moveId) }

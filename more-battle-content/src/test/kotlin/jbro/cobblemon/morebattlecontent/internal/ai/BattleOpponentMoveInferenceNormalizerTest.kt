@@ -72,6 +72,48 @@ class BattleOpponentMoveInferenceNormalizerTest {
     }
 
     @Test
+    fun `boss reads hidden status categories but never their names`() {
+        val boss = normalize(BattleTrainerTier.BOSS, mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave")))
+        val guess = boss.slots.single { it.group == BattleOpponentMoveGroup.STATUS_OTHER }
+        assertEquals(BattleOpponentMoveKnowledge.GUESS, guess.knowledge)
+        assertEquals(BattleStatusMoveCategory.STATUS_INFLICTION, guess.statusCategory)
+        assertEquals(null, guess.moveId)
+
+        val twin = normalize(BattleTrainerTier.BOSS, mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "protect")))
+        assertEquals(BattleStatusMoveCategory.PROTECTION,
+            twin.slots.single { it.group == BattleOpponentMoveGroup.STATUS_OTHER }.statusCategory)
+
+        val advanced = normalize(BattleTrainerTier.ADVANCED, mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave")))
+        assertTrue(advanced.slots.filter { it.group == BattleOpponentMoveGroup.STATUS_OTHER }.all { it.statusCategory == null },
+            "Advanced reads only the status count")
+    }
+
+    @Test
+    fun `a revealed status move replaces the guess of its own category`() {
+        val actual = mapOf(OPPONENT_ID to setOf("moonblast", "calmmind", "thunderwave", "protect"))
+        val initial = normalize(BattleTrainerTier.BOSS, actual)
+        assertEquals(
+            setOf(BattleStatusMoveCategory.STATUS_INFLICTION, BattleStatusMoveCategory.PROTECTION),
+            initial.slots.mapNotNull { it.statusCategory }.toSet(),
+        )
+        val protectionSlot = initial.slots.single { it.statusCategory == BattleStatusMoveCategory.PROTECTION }.slot
+        val revealedState = state(setOf("protect"))
+
+        val updated = BattleOpponentMoveInferenceNormalizer.normalize(
+            revealedState, catalog(revealedState), BattleTrainerTier.BOSS, actual,
+            mapOf(OPPONENT_ID to initial), moveDetails = MOVES::get,
+        ).single()
+
+        val revealed = updated.slots.single { it.moveId == "protect" }
+        assertEquals(protectionSlot, revealed.slot)
+        assertEquals(BattleOpponentMoveKnowledge.CONFIRMED, revealed.knowledge)
+        assertEquals(BattleStatusMoveCategory.PROTECTION, revealed.statusCategory)
+        assertEquals(BattleStatusMoveCategory.STATUS_INFLICTION,
+            updated.slots.single { it.knowledge == BattleOpponentMoveKnowledge.GUESS &&
+                it.group == BattleOpponentMoveGroup.STATUS_OTHER }.statusCategory)
+    }
+
+    @Test
     fun `a reveal upgrades the matching expected slot before replacing a group guess`() {
         val actual = mapOf(OPPONENT_ID to setOf("moonblast", "powergem", "calmmind", "thunderwave"))
         val initial = normalize(BattleTrainerTier.STANDARD, actual)
@@ -318,13 +360,20 @@ class BattleOpponentMoveInferenceNormalizerTest {
             "powergem" to move("rock", BattleMoveDamageCategory.SPECIAL, 80.0),
             "mysticalfire" to move("fire", BattleMoveDamageCategory.SPECIAL, 75.0),
             "calmmind" to setup(),
-            "thunderwave" to move("electric", BattleMoveDamageCategory.STATUS, 0.0),
-            "protect" to move("normal", BattleMoveDamageCategory.STATUS, 0.0),
+            "thunderwave" to effect("electric", BattleMoveEffectView(
+                BattleMoveEffectKind.STATUS, BattleMoveEffectTarget.SELECTED_TARGET, 1.0, valueId = "par")),
+            "protect" to effect("normal", BattleMoveEffectView(
+                BattleMoveEffectKind.PROTECT_USER, BattleMoveEffectTarget.USER)),
             "substitute" to move("normal", BattleMoveDamageCategory.STATUS, 0.0),
         )
 
         fun move(type: String, category: BattleMoveDamageCategory, power: Double) =
             BattleMoveCandidateView(type, category, power, 100.0, 0, 16)
+
+        fun effect(type: String, effect: BattleMoveEffectView) = BattleMoveCandidateView(
+            type, BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 16,
+            effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, listOf(effect), false),
+        )
 
         fun setup() = BattleMoveCandidateView(
             "psychic", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 16,
