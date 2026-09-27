@@ -5,6 +5,15 @@
 
 ---
 
+## [2026-09-27 22:20] 상점 탭을 계산대 구도로 — `cda4b2a1`~`b7ef66ab` (개발 클라이언트 캡처 확인, 실구매 미확인)
+
+- **방향(빡대리님이 그린 배치):** 왼쪽부터 상점 주인(전신), 품목 목록, 화살표, 장바구니(맨 아래 구매), 나(전신). 같은 품목을 다시 누르면 그 줄 수량이 늘고, 장바구니 줄에는 −/+가 있다. 구매 버튼 위에 합계와 구매 후 잔액을 보인다.
+- **구조:** `MccShopTab`·`MccShopLayout`·`MccShopClient`·`ShopCart`(Core `client`). 장바구니는 서버의 세 한도(줄 수, 줄당 수량, 전체 개수)를 지키고, 구매 성공·카탈로그 변경 시 비우며, 팔지 않게 된 줄은 뺀다. 콘텐츠 영역 폭이 420 미만이면 양쪽 모델을 빼고 카드 제목 띠 아이콘으로 옮긴다.
+- **상점 주인(규칙 JSON `shopkeeper.appearances`):** 플레이어 스킨(`{"skin": "<ns>:<path>.png", "slim": false}`, `TrainerResourceSkin` 규칙으로 검증)이나 주민(`{"villager": {"profession": "cobblemon:nurse_joy", "type": "minecraft:plains"}}`) 후보를 최대 8개 순서대로 적는다. 클라이언트는 텍스처가 실제로 있는 첫 후보를 그린다. 없으면 Cobblemon 간호순 주민이다. RCT(Radical Cobblemon Trainers) 기본 텍스처(`rctmod:textures/trainers/...`)에는 상점 주인·간호순이 보이지 않아, 기본 JSON은 간호순만 적었다. RCT 스킨을 쓰려면 그 앞에 후보로 넣는다. 외형은 카탈로그 revision에 넣지 않는다.
+- **ui-kit:** `Villager`(기본 피부, 지역, 직업 오버레이) 콘텐츠와, 목 기준 위아래 높이를 받는 `UiModelPlacement`(주민 머리는 0.625).
+- **정리:** 옛 상점 화면과 그 안의 홈 리더보드 화면, `MccTabbedContentScreen`·`MccContentFrameLayout`·`BattleHubContent`·`MccContentNavigation`·`MccPlayerModelRenderer`·`MccConfirmScreen`을 지웠다. PvP 월드 HUD가 쓰는 `MccGuiPalette`·`MccGuiSurface`·`MccStyledButton`은 남겼다. 서버의 홈 리더보드 페이로드는 아직 남아 있고, 클라이언트는 받지 않는다.
+- **확인하지 않은 것:** BP가 있는 상태의 실제 구매와 결과 문구, 실서버, RCT 리소스팩을 켠 상태의 스킨 후보.
+
 ## [2026-09-27 21:40] 모든 콘텐츠 탭을 Hub 안에 그리기 — `850e9ceb`~`693368e3` (개발 클라이언트 캡처 확인, 실서버 미확인)
 
 - **방향(빡대리님):** 탭을 누르면 창을 따로 여는 게 아니라 Hub 오른쪽 패널 안에 각 모듈이 그린다. Embedded 탭은 패널 안 어디에 붙여도 어울려야 한다. 렌더링은 MCC가 아니라 `cobblemon-ui-kit`이 맡는다. 세로로 쌓인 설정 줄은 버튼 시작 x가 같아야 한다.
