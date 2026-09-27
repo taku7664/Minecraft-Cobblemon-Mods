@@ -1,14 +1,16 @@
 # More Cobblemon Contents (MCC)
 
-Successor of More Battle Content (MBC). MCC is being restructured into a core mod and content addons.
+Successor of More Battle Content (MBC), split into a core mod and content mods.
 
-| Item | Value |
-|---|---|
-| Mod ID | `more_cobblemon_contents` |
-| Package | `jbro.cobblemon.mcc` |
-| JAR | `more-cobblemon-contents-<version>.jar` |
-| Version property | `more_cobblemon_contents_version` (root `gradle.properties`) |
-| Command | `/mcc` |
+| Module | Mod ID | Contents |
+|---|---|---|
+| `more-cobblemon-contents` | `more_cobblemon_contents` | Core: managed battle engine, built-in Better AI, Battle Points and shop, records, battle hub, presentation, holo terminal, `/mcc` |
+| `more-cobblemon-contents-battle-tower` | `more_cobblemon_contents_battle_tower` | Battle Tower and the Cynthia AI test (`/mcc test`) |
+| `more-cobblemon-contents-battle-factory` | `more_cobblemon_contents_battle_factory` | Battle Factory |
+| `more-cobblemon-contents-pvp` | `more_cobblemon_contents_pvp` | PvP rooms and the battle lounge |
+
+All modules share the package root `jbro.cobblemon.mcc`. Versions live in the root `gradle.properties`
+(`more_cobblemon_contents_version`, `more_cobblemon_contents_battle_tower_version`, ...).
 
 ## Build and test
 
@@ -17,6 +19,7 @@ Successor of More Battle Content (MBC). MCC is being restructured into a core mo
 ./gradlew :more-cobblemon-contents:remapJar
 ```
 
-`tasks.test` is disabled; run tests with `unitTest`.
+`tasks.test` is disabled; run tests with `unitTest`. In the core, `-Pscope=core` or `-Pscope=ai` runs one
+half of the suite. Build the module jars one `remapJar` at a time.
 
 Work history, decisions and open issues are recorded in [`MEMORY.md`](MEMORY.md).

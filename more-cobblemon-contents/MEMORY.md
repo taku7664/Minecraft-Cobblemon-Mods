@@ -5,6 +5,25 @@
 
 ---
 
+## [2026-09-27 22:30] 모듈 분리 — Core와 타워·팩토리·PvP 모드 (컴파일·JAR 확인, 테스트·실게임 미실행)
+
+- **순서 변경(빡대리님):** 홈 리더보드와 Hub UI는 새 UI에서 버릴 구조라 등록 구조를 만들지 않고 모듈 분리부터 했다. 리더보드·상점 화면은 콘텐츠 타입 대신 기록 ID 문자열을 쓰는 임시 형태다.
+- **Core 참조 끊기(`777de491`):** 공용 UI 타입을 `MccRect`·`MccPartyCardContentLayout`·`MccPlayerModelRenderer`·`MccPokemonPortraitRenderSpec`으로 Core에 두고, 타워 파티 슬롯 초상화는 타워 쪽 확장 함수로 옮겼다. Hub의 PvP 대체 경로를 지웠다. 진행도 명령은 공용 `BattleProgressCommands`와 `TowerProgressCommands`·`FactoryProgressCommands`로 나눴다. Cynthia AI 테스트는 타워 세트 파이프라인(`TowerPokemonSet`, 속성 팩토리, 레벨 캡)에 묶여 있어 타워 모드로 보냈다.
+- **분리(`21d71b12` 팩토리, `028d1917` PvP, `5e46e5ef` 타워):**
+
+  | 모듈 | 모드 ID | 엔트리포인트 | 내용 |
+  |---|---|---|---|
+  | `more-cobblemon-contents` | `more_cobblemon_contents` (표시 이름 More Cobblemon Contents Core) | `MoreCobblemonContents`, `MoreCobblemonContentsClient` | 관리 전투 엔진, Better AI, BP·상점, 기록, Hub, 연출, 터미널 |
+  | `more-cobblemon-contents-battle-tower` | `more_cobblemon_contents_battle_tower` | `BattleTowerContent`, `BattleTowerContentClient` | 타워, 카탈로그(`mcc-battle-tower`), AI 테스트 |
+  | `more-cobblemon-contents-battle-factory` | `more_cobblemon_contents_battle_factory` | `BattleFactoryContent`, `BattleFactoryContentClient` | 팩토리, 렌탈 카탈로그(`mcc-battle-factory`) |
+  | `more-cobblemon-contents-pvp` | `more_cobblemon_contents_pvp` | `PvpContent`, `PvpContentClient` | PvP 룸·라운지·턴 타이머, `battle_lounge` 차원, 클라이언트 Mixin 3개(`jbro.cobblemon.mcc.pvp.mixin`, `more_cobblemon_contents_pvp.mixins.json`) |
+
+  모두 0.1.0이며 콘텐츠 모드는 `more_cobblemon_contents >=0.1.0 <1.0.0`에 의존한다. 패키지 이름, 데이터팩 경로, 번역 키, 페이로드 ID, 콘텐츠 ID(`more_cobblemon_contents:battle_tower` 등)는 그대로다. 번역 파일만 각 모드 네임스페이스 폴더(`assets/<모드 ID>/lang`)로 옮겼다.
+- **공개 범위:** Kotlin `internal`은 Gradle 모듈을 넘지 못하므로, 콘텐츠가 쓰는 Core 선언의 `internal`을 컴파일 오류를 따라 반복해서 제거했다(약 100개, `@PublishedApi` 1개 포함). API 설계가 아니라 현재 사용처 기준의 개방이다.
+- **테스트 이동:** Core 테스트의 콘텐츠 검사는 각 모드의 `BattleFactoryContentContractTest`·`PvpClientContractTest`·`BattleTowerContentContractTest`로 옮겼다.
+- **빌드(`a1df04ac`):** 도구 훅이 만드는 `.omc` 상태 폴더가 Core JAR 번역 폴더에 들어가던 것을 네 빌드 모두 `processResources`에서 제외했다. 네 JAR 모두 JDK 21 `jar --validate` 통과, 클래스가 모드별로 섞이지 않음(Core JAR의 tower·factory·pvp 클래스 0), PvP Mixin 재매핑 확인. 네 모듈 `remapJar`를 한 번에 돌리면 실패하고 하나씩은 성공한다(동시 재매핑 충돌로 추정, 원인 미확인).
+- **미실행:** 테스트, 게임 안 확인, 배포. 개발 환경(MCC 전용 프로필 또는 `cobblemon-dev`의 MBC 교체)이 아직 정해지지 않았다.
+
 ## [2026-09-27 19:40] Core 분리 준비 1~3단계 — 정리, 엔진 통합, 서버 등록 구조 (컴파일만 확인)
 
 - **검증 상태:** 각 커밋마다 `compileKotlin`·`compileJava`·`compileTestKotlin`만 통과시켰다. 빡대리님 지시로 테스트는 돌리지 않았고 게임 안에서도 확인하지 않았다. 소스 텍스트를 읽는 테스트(`ManagedBattleLifecycleWiringTest`, `ManagedServerCatalogCleanupRegistrationTest`)와 ID 리터럴을 쓰는 테스트는 새 구조에 맞춰 고쳐 두었다.
