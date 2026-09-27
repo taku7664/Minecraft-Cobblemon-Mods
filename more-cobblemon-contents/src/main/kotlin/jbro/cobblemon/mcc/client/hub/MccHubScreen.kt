@@ -56,7 +56,8 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
         addRenderableWidget(HubHeader(layout, badges.minOfOrNull { it.x - 6 } ?: layout.balance.x))
         // After the header, whose fill would otherwise cover their labels.
         badges.forEach(::addRenderableWidget)
-        addRenderableWidget(RailBackdrop(layout.rail))
+        addRenderableWidget(CobblemonUiPanel.create(layout.rail.x, layout.rail.y, layout.rail.width, layout.rail.height,
+            UiPanelSpec(tone = UiPanelTone.PANEL)))
         addTabs(layout)
         addRenderableWidget(
             CobblemonUiButton.create(layout.closeButton.x, layout.closeButton.y, layout.closeButton.width,
@@ -107,21 +108,14 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
     private fun addTabs(layout: MccHubLayout) {
         val tabs = MccHubTabs.all().take(layout.visibleTabCount())
         tabs.forEachIndexed { index, tab ->
-            val bounds = layout.tabButton(index)
             val denial = tab.accessContentId?.let(MccBattleHubClientState.deniedById::get)
-            val button = CobblemonUiButton.create(
-                bounds.x,
-                bounds.y,
-                bounds.width,
-                UiButtonSpec(MccHubKit.fitted(tab.label, bounds.width - 16), variant = UiButtonVariant.SECONDARY,
-                    size = if (layout.compactTabs) UiControlSize.SMALL else UiControlSize.MEDIUM,
-                    width = UiWidthPolicy.Fixed(bounds.width), selected = tab.id == selectedTabId),
-                forcedState = if (denial != null) UiWidgetState.DISABLED else null,
-            ) { select(tab) }
-            if (denial != null) {
-                button.setTooltip(Tooltip.create(Component.translatable(denial.reasonKey, *denial.arguments.toTypedArray())))
-            }
-            addRenderableWidget(button)
+            addRenderableWidget(MccHubKit.row(layout.tabButton(index), MccHubKit.ListEntry(
+                tab.label,
+                selected = tab.id == selectedTabId,
+                enabled = denial == null,
+                tooltip = denial?.let { Component.translatable(it.reasonKey, *it.arguments.toTypedArray()) },
+                icon = tab.icon,
+            ) { select(tab) }))
         }
     }
 
@@ -143,7 +137,7 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
         shownContent?.hidden()
         shownContent = null
         val original = previousTheme
-        if (original != null && CobblemonUiThemes.registry.snapshot().id == MccHubTheme.preset.id) {
+        if (original != null && CobblemonUiThemes.registry.snapshot().id == MccHubTheme.id) {
             CobblemonUiThemes.registry.install(original)
         }
         previousTheme = null
@@ -182,7 +176,7 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
             val font = Minecraft.getInstance().font
             val header = layout.header
             graphics.fill(header.x, header.y, header.right, header.bottom, theme.pixelDecorations?.titleBar ?: theme.colors.panel)
-            graphics.fill(header.x, header.bottom - 2, header.right, header.bottom, theme.colors.border)
+            graphics.fill(header.x, header.bottom - 2, header.right, header.bottom, theme.colors.accentSecondary)
 
             val brand = hubText("brand")
             val brandRoom = (brandLimit - header.x - 14).coerceAtLeast(1)
@@ -200,21 +194,6 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
                 NumberFormat.getIntegerInstance().format(MccBattleHubClientState.bpBalance))
             drawFitted(graphics, bp, balance.x + 2, balance.y + (balance.height - font.lineHeight) / 2 + 1,
                 balance.width - 4, theme.colors.textPrimary)
-        }
-
-        override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
-    }
-
-    private class RailBackdrop(private val rail: UiRect) :
-        AbstractWidget(rail.x, rail.y, rail.width, rail.height, Component.empty()) {
-        init {
-            active = false
-        }
-
-        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-            val theme = CobblemonUiThemes.registry.snapshot()
-            graphics.fill(rail.x, rail.y, rail.right, rail.bottom, theme.pixelDecorations?.titleBar ?: theme.colors.shell)
-            graphics.fill(rail.right - 1, rail.y, rail.right, rail.bottom, theme.colors.borderBright)
         }
 
         override fun updateWidgetNarration(output: NarrationElementOutput) = Unit

@@ -5,6 +5,10 @@ import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.internal.hub.BattleHubOpenContentPayload
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import jbro.cobblemon.uikit.UiRect
+import jbro.cobblemon.uikit.client.CobblemonUiRenderContent
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.item.ItemStack
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.network.chat.Component
 
@@ -28,6 +32,8 @@ class MccHubTab(
     val order: Int,
     val kind: MccHubTabKind,
     val accessContentId: String? = id,
+    /** Drawn before the label in the rail, like the icons of a DS menu; see [MccHubTabs.itemIcon]. */
+    val icon: CobblemonUiRenderContent? = null,
 )
 
 /** What an embedded tab needs from the hub screen. */
@@ -68,6 +74,10 @@ object MccHubTabs {
     fun all(): List<MccHubTab> = tabs.sortedWith(compareBy({ it.order }, { it.id }))
 
     fun get(id: String): MccHubTab? = tabs.firstOrNull { it.id == id }
+
+    /** A rail icon showing the item [id] (such as `cobblemon:black_belt`), or null when no such item is registered. */
+    fun itemIcon(id: String): CobblemonUiRenderContent? =
+        BuiltInRegistries.ITEM.getOptional(ResourceLocation.parse(id)).map { CobblemonUiRenderContent.Item(ItemStack(it)) }.orElse(null)
 
     /** Asks the server to open a content registered with the server-side hub, as screen tabs do. */
     fun requestContent(contentId: String) {

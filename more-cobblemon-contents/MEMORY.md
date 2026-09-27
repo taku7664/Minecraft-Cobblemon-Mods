@@ -5,6 +5,18 @@
 
 ---
 
+## [2026-09-28 04:30] Hub를 4세대 DS 메뉴 창 스타일로 — `eb4ebc81`~ (개발 클라이언트 캡처 확인, 실서버 미확인)
+
+- **결정:** 빡대리님이 4세대 배틀타워·배틀팩토리 색 여섯 가지와 DPPt 메뉴 창 모양(S1)을 골랐다. 공용 계약은 루트 `docs/COBBLEMON_UI_DS_WINDOW_STYLE_AMENDMENT.md`(87번)에 있다.
+- **ui-kit:** 테마를 스타일(`UiThemeStyle.PIXEL_FRAME`/`DS_WINDOW`)과 팔레트(`UiPalettePreset` 여섯 개)로 나눠 `CobblemonUiThemeComposer`가 조합한다. DS 창 스타일용으로 `UiBorder.WindowFrame`, 커서형 선택 `UiSelectionIndicator.Outline`, 색 글자 그림자 `UiButtonStyle.textShadowColor`, 패널 제목 스타일 `UiPanelTitleStyle`, 목록 줄 스타일 `listRowStyle`, 공용 목록 줄 `CobblemonUiListRows`를 추가했다. 작은 컨트롤은 글자를 줄이지 않는다(0.75배 한글이 깨졌다).
+- **Hub 테마:** `MccHubTheme.style`/`palette`. 기본값은 `DS_WINDOW` + `tower_lobby`다. 바꾸면 Hub와 모든 탭, 확인 대화상자가 함께 바뀐다. 아직 설정 화면이나 서버 설정은 없다.
+- **MCC가 직접 그리던 것 정리:** 카드 제목은 `CobblemonUiPanel`, 목록 줄(페이지 목록, 스크롤 목록, 왼쪽 탭)은 `CobblemonUiListRows`가 그린다. 왼쪽 탭은 창 패널 안의 목록 줄이고 `MccHubTab.icon`(`MccHubTabs.itemIcon`)으로 아이템 아이콘을 붙인다. 표면을 직접 그리는 초상 카드(`MccHubPortraitCards`)는 선택 커서도 직접 그린다. 새 위젯이 표면을 직접 그리면 `UiSurfaceRenderer.drawSelection`을 꼭 같이 불러야 한다. 그러지 않으면 DS 스타일에서 선택이 안 보인다.
+- **Hub 머리줄 배지:** `MccHubHeaderBadges.register(order) { MccHubHeaderBadge? }`. League가 계급(몬스터볼·수퍼볼·하이퍼볼·마스터볼·챔피언)을 BP 왼쪽에 보인다. 서버는 계급만 담은 `rank_v1` 패킷을 접속, 200틱마다의 재조정, 진행 저장 때 바뀐 경우에만 보낸다.
+- **레일:** 탭이 레일 높이를 넘으면 20픽셀 탭으로 줄인다(`MccHubLayout.compactTabs`). 긴 이름은 말줄임표로 줄인다.
+- **캡처 하네스:** 실험적 설정 월드의 백업 경고를 스스로 넘긴다(전에는 빡대리님이 창마다 직접 눌렀다). `MCC_HUB_CAPTURE_THEME=ds_window.tower_lobby,ds_window.factory_night`처럼 `스타일.팔레트` 목록을 주면 한 번 실행으로 테마마다 캡처한다.
+- **함정:** ① ui-kit의 `test` 작업은 꺼져 있다. 테스트는 `:cobblemon-ui-kit:unitTest`로 돌린다. ② 테마 조합 캐시에 `computeIfAbsent`를 쓰면, 첫 DS 테마를 만들 때 프리셋 객체 초기화가 같은 캐시를 다시 불러 게임이 `Recursive update`로 멈췄다. 크기표를 `UiPixelMetrics`로 떼고 캐시를 재귀에 안전하게 바꿨다. 새 클래스로더에서 순서를 재현하는 회귀 테스트가 있다.
+- **확인하지 않은 것:** 모든 모듈을 함께 설치한 클라이언트(개발 캡처의 League·타워·팩토리·PvP 외 탭은 미리보기 탭이라 아이콘과 번역 이름이 없다), 실서버, 1080p 실제 GUI 배율, 팔레트 여섯 개 중 `tower_lobby`·`factory_night` 외 네 개의 DS 스타일 화면.
+
 ## [2026-09-27 22:20] 상점 탭을 계산대 구도로 — `cda4b2a1`~`b7ef66ab` (개발 클라이언트 캡처 확인, 실구매 미확인)
 
 - **방향(빡대리님이 그린 배치):** 왼쪽부터 상점 주인(전신), 품목 목록, 화살표, 장바구니(맨 아래 구매), 나(전신). 같은 품목을 다시 누르면 그 줄 수량이 늘고, 장바구니 줄에는 −/+가 있다. 구매 버튼 위에 합계와 구매 후 잔액을 보인다.

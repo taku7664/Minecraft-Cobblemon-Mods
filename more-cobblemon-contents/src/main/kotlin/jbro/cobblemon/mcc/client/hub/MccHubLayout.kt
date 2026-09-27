@@ -31,7 +31,8 @@ data class MccHubLayout(
         /** A small Pixel League control, for a rail with more tabs than fit at [TAB_HEIGHT]. */
         const val COMPACT_TAB_HEIGHT = 20
         const val TAB_GAP = 3
-        const val RAIL_INSET = 4
+        /** Room between the rail window's frame and its rows. */
+        const val RAIL_INSET = 6
         private const val GAP = 5
         private const val MAX_WIDTH = 720
         private const val MAX_HEIGHT = 400

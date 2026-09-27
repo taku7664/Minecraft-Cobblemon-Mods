@@ -16,7 +16,9 @@ import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.UiWidthPolicy
 import jbro.cobblemon.uikit.client.CobblemonUiButton
 import jbro.cobblemon.uikit.client.CobblemonUiDialogScreen
-import jbro.cobblemon.uikit.client.CobblemonUiListItem
+import jbro.cobblemon.uikit.client.CobblemonUiListRows
+import jbro.cobblemon.uikit.client.UiListRowAction
+import jbro.cobblemon.uikit.client.UiListRowContent
 import jbro.cobblemon.uikit.client.CobblemonUiRenderContent
 import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
 import jbro.cobblemon.uikit.client.UiSurfaceRenderer
@@ -82,8 +84,8 @@ object MccHubKit {
         tone: CardTone = CardTone.INFO,
         icon: CobblemonUiRenderContent? = null,
     ): UiRect {
-        host.add(CobblemonUiPanel.create(rect.x, rect.y, rect.width, rect.height, UiPanelSpec(tone = UiPanelTone.RAISED)))
-        host.add(TitleBand(rect, title, tone, icon))
+        host.add(CobblemonUiPanel.create(rect.x, rect.y, rect.width, rect.height,
+            UiPanelSpec(title = title, tone = UiPanelTone.RAISED, featured = tone == CardTone.FEATURE), icon))
         return cardBody(rect)
     }
 
@@ -333,13 +335,7 @@ object MccHubKit {
         val pages = (entries.size + perPage - 1) / perPage
         val current = page.coerceIn(0, pages - 1)
         entries.drop(current * perPage).take(perPage).forEachIndexed { index, entry ->
-            val item = if (entry.icon == null && entry.actions.isEmpty()) {
-                CobblemonUiListItem.create(rect.x, rect.y + index * step, rect.width,
-                    UiListItemSpec(fitted(entry.title, rect.width - 40), entry.supporting?.let { fitted(it, rect.width - 20) },
-                        trailingText = entry.trailing, selected = entry.selected), entry.press)
-            } else {
-                Row(UiRect(rect.x, rect.y + index * step, rect.width, step - 2), entry)
-            }
+            val item = Row(UiRect(rect.x, rect.y + index * step, rect.width, step - 2), entry)
             item.active = entry.enabled
             entry.tooltip?.let { item.setTooltip(Tooltip.create(it)) }
             host.add(item)
@@ -433,38 +429,6 @@ object MccHubKit {
         button.active = action.enabled
         action.tooltip?.let { button.setTooltip(Tooltip.create(it)) }
         return button
-    }
-
-    /** Dark text on a light band and light text on a dark one, whatever colour the theme gives the band. */
-    private fun onBand(theme: UiThemeSnapshot, band: Int): Int {
-        val luma = (band ushr 16 and 0xFF) * 299 + (band ushr 8 and 0xFF) * 587 + (band and 0xFF) * 114
-        return if (luma >= 150_000) theme.colors.border else theme.colors.textPrimary
-    }
-
-    private class TitleBand(
-        private val card: UiRect,
-        private val title: Component,
-        private val tone: CardTone,
-        private val icon: CobblemonUiRenderContent?,
-    ) : AbstractWidget(card.x, card.y, card.width, TITLE_BAND_HEIGHT + 2, title) {
-        init { active = false }
-        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-            val theme = CobblemonUiThemes.registry.snapshot()
-            val band = when (tone) {
-                CardTone.FEATURE -> theme.colors.accentCaution
-                CardTone.INFO -> theme.colors.borderBright
-            }
-            graphics.fill(card.x + 2, card.y + 2, card.right - 2, card.y + 2 + TITLE_BAND_HEIGHT, band)
-            var left = card.x + 7
-            if (icon != null) {
-                CobblemonUiRenderSlot.drawContent(graphics, UiRect(card.x + 4, card.y + 3, 13, 13), icon, partialTick)
-                left = card.x + 20
-            }
-            drawLine(graphics, title, left, card.y + 5, card.right - 7 - left, onBand(theme, band))
-        }
-        override fun updateWidgetNarration(output: NarrationElementOutput) {
-            output.add(NarratedElementType.TITLE, title)
-        }
     }
 
     private class Strip(
@@ -608,10 +572,16 @@ object MccHubKit {
         }
     }
 
-    /** A list row with a UI kit icon and trailing actions, styled like the UI kit's own list items. */
+    /** One [entry] as a clickable list row over [rect], drawn by the UI kit in the theme's row style. */
+    fun row(rect: UiRect, entry: ListEntry): AbstractWidget = Row(rect, entry).also { row ->
+        row.active = entry.enabled
+        entry.tooltip?.let { row.setTooltip(Tooltip.create(it)) }
+    }
+
+    /** A list row with a UI kit icon and trailing actions, drawn by the UI kit's list rows. */
     private class Row(private val rect: UiRect, private val entry: ListEntry) :
         AbstractButton(rect.x, rect.y, rect.width, rect.height, entry.title) {
-        private val actionRects = actionRects(rect, entry)
+        private val actionRects = CobblemonUiListRows.actionBounds(rect, entry.actions.size)
 
         /** Keyboard activation and clicks outside the actions press the row itself. */
         override fun onPress() = entry.press()
@@ -629,7 +599,7 @@ object MccHubKit {
         override fun updateWidgetNarration(output: NarrationElementOutput) = defaultButtonNarrationText(output)
 
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) =
-            drawEntry(graphics, rect, entry, active, isHovered, mouseX, mouseY, partialTick)
+            CobblemonUiListRows.draw(graphics, rect, entry.content(), active, isHovered, mouseX, mouseY, partialTick)
     }
 
     /**
@@ -665,7 +635,7 @@ object MccHubKit {
             val entry = entries[index]
             if (!entry.enabled) return false
             playDownSound(Minecraft.getInstance().soundManager)
-            val action = actionRects(rowBounds(index), entry).indexOfFirst { it.contains(mouseX, mouseY) }
+            val action = CobblemonUiListRows.actionBounds(rowBounds(index), entry.actions.size).indexOfFirst { it.contains(mouseX, mouseY) }
             if (action < 0) entry.press() else if (entry.actions[action].enabled) entry.actions[action].press()
             return true
         }
@@ -678,7 +648,7 @@ object MccHubKit {
                     val bounds = rowBounds(index)
                     if (bounds.bottom < rect.y || bounds.y > rect.bottom) return@forEachIndexed
                     val hovered = rect.contains(mouseX.toDouble(), mouseY.toDouble()) && bounds.contains(mouseX.toDouble(), mouseY.toDouble())
-                    drawEntry(graphics, bounds, entry, entry.enabled, hovered, mouseX, mouseY, partialTick)
+                    CobblemonUiListRows.draw(graphics, bounds, entry.content(), entry.enabled, hovered, mouseX, mouseY, partialTick)
                 }
             } finally {
                 graphics.disableScissor()
@@ -736,64 +706,8 @@ object MccHubKit {
 
     private fun UiRect.contains(mouseX: Double, mouseY: Double): Boolean = mouseX >= x && mouseX < right && mouseY >= y && mouseY < bottom
 
-    private fun actionRects(bounds: UiRect, entry: ListEntry): List<UiRect> = entry.actions.indices.map { index ->
-        val size = (bounds.height - 6).coerceAtMost(18)
-        UiRect(bounds.right - 4 - (entry.actions.size - index) * (size + 2) + 2, bounds.y + (bounds.height - size) / 2, size, size)
-    }
-
-    /** One list entry as a UI kit list row: icon, title and supporting line, trailing text and actions. */
-    private fun drawEntry(
-        graphics: GuiGraphics,
-        bounds: UiRect,
-        entry: ListEntry,
-        enabled: Boolean,
-        hovered: Boolean,
-        mouseX: Int,
-        mouseY: Int,
-        partialTick: Float,
-    ) {
-        val theme = CobblemonUiThemes.registry.snapshot()
-        val font = Minecraft.getInstance().font
-        val state = when {
-            !enabled -> UiWidgetState.DISABLED
-            hovered -> UiWidgetState.HOVER
-            entry.selected -> UiWidgetState.SELECTED
-            else -> UiWidgetState.NORMAL
-        }
-        val style = theme.style(UiButtonVariant.SECONDARY, state)
-        UiSurfaceRenderer.draw(graphics, bounds.x, bounds.y, bounds.width, bounds.height, style.surface)
-        var left = bounds.x + 6
-        entry.icon?.let { icon ->
-            val size = (bounds.height - 6).coerceAtMost(16)
-            CobblemonUiRenderSlot.drawContent(graphics, UiRect(left, bounds.y + (bounds.height - size) / 2, size, size), icon, partialTick)
-            left += size + 5
-        }
-        val actions = actionRects(bounds, entry)
-        var right = (actions.firstOrNull()?.x ?: (bounds.right - 2)) - 4
-        actions.forEachIndexed { index, action ->
-            val row = entry.actions[index]
-            val actionStyle = theme.style(UiButtonVariant.SECONDARY, when {
-                !enabled || !row.enabled -> UiWidgetState.DISABLED
-                action.contains(mouseX.toDouble(), mouseY.toDouble()) -> UiWidgetState.HOVER
-                else -> UiWidgetState.NORMAL
-            })
-            UiSurfaceRenderer.draw(graphics, action.x, action.y, action.width, action.height, actionStyle.surface)
-            graphics.drawString(font, row.label, action.x + (action.width - font.width(row.label) + 1) / 2,
-                action.y + (action.height - font.lineHeight) / 2 + 1, actionStyle.text, false)
-        }
-        entry.trailing?.let { trailing ->
-            val width = font.width(trailing)
-            graphics.drawString(font, trailing, right - width, bounds.y + (bounds.height - font.lineHeight) / 2 + 1, style.supportingText, false)
-            right -= width + 6
-        }
-        val textWidth = right - left
-        if (entry.supporting == null) {
-            graphics.drawString(font, fitted(entry.title, textWidth), left, bounds.y + (bounds.height - font.lineHeight) / 2 + 1, style.text, false)
-        } else {
-            graphics.drawString(font, fitted(entry.title, textWidth), left, bounds.y + 4, style.text, false)
-            graphics.drawString(font, fitted(entry.supporting, textWidth), left, bounds.bottom - font.lineHeight - 3, style.supportingText, false)
-        }
-    }
+    private fun ListEntry.content() = UiListRowContent(title, supporting, trailing, selected, icon,
+        actions.map { UiListRowAction(it.label, it.enabled) })
 
     private fun drawLine(graphics: GuiGraphics, text: Component, x: Int, y: Int, width: Int, color: Int) {
         if (width <= 0) return

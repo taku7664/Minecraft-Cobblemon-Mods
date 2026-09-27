@@ -19,9 +19,11 @@ object MoreCobblemonContentsClient : ClientModInitializer {
         HoloBattleTerminalClientContent.register()
         BattleHubClientNetworking.register()
         MccHubTabs.register(MccHubTab(MccHubTabs.DASHBOARD, Component.translatable("screen.${MoreCobblemonContents.MOD_ID}.hub.tab.dashboard"),
-            order = 0, kind = MccHubTabKind.Embedded(::MccDashboardTab), accessContentId = null))
+            order = 0, kind = MccHubTabKind.Embedded(::MccDashboardTab), accessContentId = null,
+            icon = MccHubTabs.itemIcon("cobblemon:pokedex_red")))
         MccHubTabs.register(MccHubTab(BattleHubIds.SHOP, Component.translatable("screen.${MoreCobblemonContents.MOD_ID}.hub.tab.shop"),
-            order = 10, kind = MccHubTabKind.Embedded(::MccShopTab), accessContentId = null))
+            order = 10, kind = MccHubTabKind.Embedded(::MccShopTab), accessContentId = null,
+            icon = MccHubTabs.itemIcon("cobblemon:relic_coin")))
         MccHubCaptureHarness.installFromEnvironment()
         ShopPlayClientNetworking.register()
         ShadowTrainerProjectionRenderer.register()
