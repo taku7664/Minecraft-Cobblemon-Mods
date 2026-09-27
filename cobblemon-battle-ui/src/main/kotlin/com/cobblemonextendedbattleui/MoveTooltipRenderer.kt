@@ -544,7 +544,7 @@ object MoveTooltipRenderer {
     ) {
         drawScaledText(
             context = context, text = Text.literal(text),
-            x = x, y = y, scale = fontScale, colour = color, shadow = true
+            x = x, y = y, scale = fontScale, colour = color, shadow = false
         )
     }
 

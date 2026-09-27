@@ -6,9 +6,9 @@ import org.junit.jupiter.api.Test;
 
 final class MoveTooltipAnchorTest {
     @Test
-    void tooltipRightEdgeTouchesMoveColumnAndBottomsAlign() {
+    void tooltipLeavesRoomForProtrudingIconAndFocusGrowth() {
         MoveTooltipAnchor.Position position = MoveTooltipAnchor.position(720, 480, 210, 180, 960, 540);
-        assertEquals(720, position.x() + 210);
+        assertEquals(720 - 18, position.x() + 210);
         assertEquals(480, position.y() + 180);
     }
 

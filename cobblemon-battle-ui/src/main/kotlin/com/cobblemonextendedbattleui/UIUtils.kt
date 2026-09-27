@@ -162,7 +162,7 @@ object UIUtils {
     // ═══════════════════════════════════════════════════════════════════════════
 
     /**
-     * Draws scaled text with shadow using Cobblemon's renderer.
+     * Draws scaled text without shadow on the battle UI's filled surfaces.
      */
     fun drawText(context: DrawContext, text: String, x: Float, y: Float, color: Int, scale: Float) {
         drawScaledText(
@@ -172,7 +172,7 @@ object UIUtils {
             y = y,
             scale = scale,
             colour = color,
-            shadow = true
+            shadow = false
         )
     }
 

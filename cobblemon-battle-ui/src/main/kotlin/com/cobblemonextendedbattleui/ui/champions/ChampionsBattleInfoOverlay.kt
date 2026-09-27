@@ -7,6 +7,7 @@ import jbro.cobblemon.battleui.extended.BattleStateTracker
 import jbro.cobblemon.battleui.extended.TeamIndicatorUI
 import jbro.cobblemon.battleui.extended.UIUtils
 import jbro.cobblemon.battleui.extended.PanelConfig
+import jbro.cobblemon.battleui.extended.PixelTextLayout
 import jbro.cobblemon.battleui.extended.ui.shared.BattleSurfaceRenderer
 import jbro.cobblemon.battleui.extended.ui.shared.BattleUiTheme
 import jbro.cobblemon.battleui.extended.pokemon.render.PokemonModelRenderer
@@ -23,6 +24,9 @@ import kotlin.math.min
 object ChampionsBattleInfoOverlay {
     private const val BASE_W = 960
     private const val BASE_H = 440
+    private const val FRAME_TOP = 12
+    private const val TITLE_HEIGHT = 40
+    private const val TITLE_TOP = FRAME_TOP - TITLE_HEIGHT / 2
     private const val TEAM_X_LEFT = 18
     private const val SIDE_X_LEFT = 66
     private const val FIELD_X = 340
@@ -80,8 +84,9 @@ object ChampionsBattleInfoOverlay {
     fun onOpened() = Unit
 
     /** Synthetic data, using the production renderer; never changes a live battle. */
-    internal fun renderPreview(context: DrawContext) {
+    internal fun renderPreview(context: DrawContext, activeCount: Int = 1) {
         check(net.fabricmc.loader.api.FabricLoader.getInstance().isDevelopmentEnvironment)
+        require(activeCount in 1..MAX_ACTIVE_PER_SIDE)
         val savedAllies = activeAllies
         val savedOpponents = activeOpponents
         try {
@@ -90,8 +95,8 @@ object ChampionsBattleInfoOverlay {
                 Text.translatable("cobblemon.species.$species.name").string,
                 hp, null, 50, Identifier.of("cobblemon", species), emptySet()
             )
-            activeAllies = listOf(entry("pikachu", .72f))
-            activeOpponents = listOf(entry("charizard", .36f))
+            activeAllies = listOf(entry("pikachu", .72f), entry("bulbasaur", .8f), entry("eevee", .5f)).take(activeCount)
+            activeOpponents = listOf(entry("charizard", .36f), entry("venusaur", .7f), entry("blastoise", .2f)).take(activeCount)
             render(context)
         } finally {
             activeAllies = savedAllies
@@ -135,7 +140,7 @@ object ChampionsBattleInfoOverlay {
             (screenHeight - 16f) / BASE_H
         ).coerceAtMost(1.25f)
         val originX = (screenWidth - BASE_W * scale) / 2f
-        val originY = (screenHeight - BASE_H * scale) / 2f
+        val originY = ((screenHeight - BASE_H * scale) / 2f).coerceAtLeast(-TITLE_TOP * scale)
 
         context.fill(0, 0, screenWidth, screenHeight, color(3, 6, 18, 106))
         context.matrices.push()
@@ -156,9 +161,9 @@ object ChampionsBattleInfoOverlay {
     }
 
     private fun drawFrame(context: DrawContext) {
-        BattleSurfaceRenderer.draw(context, 8, 12, BASE_W - 16, BASE_H - 20, BattleUiTheme.shell)
-        BattleSurfaceRenderer.draw(context, 406, 10, 148, 41, BattleUiTheme.panel.copy(border = BattleUiTheme.CYAN, cut = 5))
-        drawTextCentered(context, tr("cobblemon_battle_ui.champions.title"), BASE_W / 2, 24, WHITE, 1.2f)
+        BattleSurfaceRenderer.draw(context, 8, FRAME_TOP, BASE_W - 16, BASE_H - 20, BattleUiTheme.shell)
+        BattleSurfaceRenderer.draw(context, 406, TITLE_TOP, 148, TITLE_HEIGHT, BattleUiTheme.panel.copy(border = BattleUiTheme.CYAN, cut = 5))
+        drawTextCentered(context, tr("cobblemon_battle_ui.champions.title"), BASE_W / 2, TITLE_TOP + 14, WHITE, 1.2f)
     }
 
     private fun drawTeamRail(context: DrawContext, team: List<TeamIndicatorUI.TeamPreview>, x: Int, opponent: Boolean) {
@@ -233,14 +238,19 @@ object ChampionsBattleInfoOverlay {
         drawPortrait(context, entry, x + 10, y + 12, 38, opponent)
         val headerX = x + 54
         val nameWidth = if (entry.level == null) width - 68 else width - 124
-        drawText(context, trim(entry.name, nameWidth), headerX, y + 13, WHITE, if (height >= 200) 1.2f else 1.05f)
-        entry.level?.let { drawTextRight(context, "Lv.$it", x + width - 14, y + 15, TEXT_DIM, 0.95f) }
+        val detailed = height >= 200
+        val nameScale = if (detailed) 1.2f else 1.05f
+        val nameY = y + if (detailed) 13 else 9
+        drawText(context, trim(context, entry.name, nameWidth, nameScale), headerX, nameY, WHITE, nameScale)
+        entry.level?.let { drawTextRight(context, "Lv.$it", x + width - 14, nameY + 2, TEXT_DIM, 0.95f) }
 
         val status = entry.status?.let { TeamIndicatorUI.getStatusDisplayName(it) }
             ?: tr("cobblemon_battle_ui.champions.normal")
-        drawText(context, tr("cobblemon_battle_ui.champions.status"), headerX, y + 42, TEXT_LABEL, 0.9f)
-        drawText(context, status, headerX + 54, y + 42, WHITE, 1.0f)
-        drawHpBar(context, x + 14, y + 64, width - 28, entry.hpPercent, height >= 200)
+        val statusY = y + if (detailed) 42 else 29
+        drawText(context, tr("cobblemon_battle_ui.champions.status"), headerX, statusY, TEXT_LABEL, 0.9f)
+        drawText(context, status, headerX + 54, statusY, WHITE, 1.0f)
+        drawHpBar(context, x + 14, y + if (detailed) 64 else 50,
+            width - if (detailed) 28 else 76, entry.hpPercent, detailed, inlinePercent = !detailed)
 
         if (height >= 200) {
             drawDetailedConditions(context, entry, x, y, width)
@@ -259,15 +269,15 @@ object ChampionsBattleInfoOverlay {
     }
 
     private fun drawDetailedConditions(context: DrawContext, entry: PokemonEntry, x: Int, y: Int, width: Int) {
-        val volatileText = volatileText(entry.uuid, width - 28)
-        drawText(context, tr("cobblemon_battle_ui.champions.additional_status"), x + 14, y + 103, TEXT_LABEL, 0.9f)
-        drawText(context, volatileText, x + 14, y + 124, WHITE, 1.0f)
-        drawText(context, tr("cobblemon_battle_ui.champions.stat_changes"), x + 14, y + 156, TEXT_LABEL, 0.9f)
-        drawDetailedRankRows(context, entry.uuid, x + 14, y + 178, width - 28)
+        val volatileText = volatileText(context, entry.uuid, width - 28)
+        drawText(context, tr("cobblemon_battle_ui.champions.additional_status"), x + 14, y + 96, TEXT_LABEL, 0.9f)
+        drawText(context, volatileText, x + 14, y + 116, WHITE, 1.0f)
+        drawText(context, tr("cobblemon_battle_ui.champions.stat_changes"), x + 14, y + 140, TEXT_LABEL, 0.9f)
+        drawDetailedRankRows(context, entry.uuid, x + 14, y + 162, width - 28)
     }
 
     private fun drawCompactConditions(context: DrawContext, entry: PokemonEntry, x: Int, y: Int, width: Int) {
-        drawCompactRankGrid(context, entry.uuid, x + 14, y + 86, width - 28)
+        drawCompactRankGrid(context, entry.uuid, x + 14, y + 68, width - 28)
     }
 
     private fun drawDetailedRankRows(
@@ -280,7 +290,7 @@ object ChampionsBattleInfoOverlay {
         val stages = BattleStateTracker.getStatChanges(uuid)
         STAT_ORDER.forEachIndexed { index, stat ->
             val stage = stages[stat] ?: 0
-            val rowY = y + index * 15
+            val rowY = y + index * 18
             drawText(context, stat.displayName, x, rowY, WHITE, 0.9f)
             drawRankTrack(context, x + 72, rowY + 2, stage, 10, 6, 3)
             drawTextRight(context, stageText(stage), x + width, rowY, stageColor(stage), 0.9f)
@@ -301,9 +311,9 @@ object ChampionsBattleInfoOverlay {
             val row = index / 2
             val stage = stages[stat] ?: 0
             val cellX = x + column * columnWidth
-            val rowY = y + row * 13
+            val rowY = y + row * 18
             drawText(context, stat.abbr, cellX, rowY, WHITE, 0.85f)
-            drawRankTrack(context, cellX + 25, rowY + 2, stage, 5, 5, 2)
+            drawRankTrack(context, cellX + 32, rowY + 2, stage, 5, 5, 2)
             drawTextRight(context, stageText(stage), cellX + columnWidth - 4, rowY, stageColor(stage), 0.85f)
         }
     }
@@ -357,7 +367,7 @@ object ChampionsBattleInfoOverlay {
             context.fill(x + 10, rowY, x + FIELD_W - 10, rowY + 31, rowColor)
             context.fill(x + 10, rowY, x + 13, rowY + 31, if (effect.opponent) MAGENTA_EDGE else VIOLET_EDGE)
             drawText(context, effect.group, x + 21, rowY + 6, TEXT_LABEL, 0.85f)
-            drawText(context, trim(effect.name, 142), x + 88, rowY + 6, WHITE, 1.0f)
+            drawText(context, trim(context, effect.name, 142), x + 88, rowY + 6, WHITE, 1.0f)
             effect.turns?.let { drawTextRight(context, it, x + FIELD_W - 19, rowY + 7, WHITE, 0.9f) }
         }
 
@@ -382,7 +392,8 @@ object ChampionsBattleInfoOverlay {
         y: Int,
         width: Int,
         hpPercent: Float,
-        detailed: Boolean
+        detailed: Boolean,
+        inlinePercent: Boolean = false
     ) {
         val height = if (detailed) 12 else 9
         context.fill(x, y, x + width, y + height, BattleUiTheme.TRACK)
@@ -394,10 +405,12 @@ object ChampionsBattleInfoOverlay {
         }
         val fillWidth = ((width - 4) * clamped).toInt()
         context.fill(x + 2, y + 2, x + 2 + fillWidth, y + height - 2, hpColor)
-        drawTextRight(context, "${(clamped * 100).toInt()}%", x + width, y + height + 4, WHITE, 0.9f)
+        drawTextRight(context, "${(clamped * 100).toInt()}%",
+            x + width + if (inlinePercent) 48 else 0,
+            if (inlinePercent) y - 1 else y + height + 4, WHITE, 0.9f)
     }
 
-    private fun volatileText(uuid: UUID, width: Int): String {
+    private fun volatileText(context: DrawContext, uuid: UUID, width: Int): String {
         val statuses = BattleStateTracker.getVolatileStatuses(uuid)
             .map { state -> state.type.displayName }
         val text = if (statuses.isEmpty()) {
@@ -405,7 +418,7 @@ object ChampionsBattleInfoOverlay {
         } else {
             statuses.joinToString(" · ")
         }
-        return trim(text, width)
+        return trim(context, text, width)
     }
 
     private fun stageText(stage: Int): String = if (stage > 0) "+$stage" else stage.toString()
@@ -456,19 +469,38 @@ object ChampionsBattleInfoOverlay {
 
     private fun turnText(turns: String?): String? = turns?.let { tr("cobblemon_battle_ui.champions.turns", it) }
     private fun tr(key: String, vararg args: Any): String = Text.translatable(key, *args).string
-    private fun trim(text: String, width: Int): String = MinecraftClient.getInstance().textRenderer.trimToWidth(text, width)
+    private fun trim(context: DrawContext, text: String, width: Int, requestedScale: Float = 1f): String {
+        val mc = MinecraftClient.getInstance()
+        val scale = PixelTextLayout.fontScale(requestedScale, context.matrices.peek().positionMatrix.m00(), mc.window.scaleFactor.toFloat())
+        return mc.textRenderer.trimToWidth(text, (width / scale).toInt())
+    }
 
     private fun drawText(context: DrawContext, text: String, x: Int, y: Int, color: Int, textScale: Float) =
-        UIUtils.drawText(context, text, x.toFloat(), y.toFloat(), color, textScale)
+        drawPixelText(context, text, x.toFloat(), y, color, textScale, 0f)
 
     private fun drawTextRight(context: DrawContext, text: String, right: Int, y: Int, color: Int, textScale: Float) {
-        val width = MinecraftClient.getInstance().textRenderer.getWidth(text) * textScale
-        UIUtils.drawText(context, text, right - width, y.toFloat(), color, textScale)
+        drawPixelText(context, text, right.toFloat(), y, color, textScale, 1f)
     }
 
     private fun drawTextCentered(context: DrawContext, text: String, centerX: Int, y: Int, color: Int, textScale: Float) {
-        val width = MinecraftClient.getInstance().textRenderer.getWidth(text) * textScale
-        UIUtils.drawText(context, text, centerX - width / 2f, y.toFloat(), color, textScale)
+        drawPixelText(context, text, centerX.toFloat(), y, color, textScale, .5f)
+    }
+
+    /** Preserve minimum readable text size and snap its origin after panel/GUI transforms. */
+    private fun drawPixelText(context: DrawContext, text: String, anchorX: Float, y: Int,
+                              color: Int, requestedScale: Float, alignment: Float) {
+        val mc = MinecraftClient.getInstance()
+        val matrix = context.matrices.peek().positionMatrix
+        val guiScale = mc.window.scaleFactor.toFloat()
+        val scale = PixelTextLayout.fontScale(requestedScale, matrix.m00(), guiScale)
+        val x = anchorX - mc.textRenderer.getWidth(text) * scale * alignment
+        val snappedX = PixelTextLayout.snap(x, matrix.m30(), matrix.m00(), guiScale)
+        val snappedY = PixelTextLayout.snap(y.toFloat(), matrix.m31(), matrix.m11(), guiScale)
+        context.matrices.push()
+        context.matrices.translate(snappedX, snappedY, 0f)
+        context.matrices.scale(scale, scale, 1f)
+        context.drawText(mc.textRenderer, text, 0, 0, color, false)
+        context.matrices.pop()
     }
 
     private fun color(r: Int, g: Int, b: Int, a: Int = 255): Int = UIUtils.color(r, g, b, a)

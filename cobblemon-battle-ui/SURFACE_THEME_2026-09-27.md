@@ -73,3 +73,7 @@ Remove-Item Env:COBBLEMON_BATTLE_UI_CAPTURE, Env:COBBLEMON_BATTLE_UI_CAPTURE_LAN
 `resourcepacks/CobbleNostalgia v1.0_HP_Bar.zip` 원본은 삭제하지 않았다. 복구하려면 게임의 리소스팩 설정에서 다시 활성화하고, 기존처럼 Galmuri 다음·Whimscape x Cobblemon 이전의 우선순위로 놓으면 된다. 이 팩은 전투 UI뿐 아니라 PC·포켓몬 정보·인벤토리도 포함하므로 해당 팩의 외형 변경도 함께 해제된다. 번역·음악·폰트·Whimscape 팩은 유지한다.
 
 검증: 설정 JSON 파싱 및 대상 항목 제거, 원본 ZIP 보존, 해당 줄을 제외한 설정 전체의 SHA-256 동일 여부를 확인했다. Battle UI JAR는 위 배포 해시와 동일한 파일을 유지한다. 이번 변경 후 게임을 재실행하거나 실제 전투를 확인한 것은 아니다.
+
+## 후속 수정
+
+실전 캡처에서 드러난 그림자·아이콘 가림·제목판 위치·한글 축소 문제는 [2026-09-28 가독성 수정](READABILITY_FIX_2026-09-28.md)에서 보완했다. 이후 구현과 검증은 해당 기록을 함께 참조한다.

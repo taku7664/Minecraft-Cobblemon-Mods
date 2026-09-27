@@ -3,6 +3,9 @@ package jbro.cobblemon.battleui.extended.ui.shared
 import com.cobblemon.mod.common.api.moves.Moves
 import com.cobblemon.mod.common.api.types.ElementalTypes
 import jbro.cobblemon.battleui.extended.BattleDialogue
+import jbro.cobblemon.battleui.extended.MoveTooltipRenderer
+import jbro.cobblemon.battleui.navigation.BattleMenuLayout
+import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection
 import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUI
 import jbro.cobblemon.battleui.extended.ui.champions.ChampionsBattleInfoOverlay
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -30,13 +33,20 @@ internal object BattleThemeCapture {
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             if (!started && client.currentScreen is TitleScreen && client.overlay == null) {
                 started = true
-                org.lwjgl.glfw.GLFW.glfwSetWindowSize(client.window.handle, 1600, 900)
-                client.options.guiScale.value = 2
+                val captureWidth = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_WIDTH")?.toInt() ?: 1600
+                val captureHeight = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_HEIGHT")?.toInt() ?: 900
+                org.lwjgl.glfw.GLFW.glfwSetWindowSize(client.window.handle, captureWidth, captureHeight)
+                client.options.guiScale.value = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_GUI_SCALE")?.toInt() ?: 2
                 client.onResolutionChanged()
                 val language = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_LANGUAGE") ?: "en_us"
                 require(language == "en_us" || language == "ko_kr")
                 client.options.language = language
                 client.languageManager.language = language
+                System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_FONT_PACK")?.let { filename ->
+                    require(!filename.contains('/') && !filename.contains('\\'))
+                    client.resourcePackManager.scanPacks()
+                    check(client.resourcePackManager.enable("file/$filename")) { "Missing capture font pack: $filename" }
+                }
                 client.reloadResources().thenRun { client.execute { CreateWorldScreen.create(client, TitleScreen()) } }
             }
             val creation = client.currentScreen as? CreateWorldScreen
@@ -63,6 +73,7 @@ internal object BattleThemeCapture {
     }
 
     private class CaptureScreen : Screen(Text.literal("Battle UI rendering fixture")) {
+        private val pages = listOf("controls", "info", "info-double", "info-triple", "tooltip")
         private var page = 0
         private var ticks = 0
         private var pending = false
@@ -75,12 +86,14 @@ internal object BattleThemeCapture {
                 pending = false
                 page++
                 ticks = 0
-                if (page >= 2) mc.scheduleStop()
+                if (page >= pages.size) mc.scheduleStop()
                 return
             }
             if (++ticks < 40) return
             pending = true
-            val filename = "battle-ui-theme-${if (page == 0) "controls" else "info"}-${mc.options.language}.png"
+            val label = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_LABEL") ?: "theme"
+            require(label.matches(Regex("[a-z0-9-]+")))
+            val filename = "battle-ui-$label-${pages[page]}-${mc.options.language}.png"
             ScreenshotRecorder.saveScreenshot(mc.runDirectory, filename, mc.framebuffer) {
                 CobblemonExtendedBattleUI.LOGGER.info("Battle UI fixture capture: {}", it.string)
                 saved.set(true)
@@ -92,8 +105,12 @@ internal object BattleThemeCapture {
         override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
             context.fillGradient(0, 0, width, height, 0xFF182A39.toInt(), 0xFF080E17.toInt())
             context.drawText(textRenderer, "DEVELOPMENT FIXTURE / ${client!!.options.language} / not a live battle", 12, 10, BattleUiTheme.MUTED, false)
-            if (page != 0) {
-                ChampionsBattleInfoOverlay.renderPreview(context)
+            if (page in 1..3) {
+                ChampionsBattleInfoOverlay.renderPreview(context, page)
+                return
+            }
+            if (page == 4) {
+                renderTooltipFixture(context)
                 return
             }
             val left = (width - 390) / 2
@@ -116,7 +133,26 @@ internal object BattleThemeCapture {
             context.drawText(textRenderer, "Normal / keyboard focus / normal / disabled (0 PP)", left, 171, BattleUiTheme.MUTED, false)
             val message = if (client!!.options.language == "ko_kr") "피카츄의 10만볼트! 상대 리자몽에게 효과가 굉장했다!"
                 else "Pikachu used Thunderbolt! It was super effective against Charizard!"
-            BattleDialogue.renderMessage(context, Text.literal(message))
+            if (height >= 300) BattleDialogue.renderMessage(context, Text.literal(message))
+        }
+
+        private fun renderTooltipFixture(context: DrawContext) {
+            val bounds = BattleMenuLayout.vertical(width, height, BattleMoveSelection.MOVE_WIDTH,
+                BattleMoveSelection.MOVE_HEIGHT, 4, 12, 10, 4)
+            val names = listOf("thunderbolt", "dazzlinggleam", "trick", "aromatherapy")
+            val types = listOf("electric", "fairy", "psychic", "grass")
+            val colors = listOf(0xFFF3D03E.toInt(), 0xFFEE99AC.toInt(), 0xFFF85888.toInt(), 0xFF78C850.toInt())
+            MoveTooltipRenderer.clear()
+            names.forEachIndexed { index, name ->
+                val move = requireNotNull(Moves.getByName(name))
+                val bound = bounds[index]
+                BattleControlRenderer.drawMove(context, bound.x().toFloat(), bound.y().toFloat(),
+                    move, ElementalTypes.get(types[index])!!, colors[index], 10, 10, true, index == 1)
+                MoveTooltipRenderer.registerMoveTile(bound.x().toFloat(), bound.y().toFloat(),
+                    bound.width(), bound.height(), move, 10, 10)
+            }
+            MoveTooltipRenderer.updateHoverState(bounds[1].x() + 30, bounds[1].y() + 10)
+            MoveTooltipRenderer.renderTooltip(context)
         }
     }
 }

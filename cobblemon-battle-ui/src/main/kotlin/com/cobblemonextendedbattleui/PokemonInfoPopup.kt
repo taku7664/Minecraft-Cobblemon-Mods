@@ -627,7 +627,7 @@ object PokemonInfoPopup {
             x = x, y = y,
             scale = labelScale,
             colour = TeamIndicatorUI.applyOpacity(LABEL_COLOR),
-            shadow = true
+            shadow = false
         )
     }
 
@@ -641,7 +641,7 @@ object PokemonInfoPopup {
             x = x, y = y,
             scale = fontScale,
             colour = TeamIndicatorUI.applyOpacity(color),
-            shadow = true
+            shadow = false
         )
     }
 }

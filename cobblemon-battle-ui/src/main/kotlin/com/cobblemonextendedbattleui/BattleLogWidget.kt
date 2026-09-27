@@ -760,7 +760,7 @@ object BattleLogWidget {
             y = y,
             scale = scale,
             colour = applyOpacity(color),
-            shadow = true
+            shadow = false
         )
     }
 
