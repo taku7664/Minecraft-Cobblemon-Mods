@@ -240,6 +240,13 @@ final class BattleUiAuditContractTest {
     }
 
     @Test
+    void keyboardMoveConfirmUsesNativeMouseSelectionRouteForMultiBattles() throws Exception {
+        String navigation = read("src/main/java/com/cobblemonextendedbattleui/mixin/BattleGuiNavigationMixin.java");
+        assertTrue(navigation.contains("tile -> selection.mousePrimaryClicked(tile.getX() + 1.0, tile.getY() + 1.0)"));
+        assertFalse(navigation.contains("BattleMoveSelection.MoveTile::onClick"));
+    }
+
+    @Test
     void optionalClothConfigIsGuardedBeforeItsBuilderLoads() throws Exception {
         String integration = read("src/main/kotlin/com/cobblemonextendedbattleui/ModMenuIntegration.kt");
         assertTrue(integration.contains("isModLoaded(\"cloth-config\")"));

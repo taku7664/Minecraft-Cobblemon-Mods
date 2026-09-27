@@ -14,6 +14,7 @@ import com.cobblemon.mod.common.client.gui.battle.BattleGUI
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleGeneralActionSelection
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleSwitchPokemonSelection
+import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleTargetSelection
 import com.cobblemon.mod.common.client.gui.battle.subscreen.ForfeitConfirmationSelection
 import com.cobblemon.mod.common.client.gui.battle.widgets.BattleOptionTile
 import com.cobblemon.mod.common.client.gui.party.PartyTutorialToasts
@@ -42,6 +43,8 @@ internal object BattleLiveCapture {
     private var pageOpened = false
     private var navigationChecked = false
     private var backPending = false
+    private var targetOpened = false
+    private var targetReturnedToMoves = false
     private val screenshotSaved = AtomicBoolean(false)
     private var pendingOpponent: PokemonEntity? = null
     private var pendingTrainer: NPCEntity? = null
@@ -50,7 +53,7 @@ internal object BattleLiveCapture {
 
     fun install() {
         val page = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_SCREEN") ?: "command"
-        require(page in setOf("command", "moves", "switch", "forfeit"))
+        require(page in setOf("command", "moves", "target", "switch", "forfeit"))
         val trainerBattle = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TRAINER") == "1"
         val acceptForfeit = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_FORFEIT_ACCEPT") == "1"
         require(!acceptForfeit || (trainerBattle && page == "forfeit"))
@@ -62,6 +65,7 @@ internal object BattleLiveCapture {
             else -> error("Unsupported live capture battle format")
         }
         require(trainerBattle || battleFormat == BattleFormat.GEN_9_SINGLES)
+        require(page != "target" || (trainerBattle && battleFormat.battleType.slotsPerActor > 1))
         val captureWaitTicks = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_WAIT_TICKS")?.toInt() ?: 80
         require(captureWaitTicks in 20..400)
         ClientTickEvents.END_CLIENT_TICK.register { client ->
@@ -108,6 +112,16 @@ internal object BattleLiveCapture {
                         ticks = 0
                         return@register
                     }
+                    if (page == "target" && !targetReturnedToMoves) {
+                        if (screen.getCurrentActionSelection() !is BattleMoveSelection) {
+                            check(++ticks < 40) { "Target cancel did not return to moves" }
+                            return@register
+                        }
+                        check(screen.keyPressed(GLFW.GLFW_KEY_ESCAPE, 0, 0))
+                        targetReturnedToMoves = true
+                        ticks = 0
+                        return@register
+                    }
                     if (screen.getCurrentActionSelection() !is BattleGeneralActionSelection) {
                         check(++ticks < 40) { "$page did not return to root within 40 ticks" }
                         return@register
@@ -151,8 +165,8 @@ internal object BattleLiveCapture {
                 val root = selection as? BattleGeneralActionSelection ?: return@register
                 if (++ticks < 20) return@register
                 when (page) {
-                    "moves", "switch" -> {
-                        val tile = root.tiles[if (page == "moves") 0 else 1]
+                    "moves", "target", "switch" -> {
+                        val tile = root.tiles[if (page == "switch") 1 else 0]
                         val clicked = screen.mouseClicked(
                             (tile.x + BattleOptionTile.OPTION_WIDTH / 2).toDouble(),
                             (tile.y + BattleOptionTile.OPTION_HEIGHT / 2).toDouble(), 0)
@@ -176,9 +190,23 @@ internal object BattleLiveCapture {
                     if (page == "forfeit" && !trainerBattle) "native selection constructor" else "mouse click")
                 return@register
             }
+            if (page == "target" && !targetOpened) {
+                val moves = selection as? BattleMoveSelection ?: return@register
+                if (++ticks < 5) return@register
+                check(screen.keyPressed(GLFW.GLFW_KEY_DOWN, 0, 0))
+                check(KeyboardTileFocus.focusedIndex(moves.moveTiles) >= 0)
+                check(screen.keyPressed(GLFW.GLFW_KEY_Z, 0, 0)) {
+                    "Keyboard move confirm was not handled in multi battle"
+                }
+                targetOpened = true
+                ticks = 0
+                CobblemonExtendedBattleUI.LOGGER.info("Live multi-battle move confirmed by keyboard")
+                return@register
+            }
             if (page != "command") {
                 val matches = when (page) {
                     "moves" -> selection is BattleMoveSelection
+                    "target" -> selection is BattleTargetSelection
                     "switch" -> selection is BattleSwitchPokemonSelection
                     else -> selection is ForfeitConfirmationSelection
                 }
@@ -189,6 +217,7 @@ internal object BattleLiveCapture {
                 when (selection) {
                     is BattleGeneralActionSelection -> check(selection.tiles.any { it.isFocused })
                     is BattleMoveSelection -> check(KeyboardTileFocus.focusedIndex(selection.moveTiles) >= 0)
+                    is BattleTargetSelection -> check(KeyboardTileFocus.focusedIndex(selection.targetTiles) >= 0)
                     is BattleSwitchPokemonSelection -> check(KeyboardTileFocus.focusedIndex(selection.tiles) >= 0)
                     is ForfeitConfirmationSelection -> {
                         check(screen.keyPressed(GLFW.GLFW_KEY_LEFT, 0, 0))

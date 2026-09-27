@@ -325,7 +325,9 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
                 BattleMoveSelection.MoveTile::getSelectable,
                 keyCode,
                 scanCode,
-                BattleMoveSelection.MoveTile::onClick
+                // Cobblemon opens target selection here in multi battles; MoveTile.onClick()
+                // submits immediately and would bypass that required second choice.
+                tile -> selection.mousePrimaryClicked(tile.getX() + 1.0, tile.getY() + 1.0)
         );
     }
 
