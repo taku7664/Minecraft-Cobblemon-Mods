@@ -17,7 +17,13 @@ object TerminalAuthorization {
         val dz = observed.playerZ - (anchor.z + .5)
         val distance = dx * dx + dy * dy + dz * dz
         if (!distance.isFinite() || distance > 64.0) return "terminal_invalid"
-        if (observed.tick < touched || observed.tick - touched >= 12000) return "terminal_expired"
-        return null
+        return expired(observed.tick, touched)
     }
+
+    /** A session opened from the MCC hub has no League terminal to stand at; only the player and the timeout count. */
+    fun rejectDetached(livingNonSpectator: Boolean, tick: Long, touched: Long): String? =
+        if (!livingNonSpectator) "terminal_invalid" else expired(tick, touched)
+
+    private fun expired(tick: Long, touched: Long): String? =
+        if (tick < touched || tick - touched >= 12000) "terminal_expired" else null
 }

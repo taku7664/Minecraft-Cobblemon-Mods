@@ -1,5 +1,10 @@
 package jbro.cobblemon.mcc.league.client
 
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
+import jbro.cobblemon.mcc.client.hub.MccDashboardPresentation
+import jbro.cobblemon.mcc.client.hub.MccHubTab
+import jbro.cobblemon.mcc.client.hub.MccHubTabKind
+import jbro.cobblemon.mcc.client.hub.MccHubTabs
 import jbro.cobblemon.mcc.league.DevelopmentEnvironmentGate
 import jbro.cobblemon.mcc.league.ui.LeagueHomeFixtureCatalog
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
@@ -13,6 +18,15 @@ object MoreCobblemonContentsLeagueChallengeClient : ClientModInitializer {
     override fun onInitializeClient() {
         LeagueClientSession.register()
         LeagueHomeController.register()
+        // League gates Tower and Factory behind the champion title, so it leads the content tabs.
+        MccHubTabs.register(
+            MccHubTab(
+                ManagedBattleContentIds.LEAGUE_CHALLENGE,
+                Component.translatable(MccDashboardPresentation.contentNameKey(ManagedBattleContentIds.LEAGUE_CHALLENGE)),
+                order = 90,
+                kind = MccHubTabKind.Screen { MccHubTabs.requestContent(ManagedBattleContentIds.LEAGUE_CHALLENGE) },
+            ),
+        )
         if (!DevelopmentEnvironmentGate.shouldRegister(FabricLoader.getInstance().isDevelopmentEnvironment)) {
             return
         }

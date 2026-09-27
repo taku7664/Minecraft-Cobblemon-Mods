@@ -21,4 +21,9 @@ class TerminalAuthorizationTest {
     @Test fun `expired session must be reopened`() {
         assertEquals("terminal_expired", TerminalAuthorization.reject(expected, valid.copy(tick = 12000), 0))
     }
+    @Test fun `hub session checks only the player and the timeout`() {
+        assertNull(TerminalAuthorization.rejectDetached(true, 10, 0))
+        assertEquals("terminal_invalid", TerminalAuthorization.rejectDetached(false, 10, 0))
+        assertEquals("terminal_expired", TerminalAuthorization.rejectDetached(true, 12000, 0))
+    }
 }

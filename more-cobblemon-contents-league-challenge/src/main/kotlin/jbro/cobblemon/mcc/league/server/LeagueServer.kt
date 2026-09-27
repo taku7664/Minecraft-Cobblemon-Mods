@@ -7,6 +7,8 @@ import jbro.cobblemon.mcc.api.battle.ManagedPveBattles
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.rewards.BattlePointRewards
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
+import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
+import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
 import jbro.cobblemon.mcc.league.MoreCobblemonContentsLeagueChallenge as Mod
 import jbro.cobblemon.mcc.league.network.*
 import jbro.cobblemon.mcc.league.system.*
@@ -20,17 +22,19 @@ import net.minecraft.server.level.ServerPlayer
 
 /** All mutations execute on the server thread. Clients send intent, never outcomes or cap values. */
 object LeagueServer {
-    private data class Session(val pos: BlockPos, val dimension: String, val terminalId: UUID,
+    /** [terminal] is null for a session opened from the MCC hub rather than a League terminal. */
+    private data class Session(val terminal: TerminalAnchor?,
         val nonce: UUID = UUID.randomUUID(), var touched: Long = 0,
         val requests: LinkedHashMap<UUID, LeagueIntentPayload> = linkedMapOf())
     private val sessions = mutableMapOf<UUID, Session>()
     private val lastRequestTick = mutableMapOf<UUID, Int>()
     private var access: AutoCloseable? = null
     private val gson = Gson()
-    private const val CONTENT = "${Mod.MOD_ID}:league"
+    private const val CONTENT = ManagedBattleContentIds.LEAGUE_CHALLENGE
     private const val ERROR_PREFIX = "message.${Mod.MOD_ID}."
 
     fun register() {
+        BattleHubEntries.register(BattleHubEntry(CONTENT) { player, _ -> openFromHub(player) })
         PayloadTypeRegistry.playS2C().register(LeagueStatePayload.TYPE, LeagueStatePayload.CODEC)
         PayloadTypeRegistry.playC2S().register(LeagueIntentPayload.TYPE, LeagueIntentPayload.CODEC)
         ServerPlayNetworking.registerGlobalReceiver(LeagueIntentPayload.TYPE) { payload, context ->
@@ -66,8 +70,17 @@ object LeagueServer {
     fun open(player: ServerPlayer, pos: BlockPos): Boolean = guarded(player) {
         if (!requestAllowed(player)) return@guarded
         val entity = player.level().getBlockEntity(pos) as? TerminalEntity ?: error("terminal_invalid")
-        val session = Session(pos.immutable(), player.level().dimension().location().toString(), entity.terminalId,
-            touched = player.server.tickCount.toLong())
+        start(player, Session(TerminalAnchor(entity.terminalId, player.level().dimension().location().toString(),
+            pos.x, pos.y, pos.z), touched = player.server.tickCount.toLong()))
+    }
+
+    /** The hub already let the player reach League from where they stand, so no terminal anchors the session. */
+    fun openFromHub(player: ServerPlayer): Boolean = guarded(player) {
+        if (!requestAllowed(player)) return@guarded
+        start(player, Session(null, touched = player.server.tickCount.toLong()))
+    }
+
+    private fun start(player: ServerPlayer, session: Session) {
         validate(player, session)
         check(ServerPlayNetworking.canSend(player, LeagueStatePayload.TYPE)) { "client_missing" }
         sessions[player.uuid] = session
@@ -156,12 +169,17 @@ object LeagueServer {
     }
 
     private fun validate(player: ServerPlayer, session: Session) {
-        val reason = TerminalAuthorization.reject(
-            TerminalAnchor(session.terminalId, session.dimension, session.pos.x, session.pos.y, session.pos.z),
-            TerminalObservation((player.level().getBlockEntity(session.pos) as? TerminalEntity)?.terminalId,
-                player.level().dimension().location().toString(), player.x, player.y, player.z,
-                player.level().getBlockState(session.pos).`is`(LeagueTerminal.block), player.mayInteract(player.level(), session.pos),
-                player.isAlive && !player.isSpectator, player.server.tickCount.toLong()), session.touched)
+        val living = player.isAlive && !player.isSpectator
+        val tick = player.server.tickCount.toLong()
+        val anchor = session.terminal
+        val reason = if (anchor == null) TerminalAuthorization.rejectDetached(living, tick, session.touched) else {
+            val pos = BlockPos(anchor.x, anchor.y, anchor.z)
+            TerminalAuthorization.reject(anchor,
+                TerminalObservation((player.level().getBlockEntity(pos) as? TerminalEntity)?.terminalId,
+                    player.level().dimension().location().toString(), player.x, player.y, player.z,
+                    player.level().getBlockState(pos).`is`(LeagueTerminal.block), player.mayInteract(player.level(), pos),
+                    living, tick), session.touched)
+        }
         check(reason == null) { requireNotNull(reason) }
     }
 
