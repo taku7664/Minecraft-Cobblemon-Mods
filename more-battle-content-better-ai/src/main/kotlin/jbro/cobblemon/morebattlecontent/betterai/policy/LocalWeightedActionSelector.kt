@@ -97,7 +97,9 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         }
         val exclusions = linkedMapOf<String, String>()
         val eligible = selectionUniverse.filter { rank ->
-            val reason = if (context.authoritativeSimulationScores) {
+            val reason = if (dominatedKnockout(rank, selectionUniverse)) {
+                "dominated_knockout"
+            } else if (context.authoritativeSimulationScores) {
                 when (rank.outcome.candidate.kind) {
                     BattleActionKind.FORFEIT -> "forfeit"
                     BattleActionKind.WAIT -> "wait"
@@ -338,6 +340,48 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
 
     private fun format(value: Double): String = String.format(Locale.ROOT, "%.2f", value)
 
+    /**
+     * True when another move does the same knockout more surely: same actor and single target, a
+     * knockout on every damage roll for both, better accuracy, no later turn order, no more recoil,
+     * no different mechanic, and a score at least as high.
+     *
+     * Risk appetite is a real trait - a trainer who is behind may gamble on an 80% move that could
+     * turn the game. It is not a reason to miss a knockout a 100% move was certain to take: nothing
+     * is gained by the gamble, so a player would call it a mistake, not character. This removes only
+     * that strictly dominated case; any difference in effect keeps both moves in the draw.
+     */
+    private fun dominatedKnockout(rank: LocalBattleActionRank, universe: List<LocalBattleActionRank>): Boolean {
+        val candidate = rank.outcome.candidate
+        if (!isSingleTargetKnockout(rank)) return false
+        val accuracy = accuracyOf(rank)
+        return universe.any { other ->
+            val alternative = other.outcome.candidate
+            other !== rank &&
+                isSingleTargetKnockout(other) &&
+                alternative.actorSlot == candidate.actorSlot &&
+                alternative.targets == candidate.targets &&
+                alternative.mechanic?.mechanicId == candidate.mechanic?.mechanicId &&
+                accuracyOf(other) > accuracy + DOMINANCE_EPSILON &&
+                (alternative.facts?.actsFirstProbability ?: 0.0) + DOMINANCE_EPSILON >=
+                (candidate.facts?.actsFirstProbability ?: 0.0) &&
+                (alternative.facts?.selfRecoilFractionRange?.maximum ?: 0.0) <=
+                (candidate.facts?.selfRecoilFractionRange?.maximum ?: 0.0) &&
+                other.comparisonValue >= rank.comparisonValue
+        }
+    }
+
+    private fun isSingleTargetKnockout(rank: LocalBattleActionRank): Boolean {
+        val candidate = rank.outcome.candidate
+        return candidate.kind == BattleActionKind.USE_MOVE && candidate.targets.size == 1 &&
+            (candidate.facts?.standardDamageRollKoProbabilityRange?.minimum ?: 0.0) >= 1.0
+    }
+
+    private fun accuracyOf(rank: LocalBattleActionRank): Double =
+        rank.outcome.effectiveAccuracyProbability
+            ?: rank.outcome.candidate.facts?.baseAccuracyProbability
+            ?: rank.outcome.candidate.moveDetails?.accuracy?.div(100.0)
+            ?: 1.0
+
     private fun isCredibleDamagingStay(rank: LocalBattleActionRank): Boolean =
         rank.outcome.candidate.kind == BattleActionKind.USE_MOVE &&
             rank.outcome.executableDamageActions > 0 &&
@@ -558,6 +602,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         const val MAX_NON_PROGRESS_PRESSURE = 4
         const val NON_PROGRESS_TILT = 0.75
         const val MINIMUM_EXPLORATORY_EXECUTION_PROBABILITY = 0.25
+        const val DOMINANCE_EPSILON = 1e-9
         const val MINIMUM_BEST_SWITCH_HP_RETENTION = 0.50
         const val MINIMUM_EXPLORATORY_SWITCH_HP_RETENTION = 0.60
         const val MAXIMUM_EXPLORATORY_SWITCH_HP_RETENTION = 0.75
