@@ -7,6 +7,21 @@
 
 ---
 
+## [2026-09-27 15:10] 분석 — MBC Core 분리와 Better AI 합병 준비
+
+빡대리님 방향: MBC를 Core(전투·BP 등 API)와 콘텐츠 모드(Battle Tower, Battle Factory, PvP, League)로 나누고, Better AI를 Core에 합친다. 옛 설계 문서(`DESIGN.md`의 단일 JAR·AI 분리 결정 등)는 제약으로 삼지 않는다. 아래는 코드 대조로 확인한 사실이다.
+
+- **공용 PvE 엔진은 이름만 Tower다.** `Cobblemon173TowerPveBattleRuntime.startManaged`를 타워, AI 테스트, `ManagedPveBattles`(League)가 모두 쓴다. 반환·결과 타입은 `TowerBattleLaunchResult`/`TowerBattleOutcome`이다. `Cobblemon173FactoryPveBattleRuntime.start`는 이 흐름을 거의 줄 단위로 복제했다(차이: 전략 브리핑, 관측 어댑터, 교환 관측, runId 콜백). PvP 런타임도 시작 트랜잭션 골격을 반복한다.
+- **규칙 레지스트리도 이름만 Tower다.** `internal/tower/rules`(`TowerBattleRuleRegistry`, `TowerSubmittedMechanic`, `selectedForTower`)는 타워·팩토리·PvP·League가 모두 쓰는 범용 코드다.
+- **엔진 → PvP 역결합:** `BattleActorMixin`(PvP 턴 캡처·수락·거절·시간 초과), `PokemonBattleMixin.tick`(모든 전투 tick마다 `PvpPlayNetworking.observeBattleTurn`), `Cobblemon173BattleRuleHooks.beforeBattleEnd`. 클라이언트 PvP Mixin 3개(`BattleGuiPvpSpectator`, `PartySendBindingPvpSpectator`, `ScreenPvpInviteClick`)는 그대로 PvP로 옮길 수 있다.
+- **닫힌 목록:** Hub는 `BattleHubContent` enum을 서수로 전송하고 `when`으로 연다. 탭 순서·접근 검사·`/mbc` 하위 명령·진행도 관리 명령·홈 리더보드(보드 8개 하드코딩, 상한 8로 이미 가득)·서버 종료 정리도 콘텐츠를 직접 나열한다. 콘텐츠 등록 경로는 없다. `BattleContentApplication` 레지스트리는 타워만 등록된 채 거의 쓰이지 않는다.
+- **이벤트 순서 의존:** "콘텐츠 정산 → Core 엔티티 정리" 순서가 `MoreBattleContent.onInitialize`의 등록 순서로만 보장된다. 모드가 나뉘면 명시적 단계 이벤트가 필요하다.
+- **클라이언트 공용 코드가 콘텐츠 파일에 있다.** `TowerPlayRect`(24개 파일 사용), `MbcVerticalScrollMetrics`(상점 레이아웃), 플레이어 모델 렌더러(PvP 파일), 초상화 렌더러(`TowerPlayPartySlot` 입력). 클라이언트는 전부 `internal`이다. League는 Hub 탭 없이 `cobblemon-ui-kit` 화면을 따로 연다.
+- **콘텐츠 ID 체계가 셋이다.** 네임스페이스 `ManagedBattleContentIds`, 기록·BP용 짧은 ID(`battle_tower`/`battle_factory`/`pvp`), `BattleHubContent` enum.
+- **저장·식별자 제약:** SavedData는 `cobblemon_more_battle_content_bp`(모든 콘텐츠 BP 원장), `cobblemon_more_battle_content_records`(세 콘텐츠 기록 혼재) 두 개뿐이다. 세션·룸·팀 스냅샷은 메모리에만 있다. 외부 결합: Better AI·League `depends`, 음악 모드가 모드 ID와 `api.presentation.ManagedBattleContentClient`를 리플렉션한다. 분리 뒤에도 문자 그대로 유지해야 하는 값: 기록 content·format·metric 문자열, BP source ID(`cobblemon_more_battle_content:battle_tower` 등, 멱등 재시도 조건), 번역 키(데이터팩 JSON에도 박혀 있음), `holo_battle_terminal` 블록 ID, PvP 전용인 `battle_lounge` 차원(월드에 지형·로그아웃 위치가 남음). 데이터팩 폴더는 모든 네임스페이스를 스캔하므로 폴더명만 유지하면 된다.
+- **Better AI 경계:** 메인 코드는 `api.ai`만 쓰고 `internal` import가 0개다(테스트 2곳은 `internal.ai` 원장 사용). 문자열 결합: `RouterPolicyConfig`가 타워·팩토리 ID로 BOSS_ONLY를 정하고, AI 테스트 persona 접두사로 추적을 켠다. 반대로 AI 테스트는 Better AI 제공자 ID를 하드코딩해 설치 여부를 판정한다.
+- **정리 대상:** `Cobblemon173TowerBattleTeamMaterializer`는 호출처가 없다. `.omc/state/last-tool-error.json`이 `src/main/resources/.../lang/` 등에 있어 JAR에 들어갈 가능성이 있다. `ManagedBattleLifecycleWiringTest`와 `ManagedServerCatalogCleanupRegistrationTest`는 소스 텍스트를 읽으므로 파일 이동 때 함께 고쳐야 한다.
+
 ## [2026-09-27 14:07] 수정 — 싱글플레이 정상 종료에서도 상대 복제본이 남음 — `d5186825`, 1.6.27 클라이언트·서버 배포
 
 - **현상:** 1.6.26 설치 뒤에도 "여전히 뜸" 보고. 월드에 난천 팀 미라몽 두 마리가 새로 남았다. 포켓몬 UUID로 전투를 특정했다. `e608ad64…`는 13:48 전투 `6b1c19f0`(ESC 뒤 "저장 후 나가기"), `2fe3dd63…`는 13:49 전투 `f753a020`(전투 중 창 닫기)의 선봉이다. 두 번 모두 정상 종료였고 강제 종료가 아니었다. NBT에 `BattleId`가 없으므로 전투가 끝난 뒤의 종료 저장에서 기록됐다.
