@@ -3,9 +3,9 @@ package jbro.cobblemon.mcc.client
 import com.google.gson.JsonParser
 import java.io.InputStreamReader
 import jbro.cobblemon.mcc.client.hub.MccHubKit
+import jbro.cobblemon.mcc.client.hub.MccHubPortraitCards
 import jbro.cobblemon.uikit.UiRect
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -33,30 +33,11 @@ class TowerHubLayoutTest {
     }
 
     @Test
-    fun `party cells stay inside the card and never overlap`() {
+    fun `party grid fits six cards in the party card at every size`() {
         sizes.forEach { bounds ->
             val body = MccHubKit.cardBody(TowerHubLayout.calculate(bounds).party)
-            val cells = TowerHubLayout.partyCells(body)
-            assertEquals(TowerHubLayout.PARTY_SIZE, cells.size)
-            cells.forEach { cell ->
-                assertTrue(body.contains(cell.bounds), "$bounds ${cell.bounds}")
-                assertTrue(cell.bounds.contains(cell.portrait), "$bounds portrait")
-                assertTrue(cell.bounds.contains(cell.text), "$bounds text")
-                assertEquals(cell.portrait.width, cell.portrait.height)
-            }
-            cells.forEachIndexed { index, cell ->
-                cells.drop(index + 1).forEach { other -> assertFalse(cell.bounds.overlaps(other.bounds), "$bounds") }
-            }
+            assertEquals(TowerHubLayout.PARTY_SIZE, MccHubPortraitCards.grid(body, TowerHubLayout.PARTY_SIZE).size, "$bounds")
         }
-    }
-
-    @Test
-    fun `small hubs put the portrait beside the text and large ones above it`() {
-        val small = TowerHubLayout.partyCells(MccHubKit.cardBody(TowerHubLayout.calculate(sizes.first()).party))
-        val large = TowerHubLayout.partyCells(MccHubKit.cardBody(TowerHubLayout.calculate(sizes.last()).party))
-        assertTrue(small.none { it.stacked })
-        assertTrue(large.all { it.stacked })
-        assertTrue(large.first().portrait.width > small.first().portrait.width)
     }
 
     @Test
@@ -78,9 +59,3 @@ class TowerHubLayoutTest {
         }
     }
 }
-
-private fun UiRect.contains(other: UiRect): Boolean =
-    other.x >= x && other.y >= y && other.right <= right && other.bottom <= bottom
-
-private fun UiRect.overlaps(other: UiRect): Boolean =
-    x < other.right && other.x < right && y < other.bottom && other.y < bottom

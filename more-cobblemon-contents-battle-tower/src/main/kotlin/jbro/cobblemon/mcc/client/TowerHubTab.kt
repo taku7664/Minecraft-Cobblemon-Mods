@@ -5,6 +5,7 @@ import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.client.hub.MccHubContentHost
 import jbro.cobblemon.mcc.client.hub.MccHubKit
+import jbro.cobblemon.mcc.client.hub.MccHubPortraitCards
 import jbro.cobblemon.mcc.client.hub.MccHubScreen
 import jbro.cobblemon.mcc.client.hub.MccHubTabContent
 import jbro.cobblemon.mcc.client.hub.MccHubTabs
@@ -17,17 +18,10 @@ import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayPartySlot
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayPhase
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayScreenController
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayViewState
-import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiRect
-import jbro.cobblemon.uikit.UiWidgetState
-import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
-import jbro.cobblemon.uikit.client.UiSurfaceRenderer
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.gui.components.AbstractButton
 import net.minecraft.client.gui.components.Tooltip
-import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.network.chat.Component
 
 internal enum class TowerLegendaryClassOption(val allowed: Boolean, val translationKey: String) {
@@ -123,12 +117,16 @@ internal class TowerHubTab : MccHubTabContent {
             MccHubKit.placeholder(host, body, tower("error.party_size"))
             return
         }
-        TowerHubLayout.partyCells(body).forEachIndexed { index, cell ->
+        MccHubPortraitCards.grid(body, TowerHubLayout.PARTY_SIZE).forEachIndexed { index, cell ->
             val pokemon = party.getOrNull(index) ?: return@forEachIndexed
             val order = state.selectedPokemonOrder.indexOf(pokemon.pokemonId).takeIf { it >= 0 }?.plus(1)
             val speciesName = speciesName(pokemon.speciesId)
             val heldItem = itemName(pokemon.heldItemId)
-            val button = PartyCellButton(cell, pokemon, order, speciesName, heldItem) {
+            val button = MccHubPortraitCards.Button(cell, MccPokemonPortraits.party(pokemon.pokemonId, pokemon.speciesId, pokemon.formId),
+                if (order == null) speciesName else tower("party_entry.order_name", order, speciesName),
+                tower("party_entry.details", pokemon.battleLevel, heldItem), order != null,
+                if (order == null) tower("party_entry.narration.available", speciesName, pokemon.battleLevel, heldItem)
+                else tower("party_entry.narration.selected", order, speciesName, pokemon.battleLevel, heldItem)) {
                 if (controller.toggleSelection(pokemon.pokemonId)) host.rebuild()
             }
             button.active = state.phase == TowerPlayPhase.SELECTING && !controller.isPending
@@ -218,53 +216,6 @@ internal class TowerHubTab : MccHubTabContent {
             )
         }
         MccHubKit.footer(host, layout.footer, listOf(guide), end)
-    }
-
-    /** One party member: its portrait drawn by the UI kit, its name with the pick order, level and held item. */
-    private class PartyCellButton(
-        private val cell: TowerHubLayout.PartyCell,
-        private val pokemon: TowerPlayPartySlot,
-        private val order: Int?,
-        private val speciesName: Component,
-        private val heldItem: Component,
-        private val press: () -> Unit,
-    ) : AbstractButton(cell.bounds.x, cell.bounds.y, cell.bounds.width, cell.bounds.height,
-        if (order == null) tower("party_entry.narration.available", speciesName, pokemon.battleLevel, heldItem)
-        else tower("party_entry.narration.selected", order, speciesName, pokemon.battleLevel, heldItem)) {
-        private val portrait = MccPokemonPortraits.party(pokemon.pokemonId, pokemon.speciesId, pokemon.formId)
-
-        override fun onPress() = press()
-
-        override fun updateWidgetNarration(output: NarrationElementOutput) = defaultButtonNarrationText(output)
-
-        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-            val theme = CobblemonUiThemes.registry.snapshot()
-            val widgetState = when {
-                !active && order == null -> UiWidgetState.DISABLED
-                isHoveredOrFocused -> UiWidgetState.HOVER
-                order != null -> UiWidgetState.SELECTED
-                else -> UiWidgetState.NORMAL
-            }
-            val style = theme.style(UiButtonVariant.SECONDARY, widgetState)
-            UiSurfaceRenderer.draw(graphics, x, y, width, height, style.surface)
-            val portraitRect = cell.portrait
-            graphics.fill(portraitRect.x, portraitRect.y, portraitRect.right, portraitRect.bottom, theme.colors.shell)
-            CobblemonUiRenderSlot.drawContent(graphics, portraitRect, portrait.copy(animate = isHoveredOrFocused), partialTick)
-            val font = Minecraft.getInstance().font
-            val name = if (order == null) speciesName else tower("party_entry.order_name", order, speciesName)
-            val details = tower("party_entry.details", pokemon.battleLevel, heldItem)
-            val text = cell.text
-            val nameColor = if (order != null) theme.colors.accentCaution else style.text
-            val nameLine = MccHubKit.fitted(name, text.width)
-            val detailLine = MccHubKit.fitted(details, text.width)
-            if (cell.stacked) {
-                graphics.drawString(font, nameLine, text.x + (text.width - font.width(nameLine)) / 2, text.y, nameColor, false)
-                graphics.drawString(font, detailLine, text.x + (text.width - font.width(detailLine)) / 2, text.y + 10, style.text, false)
-            } else {
-                graphics.drawString(font, nameLine, text.x, text.y, nameColor, false)
-                graphics.drawString(font, detailLine, text.x, text.y + 10, style.text, false)
-            }
-        }
     }
 }
 
