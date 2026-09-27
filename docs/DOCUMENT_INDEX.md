@@ -4,7 +4,7 @@
 |---|---|
 | Status | `shared` |
 | Effective | 2026-08-19 |
-| Last reviewed | 2026-09-27 — MBC 문서를 모듈 `docs/`로 이전 |
+| Last reviewed | 2026-09-28 — Cobblemon UI DS 창 스타일 결정(87번) 추가 |
 | 주 독자 | 빡대리님과 이후 설계·구현 담당자 |
 | 목적 | 활성 계약, 분석 근거, 폐기 기록과 재개 지점의 라우팅 |
 
@@ -40,6 +40,7 @@
 84. `BETTER_COBBLEMON_MUSIC_RESOURCE_CATALOG_AND_MAPPING_DECISION.md` — 공식 ZIP의 OGG·사운드 이벤트·기본 카탈로그 소유권, 확장 카탈로그, 안정 ID, `settings.json`·`overrides.json`, 구형 생성팩 종료를 확정한 현행 계약
 85. `../better-cobblemon-music/RCT_ROLE_SUPPORT_RETIREMENT_2026-09-22.md` — RCT 역할 조회와 `battle.roles`·`battle.gym`을 전부 제거하고 NPC 여부만 사용하는 현행 종료 계약
 86. `../more-battle-content-league-challenge/docs/LIVE_UI_WIRING_V1.md` — 실제 터미널 홈과 서버 요청 연결, Better AI 진입점 보존, 임시 UI Kit 내장 배포와 검증 경계
+87. `COBBLEMON_UI_DS_WINDOW_STYLE_AMENDMENT.md` — 테마를 스타일과 팔레트로 나누고, 4세대 배틀타워·배틀팩토리 팔레트 여섯 개와 DPPt 메뉴 창 스타일(창 테두리·커서형 선택·색 글자 그림자·규칙선 제목·틀 없는 목록 줄)과 작은 컨트롤 글자 배율 정정을 확정
 
 ## 2. 현재 확정 결정
 
