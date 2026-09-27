@@ -87,7 +87,7 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
 
     private fun drawTeam(
         graphics: GuiGraphics,
-        panel: TowerPlayRect,
+        panel: MccRect,
         own: Boolean,
         playerName: String,
         partialTick: Float,
@@ -107,7 +107,7 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
 
     private fun drawPublicTeam(
         graphics: GuiGraphics,
-        panel: TowerPlayRect,
+        panel: MccRect,
         party: List<PvpSelectionOpponentSlot>,
         playerName: String,
         portraitOffset: Int,
@@ -122,7 +122,7 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
 
     private fun drawPublicSlot(
         graphics: GuiGraphics,
-        panel: TowerPlayRect,
+        panel: MccRect,
         slot: PvpSelectionOpponentSlot,
         cardIndex: Int,
         portraitIndex: Int,
@@ -159,7 +159,7 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
         val state = controller.state
         val center = centerPanel()
         graphics.drawCenteredString(font, Component.translatable(key("spectators"), state.spectators.size), width / 2, center.top + 8, MccGuiPalette.TEXT_SECONDARY)
-        val bounds = TowerPlayRect(center.left + 4, center.top + 22, center.width - 8, center.height - 26)
+        val bounds = MccRect(center.left + 4, center.top + 22, center.width - 8, center.height - 26)
         val grid = PvpSpectatorGridLayout.calculate(bounds, state.spectators.map { font.width(it.name) })
         grid.slots.forEach { slot ->
             val spectator = state.spectators[slot.index]
@@ -275,25 +275,25 @@ internal class PvpSelectionScreen(initialState: PvpSelectionViewState) :
     private fun speciesName(speciesId: String): Component =
         Component.translatable("cobblemon.species.${speciesId.substringAfter(':')}.name")
 
-    private fun shell(): TowerPlayRect {
+    private fun shell(): MccRect {
         val w = (width - 16).coerceAtMost(540)
         val h = (height - 16).coerceAtMost(320)
-        return TowerPlayRect((width - w) / 2, (height - h) / 2, w, h)
+        return MccRect((width - w) / 2, (height - h) / 2, w, h)
     }
 
-    private fun header() = TowerPlayRect(shell().left + 6, shell().top + 6, shell().width - 12, 27)
+    private fun header() = MccRect(shell().left + 6, shell().top + 6, shell().width - 12, 27)
     private fun contentTop() = header().bottom + 5
     private fun contentHeight() = shell().height - 77
     private fun columns() = PvpSelectionLayout.columns(shell(), contentTop(), contentHeight())
     private fun leftPanel() = columns().left
     private fun centerPanel() = columns().center
     private fun rightPanel() = columns().right
-    private fun footer() = TowerPlayRect(shell().left + 6, shell().bottom - 32, shell().width - 12, 20)
+    private fun footer() = MccRect(shell().left + 6, shell().bottom - 32, shell().width - 12, 20)
 
-    private fun split(bounds: TowerPlayRect, count: Int): List<TowerPlayRect> {
+    private fun split(bounds: MccRect, count: Int): List<MccRect> {
         val gap = 4
         val itemWidth = (bounds.width - gap * (count - 1)) / count
-        return List(count) { index -> TowerPlayRect(bounds.left + index * (itemWidth + gap), bounds.top, itemWidth, bounds.height) }
+        return List(count) { index -> MccRect(bounds.left + index * (itemWidth + gap), bounds.top, itemWidth, bounds.height) }
     }
 
     private companion object {

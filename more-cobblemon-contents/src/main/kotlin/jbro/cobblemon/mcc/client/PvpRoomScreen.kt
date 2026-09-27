@@ -28,7 +28,7 @@ internal class PvpRoomScreen(
         get() = controller.state
     private val feedbackKey: String?
         get() = controller.feedbackKey
-    private val playerModels = PvpRoomPlayerModelRenderer()
+    private val playerModels = MccPlayerModelRenderer()
 
     override fun init() = buildWidgets()
 
@@ -76,7 +76,7 @@ internal class PvpRoomScreen(
     private fun drawSeat(
         graphics: GuiGraphics,
         layout: PvpRoomLayout,
-        panel: TowerPlayRect,
+        panel: MccRect,
         member: PvpRoomMemberView?,
         side: PvpRoomSide,
     ) {
@@ -100,7 +100,7 @@ internal class PvpRoomScreen(
         )
     }
 
-    private fun renderPlayerModel(graphics: GuiGraphics, member: PvpRoomMemberView, panel: TowerPlayRect, bottom: Int) {
+    private fun renderPlayerModel(graphics: GuiGraphics, member: PvpRoomMemberView, panel: MccRect, bottom: Int) {
         val client = minecraft ?: return
         val profile = client.connection?.getPlayerInfo(member.playerId)?.profile ?: return
         val scale = (panel.height / 5).coerceIn(20, 32)
@@ -199,7 +199,7 @@ internal class PvpRoomScreen(
     private fun addSeatButton(
         side: PvpRoomSide,
         layout: PvpRoomLayout,
-        panel: TowerPlayRect,
+        panel: MccRect,
         occupant: PvpRoomMemberView?,
         playerId: UUID,
         lobby: Boolean,
@@ -232,7 +232,7 @@ internal class PvpRoomScreen(
     }
 
     private fun addOptionButton(
-        bounds: TowerPlayRect,
+        bounds: MccRect,
         label: Component,
         selected: Boolean,
         enabled: Boolean,

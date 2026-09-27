@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.internal.bp.shop
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.internal.hub.BattleHubIds
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
@@ -12,16 +13,9 @@ import jbro.cobblemon.mcc.internal.compat.cobblemon173.reportManagedCleanupFailu
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.runManagedCleanupActionsSafely
 import jbro.cobblemon.mcc.internal.compat.fabric.BattlePointShopCatalogResources
 import jbro.cobblemon.mcc.internal.compat.fabric.MinecraftBattlePointShopDelivery
-import jbro.cobblemon.mcc.internal.factory.FactoryBattleFormat
-import jbro.cobblemon.mcc.internal.factory.FactoryLevelMode
-import jbro.cobblemon.mcc.internal.factory.FactoryRecordContract
 import jbro.cobblemon.mcc.internal.hub.BattleHubNetworking
 import jbro.cobblemon.mcc.internal.record.BattleRecordCategory
 import jbro.cobblemon.mcc.internal.record.BattleRecordService
-import jbro.cobblemon.mcc.internal.pvp.PvpBattleFormat
-import jbro.cobblemon.mcc.internal.pvp.PvpBattleRecordService
-import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
-import jbro.cobblemon.mcc.internal.tower.TowerRecordContract
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.server.level.ServerPlayer
@@ -110,8 +104,8 @@ internal object ShopPlayNetworking {
                     ServerPlayNetworking.send(
                         player,
                         HomeLeaderboardStatePayload(
-                            singles = entries(TowerRecordContract.CONTENT_ID, TowerBattleFormat.SINGLE.recordId, HomeLeaderboardRanking.TOWER),
-                            doubles = entries(TowerRecordContract.CONTENT_ID, TowerBattleFormat.DOUBLE.recordId, HomeLeaderboardRanking.TOWER),
+                            singles = entries(ManagedBattleContentIds.BATTLE_TOWER, "single", HomeLeaderboardRanking.TOWER),
+                            doubles = entries(ManagedBattleContentIds.BATTLE_TOWER, "double", HomeLeaderboardRanking.TOWER),
                         ),
                     )
                 }
@@ -177,23 +171,20 @@ internal data class HomeLeaderboardBoardSpec(
     val ranking: HomeLeaderboardRanking,
 )
 
+// Stopgap until the hub rewrite replaces the home leaderboard: record IDs are spelled out so the core
+// does not import the content mods.
 internal fun homeLeaderboardBoardSpecs(): List<HomeLeaderboardBoardSpec> = buildList {
-    TowerBattleFormat.entries.forEach { format ->
-        add(HomeLeaderboardBoardSpec(TowerRecordContract.CONTENT_ID, format.recordId, HomeLeaderboardRanking.TOWER))
+    val formats = listOf("single", "double")
+    formats.forEach { format ->
+        add(HomeLeaderboardBoardSpec(ManagedBattleContentIds.BATTLE_TOWER, format, HomeLeaderboardRanking.TOWER))
     }
-    FactoryBattleFormat.entries.forEach { format ->
-        FactoryLevelMode.entries.forEach { levelMode ->
-            add(
-                HomeLeaderboardBoardSpec(
-                    FactoryRecordContract.CONTENT_ID,
-                    format.recordId(levelMode),
-                    HomeLeaderboardRanking.FACTORY,
-                ),
-            )
+    formats.forEach { format ->
+        listOf("level_50", "open_level").forEach { levelMode ->
+            add(HomeLeaderboardBoardSpec(ManagedBattleContentIds.BATTLE_FACTORY, "${format}_$levelMode", HomeLeaderboardRanking.FACTORY))
         }
     }
-    PvpBattleFormat.entries.forEach { format ->
-        add(HomeLeaderboardBoardSpec(PvpBattleRecordService.CONTENT_ID, format.recordId, HomeLeaderboardRanking.PVP))
+    formats.forEach { format ->
+        add(HomeLeaderboardBoardSpec(ManagedBattleContentIds.PVP, format, HomeLeaderboardRanking.PVP))
     }
 }
 

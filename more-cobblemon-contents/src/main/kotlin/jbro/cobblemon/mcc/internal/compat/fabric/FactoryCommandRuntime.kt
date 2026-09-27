@@ -1,8 +1,8 @@
 package jbro.cobblemon.mcc.internal.compat.fabric
 
 import jbro.cobblemon.mcc.api.access.BattleContentAccess
+import jbro.cobblemon.mcc.internal.factory.FactoryProgressCommands
 import jbro.cobblemon.mcc.internal.command.MccCommandContributors
-import jbro.cobblemon.mcc.internal.command.BattleProgressCommands
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
 import jbro.cobblemon.mcc.api.access.ContentAccessAction
@@ -135,7 +135,7 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
 
     fun registerServer() {
         play
-        MccCommandContributors.register { BattleProgressCommands.factory() }
+        MccCommandContributors.register { FactoryProgressCommands.build() }
         BattleHubEntries.register(BattleHubEntry(ManagedBattleContentIds.BATTLE_FACTORY) { player, _ -> open(player) })
         FactoryPlayNetworking.registerServer(this)
         ServerLifecycleEvents.SERVER_STARTING.register { server -> currentServer = server }

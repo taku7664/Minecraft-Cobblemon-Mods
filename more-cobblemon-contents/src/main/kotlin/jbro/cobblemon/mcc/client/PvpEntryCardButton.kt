@@ -10,8 +10,8 @@ import net.minecraft.network.chat.Component
 
 /** A selectable entry card for one of the viewer's own Pokemon during PvP entry selection. */
 internal class PvpEntryCardButton(
-    bounds: TowerPlayRect,
-    private val content: TowerPartyCardContentLayout,
+    bounds: MccRect,
+    private val content: MccPartyCardContentLayout,
     private val pokemon: PvpSelectionPartySlot,
     private val selectionPosition: Int?,
     private val speciesName: Component,
@@ -29,7 +29,7 @@ internal class PvpEntryCardButton(
     override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         MccGuiSurface.drawButton(
             graphics,
-            TowerPlayRect(x, y, width, height),
+            MccRect(x, y, width, height),
             active,
             isHoveredOrFocused,
             selectionPosition != null,

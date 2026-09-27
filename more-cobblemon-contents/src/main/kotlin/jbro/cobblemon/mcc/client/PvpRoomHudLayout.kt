@@ -1,16 +1,16 @@
 package jbro.cobblemon.mcc.client
 
 internal data class PvpRoomHudLayout(
-    val panel: TowerPlayRect,
-    val header: TowerPlayRect,
-    val title: TowerPlayRect,
-    val openButton: TowerPlayRect,
-    val toggleButton: TowerPlayRect,
-    val phaseRow: TowerPlayRect?,
-    val leftSide: TowerPlayRect,
-    val rightSide: TowerPlayRect,
-    val spectatorHeading: TowerPlayRect?,
-    val spectatorRows: List<TowerPlayRect>,
+    val panel: MccRect,
+    val header: MccRect,
+    val title: MccRect,
+    val openButton: MccRect,
+    val toggleButton: MccRect,
+    val phaseRow: MccRect?,
+    val leftSide: MccRect,
+    val rightSide: MccRect,
+    val spectatorHeading: MccRect?,
+    val spectatorRows: List<MccRect>,
     val hiddenSpectatorCount: Int,
     val toggleLabel: String,
 ) {
@@ -44,35 +44,35 @@ internal data class PvpRoomHudLayout(
             } else {
                 HEADER_HEIGHT
             }
-            val panel = TowerPlayRect(
+            val panel = MccRect(
                 left = (screenWidth - panelWidth - SCREEN_MARGIN).coerceAtLeast(0),
                 top = (screenHeight - HOTBAR_CLEARANCE - panelHeight).coerceAtLeast(SCREEN_MARGIN),
                 width = panelWidth,
                 height = panelHeight,
             )
-            val header = TowerPlayRect(panel.left, panel.top, panel.width, HEADER_HEIGHT)
-            val toggle = TowerPlayRect(header.right - TOGGLE_WIDTH, header.top, TOGGLE_WIDTH, header.height)
-            val open = TowerPlayRect(toggle.left - CONTROL_GAP - OPEN_WIDTH, header.top, OPEN_WIDTH, header.height)
-            val title = TowerPlayRect(header.left + 4, header.top, (open.left - header.left - 6).coerceAtLeast(1), header.height)
+            val header = MccRect(panel.left, panel.top, panel.width, HEADER_HEIGHT)
+            val toggle = MccRect(header.right - TOGGLE_WIDTH, header.top, TOGGLE_WIDTH, header.height)
+            val open = MccRect(toggle.left - CONTROL_GAP - OPEN_WIDTH, header.top, OPEN_WIDTH, header.height)
+            val title = MccRect(header.left + 4, header.top, (open.left - header.left - 6).coerceAtLeast(1), header.height)
             if (!expanded) {
                 return PvpRoomHudLayout(
                     panel, header, title, open, toggle, null,
-                    TowerPlayRect(0, 0, 0, 0), TowerPlayRect(0, 0, 0, 0), null,
+                    MccRect(0, 0, 0, 0), MccRect(0, 0, 0, 0), null,
                     emptyList(), 0, "+",
                 )
             }
 
             val contentLeft = panel.left + CONTENT_INSET
             val contentWidth = (panel.width - CONTENT_INSET * 2).coerceAtLeast(2)
-            val phase = TowerPlayRect(contentLeft, header.bottom + CONTROL_GAP, contentWidth, PHASE_HEIGHT)
+            val phase = MccRect(contentLeft, header.bottom + CONTROL_GAP, contentWidth, PHASE_HEIGHT)
             val sideTop = phase.bottom
             val sideGap = 4
             val leftWidth = (contentWidth - sideGap) / 2
-            val left = TowerPlayRect(contentLeft, sideTop, leftWidth, SIDE_HEIGHT)
-            val right = TowerPlayRect(left.right + sideGap, sideTop, contentWidth - leftWidth - sideGap, SIDE_HEIGHT)
-            val spectatorHeading = TowerPlayRect(contentLeft, left.bottom, contentWidth, SPECTATOR_HEADING_HEIGHT)
+            val left = MccRect(contentLeft, sideTop, leftWidth, SIDE_HEIGHT)
+            val right = MccRect(left.right + sideGap, sideTop, contentWidth - leftWidth - sideGap, SIDE_HEIGHT)
+            val spectatorHeading = MccRect(contentLeft, left.bottom, contentWidth, SPECTATOR_HEADING_HEIGHT)
             val rows = List(visibleSpectators) { index ->
-                TowerPlayRect(
+                MccRect(
                     contentLeft,
                     spectatorHeading.bottom + index * SPECTATOR_ROW_HEIGHT,
                     contentWidth,

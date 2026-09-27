@@ -5,11 +5,11 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-class TowerPokemonPortraitRenderSpecTest {
+class MccPokemonPortraitRenderSpecTest {
     @Test
     fun `portrait uses a visible card scale and Cobblemon profile origin`() {
-        val bounds = TowerPlayRect(left = 20, top = 30, width = 18, height = 18)
-        val pose = TowerPokemonPortraitRenderSpec.forBounds(bounds)
+        val bounds = MccRect(left = 20, top = 30, width = 18, height = 18)
+        val pose = MccPokemonPortraitRenderSpec.forBounds(bounds)
 
         assertEquals(ProfileTransformType.PROFILE, pose.profileTransformType)
         assertEquals(28.0, pose.anchorY)

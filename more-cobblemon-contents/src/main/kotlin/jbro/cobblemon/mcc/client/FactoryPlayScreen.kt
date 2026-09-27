@@ -130,7 +130,7 @@ internal class FactoryPlayScreen(
         }
     }
 
-    private fun drawSectionHeading(graphics: GuiGraphics, panel: TowerPlayRect, label: Component, color: Int) {
+    private fun drawSectionHeading(graphics: GuiGraphics, panel: MccRect, label: Component, color: Int) {
         graphics.drawString(font, label, panel.left + 7, panel.top + 6, color, false)
     }
 
@@ -252,7 +252,7 @@ internal class FactoryPlayScreen(
     }
 
     private fun addRentalCard(
-        bounds: TowerPlayRect,
+        bounds: MccRect,
         set: FactoryRentalSet,
         selected: Boolean,
         accent: Int,
@@ -281,7 +281,7 @@ internal class FactoryPlayScreen(
         addRenderableWidget(button)
     }
 
-    private fun addOfferCard(bounds: TowerPlayRect, offer: FactorySwapOffer, selected: Boolean) {
+    private fun addOfferCard(bounds: MccRect, offer: FactorySwapOffer, selected: Boolean) {
         val name = speciesName(offer.speciesId, offer.formId)
         val details = Component.translatable(
             key("card.offer_details"),
@@ -305,7 +305,7 @@ internal class FactoryPlayScreen(
     }
 
     private fun addAction(
-        bounds: TowerPlayRect,
+        bounds: MccRect,
         translationKey: String,
         tone: MccButtonTone,
         enabled: Boolean = true,
@@ -318,7 +318,7 @@ internal class FactoryPlayScreen(
         addRenderableWidget(button)
     }
 
-    private fun addAbandon(bounds: TowerPlayRect) {
+    private fun addAbandon(bounds: MccRect) {
         val button = MccStyledButton(bounds, Component.translatable(key("abandon")), MccButtonTone.DANGER) { confirmAbandon() }
         button.active = !controller.isPending
         addRenderableWidget(button)
@@ -410,7 +410,7 @@ internal class FactoryPlayScreen(
 }
 
 private class FactoryRentalCardButton(
-    bounds: TowerPlayRect,
+    bounds: MccRect,
     private val content: FactoryRentalCardContentLayout,
     private val identity: MccPokemonPortraitIdentity,
     private val primary: Component,
@@ -423,7 +423,7 @@ private class FactoryRentalCardButton(
     override fun onPress() = press()
 
     override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        MccGuiSurface.drawButton(graphics, TowerPlayRect(x, y, width, height), active, isHoveredOrFocused, selected, accent)
+        MccGuiSurface.drawButton(graphics, MccRect(x, y, width, height), active, isHoveredOrFocused, selected, accent)
         graphics.fill(
             content.portrait.left,
             content.portrait.top,

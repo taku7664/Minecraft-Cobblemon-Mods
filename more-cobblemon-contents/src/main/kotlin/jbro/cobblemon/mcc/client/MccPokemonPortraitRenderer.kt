@@ -7,7 +7,6 @@ import com.cobblemon.mod.common.client.gui.drawProfilePokemon
 import com.cobblemon.mod.common.client.render.models.blockbench.FloatingState
 import com.cobblemon.mod.common.pokemon.RenderablePokemon
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.findMccForm
-import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayPartySlot
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
@@ -55,22 +54,6 @@ internal data class MccPokemonPortraitIdentity(
 internal class MccPokemonPortraitRenderer {
     private val states = HashMap<String, FloatingState>()
 
-    fun render(
-        graphics: GuiGraphics,
-        pokemon: TowerPlayPartySlot,
-        bounds: TowerPlayRect,
-        partialTick: Float,
-        animate: Boolean,
-    ) {
-        val currentPartyPokemon = portraitLookupOrNull {
-            CobblemonClient.storage.party.findByUUID(pokemon.pokemonId)
-        }
-        val renderable = currentPartyPokemon?.asRenderablePokemon()
-            ?: renderablePokemon(pokemon.speciesId, null)
-            ?: return
-        render(graphics, pokemon.pokemonId.toString(), renderable, bounds, partialTick, animate)
-    }
-
     /**
      * Renders one of the viewer's own Pokemon. The live party entry is preferred so the real form,
      * shininess and cosmetics show; the registered species and form are the fallback if the party
@@ -81,7 +64,7 @@ internal class MccPokemonPortraitRenderer {
         pokemonId: java.util.UUID,
         speciesId: String,
         formId: String?,
-        bounds: TowerPlayRect,
+        bounds: MccRect,
         partialTick: Float,
         animate: Boolean,
     ) {
@@ -97,7 +80,7 @@ internal class MccPokemonPortraitRenderer {
     fun render(
         graphics: GuiGraphics,
         identity: MccPokemonPortraitIdentity,
-        bounds: TowerPlayRect,
+        bounds: MccRect,
         partialTick: Float,
         animate: Boolean,
     ) {
@@ -109,12 +92,12 @@ internal class MccPokemonPortraitRenderer {
         graphics: GuiGraphics,
         stateKey: String,
         renderable: RenderablePokemon,
-        bounds: TowerPlayRect,
+        bounds: MccRect,
         partialTick: Float,
         animate: Boolean,
     ) {
         val state = states.getOrPut(stateKey, ::FloatingState)
-        val pose = TowerPokemonPortraitRenderSpec.forBounds(bounds)
+        val pose = MccPokemonPortraitRenderSpec.forBounds(bounds)
         graphics.enableScissor(bounds.left, bounds.top, bounds.right, bounds.bottom)
         graphics.pose().pushPose()
         try {
@@ -153,7 +136,7 @@ internal class MccPokemonPortraitRenderer {
     }
 }
 
-internal data class TowerPokemonPortraitRenderPose(
+internal data class MccPokemonPortraitRenderPose(
     val anchorX: Double,
     val anchorY: Double,
     val depth: Double,
@@ -161,8 +144,8 @@ internal data class TowerPokemonPortraitRenderPose(
     val profileTransformType: ProfileTransformType,
 )
 
-internal object TowerPokemonPortraitRenderSpec {
-    fun forBounds(bounds: TowerPlayRect) = TowerPokemonPortraitRenderPose(
+internal object MccPokemonPortraitRenderSpec {
+    fun forBounds(bounds: MccRect) = MccPokemonPortraitRenderPose(
         anchorX = bounds.left + bounds.width / 2.0,
         anchorY = bounds.top - 2.0,
         depth = 0.0,

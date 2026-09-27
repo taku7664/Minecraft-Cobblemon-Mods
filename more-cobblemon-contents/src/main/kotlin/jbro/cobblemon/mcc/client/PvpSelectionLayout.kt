@@ -1,9 +1,9 @@
 package jbro.cobblemon.mcc.client
 
 internal data class PvpSelectionColumns(
-    val left: TowerPlayRect,
-    val center: TowerPlayRect,
-    val right: TowerPlayRect,
+    val left: MccRect,
+    val center: MccRect,
+    val right: MccRect,
 )
 
 /**
@@ -13,7 +13,7 @@ internal data class PvpSelectionColumns(
 internal object PvpSelectionLayout {
     const val PARTY_SIZE = 6
 
-    fun columns(shell: TowerPlayRect, top: Int, height: Int): PvpSelectionColumns {
+    fun columns(shell: MccRect, top: Int, height: Int): PvpSelectionColumns {
         require(height > 0) { "PvP selection column height must be positive" }
         val contentLeft = shell.left + SCREEN_INSET
         val contentRight = shell.right - SCREEN_INSET
@@ -23,16 +23,16 @@ internal object PvpSelectionLayout {
         require(sideSpace >= 2) { "PvP selection shell is too narrow for three columns" }
         val leftWidth = sideSpace / 2
         val rightWidth = sideSpace - leftWidth
-        val left = TowerPlayRect(contentLeft, top, leftWidth, height)
-        val center = TowerPlayRect(left.right + COLUMN_GAP, top, centerWidth, height)
-        val right = TowerPlayRect(center.right + COLUMN_GAP, top, rightWidth, height)
+        val left = MccRect(contentLeft, top, leftWidth, height)
+        val center = MccRect(left.right + COLUMN_GAP, top, centerWidth, height)
+        val right = MccRect(center.right + COLUMN_GAP, top, rightWidth, height)
         check(right.right == contentRight) { "PvP selection columns must fill the content width" }
         return PvpSelectionColumns(left, center, right)
     }
 
-    fun partyCard(panel: TowerPlayRect, index: Int): TowerPlayRect {
+    fun partyCard(panel: MccRect, index: Int): MccRect {
         require(index in 0 until PARTY_SIZE) { "PvP party card index is out of range" }
-        val rail = TowerPlayRect(
+        val rail = MccRect(
             left = panel.left + PANEL_INSET,
             top = panel.top + HEADING_HEIGHT,
             width = (panel.width - PANEL_INSET * 2).coerceAtLeast(1),
@@ -41,7 +41,7 @@ internal object PvpSelectionLayout {
         val available = rail.height - CARD_GAP * (PARTY_SIZE - 1)
         val start = available * index / PARTY_SIZE
         val end = available * (index + 1) / PARTY_SIZE
-        return TowerPlayRect(
+        return MccRect(
             left = rail.left,
             top = rail.top + start + CARD_GAP * index,
             width = rail.width,
@@ -49,17 +49,17 @@ internal object PvpSelectionLayout {
         )
     }
 
-    fun partyCardContent(panel: TowerPlayRect, index: Int): TowerPartyCardContentLayout {
+    fun partyCardContent(panel: MccRect, index: Int): MccPartyCardContentLayout {
         val card = partyCard(panel, index)
         val portraitSize = (card.height - CARD_INSET * 2).coerceIn(MIN_PORTRAIT_SIZE, MAX_PORTRAIT_SIZE)
-        val portrait = TowerPlayRect(
+        val portrait = MccRect(
             left = card.left + CARD_INSET + SELECTED_STRIP_WIDTH,
             top = card.top + (card.height - portraitSize) / 2,
             width = portraitSize,
             height = portraitSize,
         )
         val nameTop = card.top + ((card.height - SUMMARY_LINE_HEIGHT * 2) / 2).coerceAtLeast(1)
-        return TowerPartyCardContentLayout(
+        return MccPartyCardContentLayout(
             index = index,
             portrait = portrait,
             textLeft = portrait.right + CARD_CONTENT_GAP,

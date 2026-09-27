@@ -34,12 +34,12 @@ internal object TowerGuideContent {
 }
 
 internal class TowerGuideLayout private constructor(
-    val shell: TowerPlayRect,
-    val header: TowerPlayRect,
-    val closeButton: TowerPlayRect,
-    val body: TowerPlayRect,
-    val viewport: TowerPlayRect,
-    val scrollTrack: TowerPlayRect,
+    val shell: MccRect,
+    val header: MccRect,
+    val closeButton: MccRect,
+    val body: MccRect,
+    val viewport: MccRect,
+    val scrollTrack: MccRect,
 ) {
     companion object {
         fun calculate(screenWidth: Int, screenHeight: Int): TowerGuideLayout {
@@ -48,27 +48,27 @@ internal class TowerGuideLayout private constructor(
             require(shellWidth >= MIN_WIDTH) { "Screen is too narrow for the Battle Tower guide" }
             require(shellHeight >= MIN_HEIGHT) { "Screen is too short for the Battle Tower guide" }
 
-            val shell = TowerPlayRect(
+            val shell = MccRect(
                 (screenWidth - shellWidth) / 2,
                 (screenHeight - shellHeight) / 2,
                 shellWidth,
                 shellHeight,
             )
-            val header = TowerPlayRect(shell.left + INSET, shell.top + INSET, shell.width - INSET * 2, HEADER_HEIGHT)
-            val closeButton = TowerPlayRect(header.right - HEADER_HEIGHT, header.top, HEADER_HEIGHT, HEADER_HEIGHT)
-            val body = TowerPlayRect(
+            val header = MccRect(shell.left + INSET, shell.top + INSET, shell.width - INSET * 2, HEADER_HEIGHT)
+            val closeButton = MccRect(header.right - HEADER_HEIGHT, header.top, HEADER_HEIGHT, HEADER_HEIGHT)
+            val body = MccRect(
                 header.left,
                 header.bottom + PANEL_GAP,
                 header.width,
                 shell.bottom - INSET - header.bottom - PANEL_GAP,
             )
-            val scrollTrack = TowerPlayRect(
+            val scrollTrack = MccRect(
                 body.right - BODY_INSET - SCROLL_WIDTH,
                 body.top + BODY_INSET,
                 SCROLL_WIDTH,
                 body.height - BODY_INSET * 2,
             )
-            val viewport = TowerPlayRect(
+            val viewport = MccRect(
                 body.left + BODY_INSET,
                 body.top + BODY_INSET,
                 scrollTrack.left - SCROLL_GAP - body.left - BODY_INSET,
@@ -231,7 +231,7 @@ internal class TowerGuideScreen(
 
     private fun drawScrollBar(
         graphics: GuiGraphics,
-        track: TowerPlayRect,
+        track: MccRect,
         metrics: MccVerticalScrollMetrics,
     ) {
         graphics.fill(track.left, track.top, track.right, track.bottom, MccGuiPalette.BORDER)
@@ -253,7 +253,7 @@ internal class TowerGuideScreen(
     )
 }
 
-private fun TowerPlayRect.contains(x: Double, y: Double): Boolean =
+private fun MccRect.contains(x: Double, y: Double): Boolean =
     x >= left && x < right && y >= top && y < bottom
 
 private const val SCREEN_MARGIN = 8

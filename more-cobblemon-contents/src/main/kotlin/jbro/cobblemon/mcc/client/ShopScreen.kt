@@ -12,8 +12,6 @@ import jbro.cobblemon.mcc.internal.bp.shop.ShopEntryView
 import jbro.cobblemon.mcc.internal.bp.shop.ShopPurchasePayload
 import jbro.cobblemon.mcc.internal.bp.shop.ShopStatePayload
 import jbro.cobblemon.mcc.internal.hub.BattleHubContent
-import jbro.cobblemon.mcc.internal.factory.FactoryLevelMode
-import jbro.cobblemon.mcc.internal.tower.TowerBattleFormat
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractButton
@@ -34,10 +32,10 @@ internal class ShopScreen(
     private var leaderboardCatalog = initialLeaderboardCatalog
     private val purchaseSelection = ShopPurchaseSelection()
     private val itemButtons = mutableListOf<ShopItemButton>()
-    private val playerModelRenderer = PvpRoomPlayerModelRenderer()
-    private var leaderboardFormat = TowerBattleFormat.SINGLE
+    private val playerModelRenderer = MccPlayerModelRenderer()
+    private var leaderboardFormat = LeaderboardFormat.SINGLE
     private var leaderboardContent = LeaderboardContent.TOWER
-    private var leaderboardFactoryLevel = FactoryLevelMode.LEVEL_50
+    private var leaderboardFactoryLevel = LeaderboardLevel.LEVEL_50
     private var shopScrollOffset = 0
     private var leaderboardScrollOffset = 0
     private var dragTarget: ScrollTarget? = null
@@ -212,7 +210,7 @@ internal class ShopScreen(
                 ) { changeLeaderboardContent(content) },
             )
         }
-        TowerBattleFormat.entries.forEachIndexed { index, format ->
+        LeaderboardFormat.entries.forEachIndexed { index, format ->
             addRenderableWidget(
                 MccStyledButton(
                     layout.leaderboardFormatButtons[index],
@@ -223,7 +221,7 @@ internal class ShopScreen(
             )
         }
         if (leaderboardContent == LeaderboardContent.FACTORY) {
-            FactoryLevelMode.entries.forEachIndexed { index, levelMode ->
+            LeaderboardLevel.entries.forEachIndexed { index, levelMode ->
                 addRenderableWidget(
                     MccStyledButton(
                         layout.leaderboardLevelButtons[index],
@@ -443,7 +441,7 @@ internal class ShopScreen(
         }
     }
 
-    private fun changeLeaderboardFormat(format: TowerBattleFormat) {
+    private fun changeLeaderboardFormat(format: LeaderboardFormat) {
         if (leaderboardFormat == format) return
         leaderboardFormat = format
         leaderboardScrollOffset = 0
@@ -457,7 +455,7 @@ internal class ShopScreen(
         rebuild()
     }
 
-    private fun changeLeaderboardFactoryLevel(levelMode: FactoryLevelMode) {
+    private fun changeLeaderboardFactoryLevel(levelMode: LeaderboardLevel) {
         if (leaderboardFactoryLevel == levelMode) return
         leaderboardFactoryLevel = levelMode
         leaderboardScrollOffset = 0
@@ -476,8 +474,8 @@ internal class ShopScreen(
             ?.let { return it.entries }
         if (leaderboardContent != LeaderboardContent.TOWER) return null
         return when (leaderboardFormat) {
-            TowerBattleFormat.SINGLE -> leaderboard?.singles
-            TowerBattleFormat.DOUBLE -> leaderboard?.doubles
+            LeaderboardFormat.SINGLE -> leaderboard?.singles
+            LeaderboardFormat.DOUBLE -> leaderboard?.doubles
         }
     }
 
@@ -596,7 +594,7 @@ internal class ShopScreen(
 
     private fun beginScrollDrag(
         target: ScrollTarget,
-        track: TowerPlayRect,
+        track: MccRect,
         metrics: MccVerticalScrollMetrics,
         offset: Int,
         mouseX: Double,
@@ -618,7 +616,7 @@ internal class ShopScreen(
 
     private fun drawScrollBar(
         graphics: GuiGraphics,
-        track: TowerPlayRect,
+        track: MccRect,
         metrics: MccVerticalScrollMetrics,
         offset: Int,
         accent: Int,
@@ -642,6 +640,16 @@ internal class ShopScreen(
 
     private enum class ScrollTarget { SHOP, LEADERBOARD }
 
+    private enum class LeaderboardFormat(val recordId: String) {
+        SINGLE("single"),
+        DOUBLE("double"),
+    }
+
+    private enum class LeaderboardLevel(val id: String) {
+        LEVEL_50("level_50"),
+        OPEN_LEVEL("open_level"),
+    }
+
     private enum class LeaderboardContent(val contentId: String, val translationId: String) {
         TOWER(ManagedBattleContentIds.BATTLE_TOWER, "tower"),
         FACTORY(ManagedBattleContentIds.BATTLE_FACTORY, "factory"),
@@ -650,8 +658,8 @@ internal class ShopScreen(
 }
 
 private class ShopItemButton(
-    bounds: TowerPlayRect,
-    private var clipBounds: TowerPlayRect,
+    bounds: MccRect,
+    private var clipBounds: MccRect,
     private val entry: ShopEntryView,
     val stack: ItemStack,
     private val selected: Boolean,
@@ -664,7 +672,7 @@ private class ShopItemButton(
         graphics.enableScissor(clipBounds.left, clipBounds.top, clipBounds.right, clipBounds.bottom)
         MccGuiSurface.drawButton(
             graphics,
-            TowerPlayRect(x, y, width, height),
+            MccRect(x, y, width, height),
             active,
             isHoveredOrFocused,
             selected,
@@ -682,7 +690,7 @@ private class ShopItemButton(
     override fun isMouseOver(mouseX: Double, mouseY: Double): Boolean =
         clipBounds.contains(mouseX, mouseY) && super.isMouseOver(mouseX, mouseY)
 
-    fun reposition(bounds: TowerPlayRect, clipBounds: TowerPlayRect) {
+    fun reposition(bounds: MccRect, clipBounds: MccRect) {
         x = bounds.left
         y = bounds.top
         width = bounds.width
@@ -690,15 +698,15 @@ private class ShopItemButton(
         visible = bounds.overlaps(clipBounds)
     }
 
-    private fun bounds() = TowerPlayRect(x, y, width, height)
+    private fun bounds() = MccRect(x, y, width, height)
 
     override fun updateWidgetNarration(output: NarrationElementOutput) = defaultButtonNarrationText(output)
 }
 
-private fun TowerPlayRect.contains(x: Double, y: Double): Boolean =
+private fun MccRect.contains(x: Double, y: Double): Boolean =
     x >= left && x < right && y >= top && y < bottom
 
-private fun TowerPlayRect.overlaps(other: TowerPlayRect): Boolean =
+private fun MccRect.overlaps(other: MccRect): Boolean =
     left < other.right && right > other.left && top < other.bottom && bottom > other.top
 
 private fun ShopEntryView.itemStack(): ItemStack {

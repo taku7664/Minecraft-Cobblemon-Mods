@@ -1,22 +1,22 @@
 package jbro.cobblemon.mcc.client
 
 internal class MccContentFrameLayout private constructor(
-    val shell: TowerPlayRect,
-    val header: TowerPlayRect,
-    val helpButton: TowerPlayRect,
-    val closeButton: TowerPlayRect,
-    val tabs: TowerPlayRect,
-    val content: TowerPlayRect,
+    val shell: MccRect,
+    val header: MccRect,
+    val helpButton: MccRect,
+    val closeButton: MccRect,
+    val tabs: MccRect,
+    val content: MccRect,
 ) {
-    fun tabButtons(count: Int): List<TowerPlayRect> = partition(tabs, count, TAB_GAP)
+    fun tabButtons(count: Int): List<MccRect> = partition(tabs, count, TAB_GAP)
 
-    private fun partition(bounds: TowerPlayRect, count: Int, gap: Int): List<TowerPlayRect> {
+    private fun partition(bounds: MccRect, count: Int, gap: Int): List<MccRect> {
         require(count > 0)
         val available = bounds.width - gap * (count - 1)
         return List(count) { index ->
             val start = available * index / count
             val end = available * (index + 1) / count
-            TowerPlayRect(bounds.left + start + gap * index, bounds.top, end - start, bounds.height)
+            MccRect(bounds.left + start + gap * index, bounds.top, end - start, bounds.height)
         }
     }
 
@@ -27,22 +27,22 @@ internal class MccContentFrameLayout private constructor(
             require(shellWidth >= MIN_SHELL_WIDTH) { "Screen is too narrow for the MCC content frame" }
             require(shellHeight >= MIN_SHELL_HEIGHT) { "Screen is too short for the MCC content frame" }
 
-            val shell = TowerPlayRect(
+            val shell = MccRect(
                 (screenWidth - shellWidth) / 2,
                 (screenHeight - shellHeight) / 2,
                 shellWidth,
                 shellHeight,
             )
-            val header = TowerPlayRect(shell.left + INSET, shell.top + INSET, shell.width - INSET * 2, HEADER_HEIGHT)
-            val closeButton = TowerPlayRect(header.right - CLOSE_SIZE, header.top, CLOSE_SIZE, header.height)
-            val helpButton = TowerPlayRect(
+            val header = MccRect(shell.left + INSET, shell.top + INSET, shell.width - INSET * 2, HEADER_HEIGHT)
+            val closeButton = MccRect(header.right - CLOSE_SIZE, header.top, CLOSE_SIZE, header.height)
+            val helpButton = MccRect(
                 closeButton.left - HEADER_BUTTON_GAP - CLOSE_SIZE,
                 header.top,
                 CLOSE_SIZE,
                 header.height,
             )
-            val tabs = TowerPlayRect(header.left, header.bottom + SECTION_GAP, header.width, TAB_HEIGHT)
-            val content = TowerPlayRect(
+            val tabs = MccRect(header.left, header.bottom + SECTION_GAP, header.width, TAB_HEIGHT)
+            val content = MccRect(
                 tabs.left,
                 tabs.bottom + SECTION_GAP,
                 tabs.width,

@@ -1,58 +1,58 @@
 package jbro.cobblemon.mcc.client
 
 internal class PvpRoomLayout private constructor(
-    val shell: TowerPlayRect,
-    val header: TowerPlayRect,
-    val closeButton: TowerPlayRect,
-    val settings: TowerPlayRect,
-    val visibilityGroup: TowerPlayRect,
-    val formatGroup: TowerPlayRect,
-    val mechanicsGroup: TowerPlayRect,
-    val leftSeat: TowerPlayRect,
-    val spectators: TowerPlayRect,
-    val rightSeat: TowerPlayRect,
-    val footer: TowerPlayRect,
+    val shell: MccRect,
+    val header: MccRect,
+    val closeButton: MccRect,
+    val settings: MccRect,
+    val visibilityGroup: MccRect,
+    val formatGroup: MccRect,
+    val mechanicsGroup: MccRect,
+    val leftSeat: MccRect,
+    val spectators: MccRect,
+    val rightSeat: MccRect,
+    val footer: MccRect,
 ) {
-    val spectatorJoinButton = TowerPlayRect(
+    val spectatorJoinButton = MccRect(
         spectators.left + PANEL_INSET,
         spectators.bottom - SPECTATOR_BUTTON_BOTTOM - CONTROL_HEIGHT,
         spectators.width - PANEL_INSET * 2,
         CONTROL_HEIGHT,
     )
-    val spectatorGrid = TowerPlayRect(
+    val spectatorGrid = MccRect(
         spectators.left + PANEL_INSET,
         spectators.top + SPECTATOR_GRID_TOP,
         spectators.width - PANEL_INSET * 2,
         (spectatorJoinButton.top - SECTION_GAP - spectators.top - SPECTATOR_GRID_TOP).coerceAtLeast(1),
     )
 
-    fun visibilityButtons(): List<TowerPlayRect> = groupButtons(visibilityGroup, 2)
+    fun visibilityButtons(): List<MccRect> = groupButtons(visibilityGroup, 2)
 
-    fun formatButtons(): List<TowerPlayRect> = groupButtons(formatGroup, 2)
+    fun formatButtons(): List<MccRect> = groupButtons(formatGroup, 2)
 
-    fun mechanicButtons(): List<TowerPlayRect> = groupButtons(mechanicsGroup, 4)
+    fun mechanicButtons(): List<MccRect> = groupButtons(mechanicsGroup, 4)
 
-    fun managementButtons(): List<TowerPlayRect> = partition(footer.inset(FOOTER_INSET), 4, CONTROL_GAP)
+    fun managementButtons(): List<MccRect> = partition(footer.inset(FOOTER_INSET), 4, CONTROL_GAP)
 
-    fun seatButton(side: TowerPlayRect): TowerPlayRect = TowerPlayRect(
+    fun seatButton(side: MccRect): MccRect = MccRect(
         side.left + PANEL_INSET,
         side.bottom - SEAT_BUTTON_BOTTOM - CONTROL_HEIGHT,
         side.width - PANEL_INSET * 2,
         CONTROL_HEIGHT,
     )
 
-    private fun groupButtons(group: TowerPlayRect, count: Int): List<TowerPlayRect> = partition(
-        TowerPlayRect(group.left + PANEL_INSET, group.bottom - PANEL_INSET - CONTROL_HEIGHT, group.width - PANEL_INSET * 2, CONTROL_HEIGHT),
+    private fun groupButtons(group: MccRect, count: Int): List<MccRect> = partition(
+        MccRect(group.left + PANEL_INSET, group.bottom - PANEL_INSET - CONTROL_HEIGHT, group.width - PANEL_INSET * 2, CONTROL_HEIGHT),
         count,
         CONTROL_GAP,
     )
 
-    private fun partition(bounds: TowerPlayRect, count: Int, gap: Int): List<TowerPlayRect> {
+    private fun partition(bounds: MccRect, count: Int, gap: Int): List<MccRect> {
         val available = bounds.width - gap * (count - 1)
         return List(count) { index ->
             val start = available * index / count
             val end = available * (index + 1) / count
-            TowerPlayRect(bounds.left + start + gap * index, bounds.top, end - start, bounds.height)
+            MccRect(bounds.left + start + gap * index, bounds.top, end - start, bounds.height)
         }
     }
 
@@ -63,21 +63,21 @@ internal class PvpRoomLayout private constructor(
             require(shellWidth >= MIN_SHELL_WIDTH) { "Screen is too narrow for the PvP room shell" }
             require(shellHeight >= MIN_SHELL_HEIGHT) { "Screen is too short for the PvP room shell" }
 
-            val shell = TowerPlayRect(
+            val shell = MccRect(
                 (screenWidth - shellWidth) / 2,
                 (screenHeight - shellHeight) / 2,
                 shellWidth,
                 shellHeight,
             )
-            val header = TowerPlayRect(shell.left + SHELL_INSET, shell.top + SHELL_INSET, shell.width - SHELL_INSET * 2, HEADER_HEIGHT)
-            val closeButton = TowerPlayRect(header.right - HEADER_HEIGHT, header.top, HEADER_HEIGHT, HEADER_HEIGHT)
-            val settings = TowerPlayRect(header.left, header.bottom + SECTION_GAP, header.width, SETTINGS_HEIGHT)
+            val header = MccRect(shell.left + SHELL_INSET, shell.top + SHELL_INSET, shell.width - SHELL_INSET * 2, HEADER_HEIGHT)
+            val closeButton = MccRect(header.right - HEADER_HEIGHT, header.top, HEADER_HEIGHT, HEADER_HEIGHT)
+            val settings = MccRect(header.left, header.bottom + SECTION_GAP, header.width, SETTINGS_HEIGHT)
             val groupGap = SECTION_GAP
             val compactWidth = (settings.width * 23 / 100).coerceAtLeast(66)
-            val visibilityGroup = TowerPlayRect(settings.left, settings.top, compactWidth, settings.height)
-            val formatGroup = TowerPlayRect(visibilityGroup.right + groupGap, settings.top, compactWidth, settings.height)
-            val mechanicsGroup = TowerPlayRect(formatGroup.right + groupGap, settings.top, settings.right - formatGroup.right - groupGap, settings.height)
-            val footer = TowerPlayRect(header.left, shell.bottom - FOOTER_BOTTOM - FOOTER_HEIGHT, header.width, FOOTER_HEIGHT)
+            val visibilityGroup = MccRect(settings.left, settings.top, compactWidth, settings.height)
+            val formatGroup = MccRect(visibilityGroup.right + groupGap, settings.top, compactWidth, settings.height)
+            val mechanicsGroup = MccRect(formatGroup.right + groupGap, settings.top, settings.right - formatGroup.right - groupGap, settings.height)
+            val footer = MccRect(header.left, shell.bottom - FOOTER_BOTTOM - FOOTER_HEIGHT, header.width, FOOTER_HEIGHT)
             val bodyTop = settings.bottom + SECTION_GAP
             val bodyHeight = footer.top - SECTION_GAP - bodyTop
             val bodyWidth = header.width
@@ -85,9 +85,9 @@ internal class PvpRoomLayout private constructor(
             val sideAvailable = bodyWidth - spectatorWidth - SECTION_GAP * 2
             val leftWidth = sideAvailable / 2
             val rightWidth = sideAvailable - leftWidth
-            val left = TowerPlayRect(header.left, bodyTop, leftWidth, bodyHeight)
-            val spectators = TowerPlayRect(left.right + SECTION_GAP, bodyTop, spectatorWidth, bodyHeight)
-            val right = TowerPlayRect(spectators.right + SECTION_GAP, bodyTop, rightWidth, bodyHeight)
+            val left = MccRect(header.left, bodyTop, leftWidth, bodyHeight)
+            val spectators = MccRect(left.right + SECTION_GAP, bodyTop, spectatorWidth, bodyHeight)
+            val right = MccRect(spectators.right + SECTION_GAP, bodyTop, rightWidth, bodyHeight)
             return PvpRoomLayout(
                 shell,
                 header,

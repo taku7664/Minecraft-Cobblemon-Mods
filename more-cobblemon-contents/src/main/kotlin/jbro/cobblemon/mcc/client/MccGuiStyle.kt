@@ -111,14 +111,14 @@ internal object MccGuiSurface {
         }
     }
 
-    fun drawShell(graphics: GuiGraphics, bounds: TowerPlayRect, backgroundAlpha: Int = 0xFF) {
+    fun drawShell(graphics: GuiGraphics, bounds: MccRect, backgroundAlpha: Int = 0xFF) {
         drawFrame(graphics, bounds, withAlpha(MccGuiPalette.SHELL, backgroundAlpha), MccGuiPalette.ACCENT_PRIMARY)
         graphics.fill(bounds.left + 2, bounds.top + 3, bounds.right - 2, bounds.top + 4, MccGuiPalette.ACCENT_SECONDARY)
     }
 
     fun drawPanel(
         graphics: GuiGraphics,
-        bounds: TowerPlayRect,
+        bounds: MccRect,
         accent: Int,
         alternate: Boolean = false,
         backgroundAlpha: Int = 0xFF,
@@ -131,13 +131,13 @@ internal object MccGuiSurface {
         )
     }
 
-    fun drawBadge(graphics: GuiGraphics, bounds: TowerPlayRect, accent: Int) {
+    fun drawBadge(graphics: GuiGraphics, bounds: MccRect, accent: Int) {
         drawFrame(graphics, bounds, MccGuiPalette.BUTTON, accent)
     }
 
     fun drawButton(
         graphics: GuiGraphics,
-        bounds: TowerPlayRect,
+        bounds: MccRect,
         active: Boolean,
         hovered: Boolean,
         selected: Boolean,
@@ -164,7 +164,7 @@ internal object MccGuiSurface {
         }
     }
 
-    fun drawProgressSegment(graphics: GuiGraphics, bounds: TowerPlayRect, filled: Boolean) {
+    fun drawProgressSegment(graphics: GuiGraphics, bounds: MccRect, filled: Boolean) {
         drawFrame(
             graphics,
             bounds,
@@ -173,7 +173,7 @@ internal object MccGuiSurface {
         )
     }
 
-    private fun drawFrame(graphics: GuiGraphics, bounds: TowerPlayRect, fill: Int, border: Int) {
+    private fun drawFrame(graphics: GuiGraphics, bounds: MccRect, fill: Int, border: Int) {
         // Keep the interior free of an opaque backing layer. Otherwise a translucent fill blends
         // against the border color instead of the game world and only looks like a different solid color.
         if (bounds.width <= 0 || bounds.height <= 0) return
@@ -199,7 +199,7 @@ internal object MccGuiSurface {
 }
 
 internal class MccStyledButton(
-    bounds: TowerPlayRect,
+    bounds: MccRect,
     message: Component,
     private val tone: MccButtonTone = MccButtonTone.NEUTRAL,
     private val selected: Boolean = false,
@@ -217,7 +217,7 @@ internal class MccStyledButton(
     override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         MccGuiSurface.drawButton(
             graphics,
-            TowerPlayRect(x, y, width, height),
+            MccRect(x, y, width, height),
             active,
             isHoveredOrFocused,
             selected,
@@ -258,7 +258,7 @@ internal class MccConfirmScreen(
 ) : MccScreen(title) {
     override fun init() {
         val panel = panelBounds()
-        val buttons = splitButtons(TowerPlayRect(panel.left + 8, panel.bottom - 28, panel.width - 16, 20))
+        val buttons = splitButtons(MccRect(panel.left + 8, panel.bottom - 28, panel.width - 16, 20))
         addRenderableWidget(
             MccStyledButton(buttons.first, Component.translatable("gui.yes"), MccButtonTone.DANGER) {
                 minecraft?.setScreen(parent)
@@ -293,15 +293,15 @@ internal class MccConfirmScreen(
         minecraft?.setScreen(parent)
     }
 
-    private fun panelBounds(): TowerPlayRect {
+    private fun panelBounds(): MccRect {
         val panelWidth = (width - 24).coerceAtMost(300)
         val panelHeight = 116
-        return TowerPlayRect((width - panelWidth) / 2, (height - panelHeight) / 2, panelWidth, panelHeight)
+        return MccRect((width - panelWidth) / 2, (height - panelHeight) / 2, panelWidth, panelHeight)
     }
 
-    private fun splitButtons(bounds: TowerPlayRect): Pair<TowerPlayRect, TowerPlayRect> {
+    private fun splitButtons(bounds: MccRect): Pair<MccRect, MccRect> {
         val firstWidth = (bounds.width - 6) / 2
-        return TowerPlayRect(bounds.left, bounds.top, firstWidth, bounds.height) to
-            TowerPlayRect(bounds.left + firstWidth + 6, bounds.top, bounds.width - firstWidth - 6, bounds.height)
+        return MccRect(bounds.left, bounds.top, firstWidth, bounds.height) to
+            MccRect(bounds.left + firstWidth + 6, bounds.top, bounds.width - firstWidth - 6, bounds.height)
     }
 }

@@ -9,8 +9,8 @@ class PvpSelectionLayoutTest {
     @Test
     fun `selection columns fill the content width symmetrically`() {
         listOf(
-            TowerPlayRect(left = 8, top = 8, width = 304, height = 224),
-            TowerPlayRect(left = 157, top = 82, width = 540, height = 320),
+            MccRect(left = 8, top = 8, width = 304, height = 224),
+            MccRect(left = 157, top = 82, width = 540, height = 320),
         ).forEach { shell ->
             val columns = PvpSelectionLayout.columns(
                 shell = shell,
@@ -69,7 +69,7 @@ class PvpSelectionLayoutTest {
     }
 
     // Mirrors the side panels PvpSelectionScreen derives from a 320x240 and a 540-wide shell.
-    private fun compactPanel() = TowerPlayRect(left = 8, top = 40, width = 96, height = 163)
+    private fun compactPanel() = MccRect(left = 8, top = 40, width = 96, height = 163)
 
-    private fun widePanel() = TowerPlayRect(left = 12, top = 44, width = 204, height = 243)
+    private fun widePanel() = MccRect(left = 12, top = 44, width = 204, height = 243)
 }

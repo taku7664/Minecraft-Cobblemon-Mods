@@ -72,7 +72,7 @@ internal class PvpRoomListScreen(
         val pageSize = roomsPerPage(layout)
         val visible = rooms.drop(page * pageSize).take(pageSize)
         visible.forEachIndexed { index, room ->
-            val bounds = TowerPlayRect(layout.listPanel.left + 6, layout.listPanel.top + 21 + index * 23, layout.listPanel.width - 12, 19)
+            val bounds = MccRect(layout.listPanel.left + 6, layout.listPanel.top + 21 + index * 23, layout.listPanel.width - 12, 19)
             val phase = Component.translatable(key("phase.${room.phase.name.lowercase()}"))
             val format = Component.translatable(key("format.${room.settings.format.recordId}"))
             val visibility = Component.translatable(key("visibility.${room.settings.visibility.name.lowercase()}"))

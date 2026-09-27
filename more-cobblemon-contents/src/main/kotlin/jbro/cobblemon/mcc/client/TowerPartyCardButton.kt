@@ -8,8 +8,8 @@ import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.network.chat.Component
 
 internal class TowerPartyCardButton(
-    bounds: TowerPlayRect,
-    private val content: TowerPartyCardContentLayout,
+    bounds: MccRect,
+    private val content: MccPartyCardContentLayout,
     private val pokemon: TowerPlayPartySlot,
     private val selectionPosition: Int?,
     private val speciesName: Component,
@@ -28,7 +28,7 @@ internal class TowerPartyCardButton(
     override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         MccGuiSurface.drawButton(
             graphics,
-            TowerPlayRect(x, y, width, height),
+            MccRect(x, y, width, height),
             active,
             isHoveredOrFocused,
             selectionPosition != null,
@@ -99,3 +99,12 @@ internal class TowerPartyCardButton(
         }
     }
 }
+
+/** Renders a registered Tower party slot, preferring the live party entry. */
+internal fun MccPokemonPortraitRenderer.render(
+    graphics: GuiGraphics,
+    pokemon: TowerPlayPartySlot,
+    bounds: MccRect,
+    partialTick: Float,
+    animate: Boolean,
+) = render(graphics, pokemon.pokemonId, pokemon.speciesId, null, bounds, partialTick, animate)

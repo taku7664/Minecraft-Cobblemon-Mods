@@ -12,8 +12,8 @@ class BattleContentCommandsTest {
         val root = BattleContentCommands.build(
             DefaultBattleContentApplicationService(emptyList()),
             contributors = listOf(
-                MccCommandContributor { BattleProgressCommands.tower() },
-                MccCommandContributor { BattleProgressCommands.factory() },
+                MccCommandContributor { jbro.cobblemon.mcc.internal.tower.TowerProgressCommands.build() },
+                MccCommandContributor { jbro.cobblemon.mcc.internal.factory.FactoryProgressCommands.build() },
                 MccCommandContributor { AiTestCommands.build() },
             ),
         ).build()

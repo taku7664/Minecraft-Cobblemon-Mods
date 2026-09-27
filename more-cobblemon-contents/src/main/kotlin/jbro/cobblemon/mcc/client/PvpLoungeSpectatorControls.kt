@@ -105,7 +105,7 @@ internal object PvpLoungeSpectatorControls {
 }
 
 internal object PvpLoungeExitButtonLayout {
-    fun bounds(screenHeight: Int) = TowerPlayRect(
+    fun bounds(screenHeight: Int) = MccRect(
         left = 8,
         top = (screenHeight - 56).coerceAtLeast(8),
         width = 104,

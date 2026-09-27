@@ -3,29 +3,29 @@ package jbro.cobblemon.mcc.client
 import kotlin.math.roundToInt
 
 internal data class ShopScreenLayout(
-    val shell: TowerPlayRect,
-    val characterPanel: TowerPlayRect,
-    val leaderboardPanel: TowerPlayRect,
-    val shopPanel: TowerPlayRect,
-    val characterViewport: TowerPlayRect,
-    val leaderboardViewport: TowerPlayRect,
-    val leaderboardScrollTrack: TowerPlayRect,
-    val leaderboardContentButtons: List<TowerPlayRect>,
-    val leaderboardFormatButtons: List<TowerPlayRect>,
-    val leaderboardLevelButtons: List<TowerPlayRect>,
-    val shopBalanceBadge: TowerPlayRect,
-    val shopViewport: TowerPlayRect,
-    val shopScrollTrack: TowerPlayRect,
-    val decrement: TowerPlayRect,
-    val increment: TowerPlayRect,
-    val purchase: TowerPlayRect,
+    val shell: MccRect,
+    val characterPanel: MccRect,
+    val leaderboardPanel: MccRect,
+    val shopPanel: MccRect,
+    val characterViewport: MccRect,
+    val leaderboardViewport: MccRect,
+    val leaderboardScrollTrack: MccRect,
+    val leaderboardContentButtons: List<MccRect>,
+    val leaderboardFormatButtons: List<MccRect>,
+    val leaderboardLevelButtons: List<MccRect>,
+    val shopBalanceBadge: MccRect,
+    val shopViewport: MccRect,
+    val shopScrollTrack: MccRect,
+    val decrement: MccRect,
+    val increment: MccRect,
+    val purchase: MccRect,
 ) {
     fun shopContentHeight(entryCount: Int): Int =
         (entryCount.coerceAtLeast(1) * (SHOP_CARD_HEIGHT + ITEM_GAP) - ITEM_GAP).coerceAtLeast(shopViewport.height)
 
-    fun shopCardBounds(index: Int, scrollOffset: Int): TowerPlayRect {
+    fun shopCardBounds(index: Int, scrollOffset: Int): MccRect {
         require(index >= 0)
-        return TowerPlayRect(
+        return MccRect(
             shopViewport.left,
             shopViewport.top + index * (SHOP_CARD_HEIGHT + ITEM_GAP) - scrollOffset,
             shopViewport.width,
@@ -36,9 +36,9 @@ internal data class ShopScreenLayout(
     fun leaderboardContentHeight(entryCount: Int): Int =
         (entryCount.coerceAtLeast(1) * LEADERBOARD_ROW_HEIGHT).coerceAtLeast(leaderboardViewport.height)
 
-    fun leaderboardRowBounds(index: Int, scrollOffset: Int): TowerPlayRect {
+    fun leaderboardRowBounds(index: Int, scrollOffset: Int): MccRect {
         require(index >= 0)
-        return TowerPlayRect(
+        return MccRect(
             leaderboardViewport.left,
             leaderboardViewport.top + index * LEADERBOARD_ROW_HEIGHT - scrollOffset,
             leaderboardViewport.width,
@@ -47,7 +47,7 @@ internal data class ShopScreenLayout(
     }
 
     companion object {
-        fun calculate(shell: TowerPlayRect): ShopScreenLayout {
+        fun calculate(shell: MccRect): ShopScreenLayout {
             val inner = shell.inset(PANEL_GAP)
             val columnSpace = inner.width - PANEL_GAP * 2
             val desiredLeaderboardWidth =
@@ -62,44 +62,44 @@ internal data class ShopScreenLayout(
                 (columnSpace - leaderboardWidth - MIN_SHOP_WIDTH).coerceAtLeast(1),
             )
             val shopWidth = columnSpace - characterWidth - leaderboardWidth
-            val character = TowerPlayRect(inner.left, inner.top, characterWidth, inner.height)
-            val leaderboard = TowerPlayRect(character.right + PANEL_GAP, inner.top, leaderboardWidth, inner.height)
-            val shop = TowerPlayRect(leaderboard.right + PANEL_GAP, inner.top, shopWidth, inner.height)
+            val character = MccRect(inner.left, inner.top, characterWidth, inner.height)
+            val leaderboard = MccRect(character.right + PANEL_GAP, inner.top, leaderboardWidth, inner.height)
+            val shop = MccRect(leaderboard.right + PANEL_GAP, inner.top, shopWidth, inner.height)
 
-            val leaderboardContentRow = TowerPlayRect(
+            val leaderboardContentRow = MccRect(
                 leaderboard.left + PANEL_INSET,
                 leaderboard.top + TITLE_HEIGHT,
                 leaderboard.width - PANEL_INSET * 2,
                 SMALL_CONTROL_HEIGHT,
             )
             val leaderboardContentButtons = partition(leaderboardContentRow, 3)
-            val leaderboardFormatRow = TowerPlayRect(
+            val leaderboardFormatRow = MccRect(
                 leaderboardContentRow.left,
                 leaderboardContentRow.bottom + PANEL_GAP,
                 leaderboardContentRow.width,
                 SMALL_CONTROL_HEIGHT,
             )
             val leaderboardFormatButtons = partition(leaderboardFormatRow, 2)
-            val leaderboardLevelRow = TowerPlayRect(
+            val leaderboardLevelRow = MccRect(
                 leaderboardContentRow.left,
                 leaderboardFormatRow.bottom + PANEL_GAP,
                 leaderboardContentRow.width,
                 SMALL_CONTROL_HEIGHT,
             )
             val leaderboardLevelButtons = partition(leaderboardLevelRow, 2)
-            val leaderboardTrack = TowerPlayRect(
+            val leaderboardTrack = MccRect(
                 leaderboard.right - PANEL_INSET - SCROLL_TRACK_WIDTH,
                 leaderboardLevelRow.bottom + PANEL_GAP,
                 SCROLL_TRACK_WIDTH,
                 leaderboard.bottom - PANEL_INSET - leaderboardLevelRow.bottom - PANEL_GAP,
             )
-            val leaderboardViewport = TowerPlayRect(
+            val leaderboardViewport = MccRect(
                 leaderboard.left + PANEL_INSET,
                 leaderboardTrack.top,
                 leaderboardTrack.left - PANEL_GAP - leaderboard.left - PANEL_INSET,
                 leaderboardTrack.height,
             )
-            val characterViewport = TowerPlayRect(
+            val characterViewport = MccRect(
                 character.left + PANEL_INSET,
                 character.top + PANEL_INSET,
                 character.width - PANEL_INSET * 2,
@@ -107,20 +107,20 @@ internal data class ShopScreenLayout(
             )
 
             val shopBalanceWidth = SHOP_BALANCE_WIDTH.coerceAtMost((shop.width / 2).coerceAtLeast(1))
-            val shopBalanceBadge = TowerPlayRect(
+            val shopBalanceBadge = MccRect(
                 shop.right - PANEL_INSET - shopBalanceWidth,
                 shop.top + 2,
                 shopBalanceWidth,
                 SHOP_BALANCE_HEIGHT,
             )
             val footerHeight = SHOP_FOOTER_HEIGHT.coerceAtMost((shop.height / 2).coerceAtLeast(1))
-            val shopTrack = TowerPlayRect(
+            val shopTrack = MccRect(
                 shop.right - PANEL_INSET - SCROLL_TRACK_WIDTH,
                 shop.top + TITLE_HEIGHT,
                 SCROLL_TRACK_WIDTH,
                 shop.height - TITLE_HEIGHT - footerHeight - PANEL_GAP - PANEL_INSET,
             )
-            val shopViewport = TowerPlayRect(
+            val shopViewport = MccRect(
                 shop.left + PANEL_INSET,
                 shopTrack.top,
                 shopTrack.left - PANEL_GAP - shop.left - PANEL_INSET,
@@ -129,10 +129,10 @@ internal data class ShopScreenLayout(
             val footerTop = shop.bottom - footerHeight
             val controlsWidth = shop.width - PANEL_INSET * 2
             val quantityTop = footerTop + 14
-            val decrement = TowerPlayRect(shop.left + PANEL_INSET, quantityTop, 22, SMALL_CONTROL_HEIGHT)
-            val increment = TowerPlayRect(decrement.right + PANEL_GAP, quantityTop, 22, SMALL_CONTROL_HEIGHT)
+            val decrement = MccRect(shop.left + PANEL_INSET, quantityTop, 22, SMALL_CONTROL_HEIGHT)
+            val increment = MccRect(decrement.right + PANEL_GAP, quantityTop, 22, SMALL_CONTROL_HEIGHT)
             val bottomTop = shop.bottom - SMALL_CONTROL_HEIGHT - PANEL_INSET
-            val purchase = TowerPlayRect(
+            val purchase = MccRect(
                 shop.left + PANEL_INSET,
                 bottomTop,
                 controlsWidth,
@@ -159,12 +159,12 @@ internal data class ShopScreenLayout(
             )
         }
 
-        private fun partition(bounds: TowerPlayRect, count: Int): List<TowerPlayRect> {
+        private fun partition(bounds: MccRect, count: Int): List<MccRect> {
             val available = bounds.width - PANEL_GAP * (count - 1)
             return List(count) { index ->
                 val start = available * index / count
                 val end = available * (index + 1) / count
-                TowerPlayRect(bounds.left + start + PANEL_GAP * index, bounds.top, end - start, bounds.height)
+                MccRect(bounds.left + start + PANEL_GAP * index, bounds.top, end - start, bounds.height)
             }
         }
     }

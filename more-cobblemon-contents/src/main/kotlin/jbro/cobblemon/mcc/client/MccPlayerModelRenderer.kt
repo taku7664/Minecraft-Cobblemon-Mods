@@ -9,7 +9,7 @@ import net.minecraft.client.player.RemotePlayer
 import org.joml.Quaternionf
 import org.joml.Vector3f
 
-internal object PvpRoomPlayerModelSpec {
+internal object MccPlayerModelSpec {
     const val BODY_YAW = 180f
     const val HEAD_YAW = 180f
     const val PITCH = 0f
@@ -17,7 +17,7 @@ internal object PvpRoomPlayerModelSpec {
     const val ADVANCES_IDLE_ANIMATION = true
 }
 
-internal class PvpRoomPlayerModelRenderer {
+internal class MccPlayerModelRenderer {
     private val cachedPlayers = mutableMapOf<UUID, RemotePlayer>()
 
     fun retain(playerIds: Set<UUID>) {
@@ -31,10 +31,10 @@ internal class PvpRoomPlayerModelRenderer {
             ?.takeIf { it.level() === level }
             ?: RemotePlayer(level, profile).also { cachedPlayers[playerId] = it }
         entity.tickCount = level.gameTime.toInt()
-        entity.yBodyRot = PvpRoomPlayerModelSpec.BODY_YAW
-        entity.yRot = PvpRoomPlayerModelSpec.BODY_YAW
-        entity.yHeadRot = PvpRoomPlayerModelSpec.HEAD_YAW
-        entity.xRot = PvpRoomPlayerModelSpec.PITCH
+        entity.yBodyRot = MccPlayerModelSpec.BODY_YAW
+        entity.yRot = MccPlayerModelSpec.BODY_YAW
+        entity.yHeadRot = MccPlayerModelSpec.HEAD_YAW
+        entity.xRot = MccPlayerModelSpec.PITCH
         InventoryScreen.renderEntityInInventory(
             graphics,
             x.toFloat(),

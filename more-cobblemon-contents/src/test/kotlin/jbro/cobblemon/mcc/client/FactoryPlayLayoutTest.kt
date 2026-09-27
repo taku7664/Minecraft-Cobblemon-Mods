@@ -60,5 +60,5 @@ class FactoryPlayLayoutTest {
     }
 }
 
-private fun TowerPlayRect.contains(other: TowerPlayRect): Boolean =
+private fun MccRect.contains(other: MccRect): Boolean =
     other.left >= left && other.top >= top && other.right <= right && other.bottom <= bottom

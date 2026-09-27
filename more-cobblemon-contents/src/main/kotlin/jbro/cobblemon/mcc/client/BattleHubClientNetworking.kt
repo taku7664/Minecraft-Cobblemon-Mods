@@ -7,7 +7,6 @@ import jbro.cobblemon.mcc.internal.hub.BattleHubStatePayload
 import jbro.cobblemon.mcc.internal.hub.BattleHubAccessPayload
 import jbro.cobblemon.mcc.api.access.ContentAccessDecision
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
-import net.minecraft.client.Minecraft
 
 internal object BattleHubClientNetworking {
     fun register() {
@@ -38,8 +37,7 @@ internal object MccContentNavigation {
             if (ShopPlayClientNetworking.canOpen()) {
                 ShopPlayClientNetworking.open()
             } else {
-                Minecraft.getInstance().setScreen(PvpRoomListScreen(emptyList()))
-                BattleHubClientNetworking.open(BattleHubOpenContentPayload(BattleHubContent.PVP.id))
+                BattleHubClientNetworking.open(BattleHubOpenContentPayload(content.id))
             }
         } else {
             BattleHubClientNetworking.open(BattleHubOpenContentPayload(content.id))

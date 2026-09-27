@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 class HomePlayerModelPlacementTest {
     @Test
     fun `home model is centered fills the panel and keeps the whole body inside the viewport`() {
-        val viewport = TowerPlayRect(20, 30, 136, 276)
+        val viewport = MccRect(20, 30, 136, 276)
         val placement = HomePlayerModelPlacement.calculate(viewport, entityHeight = 1.8f)
         val halfRenderedHeight = 1.8f * placement.scale / 2f
 
@@ -21,7 +21,7 @@ class HomePlayerModelPlacementTest {
 
     @Test
     fun `narrow home still keeps the whole player model visible`() {
-        val viewport = TowerPlayRect(4, 4, 56, 140)
+        val viewport = MccRect(4, 4, 56, 140)
         val placement = HomePlayerModelPlacement.calculate(viewport, entityHeight = 1.8f)
         val halfRenderedHeight = 1.8f * placement.scale / 2f
 

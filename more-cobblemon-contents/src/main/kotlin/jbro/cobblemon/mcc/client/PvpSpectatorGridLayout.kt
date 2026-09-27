@@ -2,8 +2,8 @@ package jbro.cobblemon.mcc.client
 
 internal data class PvpSpectatorSlotLayout(
     val index: Int,
-    val bounds: TowerPlayRect,
-    val face: TowerPlayRect,
+    val bounds: MccRect,
+    val face: MccRect,
     val nameLeft: Int,
     val nameWidth: Int,
 )
@@ -11,12 +11,12 @@ internal data class PvpSpectatorSlotLayout(
 internal class PvpSpectatorGridLayout private constructor(
     val rows: Int,
     val columns: Int,
-    val block: TowerPlayRect,
+    val block: MccRect,
     val slots: List<PvpSpectatorSlotLayout>,
 ) {
     internal companion object {
-        fun calculate(bounds: TowerPlayRect, nameWidths: List<Int>): PvpSpectatorGridLayout {
-            if (nameWidths.isEmpty()) return PvpSpectatorGridLayout(0, 0, TowerPlayRect(bounds.left, bounds.top, 0, 0), emptyList())
+        fun calculate(bounds: MccRect, nameWidths: List<Int>): PvpSpectatorGridLayout {
+            if (nameWidths.isEmpty()) return PvpSpectatorGridLayout(0, 0, MccRect(bounds.left, bounds.top, 0, 0), emptyList())
             val rows = (bounds.height / ROW_HEIGHT).coerceIn(1, MAX_ROWS).coerceAtMost(nameWidths.size)
             val columns = (nameWidths.size + rows - 1) / rows
             val desiredCellWidth = (nameWidths.maxOrNull()!! + FACE_SIZE + FACE_NAME_GAP).coerceAtLeast(MIN_CELL_WIDTH)
@@ -24,17 +24,17 @@ internal class PvpSpectatorGridLayout private constructor(
             val cellWidth = desiredCellWidth.coerceAtMost(maximumCellWidth)
             val blockWidth = cellWidth * columns + COLUMN_GAP * (columns - 1)
             val blockHeight = rows * ROW_HEIGHT
-            val block = TowerPlayRect(bounds.left + (bounds.width - blockWidth) / 2, bounds.top, blockWidth, blockHeight)
+            val block = MccRect(bounds.left + (bounds.width - blockWidth) / 2, bounds.top, blockWidth, blockHeight)
             val slots = nameWidths.mapIndexed { index, _ ->
                 val column = index / rows
                 val row = index % rows
-                val cell = TowerPlayRect(
+                val cell = MccRect(
                     block.left + column * (cellWidth + COLUMN_GAP),
                     block.top + row * ROW_HEIGHT,
                     cellWidth,
                     ROW_HEIGHT,
                 )
-                val face = TowerPlayRect(cell.left, cell.top + 1, FACE_SIZE, FACE_SIZE)
+                val face = MccRect(cell.left, cell.top + 1, FACE_SIZE, FACE_SIZE)
                 PvpSpectatorSlotLayout(index, cell, face, face.right + FACE_NAME_GAP, (cell.right - face.right - FACE_NAME_GAP).coerceAtLeast(1))
             }
             return PvpSpectatorGridLayout(rows, columns, block, slots)

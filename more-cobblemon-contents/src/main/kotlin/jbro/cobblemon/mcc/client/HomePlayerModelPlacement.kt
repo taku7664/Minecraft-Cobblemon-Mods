@@ -8,7 +8,7 @@ internal data class HomePlayerModelPlacement(
     val scale: Int,
 ) {
     companion object {
-        fun calculate(viewport: TowerPlayRect, entityHeight: Float): HomePlayerModelPlacement {
+        fun calculate(viewport: MccRect, entityHeight: Float): HomePlayerModelPlacement {
             require(entityHeight > 0f) { "Player model height must be positive" }
             val heightScale = (viewport.height * HEIGHT_USAGE / entityHeight).toInt()
             val widthScale = (viewport.width * WIDTH_USAGE).toInt()

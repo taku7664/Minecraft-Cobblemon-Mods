@@ -42,7 +42,7 @@ internal class PvpMemberPickerScreen(
         members.drop(page * PAGE_SIZE).take(PAGE_SIZE).forEachIndexed { index, member ->
             addRenderableWidget(
                 MccStyledButton(
-                    TowerPlayRect(listPanel().left + 7, listPanel().top + 7 + index * 23, listPanel().width - 14, 19),
+                    MccRect(listPanel().left + 7, listPanel().top + 7 + index * 23, listPanel().width - 14, 19),
                     Component.literal(member.name),
                     MccButtonTone.PRIMARY,
                 ) {
@@ -68,20 +68,20 @@ internal class PvpMemberPickerScreen(
         buildWidgets()
     }
 
-    private fun shell(): TowerPlayRect {
+    private fun shell(): MccRect {
         val w = (width - 24).coerceAtMost(330)
         val h = (height - 24).coerceAtMost(240)
-        return TowerPlayRect((width - w) / 2, (height - h) / 2, w, h)
+        return MccRect((width - w) / 2, (height - h) / 2, w, h)
     }
 
-    private fun header() = TowerPlayRect(shell().left + 6, shell().top + 6, shell().width - 12, 28)
-    private fun listPanel() = TowerPlayRect(shell().left + 6, header().bottom + 5, shell().width - 12, shell().height - 82)
-    private fun footer() = TowerPlayRect(shell().left + 6, shell().bottom - 32, shell().width - 12, 20)
+    private fun header() = MccRect(shell().left + 6, shell().top + 6, shell().width - 12, 28)
+    private fun listPanel() = MccRect(shell().left + 6, header().bottom + 5, shell().width - 12, shell().height - 82)
+    private fun footer() = MccRect(shell().left + 6, shell().bottom - 32, shell().width - 12, 20)
 
-    private fun split(bounds: TowerPlayRect, count: Int): List<TowerPlayRect> {
+    private fun split(bounds: MccRect, count: Int): List<MccRect> {
         val gap = 4
         val itemWidth = (bounds.width - gap * (count - 1)) / count
-        return List(count) { index -> TowerPlayRect(bounds.left + index * (itemWidth + gap), bounds.top, itemWidth, bounds.height) }
+        return List(count) { index -> MccRect(bounds.left + index * (itemWidth + gap), bounds.top, itemWidth, bounds.height) }
     }
 
     private companion object {

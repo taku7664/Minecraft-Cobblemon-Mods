@@ -6,18 +6,18 @@ internal enum class FactoryPlayLayoutMode {
 }
 
 internal data class FactoryRentalCardContentLayout(
-    val portrait: TowerPlayRect,
+    val portrait: MccRect,
     val textLeft: Int,
     val textRight: Int,
     val nameTop: Int,
     val detailsTop: Int,
 ) {
     companion object {
-        fun calculate(card: TowerPlayRect): FactoryRentalCardContentLayout {
+        fun calculate(card: MccRect): FactoryRentalCardContentLayout {
             val portraitSize = (card.height - CARD_CONTENT_INSET * 2)
                 .coerceIn(MIN_PORTRAIT_SIZE, MAX_PORTRAIT_SIZE)
                 .coerceAtMost((card.width / 2).coerceAtLeast(1))
-            val portrait = TowerPlayRect(
+            val portrait = MccRect(
                 card.left + CARD_CONTENT_INSET,
                 card.top + (card.height - portraitSize) / 2,
                 portraitSize,
@@ -36,17 +36,17 @@ internal data class FactoryRentalCardContentLayout(
 
 internal class FactoryPlayLayout private constructor(
     val mode: FactoryPlayLayoutMode,
-    val shell: TowerPlayRect,
-    val summary: TowerPlayRect,
-    val content: TowerPlayRect,
-    val footer: TowerPlayRect,
-    val swapTeamArea: TowerPlayRect,
-    val swapOfferArea: TowerPlayRect,
+    val shell: MccRect,
+    val summary: MccRect,
+    val content: MccRect,
+    val footer: MccRect,
+    val swapTeamArea: MccRect,
+    val swapOfferArea: MccRect,
 ) {
-    fun optionButtons(row: Int): List<TowerPlayRect> {
+    fun optionButtons(row: Int): List<MccRect> {
         require(row in 0..1)
         return partition(
-            TowerPlayRect(
+            MccRect(
                 content.left + PANEL_INSET,
                 content.top + OPTION_TOP + row * OPTION_ROW_STEP,
                 content.width - PANEL_INSET * 2,
@@ -57,8 +57,8 @@ internal class FactoryPlayLayout private constructor(
         )
     }
 
-    fun mainCards(count: Int): List<TowerPlayRect> = cardGrid(
-        TowerPlayRect(
+    fun mainCards(count: Int): List<MccRect> = cardGrid(
+        MccRect(
             content.left + PANEL_INSET,
             content.top + CARD_HEADING_HEIGHT,
             content.width - PANEL_INSET * 2,
@@ -68,55 +68,55 @@ internal class FactoryPlayLayout private constructor(
         if (mode == FactoryPlayLayoutMode.WIDE) 3 else 2,
     )
 
-    fun swapCards(teamCount: Int, offerCount: Int): Pair<List<TowerPlayRect>, List<TowerPlayRect>> =
+    fun swapCards(teamCount: Int, offerCount: Int): Pair<List<MccRect>, List<MccRect>> =
         cardGrid(swapTeamArea.inset(SWAP_INSET), teamCount, 2, SWAP_HEADING_HEIGHT) to
             cardGrid(swapOfferArea.inset(SWAP_INSET), offerCount, 2, SWAP_HEADING_HEIGHT)
 
-    fun actionButtons(count: Int): List<TowerPlayRect> {
+    fun actionButtons(count: Int): List<MccRect> {
         require(count in 1..4)
         return partition(footer.inset(FOOTER_INSET), count, ACTION_GAP)
     }
 
     private fun cardGrid(
-        area: TowerPlayRect,
+        area: MccRect,
         count: Int,
         requestedColumns: Int,
         topInset: Int = 0,
-    ): List<TowerPlayRect> {
+    ): List<MccRect> {
         if (count == 0) return emptyList()
         val columns = requestedColumns.coerceAtMost(count)
         val rows = (count + columns - 1) / columns
-        val grid = TowerPlayRect(area.left, area.top + topInset, area.width, (area.height - topInset).coerceAtLeast(1))
+        val grid = MccRect(area.left, area.top + topInset, area.width, (area.height - topInset).coerceAtLeast(1))
         val availableHeight = grid.height - CARD_GAP * (rows - 1)
         val cellHeight = (availableHeight / rows).coerceAtMost(MAX_CARD_HEIGHT).coerceAtLeast(1)
         val rowBlockHeight = cellHeight * rows + CARD_GAP * (rows - 1)
         val top = grid.top + ((grid.height - rowBlockHeight) / 2).coerceAtLeast(0)
-        val widths = partition(TowerPlayRect(grid.left, top, grid.width, cellHeight), columns, CARD_GAP)
+        val widths = partition(MccRect(grid.left, top, grid.width, cellHeight), columns, CARD_GAP)
         return List(count) { index ->
             val column = index % columns
             val row = index / columns
-            TowerPlayRect(widths[column].left, top + row * (cellHeight + CARD_GAP), widths[column].width, cellHeight)
+            MccRect(widths[column].left, top + row * (cellHeight + CARD_GAP), widths[column].width, cellHeight)
         }
     }
 
-    private fun partition(bounds: TowerPlayRect, count: Int, gap: Int): List<TowerPlayRect> {
+    private fun partition(bounds: MccRect, count: Int, gap: Int): List<MccRect> {
         require(count > 0)
         val available = bounds.width - gap * (count - 1)
         return List(count) { index ->
             val start = available * index / count
             val end = available * (index + 1) / count
-            TowerPlayRect(bounds.left + start + gap * index, bounds.top, end - start, bounds.height)
+            MccRect(bounds.left + start + gap * index, bounds.top, end - start, bounds.height)
         }
     }
 
     internal companion object {
-        fun calculate(shell: TowerPlayRect): FactoryPlayLayout {
+        fun calculate(shell: MccRect): FactoryPlayLayout {
             require(shell.width >= MIN_SHELL_WIDTH) { "Content is too narrow for the Battle Factory layout" }
             require(shell.height >= MIN_SHELL_HEIGHT) { "Content is too short for the Battle Factory layout" }
-            val summary = TowerPlayRect(shell.left, shell.top, shell.width, SUMMARY_HEIGHT)
-            val footer = TowerPlayRect(shell.left, shell.bottom - FOOTER_HEIGHT, shell.width, FOOTER_HEIGHT)
+            val summary = MccRect(shell.left, shell.top, shell.width, SUMMARY_HEIGHT)
+            val footer = MccRect(shell.left, shell.bottom - FOOTER_HEIGHT, shell.width, FOOTER_HEIGHT)
             val contentTop = summary.bottom + SECTION_GAP
-            val content = TowerPlayRect(
+            val content = MccRect(
                 shell.left,
                 contentTop,
                 shell.width,
@@ -125,8 +125,8 @@ internal class FactoryPlayLayout private constructor(
             val mode = if (shell.width >= WIDE_THRESHOLD) FactoryPlayLayoutMode.WIDE else FactoryPlayLayoutMode.COMPACT
             val groupGap = SECTION_GAP
             val teamWidth = (content.width - groupGap) / 2
-            val swapTeamArea = TowerPlayRect(content.left, content.top, teamWidth, content.height)
-            val swapOfferArea = TowerPlayRect(
+            val swapTeamArea = MccRect(content.left, content.top, teamWidth, content.height)
+            val swapOfferArea = MccRect(
                 swapTeamArea.right + groupGap,
                 content.top,
                 content.right - swapTeamArea.right - groupGap,

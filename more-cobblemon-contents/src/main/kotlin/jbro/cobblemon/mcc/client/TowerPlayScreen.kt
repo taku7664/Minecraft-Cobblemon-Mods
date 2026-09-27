@@ -310,7 +310,7 @@ internal class TowerPlayScreen(
         }
     }
 
-    private fun addFormatButton(format: TowerBattleFormat, bounds: TowerPlayRect) {
+    private fun addFormatButton(format: TowerBattleFormat, bounds: MccRect) {
         val selected = controller.state.format == format
         val button = MccStyledButton(
             bounds,
@@ -330,7 +330,7 @@ internal class TowerPlayScreen(
         addRenderableWidget(button)
     }
 
-    private fun addMechanicButton(mechanic: MajorBattleMechanic, bounds: TowerPlayRect) {
+    private fun addMechanicButton(mechanic: MajorBattleMechanic, bounds: MccRect) {
         val selected = controller.state.selectedMechanic == mechanic
         val button = MccStyledButton(
             bounds,
@@ -351,7 +351,7 @@ internal class TowerPlayScreen(
         addRenderableWidget(button)
     }
 
-    private fun addLegendaryClassButton(option: TowerLegendaryClassOption, bounds: TowerPlayRect) {
+    private fun addLegendaryClassButton(option: TowerLegendaryClassOption, bounds: MccRect) {
         val selected = controller.state.legendaryClassAllowed == option.allowed
         val labelKey = if (bounds.width >= 48) option.translationKey else option.compactTranslationKey
         val button = MccStyledButton(
@@ -372,7 +372,7 @@ internal class TowerPlayScreen(
 
     private fun addActionButton(
         label: Component,
-        bounds: TowerPlayRect,
+        bounds: MccRect,
         enabled: Boolean = true,
         tone: MccButtonTone = MccButtonTone.PRIMARY,
         action: () -> Boolean,
@@ -382,7 +382,7 @@ internal class TowerPlayScreen(
         addRenderableWidget(button)
     }
 
-    private fun addDisabledButton(label: Component, bounds: TowerPlayRect) {
+    private fun addDisabledButton(label: Component, bounds: MccRect) {
         val button = MccStyledButton(bounds, label) {}
         button.active = false
         addRenderableWidget(button)

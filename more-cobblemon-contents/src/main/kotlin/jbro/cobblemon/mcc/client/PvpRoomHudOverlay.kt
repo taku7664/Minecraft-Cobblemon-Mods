@@ -118,7 +118,7 @@ internal object PvpRoomHudOverlay {
         }
     }
 
-    private fun drawSide(graphics: GuiGraphics, client: Minecraft, bounds: TowerPlayRect, label: Component, name: String?) {
+    private fun drawSide(graphics: GuiGraphics, client: Minecraft, bounds: MccRect, label: Component, name: String?) {
         MccGuiSurface.drawPanel(
             graphics,
             bounds,
