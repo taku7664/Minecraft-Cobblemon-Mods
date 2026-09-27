@@ -4,7 +4,10 @@ import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.api.pokemon.PokemonProperties
 import com.cobblemon.mod.common.battles.BattleBuilder
 import com.cobblemon.mod.common.battles.ErroredBattleStart
+import com.cobblemon.mod.common.battles.ForfeitActionResponse
 import com.cobblemon.mod.common.battles.SuccessfulBattleStart
+import com.cobblemon.mod.common.api.storage.party.NPCPartyStore
+import com.cobblemon.mod.common.api.npc.NPCClasses
 import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.client.gui.battle.BattleGUI
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleGeneralActionSelection
@@ -14,6 +17,7 @@ import com.cobblemon.mod.common.client.gui.battle.subscreen.ForfeitConfirmationS
 import com.cobblemon.mod.common.client.gui.battle.widgets.BattleOptionTile
 import com.cobblemon.mod.common.client.gui.party.PartyTutorialToasts
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity
+import com.cobblemon.mod.common.entity.npc.NPCEntity
 import com.cobblemon.mod.common.util.isPartyBusy
 import jbro.cobblemon.battleui.extended.BattleDialogue
 import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUI
@@ -39,12 +43,16 @@ internal object BattleLiveCapture {
     private var backPending = false
     private val screenshotSaved = AtomicBoolean(false)
     private var pendingOpponent: PokemonEntity? = null
+    private var pendingTrainer: NPCEntity? = null
     private var pendingPlayerId: UUID? = null
     private var battleAttemptTicks = 0
 
     fun install() {
         val page = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_SCREEN") ?: "command"
         require(page in setOf("command", "moves", "switch", "forfeit"))
+        val trainerBattle = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TRAINER") == "1"
+        val acceptForfeit = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_FORFEIT_ACCEPT") == "1"
+        require(!acceptForfeit || (trainerBattle && page == "forfeit"))
         val captureWaitTicks = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_WAIT_TICKS")?.toInt() ?: 80
         require(captureWaitTicks in 20..400)
         ClientTickEvents.END_CLIENT_TICK.register { client ->
@@ -57,7 +65,27 @@ internal object BattleLiveCapture {
             if (screenshotPending) {
                 if (!screenshotSaved.get()) return@register
                 val screen = client.currentScreen as? BattleGUI
-                if (screen != null && page != "command") {
+                if (acceptForfeit) {
+                    if (!backPending) {
+                        val confirmation = checkNotNull(screen?.getCurrentActionSelection() as? ForfeitConfirmationSelection)
+                        val accept = BattleScreenGeometry.forfeitAccept(client.window.scaledWidth,
+                            client.window.scaledHeight)
+                        check(screen.mouseClicked((accept.x() + accept.width() / 2).toDouble(),
+                            (accept.y() + accept.height() / 2).toDouble(), 0))
+                        check(confirmation.request.response is ForfeitActionResponse) {
+                            "Trainer forfeit visual center did not submit Cobblemon's native response"
+                        }
+                        backPending = true
+                        ticks = 0
+                        return@register
+                    }
+                    if (CobblemonClient.battle != null) {
+                        check(++ticks < 200) { "Trainer battle did not end after forfeit response" }
+                        return@register
+                    }
+                    CobblemonExtendedBattleUI.LOGGER.info("Live trainer forfeit accept ended the battle")
+                }
+                if (!acceptForfeit && screen != null && page != "command") {
                     if (!backPending) {
                         if (page == "forfeit") {
                             val back = BattleScreenGeometry.forfeitCancel(client.window.scaledWidth,
@@ -121,12 +149,22 @@ internal object BattleLiveCapture {
                             (tile.y + BattleOptionTile.OPTION_HEIGHT / 2).toDouble(), 0)
                         check(clicked) { "Native $page command did not accept its visible center click" }
                     }
-                    "forfeit" -> screen.changeActionSelection(ForfeitConfirmationSelection(screen, root.request))
+                    "forfeit" -> {
+                        if (trainerBattle) {
+                            val tile = root.tiles.single { it.resource == BattleGUI.forfeitResource }
+                            check(screen.mouseClicked((tile.x + BattleOptionTile.OPTION_WIDTH / 2).toDouble(),
+                                (tile.y + BattleOptionTile.OPTION_HEIGHT / 2).toDouble(), 0)) {
+                                "Native trainer forfeit command did not accept its visible center click"
+                            }
+                        } else {
+                            screen.changeActionSelection(ForfeitConfirmationSelection(screen, root.request))
+                        }
+                    }
                 }
                 pageOpened = true
                 ticks = 0
                 CobblemonExtendedBattleUI.LOGGER.info("Live battle page '{}' opened via {}", page,
-                    if (page == "forfeit") "native selection constructor" else "mouse click")
+                    if (page == "forfeit" && !trainerBattle) "native selection constructor" else "mouse click")
                 return@register
             }
             if (page != "command") {
@@ -162,8 +200,22 @@ internal object BattleLiveCapture {
             }
         }
         ServerTickEvents.END_SERVER_TICK.register { server ->
-            val opponent = pendingOpponent ?: return@register
             val player = pendingPlayerId?.let(server.playerManager::getPlayer) ?: return@register
+            val trainer = pendingTrainer
+            if (trainer != null) {
+                if (++battleAttemptTicks < 10) return@register
+                pendingTrainer = null
+                pendingPlayerId = null
+                when (val result = BattleBuilder.pvn(player, trainer)) {
+                    is SuccessfulBattleStart -> CobblemonExtendedBattleUI.LOGGER.info(
+                        "Live trainer battle started in fixture world: {}", result.battle.battleId)
+                    is ErroredBattleStart -> CobblemonExtendedBattleUI.LOGGER.error(
+                        "Live trainer battle rejected by Cobblemon: general={}, participant={}",
+                        result.generalErrors, result.participantErrors)
+                }
+                return@register
+            }
+            val opponent = pendingOpponent ?: return@register
             if (!opponent.canBattle(player)) {
                 if (++battleAttemptTicks % 40 == 0) {
                     CobblemonExtendedBattleUI.LOGGER.warn(
@@ -209,13 +261,28 @@ internal object BattleLiveCapture {
             }
             CobblemonExtendedBattleUI.LOGGER.info("Live fixture party count: {}", party.toList().size)
             val world = player.serverWorld
-            val opponent = PokemonProperties().apply {
-                species = "charizard"
-                level = 50
-            }.createEntity(world)
-            opponent.setPosition(player.x + 3.0, player.y, player.z + 3.0)
-            check(world.spawnEntity(opponent)) { "Could not spawn disposable battle opponent" }
-            pendingOpponent = opponent
+            if (System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TRAINER") == "1") {
+                val trainer = NPCEntity(world)
+                trainer.npc = NPCClasses.classes.sortedBy { it.id.toString() }.first()
+                val party = NPCPartyStore(trainer)
+                check(party.add(PokemonProperties().apply {
+                    species = "charizard"
+                    level = 50
+                }.create())) { "Could not add trainer's Pokémon" }
+                party.initialize()
+                trainer.party = party
+                trainer.setPosition(player.x + 3.0, player.y, player.z + 3.0)
+                check(world.spawnEntity(trainer)) { "Could not spawn disposable trainer" }
+                pendingTrainer = trainer
+            } else {
+                val opponent = PokemonProperties().apply {
+                    species = "charizard"
+                    level = 50
+                }.createEntity(world)
+                opponent.setPosition(player.x + 3.0, player.y, player.z + 3.0)
+                check(world.spawnEntity(opponent)) { "Could not spawn disposable battle opponent" }
+                pendingOpponent = opponent
+            }
             pendingPlayerId = playerId
             battleAttemptTicks = 0
             started = true
