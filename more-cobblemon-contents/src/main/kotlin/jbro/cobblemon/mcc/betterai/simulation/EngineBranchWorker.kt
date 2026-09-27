@@ -28,7 +28,8 @@ import jbro.cobblemon.mcc.betterai.engine.sim.fork
  * rebuilt by replaying its steps, which gives the same battle because the engine is deterministic.
  */
 internal class EngineBranchWorker(
-    private val dex: EngineDex = EngineDex.bundled(),
+    /** The dex and a digest of the Cobblemon species laid over it ("bundled" when there are none). */
+    runtime: Pair<String, EngineDex> = EngineRuntimeDex.current(),
     private val cacheLimit: Int = 4096,
     /** The pool's rules fingerprint when this worker serves a native generation. */
     private val fingerprint: String? = null,
@@ -38,7 +39,10 @@ internal class EngineBranchWorker(
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Battle>?): Boolean = size > cacheLimit
     }
 
-    override val rulesFingerprint: String = fingerprint ?: ("ai-engine:" + dexFingerprint())
+    private val dex: EngineDex = runtime.second
+
+    // Snapshots are only valid on a worker with the same species data, so the species digest is part of it.
+    override val rulesFingerprint: String = (fingerprint ?: ("ai-engine:" + dexFingerprint())) + ":species=" + runtime.first
 
     override fun createBattle(definition: NativeBattleDefinition): NativeBattleFrame {
         val token = JsonObject().apply {

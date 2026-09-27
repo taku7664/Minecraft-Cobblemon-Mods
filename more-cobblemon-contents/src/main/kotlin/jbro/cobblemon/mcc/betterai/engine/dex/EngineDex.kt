@@ -11,7 +11,11 @@ import jbro.cobblemon.mcc.betterai.engine.Js
  * (see `tools/ai-engine/export-dex.cjs`). Lookups mirror `sim/dex*.js`, including where a condition
  * comes from when its id names a move, ability or item.
  */
-class EngineDex private constructor(root: JsonObject) {
+class EngineDex private constructor(
+    private val root: JsonObject,
+    /** Species the game registered at runtime, looked up before the exported ones as Showdown does. */
+    private val runtimeSpecies: Map<String, Species> = emptyMap(),
+) {
     val typeNames: List<String>
     private val damageTaken: Map<String, Map<String, Int>>
     private val natures: Map<String, Nature>
@@ -33,7 +37,7 @@ class EngineDex private constructor(root: JsonObject) {
             id to Nature(id, obj.get("name").asString, obj.get("plus")?.takeIf { !it.isJsonNull }?.asString,
                 obj.get("minus")?.takeIf { !it.isJsonNull }?.asString)
         }
-        speciesTable = root.getAsJsonObject("species").entrySet().associate { (id, value) -> id to Species(value.asJsonObject) }
+        speciesTable = root.getAsJsonObject("species").entrySet().associate { (id, value) -> id to Species(value.asJsonObject) } + runtimeSpecies
         moveTable = root.getAsJsonObject("moves").entrySet().associate { (id, value) -> id to MoveData(id, value.asJsonObject) }
         abilityTable = root.getAsJsonObject("abilities").entrySet().associate { (id, value) ->
             id to effect(id, value.asJsonObject, "Ability", "ability:$id", "")
@@ -77,6 +81,27 @@ class EngineDex private constructor(root: JsonObject) {
     val conditionIds: Set<String> get() = conditionData.keys
 
     fun isTypeName(name: String): Boolean = name in damageTaken
+
+    /**
+     * This dex with the species Cobblemon registers in Showdown (`receiveSpeciesData`), given as the plain
+     * data Cobblemon sends. Showdown's `dex.species.get` looks in that registry before its own Pokédex, so
+     * these entries replace the exported ones with the same id, and species only the game knows (Z-A Megas,
+     * datapack species) become available.
+     */
+    fun withSpecies(data: List<JsonObject>): EngineDex {
+        // Cobblemon's SpeciesRegistry.register: a species without a number gets 10001 + the entries so far.
+        val species = LinkedHashMap<String, Species>()
+        for (entry in data) {
+            val copy = entry.deepCopy()
+            val num = copy.get("num")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asDouble ?: 0.0
+            if (num == 0.0 || num.isNaN()) copy.addProperty("num", 10001 + species.size)
+            val built = Species(ShowdownSpeciesData.construct(copy))
+            species[built.id] = built
+        }
+        return EngineDex(root, runtimeSpecies + species)
+    }
+
+    val runtimeSpeciesCount: Int get() = runtimeSpecies.size
 
     /** `dex.conditions.get(name)`: ids are normalised unless they carry an `item:`/`ability:` prefix. */
     fun condition(name: String): Effect {

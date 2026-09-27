@@ -43,6 +43,8 @@ bash more-cobblemon-contents/tools/ai-engine/export-dex.sh
 
 옮기지 않은 핸들러에 도달하면 엔진은 그 핸들러를 조용히 건너뛰지 않고 `battle.missingHooks`에 기록한다.
 
+게임 안에서는 종족 데이터를 한 번 더 바꾼다. Cobblemon은 전투를 시작하기 전에 Showdown의 종족을 모두 자기 데이터로 다시 등록하므로(`receiveSpeciesData`), 실제 전투의 종족값·특성·타입은 Cobblemon 종족 데이터와 데이터팩을 따른다. Z-A 메가진화 같은 종족도 여기서만 생긴다. `simulation/EngineRuntimeDex.kt`가 같은 데이터를 Cobblemon의 `PokemonSpecies.allShowdownSpecies`에서 읽어, Showdown의 `new Species(data)`를 옮긴 `dex/SpeciesData.kt`로 만든 뒤 번들 도감 위에 덮어쓴다. 이 종족 데이터의 요약값은 작업자의 규칙 지문에 들어가므로, 데이터팩을 다시 불러오면 예전 스냅샷을 쓰지 않는다.
+
 ## 심판 테스트
 
 `tools/ai-engine/referee.cjs`가 같은 팀, 같은 시드, 같은 선택으로 Showdown에서 전투를 돌리고, 테스트가 엔진에서 같은 전투를 돌려 프로토콜 로그를 한 줄씩 비교한다.
@@ -52,6 +54,7 @@ bash more-cobblemon-contents/tools/ai-engine/export-dex.sh
 - `EngineTriggerParityTest`: 사용률 상위 효과가 실제로 발동하도록 조건을 만든 전투(방어, 속이기, 기습, 도발, 트릭룸, 기합의띠, 대타출동, 스텔스록, 테라스탈, 고대활성 등).
 - `EngineTournamentParityTest`: 사용률 데이터의 실제 세트로 꾸린 싱글 3대3과 더블 4대4 전투를 레벨 50으로 끝까지 진행한다. 엔진이 무작위 합법 선택으로 전투를 치르고, Showdown이 그 선택을 재생한다.
 - `EngineReplayMockTest`: 팀 시트가 공개된 실제 경기 기록(`src/test/resources/ai-engine/replays/`)을 엔진에서 모의 재현한다. 기록에서 팀, 선출, 턴마다 고른 기술·대상·테라스탈·교체를 읽어 여러 시드로 그대로 재생하고, 턴마다 실제와 같은 흐름이 나온 시드의 비율과 실제 HP가 엔진의 난수 범위 안에 드는지 `build/reports/ai-engine-replay-<id>.md`에 적는다. 같은 선택을 Showdown에서도 재생해서 로그가 같은지도 확인한다. 공개 팀 시트에는 노력치와 성격이 없어서 사용률 상위 배분 중에서 고른다. `-Psweeps`를 붙이면 그 경기의 HP 기록에 가장 잘 맞는 배분을 찾아 `<id>.spreads.json`으로 남기며, 이 파일을 기록 옆에 두면 재현에 쓴다.
+- `EngineSpeciesDataTest`: Cobblemon 데이터로 만든 종족이 Showdown의 `new Species(data)`와 같은지, 도감 전체와 합성 사례로 비교한다(`tools/ai-engine/species-oracle.cjs`).
 - `EngineBranchWorkerTest`: 네이티브 탐색이 받는 프레임(팀, 필드, 요청, 기술 순서)을 예전 GraalJS 작업자와 한 턴씩 비교한다.
 - `EngineForkTest`, `EngineSpeedTest`: 복제한 전투가 원본과 똑같이 이어지는지, 분기 속도가 충분한지 확인한다.
 
