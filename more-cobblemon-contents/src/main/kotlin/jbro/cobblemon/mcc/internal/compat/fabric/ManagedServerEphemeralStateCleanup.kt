@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.internal.compat.fabric
 
+import java.util.concurrent.CopyOnWriteArrayList
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.internal.ai.BattleTacticalRunMemoryStore
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173BattleRuleHooks
@@ -10,19 +11,28 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 
 /** Final backstop for process-wide references that must never cross integrated-server lifetimes. */
 internal object ManagedServerEphemeralStateCleanup {
+    private val contentActions = CopyOnWriteArrayList<() -> Unit>()
+
+    /** Contents add their own process-wide state (catalog stores and the like) to the same backstop. */
+    fun register(action: () -> Unit): AutoCloseable {
+        contentActions += action
+        return AutoCloseable { contentActions.remove(action) }
+    }
+
     fun registerServer() {
         ServerLifecycleEvents.SERVER_STOPPED.register {
-            runManagedCleanupActionsSafely(
-                reportFailure = { failure ->
-                    MoreCobblemonContents.LOGGER.error("Final managed server-state cleanup failed", failure)
-                },
+            val coreActions = listOf<() -> Unit>(
                 BattleHubNetworking::clear,
                 Cobblemon173BattleRuleHooks::clear,
                 Cobblemon173ManagedTrainerPokemonOwners::clear,
                 BattleTacticalRunMemoryStore::clear,
-                FactoryCatalogResources.store::clear,
-                TowerOpponentCatalogResources.store::clear,
                 BattlePointShopCatalogResources.store::clear,
+            )
+            runManagedCleanupActionsSafely(
+                { failure ->
+                    MoreCobblemonContents.LOGGER.error("Final managed server-state cleanup failed", failure)
+                },
+                *(coreActions + contentActions).toTypedArray(),
             )
         }
     }

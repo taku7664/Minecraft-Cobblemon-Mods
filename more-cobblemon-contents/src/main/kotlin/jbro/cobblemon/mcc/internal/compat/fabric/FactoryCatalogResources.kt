@@ -21,6 +21,7 @@ internal object FactoryCatalogResources {
     private val reloader = FactoryCatalogResourceReloader(store)
 
     fun register() {
+        ManagedServerEphemeralStateCleanup.register(store::clear)
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(
             object : SimpleSynchronousResourceReloadListener {
                 override fun getFabricId(): ResourceLocation = listenerId

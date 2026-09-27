@@ -30,6 +30,7 @@ internal object TowerOpponentCatalogResources {
     )
 
     fun register() {
+        ManagedServerEphemeralStateCleanup.register(store::clear)
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(listener)
     }
 }
