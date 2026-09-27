@@ -87,6 +87,11 @@ object EngineReferee {
     private val tools: Path = Path.of(System.getProperty("aiengine.tools") ?: "tools/ai-engine")
     val dex: EngineDex by lazy { EngineDex.bundled() }
 
+    /** Test runs used to leave every referee input and log behind; a full sweep writes tens of megabytes. */
+    private fun deleteTree(root: Path) {
+        runCatching { Files.walk(root).use { s -> s.sorted(Comparator.reverseOrder()).forEach { Files.deleteIfExists(it) } } }
+    }
+
     fun assumeAvailable() {
         Assumptions.assumeTrue(showdown != null, "No dev server Showdown; pass -PshowdownRoot=<repo>/dev-server/showdown")
     }
@@ -96,6 +101,7 @@ object EngineReferee {
         val jar = Files.list(mods).use { s -> s.filter { it.fileName.toString().startsWith("mega_showdown-") }.findFirst().orElse(null) }
             ?: return@lazy null
         val out = Files.createTempDirectory("ai-engine-msd")
+        Runtime.getRuntime().addShutdownHook(Thread { deleteTree(out) })
         val prefix = "data/mega_showdown/mega_showdown/showdown/"
         ZipFile(jar.toFile()).use { zip ->
             for (entry in zip.entries()) {
@@ -122,6 +128,7 @@ object EngineReferee {
         check(process.waitFor(120, TimeUnit.SECONDS)) { "Referee timed out" }
         check(process.exitValue() == 0) { "Referee failed: $console" }
         val root = JsonParser.parseString(Files.readString(output)).asJsonObject
+        deleteTree(dir)
         return root.getAsJsonArray("results").associate { element ->
             val r = element.asJsonObject
             r.get("id").asString to RefResult(
@@ -155,8 +162,13 @@ object EngineReferee {
         if (state.isEmpty()) return
         var choice = input.ifEmpty { "default" }
         if (state == "switch" && !choice.startsWith("switch")) {
-            val bench = (side.active.size until side.pokemon.size).firstOrNull { !side.pokemon[it].fainted }
-            choice = if (bench != null) "switch ${bench + 1}" else "pass"
+            // One choice per active slot: slots that must be replaced take the next healthy bench Pokemon.
+            val used = HashSet<Int>()
+            choice = side.active.joinToString(", ") { pokemon ->
+                if (pokemon == null || !Js.truthy(pokemon.switchFlag)) return@joinToString "pass"
+                val bench = (side.active.size until side.pokemon.size).firstOrNull { !side.pokemon[it].fainted && it !in used }
+                if (bench == null) "pass" else "switch ${bench + 1}".also { used.add(bench) }
+            }
         }
         try {
             if (side.choose(choice)) return

@@ -29,11 +29,16 @@ function fillSet(set) {
 // Scripts stay usable when the battle goes its own way: a side with nothing to choose is skipped, a side
 // that must replace a fainted Pokemon switches in the first one available, and a choice Showdown rejects
 // (a disabled or locked move) falls back to the default choice. The engine test harness does the same.
+// One choice per active slot: slots that must be replaced take the next healthy bench Pokemon, others pass.
 function firstSwitch(side) {
-  for (let i = side.active.length; i < side.pokemon.length; i++) {
-    if (!side.pokemon[i].fainted) return 'switch ' + (i + 1);
-  }
-  return 'pass';
+  const used = new Set();
+  return side.active.map((pokemon) => {
+    if (!pokemon || !pokemon.switchFlag) return 'pass';
+    for (let i = side.active.length; i < side.pokemon.length; i++) {
+      if (!side.pokemon[i].fainted && !used.has(i)) { used.add(i); return 'switch ' + (i + 1); }
+    }
+    return 'pass';
+  }).join(', ');
 }
 
 function choose(side, input) {

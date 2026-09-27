@@ -54,6 +54,46 @@ class EngineCoreParityTest {
     )))
 
     @Test
+    fun `terastallization matches`() = assertParity(sweep(RefScenario(
+        "tera",
+        listOf(RefSet("Dragonite", listOf("extremespeed", "dragonclaw", "earthquake"), teraType = "Normal"),
+            RefSet("Garchomp", listOf("earthquake", "dragonclaw"), teraType = "Steel")),
+        listOf(RefSet("Gholdengo", listOf("makeitrain", "shadowball", "flashcannon"), teraType = "Water"),
+            RefSet("Kingambit", listOf("ironhead", "kowtowcleave"), teraType = "Stellar")),
+        listOf("move 1 terastallize" to "move 2 terastallize", "move 2" to "move 3", "switch 2" to "switch 2",
+            "move 1" to "move 1", "move 2" to "move 2"),
+    )))
+
+    @Test
+    fun `mega evolution matches`() = assertParity(sweep(RefScenario(
+        "mega",
+        listOf(RefSet("Charizard", listOf("flamethrower", "airslash", "dragonclaw"), item = "Charizardite Y")),
+        listOf(RefSet("Garchomp", listOf("earthquake", "stoneedge"), item = "Garchompite"), RefSet("Blissey", listOf("tackle"))),
+        listOf("move 1 mega" to "move 2 mega", "move 2" to "move 1", "move 3" to "move 2", "move 1" to "move 1"),
+    )))
+
+    @Test
+    fun `dynamax matches`() = assertParity(sweep(RefScenario(
+        "dynamax",
+        listOf(RefSet("Snorlax", listOf("bodyslam", "earthquake", "crunch")), RefSet("Chansey", listOf("tackle"))),
+        listOf(RefSet("Gyarados", listOf("waterfall", "icefang", "bounce")), RefSet("Blissey", listOf("tackle"))),
+        listOf("move 1 dynamax" to "move 1", "move 2" to "move 2 dynamax", "move 3" to "move 3", "move 1" to "move 1",
+            "move 2" to "move 1", "move 1" to "move 2"),
+    )))
+
+    @Test
+    fun `doubles targeting and spread moves match`() = assertParity(sweep(RefScenario(
+        "doubles",
+        listOf(RefSet("Garchomp", listOf("earthquake", "dragonclaw", "rockslide")), RefSet("Pelipper", listOf("hurricane", "surf", "icebeam")),
+            RefSet("Snorlax", listOf("bodyslam"))),
+        listOf(RefSet("Heatran", listOf("heatwave", "earthpower", "flashcannon")), RefSet("Amoonguss", listOf("sludgebomb", "gigadrain")),
+            RefSet("Blissey", listOf("tackle"))),
+        listOf("move 1, move 2 2" to "move 1, move 2 1", "move 2 1, move 3 2" to "move 2 2, move 1 1",
+            "move 3, move 1 1" to "move 3 1, move 2 2", "move 1, move 2" to "move 1, move 1 1"),
+        gameType = "doubles",
+    )))
+
+    @Test
     fun `speed ties and priority match`() = assertParity(sweep(RefScenario(
         "speed-tie",
         listOf(RefSet("Dragonite", listOf("extremespeed", "dragonclaw"))),
