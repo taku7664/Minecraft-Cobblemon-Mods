@@ -90,7 +90,10 @@ internal class NativeShowdownWorkerPool private constructor(
             val workers = mutableListOf<NativeBranchWorker>()
             try {
                 repeat(workerCount) {
-                    workers += NativeShowdownBranchEngine.open(generation.sourceEngineRoot, generation)
+                    workers += when (workerKind()) {
+                        "showdown" -> NativeShowdownBranchEngine.open(generation.sourceEngineRoot, generation)
+                        else -> EngineBranchWorker(fingerprint = generation.fingerprint)
+                    }
                 }
                 return create(generation, workers)
             } catch (failure: Throwable) {
@@ -110,6 +113,12 @@ internal class NativeShowdownWorkerPool private constructor(
             }
             return NativeShowdownWorkerPool(generation, workers.toList())
         }
+
+        /**
+         * Which engine plays the native search: the Kotlin AI engine by default, or Showdown in GraalJS with
+         * `-Dmcc.betterai.nativeWorker=showdown` (kept for comparison; it is too slow to finish a decision in play).
+         */
+        private fun workerKind(): String = System.getProperty("mcc.betterai.nativeWorker", "engine")
 
         private const val MAX_WORKERS = 4
         private val RETIRE_POLL_NANOS = TimeUnit.MILLISECONDS.toNanos(10)

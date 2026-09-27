@@ -25,7 +25,22 @@ class BattleOptions(
     /** Keep Showdown's protocol log. Off for search, where nobody reads it. */
     val log: Boolean = true,
     val strictChoices: Boolean = true,
+    /** Wait for an explicit [Battle.start] after both players join, like Showdown's `deserialized` option. */
+    val deferStart: Boolean = false,
 )
+
+/**
+ * Sees what the protocol log would say even when the log is off: move messages, damage rolls and HP
+ * lines. The native search's branch worker uses it for move order, damage evidence and recoil.
+ */
+interface BattleTracer {
+    fun move(battle: Battle, pokemon: Pokemon, moveName: String)
+
+    /** Returns the damage to use; [actual] is what the battle's own roll gave. */
+    fun randomizer(battle: Battle, baseDamage: Int, actual: Int): Int
+
+    fun hpLine(battle: Battle, kind: String, pokemon: Pokemon, extras: List<String>)
+}
 
 /**
  * Port of `sim/battle.js`: the event system, the turn loop, damage, healing and stat stages. Gen 9 only,
@@ -63,6 +78,7 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
     var lastDamage = 0
     var abilityOrder = 0
     val hints: MutableSet<String> = HashSet()
+    var tracer: BattleTracer? = null
     /** Handlers Showdown has in code that the engine reached without an implementation. */
     val missingHooks: MutableSet<String> = LinkedHashSet()
 
@@ -971,7 +987,10 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
         return result
     }
 
-    fun randomizer(baseDamage: Int): Int = Js.trunc(Js.trunc(baseDamage.toDouble() * (100 - random(16))).toDouble() / 100)
+    fun randomizer(baseDamage: Int): Int {
+        val actual = Js.trunc(Js.trunc(baseDamage.toDouble() * (100 - random(16))).toDouble() / 100)
+        return tracer?.randomizer(this, baseDamage, actual) ?: actual
+    }
 
     fun validTargetLoc(targetLoc: Int, source: Pokemon, targetType: String): Boolean {
         if (targetLoc == 0) return true
@@ -1371,6 +1390,11 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
     }
 
     fun add(vararg parts: Any?) {
+        tracer?.let { t ->
+            val kind = parts.getOrNull(0)
+            val target = parts.getOrNull(1)
+            if ((kind == "-damage" || kind == "-heal") && target is Pokemon) t.hpLine(this, kind as String, target, parts.drop(3).map { part(it) })
+        }
         if (!logEnabled) return
         if (parts.none { it is SplitPart }) {
             log.add("|" + parts.joinToString("|") { part(it) })
@@ -1397,6 +1421,10 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
     }
 
     fun addMove(vararg args: Any?) {
+        tracer?.let { t ->
+            val pokemon = args.getOrNull(1)
+            if (args.getOrNull(0) == "move" && pokemon is Pokemon) t.move(this, pokemon, Js.str(args.getOrNull(2)))
+        }
         if (!logEnabled) return
         lastMoveLine = log.size
         log.add("|" + args.joinToString("|") { part(it) })
@@ -1433,7 +1461,7 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
         val side = Side(name, this, slotNum, team)
         sides.add(side)
         add("player", side.id, side.name, "", "")
-        if (sides.size == 2 && !started) start()
+        if (sides.size == 2 && !started && !options.deferStart) start()
     }
 
     fun getSide(sideId: String): Side = sides[sideId.substring(1).toInt() - 1]
