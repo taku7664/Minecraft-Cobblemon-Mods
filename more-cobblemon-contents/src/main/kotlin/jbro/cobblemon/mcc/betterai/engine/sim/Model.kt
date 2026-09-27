@@ -306,3 +306,38 @@ class ActiveMove(val template: MoveData) : HitData {
         return c
     }
 }
+
+/**
+ * A hit block a handler builds on the fly, like Tera Blast's `move.self = { boosts: { atk: -1, spa: -1 } }`.
+ * It has no handlers of its own.
+ */
+class LiteralHit(
+    override val hitBoosts: Map<String, Int>? = null,
+    override val chance: Int? = null,
+    override val hitStatus: String? = null,
+    override val hitVolatileStatus: String? = null,
+    override val hitSelf: HitData? = null,
+) : HitData {
+    override val id: String get() = ""
+    override val name: String get() = ""
+    override val fullname: String get() = ""
+    override val effectType: String get() = ""
+    override val num: Int get() = 0
+    override val hookKey: String get() = ""
+    override fun handler(callbackName: String): Any? = null
+    override fun declares(callbackName: String): Boolean = false
+    override fun data(field: String): Any? = null
+    override val hitFlags: Map<String, Any?> get() = emptyMap()
+    override val hitHeal: IntArray? get() = null
+    override val hitForceStatus: String? get() = null
+    override val hitSideCondition: String? get() = null
+    override val hitSlotCondition: String? get() = null
+    override val hitWeather: String? get() = null
+    override val hitTerrain: String? get() = null
+    override val hitPseudoWeather: String? get() = null
+    override val hitForceSwitch: Boolean get() = false
+    override val hitSelfdestruct: String? get() = null
+    override val hitSelfSwitch: Any? get() = null
+    override val hitSecondaries: List<HitData>? get() = null
+    override val hitAbility: EffectLike? get() = null
+}

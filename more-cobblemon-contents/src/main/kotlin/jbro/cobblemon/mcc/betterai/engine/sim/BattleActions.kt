@@ -525,7 +525,7 @@ class BattleActions(private val battle: Battle) {
 
     fun afterMoveSecondaryEvent(targets: List<Pokemon>, pokemon: Pokemon, move: ActiveMove) {
         if (!move.negateSecondary && !(move.hasSheerForce && pokemon.hasAbility("sheerforce"))) {
-            battle.singleEvent("AfterMoveSecondary", move, null, targets[0], pokemon, move)
+            battle.singleEvent("AfterMoveSecondary", move, null, targets.firstOrNull(), pokemon, move)
             battle.runEvent("AfterMoveSecondary", targets, pokemon, move)
         }
     }

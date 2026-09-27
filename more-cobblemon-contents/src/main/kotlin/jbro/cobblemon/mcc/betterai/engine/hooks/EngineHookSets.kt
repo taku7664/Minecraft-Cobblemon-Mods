@@ -6,5 +6,8 @@ import jbro.cobblemon.mcc.betterai.engine.effects.BaseConditions
 object EngineHookSets {
     val all: List<HookSet> = listOf(
         BaseConditions,
+        jbro.cobblemon.mcc.betterai.engine.effects.TopMoves,
+        jbro.cobblemon.mcc.betterai.engine.effects.TopAbilities,
+        jbro.cobblemon.mcc.betterai.engine.effects.TopItems,
     )
 }
