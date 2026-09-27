@@ -7,7 +7,14 @@
 
 ---
 
-## [2026-09-27 03:50] 수정 — MBC 전투 포켓몬을 청크 저장에서 제외 (미배포)
+## [2026-09-27 12:45] 1.6.25 클라이언트 설치 — `a6b4b01e`
+
+- 저장 제외 수정(`d67d312e`)을 담은 본체 1.6.25를 빌드했다. `unitTest` 988개 통과, JDK 21 `jar --validate` 통과, 재매핑된 Mixin 대상이 `class_1297.method_5786`(saveAsPassenger)임을 확인했다. SHA-256 `963CD83CD51A73B1442A578A056E62F262FF527A215EC447304756AB5E80B8F8`.
+- 배포 전 Java 프로세스 0개, 25566 포트 닫힘을 확인했다. `cobblemon-dev/mods`의 1.6.24(`21C82F8F…`)를 `dev-server/deployment-backups/20260927-124516-before-mbc-1.6.25-save-exclusion/client/`에 보존하고 1.6.25로 교체했다. 설치 파일과 빌드 해시가 일치한다. 함께 있는 Better AI 1.2.21(`>=1.6.21`)과 League 0.2.4(`>=1.6.24`)는 1.6.25를 허용한다.
+- `dev-server`에는 배포하지 않았다. 서버는 2026-08-28 이후 갱신되지 않아 MBC 1.6.19·Better AI 1.2.14·Mega Showdown `1.9.5+1.7.3`·Fabric Language Kotlin 1.13.11의 Cobblemon 1.7.3 구성이다. 1.6.25는 Cobblemon 1.8.1을 요구하므로 서버 전체 의존 스택을 올려야 하며, 이는 별도 판단이 필요하다.
+- 설치 확인일 뿐이며 실게임 검증은 아니다. 다음 확인 순서: 클라이언트 실행 → MBC 전투 중 ESC(일시정지 저장) → 작업 관리자로 강제 종료 → 재접속해 상대 포켓몬이 남지 않는지 본다. 이미 월드에 남은 난천 팀 4마리(-648, 95, -161 근처)는 이 수정으로 사라지지 않는다.
+
+## [2026-09-27 03:50] 수정 — MBC 전투 포켓몬을 청크 저장에서 제외 — `d67d312e`
 
 - `EntityManagedBattlePersistenceMixin`: `Entity.saveAsPassenger` HEAD에서 MBC 관리 전투 포켓몬이면 `false`를 돌려준다. 청크 저장은 `EntityStorage.storeEntities` → `Entity.save` → `saveAsPassenger`의 반환값으로만 기록 여부를 정하므로(1.21.1 바이트코드 확인), ESC 일시정지 저장·자동 저장·청크 언로드 모두에 적용된다. `shouldBeSaved()`는 이 경로에서 쓰이지 않아 대상으로 삼지 않았다. PokemonEntity는 `save`·`saveAsPassenger`를 재정의하지 않는다.
 - 판정(`ManagedBattleEntityPersistencePolicy`): 엔티티의 `battleId`가 MBC 규칙 레지스트리(`Cobblemon173BattleRuleHooks`)에 등록돼 있거나, 전투 종료 뒤 회수 대기 중인 포켓몬을 생명주기 레지스트리가 아직 소유하면(`ManagedBattleLifecycleRegistry.ownsTarget`, 동일 객체 비교) 저장하지 않는다. MBC 밖 전투와 엔티티는 기존 저장을 유지한다. 판정 중 예외가 나면 로그를 남기고 저장을 허용한다.
