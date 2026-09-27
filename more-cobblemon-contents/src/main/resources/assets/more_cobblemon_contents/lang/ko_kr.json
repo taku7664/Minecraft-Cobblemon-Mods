@@ -88,5 +88,13 @@
   "screen.more_cobblemon_contents.dashboard.format.single_level_50": "싱글 · Lv.50",
   "screen.more_cobblemon_contents.dashboard.format.single_open_level": "싱글 · 레벨 자유",
   "screen.more_cobblemon_contents.dashboard.format.double_level_50": "더블 · Lv.50",
-  "screen.more_cobblemon_contents.dashboard.format.double_open_level": "더블 · 레벨 자유"
+  "screen.more_cobblemon_contents.dashboard.format.double_open_level": "더블 · 레벨 자유",
+  "screen.more_cobblemon_contents.shop.shopkeeper": "상점 주인",
+  "screen.more_cobblemon_contents.shop.add_tooltip": "%s 장바구니에 담기",
+  "screen.more_cobblemon_contents.shop.empty": "판매 중인 품목이 없습니다.",
+  "screen.more_cobblemon_contents.shop.cart.title": "장바구니 · %s/%s개",
+  "screen.more_cobblemon_contents.shop.line_tooltip": "%s ×%s · %s",
+  "screen.more_cobblemon_contents.shop.total": "합계",
+  "screen.more_cobblemon_contents.shop.after": "구매 후",
+  "screen.more_cobblemon_contents.shop.items": "품목"
 }

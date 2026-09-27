@@ -30,10 +30,4 @@ class MccGuiStyleContractTest {
         assertEquals(4, accents.size)
         assertTrue(accents.all { it ushr 24 == 0xFF })
     }
-
-    @Test
-    fun `MCC screens override Minecraft background rendering`() {
-        assertTrue(MccScreen::class.java.isAssignableFrom(MccConfirmScreen::class.java))
-        assertTrue(MccScreen::class.java.declaredMethods.any { it.name == "renderBackground" })
-    }
 }

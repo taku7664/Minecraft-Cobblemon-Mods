@@ -1,7 +1,6 @@
 package jbro.cobblemon.mcc.client
 
 import jbro.cobblemon.mcc.internal.hub.BattleHubOpenContentPayload
-import jbro.cobblemon.mcc.internal.hub.BattleHubContent
 import jbro.cobblemon.mcc.internal.hub.BattleHubHeaderStatePayload
 import jbro.cobblemon.mcc.internal.hub.BattleHubStatePayload
 import jbro.cobblemon.mcc.internal.hub.BattleHubAccessPayload
@@ -16,9 +15,6 @@ internal object BattleHubClientNetworking {
         ClientPlayNetworking.registerGlobalReceiver(BattleHubAccessPayload.TYPE) { payload, context ->
             context.client().execute {
                 MccBattleHubClientState.deniedById = payload.denied
-                MccBattleHubClientState.denied = payload.denied.mapNotNull { (contentId, denial) ->
-                    BattleHubContent.fromId(contentId)?.let { content -> content to denial }
-                }.toMap()
             }
         }
         MccClientSessionReset.onReset("battle hub header") { MccBattleHubClientState.clear() }
@@ -42,22 +38,7 @@ internal object BattleHubClientNetworking {
     fun open(payload: BattleHubOpenContentPayload) = ClientPlayNetworking.send(payload)
 }
 
-internal object MccContentNavigation {
-    fun open(content: BattleHubContent) {
-        if (content == BattleHubContent.SHOP) {
-            if (ShopPlayClientNetworking.canOpen()) {
-                ShopPlayClientNetworking.open()
-            } else {
-                BattleHubClientNetworking.open(BattleHubOpenContentPayload(content.id))
-            }
-        } else {
-            BattleHubClientNetworking.open(BattleHubOpenContentPayload(content.id))
-        }
-    }
-}
-
 object MccBattleHubClientState {
-    var denied: Map<BattleHubContent, ContentAccessDecision.Denied> = emptyMap()
     var deniedById: Map<String, ContentAccessDecision.Denied> = emptyMap()
 
     /** The viewer's own records from the last hub open; null until the server sent them. */
@@ -70,7 +51,6 @@ object MccBattleHubClientState {
     }
 
     fun clear() {
-        denied = emptyMap()
         deniedById = emptyMap()
         dashboard = null
         bpBalance = 0L

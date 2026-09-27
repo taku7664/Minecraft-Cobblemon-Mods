@@ -7,20 +7,6 @@ import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.ResourceLocation
 
-/** Client tab identities until the hub tabs become registrable; [id] is what travels on the wire. */
-enum class BattleHubContent(val id: String) {
-    BATTLE_TOWER(ManagedBattleContentIds.BATTLE_TOWER),
-    BATTLE_FACTORY(ManagedBattleContentIds.BATTLE_FACTORY),
-    PVP(ManagedBattleContentIds.PVP),
-    BOSS_RAID(BattleHubIds.BOSS_RAID),
-    SHOP(BattleHubIds.SHOP),
-    ;
-
-    companion object {
-        fun fromId(id: String): BattleHubContent? = entries.firstOrNull { it.id == id }
-    }
-}
-
 internal data object BattleHubStatePayload : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<BattleHubStatePayload> = TYPE
 

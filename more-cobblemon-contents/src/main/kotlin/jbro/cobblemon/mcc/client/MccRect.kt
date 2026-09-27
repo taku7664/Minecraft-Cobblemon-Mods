@@ -21,12 +21,3 @@ data class MccRect(
         )
     }
 }
-
-data class MccPartyCardContentLayout(
-    val index: Int,
-    val portrait: MccRect,
-    val textLeft: Int,
-    val textRight: Int,
-    val nameTop: Int,
-    val detailsTop: Int,
-)

@@ -88,5 +88,13 @@
   "screen.more_cobblemon_contents.dashboard.format.single_level_50": "Singles · Lv. 50",
   "screen.more_cobblemon_contents.dashboard.format.single_open_level": "Singles · Open level",
   "screen.more_cobblemon_contents.dashboard.format.double_level_50": "Doubles · Lv. 50",
-  "screen.more_cobblemon_contents.dashboard.format.double_open_level": "Doubles · Open level"
+  "screen.more_cobblemon_contents.dashboard.format.double_open_level": "Doubles · Open level",
+  "screen.more_cobblemon_contents.shop.shopkeeper": "Shopkeeper",
+  "screen.more_cobblemon_contents.shop.add_tooltip": "Add %s to the cart",
+  "screen.more_cobblemon_contents.shop.empty": "Nothing is on sale.",
+  "screen.more_cobblemon_contents.shop.cart.title": "Cart · %s/%s",
+  "screen.more_cobblemon_contents.shop.line_tooltip": "%s ×%s · %s",
+  "screen.more_cobblemon_contents.shop.total": "Total",
+  "screen.more_cobblemon_contents.shop.after": "After purchase",
+  "screen.more_cobblemon_contents.shop.items": "Items"
 }

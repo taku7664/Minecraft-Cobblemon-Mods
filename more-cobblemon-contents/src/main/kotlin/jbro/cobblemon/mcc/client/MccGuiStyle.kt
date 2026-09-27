@@ -1,7 +1,6 @@
 package jbro.cobblemon.mcc.client
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
-import jbro.cobblemon.mcc.internal.hub.BattleHubContent
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractButton
@@ -37,70 +36,6 @@ enum class MccButtonTone {
     SECONDARY,
     DANGER,
     NEUTRAL,
-}
-
-abstract class MccScreen(title: Component) : Screen(title) {
-    final override fun renderBackground(
-        graphics: GuiGraphics,
-        mouseX: Int,
-        mouseY: Int,
-        partialTick: Float,
-    ) = Unit
-}
-
-abstract class MccTabbedContentScreen(
-    title: Component,
-    private val activeContent: BattleHubContent?,
-) : MccScreen(title) {
-    protected fun frameLayout(): MccContentFrameLayout = MccContentFrameLayout.calculate(width, height)
-
-    protected fun addContentFrameWidgets(frame: MccContentFrameLayout = frameLayout()) {
-        val tabs = frame.tabButtons(MccContentTabContract.DISPLAY_ORDER.size)
-        MccContentTabContract.DISPLAY_ORDER.forEachIndexed { index, content ->
-            val denial = MccBattleHubClientState.denied[content]
-            val unavailable = content == BattleHubContent.BOSS_RAID || denial != null
-            addRenderableWidget(
-                MccStyledButton(
-                    tabs[index],
-                    Component.translatable("screen.${MoreCobblemonContents.MOD_ID}.hub.tab.${content.name.lowercase()}"),
-                    if (unavailable) MccButtonTone.NEUTRAL else MccButtonTone.PRIMARY,
-                    selected = content == activeContent,
-                ) {
-                    if (content != activeContent) {
-                        MccContentNavigation.open(content)
-                    }
-                }.also {
-                    it.active = !unavailable
-                    if (denial != null) it.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
-                        Component.translatable(denial.reasonKey, *denial.arguments.toTypedArray())))
-                },
-            )
-        }
-        addRenderableWidget(
-            MccStyledButton(frame.closeButton, Component.literal("×"), MccButtonTone.DANGER) { onClose() },
-        )
-    }
-
-    protected fun drawContentFrame(
-        graphics: GuiGraphics,
-        frame: MccContentFrameLayout = frameLayout(),
-        headerContentRight: Int = frame.closeButton.left,
-    ) {
-        MccGuiSurface.drawBackdrop(graphics, width, height)
-        MccGuiSurface.drawShell(graphics, frame.shell)
-        MccGuiSurface.drawPanel(graphics, frame.header, MccGuiPalette.ACCENT_SECONDARY, alternate = true)
-        MccGuiSurface.drawPanel(graphics, frame.tabs, MccGuiPalette.BORDER_BRIGHT, alternate = true)
-        val brandRight = headerContentRight - 6
-        val brand = font.plainSubstrByWidth("More Cobblemon Contents", (brandRight - frame.header.left - 8).coerceAtLeast(1))
-        graphics.drawString(
-            font,
-            brand,
-            frame.header.left + 6,
-            frame.header.top + (frame.header.height - 8) / 2,
-            MccGuiPalette.ACCENT_PRIMARY,
-            false,
-        )
-    }
 }
 
 object MccGuiSurface {
@@ -247,61 +182,5 @@ class MccStyledButton(
         MccButtonTone.SECONDARY -> MccGuiPalette.ACCENT_SECONDARY
         MccButtonTone.DANGER -> MccGuiPalette.ACCENT_DANGER
         MccButtonTone.NEUTRAL -> MccGuiPalette.BORDER_BRIGHT
-    }
-}
-
-class MccConfirmScreen(
-    private val parent: Screen,
-    title: Component,
-    private val body: Component,
-    private val confirm: () -> Unit,
-) : MccScreen(title) {
-    override fun init() {
-        val panel = panelBounds()
-        val buttons = splitButtons(MccRect(panel.left + 8, panel.bottom - 28, panel.width - 16, 20))
-        addRenderableWidget(
-            MccStyledButton(buttons.first, Component.translatable("gui.yes"), MccButtonTone.DANGER) {
-                minecraft?.setScreen(parent)
-                confirm()
-            },
-        )
-        addRenderableWidget(
-            MccStyledButton(buttons.second, Component.translatable("gui.no")) {
-                minecraft?.setScreen(parent)
-            },
-        )
-    }
-
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        MccGuiSurface.drawBackdrop(graphics, width, height)
-        val panel = panelBounds()
-        MccGuiSurface.drawShell(graphics, panel)
-        graphics.drawCenteredString(font, title, width / 2, panel.top + 12, MccGuiPalette.ACCENT_DANGER)
-        font.split(body, panel.width - 24).take(4).forEachIndexed { index, line ->
-            graphics.drawCenteredString(
-                font,
-                line,
-                width / 2,
-                panel.top + 34 + index * 10,
-                MccGuiPalette.TEXT_SECONDARY,
-            )
-        }
-        super.render(graphics, mouseX, mouseY, partialTick)
-    }
-
-    override fun onClose() {
-        minecraft?.setScreen(parent)
-    }
-
-    private fun panelBounds(): MccRect {
-        val panelWidth = (width - 24).coerceAtMost(300)
-        val panelHeight = 116
-        return MccRect((width - panelWidth) / 2, (height - panelHeight) / 2, panelWidth, panelHeight)
-    }
-
-    private fun splitButtons(bounds: MccRect): Pair<MccRect, MccRect> {
-        val firstWidth = (bounds.width - 6) / 2
-        return MccRect(bounds.left, bounds.top, firstWidth, bounds.height) to
-            MccRect(bounds.left + firstWidth + 6, bounds.top, bounds.width - firstWidth - 6, bounds.height)
     }
 }

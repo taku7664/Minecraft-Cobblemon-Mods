@@ -13,8 +13,8 @@ class BattleHubPayloadsTest {
         assertEquals(state, roundTrip(BattleHubStatePayload.CODEC, state))
         val header = BattleHubHeaderStatePayload(275L)
         assertEquals(header, roundTrip(BattleHubHeaderStatePayload.CODEC, header))
-        BattleHubContent.entries.forEach { content ->
-            val payload = BattleHubOpenContentPayload(content.id)
+        listOf(BattleHubIds.SHOP, BattleHubIds.BOSS_RAID, "more_cobblemon_contents:battle_tower").forEach { contentId ->
+            val payload = BattleHubOpenContentPayload(contentId)
             assertEquals(payload, roundTrip(BattleHubOpenContentPayload.CODEC, payload))
         }
     }
