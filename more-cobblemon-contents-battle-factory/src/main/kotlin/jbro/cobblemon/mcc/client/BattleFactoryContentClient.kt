@@ -11,13 +11,12 @@ import net.fabricmc.api.ClientModInitializer
 object BattleFactoryContentClient : ClientModInitializer {
     override fun onInitializeClient() {
         FactoryPlayClientNetworking.register()
-        // Opens the content's own screen until its hub tab is rebuilt on the hub.
         MccHubTabs.register(
             MccHubTab(
                 ManagedBattleContentIds.BATTLE_FACTORY,
                 Component.translatable(MccDashboardPresentation.contentNameKey(ManagedBattleContentIds.BATTLE_FACTORY)),
                 order = 110,
-                kind = MccHubTabKind.Screen { MccHubTabs.requestContent(ManagedBattleContentIds.BATTLE_FACTORY) },
+                kind = MccHubTabKind.Embedded(::FactoryHubTab),
             ),
         )
     }

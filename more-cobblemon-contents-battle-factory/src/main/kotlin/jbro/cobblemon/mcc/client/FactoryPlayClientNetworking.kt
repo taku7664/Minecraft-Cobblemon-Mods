@@ -1,6 +1,5 @@
 package jbro.cobblemon.mcc.client
 
-import jbro.cobblemon.mcc.internal.factory.FactoryPlayPhase
 import jbro.cobblemon.mcc.internal.factory.network.FactoryPlayIntentPayload
 import jbro.cobblemon.mcc.internal.factory.network.FactoryPlayRejectedPayload
 import jbro.cobblemon.mcc.internal.factory.network.FactoryPlayStatePayload
@@ -9,21 +8,10 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 internal object FactoryPlayClientNetworking {
     fun register() {
         ClientPlayNetworking.registerGlobalReceiver(FactoryPlayStatePayload.TYPE) { payload, context ->
-            context.client().execute {
-                val current = context.client().screen as? FactoryPlayScreen
-                if (payload.state.phase == FactoryPlayPhase.IN_BATTLE) {
-                    if (current != null) context.client().setScreen(null)
-                } else if (payload.requestId != null && current != null) {
-                    current.applyAccepted(payload.requestId, payload.state)
-                } else {
-                    context.client().setScreen(FactoryPlayScreen(payload.state))
-                }
-            }
+            context.client().execute { FactoryHubClient.accept(payload.requestId, payload.state) }
         }
         ClientPlayNetworking.registerGlobalReceiver(FactoryPlayRejectedPayload.TYPE) { payload, context ->
-            context.client().execute {
-                (context.client().screen as? FactoryPlayScreen)?.applyRejected(payload.requestId, payload.error)
-            }
+            context.client().execute { FactoryHubClient.reject(payload.requestId, payload.error) }
         }
     }
 

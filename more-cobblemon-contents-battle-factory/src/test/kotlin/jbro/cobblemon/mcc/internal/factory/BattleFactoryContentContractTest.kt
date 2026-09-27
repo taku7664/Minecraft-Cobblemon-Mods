@@ -2,11 +2,6 @@ package jbro.cobblemon.mcc.internal.factory
 
 import java.nio.file.Files
 import java.nio.file.Path
-import jbro.cobblemon.mcc.client.FactoryPlayLayout
-import jbro.cobblemon.mcc.client.FactoryPlayScreen
-import jbro.cobblemon.mcc.client.MccContentFrameLayout
-import jbro.cobblemon.mcc.client.MccScreen
-import jbro.cobblemon.mcc.client.MccTabbedContentScreen
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -47,15 +42,6 @@ class BattleFactoryContentContractTest {
             factoryReset.getChild("player").getChild("format").getChild("level_mode").children.map { it.name }.toSet(),
         )
         assertNotSame(root.requirement, factorySet.requirement)
-    }
-
-    @Test
-    fun `factory screen sits in the shared hub frame`() {
-        val frame = MccContentFrameLayout.calculate(844, 470)
-
-        assertEquals(frame.content, FactoryPlayLayout.calculate(frame.content).shell)
-        assertTrue(MccScreen::class.java.isAssignableFrom(FactoryPlayScreen::class.java))
-        assertTrue(MccTabbedContentScreen::class.java.isAssignableFrom(FactoryPlayScreen::class.java))
     }
 
     @Test

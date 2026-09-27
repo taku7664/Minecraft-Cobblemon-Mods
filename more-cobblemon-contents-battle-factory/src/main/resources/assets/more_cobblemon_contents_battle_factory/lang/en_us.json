@@ -174,5 +174,7 @@
   "factory.more_cobblemon_contents.trainer.shared.description": "A Battle Factory trainer who draws a legal team from the same complete rental preset pool offered to challengers.",
   "screen.more_cobblemon_contents.hub.tab.battle_factory": "Battle Factory",
   "screen.more_cobblemon_contents.hub.unavailable.battle_factory": "The Battle Factory screen could not be opened.",
-  "screen.more_cobblemon_contents.dashboard.metric.highest_floor": "Best floor %s"
+  "screen.more_cobblemon_contents.dashboard.metric.highest_floor": "Best floor %s",
+  "screen.more_cobblemon_contents.factory.section.format": "Battle format",
+  "screen.more_cobblemon_contents.factory.section.level": "Level rule"
 }

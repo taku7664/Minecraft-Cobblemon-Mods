@@ -174,5 +174,7 @@
   "factory.more_cobblemon_contents.trainer.shared.description": "도전자와 같은 완성 렌탈세트 풀에서 규칙에 맞는 팀을 구성하는 배틀팩토리 트레이너입니다.",
   "screen.more_cobblemon_contents.hub.tab.battle_factory": "배틀팩토리",
   "screen.more_cobblemon_contents.hub.unavailable.battle_factory": "배틀팩토리 화면을 열 수 없습니다.",
-  "screen.more_cobblemon_contents.dashboard.metric.highest_floor": "최고 %s층"
+  "screen.more_cobblemon_contents.dashboard.metric.highest_floor": "최고 %s층",
+  "screen.more_cobblemon_contents.factory.section.format": "배틀 형식",
+  "screen.more_cobblemon_contents.factory.section.level": "레벨 규칙"
 }
