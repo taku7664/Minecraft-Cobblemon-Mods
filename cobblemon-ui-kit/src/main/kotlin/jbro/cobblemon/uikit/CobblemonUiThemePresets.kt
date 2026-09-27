@@ -69,7 +69,9 @@ object CobblemonUiThemePresets {
             UiIcon("cobblemon_ui_kit", "textures/gui/pixel/selector.png")
         )
         val metrics = mapOf(
-            UiControlSize.SMALL to UiButtonMetrics(20, 28, 10, 8, 3, 0.75f, 0.65f),
+            // Pixel glyphs, Hangul above all, break apart below full size, so the small control only loses height:
+            // twenty pixels with full-size text, like a vanilla button.
+            UiControlSize.SMALL to UiButtonMetrics(20, 28, 10, 8, 3, 1f, 0.65f),
             UiControlSize.MEDIUM to UiButtonMetrics(26, 36, 12, 8, 4, 1f, 0.75f),
             UiControlSize.LARGE to UiButtonMetrics(36, 46, 14, 8, 4, 1.1f, 0.8f)
         )
