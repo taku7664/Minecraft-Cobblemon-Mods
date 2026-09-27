@@ -21,6 +21,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.item.ItemStack
+import java.util.UUID
 import kotlin.math.min
 
 sealed interface CobblemonUiRenderContent {
@@ -37,6 +38,27 @@ sealed interface CobblemonUiRenderContent {
     data class PlayerProfile(
         val profile: GameProfile,
         val framing: UiModelFraming = UiModelFraming.PORTRAIT
+    ) : CobblemonUiRenderContent
+
+    /**
+     * A Cobblemon Pokemon's profile portrait. [aspects] select its form; [stateKey] keeps its idle animation
+     * running across widget rebuilds, so give each shown Pokemon a stable key. A still portrait holds its pose.
+     */
+    data class Pokemon(
+        val speciesId: ResourceLocation,
+        val aspects: Set<String> = emptySet(),
+        val stateKey: String,
+        val animate: Boolean = true
+    ) : CobblemonUiRenderContent
+
+    /**
+     * One of the viewer's own party Pokemon. The live party entry is drawn so its real form, shininess and
+     * cosmetics show; [fallback] is drawn once it has left the party.
+     */
+    data class PartyPokemon(
+        val pokemonId: UUID,
+        val fallback: Pokemon? = null,
+        val animate: Boolean = true
     ) : CobblemonUiRenderContent
 }
 
@@ -55,76 +77,13 @@ class CobblemonUiRenderSlot private constructor(
     override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         val theme = CobblemonUiThemes.registry.snapshot()
         UiSurfaceRenderer.draw(graphics, x, y, width, height, theme.surfaces.panelAlt)
-        val left = x + spec.padding
-        val top = y + spec.padding
-        val innerWidth = (width - spec.padding * 2).coerceAtLeast(1)
-        val innerHeight = (height - spec.padding * 2).coerceAtLeast(1)
-        graphics.enableScissor(left, top, left + innerWidth, top + innerHeight)
-        try {
-            when (content) {
-                CobblemonUiRenderContent.Empty -> renderFallback(graphics, left, top, innerWidth, innerHeight)
-                is CobblemonUiRenderContent.Texture -> renderTexture(graphics, content.texture, left, top, innerWidth, innerHeight)
-                is CobblemonUiRenderContent.Item -> graphics.renderItem(content.stack, left + (innerWidth - 16) / 2, top + (innerHeight - 16) / 2)
-                is CobblemonUiRenderContent.PlayerSkin -> renderPlayer(
-                    graphics,
-                    ResourceLocation.fromNamespaceAndPath(content.texture.namespace, content.texture.path),
-                    content.slim,
-                    UiModelPlacement.calculate(UiRect(left, top, innerWidth, innerHeight), content.framing)
-                )
-                is CobblemonUiRenderContent.PlayerProfile -> {
-                    val skin = Minecraft.getInstance().skinManager.getInsecureSkin(content.profile)
-                    renderPlayer(
-                        graphics,
-                        skin.texture(),
-                        skin.model() == MinecraftPlayerSkin.Model.SLIM,
-                        UiModelPlacement.calculate(UiRect(left, top, innerWidth, innerHeight), content.framing)
-                    )
-                }
-            }
-        } finally {
-            graphics.disableScissor()
-        }
-    }
-
-    private fun renderFallback(graphics: GuiGraphics, left: Int, top: Int, innerWidth: Int, innerHeight: Int) {
-        spec.fallbackIcon?.let { renderTexture(graphics, it, left, top, innerWidth, innerHeight) } ?: run {
-            val theme = CobblemonUiThemes.registry.snapshot()
-            val font = Minecraft.getInstance().font
-            val marker = Component.literal("?")
-            graphics.drawString(font, marker, left + (innerWidth - font.width(marker)) / 2, top + (innerHeight - font.lineHeight) / 2, theme.colors.textDim, false)
-        }
-    }
-
-    private fun renderTexture(graphics: GuiGraphics, icon: UiIcon, left: Int, top: Int, innerWidth: Int, innerHeight: Int) {
-        val size = min(8, min(innerWidth, innerHeight))
-        graphics.blit(
-            ResourceLocation.fromNamespaceAndPath(icon.namespace, icon.path),
-            left + (innerWidth - size) / 2,
-            top + (innerHeight - size) / 2,
-            0f,
-            0f,
-            size,
-            size,
-            8,
-            8
+        val inner = UiRect(
+            x + spec.padding,
+            y + spec.padding,
+            (width - spec.padding * 2).coerceAtLeast(1),
+            (height - spec.padding * 2).coerceAtLeast(1)
         )
-    }
-
-    private fun renderPlayer(graphics: GuiGraphics, texture: ResourceLocation, slim: Boolean, placement: UiModelPlacement) {
-        val model = playerModel(slim)
-        val scale = placement.scale.toFloat()
-        val pose = graphics.pose()
-        graphics.flush()
-        pose.pushPose()
-        try {
-            pose.translate(placement.centerX.toDouble(), placement.originY.toDouble(), 80.0)
-            pose.scale(scale, scale, -scale)
-            val buffer = graphics.bufferSource().getBuffer(model.renderType(texture))
-            model.renderToBuffer(pose, buffer, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY)
-            graphics.flush()
-        } finally {
-            pose.popPose()
-        }
+        drawContent(graphics, inner, content, partialTick, spec.fallbackIcon)
     }
 
     override fun updateWidgetNarration(output: NarrationElementOutput) {
@@ -145,6 +104,101 @@ class CobblemonUiRenderSlot private constructor(
         ): CobblemonUiRenderSlot {
             require(width > 0 && height > 0) { "Render slot size must be positive" }
             return CobblemonUiRenderSlot(x, y, width, height, spec, content)
+        }
+
+        /**
+         * Draws [content] clipped to [bounds] without the slot surface, for widgets such as cards and buttons
+         * that frame a model themselves.
+         */
+        fun drawContent(
+            graphics: GuiGraphics,
+            bounds: UiRect,
+            content: CobblemonUiRenderContent,
+            partialTick: Float,
+            fallbackIcon: UiIcon? = null
+        ) {
+            if (bounds.width <= 0 || bounds.height <= 0) return
+            graphics.enableScissor(bounds.x, bounds.y, bounds.right, bounds.bottom)
+            try {
+                when (content) {
+                    CobblemonUiRenderContent.Empty -> renderFallback(graphics, fallbackIcon, bounds)
+                    is CobblemonUiRenderContent.Texture -> renderTexture(graphics, content.texture, bounds)
+                    is CobblemonUiRenderContent.Item -> graphics.renderItem(
+                        content.stack,
+                        bounds.x + (bounds.width - 16) / 2,
+                        bounds.y + (bounds.height - 16) / 2
+                    )
+                    is CobblemonUiRenderContent.PlayerSkin -> renderPlayer(
+                        graphics,
+                        ResourceLocation.fromNamespaceAndPath(content.texture.namespace, content.texture.path),
+                        content.slim,
+                        UiModelPlacement.calculate(bounds, content.framing)
+                    )
+                    is CobblemonUiRenderContent.PlayerProfile -> {
+                        val skin = Minecraft.getInstance().skinManager.getInsecureSkin(content.profile)
+                        renderPlayer(
+                            graphics,
+                            skin.texture(),
+                            skin.model() == MinecraftPlayerSkin.Model.SLIM,
+                            UiModelPlacement.calculate(bounds, content.framing)
+                        )
+                    }
+                    is CobblemonUiRenderContent.Pokemon -> CobblemonUiPokemonRenderer.draw(graphics, bounds, content, partialTick)
+                    is CobblemonUiRenderContent.PartyPokemon -> CobblemonUiPokemonRenderer.draw(graphics, bounds, content, partialTick)
+                }
+            } finally {
+                graphics.disableScissor()
+            }
+        }
+
+        private fun renderFallback(graphics: GuiGraphics, fallbackIcon: UiIcon?, bounds: UiRect) {
+            if (fallbackIcon != null) {
+                renderTexture(graphics, fallbackIcon, bounds)
+                return
+            }
+            val theme = CobblemonUiThemes.registry.snapshot()
+            val font = Minecraft.getInstance().font
+            val marker = Component.literal("?")
+            graphics.drawString(
+                font,
+                marker,
+                bounds.x + (bounds.width - font.width(marker)) / 2,
+                bounds.y + (bounds.height - font.lineHeight) / 2,
+                theme.colors.textDim,
+                false
+            )
+        }
+
+        private fun renderTexture(graphics: GuiGraphics, icon: UiIcon, bounds: UiRect) {
+            val size = min(8, min(bounds.width, bounds.height))
+            graphics.blit(
+                ResourceLocation.fromNamespaceAndPath(icon.namespace, icon.path),
+                bounds.x + (bounds.width - size) / 2,
+                bounds.y + (bounds.height - size) / 2,
+                0f,
+                0f,
+                size,
+                size,
+                8,
+                8
+            )
+        }
+
+        private fun renderPlayer(graphics: GuiGraphics, texture: ResourceLocation, slim: Boolean, placement: UiModelPlacement) {
+            val model = playerModel(slim)
+            val scale = placement.scale.toFloat()
+            val pose = graphics.pose()
+            graphics.flush()
+            pose.pushPose()
+            try {
+                pose.translate(placement.centerX.toDouble(), placement.originY.toDouble(), 80.0)
+                pose.scale(scale, scale, -scale)
+                val buffer = graphics.bufferSource().getBuffer(model.renderType(texture))
+                model.renderToBuffer(pose, buffer, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY)
+                graphics.flush()
+            } finally {
+                pose.popPose()
+            }
         }
 
         private fun playerModel(slim: Boolean): PlayerModel<LivingEntity> {
