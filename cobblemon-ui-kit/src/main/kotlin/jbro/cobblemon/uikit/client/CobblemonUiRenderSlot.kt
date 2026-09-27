@@ -153,6 +153,8 @@ class CobblemonUiRenderSlot private constructor(
             val layer = if (slim) ModelLayers.PLAYER_SLIM else ModelLayers.PLAYER
             return PlayerModel<LivingEntity>(Minecraft.getInstance().entityModels.bakeLayer(layer), slim).also { model ->
                 model.setAllVisible(true)
+                // EntityModel starts as young, which shrinks the body under a large head.
+                model.young = false
                 model.leftArm.zRot = -0.08f
                 model.rightArm.zRot = 0.08f
                 if (slim) slimModel = model else wideModel = model
