@@ -5,6 +5,12 @@
 
 ---
 
+## [2026-09-27 18:05] 애드온 경계 제거 — `b6812d31`, `0e4121a1` (빌드·테스트 미실행)
+
+- **`api.ai` → `internal.ai`(`b6812d31`):** AI 계약(`BattleBrainRegistry`, 전투 상태 뷰, 판단 계약 등 13개 파일)과 테스트 6개를 `jbro.cobblemon.mcc.internal.ai`로 옮기고 참조 411개 파일을 바꿨다. 두 패키지 사이에 겹치는 최상위 선언은 없었다. 공개 API `ManagedPveBattles`의 시그니처에는 이 타입들이 드러나지 않는다(내부 구현에서만 사용). `docs/betterai/` 계약 문서의 패키지 표기도 함께 바꿨고, 과거 기록인 `docs/betterai/MEMORY.md`는 그대로 두었다.
+- **초기화 통합(`0e4121a1`):** `MoreCobblemonContentsBetterAi`는 더 이상 `ModInitializer`가 아니다. `fabric.mod.json`의 두 번째 main 엔트리포인트를 지우고, `MoreCobblemonContents.onInitialize` 마지막에서 `MoreCobblemonContentsBetterAi.initialize()`를 부른다. 초기화 순서는 합병 전과 같고 `MOD_ID`는 코어 값을 재사용한다. 애드온 메타데이터(애드온 이름·코어 버전 범위 의존)를 검사하던 테스트는 삭제했다.
+- **검증 상태:** 빡대리님 지시로 빌드와 테스트를 돌리지 않았다. 컴파일 여부는 확인되지 않았다.
+
 ## [2026-09-27 17:45] Better AI 합병 — `54b32a24`, `2afbd2cd`, `56984ff0`
 
 - **선봉 선택 이식(`54b32a24`):** MCC 복사 뒤 MBC에 들어온 코드 변경은 `50e9075b`(`BattleBrain.chooseLeads`, `BattleLeadChoiceContext`, `Cobblemon173LeadChoice`, `startManaged` 호출) 하나였다. 같은 이름 규칙으로 패치를 옮겼고, MBC HEAD 전체를 이름만 바꾼 결과와 MCC를 파일 단위로 비교해 의도한 두 파일(빌드 group, 테스트 fixture) 외에는 같음을 확인했다.
