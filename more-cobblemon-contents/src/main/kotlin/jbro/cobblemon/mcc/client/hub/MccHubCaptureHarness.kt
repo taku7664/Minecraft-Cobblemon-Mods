@@ -14,8 +14,8 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * Development-only visual check of the hub. Set `MCC_HUB_CAPTURE` to a fixture (`empty`, `standard`,
  * `dense`); optionally `MCC_HUB_CAPTURE_LOCALE` (default `ko_kr`, or `en_us`) and `MCC_HUB_CAPTURE_GUI_SCALE` (1-4).
- * The hub opens over the title screen with fixture data, is captured to `screenshots/`, closed through
- * its ESC path, and the client stops.
+ * Launch with `--quickPlaySingleplayer <world>`: once the world is loaded the hub opens with fixture data,
+ * is captured to `screenshots/`, closed through its ESC path, and the client stops.
  */
 object MccHubCaptureHarness {
     private val logger = MoreCobblemonContents.LOGGER
@@ -38,6 +38,7 @@ object MccHubCaptureHarness {
         var languageRequested = false
         var opened = false
         var requested = false
+        var closed = false
         val captured = AtomicBoolean(false)
         var ticks = 0
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
@@ -49,7 +50,7 @@ object MccHubCaptureHarness {
             }
             languageFailure.get()?.let { throw IllegalStateException("Hub capture language reload failed", it) }
             if (!languageReady.get()) {
-                if (!languageRequested && client.screen != null && client.overlay == null) {
+                if (!languageRequested && client.overlay == null && (client.screen != null || client.level != null)) {
                     client.options.languageCode = locale
                     client.languageManager.setSelected(locale)
                     languageRequested = true
@@ -60,7 +61,8 @@ object MccHubCaptureHarness {
                 return@EndTick
             }
             if (!opened) {
-                if (client.screen == null || client.overlay != null) return@EndTick
+                // The dashboard draws the real player entity, so the hub opens only inside a loaded world.
+                if (client.level == null || client.player == null || client.screen != null || client.overlay != null) return@EndTick
                 MccBattleHubClientState.update(if (fixture == "empty") 0 else 1_284)
                 MccBattleHubClientState.dashboard = records
                 client.setScreen(MccHubScreen())
@@ -68,6 +70,7 @@ object MccHubCaptureHarness {
                 logger.info("Opened hub capture fixture={} locale={}", fixture, client.languageManager.selected)
                 return@EndTick
             }
+            if (closed) return@EndTick
             ticks += 1
             if (!requested && ticks >= 20) {
                 requested = true
@@ -83,6 +86,7 @@ object MccHubCaptureHarness {
                 screen.onClose()
                 check(client.screen !== screen) { "Hub did not close through onClose" }
                 logger.info("Verified hub ESC close path")
+                closed = true
                 client.stop()
             } else if (ticks >= 200) {
                 error("Hub capture timed out")
