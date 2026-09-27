@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | `shared` |
 | Effective | 2026-09-25 |
-| Updates | `MORE_BATTLE_CONTENT_GUI_UX_CONTEXT.md`, `MORE_BATTLE_CONTENT_TOWER_CUSTOM_GUI_DECISION.md`의 구현 방식 |
+| Updates | `MORE_BATTLE_CONTENT_GUI_UX_CONTEXT.md`(2026-09-27 삭제, `MEMORY.md` 참고), [`TOWER_CUSTOM_GUI.md`](TOWER_CUSTOM_GUI.md)의 구현 방식 |
 | Does not obsolete | 기존 화면의 정보·상태·상호작용 계약 |
 | 첫 사용처 | `more-battle-content-league-challenge` |
 

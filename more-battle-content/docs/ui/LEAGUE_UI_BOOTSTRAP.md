@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | `shared` |
 | Effective | 2026-09-25 |
-| Updates | `MORE_BATTLE_CONTENT_UI_RESOURCE_BOUNDARY_AMENDMENT.md`의 UI-A~UI-C 착수 순서 |
+| Updates | [`UI_RESOURCE_BOUNDARY.md`](UI_RESOURCE_BOUNDARY.md)의 UI-A~UI-C 착수 순서 |
 | Does not obsolete | Minecraft 우선 비교, Visual Pack 경계, 최소 두 화면 뒤 API 승격 원칙 |
 | 적용 모듈 | `more-battle-content`, `more-battle-content-league-challenge` |
 

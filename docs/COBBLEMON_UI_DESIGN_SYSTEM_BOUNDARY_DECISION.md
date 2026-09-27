@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | `shared` |
 | Effective | 2026-09-25 |
-| Updates | `MORE_BATTLE_CONTENT_DECLARATIVE_UI_FRAMEWORK_DECISION.md`, `MORE_BATTLE_CONTENT_UI_RESOURCE_BOUNDARY_AMENDMENT.md`의 저장소 간 재사용 범위 |
+| Updates | [`DECLARATIVE_UI_FRAMEWORK.md`](../more-battle-content/docs/ui/DECLARATIVE_UI_FRAMEWORK.md), [`UI_RESOURCE_BOUNDARY.md`](../more-battle-content/docs/ui/UI_RESOURCE_BOUNDARY.md)의 저장소 간 재사용 범위 |
 | Does not obsolete | MBC가 `MbcUI`를 소유하고 League Challenge가 그 계약을 사용하는 구조 |
 | 적용 대상 | `more-battle-content`, `more-battle-content-league-challenge`, `cobblemon-battle-ui` |
 | 주 독자 | 각 모드의 GUI를 구현하는 개발자 |

@@ -1,7 +1,7 @@
 # League Challenge GUI 프레임워크 및 리소스팩 계획
 
 - 상태: `shared planning baseline`
-- 적용 상위 결정: `../../docs/MORE_BATTLE_CONTENT_UI_RESOURCE_BOUNDARY_AMENDMENT.md`, `../../docs/MORE_BATTLE_CONTENT_LEAGUE_UI_BOOTSTRAP_AMENDMENT.md`, `../../docs/COBBLEMON_UI_TOOLKIT_AND_RUNTIME_EVIDENCE_AMENDMENT.md`
+- 적용 상위 결정: [`UI_RESOURCE_BOUNDARY.md`](../../more-battle-content/docs/ui/UI_RESOURCE_BOUNDARY.md), [`LEAGUE_UI_BOOTSTRAP.md`](../../more-battle-content/docs/ui/LEAGUE_UI_BOOTSTRAP.md), `../../docs/COBBLEMON_UI_TOOLKIT_AND_RUNTIME_EVIDENCE_AMENDMENT.md`
 - 구현 상태: GUI 착수용 모듈·실험 계약 구현 단계
 
 > 2026-09-25 수정: MBC 내부 전용 `MbcUI` 소유권과 기존 캡처의 증거 명칭은 [Cobblemon UI 툴킷과 런타임 증거 후속 결정](../../docs/COBBLEMON_UI_TOOLKIT_AND_RUNTIME_EVIDENCE_AMENDMENT.md)이 갱신한다. 아래의 서버 권위·화면 행동·Visual Pack 제한은 계속 유효하다.

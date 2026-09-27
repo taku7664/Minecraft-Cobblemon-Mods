@@ -3,7 +3,7 @@
 - 상태: `non-normative progress record`
 - 기준 브랜치: `feature/league-ui-foundation`
 - 최종 갱신: 2026-09-26
-- 규범 계약: [GUI_FRAMEWORK_AND_RESOURCE_PACK.md](GUI_FRAMEWORK_AND_RESOURCE_PACK.md), [GUI 착수 순서 수정 결정](../../docs/MORE_BATTLE_CONTENT_LEAGUE_UI_BOOTSTRAP_AMENDMENT.md)
+- 규범 계약: [GUI_FRAMEWORK_AND_RESOURCE_PACK.md](GUI_FRAMEWORK_AND_RESOURCE_PACK.md), [GUI 착수 순서 수정 결정](../../more-battle-content/docs/ui/LEAGUE_UI_BOOTSTRAP.md)
 
 이 문서는 완료 증거와 재개 지점만 기록한다. 제품 계약을 새로 만들거나 기존 결정을 수정하지 않는다.
 

@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | `shared` |
 | Effective | 2026-09-25 |
-| Updates | `MORE_BATTLE_CONTENT_DECLARATIVE_UI_FRAMEWORK_DECISION.md`, `MORE_BATTLE_CONTENT_UI_RESOURCE_BOUNDARY_AMENDMENT.md`, `MORE_BATTLE_CONTENT_LEAGUE_UI_BOOTSTRAP_AMENDMENT.md`, `COBBLEMON_UI_DESIGN_SYSTEM_BOUNDARY_DECISION.md` |
+| Updates | [`DECLARATIVE_UI_FRAMEWORK.md`](../more-battle-content/docs/ui/DECLARATIVE_UI_FRAMEWORK.md), [`UI_RESOURCE_BOUNDARY.md`](../more-battle-content/docs/ui/UI_RESOURCE_BOUNDARY.md), [`LEAGUE_UI_BOOTSTRAP.md`](../more-battle-content/docs/ui/LEAGUE_UI_BOOTSTRAP.md), `COBBLEMON_UI_DESIGN_SYSTEM_BOUNDARY_DECISION.md` |
 | Does not obsolete | 타입 있는 화면 행동, 서버 권위 검증, 내장 기본 자산, 시각 전용 외부 팩 경계 |
 | 적용 대상 | `more-battle-content`, `more-battle-content-league-challenge`, `cobblemon-battle-ui`와 후속 Cobblemon 클라이언트 애드온 |
 | 주 독자 | UI 툴킷·화면·리소스팩을 구현하는 개발자 |

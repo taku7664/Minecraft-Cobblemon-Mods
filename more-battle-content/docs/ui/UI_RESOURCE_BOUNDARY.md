@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | `shared` |
 | Effective | 2026-09-25 |
-| Updates | `MORE_BATTLE_CONTENT_DECLARATIVE_UI_FRAMEWORK_DECISION.md`의 화면 문서, 리소스팩, 웹 미리보기와 구현 순서 |
+| Updates | [`DECLARATIVE_UI_FRAMEWORK.md`](DECLARATIVE_UI_FRAMEWORK.md)의 화면 문서, 리소스팩, 웹 미리보기와 구현 순서 |
 | Does not obsolete | `MbcUI` 소유권, owo 내부 백엔드 후보, 점진 이행과 실제 게임 검증 원칙 |
 | 첫 사용처 | `more-battle-content-league-challenge` |
 
