@@ -1005,6 +1005,37 @@ data class BattleBrainOpenContext(
     }
 }
 
+/**
+ * The deciding trainer's own team before the battle starts, and the opponent's public team preview,
+ * for choosing who leads.
+ *
+ * [ownTeam] is in the current send-out order with no active slots. [ownMoves] carries the exact own
+ * move sets. The preview is the same public knowledge a turn decision later receives.
+ */
+class BattleLeadChoiceContext(
+    val format: BattleFormat,
+    ownTeam: List<BattlePokemonStateView>,
+    val ownMoves: BattlePublicActionCatalogView,
+    val exactOwnTeam: BattleExactOwnTeamView,
+    val opponentTeamPreview: BattleOpponentTeamPreviewView,
+    val trainerProfile: BattleTrainerProfile = BattleTrainerProfile.balanced(),
+    val trainerPersonaId: String? = null,
+    /** Stable per battle, so a choice drawn from a distribution can be reproduced. */
+    val seed: Long = 0L,
+) {
+    val ownTeam: List<BattlePokemonStateView> = Collections.unmodifiableList(ArrayList(ownTeam))
+
+    init {
+        require(this.ownTeam.isNotEmpty())
+        require(this.ownTeam.all { it.side == BattleSide.ALLY && it.activeSlot == null })
+        require(this.ownTeam.map(BattlePokemonStateView::battlePokemonId).distinct().size == this.ownTeam.size)
+        require(trainerPersonaId == null || trainerPersonaId.isNotBlank())
+    }
+
+    /** Pokemon that enter the field at the start: one in singles, two in doubles. */
+    val leadCount: Int get() = minOf(if (format == BattleFormat.DOUBLE) 2 else 1, ownTeam.size)
+}
+
 class BattleDecisionContext private constructor(
     val requestId: UUID,
     val state: BattleStateView,
@@ -1140,6 +1171,14 @@ interface BattleBrain {
     fun openSession(context: BattleBrainOpenContext): BattleBrainSession
     fun decide(session: BattleBrainSession, context: BattleDecisionContext): CompletionStage<BattleDecision>
     fun closeSession(session: BattleBrainSession, result: BattleBrainCloseResult)
+
+    /**
+     * Battle Pokemon IDs that should lead, in active-slot order, or null to keep the team order.
+     * Called once before the battle starts, only when a public team preview exists. The runtime
+     * moves the returned Pokemon to the front and keeps everyone else in order; an invalid answer
+     * keeps the original order.
+     */
+    fun chooseLeads(context: BattleLeadChoiceContext): List<UUID>? = null
 }
 
 fun interface BattleBrainFactory {

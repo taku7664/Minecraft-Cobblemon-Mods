@@ -115,13 +115,24 @@ internal class Cobblemon173TowerPveBattleRuntime(
             BattleBrainProviderRole.LOCAL,
             prepared.brainSelectionContext,
         )
+        val opponentTeam = Cobblemon173LeadChoice.order(
+            team = prepared.opponentTeam,
+            preview = prepared.opponentTeamPreview,
+            format = prepared.format,
+            trainerProfile = prepared.trainerProfile,
+            trainerPersonaId = prepared.trainerPersonaId,
+            seed = prepared.learningScopeId.mostSignificantBits xor
+                (prepared.trainerPersonaId?.hashCode()?.toLong() ?: 0L) xor trainerActorId.leastSignificantBits,
+            brains = listOf(primaryBrain, localBrain),
+            diagnosticsLabel = prepared.diagnosticsLabel,
+        )
         lateinit var trainerActor: Cobblemon173BrainTrainerBattleActor
         trainerActor = Cobblemon173BrainTrainerBattleActor(
             server = player.server,
             trainerEntity = trainerEntity,
             trainerName = prepared.trainerDisplayNameKey,
             actorId = trainerActorId,
-            pokemonList = prepared.opponentTeam,
+            pokemonList = opponentTeam,
             battleFormat = prepared.format,
             opponentActorId = playerActor.uuid,
             initialOpponentPokemonCount = prepared.playerTeam.size,
