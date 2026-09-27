@@ -31,8 +31,18 @@ object LeagueCatalogParser {
                 appearance?.string("model")?.also { require(it in setOf("default", "slim")) } == "slim",
                 trainer.number("ai_skill").toInt())
         }
-        return LeagueCatalog(league.string("progress_id"), league.string("name_key"), league.number("initial_cap").toInt(), gyms, finals, challenges)
+        return LeagueCatalog(league.string("progress_id"), league.string("name_key"), league.number("initial_cap").toInt(), gyms, finals, challenges,
+            wildLevel(league))
     }
+}
+
+/** The league's optional `wild_level` object; each missing field keeps its default. */
+private fun wildLevel(league: JsonObject): WildLevelRule {
+    val defaults = WildLevelRule()
+    if (!league.has("wild_level") || league.get("wild_level").isJsonNull) return defaults
+    val rule = league.get("wild_level").also { require(it.isJsonObject) { "Expected object: wild_level" } }.asJsonObject
+    fun field(key: String, fallback: Int) = if (rule.has(key)) rule.number(key).toInt() else fallback
+    return WildLevelRule(field("below_cap", defaults.belowCap), field("spread", defaults.spread), field("region_chunks", defaults.regionChunks))
 }
 
 internal fun JsonObject.string(key: String): String = requireNotNull(get(key)) { "Missing $key" }.let {
