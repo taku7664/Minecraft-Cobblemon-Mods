@@ -7,6 +7,16 @@
 
 ---
 
+## [2026-09-27 14:07] 수정 — 싱글플레이 정상 종료에서도 상대 복제본이 남음 — `d5186825`, 1.6.27 클라이언트·서버 배포
+
+- **현상:** 1.6.26 설치 뒤에도 "여전히 뜸" 보고. 월드에 난천 팀 미라몽 두 마리가 새로 남았다. 포켓몬 UUID로 전투를 특정했다. `e608ad64…`는 13:48 전투 `6b1c19f0`(ESC 뒤 "저장 후 나가기"), `2fe3dd63…`는 13:49 전투 `f753a020`(전투 중 창 닫기)의 선봉이다. 두 번 모두 정상 종료였고 강제 종료가 아니었다. NBT에 `BattleId`가 없으므로 전투가 끝난 뒤의 종료 저장에서 기록됐다.
+- **원인(Cobblemon 1.8.1 바이트코드 확인):** `SentOutState.getEntity()`는 `Cobblemon.getLevel(dimension)`으로 월드를 찾는데, 전용 서버가 아니면 `Minecraft.getInstance().getSingleplayerServer()`를 쓴다. 클라이언트는 나가기를 누르는 즉시 이 값을 비우고 통합 서버 종료를 기다린다. 그 뒤 서버가 처리하는 연결 해제에서 Cobblemon `BattleRegistry.onPlayerDisconnect` → `battle.stop()` → `end()`의 사후 회수와 MBC `Cobblemon173ManagedBattleLifecycles.disconnect`의 `pokemon.entity?.discard()`가 모두 `null`을 보고 아무것도 지우지 않는다. 전투도 생명주기 항목도 사라졌으므로 `d67d312e`의 저장 제외 조건에도 걸리지 않아 마지막 저장에 기록된다. 전용 서버는 `server()`를 쓰므로 이 경로가 없다.
+- **수정:** `ManagedBattleEntityPersistencePolicy`에 `isBattleClone`을 추가했다. `PokemonEntity.isBattleClone()`인 엔티티는 어떤 전투에 속하든 저장하지 않는다. Cobblemon도 전투 밖의 복제본을 tick에서 버리므로 같은 의미이고, MBC의 모든 전투(PvP 포함)가 `safeCopyOf` 복제본을 쓰므로 03:50 항목에 적은 PvP 회수 대기 공백도 함께 닫힌다. 적용 범위는 MBC 밖의 Cobblemon 전투 복제본까지 넓어졌다.
+- **03:33 항목 정정:** "정상 종료는 마지막 저장 전에 엔티티를 지우므로 막힌다"는 싱글플레이에서 틀렸다. 위 경로로 정상 종료도 샌다.
+- **검증:** `unitTest` 995개 통과(정책 테스트 2개 추가, 배선 테스트에 어댑터 확인 추가). 1.6.27 JAR: JDK 21 `jar --validate` 통과, Mixin 대상 `class_1297.method_5786` 유지, 어댑터가 `PokemonEntity.isBattleClone` 호출. SHA-256 `2E9405B672719A6A5403B5283E012B38380EC13E77742995F879F18A75A58F07`.
+- **배포:** 백업 `dev-server/deployment-backups/20260927-140431-before-mbc-1.6.27-battle-clone-save/{client,server}/`. 클라이언트는 꺼진 것을 확인하고 1.6.26 → 1.6.27로 교체했다. dev-server는 다른 세션이 Cobblemon 1.8.1 구성(MBC 1.6.25, Better AI 1.2.21)으로 올려 12:57부터 실행 중이었다. 접속자가 없음을 확인하고 콘솔 `stop`으로 전 차원 저장을 확인한 뒤 1.6.25 → 1.6.27로 교체하고 `run.bat`의 재시작 확인에 `Y`를 넣어 재기동했다. 14:06:30 `Done`, 부팅 ERROR 목록은 직전 부팅과 동일하다.
+- **남은 일:** 실게임 미검증. 확인 순서: `/mbc test ai-보스` → 전투 중 "저장 후 나가기" → 재접속해 미라몽이 없는지 본다. 이미 남은 6마리(-648, 95, -161 근처 4마리, -800, 73, 390 근처 미라몽 2마리)는 복제본 표식을 잃은 뒤라 이 수정으로 사라지지 않는다.
+
 ## [2026-09-27 13:35] 변화기 분류와 보스 분류 읽기 — `9dab864b`, 1.6.26 클라이언트 설치
 
 - Better AI용 상대 기술 추론(`BattleOpponentMoveInferenceNormalizer`)에 변화기 분류(`BattleStatusMoveCategory`, 슬롯 `statusCategory`)를 추가했다. 보스 정책만 숨은 변화기의 분류를 읽는다(`readsHiddenStatusCategories`). 상세는 Better AI `MEMORY.md` 같은 시각 항목.
@@ -32,7 +42,7 @@
 - **현상:** 개발 월드 `새로운 세계`의 `entities/r.-2.-1.mca`, 좌표 약 (-648, 95, -161)에 난천 팀 4마리(로즈레이드 2, 미라몽, 토게키스)가 레벨 50·`OriginalTrainerType=NPC`·`HeldItemVisible=0`인 채 떠돌고 있다. NBT에는 `BattleId`가 없고 `PokemonData`는 `["uncatchable"]`뿐이다. 로즈레이드가 둘이므로 최소 두 전투에서 샜다.
 - **Cobblemon 1.8.1 결함(바이트코드 확인):** `safeCopyOf`가 복제본에 붙이는 `battleClone` 표식은 저장 때 `PokemonData`에 `"battleClone"`으로 기록되지만, 로드 때 `PokemonProperties.parse`가 키를 `toLowerCase(Locale.ROOT)`로 바꾼 뒤 등록 키 `{"battleClone"}`과 대조하므로 일치하지 않아 버려진다. 소문자 키인 `uncatchable`만 살아남는다.
 - **연쇄:** 로드된 엔티티는 전투가 레지스트리에 없어 `BattleId`도 버리고, battle clone도 아니므로 Cobblemon tick의 안전장치(`!isBattling && beamMode==0 && isBattleClone → discard`)가 작동하지 않는다. 소유자 앵커도 메모리에만 있어 결과적으로 야생 포켓몬이 된다.
-- **`eacf8a78`이 막지 못하는 경로:** 이 수정은 `SERVER_STOPPING`과 `DISCONNECT`에서 살아 있는 엔티티를 `discard()`한다. 그러나 싱글플레이는 ESC 일시정지마다 `Saving and pausing game...`으로 청크를 저장하고, 5분 주기 자동 저장도 있다. 전투 중 이런 저장이 한 번이라도 있은 뒤 프로세스가 강제 종료되면 종료 훅이 돌지 않으므로, 디스크의 복제본이 다음 로드 때 야생으로 되살아난다. 정상 종료는 마지막 저장 전에 엔티티를 지우므로 막힌다.
+- **`eacf8a78`이 막지 못하는 경로:** 이 수정은 `SERVER_STOPPING`과 `DISCONNECT`에서 살아 있는 엔티티를 `discard()`한다. 그러나 싱글플레이는 ESC 일시정지마다 `Saving and pausing game...`으로 청크를 저장하고, 5분 주기 자동 저장도 있다. 전투 중 이런 저장이 한 번이라도 있은 뒤 프로세스가 강제 종료되면 종료 훅이 돌지 않으므로, 디스크의 복제본이 다음 로드 때 야생으로 되살아난다. 정상 종료는 마지막 저장 전에 엔티티를 지우므로 막힌다. (14:07 정정: 싱글플레이에서는 정상 종료도 샌다.)
 - **확인하지 못한 것:** 남은 4마리가 `eacf8a78` 이전 사고(2026-09-26 03:40)에서 생긴 것인지 이후 강제 종료에서 생긴 것인지는 보존 로그로 가릴 수 없다. `2026-09-26-7.log`가 전투 중에 끝난 것은 강제 종료가 아니라 자정 로그 회전이었다. 플레이어 쪽 복제본이 같은 방식으로 남는지는 확인하지 않았다.
 - **수정 방향:** (1) MBC 관리 전투 엔티티가 청크 저장에 기록되지 않게 막는다 — 03:50 항목에서 구현. (2) 생성 때 `Pokemon.persistentData`에 대소문자 문제가 없는 MBC 표식을 넣고, 엔티티 로드 시 활성 MBC 전투에 속하지 않으면 제거한다. (2)는 이미 월드에 남은 개체도 정리한다 — 미구현.
 
