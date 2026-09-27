@@ -25,6 +25,11 @@ import jbro.cobblemon.morebattlecontent.betterai.mechanics.StandardTypeEffective
  *
  * The cost is scaled by tier (an Introductory trainer spends on impulse) and by personality (a
  * cautious trainer hoards, an aggressive one spends early). A last Pokemon pays nothing.
+ *
+ * Tera also leans toward a carrier: the living ally whose Tera does the most against every opponent
+ * seen so far. The carrier's Tera costs less and everyone else's costs more, by at most 30%, scaled
+ * by tier and plan persistence. It is a tilt, not a plan: a large gain this turn still wins, and when
+ * the best two allies are close there is no carrier at all.
  */
 internal object LocalMechanicOptionValue {
     fun cost(
@@ -56,7 +61,7 @@ internal object LocalMechanicOptionValue {
         if (others.isEmpty()) return 0.0
         val base = when (kind(mechanic.mechanicId)) {
             MEGA -> 0.0
-            TERA -> teraOptionValue(others, context)
+            TERA -> teraOptionValue(others, context) * carrierTilt(actor, others, context, profile, tierScale)
             else -> {
                 val healthy = others.count { it.hpFraction >= 0.5 }
                 DYNAMAX_SCALE * healthy / (healthy + 1.0)
@@ -67,19 +72,43 @@ internal object LocalMechanicOptionValue {
 
     /** Best Tera gain another ally could still realize, times its chance to get the turn to do it. */
     private fun teraOptionValue(others: List<BattlePokemonStateView>, context: BattleDecisionContext): Double {
-        val foes = context.state.pokemon.filter { it.side == BattleSide.OPPONENT && !it.fainted && it.hpFraction > 0.0 }
-        if (foes.isEmpty()) return 0.0
-        val weights = LocalOpponentThreat.weights(context, BattleTrainerTier.STANDARD)
-        val bestGain = others.maxOf { ally ->
-            val teraType = context.exactOwnTeam?.builds
-                ?.firstOrNull { it.battlePokemonId == ally.battlePokemonId }?.teraTypeId ?: return@maxOf 0.0
-            val weightTotal = foes.sumOf { weights[it.battlePokemonId] ?: 1.0 }
-            foes.sumOf { foe -> (weights[foe.battlePokemonId] ?: 1.0) * teraGain(ally, teraType, foe, context) } / weightTotal
-        }
+        if (context.state.pokemon.none { it.side == BattleSide.OPPONENT && !it.fainted && it.hpFraction > 0.0 }) return 0.0
+        val bestGain = others.maxOf { ally -> teraFit(ally, context) }
         val remainingOthers = others.size
         var availability = remainingOthers / (remainingOthers + 1.0)
         if (context.state.remainingPokemonBySide.getValue(BattleSide.OPPONENT) <= 1) availability *= 0.5
         return bestGain * availability * TERA_SCALE
+    }
+
+    /**
+     * Multiplier on the Tera cost from the carrier lean: below one when [actor] is the clear carrier,
+     * above one when another ally is, one when no ally stands out.
+     */
+    private fun carrierTilt(
+        actor: BattlePokemonStateView,
+        others: List<BattlePokemonStateView>,
+        context: BattleDecisionContext,
+        profile: BattleTrainerProfile,
+        tierScale: Double,
+    ): Double {
+        val strength = tierScale * profile.personality.planPersistence
+        if (strength <= 0.0) return 1.0
+        val fits = (others + actor).associate { it.battlePokemonId to teraFit(it, context) }
+        val ranked = fits.entries.sortedByDescending { it.value }
+        if (ranked.size < 2 || ranked[0].value - ranked[1].value < CARRIER_MARGIN) return 1.0
+        val lean = CARRIER_TILT * strength
+        return if (ranked[0].key == actor.battlePokemonId) 1.0 - lean else 1.0 + lean
+    }
+
+    /** Threat-weighted Tera gain of [ally] against every visible living opponent, 0 without a Tera type. */
+    private fun teraFit(ally: BattlePokemonStateView, context: BattleDecisionContext): Double {
+        val teraType = context.exactOwnTeam?.builds
+            ?.firstOrNull { it.battlePokemonId == ally.battlePokemonId }?.teraTypeId ?: return 0.0
+        val foes = context.state.pokemon.filter { it.side == BattleSide.OPPONENT && !it.fainted && it.hpFraction > 0.0 }
+        if (foes.isEmpty()) return 0.0
+        val weights = LocalOpponentThreat.weights(context, BattleTrainerTier.STANDARD)
+        val weightTotal = foes.sumOf { weights[it.battlePokemonId] ?: 1.0 }
+        return foes.sumOf { foe -> (weights[foe.battlePokemonId] ?: 1.0) * teraGain(ally, teraType, foe, context) } / weightTotal
     }
 
     /** 0..1: the larger of the defensive and offensive difference Tera makes in this matchup. */
@@ -124,4 +153,10 @@ internal object LocalMechanicOptionValue {
     /** A fully realized future Tera (a saved KO or a dodged one) is worth most of an HP bar. */
     private const val TERA_SCALE = 80.0
     private const val DYNAMAX_SCALE = 40.0
+
+    /** Largest share the carrier lean moves a Tera cost, at full tier scale and plan persistence. */
+    private const val CARRIER_TILT = 0.3
+
+    /** Tera fits closer than this leave no clear carrier. */
+    private const val CARRIER_MARGIN = 0.1
 }
