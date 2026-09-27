@@ -243,7 +243,8 @@ class ActiveMove(val template: MoveData) : HitData {
     /** Anything else a handler sets on the move. */
     val extra: HashMap<String, Any?> = HashMap()
 
-    override fun handler(callbackName: String): Any? = template.handler(callbackName)
+    /** A handler set on this move by another effect (Piercing Drill's `move.onBasePower = ...`) wins over the template's. */
+    override fun handler(callbackName: String): Any? = (extra[callbackName] as? Function1<*, *>) ?: template.handler(callbackName)
     override fun declares(callbackName: String): Boolean = template.declares(callbackName)
     override fun data(field: String): Any? = if (extra.containsKey(field)) extra[field] else template.data(field)
     override fun flag(name: String): Boolean = Js.truthy(flags[name])
