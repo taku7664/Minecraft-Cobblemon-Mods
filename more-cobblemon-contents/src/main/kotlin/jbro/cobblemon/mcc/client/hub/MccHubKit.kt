@@ -14,13 +14,18 @@ import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiScrollState
 import jbro.cobblemon.uikit.UiThemePreset
 import jbro.cobblemon.uikit.UiThemeSnapshot
+import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.UiWidthPolicy
 import jbro.cobblemon.uikit.client.CobblemonUiButton
 import jbro.cobblemon.uikit.client.CobblemonUiDialogScreen
 import jbro.cobblemon.uikit.client.CobblemonUiListItem
+import jbro.cobblemon.uikit.client.CobblemonUiRenderContent
+import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
+import jbro.cobblemon.uikit.client.UiSurfaceRenderer
 import jbro.cobblemon.uikit.client.CobblemonUiPanel
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.AbstractButton
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.narration.NarratedElementType
@@ -72,9 +77,15 @@ object MccHubKit {
     class Choice(val id: String, val label: Component)
 
     /** Adds a raised card titled [title] over [rect] and returns the body inside its frame. */
-    fun card(host: MccHubContentHost, rect: UiRect, title: Component, tone: CardTone = CardTone.INFO): UiRect {
+    fun card(
+        host: MccHubContentHost,
+        rect: UiRect,
+        title: Component,
+        tone: CardTone = CardTone.INFO,
+        icon: CobblemonUiRenderContent? = null,
+    ): UiRect {
         host.add(CobblemonUiPanel.create(rect.x, rect.y, rect.width, rect.height, UiPanelSpec(tone = UiPanelTone.RAISED)))
-        host.add(TitleBand(rect, title, tone))
+        host.add(TitleBand(rect, title, tone, icon))
         return cardBody(rect)
     }
 
@@ -231,7 +242,13 @@ object MccHubKit {
         host.add(button)
     }
 
-    /** One row of a [pagedList]. */
+    /** A small control at the end of a list row, such as a quantity step. */
+    class RowAction(val label: Component, val enabled: Boolean = true, val press: () -> Unit)
+
+    /**
+     * One row of a [pagedList]. An [icon] is drawn by the UI kit at the row's start; [actions] sit at its end and
+     * take their own clicks, while a press anywhere else on the row runs [press].
+     */
     class ListEntry(
         val title: Component,
         val supporting: Component? = null,
@@ -239,6 +256,8 @@ object MccHubKit {
         val selected: Boolean = false,
         val enabled: Boolean = true,
         val tooltip: Component? = null,
+        val icon: CobblemonUiRenderContent? = null,
+        val actions: List<RowAction> = emptyList(),
         val press: () -> Unit,
     )
 
@@ -265,9 +284,13 @@ object MccHubKit {
         val pages = (entries.size + perPage - 1) / perPage
         val current = page.coerceIn(0, pages - 1)
         entries.drop(current * perPage).take(perPage).forEachIndexed { index, entry ->
-            val item = CobblemonUiListItem.create(rect.x, rect.y + index * step, rect.width,
-                UiListItemSpec(fitted(entry.title, rect.width - 40), entry.supporting?.let { fitted(it, rect.width - 20) },
-                    trailingText = entry.trailing, selected = entry.selected), entry.press)
+            val item = if (entry.icon == null && entry.actions.isEmpty()) {
+                CobblemonUiListItem.create(rect.x, rect.y + index * step, rect.width,
+                    UiListItemSpec(fitted(entry.title, rect.width - 40), entry.supporting?.let { fitted(it, rect.width - 20) },
+                        trailingText = entry.trailing, selected = entry.selected), entry.press)
+            } else {
+                Row(UiRect(rect.x, rect.y + index * step, rect.width, step - 2), entry)
+            }
             item.active = entry.enabled
             entry.tooltip?.let { item.setTooltip(Tooltip.create(it)) }
             host.add(item)
@@ -282,7 +305,7 @@ object MccHubKit {
             width = UiWidthPolicy.Fixed(40))) { pageChanged(current + 1) }
         next.active = current < pages - 1
         host.add(next)
-        host.add(Placeholder(UiRect(rect.x + 44, y, rect.width - 88, CONTROL_HEIGHT), Component.literal("${current + 1} / $pages")))
+        host.add(PageLabel(UiRect(rect.x + 44, y, rect.width - 88, CONTROL_HEIGHT), Component.literal("${current + 1} / $pages")))
     }
 
     /** A quiet centered line for a tab still waiting for its server state, or with nothing to show. */
@@ -363,8 +386,12 @@ object MccHubKit {
         return button
     }
 
-    private class TitleBand(private val card: UiRect, private val title: Component, private val tone: CardTone) :
-        AbstractWidget(card.x, card.y, card.width, TITLE_BAND_HEIGHT + 2, title) {
+    private class TitleBand(
+        private val card: UiRect,
+        private val title: Component,
+        private val tone: CardTone,
+        private val icon: CobblemonUiRenderContent?,
+    ) : AbstractWidget(card.x, card.y, card.width, TITLE_BAND_HEIGHT + 2, title) {
         init { active = false }
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
             val theme = CobblemonUiThemes.registry.snapshot()
@@ -373,7 +400,12 @@ object MccHubKit {
                 CardTone.INFO -> theme.colors.borderBright
             }
             graphics.fill(card.x + 2, card.y + 2, card.right - 2, card.y + 2 + TITLE_BAND_HEIGHT, band)
-            drawLine(graphics, title, card.x + 7, card.y + 5, card.width - 14, theme.colors.shell)
+            var left = card.x + 7
+            if (icon != null) {
+                CobblemonUiRenderSlot.drawContent(graphics, UiRect(card.x + 4, card.y + 3, 13, 13), icon, partialTick)
+                left = card.x + 20
+            }
+            drawLine(graphics, title, left, card.y + 5, card.right - 7 - left, theme.colors.shell)
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) {
             output.add(NarratedElementType.TITLE, title)
@@ -518,6 +550,89 @@ object MccHubKit {
 
         private companion object {
             const val LINE_HEIGHT = 10
+        }
+    }
+
+    /** A list row with a UI kit icon and trailing actions, styled like the UI kit's own list items. */
+    private class Row(private val rect: UiRect, private val entry: ListEntry) :
+        AbstractButton(rect.x, rect.y, rect.width, rect.height, entry.title) {
+        private val actionRects: List<UiRect> = entry.actions.indices.map { index ->
+            val size = (rect.height - 6).coerceAtMost(18)
+            UiRect(rect.right - 4 - (entry.actions.size - index) * (size + 2) + 2, rect.y + (rect.height - size) / 2, size, size)
+        }
+
+        /** Keyboard activation and clicks outside the actions press the row itself. */
+        override fun onPress() = entry.press()
+
+        override fun onClick(mouseX: Double, mouseY: Double) {
+            val index = actionRects.indexOfFirst { mouseX >= it.x && mouseX < it.right && mouseY >= it.y && mouseY < it.bottom }
+            if (index < 0) {
+                onPress()
+                return
+            }
+            val action = entry.actions[index]
+            if (action.enabled) action.press()
+        }
+
+        override fun updateWidgetNarration(output: NarrationElementOutput) = defaultButtonNarrationText(output)
+
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+            val theme = CobblemonUiThemes.registry.snapshot()
+            val font = Minecraft.getInstance().font
+            val state = when {
+                !active -> UiWidgetState.DISABLED
+                isHovered -> UiWidgetState.HOVER
+                entry.selected -> UiWidgetState.SELECTED
+                else -> UiWidgetState.NORMAL
+            }
+            val style = theme.style(UiButtonVariant.SECONDARY, state)
+            UiSurfaceRenderer.draw(graphics, x, y, width, height, style.surface)
+            var left = x + 6
+            entry.icon?.let { icon ->
+                val size = (height - 6).coerceAtMost(16)
+                CobblemonUiRenderSlot.drawContent(graphics, UiRect(left, y + (height - size) / 2, size, size), icon, partialTick)
+                left += size + 5
+            }
+            var right = (actionRects.firstOrNull()?.x ?: (x + width - 2)) - 4
+            actionRects.forEachIndexed { index, bounds ->
+                val action = entry.actions[index]
+                val hovered = mouseX >= bounds.x && mouseX < bounds.right && mouseY >= bounds.y && mouseY < bounds.bottom
+                val actionStyle = theme.style(UiButtonVariant.SECONDARY, when {
+                    !active || !action.enabled -> UiWidgetState.DISABLED
+                    hovered -> UiWidgetState.HOVER
+                    else -> UiWidgetState.NORMAL
+                })
+                UiSurfaceRenderer.draw(graphics, bounds.x, bounds.y, bounds.width, bounds.height, actionStyle.surface)
+                graphics.drawString(font, action.label, bounds.x + (bounds.width - font.width(action.label) + 1) / 2,
+                    bounds.y + (bounds.height - font.lineHeight) / 2 + 1, actionStyle.text, false)
+            }
+            entry.trailing?.let { trailing ->
+                val width = font.width(trailing)
+                graphics.drawString(font, trailing, right - width, y + (height - font.lineHeight) / 2 + 1, style.supportingText, false)
+                right -= width + 6
+            }
+            val textWidth = right - left
+            if (entry.supporting == null) {
+                graphics.drawString(font, fitted(entry.title, textWidth), left, y + (height - font.lineHeight) / 2 + 1, style.text, false)
+            } else {
+                graphics.drawString(font, fitted(entry.title, textWidth), left, y + 4, style.text, false)
+                graphics.drawString(font, fitted(entry.supporting, textWidth), left, y + height - font.lineHeight - 3, style.supportingText, false)
+            }
+        }
+    }
+
+    /** The page switcher's "page / pages", on one line between its arrows. */
+    private class PageLabel(private val rect: UiRect, private val text: Component) :
+        AbstractWidget(rect.x, rect.y, rect.width, rect.height, text) {
+        init { active = false }
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+            val font = Minecraft.getInstance().font
+            val line = fitted(text, rect.width)
+            graphics.drawString(font, line, rect.x + (rect.width - font.width(line)) / 2, rect.y + (rect.height - font.lineHeight) / 2 + 1,
+                CobblemonUiThemes.registry.snapshot().colors.textDim, false)
+        }
+        override fun updateWidgetNarration(output: NarrationElementOutput) {
+            output.add(NarratedElementType.TITLE, text)
         }
     }
 
