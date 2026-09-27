@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test
 
 class NativeInitialProductBrainIntegrationTest {
     @Test
-    fun `AI test persona removes only the wall clock budget`() {
+    fun `AI test persona keeps a bounded native clock while the legacy clock is lifted`() {
         val context = contestedContext()
         val base = LocalLookaheadBudget(timeMillis = 17L, nodeLimit = 123, chanceBranchesPerMove = 7)
         val observed = mutableListOf<LocalLookaheadBudget>()
@@ -63,7 +63,8 @@ class NativeInitialProductBrainIntegrationTest {
         invoke("${BattleBrainContentIds.AI_TEST_PERSONA_PREFIX}boss")
 
         assertEquals(base, observed[0])
-        assertEquals(Long.MAX_VALUE, observed[1].timeMillis)
+        // A native node is a full Showdown turn; an unbounded clock froze the first live test battle.
+        assertEquals(10_000L, observed[1].timeMillis)
         assertEquals(base.nodeLimit, observed[1].nodeLimit)
         assertEquals(base.chanceBranchesPerMove, observed[1].chanceBranchesPerMove)
     }

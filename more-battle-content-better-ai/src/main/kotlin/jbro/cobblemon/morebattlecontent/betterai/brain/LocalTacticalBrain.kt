@@ -53,6 +53,7 @@ import jbro.cobblemon.morebattlecontent.betterai.state.LocalStatusMoveBinder
 import kotlin.math.roundToInt
 
 private const val WEAKER_CHOICE_MARGIN = 0.05
+private const val NATIVE_TEST_TIME_LIMIT_MILLIS = 10_000L
 private val logger = LoggerFactory.getLogger(LocalTacticalBrain::class.java)
 
 internal fun interface NativeInitialDecisionSource {
@@ -226,18 +227,26 @@ internal class LocalTacticalBrain(
         val decisionTrace = AiTestDecisionTrace.forTestPersona(
             active?.trainerPersonaId, difficultyContext, decisionStartedAtNanos,
         )
-        val budget = lookaheadBudget(profile.difficulty.tier).let { configured ->
-            if (unboundedTestDecision) configured.copy(timeMillis = Long.MAX_VALUE) else configured
+        val configuredBudget = lookaheadBudget(profile.difficulty.tier)
+        val budget = if (unboundedTestDecision) configuredBudget.copy(timeMillis = Long.MAX_VALUE) else configuredBudget
+        // Native nodes are full Showdown turns, orders of magnitude costlier than legacy projections,
+        // so the node limit alone never stops them in time. AI test battles lift the wall clock for
+        // the legacy search only; the native search keeps a bounded clock and falls back when it
+        // completes no depth, exactly as it would in a real battle.
+        val nativeBudget = if (unboundedTestDecision) {
+            configuredBudget.copy(timeMillis = NATIVE_TEST_TIME_LIMIT_MILLIS)
+        } else {
+            configuredBudget
         }
         val continuingNative = active?.nativeProductState != null
         val nativeInitial = nativeInitialDecision.evaluate(
             difficultyContext,
             decidingProfile,
             tuning,
-            budget,
+            nativeBudget,
             active?.nativeProductState,
         )
-        decisionTrace?.nativeSearch(nativeInitial, profile.difficulty.lookaheadPlies, budget)
+        decisionTrace?.nativeSearch(nativeInitial, profile.difficulty.lookaheadPlies, nativeBudget)
         var nativeFallbackStatus: NativeInitialProductDecisionStatus? = null
         // Roots that reconciled with the current board survive a failed native search. The legacy
         // choice made this turn becomes their pending action, so the next turn can continue natively
