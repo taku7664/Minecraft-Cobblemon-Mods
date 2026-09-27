@@ -1,12 +1,13 @@
 package jbro.cobblemon.mcc.internal.application
 
 import java.util.UUID
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.MoreCobblemonContents
 
 @JvmInline
 internal value class BattleContentId(val value: String) : Comparable<BattleContentId> {
     init {
-        require(APPLICATION_ID.matches(value)) { "Invalid battle content ID: $value" }
+        require(ManagedBattleContentIds.isValid(value)) { "Invalid battle content ID: $value" }
     }
 
     override fun compareTo(other: BattleContentId): Int = value.compareTo(other.value)

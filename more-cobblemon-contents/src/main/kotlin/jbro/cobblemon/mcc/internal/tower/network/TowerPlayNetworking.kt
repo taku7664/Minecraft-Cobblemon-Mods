@@ -478,7 +478,7 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
                         playerId = recordedPlayerId,
                         contentId = TOWER_CONTENT_ID,
                         amount = update.rewardBp.toLong(),
-                        reason = "${TOWER_CONTENT_ID.value}_${update.after.currentWinStreak}_streak_win",
+                        reason = "${TOWER_CONTENT_ID.value.substringAfter(':')}_${update.after.currentWinStreak}_streak_win",
                     ),
                 ).requireAcceptedReward()
             }
@@ -490,5 +490,5 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
             }
         }
 
-    private val TOWER_CONTENT_ID = BattleContentId("battle_tower")
+    private val TOWER_CONTENT_ID = BattleContentId(ManagedBattleContentIds.BATTLE_TOWER)
 }

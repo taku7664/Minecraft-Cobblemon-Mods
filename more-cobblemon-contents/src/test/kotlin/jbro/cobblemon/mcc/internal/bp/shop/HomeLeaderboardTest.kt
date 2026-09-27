@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 class HomeLeaderboardTest {
     @Test
     fun `tower ranking orders best streak total wins and fewer losses with shared places`() {
-        val category = BattleRecordCategory("battle_tower", "single")
+        val category = BattleRecordCategory("more_cobblemon_contents:battle_tower", "single")
         val alpha = UUID(0, 1)
         val beta = UUID(0, 2)
         val gamma = UUID(0, 3)
@@ -33,7 +33,7 @@ class HomeLeaderboardTest {
 
     @Test
     fun `missing profile name falls back to short uuid`() {
-        val category = BattleRecordCategory("battle_tower", "double")
+        val category = BattleRecordCategory("more_cobblemon_contents:battle_tower", "double")
         val playerId = UUID.fromString("12345678-0000-0000-0000-000000000001")
 
         val result = HomeLeaderboard.project(listOf(stats(playerId, category, 1, 1, 0))) { null }
@@ -43,7 +43,7 @@ class HomeLeaderboardTest {
 
     @Test
     fun `factory ranking orders best floor wins streak and losses`() {
-        val category = BattleRecordCategory("battle_factory", "single_level_50")
+        val category = BattleRecordCategory("more_cobblemon_contents:battle_factory", "single_level_50")
         val alpha = UUID(0, 11)
         val beta = UUID(0, 12)
         val gamma = UUID(0, 13)
@@ -62,7 +62,7 @@ class HomeLeaderboardTest {
 
     @Test
     fun `pvp ranking orders wins streak and fewer losses with shared places`() {
-        val category = BattleRecordCategory("pvp", "single")
+        val category = BattleRecordCategory("more_cobblemon_contents:pvp", "single")
         val alpha = UUID(0, 21)
         val beta = UUID(0, 22)
         val gamma = UUID(0, 23)
@@ -83,7 +83,7 @@ class HomeLeaderboardTest {
         val specs = homeLeaderboardBoardSpecs()
 
         assertEquals(8, specs.size)
-        assertEquals(mapOf("battle_tower" to 2, "battle_factory" to 4, "pvp" to 2), specs.groupingBy { it.contentId }.eachCount())
+        assertEquals(mapOf("more_cobblemon_contents:battle_tower" to 2, "more_cobblemon_contents:battle_factory" to 4, "more_cobblemon_contents:pvp" to 2), specs.groupingBy { it.contentId }.eachCount())
         assertEquals(specs.size, specs.map { it.contentId to it.formatId }.distinct().size)
     }
 

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.assertThrows
 
 class BattleRecordStoreTest {
     private val playerId = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
-    private val towerSingles = BattleRecordKey(playerId, BattleRecordCategory("battle_tower", "single"))
+    private val towerSingles = BattleRecordKey(playerId, BattleRecordCategory("more_cobblemon_contents:battle_tower", "single"))
 
     @Test
     fun `wins and losses update current and best streaks`() {
@@ -64,7 +64,7 @@ class BattleRecordStoreTest {
     fun `admin floor setter raises but never lowers the highest floor`() {
         val factorySingles = BattleRecordKey(
             playerId,
-            BattleRecordCategory("battle_factory", "single_level_50"),
+            BattleRecordCategory("more_cobblemon_contents:battle_factory", "single_level_50"),
         )
         val store = BattleRecordStore()
 
@@ -91,7 +91,7 @@ class BattleRecordStoreTest {
     fun `current reset preserves best streak and floor`() {
         val factorySingles = BattleRecordKey(
             playerId,
-            BattleRecordCategory("battle_factory", "single_level_50"),
+            BattleRecordCategory("more_cobblemon_contents:battle_factory", "single_level_50"),
         )
         val store = BattleRecordStore()
         store.setCurrentWinStreak(towerSingles, 12)
@@ -120,7 +120,7 @@ class BattleRecordStoreTest {
     fun `all reset clears current and best streak and floor`() {
         val factorySingles = BattleRecordKey(
             playerId,
-            BattleRecordCategory("battle_factory", "single_level_50"),
+            BattleRecordCategory("more_cobblemon_contents:battle_factory", "single_level_50"),
         )
         val store = BattleRecordStore()
         store.setCurrentWinStreak(towerSingles, 12)
@@ -196,8 +196,8 @@ class BattleRecordStoreTest {
 
     @Test
     fun `records are isolated by content and format`() {
-        val towerDoubles = BattleRecordKey(playerId, BattleRecordCategory("battle_tower", "double"))
-        val factorySingles = BattleRecordKey(playerId, BattleRecordCategory("battle_factory", "single"))
+        val towerDoubles = BattleRecordKey(playerId, BattleRecordCategory("more_cobblemon_contents:battle_tower", "double"))
+        val factorySingles = BattleRecordKey(playerId, BattleRecordCategory("more_cobblemon_contents:battle_factory", "single"))
         val store = BattleRecordStore()
 
         store.recordOutcome(towerSingles, BattleRecordOutcome.WIN)
@@ -207,7 +207,7 @@ class BattleRecordStoreTest {
         assertEquals(1, store.get(towerSingles).totalWins)
         assertEquals(1, store.get(towerDoubles).totalLosses)
         assertEquals(8, store.get(factorySingles).bestMetrics.getValue(BattleRecordMetricId("highest_floor")))
-        assertEquals(1, store.all(BattleRecordCategory("battle_tower", "single")).size)
+        assertEquals(1, store.all(BattleRecordCategory("more_cobblemon_contents:battle_tower", "single")).size)
     }
 
     @Test

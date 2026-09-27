@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.internal.pvp
 
 import java.util.UUID
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.internal.record.BattleRecordCategory
 import jbro.cobblemon.mcc.internal.record.BattleRecordCompletion
 import jbro.cobblemon.mcc.internal.record.BattleRecordKey
@@ -32,6 +33,6 @@ internal class PvpBattleRecordService(
     }
 
     companion object {
-        const val CONTENT_ID = "pvp"
+        const val CONTENT_ID = ManagedBattleContentIds.PVP
     }
 }

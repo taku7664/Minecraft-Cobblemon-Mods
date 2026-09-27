@@ -1,7 +1,6 @@
 package jbro.cobblemon.mcc.internal.bp
 
 import java.util.UUID
-import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.internal.application.BattleContentId
 
 internal data class BattlePointRewardSettlement(
@@ -30,7 +29,7 @@ internal class BattlePointRewardSettlementService(
             playerId = playerId,
             contentId = contentId,
             amount = STANDARD_VICTORY_REWARD,
-            reason = "${contentId.value}_win",
+            reason = "${contentId.value.substringAfter(':')}_win",
         ),
     )
 
@@ -39,7 +38,7 @@ internal class BattlePointRewardSettlementService(
             transactionId = settlement.settlementId,
             playerId = settlement.playerId,
             operation = BattlePointOperation.ContentReward(settlement.amount),
-            sourceId = BattlePointSourceId("${MoreCobblemonContents.MOD_ID}:${settlement.contentId.value}"),
+            sourceId = BattlePointSourceId(settlement.contentId.value),
             reason = settlement.reason,
         ),
     )

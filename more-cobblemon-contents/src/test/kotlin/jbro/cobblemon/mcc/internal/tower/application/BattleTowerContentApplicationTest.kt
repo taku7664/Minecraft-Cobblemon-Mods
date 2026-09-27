@@ -25,7 +25,7 @@ class BattleTowerContentApplicationTest {
     fun `descriptor exposes only the supported tower formats`() {
         val application = BattleTowerContentApplication(FakeBackend())
 
-        assertEquals("battle_tower", application.descriptor.contentId.value)
+        assertEquals("more_cobblemon_contents:battle_tower", application.descriptor.contentId.value)
         assertEquals(listOf("double", "single"), application.descriptor.formats.map { it.value })
     }
 

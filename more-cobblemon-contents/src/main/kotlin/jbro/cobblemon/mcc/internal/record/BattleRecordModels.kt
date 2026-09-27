@@ -1,13 +1,14 @@
 package jbro.cobblemon.mcc.internal.record
 
 import java.util.UUID
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 
 internal data class BattleRecordCategory(
     val contentId: String,
     val formatId: String,
 ) {
     init {
-        require(RECORD_ID.matches(contentId)) { "Invalid record content ID: $contentId" }
+        require(ManagedBattleContentIds.isValid(contentId)) { "Invalid record content ID: $contentId" }
         require(RECORD_ID.matches(formatId)) { "Invalid record format ID: $formatId" }
     }
 }

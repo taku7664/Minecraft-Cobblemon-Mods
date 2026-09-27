@@ -24,13 +24,13 @@ class PvpBattleRecordServiceTest {
         assertEquals(0, result.getValue(winner).totalLosses)
         assertEquals(0, result.getValue(loser).totalWins)
         assertEquals(1, result.getValue(loser).totalLosses)
-        assertEquals("pvp", result.getValue(winner).key.category.contentId)
+        assertEquals("more_cobblemon_contents:pvp", result.getValue(winner).key.category.contentId)
         assertEquals("double", result.getValue(winner).key.category.formatId)
     }
 
     @Test
     fun `pair update is atomic when either participant counter overflows`() {
-        val category = BattleRecordCategory("pvp", "single")
+        val category = BattleRecordCategory("more_cobblemon_contents:pvp", "single")
         val winnerKey = BattleRecordKey(winner, category)
         val loserKey = BattleRecordKey(loser, category)
         val winnerBefore = BattleRecordStats(

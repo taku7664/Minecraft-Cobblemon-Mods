@@ -13,8 +13,8 @@ class BattleContentApplicationServiceTest {
 
     @Test
     fun `open returns stable sorted content descriptors without invoking content`() {
-        val factory = RecordingContent("battle_factory", setOf("double", "single"))
-        val tower = RecordingContent("battle_tower", setOf("single", "double"))
+        val factory = RecordingContent("more_cobblemon_contents:battle_factory", setOf("double", "single"))
+        val tower = RecordingContent("more_cobblemon_contents:battle_tower", setOf("single", "double"))
         val service = DefaultBattleContentApplicationService(listOf(tower, factory))
 
         val result = service.open(context)
@@ -23,8 +23,8 @@ class BattleContentApplicationServiceTest {
             BattleApplicationResult.Success(
                 BattleHubView(
                     listOf(
-                        BattleContentDescriptor(BattleContentId("battle_factory"), listOf(BattleFormatId("double"), BattleFormatId("single"))),
-                        BattleContentDescriptor(BattleContentId("battle_tower"), listOf(BattleFormatId("double"), BattleFormatId("single"))),
+                        BattleContentDescriptor(BattleContentId("more_cobblemon_contents:battle_factory"), listOf(BattleFormatId("double"), BattleFormatId("single"))),
+                        BattleContentDescriptor(BattleContentId("more_cobblemon_contents:battle_tower"), listOf(BattleFormatId("double"), BattleFormatId("single"))),
                     ),
                 ),
             ),
@@ -36,11 +36,11 @@ class BattleContentApplicationServiceTest {
 
     @Test
     fun `start validates format then forwards the unchanged request context`() {
-        val tower = RecordingContent("battle_tower", setOf("single", "double"))
+        val tower = RecordingContent("more_cobblemon_contents:battle_tower", setOf("single", "double"))
         val service = DefaultBattleContentApplicationService(listOf(tower))
 
-        val rejected = service.start(context, BattleContentId("battle_tower"), BattleFormatId("triples"))
-        val accepted = service.start(context, BattleContentId("battle_tower"), BattleFormatId("double"))
+        val rejected = service.start(context, BattleContentId("more_cobblemon_contents:battle_tower"), BattleFormatId("triples"))
+        val accepted = service.start(context, BattleContentId("more_cobblemon_contents:battle_tower"), BattleFormatId("double"))
 
         assertEquals(
             BattleApplicationResult.Rejected(BattleApplicationError.UNSUPPORTED_FORMAT),
@@ -56,30 +56,30 @@ class BattleContentApplicationServiceTest {
 
     @Test
     fun `status resume and abandon use the same registered content service`() {
-        val tower = RecordingContent("battle_tower", setOf("single"))
+        val tower = RecordingContent("more_cobblemon_contents:battle_tower", setOf("single"))
         val service = DefaultBattleContentApplicationService(listOf(tower))
 
-        assertEquals(BattleApplicationResult.Success(tower.status), service.status(context, BattleContentId("battle_tower")))
-        assertEquals(BattleApplicationResult.Success(tower.status), service.resume(context, BattleContentId("battle_tower")))
-        assertEquals(BattleApplicationResult.Success(tower.status), service.abandon(context, BattleContentId("battle_tower")))
+        assertEquals(BattleApplicationResult.Success(tower.status), service.status(context, BattleContentId("more_cobblemon_contents:battle_tower")))
+        assertEquals(BattleApplicationResult.Success(tower.status), service.resume(context, BattleContentId("more_cobblemon_contents:battle_tower")))
+        assertEquals(BattleApplicationResult.Success(tower.status), service.abandon(context, BattleContentId("more_cobblemon_contents:battle_tower")))
         assertEquals(listOf("status", "resume", "abandon"), tower.calls)
     }
 
     @Test
     fun `unknown content and content failures use stable errors`() {
-        val failed = RecordingContent("battle_tower", setOf("single"), fail = true)
+        val failed = RecordingContent("more_cobblemon_contents:battle_tower", setOf("single"), fail = true)
         val reported = mutableListOf<BattleContentId>()
         val service = DefaultBattleContentApplicationService(listOf(failed)) { contentId, _ -> reported += contentId }
 
         assertEquals(
             BattleApplicationResult.Rejected(BattleApplicationError.UNKNOWN_CONTENT),
-            service.status(context, BattleContentId("battle_factory")),
+            service.status(context, BattleContentId("more_cobblemon_contents:battle_factory")),
         )
         assertEquals(
             BattleApplicationResult.Rejected(BattleApplicationError.CONTENT_FAILURE),
-            service.status(context, BattleContentId("battle_tower")),
+            service.status(context, BattleContentId("more_cobblemon_contents:battle_tower")),
         )
-        assertEquals(listOf(BattleContentId("battle_tower")), reported)
+        assertEquals(listOf(BattleContentId("more_cobblemon_contents:battle_tower")), reported)
     }
 
     @Test
@@ -87,7 +87,7 @@ class BattleContentApplicationServiceTest {
         val failure = NoSuchMethodError("Cobblemon API drift")
         val failed = object : BattleContentApplication {
             override val descriptor = BattleContentDescriptor(
-                BattleContentId("battle_tower"),
+                BattleContentId("more_cobblemon_contents:battle_tower"),
                 listOf(BattleFormatId("single")),
             )
 
@@ -100,7 +100,7 @@ class BattleContentApplicationServiceTest {
         var reported: Throwable? = null
         val service = DefaultBattleContentApplicationService(listOf(failed)) { _, exception -> reported = exception }
 
-        val result = service.status(context, BattleContentId("battle_tower"))
+        val result = service.status(context, BattleContentId("more_cobblemon_contents:battle_tower"))
 
         assertEquals(BattleApplicationResult.Rejected(BattleApplicationError.CONTENT_FAILURE), result)
         assertSame(failure, reported)
@@ -108,12 +108,12 @@ class BattleContentApplicationServiceTest {
 
     @Test
     fun `failure reporter cannot replace the stable content error`() {
-        val failed = RecordingContent("battle_tower", setOf("single"), fail = true)
+        val failed = RecordingContent("more_cobblemon_contents:battle_tower", setOf("single"), fail = true)
         val service = DefaultBattleContentApplicationService(listOf(failed)) { _, _ ->
             throw NoSuchMethodError("logger API drift")
         }
 
-        val result = service.status(context, BattleContentId("battle_tower"))
+        val result = service.status(context, BattleContentId("more_cobblemon_contents:battle_tower"))
 
         assertEquals(BattleApplicationResult.Rejected(BattleApplicationError.CONTENT_FAILURE), result)
     }
@@ -123,8 +123,8 @@ class BattleContentApplicationServiceTest {
         assertThrows<IllegalArgumentException> {
             DefaultBattleContentApplicationService(
                 listOf(
-                    RecordingContent("battle_tower", setOf("single")),
-                    RecordingContent("battle_tower", setOf("double")),
+                    RecordingContent("more_cobblemon_contents:battle_tower", setOf("single")),
+                    RecordingContent("more_cobblemon_contents:battle_tower", setOf("double")),
                 ),
             )
         }
@@ -135,18 +135,18 @@ class BattleContentApplicationServiceTest {
     @Test
     fun `content may be registered after the shared service is created`() {
         val service = DefaultBattleContentApplicationService(emptyList())
-        val tower = RecordingContent("battle_tower", setOf("single"))
+        val tower = RecordingContent("more_cobblemon_contents:battle_tower", setOf("single"))
 
         service.register(tower)
 
-        assertEquals(BattleApplicationResult.Success(tower.status), service.status(context, BattleContentId("battle_tower")))
+        assertEquals(BattleApplicationResult.Success(tower.status), service.status(context, BattleContentId("more_cobblemon_contents:battle_tower")))
         assertThrows<IllegalArgumentException> { service.register(tower) }
     }
 
     @Test
     fun `hub descriptors and status detach caller owned collections`() {
         val rawFormats = mutableListOf(BattleFormatId("single"))
-        val descriptor = BattleContentDescriptor(BattleContentId("battle_tower"), rawFormats)
+        val descriptor = BattleContentDescriptor(BattleContentId("more_cobblemon_contents:battle_tower"), rawFormats)
         rawFormats += BattleFormatId("double")
 
         val rawContents = mutableListOf(descriptor)
@@ -156,7 +156,7 @@ class BattleContentApplicationServiceTest {
         val rawProgress = mutableMapOf("rank" to 2L)
         val status = BattleContentStatus(
             playerId,
-            BattleContentId("battle_tower"),
+            BattleContentId("more_cobblemon_contents:battle_tower"),
             BattleFormatId("single"),
             BattleContentPhase.ACTIVE,
             rawProgress,

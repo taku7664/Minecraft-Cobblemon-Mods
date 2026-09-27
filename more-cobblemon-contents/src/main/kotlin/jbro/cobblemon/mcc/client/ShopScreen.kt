@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.client
 
 import java.util.UUID
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import kotlin.math.roundToInt
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.internal.bp.shop.BattlePointShopPurchaseStatus
@@ -642,9 +643,9 @@ internal class ShopScreen(
     private enum class ScrollTarget { SHOP, LEADERBOARD }
 
     private enum class LeaderboardContent(val contentId: String, val translationId: String) {
-        TOWER("battle_tower", "tower"),
-        FACTORY("battle_factory", "factory"),
-        PVP("pvp", "pvp"),
+        TOWER(ManagedBattleContentIds.BATTLE_TOWER, "tower"),
+        FACTORY(ManagedBattleContentIds.BATTLE_FACTORY, "factory"),
+        PVP(ManagedBattleContentIds.PVP, "pvp"),
     }
 }
 

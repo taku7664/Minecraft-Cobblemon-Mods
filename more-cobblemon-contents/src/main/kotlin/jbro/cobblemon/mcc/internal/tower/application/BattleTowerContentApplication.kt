@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.internal.tower.application
 
 import java.util.UUID
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.internal.application.BattleApplicationRequestContext
 import jbro.cobblemon.mcc.internal.application.BattleContentApplication
 import jbro.cobblemon.mcc.internal.application.BattleContentDescriptor
@@ -101,7 +102,7 @@ internal class BattleTowerContentApplication(
     }
 }
 
-private val CONTENT_ID = BattleContentId("battle_tower")
+private val CONTENT_ID = BattleContentId(ManagedBattleContentIds.BATTLE_TOWER)
 
 private fun TowerBattleFormat.toApplicationId(): BattleFormatId = BattleFormatId(name.lowercase())
 

@@ -34,12 +34,12 @@ class TowerProgressRecordCodecTest {
 
     @Test
     fun `rejects records outside tower formats`() {
-        val stats = BattleRecordStats(BattleRecordKey(playerId, BattleRecordCategory("battle_factory", "single")))
+        val stats = BattleRecordStats(BattleRecordKey(playerId, BattleRecordCategory("more_cobblemon_contents:battle_factory", "single")))
         assertThrows<IllegalArgumentException> { TowerProgressRecordCodec.decode(stats) }
     }
 
     private fun key(format: TowerBattleFormat) = BattleRecordKey(
         playerId,
-        BattleRecordCategory("battle_tower", format.recordId),
+        BattleRecordCategory("more_cobblemon_contents:battle_tower", format.recordId),
     )
 }

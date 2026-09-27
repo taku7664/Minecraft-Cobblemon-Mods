@@ -33,7 +33,7 @@ class TowerBattleRecordServiceTest {
     fun `loss resets current streak and preserves best streak`() {
         val store = BattleRecordStore()
         val service = TowerBattleRecordService(store::recordCompletedBattle)
-        val key = BattleRecordKey(playerId, BattleRecordCategory("battle_tower", "double"))
+        val key = BattleRecordKey(playerId, BattleRecordCategory("more_cobblemon_contents:battle_tower", "double"))
         var progress = TowerProgress.initial(TowerBattleFormat.DOUBLE)
         repeat(5) {
             val update = TowerProgression.record(progress, TowerBattleOutcome.WIN)
@@ -54,7 +54,7 @@ class TowerBattleRecordServiceTest {
         service.record(playerId, TowerProgression.record(TowerProgress.initial(TowerBattleFormat.SINGLE), TowerBattleOutcome.WIN))
         service.record(playerId, TowerProgression.record(TowerProgress.initial(TowerBattleFormat.DOUBLE), TowerBattleOutcome.LOSS))
 
-        assertEquals(1, store.get(BattleRecordKey(playerId, BattleRecordCategory("battle_tower", "single"))).totalWins)
-        assertEquals(1, store.get(BattleRecordKey(playerId, BattleRecordCategory("battle_tower", "double"))).totalLosses)
+        assertEquals(1, store.get(BattleRecordKey(playerId, BattleRecordCategory("more_cobblemon_contents:battle_tower", "single"))).totalWins)
+        assertEquals(1, store.get(BattleRecordKey(playerId, BattleRecordCategory("more_cobblemon_contents:battle_tower", "double"))).totalLosses)
     }
 }

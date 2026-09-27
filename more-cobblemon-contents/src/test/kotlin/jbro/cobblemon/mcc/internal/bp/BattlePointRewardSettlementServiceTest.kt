@@ -13,7 +13,7 @@ class BattlePointRewardSettlementServiceTest {
         val settlement = BattlePointRewardSettlement(
             settlementId = UUID.fromString("11111111-2222-3333-4444-555555555555"),
             playerId = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
-            contentId = BattleContentId("battle_tower"),
+            contentId = BattleContentId("more_cobblemon_contents:battle_tower"),
             amount = 12,
             reason = "tower_win",
         )
@@ -38,8 +38,8 @@ class BattlePointRewardSettlementServiceTest {
         val battleId = UUID.fromString("11111111-2222-3333-4444-555555555555")
         val playerId = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
 
-        val applied = service.settleVictory(battleId, playerId, BattleContentId("battle_factory"))
-        val retry = service.settleVictory(battleId, playerId, BattleContentId("battle_factory"))
+        val applied = service.settleVictory(battleId, playerId, BattleContentId("more_cobblemon_contents:battle_factory"))
+        val retry = service.settleVictory(battleId, playerId, BattleContentId("more_cobblemon_contents:battle_factory"))
 
         assertEquals(BattlePointApplyStatus.APPLIED, applied.status)
         assertEquals(BattlePointApplyStatus.ALREADY_APPLIED, retry.status)

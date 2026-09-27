@@ -540,7 +540,7 @@ class PvpSessionServiceTest {
 
     private fun recordKey(playerId: UUID) = jbro.cobblemon.mcc.internal.record.BattleRecordKey(
         playerId,
-        jbro.cobblemon.mcc.internal.record.BattleRecordCategory("pvp", "single"),
+        jbro.cobblemon.mcc.internal.record.BattleRecordCategory("more_cobblemon_contents:pvp", "single"),
     )
 
     private class RecordingSnapshots(

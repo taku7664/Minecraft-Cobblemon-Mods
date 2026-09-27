@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.internal.factory
 
 import java.util.Collections
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.record.BattleRecordCategory
 import jbro.cobblemon.mcc.internal.record.BattleRecordCompletion
@@ -39,7 +40,7 @@ internal class FactoryBattleRecordService(private val sink: FactoryBattleRecordS
 }
 
 internal object FactoryRecordContract {
-    const val CONTENT_ID = "battle_factory"
+    const val CONTENT_ID = ManagedBattleContentIds.BATTLE_FACTORY
 }
 
 internal fun interface FactoryBattleVictoryRewardSink {

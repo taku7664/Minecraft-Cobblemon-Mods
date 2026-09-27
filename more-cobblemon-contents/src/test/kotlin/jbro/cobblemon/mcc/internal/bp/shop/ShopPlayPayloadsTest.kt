@@ -34,12 +34,12 @@ class ShopPlayPayloadsTest {
         val leaderboardCatalog = HomeLeaderboardCatalogPayload(
             boards = listOf(
                 HomeLeaderboardBoard(
-                    contentId = "battle_tower",
+                    contentId = "more_cobblemon_contents:battle_tower",
                     formatId = "single",
                     entries = leaderboard.singles,
                 ),
                 HomeLeaderboardBoard(
-                    contentId = "pvp",
+                    contentId = "more_cobblemon_contents:pvp",
                     formatId = "double",
                     entries = listOf(
                         HomeLeaderboardEntry(

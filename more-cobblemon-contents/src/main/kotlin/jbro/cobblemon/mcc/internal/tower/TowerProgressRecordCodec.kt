@@ -1,9 +1,10 @@
 package jbro.cobblemon.mcc.internal.tower
 
 import jbro.cobblemon.mcc.internal.record.BattleRecordStats
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 
 internal object TowerRecordContract {
-    const val CONTENT_ID = "battle_tower"
+    const val CONTENT_ID = ManagedBattleContentIds.BATTLE_TOWER
 }
 
 internal object TowerProgressRecordCodec {
