@@ -16,6 +16,8 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
     implementation(project(path = ":more-cobblemon-contents", configuration = "namedElements")) { isTransitive = false }
     runtimeOnly(project(path = ":more-cobblemon-contents", configuration = "namedElements")) { isTransitive = false }
+    // The core bundles the UI kit; content mods compile against its hub tab types.
+    compileOnly(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
     modCompileOnly("com.cobblemon:mod:${property("cobblemon_maven_version")}") {
         isTransitive = false
     }
