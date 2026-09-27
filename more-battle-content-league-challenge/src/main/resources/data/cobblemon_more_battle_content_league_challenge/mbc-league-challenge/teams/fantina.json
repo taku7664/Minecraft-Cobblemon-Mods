@@ -1,8 +1,0 @@
-{
-  "schema_version": 1,
-  "pokemon": [
-    "duskull level=24 moves=shadowsneak,willowisp,confuseray",
-    "haunter level=24 moves=shadowpunch,confuseray,suckerpunch",
-    "mismagius level=26 moves=shadowball,psybeam,magicalleaf"
-  ]
-}

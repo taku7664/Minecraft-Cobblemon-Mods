@@ -1,8 +1,0 @@
-{
-  "schema_version": 1,
-  "pokemon": [
-    "magneton level=37 moves=flashcannon,thunderbolt,thunderwave",
-    "steelix level=38 moves=irontail,earthquake,stealthrock",
-    "bastiodon level=41 moves=metalburst,ancientpower,taunt"
-  ]
-}
