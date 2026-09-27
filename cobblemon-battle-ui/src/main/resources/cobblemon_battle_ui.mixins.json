@@ -22,6 +22,8 @@
     "BattleForfeitSelectionMixin",
     "BattleOptionTileAccessor",
     "BattleOptionTileMixin",
+    "BattleOverlayHudMixin",
+    "BattleGuiForfeitPromptMixin",
     "BattleMoveTileScaleMixin",
     "BattleSwitchTileScaleMixin",
     "BattleSwitchTileAccessor",

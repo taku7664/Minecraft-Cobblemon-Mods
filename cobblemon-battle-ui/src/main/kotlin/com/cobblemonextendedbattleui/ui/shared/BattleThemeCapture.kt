@@ -18,6 +18,7 @@ import net.minecraft.client.gui.screen.TitleScreen
 import net.minecraft.client.gui.screen.world.CreateWorldScreen
 import net.minecraft.client.gui.screen.world.WorldCreator
 import net.minecraft.client.gui.widget.ButtonWidget
+import net.minecraft.client.tutorial.TutorialStep
 import net.minecraft.text.TranslatableTextContent
 import com.cobblemon.mod.common.client.gui.snapshots.SnapshotWarningScreen
 import net.minecraft.client.util.ScreenshotRecorder
@@ -29,6 +30,8 @@ internal object BattleThemeCapture {
     fun install() {
         if (!FabricLoader.getInstance().isDevelopmentEnvironment ||
             System.getenv("COBBLEMON_BATTLE_UI_CAPTURE") != "1") return
+        val liveBattle = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_LIVE_BATTLE") == "1"
+        if (liveBattle) BattleLiveCapture.install()
         var started = false
         var created = false
         var opened = false
@@ -39,6 +42,7 @@ internal object BattleThemeCapture {
                 val captureHeight = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_HEIGHT")?.toInt() ?: 900
                 org.lwjgl.glfw.GLFW.glfwSetWindowSize(client.window.handle, captureWidth, captureHeight)
                 client.options.guiScale.value = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_GUI_SCALE")?.toInt() ?: 2
+                client.options.tutorialStep = TutorialStep.NONE
                 client.onResolutionChanged()
                 val language = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_LANGUAGE") ?: "en_us"
                 require(language == "en_us" || language == "ko_kr")
@@ -54,7 +58,7 @@ internal object BattleThemeCapture {
             val creation = client.currentScreen as? CreateWorldScreen
             if (started && !created && creation != null) {
                 created = true
-                creation.worldCreator.worldName = "Battle UI capture fixture"
+                creation.worldCreator.worldName = if (liveBattle) "Battle UI live fixture" else "Battle UI capture fixture"
                 creation.worldCreator.gameMode = WorldCreator.Mode.CREATIVE
                 creation.worldCreator.seed = "2718"
                 creation.children().filterIsInstance<ButtonWidget>().single {
@@ -82,7 +86,7 @@ internal object BattleThemeCapture {
                 if (System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TRANSCRIPT_ONLY") == "1") {
                     jbro.cobblemon.battleui.extended.ui.transcript.TranscriptInputFixture.verify()
                 }
-                client.setScreen(CaptureScreen())
+                if (liveBattle) BattleLiveCapture.start(client) else client.setScreen(CaptureScreen())
             }
         }
     }

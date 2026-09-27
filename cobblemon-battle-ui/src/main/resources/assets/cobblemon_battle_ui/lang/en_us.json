@@ -13,6 +13,8 @@
   "cobblemon_battle_ui.forfeit.accept": "FORFEIT",
   "cobblemon_battle_ui.forfeit.back": "BACK",
   "cobblemon_battle_ui.switch.title": "CHOOSE A POKÉMON",
+  "cobblemon_battle_ui.hud.self": "YOUR POKÉMON",
+  "cobblemon_battle_ui.hud.opponent": "OPPONENT",
   "cobblemon_battle_ui.switch.back": "ESC  BACK",
   "cobblemon_battle_ui.switch.active": "ACTIVE",
   "cobblemon_battle_ui.switch.fainted": "FAINTED",
