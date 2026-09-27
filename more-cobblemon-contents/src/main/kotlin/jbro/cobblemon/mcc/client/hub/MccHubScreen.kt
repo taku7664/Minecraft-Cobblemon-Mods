@@ -26,11 +26,14 @@ import net.minecraft.network.chat.Component
 import java.text.NumberFormat
 
 /** The battle hub: a left rail of tabs (dashboard, shop, then content mods) around one content area. */
-class MccHubScreen(private var selectedTabId: String = MccHubTabs.DASHBOARD) :
+class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
     Screen(hubText("title")), MccHubContentHost {
+    var selectedTabId: String = selectedTabId
+        private set
     private var previousTheme: UiThemeSnapshot? = null
     private val contents = HashMap<String, MccHubTabContent>()
     private var activeContent: MccHubTabContent? = null
+    private var shownContent: MccHubTabContent? = null
 
     override fun isPauseScreen() = false
 
@@ -61,7 +64,17 @@ class MccHubScreen(private var selectedTabId: String = MccHubTabs.DASHBOARD) :
         val tab = MccHubTabs.get(selectedTabId) ?: MccHubTabs.all().firstOrNull { it.kind is MccHubTabKind.Embedded }
         val embedded = tab?.kind as? MccHubTabKind.Embedded
         activeContent = embedded?.let { contents.getOrPut(tab.id) { it.create() } }
+        if (activeContent !== shownContent) {
+            shownContent?.hidden()
+            shownContent = activeContent
+            activeContent?.shown()
+        }
         activeContent?.build(this, layout.content)
+    }
+
+    /** Switches to [tabId] as if its rail button was pressed; unknown tabs are ignored. */
+    fun selectTab(tabId: String) {
+        MccHubTabs.get(tabId)?.let(::select)
     }
 
     private fun addTabs(layout: MccHubLayout) {
@@ -99,6 +112,8 @@ class MccHubScreen(private var selectedTabId: String = MccHubTabs.DASHBOARD) :
 
     override fun removed() {
         if (current === this) current = null
+        shownContent?.hidden()
+        shownContent = null
         val original = previousTheme
         if (original != null && CobblemonUiThemes.registry.snapshot().id == UiThemePreset.PIXEL_LEAGUE.id) {
             CobblemonUiThemes.registry.install(original)
@@ -160,6 +175,13 @@ class MccHubScreen(private var selectedTabId: String = MccHubTabs.DASHBOARD) :
         /** The open hub, so fresh server state can rebuild it in place. */
         var current: MccHubScreen? = null
             private set
+
+        /** Shows the hub on [tabId], switching tabs when the hub is already the screen. */
+        fun open(tabId: String) {
+            val client = Minecraft.getInstance()
+            val hub = current
+            if (hub != null && client.screen === hub) hub.selectTab(tabId) else client.setScreen(MccHubScreen(tabId))
+        }
     }
 }
 

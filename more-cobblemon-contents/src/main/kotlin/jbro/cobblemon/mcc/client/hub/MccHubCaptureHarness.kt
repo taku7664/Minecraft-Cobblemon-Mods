@@ -16,8 +16,8 @@ import java.util.concurrent.atomic.AtomicReference
  * `dense`); optionally `MCC_HUB_CAPTURE_LOCALE` (default `ko_kr`, or `en_us`) and `MCC_HUB_CAPTURE_GUI_SCALE` (1-4).
  * Launch with `--quickPlaySingleplayer <world>`: once the world is loaded the hub opens with fixture data,
  * is captured to `screenshots/`, closed through its ESC path, and the client stops.
- * With `MCC_HUB_CAPTURE_OPEN=<content id>` the hub instead asks the server for that content, as its tab does,
- * and the screen the server opens is captured too.
+ * With `MCC_HUB_CAPTURE_OPEN=<tab id>` the hub then selects that tab as its rail button would: an embedded tab
+ * is captured inside the hub once its server state had time to arrive, a screen tab once the server opened it.
  */
 object MccHubCaptureHarness {
     private val logger = MoreCobblemonContents.LOGGER
@@ -90,24 +90,31 @@ object MccHubCaptureHarness {
                 }
             }
             if (requested && captured.get() && openContent != null) {
+                val embedded = when (checkNotNull(MccHubTabs.get(openContent)) { "Unknown hub tab $openContent" }.kind) {
+                    is MccHubTabKind.Embedded -> true
+                    is MccHubTabKind.Screen -> false
+                }
                 if (!contentRequested) {
-                    MccHubTabs.requestContent(openContent)
+                    checkNotNull(client.screen as? MccHubScreen) { "Hub closed before selecting $openContent" }.selectTab(openContent)
                     contentRequested = true
-                    logger.info("Requested hub content {}", openContent)
+                    logger.info("Selected hub tab {}", openContent)
                     return@EndTick
                 }
                 val screen = client.screen
-                if (screen == null || screen is MccHubScreen) {
-                    if (ticks >= 400) error("Hub content $openContent did not open a screen")
+                val ready = if (embedded) screen is MccHubScreen && screen.selectedTabId == openContent
+                    else screen != null && screen !is MccHubScreen
+                if (!ready) {
+                    if (ticks >= 400) error("Hub tab $openContent did not show")
                     return@EndTick
                 }
                 contentTicks += 1
-                if (!contentCaptureRequested && contentTicks >= 20) {
+                // Embedded tabs wait longer: their server state arrives after the tab is shown.
+                if (!contentCaptureRequested && contentTicks >= if (embedded) 40 else 20) {
                     contentCaptureRequested = true
                     val name = "mcc-hub-open-${openContent.substringAfter(':')}-${client.languageManager.selected}-" +
                         "${client.window.guiScaledWidth}x${client.window.guiScaledHeight}.png"
                     Screenshot.grab(client.gameDirectory, name, client.mainRenderTarget) { result ->
-                        logger.info("Hub content capture {} ({}): {}", name, screen.javaClass.simpleName, result.string)
+                        logger.info("Hub content capture {} ({}): {}", name, screen?.javaClass?.simpleName, result.string)
                         contentCaptured.set(true)
                     }
                 }
