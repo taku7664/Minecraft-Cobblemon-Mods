@@ -64,4 +64,18 @@ class BattleScreenGeometryTest {
         assertEquals(0, BattleScreenGeometry.compactHudSlotIndent(20f, 2, 2));
         assertEquals(0, BattleScreenGeometry.compactHudSlotIndent(10f, 1, 1));
     }
+
+    @Test
+    void targetDraftFitsBetweenCompactHudAndHotbar() {
+        assertEquals(new UiRect(121, 110, 184, 74), BattleScreenGeometry.targetPanel(427, 240, 2));
+        assertEquals(new UiRect(127, 132, 83, 22), BattleScreenGeometry.targetTile(427, 240, 2, 0, 0));
+        assertEquals(new UiRect(216, 156, 83, 22), BattleScreenGeometry.targetTile(427, 240, 2, 1, 1));
+        assertEquals(new UiRect(269, 113, 30, 13), BattleScreenGeometry.targetBack(427, 240, 2));
+
+        assertEquals(new UiRect(121, 105, 184, 94), BattleScreenGeometry.targetPanel(427, 240, 3));
+        assertEquals(new UiRect(127, 127, 83, 22), BattleScreenGeometry.targetTile(427, 240, 3, 0, 0));
+        assertEquals(new UiRect(216, 175, 83, 22), BattleScreenGeometry.targetTile(427, 240, 3, 1, 2));
+        assertTrue(BattleScreenGeometry.targetPanel(427, 240, 3).y() +
+                BattleScreenGeometry.targetPanel(427, 240, 3).height() < 217);
+    }
 }

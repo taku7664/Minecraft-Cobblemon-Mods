@@ -95,7 +95,7 @@ internal object BattleThemeCapture {
         private val pages = when {
             System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_DRAFT_ONLY") == "1" ->
                 listOf("draft-menu-rail", "draft-menu-blade", "draft-moves", "draft-hud-double",
-                    "draft-hud-triple", "draft-switch", "draft-forfeit")
+                    "draft-hud-triple", "draft-switch", "draft-forfeit", "draft-target", "draft-target-triple")
             System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TRANSCRIPT_ONLY") == "1" ->
                 listOf("log", "log-long", "log-empty")
             else -> listOf("controls", "info", "info-double", "info-triple", "tooltip")

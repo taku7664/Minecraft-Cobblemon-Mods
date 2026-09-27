@@ -15,6 +15,7 @@ import java.util.UUID
 internal object BattleScreenDraft {
     private const val CARD_W = 184
     private const val CARD_H = 50
+    private const val COMPACT_CARD_W = 136
 
     private data class SamplePokemon(val species: String, val hp: Float, val level: Int = 50,
                                      val fainted: Boolean = false, val burned: Boolean = false)
@@ -24,8 +25,8 @@ internal object BattleScreenDraft {
         context.fill(0, 0, width, height, 0x4906101E)
         drawCaption(context, page, width, korean)
         val count = when (page) {
-            "draft-hud-double" -> 2
-            "draft-hud-triple" -> 3
+            "draft-hud-double", "draft-target" -> 2
+            "draft-hud-triple", "draft-target-triple" -> 3
             else -> 1
         }
         if (count > 1) {
@@ -33,9 +34,11 @@ internal object BattleScreenDraft {
             val opponents = listOf(SamplePokemon("charizard", .36f), SamplePokemon("venusaur", .54f, burned = true),
                 SamplePokemon("blastoise", .67f))
             repeat(count) { index ->
-                drawHud(context, 10, 22 + index * 31, allies[index], true, korean, compact = true)
-                drawHud(context, width - CARD_W - 10, 22 + index * 31, opponents[index], false, korean, compact = true)
+                drawHud(context, 10, 22 + index * 26, allies[index], true, korean, compact = true)
+                drawHud(context, width - COMPACT_CARD_W - 10, 22 + index * 26, opponents[index], false, korean, compact = true)
             }
+            if (page == "draft-target" || page == "draft-target-triple")
+                drawTarget(context, width, height, korean, count)
             return
         }
         drawHud(context, 10, 28, SamplePokemon("pikachu", .72f), true, korean)
@@ -60,11 +63,12 @@ internal object BattleScreenDraft {
                         compact: Boolean = false) {
         val accent = if (self) BattleUiTheme.CYAN else BattleUiTheme.PURPLE
         val corners = if (self) 0b1001 else 0b0110
-        val height = if (compact) 28 else CARD_H
-        BattleSurfaceRenderer.draw(context, x, y, CARD_W, height,
+        val cardWidth = if (compact) COMPACT_CARD_W else CARD_W
+        val height = if (compact) 24 else CARD_H
+        BattleSurfaceRenderer.draw(context, x, y, cardWidth, height,
             BattleUiTheme.panel.copy(top = 0xE01A3045.toInt(), bottom = 0xDC0D1A2B.toInt(), border = accent, cut = 5, corners = corners))
-        val portraitSize = if (compact) 22 else 30
-        val portraitX = if (self) x + 7 else x + CARD_W - portraitSize - 7
+        val portraitSize = if (compact) 18 else 30
+        val portraitX = if (self) x + 7 else x + cardWidth - portraitSize - 7
         val portraitY = y + if (compact) 3 else 6
         BattleSurfaceRenderer.draw(context, portraitX, portraitY, portraitSize, portraitSize,
             BattleUiTheme.panel.copy(border = accent, cut = 4, corners = corners))
@@ -73,20 +77,20 @@ internal object BattleScreenDraft {
             UUID.nameUUIDFromBytes(sample.species.toByteArray()), sample.fainted, null, self, { it }, 1f)
 
         val contentX = if (self) x + portraitSize + 13 else x + 9
-        val contentRight = if (self) x + CARD_W - 10 else x + CARD_W - portraitSize - 14
+        val contentRight = if (self) x + cardWidth - 10 else x + cardWidth - portraitSize - 14
         val name = Text.translatable("cobblemon.species.${sample.species}.name").string
         val font = MinecraftClient.getInstance().textRenderer
         if (compact) {
-            val statusWidth = if (sample.burned) 29 else 0
-            text(context, font.trimToWidth(name, contentRight - contentX - 30 - statusWidth), contentX, y + 3, BattleUiTheme.TEXT)
-            if (sample.burned) text(context, if (korean) "화상" else "BRN", contentRight - 56, y + 3, BattleUiTheme.DANGER)
+            text(context, font.trimToWidth(name, contentRight - contentX - 26), contentX, y + 3, BattleUiTheme.TEXT)
             rightText(context, "${sample.level}", contentRight, y + 3, BattleUiTheme.MUTED)
+            if (sample.burned) text(context, if (korean) "화상" else "BRN", contentX, y + 14, BattleUiTheme.DANGER)
+            val barLeft = contentX + if (sample.burned) 23 else 0
             val barRight = contentRight - if (self) 43 else 31
-            context.fill(contentX, y + 17, barRight, y + 23, BattleUiTheme.TRACK)
-            context.fill(contentX + 1, y + 18,
-                contentX + 1 + ((barRight - contentX - 2) * sample.hp).toInt(), y + 22, hpColor(sample.hp))
+            context.fill(barLeft, y + 16, barRight, y + 20, BattleUiTheme.TRACK)
+            context.fill(barLeft + 1, y + 17,
+                barLeft + 1 + ((barRight - barLeft - 2) * sample.hp).toInt(), y + 19, hpColor(sample.hp))
             rightText(context, if (self) "${(sample.hp * 120).toInt()}/120" else "${(sample.hp * 100).toInt()}%",
-                contentRight, y + 16, BattleUiTheme.TEXT)
+                contentRight, y + 14, BattleUiTheme.TEXT)
             return
         }
         val role = if (self) (if (korean) "내 포켓몬" else "YOUR POKÉMON")
@@ -170,6 +174,60 @@ internal object BattleScreenDraft {
             )
         }
         BattleSwitchRenderer.draw(context, width, height, cards, focused = 2)
+    }
+
+    /** Functionless target-page proposal, deliberately separate from Cobblemon's input path. */
+    private fun drawTarget(context: DrawContext, width: Int, height: Int, korean: Boolean, slots: Int) {
+        val panel = BattleScreenGeometry.targetPanel(width, height, slots)
+        // Targeting needs labels and focus, not a second HP dashboard or an enclosing shell.
+        text(context, if (korean) "대상 선택" else "SELECT TARGET", panel.x() + 6, panel.y() + 2,
+            BattleUiTheme.TEXT)
+        val back = BattleScreenGeometry.targetBack(width, height, slots)
+        BattleSurfaceRenderer.draw(context, back.x(), back.y(), back.width(), back.height(),
+            BattleUiTheme.secondary.copy(border = BattleUiTheme.CYAN, cut = 3, corners = 0b1010))
+        centerText(context, if (korean) "뒤로" else "BACK", back.x() + back.width() / 2,
+            back.y() + 2, BattleUiTheme.TEXT)
+        text(context, if (korean) "아군" else "ALLY", panel.x() + 6,
+            panel.y() + 12, BattleUiTheme.TEXT)
+        text(context, if (korean) "상대" else "OPPONENT",
+            BattleScreenGeometry.targetTile(width, height, slots, 1, 0).x(),
+            panel.y() + 12, BattleUiTheme.TEXT)
+        val opponents = if (slots == 2) listOf("squirtle", "charizard")
+            else listOf("squirtle", "charizard", "meowth")
+        val allies = if (slots == 2) listOf("pikachu", "bulbasaur")
+            else listOf("pikachu", "bulbasaur", "eevee")
+        allies.forEachIndexed { column, species ->
+            drawTargetCard(context, BattleScreenGeometry.targetTile(width, height, slots, 0, column),
+                species, true, false, column == 0)
+        }
+        opponents.forEachIndexed { column, species ->
+            drawTargetCard(context, BattleScreenGeometry.targetTile(width, height, slots, 1, column),
+                species, false, column == 1, false)
+        }
+    }
+
+    private fun drawTargetCard(context: DrawContext, rect: jbro.cobblemon.battleui.navigation.UiRect,
+                               species: String, ally: Boolean, focused: Boolean, unavailable: Boolean) {
+        val x = rect.x()
+        val y = rect.y()
+        val portraitSize = 16
+        val portraitX = x + rect.width() - portraitSize - 4
+        val accent = if (focused) BattleUiTheme.FOCUS else if (ally) BattleUiTheme.CYAN else BattleUiTheme.PURPLE
+        BattleSurfaceRenderer.draw(context, x, y, rect.width(), rect.height(),
+            BattleUiTheme.panel.copy(border = accent, borderWidth = if (focused) 2 else 1,
+                cut = 3, corners = 0b1001), if (unavailable) .7f else 1f)
+        val name = Text.translatable("cobblemon.species.$species.name").string
+        val font = MinecraftClient.getInstance().textRenderer
+        text(context, font.trimToWidth(name, portraitX - x - if (unavailable) 20 else 10),
+            x + if (unavailable) 15 else 5, y + 7,
+            if (unavailable) BattleUiTheme.MUTED else BattleUiTheme.TEXT)
+        if (unavailable) text(context, "×", x + 5, y + 7, BattleUiTheme.DANGER)
+        BattleSurfaceRenderer.draw(context, portraitX, y + 3, portraitSize, portraitSize,
+            BattleUiTheme.panel.copy(border = accent, cut = 3))
+        PokemonModelRenderer.drawPokemonModel(context, portraitX + 1, y + 4,
+            portraitSize - 2, null,
+            Identifier.of("cobblemon", species), emptySet(), UUID.nameUUIDFromBytes(species.toByteArray()),
+            false, null, ally, { it }, 1f)
     }
 
     private fun hpColor(hp: Float) = when {

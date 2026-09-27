@@ -50,6 +50,33 @@ public final class BattleScreenGeometry {
         return new UiRect(panel.x() + 116, panel.y() + 50, 68, 24);
     }
 
+    /** Non-interactive draft: one narrow column per side, below the HUD and above the hotbar. */
+    public static UiRect targetPanel(int screenWidth, int screenHeight, int slotsPerSide) {
+        if (slotsPerSide < 2 || slotsPerSide > 3) {
+            throw new IllegalArgumentException("Target selection supports two or three slots per side");
+        }
+        int width = Math.min(184, Math.max(0, screenWidth - 20));
+        int height = slotsPerSide == 3 ? 94 : 74;
+        int minY = slotsPerSide == 3 ? 105 : 88;
+        int y = Math.max(0, Math.min(Math.max(minY, screenHeight - height - 56), screenHeight - height - 8));
+        return new UiRect(Math.max(0, (screenWidth - width) / 2), y, width, height);
+    }
+
+    public static UiRect targetTile(int screenWidth, int screenHeight, int slotsPerSide, int row, int column) {
+        if (row < 0 || row > 1 || column < 0 || column >= slotsPerSide) {
+            throw new IllegalArgumentException("Target tile must be inside the two-side battle grid");
+        }
+        UiRect panel = targetPanel(screenWidth, screenHeight, slotsPerSide);
+        int width = (panel.width() - 18) / 2;
+        return new UiRect(panel.x() + 6 + row * (width + 6),
+                panel.y() + 22 + column * 24, width, 22);
+    }
+
+    public static UiRect targetBack(int screenWidth, int screenHeight, int slotsPerSide) {
+        UiRect panel = targetPanel(screenWidth, screenHeight, slotsPerSide);
+        return new UiRect(panel.x() + panel.width() - 36, panel.y() + 3, 30, 13);
+    }
+
     /** Cancels Cobblemon 1.8.1's 4 px per-slot X stagger in single-actor compact HUDs. */
     public static int compactHudSlotIndent(float nativeY, int slotsPerActor, int actorsPerSide) {
         if (slotsPerActor < 2 || actorsPerSide != 1) {
