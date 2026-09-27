@@ -49,4 +49,16 @@ public final class BattleScreenGeometry {
         UiRect panel = forfeitPanel(screenWidth, screenHeight);
         return new UiRect(panel.x() + 116, panel.y() + 50, 68, 24);
     }
+
+    /** Cancels Cobblemon 1.8.1's 4 px per-slot X stagger in single-actor compact HUDs. */
+    public static int compactHudSlotIndent(float nativeY, int slotsPerActor, int actorsPerSide) {
+        if (slotsPerActor < 2 || actorsPerSide != 1) {
+            return 0;
+        }
+        int rank = Math.round((nativeY - 10f) / 30f);
+        if (rank < 0 || rank >= slotsPerActor || Math.abs(nativeY - (10 + rank * 30)) > 0.5f) {
+            return 0;
+        }
+        return (slotsPerActor - rank - 1) * 4;
+    }
 }

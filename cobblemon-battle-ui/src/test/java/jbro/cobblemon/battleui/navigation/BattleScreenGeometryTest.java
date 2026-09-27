@@ -53,4 +53,15 @@ class BattleScreenGeometryTest {
         assertEquals(2, navigator.move(-1, 0));
         assertEquals(4, navigator.move(0, 1));
     }
+
+    @Test
+    void compactHudRowsCancelNativeHorizontalStaggerWithoutChangingVerticalOrder() {
+        assertEquals(4, BattleScreenGeometry.compactHudSlotIndent(10f, 2, 1));
+        assertEquals(0, BattleScreenGeometry.compactHudSlotIndent(40f, 2, 1));
+        assertEquals(8, BattleScreenGeometry.compactHudSlotIndent(10f, 3, 1));
+        assertEquals(4, BattleScreenGeometry.compactHudSlotIndent(40f, 3, 1));
+        assertEquals(0, BattleScreenGeometry.compactHudSlotIndent(70f, 3, 1));
+        assertEquals(0, BattleScreenGeometry.compactHudSlotIndent(20f, 2, 2));
+        assertEquals(0, BattleScreenGeometry.compactHudSlotIndent(10f, 1, 1));
+    }
 }

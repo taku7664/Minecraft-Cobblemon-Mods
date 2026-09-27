@@ -6,7 +6,9 @@ import com.cobblemon.mod.common.pokemon.Species
 import com.cobblemon.mod.common.pokemon.status.PersistentStatus
 import com.cobblemon.mod.common.client.render.models.blockbench.PosableState
 import com.cobblemon.mod.common.client.gui.battle.BattleOverlay
+import com.cobblemon.mod.common.client.CobblemonClient
 import jbro.cobblemon.battleui.extended.pokemon.render.PokemonModelRenderer
+import jbro.cobblemon.battleui.navigation.BattleScreenGeometry
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
@@ -27,7 +29,12 @@ object BattleHudRenderer {
              actorName: Text?, flatHealth: Boolean, dexState: PokedexEntryProgress) {
         val client = MinecraftClient.getInstance()
         val nativeWidth = if (compact) BattleOverlay.COMPACT_TILE_WIDTH else BattleOverlay.TILE_WIDTH
-        val x = (nativeX + if (reversed) 2 - (WIDTH - nativeWidth) else -2).toInt()
+        val battleType = CobblemonClient.battle?.battleFormat?.battleType
+        val slotIndent = if (compact && battleType != null) {
+            BattleScreenGeometry.compactHudSlotIndent(nativeY,
+                battleType.slotsPerActor, battleType.actorsPerSide)
+        } else 0
+        val x = (nativeX + if (reversed) 2 - (WIDTH - nativeWidth) + slotIndent else -2 - slotIndent).toInt()
         val y = nativeY.toInt() + if (compact) 12 else 18
         val height = if (compact) 28 else 50
         val accent = if (reversed) BattleUiTheme.PURPLE else BattleUiTheme.CYAN

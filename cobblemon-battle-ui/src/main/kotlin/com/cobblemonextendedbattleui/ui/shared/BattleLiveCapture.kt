@@ -3,6 +3,7 @@ package jbro.cobblemon.battleui.extended.ui.shared
 import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.api.pokemon.PokemonProperties
 import com.cobblemon.mod.common.battles.BattleBuilder
+import com.cobblemon.mod.common.battles.BattleFormat
 import com.cobblemon.mod.common.battles.ErroredBattleStart
 import com.cobblemon.mod.common.battles.ForfeitActionResponse
 import com.cobblemon.mod.common.battles.SuccessfulBattleStart
@@ -53,6 +54,14 @@ internal object BattleLiveCapture {
         val trainerBattle = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TRAINER") == "1"
         val acceptForfeit = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_FORFEIT_ACCEPT") == "1"
         require(!acceptForfeit || (trainerBattle && page == "forfeit"))
+        val battleFormatName = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_BATTLE_FORMAT") ?: "single"
+        val battleFormat = when (battleFormatName) {
+            "single" -> BattleFormat.GEN_9_SINGLES
+            "double" -> BattleFormat.GEN_9_DOUBLES
+            "triple" -> BattleFormat.GEN_9_TRIPLES
+            else -> error("Unsupported live capture battle format")
+        }
+        require(trainerBattle || battleFormat == BattleFormat.GEN_9_SINGLES)
         val captureWaitTicks = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_WAIT_TICKS")?.toInt() ?: 80
         require(captureWaitTicks in 20..400)
         ClientTickEvents.END_CLIENT_TICK.register { client ->
@@ -190,6 +199,17 @@ internal object BattleLiveCapture {
                 CobblemonExtendedBattleUI.LOGGER.info("Live battle keyboard navigation verified on '{}'", page)
             }
             if (++ticks < captureWaitTicks) return@register
+            if (battleFormat.battleType.slotsPerActor > 1) {
+                val battle = checkNotNull(CobblemonClient.battle)
+                val selfSlots = battle.side1.activeClientBattlePokemon.count { it.battlePokemon != null }
+                val opponentSlots = battle.side2.activeClientBattlePokemon.count { it.battlePokemon != null }
+                check(selfSlots == battleFormat.battleType.slotsPerActor &&
+                    opponentSlots == battleFormat.battleType.slotsPerActor) {
+                    "Expected ${battleFormat.battleType.slotsPerActor} HUD slots per side, got $selfSlots/$opponentSlots"
+                }
+                CobblemonExtendedBattleUI.LOGGER.info("Live {} battle has {} / {} active HUD slots",
+                    battleFormatName, selfSlots, opponentSlots)
+            }
             screenshotPending = true
             val label = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_LABEL") ?: "live"
             require(label.matches(Regex("[a-z0-9-]+")))
@@ -206,7 +226,7 @@ internal object BattleLiveCapture {
                 if (++battleAttemptTicks < 10) return@register
                 pendingTrainer = null
                 pendingPlayerId = null
-                when (val result = BattleBuilder.pvn(player, trainer)) {
+                when (val result = BattleBuilder.pvn(player, trainer, battleFormat = battleFormat)) {
                     is SuccessfulBattleStart -> CobblemonExtendedBattleUI.LOGGER.info(
                         "Live trainer battle started in fixture world: {}", result.battle.battleId)
                     is ErroredBattleStart -> CobblemonExtendedBattleUI.LOGGER.error(
@@ -265,10 +285,12 @@ internal object BattleLiveCapture {
                 val trainer = NPCEntity(world)
                 trainer.npc = NPCClasses.classes.sortedBy { it.id.toString() }.first()
                 val party = NPCPartyStore(trainer)
-                check(party.add(PokemonProperties().apply {
-                    species = "charizard"
-                    level = 50
-                }.create())) { "Could not add trainer's Pokémon" }
+                listOf("charizard", "squirtle", "meowth").forEach { species ->
+                    check(party.add(PokemonProperties().apply {
+                        this.species = species
+                        level = 50
+                    }.create())) { "Could not add trainer's $species" }
+                }
                 party.initialize()
                 trainer.party = party
                 trainer.setPosition(player.x + 3.0, player.y, player.z + 3.0)
