@@ -220,5 +220,7 @@
   "trainer.more_cobblemon_contents.tower_trainer_117": "Tower Ace Isaac Sullivan",
   "trainer.more_cobblemon_contents.tower_trainer_118": "Tower Ace Julia Sullivan",
   "trainer.more_cobblemon_contents.tower_trainer_119": "Tower Ace Kai Sullivan",
-  "trainer.more_cobblemon_contents.tower_trainer_120": "Tower Ace Lena Sullivan"
+  "trainer.more_cobblemon_contents.tower_trainer_120": "Tower Ace Lena Sullivan",
+  "screen.more_cobblemon_contents.hub.tab.battle_tower": "Battle Tower",
+  "screen.more_cobblemon_contents.hub.unavailable.battle_tower": "The Battle Tower screen could not be opened."
 }

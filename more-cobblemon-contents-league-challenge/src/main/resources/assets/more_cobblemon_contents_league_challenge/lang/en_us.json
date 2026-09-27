@@ -121,5 +121,7 @@
   "screen.more_cobblemon_contents_league_challenge.home.rank.poke_ball": "Poké Ball",
   "screen.more_cobblemon_contents_league_challenge.home.rank.ultra_ball": "Ultra Ball",
   "screen.more_cobblemon_contents_league_challenge.home.rank_value": "Rank: %s",
-  "screen.more_cobblemon_contents_league_challenge.home.title": "League Challenge"
+  "screen.more_cobblemon_contents_league_challenge.home.title": "League Challenge",
+  "screen.more_cobblemon_contents.hub.tab.league_challenge": "League Challenge",
+  "screen.more_cobblemon_contents.hub.unavailable.league_challenge": "The League Challenge screen could not be opened."
 }

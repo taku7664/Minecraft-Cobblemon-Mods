@@ -106,5 +106,7 @@
   "screen.more_cobblemon_contents.pvp.closed.cancelled": "PvP battle preparation was cancelled.",
   "screen.more_cobblemon_contents.pvp.closed.disconnected": "PvP battle preparation was cancelled because a participant disconnected.",
   "screen.more_cobblemon_contents.pvp.closed.battle_started": "Starting the PvP battle.",
-  "screen.more_cobblemon_contents.pvp.lounge.rescued": "Returned you to the overworld spawn: the battle lounge had no record of where you came from."
+  "screen.more_cobblemon_contents.pvp.lounge.rescued": "Returned you to the overworld spawn: the battle lounge had no record of where you came from.",
+  "screen.more_cobblemon_contents.hub.tab.pvp": "PvP",
+  "screen.more_cobblemon_contents.hub.unavailable.pvp": "The PvP screen could not be opened."
 }

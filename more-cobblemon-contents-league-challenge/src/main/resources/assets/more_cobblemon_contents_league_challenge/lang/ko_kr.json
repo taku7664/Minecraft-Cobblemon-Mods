@@ -121,5 +121,7 @@
   "screen.more_cobblemon_contents_league_challenge.home.rank.poke_ball": "몬스터볼",
   "screen.more_cobblemon_contents_league_challenge.home.rank.ultra_ball": "하이퍼볼",
   "screen.more_cobblemon_contents_league_challenge.home.rank_value": "계급: %s",
-  "screen.more_cobblemon_contents_league_challenge.home.title": "League Challenge"
+  "screen.more_cobblemon_contents_league_challenge.home.title": "League Challenge",
+  "screen.more_cobblemon_contents.hub.tab.league_challenge": "리그 챌린지",
+  "screen.more_cobblemon_contents.hub.unavailable.league_challenge": "리그 챌린지 화면을 열 수 없습니다."
 }

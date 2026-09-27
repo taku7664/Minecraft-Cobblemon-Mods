@@ -171,5 +171,8 @@
   "factory.more_cobblemon_contents.concept.articuno_balance_roster_3.name": "Leah Morgan",
   "factory.more_cobblemon_contents.concept.regigigas_control_roster_2.name": "Aiden Park",
   "factory.more_cobblemon_contents.concept.regigigas_control_roster_3.name": "Bianca Park",
-  "factory.more_cobblemon_contents.trainer.shared.description": "A Battle Factory trainer who draws a legal team from the same complete rental preset pool offered to challengers."
+  "factory.more_cobblemon_contents.trainer.shared.description": "A Battle Factory trainer who draws a legal team from the same complete rental preset pool offered to challengers.",
+  "screen.more_cobblemon_contents.hub.tab.battle_factory": "Battle Factory",
+  "screen.more_cobblemon_contents.hub.unavailable.battle_factory": "The Battle Factory screen could not be opened.",
+  "screen.more_cobblemon_contents.dashboard.metric.highest_floor": "Best floor %s"
 }

@@ -106,5 +106,7 @@
   "screen.more_cobblemon_contents.pvp.closed.cancelled": "PvP 대전 준비가 취소됐습니다.",
   "screen.more_cobblemon_contents.pvp.closed.disconnected": "참가자의 연결이 종료되어 PvP 대전 준비가 취소됐습니다.",
   "screen.more_cobblemon_contents.pvp.closed.battle_started": "PvP 배틀을 시작합니다.",
-  "screen.more_cobblemon_contents.pvp.lounge.rescued": "배틀 라운지에 돌아갈 위치 기록이 없어 오버월드 스폰으로 이동했습니다."
+  "screen.more_cobblemon_contents.pvp.lounge.rescued": "배틀 라운지에 돌아갈 위치 기록이 없어 오버월드 스폰으로 이동했습니다.",
+  "screen.more_cobblemon_contents.hub.tab.pvp": "PvP",
+  "screen.more_cobblemon_contents.hub.unavailable.pvp": "PvP 화면을 열 수 없습니다."
 }

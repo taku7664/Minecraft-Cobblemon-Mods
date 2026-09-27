@@ -171,5 +171,8 @@
   "factory.more_cobblemon_contents.concept.articuno_balance_roster_3.name": "윤나희",
   "factory.more_cobblemon_contents.concept.regigigas_control_roster_2.name": "장나희",
   "factory.more_cobblemon_contents.concept.regigigas_control_roster_3.name": "임나희",
-  "factory.more_cobblemon_contents.trainer.shared.description": "도전자와 같은 완성 렌탈세트 풀에서 규칙에 맞는 팀을 구성하는 배틀팩토리 트레이너입니다."
+  "factory.more_cobblemon_contents.trainer.shared.description": "도전자와 같은 완성 렌탈세트 풀에서 규칙에 맞는 팀을 구성하는 배틀팩토리 트레이너입니다.",
+  "screen.more_cobblemon_contents.hub.tab.battle_factory": "배틀팩토리",
+  "screen.more_cobblemon_contents.hub.unavailable.battle_factory": "배틀팩토리 화면을 열 수 없습니다.",
+  "screen.more_cobblemon_contents.dashboard.metric.highest_floor": "최고 %s층"
 }
