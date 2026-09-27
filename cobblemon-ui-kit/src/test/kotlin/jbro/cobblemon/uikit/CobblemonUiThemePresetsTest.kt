@@ -19,7 +19,13 @@ class CobblemonUiThemePresetsTest {
                 "paldea_portal",
                 "hoenn_pixel",
                 "johto_touch",
-                "unova_pixel"
+                "unova_pixel",
+                "tower_lobby",
+                "tower_elevator",
+                "tower_sunburst",
+                "factory_showroom",
+                "factory_night",
+                "factory_terminal"
             ),
             UiThemePreset.entries.map(UiThemePreset::id)
         )
