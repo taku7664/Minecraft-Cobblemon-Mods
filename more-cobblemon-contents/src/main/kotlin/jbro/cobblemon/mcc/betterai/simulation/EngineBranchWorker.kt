@@ -330,7 +330,7 @@ internal class EngineBranchWorker(
                                     addProperty("id", m.id)
                                     m.pp?.let { addProperty("pp", it) }
                                     m.maxpp?.let { addProperty("maxpp", it) }
-                                    addProperty("target", m.target)
+                                    if (m.target.isNotEmpty()) addProperty("target", m.target)
                                     addProperty("disabled", Js.truthy(m.disabled))
                                 })
                             }

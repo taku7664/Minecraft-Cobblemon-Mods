@@ -440,14 +440,15 @@ class Pokemon(val set: PokemonSet, val side: Side) {
     fun getMoves(lockedMove: String? = null, restrictData: Boolean = false): List<MoveRequest> {
         if (lockedMove != null) {
             val locked = Js.toID(lockedMove)
+            // Showdown lists a locked move as just {move, id}: no target, so the choice takes no target either.
             trapped = true
-            if (locked == "recharge") return listOf(MoveRequest("Recharge", "recharge", null, null, "self", false))
+            if (locked == "recharge") return listOf(MoveRequest("Recharge", "recharge", null, null, "", false))
             for (slot in moveSlots) {
                 if (slot.id != locked) continue
-                return listOf(MoveRequest(slot.move, slot.id, null, null, slot.target, false))
+                return listOf(MoveRequest(slot.move, slot.id, null, null, "", false))
             }
             val data = battle.dex.move(locked)
-            return listOf(MoveRequest(data?.name ?: locked, locked, null, null, data?.target ?: "normal", false))
+            return listOf(MoveRequest(data?.name ?: locked, locked, null, null, "", false))
         }
         val moves = ArrayList<MoveRequest>()
         var hasValidMove = false

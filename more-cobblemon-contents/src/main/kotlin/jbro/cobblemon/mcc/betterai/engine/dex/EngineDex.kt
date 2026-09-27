@@ -56,7 +56,8 @@ class EngineDex private constructor(root: JsonObject) {
 
     /** `dex.moves.get` for an id with no data (Recharge): Showdown hands out an empty, non-existent move. */
     fun moveOrPlaceholder(name: String): MoveData = move(name) ?: placeholderMoves.getOrPut(Js.toID(name)) {
-        MoveData(Js.toID(name), JsonObject().apply { addProperty("name", Js.toID(name)); addProperty("exists", false) })
+        // No target type either: Showdown then picks a random target for it (a roll the engine must match).
+        MoveData(Js.toID(name), JsonObject().apply { addProperty("name", Js.toID(name)); addProperty("exists", false); addProperty("target", "") })
     }
 
     fun ability(name: String): Effect = abilityTable[Js.toID(name)] ?: emptyAbility

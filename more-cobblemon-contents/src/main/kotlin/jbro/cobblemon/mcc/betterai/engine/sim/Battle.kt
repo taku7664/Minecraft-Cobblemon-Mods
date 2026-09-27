@@ -480,7 +480,8 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
             if (cb != null) handlers.add(resolvePriority(EventHandler(species, cb, pokemon.speciesState, { Unit }, pokemon), callbackName))
         }
         val side = pokemon.side
-        for ((id, slotState) in side.slotConditions[pokemon.position].entries.toList()) {
+        // A benched Pokemon has no slot: JS reads slotConditions[position] as undefined and finds nothing.
+        for ((id, slotState) in side.slotConditions.getOrNull(pokemon.position)?.entries?.toList().orEmpty()) {
             val slotCondition = dex.conditionById(id)
             callback = slotCondition.handler(callbackName)
             if (callback != null || (getKey != null && slotState.truthy(getKey))) {
