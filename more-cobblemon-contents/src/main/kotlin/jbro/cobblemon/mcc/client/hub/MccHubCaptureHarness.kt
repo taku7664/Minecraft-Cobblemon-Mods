@@ -8,6 +8,7 @@ import jbro.cobblemon.mcc.internal.hub.BattleHubRecordView
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Screenshot
+import net.minecraft.client.gui.components.AbstractButton
 import net.minecraft.network.chat.Component
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -19,6 +20,8 @@ import java.util.concurrent.atomic.AtomicReference
  * is captured to `screenshots/`, closed through its ESC path, and the client stops.
  * With `MCC_HUB_CAPTURE_OPEN=<tab id>` the hub then selects that tab as its rail button would: an embedded tab
  * is captured inside the hub once its server state had time to arrive, a screen tab once the server opened it.
+ * `MCC_HUB_CAPTURE_PRESS=<translation key,...>` then presses the tab's buttons with those labels one by one, capturing
+ * after each, to reach later phases of a tab.
  * `MCC_HUB_CAPTURE_PARTY=<species,...>` first tops the player's party up to that many Pokemon through the integrated
  * server, so party-driven tabs show real portraits.
  */
@@ -38,6 +41,10 @@ object MccHubCaptureHarness {
         val openContent = System.getenv("MCC_HUB_CAPTURE_OPEN")?.trim()?.takeIf { it.isNotEmpty() }
         val partyFixture = System.getenv("MCC_HUB_CAPTURE_PARTY")?.split(',')?.map(String::trim)?.filter(String::isNotEmpty).orEmpty()
         var partyRequested = partyFixture.isEmpty()
+        val presses = ArrayDeque(System.getenv("MCC_HUB_CAPTURE_PRESS")?.split(',')?.map(String::trim)?.filter(String::isNotEmpty).orEmpty())
+        var pressStep = 0
+        var pressTicks = 0
+        val pressCaptured = AtomicBoolean(true)
         var partyWait = 0
 
         var guiScaleApplied = guiScale == null
@@ -101,6 +108,8 @@ object MccHubCaptureHarness {
             }
             if (closed) return@EndTick
             ticks += 1
+            // Tutorial and advancement toasts would cover the tab being checked.
+            client.toasts.clear()
             if (!requested && ticks >= 20) {
                 requested = true
                 val name = "mcc-hub-$fixture-${client.languageManager.selected}-" +
@@ -139,10 +148,34 @@ object MccHubCaptureHarness {
                         contentCaptured.set(true)
                     }
                 }
-                if (contentCaptured.get()) {
+                if (!contentCaptured.get() || !pressCaptured.get()) return@EndTick
+                if (pressTicks > 0) {
+                    // Give the server's answer to the press time to arrive and the tab time to rebuild.
+                    if (--pressTicks == 0) {
+                        pressCaptured.set(false)
+                        val name = "mcc-hub-open-${openContent.substringAfter(':')}-step$pressStep-${client.languageManager.selected}-" +
+                            "${client.window.guiScaledWidth}x${client.window.guiScaledHeight}.png"
+                        Screenshot.grab(client.gameDirectory, name, client.mainRenderTarget) { result ->
+                            logger.info("Hub step capture {}: {}", name, result.string)
+                            pressCaptured.set(true)
+                        }
+                    }
+                    return@EndTick
+                }
+                val key = presses.removeFirstOrNull()
+                if (key == null) {
                     closed = true
                     client.stop()
+                    return@EndTick
                 }
+                val label = Component.translatable(key).string
+                val target = checkNotNull(client.screen).children().filterIsInstance<AbstractButton>().firstOrNull { it.message.string == label }
+                checkNotNull(target) { "No hub button labelled $label ($key)" }
+                check(target.active) { "Hub button $label is disabled" }
+                target.onPress()
+                pressStep += 1
+                pressTicks = 40
+                logger.info("Pressed hub button {}", label)
                 return@EndTick
             }
             if (requested && captured.get()) {
