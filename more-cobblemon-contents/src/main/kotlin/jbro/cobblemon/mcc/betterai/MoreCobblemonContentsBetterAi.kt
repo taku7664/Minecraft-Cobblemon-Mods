@@ -18,6 +18,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleBrainRegistry
 import jbro.cobblemon.mcc.internal.ai.BattleBrainSelectionPolicy
 import jbro.cobblemon.mcc.internal.ai.BrainCapability
 import jbro.cobblemon.mcc.internal.ai.BrainId
+import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.betterai.brain.AiTestDecisionSnapshot
 import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.mcc.betterai.brain.OpenRouterHttpTransport
@@ -31,17 +32,17 @@ import jbro.cobblemon.mcc.betterai.router.OpenRouterModelMetadata
 import jbro.cobblemon.mcc.betterai.router.OpenRouterModelMetadataHttpTransport
 import jbro.cobblemon.mcc.betterai.router.OpenRouterModelMetadataTransport
 import jbro.cobblemon.mcc.betterai.simulation.NativeShowdownRuntimeService
-import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.loader.api.FabricLoader
 import org.slf4j.LoggerFactory
 
-object MoreCobblemonContentsBetterAi : ModInitializer {
-    const val MOD_ID: String = "more_cobblemon_contents"
+/** Built-in tactical AI; [MoreCobblemonContents] initializes it after the core services. */
+object MoreCobblemonContentsBetterAi {
+    const val MOD_ID: String = MoreCobblemonContents.MOD_ID
 
     private val logger = LoggerFactory.getLogger(MOD_ID)
 
-    override fun onInitialize() {
+    fun initialize() {
         val loader = FabricLoader.getInstance()
         val config = try {
             BetterAiConfigStore.loadOrCreate(

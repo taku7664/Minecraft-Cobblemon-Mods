@@ -24,6 +24,7 @@ import jbro.cobblemon.mcc.internal.presentation.BattleArenaHologramNetworking
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleMechanicVisibilityNetworking
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleContentNetworking
 import jbro.cobblemon.mcc.internal.bp.shop.ShopPlayNetworking
+import jbro.cobblemon.mcc.betterai.MoreCobblemonContentsBetterAi
 
 object MoreCobblemonContents : ModInitializer {
     const val MOD_ID: String = "more_cobblemon_contents"
@@ -69,5 +70,6 @@ object MoreCobblemonContents : ModInitializer {
             aiTest = Cobblemon173AiTestBattleRuntime,
         )
         ManagedServerEphemeralStateCleanup.registerServer()
+        MoreCobblemonContentsBetterAi.initialize()
     }
 }

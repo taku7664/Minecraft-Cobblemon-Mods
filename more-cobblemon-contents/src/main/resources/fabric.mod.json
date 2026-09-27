@@ -12,10 +12,6 @@
       {
         "adapter": "kotlin",
         "value": "jbro.cobblemon.mcc.MoreCobblemonContents"
-      },
-      {
-        "adapter": "kotlin",
-        "value": "jbro.cobblemon.mcc.betterai.MoreCobblemonContentsBetterAi"
       }
     ],
     "client": [

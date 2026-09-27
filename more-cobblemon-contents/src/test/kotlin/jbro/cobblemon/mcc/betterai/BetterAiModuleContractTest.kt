@@ -1,6 +1,5 @@
 package jbro.cobblemon.mcc.betterai
 
-import com.google.gson.JsonParser
 import jbro.cobblemon.mcc.internal.ai.BattleBrainContentIds
 import jbro.cobblemon.mcc.internal.ai.BattleBrainProviderRole
 import jbro.cobblemon.mcc.internal.ai.BattleBrainRegistry
@@ -10,35 +9,12 @@ import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import jbro.cobblemon.mcc.internal.ai.BrainCapability
 import jbro.cobblemon.mcc.internal.ai.BrainId
 import jbro.cobblemon.mcc.betterai.router.BetterAiConfig
-import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class BetterAiModuleContractTest {
-    @Test
-    fun `addon metadata requires a compatible core and loads for integrated servers`() {
-        val stream = javaClass.classLoader.getResourceAsStream("fabric.mod.json")
-        assertNotNull(stream, "fabric.mod.json must be packaged")
-
-        val root = stream!!.reader().use { JsonParser.parseReader(it).asJsonObject }
-        assertEquals("more_cobblemon_contents", root["id"].asString)
-        assertEquals("More Cobblemon Contents Better AI", root["name"].asString)
-        assertEquals("*", root["environment"].asString)
-
-        val main = root.getAsJsonObject("entrypoints").getAsJsonArray("main")[0].asJsonObject
-        assertEquals("kotlin", main["adapter"].asString)
-        assertEquals("jbro.cobblemon.mcc.betterai.MoreCobblemonContentsBetterAi", main["value"].asString)
-
-        val depends = root.getAsJsonObject("depends")
-        assertEquals(">=0.19.5", depends["fabricloader"].asString)
-        assertEquals(">=1.14.1+kotlin.2.4.20", depends["fabric-language-kotlin"].asString)
-        assertEquals(">=1.6.21 <2.0.0", depends["more_cobblemon_contents"].asString)
-
-        assertDoesNotThrow { Class.forName(main["value"].asString) }
-    }
-
     @Test
     fun `addon registers one local tactical provider for single and double`() {
         val registry = BattleBrainRegistry.create()
