@@ -14,7 +14,7 @@ value class BattleContentId(val value: String) : Comparable<BattleContentId> {
 }
 
 @JvmInline
-internal value class BattleFormatId(val value: String) : Comparable<BattleFormatId> {
+value class BattleFormatId(val value: String) : Comparable<BattleFormatId> {
     init {
         require(APPLICATION_ID.matches(value)) { "Invalid battle format ID: $value" }
     }
@@ -22,9 +22,9 @@ internal value class BattleFormatId(val value: String) : Comparable<BattleFormat
     override fun compareTo(other: BattleFormatId): Int = value.compareTo(other.value)
 }
 
-internal enum class BattleEntryPoint { COMMAND, VERIFIED_TERMINAL }
+enum class BattleEntryPoint { COMMAND, VERIFIED_TERMINAL }
 
-internal data class BattleApplicationRequestContext(
+data class BattleApplicationRequestContext(
     val requestId: UUID,
     val playerId: UUID,
     val entryPoint: BattleEntryPoint,
@@ -37,7 +37,7 @@ internal data class BattleApplicationRequestContext(
     }
 }
 
-internal class BattleContentDescriptor(
+class BattleContentDescriptor(
     val contentId: BattleContentId,
     formats: Collection<BattleFormatId>,
 ) {
@@ -55,7 +55,7 @@ internal class BattleContentDescriptor(
     override fun toString(): String = "BattleContentDescriptor(contentId=$contentId, formats=$formats)"
 }
 
-internal class BattleHubView(contents: Collection<BattleContentDescriptor>) {
+class BattleHubView(contents: Collection<BattleContentDescriptor>) {
     val contents: List<BattleContentDescriptor> = contents.toList()
 
     init {
@@ -69,9 +69,9 @@ internal class BattleHubView(contents: Collection<BattleContentDescriptor>) {
     override fun toString(): String = "BattleHubView(contents=$contents)"
 }
 
-internal enum class BattleContentPhase { AVAILABLE, PREPARING, ACTIVE, SUSPENDED }
+enum class BattleContentPhase { AVAILABLE, PREPARING, ACTIVE, SUSPENDED }
 
-internal class BattleContentStatus(
+class BattleContentStatus(
     val playerId: UUID,
     val contentId: BattleContentId,
     val formatId: BattleFormatId?,
@@ -109,15 +109,15 @@ internal class BattleContentStatus(
         "BattleContentStatus(playerId=$playerId, contentId=$contentId, formatId=$formatId, phase=$phase, progress=$progress)"
 }
 
-internal enum class BattleApplicationError { UNKNOWN_CONTENT, UNSUPPORTED_FORMAT, CONTENT_FAILURE }
+enum class BattleApplicationError { UNKNOWN_CONTENT, UNSUPPORTED_FORMAT, CONTENT_FAILURE }
 
-internal sealed interface BattleApplicationResult<out T> {
+sealed interface BattleApplicationResult<out T> {
     data class Success<T>(val value: T) : BattleApplicationResult<T>
 
     data class Rejected(val error: BattleApplicationError) : BattleApplicationResult<Nothing>
 }
 
-internal interface BattleContentApplication {
+interface BattleContentApplication {
     val descriptor: BattleContentDescriptor
 
     fun status(context: BattleApplicationRequestContext): BattleContentStatus
@@ -129,7 +129,7 @@ internal interface BattleContentApplication {
     fun abandon(context: BattleApplicationRequestContext): BattleContentStatus
 }
 
-internal class DefaultBattleContentApplicationService(
+class DefaultBattleContentApplicationService(
     contentApplications: Collection<BattleContentApplication>,
     private val reportFailure: (BattleContentId, Throwable) -> Unit = { contentId, exception ->
         MoreCobblemonContents.LOGGER.error("Battle content operation failed for ${contentId.value}", exception)

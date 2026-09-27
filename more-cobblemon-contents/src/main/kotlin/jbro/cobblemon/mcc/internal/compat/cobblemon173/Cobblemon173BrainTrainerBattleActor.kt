@@ -555,7 +555,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
     }
 }
 
-internal object Cobblemon173BrainDecisionTiming {
+object Cobblemon173BrainDecisionTiming {
     fun deadline(now: Long, unbounded: Boolean): Long = when {
         unbounded -> Long.MAX_VALUE
         now > Long.MAX_VALUE - BattleBrainDefaults.DECISION_TIMEOUT_MILLIS -> Long.MAX_VALUE

@@ -1,7 +1,6 @@
 package jbro.cobblemon.mcc
 
 import net.fabricmc.api.ModInitializer
-import jbro.cobblemon.mcc.internal.tower.BattleTowerContent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import jbro.cobblemon.mcc.internal.application.DefaultBattleContentApplicationService
@@ -21,7 +20,7 @@ import jbro.cobblemon.mcc.betterai.MoreCobblemonContentsBetterAi
 object MoreCobblemonContents : ModInitializer {
     const val MOD_ID: String = "more_cobblemon_contents"
     val LOGGER: Logger = LoggerFactory.getLogger(MOD_ID)
-    internal val CONTENTS: DefaultBattleContentApplicationService by lazy {
+    val CONTENTS: DefaultBattleContentApplicationService by lazy {
         DefaultBattleContentApplicationService(emptyList())
     }
 
@@ -30,8 +29,6 @@ object MoreCobblemonContents : ModInitializer {
         jbro.cobblemon.mcc.api.battle.ManagedPveBattles.registerLifecycle()
         HoloBattleTerminalContent.register { player, verification -> BattleHubNetworking.open(player, verification) }
         BattlePointShopCatalogResources.register()
-        // Content mods call these from their own initializers once they are split out.
-        BattleTowerContent.initialize()
         ShopPlayNetworking.registerServer()
         BattleHubNetworking.registerServer()
         ShadowTrainerProjectionNetworking.registerServer()

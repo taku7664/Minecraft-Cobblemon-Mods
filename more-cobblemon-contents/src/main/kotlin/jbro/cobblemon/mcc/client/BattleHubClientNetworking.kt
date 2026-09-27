@@ -45,7 +45,7 @@ internal object MccContentNavigation {
     }
 }
 
-internal object MccBattleHubClientState {
+object MccBattleHubClientState {
     var denied: Map<BattleHubContent, ContentAccessDecision.Denied> = emptyMap()
     var bpBalance: Long = 0L
         private set

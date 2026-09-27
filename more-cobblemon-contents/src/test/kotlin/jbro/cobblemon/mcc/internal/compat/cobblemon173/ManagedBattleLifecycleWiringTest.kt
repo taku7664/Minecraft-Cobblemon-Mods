@@ -20,9 +20,7 @@ class ManagedBattleLifecycleWiringTest {
     @Test
     fun `every PvE content starts battles through the shared engine`() {
         listOf(
-            "Cobblemon173TowerPveBattleRuntime.kt",
             "ManagedPveBattleRuntime.kt",
-            "Cobblemon173AiTestBattleRuntime.kt",
         ).forEach { fileName ->
             val adapter = source(fileName)
             assertTrue(adapter.contains("Cobblemon173ManagedAiBattleEngine("), fileName)

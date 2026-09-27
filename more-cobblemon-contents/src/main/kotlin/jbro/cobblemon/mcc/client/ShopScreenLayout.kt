@@ -170,7 +170,7 @@ internal data class ShopScreenLayout(
     }
 }
 
-internal class MccVerticalScrollMetrics private constructor(
+class MccVerticalScrollMetrics private constructor(
     val maxOffset: Int,
     val thumbHeight: Int,
     private val trackHeight: Int,

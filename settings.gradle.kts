@@ -21,6 +21,7 @@ include(
     "more-battle-content-better-ai",
     "more-battle-content-league-challenge",
     "more-cobblemon-contents",
+    "more-cobblemon-contents-battle-tower",
     "more-cobblemon-contents-pvp",
     "more-cobblemon-contents-battle-factory",
     "player-popup-emotes",

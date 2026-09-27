@@ -7,7 +7,7 @@ import jbro.cobblemon.mcc.internal.compat.cobblemon173.reportManagedCleanupFailu
  * returns, its result is committed and must not be put back into a persistence retry queue merely
  * because a client update or diagnostic failed.
  */
-internal fun <T> attemptBattleCompletionSettlement(
+fun <T> attemptBattleCompletionSettlement(
     settle: () -> T,
     afterSettlement: (T) -> Unit,
     reportSettlementFailure: (Throwable) -> Unit,

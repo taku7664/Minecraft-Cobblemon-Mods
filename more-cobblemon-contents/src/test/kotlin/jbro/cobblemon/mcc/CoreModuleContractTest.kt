@@ -15,7 +15,7 @@ class CoreModuleContractTest {
 
         val root = stream!!.reader().use { JsonParser.parseReader(it).asJsonObject }
         assertEquals("more_cobblemon_contents", root["id"].asString)
-        assertEquals("More Cobblemon Contents", root["name"].asString)
+        assertEquals("More Cobblemon Contents Core", root["name"].asString)
         assertEquals("*", root["environment"].asString)
 
         val main = root.getAsJsonObject("entrypoints").getAsJsonArray("main")[0].asJsonObject

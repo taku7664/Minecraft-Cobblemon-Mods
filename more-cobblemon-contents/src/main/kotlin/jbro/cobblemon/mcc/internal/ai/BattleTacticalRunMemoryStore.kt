@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap
 import jbro.cobblemon.mcc.internal.ai.BattleTendencyView
 
 /** Volatile run memory. The owning content session MUST discard its scope when that session closes. */
-internal object BattleTacticalRunMemoryStore {
+object BattleTacticalRunMemoryStore {
     private val tendenciesByScope = ConcurrentHashMap<UUID, List<BattleTendencyView>>()
 
     fun snapshot(scopeId: UUID?): List<BattleTendencyView> =
