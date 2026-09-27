@@ -120,8 +120,11 @@ open class Effect(
     override fun toString(): String = name
 
     companion object {
+        /** Handler names that themselves end in "Priority" (the events FractionalPriority and ModifyPriority). */
+        private val PRIORITY_EVENT_HANDLER = Regex("^on(Ally|Foe|Source|Any)?(FractionalPriority|ModifyPriority)$")
+
         fun isPriorityField(key: String): Boolean =
-            key.endsWith("Priority") || key.endsWith("Order") || key.endsWith("SubOrder")
+            (key.endsWith("Priority") || key.endsWith("Order") || key.endsWith("SubOrder")) && !PRIORITY_EVENT_HANDLER.matches(key)
     }
 }
 

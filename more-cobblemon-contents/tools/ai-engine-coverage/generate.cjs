@@ -263,8 +263,9 @@ function codeHints(fn) {
 }
 
 // ---------- rows ----------
+// A row-specific entry wins; effect "*" covers every row of the entity (the referee sweep verifies whole entries).
 function coverageFor(category, id, key) {
-  return coverage[`${category}|${id}|${key}`] || null;
+  return coverage[`${category}|${id}|${key}`] || coverage[`${category}|${id}|*`] || null;
 }
 
 function entityRows(category, id, entry, ko, rank, en) {

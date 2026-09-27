@@ -49,9 +49,10 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
     var started = false
     var ended = false
     var winner: String? = null
-    var effect: EffectLike? = null
+    /** Showdown starts with `effect = {id: ''}` and `event = {id: ''}`: truthy objects outside any event. */
+    var effect: EffectLike = EMPTY_EFFECT
     var effectState: EffectState = EffectState("")
-    var event: BattleEvent? = null
+    var event: BattleEvent? = TOP_EVENT
     var eventDepth = 0
     var activeMove: ActiveMove? = null
     var activePokemon: Pokemon? = null
@@ -1438,6 +1439,8 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
     fun getSide(sideId: String): Side = sides[sideId.substring(1).toInt() - 1]
 
     companion object {
+        val EMPTY_EFFECT: Effect = Effect("", "", "", com.google.gson.JsonObject(), "", emptySet())
+        val TOP_EVENT = BattleEvent("", null, null, null)
         private val LEFT_TO_RIGHT_EVENTS = setOf("Invulnerability", "TryHit", "DamagingHit", "EntryHazard")
         private val UNPREFIXED_EVENTS = setOf("BeforeTurn", "Update", "Weather", "WeatherChange", "TerrainChange")
         private const val DEFAULT_ORDER = 4294967296.0
@@ -1477,5 +1480,4 @@ class Battle(val dex: EngineDex, val options: BattleOptions) {
 }
 
 /** `dex.getActiveMove(name)`: a fresh mutable copy of the move's data. */
-fun EngineDex.activeMove(name: String): ActiveMove =
-    ActiveMove(move(name) ?: error("Unknown move $name"))
+fun EngineDex.activeMove(name: String): ActiveMove = ActiveMove(moveOrPlaceholder(name))

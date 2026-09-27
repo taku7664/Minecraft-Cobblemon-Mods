@@ -52,6 +52,13 @@ class EngineDex private constructor(root: JsonObject) {
 
     fun move(name: String): MoveData? = moveTable[Js.toID(name)]
 
+    private val placeholderMoves = HashMap<String, MoveData>()
+
+    /** `dex.moves.get` for an id with no data (Recharge): Showdown hands out an empty, non-existent move. */
+    fun moveOrPlaceholder(name: String): MoveData = move(name) ?: placeholderMoves.getOrPut(Js.toID(name)) {
+        MoveData(Js.toID(name), JsonObject().apply { addProperty("name", Js.toID(name)); addProperty("exists", false) })
+    }
+
     fun ability(name: String): Effect = abilityTable[Js.toID(name)] ?: emptyAbility
 
     fun item(name: String): Effect = itemTable[Js.toID(name)] ?: emptyItem

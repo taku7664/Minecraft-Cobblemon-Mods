@@ -78,9 +78,18 @@ val unitTest by tasks.registering(JavaExec::class) {
     when (project.findProperty("scope")) {
         "core" -> args("--exclude-package=jbro.cobblemon.mcc.betterai")
         "ai" -> args("--include-package=jbro.cobblemon.mcc.betterai")
+        // ./gradlew :more-cobblemon-contents:unitTest -Pscope=engine   (the AI engine and its Showdown referee)
+        "engine" -> args("--include-package=jbro.cobblemon.mcc.betterai.engine")
         null -> Unit
-        else -> throw GradleException("scope must be core or ai")
+        else -> throw GradleException("scope must be core, ai or engine")
     }
+    // The engine's referee plays the same battles on the dev server's Showdown. A worktree has no dev server,
+    // so point it at one: -PshowdownRoot=<repo>/dev-server/showdown (the Mega Showdown jar is found next to it).
+    val showdownRoot = (project.findProperty("showdownRoot") as String?)
+        ?: rootProject.file("dev-server/showdown").absolutePath
+    systemProperty("aiengine.showdown", showdownRoot)
+    systemProperty("aiengine.tools", file("tools/ai-engine").absolutePath)
+    systemProperty("aiengine.coverage", layout.buildDirectory.file("reports/ai-engine-coverage.json").get().asFile.absolutePath)
     // Narrow a run to a few classes: ./gradlew :more-cobblemon-contents:unitTest -Ptests=LocalDoublesProjectionTest
     if (project.hasProperty("tests")) {
         args("--include-classname=.*(${project.property("tests")}).*")
