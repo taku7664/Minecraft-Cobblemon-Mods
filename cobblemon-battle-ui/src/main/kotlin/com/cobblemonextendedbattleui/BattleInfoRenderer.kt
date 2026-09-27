@@ -14,6 +14,7 @@ object BattleInfoRenderer {
         // Must run before panels check shouldHandleFontInput() and before the
         // F1 early return (otherwise staleness is never detected while HUD is hidden).
         MoveTooltipRenderer.resetIfStale()
+        jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay.updateVisibility()
 
         // Respect F1 to hide HUD
         if (MinecraftClient.getInstance().options.hudHidden) return

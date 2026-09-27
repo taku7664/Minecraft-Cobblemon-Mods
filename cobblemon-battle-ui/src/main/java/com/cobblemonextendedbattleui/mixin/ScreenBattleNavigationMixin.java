@@ -29,6 +29,10 @@ public abstract class ScreenBattleNavigationMixin {
         if (!((Object) this instanceof BattleGUI)) {
             return;
         }
+        if (jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.keyPressed(keyCode, scanCode)) {
+            cir.setReturnValue(true);
+            return;
+        }
         if (BattleInfoPanel.INSTANCE.isExpanded()) {
             if (keyCode == GLFW.GLFW_KEY_ESCAPE
                     || CobblemonExtendedBattleUIClient.INSTANCE.getCancelActionKey().matchesKey(keyCode, scanCode)) {

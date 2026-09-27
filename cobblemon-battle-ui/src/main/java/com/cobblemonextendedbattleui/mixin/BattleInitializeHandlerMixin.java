@@ -31,6 +31,7 @@ public class BattleInitializeHandlerMixin {
     @Inject(method = "handle", at = @At("HEAD"))
     private void onHandlePre(BattleInitializePacket packet, MinecraftClient client, CallbackInfo ci) {
         BattleDialogue.INSTANCE.clear();
+        jbro.cobblemon.battleui.extended.BattleLog.INSTANCE.clear();
         boolean needsStateTracking = PanelConfig.INSTANCE.needsBattleStateTracking();
         boolean needsDamageTracking = PanelConfig.INSTANCE.needsDamageTracking();
 

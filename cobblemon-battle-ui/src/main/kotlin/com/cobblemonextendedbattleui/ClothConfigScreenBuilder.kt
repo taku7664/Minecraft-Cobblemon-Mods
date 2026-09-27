@@ -33,6 +33,7 @@ object ClothConfigScreenBuilder {
             .setSaveConsumer(PanelConfig::setEnableMoveTooltips).build())
 
         val sizing = builder.getOrCreateCategory(Text.translatable("cobblemon_battle_ui.config.category.sizing"))
+        sizing.addEntry(scaleEntry(entries, "logFontScale", PanelConfig.logFontScale, PanelConfig::setLogFontScale))
         sizing.addEntry(scaleEntry(entries, "tooltipFontScale", PanelConfig.tooltipFontScale, PanelConfig::setTooltipFontScale))
         sizing.addEntry(scaleEntry(entries, "moveTooltipFontScale", PanelConfig.moveTooltipFontScale, PanelConfig::setMoveTooltipFontScale))
 

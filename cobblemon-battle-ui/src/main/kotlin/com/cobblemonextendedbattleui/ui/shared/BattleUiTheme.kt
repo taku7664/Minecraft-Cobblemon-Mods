@@ -7,6 +7,7 @@ object BattleUiTheme {
     const val DIM = 0xFF71859A.toInt()
     const val CYAN = 0xFF69D6E8.toInt()
     const val PURPLE = 0xFF9868FF.toInt()
+    const val TRANSCRIPT_OPPONENT = 0xFFB0A0ED.toInt()
     const val FOCUS = 0xFFFFC84A.toInt()
     const val DANGER = 0xFFFF667A.toInt()
     const val GOOD = 0xFF62E39B.toInt()
@@ -22,6 +23,8 @@ object BattleUiTheme {
     val secondary = BattleSurface(0xFF203D55.toInt(), 0xFF203D55.toInt(), BORDER, 1, 0)
     val danger = BattleSurface(0xFFAB4559.toInt(), 0xFF692F40.toInt(), DANGER, 1, 4, 0b0101)
     val capture = BattleSurface(0xFF654A9D.toInt(), 0xFF34284E.toInt(), PURPLE, 1, 3)
+    val transcriptSelf = BattleSurface(0xFF183347.toInt(), 0xFF142638.toInt(), 0xFF345C6C.toInt(), 1, 5, 0b1010)
+    val transcriptOpponent = BattleSurface(0xFF28233B.toInt(), 0xFF1A2135.toInt(), 0xFF514969.toInt(), 1, 5, 0b0101)
 }
 
 /** Corner bits clockwise from top-left. Opacity multiplies fill alpha only. */

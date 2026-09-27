@@ -62,6 +62,14 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
     @Shadow
     public abstract BattleActionSelection getCurrentActionSelection();
 
+    @Inject(method = "charTyped", at = @At("HEAD"), cancellable = true, remap = true)
+    private void cobblemonBattleUi$blockCharactersBehindTranscript(char character, int modifiers,
+            CallbackInfoReturnable<Boolean> cir) {
+        if (jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.isOpen()) {
+            cir.setReturnValue(true);
+        }
+    }
+
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true, remap = true)
     private void cobblemonBattleUi$blockCommandsBehindInformationOverlay(
             double mouseX,
@@ -69,6 +77,10 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             int button,
             CallbackInfoReturnable<Boolean> cir
     ) {
+        if (jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.mouseClicked(mouseX, mouseY)) {
+            cir.setReturnValue(true);
+            return;
+        }
         if (BattleInfoPanel.INSTANCE.isExpanded() || BattleDialogue.INSTANCE.hasPending()) {
             cir.setReturnValue(true);
         }
@@ -83,6 +95,9 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             CallbackInfo ci
     ) {
         if (BattleInfoPanel.INSTANCE.isExpanded()) {
+            return;
+        }
+        if (jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.isOpen()) {
             return;
         }
 
@@ -133,6 +148,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
     ) {
         BattleDialogue.INSTANCE.render(context);
         BattleInfoPanel.INSTANCE.renderForeground(context);
+        jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.render(context);
     }
 
     @Override

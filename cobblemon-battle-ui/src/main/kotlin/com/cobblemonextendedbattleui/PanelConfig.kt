@@ -427,8 +427,8 @@ object PanelConfig {
         get() = enableBattleInfoPanel
 
     val enableBattleLogEffective: Boolean
-        // The old config value is retained for file compatibility, but battle narration
-        // always uses dialogue until a separate log interface is designed.
+        // The legacy visibility value is retained for file compatibility. Narration and
+        // the Shift transcript share one history; neither is an always-visible log widget.
         get() = true
 
     val enableBattleLogDamagePercentagesEffective: Boolean

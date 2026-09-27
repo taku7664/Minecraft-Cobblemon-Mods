@@ -34,7 +34,10 @@ object BattleInfoPanel {
 
     fun toggle() {
         isExpanded = !isExpanded
-        if (isExpanded) ChampionsBattleInfoOverlay.onOpened()
+        if (isExpanded) {
+            jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay.close()
+            ChampionsBattleInfoOverlay.onOpened()
+        }
     }
 
     fun handleKeyPressed(keyCode: Int, scanCode: Int): Boolean =

@@ -3,6 +3,8 @@ package jbro.cobblemon.battleui.extended
 import net.minecraft.text.Text
 import net.minecraft.text.TranslatableTextContent
 import java.util.concurrent.CopyOnWriteArrayList
+import jbro.cobblemon.battleui.extended.ui.transcript.TranscriptSpeaker
+import jbro.cobblemon.battleui.extended.ui.transcript.TranscriptSources
 
 /**
  * Battle log storage and categorization system.
@@ -33,7 +35,8 @@ object BattleLog {
         val type: EntryType,
         val message: Text,
         val translationKey: String?,
-        val timestamp: Long = System.currentTimeMillis()
+        val timestamp: Long = System.currentTimeMillis(),
+        val speaker: TranscriptSpeaker? = null
     ) {
         // Cached wrapped lines (computed once per width/scale combination)
         @Volatile var cachedLines: List<String>? = null
@@ -65,6 +68,8 @@ object BattleLog {
 
     // Thread-safe list for log entries
     private val entries = CopyOnWriteArrayList<LogEntry>()
+    var revision: Long = 0
+        private set
 
     // Maximum entries to prevent memory issues
     private const val MAX_ENTRIES = 500
@@ -182,7 +187,8 @@ object BattleLog {
      * Uses two-pass approach to correctly assign turns even when turn messages
      * appear after action messages in the same batch.
      */
-    fun processMessages(messages: List<Text>) {
+    @JvmOverloads
+    fun processMessages(messages: List<Text>, resolveSpeaker: (Text) -> TranscriptSpeaker? = { null }) {
         if (messages.isEmpty()) return
 
         // PASS 1: Find all turn markers and their positions in the message list
@@ -198,11 +204,12 @@ object BattleLog {
 
         // Determine starting turn:
         // - If first message is a turn marker, use that turn
-        // - Otherwise, use the current turn from BattleStateTracker
+        // - Otherwise, keep the previous log turn. The tracker has already processed
+        //   this whole packet and may point at a later turn marker in the same batch.
         var effectiveTurn = if (turnPositions.isNotEmpty() && turnPositions[0].first == 0) {
             turnPositions[0].second
         } else {
-            BattleStateTracker.currentTurn
+            currentTurn
         }
 
         // PASS 2: Process messages with correct turn assignments
@@ -221,7 +228,8 @@ object BattleLog {
                 turn = effectiveTurn,
                 type = type,
                 message = message,
-                translationKey = key
+                translationKey = key,
+                speaker = resolveSpeaker(message)
             ))
         }
 
@@ -281,7 +289,10 @@ object BattleLog {
      */
     fun clear() {
         entries.clear()
+        revision++
         currentTurn = 0
+        TranscriptSources.clear()
+        jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay.clear()
         DamageTracker.clear()
         CobblemonExtendedBattleUI.LOGGER.debug("BattleLog: Cleared")
     }
@@ -301,6 +312,7 @@ object BattleLog {
 
     private fun addEntry(entry: LogEntry) {
         entries.add(entry)
+        revision++
 
         // Trim old entries if we exceed max
         while (entries.size > MAX_ENTRIES) {
@@ -330,7 +342,7 @@ object BattleLog {
      * Extract turn number from a turn message.
      */
     private fun extractTurnNumber(text: Text): Int? {
-        val content = text.content
+        val content = TranscriptSources.battleContent(text)
         if (content is TranslatableTextContent && content.key == TURN_KEY) {
             val args = content.args
             if (args.isNotEmpty()) {

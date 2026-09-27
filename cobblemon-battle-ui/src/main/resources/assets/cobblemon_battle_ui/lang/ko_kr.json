@@ -1,4 +1,13 @@
 {
+  "cobblemon_battle_ui.config.logFontScale": "전투 로그 글자 크기",
+  "key.cobblemon_battle_ui.toggle_log": "전투 로그 열기 / 닫기",
+  "cobblemon_battle_ui.transcript.title": "전투 로그",
+  "cobblemon_battle_ui.transcript.self": "내 편",
+  "cobblemon_battle_ui.transcript.opponent": "상대 편",
+  "cobblemon_battle_ui.transcript.start": "전투 시작",
+  "cobblemon_battle_ui.transcript.turn": "%s턴",
+  "cobblemon_battle_ui.transcript.empty": "아직 전투 기록이 없습니다.",
+  "cobblemon_battle_ui.transcript.close": "%s / Esc  닫기",
   "category.cobblemon_battle_ui": "코블몬 배틀 UI",
   "key.cobblemon_battle_ui.toggle_panel": "전투 정보",
   "key.cobblemon_battle_ui.select_action": "전투 행동 확인/대화 넘기기",

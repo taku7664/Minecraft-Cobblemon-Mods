@@ -24,5 +24,8 @@ public class KeyboardBattleNavigationMixin {
         if (action == GLFW.GLFW_RELEASE && MinecraftClient.getInstance().currentScreen instanceof BattleGUI) {
             BattleDialogue.INSTANCE.releaseConfirm(keyCode, scanCode);
         }
+        if (action == GLFW.GLFW_RELEASE) {
+            jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.releaseKey(keyCode, scanCode);
+        }
     }
 }

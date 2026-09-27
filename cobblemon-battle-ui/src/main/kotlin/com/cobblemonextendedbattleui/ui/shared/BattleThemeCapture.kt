@@ -67,19 +67,24 @@ internal object BattleThemeCapture {
             if (created && !opened && client.world != null && client.player != null && client.currentScreen == null && client.overlay == null) {
                 opened = true
                 CobblemonExtendedBattleUI.LOGGER.info("Battle UI fixture opened in loaded world {}", client.world!!.registryKey.value)
+                if (System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TRANSCRIPT_ONLY") == "1") {
+                    jbro.cobblemon.battleui.extended.ui.transcript.TranscriptInputFixture.verify()
+                }
                 client.setScreen(CaptureScreen())
             }
         }
     }
 
     private class CaptureScreen : Screen(Text.literal("Battle UI rendering fixture")) {
-        private val pages = listOf("controls", "info", "info-double", "info-triple", "tooltip")
+        private val pages = if (System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TRANSCRIPT_ONLY") == "1")
+            listOf("log", "log-long", "log-empty") else listOf("controls", "info", "info-double", "info-triple", "tooltip")
         private var page = 0
         private var ticks = 0
         private var pending = false
         private val saved = AtomicBoolean(false)
 
         override fun tick() {
+            if (page !in pages.indices) return
             val mc = client ?: return
             if (pending) {
                 if (!saved.getAndSet(false)) return
@@ -103,8 +108,13 @@ internal object BattleThemeCapture {
         override fun renderBackground(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) = Unit
 
         override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+            if (page !in pages.indices) return
             context.fillGradient(0, 0, width, height, 0xFF182A39.toInt(), 0xFF080E17.toInt())
             context.drawText(textRenderer, "DEVELOPMENT FIXTURE / ${client!!.options.language} / not a live battle", 12, 10, BattleUiTheme.MUTED, false)
+            if (pages[page].startsWith("log")) {
+                jbro.cobblemon.battleui.extended.ui.transcript.TranscriptPreview.render(context, pages[page])
+                return
+            }
             if (page in 1..3) {
                 ChampionsBattleInfoOverlay.renderPreview(context, page)
                 return

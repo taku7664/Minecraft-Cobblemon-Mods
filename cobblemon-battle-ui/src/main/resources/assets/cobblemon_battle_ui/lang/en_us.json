@@ -1,4 +1,13 @@
 {
+  "cobblemon_battle_ui.config.logFontScale": "Battle log text size",
+  "key.cobblemon_battle_ui.toggle_log": "Open / close battle log",
+  "cobblemon_battle_ui.transcript.title": "Battle log",
+  "cobblemon_battle_ui.transcript.self": "Your side",
+  "cobblemon_battle_ui.transcript.opponent": "Opponent",
+  "cobblemon_battle_ui.transcript.start": "Battle start",
+  "cobblemon_battle_ui.transcript.turn": "TURN %s",
+  "cobblemon_battle_ui.transcript.empty": "No battle messages yet.",
+  "cobblemon_battle_ui.transcript.close": "%s / Esc  Close",
   "category.cobblemon_battle_ui": "Cobblemon: Battle UI",
   "key.cobblemon_battle_ui.toggle_panel": "Battle Information",
   "key.cobblemon_battle_ui.select_action": "Confirm Battle Action / Advance Dialogue",

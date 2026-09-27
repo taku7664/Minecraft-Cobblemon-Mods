@@ -42,7 +42,8 @@ object BattleDialogue {
         val message = queue.current() ?: return
         val battle = CobblemonClient.battle ?: return
         val client = MinecraftClient.getInstance()
-        if (battle.minimised || client.options.hudHidden || BattleInfoPanel.isExpanded) return
+        if (battle.minimised || client.options.hudHidden || BattleInfoPanel.isExpanded ||
+            jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay.isOpen) return
         renderMessage(context, message)
     }
 

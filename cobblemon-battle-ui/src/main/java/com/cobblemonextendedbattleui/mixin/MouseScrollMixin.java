@@ -31,6 +31,11 @@ public abstract class MouseScrollMixin {
     private void onScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
         // Only intercept during battle
         if (CobblemonClient.INSTANCE.getBattle() != null) {
+            if (jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.isOpen()) {
+                jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.scrollBy((int) Math.round(-vertical * 24));
+                ci.cancel();
+                return;
+            }
             if (BattleInfoPanel.INSTANCE.isExpanded()) {
                 MoveTooltipRenderer.INSTANCE.suspendForModal();
                 ci.cancel();

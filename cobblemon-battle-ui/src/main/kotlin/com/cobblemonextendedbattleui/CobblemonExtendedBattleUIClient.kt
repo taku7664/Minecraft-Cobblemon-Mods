@@ -11,6 +11,8 @@ object CobblemonExtendedBattleUIClient : ClientModInitializer {
 
     lateinit var togglePanelKey: KeyBinding
         private set
+    lateinit var toggleLogKey: KeyBinding
+        private set
     lateinit var increaseFontKey: KeyBinding
         private set
     lateinit var decreaseFontKey: KeyBinding
@@ -52,6 +54,9 @@ object CobblemonExtendedBattleUIClient : ClientModInitializer {
     }
 
     private fun registerKeybindings() {
+        toggleLogKey = KeyBindingHelper.registerKeyBinding(KeyBinding(
+            "key.cobblemon_battle_ui.toggle_log", InputUtil.Type.KEYSYM,
+            GLFW.GLFW_KEY_LEFT_SHIFT, "category.cobblemon_battle_ui"))
         togglePanelKey = KeyBindingHelper.registerKeyBinding(
             KeyBinding(
                 "key.cobblemon_battle_ui.toggle_panel",

@@ -38,7 +38,7 @@ public class BattleMessageHandlerMixin {
 
         // Store messages in battle log only if the battle log feature is enabled
         if (PanelConfig.INSTANCE.getEnableBattleLogEffective()) {
-            BattleLog.INSTANCE.processMessages(packet.getMessages());
+            jbro.cobblemon.battleui.extended.ui.transcript.TranscriptSources.INSTANCE.capture(packet.getMessages());
             BattleDialogue.INSTANCE.enqueue(packet.getMessages());
             // Dialogue owns battle message presentation while this feature is enabled.
             ci.cancel();
