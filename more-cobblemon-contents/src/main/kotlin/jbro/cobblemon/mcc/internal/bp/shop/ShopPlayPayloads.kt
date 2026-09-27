@@ -96,6 +96,7 @@ internal data class ShopStatePayload(
     val limits: BattlePointShopLimits,
     val entries: List<ShopEntryView>,
     val result: BattlePointShopPurchaseStatus?,
+    val shopkeeper: List<BattlePointShopkeeperAppearance> = BattlePointShopkeeperAppearance.DEFAULT,
 ) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<ShopStatePayload> = TYPE
 
@@ -118,6 +119,22 @@ internal data class ShopStatePayload(
                 }
                 buffer.writeBoolean(payload.result != null)
                 payload.result?.let { buffer.writeShopString(it.name.lowercase()) }
+                require(payload.shopkeeper.size <= BattlePointShopkeeperAppearance.MAX_APPEARANCES) { "Too many shopkeeper appearances" }
+                buffer.writeVarInt(payload.shopkeeper.size)
+                payload.shopkeeper.forEach { appearance ->
+                    when (appearance) {
+                        is BattlePointShopkeeperAppearance.Skin -> {
+                            buffer.writeVarInt(0)
+                            buffer.writeUtf(appearance.texture, MAX_TEXTURE_LENGTH)
+                            buffer.writeBoolean(appearance.slim)
+                        }
+                        is BattlePointShopkeeperAppearance.Villager -> {
+                            buffer.writeVarInt(1)
+                            buffer.writeShopString(appearance.profession)
+                            buffer.writeShopString(appearance.type)
+                        }
+                    }
+                }
             },
             { buffer ->
                 val catalogId = buffer.readShopString()
@@ -147,7 +164,18 @@ internal data class ShopStatePayload(
                 } else {
                     null
                 }
-                ShopStatePayload(catalogId, revision, balance, limits, entries, result)
+                val shopkeeper = buildList {
+                    repeat(buffer.readBoundedShopCount(BattlePointShopkeeperAppearance.MAX_APPEARANCES, "shopkeeper appearance")) {
+                        add(
+                            when (val kind = buffer.readVarInt()) {
+                                0 -> BattlePointShopkeeperAppearance.Skin(buffer.readUtf(MAX_TEXTURE_LENGTH), buffer.readBoolean())
+                                1 -> BattlePointShopkeeperAppearance.Villager(buffer.readShopString(), buffer.readShopString())
+                                else -> throw IllegalArgumentException("Unsupported shopkeeper appearance: $kind")
+                            },
+                        )
+                    }
+                }
+                ShopStatePayload(catalogId, revision, balance, limits, entries, result, shopkeeper)
             },
         )
     }
@@ -247,5 +275,6 @@ private fun id(path: String) = ResourceLocation.fromNamespaceAndPath(MoreCobblem
 private const val MAX_ENTRIES = 256
 private const val MAX_CART_LINES = 64
 private const val MAX_STRING_LENGTH = 160
+private const val MAX_TEXTURE_LENGTH = 256
 private const val MAX_LIMIT = 4096
 private const val MAX_LEADERBOARD_BOARDS = 8

@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.internal.bp.shop
 
+import jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -79,6 +80,8 @@ internal object BattlePointShopCatalogLoader {
             maxQuantityPerLine = limitsObject.requiredPositiveInt("$rulePath.limits", "max_quantity_per_line"),
             maxTotalItems = limitsObject.requiredPositiveInt("$rulePath.limits", "max_total_items"),
         )
+        val shopkeeper = rules.get("shopkeeper")?.let { parseShopkeeper(it.requireObject("$rulePath.shopkeeper"), "$rulePath.shopkeeper") }
+            ?: BattlePointShopkeeperAppearance.DEFAULT
         val entries = entryFragments.flatMap { (resourceId, reader) ->
             val path = "resource[$resourceId]"
             val root = reader.use { JsonParser.parseReader(it).requireObject(path) }
@@ -100,7 +103,7 @@ internal object BattlePointShopCatalogLoader {
         rejectDuplicates(entries.map { it.sortOrder.toString() }, "$.entries", "sort order")
 
         BattlePointShopCatalogLoadResult.Loaded(
-            BattlePointShopCatalog(catalogId, revision(catalogId, limits, entries), limits, entries),
+            BattlePointShopCatalog(catalogId, revision(catalogId, limits, entries), limits, entries, shopkeeper),
         )
     } catch (error: ShopCatalogDecodeException) {
         BattlePointShopCatalogLoadResult.Rejected(listOf(error.issue))
@@ -108,6 +111,47 @@ internal object BattlePointShopCatalogLoader {
         malformed(error)
     } catch (error: IllegalStateException) {
         malformed(error)
+    }
+
+    /** The keeper's looks only dress the shop, so they stay out of the catalog revision a purchase is checked against. */
+    private fun parseShopkeeper(value: JsonObject, path: String): List<BattlePointShopkeeperAppearance> {
+        value.rejectUnknownFields(path, SHOPKEEPER_FIELDS)
+        val appearances = value.requiredArray(path, "appearances")
+        if (appearances.isEmpty || appearances.size() > BattlePointShopkeeperAppearance.MAX_APPEARANCES) {
+            reject(BattlePointShopCatalogIssueCode.INVALID_VALUE, "$path.appearances",
+                "appearances must hold 1 to ${BattlePointShopkeeperAppearance.MAX_APPEARANCES} entries")
+        }
+        return appearances.mapIndexed { index, element ->
+            val itemPath = "$path.appearances[$index]"
+            val appearance = element.requireObject(itemPath)
+            appearance.rejectUnknownFields(itemPath, APPEARANCE_FIELDS)
+            val villager = appearance.get("villager")
+            when {
+                appearance.has("skin") && villager == null -> {
+                    val texture = appearance.requiredString(itemPath, "skin")
+                    val slim = appearance.get("slim")?.let {
+                        if (!it.isJsonPrimitive || !it.asJsonPrimitive.isBoolean) {
+                            reject(BattlePointShopCatalogIssueCode.INVALID_VALUE, "$itemPath.slim", "slim must be a boolean")
+                        }
+                        it.asBoolean
+                    } ?: false
+                    if (runCatching { TrainerResourceSkin(texture, slim) }.isFailure) {
+                        reject(BattlePointShopCatalogIssueCode.INVALID_VALUE, "$itemPath.skin", "Invalid skin texture: $texture")
+                    }
+                    BattlePointShopkeeperAppearance.Skin(texture, slim)
+                }
+                villager != null && !appearance.has("skin") && !appearance.has("slim") -> {
+                    val villagerPath = "$itemPath.villager"
+                    val fields = villager.requireObject(villagerPath).also { it.rejectUnknownFields(villagerPath, VILLAGER_FIELDS) }
+                    BattlePointShopkeeperAppearance.Villager(
+                        fields.requiredResourceId(villagerPath, "profession"),
+                        if (fields.has("type")) fields.requiredResourceId(villagerPath, "type") else "minecraft:plains",
+                    )
+                }
+                else -> reject(BattlePointShopCatalogIssueCode.INVALID_VALUE, itemPath,
+                    "An appearance is either a skin (with an optional slim) or a villager")
+            }
+        }
     }
 
     private fun parseEntry(
@@ -232,7 +276,10 @@ private fun rejectDuplicates(values: List<String>, path: String, label: String) 
 }
 
 private val ROOT_FIELDS = setOf("schema_version", "catalog_id", "limits", "entries")
-private val RULE_ROOT_FIELDS = setOf("schema_version", "catalog_id", "limits")
+private val RULE_ROOT_FIELDS = setOf("schema_version", "catalog_id", "limits", "shopkeeper")
+private val SHOPKEEPER_FIELDS = setOf("appearances")
+private val APPEARANCE_FIELDS = setOf("skin", "slim", "villager")
+private val VILLAGER_FIELDS = setOf("profession", "type")
 private val ENTRY_ROOT_FIELDS = setOf("schema_version", "entries")
 private val LIMIT_FIELDS = setOf("max_cart_lines", "max_quantity_per_line", "max_total_items")
 private val ENTRY_FIELDS = setOf("entry_id", "item_id", "item_count", "price_bp", "sort_order")

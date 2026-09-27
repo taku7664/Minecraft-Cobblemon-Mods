@@ -20,6 +20,10 @@ class ShopPlayPayloadsTest {
                 ShopEntryView("life_orb", "cobblemon:life_orb", 1, 25L),
             ),
             result = BattlePointShopPurchaseStatus.APPLIED,
+            shopkeeper = listOf(
+                BattlePointShopkeeperAppearance.Skin("rctmod:textures/trainers/single/clerk.png", true),
+                BattlePointShopkeeperAppearance.Villager("cobblemon:nurse_joy", "minecraft:plains"),
+            ),
         )
         val purchase = ShopPurchasePayload(
             UUID(0, 10),

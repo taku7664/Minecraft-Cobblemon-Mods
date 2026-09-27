@@ -88,6 +88,47 @@ class BattlePointShopCatalogLoaderTest {
     }
 
     @Test
+    fun `rules without a shopkeeper fall back to the nurse villager`() {
+        assertEquals(BattlePointShopkeeperAppearance.DEFAULT, separated(validRulesJson()).shopkeeper)
+    }
+
+    @Test
+    fun `rules list shopkeeper skins and villagers in the order clients try them`() {
+        val catalog = separated(rulesWithShopkeeper(
+            """{ "skin": "rctmod:textures/trainers/single/clerk.png", "slim": true },
+               { "villager": { "profession": "cobblemon:nurse_joy" } }""",
+        ))
+
+        assertEquals(
+            listOf(
+                BattlePointShopkeeperAppearance.Skin("rctmod:textures/trainers/single/clerk.png", true),
+                BattlePointShopkeeperAppearance.Villager("cobblemon:nurse_joy", "minecraft:plains"),
+            ),
+            catalog.shopkeeper,
+        )
+    }
+
+    @Test
+    fun `rejects shopkeeper appearances that are not a local skin or a villager`() {
+        listOf(
+            "",
+            """{ "skin": "https://example.test/skin.png" }""",
+            """{ "skin": "rctmod:textures/../skin.png" }""",
+            """{ "skin": "rctmod:textures/skin.png", "slim": "yes" }""",
+            """{ "skin": "rctmod:textures/skin.png", "villager": { "profession": "cobblemon:nurse_joy" } }""",
+            """{ "villager": { "profession": "Not An Id" } }""",
+            """{ "villager": { "profession": "cobblemon:nurse_joy", "hat": true } }""",
+        ).forEach { appearances ->
+            val result = BattlePointShopCatalogLoader.loadSeparated(
+                ruleFragments = listOf("example:mcc-bp-shop/rules/mcc-core.json" to StringReader(rulesWithShopkeeper(appearances))),
+                entryFragments = listOf("example:mcc-bp-shop/entries/choice-band.json" to StringReader(validEntryJson("choice_band", 10))),
+                itemExists = existingItems::contains,
+            )
+            assertTrue(result is BattlePointShopCatalogLoadResult.Rejected, appearances)
+        }
+    }
+
+    @Test
     fun `separated reload rejects duplicate entries and preserves the previous snapshot`() {
         val store = BattlePointShopCatalogStore(existingItems::contains)
         store.reload(StringReader(validJson()))
@@ -104,6 +145,23 @@ class BattlePointShopCatalogLoaderTest {
         assertTrue(result is BattlePointShopCatalogLoadResult.Rejected)
         assertSame(snapshot, store.snapshot())
     }
+
+    private fun separated(rules: String): BattlePointShopCatalog =
+        (BattlePointShopCatalogLoader.loadSeparated(
+            ruleFragments = listOf("example:mcc-bp-shop/rules/mcc-core.json" to StringReader(rules)),
+            entryFragments = listOf("example:mcc-bp-shop/entries/choice-band.json" to StringReader(validEntryJson("choice_band", 10))),
+            itemExists = existingItems::contains,
+        ) as BattlePointShopCatalogLoadResult.Loaded).catalog
+
+    private fun rulesWithShopkeeper(appearances: String) =
+        """
+        {
+          "schema_version": 1,
+          "catalog_id": "mcc_core",
+          "limits": { "max_cart_lines": 16, "max_quantity_per_line": 64, "max_total_items": 64 },
+          "shopkeeper": { "appearances": [ $appearances ] }
+        }
+        """.trimIndent()
 
     private fun loaded(json: String): BattlePointShopCatalog =
         (BattlePointShopCatalogLoader.load(StringReader(json), existingItems::contains) as

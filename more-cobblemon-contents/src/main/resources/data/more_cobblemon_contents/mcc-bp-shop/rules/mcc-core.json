@@ -5,5 +5,15 @@
     "max_cart_lines": 16,
     "max_quantity_per_line": 64,
     "max_total_items": 64
+  },
+  "shopkeeper": {
+    "appearances": [
+      {
+        "villager": {
+          "profession": "cobblemon:nurse_joy",
+          "type": "minecraft:plains"
+        }
+      }
+    ]
   }
 }

@@ -201,4 +201,5 @@ internal fun shopStatePayload(
         ShopEntryView(entry.entryId, entry.itemId, entry.itemCount, entry.priceBp)
     }.orEmpty(),
     result = if (catalog == null) BattlePointShopPurchaseStatus.CATALOG_UNAVAILABLE else result,
+    shopkeeper = catalog?.shopkeeper ?: BattlePointShopkeeperAppearance.DEFAULT,
 )
