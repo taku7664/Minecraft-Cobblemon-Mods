@@ -61,3 +61,7 @@ Remove-Item Env:COBBLEMON_BATTLE_UI_CAPTURE, Env:COBBLEMON_BATTLE_UI_CAPTURE_LAN
 - 최초 타이틀 화면 캡처에서는 기술 레지스트리가 비어 있었고 포켓몬은 대체 아이콘으로 표시됐다. 월드 진입 후 캡처하도록 바꾸고, 기술 누락을 조용히 생략하지 않고 실패로 처리했다.
 - 확인 화면의 `pokemon` / `bag` 번역 키는 실제 Cobblemon 키인 `switch` / `capture`로 정정했다. 최종 캡처에는 번역 키가 노출되지 않는다.
 - 개발 로그에는 Cobblemon의 data fixer, 선택적 Adorn mixin, 신규 플레이어 데이터 파일 부재 등의 경고·오류 메시지가 남았다. 로그 전체가 오류 없는 상태라고 주장하지 않는다. 양 언어 실행 모두 월드 진입, 캡처 저장, 정상 종료와 Gradle 성공을 확인했다.
+
+## 클라이언트 배포 기록
+
+소스 `a22eb0ce` 기준으로 116개 테스트와 최종 빌드를 통과한 `cobblemon-battle-ui-0.1.8.jar`를 `cobblemon-dev/mods`의 동명 JAR에 배포했다. 대상 프로필의 Java 프로세스가 실행 중이지 않은 상태에서 교체했으며 빌드 파일과 배포 파일의 SHA-256은 모두 `B0BBE96140A3C2E00108C390094D050BE6C004405E4AEE706044FB89E8E85DC8`이다. 서버 배포는 하지 않았다. 위 캡처는 분리된 개발 클라이언트에서 얻었으며, 배포된 전체 모드팩의 실전 전투 검증을 대신하지 않는다.
