@@ -396,8 +396,9 @@ async function main() {
   for (const [category, rows] of [['특성', abilityRows], ['기술', moveRows], ['도구', itemRows]]) {
     for (const r of rows) if (r.hook) {
       const bare = r.hook.replace(/^condition\./, '');
-      const slot = (hookUse[bare] = hookUse[bare] || { 특성: new Set(), 기술: new Set(), 도구: new Set() });
+      const slot = (hookUse[bare] = hookUse[bare] || { 특성: new Set(), 기술: new Set(), 도구: new Set(), open: 0 });
       slot[category].add(r.id);
+      if (r.status !== '적용 완료') slot.open++;
     }
   }
   const hookSheet = workbook.addWorksheet('훅', { views: [{ state: 'frozen', ySplit: 1 }] });
@@ -408,8 +409,10 @@ async function main() {
     { header: '엔진 상태', key: 'status', width: 12 }, { header: '요청·메모', key: 'memo', width: 30 },
   ];
   Object.entries(hookUse)
-    .map(([hook, s]) => ({ hook, meaning: hookMeaning(hook), a: s['특성'].size, m: s['기술'].size, i: s['도구'].size }))
-    .map(r => ({ ...r, t: r.a + r.m + r.i, status: (coverage[`훅|${r.hook}|`] || {}).status || '미구현' }))
+    .map(([hook, s]) => ({ hook, meaning: hookMeaning(hook), a: s['특성'].size, m: s['기술'].size, i: s['도구'].size, open: s.open }))
+    // A hook counts as done once every row that uses it is verified; an explicit coverage entry still wins.
+    .map(r => ({ ...r, t: r.a + r.m + r.i, status: (coverage[`훅|${r.hook}|`] || {}).status ||
+      (r.open === 0 ? '적용 완료' : r.open < r.a + r.m + r.i ? '부분' : '미구현') }))
     .sort((x, y) => y.t - x.t)
     .forEach(r => hookSheet.addRow(r));
   hookSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -431,6 +434,7 @@ async function main() {
     '읽는 법',
     '· 한 항목의 효과가 여러 개면 효과 하나당 한 행입니다.',
     '· 노란색 행: 우리 엔진에 구현했고 Showdown 비교 테스트까지 통과한 효과입니다.',
+    '· 비교 테스트는 항목마다 일반 전투 두 가지를 두 시드로 돌립니다. 발동 조건이 까다로운 효과는 이 전투에서 발동하지 않았을 수 있으므로, 전용 시나리오로 따로 확인합니다.',
     '· 상태는 엔진의 비교 테스트 결과로 자동으로 채워집니다. 손으로 고치지 마세요.',
     '· "요청·메모" 칸에 적으시면 다시 생성해도 보존됩니다.',
     '· 순서는 사용률 순(Smogon BSS·VGC 2025-12, 1500+)입니다. 사용 기록이 없으면 순위가 비어 있습니다.',
