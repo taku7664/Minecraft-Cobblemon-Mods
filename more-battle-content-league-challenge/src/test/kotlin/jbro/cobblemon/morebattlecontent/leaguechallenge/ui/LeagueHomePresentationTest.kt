@@ -10,7 +10,8 @@ import java.util.UUID
 class LeagueHomePresentationTest {
     private fun view(run: String? = null): LeagueView {
         val challenges = (1..8).map { index ->
-            LeagueChallengeView("gym_$index", "gym.$index", if (index < 3) "CLEARED" else "AVAILABLE", 10 + index * 5)
+            LeagueChallengeView("gym_$index", "gym.$index", if (index < 3) "CLEARED" else "AVAILABLE", 10 + index * 5,
+                "pokebadges:test_badge_$index")
         } + LeagueChallengeView("final", "final.name", "LOCKED", 100)
         return LeagueView(UUID.randomUUID(), 1, 1, "league.name", 2, "POKE_BALL", 20, false,
             0, challenges, run, false, false)
@@ -21,6 +22,7 @@ class LeagueHomePresentationTest {
         assertEquals(8, presentation.gyms.size)
         assertEquals(listOf("final"), presentation.finals.map { it.id })
         assertEquals("gym_3", presentation.focused?.id)
+        assertEquals("pokebadges:test_badge_3", presentation.focused?.badgeId)
     }
 
     @Test fun `active run takes visual priority over stale local selection`() {

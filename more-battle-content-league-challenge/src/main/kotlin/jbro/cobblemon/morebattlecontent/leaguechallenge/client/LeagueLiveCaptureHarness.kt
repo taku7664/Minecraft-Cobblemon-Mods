@@ -8,6 +8,7 @@ import net.minecraft.client.Screenshot
 import net.minecraft.client.gui.screens.AccessibilityOnboardingScreen
 import net.minecraft.client.gui.screens.BackupConfirmScreen
 import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.components.AbstractButton
 import net.minecraft.network.chat.Component
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -35,6 +36,7 @@ internal object LeagueLiveCaptureHarness {
         var warningAccepted = false
         var revision = -1L
         var waitingScreen: String? = null
+        var tutorialCleared = false
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
             ticks++
             if (ticks == 1) client.options.pauseOnLostFocus = false
@@ -92,8 +94,15 @@ internal object LeagueLiveCaptureHarness {
                     logger.info("Sent actual terminal use-item interaction at {}", pos)
                     phase = 2; phaseTick = ticks
                 }
-                // Leave the onboarding toasts time to clear before judging the League frame.
-                2 -> if (client.screen is LeagueHomeScreen && ticks > phaseTick + 240) {
+                // Development screenshots capture the real screen without first-join tutorial overlays.
+                2 -> if (client.screen is LeagueHomeScreen && ticks > phaseTick + 20) {
+                    if (!tutorialCleared) {
+                        client.toasts.clear()
+                        tutorialCleared = true
+                        phaseTick = ticks
+                        return@EndTick
+                    }
+                    if (ticks <= phaseTick + 4) return@EndTick
                     val view = checkNotNull(LeagueClientSession.current)
                     revision = view.revision
                     logger.info("Production home received nonce={} badges={} cap={} error={}", view.nonce, view.badges, view.cap, view.errorKey)
@@ -102,14 +111,21 @@ internal object LeagueLiveCaptureHarness {
                 }
                 3 -> if (captured.get()) {
                     val screen = client.screen as LeagueHomeScreen
-                    check(screen.keyPressed(GLFW.GLFW_KEY_END, 0, 0)) { "List did not scroll" }
+                    val second = checkNotNull(LeagueClientSession.current).challenges[1]
+                    val route = screen.children().filterIsInstance<AbstractButton>().single {
+                        it.message.string == Component.translatable(second.nameKey).string
+                    }
+                    check(screen.mouseClicked(route.x + route.width / 2.0, route.y + route.height / 2.0, 0)) {
+                        "Route selection did not click"
+                    }
+                    check(LeagueHomeController.state.selectedId == second.id) { "Route selection did not update" }
                     screen.keyPressed(GLFW.GLFW_KEY_TAB, 0, 0)
                     check(screen.focused != null) { "Keyboard focus missing" }
                     captured.set(false)
                     phase = 4; phaseTick = ticks
                 }
                 4 -> if (ticks > phaseTick + 3) {
-                    Screenshot.grab(client.gameDirectory, "league-live-$captureId-scrolled.png", client.mainRenderTarget) { captured.set(true) }
+                    Screenshot.grab(client.gameDirectory, "league-live-$captureId-selected.png", client.mainRenderTarget) { captured.set(true) }
                     phase = 5
                 }
                 5 -> if (captured.get()) {
@@ -128,7 +144,7 @@ internal object LeagueLiveCaptureHarness {
                 }
                 7 -> if (ticks > phaseTick + 10) {
                     check(client.screen !is LeagueHomeScreen) { "Background state reopened dismissed home" }
-                    logger.info("PASS terminal packet -> production home -> scroll/focus -> server refresh -> close; progression unchanged")
+                    logger.info("PASS terminal packet -> production home -> route selection/focus -> server refresh -> close; progression unchanged")
                     client.stop()
                     phase = 8
                 }

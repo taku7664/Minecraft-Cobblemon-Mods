@@ -8,7 +8,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.ResourceLocation
 
 enum class LeagueAction { START, NEXT, CANCEL, REFRESH }
-data class LeagueChallengeView(val id: String, val nameKey: String, val status: String, val unlockCap: Int)
+data class LeagueChallengeView(val id: String, val nameKey: String, val status: String, val unlockCap: Int,
+    val badgeId: String? = null)
 data class LeagueView(val nonce: UUID, val revision: Long, val catalogRevision: Long, val nameKey: String,
     val badges: Int, val rank: String, val cap: Int, val champion: Boolean, val bp: Long,
     val challenges: List<LeagueChallengeView>, val runChallenge: String?, val awaitingNext: Boolean,

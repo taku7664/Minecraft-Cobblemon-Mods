@@ -207,8 +207,10 @@ object LeagueServer {
         val views = (catalog.gyms + catalog.finals.first()).map { id ->
             val index = catalog.gyms.indexOf(id)
             val available = if (index >= 0) catalog.gyms.take(index).all { it in state.cleared } else badges == 8
-            LeagueChallengeView(id, catalog.challenges.getValue(id).nameKey,
-                if (id in state.cleared) "CLEARED" else if (available) "AVAILABLE" else "LOCKED", catalog.challenges.getValue(id).unlockCap)
+            val challenge = catalog.challenges.getValue(id)
+            LeagueChallengeView(id, challenge.nameKey,
+                if (id in state.cleared) "CLEARED" else if (available) "AVAILABLE" else "LOCKED", challenge.unlockCap,
+                challenge.badge)
         }
         val view = LeagueView(session.nonce, state.revision, LeagueCatalogResources.revision, catalog.nameKey,
             badges, rank, engine.cap(state), state.champion, BattlePointRewards.balance(player.server, player.uuid), views,
