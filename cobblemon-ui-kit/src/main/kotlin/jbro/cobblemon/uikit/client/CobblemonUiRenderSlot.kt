@@ -10,6 +10,7 @@ import jbro.cobblemon.uikit.UiRenderSlotSpec
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractWidget
+import net.minecraft.client.gui.components.PlayerFaceRenderer
 import net.minecraft.client.gui.narration.NarratedElementType
 import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.client.model.PlayerModel
@@ -39,6 +40,9 @@ sealed interface CobblemonUiRenderContent {
         val profile: GameProfile,
         val framing: UiModelFraming = UiModelFraming.PORTRAIT
     ) : CobblemonUiRenderContent
+
+    /** A player's face with its hat layer, from their own skin, as a square centered in the slot. */
+    data class PlayerFace(val profile: GameProfile) : CobblemonUiRenderContent
 
     /**
      * A Cobblemon Pokemon's profile portrait. [aspects] select its form; [stateKey] keeps its idle animation
@@ -142,6 +146,11 @@ class CobblemonUiRenderSlot private constructor(
                             skin.model() == MinecraftPlayerSkin.Model.SLIM,
                             UiModelPlacement.calculate(bounds, content.framing)
                         )
+                    }
+                    is CobblemonUiRenderContent.PlayerFace -> {
+                        val size = min(bounds.width, bounds.height)
+                        PlayerFaceRenderer.draw(graphics, Minecraft.getInstance().skinManager.getInsecureSkin(content.profile),
+                            bounds.x + (bounds.width - size) / 2, bounds.y + (bounds.height - size) / 2, size)
                     }
                     is CobblemonUiRenderContent.Pokemon -> CobblemonUiPokemonRenderer.draw(graphics, bounds, content, partialTick)
                     is CobblemonUiRenderContent.PartyPokemon -> CobblemonUiPokemonRenderer.draw(graphics, bounds, content, partialTick)
