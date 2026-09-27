@@ -303,7 +303,7 @@ class TowerOpponentCatalogResourceTest {
         listOf(hp, attack, defense, specialAttack, specialDefense, speed).count { it != 0 }
 
     private fun language(code: String) = javaClass.getResourceAsStream(
-        "/assets/more_cobblemon_contents/lang/$code.json",
+        "/assets/more_cobblemon_contents_battle_tower/lang/$code.json",
     )!!.use { JsonParser.parseReader(InputStreamReader(it)).asJsonObject }
 
     private fun cobblemonJar(): JarFile {

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 class PvpSpectatorBattleMixinResourcesTest {
     @Test
     fun `client mixin configuration owns the MCC spectator controls without changing Cobblemon`() {
-        val resource = requireNotNull(javaClass.getResourceAsStream("/more_cobblemon_contents.mixins.json"))
+        val resource = requireNotNull(javaClass.getResourceAsStream("/more_cobblemon_contents_pvp.mixins.json"))
         val clientMixins = resource.reader().use { reader ->
             JsonParser.parseReader(reader).asJsonObject.getAsJsonArray("client").map { it.asString }.toSet()
         }

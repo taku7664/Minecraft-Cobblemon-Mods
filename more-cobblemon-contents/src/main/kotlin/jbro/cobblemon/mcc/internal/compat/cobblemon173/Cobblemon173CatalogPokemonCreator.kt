@@ -14,7 +14,8 @@ object Cobblemon173CatalogPokemonCreator {
         return preserve(properties.create(), catalogFormId)
     }
 
-    internal fun preserve(pokemon: Pokemon, catalogFormId: String?): Pokemon {
+    /** Content modules call this from their catalog tests to prove every bundled alternate form survives. */
+    fun preserve(pokemon: Pokemon, catalogFormId: String?): Pokemon {
         if (catalogFormId == null) return pokemon
 
         val targetForm = pokemon.species.findMccForm(catalogFormId) ?: throw IllegalArgumentException(

@@ -19,9 +19,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
-class Cobblemon173CatalogPokemonCreatorTest {
+class FactoryCatalogFormPreservationTest {
     @Test
-    fun `preserves every alternate form referenced by factory and tower catalogs`() {
+    fun `preserves every alternate form referenced by the factory catalog`() {
         referencedForms().forEach { (speciesId, formId) ->
             val species = requireNotNull(PokemonSpecies.getByIdentifier(ResourceLocation.parse(speciesId)))
             val targetForm = species.forms.first { it.name.equals(formId, ignoreCase = true) }
@@ -46,7 +46,6 @@ class Cobblemon173CatalogPokemonCreatorTest {
     companion object {
         private val catalogDirectories = listOf(
             "/data/more_cobblemon_contents/mcc-battle-factory/rental-sets",
-            "/data/more_cobblemon_contents/mcc-battle-tower/pokemon-sets",
         )
 
         @JvmStatic
@@ -110,7 +109,7 @@ class Cobblemon173CatalogPokemonCreatorTest {
         }
 
         private fun resourceFiles(directory: String): List<Path> {
-            val url = requireNotNull(Cobblemon173CatalogPokemonCreatorTest::class.java.getResource(directory)) {
+            val url = requireNotNull(FactoryCatalogFormPreservationTest::class.java.getResource(directory)) {
                 "Missing resource directory $directory"
             }
             return Files.list(Paths.get(url.toURI())).use { paths ->

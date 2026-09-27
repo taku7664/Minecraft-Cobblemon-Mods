@@ -72,7 +72,7 @@ class TowerPlayLayoutTest {
     fun `both languages define full compact and tooltip text for legendary choices`() {
         listOf("en_us", "ko_kr").forEach { language ->
             val stream = requireNotNull(javaClass.getResourceAsStream(
-                "/assets/more_cobblemon_contents/lang/$language.json",
+                "/assets/more_cobblemon_contents_battle_tower/lang/$language.json",
             ))
             val entries = InputStreamReader(stream).use(JsonParser::parseReader).asJsonObject
 

@@ -39,7 +39,7 @@ class BattleLoungeDimensionResourcesTest {
     fun `both languages name the lounge biome`() {
         listOf("en_us", "ko_kr").forEach { language ->
             val translations = JsonParser
-                .parseString(resource("/assets/more_cobblemon_contents/lang/$language.json"))
+                .parseString(resource("/assets/more_cobblemon_contents_pvp/lang/$language.json"))
                 .asJsonObject
             val name = translations[BIOME_TRANSLATION_KEY]
 

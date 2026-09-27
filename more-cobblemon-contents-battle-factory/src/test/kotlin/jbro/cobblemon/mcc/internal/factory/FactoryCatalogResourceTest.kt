@@ -254,7 +254,7 @@ class FactoryCatalogResourceTest {
     }
 
     private fun language(code: String) = javaClass.getResourceAsStream(
-        "/assets/more_cobblemon_contents/lang/$code.json",
+        "/assets/more_cobblemon_contents_battle_factory/lang/$code.json",
     )!!.use { JsonParser.parseReader(InputStreamReader(it)).asJsonObject }
 
     private fun cobblemonJar(): JarFile {
