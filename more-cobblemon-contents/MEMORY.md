@@ -5,6 +5,15 @@
 
 ---
 
+## [2026-09-28 19:20] 새 Hub와 대시보드 탭 — `5d2c773e`, `0d315edd`, `55a438d6` (개발 클라이언트 캡처 확인)
+
+- **방향(빡대리님):** Hub UI는 `cobblemon-ui-kit` 기반, 탭은 좌측. 순서는 대시보드 → 상점 → 모듈 순. 작업·캡처 기본 로케일은 한국어.
+- **구조:** `MccHubScreen`(Core, `client.hub`)이 `pixel_league` 테마를 열 때 설치하고 닫을 때 복원한다(League와 같은 방식). 헤더(브랜드, BP, 닫기), 좌측 탭 레일, 콘텐츠 영역으로 나뉘고 좌표는 `MccHubLayout`이 계산한다. 탭은 클라이언트 레지스트리 `MccHubTabs`(`MccHubTab` id·이름·순서·종류·접근 콘텐츠 ID)에 등록한다. 종류는 Hub 안에 그리는 `Embedded`와, 재작성 전까지 기존 화면을 여는 `Screen`이다. 대시보드 0, 상점 10(Core), 타워 100·팩토리 110·PvP 120(각 모드의 클라이언트 엔트리포인트). 접근이 막힌 탭은 비활성과 사유 툴팁으로 표시한다. Core는 UI kit을 JAR에 포함하고 `depends`에는 넣지 않는다(클라이언트 전용 모드라 서버 로드 실패 방지). 콘텐츠 모드는 compileOnly로 참조한다.
+- **대시보드:** 트레이너 카드(플레이어 모델, 이름)와 전적 패널(전투·승리·승률 요약, 콘텐츠·형식별 기록 행, 넘치면 스크롤). 서버는 Hub를 열 때 `battle_hub_dashboard` 페이로드로 그 플레이어의 기록을 보낸다(`BattleRecordService.forPlayer`, 최대 64개). 콘텐츠 이름은 `screen.more_cobblemon_contents.hub.tab.<경로>`, 형식은 `dashboard.format.<id>`, 지표는 `dashboard.metric.<id>` 키를 쓰고 없으면 원문 ID를 보인다. 상점 탭 이름을 "홈"에서 "상점"으로 바꿨다.
+- **pixel_league 주의:** 밝은 패널 위 글자는 `surfaces.panelAltText`(어두운 테두리색)로 쓴다. `textSecondary`는 밝아서 읽히지 않는다. SMALL 버튼은 글자를 0.75배로 줄여 흐려지므로 탭·닫기는 MEDIUM을 쓴다.
+- **캡처 하네스:** 개발 환경에서 `MCC_HUB_CAPTURE=empty|standard|dense`(선택 `MCC_HUB_CAPTURE_LOCALE`, 기본 `ko_kr`; `MCC_HUB_CAPTURE_GUI_SCALE`)로 `:more-cobblemon-contents:runClient`를 돌리면 타이틀 화면 위에 fixture로 Hub를 열어 `run/screenshots/mcc-hub-*.png`를 찍고 ESC 닫기를 확인한 뒤 종료한다. 네 조합(표준·빈 상태 한국어, 최대 밀도 영어, GUI 배율 1 한국어)을 확인했다. 배율 1의 한글이 뭉개지는 것은 개발 클라이언트에 한글 글꼴 팩이 없어서다.
+- **남은 것:** 상점 탭과 모듈 탭은 아직 기존 화면을 연다(기존 화면 상단의 옛 탭 줄도 그대로). 홈 리더보드는 상점 화면에 남아 있다. 실제 서버와 연결한 상태(서버가 보낸 기록, 접근 거부 표시)는 확인하지 않았다. 테스트는 돌리지 않았다.
+
 ## [2026-09-27 22:30] 모듈 분리 — Core와 타워·팩토리·PvP 모드 (컴파일·JAR 확인, 테스트·실게임 미실행)
 
 - **순서 변경(빡대리님):** 홈 리더보드와 Hub UI는 새 UI에서 버릴 구조라 등록 구조를 만들지 않고 모듈 분리부터 했다. 리더보드·상점 화면은 콘텐츠 타입 대신 기록 ID 문자열을 쓰는 임시 형태다.
