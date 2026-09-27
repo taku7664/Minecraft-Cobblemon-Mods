@@ -9,5 +9,7 @@ object EngineHookSets {
         jbro.cobblemon.mcc.betterai.engine.effects.TopMoves,
         jbro.cobblemon.mcc.betterai.engine.effects.TopAbilities,
         jbro.cobblemon.mcc.betterai.engine.effects.TopItems,
+        jbro.cobblemon.mcc.betterai.engine.effects.PortMovesA,
+        jbro.cobblemon.mcc.betterai.engine.effects.PortMovesA2,
     )
 }
