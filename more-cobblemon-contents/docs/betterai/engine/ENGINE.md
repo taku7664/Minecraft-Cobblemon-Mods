@@ -51,6 +51,7 @@ bash more-cobblemon-contents/tools/ai-engine/export-dex.sh
 - `EngineSweepTest`: 구현 현황 표의 모든 항목을 사용률 순으로 일반 전투에 넣어 비교한다. 선언한 핸들러를 모두 옮겼고 로그가 모두 같으면 통과이며, 통과한 항목은 커버리지 파일에 기록되어 표에서 노란색이 된다. `sweep-baseline.txt`에 있는 항목이 실패하면 테스트가 깨진다(후퇴 방지).
 - `EngineTriggerParityTest`: 사용률 상위 효과가 실제로 발동하도록 조건을 만든 전투(방어, 속이기, 기습, 도발, 트릭룸, 기합의띠, 대타출동, 스텔스록, 테라스탈, 고대활성 등).
 - `EngineTournamentParityTest`: 사용률 데이터의 실제 세트로 꾸린 싱글 3대3과 더블 4대4 전투를 레벨 50으로 끝까지 진행한다. 엔진이 무작위 합법 선택으로 전투를 치르고, Showdown이 그 선택을 재생한다.
+- `EngineReplayMockTest`: 팀 시트가 공개된 실제 경기 기록(`src/test/resources/ai-engine/replays/`)을 엔진에서 모의 재현한다. 기록에서 팀, 선출, 턴마다 고른 기술·대상·테라스탈·교체를 읽어 여러 시드로 그대로 재생하고, 턴마다 실제와 같은 흐름이 나온 시드의 비율과 실제 HP가 엔진의 난수 범위 안에 드는지 `build/reports/ai-engine-replay-<id>.md`에 적는다. 같은 선택을 Showdown에서도 재생해서 로그가 같은지도 확인한다. 공개 팀 시트에는 노력치와 성격이 없어서 사용률 상위 배분 중에서 고른다. `-Psweeps`를 붙이면 그 경기의 HP 기록에 가장 잘 맞는 배분을 찾아 `<id>.spreads.json`으로 남기며, 이 파일을 기록 옆에 두면 재현에 쓴다.
 - `EngineBranchWorkerTest`: 네이티브 탐색이 받는 프레임(팀, 필드, 요청, 기술 순서)을 예전 GraalJS 작업자와 한 턴씩 비교한다.
 - `EngineForkTest`, `EngineSpeedTest`: 복제한 전투가 원본과 똑같이 이어지는지, 분기 속도가 충분한지 확인한다.
 
