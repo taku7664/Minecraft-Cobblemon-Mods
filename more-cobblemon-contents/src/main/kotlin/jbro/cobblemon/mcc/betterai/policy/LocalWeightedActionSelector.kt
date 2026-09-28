@@ -41,8 +41,12 @@ internal data class LocalActionMixingContext(
     val uncertainConditionalActionIds: Set<String> = emptySet(),
     val alreadyBoostedSetupActionIds: Set<String> = emptySet(),
     val overcommittedSetupActionIds: Set<String> = emptySet(),
-    /** Stat-raising moves that failed [jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate]. */
-    val failedSetupGateActionIds: Set<String> = emptySet(),
+    /**
+     * Candidates the choosing rules ruled out, with the reason each is excluded under: `setup_gate`
+     * ([jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate]), `status_wasted`
+     * ([jbro.cobblemon.mcc.betterai.matchup.LocalStatusMoveTriage]).
+     */
+    val ruleExclusions: Map<String, String> = emptyMap(),
     val tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     /** The deciding tier's `decisionRegretBand`, multiplied into the regret band. One is shipped. */
     val decisionRegretBand: Double = 1.0,
@@ -118,14 +122,14 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
                     context.riskBudget,
                     context.alreadyBoostedSetupActionIds,
                     context.overcommittedSetupActionIds,
-                    context.failedSetupGateActionIds,
+                    context.ruleExclusions,
                 )
             }
             reason?.let { exclusions[rank.outcome.candidate.actionId] = it }
             reason == null
         }
         val viable = eligible.ifEmpty {
-            listOf(emergencyFallback(selectionUniverse, context.overcommittedSetupActionIds + context.failedSetupGateActionIds)).also { fallback ->
+            listOf(emergencyFallback(selectionUniverse, context.overcommittedSetupActionIds + context.ruleExclusions.keys)).also { fallback ->
                 exclusions.remove(fallback.single().outcome.candidate.actionId)
             }
         }
@@ -295,7 +299,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
         riskBudget: Double,
         alreadyBoostedSetupActionIds: Set<String>,
         overcommittedSetupActionIds: Set<String>,
-        failedSetupGateActionIds: Set<String>,
+        ruleExclusions: Map<String, String>,
     ): String? = when {
         rank.outcome.publiclyInert -> "publicly_inert"
         rank.outcome.entryFaints -> "entry_faints"
@@ -306,7 +310,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
             "low_execution_probability"
         rank.outcome.candidate.kind == BattleActionKind.FORFEIT -> "forfeit"
         rank.outcome.candidate.kind == BattleActionKind.WAIT -> "wait"
-        rank.outcome.candidate.actionId in failedSetupGateActionIds -> "setup_gate"
+        rank.outcome.candidate.actionId in ruleExclusions -> ruleExclusions.getValue(rank.outcome.candidate.actionId)
         else -> switchExclusion(rank, bestRanked, credibleStayAlternativeExists, riskBudget, memory)
             ?: if (selfSetupHasFuture(
                     rank,

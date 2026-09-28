@@ -86,6 +86,7 @@ internal object LocalSetupGate {
         return Verdict(failures.isEmpty(), failures)
     }
 
+    const val REASON = "setup_gate"
     const val ACE_PASS = 0.5
     const val DUEL_PASS = 0.5
     const val SURVIVAL_PASS = 0.8

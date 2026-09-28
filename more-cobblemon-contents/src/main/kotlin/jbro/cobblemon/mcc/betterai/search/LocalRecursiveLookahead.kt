@@ -86,6 +86,11 @@ internal object LocalRecursiveLookaheadEvaluator {
         moveUsageForFormat: (BattleFormat) -> LocalMoveUsageLookup? = LocalOpponentMoveUsage::forFormat,
         /** Per-opponent threat multipliers for the AI's own root evaluation; see [LocalOpponentThreat]. */
         opponentThreatWeights: Map<UUID, Double> = emptyMap(),
+        /**
+         * Candidates the choosing rules have already ruled out (a failed setup gate, a wasted status move).
+         * They keep their root ranking but get no search budget and take no root slot.
+         */
+        excludedActionIds: Set<String> = emptySet(),
     ): LocalLookaheadEvaluation {
         val requestedDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1)
         val moveUsage = moveUsageForFormat(context.state.format)
@@ -181,7 +186,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             // Recomputed per depth from the ranking as it now stands, so a candidate the previous ply
             // promoted is searched at the next one. Singles never trims - it does not have enough
             // candidates to reach the limit - so this changes nothing outside doubles.
-            val searchable = searchableActionIds(ranked, tuning, context)
+            val searchable = searchableActionIds(ranked.filterNot { it.outcome.candidate.actionId in excludedActionIds }, tuning, context)
             val evaluatedCoverage = mutableMapOf<String, LocalLookaheadCoverage>()
             fun evaluateRank(rank: LocalBattleActionRank): LocalBattleActionRank {
                 val id = rank.outcome.candidate.actionId
@@ -298,7 +303,8 @@ internal object LocalRecursiveLookaheadEvaluator {
                 }
             }
             val evaluated = ranked.map { rank ->
-                if (searchable != null && rank.outcome.candidate.actionId !in searchable) rank else evaluateRank(rank)
+                val id = rank.outcome.candidate.actionId
+                if (id in excludedActionIds || searchable != null && id !in searchable) rank else evaluateRank(rank)
             }.toMutableList()
             var leaderValidated = !tuning.revalidateUnsearchedRootLeaders && rootChoicePool == null
             if (!leaderValidated) {

@@ -6,6 +6,7 @@ import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
 import jbro.cobblemon.mcc.betterai.matchup.AntiAceScore
 import jbro.cobblemon.mcc.betterai.matchup.AntiAceToolKind
 import jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate
+import jbro.cobblemon.mcc.betterai.matchup.LocalStatusMoveTriage
 import jbro.cobblemon.mcc.betterai.matchup.MatchupSpeedField
 import jbro.cobblemon.mcc.internal.ai.*
 import org.junit.jupiter.api.Assertions.*
@@ -205,6 +206,26 @@ class LocalMatchupScoreTest {
         assertEquals("willowisp", physical.moveId)
         assertTrue(physical.score > 0.0) { physical.toString() }
         assertTrue(special.score < 0.0) { special.toString() }
+    }
+
+    @Test
+    fun `a status move that only spends the turn is ruled out, in singles only`() {
+        val wisp = BattlePublicMoveOptionView("willowisp", BattleMoveCandidateView(typeId = "fire",
+            damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
+            effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, listOf(BattleMoveEffectView(
+                BattleMoveEffectKind.STATUS, BattleMoveEffectTarget.SELECTED_TARGET, valueId = "brn")), false)),
+            BattlePublicMoveKnowledge.EXACT_OWN)
+        val action = BattleActionCandidate("wisp", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 2, moveId = "willowisp",
+            moveDetails = wisp.details)
+        fun wasted(category: BattleMoveDamageCategory, format: BattleFormat = BattleFormat.SINGLE): Boolean {
+            val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0, foeCategory = category,
+                allyExtra = listOf(wisp), format = format)
+            return LocalStatusMoveTriage.wasted(action, context, LocalMatchupScoreCalculator.calculate(context))
+        }
+        assertTrue(wasted(BattleMoveDamageCategory.SPECIAL))
+        assertFalse(wasted(BattleMoveDamageCategory.PHYSICAL))
+        // A doubles burn may be protecting the partner, which the one-on-one cannot see.
+        assertFalse(wasted(BattleMoveDamageCategory.SPECIAL, BattleFormat.DOUBLE))
     }
 
     @Test
