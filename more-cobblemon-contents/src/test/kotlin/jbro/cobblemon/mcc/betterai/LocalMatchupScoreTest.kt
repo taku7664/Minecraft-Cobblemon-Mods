@@ -5,8 +5,8 @@ import jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutProfile
 import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
 import jbro.cobblemon.mcc.betterai.matchup.LocalOpponentIntentPredictor
 import jbro.cobblemon.mcc.betterai.matchup.LocalPublicFailureTriage
-import jbro.cobblemon.mcc.betterai.matchup.AntiAceScore
-import jbro.cobblemon.mcc.betterai.matchup.AntiAceToolKind
+import jbro.cobblemon.mcc.betterai.matchup.StopScore
+import jbro.cobblemon.mcc.betterai.matchup.StopToolKind
 import jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate
 import jbro.cobblemon.mcc.betterai.matchup.LocalStatusMoveTriage
 import jbro.cobblemon.mcc.betterai.matchup.LocalSwitchRules
@@ -82,17 +82,17 @@ class LocalMatchupScoreTest {
     }
 
     @Test
-    fun `dragon dance makes an ace of a Pokemon that loses the plain exchange`() {
+    fun `dragon dance makes a sweeper of a Pokemon that loses the plain exchange`() {
         // Both sides need three hits; the foe is faster. One Dragon Dance costs a hit, then two hits win it first.
         val scores = LocalMatchupScoreCalculator.calculate(context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0,
             foePower = 65.0, allySetup = mapOf("atk" to 1, "spe" to 1)))
         assertEquals(0.0, scores.pokemon(ALLY, FOE)!!.winProbability, 1e-9)
-        val ace = scores.aces.getValue(ALLY)
-        assertEquals(0.0, ace.naturalSweep, 1e-9)
-        assertEquals("dragondance", ace.setupMoveId)
-        assertEquals(1.0, ace.setupSafety, 1e-9)
-        assertEquals(1.0, ace.boostedSweep, 1e-9)
-        assertEquals(1.0, ace.score, 1e-9)
+        val sweeper = scores.sweeps.getValue(ALLY)
+        assertEquals(0.0, sweeper.naturalSweep, 1e-9)
+        assertEquals("dragondance", sweeper.setupMoveId)
+        assertEquals(1.0, sweeper.setupSafety, 1e-9)
+        assertEquals(1.0, sweeper.boostedSweep, 1e-9)
+        assertEquals(1.0, sweeper.score, 1e-9)
     }
 
     @Test
@@ -100,9 +100,9 @@ class LocalMatchupScoreTest {
         // The foe two-hits and moves first: after one Swords Dance the user falls before it swings.
         val scores = LocalMatchupScoreCalculator.calculate(context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0,
             foePower = 90.0, allySetup = mapOf("atk" to 2)))
-        val ace = scores.aces.getValue(ALLY)
-        assertEquals(0.0, ace.boostedSweep, 1e-9)
-        assertEquals(0.0, ace.score, 1e-9)
+        val sweeper = scores.sweeps.getValue(ALLY)
+        assertEquals(0.0, sweeper.boostedSweep, 1e-9)
+        assertEquals(0.0, sweeper.score, 1e-9)
     }
 
     @Test
@@ -125,11 +125,11 @@ class LocalMatchupScoreTest {
     fun `doubles bench Pokemon are scored too`() {
         val scores = LocalMatchupScoreCalculator.calculate(context(allySpeed = 150, foeSpeed = 100, format = BattleFormat.DOUBLE))
         assertNotNull(scores.pokemon(BENCH, FOE))
-        assertNotNull(scores.aces[BENCH])
+        assertNotNull(scores.sweeps[BENCH])
     }
 
     @Test
-    fun `haze stops a dragon dance ace that beats the plain attacker`() {
+    fun `haze stops a dragon dance sweeper that beats the plain attacker`() {
         val haze = BattlePublicMoveOptionView("haze", BattleMoveCandidateView(typeId = "ice",
             damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
             targetPattern = BattleMoveTargetPattern.ALL_ACTIVE), BattlePublicMoveKnowledge.EXACT_OWN)
@@ -137,11 +137,11 @@ class LocalMatchupScoreTest {
         val scores = LocalMatchupScoreCalculator.calculate(context(allySpeed = 100, foeSpeed = 90, allyPower = 65.0,
             foePower = 65.0, foeSetup = mapOf("atk" to 1, "spe" to 1), allyExtra = listOf(haze)))
         assertEquals(1.0, scores.pokemon(ALLY, FOE)!!.winProbability, 1e-9)
-        assertEquals("dragondance", scores.aces.getValue(FOE).setupMoveId)
-        val anti = scores.antiAces.getValue(ALLY)
-        assertEquals(FOE, anti.aceId)
-        assertEquals(0.0, anti.tools.single { it.kind == AntiAceToolKind.OUTLASTS }.value, 1e-9)
-        assertEquals(AntiAceToolKind.RESETS_BOOSTS, anti.bestTool!!.kind)
+        assertEquals("dragondance", scores.sweeps.getValue(FOE).setupMoveId)
+        val anti = scores.stops.getValue(ALLY)
+        assertEquals(FOE, anti.sweeperId)
+        assertEquals(0.0, anti.tools.single { it.kind == StopToolKind.OUTLASTS }.value, 1e-9)
+        assertEquals(StopToolKind.RESETS_BOOSTS, anti.bestTool!!.kind)
         assertEquals(1.0, anti.score, 1e-9)
     }
 
@@ -149,10 +149,10 @@ class LocalMatchupScoreTest {
     fun `a focus sash guarantees the first action and counts as a stopper`() {
         val scores = LocalMatchupScoreCalculator.calculate(context(allySpeed = 100, foeSpeed = 90, allyPower = 65.0,
             foePower = 65.0, foeSetup = mapOf("atk" to 1, "spe" to 1), allyItem = "focussash"))
-        val anti = scores.antiAces.getValue(ALLY)
+        val anti = scores.stops.getValue(ALLY)
         assertEquals("focussash", anti.oneTimeSurvival)
         assertEquals(1.0, anti.actsBeforeKnockout, 1e-9)
-        assertEquals(AntiAceScore.ONE_TIME_SURVIVAL_BONUS, anti.score, 1e-9)
+        assertEquals(StopScore.ONE_TIME_SURVIVAL_BONUS, anti.score, 1e-9)
     }
 
     @Test
@@ -164,11 +164,11 @@ class LocalMatchupScoreTest {
     }
 
     @Test
-    fun `the setup gate refuses a setup that is not an ace`() {
+    fun `the setup gate refuses a setup that is not a sweeper`() {
         val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 90.0, allySetup = mapOf("atk" to 2))
         val verdict = LocalSetupGate.evaluate(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context))!!
         assertFalse(verdict.passes)
-        assertTrue("ace" in verdict.failures) { verdict.failures.toString() }
+        assertTrue("sweep" in verdict.failures) { verdict.failures.toString() }
     }
 
     @Test
@@ -189,7 +189,7 @@ class LocalMatchupScoreTest {
     }
 
     @Test
-    fun `an ace facing destiny bond does not set up and retreats`() {
+    fun `a sweeper facing destiny bond does not set up and retreats`() {
         val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0, benchPower = 65.0,
             allySetup = mapOf("atk" to 1, "spe" to 1), foeExtra = listOf(statusMove("destinybond", BattleMoveTargetPattern.SELF)))
         val scores = LocalMatchupScoreCalculator.calculate(context)

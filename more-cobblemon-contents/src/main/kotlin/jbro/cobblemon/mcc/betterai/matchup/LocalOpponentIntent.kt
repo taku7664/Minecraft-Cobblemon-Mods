@@ -42,7 +42,7 @@ internal data class OpponentIntent(val pokemonId: UUID, val activeSlot: Int, val
  *
  * - An attack: its chance to knock the target out this turn, and the share of the target's HP it takes.
  *   A spread move adds up every ally it hits.
- * - A scored status move: its [StatusMoveMatchupScore], a setup move: the [AceScore] it builds.
+ * - A scored status move: its [StatusMoveMatchupScore], a setup move: the [SweepScore] it builds.
  * - Protect: how likely an ally's best attack is to knock the user out this turn; it fails after itself.
  * - Fake Out: strong on the first turn out, failing after.
  * - A switch: how much better the incoming Pokemon's matchups are than the user's, less the turn it costs.
@@ -118,11 +118,11 @@ internal object LocalOpponentIntentPredictor {
                 values.map { (ally, value) -> option(IntentKind.ATTACK, value + itemBonus(ally), ally.battlePokemonId) }
             }
         }
-        scores.aces[user.battlePokemonId]?.takeIf { it.setupMoveId == moveId }?.let {
+        scores.sweeps[user.battlePokemonId]?.takeIf { it.setupMoveId == moveId }?.let {
             return listOf(option(IntentKind.SETUP, it.score + SETUP_OFFSET))
         }
         if (effects.any { it.kind == BattleMoveEffectKind.STAT_STAGE } && effects.all { it.target != BattleMoveEffectTarget.SELECTED_TARGET }) {
-            // A stat raise that makes no ace.
+            // A stat raise that makes no sweeper.
             return listOf(option(IntentKind.SETUP, UNSCORED))
         }
         val scored = allies.mapNotNull { ally ->

@@ -30,8 +30,8 @@ import jbro.cobblemon.mcc.internal.ai.BattleStateView
  * A pivot (U-turn, Volt Switch, Parting Shot) is a switch that also acts: credited like a clearly better
  * switch into the best Pokemon behind it, whose entry is free with the chance the pivot moves second.
  *
- * An ace facing Unaware or Destiny Bond retreats ([LocalSetupGate.retreatReasons]): a switch taking it out
- * is credited by its ace score, as long as the incoming Pokemon survives the entry.
+ * An sweeper facing Unaware or Destiny Bond retreats ([LocalSetupGate.retreatReasons]): a switch taking it out
+ * is credited by its sweep score, as long as the incoming Pokemon survives the entry.
  *
  * Adjustments are in the ranking's score units and are added after the search; the search owns the rest.
  */
@@ -51,11 +51,11 @@ internal object LocalSwitchRules {
         val replacementValues = linkedMapOf<String, Double>()
         val exclusions = linkedMapOf<String, String>()
         val adjustments = linkedMapOf<String, Double>()
-        // An ace that should retreat, by its ace score; worked out once per Pokemon.
+        // An sweeper that should retreat, by its sweep score; worked out once per Pokemon.
         val retreatCredits = HashMap<java.util.UUID, Double>()
         fun retreats(pokemon: BattlePokemonStateView): Double = retreatCredits.getOrPut(pokemon.battlePokemonId) {
             if (LocalSetupGate.retreatReasons(pokemon, context, scores).isEmpty()) 0.0
-            else scores.aces[pokemon.battlePokemonId]?.score ?: 0.0
+            else scores.sweeps[pokemon.battlePokemonId]?.score ?: 0.0
         }
         // A slot that may not move is being asked for a replacement.
         val movingSlots = candidates.flatMap(::parts).filter { it.kind == BattleActionKind.USE_MOVE }.map { it.actorSlot }.toSet()

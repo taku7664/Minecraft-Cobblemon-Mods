@@ -14,8 +14,8 @@ import java.util.UUID
  * |---|---|---|
  * | [MoveMatchupScore] | user x move x target | ignored: what the move does when it lands |
  * | [PokemonMatchupScore] | subject x opponent | the exchange, including who moves first |
- * | [AceScore] | subject, against the whole opposing team | through the matchups |
- * | [AntiAceScore] | subject x the opposing ace, after its setup | through the matchups |
+ * | [SweepScore] | subject, against the whole opposing team | through the matchups |
+ * | [StopScore] | subject x the opposing sweeper, after its setup | through the matchups |
  * | [StatusMoveMatchupScore] | user x status move x target | through the matchups |
  * | [SwitchInScore] | incoming x opponent x the ally it replaces | through the matchups |
  * | [PreserveScore] | subject, within its own team | through the matchups |
@@ -107,7 +107,7 @@ internal data class PokemonMatchupScore(
  * [score] (0..1) is the better of [naturalSweep] and [boostedSweep]. The boosted reading pays for its setup
  * turns: every foe attacks through them, and the exchange that follows starts from the HP they left.
  */
-internal data class AceScore(
+internal data class SweepScore(
     val subjectId: UUID,
     /** Mean win chance of its one-on-ones against every living opponent it has seen. */
     val naturalSweep: Double,
@@ -126,54 +126,54 @@ internal data class AceScore(
     val setupSurvivalByOpponent: Map<UUID, Double> = emptyMap(),
 )
 
-/** A way to stop an ace that has set up. */
-internal enum class AntiAceToolKind {
-    /** Beats the boosted ace with attacks alone. */
+/** A way to stop a sweeper that has set up. */
+internal enum class StopToolKind {
+    /** Beats the boosted sweeper with attacks alone. */
     OUTLASTS,
-    /** Unaware: the ace's attack and defence stages stop counting; its Speed still does. */
+    /** Unaware: the sweeper's attack and defence stages stop counting; its Speed still does. */
     IGNORES_BOOSTS,
     /** Haze, Clear Smog, Topsy-Turvy, Spectral Thief. */
     RESETS_BOOSTS,
-    /** Roar, Whirlwind, Dragon Tail, Circle Throw: the ace leaves and its stages with it. */
+    /** Roar, Whirlwind, Dragon Tail, Circle Throw: the sweeper leaves and its stages with it. */
     FORCES_SWITCH,
-    /** Locks the ace into the setup move it just used. */
+    /** Locks the sweeper into the setup move it just used. */
     ENCORE,
     /** Stops the setup before it happens, so it counts only when the subject moves first. */
     TAUNT,
     TRICK_ROOM,
     BURN,
     PARALYSIS,
-    /** A move that lowers the ace's stages for certain. */
+    /** A move that lowers the sweeper's stages for certain. */
     STAT_DROP,
-    /** A priority attack that knocks the boosted ace out in one hit. */
+    /** A priority attack that knocks the boosted sweeper out in one hit. */
     PRIORITY_FINISH,
     PERISH_SONG,
     DESTINY_BOND,
 }
 
-/** One tool and what it is worth against this ace, 0..1. */
-internal data class AntiAceTool(val kind: AntiAceToolKind, val moveId: String?, val value: Double)
+/** One tool and what it is worth against this sweeper, 0..1. */
+internal data class StopTool(val kind: StopToolKind, val moveId: String?, val value: Double)
 
 /**
- * How well [subjectId] stops [aceId], the opposing side's best [AceScore], once the ace has set up as its
- * ace score assumes.
+ * How well [subjectId] stops [sweeperId], the opposing side's best [SweepScore], once the sweeper has set up as its
+ * sweep score assumes.
  *
- * Every tool is priced the same way: the chance the subject gets it off before the boosted ace knocks it
+ * Every tool is priced the same way: the chance the subject gets it off before the boosted sweeper knocks it
  * out, times what the exchange looks like afterwards. A one-time survival (Focus Sash, Sturdy, Disguise,
  * Multiscale) guarantees the first action and adds [ONE_TIME_SURVIVAL_BONUS], since surviving one hit is
  * a stopper in itself. [score] (0..1) is the best tool plus that bonus.
  */
-internal data class AntiAceScore(
+internal data class StopScore(
     val subjectId: UUID,
-    val aceId: UUID,
-    /** Chance the subject acts before the boosted ace knocks it out. */
+    val sweeperId: UUID,
+    /** Chance the subject acts before the boosted sweeper knocks it out. */
     val actsBeforeKnockout: Double,
-    val tools: List<AntiAceTool>,
+    val tools: List<StopTool>,
     /** The item or ability that guarantees surviving one hit, if any. */
     val oneTimeSurvival: String?,
     val score: Double,
 ) {
-    val bestTool: AntiAceTool? get() = tools.maxByOrNull { it.value }
+    val bestTool: StopTool? get() = tools.maxByOrNull { it.value }
 
     companion object {
         const val ONE_TIME_SURVIVAL_BONUS = 0.15
@@ -252,9 +252,9 @@ internal class MatchupScores(
     /** Whether every pair was scored before the budget ran out. */
     val complete: Boolean,
     /** Both sides' living Pokemon, keyed by battle Pokemon ID. */
-    val aces: Map<UUID, AceScore> = emptyMap(),
-    /** Both sides' living Pokemon against the other side's ace, keyed by the subject. */
-    val antiAces: Map<UUID, AntiAceScore> = emptyMap(),
+    val sweeps: Map<UUID, SweepScore> = emptyMap(),
+    /** Both sides' living Pokemon against the other side's sweeper, keyed by the subject. */
+    val stops: Map<UUID, StopScore> = emptyMap(),
     /** Active Pokemon's status moves against the opposing actives, keyed by (user, target). */
     private val statusMovesByPair: Map<Pair<UUID, UUID>, List<StatusMoveMatchupScore>> = emptyMap(),
     /** Keyed by (incoming, opponent, replaced). */
@@ -271,8 +271,8 @@ internal class MatchupScores(
     val switchIns: Collection<SwitchInScore> get() = switchInsByKey.values
 
     /** The side's best sweeper, if any of its Pokemon was scored. */
-    fun ace(side: jbro.cobblemon.mcc.internal.ai.BattleSide, state: jbro.cobblemon.mcc.internal.ai.BattleStateView): AceScore? =
-        state.pokemon.filter { it.side == side }.mapNotNull { aces[it.battlePokemonId] }.maxByOrNull { it.score }
+    fun sweeper(side: jbro.cobblemon.mcc.internal.ai.BattleSide, state: jbro.cobblemon.mcc.internal.ai.BattleStateView): SweepScore? =
+        state.pokemon.filter { it.side == side }.mapNotNull { sweeps[it.battlePokemonId] }.maxByOrNull { it.score }
 
     /** The damaging moves [userId] has against [targetId], best first. */
     fun moves(userId: UUID, targetId: UUID): List<MoveMatchupScore> = movesByPair[userId to targetId].orEmpty()

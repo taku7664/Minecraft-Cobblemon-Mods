@@ -13,16 +13,16 @@ import jbro.cobblemon.mcc.internal.ai.BattleStatusMoveCategories
  * The path a stat-raising status move has to pass before the AI may pick it.
  *
  * All of these, read from [MatchupScores]:
- * - the user is an ace: its [AceScore] reaches [ACE_PASS], and through the setup, not in spite of it;
+ * - the user is a sweeper: its [SweepScore] reaches [SWEEP_PASS], and through the setup, not in spite of it;
  * - after setting up it wins against every opponent on the field, the setup turns paid for ([DUEL_PASS]);
  * - the opponents on the field do not knock it out this turn ([SURVIVAL_PASS]);
  * - no opponent on the field can stop it once boosted. A benched stopper has to come in first, which costs
  *   its side a turn and a hit; the next decision judges it once it is in front of the boosted user.
  *   - Encore, a forced switch, Unaware and Destiny Bond stop it whenever an opponent has them
- *     ([ALWAYS_STOPS]). Against the last two the ace should not stay at all: see [retreatReasons].
+ *     ([ALWAYS_STOPS]). Against the last two the sweeper should not stay at all: see [retreatReasons].
  *   - Haze, Clear Smog, Perish Song and Taunt do not: the boost is traded for the opponent's own turn, or
  *     is already up ([NEVER_STOPS]).
- *   - Any other tool stops it at [STOPPER_PASS] or more. Simply beating it is the ace and duel checks'.
+ *   - Any other tool stops it at [STOPPER_PASS] or more. Simply beating it is the sweeper and duel checks'.
  */
 internal object LocalSetupGate {
     data class Verdict(val passes: Boolean, val failures: List<String>)
@@ -64,14 +64,14 @@ internal object LocalSetupGate {
         val user = state.pokemon.firstOrNull {
             it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted && it.hpFraction > 0.0
         } ?: return null
-        val ace = scores.aces[user.battlePokemonId] ?: return Verdict(false, listOf("no_ace_score"))
+        val sweeper = scores.sweeps[user.battlePokemonId] ?: return Verdict(false, listOf("no_sweep_score"))
         val failures = mutableListOf<String>()
-        if (ace.score < ACE_PASS || ace.boostedSweep <= ace.naturalSweep) failures += "ace"
+        if (sweeper.score < SWEEP_PASS || sweeper.boostedSweep <= sweeper.naturalSweep) failures += "sweep"
         val onField = state.pokemon.filter {
             it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         }
         for (opponent in onField) {
-            val boosted = ace.boostedByOpponent[opponent.battlePokemonId] ?: 0.0
+            val boosted = sweeper.boostedByOpponent[opponent.battlePokemonId] ?: 0.0
             if (boosted < DUEL_PASS) failures += "duel:${opponent.speciesId}"
         }
         // Every attacker on the field may pick the user this turn.
@@ -79,22 +79,22 @@ internal object LocalSetupGate {
             chance * (scores.pokemon(user.battlePokemonId, opponent.battlePokemonId)?.opponentMove?.survivalByUses?.getOrNull(1) ?: 1.0)
         }
         if (survival < SURVIVAL_PASS) failures += "knockout"
-        for ((opponent, anti) in fieldStoppers(user, ace, context, scores, cache)) {
+        for ((opponent, anti) in fieldStoppers(user, sweeper, context, scores, cache)) {
             anti.tools.firstOrNull { it.kind in ALWAYS_STOPS }?.let {
                 failures += "stopper:${opponent.speciesId}:${it.kind.name.lowercase()}"
                 continue
             }
-            val stopper = anti.tools.filter { it.kind != AntiAceToolKind.OUTLASTS && it.kind !in NEVER_STOPS }
+            val stopper = anti.tools.filter { it.kind != StopToolKind.OUTLASTS && it.kind !in NEVER_STOPS }
                 .maxByOrNull { it.value } ?: continue
-            val value = stopper.value + if (anti.oneTimeSurvival != null) AntiAceScore.ONE_TIME_SURVIVAL_BONUS else 0.0
+            val value = stopper.value + if (anti.oneTimeSurvival != null) StopScore.ONE_TIME_SURVIVAL_BONUS else 0.0
             if (value >= STOPPER_PASS) failures += "stopper:${opponent.speciesId}:${stopper.kind.name.lowercase()}"
         }
         return Verdict(failures.isEmpty(), failures)
     }
 
     /**
-     * Why [user], an ace, should leave the field: an opponent there ignores its boosts (Unaware) or takes it
-     * down with it (Destiny Bond). Empty when it is no ace or nothing there does either.
+     * Why [user], a sweeper, should leave the field: an opponent there ignores its boosts (Unaware) or takes it
+     * down with it (Destiny Bond). Empty when it is no sweeper or nothing there does either.
      */
     fun retreatReasons(
         user: BattlePokemonStateView,
@@ -102,35 +102,35 @@ internal object LocalSetupGate {
         scores: MatchupScores,
         cache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
     ): List<String> {
-        val ace = scores.aces[user.battlePokemonId]?.takeIf { it.score >= ACE_PASS && it.setupMoveId != null } ?: return emptyList()
-        return fieldStoppers(user, ace, context, scores, cache).flatMap { (opponent, anti) ->
+        val sweeper = scores.sweeps[user.battlePokemonId]?.takeIf { it.score >= SWEEP_PASS && it.setupMoveId != null } ?: return emptyList()
+        return fieldStoppers(user, sweeper, context, scores, cache).flatMap { (opponent, anti) ->
             anti.tools.filter { it.kind in RETREATS_FROM }.map { "${opponent.speciesId}:${it.kind.name.lowercase()}" }
         }.distinct()
     }
 
-    /** The anti-ace reading of every opponent on the field against [user] as the ace. */
+    /** The stopping reading of every opponent on the field against [user] as the sweeper. */
     private fun fieldStoppers(
         user: BattlePokemonStateView,
-        ace: AceScore,
+        sweeper: SweepScore,
         context: BattleDecisionContext,
         scores: MatchupScores,
         cache: LocalProjectedActionCalculationCache,
-    ): List<Pair<BattlePokemonStateView, AntiAceScore>> = context.state.pokemon.filter {
+    ): List<Pair<BattlePokemonStateView, StopScore>> = context.state.pokemon.filter {
         it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
     }.mapNotNull { opponent ->
-        // Scored against this user as the ace, which is not always the side's best one.
-        val anti = scores.antiAces[opponent.battlePokemonId]?.takeIf { it.aceId == user.battlePokemonId }
-            ?: LocalAntiAceScoreCalculator.score(context, opponent, ace, user, scores, cache)
+        // Scored against this user as the sweeper, which is not always the side's best one.
+        val anti = scores.stops[opponent.battlePokemonId]?.takeIf { it.sweeperId == user.battlePokemonId }
+            ?: LocalStopScoreCalculator.score(context, opponent, sweeper, user, scores, cache)
         anti?.let { opponent to it }
     }
 
     const val REASON = "setup_gate"
-    const val ACE_PASS = 0.5
+    const val SWEEP_PASS = 0.5
     const val DUEL_PASS = 0.5
     const val SURVIVAL_PASS = 0.8
     const val STOPPER_PASS = 0.5
-    val ALWAYS_STOPS = setOf(AntiAceToolKind.ENCORE, AntiAceToolKind.FORCES_SWITCH,
-        AntiAceToolKind.IGNORES_BOOSTS, AntiAceToolKind.DESTINY_BOND)
-    val NEVER_STOPS = setOf(AntiAceToolKind.RESETS_BOOSTS, AntiAceToolKind.PERISH_SONG, AntiAceToolKind.TAUNT)
-    val RETREATS_FROM = setOf(AntiAceToolKind.IGNORES_BOOSTS, AntiAceToolKind.DESTINY_BOND)
+    val ALWAYS_STOPS = setOf(StopToolKind.ENCORE, StopToolKind.FORCES_SWITCH,
+        StopToolKind.IGNORES_BOOSTS, StopToolKind.DESTINY_BOND)
+    val NEVER_STOPS = setOf(StopToolKind.RESETS_BOOSTS, StopToolKind.PERISH_SONG, StopToolKind.TAUNT)
+    val RETREATS_FROM = setOf(StopToolKind.IGNORES_BOOSTS, StopToolKind.DESTINY_BOND)
 }

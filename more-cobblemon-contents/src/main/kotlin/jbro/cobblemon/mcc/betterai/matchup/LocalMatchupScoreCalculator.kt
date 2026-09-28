@@ -52,44 +52,44 @@ internal object LocalMatchupScoreCalculator {
             }
         }
         val pairs = MatchupScores(moves, pokemon, complete = true)
-        val aces = linkedMapOf<UUID, AceScore>()
+        val sweeps = linkedMapOf<UUID, SweepScore>()
         for (subject in allies + opponents) {
-            if (!shouldContinue()) return MatchupScores(moves, pokemon, complete = false, aces = aces)
+            if (!shouldContinue()) return MatchupScores(moves, pokemon, complete = false, sweeps = sweeps)
             val foes = if (subject.side == BattleSide.ALLY) opponents else allies
-            aceScore(context, subject, foes, pairs, cache)?.let { aces[subject.battlePokemonId] = it }
+            sweepScore(context, subject, foes, pairs, cache)?.let { sweeps[subject.battlePokemonId] = it }
         }
-        val withAces = MatchupScores(moves, pokemon, complete = true, aces = aces)
-        val antiAces = linkedMapOf<UUID, AntiAceScore>()
+        val withSweeps = MatchupScores(moves, pokemon, complete = true, sweeps = sweeps)
+        val stops = linkedMapOf<UUID, StopScore>()
         for ((side, stoppers) in listOf(BattleSide.OPPONENT to allies, BattleSide.ALLY to opponents)) {
-            val ace = withAces.ace(side, context.state) ?: continue
-            val acePokemon = context.state.pokemon.first { it.battlePokemonId == ace.subjectId }
+            val sweeper = withSweeps.sweeper(side, context.state) ?: continue
+            val sweeperPokemon = context.state.pokemon.first { it.battlePokemonId == sweeper.subjectId }
             for (subject in stoppers) {
-                if (!shouldContinue()) return MatchupScores(moves, pokemon, complete = false, aces = aces, antiAces = antiAces)
-                LocalAntiAceScoreCalculator.score(context, subject, ace, acePokemon, pairs, cache)
-                    ?.let { antiAces[subject.battlePokemonId] = it }
+                if (!shouldContinue()) return MatchupScores(moves, pokemon, complete = false, sweeps = sweeps, stops = stops)
+                LocalStopScoreCalculator.score(context, subject, sweeper, sweeperPokemon, pairs, cache)
+                    ?.let { stops[subject.battlePokemonId] = it }
             }
         }
         val statusMoves = linkedMapOf<Pair<UUID, UUID>, List<StatusMoveMatchupScore>>()
         val switchIns = linkedMapOf<Triple<UUID, UUID, UUID>, SwitchInScore>()
-        fun partial() = MatchupScores(moves, pokemon, complete = false, aces = aces, antiAces = antiAces,
+        fun partial() = MatchupScores(moves, pokemon, complete = false, sweeps = sweeps, stops = stops,
             statusMovesByPair = statusMoves, switchInsByKey = switchIns)
         val allyField = allies.filter { it.activeSlot != null }
         val opponentField = opponents.filter { it.activeSlot != null }
         for (ally in allyField) for (opponent in opponentField) {
             if (!shouldContinue()) return partial()
             statusMoves[ally.battlePokemonId to opponent.battlePokemonId] =
-                LocalTurnCostScoreCalculator.statusMoves(context, ally, opponent, withAces, cache)
+                LocalTurnCostScoreCalculator.statusMoves(context, ally, opponent, withSweeps, cache)
             statusMoves[opponent.battlePokemonId to ally.battlePokemonId] =
-                LocalTurnCostScoreCalculator.statusMoves(context, opponent, ally, withAces, cache)
+                LocalTurnCostScoreCalculator.statusMoves(context, opponent, ally, withSweeps, cache)
         }
         for (incoming in allies.filter { it.activeSlot == null }) for (replaced in allyField) for (opponent in opponentField) {
             if (!shouldContinue()) return partial()
-            LocalTurnCostScoreCalculator.switchIn(context, incoming, replaced, opponent, withAces, cache)
+            LocalTurnCostScoreCalculator.switchIn(context, incoming, replaced, opponent, withSweeps, cache)
                 ?.let { switchIns[Triple(incoming.battlePokemonId, opponent.battlePokemonId, replaced.battlePokemonId)] = it }
         }
-        val preserves = LocalTurnCostScoreCalculator.preserves(allies, opponents, withAces) +
-            LocalTurnCostScoreCalculator.preserves(opponents, allies, withAces)
-        return MatchupScores(moves, pokemon, complete = true, aces = aces, antiAces = antiAces,
+        val preserves = LocalTurnCostScoreCalculator.preserves(allies, opponents, withSweeps) +
+            LocalTurnCostScoreCalculator.preserves(opponents, allies, withSweeps)
+        return MatchupScores(moves, pokemon, complete = true, sweeps = sweeps, stops = stops,
             statusMovesByPair = statusMoves, switchInsByKey = switchIns, preserves = preserves)
     }
 
@@ -98,13 +98,13 @@ internal object LocalMatchupScoreCalculator {
      * status moves. A boosted reading re-scores both sides' attacks, since a boost changes damage dealt,
      * damage taken and turn order alike.
      */
-    private fun aceScore(
+    private fun sweepScore(
         context: BattleDecisionContext,
         subject: BattlePokemonStateView,
         foes: List<BattlePokemonStateView>,
         pairs: MatchupScores,
         cache: LocalProjectedActionCalculationCache,
-    ): AceScore? {
+    ): SweepScore? {
         val matchups = foes.mapNotNull { pairs.pokemon(subject.battlePokemonId, it.battlePokemonId) }
         if (matchups.isEmpty()) return null
         val natural = matchups.map { it.winProbability }.average()
@@ -131,7 +131,7 @@ internal object LocalMatchupScoreCalculator {
             if (sweep > best.sweep + 1e-9) best = Boost(moveId, uses, sweep, outcomes.map { it.second }.average(),
                 outcomes.associate { it.first to it.third }, outcomes.associate { it.first to it.second })
         }
-        return AceScore(
+        return SweepScore(
             subjectId = subject.battlePokemonId,
             naturalSweep = natural,
             setupMoveId = best.moveId,
