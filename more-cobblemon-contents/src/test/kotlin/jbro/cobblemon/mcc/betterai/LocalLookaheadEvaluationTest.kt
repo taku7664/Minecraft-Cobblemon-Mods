@@ -1629,6 +1629,19 @@ class LocalLookaheadEvaluationTest {
     }
 
     @Test
+    fun `search turns drop attacks into a public immunity unless something pierces it`() {
+        val publicCatalog = catalog(allyMoves = listOf(move("normal_hit", typeId = "normal"), move("dark_hit", typeId = "dark")))
+
+        val intoGhost = PublicFutureActionFactory.actions(state(opponentTypes = setOf("ghost")), BattleSide.ALLY, publicCatalog)
+        val scrappy = PublicFutureActionFactory.actions(
+            state(opponentTypes = setOf("ghost"), allyAbility = "cobblemon:scrappy"), BattleSide.ALLY, publicCatalog,
+        )
+
+        assertEquals(listOf("cobblemon:dark_hit"), intoGhost.mapNotNull { it.moveId })
+        assertEquals(setOf("cobblemon:normal_hit", "cobblemon:dark_hit"), scrappy.mapNotNull { it.moveId }.toSet())
+    }
+
+    @Test
     fun `slot actions are the flattened doubles turns without building them`() {
         val partner = pokemon(UUID.fromString("00000000-0000-0000-0000-000000000231"), BattleSide.ALLY, speed = 70, activeSlot = 1)
         val doubles = state(

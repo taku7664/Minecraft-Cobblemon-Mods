@@ -116,7 +116,10 @@ internal object PublicFutureActionFactory {
         hypotheticalPriorityReservation: LocalHypothesisPriorityReservation,
         moveUsage: LocalMoveUsageLookup?,
     ): List<BattleActionCandidate> {
-        val ordered = actions.sortedWith(
+        // A move the public state already rules out has no value this turn or later, so no search
+        // turn spends budget on it; a slot left with nothing keeps its original list.
+        val viable = actions.filterNot { publiclyFails(state, side, actor, it) }.ifEmpty { actions }
+        val ordered = viable.sortedWith(
             compareByDescending<BattleActionCandidate> { primitivePriority(state, side, actor, it) }
                 .thenBy(BattleActionCandidate::actionId),
         )
@@ -184,6 +187,51 @@ internal object PublicFutureActionFactory {
             if (selected.size < limit) selected.putIfAbsent(action.actionId, action)
         }
         return selected.values.toList()
+    }
+
+    /**
+     * True when the public state already says the move cannot work: a single-target attack into a public
+     * type immunity (Fake Out into a Ghost, a Ground move into Levitate), a move that only inflicts a
+     * major status on a Pokemon that already has one, or weather or terrain that is already up. Anything
+     * that could let the hit land (Scrappy, Mold Breaker, Ring Target, Gravity, Foresight, Smack Down)
+     * keeps the move.
+     */
+    private fun publiclyFails(
+        state: BattleStateView,
+        side: BattleSide,
+        actor: BattlePokemonStateView,
+        action: BattleActionCandidate,
+    ): Boolean {
+        if (action.kind != BattleActionKind.USE_MOVE) return false
+        val details = action.moveDetails ?: return false
+        val effects = details.effects?.effects.orEmpty()
+        val target = action.targets.singleOrNull()?.takeIf { it.side != side }?.let { slot ->
+            state.pokemon.firstOrNull { it.side == slot.side && it.activeSlot == slot.slot && !it.fainted && it.hpFraction > 0.0 }
+        }
+        if (details.damageCategory != BattleMoveDamageCategory.STATUS) {
+            target ?: return false
+            if (target.knownTypeIds.isEmpty()) return false
+            if (effects.any { it.kind == BattleMoveEffectKind.IGNORE_TYPE_IMMUNITY }) return false
+            val actorAbility = LocalPublicAbilityState.effectiveKnownAbility(state, actor)?.let(::canonicalId)
+            if (actorAbility in IMMUNITY_PIERCING_ABILITIES) return false
+            if (target.knownHeldItemId?.let(::canonicalId) in IMMUNITY_REMOVING_ITEMS) return false
+            if (target.knownVolatileEffectIds.any { canonicalId(it) in IMMUNITY_REMOVING_VOLATILES }) return false
+            if (state.field.globalEffects.any { canonicalId(it.effectId) == "gravity" }) return false
+            val type = LocalPublicMoveDamageInputs.resolvedTypeId(action, actor, state) ?: details.typeId
+            return StandardTypeEffectiveness.multiplierAgainst(
+                type, target.knownTypeIds, LocalPublicAbilityState.effectiveKnownAbility(state, target), moveId = action.moveId,
+            ) == 0.0
+        }
+        if (effects.isEmpty()) return false
+        if (effects.all { it.kind == BattleMoveEffectKind.STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET }) {
+            return target?.statusId != null
+        }
+        val only = effects.singleOrNull() ?: return false
+        return when (only.kind) {
+            BattleMoveEffectKind.WEATHER -> only.valueId?.let(::canonicalId)?.let { it == LocalPublicFieldMechanics.effectiveWeatherId(state) } == true
+            BattleMoveEffectKind.TERRAIN -> only.valueId?.let(::canonicalId)?.let { it == LocalPublicFieldMechanics.terrainId(state) } == true
+            else -> false
+        }
     }
 
     private fun primitivePriority(
@@ -423,4 +471,9 @@ internal object PublicFutureActionFactory {
         "inferred_opponent_move" in tags || "hypothetical_public_move" in tags
 
     private val FIRST_ENTRY_ONLY_MOVES = setOf("fakeout", "firstimpression", "matblock")
+    /** Attacker abilities that hit through a type or ability immunity. */
+    private val IMMUNITY_PIERCING_ABILITIES = setOf("scrappy", "mindseye", "moldbreaker", "teravolt", "turboblaze")
+    /** Target items and volatiles that remove a type immunity. */
+    private val IMMUNITY_REMOVING_ITEMS = setOf("ringtarget", "ironball")
+    private val IMMUNITY_REMOVING_VOLATILES = setOf("foresight", "odorsleuth", "miracleeye", "smackdown", "roost")
 }
