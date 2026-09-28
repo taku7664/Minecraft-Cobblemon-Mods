@@ -31,6 +31,8 @@ class LocalSearchSwitchDuelTest {
         val format: BattleFormat,
         /** The challenger's own difficulty, when the duel is about the difficulty rather than the tuning. */
         val challengerDifficulty: BattleDifficultyProfile? = null,
+        /** The defender's own difficulty, for calibrating how much a duel can tell apart. */
+        val defenderDifficulty: BattleDifficultyProfile? = null,
     )
 
     @Test
@@ -55,10 +57,11 @@ class LocalSearchSwitchDuelTest {
         val seed = System.getProperty("aiengine.duelSeed")?.toIntOrNull() ?: SEED
         for (definition in LocalSelfPlayMeasurement.definitions(pairs, seed, duel.format)) {
             val challengerDifficulty = duel.challengerDifficulty ?: difficulty
+            val defenderDifficulty = duel.defenderDifficulty ?: difficulty
             val asCycle = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.challenger, duel.defender,
-                challengerDifficulty, difficulty, lookaheadBudget = UNLIMITED)
+                challengerDifficulty, defenderDifficulty, lookaheadBudget = UNLIMITED)
             val asOffense = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.defender, duel.challenger,
-                difficulty, challengerDifficulty, lookaheadBudget = UNLIMITED)
+                defenderDifficulty, challengerDifficulty, lookaheadBudget = UNLIMITED)
             // The challenger's HP lead at the end of each game.
             val leads = listOf(asCycle.cycleRemainingHp - asCycle.offenseRemainingHp,
                 asOffense.offenseRemainingHp - asOffense.cycleRemainingHp)
@@ -123,6 +126,8 @@ class LocalSearchSwitchDuelTest {
             "authority-depth3-singles" to Duel(AUTHORITY, AUTHORITY, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 3)),
             "duel-leaf-singles" to Duel(CURRENT.copy(id = "duel-leaf", leafDuelValue = 0.4), CURRENT, BattleFormat.SINGLE),
             "authority-duel-leaf-singles" to Duel(AUTHORITY.copy(id = "authority-duel-leaf", leafDuelValue = 0.4), CURRENT, BattleFormat.SINGLE),
+            "boss-vs-standard-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, defenderDifficulty = BattleDifficultyProfiles.STANDARD),
+            "boss-vs-introductory-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, defenderDifficulty = BattleDifficultyProfiles.INTRODUCTORY),
             "depth1-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 1)),
             "depth3-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 3)),
             "simultaneous" to Duel(CURRENT.copy(id = "simultaneous", simultaneousResponseWeight = 1.0), CURRENT, BattleFormat.DOUBLE),
