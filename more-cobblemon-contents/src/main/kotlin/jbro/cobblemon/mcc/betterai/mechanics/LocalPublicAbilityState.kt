@@ -19,12 +19,15 @@ internal object LocalPublicAbilityState {
         val itemProtected = !LocalPublicFieldMechanics.magicRoomActive(state) &&
             canonical(pokemon.knownHeldItemId) == ABILITY_SHIELD
         if (itemProtected || ability == NEUTRALIZING_GAS) return true
-        return state.pokemon.none { active ->
-            active.battlePokemonId != pokemon.battlePokemonId && active.activeSlot != null &&
-                !active.fainted && active.hpFraction > 0.0 &&
-                canonical(active.knownAbilityId) == NEUTRALIZING_GAS &&
-                !hasGastroAcid(active)
-        }
+        return neutralizingGasHolders[state].none { it != pokemon.battlePokemonId }
+    }
+
+    /** Active Pokemon whose public Neutralizing Gas works, found once per state. */
+    private val neutralizingGasHolders = LocalStateMemo { state ->
+        state.pokemon.filter { active ->
+            active.activeSlot != null && !active.fainted && active.hpFraction > 0.0 &&
+                canonical(active.knownAbilityId) == NEUTRALIZING_GAS && !hasGastroAcid(active)
+        }.map { it.battlePokemonId }
     }
 
     private fun hasGastroAcid(pokemon: BattlePokemonStateView): Boolean =

@@ -12,20 +12,24 @@ internal object LocalPublicFieldMechanics {
 
     fun trickRoomActive(state: BattleStateView): Boolean = roomActive(state, "trickroom")
 
-    fun effectiveWeatherId(state: BattleStateView): String? {
+    fun effectiveWeatherId(state: BattleStateView): String? = weather[state]
+
+    fun terrainId(state: BattleStateView): String? = state.field.terrain?.takeIf(::active)?.effectId?.let(::canonical)
+
+    // These gates are asked many times per search node about the same state; each is worked out once.
+    private val weather = LocalStateMemo { state ->
         val weatherSuppressed = state.pokemon.any { pokemon ->
             pokemon.activeSlot != null && !pokemon.fainted && pokemon.hpFraction > 0.0 &&
                 LocalPublicAbilityState.effectiveKnownAbility(state, pokemon) in WEATHER_SUPPRESSING_ABILITIES
         }
-        if (weatherSuppressed) return null
-        return state.field.weather?.takeIf(::active)?.effectId?.let(::canonical)
+        if (weatherSuppressed) null else state.field.weather?.takeIf(::active)?.effectId?.let(::canonical)
     }
 
-    fun terrainId(state: BattleStateView): String? = state.field.terrain?.takeIf(::active)?.effectId?.let(::canonical)
-
-    private fun roomActive(state: BattleStateView, id: String): Boolean = state.field.roomEffects.any {
-        active(it) && canonical(it.effectId) == id
+    private val activeRooms = LocalStateMemo { state ->
+        state.field.roomEffects.filter(::active).mapTo(hashSetOf()) { canonical(it.effectId) }
     }
+
+    private fun roomActive(state: BattleStateView, id: String): Boolean = id in activeRooms[state]
 
     private fun active(effect: BattleTimedEffectView): Boolean = effect.remainingTurns?.let { it > 0 } ?: true
 
