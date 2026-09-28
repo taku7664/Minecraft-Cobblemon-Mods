@@ -144,6 +144,7 @@ internal object LocalTacticalScenarioBattle {
             cycleIds.take(definition.activeSlots) + offenseIds.take(definition.activeSlots)
             ).toCollection(linkedSetOf())
         private val revealedMoveIds = mutableMapOf<UUID, MutableSet<String>>()
+        private val revealedAbilityIds = hashSetOf<UUID>()
         private val selectors = BattleSide.entries.associateWith { CapturingWeightedSelector() }
         private val actualBrains = BattleSide.entries.associateWith { side ->
             if (lookaheadBudget == null) LocalTacticalBrain(selectors.getValue(side), tunings.getValue(side))
@@ -453,7 +454,7 @@ internal object LocalTacticalScenarioBattle {
                 statStages = if (public) pokemon.statStages else emptyMap(),
                 knownMoveIds = if (own) template.moves.mapTo(linkedSetOf()) { it.id }
                     else revealedMoveIds[pokemon.battlePokemonId].orEmpty(),
-                knownAbilityId = template.abilityId.takeIf { own },
+                knownAbilityId = template.abilityId.takeIf { own || pokemon.battlePokemonId in revealedAbilityIds },
                 knownHeldItemId = pokemon.knownHeldItemId.takeIf { own },
                 fainted = pokemon.fainted,
                 knownTypeIds = template.typeIds.takeIf { public }.orEmpty(),
@@ -634,6 +635,30 @@ internal object LocalTacticalScenarioBattle {
                 if (side == BattleSide.ALLY) cycleVoluntarySwitches++ else offenseVoluntarySwitches++
             }
             countBlunders(side, action, statusMove, actorAfter, targetsBefore, after)
+            if (executed && !statusMove) revealAbsorbingAbilities(action, targetsBefore, after)
+        }
+
+        /**
+         * An ability that made a hit do nothing is public from then on, as the battle message announces it:
+         * the live observation adapter reads "[from] ability: Volt Absorb". Without this a Boss clicked
+         * Thunderbolt into the same Volt Absorb four turns running.
+         */
+        private fun revealAbsorbingAbilities(
+            action: BattleActionCandidate,
+            targetsBefore: List<BattlePokemonStateView>,
+            after: BattleStateView,
+        ) {
+            val type = action.moveDetails?.typeId ?: return
+            for (target in targetsBefore) {
+                val now = after.pokemon.firstOrNull { it.battlePokemonId == target.battlePokemonId } ?: continue
+                if (now.activeSlot != target.activeSlot || now.hpFraction < target.hpFraction - EPSILON) continue
+                val ability = templates.getValue(target.battlePokemonId).abilityId ?: continue
+                val chart = jbro.cobblemon.mcc.betterai.mechanics.StandardTypeEffectiveness
+                if (chart.multiplier(type, target.knownTypeIds) > 0.0 &&
+                    chart.multiplierAgainst(type, target.knownTypeIds, ability, moveId = action.moveId) == 0.0) {
+                    revealedAbilityIds += target.battlePokemonId
+                }
+            }
         }
 
         /**
