@@ -217,13 +217,15 @@ internal object LocalPublicMechanicsKernel {
         ignoresAbility: Boolean,
     ): Boolean {
         val details = candidate.moveDetails ?: return false
-        val types = target.knownTypeIds.mapTo(linkedSetOf(), ::canonical)
+        // Checked for every projected move, so no sets are built: most moves stop at the first test.
+        val rawFlags = details.effects?.mechanicFlags.orEmpty()
+        fun flagged(flag: String) = rawFlags.any { canonical(it) == flag }
+        fun typed(type: String) = target.knownTypeIds.any { canonical(it) == type }
         val ability = publicAbility(target, context)
-        val flags = details.effects?.mechanicFlags.orEmpty().mapTo(hashSetOf(), ::canonical)
         if (!ignoresAbility && when (ability) {
-                WIND_RIDER -> WIND_FLAG in flags
-                BULLETPROOF -> BULLET_FLAG in flags
-                SOUNDPROOF -> SOUND_FLAG in flags &&
+                WIND_RIDER -> flagged(WIND_FLAG)
+                BULLETPROOF -> flagged(BULLET_FLAG)
+                SOUNDPROOF -> flagged(SOUND_FLAG) &&
                     target.battlePokemonId != actor?.battlePokemonId
                 TELEPATHY -> target.side == actingSide && details.damageCategory != BattleMoveDamageCategory.STATUS
                 else -> false
@@ -233,16 +235,16 @@ internal object LocalPublicMechanicsKernel {
             details.damageCategory == BattleMoveDamageCategory.STATUS
         ) {
             if (ability == GOOD_AS_GOLD) return true
-            if (ability == MAGIC_BOUNCE && REFLECTABLE_FLAG in flags) return true
+            if (ability == MAGIC_BOUNCE && flagged(REFLECTABLE_FLAG)) return true
         }
-        if (target.side != actingSide && targetsOpponent(candidate, actingSide) &&
-            actorAbility == PRANKSTER && details.damageCategory == BattleMoveDamageCategory.STATUS && DARK in types
+        if (target.side != actingSide && actorAbility == PRANKSTER && details.damageCategory == BattleMoveDamageCategory.STATUS &&
+            targetsOpponent(candidate, actingSide) && typed(DARK)
         ) {
             return true
         }
-        if (POWDER_FLAG !in details.effects?.mechanicFlags.orEmpty()) return false
+        if (POWDER_FLAG !in rawFlags) return false
         val item = LocalPublicItemState.activeItemId(context.state, target)
-        return GRASS in types || item == SAFETY_GOGGLES || !ignoresAbility && ability == OVERCOAT
+        return typed(GRASS) || item == SAFETY_GOGGLES || !ignoresAbility && ability == OVERCOAT
     }
 
     private fun priorityMoveBlocked(
