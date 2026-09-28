@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 final class ChampionsDesignSystemContractTest {
     @Test
-    void championsOverlayUsesTheLocalSemanticThemeWithoutDependingOnMbcRuntime() throws Exception {
+    void championsOverlayUsesTheLocalSemanticThemeWithoutDependingOnMccRuntime() throws Exception {
         String tokens = read("src/main/kotlin/com/cobblemonextendedbattleui/ui/shared/BattleUiDesignTokens.kt");
         String overlay = read("src/main/kotlin/com/cobblemonextendedbattleui/ui/champions/ChampionsBattleInfoOverlay.kt");
         String build = read("build.gradle.kts");
@@ -41,9 +41,9 @@ final class ChampionsDesignSystemContractTest {
         assertFalse(overlay.contains("ALLY_GLASS"));
         assertFalse(overlay.contains("ENEMY_GLASS"));
 
-        assertFalse(build.contains("more-battle-content"));
-        assertFalse(metadata.contains("cobblemon_more_battle_content"));
-        assertFalse(overlay.contains("jbro.cobblemon.morebattlecontent"));
+        assertFalse(build.contains("more-cobblemon-contents"));
+        assertFalse(metadata.contains("more_cobblemon_contents"));
+        assertFalse(overlay.contains("jbro.cobblemon.mcc"));
     }
 
     private static String read(String path) throws Exception {

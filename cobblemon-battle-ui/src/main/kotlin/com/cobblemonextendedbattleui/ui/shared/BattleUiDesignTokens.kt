@@ -3,7 +3,7 @@ package jbro.cobblemon.battleui.extended.ui.shared
 /**
  * Battle UI's local implementation of the repository-wide semantic UI roles.
  *
- * This object intentionally contains values only. It does not depend on MBC or
+ * This object intentionally contains values only. It does not depend on MCC or
  * expose a shared widget lifecycle across otherwise independent mods.
  */
 internal object BattleUiDesignTokens {

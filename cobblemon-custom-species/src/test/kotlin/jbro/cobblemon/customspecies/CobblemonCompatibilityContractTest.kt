@@ -24,7 +24,7 @@ class CobblemonCompatibilityContractTest {
     }
 
     @Test
-    fun `fabric metadata stays independent from more battle content and allows newer cobblemon`() {
+    fun `fabric metadata stays independent from more cobblemon contents and allows newer cobblemon`() {
         val source = requireNotNull(javaClass.getResourceAsStream("/fabric.mod.json"))
             .bufferedReader().use { it.readText() }
         val metadata = JsonParser.parseString(source).asJsonObject
@@ -35,6 +35,6 @@ class CobblemonCompatibilityContractTest {
         assertEquals(">=0.19.5", dependencies.get("fabricloader").asString)
         assertEquals(">=1.14.1+kotlin.2.4.20", dependencies.get("fabric-language-kotlin").asString)
         assertEquals(">=1.8.1 <1.9.0", dependencies.get("cobblemon").asString)
-        assertTrue(dependencies.keySet().none { it.contains("more_battle_content") })
+        assertTrue(dependencies.keySet().none { it.contains("more_cobblemon_contents") })
     }
 }

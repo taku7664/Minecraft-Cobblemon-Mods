@@ -37,8 +37,7 @@ final class BetterBattlePresentationModuleContractTest {
         var dependencies = metadata.getAsJsonObject("depends");
         assertEquals(">=1.8.1 <1.9.0", dependencies.get("cobblemon").getAsString());
         assertEquals("1.2.0+1.8.1+1.21.1-release", dependencies.get("mega_showdown").getAsString());
-        assertFalse(dependencies.has("cobblemon_more_battle_content"));
-        assertFalse(dependencies.has("cobblemon_more_battle_content_better_ai"));
+        assertFalse(dependencies.has("more_cobblemon_contents"));
 
         var serialized = metadata.toString();
         assertTrue(serialized.contains("BetterBattlePresentation"));
