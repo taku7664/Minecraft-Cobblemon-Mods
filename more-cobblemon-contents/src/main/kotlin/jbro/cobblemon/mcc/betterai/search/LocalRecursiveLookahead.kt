@@ -241,6 +241,9 @@ internal object LocalRecursiveLookaheadEvaluator {
             val evaluatedCoverage = mutableMapOf<String, LocalLookaheadCoverage>()
             // Each rank this depth produced, with its unbounded adjustment; see boundSharedAdjustments.
             val producedAdjustments = java.util.IdentityHashMap<LocalBattleActionRank, RawAdjustment>()
+            // This depth's root searches, kept so the simultaneous reading can re-weigh them without searching again.
+            val rootSearches = HashMap<String, RootActionEvaluation>()
+            var opponentMix: Map<String, Double>? = null
             fun evaluateRank(rank: LocalBattleActionRank): LocalBattleActionRank {
                 val id = rank.outcome.candidate.actionId
                 if ((tuning.revalidateUnsearchedRootLeaders || rootChoicePool != null) && depth > 1 && id !in singlePlyGain) {
@@ -252,7 +255,9 @@ internal object LocalRecursiveLookaheadEvaluator {
                     singlePlyCoverage[id] = search.publicResponseCoverage
                     singlePlyThreat[id] = immediate.threatDelta
                 }
-                val evaluation = search.rootActionValue(context.state, rank.outcome.candidate, depth)
+                val searched = (if (opponentMix != null) rootSearches[id] else null)
+                    ?: search.rootActionValue(context.state, rank.outcome.candidate, depth)?.also { rootSearches[id] = it }
+                val evaluation = searched?.let { found -> opponentMix?.let { found.againstMix(it, tuning.simultaneousResponseWeight) } ?: found }
                 return if (evaluation == null) rank else {
                     // The recursive turn score carries its own knockout value, weighted by the actual
                     // damage-roll KO ratio and execution probability. Remove exactly the knockout
@@ -402,6 +407,19 @@ internal object LocalRecursiveLookaheadEvaluator {
                     val index = ranked.indexOfFirst { it.outcome.candidate.actionId == leaderId }
                     evaluated[index] = evaluateRank(ranked[index])
                     if (leaderId !in evaluatedCoverage) break
+                }
+            }
+            if (tuning.simultaneousResponseWeight > 0.0 && !search.truncated) {
+                // The root as a simultaneous choice: the opponent's equilibrium mix over the replies, then each
+                // candidate's value against that mix instead of against the worst reply to it alone.
+                val producedIds = evaluated.filter { it in producedAdjustments }.map { it.outcome.candidate.actionId }
+                rootOpponentMix(producedIds.mapNotNull { rootSearches[it] })?.let { mix ->
+                    opponentMix = mix
+                    val original = ranked.associateBy { it.outcome.candidate.actionId }
+                    for (index in evaluated.indices) {
+                        if (evaluated[index] !in producedAdjustments) continue
+                        evaluated[index] = evaluateRank(original.getValue(evaluated[index].outcome.candidate.actionId))
+                    }
                 }
             }
             if (tuning.sharedAdjustmentBound) {
@@ -625,6 +643,9 @@ internal object LocalRecursiveLookaheadEvaluator {
                     worstResponseRemainingHp,
                     worstConfirmedResponseRemainingHp,
                     aggregate.threatDelta,
+                    responses = if (tuning.simultaneousResponseWeight > 0.0) {
+                        calibratedResponses.associate { it.action.actionId to it.value.value }
+                    } else emptyMap(),
                 )
             }
         }
@@ -671,6 +692,8 @@ internal object LocalRecursiveLookaheadEvaluator {
             }
             val turnStartValue = stateUtility(state, history)
             var best = Double.NEGATIVE_INFINITY
+            val simultaneous = tuning.simultaneousResponseWeight
+            val table = if (simultaneous > 0.0) ArrayList<DoubleArray>(ownActions.size) else null
             for (ownAction in ownActions) {
                 if (budgetExhausted()) break
                 val responseValues = mutableListOf<OpponentTurnValue>()
@@ -687,11 +710,20 @@ internal object LocalRecursiveLookaheadEvaluator {
                     )
                         ?.let { value -> responseValues += OpponentTurnValue(opponentAction, value) }
                 }
-                aggregateOpponentResponses(calibrateExpectedResponses(responseValues), state, ownAction)?.let { responseValue ->
+                val calibrated = calibrateExpectedResponses(responseValues)
+                aggregateOpponentResponses(calibrated, state, ownAction)?.let { responseValue ->
                     best = maxOf(best, responseValue.value)
                 }
+                if (table != null && calibrated.size == opponentActions.size) {
+                    table += DoubleArray(calibrated.size) { calibrated[it].value.value }
+                }
             }
-            val result = if (best.isFinite()) best else stateUtility(state, history)
+            val sequential = if (best.isFinite()) best else stateUtility(state, history)
+            // A row whose replies came back short of the full list cannot sit in the table; the sequential value
+            // stands alone then.
+            val result = if (table != null && table.size >= 2 && best.isFinite()) {
+                sequential * (1.0 - simultaneous) + LocalMatrixGame.solve(table.toTypedArray()).value * simultaneous
+            } else sequential
             if (!truncated) memo[key] = result
             return result
         }
@@ -1138,7 +1170,35 @@ internal object LocalRecursiveLookaheadEvaluator {
         /** Null when every evaluated reply was an expected move slot. */
         val worstConfirmedResponseRemainingHp: Double?,
         val threatDelta: Double = 0.0,
-    )
+        /** Each reply's value, keyed by the reply's action id. */
+        val responses: Map<String, Double> = emptyMap(),
+    ) {
+        /** [weight] of the value moved to the expected value against the opponent's [mix]. */
+        fun againstMix(mix: Map<String, Double>, weight: Double): RootActionEvaluation {
+            var mass = 0.0
+            var expected = 0.0
+            for ((id, share) in mix) {
+                val response = responses[id] ?: continue
+                mass += share
+                expected += share * response
+            }
+            if (mass < MIX_COVERAGE) return this
+            return copy(value = value * (1.0 - weight) + expected / mass * weight)
+        }
+    }
+
+    /** The opponent's equilibrium mix over its replies to the root, from the searched candidates' reply values. */
+    private fun rootOpponentMix(searches: List<RootActionEvaluation>): Map<String, Double>? {
+        if (searches.size < 2) return null
+        val columns = searches.first().responses.keys.toList()
+        if (columns.isEmpty() || searches.any { it.responses.keys != columns.toSet() }) return null
+        val table = Array(searches.size) { row -> DoubleArray(columns.size) { searches[row].responses.getValue(columns[it]) } }
+        val solution = LocalMatrixGame.solve(table)
+        return columns.indices.associate { columns[it] to solution.columnStrategy[it] }
+    }
+
+    /** Below this share of the mix found among an action's replies, the mix says too little about it. */
+    private const val MIX_COVERAGE = 0.5
 
     private fun retention(remainingHp: Double, baselineHp: Double): Double =
         if (baselineHp <= 0.0) 0.0 else (remainingHp / baselineHp).coerceIn(0.0, 1.0)
