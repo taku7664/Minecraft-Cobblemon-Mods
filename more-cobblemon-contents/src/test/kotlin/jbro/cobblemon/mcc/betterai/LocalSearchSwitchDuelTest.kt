@@ -91,6 +91,7 @@ class LocalSearchSwitchDuelTest {
         const val MAXIMUM_TURNS = 20
         const val DECISIVE_LEAD = 0.5
         val CURRENT = LocalDecisionTuning.CURRENT
+        val AUTHORITY = CURRENT.copy(id = "authority-full", searchAuthority = 1.0)
         val UNLIMITED: (BattleTrainerTier) -> LocalLookaheadBudget = { tier ->
             // A doubles search with no node limit at all fills any heap with its memo, so the ceiling stays, far
             // above the shipped one; aiengine.duelNodes moves it.
@@ -118,6 +119,8 @@ class LocalSearchSwitchDuelTest {
             "coverage-singles" to Duel(CURRENT.copy(id = "team-coverage", leafTeamCoverageWeight = 0.3), CURRENT, BattleFormat.SINGLE),
             "authority-half-singles" to Duel(CURRENT.copy(id = "authority-half", searchAuthority = 0.5), CURRENT, BattleFormat.SINGLE),
             "authority-full-singles" to Duel(CURRENT.copy(id = "authority-full", searchAuthority = 1.0), CURRENT, BattleFormat.SINGLE),
+            "authority-depth1-singles" to Duel(AUTHORITY, AUTHORITY, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 1)),
+            "authority-depth3-singles" to Duel(AUTHORITY, AUTHORITY, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 3)),
             "depth1-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 1)),
             "depth3-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 3)),
             "simultaneous" to Duel(CURRENT.copy(id = "simultaneous", simultaneousResponseWeight = 1.0), CURRENT, BattleFormat.DOUBLE),
