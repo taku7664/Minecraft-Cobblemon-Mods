@@ -52,6 +52,46 @@ internal object PublicFutureActionFactory {
         return combine(bySlot)
     }
 
+    /**
+     * The single-slot actions of [actions]' turns, distinct by id, in the order flattening those turns
+     * gives, without building the joint turns. Callers that only score slots one at a time (attack
+     * pressure at every search leaf) used to build every doubles combination only to take it apart.
+     */
+    fun slotActions(
+        state: BattleStateView,
+        side: BattleSide,
+        catalog: BattlePublicActionCatalogView,
+        includeMoveHypotheses: Boolean = false,
+    ): List<BattleActionCandidate> {
+        val active = state.pokemon.filter {
+            it.side == side && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+        }.sortedBy { it.activeSlot }
+        if (active.isEmpty()) return emptyList()
+        val bySlot = active.map { pokemon ->
+            limitPrimitiveActions(
+                state, side, pokemon,
+                primitiveActions(state, side, pokemon, catalog, RecursiveActionHistory(), emptySet(), includeMoveHypotheses, null),
+                Int.MAX_VALUE, Int.MAX_VALUE, LocalHypothesisPriorityReservation.NONE, null,
+            )
+        }
+        if (bySlot.any(List<BattleActionCandidate>::isEmpty)) return emptyList()
+        if (state.format == BattleFormat.SINGLE || bySlot.size == 1) return bySlot.single().distinctBy(BattleActionCandidate::actionId)
+        val seen = HashSet<String>()
+        val out = ArrayList<BattleActionCandidate>()
+        fun visit(combination: List<BattleActionCandidate>, slot: Int) {
+            if (slot == bySlot.size) {
+                // combine() drops turns that switch two slots to the same Pokemon.
+                val switchIds = combination.mapNotNull(BattleActionCandidate::switchPokemonId)
+                if (switchIds.distinct().size != switchIds.size) return
+                combination.forEach { if (seen.add(it.actionId)) out += it }
+                return
+            }
+            for (action in bySlot[slot]) visit(combination + action, slot + 1)
+        }
+        visit(emptyList(), 0)
+        return out
+    }
+
     fun primitiveActionsForPokemon(
         state: BattleStateView,
         side: BattleSide,

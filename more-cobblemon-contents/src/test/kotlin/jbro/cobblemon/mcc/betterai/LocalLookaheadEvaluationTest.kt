@@ -1629,6 +1629,27 @@ class LocalLookaheadEvaluationTest {
     }
 
     @Test
+    fun `slot actions are the flattened doubles turns without building them`() {
+        val partner = pokemon(UUID.fromString("00000000-0000-0000-0000-000000000231"), BattleSide.ALLY, speed = 70, activeSlot = 1)
+        val doubles = state(
+            format = BattleFormat.DOUBLE,
+            bench = pokemon(UUID.fromString("00000000-0000-0000-0000-000000000230"), BattleSide.ALLY, speed = 90, activeSlot = null),
+            extraPokemon = listOf(partner),
+        )
+        val publicCatalog = catalog(allyMoves = listOf(move("strike"), move("second_strike")))
+
+        val flattened = PublicFutureActionFactory.actions(doubles, BattleSide.ALLY, publicCatalog)
+            .flatMap { if (it.kind == BattleActionKind.COMPOSITE) it.componentActions else listOf(it) }
+            .distinctBy { it.actionId }
+
+        assertTrue(flattened.size > 2)
+        assertEquals(
+            flattened.map { it.actionId },
+            PublicFutureActionFactory.slotActions(doubles, BattleSide.ALLY, publicCatalog).map { it.actionId },
+        )
+    }
+
+    @Test
     fun `neutralizing gas restores switches blocked by arena trap`() {
         val benchId = UUID.fromString("00000000-0000-0000-0000-000000000220")
         val gasId = UUID.fromString("00000000-0000-0000-0000-000000000221")

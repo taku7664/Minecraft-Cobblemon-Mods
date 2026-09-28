@@ -109,13 +109,9 @@ internal object LocalLookaheadStateEvaluator {
         capDamageToRemainingHp: Boolean = false,
         // Threat estimation may count the opponent's expected move slots; the leaf keeps known moves.
         includeMoveHypotheses: Boolean = false,
-    ): Double = PublicFutureActionFactory.actions(
+    ): Double = PublicFutureActionFactory.slotActions(
         state, side, source.publicActionCatalog, includeMoveHypotheses = includeMoveHypotheses,
     )
-        .flatMap { action ->
-            if (action.kind == BattleActionKind.COMPOSITE) action.componentActions else listOf(action)
-        }
-        .distinctBy(BattleActionCandidate::actionId)
         .filter { action ->
             action.kind == BattleActionKind.USE_MOVE &&
                 action.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS &&
