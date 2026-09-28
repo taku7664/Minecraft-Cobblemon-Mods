@@ -69,6 +69,9 @@ internal data class LocalTacticalScenarioReport(
     /** Each team's HP left at the end, in whole Pokemon (a full team of four is 4.0). */
     val cycleRemainingHp: Double = 0.0,
     val offenseRemainingHp: Double = 0.0,
+    /** Plain mistakes by kind; see the battle's countBlunders. */
+    val cycleBlunders: Map<String, Int> = emptyMap(),
+    val offenseBlunders: Map<String, Int> = emptyMap(),
 ) {
     fun documentationLog(): String = buildString {
         appendLine("SCENARIO=${definition.name} seed=${definition.seed}")
@@ -174,6 +177,8 @@ internal object LocalTacticalScenarioBattle {
         private var offenseStatusMoves = 0
         private var cycleVoluntarySwitches = 0
         private var offenseVoluntarySwitches = 0
+        private val cycleBlunders = linkedMapOf<String, Int>()
+        private val offenseBlunders = linkedMapOf<String, Int>()
 
         fun run(maximumTurns: Int): LocalTacticalScenarioReport {
             val turns = mutableListOf<LocalTacticalScenarioTurn>()
@@ -262,6 +267,8 @@ internal object LocalTacticalScenarioBattle {
                 publicEvidenceCounts = publicEvidence.counts(),
                 cycleRemainingHp = remainingHp(BattleSide.ALLY),
                 offenseRemainingHp = remainingHp(BattleSide.OPPONENT),
+                cycleBlunders = cycleBlunders.toMap(),
+                offenseBlunders = offenseBlunders.toMap(),
             )
         }
 
@@ -626,6 +633,40 @@ internal object LocalTacticalScenarioBattle {
             if (action.kind == BattleActionKind.SWITCH) {
                 if (side == BattleSide.ALLY) cycleVoluntarySwitches++ else offenseVoluntarySwitches++
             }
+            countBlunders(side, action, statusMove, actorAfter, targetsBefore, after)
+        }
+
+        /**
+         * Plain mistakes, counted per side: an attack into a type immunity of a Pokemon that stayed in (not a
+         * switch it failed to predict), a status move at a target that already has a status, and a setup move
+         * whose user was knocked out that same turn.
+         */
+        private fun countBlunders(
+            side: BattleSide,
+            action: BattleActionCandidate,
+            statusMove: Boolean,
+            actorAfter: BattlePokemonStateView?,
+            targetsBefore: List<BattlePokemonStateView>,
+            after: BattleStateView,
+        ) {
+            val tally = if (side == BattleSide.ALLY) cycleBlunders else offenseBlunders
+            fun stayed(target: BattlePokemonStateView) =
+                after.pokemon.firstOrNull { it.side == target.side && it.activeSlot == target.activeSlot }?.battlePokemonId == target.battlePokemonId
+            val foes = targetsBefore.filter { it.side != side && !it.fainted && it.hpFraction > 0.0 && stayed(it) }
+            val details = action.moveDetails ?: return
+            if (action.kind != BattleActionKind.USE_MOVE) return
+            if (!statusMove) {
+                val type = details.typeId
+                if (type != null && foes.any { jbro.cobblemon.mcc.betterai.mechanics.StandardTypeEffectiveness.multiplier(type, it.knownTypeIds) == 0.0 }) {
+                    tally.merge("immune_attack", 1, Int::plus)
+                }
+                return
+            }
+            val inflicts = details.effects?.effects.orEmpty().any {
+                it.kind == BattleMoveEffectKind.STATUS && it.target == BattleMoveEffectTarget.SELECTED_TARGET && (it.probability ?: 1.0) >= 1.0
+            }
+            if (inflicts && foes.any { it.statusId != null }) tally.merge("status_on_statused", 1, Int::plus)
+            if (BattleStatusMoveCategories.isPureSelfSetup(details) && actorAfter?.fainted == true) tally.merge("setup_then_fainted", 1, Int::plus)
         }
 
         private fun revealActives() {

@@ -53,6 +53,7 @@ class LocalSearchSwitchDuelTest {
         // Status moves and voluntary switches per side: [challenger, defender].
         val statusMoves = IntArray(2)
         val switches = IntArray(2)
+        val blunders = listOf(linkedMapOf<String, Int>(), linkedMapOf())
         val pairs = System.getProperty("aiengine.duelPairs")?.toIntOrNull() ?: PAIRS
         val seed = System.getProperty("aiengine.duelSeed")?.toIntOrNull() ?: SEED
         for (definition in LocalSelfPlayMeasurement.definitions(pairs, seed, duel.format)) {
@@ -73,11 +74,15 @@ class LocalSearchSwitchDuelTest {
             statusMoves[1] += asCycle.offenseStatusMoves + asOffense.cycleStatusMoves
             switches[0] += asCycle.cycleVoluntarySwitches + asOffense.offenseVoluntarySwitches
             switches[1] += asCycle.offenseVoluntarySwitches + asOffense.cycleVoluntarySwitches
+            asCycle.cycleBlunders.forEach { (kind, count) -> blunders[0].merge(kind, count, Int::plus) }
+            asOffense.offenseBlunders.forEach { (kind, count) -> blunders[0].merge(kind, count, Int::plus) }
+            asCycle.offenseBlunders.forEach { (kind, count) -> blunders[1].merge(kind, count, Int::plus) }
+            asOffense.cycleBlunders.forEach { (kind, count) -> blunders[1].merge(kind, count, Int::plus) }
             println("$name ${definition.name}: challenger ${scores.joinToString("/")} lead ${leads.joinToString("/") { "%+.2f".format(it) }} " +
                 "turns ${asCycle.turns.size}/${asOffense.turns.size} winners ${asCycle.winner}/${asOffense.winner}")
         }
         return ("$name: challenger score %.3f over %d games, mean HP lead %+.3f; status moves %d/%d, voluntary switches %d/%d " +
-            "(challenger/defender)").format(points / games, games, leadTotal / games, statusMoves[0], statusMoves[1], switches[0], switches[1])
+            "(challenger/defender); blunders ${blunders[0]} / ${blunders[1]}").format(points / games, games, leadTotal / games, statusMoves[0], statusMoves[1], switches[0], switches[1])
     }
 
     private fun score(report: LocalTacticalScenarioReport, challengerSide: String, lead: Double): Double = when {
@@ -115,6 +120,9 @@ class LocalSearchSwitchDuelTest {
             "simultaneous-half-singles" to Duel(CURRENT.copy(id = "simultaneous-half", simultaneousResponseWeight = 0.5), CURRENT, BattleFormat.SINGLE),
             "repeats-singles" to Duel(CURRENT.copy(id = "opponent-repeats", readOpponentRepeats = true), CURRENT, BattleFormat.SINGLE),
             "repeats" to Duel(CURRENT.copy(id = "opponent-repeats", readOpponentRepeats = true), CURRENT, BattleFormat.DOUBLE),
+            "revalidate" to Duel(CURRENT.copy(id = "revalidate-pool", revalidateRootChoicePool = true), CURRENT, BattleFormat.DOUBLE),
+            "median-revalidate" to Duel(CURRENT.copy(id = "median-revalidate", unsearchedTakeMedianAdjustment = true,
+                revalidateRootChoicePool = true), CURRENT, BattleFormat.DOUBLE),
             "median" to Duel(CURRENT.copy(id = "unsearched-median", unsearchedTakeMedianAdjustment = true), CURRENT, BattleFormat.DOUBLE),
             "stages-singles" to Duel(CURRENT.copy(id = "persistent-stages", leafPersistentStageValue = 0.10), CURRENT, BattleFormat.SINGLE),
             "stages-strong-singles" to Duel(CURRENT.copy(id = "persistent-stages-strong", leafPersistentStageValue = 0.20), CURRENT, BattleFormat.SINGLE),
@@ -126,6 +134,7 @@ class LocalSearchSwitchDuelTest {
             "authority-depth3-singles" to Duel(AUTHORITY, AUTHORITY, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 3)),
             "duel-leaf-singles" to Duel(CURRENT.copy(id = "duel-leaf", leafDuelValue = 0.4), CURRENT, BattleFormat.SINGLE),
             "authority-duel-leaf-singles" to Duel(AUTHORITY.copy(id = "authority-duel-leaf", leafDuelValue = 0.4), CURRENT, BattleFormat.SINGLE),
+            "baseline-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE),
             "boss-vs-standard-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, defenderDifficulty = BattleDifficultyProfiles.STANDARD),
             "boss-vs-introductory-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, defenderDifficulty = BattleDifficultyProfiles.INTRODUCTORY),
             "depth1-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 1)),
