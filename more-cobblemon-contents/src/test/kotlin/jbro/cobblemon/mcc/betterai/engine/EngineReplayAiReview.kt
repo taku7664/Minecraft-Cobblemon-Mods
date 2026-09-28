@@ -27,6 +27,10 @@ import jbro.cobblemon.mcc.internal.ai.BattleBrainOpenContext
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveKnowledge
+import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveOptionView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonActionCatalogView
+import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveInferenceLedger
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
@@ -148,10 +152,14 @@ internal object EngineReplayAiReview {
             }
             base.publicActionCatalog.entries.forEach { entry -> entry.moves.forEach { moveDetails[canonical(it.moveId)] = it.details } }
             base.publicActionCatalog.candidatePools.forEach { pool -> pool.moveDetails.forEach { (id, d) -> moveDetails[canonical(id)] = d } }
-            // Open team sheets: every opponent move is public from team preview on.
-            val inferences = inference.update(base.state, base.publicActionCatalog, profile.difficulty.tier, sheetMoves(teams, side, base.state))
+            // Open team sheets: every opponent move is public from team preview on, so the sheet goes into the
+            // public catalog as revealed moves. Passed only as the tier's hidden-set read, most of it was
+            // dropped for usage-rate guesses (Focus Punch on a Rillaboom whose sheet says Fake Out).
+            val sheet = sheetMoves(teams, side, base.state)
+            val catalog = openSheet(base.publicActionCatalog, sheet, moveDetails)
+            val inferences = inference.update(base.state, catalog, profile.difficulty.tier, sheet)
             val built = BattleDecisionContext(base.requestId, base.state, base.candidates, base.deadlineEpochMillis, base.memory,
-                base.publicActionCatalog.withOpponentMoveInferences(inferences))
+                catalog.withOpponentMoveInferences(inferences))
             context = built
             captured.remove(side)
             deciding[side] = Thread.currentThread()
@@ -222,7 +230,7 @@ internal object EngineReplayAiReview {
             } } }
         val switchLines = scores.switchIns.sortedByDescending { it.score }.map { w ->
             "교체 투입 ${species[w.incomingId]} ← ${species[w.replacedId]} vs ${species[w.opponentId]} ${signed(w.score)}: " +
-                "예상 ${w.predictedMoveId} 생존 ${pct(w.predictedSurvival)} 남는 HP ${pct(w.hpAfterEntry)}, 최악 ${w.worstMoveId} 생존 ${pct(w.worstSurvival)}"
+                "예상 ${w.predictedMoveId} 생존 ${pct(w.predictedSurvival)} 남는 HP ${if (w.predictedSurvival > 0.0) pct(w.hpAfterEntry) else "-"}, 최악 ${w.worstMoveId} 생존 ${pct(w.worstSurvival)}"
         }
         val preserveLines = scores.preserves.values.filter { p -> assumed.state.pokemon.any { it.battlePokemonId == p.subjectId && it.side == BattleSide.ALLY } }
             .sortedByDescending { it.score }.map { p ->
@@ -238,6 +246,25 @@ internal object EngineReplayAiReview {
                 "; 내 기술 ${scores.moves(m.subjectId, m.opponentId).joinToString(", ") { "${it.moveId} ${"%.2f".format(Locale.ROOT, it.score)}" }}" +
                 "; 상대 기술 ${scores.moves(m.opponentId, m.subjectId).joinToString(", ") { "${it.moveId} ${"%.2f".format(Locale.ROOT, it.score)}" }}"
         }
+    }
+
+    /** [catalog] with each opponent's sheet moves added as revealed, and its move set complete. */
+    private fun openSheet(
+        catalog: BattlePublicActionCatalogView,
+        sheet: Map<UUID, Set<String>>,
+        moveDetails: Map<String, BattleMoveCandidateView>,
+    ): BattlePublicActionCatalogView {
+        if (sheet.isEmpty()) return catalog
+        val existing = catalog.entries.associateBy { it.battlePokemonId }
+        val opened = sheet.map { (pokemonId, moves) ->
+            val known = existing[pokemonId]?.moves.orEmpty()
+            val added = moves.filter { id -> known.none { canonical(it.moveId) == id } }
+                .mapNotNull { id -> moveDetails[id]?.let { BattlePublicMoveOptionView(id, it, BattlePublicMoveKnowledge.PUBLICLY_REVEALED) } }
+            BattlePokemonActionCatalogView(pokemonId, known + added, moveSetComplete = true)
+        }
+        val openedIds = opened.mapTo(hashSetOf()) { it.battlePokemonId }
+        return BattlePublicActionCatalogView(catalog.entries.filterNot { it.battlePokemonId in openedIds } + opened,
+            catalog.originalEntries, catalog.candidatePools)
     }
 
     private fun sheetMoves(teams: Map<String, List<RefSet>>, side: String, state: BattleStateView): Map<UUID, Set<String>> {
