@@ -19,13 +19,14 @@ object BattleDeclarativeMoveEffects {
         if (objectStart < 0) return emptyMap()
         val objectEnd = matchingDelimiter(source, objectStart, '{', '}') ?: return emptyMap()
         return objectProperties(source.substring(objectStart + 1, objectEnd)).mapNotNull { (moveId, raw) ->
-            raw.takeIf { it.startsWith('{') }?.let { canonicalMoveId(moveId) to parseMove(it) }
+            raw.takeIf { it.startsWith('{') }?.let { canonicalMoveId(moveId).let { id -> id to parseMove(it, id) } }
         }.toMap(linkedMapOf())
     }
 
-    private fun parseMove(rawObject: String): BattleMoveEffectsView {
+    private fun parseMove(rawObject: String, moveId: String): BattleMoveEffectsView {
         val properties = objectProperties(trimContainer(rawObject, '{', '}'))
         val effects = arrayListOf<BattleMoveEffectView>()
+        CALLBACK_EFFECTS[moveId]?.let(effects::addAll)
         val requirements = moveRequirements(rawObject)
         val moveTarget = stringValue(properties["target"])
         val directTarget = if (moveTarget == "self") BattleMoveEffectTarget.USER else BattleMoveEffectTarget.SELECTED_TARGET
@@ -390,6 +391,16 @@ object BattleDeclarativeMoveEffects {
             )
         }
     }
+
+    /**
+     * Effects Showdown applies from a callback that are nonetheless fixed facts of the move. Parting Shot
+     * lowers the target's Attack and Special Attack in `onHit`, because whether the user switches out
+     * depends on that drop succeeding; read statically it was only a pivot.
+     */
+    private val CALLBACK_EFFECTS: Map<String, List<BattleMoveEffectView>> = mapOf(
+        "partingshot" to listOf(BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.SELECTED_TARGET, 1.0,
+            statStages = mapOf("atk" to -1, "spa" to -1))),
+    )
 
     private fun effect(
         kind: BattleMoveEffectKind,

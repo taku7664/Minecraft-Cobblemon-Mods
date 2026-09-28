@@ -208,6 +208,18 @@ class LocalMatchupScoreTest {
     }
 
     @Test
+    fun `parting shot declares the stat drop its callback applies`() {
+        val parsed = BattleDeclarativeMoveEffects.parse(
+            "const Moves = { partingshot: { num: 575, category: \"Status\", target: \"normal\", selfSwitch: true, " +
+                "onHit(target, source, move) { const success = this.boost({ atk: -1, spa: -1 }, target, source); } } };",
+        ).getValue("partingshot").effects
+        assertTrue(parsed.any { it.kind == BattleMoveEffectKind.SWITCH_USER })
+        val drop = parsed.single { it.kind == BattleMoveEffectKind.STAT_STAGE }
+        assertEquals(BattleMoveEffectTarget.SELECTED_TARGET, drop.target)
+        assertEquals(mapOf("atk" to -1, "spa" to -1), drop.statStages)
+    }
+
+    @Test
     fun `status moves are scored in doubles too`() {
         val snarl = BattlePublicMoveOptionView("partingshot", BattleMoveCandidateView(typeId = "dark",
             damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
