@@ -97,20 +97,9 @@ internal class LocalProjectedActionCalculationCache(
         catalog: BattlePublicActionCatalogView? = null,
         calculation: () -> BattleDecisionContext,
     ): BattleDecisionContext {
-        val key = ActionKey(
-            side = side,
-            actionId = action.actionId,
-            kind = action.kind,
-            actorSlot = action.actorSlot,
-            moveSlot = action.moveSlot,
-            moveId = action.moveId,
-            targets = action.targets,
-            switchPokemonId = action.switchPokemonId,
-            mechanicId = action.mechanic?.mechanicId,
-            moveDetails = action.moveDetails,
-            tags = action.tags,
-            catalog = catalog?.let(::catalogKey),
-        )
+        val catalogKey = catalog?.let(::catalogKey)
+        val key = ActionKey(action, side, catalogKey,
+            (actionHashes.getOrPut(action) { actionHash(action) } * 31 + side.hashCode()) * 31 + catalogKey.hashCode())
         if (countIdentityKeying && byStateIdentity.getOrPut(state) { HashSet() }.add(key)) calculationsUnderIdentityKeying++
         val stateEntries = byState.getOrPut(fingerprints.of(state)) { HashMap() }
         return stateEntries.getOrPut(key) {
@@ -119,20 +108,35 @@ internal class LocalProjectedActionCalculationCache(
         }
     }
 
-    private data class ActionKey(
+    /**
+     * An action's calculation inputs, compared field by field but hashed once: the hash used to walk the move's
+     * details and the whole catalog on every lookup, a few percent of a doubles search.
+     */
+    private class ActionKey(
+        val action: BattleActionCandidate,
         val side: BattleSide,
-        val actionId: String,
-        val kind: BattleActionKind,
-        val actorSlot: Int?,
-        val moveSlot: Int?,
-        val moveId: String?,
-        val targets: List<BattleTargetSlot>,
-        val switchPokemonId: UUID?,
-        val mechanicId: String?,
-        val moveDetails: BattleMoveCandidateView?,
-        val tags: Set<String>,
         val catalog: CatalogKey?,
-    )
+        private val hash: Int,
+    ) {
+        override fun hashCode(): Int = hash
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is ActionKey || other.hash != hash || other.side != side || other.catalog != catalog) return false
+            val a = action
+            val b = other.action
+            return a === b || a.actionId == b.actionId && a.kind == b.kind && a.actorSlot == b.actorSlot &&
+                a.moveSlot == b.moveSlot && a.moveId == b.moveId && a.targets == b.targets &&
+                a.switchPokemonId == b.switchPokemonId && a.mechanic?.mechanicId == b.mechanic?.mechanicId &&
+                a.moveDetails == b.moveDetails && a.tags == b.tags
+        }
+    }
+
+    private val actionHashes = java.util.IdentityHashMap<BattleActionCandidate, Int>()
+
+    private fun actionHash(action: BattleActionCandidate): Int = listOf(
+        action.actionId, action.kind, action.actorSlot, action.moveSlot, action.moveId, action.targets,
+        action.switchPokemonId, action.mechanic?.mechanicId, action.moveDetails, action.tags,
+    ).hashCode()
     private data class SlotActionsKey(
         val state: String,
         val side: BattleSide,
@@ -140,7 +144,13 @@ internal class LocalProjectedActionCalculationCache(
         val includeMoveHypotheses: Boolean,
     )
     private data class CatalogEntryKey(val id: UUID, val moves: List<BattlePublicMoveOptionView>, val complete: Boolean)
-    private data class CatalogKey(val current: List<CatalogEntryKey>, val original: List<CatalogEntryKey>)
+    /** Hashed once; one is made per catalog object and every lookup of it hashed the whole catalog. */
+    private class CatalogKey(val current: List<CatalogEntryKey>, val original: List<CatalogEntryKey>) {
+        private val hash = current.hashCode() * 31 + original.hashCode()
+        override fun hashCode(): Int = hash
+        override fun equals(other: Any?): Boolean =
+            this === other || other is CatalogKey && other.hash == hash && other.current == current && other.original == original
+    }
 
     companion object {
         /** Measurement switch for [calculationsUnderIdentityKeying]; off in play. */
