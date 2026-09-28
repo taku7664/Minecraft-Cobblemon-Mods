@@ -709,6 +709,19 @@ class LocalWeightedActionSelectorTest {
     }
 
     @Test
+    fun `a setup that failed the setup gate is excluded under its own reason`() {
+        val ranked = listOf(
+            rank("gated_setup", 110.0, moveId = "swordsdance", selfSetup = true),
+            rank("credible_attack", 100.0, moveId = "closecombat", executableDamageActions = 1),
+        )
+        val context = mixingContext().copy(failedSetupGateActionIds = setOf("gated_setup"))
+
+        val selection = selector.choose(ranked, 7L, context)
+        assertEquals("credible_attack", selection.rank.outcome.candidate.actionId)
+        assertEquals("setup_gate", selection.exclusionsByActionId["gated_setup"])
+    }
+
+    @Test
     fun `authoritative native scores are not vetoed by handmade outcome metadata`() {
         val ranked = listOf(
             rank(

@@ -488,7 +488,8 @@ class EngineReplayMockTest {
             }
             report("$id-ai", text)
             report("$id-ai-full", result.rows.joinToString("\n\n") { row ->
-                "## ${row.turn}턴 ${row.side}${if (row.forced) " (교체 요청)" else ""}\n" + row.ranked.joinToString("\n") { "- $it" }
+                "## ${row.turn}턴 ${row.side}${if (row.forced) " (교체 요청)" else ""}\n" + row.ranked.joinToString("\n") { "- $it" } +
+                    (if (row.matchups.isEmpty()) "" else "\n\n대면 점수\n\n" + row.matchups.joinToString("\n") { "- $it" })
             })
             println(text.lineSequence().take(6).joinToString("\n"))
         }

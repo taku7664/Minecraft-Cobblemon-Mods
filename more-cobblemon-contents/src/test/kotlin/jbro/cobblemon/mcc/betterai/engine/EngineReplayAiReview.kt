@@ -13,6 +13,14 @@ import jbro.cobblemon.mcc.betterai.policy.LocalActionSelector
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank
 import jbro.cobblemon.mcc.betterai.policy.LocalWeightedActionSelector
 import jbro.cobblemon.mcc.betterai.simulation.NativeOpeningStateRules
+import jbro.cobblemon.mcc.betterai.simulation.LocalOpponentStatAssumption
+import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
+import jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate
+import jbro.cobblemon.mcc.betterai.matchup.MatchupSpeedField
+import jbro.cobblemon.mcc.betterai.matchup.MoveMatchupScore
+import jbro.cobblemon.mcc.betterai.state.LocalOpponentMoveUsage
+import jbro.cobblemon.mcc.betterai.state.LocalStatusMoveBinder
+import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleBrainCloseOutcome
 import jbro.cobblemon.mcc.internal.ai.BattleBrainCloseResult
 import jbro.cobblemon.mcc.internal.ai.BattleBrainOpenContext
@@ -46,6 +54,8 @@ internal object EngineReplayAiReview {
         val millis: Long,
         val openingAccepted: Boolean?,
         val failure: String?,
+        /** The decision's matchup scores, one line per pair (see [matchupLines]). */
+        val matchups: List<String> = emptyList(),
     )
 
     class Result(val rows: List<Row>, val publicLog: List<String>, val stoppedAt: String?)
@@ -165,10 +175,53 @@ internal object EngineReplayAiReview {
             Row(step, turn, side, forced, board(built.state), describe(input, built.state, realChoice),
                 describe(input, built.state, decision.actionId) + (if (position >= 0) " [${position + 1}위/${finalRanked.size}]" else "") +
                     (if (mismatch) " **최종 결정이 선택기와 다름**" else ""), decision.actionId, ranked, decision.tags, millis,
-                if (turn <= 1) NativeOpeningStateRules.acceptsObservations(built.state) else null, null)
+                if (turn <= 1) NativeOpeningStateRules.acceptsObservations(built.state) else null, null,
+                matchupLines(built, profile))
         } catch (failure: Throwable) {
             Row(step, turn, side, forced, context?.state?.let(::board) ?: "", realChoice, null, null, emptyList(), emptySet(), 0,
                 null, failure.toString().lines().first().take(300))
+        }
+    }
+
+    /** The matchup scores the brain would see: the same catalog binding and opponent stat assumption. */
+    private fun matchupLines(context: BattleDecisionContext, profile: BattleTrainerProfile): List<String> {
+        val tier = profile.difficulty.tier
+        val bound = context.copy(publicActionCatalog = LocalStatusMoveBinder.bindCatalog(context.state, context.publicActionCatalog,
+            tier, LocalOpponentMoveUsage.forFormat(context.state.format)))
+        val assumed = LocalOpponentStatAssumption.applyToPublicState(bound, tier)
+        val started = System.nanoTime()
+        val scores = LocalMatchupScoreCalculator.calculate(assumed)
+        val millis = (System.nanoTime() - started) / 1_000_000
+        val species = assumed.state.pokemon.associate { it.battlePokemonId to name(it.speciesId) }
+        fun pct(value: Double) = "%.0f%%".format(Locale.ROOT, value * 100)
+        fun move(score: MoveMatchupScore?) = score?.let {
+            "${it.moveId} ${pct(it.minimumDamageFraction)}~${pct(it.maximumDamageFraction)} " +
+                "1타 ${pct(it.knockoutChanceWithin(1))}/2타 ${pct(it.knockoutChanceWithin(2))}/3타 ${pct(it.knockoutChanceWithin(3))}"
+        } ?: "공격 없음"
+        val aces = scores.aces.values.sortedByDescending { it.score }.map { a ->
+            "에이스 ${species[a.subjectId]} ${"%.2f".format(Locale.ROOT, a.score)}: 그대로 ${pct(a.naturalSweep)}" +
+                (a.setupMoveId?.let { " / ${it}×${a.setupUses} ${pct(a.boostedSweep)} (설치 턴 생존 ${pct(a.setupSafety)})" } ?: "")
+        }
+        val antiAces = scores.antiAces.values.sortedByDescending { it.score }.map { a ->
+            "안티 에이스 ${species[a.subjectId]} → ${species[a.aceId]} ${"%.2f".format(Locale.ROOT, a.score)}: " +
+                "먼저 행동 ${pct(a.actsBeforeKnockout)}" + (a.oneTimeSurvival?.let { ", 1회 생존 $it" } ?: "") + ", 도구 " +
+                a.tools.take(3).joinToString(" / ") { "${it.kind.name.lowercase()}${it.moveId?.let { m -> "($m)" } ?: ""} ${pct(it.value)}" }
+        }
+        val gates = assumed.candidates.flatMap { c -> if (c.kind == BattleActionKind.COMPOSITE) c.componentActions else listOf(c) }
+            .distinctBy { it.actionId }
+            .mapNotNull { part -> LocalSetupGate.evaluate(part, assumed, scores)?.let { part to it } }
+            .map { (part, verdict) ->
+                "랭크업 게이트 ${species[assumed.state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot == part.actorSlot }?.battlePokemonId]} " +
+                    "${part.moveId}: ${if (verdict.passes) "통과" else "탈락 ${verdict.failures}"}"
+            }
+        return listOf("계산 ${millis}ms") + gates + aces + antiAces + scores.pokemonMatchups.filter { it.speedField == MatchupSpeedField.CURRENT }.map { m ->
+            val reversed = scores.pokemon(m.subjectId, m.opponentId, MatchupSpeedField.TRICK_ROOM_TOGGLED)
+            "${species[m.subjectId]} vs ${species[m.opponentId]}: 점수 ${"%+.2f".format(Locale.ROOT, m.score)}" +
+                " (트릭룸 반전 ${reversed?.let { "%+.2f".format(Locale.ROOT, it.score) } ?: "-"}), 승 ${pct(m.winProbability)}" +
+                " 이기면 내 HP ${pct(m.subjectRemainingHpOnWin)} / 지면 상대 HP ${pct(m.opponentRemainingHpOnLoss)}, 선공 ${pct(m.subjectMovesFirstProbability)}" +
+                "; 나: ${move(m.subjectMove)}; 상대: ${move(m.opponentMove)}" +
+                "; 내 기술 ${scores.moves(m.subjectId, m.opponentId).joinToString(", ") { "${it.moveId} ${"%.2f".format(Locale.ROOT, it.score)}" }}" +
+                "; 상대 기술 ${scores.moves(m.opponentId, m.subjectId).joinToString(", ") { "${it.moveId} ${"%.2f".format(Locale.ROOT, it.score)}" }}"
         }
     }
 

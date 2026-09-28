@@ -50,6 +50,8 @@ import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionEvaluator
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionStatus
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionState
 import jbro.cobblemon.mcc.betterai.evaluation.LocalOpponentThreat
+import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
+import jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate
 import jbro.cobblemon.mcc.betterai.policy.LocalLeadChoice
 import jbro.cobblemon.mcc.betterai.state.LocalOpponentMoveUsage
 import jbro.cobblemon.mcc.betterai.state.LocalStatusMoveBinder
@@ -58,6 +60,8 @@ import kotlin.math.roundToInt
 private const val WEAKER_CHOICE_MARGIN = 0.05
 private const val NATIVE_TEST_TIME_LIMIT_MILLIS = 10_000L
 private const val THREAT_TIME_LIMIT_NANOS = 300_000_000L
+/** Matchup scores for the setup gate; an unfinished table gates nothing. */
+private const val SETUP_GATE_TIME_LIMIT_NANOS = 1_000_000_000L
 private val logger = LoggerFactory.getLogger(LocalTacticalBrain::class.java)
 
 internal fun interface NativeInitialDecisionSource {
@@ -168,6 +172,30 @@ internal class LocalTacticalBrain(
         val decidingProfile = profile.copy(
             personality = profile.personality.copy(riskTolerance = mind.riskBudget),
         )
+        // Built on the first ranking that holds a stat-raising move, then shared: the search asks for mixing
+        // contexts from its own threads.
+        val setupGateScores by lazy {
+            val started = System.nanoTime()
+            LocalMatchupScoreCalculator.calculate(
+                difficultyContext,
+                shouldContinue = { System.nanoTime() - started < SETUP_GATE_TIME_LIMIT_NANOS },
+            ).takeIf { it.complete }
+        }
+        val setupGatePasses = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+        fun failedSetupGate(ranked: List<LocalBattleActionRank>): Set<String> {
+            if (profile.difficulty.tier != BattleTrainerTier.ADVANCED && profile.difficulty.tier != BattleTrainerTier.BOSS) return emptySet()
+            val setups = ranked.filter { LocalSetupGate.raisesOwnStats(it.outcome.candidate) }
+            if (setups.isEmpty()) return emptySet()
+            val scores = setupGateScores ?: return emptySet()
+            return setups.asSequence().map { it.outcome.candidate }.filterNot { candidate ->
+                LocalSetupGate.passes(candidate) { part ->
+                    val passes = setupGatePasses.getOrPut(part.actionId) {
+                        LocalSetupGate.evaluate(part, difficultyContext, scores)?.passes ?: true
+                    }
+                    LocalSetupGate.Verdict(passes, emptyList())
+                }
+            }.map { it.actionId }.toSet()
+        }
         fun mixingContext(
             ranked: List<LocalBattleActionRank>,
             authoritativeSimulationScores: Boolean = false,
@@ -206,6 +234,7 @@ internal class LocalTacticalBrain(
                     }
                     .map { it.outcome.candidate.actionId }
                     .toSet(),
+                failedSetupGateActionIds = if (authoritativeSimulationScores) emptySet() else failedSetupGate(ranked),
                 tuning = tuning,
                 authoritativeSimulationScores = authoritativeSimulationScores,
             )

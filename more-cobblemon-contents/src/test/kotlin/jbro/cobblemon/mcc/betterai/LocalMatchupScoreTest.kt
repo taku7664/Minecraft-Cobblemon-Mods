@@ -5,6 +5,7 @@ import jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutProfile
 import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
 import jbro.cobblemon.mcc.betterai.matchup.AntiAceScore
 import jbro.cobblemon.mcc.betterai.matchup.AntiAceToolKind
+import jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate
 import jbro.cobblemon.mcc.betterai.matchup.MatchupSpeedField
 import jbro.cobblemon.mcc.internal.ai.*
 import org.junit.jupiter.api.Assertions.*
@@ -147,6 +148,50 @@ class LocalMatchupScoreTest {
         assertEquals("focussash", anti.oneTimeSurvival)
         assertEquals(1.0, anti.actsBeforeKnockout, 1e-9)
         assertEquals(AntiAceScore.ONE_TIME_SURVIVAL_BONUS, anti.score, 1e-9)
+    }
+
+    @Test
+    fun `the setup gate lets the dragon dance through when it wins and nothing stops it`() {
+        val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0,
+            allySetup = mapOf("atk" to 1, "spe" to 1))
+        val verdict = LocalSetupGate.evaluate(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context))!!
+        assertTrue(verdict.passes) { verdict.failures.toString() }
+    }
+
+    @Test
+    fun `the setup gate refuses a setup that is not an ace`() {
+        val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 90.0, allySetup = mapOf("atk" to 2))
+        val verdict = LocalSetupGate.evaluate(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context))!!
+        assertFalse(verdict.passes)
+        assertTrue("ace" in verdict.failures) { verdict.failures.toString() }
+    }
+
+    @Test
+    fun `the setup gate refuses a setup the opponent can haze away`() {
+        val haze = BattlePublicMoveOptionView("haze", BattleMoveCandidateView(typeId = "ice",
+            damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
+            targetPattern = BattleMoveTargetPattern.ALL_ACTIVE), BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
+        val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0,
+            allySetup = mapOf("atk" to 1, "spe" to 1), foeExtra = listOf(haze))
+        val verdict = LocalSetupGate.evaluate(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context))!!
+        assertFalse(verdict.passes)
+        assertTrue(verdict.failures.any { it.startsWith("stopper:") && it.endsWith(":resets_boosts") }) { verdict.failures.toString() }
+    }
+
+    @Test
+    fun `an attack that raises its user's stats is not a setup move for the gate`() {
+        val context = context(allySpeed = 100, foeSpeed = 120)
+        val flameCharge = BattleActionCandidate("flamecharge", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 1, moveId = "flamecharge",
+            moveDetails = BattleMoveCandidateView(typeId = "fire", damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 50.0,
+                accuracy = 100.0, priority = 0, currentPp = 8, effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                    listOf(BattleMoveEffectView(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.USER, statStages = mapOf("spe" to 1))), false)))
+        assertFalse(LocalSetupGate.raisesOwnStats(flameCharge))
+        assertNull(LocalSetupGate.evaluate(flameCharge, context, LocalMatchupScoreCalculator.calculate(context)))
+    }
+
+    private fun setupAction(context: BattleDecisionContext): BattleActionCandidate {
+        val option = context.publicActionCatalog.forPokemon(ALLY).first { it.details.damageCategory == BattleMoveDamageCategory.STATUS }
+        return BattleActionCandidate("setup", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 1, moveId = option.moveId, moveDetails = option.details)
     }
 
     private fun context(
