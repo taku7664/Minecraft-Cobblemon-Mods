@@ -32,6 +32,7 @@
   - `damageWhileStandingByUses[n]`: 버틴 경우의 평균 누적 피해
   - `expectedHitsToKnockout`: 기절까지 기대 사용 횟수
 - `score = 1 / expectedHitsToKnockout`. 확정 1타는 1.0, 확정 2타는 0.5, 피해가 없으면 0이다.
+- 더블의 광역기는 맞히는 상대마다 따로 계산하고, 광역 감소(×0.75)를 적용한다. 피해 계산기가 광역기를 첫 번째 대상에게만 투영하므로, 두 번째 대상은 그 대상을 지정한 같은 기술로 계산한다.
 
 ## 대면 점수 `PokemonMatchupScore`
 

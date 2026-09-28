@@ -263,6 +263,18 @@ class LocalMatchupScoreTest {
         assertEquals(false to false, fails(null))
     }
 
+    @Test
+    fun `a doubles spread move is scored against both opponents it hits`() {
+        val slide = BattlePublicMoveOptionView("rockslide", BattleMoveCandidateView(typeId = "rock",
+            damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 75.0, accuracy = 100.0, priority = 0, currentPp = 8,
+            targetPattern = BattleMoveTargetPattern.ALL_OPPONENTS), BattlePublicMoveKnowledge.EXACT_OWN)
+        val scores = LocalMatchupScoreCalculator.calculate(context(allySpeed = 100, foeSpeed = 120, allyExtra = listOf(slide),
+            format = BattleFormat.DOUBLE, secondFoe = true, secondFoeActive = true))
+        val primary = scores.moves(ALLY, FOE).single { it.moveId == "rockslide" }
+        val secondary = scores.moves(ALLY, FOE2).single { it.moveId == "rockslide" }
+        assertEquals(primary.maximumDamageFraction, secondary.maximumDamageFraction, 0.01)
+    }
+
     private fun wisp() = BattlePublicMoveOptionView("willowisp", BattleMoveCandidateView(typeId = "fire",
         damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
         targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
@@ -408,6 +420,8 @@ class LocalMatchupScoreTest {
         /** The bench Pokemon stands beside the ally, in doubles. */
         benchActive: Boolean = false,
         foeStatus: String? = null,
+        /** The second opponent stands beside the first, in doubles. */
+        secondFoeActive: Boolean = false,
     ): BattleDecisionContext {
         val field = if (!rocksOnAllySide) BattleFieldStateView.empty() else BattleFieldStateView(null, null, emptyList(), emptyList(),
             mapOf(BattleSide.ALLY to listOf(BattleTimedEffectView("stealthrock", null)), BattleSide.OPPONENT to emptyList()))
@@ -415,7 +429,7 @@ class LocalMatchupScoreTest {
             listOf(BattleObservedEventView(1, 1, BattleObservedEventKind.MOVE_USED, FOE, listOf(ALLY), "probe"))
         val state = BattleStateView(UUID(0, 918), format, 1,
             listOf(pokemon(ALLY, BattleSide.ALLY, 0, allySpeed, allyItem), pokemon(BENCH, BattleSide.ALLY, if (benchActive) 1 else null, allySpeed),
-                pokemon(FOE, BattleSide.OPPONENT, 0, foeSpeed, status = foeStatus)) + listOfNotNull(if (secondFoe) pokemon(FOE2, BattleSide.OPPONENT, null, 50) else null),
+                pokemon(FOE, BattleSide.OPPONENT, 0, foeSpeed, status = foeStatus)) + listOfNotNull(if (secondFoe) pokemon(FOE2, BattleSide.OPPONENT, if (secondFoeActive) 1 else null, 50) else null),
             field, mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to if (secondFoe) 2 else 1), events, emptyList())
         return BattleDecisionContext(UUID(0, 919), state, listOf(BattleActionCandidate("wait", BattleActionKind.WAIT)), Long.MAX_VALUE,
             publicActionCatalog = BattlePublicActionCatalogView(state.pokemon.map { pokemon ->
