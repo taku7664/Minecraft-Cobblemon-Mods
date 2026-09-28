@@ -184,9 +184,10 @@ internal data class AntiAceScore(
  * What a status move does to the exchange: the matchup after it lands, the turn spent on it paid for,
  * against the matchup without it.
  *
- * [score] = `survivesTurn * (accuracy * afterLanding + (1 - accuracy) * afterMiss) - (1 - survivesTurn) - before`,
- * clamped to -1..1: a burn on a physical attacker is positive, the same burn on a special one costs the
- * turn and comes out negative.
+ * [score] = `survivesTurn * (accuracy * afterLanding + (1 - accuracy) * afterMiss) - (1 - survivesTurn) - before
+ * + accuracy * partnerGain`, clamped to -1..1: a burn on a physical attacker is positive, the same burn on a
+ * special one costs the turn and comes out negative. A move that cannot land (the target already has a
+ * status, or is publicly immune) scores as a miss.
  */
 internal data class StatusMoveMatchupScore(
     val userId: UUID,
@@ -202,6 +203,8 @@ internal data class StatusMoveMatchupScore(
     /** The exchange after the move misses: only the turn is gone. */
     val afterMiss: Double,
     val score: Double,
+    /** In doubles, what the landed move does for the user's partner against the same target; it spends no turn. */
+    val partnerGain: Double = 0.0,
 )
 
 /**

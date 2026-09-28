@@ -10,6 +10,7 @@ import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveTargets
 import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget
@@ -49,6 +50,11 @@ internal object LocalTurnCostScoreCalculator {
             else it.copyState(hpFraction = (it.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP))
         })
         val afterMiss = exchange(position, worn, user.battlePokemonId, target.battlePokemonId, cache) ?: return emptyList()
+        // In doubles the target threatens the partner too, which the move helps without spending its turn.
+        val partner = if (state.format != BattleFormat.DOUBLE || target.side == user.side) null else state.pokemon.firstOrNull {
+            it.side == user.side && it.battlePokemonId != user.battlePokemonId && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+        }
+        val partnerBefore = partner?.let { exchange(position, state, it.battlePokemonId, target.battlePokemonId, cache) }
         val side = user.side
         val hypotheses = side == BattleSide.OPPONENT
         return cache.slotActions(state, side, position.publicActionCatalog, hypotheses) {
@@ -67,11 +73,17 @@ internal object LocalTurnCostScoreCalculator {
                 if (aimsAtTarget && LocalPublicMoveTargets.resolve(candidate, calculated, side).firstOrNull()?.battlePokemonId != target.battlePokemonId) {
                     return@mapNotNull null
                 }
-                if (LocalPublicMechanicsKernel.projectMove(candidate, calculated, side).publiclyNullified) return@mapNotNull null
-                val landed = applyEffects(worn, effects, user.battlePokemonId, target) ?: return@mapNotNull null
-                val afterLanding = exchange(position, landed, user.battlePokemonId, target.battlePokemonId, cache) ?: return@mapNotNull null
+                val applied = applyEffects(worn, effects, user.battlePokemonId, target) ?: return@mapNotNull null
+                // A move that cannot land does no more than a miss.
+                val nullified = LocalPublicMechanicsKernel.projectMove(candidate, calculated, side).publiclyNullified
+                val landed = if (nullified) worn else applied
+                val afterLanding = if (landed === worn) afterMiss
+                    else exchange(position, landed, user.battlePokemonId, target.battlePokemonId, cache) ?: return@mapNotNull null
+                val partnerGain = if (partner == null || partnerBefore == null || landed === worn) 0.0
+                    else (exchange(position, landed, partner.battlePokemonId, target.battlePokemonId, cache) ?: partnerBefore) - partnerBefore
                 val accuracy = (details.accuracy / 100.0).coerceIn(0.0, 1.0).takeIf { it > 0.0 } ?: 1.0
-                val expected = survives * (accuracy * afterLanding + (1.0 - accuracy) * afterMiss) - (1.0 - survives)
+                val expected = survives * (accuracy * afterLanding + (1.0 - accuracy) * afterMiss) - (1.0 - survives) +
+                    accuracy * partnerGain
                 StatusMoveMatchupScore(
                     userId = user.battlePokemonId,
                     moveId = PublicIds.canonical(action.moveId ?: action.actionId),
@@ -82,6 +94,7 @@ internal object LocalTurnCostScoreCalculator {
                     afterLanding = afterLanding,
                     afterMiss = afterMiss,
                     score = (expected - base.score).coerceIn(-1.0, 1.0),
+                    partnerGain = partnerGain,
                 )
             }
             .distinctBy { it.moveId }

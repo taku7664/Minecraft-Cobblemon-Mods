@@ -196,18 +196,19 @@ internal object PublicFutureActionFactory {
      * that could let the hit land (Scrappy, Mold Breaker, Ring Target, Gravity, Foresight, Smack Down)
      * keeps the move.
      */
-    private fun publiclyFails(
+    internal fun publiclyFails(
         state: BattleStateView,
         side: BattleSide,
         actor: BattlePokemonStateView,
         action: BattleActionCandidate,
+        /** The opposing target; by default the one [action] declares. */
+        target: BattlePokemonStateView? = action.targets.singleOrNull()?.takeIf { it.side != side }?.let { slot ->
+            state.pokemon.firstOrNull { it.side == slot.side && it.activeSlot == slot.slot && !it.fainted && it.hpFraction > 0.0 }
+        },
     ): Boolean {
         if (action.kind != BattleActionKind.USE_MOVE) return false
         val details = action.moveDetails ?: return false
         val effects = details.effects?.effects.orEmpty()
-        val target = action.targets.singleOrNull()?.takeIf { it.side != side }?.let { slot ->
-            state.pokemon.firstOrNull { it.side == slot.side && it.activeSlot == slot.slot && !it.fainted && it.hpFraction > 0.0 }
-        }
         if (details.damageCategory != BattleMoveDamageCategory.STATUS) {
             target ?: return false
             if (target.knownTypeIds.isEmpty()) return false

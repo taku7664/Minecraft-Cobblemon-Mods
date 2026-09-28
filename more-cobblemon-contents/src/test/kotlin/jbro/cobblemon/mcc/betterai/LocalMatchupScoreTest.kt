@@ -3,12 +3,14 @@ package jbro.cobblemon.mcc.betterai
 import java.util.UUID
 import jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutProfile
 import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
+import jbro.cobblemon.mcc.betterai.matchup.LocalPublicFailureTriage
 import jbro.cobblemon.mcc.betterai.matchup.AntiAceScore
 import jbro.cobblemon.mcc.betterai.matchup.AntiAceToolKind
 import jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate
 import jbro.cobblemon.mcc.betterai.matchup.LocalStatusMoveTriage
 import jbro.cobblemon.mcc.betterai.matchup.LocalSwitchRules
 import jbro.cobblemon.mcc.betterai.matchup.MatchupSpeedField
+import jbro.cobblemon.mcc.betterai.matchup.StatusMoveMatchupScore
 import jbro.cobblemon.mcc.internal.ai.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -225,9 +227,48 @@ class LocalMatchupScoreTest {
         }
         assertTrue(wasted(BattleMoveDamageCategory.SPECIAL))
         assertFalse(wasted(BattleMoveDamageCategory.PHYSICAL))
-        // A doubles burn may be protecting the partner, which the one-on-one cannot see.
+        // A doubles move without a declared target is left to the search.
         assertFalse(wasted(BattleMoveDamageCategory.SPECIAL, BattleFormat.DOUBLE))
     }
+
+    @Test
+    fun `a doubles burn counts what it does for the partner and a special target still wastes it`() {
+        val action = BattleActionCandidate("wisp", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 2, moveId = "willowisp",
+            targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)), moveDetails = wisp().details)
+        val partnerAttack = BattleActionCandidate("partner", BattleActionKind.USE_MOVE, actorSlot = 1, moveSlot = 0, moveId = "probe")
+        val turn = BattleActionCandidate("turn", BattleActionKind.COMPOSITE, componentActionIds = listOf("wisp", "partner"),
+            componentActions = listOf(action, partnerAttack))
+        fun judged(category: BattleMoveDamageCategory): Pair<StatusMoveMatchupScore, Boolean> {
+            val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0, foeCategory = category,
+                allyExtra = listOf(wisp()), format = BattleFormat.DOUBLE, benchActive = true)
+            val scores = LocalMatchupScoreCalculator.calculate(context)
+            return scores.statusMoves(ALLY, FOE).single { it.moveId == "willowisp" } to LocalStatusMoveTriage.wasted(turn, context, scores)
+        }
+        val (physical, physicalWasted) = judged(BattleMoveDamageCategory.PHYSICAL)
+        assertTrue(physical.partnerGain > 0.0) { physical.toString() }
+        assertFalse(physicalWasted)
+        val (special, specialWasted) = judged(BattleMoveDamageCategory.SPECIAL)
+        assertEquals(0.0, special.partnerGain, 1e-9)
+        assertTrue(specialWasted) { special.toString() }
+    }
+
+    @Test
+    fun `a burn on a target that already has a status publicly fails and is ruled out`() {
+        val action = BattleActionCandidate("wisp", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 2, moveId = "willowisp",
+            moveDetails = wisp().details)
+        val attack = attackAction()
+        fun fails(status: String?) = context(allySpeed = 100, foeSpeed = 120, allyExtra = listOf(wisp()), foeStatus = status)
+            .let { LocalPublicFailureTriage.fails(action, it) to LocalPublicFailureTriage.fails(attack, it) }
+        assertEquals(true to false, fails("par"))
+        assertEquals(false to false, fails(null))
+    }
+
+    private fun wisp() = BattlePublicMoveOptionView("willowisp", BattleMoveCandidateView(typeId = "fire",
+        damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
+        targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
+        effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, listOf(BattleMoveEffectView(
+            BattleMoveEffectKind.STATUS, BattleMoveEffectTarget.SELECTED_TARGET, valueId = "brn")), false)),
+        BattlePublicMoveKnowledge.EXACT_OWN)
 
     @Test
     fun `parting shot declares the stat drop its callback applies`() {
@@ -364,14 +405,17 @@ class LocalMatchupScoreTest {
         secondFoe: Boolean = false,
         format: BattleFormat = BattleFormat.SINGLE,
         foeMovedThisTurn: Boolean = false,
+        /** The bench Pokemon stands beside the ally, in doubles. */
+        benchActive: Boolean = false,
+        foeStatus: String? = null,
     ): BattleDecisionContext {
         val field = if (!rocksOnAllySide) BattleFieldStateView.empty() else BattleFieldStateView(null, null, emptyList(), emptyList(),
             mapOf(BattleSide.ALLY to listOf(BattleTimedEffectView("stealthrock", null)), BattleSide.OPPONENT to emptyList()))
         val events = if (!foeMovedThisTurn) emptyList() else
             listOf(BattleObservedEventView(1, 1, BattleObservedEventKind.MOVE_USED, FOE, listOf(ALLY), "probe"))
         val state = BattleStateView(UUID(0, 918), format, 1,
-            listOf(pokemon(ALLY, BattleSide.ALLY, 0, allySpeed, allyItem), pokemon(BENCH, BattleSide.ALLY, null, allySpeed),
-                pokemon(FOE, BattleSide.OPPONENT, 0, foeSpeed)) + listOfNotNull(if (secondFoe) pokemon(FOE2, BattleSide.OPPONENT, null, 50) else null),
+            listOf(pokemon(ALLY, BattleSide.ALLY, 0, allySpeed, allyItem), pokemon(BENCH, BattleSide.ALLY, if (benchActive) 1 else null, allySpeed),
+                pokemon(FOE, BattleSide.OPPONENT, 0, foeSpeed, status = foeStatus)) + listOfNotNull(if (secondFoe) pokemon(FOE2, BattleSide.OPPONENT, null, 50) else null),
             field, mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to if (secondFoe) 2 else 1), events, emptyList())
         return BattleDecisionContext(UUID(0, 919), state, listOf(BattleActionCandidate("wait", BattleActionKind.WAIT)), Long.MAX_VALUE,
             publicActionCatalog = BattlePublicActionCatalogView(state.pokemon.map { pokemon ->
@@ -392,8 +436,8 @@ class LocalMatchupScoreTest {
             }))
     }
 
-    private fun pokemon(id: UUID, side: BattleSide, slot: Int?, speed: Int, item: String? = null) =
-        BattlePokemonStateView(id, side, slot, "fixture:matchup", null, 50, 1.0, null, emptyMap(), emptySet(), null, item, false,
+    private fun pokemon(id: UUID, side: BattleSide, slot: Int?, speed: Int, item: String? = null, status: String? = null) =
+        BattlePokemonStateView(id, side, slot, "fixture:matchup", null, 50, 1.0, status, emptyMap(), emptySet(), null, item, false,
             knownTypeIds = setOf("normal"),
             combatStats = BattleCombatStatRangesView(maxHp = BattleIntegerRange(150, 150),
                 attack = BattleIntegerRange(150, 150), defence = BattleIntegerRange(100, 100),

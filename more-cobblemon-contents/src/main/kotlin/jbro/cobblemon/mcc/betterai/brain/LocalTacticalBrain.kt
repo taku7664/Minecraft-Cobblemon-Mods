@@ -51,6 +51,7 @@ import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionStatus
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionState
 import jbro.cobblemon.mcc.betterai.evaluation.LocalOpponentThreat
 import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
+import jbro.cobblemon.mcc.betterai.matchup.LocalPublicFailureTriage
 import jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate
 import jbro.cobblemon.mcc.betterai.matchup.LocalStatusMoveTriage
 import jbro.cobblemon.mcc.betterai.matchup.LocalSwitchRules
@@ -197,15 +198,21 @@ internal class LocalTacticalBrain(
             else ruleScores?.let { LocalSwitchRules.judge(difficultyContext.candidates, difficultyContext, it) }
                 ?: LocalSwitchRules.Judgement.NONE
         }
+        val publicFailures = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
         fun ruleExclusions(ranked: List<LocalBattleActionRank>): Map<String, String> {
             if (!rulesApply) return emptyMap()
-            val switchExclusions = switchJudgement.exclusions.filterKeys { id -> ranked.any { it.outcome.candidate.actionId == id } }
+            // A turn with nothing but failing moves keeps them, as the search does.
+            val failing = ranked.map { it.outcome.candidate }.filter { candidate ->
+                publicFailures.getOrPut(candidate.actionId) { LocalPublicFailureTriage.fails(candidate, difficultyContext) }
+            }.takeIf { it.size < ranked.size }.orEmpty()
+            val plainExclusions = switchJudgement.exclusions.filterKeys { id -> ranked.any { it.outcome.candidate.actionId == id } } +
+                failing.associate { it.actionId to LocalPublicFailureTriage.REASON }
             val judged = ranked.map { it.outcome.candidate }.filter {
                 LocalSetupGate.raisesOwnStats(it) || LocalStatusMoveTriage.judgeable(it, difficultyContext)
             }
-            if (judged.isEmpty()) return switchExclusions
-            val scores = ruleScores ?: return switchExclusions
-            return switchExclusions + judged.mapNotNull { candidate ->
+            if (judged.isEmpty()) return plainExclusions
+            val scores = ruleScores ?: return plainExclusions
+            return plainExclusions + judged.mapNotNull { candidate ->
                 val gated = LocalSetupGate.raisesOwnStats(candidate) && !LocalSetupGate.passes(candidate) { part ->
                     val passes = setupGatePasses.getOrPut(part.actionId) {
                         LocalSetupGate.evaluate(part, difficultyContext, scores)?.passes ?: true
