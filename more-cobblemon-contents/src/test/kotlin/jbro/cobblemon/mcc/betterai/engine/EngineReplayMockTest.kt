@@ -53,6 +53,8 @@ class EngineReplayMockTest {
         }
 
         const val CANDIDATES = 12
+        // Enough for the report's rates; the AI review finds its seed separately.
+        const val MOCK_SEEDS = 500
         const val FIT_SEEDS = 200
         val IDENT = Regex("p[12][a-d]?: .+")
         val HP = Regex("(?<=\\|)(\\d+)(?=/100)")
@@ -373,7 +375,7 @@ class EngineReplayMockTest {
     fun `real battles replay on the engine`() {
         for ((id, format) in replays) {
             val replay = parse(id, format)
-            val text = mock(replay, 2000)
+            val text = mock(replay, MOCK_SEEDS)
             report(id, text)
             // The real log and the first seed's log side by side, for reading where they part.
             val dir = Path.of(System.getProperty("aiengine.coverage") ?: "build/reports/x").parent
@@ -383,6 +385,23 @@ class EngineReplayMockTest {
             // Some seed must play the real battle out: same order, knockouts, switches and winner.
             assertTrue("급소와 피해량 무시): 0 /" !in text) { "No seed reproduces $id:\n$text" }
         }
+    }
+
+    /**
+     * The first seed (in the mock's seed order) whose battle follows the whole real log, or the one that
+     * follows it furthest. Stops at the first faithful seed instead of playing them all.
+     */
+    private fun faithfulRun(replay: Replay, limit: Int = 2000): Run {
+        val random = Random(20251215)
+        val real = replay.lines.map(::shape)
+        var best: Pair<Run, Int>? = null
+        repeat(limit) {
+            val run = play(replay, IntArray(4) { random.nextInt(65536) })
+            val reach = real.indices.firstOrNull { run.lines.getOrNull(it)?.let(::shape) != real[it] } ?: real.size
+            if (reach == real.size) return run
+            if (best == null || reach > best!!.second) best = run to reach
+        }
+        return best!!.first
     }
 
     /**
@@ -424,8 +443,7 @@ class EngineReplayMockTest {
         val engine = Path.of(System.getProperty("aiengine.showdown"))
         for ((id, format) in replays) {
             val replay = parse(id, format)
-            val stats = stats(replay, 2000)
-            val run = stats.runs[stats.runs.indices.maxBy { stats.reach[it] }]
+            val run = faithfulRun(replay)
             val directory = Files.createTempDirectory("ai-engine-review")
             val result = try {
                 EngineReplayAiReview.run(replay.teams, replay.gameType, run.seed, run.choices, engine, directory.resolve("battle"))
