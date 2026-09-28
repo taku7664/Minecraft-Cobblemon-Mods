@@ -497,8 +497,10 @@ internal object LocalRecursiveLookaheadEvaluator {
             // search's cautious correction, so skipping the search was an advantage and a doubles Boss often
             // picked the joint action nobody had looked at. It takes the searched candidates' median correction.
             val searchedLooks = accepted.filter { it.outcome.candidate.actionId in acceptedCoverage }.map { it.lookaheadUtility }.sorted()
-            val median = if (searchedLooks.size % 2 == 1) searchedLooks[searchedLooks.size / 2]
-                else (searchedLooks[searchedLooks.size / 2 - 1] + searchedLooks[searchedLooks.size / 2]) / 2.0
+            // Never a gain: a search that found the searched candidates better than the heuristic said is no
+            // evidence about one it did not search, and lifting those lifted untested joints into the choice pool.
+            val median = (if (searchedLooks.size % 2 == 1) searchedLooks[searchedLooks.size / 2]
+                else (searchedLooks[searchedLooks.size / 2 - 1] + searchedLooks[searchedLooks.size / 2]) / 2.0).coerceAtMost(0.0)
             accepted = LocalBattleActionPolicy.sort(accepted.map { rank ->
                 val id = rank.outcome.candidate.actionId
                 if (id in acceptedCoverage || id in excludedActionIds) rank

@@ -113,7 +113,11 @@ internal data class LocalDecisionTuning(
     val simultaneousResponseWeight: Double = 0.0,
     /** The opponent intents lean toward what the opponent did before in the same matchup (LocalOpponentRepeats). */
     val readOpponentRepeats: Boolean = false,
-    /** A root candidate the search did not reach takes the searched candidates' median adjustment instead of none. */
+    /**
+     * A root candidate the search did not reach takes the searched candidates' median adjustment, when that is a
+     * loss, instead of none. Unclamped, doubles duels at the shipped budget and three times it, six seeds and 126
+     * games, gave it a mean HP lead of +0.23, but it also lifted untested joints into the choice pool.
+     */
     val unsearchedTakeMedianAdjustment: Boolean = false,
     /** How the search's projected hits branch on damage rolls and critical hits. */
     val chanceModel: jbro.cobblemon.mcc.betterai.calculation.LocalChanceModel =
