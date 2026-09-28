@@ -398,7 +398,6 @@ object UIUtils {
 
     // Cell colors (Cobblemon dark blue-tinted palette)
     val CELL_BG = BattleUiTheme.PANEL_ALT
-    val CELL_BORDER = BattleUiTheme.BORDER
     val ROW_DIVIDER_COLOR = BattleUiTheme.BORDER
 
     /** Shared 9-slice insets for the popup frame texture. */
@@ -408,19 +407,18 @@ object UIUtils {
      * Renders the same chamfered navy surface used by battle narration and TAB.
      */
     fun renderPopupFrame(context: DrawContext, x: Int, y: Int, width: Int, height: Int) {
-        BattleSurfaceRenderer.draw(context, x, y, width, height, BattleUiTheme.shell.copy(cut = 4, borderWidth = 1))
+        BattleSurfaceRenderer.draw(context, x, y, width, height, BattleUiTheme.shell.copy(cut = 4))
     }
 
     /**
-     * Draws a cell background with 1px border and filled interior.
+     * Draws a borderless cell background.
      * @param colorTransform Optional transform applied to colors (e.g., for opacity)
      */
     fun drawPopupCell(
         context: DrawContext, x: Int, y: Int, w: Int, h: Int,
         colorTransform: (Int) -> Int = { it }
     ) {
-        context.fill(x, y, x + w, y + h, colorTransform(CELL_BORDER))
-        context.fill(x + 1, y + 1, x + w - 1, y + h - 1, colorTransform(CELL_BG))
+        context.fill(x, y, x + w, y + h, colorTransform(CELL_BG))
     }
 
     /**

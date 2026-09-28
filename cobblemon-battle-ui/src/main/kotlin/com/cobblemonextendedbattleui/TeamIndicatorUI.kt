@@ -1053,9 +1053,6 @@ object TeamIndicatorUI {
     private fun drawTeamPanel(context: DrawContext, x: Int, y: Int, teamSize: Int) =
         TeamPanelRenderer.drawTeamPanel(context, x, y, teamSize, modelSize, modelSpacing, ::applyOpacity)
 
-    private fun drawPanelCornerOverlays(context: DrawContext, x: Int, y: Int, teamSize: Int) =
-        TeamPanelRenderer.drawPanelCornerOverlays(context, x, y, teamSize, modelSize, modelSpacing, ::applyOpacity)
-
     private fun drawHelpIcon(
         context: DrawContext, panelX: Int, panelY: Int, panelWidth: Int, panelHeight: Int, isLeftSide: Boolean
     ): TooltipBoundsData =
@@ -1129,7 +1126,6 @@ object TeamIndicatorUI {
         }
 
         // Draw corner overlays AFTER models to ensure rounded corners appear on top
-        drawPanelCornerOverlays(context, startX, startY, team.size)
 
         // Draw help icon and track its bounds
         val helpBounds = drawHelpIcon(context, bounds.x, bounds.y, panelWidth, panelHeight, isLeftSide)
@@ -1214,7 +1210,6 @@ object TeamIndicatorUI {
         }
 
         // Draw corner overlays AFTER models to ensure rounded corners appear on top
-        drawPanelCornerOverlays(context, startX, startY, team.size)
 
         // Draw help icon and track its bounds
         val helpBounds = drawHelpIcon(context, bounds.x, bounds.y, panelWidth, panelHeight, isLeftSide)

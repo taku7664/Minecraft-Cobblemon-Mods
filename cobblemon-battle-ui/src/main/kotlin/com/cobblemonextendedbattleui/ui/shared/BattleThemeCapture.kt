@@ -4,8 +4,7 @@ import com.cobblemon.mod.common.api.moves.Moves
 import com.cobblemon.mod.common.api.types.ElementalTypes
 import jbro.cobblemon.battleui.extended.BattleDialogue
 import jbro.cobblemon.battleui.extended.MoveTooltipRenderer
-import jbro.cobblemon.battleui.navigation.BattleMenuLayout
-import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection
+import jbro.cobblemon.battleui.navigation.BattleScreenGeometry
 import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUI
 import jbro.cobblemon.battleui.extended.mixin.BattleSwitchTileAccessor
 import jbro.cobblemon.battleui.extended.navigation.ForfeitSelectionAccess
@@ -177,8 +176,7 @@ internal object BattleThemeCapture {
         }
 
         private fun renderTooltipFixture(context: DrawContext) {
-            val bounds = BattleMenuLayout.vertical(width, height, BattleMoveSelection.MOVE_WIDTH,
-                BattleMoveSelection.MOVE_HEIGHT, 4, 12, 10, 4)
+            val bounds = BattleScreenGeometry.moveTiles(width, height, 4)
             val names = listOf("thunderbolt", "dazzlinggleam", "trick", "aromatherapy")
             val types = listOf("electric", "fairy", "psychic", "grass")
             val colors = listOf(0xFFF3D03E.toInt(), 0xFFEE99AC.toInt(), 0xFFF85888.toInt(), 0xFF78C850.toInt())
@@ -188,8 +186,8 @@ internal object BattleThemeCapture {
                 val bound = bounds[index]
                 BattleControlRenderer.drawMove(context, bound.x().toFloat(), bound.y().toFloat(),
                     move, ElementalTypes.get(types[index])!!, colors[index], 10, 10, true, index == 1)
-                MoveTooltipRenderer.registerMoveTile(bound.x().toFloat(), bound.y().toFloat(),
-                    bound.width(), bound.height(), move, 10, 10)
+                MoveTooltipRenderer.registerMoveTile((bound.x() - BattleScreenGeometry.FOCUS_PROTRUSION).toFloat(), bound.y().toFloat(),
+                    bound.width() + BattleScreenGeometry.FOCUS_PROTRUSION, bound.height(), move, 10, 10)
             }
             MoveTooltipRenderer.updateHoverState(bounds[1].x() + 30, bounds[1].y() + 10)
             MoveTooltipRenderer.renderTooltip(context)

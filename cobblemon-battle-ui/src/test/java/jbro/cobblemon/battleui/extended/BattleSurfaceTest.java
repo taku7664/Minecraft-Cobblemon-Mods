@@ -1,10 +1,23 @@
 package jbro.cobblemon.battleui.extended;
 
 import jbro.cobblemon.battleui.extended.ui.shared.BattleSurfaceRenderer;
+import jbro.cobblemon.battleui.extended.ui.shared.BattleUiTheme;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class BattleSurfaceTest {
+    @Test void battleThemeSurfacesHaveNoPerimeterBorder() {
+        BattleUiTheme theme = BattleUiTheme.INSTANCE;
+        assertEquals(0, theme.getShell().getBorderWidth());
+        assertEquals(0, theme.getPanel().getBorderWidth());
+        assertEquals(0, theme.getPrimary().getBorderWidth());
+        assertEquals(0, theme.getSecondary().getBorderWidth());
+        assertEquals(0, theme.getDanger().getBorderWidth());
+        assertEquals(0, theme.getCapture().getBorderWidth());
+        assertEquals(0, theme.getTranscriptSelf().getBorderWidth());
+        assertEquals(0, theme.getTranscriptOpponent().getBorderWidth());
+    }
+
     @Test void selectedCornersCutOnlyTheirOwnEnd() {
         assertEquals(4, BattleSurfaceRenderer.inset(0, 24, 4, true, false));
         assertEquals(3, BattleSurfaceRenderer.inset(1, 24, 4, true, false));

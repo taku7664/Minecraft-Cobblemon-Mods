@@ -14,7 +14,7 @@ object BattleForfeitRenderer {
         val accept = BattleScreenGeometry.forfeitAccept(width, height)
         val cancel = BattleScreenGeometry.forfeitCancel(width, height)
         BattleSurfaceRenderer.draw(context, panel.x(), panel.y(), panel.width(), panel.height(),
-            BattleUiTheme.shell.copy(border = BattleUiTheme.DANGER), opacity)
+            BattleUiTheme.shell, opacity)
         val font = MinecraftClient.getInstance().textRenderer
         context.drawText(font, font.trimToWidth(title.string, panel.width() - 28), panel.x() + 14,
             panel.y() + 12, BattleSurfaceRenderer.withOpacity(BattleUiTheme.TEXT, opacity), false)
@@ -22,11 +22,11 @@ object BattleForfeitRenderer {
             panel.y() + 29, BattleSurfaceRenderer.withOpacity(BattleUiTheme.MUTED, opacity), false)
         BattleSurfaceRenderer.draw(context, accept.x(), accept.y(), accept.width(), accept.height(),
             BattleUiTheme.danger.copy(cut = 5, corners = 0b0101,
-                border = if (focused == 0) BattleUiTheme.FOCUS else BattleUiTheme.DANGER,
-                borderWidth = if (focused == 0) 2 else 1), opacity)
+                top = if (focused == 0) 0xFFBD586B.toInt() else BattleUiTheme.danger.top), opacity)
         BattleSurfaceRenderer.draw(context, cancel.x(), cancel.y(), cancel.width(), cancel.height(),
-            BattleUiTheme.secondary.copy(border = if (focused == 1) BattleUiTheme.FOCUS else BattleUiTheme.BORDER,
-                borderWidth = if (focused == 1) 2 else 0, cut = 4, corners = 0b1010), opacity)
+            BattleUiTheme.secondary.copy(top = if (focused == 1) 0xFF2E526D.toInt() else BattleUiTheme.secondary.top,
+                bottom = if (focused == 1) 0xFF2E526D.toInt() else BattleUiTheme.secondary.bottom,
+                cut = 4, corners = 0b1010), opacity)
         centered(context, font.trimToWidth(acceptLabel.string, accept.width() - 8), accept.x() + accept.width() / 2,
             accept.y() + 7, opacity)
         centered(context, font.trimToWidth(cancelLabel.string, cancel.width() - 8), cancel.x() + cancel.width() / 2,

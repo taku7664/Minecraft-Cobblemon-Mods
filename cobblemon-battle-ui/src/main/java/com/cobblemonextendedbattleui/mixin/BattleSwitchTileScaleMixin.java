@@ -2,7 +2,6 @@ package jbro.cobblemon.battleui.extended.mixin;
 
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleSwitchPokemonSelection;
 import jbro.cobblemon.battleui.extended.navigation.KeyboardTileFocus;
-import jbro.cobblemon.battleui.navigation.FocusBorderRenderer;
 import jbro.cobblemon.battleui.navigation.SmoothButtonScale;
 import jbro.cobblemon.battleui.navigation.BattleScreenGeometry;
 import net.minecraft.client.gui.DrawContext;
@@ -54,14 +53,6 @@ public abstract class BattleSwitchTileScaleMixin {
 
     @Inject(method = "render", at = @At("RETURN"))
     private void cobblemonBattleUi$end(DrawContext context, double mouseX, double mouseY, float delta, CallbackInfo ci) {
-        FocusBorderRenderer.draw(
-                context,
-                getX(),
-                getY(),
-                BattleSwitchPokemonSelection.SwitchTile.SELECT_WIDTH,
-                BattleSwitchPokemonSelection.SwitchTile.SELECT_HEIGHT,
-                cobblemonBattleUi$currentScale
-        );
         context.getMatrices().pop();
     }
 }

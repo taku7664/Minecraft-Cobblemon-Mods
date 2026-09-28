@@ -9,7 +9,7 @@ import jbro.cobblemon.battleui.navigation.UiRect;
 /** Applies the shared bottom-right layout before rendering or hit testing commands. */
 public final class BattleCommandLayout {
     private static final int BUTTON_GAP = 4;
-    private static final int RIGHT_MARGIN = 12;
+    private static final int RIGHT_MARGIN = 0;
     private static final int BOTTOM_MARGIN = 10;
 
     private BattleCommandLayout() {}

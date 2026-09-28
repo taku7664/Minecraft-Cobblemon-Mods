@@ -7,6 +7,7 @@ import java.util.List;
 public final class BattleScreenGeometry {
     public static final int MOVE_WIDTH = 140;
     public static final int MOVE_HEIGHT = 32;
+    public static final int FOCUS_PROTRUSION = 5;
     public static final int SWITCH_WIDTH = 120;
     public static final int SWITCH_HEIGHT = 20;
 
@@ -14,7 +15,7 @@ public final class BattleScreenGeometry {
     }
 
     public static List<UiRect> moveTiles(int screenWidth, int screenHeight, int count) {
-        return BattleMenuLayout.vertical(screenWidth, screenHeight, MOVE_WIDTH, MOVE_HEIGHT, 4, 12, 16, count);
+        return BattleMenuLayout.vertical(screenWidth, screenHeight, MOVE_WIDTH, MOVE_HEIGHT, 4, 0, 16, count);
     }
 
     public static UiRect switchPanel(int screenWidth, int screenHeight) {

@@ -16,6 +16,20 @@ import net.minecraft.text.Text
 
 object BattleControlRenderer {
     @JvmStatic
+    fun back(context: DrawContext, x: Int, y: Int, hovered: Boolean) {
+        val extension = if (hovered) BattleScreenGeometry.FOCUS_PROTRUSION else 0
+        val base = BattleUiTheme.secondary.copy(cut = 3, corners = 0b1010)
+        val style = if (hovered) base.copy(top = lighten(base.top), bottom = lighten(base.bottom)) else base
+        BattleSurfaceRenderer.draw(context, x - extension, y, 29 + extension, 17, style)
+        val ink = if (hovered) BattleUiTheme.CYAN else BattleUiTheme.TEXT
+        context.fill(x + 8, y + 8, x + 20, y + 9, ink)
+        for (step in 0..3) {
+            context.fill(x + 8 - step, y + 8 - step, x + 9 - step, y + 9 - step, ink)
+            context.fill(x + 8 - step, y + 8 + step, x + 9 - step, y + 9 + step, ink)
+        }
+    }
+
+    @JvmStatic
     fun option(context: DrawContext, tile: BattleOptionTile, focused: Boolean) {
         val opacity = CobblemonClient.battleOverlay.opacityRatio.toFloat()
         if (opacity < .1f) return
@@ -37,8 +51,9 @@ object BattleControlRenderer {
             BattleUiTheme.capture -> base.copy(borderWidth = 0, cut = 4, corners = 0b1010)
             else -> base.copy(borderWidth = 0, cut = 4)
         }
-        val style = if (focused) rail.copy(border = BattleUiTheme.FOCUS, borderWidth = 2) else rail
-        BattleSurfaceRenderer.draw(context, x, y, BattleOptionTile.OPTION_WIDTH, BattleOptionTile.OPTION_HEIGHT, style, opacity)
+        val extension = if (focused) BattleScreenGeometry.FOCUS_PROTRUSION else 0
+        val style = if (focused) rail.copy(top = lighten(rail.top), bottom = lighten(rail.bottom)) else rail
+        BattleSurfaceRenderer.draw(context, x - extension, y, BattleOptionTile.OPTION_WIDTH + extension, BattleOptionTile.OPTION_HEIGHT, style, opacity)
         context.fill(x + 5, y + 6, x + 7, y + 20, BattleSurfaceRenderer.withOpacity(when (base) {
             BattleUiTheme.primary -> BattleUiTheme.PANEL_ALT
             BattleUiTheme.danger -> BattleUiTheme.DANGER
@@ -67,12 +82,10 @@ object BattleControlRenderer {
                           type: ElementalType, typeColor: Int, pp: Int, maxPp: Int,
                           selectable: Boolean, focused: Boolean, opacity: Float = 1f) {
         val contentOpacity = opacity * if (selectable) 1f else .95f
-        val style = BattleUiTheme.panel.copy(
-            border = if (focused) BattleUiTheme.FOCUS else BattleUiTheme.BORDER,
-            borderWidth = if (focused) 2 else 1,
-            cut = 4, corners = 0b1001
-        )
-        BattleSurfaceRenderer.draw(context, x.toInt(), y.toInt(), BattleScreenGeometry.MOVE_WIDTH, BattleScreenGeometry.MOVE_HEIGHT, style, contentOpacity)
+        val extension = if (focused) BattleScreenGeometry.FOCUS_PROTRUSION else 0
+        val base = BattleUiTheme.panel.copy(cut = 4, corners = 0b1001)
+        val style = if (focused) base.copy(top = lighten(base.top), bottom = lighten(base.bottom)) else base
+        BattleSurfaceRenderer.draw(context, x.toInt() - extension, y.toInt(), BattleScreenGeometry.MOVE_WIDTH + extension, BattleScreenGeometry.MOVE_HEIGHT, style, contentOpacity)
         context.fill(x.toInt() + 5, y.toInt() + 6, x.toInt() + 8, y.toInt() + 26,
             BattleSurfaceRenderer.withOpacity(typeColor, opacity))
         TypeIcon(x = x + 15, y = y + 19, type = type, small = true,
@@ -91,5 +104,12 @@ object BattleControlRenderer {
         }
         UIUtils.drawText(context, label, x + BattleScreenGeometry.MOVE_WIDTH - 7 - font.getWidth(label), y + 19,
             BattleSurfaceRenderer.withOpacity(ppColor, opacity), 1f)
+    }
+
+    private fun lighten(color: Int): Int {
+        val red = minOf(255, ((color ushr 16) and 255) + 15)
+        val green = minOf(255, ((color ushr 8) and 255) + 18)
+        val blue = minOf(255, (color and 255) + 20)
+        return (color and 0xFF000000.toInt()) or (red shl 16) or (green shl 8) or blue
     }
 }

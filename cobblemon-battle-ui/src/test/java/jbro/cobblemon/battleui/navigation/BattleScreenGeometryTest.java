@@ -11,10 +11,10 @@ class BattleScreenGeometryTest {
     @Test
     void enlargedMoveColumnKeepsHitboxesOnTheVisualTiles() {
         assertEquals(List.of(
-                new UiRect(275, 84, 140, 32),
-                new UiRect(275, 120, 140, 32),
-                new UiRect(275, 156, 140, 32),
-                new UiRect(275, 192, 140, 32)
+                new UiRect(287, 84, 140, 32),
+                new UiRect(287, 120, 140, 32),
+                new UiRect(287, 156, 140, 32),
+                new UiRect(287, 192, 140, 32)
         ), BattleScreenGeometry.moveTiles(427, 240, 4));
     }
 

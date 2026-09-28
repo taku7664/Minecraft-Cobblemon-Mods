@@ -94,7 +94,7 @@ object BattleTargetRenderer {
             BattleScreenGeometry.targetTile(width, height, slots, 1, 0).x(), panel.y() + 12, opacity)
         val back = BattleScreenGeometry.targetBack(width, height, slots)
         BattleSurfaceRenderer.draw(context, back.x(), back.y(), back.width(), back.height(),
-            BattleUiTheme.secondary.copy(border = BattleUiTheme.CYAN, cut = 3, corners = 0b1010), opacity)
+            BattleUiTheme.secondary.copy(cut = 3, corners = 0b1010), opacity)
         val label = Text.translatable("cobblemon_battle_ui.target.back").string
         val font = MinecraftClient.getInstance().textRenderer
         drawText(context, label, back.x() + (back.width() - font.getWidth(label)) / 2,
@@ -107,15 +107,9 @@ object BattleTargetRenderer {
         val y = rect.y()
         val portraitSize = 16
         val portraitX = x + rect.width() - portraitSize - 4
-        val accent = when {
-            card.focused && card.selectable -> BattleUiTheme.FOCUS
-            card.ally -> BattleUiTheme.CYAN
-            else -> BattleUiTheme.PURPLE
-        }
         val cardOpacity = opacity * if (card.selectable) 1f else .7f
         BattleSurfaceRenderer.draw(context, x, y, rect.width(), rect.height(),
-            BattleUiTheme.panel.copy(border = accent,
-                borderWidth = if (card.focused && card.selectable) 2 else 1,
+            BattleUiTheme.panel.copy(top = if (card.focused && card.selectable) 0xF22D4560.toInt() else BattleUiTheme.panel.top,
                 cut = 3, corners = 0b1001), cardOpacity)
         val font = MinecraftClient.getInstance().textRenderer
         val textX = x + if (card.selectable) 5 else 15
@@ -123,7 +117,7 @@ object BattleTargetRenderer {
             textX, y + 7, if (card.selectable) BattleUiTheme.TEXT else BattleUiTheme.MUTED, cardOpacity)
         if (!card.selectable) drawText(context, "×", x + 5, y + 7, BattleUiTheme.DANGER, cardOpacity)
         BattleSurfaceRenderer.draw(context, portraitX, y + 3, portraitSize, portraitSize,
-            BattleUiTheme.panel.copy(border = accent, cut = 3), cardOpacity)
+            BattleUiTheme.panel.copy(cut = 3), cardOpacity)
         PokemonModelRenderer.drawPokemonModel(context, portraitX + 1, y + 4, portraitSize - 2,
             null, card.species, card.aspects, card.uuid, card.fainted, card.status, card.ally,
             { BattleSurfaceRenderer.withOpacity(it, cardOpacity) }, 1f)

@@ -11,14 +11,13 @@ import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
 
 /**
- * Renders team indicator panel backgrounds, borders, corners, and help icons.
+ * Renders team indicator panel backgrounds, corners, and help icons.
  */
 object TeamPanelRenderer {
 
     // Background panel settings
     private const val PANEL_CORNER = 3
     private val PANEL_BG = color(15, 20, 25, 180)
-    private val PANEL_BORDER = color(60, 70, 85, 200)
 
     // Help icon settings
     private const val HELP_ICON_SIZE = 8
@@ -53,7 +52,6 @@ object TeamPanelRenderer {
         val panelY = y - TeamPanelLayout.VERTICAL_PADDING
 
         val bg = applyOpacity(PANEL_BG)
-        val border = applyOpacity(PANEL_BORDER)
 
         // Draw main background (cross pattern for rounded corners)
         context.fill(panelX + PANEL_CORNER, panelY, panelX + panelWidth - PANEL_CORNER, panelY + panelHeight, bg)
@@ -73,46 +71,6 @@ object TeamPanelRenderer {
         context.fill(panelX + panelWidth - PANEL_CORNER, panelY + panelHeight - 2, panelX + panelWidth - 2, panelY + panelHeight - 1, bg)
         context.fill(panelX + panelWidth - PANEL_CORNER, panelY + panelHeight - PANEL_CORNER, panelX + panelWidth - 1, panelY + panelHeight - 2, bg)
 
-        // Draw borders
-        // Top
-        context.fill(panelX + PANEL_CORNER, panelY, panelX + panelWidth - PANEL_CORNER, panelY + 1, border)
-        // Bottom
-        context.fill(panelX + PANEL_CORNER, panelY + panelHeight - 1, panelX + panelWidth - PANEL_CORNER, panelY + panelHeight, border)
-        // Left
-        context.fill(panelX, panelY + PANEL_CORNER, panelX + 1, panelY + panelHeight - PANEL_CORNER, border)
-        // Right
-        context.fill(panelX + panelWidth - 1, panelY + PANEL_CORNER, panelX + panelWidth, panelY + panelHeight - PANEL_CORNER, border)
-
-        // Rounded corner borders
-        drawCornerBorders(context, panelX, panelY, panelWidth, panelHeight, border)
-    }
-
-    /**
-     * Draw corner overlays AFTER models to ensure rounded corners appear on top of model overflow.
-     */
-    fun drawPanelCornerOverlays(
-        context: DrawContext,
-        x: Int,
-        y: Int,
-        teamSize: Int,
-        modelSize: Int,
-        modelSpacing: Int,
-        applyOpacity: (Int) -> Int
-    ) {
-        if (teamSize <= 0) return
-
-        val (panelWidth, panelHeight) = calculatePanelDimensions(teamSize, modelSize, modelSpacing)
-        val panelX = x - TeamPanelLayout.HORIZONTAL_PADDING
-        val panelY = y - TeamPanelLayout.VERTICAL_PADDING
-        val border = applyOpacity(PANEL_BORDER)
-
-        val matrices = context.matrices
-        matrices.push()
-        matrices.translate(0.0, 0.0, 200.0)
-
-        drawCornerBorders(context, panelX, panelY, panelWidth, panelHeight, border)
-
-        matrices.pop()
     }
 
     /**
@@ -144,7 +102,6 @@ object TeamPanelRenderer {
             mouseY >= iconY && mouseY <= iconY + HELP_ICON_SIZE
 
         val bgColor = if (isHovered) color(70, 85, 105, 230) else color(45, 55, 70, 180)
-        val borderColor = if (isHovered) color(100, 120, 150, 255) else color(70, 80, 100, 200)
         val textColor = if (isHovered) color(240, 245, 250, 255) else color(140, 155, 175, 220)
 
         val matrices = context.matrices
@@ -158,18 +115,6 @@ object TeamPanelRenderer {
         context.fill(iconX + 1, iconY + 6, iconX + HELP_ICON_SIZE - 1, iconY + 7, bg)
         context.fill(iconX + 2, iconY, iconX + HELP_ICON_SIZE - 2, iconY + 1, bg)
         context.fill(iconX + 2, iconY + 7, iconX + HELP_ICON_SIZE - 2, iconY + 8, bg)
-
-        // Draw circular border
-        val border = applyOpacity(borderColor)
-        context.fill(iconX + 2, iconY, iconX + HELP_ICON_SIZE - 2, iconY + 1, border)
-        context.fill(iconX + 2, iconY + HELP_ICON_SIZE - 1, iconX + HELP_ICON_SIZE - 2, iconY + HELP_ICON_SIZE, border)
-        context.fill(iconX, iconY + 2, iconX + 1, iconY + HELP_ICON_SIZE - 2, border)
-        context.fill(iconX + HELP_ICON_SIZE - 1, iconY + 2, iconX + HELP_ICON_SIZE, iconY + HELP_ICON_SIZE - 2, border)
-        // Corner pixels
-        context.fill(iconX + 1, iconY + 1, iconX + 2, iconY + 2, border)
-        context.fill(iconX + HELP_ICON_SIZE - 2, iconY + 1, iconX + HELP_ICON_SIZE - 1, iconY + 2, border)
-        context.fill(iconX + 1, iconY + HELP_ICON_SIZE - 2, iconX + 2, iconY + HELP_ICON_SIZE - 1, border)
-        context.fill(iconX + HELP_ICON_SIZE - 2, iconY + HELP_ICON_SIZE - 2, iconX + HELP_ICON_SIZE - 1, iconY + HELP_ICON_SIZE - 1, border)
 
         // Draw "?" text
         val helpText = "?"
@@ -240,7 +185,6 @@ object TeamPanelRenderer {
         hintY = ViewportClamp.clamp(hintY, 2, screenHeight, hintHeight, 2)
 
         val bgColor = color(15, 20, 25, 200)
-        val borderColor = color(50, 60, 70, 200)
         val keyColor = if (isCustomized) color(180, 200, 140, 255) else color(140, 160, 180, 255)
         val textColor = color(100, 110, 120, 255)
         val separatorColor = color(70, 80, 90, 255)
@@ -250,8 +194,6 @@ object TeamPanelRenderer {
         matrices.translate(0.0, 0.0, 400.0)
 
         context.fill(hintX, hintY, hintX + hintWidth, hintY + hintHeight, applyOpacity(bgColor))
-        context.fill(hintX, hintY, hintX + hintWidth, hintY + 1, applyOpacity(borderColor))
-        context.fill(hintX, hintY + hintHeight - 1, hintX + hintWidth, hintY + hintHeight, applyOpacity(borderColor))
 
         var textX = (hintX + 4).toFloat()
         val textY = (hintY + 2).toFloat()
@@ -291,32 +233,6 @@ object TeamPanelRenderer {
     }
 
     // ─── Internal Helpers ───────────────────────────────────────────────────
-
-    private fun drawCornerBorders(
-        context: DrawContext,
-        panelX: Int,
-        panelY: Int,
-        panelWidth: Int,
-        panelHeight: Int,
-        border: Int
-    ) {
-        // Top-left
-        context.fill(panelX + 2, panelY, panelX + PANEL_CORNER, panelY + 1, border)
-        context.fill(panelX + 1, panelY + 1, panelX + 2, panelY + 2, border)
-        context.fill(panelX, panelY + 2, panelX + 1, panelY + PANEL_CORNER, border)
-        // Top-right
-        context.fill(panelX + panelWidth - PANEL_CORNER, panelY, panelX + panelWidth - 2, panelY + 1, border)
-        context.fill(panelX + panelWidth - 2, panelY + 1, panelX + panelWidth - 1, panelY + 2, border)
-        context.fill(panelX + panelWidth - 1, panelY + 2, panelX + panelWidth, panelY + PANEL_CORNER, border)
-        // Bottom-left
-        context.fill(panelX + 2, panelY + panelHeight - 1, panelX + PANEL_CORNER, panelY + panelHeight, border)
-        context.fill(panelX + 1, panelY + panelHeight - 2, panelX + 2, panelY + panelHeight - 1, border)
-        context.fill(panelX, panelY + panelHeight - PANEL_CORNER, panelX + 1, panelY + panelHeight - 2, border)
-        // Bottom-right
-        context.fill(panelX + panelWidth - PANEL_CORNER, panelY + panelHeight - 1, panelX + panelWidth - 2, panelY + panelHeight, border)
-        context.fill(panelX + panelWidth - 2, panelY + panelHeight - 2, panelX + panelWidth - 1, panelY + panelHeight - 1, border)
-        context.fill(panelX + panelWidth - 1, panelY + panelHeight - PANEL_CORNER, panelX + panelWidth, panelY + panelHeight - 2, border)
-    }
 
     private fun color(r: Int, g: Int, b: Int, a: Int = 255): Int = UIUtils.color(r, g, b, a)
 }

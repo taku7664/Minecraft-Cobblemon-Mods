@@ -1,7 +1,6 @@
 package jbro.cobblemon.battleui.extended.mixin;
 
-import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleMoveSelection;
-import jbro.cobblemon.battleui.extended.navigation.KeyboardTileFocus;
+import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleBackButton;
 import jbro.cobblemon.battleui.extended.ui.shared.BattleControlRenderer;
 import jbro.cobblemon.battleui.navigation.BattleScreenGeometry;
 import net.minecraft.client.gui.DrawContext;
@@ -12,27 +11,25 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(value = BattleMoveSelection.MoveTile.class, remap = false)
-public abstract class BattleMoveTileScaleMixin {
+@Mixin(value = BattleBackButton.class, remap = false)
+public abstract class BattleBackButtonMixin {
     @Shadow public abstract float getX();
     @Shadow public abstract float getY();
     @Shadow public abstract boolean isHovered(double mouseX, double mouseY);
-    @Shadow public abstract boolean getSelectable();
-
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
-    private void cobblemonBattleUi$begin(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-        boolean emphasized = getSelectable() && (KeyboardTileFocus.allowsMouseHover()
-                ? isHovered(mouseX, mouseY)
-                : KeyboardTileFocus.isFocused(this));
-        BattleControlRenderer.move(context, (BattleMoveSelection.MoveTile) (Object) this, emphasized);
-        ci.cancel();
-    }
 
     @Inject(method = "isHovered", at = @At("HEAD"), cancellable = true)
     private void cobblemonBattleUi$expandedHover(double mouseX, double mouseY,
             CallbackInfoReturnable<Boolean> cir) {
         cir.setReturnValue(mouseX >= getX() - BattleScreenGeometry.FOCUS_PROTRUSION
-                && mouseX < getX() + BattleScreenGeometry.MOVE_WIDTH
-                && mouseY >= getY() && mouseY < getY() + BattleScreenGeometry.MOVE_HEIGHT);
+                && mouseX < getX() + 29
+                && mouseY >= getY() && mouseY < getY() + 17);
+    }
+
+    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    private void cobblemonBattleUi$renderBorderlessBack(
+            DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        BattleControlRenderer.back(context, Math.round(getX()), Math.round(getY()),
+                isHovered(mouseX, mouseY));
+        ci.cancel();
     }
 }

@@ -135,7 +135,7 @@ internal object BattleScreenDraft {
 
     private fun drawCommands(context: DrawContext, width: Int, height: Int, rail: Boolean) {
         val labels = listOf("fight", "switch", "capture", "run")
-        val x = width - 102
+        val x = width - 90
         val top = height - 126
         labels.forEachIndexed { index, key ->
             val y = top + index * 30
@@ -143,11 +143,11 @@ internal object BattleScreenDraft {
                 index == 0 && rail -> BattleUiTheme.primary.copy(cut = 6, corners = 0b1001)
                 index == 0 -> BattleUiTheme.primary.copy(cut = 6, corners = 0b1001)
                 index == 3 -> BattleUiTheme.danger.copy(backgroundOpacity = 1f,
-                    borderWidth = if (rail) 0 else 1, cut = 5, corners = 0b0101)
+                    cut = 5, corners = 0b0101)
                 index == 2 -> BattleUiTheme.capture.copy(backgroundOpacity = 1f,
-                    borderWidth = if (rail) 0 else 1, cut = 4, corners = 0b1010)
+                    cut = 4, corners = 0b1010)
                 else -> BattleUiTheme.secondary.copy(backgroundOpacity = 1f,
-                    borderWidth = if (rail) 0 else 1, cut = if (rail) 4 else 0)
+                    cut = if (rail) 4 else 0)
             }
             val label = Text.translatable("cobblemon.battle.ui.$key")
             if (rail) {

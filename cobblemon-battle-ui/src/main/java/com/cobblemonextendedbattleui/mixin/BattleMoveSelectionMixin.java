@@ -87,9 +87,9 @@ public class BattleMoveSelectionMixin {
         // Register each move tile's bounds for hover detection
         for (MoveTile tile : moveTiles) {
             MoveTooltipRenderer.INSTANCE.registerMoveTile(
-                tile.getX(),
+                tile.getX() - BattleScreenGeometry.FOCUS_PROTRUSION,
                 tile.getY(),
-                BattleScreenGeometry.MOVE_WIDTH,
+                BattleScreenGeometry.MOVE_WIDTH + BattleScreenGeometry.FOCUS_PROTRUSION,
                 BattleScreenGeometry.MOVE_HEIGHT,
                 tile.getMoveTemplate(),
                 tile.getMove().getPp(),

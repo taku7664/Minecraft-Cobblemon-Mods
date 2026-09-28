@@ -17,12 +17,12 @@ import net.minecraft.text.Text
  * Dynamic, scalable Pokemon info popup with Cobblemon-style cell structure.
  *
  * Rendering layers (bottom to top):
- *   1. 9-slice texture frame (rounded border + gap-colored interior)
- *   2. Cell backgrounds (dark rectangles with borders, like Academy textures)
+ *   1. Borderless chamfered background
+ *   2. Borderless dark cell backgrounds
  *   3. Row dividers within cells
  *   4. Text content
  *
- * The gap color (visible between cells) comes from the texture interior.
+ * The gap color (visible between cells) comes from the background.
  * Cells are drawn programmatically so they adapt to dynamic content.
  */
 object PokemonInfoPopup {

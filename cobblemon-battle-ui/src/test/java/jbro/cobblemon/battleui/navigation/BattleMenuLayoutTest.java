@@ -7,6 +7,14 @@ import org.junit.jupiter.api.Test;
 
 class BattleMenuLayoutTest {
     @Test
+    void edgeControlsKeepTheirRightEdgeOnTheViewportWhileFocusExtendsLeft() {
+        List<UiRect> commands = BattleMenuLayout.vertical(427, 240, 90, 26, 4, 0, 10, 3);
+
+        assertEquals(427, commands.getFirst().x() + commands.getFirst().width());
+        assertEquals(332, commands.getFirst().x() - BattleScreenGeometry.FOCUS_PROTRUSION);
+    }
+
+    @Test
     void anchorsVerticalButtonsToBottomRightWithoutMovingTheirSpacing() {
         List<UiRect> buttons = BattleMenuLayout.vertical(320, 180, 88, 20, 4, 12, 10, 4);
 
