@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
+import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import java.util.Locale
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
@@ -674,6 +675,7 @@ internal object LocalTacticalScorer {
         )
         val sameTypeBonus = publicSameTypeBonus(candidate, context)
         val doomedDiscount = { ally: BattlePokemonStateView -> doomedAllyDiscount(ally, context, tuning) }
+        val spread = spreadDamageModifier(candidate, context)
         return targets.sumOf { target ->
             val multiplier = if (target.knownTypeIds.isEmpty()) {
                 1.0
@@ -685,13 +687,29 @@ internal object LocalTacticalScorer {
                     target,
                 )
             }
-            if (tuning.legacyRawPowerFallback) {
+            // Immunities (types, Levitate, Telepathy) are the kernel's call; the damage formula below does
+            // not know every partner-protecting mechanic.
+            if (multiplier == 0.0) return@sumOf 0.0
+            // The partner's stats are exact, so the real damage formula prices the hit, and a hit that can
+            // knock the partner out is charged as a lost Pokemon, not only as lost HP. Earthquake from a
+            // Guts Ursaluna left a full-HP Volcanion partner at 19%, fainted or at 8% in the engine, while
+            // the power-only estimate below charged it about 75 points.
+            val rolls = if (tuning.legacyRawPowerFallback) null else {
+                PublicBattleTacticalCalculator.partnerDamageRollFractions(candidate, context, target, spread)
+            }
+            if (!rolls.isNullOrEmpty()) {
+                val lost = rolls.map { minOf(it, target.hpFraction) }.average()
+                val knockoutChance = rolls.count { it >= target.hpFraction }.toDouble() / rolls.size
+                return@sumOf (lost * tuning.boardToScore + knockoutChance * tuning.knockoutMaterialScore) *
+                    (1.0 - doomedDiscount(target))
+            }
+            spread * if (tuning.legacyRawPowerFallback) {
                 effectivePower * sameTypeBonus * multiplier
             } else {
                 val hpFraction = effectivePower / tuning.unprojectedPowerPerHpBar * sameTypeBonus * multiplier
                 hpFraction.coerceIn(0.0, 1.5) * tuning.boardToScore * (1.0 - doomedDiscount(target))
             }
-        } * spreadDamageModifier(candidate, context)
+        }
     }
 
     /**

@@ -89,6 +89,38 @@ internal object PublicBattleTacticalCalculator {
         }
     }
 
+    /**
+     * Damage rolls of an own spread move against its own partner, as fractions of the partner's maximum HP
+     * and not capped at its remaining HP, so the caller can tell a knockout. Both Pokemon belong to the
+     * deciding trainer, so the stats are exact and the full damage formula applies (abilities such as Guts,
+     * the partner's types and a revealed absorbing ability included).
+     */
+    fun partnerDamageRollFractions(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        partner: BattlePokemonStateView,
+        spreadMultiplier: Double,
+    ): List<Double>? {
+        val resolvedCandidate = resolveDynamicMove(candidate, context, BattleSide.ALLY)
+        val details = resolvedCandidate.moveDetails ?: return null
+        val actor = resolvedCandidate.actorSlot?.let { slot -> active(context, BattleSide.ALLY, slot) } ?: return null
+        val projection = standardDamageProjection(
+            resolvedCandidate,
+            details,
+            actor,
+            partner,
+            sameTypeAttackBonus(details, actor, resolvedCandidate),
+            publicTypeMultiplier(resolvedCandidate.moveId, details, partner, context),
+            context.state,
+            spreadMultiplier,
+        ) ?: return null
+        val maxHp = partner.combatStats?.maxHp ?: return null
+        val hitCount = if (LocalDeclaredMultiHit.usesPerHitAccuracy(resolvedCandidate)) 1 else {
+            LocalDeclaredMultiHit.representativeCount(resolvedCandidate, actor, context.state)
+        }
+        return projection.maximumHypothesisRolls.map { damage -> damage.toDouble() / maxHp.minimum * hitCount }
+    }
+
     private fun declaredDamageRollFractions(
         candidate: BattleActionCandidate,
         actor: BattlePokemonStateView?,

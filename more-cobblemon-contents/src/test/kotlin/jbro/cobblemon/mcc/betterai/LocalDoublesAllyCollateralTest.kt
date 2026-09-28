@@ -73,12 +73,21 @@ class LocalDoublesAllyCollateralTest {
         )
     }
 
+    @Test
+    fun `knocking the partner out costs a lost pokemon, not only its health`() {
+        val grazed = quakeScore(context(allyTypes = setOf("normal")))
+        val knockedOut = quakeScore(context(allyTypes = setOf("normal"), allyHp = 0.05))
+        // At 5% the partner loses almost no health it still has, so only the knockout charge can make
+        // the difference this large.
+        assertTrue(grazed - knockedOut > 100.0, "grazed=$grazed knockedOut=$knockedOut")
+    }
+
     private fun quakeScore(context: BattleDecisionContext): Double = LocalDecisionInstrumentation.inspect(context)
         .candidates.single { it.actionId == "earthquake" }.comparisonValue
 
-    private fun context(allyTypes: Set<String>, allyAbility: String? = null): BattleDecisionContext {
+    private fun context(allyTypes: Set<String>, allyAbility: String? = null, allyHp: Double = 1.0): BattleDecisionContext {
         val actor = mon(BattleSide.ALLY, 0, setOf("ground"))
-        val partner = mon(BattleSide.ALLY, 1, allyTypes, allyAbility)
+        val partner = mon(BattleSide.ALLY, 1, allyTypes, allyAbility, allyHp)
         val opponents = listOf(mon(BattleSide.OPPONENT, 0, setOf("normal")), mon(BattleSide.OPPONENT, 1, setOf("normal")))
         return BattleDecisionContext(
             requestId = UUID.randomUUID(),
@@ -115,10 +124,10 @@ class LocalDoublesAllyCollateralTest {
         ),
     )
 
-    private fun mon(side: BattleSide, slot: Int, types: Set<String>, ability: String? = null) = BattlePokemonStateView(
+    private fun mon(side: BattleSide, slot: Int, types: Set<String>, ability: String? = null, hp: Double = 1.0) = BattlePokemonStateView(
         battlePokemonId = UUID.randomUUID(), side = side, activeSlot = slot,
         speciesId = "cobblemon:probe_${side.name.lowercase()}_$slot", formId = null, level = 50,
-        hpFraction = 1.0, statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(),
+        hpFraction = hp, statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(),
         knownAbilityId = ability, knownHeldItemId = null, fainted = false, knownTypeIds = types,
         combatStats = if (side == BattleSide.ALLY) {
             BattleCombatStatRangesView.exact(200, 140, 100, 100, 100, 100)
