@@ -53,6 +53,7 @@ import jbro.cobblemon.mcc.betterai.evaluation.LocalOpponentThreat
 import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
 import jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate
 import jbro.cobblemon.mcc.betterai.matchup.LocalStatusMoveTriage
+import jbro.cobblemon.mcc.betterai.matchup.LocalSwitchRules
 import jbro.cobblemon.mcc.betterai.policy.LocalLeadChoice
 import jbro.cobblemon.mcc.betterai.state.LocalOpponentMoveUsage
 import jbro.cobblemon.mcc.betterai.state.LocalStatusMoveBinder
@@ -185,14 +186,26 @@ internal class LocalTacticalBrain(
         val setupGatePasses = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
         // Candidates the matchup-score rules rule out, with the selector's exclusion reason. The search
         // spends nothing on them either.
+        val rulesApply = profile.difficulty.tier == BattleTrainerTier.ADVANCED || profile.difficulty.tier == BattleTrainerTier.BOSS
+        // Switches are on offer in almost every decision, so with the switching rules the table is built for most.
+        val switchJudgement by lazy {
+            val switching = difficultyContext.candidates.any { candidate ->
+                (if (candidate.kind == BattleActionKind.COMPOSITE) candidate.componentActions else listOf(candidate))
+                    .any { it.kind == BattleActionKind.SWITCH }
+            }
+            if (!rulesApply || !switching) LocalSwitchRules.Judgement.NONE
+            else ruleScores?.let { LocalSwitchRules.judge(difficultyContext.candidates, difficultyContext, it) }
+                ?: LocalSwitchRules.Judgement.NONE
+        }
         fun ruleExclusions(ranked: List<LocalBattleActionRank>): Map<String, String> {
-            if (profile.difficulty.tier != BattleTrainerTier.ADVANCED && profile.difficulty.tier != BattleTrainerTier.BOSS) return emptyMap()
+            if (!rulesApply) return emptyMap()
+            val switchExclusions = switchJudgement.exclusions.filterKeys { id -> ranked.any { it.outcome.candidate.actionId == id } }
             val judged = ranked.map { it.outcome.candidate }.filter {
                 LocalSetupGate.raisesOwnStats(it) || LocalStatusMoveTriage.judgeable(it, difficultyContext)
             }
-            if (judged.isEmpty()) return emptyMap()
-            val scores = ruleScores ?: return emptyMap()
-            return judged.mapNotNull { candidate ->
+            if (judged.isEmpty()) return switchExclusions
+            val scores = ruleScores ?: return switchExclusions
+            return switchExclusions + judged.mapNotNull { candidate ->
                 val gated = LocalSetupGate.raisesOwnStats(candidate) && !LocalSetupGate.passes(candidate) { part ->
                     val passes = setupGatePasses.getOrPut(part.actionId) {
                         LocalSetupGate.evaluate(part, difficultyContext, scores)?.passes ?: true
@@ -438,7 +451,13 @@ internal class LocalTacticalBrain(
             },
         )
         decisionTrace?.legacySearch(lookahead, profile.difficulty.lookaheadPlies, budget)
-        val rootDecision = LocalRootDecisionPolicy.refine(lookahead.ranked, difficultyContext)
+        // The switching rules' credits and debits, added to what the search made of each candidate.
+        val switchAdjusted = switchJudgement.adjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
+            LocalBattleActionPolicy.sort(lookahead.ranked.map { rank ->
+                adjustments[rank.outcome.candidate.actionId]?.let { rank.copy(comparisonValue = rank.comparisonValue + it) } ?: rank
+            })
+        } ?: lookahead.ranked
+        val rootDecision = LocalRootDecisionPolicy.refine(switchAdjusted, difficultyContext)
         val ranked = rootDecision.ranked
         val seed = LocalActionChoiceSeed.derive(
             battleId = battleId,

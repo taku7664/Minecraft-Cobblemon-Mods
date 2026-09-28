@@ -7,6 +7,7 @@ import jbro.cobblemon.mcc.betterai.matchup.AntiAceScore
 import jbro.cobblemon.mcc.betterai.matchup.AntiAceToolKind
 import jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate
 import jbro.cobblemon.mcc.betterai.matchup.LocalStatusMoveTriage
+import jbro.cobblemon.mcc.betterai.matchup.LocalSwitchRules
 import jbro.cobblemon.mcc.betterai.matchup.MatchupSpeedField
 import jbro.cobblemon.mcc.internal.ai.*
 import org.junit.jupiter.api.Assertions.*
@@ -272,6 +273,41 @@ class LocalMatchupScoreTest {
         assertEquals(0.0, scores.preserves.getValue(BENCH).score, 1e-9)
     }
 
+    @Test
+    fun `a switch-in that the predicted hit knocks out is ruled out`() {
+        // The faster ally knocks the foe out first; the foe knocks out anything that walks in.
+        val context = context(allySpeed = 150, foeSpeed = 100)
+        val judgement = LocalSwitchRules.judge(listOf(switchAction()), context, LocalMatchupScoreCalculator.calculate(context))
+        assertEquals(LocalSwitchRules.SWITCH_IN_DIES, judgement.exclusions["switch"])
+    }
+
+    @Test
+    fun `a switch that wins what staying loses is credited by the difference`() {
+        // Staying, the weak ally loses a race it moves first in; the bench's one-hit knockout wins it after the hit.
+        val context = context(allySpeed = 150, foeSpeed = 100, allyPower = 40.0, benchPower = 300.0, foePower = 65.0)
+        val scores = LocalMatchupScoreCalculator.calculate(context)
+        val judgement = LocalSwitchRules.judge(listOf(switchAction()), context, scores)
+        val gain = scores.switchIn(BENCH, FOE, ALLY)!!.score - scores.pokemon(ALLY, FOE)!!.score
+        assertTrue(gain >= LocalSwitchRules.SWITCH_MARGIN) { "gain $gain" }
+        assertEquals(gain * LocalSwitchRules.SCORE_SCALE, judgement.adjustments.getValue("switch"), 1e-6)
+        assertNull(judgement.exclusions["switch"])
+    }
+
+    @Test
+    fun `a worthless Pokemon may take the knockout meant for the only answer`() {
+        // Only the ally beats the benched foe; the active foe is about to knock it out. The bench beats nobody.
+        val context = context(allySpeed = 100, foeSpeed = 150, allyPower = 300.0, benchPower = 40.0, foePower = 300.0,
+            secondFoe = true)
+        val scores = LocalMatchupScoreCalculator.calculate(context)
+        assertEquals(listOf(FOE2), scores.preserves.getValue(ALLY).soleAnswerTo)
+        assertEquals(0.0, scores.preserves.getValue(BENCH).score, 1e-9)
+        val judgement = LocalSwitchRules.judge(listOf(switchAction()), context, scores)
+        assertNull(judgement.exclusions["switch"]) { "the sacrifice dies on entry by design" }
+        assertTrue(judgement.adjustments.getValue("switch") > 0.0)
+    }
+
+    private fun switchAction() = BattleActionCandidate("switch", BattleActionKind.SWITCH, actorSlot = 0, switchPokemonId = BENCH)
+
     private fun setupAction(context: BattleDecisionContext): BattleActionCandidate {
         val option = context.publicActionCatalog.forPokemon(ALLY).first { it.details.damageCategory == BattleMoveDamageCategory.STATUS }
         return BattleActionCandidate("setup", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 1, moveId = option.moveId, moveDetails = option.details)
@@ -290,17 +326,19 @@ class LocalMatchupScoreTest {
         allyItem: String? = null,
         benchPower: Double? = null,
         foeCategory: BattleMoveDamageCategory = BattleMoveDamageCategory.PHYSICAL,
+        /** A benched opponent, slow and three-hitting, that only a strong ally beats. */
+        secondFoe: Boolean = false,
         format: BattleFormat = BattleFormat.SINGLE,
     ): BattleDecisionContext {
         val field = if (!rocksOnAllySide) BattleFieldStateView.empty() else BattleFieldStateView(null, null, emptyList(), emptyList(),
             mapOf(BattleSide.ALLY to listOf(BattleTimedEffectView("stealthrock", null)), BattleSide.OPPONENT to emptyList()))
         val state = BattleStateView(UUID(0, 918), format, 1,
             listOf(pokemon(ALLY, BattleSide.ALLY, 0, allySpeed, allyItem), pokemon(BENCH, BattleSide.ALLY, null, allySpeed),
-                pokemon(FOE, BattleSide.OPPONENT, 0, foeSpeed)), field,
-            mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to 1), emptyList(), emptyList())
+                pokemon(FOE, BattleSide.OPPONENT, 0, foeSpeed)) + listOfNotNull(if (secondFoe) pokemon(FOE2, BattleSide.OPPONENT, null, 50) else null),
+            field, mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to if (secondFoe) 2 else 1), emptyList(), emptyList())
         return BattleDecisionContext(UUID(0, 919), state, listOf(BattleActionCandidate("wait", BattleActionKind.WAIT)), Long.MAX_VALUE,
             publicActionCatalog = BattlePublicActionCatalogView(state.pokemon.map { pokemon ->
-                val power = when (pokemon.battlePokemonId) { BENCH -> benchPower ?: allyPower; FOE -> foePower; else -> allyPower }
+                val power = when (pokemon.battlePokemonId) { BENCH -> benchPower ?: allyPower; FOE -> foePower; FOE2 -> 65.0; else -> allyPower }
                 val category = if (pokemon.side == BattleSide.ALLY) BattleMoveDamageCategory.PHYSICAL else foeCategory
                 val knowledge = if (pokemon.side == BattleSide.ALLY) BattlePublicMoveKnowledge.EXACT_OWN else BattlePublicMoveKnowledge.PUBLICLY_REVEALED
                 val attack = BattlePublicMoveOptionView("probe", BattleMoveCandidateView(typeId = "normal",
@@ -330,5 +368,6 @@ class LocalMatchupScoreTest {
         val ALLY = UUID(0, 1)
         val BENCH = UUID(0, 2)
         val FOE = UUID(0, 3)
+        val FOE2 = UUID(0, 4)
     }
 }
