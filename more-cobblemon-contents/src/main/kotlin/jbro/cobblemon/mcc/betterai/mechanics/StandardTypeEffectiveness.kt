@@ -20,6 +20,11 @@ internal object StandardTypeEffectiveness {
         defendingTypeIds: Set<String>,
         ignoreTypeImmunity: Boolean = false,
     ): Double {
+        // Flying Press adds the Flying chart to its Fighting one.
+        if (canonical(moveId) == FLYING_PRESS && canonical(attackingTypeId) == "fighting") {
+            return multiplier(attackingTypeId, defendingTypeIds, ignoreTypeImmunity) *
+                multiplier("flying", defendingTypeIds, ignoreTypeImmunity)
+        }
         if (canonical(moveId) != FREEZE_DRY || canonical(attackingTypeId) != "ice") {
             return multiplier(attackingTypeId, defendingTypeIds, ignoreTypeImmunity)
         }
@@ -66,6 +71,7 @@ internal object StandardTypeEffectiveness {
         ?.takeIf(String::isNotEmpty)
 
     private const val FREEZE_DRY = "freezedry"
+    private const val FLYING_PRESS = "flyingpress"
 
     /** Revealed abilities that nullify a whole attacking type. */
     private val ABSORBING_ABILITIES: Map<String, Set<String>> = mapOf(

@@ -36,6 +36,9 @@ internal object LocalPublicMoveDamageInputs {
             ?: ppDependentPower(id, actor, details.currentPp)
         val fixedPower = when (id) {
             "acrobatics" -> wholePower?.let { if (actor.knownHeldItemId == null) it * 2 else it }
+            // 1.5x only for a held item that is public and can be knocked off; an unknown item keeps the
+            // printed power as the lower bound.
+            "knockoff" -> wholePower?.let { if (knockOffBoosts(target)) it * 3 / 2 else it }
             "weatherball" -> wholePower?.let {
                 if (weatherBallWeather(actor, state) != null) it * 2 else it
             }
@@ -133,8 +136,21 @@ internal object LocalPublicMoveDamageInputs {
             } else {
                 details.typeId
             }
+            // Ogerpon's mask sets the type (`onModifyType`); the form is public.
+            "ivycudgel" -> ivyCudgelType(actor) ?: details.typeId
             else -> details.typeId
         }
+    }
+
+    private fun ivyCudgelType(actor: BattlePokemonStateView): String? {
+        val form = canonical(actor.speciesId + (actor.formId ?: ""))
+        return IVY_CUDGEL_FORMS.entries.firstOrNull { (key, _) -> key in form }?.value
+    }
+
+    /** Showdown boosts Knock Off when the target holds an item it can lose (not a mask, Mega Stone or the like). */
+    private fun knockOffBoosts(target: BattlePokemonStateView): Boolean {
+        val item = canonical(target.knownHeldItemId).takeIf { it.isNotEmpty() } ?: return false
+        return item !in UNREMOVABLE_ITEMS && !item.endsWith("mask") && !MEGA_STONE.matches(item)
     }
 
     /** True when the public model knows the template value is not the move's resolved damage input. */
@@ -345,7 +361,14 @@ internal object LocalPublicMoveDamageInputs {
         "infernalparade", "brine", "venoshock",
         "barbbarrage", "smellingsalts", "wakeupslap", "round", "fishiousrend", "boltbeak",
         "assurance", "payback", "avalanche", "revenge", "electroball", "gyroball",
+        "knockoff", "ivycudgel",
     )
+    private val IVY_CUDGEL_FORMS = mapOf("wellspring" to "water", "hearthflame" to "fire", "cornerstone" to "rock")
+    /** Items whose `onTakeItem` refuses removal for their usual holder, so Knock Off gets no boost. */
+    private val UNREMOVABLE_ITEMS = setOf(
+        "blueorb", "redorb", "griseouscore", "adamantcrystal", "lustrousglobe", "rustedsword", "rustedshield",
+    )
+    private val MEGA_STONE = Regex("(?!eviolite).+ite[xyz]?")
 
     private val SPEED_RATIO_MOVES = setOf("electroball", "gyroball")
     private val HP_DEPENDENT_MOVES = setOf(

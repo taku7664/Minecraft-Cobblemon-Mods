@@ -203,10 +203,15 @@ object BattleDeclarativeMoveEffects {
         )
     }
 
+    /**
+     * True when a callback writes the field (`move.type = ...`, `move.basePower *= 2`). Reading it is not
+     * enough: Sucker Punch and Thunderclap only compare `move.category`, and Freeze-Dry and Flying Press only
+     * name a callback parameter `type`, yet their damage is the printed one.
+     */
     private fun callbackAssigns(properties: Map<String, String>, field: String): Boolean =
         properties.asSequence()
             .filter { (key, _) -> key.startsWith("on") || key.endsWith("Callback") }
-            .any { (_, value) -> Regex("""\b(?:move\.)?$field\b""").containsMatchIn(value) }
+            .any { (_, value) -> Regex("""\b(?:move\.)?$field\s*[-+*/]?=(?!=)""").containsMatchIn(value) }
 
     private fun canonicalStat(raw: String?): String? = when (stringValue(raw)) {
         "atk", "attack" -> "attack"
