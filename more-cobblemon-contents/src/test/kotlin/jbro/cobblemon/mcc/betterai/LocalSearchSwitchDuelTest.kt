@@ -14,7 +14,8 @@ import org.junit.jupiter.api.Test
 /**
  * One search switch against its alternative, in Boss battles, each pairing played from both sides.
  *
- * Opt-in: -Psweeps -PsweepOnly=<name>, a name from [DUELS] (several with commas). A pairing is minutes of
+ * Opt-in: -Psweeps -PsweepOnly=<name>, a name from [DUELS] (several with commas); the system properties
+ * aiengine.duelPairs and aiengine.duelSeed change how many team pairs are played and which. A pairing is minutes of
  * Boss decisions and a small edge needs many of them, so only the asked-for duels run.
  *
  * Both sides search without the shipped node and time limits, so a duel measures the idea, not how much of
@@ -24,7 +25,13 @@ import org.junit.jupiter.api.Test
  * more is a win, anything closer a draw.
  */
 class LocalSearchSwitchDuelTest {
-    private class Duel(val challenger: LocalDecisionTuning, val defender: LocalDecisionTuning, val format: BattleFormat)
+    private class Duel(
+        val challenger: LocalDecisionTuning,
+        val defender: LocalDecisionTuning,
+        val format: BattleFormat,
+        /** The challenger's own difficulty, when the duel is about the difficulty rather than the tuning. */
+        val challengerDifficulty: BattleDifficultyProfile? = null,
+    )
 
     @Test
     fun `search switches are measured against their alternatives`() {
@@ -44,11 +51,14 @@ class LocalSearchSwitchDuelTest {
         // Status moves and voluntary switches per side: [challenger, defender].
         val statusMoves = IntArray(2)
         val switches = IntArray(2)
-        for (definition in LocalSelfPlayMeasurement.definitions(PAIRS, SEED, duel.format)) {
-            val asCycle = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.challenger, duel.defender, difficulty, difficulty,
-                lookaheadBudget = UNLIMITED)
-            val asOffense = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.defender, duel.challenger, difficulty, difficulty,
-                lookaheadBudget = UNLIMITED)
+        val pairs = System.getProperty("aiengine.duelPairs")?.toIntOrNull() ?: PAIRS
+        val seed = System.getProperty("aiengine.duelSeed")?.toIntOrNull() ?: SEED
+        for (definition in LocalSelfPlayMeasurement.definitions(pairs, seed, duel.format)) {
+            val challengerDifficulty = duel.challengerDifficulty ?: difficulty
+            val asCycle = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.challenger, duel.defender,
+                challengerDifficulty, difficulty, lookaheadBudget = UNLIMITED)
+            val asOffense = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.defender, duel.challenger,
+                difficulty, challengerDifficulty, lookaheadBudget = UNLIMITED)
             // The challenger's HP lead at the end of each game.
             val leads = listOf(asCycle.cycleRemainingHp - asCycle.offenseRemainingHp,
                 asOffense.offenseRemainingHp - asOffense.cycleRemainingHp)
@@ -100,6 +110,7 @@ class LocalSearchSwitchDuelTest {
             "stages-strong-singles" to Duel(CURRENT.copy(id = "persistent-stages-strong", leafPersistentStageValue = 0.20), CURRENT, BattleFormat.SINGLE),
             "stages" to Duel(CURRENT.copy(id = "persistent-stages", leafPersistentStageValue = 0.10), CURRENT, BattleFormat.DOUBLE),
             "coverage-singles" to Duel(CURRENT.copy(id = "team-coverage", leafTeamCoverageWeight = 0.3), CURRENT, BattleFormat.SINGLE),
+            "depth3-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 3)),
             "simultaneous" to Duel(CURRENT.copy(id = "simultaneous", simultaneousResponseWeight = 1.0), CURRENT, BattleFormat.DOUBLE),
             "simultaneous-half" to Duel(CURRENT.copy(id = "simultaneous-half", simultaneousResponseWeight = 0.5), CURRENT, BattleFormat.DOUBLE),
         )
