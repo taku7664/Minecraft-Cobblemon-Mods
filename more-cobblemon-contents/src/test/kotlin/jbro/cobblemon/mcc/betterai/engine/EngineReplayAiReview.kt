@@ -68,6 +68,8 @@ internal object EngineReplayAiReview {
         val strongest: Map<Int, String> = emptyMap(),
         /** Per own active slot, the real choice as an action key. */
         val realKeys: Map<Int, String> = emptyMap(),
+        /** CPU time the whole JVM spent on the decision: unlike [millis], other processes do not count. */
+        val cpuMillis: Long = 0,
     )
 
     class Result(val rows: List<Row>, val publicLog: List<String>, val stoppedAt: String?)
@@ -171,9 +173,12 @@ internal object EngineReplayAiReview {
             context = built
             captured.remove(side)
             deciding[side] = Thread.currentThread()
+            val cpu = java.lang.management.ManagementFactory.getOperatingSystemMXBean() as com.sun.management.OperatingSystemMXBean
+            val cpuStarted = cpu.processCpuTime
             val started = System.nanoTime()
             val decision = brain.decide(session, built).toCompletableFuture().get(60, TimeUnit.SECONDS)
             val millis = (System.nanoTime() - started) / 1_000_000
+            val cpuMillis = (cpu.processCpuTime - cpuStarted) / 1_000_000
             val selected = built.candidates.single { it.actionId == decision.actionId }
             memory.accept(built.state, selected, decision.advice)
             val finalRanked = captured[side]?.first.orEmpty()
@@ -206,7 +211,7 @@ internal object EngineReplayAiReview {
                             .flatMap { view.scores.moves(user.battlePokemonId, it.battlePokemonId) }
                             .maxByOrNull { it.score }?.let { requireNotNull(user.activeSlot) to "move:${it.moveId}" }
                     }.toMap(),
-                realKeys = actionKeys(input, realChoice))
+                realKeys = actionKeys(input, realChoice), cpuMillis = cpuMillis)
         } catch (failure: Throwable) {
             Row(step, turn, side, forced, context?.state?.let(::board) ?: "", realChoice, null, null, emptyList(), emptySet(), 0,
                 null, failure.toString().lines().first().take(300))

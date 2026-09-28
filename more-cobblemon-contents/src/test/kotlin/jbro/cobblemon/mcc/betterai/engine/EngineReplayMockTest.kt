@@ -480,7 +480,7 @@ class EngineReplayMockTest {
                     if (row.failure != null) {
                         appendLine("- **AI 예외**: ${row.failure}")
                     } else {
-                        appendLine("- AI: ${row.ai}${if (row.ai == row.real) " (같음)" else ""}  `${row.aiRaw}` ${row.millis}ms")
+                        appendLine("- AI: ${row.ai}${if (row.ai == row.real) " (같음)" else ""}  `${row.aiRaw}` ${row.millis}ms, CPU ${row.cpuMillis}ms")
                         appendLine("- 태그: ${row.tags.joinToString(", ")}")
                         row.openingAccepted?.let { appendLine("- 네이티브 오프닝 조건 충족: $it") }
                         appendLine("- 후보 순위: " + row.ranked.take(8).joinToString(" / "))
