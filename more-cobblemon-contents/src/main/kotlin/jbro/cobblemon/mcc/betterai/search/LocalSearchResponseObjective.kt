@@ -78,11 +78,16 @@ internal object LocalSearchResponseObjective {
      * [probabilities] (one per response, summing to 1). The rest keeps the worst-case share [base] has,
      * so a wrong prediction still meets the cautious reading.
      */
-    fun withIntent(base: LocalResponseValue, values: List<LocalOpponentResponseValue>, probabilities: List<Double>): LocalResponseValue {
+    fun withIntent(
+        base: LocalResponseValue,
+        values: List<LocalOpponentResponseValue>,
+        probabilities: List<Double>,
+        weight: Double = INTENT_WEIGHT,
+    ): LocalResponseValue {
         require(values.size == probabilities.size)
-        if (values.isEmpty()) return base
+        if (values.isEmpty() || weight <= 0.0) return base
         fun expected(of: (LocalResponseValue) -> Double) = values.indices.sumOf { of(values[it].value) * probabilities[it] }
-        fun blend(baseValue: Double, predicted: Double) = baseValue * (1.0 - INTENT_WEIGHT) + predicted * INTENT_WEIGHT
+        fun blend(baseValue: Double, predicted: Double) = baseValue * (1.0 - weight) + predicted * weight
         return LocalResponseValue(
             value = blend(base.value, expected(LocalResponseValue::value)),
             ownExecutionProbability = blend(base.ownExecutionProbability, expected(LocalResponseValue::ownExecutionProbability)),

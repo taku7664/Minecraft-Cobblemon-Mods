@@ -18,6 +18,7 @@ import jbro.cobblemon.mcc.betterai.policy.LocalBattleMind
 import jbro.cobblemon.mcc.betterai.search.LocalResponseValue as TurnValue
 import jbro.cobblemon.mcc.betterai.search.LocalOpponentResponseValue as OpponentTurnValue
 import jbro.cobblemon.mcc.betterai.matchup.OpponentIntent
+import jbro.cobblemon.mcc.betterai.calculation.PublicMoveOutcomeBranchProjector
 import jbro.cobblemon.mcc.betterai.state.LocalRecursiveSwitchTempo
 import jbro.cobblemon.mcc.betterai.state.PublicTurnProjection
 import jbro.cobblemon.mcc.betterai.state.RecursiveActionHistory
@@ -102,6 +103,28 @@ internal object LocalRecursiveLookaheadEvaluator {
          * turns are other positions the prediction was not made for.
          */
         opponentIntents: List<OpponentIntent> = emptyList(),
+    ): LocalLookaheadEvaluation {
+        // The search's own projections branch on the tuning's chance model; the root ranking keeps its own.
+        return PublicMoveOutcomeBranchProjector.withChanceModel(tuning.chanceModel) {
+            evaluateUnderChanceModel(ranked, context, profile, tuning, clockMillis, strategy, budget, rootChoicePool,
+                decisionSignature, moveUsageForFormat, opponentThreatWeights, excludedActionIds, opponentIntents)
+        }
+    }
+
+    private fun evaluateUnderChanceModel(
+        ranked: List<LocalBattleActionRank>,
+        context: BattleDecisionContext,
+        profile: BattleTrainerProfile,
+        tuning: LocalDecisionTuning,
+        clockMillis: () -> Long,
+        strategy: BattleStrategyBrief?,
+        budget: LocalLookaheadBudget,
+        rootChoicePool: ((List<LocalBattleActionRank>) -> Set<String>)?,
+        decisionSignature: ((List<LocalBattleActionRank>) -> LocalLookaheadDecisionSignature)?,
+        moveUsageForFormat: (BattleFormat) -> LocalMoveUsageLookup?,
+        opponentThreatWeights: Map<UUID, Double>,
+        excludedActionIds: Set<String>,
+        opponentIntents: List<OpponentIntent>,
     ): LocalLookaheadEvaluation {
         val requestedDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1)
         val moveUsage = moveUsageForFormat(context.state.format)
@@ -386,7 +409,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             if (search.truncated) {
                 truncated = true
                 terminationReason = search.terminationReason ?: LocalLookaheadTerminationReason.TIME_BUDGET
-                if (depth > 1 && finishedIds.isNotEmpty()) {
+                if (tuning.keepFinishedCandidates && depth > 1 && finishedIds.isNotEmpty()) {
                     accepted = LocalBattleActionPolicy.sort(evaluated)
                     acceptedCoverage = acceptedCoverage + evaluatedCoverage.filterKeys { it in finishedIds }
                     partialDepthCandidates = finishedIds.size
@@ -427,7 +450,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 currentCost = currentDepthCost,
                 previousSignature = previousDecisionSignature,
                 currentSignature = currentDecisionSignature,
-                rootPairs = search.rootPairsProjected,
+                rootPairs = if (tuning.skipHopelessDepth) search.rootPairsProjected else null,
                 nodeLimit = budget.nodeLimit,
             )
             previousDepthCost = currentDepthCost
@@ -578,7 +601,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             val calibratedResponses = calibrateExpectedResponses(responseValues)
             return aggregateOpponentResponses(calibratedResponses, state, ownAction)?.let { robust ->
                 val aggregate = LocalOpponentIntentWeights.probabilities(calibratedResponses.map { it.action }, opponentIntents, state)
-                    ?.let { LocalSearchResponseObjective.withIntent(robust, calibratedResponses, it) } ?: robust
+                    ?.let { LocalSearchResponseObjective.withIntent(robust, calibratedResponses, it, tuning.intentResponseWeight) } ?: robust
                 // A risky action may still remain the best-ranked fallback, but it must not enter the
                 // exploratory pool merely because some other public response lets it execute.
                 val executionProbability = calibratedResponses.minOfOrNull { it.value.ownExecutionProbability }
@@ -839,8 +862,12 @@ internal object LocalRecursiveLookaheadEvaluator {
                             LocalBranchMoveInputs.state(outcome.state, context.publicActionCatalog, nextHistory),
                             nextHistory,
                         )
-                        turnStartValue + (immediateTurnDelta + FUTURE_DELTA_DISCOUNT * (continuationValue - nextStart)) /
-                            (1.0 + FUTURE_DELTA_DISCOUNT)
+                        if (tuning.perTurnSearchValues) {
+                            turnStartValue + (immediateTurnDelta + FUTURE_DELTA_DISCOUNT * (continuationValue - nextStart)) /
+                                (1.0 + FUTURE_DELTA_DISCOUNT)
+                        } else {
+                            immediateValue + FUTURE_DELTA_DISCOUNT * (continuationValue - immediateValue)
+                        }
                     }
                     val uncertaintyReserve = if (opponentAction.isUnknownPublicResponse()) {
                         UNKNOWN_RESPONSE_RESERVE

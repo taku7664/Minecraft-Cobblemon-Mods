@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.betterai.calculation
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDeclaredMultiHit
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
@@ -20,7 +21,31 @@ internal data class PublicDamageRollSummary(
     val knockoutProbability: Double,
 )
 
+/** How a hit's damage roll and critical hit become branches. */
+internal enum class LocalChanceModel {
+    /** The sixteen rolls split into knockout and survival, one representative roll each; no random critical hits. */
+    ROLL_CLASSES,
+    /**
+     * The median roll only. A critical hit ([CRITICAL_HIT_CHANCE], 1.5x) is a branch only where it knocks
+     * out and the median roll does not; otherwise it changes nothing worth a branch.
+     */
+    MEDIAN_ROLL,
+}
+
 internal object PublicMoveOutcomeBranchProjector {
+    private val chanceModel = ThreadLocal.withInitial { LocalChanceModel.ROLL_CLASSES }
+
+    /** Runs [block] with [model] for the branches this thread projects. */
+    fun <T> withChanceModel(model: LocalChanceModel, block: () -> T): T {
+        val previous = chanceModel.get()
+        chanceModel.set(model)
+        try {
+            return block()
+        } finally {
+            chanceModel.set(previous)
+        }
+    }
+
     fun project(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
@@ -44,10 +69,12 @@ internal object PublicMoveOutcomeBranchProjector {
                 it.side == defaultTargetSide && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
             }?.hpFraction
         }
+        val criticalHits = candidate.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS &&
+            candidate.moveDetails?.effects?.effects.orEmpty().none { it.kind == BattleMoveEffectKind.ALWAYS_CRITICAL }
         if (LocalDeclaredMultiHit.usesPerHitAccuracy(candidate)) {
-            return perHitAccuracyBranches(candidate, accuracy, rolls, targetHp)
+            return perHitAccuracyBranches(candidate, accuracy, rolls, targetHp, criticalHits)
         }
-        val hitBranches = damageBranches(rolls, targetHp, accuracy)
+        val hitBranches = damageBranches(rolls, targetHp, accuracy, criticalHits)
         val miss = if (accuracy < 1.0) {
             listOf(PublicMoveOutcomeBranch(1.0 - accuracy, hit = false, damageFraction = 0.0))
         } else {
@@ -61,14 +88,15 @@ internal object PublicMoveOutcomeBranchProjector {
         accuracy: Double,
         damageRolls: List<Double>,
         targetHp: Double?,
+        criticalHits: Boolean,
     ): List<PublicMoveOutcomeBranch> {
         val maximum = LocalDeclaredMultiHit.maximumCount(candidate)
         val branches = mutableListOf(PublicMoveOutcomeBranch(1.0 - accuracy, false, 0.0))
         for (hits in 1 until maximum) {
             val probability = accuracy.pow(hits) * (1.0 - accuracy)
-            branches += damageBranches(damageRolls.map { it * hits }, targetHp, probability)
+            branches += damageBranches(damageRolls.map { it * hits }, targetHp, probability, criticalHits)
         }
-        branches += damageBranches(damageRolls.map { it * maximum }, targetHp, accuracy.pow(maximum))
+        branches += damageBranches(damageRolls.map { it * maximum }, targetHp, accuracy.pow(maximum), criticalHits)
         return branches.filter { it.probability > 0.0 }
     }
 
@@ -82,8 +110,20 @@ internal object PublicMoveOutcomeBranchProjector {
         rolls: List<Double>,
         targetHp: Double?,
         probability: Double,
+        criticalHits: Boolean,
     ): List<PublicMoveOutcomeBranch> {
         if (rolls.isEmpty()) return listOf(PublicMoveOutcomeBranch(probability, true, 0.0))
+        if (chanceModel.get() == LocalChanceModel.MEDIAN_ROLL) {
+            val median = rolls.sorted()[(rolls.size - 1) / 2]
+            val critical = median * CRITICAL_HIT_MULTIPLIER
+            val criticalKnocksOut = criticalHits && targetHp != null && median + DAMAGE_EPSILON < targetHp &&
+                critical + DAMAGE_EPSILON >= targetHp
+            if (!criticalKnocksOut) return listOf(PublicMoveOutcomeBranch(probability, true, median))
+            return listOf(
+                PublicMoveOutcomeBranch(probability * (1.0 - CRITICAL_HIT_CHANCE), true, median),
+                PublicMoveOutcomeBranch(probability * CRITICAL_HIT_CHANCE, true, critical),
+            )
+        }
         return rolls.groupBy { targetHp != null && it >= targetHp }.values.map { group ->
             PublicMoveOutcomeBranch(
                 probability * group.size / rolls.size,
@@ -122,4 +162,8 @@ internal object PublicMoveOutcomeBranchProjector {
     }
 
     private const val DAMAGE_EPSILON = 1e-9
+
+    /** Stage-zero critical hit chance since Generation 7. */
+    const val CRITICAL_HIT_CHANCE = 1.0 / 24.0
+    private const val CRITICAL_HIT_MULTIPLIER = 1.5
 }

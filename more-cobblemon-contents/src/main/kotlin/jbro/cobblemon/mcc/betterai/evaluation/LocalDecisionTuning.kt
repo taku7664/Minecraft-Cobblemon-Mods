@@ -89,7 +89,20 @@ internal data class LocalDecisionTuning(
      * A doubles second turn too wide to finish is searched narrowed instead of skipped: see
      * [jbro.cobblemon.mcc.betterai.search.LocalNarrowSecondTurn]. False skips it.
      */
-    val narrowSecondTurn: Boolean = true,
+    val narrowSecondTurn: Boolean = false,
+    // The search's large design choices, each a switch so any combination can be played against another.
+    // Off restores the earlier behaviour.
+    /** A deeper turn's value is the discounted average of the turns' own changes; off, the last board reached. */
+    val perTurnSearchValues: Boolean = true,
+    /** A depth the budget cuts short keeps the candidates it finished; off, the whole depth is discarded. */
+    val keepFinishedCandidates: Boolean = true,
+    /** A next depth whose node count cannot fit the budget is not started. */
+    val skipHopelessDepth: Boolean = true,
+    /** Share of the root response value taken from the opponent-intent prediction; 0 ignores the prediction. */
+    val intentResponseWeight: Double = 0.3,
+    /** How the search's projected hits branch on damage rolls and critical hits. */
+    val chanceModel: jbro.cobblemon.mcc.betterai.calculation.LocalChanceModel =
+        jbro.cobblemon.mcc.betterai.calculation.LocalChanceModel.MEDIAN_ROLL,
     /** Experimental public team matchup coverage in board units; zero preserves the default leaf. */
     val leafTeamCoverageWeight: Double = 0.0,
     /** Board value of a certain knockout threat in the leaf, beyond the damage it represents. */
