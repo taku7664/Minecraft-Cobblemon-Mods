@@ -176,6 +176,8 @@ internal object LocalStatStageMarginalEvaluator {
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
         shouldContinue: () -> Boolean = { true },
     ): LocalStatStageMarginalValue {
+        // Most projected turns change no stage; they need neither the copied board nor the pressure reads.
+        if (!stagesChanged(beforeTurn, afterTurn)) return LocalStatStageMarginalValue(0.0, 0.0, true)
         val beforeById = beforeTurn.pokemon.associateBy(BattlePokemonStateView::battlePokemonId)
         val postTurnWithoutStageChanges = afterTurn.copyState(
             pokemon = afterTurn.pokemon.map { pokemon ->
@@ -371,6 +373,21 @@ internal object LocalStatStageMarginalEvaluator {
                 pokemonChanges.associate { change -> change.stat to change.delta },
             )
         }
+
+    /** Whether any Pokemon's stages differ, without building the change list; views share an unchanged map. */
+    private fun stagesChanged(before: BattleStateView, after: BattleStateView): Boolean {
+        if (before.pokemon.size == after.pokemon.size) {
+            var aligned = true
+            for (index in before.pokemon.indices) {
+                val old = before.pokemon[index]
+                val new = after.pokemon[index]
+                if (old.battlePokemonId != new.battlePokemonId) { aligned = false; break }
+                if (old.statStages !== new.statStages && old.statStages != new.statStages) return true
+            }
+            if (aligned) return false
+        }
+        return stageChanges(before, after).isNotEmpty()
+    }
 
     private fun stageChanges(before: BattleStateView, after: BattleStateView): List<StageChange> {
         val beforeById = before.pokemon.associateBy(BattlePokemonStateView::battlePokemonId)
