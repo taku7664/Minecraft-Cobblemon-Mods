@@ -51,6 +51,9 @@ internal data class LocalTacticalScenarioTurn(
     val cycleActual: String,
     val offenseActual: String,
     val result: String,
+    /** The top of each side's ranking, with comparison values, for reading a battle back. */
+    val cycleTop: String = "",
+    val offenseTop: String = "",
 )
 
 internal data class LocalTacticalScenarioReport(
@@ -184,8 +187,10 @@ internal object LocalTacticalScenarioBattle {
                 val offenseCandidates = candidates(BattleSide.OPPONENT)
                 val cycleActual = choose(BattleSide.ALLY, cycleCandidates)
                 val cycleIdeal = selectors.getValue(BattleSide.ALLY).ideal()
+                val cycleTop = topLabel(selectors.getValue(BattleSide.ALLY).lastRanked)
                 val offenseActual = choose(BattleSide.OPPONENT, offenseCandidates)
                 val offenseIdeal = selectors.getValue(BattleSide.OPPONENT).ideal()
+                val offenseTop = topLabel(selectors.getValue(BattleSide.OPPONENT).lastRanked)
                 val cycleCanonical = toCanonical(cycleActual, BattleSide.ALLY)
                 val offenseCanonical = toCanonical(offenseActual, BattleSide.OPPONENT)
                 val before = state
@@ -235,6 +240,8 @@ internal object LocalTacticalScenarioBattle {
                     cycleActual = actionLabel(cycleActual),
                     offenseActual = actionLabel(offenseActual),
                     result = resultSummary(before, state, cycleCanonical, offenseCanonical, outcome),
+                    cycleTop = cycleTop,
+                    offenseTop = offenseTop,
                 )
                 if (ended()) break
             }
@@ -332,13 +339,14 @@ internal object LocalTacticalScenarioBattle {
         ): BattleActionCandidate {
             val brain = actualBrains.getValue(side)
             val session = actualSessions.getValue(side)
+            val view = perspective(side)
             val context = BattleDecisionContext(
                 requestId = UUID(random.nextLong(), random.nextLong()),
-                state = perspective(side),
+                state = view,
                 candidates = candidates,
                 deadlineEpochMillis = Long.MAX_VALUE,
                 memory = memories.getValue(side).view(state.turn),
-                publicActionCatalog = decisionCatalog(side),
+                publicActionCatalog = inferredCatalog(side, view, decisionCatalog(side)),
             )
             recordedContexts?.add(context)
             val started = if (recordedDecisions != null) System.nanoTime() else 0L
@@ -449,6 +457,28 @@ internal object LocalTacticalScenarioBattle {
                 },
                 actionConstraints = pokemon.actionConstraints,
             )
+        }
+
+        private val inferenceMoveDetails by lazy {
+            templates.values.flatMap { it.moves }.associate { PublicIds.canonical(it.id) to LocalTacticalSimulationMoveLibrary.details(it) }
+        }
+        private val inferenceLedgers = BattleSide.entries.associateWith {
+            BattleOpponentMoveInferenceLedger { moveId -> inferenceMoveDetails[PublicIds.canonical(moveId)] }
+        }
+
+        /**
+         * The catalog with the opponent move slots a trainer of this tier is given, as the live battle actor
+         * gives the local Brain: without them a Boss saw only the moves already used against it.
+         */
+        private fun inferredCatalog(
+            viewer: BattleSide,
+            view: BattleStateView,
+            catalog: BattlePublicActionCatalogView,
+        ): BattlePublicActionCatalogView {
+            val actual = state.pokemon.filter { it.side != viewer }
+                .associate { pokemon -> pokemon.battlePokemonId to templates.getValue(pokemon.battlePokemonId).moves.mapTo(linkedSetOf()) { it.id } }
+            return catalog.withOpponentMoveInferences(
+                inferenceLedgers.getValue(viewer).update(view, catalog, difficulties.getValue(viewer).tier, actual))
         }
 
         private fun decisionCatalog(viewer: BattleSide): BattlePublicActionCatalogView =
@@ -644,6 +674,10 @@ internal object LocalTacticalScenarioBattle {
             return parts.ifEmpty { listOf("상태 변화 없음") }.joinToString("; ")
         }
 
+        private fun topLabel(ranked: List<LocalBattleActionRank>): String = ranked.take(TOP_LABELS).joinToString(" | ") {
+            "${actionLabel(it.outcome.candidate)} %.1f(look %.1f)".format(it.comparisonValue, it.lookaheadUtility)
+        }
+
         private fun actionLabel(action: BattleActionCandidate): String = when (action.kind) {
             BattleActionKind.COMPOSITE -> action.componentActions.joinToString("+") { actionLabel(it) }
             BattleActionKind.USE_MOVE -> moveLabel(action.moveId)
@@ -735,8 +769,12 @@ internal object LocalTacticalScenarioBattle {
             context: LocalActionMixingContext,
         ): LocalActionSelection {
             lastIdeal = ranked.first()
+            lastRanked = ranked
             return delegate.choose(ranked, seed, context)
         }
+
+        var lastRanked: List<LocalBattleActionRank> = emptyList()
+            private set
 
         fun ideal(): BattleActionCandidate = requireNotNull(lastIdeal).outcome.candidate
     }
@@ -820,6 +858,7 @@ internal object LocalTacticalScenarioBattle {
     )
 
     private const val LEVEL = 50
+    private const val TOP_LABELS = 4
     private const val UNKNOWN_SPECIES = "cobblemon:unknown"
     private const val EPSILON = 1e-9
 }
