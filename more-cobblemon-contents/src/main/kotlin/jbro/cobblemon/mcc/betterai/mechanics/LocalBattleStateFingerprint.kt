@@ -24,16 +24,25 @@ import kotlin.math.roundToInt
  */
 internal class LocalBattleStateFingerprint {
     private val byIdentity = IdentityHashMap<BattleStateView, String>()
+    private val actionInputsByIdentity = IdentityHashMap<BattleStateView, String>()
 
     fun of(state: BattleStateView): String = byIdentity.getOrPut(state) { build(state) }
 
-    private fun build(state: BattleStateView): String = buildString {
+    /**
+     * [of] with each active Pokemon's HP reduced to what a side's action list reads from it: standing or
+     * not, full (Gale Wings), below half (how early a recovery move is listed). Positions a damage roll
+     * apart share an action list, and the list is exactly the same for them.
+     */
+    fun ofActionInputs(state: BattleStateView): String = actionInputsByIdentity.getOrPut(state) { build(state, activeHpBands = true) }
+
+    private fun build(state: BattleStateView, activeHpBands: Boolean = false): String = buildString {
         append(state.turn).append('|')
         state.pokemon.sortedBy { it.battlePokemonId }.forEach { pokemon ->
             append(pokemon.battlePokemonId).append(':')
             append(pokemon.side.ordinal).append(':')
             append(pokemon.activeSlot ?: -1).append(':')
-            append((pokemon.hpFraction * 10_000).roundToInt()).append(':')
+            if (activeHpBands && pokemon.activeSlot != null) append(hpBand(pokemon.hpFraction)).append(':')
+            else append((pokemon.hpFraction * 10_000).roundToInt()).append(':')
             append(pokemon.statusId ?: "-").append(':')
             append(pokemon.formId ?: "-").append(':')
             append(pokemon.knownTypeIds.sorted().joinToString(",")).append(':')
@@ -62,6 +71,13 @@ internal class LocalBattleStateFingerprint {
         appendTimedEffect("terrain", state.field.terrain)
         state.field.roomEffects.sortedBy { it.effectId }.forEach { appendTimedEffect("room", it) }
         state.field.globalEffects.sortedBy { it.effectId }.forEach { appendTimedEffect("global", it) }
+    }
+
+    private fun hpBand(hp: Double): Char = when {
+        hp <= 0.0 -> '0'
+        hp >= 1.0 -> 'F'
+        hp < 0.5 -> 'L'
+        else -> 'H'
     }
 
     private fun StringBuilder.appendTimedEffect(scope: String, effect: BattleTimedEffectView?) {

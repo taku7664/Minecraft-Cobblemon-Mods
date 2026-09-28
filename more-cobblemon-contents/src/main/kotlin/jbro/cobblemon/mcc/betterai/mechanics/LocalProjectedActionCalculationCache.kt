@@ -40,6 +40,34 @@ internal class LocalProjectedActionCalculationCache(
 
     private val byStateIdentity = java.util.IdentityHashMap<BattleStateView, MutableSet<ActionKey>>()
     private val catalogKeys = java.util.IdentityHashMap<BattlePublicActionCatalogView, CatalogKey>()
+    private val slotActionsByInputs = HashMap<SlotActionsKey, List<BattleActionCandidate>>()
+
+    var slotActionListsBuilt: Int = 0
+        private set
+
+    /**
+     * A side's single-slot actions, shared by every position with the same action inputs
+     * ([LocalBattleStateFingerprint.ofActionInputs]): the lists a leaf evaluation builds for positions
+     * a damage roll apart are identical, and building them was a quarter of a Boss search.
+     */
+    fun slotActions(
+        state: BattleStateView,
+        side: BattleSide,
+        catalog: BattlePublicActionCatalogView,
+        includeMoveHypotheses: Boolean,
+        build: () -> List<BattleActionCandidate>,
+    ): List<BattleActionCandidate> = slotActionsByInputs.getOrPut(
+        SlotActionsKey(fingerprints.ofActionInputs(state), side, catalogKey(catalog), includeMoveHypotheses),
+    ) {
+        slotActionListsBuilt++
+        build()
+    }
+
+    private fun catalogKey(source: BattlePublicActionCatalogView): CatalogKey = catalogKeys.getOrPut(source) {
+        fun entries(values: List<jbro.cobblemon.mcc.internal.ai.BattlePokemonActionCatalogView>) =
+            values.map { CatalogEntryKey(it.battlePokemonId, it.moves, it.moveSetComplete) }
+        CatalogKey(entries(source.entries), entries(source.originalEntries))
+    }
 
     fun getOrCalculate(
         state: BattleStateView,
@@ -60,11 +88,7 @@ internal class LocalProjectedActionCalculationCache(
             mechanicId = action.mechanic?.mechanicId,
             moveDetails = action.moveDetails,
             tags = action.tags,
-            catalog = catalog?.let { source -> catalogKeys.getOrPut(source) {
-                fun entries(values: List<jbro.cobblemon.mcc.internal.ai.BattlePokemonActionCatalogView>) =
-                    values.map { CatalogEntryKey(it.battlePokemonId, it.moves, it.moveSetComplete) }
-                CatalogKey(entries(source.entries), entries(source.originalEntries))
-            } },
+            catalog = catalog?.let(::catalogKey),
         )
         if (byStateIdentity.getOrPut(state) { HashSet() }.add(key)) calculationsUnderIdentityKeying++
         val stateEntries = byState.getOrPut(fingerprints.of(state)) { HashMap() }
@@ -87,6 +111,12 @@ internal class LocalProjectedActionCalculationCache(
         val moveDetails: BattleMoveCandidateView?,
         val tags: Set<String>,
         val catalog: CatalogKey?,
+    )
+    private data class SlotActionsKey(
+        val state: String,
+        val side: BattleSide,
+        val catalog: CatalogKey,
+        val includeMoveHypotheses: Boolean,
     )
     private data class CatalogEntryKey(val id: UUID, val moves: List<BattlePublicMoveOptionView>, val complete: Boolean)
     private data class CatalogKey(val current: List<CatalogEntryKey>, val original: List<CatalogEntryKey>)

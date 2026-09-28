@@ -204,8 +204,10 @@ internal object LocalMatchupScoreCalculator {
         val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId && it.activeSlot != null } ?: return emptyList()
         val side = user.side
         // The opponent's unrevealed slots count at the strength this tier believes in; the AI's own moves are exact.
-        return PublicFutureActionFactory.slotActions(state, side, position.publicActionCatalog,
-            includeMoveHypotheses = side == BattleSide.OPPONENT)
+        val hypotheses = side == BattleSide.OPPONENT
+        return cache.slotActions(state, side, position.publicActionCatalog, hypotheses) {
+            PublicFutureActionFactory.slotActions(state, side, position.publicActionCatalog, includeMoveHypotheses = hypotheses)
+        }
             .asSequence()
             .filter { it.kind == BattleActionKind.USE_MOVE && it.actorSlot == user.activeSlot }
             .filter { it.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS }
