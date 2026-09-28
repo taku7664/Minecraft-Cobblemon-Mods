@@ -113,6 +113,8 @@ internal data class LocalDecisionTuning(
     val simultaneousResponseWeight: Double = 0.0,
     /** The opponent intents lean toward what the opponent did before in the same matchup (LocalOpponentRepeats). */
     val readOpponentRepeats: Boolean = false,
+    /** A root candidate the search did not reach takes the searched candidates' median adjustment instead of none. */
+    val unsearchedTakeMedianAdjustment: Boolean = false,
     /** How the search's projected hits branch on damage rolls and critical hits. */
     val chanceModel: jbro.cobblemon.mcc.betterai.calculation.LocalChanceModel =
         jbro.cobblemon.mcc.betterai.calculation.LocalChanceModel.HIGH_ROLL,

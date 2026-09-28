@@ -111,6 +111,7 @@ class LocalSearchSwitchDuelTest {
             "simultaneous-half-singles" to Duel(CURRENT.copy(id = "simultaneous-half", simultaneousResponseWeight = 0.5), CURRENT, BattleFormat.SINGLE),
             "repeats-singles" to Duel(CURRENT.copy(id = "opponent-repeats", readOpponentRepeats = true), CURRENT, BattleFormat.SINGLE),
             "repeats" to Duel(CURRENT.copy(id = "opponent-repeats", readOpponentRepeats = true), CURRENT, BattleFormat.DOUBLE),
+            "median" to Duel(CURRENT.copy(id = "unsearched-median", unsearchedTakeMedianAdjustment = true), CURRENT, BattleFormat.DOUBLE),
             "stages-singles" to Duel(CURRENT.copy(id = "persistent-stages", leafPersistentStageValue = 0.10), CURRENT, BattleFormat.SINGLE),
             "stages-strong-singles" to Duel(CURRENT.copy(id = "persistent-stages-strong", leafPersistentStageValue = 0.20), CURRENT, BattleFormat.SINGLE),
             "stages" to Duel(CURRENT.copy(id = "persistent-stages", leafPersistentStageValue = 0.10), CURRENT, BattleFormat.DOUBLE),
