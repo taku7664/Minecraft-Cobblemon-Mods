@@ -176,8 +176,13 @@ internal object LocalRecursiveLookaheadEvaluator {
         var acceptedCoverage = emptyMap<String, LocalLookaheadCoverage>()
         var previousDepthCost: LocalCompletedDepthCost? = null
         var previousDecisionSignature: LocalLookaheadDecisionSignature? = null
+        // Doubles searches its second turn narrowed; see LocalNarrowSecondTurn.
+        var narrowing = false
+        // The first turn's value of each root (own action, response) pair, for the narrowed second turn.
+        val firstTurnValues = HashMap<Pair<String, String>, TurnValue>()
         for (depth in 1..requestedDepth) {
             val depthStartedAt = clockMillis()
+            val narrowed = narrowing
             val search = Search(
                 context = context,
                 profile = profile,
@@ -192,13 +197,20 @@ internal object LocalRecursiveLookaheadEvaluator {
                 moveUsage = moveUsage,
                 opponentThreatWeights = opponentThreatWeights,
                 opponentIntents = opponentIntents,
+                narrow = narrowed,
+                firstTurnValues = firstTurnValues,
             )
             // Which candidates this ply is allowed to spend the budget on.
             //
             // Recomputed per depth from the ranking as it now stands, so a candidate the previous ply
             // promoted is searched at the next one. Singles never trims - it does not have enough
             // candidates to reach the limit - so this changes nothing outside doubles.
-            val searchable = searchableActionIds(ranked.filterNot { it.outcome.candidate.actionId in excludedActionIds }, tuning, context)
+            val searchable = if (narrowed) {
+                accepted.filterNot { it.outcome.candidate.actionId in excludedActionIds }
+                    .take(LocalNarrowSecondTurn.ROOT_CANDIDATES).mapTo(linkedSetOf()) { it.outcome.candidate.actionId }
+            } else {
+                searchableActionIds(ranked.filterNot { it.outcome.candidate.actionId in excludedActionIds }, tuning, context)
+            }
             val evaluatedCoverage = mutableMapOf<String, LocalLookaheadCoverage>()
             fun evaluateRank(rank: LocalBattleActionRank): LocalBattleActionRank {
                 val id = rank.outcome.candidate.actionId
@@ -314,11 +326,26 @@ internal object LocalRecursiveLookaheadEvaluator {
                     )
                 }
             }
-            val evaluated = ranked.map { rank ->
-                val id = rank.outcome.candidate.actionId
-                if (id in excludedActionIds || searchable != null && id !in searchable) rank else evaluateRank(rank)
-            }.toMutableList()
-            var leaderValidated = !tuning.revalidateUnsearchedRootLeaders && rootChoicePool == null
+            val evaluated = if (narrowed) {
+                // The leaders again from the pre-search ranking; everything else as the first turn left it.
+                val deep = ranked.filter { it.outcome.candidate.actionId in searchable.orEmpty() }.map(::evaluateRank)
+                val foresight = deep.mapNotNull { rank ->
+                    accepted.firstOrNull { it.outcome.candidate.actionId == rank.outcome.candidate.actionId }
+                        ?.let { rank.comparisonValue - it.comparisonValue }
+                }.averageOrNull() ?: 0.0
+                val byId = deep.associateBy { it.outcome.candidate.actionId }
+                accepted.map { rank ->
+                    byId[rank.outcome.candidate.actionId]?.let {
+                        it.copy(comparisonValue = it.comparisonValue - foresight, lookaheadUtility = it.lookaheadUtility - foresight)
+                    } ?: rank
+                }.toMutableList()
+            } else {
+                ranked.map { rank ->
+                    val id = rank.outcome.candidate.actionId
+                    if (id in excludedActionIds || searchable != null && id !in searchable) rank else evaluateRank(rank)
+                }.toMutableList()
+            }
+            var leaderValidated = narrowed || !tuning.revalidateUnsearchedRootLeaders && rootChoicePool == null
             if (!leaderValidated) {
                 // Keep every original candidate and cooperation reservation. Validate an unsearched
                 // leader or choice-pool member, then reconsider the pool; never add its adjustment twice.
@@ -362,7 +389,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 break
             }
             accepted = LocalBattleActionPolicy.sort(evaluated)
-            acceptedCoverage = evaluatedCoverage.toMap()
+            acceptedCoverage = if (narrowed) acceptedCoverage + evaluatedCoverage else evaluatedCoverage.toMap()
             completedDepth = depth
             val depthFinishedAt = clockMillis()
             acceptedDepthMillis = elapsedMillis(searchStartedAt, depthFinishedAt)
@@ -372,6 +399,12 @@ internal object LocalRecursiveLookaheadEvaluator {
                 nodesVisited = search.nodesVisited,
             )
             val currentDecisionSignature = decisionSignature?.invoke(accepted)
+            if (depth == 1 && requestedDepth > 1 && tuning.narrowSecondTurn && context.state.format == BattleFormat.DOUBLE) {
+                narrowing = true
+                previousDepthCost = currentDepthCost
+                previousDecisionSignature = currentDecisionSignature
+                continue
+            }
             val admission = LocalDepthAdmissionPolicy.afterCompletedDepth(
                 completedDepth = completedDepth,
                 requestedDepth = requestedDepth,
@@ -444,6 +477,10 @@ internal object LocalRecursiveLookaheadEvaluator {
         private val moveUsage: LocalMoveUsageLookup?,
         private val opponentThreatWeights: Map<UUID, Double> = emptyMap(),
         private val opponentIntents: List<OpponentIntent> = emptyList(),
+        /** Search the second turn narrowed; see [LocalNarrowSecondTurn]. */
+        private val narrow: Boolean = false,
+        /** Filled by the first turn and read by the narrowed second one. */
+        private val firstTurnValues: MutableMap<Pair<String, String>, TurnValue> = HashMap(),
     ) {
         var nodesVisited: Int = 0
             private set
@@ -488,9 +525,18 @@ internal object LocalRecursiveLookaheadEvaluator {
             }
             val turnStartValue = stateUtility(state, initialHistory)
             val responseValues = mutableListOf<OpponentTurnValue>()
-            for (opponentAction in opponentActions) {
+            val deepResponses = if (narrow && depth > 1) deepResponses(opponentActions, state) else null
+            val shallowValues = mutableMapOf<Int, TurnValue>()
+            for ((index, opponentAction) in opponentActions.withIndex()) {
                 if (budgetExhausted()) break
                 rootPairsProjected++
+                val pair = ownAction.actionId to opponentAction.actionId
+                if (deepResponses != null) {
+                    // Every response gets its one-turn value: the shallow ones use it, the deep ones measure the shift.
+                    (firstTurnValues[pair] ?: turnValue(state, ownAction, opponentAction, 1, initialHistory, rootTurn = true,
+                        turnStartValue = turnStartValue))?.let { shallowValues[index] = it }
+                    if (index !in deepResponses) continue
+                }
                 turnValue(
                     state,
                     ownAction,
@@ -499,7 +545,18 @@ internal object LocalRecursiveLookaheadEvaluator {
                     initialHistory,
                     rootTurn = true,
                     turnStartValue = turnStartValue,
-                )?.let { value -> responseValues += OpponentTurnValue(opponentAction, value) }
+                )?.let { value ->
+                    if (depth == 1) firstTurnValues[pair] = value
+                    responseValues += OpponentTurnValue(opponentAction, value)
+                }
+            }
+            if (deepResponses != null) {
+                val shift = responseValues.mapNotNull { response ->
+                    shallowValues[opponentActions.indexOf(response.action)]?.let { response.value.value - it.value }
+                }.averageOrNull() ?: 0.0
+                opponentActions.withIndex().filter { it.index !in deepResponses }.forEach { (index, action) ->
+                    shallowValues[index]?.let { responseValues += OpponentTurnValue(action, it.copy(value = it.value + shift)) }
+                }
             }
             val calibratedResponses = calibrateExpectedResponses(responseValues)
             return aggregateOpponentResponses(calibratedResponses, state, ownAction)?.let { robust ->
@@ -526,6 +583,17 @@ internal object LocalRecursiveLookaheadEvaluator {
             }
         }
 
+        /** The indices of [responses] searched deeper when narrowed: the most likely ones. */
+        private fun deepResponses(responses: List<BattleActionCandidate>, state: BattleStateView): Set<Int> {
+            val chances = LocalOpponentIntentWeights.probabilities(responses, opponentIntents, state)
+            val order = if (chances == null) responses.indices.toList() else responses.indices.sortedByDescending { chances[it] }
+            return order.take(LocalNarrowSecondTurn.DEEP_RESPONSES).toSet()
+        }
+
+        private val innerLimitPerSlot: Int
+            get() = if (narrow) minOf(LocalNarrowSecondTurn.INNER_PER_SLOT, profile.difficulty.doubleCandidateLimitPerSlot)
+                else profile.difficulty.doubleCandidateLimitPerSlot
+
         private fun searchState(projectedState: BattleStateView, depth: Int, history: RecursiveActionHistory): Double {
             val state = LocalBranchMoveInputs.state(projectedState, context.publicActionCatalog, history)
             if (depth <= 0 || battleEnded(state) || budgetExhausted()) return stateUtility(state, history)
@@ -537,14 +605,14 @@ internal object LocalRecursiveLookaheadEvaluator {
                 BattleSide.ALLY,
                 context.publicActionCatalog,
                 history,
-                profile.difficulty.doubleCandidateLimitPerSlot,
+                innerLimitPerSlot,
             )
             // Advanced still considers switching now. Only its second simulated turn omits
             // voluntary own switches; forced replacements are resolved above this branch.
             val ownActions = if (profile.difficulty.tier == BattleTrainerTier.ADVANCED) {
                 futureOwnActions.filterNot { it.containsActionKind(BattleActionKind.SWITCH) }
             } else futureOwnActions
-            val opponentActions = completeOpponentActions(state, history) ?: return stateUtility(state, history)
+            val opponentActions = completeOpponentActions(state, history, innerLimitPerSlot) ?: return stateUtility(state, history)
             if (ownActions.isEmpty() || opponentActions.isEmpty()) {
                 if (opponentActions.isEmpty() && !battleEnded(state)) publicResponseIncomplete = true
                 return stateUtility(state, history)
@@ -912,6 +980,7 @@ internal object LocalRecursiveLookaheadEvaluator {
         private fun completeOpponentActions(
             state: BattleStateView,
             history: RecursiveActionHistory,
+            limitPerSlot: Int = profile.difficulty.doubleCandidateLimitPerSlot,
         ): List<BattleActionCandidate>? {
             val currentCatalog = context.publicActionCatalog.afterSwitch(history.restoredOriginalPokemonIds)
             val activeOpponents = state.pokemon.filter {
@@ -925,7 +994,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 BattleSide.OPPONENT,
                 context.publicActionCatalog,
                 history,
-                profile.difficulty.doubleCandidateLimitPerSlot,
+                limitPerSlot,
                 incompleteIds,
                 includeMoveHypotheses = tuning.lookaheadMoveHypotheses,
                 hypotheticalMoveLimitPerSlot = tuning.hypotheticalMoveLimitPerSlot,

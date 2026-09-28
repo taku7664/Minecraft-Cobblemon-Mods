@@ -85,6 +85,11 @@ internal data class LocalDecisionTuning(
     val revalidateUnsearchedRootLeaders: Boolean = false,
     /** Experimental production pre-weight pool validation; requires paired cost/quality assessment. */
     val revalidateRootChoicePool: Boolean = false,
+    /**
+     * A doubles second turn too wide to finish is searched narrowed instead of skipped: see
+     * [jbro.cobblemon.mcc.betterai.search.LocalNarrowSecondTurn]. False skips it.
+     */
+    val narrowSecondTurn: Boolean = true,
     /** Experimental public team matchup coverage in board units; zero preserves the default leaf. */
     val leafTeamCoverageWeight: Double = 0.0,
     /** Board value of a certain knockout threat in the leaf, beyond the damage it represents. */
