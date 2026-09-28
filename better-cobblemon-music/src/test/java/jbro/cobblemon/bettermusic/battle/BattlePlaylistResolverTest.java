@@ -49,9 +49,9 @@ final class BattlePlaylistResolverTest {
     @Test
     void configuredContentWinsAfterAnExplicitPokemonRule() {
         var resolver = new BattlePlaylistResolver(config());
-        var contentId = Optional.of("cobblemon_more_battle_content:battle_tower");
+        var contentId = Optional.of("more_cobblemon_contents:battle_tower");
 
-        assertEquals("battle.content:cobblemon_more_battle_content:battle_tower", resolver.select(
+        assertEquals("battle.content:more_cobblemon_contents:battle_tower", resolver.select(
             new BattleMusicContext(
                 BattleMusicConfig.BattleType.TRAINER,
                 Set.of(),
@@ -126,7 +126,7 @@ final class BattlePlaylistResolverTest {
     private static BattleMusicConfig config() {
         return new BattleMusicConfig(
             playlist("wild"), playlist("trainer"), playlist("pvp"),
-            java.util.Map.of("cobblemon_more_battle_content:battle_tower", playlist("tower")),
+            java.util.Map.of("more_cobblemon_contents:battle_tower", playlist("tower")),
             Optional.of(playlist("legendary")), Optional.of(playlist("ultra")),
             List.of(new BattleMusicConfig.PokemonRule(
                 Set.of("cobblemon:groudon"),

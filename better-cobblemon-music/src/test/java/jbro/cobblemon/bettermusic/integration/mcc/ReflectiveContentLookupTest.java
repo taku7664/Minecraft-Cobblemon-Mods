@@ -1,4 +1,4 @@
-package jbro.cobblemon.bettermusic.integration.mbc;
+package jbro.cobblemon.bettermusic.integration.mcc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -7,18 +7,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-final class ReflectiveMbcContentLookupTest {
+final class ReflectiveContentLookupTest {
     @Test
-    void readsContentIdsFromTheMbcClientSingletonWithoutALinkTimeDependency() throws Exception {
-        var lookup = ReflectiveMbcContentLookup.load(
+    void readsContentIdsFromTheMccClientSingletonWithoutALinkTimeDependency() throws Exception {
+        var lookup = ReflectiveContentLookup.load(
             getClass().getClassLoader(),
             FakeManagedBattleContentClient.class.getName()
         );
         UUID battleId = UUID.randomUUID();
-        FakeManagedBattleContentClient.INSTANCE.contentId = "cobblemon_more_battle_content:battle_factory";
+        FakeManagedBattleContentClient.INSTANCE.contentId = "more_cobblemon_contents:battle_factory";
 
         assertEquals(
-            "cobblemon_more_battle_content:battle_factory",
+            "more_cobblemon_contents:battle_factory",
             lookup.contentId(battleId).orElseThrow()
         );
         assertEquals(battleId, FakeManagedBattleContentClient.INSTANCE.lastBattleId);
@@ -26,7 +26,7 @@ final class ReflectiveMbcContentLookupTest {
 
     @Test
     void treatsNullAndBlankContentIdsAsAbsent() throws Exception {
-        var lookup = ReflectiveMbcContentLookup.load(
+        var lookup = ReflectiveContentLookup.load(
             getClass().getClassLoader(),
             FakeManagedBattleContentClient.class.getName()
         );
@@ -38,10 +38,10 @@ final class ReflectiveMbcContentLookupTest {
     }
 
     @Test
-    void missingMbcApiFailsDuringOptionalAdapterRegistration() {
+    void missingMccApiFailsDuringOptionalAdapterRegistration() {
         assertThrows(
             ReflectiveOperationException.class,
-            () -> ReflectiveMbcContentLookup.load(getClass().getClassLoader(), "missing.mbc.ClientApi")
+            () -> ReflectiveContentLookup.load(getClass().getClassLoader(), "missing.mcc.ClientApi")
         );
     }
 

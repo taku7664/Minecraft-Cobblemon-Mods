@@ -53,7 +53,7 @@ JAR은 상황 판정과 재생을 담당합니다. ZIP은 OGG, `sounds.json`, �
   "schemaVersion": 1,
   "battle": {
     "content": {
-      "cobblemon_more_battle_content:battle_tower": "cobleserver:track/battle/pvp/swsh_gym_leader_battle"
+      "more_cobblemon_contents:battle_tower": "cobleserver:track/battle/pvp/swsh_gym_leader_battle"
     }
   }
 }
@@ -97,13 +97,13 @@ user-music-extension.zip
 
 확장 카탈로그는 기본 매핑을 자동으로 바꾸지 않습니다. 팩을 활성화한 뒤 Mod Menu나 `overrides.json`에서 새 플레이리스트를 상황에 연결합니다.
 
-## More Battle Content 연동
+## More Cobblemon Contents 연동
 
-More Battle Content가 설치돼 있으면 다음 콘텐츠 ID를 자동으로 인식합니다.
+More Cobblemon Contents가 설치돼 있으면 다음 콘텐츠 ID를 자동으로 인식합니다.
 
-- `cobblemon_more_battle_content:battle_tower`
-- `cobblemon_more_battle_content:battle_factory`
-- `cobblemon_more_battle_content:pvp`
+- `more_cobblemon_contents:battle_tower`
+- `more_cobblemon_contents:battle_factory`
+- `more_cobblemon_contents:pvp`
 
 연동 모드가 없거나 콘텐츠 ID를 얻지 못하면 일반 전투 매핑으로 돌아갑니다.
 

@@ -209,7 +209,7 @@ final class MusicConfigParserTest {
                 "trainer": ["battle/trainer_1.ogg", "battle/trainer_2.ogg"],
                 "pvp": ["battle/pvp_1.ogg", "battle/pvp_2.ogg"],
                 "content": {
-                  "cobblemon_more_battle_content:battle_tower": [
+                  "more_cobblemon_contents:battle_tower": [
                     "battle/tower_1.ogg",
                     "battle/tower_2.ogg"
                   ]
@@ -235,7 +235,7 @@ final class MusicConfigParserTest {
         assertEquals(0.9, config.battle().wild().volume());
         assertEquals(
             java.util.List.of("battle/tower_1.ogg", "battle/tower_2.ogg"),
-            config.battle().content().get("cobblemon_more_battle_content:battle_tower").tracks()
+            config.battle().content().get("more_cobblemon_contents:battle_tower").tracks()
         );
         assertEquals(
             java.util.Set.of("cobblemon:uxie", "cobblemon:mesprit", "cobblemon:azelf"),

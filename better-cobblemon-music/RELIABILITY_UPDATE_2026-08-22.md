@@ -6,7 +6,7 @@
 |---|---|
 | Status | `shared` |
 | Effective | 2026-08-22 |
-| Updates | `BETTER_COBBLEMON_MUSIC_ARCHITECTURE_AND_MIGRATION_DECISION.md` §13, `BETTER_COBBLEMON_MUSIC_MBC_INTEGRATION_DECISION.md` §1·§4 |
+| Updates | `BETTER_COBBLEMON_MUSIC_ARCHITECTURE_AND_MIGRATION_DECISION.md` §13, `BETTER_COBBLEMON_MUSIC_MCC_INTEGRATION_DECISION.md` §1·§4 |
 | 대상 | 외부 설정 재로드, 생성 리소스팩, 음원 검증, 검사 주기, 선택형 콘텐츠 제공자 |
 | 주 독자 | 빡대리님과 이후 구현·검증 담당자 |
 
@@ -47,9 +47,9 @@
 
 ## 5. 애드온 버전 계약 정정
 
-Obsoletes: `BETTER_COBBLEMON_MUSIC_MBC_INTEGRATION_DECISION.md` §1의 “같은 제품 버전” 요구
+Obsoletes: `BETTER_COBBLEMON_MUSIC_MCC_INTEGRATION_DECISION.md` §1의 “같은 제품 버전” 요구
 
-- 음악 본체와 MBC는 독립 제품 버전을 유지해야 **MUST** 한다.
+- 음악 본체와 MCC는 독립 제품 버전을 유지해야 **MUST** 한다.
 - 연동 애드온은 실제 공개 API 호환 범위를 `fabric.mod.json`에 선언해야 **MUST** 하며, 단순히 세 모듈 버전 문자열이 같다는 이유로 호환을 판정해서는 안 된다 **MUST NOT**.
 - 같은 제품 버전 요구는 2026-08-22부로 종료하며 후속 구현에서 다시 도입해서는 안 된다 **MUST NOT**.
 
