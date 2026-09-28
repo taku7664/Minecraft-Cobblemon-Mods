@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.policy
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.SplittableRandom
 import java.util.UUID
@@ -123,7 +124,7 @@ internal object LocalLeadChoice {
     private fun log2(value: Double): Double = ln(value) / ln(2.0)
 
     private fun canonical(value: String): String =
-        value.substringAfter(':').lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+        PublicIds.canonical(value)
 
     private const val STAB = 1.5
     private const val REFERENCE_POWER = 80.0

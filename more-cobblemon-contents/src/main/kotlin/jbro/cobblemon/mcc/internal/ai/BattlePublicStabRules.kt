@@ -40,7 +40,7 @@ object BattlePublicStabRules {
     }
 
     private fun canonical(value: String): String =
-        value.substringAfter(':').lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+        PublicIds.canonical(value)
 
     private const val STELLAR = "stellar"
     private const val NO_STAB = 1.0

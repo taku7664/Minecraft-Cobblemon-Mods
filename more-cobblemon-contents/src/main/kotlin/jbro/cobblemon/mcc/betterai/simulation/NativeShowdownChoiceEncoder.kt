@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
@@ -127,7 +128,5 @@ internal object NativeShowdownChoiceEncoder {
         BattleSide.OPPONENT -> frame.p2Team
     }
 
-    private fun nativeId(value: String): String = value.substringAfter(':')
-        .lowercase(Locale.ROOT)
-        .filter(Char::isLetterOrDigit)
+    private fun nativeId(value: String): String = PublicIds.canonical(value)
 }

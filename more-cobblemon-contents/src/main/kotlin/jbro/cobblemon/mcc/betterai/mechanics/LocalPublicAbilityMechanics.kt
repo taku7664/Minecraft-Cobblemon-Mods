@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
@@ -27,10 +28,7 @@ internal object LocalPublicAbilityMechanics {
             }
     }
 
-    private fun canonical(value: String?): String = value
-        ?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String = value?.let(PublicIds::canonical)
         .orEmpty()
 
     private const val ABILITY_SHIELD = "abilityshield"

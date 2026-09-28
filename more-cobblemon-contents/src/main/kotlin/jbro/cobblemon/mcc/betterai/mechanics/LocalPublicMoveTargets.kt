@@ -49,7 +49,7 @@ internal object LocalPublicMoveTargets {
             possible.isNotEmpty() && possible.all { REDIRECTING_ABILITIES[it] == type }
     }
 
-    private fun canonical(value: String?): String? = value?.substringAfter(':')?.lowercase()?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
     private val SPREAD_PATTERNS = setOf(BattleMoveTargetPattern.ALL_OPPONENTS,
         BattleMoveTargetPattern.ALL_ADJACENT, BattleMoveTargetPattern.ALL_ACTIVE)

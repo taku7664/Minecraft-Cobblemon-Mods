@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.PriorityQueue
 import java.util.UUID
@@ -332,9 +333,7 @@ internal class NativeInitialProductWorldPlanner(
             BattleTrainerTier.BOSS -> 16
         } * selectionSize
 
-        fun canonical(value: String): String = value.substringAfter(':')
-            .lowercase(Locale.ROOT)
-            .filter(Char::isLetterOrDigit)
+        fun canonical(value: String): String = PublicIds.canonical(value)
 
     }
 }

@@ -93,10 +93,7 @@ internal object LocalPublicAccuracy {
         canonical(it.key) in aliases
     }?.value?.coerceIn(-6, 6) ?: 0
 
-    private fun canonical(value: String?): String = value
-        ?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String = value?.let(PublicIds::canonical)
         .orEmpty()
 
     private const val NO_GUARD = "noguard"

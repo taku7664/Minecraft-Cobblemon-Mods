@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleCombatStatKnowledge
@@ -128,9 +129,7 @@ internal object NativeBattleStateAdapter {
         BattleSide.OPPONENT -> frame.p2Team
     }
 
-    private fun nativeId(value: String): String = value.substringAfter(':')
-        .lowercase(Locale.ROOT)
-        .filter(Char::isLetterOrDigit)
+    private fun nativeId(value: String): String = PublicIds.canonical(value)
 
     private val ROOM_EFFECTS = setOf("trickroom", "wonderroom", "magicroom")
 }

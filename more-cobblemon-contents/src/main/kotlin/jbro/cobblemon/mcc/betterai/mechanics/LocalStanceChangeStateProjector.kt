@@ -61,8 +61,5 @@ internal object LocalStanceChangeStateProjector {
         )
     }
 
-    private fun canonical(value: String?): String = value.orEmpty()
-        .substringAfter(':')
-        .lowercase()
-        .filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String = PublicIds.canonical(value.orEmpty())
 }

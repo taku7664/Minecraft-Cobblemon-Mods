@@ -154,9 +154,7 @@ internal object RecursiveSnapshotActionConstraints {
 
     private fun sameMove(first: String, second: String): Boolean = canonicalId(first) == canonicalId(second)
 
-    private fun canonicalId(value: String): String = value.substringAfter(':')
-        .lowercase()
-        .filter(Char::isLetterOrDigit)
+    private fun canonicalId(value: String): String = PublicIds.canonical(value)
 
     fun clearFromProjectedState(state: BattleStateView): BattleStateView {
         if (state.pokemon.none { it.actionConstraints != BattlePokemonActionConstraintView.empty() }) return state
@@ -330,9 +328,7 @@ internal object RecursiveHistoryProjector {
 
     private fun sameMove(first: String, second: String): Boolean = canonicalId(first) == canonicalId(second)
 
-    private fun canonicalId(value: String): String = value.substringAfter(':')
-        .lowercase()
-        .filter(Char::isLetterOrDigit)
+    private fun canonicalId(value: String): String = PublicIds.canonical(value)
 
     private const val STANDARD_CONTROL_TURNS = 3
     private const val FUTURE_CONTROL_TURNS_AFTER_EARLY_HIT = 2

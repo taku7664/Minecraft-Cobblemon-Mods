@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 
@@ -18,7 +19,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
  */
 internal object NativeMechanicAllowance {
     fun canonical(mechanicId: String): String = when (
-        val id = mechanicId.substringAfter(':').lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+        val id = PublicIds.canonical(mechanicId)
     ) {
         "mega", "megaevolution" -> "mega"
         "dynamax", "dmax" -> "dynamax"

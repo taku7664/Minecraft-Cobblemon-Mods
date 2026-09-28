@@ -399,7 +399,7 @@ internal object BattleOpponentMoveInferenceNormalizer {
 
     private fun sameMove(left: String?, right: String): Boolean = left != null && canonical(left) == canonical(right)
     private fun canonical(value: String): String =
-        value.substringAfter(':').lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+        PublicIds.canonical(value)
 
     private const val MAX_MOVE_SLOTS = 4
 }
@@ -463,7 +463,7 @@ class BattleOpponentMoveInferenceLedger(
             )
 
             private fun canonicalIdentityPart(value: String): String =
-                value.substringAfter(':').lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+                PublicIds.canonical(value)
         }
     }
 }

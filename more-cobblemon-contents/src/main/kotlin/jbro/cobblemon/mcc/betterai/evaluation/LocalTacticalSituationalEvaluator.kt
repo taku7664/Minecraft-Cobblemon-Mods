@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
@@ -615,7 +616,7 @@ internal object LocalTacticalSituationalEvaluator {
         sameEffect(active.effectId, effectId)
 
     private fun canonicalEffectId(effectId: String): String =
-        effectId.substringAfter(':').lowercase().filter { it.isLetterOrDigit() }
+        PublicIds.canonical(effectId)
 
     private const val GUARANTEED_KNOCKOUT_BONUS = 50.0
     private const val POSSIBLE_KNOCKOUT_BONUS = 35.0

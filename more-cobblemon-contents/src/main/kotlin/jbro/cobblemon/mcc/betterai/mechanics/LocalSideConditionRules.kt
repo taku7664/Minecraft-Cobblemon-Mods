@@ -1,9 +1,10 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 /** Public, generation-stable side-condition rules shared by scoring and projection. */
 internal object LocalSideConditionRules {
     fun canonical(effectId: String): String =
-        effectId.substringAfter(':').lowercase().filter(Char::isLetterOrDigit)
+        PublicIds.canonical(effectId)
 
     fun maximumStacks(effectId: String, declaredMaximum: Int? = null): Int? {
         val knownMaximum = HAZARD_MAXIMUM_STACKS[canonical(effectId)]

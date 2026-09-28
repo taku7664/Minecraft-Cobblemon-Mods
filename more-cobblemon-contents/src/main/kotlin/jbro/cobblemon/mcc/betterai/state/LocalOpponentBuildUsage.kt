@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.state
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.io.InputStreamReader
@@ -200,9 +201,7 @@ internal class LocalOpponentBuildUsageTable private constructor(
         private fun <K, V> immutableMap(source: Map<K, V>): Map<K, V> =
             Collections.unmodifiableMap(LinkedHashMap(source))
 
-        private fun canonical(value: String): String = value.substringAfter(':')
-            .lowercase(Locale.ROOT)
-            .filter(Char::isLetterOrDigit)
+        private fun canonical(value: String): String = PublicIds.canonical(value)
 
         private const val NO_ITEM_ID = "nothing"
         private const val DISTRIBUTION_TOLERANCE = 0.00000002

@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
@@ -190,9 +191,7 @@ internal object NativeObservedTurnActionMatcher {
         else -> nativeId(value)
     }
 
-    private fun nativeId(value: String): String = value.substringAfter(':')
-        .lowercase(Locale.ROOT)
-        .filter(Char::isLetterOrDigit)
+    private fun nativeId(value: String): String = PublicIds.canonical(value)
 
     private fun failure(code: NativeObservedTurnActionIssueCode, sequence: Long? = null) =
         NativeObservedTurnActionMatch(emptyList(), listOf(NativeObservedTurnActionIssue(code, sequence)))

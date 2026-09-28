@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
@@ -13,8 +14,8 @@ internal object LocalPublicAbilityState {
     fun isActive(state: BattleStateView, pokemon: BattlePokemonStateView, abilityId: String): Boolean {
         val ability = canonical(abilityId) ?: return false
         if (ability in CANNOT_SUPPRESS) return true
-        val volatiles = pokemon.knownVolatileEffectIds.mapTo(hashSetOf()) { canonical(it).orEmpty() }
-        if (GASTRO_ACID in volatiles) return false
+        // Called at every search node for every ability check, so no sets are built here.
+        if (hasGastroAcid(pokemon)) return false
         val itemProtected = !LocalPublicFieldMechanics.magicRoomActive(state) &&
             canonical(pokemon.knownHeldItemId) == ABILITY_SHIELD
         if (itemProtected || ability == NEUTRALIZING_GAS) return true
@@ -22,12 +23,14 @@ internal object LocalPublicAbilityState {
             active.battlePokemonId != pokemon.battlePokemonId && active.activeSlot != null &&
                 !active.fainted && active.hpFraction > 0.0 &&
                 canonical(active.knownAbilityId) == NEUTRALIZING_GAS &&
-                GASTRO_ACID !in active.knownVolatileEffectIds.mapTo(hashSetOf()) { canonical(it).orEmpty() }
+                !hasGastroAcid(active)
         }
     }
 
-    private fun canonical(value: String?): String? = value?.substringAfter(':')
-        ?.lowercase()?.filter(Char::isLetterOrDigit)?.takeIf(String::isNotEmpty)
+    private fun hasGastroAcid(pokemon: BattlePokemonStateView): Boolean =
+        pokemon.knownVolatileEffectIds.any { canonical(it) == GASTRO_ACID }
+
+    private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)?.takeIf(String::isNotEmpty)
 
     private const val ABILITY_SHIELD = "abilityshield"
     private const val GASTRO_ACID = "gastroacid"

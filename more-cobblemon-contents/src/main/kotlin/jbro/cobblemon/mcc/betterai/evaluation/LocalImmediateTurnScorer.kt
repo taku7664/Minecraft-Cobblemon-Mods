@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleSide
@@ -108,10 +109,7 @@ internal object LocalImmediateTurnScorer {
             }
         }
 
-    private fun canonicalId(value: String?): String? = value
-        ?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonicalId(value: String?): String? = value?.let(PublicIds::canonical)
 
     private const val HAZARD_STACK_VALUE = 0.10
     private const val BENEFICIAL_SIDE_EFFECT_VALUE = 0.15

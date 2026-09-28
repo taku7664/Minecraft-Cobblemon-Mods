@@ -156,10 +156,7 @@ internal object LocalEndTurnStateProjector {
         knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,
     )
 
-    private fun canonical(value: String?): String? = value
-        ?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
     private val SPEED_IDS = setOf("speed", "spe")
     private val REGULAR_POISON_IDS = setOf("psn", "poison", "poisoned")

@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
@@ -394,10 +395,7 @@ internal object LocalStatStageMarginalEvaluator {
     private fun opposite(side: BattleSide): BattleSide =
         if (side == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
 
-    private fun canonical(value: String?): String = value.orEmpty()
-        .substringAfter(':')
-        .lowercase()
-        .filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String = PublicIds.canonical(value.orEmpty())
         .let { STAT_ALIASES[it] ?: it }
 
     private data class StageChange(

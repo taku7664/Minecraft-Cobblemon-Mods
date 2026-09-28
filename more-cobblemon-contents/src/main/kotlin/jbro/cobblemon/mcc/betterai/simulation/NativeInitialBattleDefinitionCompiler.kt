@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleCombatStatKnowledge
@@ -12,9 +13,7 @@ import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveKnowledge
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
-private fun normalizedNativeId(value: String): String = value.substringAfter(':')
-    .lowercase(Locale.ROOT)
-    .filter(Char::isLetterOrDigit)
+private fun normalizedNativeId(value: String): String = PublicIds.canonical(value)
 
 internal fun nativeSpeciesId(speciesId: String, showdownSpeciesId: String): String {
     val supplied = normalizedNativeId(showdownSpeciesId)

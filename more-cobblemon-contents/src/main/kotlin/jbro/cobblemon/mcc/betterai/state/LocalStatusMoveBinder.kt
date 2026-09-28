@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.state
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveGroup
@@ -115,5 +116,5 @@ internal object LocalStatusMoveBinder {
     )
 
     private fun canonical(value: String): String =
-        value.substringAfter(':').lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+        PublicIds.canonical(value)
 }

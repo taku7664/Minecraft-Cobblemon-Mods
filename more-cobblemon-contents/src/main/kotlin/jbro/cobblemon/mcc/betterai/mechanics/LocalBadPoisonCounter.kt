@@ -52,10 +52,7 @@ internal object LocalBadPoisonCounter {
         pokemon.activeSlot != null && !pokemon.fainted && pokemon.hpFraction > 0.0 &&
             canonical(pokemon.statusId) in BAD_POISON_IDS
 
-    private fun canonical(value: String?): String? = value
-        ?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
     private val BAD_POISON_IDS = setOf("tox", "toxic", "badlypoisoned")
     const val MAXIMUM_BAD_POISON_TURN = 15

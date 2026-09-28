@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Collections
 import java.util.Locale
 import java.util.UUID
@@ -57,9 +58,7 @@ internal object NativeMoveHypothesisCompiler {
         )
     }
 
-    private fun showdownId(value: String): String = value.substringAfter(':')
-        .lowercase(Locale.ROOT)
-        .filter(Char::isLetterOrDigit)
+    private fun showdownId(value: String): String = PublicIds.canonical(value)
         .also { require(it.isNotBlank()) { "Native Showdown move ID cannot be blank" } }
 
     private const val MAX_MOVE_SLOTS = 4

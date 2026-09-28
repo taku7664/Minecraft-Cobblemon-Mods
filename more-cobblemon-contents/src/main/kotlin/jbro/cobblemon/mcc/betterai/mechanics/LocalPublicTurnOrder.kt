@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
@@ -246,7 +247,7 @@ internal object LocalPublicTurnOrder {
         ).coerceAtLeast(1)
 
     private fun canonical(value: String): String =
-        value.substringAfter(':').lowercase().filter { it.isLetterOrDigit() }
+        PublicIds.canonical(value)
 
     private const val TAILWIND = "tailwind"
     private const val PRANKSTER = "prankster"

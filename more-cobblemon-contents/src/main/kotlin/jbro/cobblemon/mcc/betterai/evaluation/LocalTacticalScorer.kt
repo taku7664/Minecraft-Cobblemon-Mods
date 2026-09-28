@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
 import java.util.Locale
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
@@ -569,7 +570,7 @@ internal object LocalTacticalScorer {
     private const val DOOMED_ALLY_ORDER_CONFIDENCE = 0.8
 
     private fun canonicalResourceId(id: String): String =
-        id.substringAfter(':').lowercase(Locale.ROOT).filter { it.isLetterOrDigit() }
+        PublicIds.canonical(id)
 
     private fun publicTypeMultiplier(
         candidate: BattleActionCandidate,

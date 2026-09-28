@@ -194,7 +194,7 @@ internal object LocalLookaheadStateEvaluator {
         state.remainingPokemonBySide.getValue(side) <= 0
     }
 
-    private fun canonicalId(id: String?): String? = id?.substringAfter(':')?.lowercase()?.filter { it.isLetterOrDigit() }
+    private fun canonicalId(id: String?): String? = id?.let(PublicIds::canonical)
 
 }
 

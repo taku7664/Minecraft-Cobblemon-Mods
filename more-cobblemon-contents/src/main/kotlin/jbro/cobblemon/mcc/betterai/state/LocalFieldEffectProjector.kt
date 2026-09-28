@@ -219,10 +219,7 @@ internal object LocalFieldEffectProjector {
         inferences = state.inferences,
     )
 
-    private fun canonical(value: String?): String? = value
-        ?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
     private fun opposite(side: BattleSide) = if (side == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
 

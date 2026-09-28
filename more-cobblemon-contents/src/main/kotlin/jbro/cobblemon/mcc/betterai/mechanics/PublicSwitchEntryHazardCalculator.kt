@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattleFieldStateView
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
@@ -77,9 +78,7 @@ internal object PublicSwitchEntryHazardCalculator {
         pokemon.knownTypeIds.none { canonical(it) == FLYING } &&
             ability != LEVITATE && item != AIR_BALLOON
 
-    private fun canonical(value: String?): String? = value?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
     private const val STEALTH_ROCK_FRACTION = 1.0 / 8.0
     private const val STEALTH_ROCK = "stealthrock"

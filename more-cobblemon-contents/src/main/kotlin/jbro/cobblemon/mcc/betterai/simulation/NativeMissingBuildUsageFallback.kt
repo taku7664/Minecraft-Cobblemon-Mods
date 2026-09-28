@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
 import jbro.cobblemon.mcc.betterai.state.LocalOpponentBuildUsageEntry
@@ -46,8 +47,7 @@ internal object NativeMissingBuildUsageFallback {
             rate = 1.0 / 6.0,
         )
 
-    private fun canonical(value: String): String = value.substringAfter(':')
-        .lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+    private fun canonical(value: String): String = PublicIds.canonical(value)
 
     private val BASE_FORMS = setOf("", "normal", "default", "base", "standard")
     private val STANDARD_TYPES = setOf(

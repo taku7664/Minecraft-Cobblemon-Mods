@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonFormStateView
@@ -83,7 +84,7 @@ internal object LocalMechanicFormResolution {
     }
 
     private fun canonical(value: String): String =
-        value.substringAfter(':').lowercase().filter { it.isLetterOrDigit() }
+        PublicIds.canonical(value)
 
     private const val MEGA = "mega"
 

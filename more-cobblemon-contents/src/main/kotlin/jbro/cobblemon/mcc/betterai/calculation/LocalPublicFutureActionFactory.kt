@@ -377,10 +377,7 @@ internal object PublicFutureActionFactory {
 
     private fun opposite(side: BattleSide) = if (side == BattleSide.ALLY) BattleSide.OPPONENT else BattleSide.ALLY
 
-    private fun canonicalId(value: String?): String = value.orEmpty()
-        .substringAfter(':')
-        .lowercase()
-        .filter(Char::isLetterOrDigit)
+    private fun canonicalId(value: String?): String = PublicIds.canonical(value.orEmpty())
 
     private fun BattleActionCandidate.isInferredMove(): Boolean =
         "inferred_opponent_move" in tags || "hypothetical_public_move" in tags

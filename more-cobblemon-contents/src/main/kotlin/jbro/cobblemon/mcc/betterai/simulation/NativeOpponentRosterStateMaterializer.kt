@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.UUID
@@ -222,9 +223,7 @@ internal object NativeOpponentRosterStateMaterializer {
                 .toByteArray(StandardCharsets.UTF_8),
         )
 
-    private fun normalizedSpeciesId(value: String): String = value.substringAfter(':')
-        .lowercase(Locale.ROOT)
-        .filter(Char::isLetterOrDigit)
+    private fun normalizedSpeciesId(value: String): String = PublicIds.canonical(value)
 
     private data class PublicAppearanceOrderSlot(
         val required: Boolean,

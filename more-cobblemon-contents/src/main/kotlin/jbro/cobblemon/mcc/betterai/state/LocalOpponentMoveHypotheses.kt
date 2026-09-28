@@ -100,5 +100,5 @@ internal object LocalOpponentMoveHypotheses {
             history.assumedOpponentMoveIds + (id to Collections.unmodifiableSet(moves))))
     }
 
-    private fun canonical(value: String) = value.substringAfter(':').lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+    private fun canonical(value: String) = PublicIds.canonical(value)
 }

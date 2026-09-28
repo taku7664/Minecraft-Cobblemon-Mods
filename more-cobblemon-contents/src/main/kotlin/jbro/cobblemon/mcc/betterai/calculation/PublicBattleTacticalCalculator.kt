@@ -616,10 +616,7 @@ internal object PublicBattleTacticalCalculator {
         )
     }
 
-    private fun canonical(value: String?): String? = value
-        ?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
     private const val UNAWARE = "unaware"
     private val UNAWARE_IGNORED_OFFENSIVE_STATS = setOf(

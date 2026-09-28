@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
@@ -147,10 +148,7 @@ internal object LocalKnownStatMechanics {
         maximum = (value.maximum * multiplier).toInt().coerceAtLeast(1),
     )
 
-    private fun canonical(value: String?): String? = value
-        ?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
     private val HALF_SPEED_ITEMS = setOf(
         "ironball", "machobrace", "poweranklet", "powerband", "powerbelt",

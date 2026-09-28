@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
@@ -39,10 +40,7 @@ internal object LocalStellarBoostStateProjector {
             species == TERAPAGOS && form == STELLAR
     }
 
-    private fun canonical(value: String?): String? = value
-        ?.substringAfter(':')
-        ?.lowercase(Locale.ROOT)
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
     private const val STELLAR = "stellar"
     private const val TERAPAGOS = "terapagos"

@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 internal object StandardTypeEffectiveness {
     fun multiplier(
         attackingTypeId: String,
@@ -64,10 +65,7 @@ internal object StandardTypeEffectiveness {
         return base
     }
 
-    private fun canonical(value: String?): String? = value
-        ?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
         ?.takeIf(String::isNotEmpty)
 
     private const val FREEZE_DRY = "freezedry"

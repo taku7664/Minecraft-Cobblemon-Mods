@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.policy
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.SplittableRandom
 import java.util.UUID
@@ -437,7 +438,7 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
     }
 
     private fun canonical(value: String): String =
-        value.substringAfter(':').lowercase().filter(Char::isLetterOrDigit)
+        PublicIds.canonical(value)
 
     private fun exploratorySwitchHpRetention(riskBudget: Double): Double =
         MAXIMUM_EXPLORATORY_SWITCH_HP_RETENTION -

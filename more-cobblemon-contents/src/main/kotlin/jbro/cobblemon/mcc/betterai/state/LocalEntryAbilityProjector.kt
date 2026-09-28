@@ -111,10 +111,7 @@ internal object LocalEntryAbilityProjector {
         inferences = state.inferences,
     )
 
-    private fun canonical(value: String?): String? = value
-        ?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
     private val INTIMIDATE_IMMUNITIES = setOf(
         "clearbody",

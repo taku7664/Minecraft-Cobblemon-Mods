@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
@@ -91,9 +92,7 @@ internal object NativeRootActionMatcher {
         )
     }
 
-    private fun nativeId(value: String): String = value.substringAfter(':')
-        .lowercase(Locale.ROOT)
-        .filter(Char::isLetterOrDigit)
+    private fun nativeId(value: String): String = PublicIds.canonical(value)
 
     private sealed interface ActionSignature
 

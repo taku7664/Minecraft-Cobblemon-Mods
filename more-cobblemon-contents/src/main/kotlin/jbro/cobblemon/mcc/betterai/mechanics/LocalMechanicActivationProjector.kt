@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
@@ -89,7 +90,7 @@ internal object LocalMechanicActivationProjector {
     }
 
     private fun canonical(value: String?): String =
-        value.orEmpty().substringAfter(':').lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+        PublicIds.canonical(value.orEmpty())
 
     private const val TERA = "tera"
     private const val MEGA = "mega"

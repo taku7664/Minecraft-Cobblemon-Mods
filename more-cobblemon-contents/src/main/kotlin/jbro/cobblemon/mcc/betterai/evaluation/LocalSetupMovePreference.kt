@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
@@ -34,7 +35,7 @@ internal object LocalSetupMovePreference {
     }
 
     private fun canonical(value: String): String =
-        value.substringAfter(':').lowercase().filter { it.isLetterOrDigit() }
+        PublicIds.canonical(value)
 
     private const val BONUS = 10.0
 }

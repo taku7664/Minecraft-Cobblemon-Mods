@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.search
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
@@ -475,9 +476,7 @@ internal class NativeIntermediateRequestReplayer(
     ): List<jbro.cobblemon.mcc.betterai.simulation.NativeDamageRollFrame> =
         after.executedDamageRolls
 
-    private fun nativeId(value: String): String = value.substringAfter(':')
-        .lowercase(Locale.ROOT)
-        .filter(Char::isLetterOrDigit)
+    private fun nativeId(value: String): String = PublicIds.canonical(value)
 
     private fun observedMismatch(issues: List<NativeObservedTurnActionIssue>) = NativeIntermediateReplayResult(
         status = NativeIntermediateReplayStatus.OBSERVED_ACTION_MISMATCH,

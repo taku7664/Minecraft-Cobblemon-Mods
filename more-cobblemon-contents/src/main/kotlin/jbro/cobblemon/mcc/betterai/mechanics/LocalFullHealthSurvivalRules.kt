@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
@@ -45,7 +46,7 @@ internal object LocalFullHealthSurvivalRules {
             .toList()
 
     private fun canonical(value: String?): String? =
-        value?.substringAfter(':')?.lowercase()?.filter(Char::isLetterOrDigit)
+        value?.let(PublicIds::canonical)
 
     /** Match direct-hit projection: tolerate floating-point noise, not actual projected HP loss. */
     private const val FULL_HEALTH = 1.0 - 1e-9

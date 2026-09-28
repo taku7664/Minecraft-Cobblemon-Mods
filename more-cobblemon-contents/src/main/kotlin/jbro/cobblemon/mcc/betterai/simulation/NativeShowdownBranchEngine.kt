@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import com.google.gson.Gson
 import java.io.IOException
 import java.net.URI
@@ -277,9 +278,7 @@ internal data class NativeBattleDefinition(
     }
 
     private companion object {
-        fun nativeId(value: String): String = value.substringAfter(':')
-            .lowercase(Locale.ROOT)
-            .filter(Char::isLetterOrDigit)
+        fun nativeId(value: String): String = PublicIds.canonical(value)
     }
 }
 

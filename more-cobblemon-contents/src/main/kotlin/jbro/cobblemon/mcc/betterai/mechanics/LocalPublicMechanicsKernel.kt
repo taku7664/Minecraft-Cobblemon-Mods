@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
@@ -460,7 +461,7 @@ internal object LocalPublicMechanicsKernel {
     private fun canonicalOrNull(value: String?): String? = value?.let(::canonical)
 
     private fun canonical(value: String): String =
-        value.substringAfter(':').lowercase().filter { it.isLetterOrDigit() }
+        PublicIds.canonical(value)
 
     private val TYPE_IMMUNITY_ABILITIES = mapOf(
         GROUND to setOf("levitate", "eartheater"),

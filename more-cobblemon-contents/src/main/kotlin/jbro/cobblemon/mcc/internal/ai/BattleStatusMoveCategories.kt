@@ -82,7 +82,7 @@ object BattleStatusMoveCategories {
     }
 
     private fun canonical(value: String): String =
-        value.substringAfter(':').lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+        PublicIds.canonical(value)
 
     /** Healing computed in Showdown callbacks, so it has no declarative `heal` fraction. */
     private val CALLBACK_RECOVERY = setOf(

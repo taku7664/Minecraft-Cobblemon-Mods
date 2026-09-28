@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
@@ -98,7 +99,7 @@ internal object LocalIdleUtilityMoveRules {
     }
 
     private fun canonical(value: String): String =
-        value.substringAfter(':').lowercase().filter { it.isLetterOrDigit() }
+        PublicIds.canonical(value)
 
     private const val SUBSTITUTE = "substitute"
     private const val LEECH_SEED = "leechseed"

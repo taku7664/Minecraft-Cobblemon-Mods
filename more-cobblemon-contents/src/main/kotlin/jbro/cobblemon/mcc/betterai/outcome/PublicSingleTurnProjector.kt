@@ -2038,10 +2038,7 @@ internal object PublicSingleTurnProjector {
         return LocalPublicTurnOrder.effectiveSpeed(state, actor)
     }
 
-    private fun canonicalId(value: String?): String? = value
-        ?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonicalId(value: String?): String? = value?.let(PublicIds::canonical)
 
     private fun actionContext(
         state: BattleStateView,
@@ -2321,7 +2318,7 @@ private fun BattleMoveCandidateView.forDelayedImpact(): BattleMoveCandidateView 
     val filtered = original.effects.filterNot {
         it.kind == BattleMoveEffectKind.IGNORE_TYPE_IMMUNITY ||
             it.kind == BattleMoveEffectKind.SLOT_CONDITION &&
-            it.valueId?.substringAfter(':')?.lowercase()?.filter(Char::isLetterOrDigit) == "futuremove"
+            it.valueId?.let(PublicIds::canonical) == "futuremove"
     }
     return BattleMoveCandidateView(
         typeId = typeId,

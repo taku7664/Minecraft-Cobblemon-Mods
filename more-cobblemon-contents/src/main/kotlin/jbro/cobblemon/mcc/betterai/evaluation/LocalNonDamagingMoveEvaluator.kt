@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
@@ -153,7 +154,7 @@ internal object LocalNonDamagingMoveEvaluator {
             }
 
     private fun canonicalEffectId(effectId: String): String =
-        effectId.substringAfter(':').lowercase().filter { it.isLetterOrDigit() }
+        PublicIds.canonical(effectId)
 
     private const val GENERIC_STATUS_PRESSURE = 20.0
     private const val MAJOR_STATUS_PRESSURE = 35.0

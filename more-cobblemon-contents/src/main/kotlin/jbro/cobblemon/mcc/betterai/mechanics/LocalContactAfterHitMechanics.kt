@@ -108,10 +108,7 @@ internal object LocalContactAfterHitMechanics {
         knownStellarBoostedTypeIds = pokemon.knownStellarBoostedTypeIds,
     )
 
-    private fun canonical(value: String?): String? = value
-        ?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
     private val CONTACT_DAMAGE_ABILITIES = setOf("roughskin", "ironbarbs")
 }

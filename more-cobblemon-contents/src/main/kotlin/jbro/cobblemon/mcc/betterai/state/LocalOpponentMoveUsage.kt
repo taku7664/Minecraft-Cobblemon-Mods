@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.state
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.io.InputStreamReader
@@ -112,8 +113,7 @@ internal class LocalMoveUsageTable private constructor(
 
         private val GENERIC_FORM_IDS = setOf("normal", "default", "base", "standard")
 
-        private fun canonical(value: String): String = value.substringAfter(':').lowercase(Locale.ROOT)
-            .filter(Char::isLetterOrDigit)
+        private fun canonical(value: String): String = PublicIds.canonical(value)
     }
 }
 

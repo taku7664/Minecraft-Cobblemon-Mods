@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.abs
@@ -113,9 +114,7 @@ internal object NativeDamageObservationConditioner {
         )
     }
 
-    private fun nativeId(value: String): String = value.substringAfter(':')
-        .lowercase(Locale.ROOT)
-        .filter(Char::isLetterOrDigit)
+    private fun nativeId(value: String): String = PublicIds.canonical(value)
 
     private fun matchesObservedLoss(hpBefore: Int, maxHp: Int, loss: Int, observedFraction: Double): Boolean {
         val exactLoss = loss.toDouble() / maxHp.toDouble()

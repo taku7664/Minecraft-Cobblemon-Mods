@@ -251,10 +251,7 @@ internal object LocalDirectHitMechanics {
 
     private fun midpoint(range: BattleFractionRange): Double = (range.minimum + range.maximum) / 2.0
 
-    private fun canonical(value: String?): String? = value
-        ?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
     private data class TargetResolution(
         val pokemon: BattlePokemonStateView,

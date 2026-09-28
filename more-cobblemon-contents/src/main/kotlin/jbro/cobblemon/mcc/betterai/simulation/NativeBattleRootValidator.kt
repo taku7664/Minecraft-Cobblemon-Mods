@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleCombatStatKnowledge
@@ -284,9 +285,7 @@ internal object NativeBattleRootValidator {
         else -> normalizedId(value.orEmpty())
     }
 
-    private fun normalizedId(value: String): String = value.substringAfter(':')
-        .lowercase(Locale.ROOT)
-        .filter(Char::isLetterOrDigit)
+    private fun normalizedId(value: String): String = PublicIds.canonical(value)
 
     private fun uuidOrNull(value: String): UUID? = runCatching { UUID.fromString(value) }.getOrNull()
 

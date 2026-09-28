@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleExactOwnTeamView
@@ -228,9 +229,7 @@ internal object NativeInitialBattleWorldAssembler {
     )
 }
 
-private fun nativeId(value: String): String = value.substringAfter(':')
-    .lowercase(Locale.ROOT)
-    .filter(Char::isLetterOrDigit)
+private fun nativeId(value: String): String = PublicIds.canonical(value)
 
 private fun requireValidSpreads(evs: Map<String, Int>, ivs: Map<String, Int>) {
     val stats = setOf("hp", "atk", "def", "spa", "spd", "spe")

@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewView
@@ -312,9 +313,7 @@ internal object NativeOpponentPreviewBuildWorldCompiler {
     private fun spreadId(spread: LocalOpponentSpreadUsage): String =
         "${spread.natureId}:${STAT_IDS.joinToString("/") { spread.evs.getValue(it).toString() }}"
 
-    private fun canonical(value: String): String = value.substringAfter(':')
-        .lowercase(Locale.ROOT)
-        .filter(Char::isLetterOrDigit)
+    private fun canonical(value: String): String = PublicIds.canonical(value)
 
     private data class WeightedValue<T>(val value: T, val weight: Double, val id: String)
     private data class WeightedIvs(val values: Map<String, Int>, val weight: Double, val id: String)

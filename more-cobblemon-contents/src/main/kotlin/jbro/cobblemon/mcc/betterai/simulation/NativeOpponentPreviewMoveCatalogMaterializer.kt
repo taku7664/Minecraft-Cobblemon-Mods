@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
@@ -385,9 +386,7 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
     ) = NativeOpponentPreviewMoveCatalogIssue(code, pokemon.battlePokemonId, previewSlotId)
 
     private fun sameId(left: String, right: String): Boolean = canonical(left) == canonical(right)
-    private fun canonical(value: String): String = value.substringAfter(':')
-        .lowercase(Locale.ROOT)
-        .filter(Char::isLetterOrDigit)
+    private fun canonical(value: String): String = PublicIds.canonical(value)
 
     private data class PublicPreviewPolicy(
         val stabSlots: Int,

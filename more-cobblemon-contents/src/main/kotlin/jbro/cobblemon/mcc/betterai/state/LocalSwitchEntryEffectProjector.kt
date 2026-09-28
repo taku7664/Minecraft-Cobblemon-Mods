@@ -108,8 +108,7 @@ internal object LocalSwitchEntryEffectProjector {
         state.observedEvents, state.inferences,
     )
 
-    private fun canonical(value: String?): String = value.orEmpty().substringAfter(':')
-        .lowercase().filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String = PublicIds.canonical(value.orEmpty())
 
     private const val HEAVY_DUTY_BOOTS = "heavydutyboots"
     private const val CLEAR_AMULET = "clearamulet"

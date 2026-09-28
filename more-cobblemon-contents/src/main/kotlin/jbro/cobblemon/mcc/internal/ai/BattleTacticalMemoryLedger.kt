@@ -359,7 +359,7 @@ class BattleTacticalMemoryLedger(
         activePlanOwner = null
     }
 
-    private fun canonicalId(value: String): String = value.substringAfter(':').lowercase().filter(Char::isLetterOrDigit)
+    private fun canonicalId(value: String): String = PublicIds.canonical(value)
 
     private fun BattleActionCandidate.containsSwitch(): Boolean =
         kind == BattleActionKind.SWITCH || componentActions.any { it.containsSwitch() }

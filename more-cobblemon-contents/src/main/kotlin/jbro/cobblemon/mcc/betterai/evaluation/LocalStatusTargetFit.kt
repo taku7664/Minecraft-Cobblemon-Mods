@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
@@ -125,7 +126,7 @@ internal object LocalStatusTargetFit {
     private fun midpoint(range: BattleIntegerRange): Double = (range.minimum + range.maximum) / 2.0
 
     private fun canonical(value: String?): String =
-        value.orEmpty().substringAfter(':').lowercase(Locale.ROOT).filter(Char::isLetterOrDigit)
+        PublicIds.canonical(value.orEmpty())
 
     private const val BURN = "brn"
     private const val PARALYSIS = "par"

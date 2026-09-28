@@ -281,7 +281,7 @@ internal object LocalBattleMind {
         return rollFloor * accuracy >= MINIMUM_CREDIBLE_KO_PROBABILITY
     }
 
-    private fun canonicalId(value: String): String = value.substringAfter(':').lowercase().filter(Char::isLetterOrDigit)
+    private fun canonicalId(value: String): String = PublicIds.canonical(value)
 
     private const val LOW_HP_THRESHOLD = 0.35
     private const val PRESERVE_HP_THRESHOLD = 0.35

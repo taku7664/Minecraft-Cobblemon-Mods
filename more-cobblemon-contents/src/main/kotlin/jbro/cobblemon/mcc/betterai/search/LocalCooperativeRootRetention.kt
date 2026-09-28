@@ -54,7 +54,7 @@ internal object LocalCooperativeRootRetention {
         if (parts.size != 2 || parts.any { it.kind != BattleActionKind.USE_MOVE || it.mechanic != null } ||
             parts.map { it.actorSlot }.distinct().size != 2) return false
         return parts.any { protect ->
-            protect.moveId?.substringAfter(':')?.lowercase()?.filter(Char::isLetterOrDigit) == "protect" &&
+            protect.moveId?.let(PublicIds::canonical) == "protect" &&
                 protect.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS &&
                 protect.moveDetails?.effects?.effects?.any { effect ->
                     // Match the projector's declaration default; streak-dependent success is still projected there.
@@ -78,7 +78,7 @@ internal object LocalCooperativeRootRetention {
         val parts = candidate.componentActions
         return parts.size == 2 && parts.any { redirect ->
             redirect.kind == BattleActionKind.USE_MOVE &&
-                redirect.moveId?.substringAfter(':')?.lowercase()?.filter(Char::isLetterOrDigit) in
+                redirect.moveId?.let(PublicIds::canonical) in
                 setOf("followme", "ragepowder") && parts.any { setup ->
                 setup.actorSlot != null && setup.actorSlot != redirect.actorSlot &&
                     setup.kind == BattleActionKind.USE_MOVE &&

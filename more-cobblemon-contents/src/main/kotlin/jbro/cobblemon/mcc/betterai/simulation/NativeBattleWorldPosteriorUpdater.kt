@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.abs
@@ -114,9 +115,7 @@ internal object NativeBattleWorldPosteriorUpdater {
     private fun failure(issues: Collection<NativeBattleWorldPosteriorIssue>) =
         NativeBattleWorldPosteriorUpdate(emptyList(), issues.toList())
 
-    private fun normalizedTeraId(value: String): String = value.substringAfter(':')
-        .lowercase(Locale.ROOT)
-        .filter(Char::isLetterOrDigit)
+    private fun normalizedTeraId(value: String): String = PublicIds.canonical(value)
 
     private const val TERA_TYPE_CATEGORY = "tera_type"
     private const val NORMALIZATION_EPSILON = 1e-9

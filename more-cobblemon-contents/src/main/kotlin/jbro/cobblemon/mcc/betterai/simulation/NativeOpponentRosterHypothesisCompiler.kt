@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentTeamPreviewPokemonView
@@ -257,7 +258,5 @@ internal object NativeOpponentRosterHypothesisCompiler {
         "roster:${selected.joinToString(",")}|map:" + assignment.entries.sortedBy { it.key.toString() }
             .joinToString(",") { (pokemon, slot) -> "$pokemon=$slot" }
 
-    private fun normalizedId(value: String): String = value.substringAfter(':')
-        .lowercase(Locale.ROOT)
-        .filter(Char::isLetterOrDigit)
+    private fun normalizedId(value: String): String = PublicIds.canonical(value)
 }

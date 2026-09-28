@@ -66,10 +66,7 @@ internal object LocalSwitchStateProjector {
             pokemon.hpFraction
         }
 
-    private fun canonical(value: String?): String? = value
-        ?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)
 
     private fun BattlePokemonStateView.stanceResetForm(): BattlePokemonFormStateView? {
         if (canonical(speciesId) != "aegislash" || canonical(knownAbilityId) != "stancechange") return null

@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView
 
@@ -28,10 +29,7 @@ internal object LocalPublicFieldMechanics {
 
     private fun active(effect: BattleTimedEffectView): Boolean = effect.remainingTurns?.let { it > 0 } ?: true
 
-    private fun canonical(value: String?): String = value
-        ?.substringAfter(':')
-        ?.lowercase()
-        ?.filter(Char::isLetterOrDigit)
+    private fun canonical(value: String?): String = value?.let(PublicIds::canonical)
         .orEmpty()
 
     private val WEATHER_SUPPRESSING_ABILITIES = setOf("airlock", "cloudnine")
