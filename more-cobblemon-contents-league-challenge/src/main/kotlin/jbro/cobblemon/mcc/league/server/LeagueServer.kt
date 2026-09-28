@@ -13,6 +13,7 @@ import jbro.cobblemon.mcc.internal.hub.BattleHubNetworking
 import jbro.cobblemon.mcc.league.MoreCobblemonContentsLeagueChallenge as Mod
 import jbro.cobblemon.mcc.league.network.*
 import jbro.cobblemon.mcc.league.system.*
+import jbro.cobblemon.mcc.league.ui.LeagueRank
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.fabricmc.fabric.api.networking.v1.*
@@ -216,8 +217,8 @@ object LeagueServer {
     }
 
     private fun rank(catalog: LeagueCatalog, state: LeagueProgress): String {
-        val badges = LeagueEngine(catalog).badgeCount(state)
-        return when { state.champion -> "CHAMPION"; badges == 8 -> "MASTER_BALL"; badges >= 5 -> "ULTRA_BALL"; badges >= 3 -> "GREAT_BALL"; else -> "POKE_BALL" }
+        val badges = LeagueEngine(catalog).badgeCount(state).coerceIn(0, 8)
+        return LeagueRank.fromProgress(badges, state.champion && badges == 8).name
     }
 
     /** Tells the client its rank when it changed; reconcile repeats this, so admin edits reach it too. */

@@ -34,8 +34,7 @@ dependencies {
     runtimeOnly("com.electronwill.night-config:core:3.8.0")
     runtimeOnly("com.electronwill.night-config:toml:3.8.0")
     modCompileOnly("maven.modrinth:modmenu:6lgOkclV")
-    // The retained development spike needs owo's injected vanilla widget interfaces during compilation.
-    modImplementation("io.wispforest:owo-lib:${property("owo_lib_version")}")
+    modRuntimeOnly("io.wispforest:owo-lib:${property("owo_lib_version")}")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("com.google.code.gson:gson:2.11.0")

@@ -56,8 +56,8 @@ class LeagueChallengeModuleContractTest {
         val korean = language("ko_kr")
 
         assertEquals(english.keySet(), korean.keySet())
-        assertTrue(english.has("screen.more_cobblemon_contents_league_challenge.dev.title"))
-        assertTrue(english.has("command.more_cobblemon_contents_league_challenge.dev.opened"))
+        assertTrue(english.has("block.more_cobblemon_contents_league_challenge.league_terminal"))
+        assertTrue(english.has("screen.more_cobblemon_contents_league_challenge.live.header_rank"))
         english.keySet().forEach { key ->
             val englishValue = english[key].asString
             val koreanValue = korean[key].asString
