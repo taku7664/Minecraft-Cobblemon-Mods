@@ -5,6 +5,9 @@ import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfile
 import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfiles
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
+import jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudget
+import jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudgetPolicy
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Test
 
@@ -13,6 +16,9 @@ import org.junit.jupiter.api.Test
  *
  * Opt-in: -Psweeps -PsweepOnly=<name>, a name from [DUELS] (several with commas). A pairing is minutes of
  * Boss decisions and a small edge needs many of them, so only the asked-for duels run.
+ *
+ * Both sides search without the shipped node and time limits, so a duel measures the idea, not how much of
+ * it fits in a Boss decision's budget.
  *
  * A battle still going at the turn limit is decided on the HP left: ahead by [DECISIVE_LEAD] Pokemon or
  * more is a win, anything closer a draw.
@@ -35,9 +41,14 @@ class LocalSearchSwitchDuelTest {
         var points = 0.0
         var games = 0
         var leadTotal = 0.0
+        // Status moves and voluntary switches per side: [challenger, defender].
+        val statusMoves = IntArray(2)
+        val switches = IntArray(2)
         for (definition in LocalSelfPlayMeasurement.definitions(PAIRS, SEED, duel.format)) {
-            val asCycle = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.challenger, duel.defender, difficulty, difficulty)
-            val asOffense = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.defender, duel.challenger, difficulty, difficulty)
+            val asCycle = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.challenger, duel.defender, difficulty, difficulty,
+                lookaheadBudget = UNLIMITED)
+            val asOffense = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.defender, duel.challenger, difficulty, difficulty,
+                lookaheadBudget = UNLIMITED)
             // The challenger's HP lead at the end of each game.
             val leads = listOf(asCycle.cycleRemainingHp - asCycle.offenseRemainingHp,
                 asOffense.offenseRemainingHp - asOffense.cycleRemainingHp)
@@ -45,10 +56,15 @@ class LocalSearchSwitchDuelTest {
             points += scores.sum()
             games += 2
             leadTotal += leads.sum()
+            statusMoves[0] += asCycle.cycleStatusMoves + asOffense.offenseStatusMoves
+            statusMoves[1] += asCycle.offenseStatusMoves + asOffense.cycleStatusMoves
+            switches[0] += asCycle.cycleVoluntarySwitches + asOffense.offenseVoluntarySwitches
+            switches[1] += asCycle.offenseVoluntarySwitches + asOffense.cycleVoluntarySwitches
             println("$name ${definition.name}: challenger ${scores.joinToString("/")} lead ${leads.joinToString("/") { "%+.2f".format(it) }} " +
                 "turns ${asCycle.turns.size}/${asOffense.turns.size} winners ${asCycle.winner}/${asOffense.winner}")
         }
-        return "$name: challenger score %.3f over %d games, mean HP lead %+.3f".format(points / games, games, leadTotal / games)
+        return ("$name: challenger score %.3f over %d games, mean HP lead %+.3f; status moves %d/%d, voluntary switches %d/%d " +
+            "(challenger/defender)").format(points / games, games, leadTotal / games, statusMoves[0], statusMoves[1], switches[0], switches[1])
     }
 
     private fun score(report: LocalTacticalScenarioReport, challengerSide: String, lead: Double): Double = when {
@@ -65,6 +81,9 @@ class LocalSearchSwitchDuelTest {
         const val MAXIMUM_TURNS = 20
         const val DECISIVE_LEAD = 0.5
         val CURRENT = LocalDecisionTuning.CURRENT
+        val UNLIMITED: (BattleTrainerTier) -> LocalLookaheadBudget = { tier ->
+            LocalLookaheadBudgetPolicy.forTier(tier).copy(timeMillis = Long.MAX_VALUE, nodeLimit = 50_000_000)
+        }
 
         /** Challenger against defender; the shipped tuning is on one side of each. */
         val DUELS = mapOf(
@@ -74,6 +93,15 @@ class LocalSearchSwitchDuelTest {
             "intent" to Duel(CURRENT, CURRENT.copy(id = "no-intent", intentResponseWeight = 0.0), BattleFormat.DOUBLE),
             "chance" to Duel(CURRENT, CURRENT.copy(id = "roll-classes", chanceModel = LocalChanceModel.ROLL_CLASSES), BattleFormat.DOUBLE),
             "chance-singles" to Duel(CURRENT, CURRENT.copy(id = "roll-classes", chanceModel = LocalChanceModel.ROLL_CLASSES), BattleFormat.SINGLE),
+            "bound-singles" to Duel(CURRENT, CURRENT.copy(id = "per-candidate-bound", sharedAdjustmentBound = false), BattleFormat.SINGLE),
+            "simultaneous-singles" to Duel(CURRENT.copy(id = "simultaneous", simultaneousResponseWeight = 1.0), CURRENT, BattleFormat.SINGLE),
+            "simultaneous-half-singles" to Duel(CURRENT.copy(id = "simultaneous-half", simultaneousResponseWeight = 0.5), CURRENT, BattleFormat.SINGLE),
+            "stages-singles" to Duel(CURRENT.copy(id = "persistent-stages", leafPersistentStageValue = 0.10), CURRENT, BattleFormat.SINGLE),
+            "stages-strong-singles" to Duel(CURRENT.copy(id = "persistent-stages-strong", leafPersistentStageValue = 0.20), CURRENT, BattleFormat.SINGLE),
+            "stages" to Duel(CURRENT.copy(id = "persistent-stages", leafPersistentStageValue = 0.10), CURRENT, BattleFormat.DOUBLE),
+            "coverage-singles" to Duel(CURRENT.copy(id = "team-coverage", leafTeamCoverageWeight = 0.3), CURRENT, BattleFormat.SINGLE),
+            "simultaneous" to Duel(CURRENT.copy(id = "simultaneous", simultaneousResponseWeight = 1.0), CURRENT, BattleFormat.DOUBLE),
+            "simultaneous-half" to Duel(CURRENT.copy(id = "simultaneous-half", simultaneousResponseWeight = 0.5), CURRENT, BattleFormat.DOUBLE),
         )
     }
 }

@@ -12,6 +12,7 @@ import jbro.cobblemon.mcc.betterai.policy.LocalActionSelection
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelector
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank
 import jbro.cobblemon.mcc.betterai.policy.LocalWeightedActionSelector
+import jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudget
 import jbro.cobblemon.mcc.betterai.state.LocalEntryAbilityProjector
 import jbro.cobblemon.mcc.betterai.state.LocalSwitchStateProjector
 import jbro.cobblemon.mcc.betterai.state.PublicTurnProjection
@@ -102,8 +103,11 @@ internal object LocalTacticalScenarioBattle {
          */
         recordedContexts: MutableList<BattleDecisionContext>? = null,
         recordedDecisions: MutableList<LocalScenarioDecisionTrace>? = null,
+        /** The search budget both sides get; null is the shipped one. */
+        lookaheadBudget: ((BattleTrainerTier) -> LocalLookaheadBudget)? = null,
     ): LocalTacticalScenarioReport = Battle(
         definition, cycleTuning, offenseTuning, cycleDifficulty, offenseDifficulty, recordedContexts, recordedDecisions,
+        lookaheadBudget,
     ).run(maximumTurns)
 
     private class Battle(
@@ -114,6 +118,7 @@ internal object LocalTacticalScenarioBattle {
         offenseDifficulty: BattleDifficultyProfile,
         private val recordedContexts: MutableList<BattleDecisionContext>?,
         private val recordedDecisions: MutableList<LocalScenarioDecisionTrace>?,
+        private val lookaheadBudget: ((BattleTrainerTier) -> LocalLookaheadBudget)?,
     ) {
         private val difficulties = mapOf(
             BattleSide.ALLY to cycleDifficulty,
@@ -135,7 +140,8 @@ internal object LocalTacticalScenarioBattle {
         private val revealedMoveIds = mutableMapOf<UUID, MutableSet<String>>()
         private val selectors = BattleSide.entries.associateWith { CapturingWeightedSelector() }
         private val actualBrains = BattleSide.entries.associateWith { side ->
-            LocalTacticalBrain(selectors.getValue(side), tunings.getValue(side))
+            if (lookaheadBudget == null) LocalTacticalBrain(selectors.getValue(side), tunings.getValue(side))
+            else LocalTacticalBrain(selectors.getValue(side), tunings.getValue(side), lookaheadBudget)
         }
         private val profiles = BattleSide.entries.associateWith { side ->
             BattleTrainerProfile(
