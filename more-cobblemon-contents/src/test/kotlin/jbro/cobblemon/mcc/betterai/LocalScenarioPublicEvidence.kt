@@ -42,6 +42,17 @@ internal class LocalScenarioPublicEvidence {
                 publicValueId = moveId,
                 actorSlot = selected.action.actorSlot,
             )
+            // A protection that started is public, and the next Protect's odds are read from it.
+            if (outcome.protectionResultsByPokemon[actorId] == true) {
+                append(
+                    turn = turn,
+                    kind = BattleObservedEventKind.MOVE_OUTCOME,
+                    actorPokemonId = actorId,
+                    targetPokemonIds = listOf(actorId),
+                    actorSlot = selected.action.actorSlot,
+                    moveOutcome = BattleMoveOutcomeView(BattleMoveOutcomeKind.PROTECTION_STARTED, publicEffectId = "protect"),
+                )
+            }
         }
 
         recordActiveChanges(turn, before, after)
@@ -177,6 +188,7 @@ internal class LocalScenarioPublicEvidence {
         hpFractionDelta: Double? = null,
         baseMovePriority: Int? = null,
         actorSlot: Int? = null,
+        moveOutcome: BattleMoveOutcomeView? = null,
     ) {
         events += BattleObservedEventView(
             sequence = nextSequence++,
@@ -188,6 +200,7 @@ internal class LocalScenarioPublicEvidence {
             hpFractionDelta = hpFractionDelta,
             baseMovePriority = baseMovePriority,
             actorSlot = actorSlot,
+            moveOutcome = moveOutcome,
         )
     }
 

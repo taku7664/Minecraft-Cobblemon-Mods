@@ -24,8 +24,8 @@ class LocalBattleReadTest {
         val format = if (System.getProperty("aiengine.readDoubles") == "true") BattleFormat.DOUBLE else BattleFormat.SINGLE
         val boss = BattleDifficultyProfiles.BOSS
         for (definition in LocalSelfPlayMeasurement.definitions(count, 20260930, format)) {
-            val report = LocalTacticalScenarioBattle.run(definition, 20, LocalDecisionTuning.CURRENT, LocalDecisionTuning.CURRENT,
-                boss, boss, lookaheadBudget = { LocalLookaheadBudgetPolicy.forTier(it).copy(timeMillis = Long.MAX_VALUE, nodeLimit = 50_000_000) })
+            val report = LocalTacticalScenarioBattle.run(definition, 20, readTuning(), readTuning(),
+                boss, boss, lookaheadBudget = { LocalLookaheadBudgetPolicy.forTier(it).copy(timeMillis = Long.MAX_VALUE, nodeLimit = System.getProperty("aiengine.readNodes")?.toIntOrNull() ?: 50_000_000) })
             println("GAME ${definition.name} cycle=${definition.cycleSetIds} offense=${definition.offenseSetIds} winner=${report.winner}")
             for (turn in report.turns) {
                 println("T${turn.turn} A:${turn.cycleActual} B:${turn.offenseActual} => ${turn.result}")
@@ -45,16 +45,16 @@ class LocalBattleReadTest {
         val boss = BattleDifficultyProfiles.BOSS
         val definition = LocalSelfPlayMeasurement.definitions(game, 20260930, format)[game - 1]
         val contexts = mutableListOf<BattleDecisionContext>()
-        LocalTacticalScenarioBattle.run(definition, turn, LocalDecisionTuning.CURRENT, LocalDecisionTuning.CURRENT, boss, boss,
+        LocalTacticalScenarioBattle.run(definition, turn, readTuning(), readTuning(), boss, boss,
             recordedContexts = contexts,
-            lookaheadBudget = { LocalLookaheadBudgetPolicy.forTier(it).copy(timeMillis = Long.MAX_VALUE, nodeLimit = 50_000_000) })
+            lookaheadBudget = { LocalLookaheadBudgetPolicy.forTier(it).copy(timeMillis = Long.MAX_VALUE, nodeLimit = System.getProperty("aiengine.readNodes")?.toIntOrNull() ?: 50_000_000) })
         // Contexts alternate cycle then offense each turn; replacements add more. Take the last ones at the turn.
         val atTurn = contexts.filter { it.state.turn == turn }
         val context = if (side == "cycle") atTurn.first() else atTurn.last()
         val profile = BattleTrainerProfile(skillLevel = 2, personality = BattleTrainerProfile.champion().personality, difficulty = boss)
         val base = LocalBattleActionPolicy.rank(context, null, profile)
         val result = LocalRecursiveLookaheadEvaluator.evaluate(base, context, profile, LocalDecisionTuning.CURRENT, clockMillis = { 0L },
-            budget = LocalLookaheadBudgetPolicy.forTier(boss.tier).copy(timeMillis = Long.MAX_VALUE, nodeLimit = 50_000_000))
+            budget = LocalLookaheadBudgetPolicy.forTier(boss.tier).copy(timeMillis = Long.MAX_VALUE, nodeLimit = System.getProperty("aiengine.readNodes")?.toIntOrNull() ?: 50_000_000))
         println("PROBE depth=${result.depthCompleted} nodes=${result.nodesVisited}")
         context.state.pokemon.forEach { println("PROBE mon ${it.side} ${it.speciesId} slot=${it.activeSlot} hp=%.2f st=${it.statusId} stages=${it.statStages}".format(it.hpFraction)) }
         for (rank in result.ranked) {
@@ -62,5 +62,20 @@ class LocalBattleReadTest {
             println("PROBE ${rank.outcome.candidate.actionId} cmp=%.1f look=%.1f base=%.1f exec=%.2f worstHp=%.2f".format(
                 rank.comparisonValue, rank.lookaheadUtility, b.comparisonValue, rank.executionProbability, rank.worstResponseHpRetention))
         }
+    }
+
+    /** CURRENT with the switches named in -Daiengine.readFlags (comma separated) turned on. */
+    private fun readTuning(): LocalDecisionTuning {
+        var tuning = LocalDecisionTuning.CURRENT
+        for (flag in System.getProperty("aiengine.readFlags").orEmpty().split(',').map(String::trim).filter(String::isNotEmpty)) {
+            tuning = when (flag) {
+                "repeats" -> tuning.copy(readOpponentRepeats = true)
+                "median" -> tuning.copy(unsearchedTakeMedianAdjustment = true)
+                "simultaneous" -> tuning.copy(simultaneousResponseWeight = 1.0)
+                "stages" -> tuning.copy(leafPersistentStageValue = 0.2)
+                else -> error("unknown read flag $flag")
+            }
+        }
+        return tuning
     }
 }
