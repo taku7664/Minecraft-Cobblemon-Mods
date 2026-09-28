@@ -111,6 +111,8 @@ internal data class LocalDecisionTuning(
      * of the worst reply to each own action taken alone; 0 is the sequential reading only.
      */
     val simultaneousResponseWeight: Double = 0.0,
+    /** The opponent intents lean toward what the opponent did before in the same matchup (LocalOpponentRepeats). */
+    val readOpponentRepeats: Boolean = false,
     /** How the search's projected hits branch on damage rolls and critical hits. */
     val chanceModel: jbro.cobblemon.mcc.betterai.calculation.LocalChanceModel =
         jbro.cobblemon.mcc.betterai.calculation.LocalChanceModel.HIGH_ROLL,

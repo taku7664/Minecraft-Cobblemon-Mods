@@ -92,7 +92,10 @@ class LocalSearchSwitchDuelTest {
         const val DECISIVE_LEAD = 0.5
         val CURRENT = LocalDecisionTuning.CURRENT
         val UNLIMITED: (BattleTrainerTier) -> LocalLookaheadBudget = { tier ->
-            LocalLookaheadBudgetPolicy.forTier(tier).copy(timeMillis = Long.MAX_VALUE, nodeLimit = 50_000_000)
+            // A doubles search with no node limit at all fills any heap with its memo, so the ceiling stays, far
+            // above the shipped one; aiengine.duelNodes moves it.
+            LocalLookaheadBudgetPolicy.forTier(tier).copy(timeMillis = Long.MAX_VALUE,
+                nodeLimit = System.getProperty("aiengine.duelNodes")?.toIntOrNull() ?: 50_000_000)
         }
 
         /** Challenger against defender; the shipped tuning is on one side of each. */
@@ -106,6 +109,8 @@ class LocalSearchSwitchDuelTest {
             "bound-singles" to Duel(CURRENT, CURRENT.copy(id = "per-candidate-bound", sharedAdjustmentBound = false), BattleFormat.SINGLE),
             "simultaneous-singles" to Duel(CURRENT.copy(id = "simultaneous", simultaneousResponseWeight = 1.0), CURRENT, BattleFormat.SINGLE),
             "simultaneous-half-singles" to Duel(CURRENT.copy(id = "simultaneous-half", simultaneousResponseWeight = 0.5), CURRENT, BattleFormat.SINGLE),
+            "repeats-singles" to Duel(CURRENT.copy(id = "opponent-repeats", readOpponentRepeats = true), CURRENT, BattleFormat.SINGLE),
+            "repeats" to Duel(CURRENT.copy(id = "opponent-repeats", readOpponentRepeats = true), CURRENT, BattleFormat.DOUBLE),
             "stages-singles" to Duel(CURRENT.copy(id = "persistent-stages", leafPersistentStageValue = 0.10), CURRENT, BattleFormat.SINGLE),
             "stages-strong-singles" to Duel(CURRENT.copy(id = "persistent-stages-strong", leafPersistentStageValue = 0.20), CURRENT, BattleFormat.SINGLE),
             "stages" to Duel(CURRENT.copy(id = "persistent-stages", leafPersistentStageValue = 0.10), CURRENT, BattleFormat.DOUBLE),

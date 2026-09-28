@@ -159,6 +159,7 @@ internal class LocalTacticalBrain(
         } else {
             calculatedContext
         }
+        active?.repeats?.observe(difficultyContext.state)
         // Assessed before ranking, not after, because the risk budget it resolves belongs in the
         // scoring rather than only in the draw at the end.
         //
@@ -442,7 +443,9 @@ internal class LocalTacticalBrain(
             excludedActionIds = ruleExclusions(rootRanked).keys,
             // Read from the same table as the rules; the AI's threat weights play no part in it.
             opponentIntents = if (!rulesApply) emptyList()
-                else ruleScores?.let { LocalOpponentIntentPredictor.predict(difficultyContext, it) }.orEmpty(),
+                else ruleScores?.let { LocalOpponentIntentPredictor.predict(difficultyContext, it) }.orEmpty().let { intents ->
+                    if (tuning.readOpponentRepeats && active != null) active.repeats.apply(intents, difficultyContext.state) else intents
+                },
             decisionSignature = if (actionSelector !is LocalWeightedActionSelector) null else { tentative ->
                 val refined = LocalRootDecisionPolicy.refine(tentative, difficultyContext).ranked
                 val tentativeSeed = LocalActionChoiceSeed.derive(
@@ -626,6 +629,8 @@ internal class LocalTacticalBrain(
         /** The AI's ace scores ([LocalAceScore]) and the opponents seen when they were worked out. */
         @Volatile var aceScores: Map<UUID, Double> = emptyMap()
         @Volatile var aceOpponentIds: Set<UUID> = emptySet()
+        /** What the opponent did in each matchup so far; see [LocalOpponentRepeats]. */
+        val repeats = jbro.cobblemon.mcc.betterai.matchup.LocalOpponentRepeats()
     }
 
     private fun BattleDecisionContext.withoutActivePlan(): BattleDecisionContext = copy(
