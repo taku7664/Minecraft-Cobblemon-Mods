@@ -7,7 +7,7 @@ import java.util.List;
 public final class BattleScreenGeometry {
     public static final int MOVE_WIDTH = 140;
     public static final int MOVE_HEIGHT = 32;
-    public static final int SWITCH_WIDTH = 132;
+    public static final int SWITCH_WIDTH = 120;
     public static final int SWITCH_HEIGHT = 20;
 
     private BattleScreenGeometry() {
@@ -18,8 +18,8 @@ public final class BattleScreenGeometry {
     }
 
     public static UiRect switchPanel(int screenWidth, int screenHeight) {
-        return new UiRect(Math.max(0, Math.min(18, screenWidth - 300)),
-                Math.max(82, (screenHeight - 150) / 2), 300, 150);
+        return new UiRect(Math.max(0, (screenWidth - 400) / 2),
+                Math.max(82, (screenHeight - 150) / 2), 274, 150);
     }
 
     public static List<UiRect> switchTiles(int screenWidth, int screenHeight, int count) {
@@ -29,7 +29,22 @@ public final class BattleScreenGeometry {
         UiRect panel = switchPanel(screenWidth, screenHeight);
         List<UiRect> result = new ArrayList<>(count);
         for (int index = 0; index < count; index++) {
-            result.add(new UiRect(panel.x() + 8,
+            result.add(new UiRect(panel.x(),
+                    panel.y() + 17 + index * 22, SWITCH_WIDTH, SWITCH_HEIGHT));
+        }
+        return List.copyOf(result);
+    }
+
+    /** Preview-only rows mirror the player's hitboxes without introducing opponent click targets. */
+    public static List<UiRect> switchOpponentTiles(int screenWidth, int screenHeight, int count) {
+        if (screenWidth < 400) return List.of();
+        if (count < 0 || count > 6) {
+            throw new IllegalArgumentException("Party preview count must be between 0 and 6");
+        }
+        UiRect panel = switchPanel(screenWidth, screenHeight);
+        List<UiRect> result = new ArrayList<>(count);
+        for (int index = 0; index < count; index++) {
+            result.add(new UiRect(screenWidth - panel.x() - SWITCH_WIDTH,
                     panel.y() + 17 + index * 22, SWITCH_WIDTH, SWITCH_HEIGHT));
         }
         return List.copyOf(result);

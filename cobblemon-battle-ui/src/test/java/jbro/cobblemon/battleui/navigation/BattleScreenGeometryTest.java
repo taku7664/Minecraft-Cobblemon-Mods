@@ -20,15 +20,27 @@ class BattleScreenGeometryTest {
 
     @Test
     void partyListKeepsOnlyExistingPokemonInOneColumn() {
-        assertEquals(new UiRect(18, 82, 300, 150), BattleScreenGeometry.switchPanel(427, 240));
+        assertEquals(new UiRect(13, 82, 274, 150), BattleScreenGeometry.switchPanel(427, 240));
         assertEquals(List.of(
-                new UiRect(26, 99, 132, 20),
-                new UiRect(26, 121, 132, 20),
-                new UiRect(26, 143, 132, 20),
-                new UiRect(26, 165, 132, 20),
-                new UiRect(26, 187, 132, 20),
-                new UiRect(26, 209, 132, 20)
+                new UiRect(13, 99, 120, 20),
+                new UiRect(13, 121, 120, 20),
+                new UiRect(13, 143, 120, 20),
+                new UiRect(13, 165, 120, 20),
+                new UiRect(13, 187, 120, 20),
+                new UiRect(13, 209, 120, 20)
         ), BattleScreenGeometry.switchTiles(427, 240, 6));
+        assertEquals(List.of(
+                new UiRect(294, 99, 120, 20),
+                new UiRect(294, 121, 120, 20),
+                new UiRect(294, 143, 120, 20)
+        ), BattleScreenGeometry.switchOpponentTiles(427, 240, 3));
+        for (int i = 0; i < 3; i++) {
+            UiRect ally = BattleScreenGeometry.switchTiles(427, 240, 3).get(i);
+            UiRect opponent = BattleScreenGeometry.switchOpponentTiles(427, 240, 3).get(i);
+            assertEquals(427, ally.x() + ally.width() + opponent.x());
+            assertEquals(ally.y(), opponent.y());
+        }
+        assertTrue(BattleScreenGeometry.switchOpponentTiles(320, 240, 3).isEmpty());
         assertEquals(3, BattleScreenGeometry.switchTiles(427, 240, 3).size());
         for (UiRect tile : BattleScreenGeometry.switchTiles(427, 240, 6)) {
             assertTrue(BattleScreenGeometry.switchPanel(427, 240).contains(tile.x() + 1, tile.y() + 1));

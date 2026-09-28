@@ -71,8 +71,8 @@ object BattleHudRenderer {
             Text.translatable("cobblemon_battle_ui.switch.status.$key").string
         }
         if (compact) {
-            context.drawText(font, font.trimToWidth(displayName.string, contentRight - contentX - 26),
-                contentX, y + 3, textColor, false)
+            BattleGenderText.draw(context, displayName.string, gender, contentX, y + 3,
+                contentRight - contentX - 26, opacity)
             rightText(context, "$level", contentRight, y + 3, muted)
             drawHp(context, contentX, minOf(contentX + 48, contentRight - if (flatHealth) 43 else 31),
                 y + 15, ratio, opacity, 4)
@@ -85,14 +85,8 @@ object BattleHudRenderer {
                 val label = font.trimToWidth(statusLabel, 35)
                 drawStatus(context, label, contentRight - font.getWidth(label) - 4, y + 32, status, opacity)
             }
-            val genderSymbol = when (gender) {
-                Gender.MALE -> "♂"
-                Gender.FEMALE -> "♀"
-                else -> ""
-            }
-            val name = displayName.string + genderSymbol
-            context.drawText(font, font.trimToWidth(name, contentRight - contentX - 30), contentX,
-                y + 6, textColor, false)
+            BattleGenderText.draw(context, displayName.string, gender, contentX, y + 6,
+                contentRight - contentX - 30, opacity)
             rightText(context, "$level", contentRight, y + 6, muted)
             drawHp(context, contentX, contentRight, y + 20, ratio, opacity)
             rightText(context, if (flatHealth) "${health.toInt()}/$maxHealth" else "${ceil(ratio * 100).toInt()}%",
@@ -120,13 +114,14 @@ object BattleHudRenderer {
 
     private fun drawHp(context: DrawContext, left: Int, right: Int, y: Int, ratio: Float, opacity: Float,
                        height: Int = 6) {
-        context.fill(left, y, right, y + height, BattleSurfaceRenderer.withOpacity(BattleUiTheme.TRACK, opacity))
+        val end = left + BattleHealthBarLayout.shortWidth((right - left).coerceAtLeast(0))
+        context.fill(left, y, end, y + height, BattleSurfaceRenderer.withOpacity(BattleUiTheme.TRACK, opacity))
         val color = when {
             ratio > .5f -> BattleUiTheme.GOOD
             ratio > .25f -> BattleUiTheme.FOCUS
             else -> BattleUiTheme.DANGER
         }
-        context.fill(left + 1, y + 1, left + 1 + ((right - left - 2) * ratio).toInt(), y + height - 1,
+        context.fill(left + 1, y + 1, left + 1 + ((end - left - 2) * ratio).toInt(), y + height - 1,
             BattleSurfaceRenderer.withOpacity(color, opacity))
     }
 

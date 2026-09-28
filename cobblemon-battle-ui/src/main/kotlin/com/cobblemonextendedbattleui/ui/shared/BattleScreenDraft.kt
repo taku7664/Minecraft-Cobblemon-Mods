@@ -3,6 +3,7 @@ package jbro.cobblemon.battleui.extended.ui.shared
 import com.cobblemon.mod.common.api.moves.Moves
 import com.cobblemon.mod.common.api.pokemon.status.Statuses
 import com.cobblemon.mod.common.api.types.ElementalTypes
+import com.cobblemon.mod.common.pokemon.Gender
 import jbro.cobblemon.battleui.navigation.BattleScreenGeometry
 import jbro.cobblemon.battleui.extended.pokemon.render.PokemonModelRenderer
 import net.minecraft.client.MinecraftClient
@@ -18,7 +19,8 @@ internal object BattleScreenDraft {
     private const val COMPACT_CARD_W = 132
 
     private data class SamplePokemon(val species: String, val hp: Float, val level: Int = 50,
-                                     val fainted: Boolean = false, val burned: Boolean = false)
+                                     val fainted: Boolean = false, val burned: Boolean = false,
+                                     val gender: Gender? = null)
 
     fun render(context: DrawContext, page: String, width: Int, height: Int) {
         val korean = MinecraftClient.getInstance().options.language == "ko_kr"
@@ -30,8 +32,9 @@ internal object BattleScreenDraft {
             else -> 1
         }
         if (count > 1) {
-            val allies = listOf(SamplePokemon("pikachu", .72f), SamplePokemon("bulbasaur", .91f), SamplePokemon("eevee", .48f))
-            val opponents = listOf(SamplePokemon("charizard", .36f), SamplePokemon("venusaur", .54f, burned = true),
+            val allies = listOf(SamplePokemon("pikachu", .72f, gender = Gender.MALE),
+                SamplePokemon("bulbasaur", .91f, gender = Gender.FEMALE), SamplePokemon("eevee", .48f))
+            val opponents = listOf(SamplePokemon("charizard", .36f, gender = Gender.FEMALE), SamplePokemon("venusaur", .54f, burned = true),
                 SamplePokemon("blastoise", .67f))
             repeat(count) { index ->
                 drawHud(context, 10, 22 + index * 33, allies[index], true, korean, compact = true)
@@ -41,8 +44,8 @@ internal object BattleScreenDraft {
                 drawTarget(context, width, height, count)
             return
         }
-        drawHud(context, 10, 28, SamplePokemon("pikachu", .72f), true, korean)
-        drawHud(context, width - CARD_W - 10, 28, SamplePokemon("charizard", .36f, burned = true), false, korean)
+        drawHud(context, 10, 28, SamplePokemon("pikachu", .72f, gender = Gender.MALE), true, korean)
+        drawHud(context, width - CARD_W - 10, 28, SamplePokemon("charizard", .36f, burned = true, gender = Gender.FEMALE), false, korean)
         when (page) {
             "draft-menu-rail" -> drawCommands(context, width, height, true)
             "draft-menu-blade" -> drawCommands(context, width, height, false)
@@ -83,9 +86,11 @@ internal object BattleScreenDraft {
         val name = Text.translatable("cobblemon.species.${sample.species}.name").string
         val font = MinecraftClient.getInstance().textRenderer
         if (compact) {
-            text(context, font.trimToWidth(name, contentRight - contentX - 26), contentX, y + 3, BattleUiTheme.TEXT)
+            BattleGenderText.draw(context, name, sample.gender, contentX, y + 3,
+                contentRight - contentX - 26, 1f)
             rightText(context, "${sample.level}", contentRight, y + 3, BattleUiTheme.MUTED)
-            val barRight = minOf(contentX + 48, contentRight - if (self) 43 else 31)
+            val fullBarRight = minOf(contentX + 48, contentRight - if (self) 43 else 31)
+            val barRight = contentX + BattleHealthBarLayout.shortWidth(fullBarRight - contentX)
             context.fill(contentX, y + 15, barRight, y + 19, BattleUiTheme.TRACK)
             context.fill(contentX + 1, y + 16,
                 contentX + 1 + ((barRight - contentX - 2) * sample.hp).toInt(), y + 18, hpColor(sample.hp))
@@ -106,12 +111,14 @@ internal object BattleScreenDraft {
                 BattleStatusPalette.background(Statuses.BURN.showdownName))
             text(context, statusLabel, badgeX + 2, y + 32, 0xFF182337.toInt())
         }
-        text(context, font.trimToWidth(name, contentRight - contentX - 30), contentX, y + 6, BattleUiTheme.TEXT)
+        BattleGenderText.draw(context, name, sample.gender, contentX, y + 6,
+            contentRight - contentX - 30, 1f)
         rightText(context, "${sample.level}", contentRight, y + 6, BattleUiTheme.MUTED)
         val barY = y + 20
-        context.fill(contentX, barY, contentRight, barY + 6, BattleUiTheme.TRACK)
+        val barRight = contentX + BattleHealthBarLayout.shortWidth(contentRight - contentX)
+        context.fill(contentX, barY, barRight, barY + 6, BattleUiTheme.TRACK)
         context.fill(contentX + 1, barY + 1,
-            contentX + 1 + ((contentRight - contentX - 2) * sample.hp).toInt(), barY + 5, hpColor(sample.hp))
+            contentX + 1 + ((barRight - contentX - 2) * sample.hp).toInt(), barY + 5, hpColor(sample.hp))
         rightText(context, if (self) "${(sample.hp * 120).toInt()}/120" else "${(sample.hp * 100).toInt()}%",
             if (statusLabel == null) contentRight else contentRight - font.getWidth(statusLabel) - 8,
             y + 32, BattleUiTheme.TEXT)
@@ -169,8 +176,8 @@ internal object BattleScreenDraft {
 
     private fun drawSwitch(context: DrawContext, width: Int, height: Int) {
         val samples = listOf(
-            SamplePokemon("pikachu", .72f), SamplePokemon("bulbasaur", .91f),
-            SamplePokemon("eevee", .48f), SamplePokemon("squirtle", .67f),
+            SamplePokemon("pikachu", .72f, gender = Gender.MALE), SamplePokemon("bulbasaur", .91f, gender = Gender.FEMALE),
+            SamplePokemon("eevee", .48f, gender = Gender.FEMALE), SamplePokemon("squirtle", .67f),
             SamplePokemon("charmander", .21f, burned = true), SamplePokemon("jigglypuff", 0f, fainted = true)
         )
         val cards = samples.mapIndexed { index, sample ->
@@ -185,7 +192,7 @@ internal object BattleScreenDraft {
                     "babydolleyes" to "30/30", "swift" to "20/20").map { (move, pp) ->
                     (Moves.getByName(move)?.displayName?.string ?: move) to pp
                 }, Text.translatable("cobblemon.ability.runaway").string,
-                    Text.translatable("cobblemon_battle_ui.switch.none").string)
+                    Text.translatable("cobblemon_battle_ui.switch.none").string), sample.gender
             )
         }
         val opponents = listOf("charizard", "venusaur", "blastoise").map { species ->

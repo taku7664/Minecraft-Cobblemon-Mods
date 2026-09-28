@@ -7,6 +7,8 @@ object BattleUiTheme {
     const val DIM = 0xFF71859A.toInt()
     const val CYAN = 0xFF69D6E8.toInt()
     const val PURPLE = 0xFF9868FF.toInt()
+    const val MALE = 0xFF64B6FF.toInt()
+    const val FEMALE = 0xFFFF79B7.toInt()
     const val TRANSCRIPT_OPPONENT = 0xFFB0A0ED.toInt()
     const val FOCUS = 0xFFFFC84A.toInt()
     const val DANGER = 0xFFFF667A.toInt()

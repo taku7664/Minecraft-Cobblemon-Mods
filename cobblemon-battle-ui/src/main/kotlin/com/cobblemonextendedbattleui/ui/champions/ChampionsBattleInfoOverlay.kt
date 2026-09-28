@@ -9,6 +9,7 @@ import jbro.cobblemon.battleui.extended.UIUtils
 import jbro.cobblemon.battleui.extended.PanelConfig
 import jbro.cobblemon.battleui.extended.PixelTextLayout
 import jbro.cobblemon.battleui.extended.ui.shared.BattleSurfaceRenderer
+import jbro.cobblemon.battleui.extended.ui.shared.BattleHealthBarLayout
 import jbro.cobblemon.battleui.extended.ui.shared.BattleUiTheme
 import jbro.cobblemon.battleui.extended.pokemon.render.PokemonModelRenderer
 import net.minecraft.client.MinecraftClient
@@ -396,18 +397,19 @@ object ChampionsBattleInfoOverlay {
         inlinePercent: Boolean = false
     ) {
         val height = if (detailed) 12 else 9
-        context.fill(x, y, x + width, y + height, BattleUiTheme.TRACK)
+        val barWidth = BattleHealthBarLayout.shortWidth(width)
+        context.fill(x, y, x + barWidth, y + height, BattleUiTheme.TRACK)
         val clamped = hpPercent.coerceIn(0f, 1f)
         val hpColor = when {
             clamped > .5f -> BattleUiTheme.GOOD
             clamped > .25f -> BattleUiTheme.FOCUS
             else -> BattleUiTheme.DANGER
         }
-        val fillWidth = ((width - 4) * clamped).toInt()
+        val fillWidth = ((barWidth - 4) * clamped).toInt()
         context.fill(x + 2, y + 2, x + 2 + fillWidth, y + height - 2, hpColor)
-        drawTextRight(context, "${(clamped * 100).toInt()}%",
-            x + width + if (inlinePercent) 48 else 0,
-            if (inlinePercent) y - 1 else y + height + 4, WHITE, 0.9f)
+        val percent = "${(clamped * 100).toInt()}%"
+        if (inlinePercent) drawText(context, percent, x + barWidth + 7, y - 1, WHITE, 0.9f)
+        else drawTextRight(context, percent, x + barWidth, y + height + 4, WHITE, 0.9f)
     }
 
     private fun volatileText(context: DrawContext, uuid: UUID, width: Int): String {
