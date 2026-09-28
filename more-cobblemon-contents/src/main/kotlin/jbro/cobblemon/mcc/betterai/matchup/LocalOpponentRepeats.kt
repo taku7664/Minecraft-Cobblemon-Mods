@@ -61,6 +61,25 @@ internal class LocalOpponentRepeats {
         }
     }
 
+    /**
+     * The switches the record alone predicts: for each opposing Pokemon, each Pokemon it switched to in this
+     * matchup before, with the share of the prediction the repeats earn times how often it did so.
+     */
+    @Synchronized
+    fun expectedSwitches(state: BattleStateView): Map<UUID, Map<UUID, Double>> {
+        if (seen.isEmpty()) return emptyMap()
+        return keys(state).mapNotNull { (pokemonId, keyed) ->
+            val counts = seen[keyed.first] ?: return@mapNotNull null
+            val total = counts.values.sum()
+            if (total <= 0) return@mapNotNull null
+            val share = minOf(1.0 - Math.pow(0.5, total.toDouble()), MAXIMUM_SHARE)
+            val switches = counts.filterKeys { it.startsWith(SWITCH) }.map { (label, count) ->
+                UUID.fromString(label.removePrefix(SWITCH)) to share * count / total
+            }.toMap()
+            if (switches.isEmpty()) null else pokemonId to switches
+        }.toMap()
+    }
+
     private fun keys(state: BattleStateView): Map<UUID, Pair<String, Int>> {
         val active = state.pokemon.filter { it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
         val own = active.filter { it.side == BattleSide.ALLY }.map { it.battlePokemonId.toString() }.sorted()
@@ -81,7 +100,7 @@ internal class LocalOpponentRepeats {
         return events.firstOrNull {
             it.kind == BattleObservedEventKind.SWITCHED && it.actorSlot == slot && it.actorPokemonId != pokemonId &&
                 it.actorPokemonId in opponents
-        }?.let { "switch:${it.actorPokemonId}" }
+        }?.let { "$SWITCH${it.actorPokemonId}" }
     }
 
     private fun label(option: IntentOption): String =
@@ -89,5 +108,6 @@ internal class LocalOpponentRepeats {
 
     companion object {
         const val MAXIMUM_SHARE = 0.8
+        private const val SWITCH = "switch:"
     }
 }

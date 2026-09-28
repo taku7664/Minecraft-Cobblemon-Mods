@@ -478,8 +478,15 @@ internal class LocalTacticalBrain(
         }
         val gimmickAdjustments = LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores)
         // The switching and mechanic rules' credits and debits, added to what the search made of each candidate.
-        val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys).associateWith {
-            (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0)
+        // An attack aimed at a Pokemon the opponent keeps switching out is priced against the one coming in.
+        val predictionAdjustments = if (!tuning.readOpponentRepeats || active == null || !rulesApply) emptyMap() else {
+            ruleScores?.let { scores ->
+                jbro.cobblemon.mcc.betterai.matchup.LocalSwitchPrediction.adjustments(
+                    difficultyContext.candidates, difficultyContext, scores, active.repeats.expectedSwitches(difficultyContext.state))
+            }.orEmpty()
+        }
+        val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys).associateWith {
+            (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0)
         }
         val switchAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
             LocalBattleActionPolicy.sort(lookahead.ranked.map { rank ->
