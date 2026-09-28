@@ -2,9 +2,13 @@ package jbro.cobblemon.mcc.betterai.matchup
 
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 
 /**
  * The switching rules, read from [MatchupScores].
@@ -20,6 +24,11 @@ import jbro.cobblemon.mcc.internal.ai.BattleSide
  *   fall brings the second in without a hit, and that is worth more than switching it in now.
  *
  * A replacement after a knockout enters without a hit, so the candidates are compared on the exchange alone.
+ * So does the one a pivot brings in once the opponent has moved; before that, it takes the hit. Such a
+ * replacement (a pivot's, an Eject Button's) is asked for mid-turn, with the one leaving still standing.
+ *
+ * A pivot (U-turn, Volt Switch, Parting Shot) is a switch that also acts: credited like a clearly better
+ * switch into the best Pokemon behind it, whose entry is free with the chance the pivot moves second.
  *
  * Adjustments are in the ranking's score units and are added after the search; the search owns the rest.
  */
@@ -39,17 +48,27 @@ internal object LocalSwitchRules {
         val replacementValues = linkedMapOf<String, Double>()
         val exclusions = linkedMapOf<String, String>()
         val adjustments = linkedMapOf<String, Double>()
+        // A slot that may not move is being asked for a replacement.
+        val movingSlots = candidates.flatMap(::parts).filter { it.kind == BattleActionKind.USE_MOVE }.map { it.actorSlot }.toSet()
         for (candidate in candidates) {
-            val switches = parts(candidate).filter { it.kind == BattleActionKind.SWITCH && it.switchPokemonId != null }
-            if (switches.isEmpty()) continue
             var adjustment = 0.0
-            for (part in switches) {
+            for (part in parts(candidate)) {
+                if (part.kind == BattleActionKind.USE_MOVE && pivots(part)) {
+                    val user = active(state, part.actorSlot) ?: continue
+                    adjustment += pivot(part, user, opponents, state, scores)
+                    continue
+                }
+                if (part.kind != BattleActionKind.SWITCH) continue
                 val incoming = state.pokemon.firstOrNull { it.battlePokemonId == part.switchPokemonId } ?: continue
-                val replaced = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot == part.actorSlot }
-                if (replaced == null || replaced.fainted || replaced.hpFraction <= 0.0) {
+                val replaced = active(state, part.actorSlot)
+                if (replaced == null) {
                     replacementValues[part.actionId] = opponents.mapNotNull {
                         scores.pokemon(incoming.battlePokemonId, it.battlePokemonId)?.score
                     }.averageOrNull() ?: continue
+                    continue
+                }
+                if (part.actorSlot !in movingSlots) {
+                    replacementValues[part.actionId] = midTurnEntry(incoming, replaced, opponents, state, scores) ?: continue
                     continue
                 }
                 val verdict = voluntary(incoming, replaced, opponents, scores) ?: continue
@@ -101,6 +120,56 @@ internal object LocalSwitchRules {
         }
         val exclusion = if (survival < SURVIVAL_PASS && !sacrifice) SWITCH_IN_DIES else null
         return Verdict(exclusion, adjustment)
+    }
+
+    /** A pivot's credit: the best switch behind it, entering free with the chance the pivot moves second. */
+    private fun pivot(
+        move: BattleActionCandidate,
+        user: BattlePokemonStateView,
+        opponents: List<BattlePokemonStateView>,
+        state: BattleStateView,
+        scores: MatchupScores,
+    ): Double {
+        val stayValue = opponents.mapNotNull { scores.pokemon(user.battlePokemonId, it.battlePokemonId)?.score }.averageOrNull() ?: return 0.0
+        val priority = LocalPublicTurnOrder.effectivePriority(state, BattleSide.ALLY, move)
+        val bench = state.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot == null && !it.fainted && it.hpFraction > 0.0 }
+        val best = bench.mapNotNull { incoming ->
+            opponents.mapNotNull { opponent ->
+                val free = scores.pokemon(incoming.battlePokemonId, opponent.battlePokemonId)?.score ?: return@mapNotNull null
+                val hit = scores.switchIn(incoming.battlePokemonId, opponent.battlePokemonId, user.battlePokemonId)?.score ?: free
+                // The opponent's attack is taken to have no priority.
+                val first = when {
+                    priority > 0 -> 1.0
+                    priority < 0 -> 0.0
+                    else -> LocalPublicTurnOrder.speedOrderProbability(state, user, opponent) ?: 0.5
+                }
+                first * hit + (1.0 - first) * free
+            }.averageOrNull()
+        }.maxOrNull() ?: return 0.0
+        val gain = best - stayValue
+        return if (gain >= SWITCH_MARGIN) gain * SCORE_SCALE else 0.0
+    }
+
+    /** A mid-turn replacement: free against an opponent that has moved this turn, under its hit otherwise. */
+    private fun midTurnEntry(
+        incoming: BattlePokemonStateView,
+        replaced: BattlePokemonStateView,
+        opponents: List<BattlePokemonStateView>,
+        state: BattleStateView,
+        scores: MatchupScores,
+    ): Double? = opponents.mapNotNull { opponent ->
+        val free = scores.pokemon(incoming.battlePokemonId, opponent.battlePokemonId)?.score ?: return@mapNotNull null
+        val moved = state.observedEvents.any {
+            it.turn == state.turn && it.kind == BattleObservedEventKind.MOVE_USED && it.actorPokemonId == opponent.battlePokemonId
+        }
+        if (moved) free else scores.switchIn(incoming.battlePokemonId, opponent.battlePokemonId, replaced.battlePokemonId)?.score ?: free
+    }.averageOrNull()
+
+    private fun pivots(move: BattleActionCandidate): Boolean =
+        move.moveDetails?.effects?.effects.orEmpty().any { it.kind == BattleMoveEffectKind.SWITCH_USER }
+
+    private fun active(state: BattleStateView, slot: Int?): BattlePokemonStateView? = state.pokemon.firstOrNull {
+        it.side == BattleSide.ALLY && it.activeSlot == slot && !it.fainted && it.hpFraction > 0.0
     }
 
     private fun parts(candidate: BattleActionCandidate): List<BattleActionCandidate> =

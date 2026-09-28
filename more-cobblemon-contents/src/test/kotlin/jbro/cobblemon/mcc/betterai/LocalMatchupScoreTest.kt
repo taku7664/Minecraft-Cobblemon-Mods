@@ -277,7 +277,7 @@ class LocalMatchupScoreTest {
     fun `a switch-in that the predicted hit knocks out is ruled out`() {
         // The faster ally knocks the foe out first; the foe knocks out anything that walks in.
         val context = context(allySpeed = 150, foeSpeed = 100)
-        val judgement = LocalSwitchRules.judge(listOf(switchAction()), context, LocalMatchupScoreCalculator.calculate(context))
+        val judgement = LocalSwitchRules.judge(listOf(attackAction(), switchAction()), context, LocalMatchupScoreCalculator.calculate(context))
         assertEquals(LocalSwitchRules.SWITCH_IN_DIES, judgement.exclusions["switch"])
     }
 
@@ -286,7 +286,7 @@ class LocalMatchupScoreTest {
         // Staying, the weak ally loses a race it moves first in; the bench's one-hit knockout wins it after the hit.
         val context = context(allySpeed = 150, foeSpeed = 100, allyPower = 40.0, benchPower = 300.0, foePower = 65.0)
         val scores = LocalMatchupScoreCalculator.calculate(context)
-        val judgement = LocalSwitchRules.judge(listOf(switchAction()), context, scores)
+        val judgement = LocalSwitchRules.judge(listOf(attackAction(), switchAction()), context, scores)
         val gain = scores.switchIn(BENCH, FOE, ALLY)!!.score - scores.pokemon(ALLY, FOE)!!.score
         assertTrue(gain >= LocalSwitchRules.SWITCH_MARGIN) { "gain $gain" }
         assertEquals(gain * LocalSwitchRules.SCORE_SCALE, judgement.adjustments.getValue("switch"), 1e-6)
@@ -301,10 +301,44 @@ class LocalMatchupScoreTest {
         val scores = LocalMatchupScoreCalculator.calculate(context)
         assertEquals(listOf(FOE2), scores.preserves.getValue(ALLY).soleAnswerTo)
         assertEquals(0.0, scores.preserves.getValue(BENCH).score, 1e-9)
-        val judgement = LocalSwitchRules.judge(listOf(switchAction()), context, scores)
+        val judgement = LocalSwitchRules.judge(listOf(attackAction(), switchAction()), context, scores)
         assertNull(judgement.exclusions["switch"]) { "the sacrifice dies on entry by design" }
         assertTrue(judgement.adjustments.getValue("switch") > 0.0)
     }
+
+    @Test
+    fun `a slow pivot brings the bench in free and is credited above the hard switch`() {
+        // The slower weak ally loses staying. After the foe's hit on it, the bench walks in without one and wins.
+        val context = context(allySpeed = 100, foeSpeed = 150, allyPower = 40.0, benchPower = 300.0, foePower = 65.0,
+            allyExtra = listOf(uturn()))
+        val scores = LocalMatchupScoreCalculator.calculate(context)
+        val judgement = LocalSwitchRules.judge(listOf(pivotAction(context), switchAction()), context, scores)
+        val free = scores.pokemon(BENCH, FOE)!!.score - scores.pokemon(ALLY, FOE)!!.score
+        assertEquals(free * LocalSwitchRules.SCORE_SCALE, judgement.adjustments.getValue("pivot"), 1e-6)
+        assertTrue(judgement.adjustments.getValue("pivot") > (judgement.adjustments["switch"] ?: 0.0)) { judgement.toString() }
+    }
+
+    @Test
+    fun `a mid-turn replacement is never ruled out for the hit it would take`() {
+        // A pivot's replacement: the leaving ally still stands, and the foe knocks out anything that walks in.
+        for (foeMoved in listOf(true, false)) {
+            val context = context(allySpeed = 150, foeSpeed = 100, foeMovedThisTurn = foeMoved)
+            val judgement = LocalSwitchRules.judge(listOf(switchAction()), context, LocalMatchupScoreCalculator.calculate(context))
+            assertTrue(judgement.exclusions.isEmpty()) { "foe moved $foeMoved: $judgement" }
+        }
+    }
+
+    private fun uturn() = BattlePublicMoveOptionView("uturn", BattleMoveCandidateView(typeId = "bug",
+        damageCategory = BattleMoveDamageCategory.PHYSICAL, power = 20.0, accuracy = 100.0, priority = 0, currentPp = 8,
+        effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, listOf(BattleMoveEffectView(
+            BattleMoveEffectKind.SWITCH_USER, BattleMoveEffectTarget.USER)), false)), BattlePublicMoveKnowledge.EXACT_OWN)
+
+    private fun pivotAction(context: BattleDecisionContext): BattleActionCandidate {
+        val option = context.publicActionCatalog.forPokemon(ALLY).first { it.moveId == "uturn" }
+        return BattleActionCandidate("pivot", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 2, moveId = option.moveId, moveDetails = option.details)
+    }
+
+    private fun attackAction() = BattleActionCandidate("attack", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0, moveId = "probe")
 
     private fun switchAction() = BattleActionCandidate("switch", BattleActionKind.SWITCH, actorSlot = 0, switchPokemonId = BENCH)
 
@@ -329,13 +363,16 @@ class LocalMatchupScoreTest {
         /** A benched opponent, slow and three-hitting, that only a strong ally beats. */
         secondFoe: Boolean = false,
         format: BattleFormat = BattleFormat.SINGLE,
+        foeMovedThisTurn: Boolean = false,
     ): BattleDecisionContext {
         val field = if (!rocksOnAllySide) BattleFieldStateView.empty() else BattleFieldStateView(null, null, emptyList(), emptyList(),
             mapOf(BattleSide.ALLY to listOf(BattleTimedEffectView("stealthrock", null)), BattleSide.OPPONENT to emptyList()))
+        val events = if (!foeMovedThisTurn) emptyList() else
+            listOf(BattleObservedEventView(1, 1, BattleObservedEventKind.MOVE_USED, FOE, listOf(ALLY), "probe"))
         val state = BattleStateView(UUID(0, 918), format, 1,
             listOf(pokemon(ALLY, BattleSide.ALLY, 0, allySpeed, allyItem), pokemon(BENCH, BattleSide.ALLY, null, allySpeed),
                 pokemon(FOE, BattleSide.OPPONENT, 0, foeSpeed)) + listOfNotNull(if (secondFoe) pokemon(FOE2, BattleSide.OPPONENT, null, 50) else null),
-            field, mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to if (secondFoe) 2 else 1), emptyList(), emptyList())
+            field, mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to if (secondFoe) 2 else 1), events, emptyList())
         return BattleDecisionContext(UUID(0, 919), state, listOf(BattleActionCandidate("wait", BattleActionKind.WAIT)), Long.MAX_VALUE,
             publicActionCatalog = BattlePublicActionCatalogView(state.pokemon.map { pokemon ->
                 val power = when (pokemon.battlePokemonId) { BENCH -> benchPower ?: allyPower; FOE -> foePower; FOE2 -> 65.0; else -> allyPower }
