@@ -9,6 +9,7 @@ import com.cobblemon.mod.common.battles.ErroredBattleStart
 import com.cobblemon.mod.common.battles.ForfeitActionResponse
 import com.cobblemon.mod.common.battles.MoveActionResponse
 import com.cobblemon.mod.common.battles.SuccessfulBattleStart
+import com.cobblemon.mod.common.battles.SwitchActionResponse
 import com.cobblemon.mod.common.api.storage.party.NPCPartyStore
 import com.cobblemon.mod.common.api.npc.NPCClasses
 import com.cobblemon.mod.common.client.CobblemonClient
@@ -59,8 +60,10 @@ internal object BattleLiveCapture {
         val trainerBattle = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TRAINER") == "1"
         val acceptForfeit = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_FORFEIT_ACCEPT") == "1"
         val targetSubmit = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TARGET_SUBMIT")?.takeIf { it.isNotBlank() }
+        val switchSubmit = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_SWITCH_SUBMIT")?.takeIf { it.isNotBlank() }
         require(!acceptForfeit || (trainerBattle && page == "forfeit"))
         require(targetSubmit == null || (page == "target" && targetSubmit in setOf("mouse", "keyboard", "back")))
+        require(switchSubmit == null || (page == "switch" && switchSubmit in setOf("mouse", "keyboard")))
         val battleFormatName = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_BATTLE_FORMAT") ?: "single"
         val battleFormat = when (battleFormatName) {
             "single" -> BattleFormat.GEN_9_SINGLES
@@ -82,6 +85,30 @@ internal object BattleLiveCapture {
             if (screenshotPending) {
                 if (!screenshotSaved.get()) return@register
                 val screen = client.currentScreen as? BattleGUI
+                if (switchSubmit != null) {
+                    val selection = checkNotNull(screen?.getCurrentActionSelection() as? BattleSwitchPokemonSelection)
+                    val chosen = selection.tiles.indexOfFirst { !it.isFainted && !it.isCurrentlyInBattle }
+                    check(chosen >= 0) { "No selectable switch target in live fixture" }
+                    if (switchSubmit == "mouse") {
+                        val bound = BattleScreenGeometry.switchTiles(client.window.scaledWidth,
+                            client.window.scaledHeight, selection.tiles.size)[chosen]
+                        check(screen.mouseClicked((bound.x() + bound.width() / 2).toDouble(),
+                            (bound.y() + bound.height() / 2).toDouble(), 0)) {
+                            "Visible switch row did not accept a mouse click"
+                        }
+                    } else {
+                        check(screen.keyPressed(GLFW.GLFW_KEY_Z, 0, 0)) {
+                            "Focused switch row did not accept keyboard confirmation"
+                        }
+                    }
+                    check(selection.request.response is SwitchActionResponse) {
+                        "Switch choice did not become Cobblemon's native switch response"
+                    }
+                    CobblemonExtendedBattleUI.LOGGER.info("Live switch {} submission verified", switchSubmit)
+                    screenshotPending = false
+                    client.scheduleStop()
+                    return@register
+                }
                 if (targetSubmit != null) {
                     if (targetSubmit == "back" && backPending) {
                         if (screen?.getCurrentActionSelection() !is BattleMoveSelection) {

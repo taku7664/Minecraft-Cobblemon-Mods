@@ -18,8 +18,8 @@ import kotlin.math.ceil
 
 /** Replaces only the ordinary HUD tile; Cobblemon still owns capture-ball animation. */
 object BattleHudRenderer {
-    private const val WIDTH = 184
-    private const val COMPACT_WIDTH = 156
+    private const val WIDTH = 156
+    private const val COMPACT_WIDTH = 132
     private val caughtIndicator = Identifier.of("cobblemon", "textures/gui/battle/battle_owned_indicator.png")
 
     @JvmStatic
@@ -40,21 +40,20 @@ object BattleHudRenderer {
         val verticalOffset = if (compact && battleType != null) BattleScreenGeometry.compactHudVerticalOffset(
             nativeY, battleType.slotsPerActor, battleType.actorsPerSide) else 0
         val y = nativeY.toInt() + (if (compact) 12 else 18) + verticalOffset
-        val height = if (compact) 30 else 50
+        val height = if (compact) 30 else 44
         val accent = if (reversed) BattleUiTheme.PURPLE else BattleUiTheme.CYAN
         BattleSurfaceRenderer.draw(context, x, y, width, height,
-            BattleUiTheme.panel.copy(top = 0xE01A3045.toInt(), bottom = 0xDC0D1A2B.toInt(),
-                border = if (selected || hovered) BattleUiTheme.FOCUS else accent,
-                borderWidth = if (selected || hovered) 2 else 1,
-                cornerCuts = if (reversed) BattleCornerCuts(topRight = 3, bottomLeft = 10)
-                    else BattleCornerCuts(topLeft = 3, bottomRight = 10)), opacity)
+            BattleUiTheme.panel.copy(top = 0xE5284054.toInt(), bottom = 0xE70C192B.toInt(),
+                borderWidth = 0,
+                cornerCuts = if (reversed) BattleCornerCuts(topRight = 4, bottomLeft = 15)
+                    else BattleCornerCuts(topLeft = 4, bottomRight = 15)), opacity)
+        context.fill(if (reversed) x + width - 3 else x, y + 5,
+            if (reversed) x + width else x + 3, y + height - 6,
+            BattleSurfaceRenderer.withOpacity(if (selected || hovered) BattleUiTheme.FOCUS else accent, opacity))
 
-        val portraitSize = if (compact) 22 else 30
-        val portraitX = if (reversed) x + width - portraitSize - 7 else x + 7
-        val portraitY = y + if (compact) 3 else 6
-        BattleSurfaceRenderer.draw(context, portraitX, portraitY, portraitSize, portraitSize,
-            BattleUiTheme.panel.copy(border = accent, cut = 4,
-                corners = if (reversed) 0b0110 else 0b1001), opacity)
+        val portraitSize = if (compact) 21 else 28
+        val portraitX = if (reversed) x + width - portraitSize - 6 else x + 6
+        val portraitY = y + if (compact) 3 else 5
         val ratio = (if (flatHealth) health / maxHealth.coerceAtLeast(1) else health).coerceIn(0f, 1f)
         val stableId = UUID.nameUUIDFromBytes("${species.resourceIdentifier}-$reversed-${displayName.string}".toByteArray())
         PokemonModelRenderer.drawPokemonModel(context, portraitX + 2, portraitY + 2, portraitSize - 4,
@@ -62,8 +61,8 @@ object BattleHudRenderer {
             ratio <= 0f, status, !reversed,
             { BattleSurfaceRenderer.withOpacity(it, opacity) }, 1f)
 
-        val contentX = if (reversed) x + 9 else x + portraitSize + 13
-        val contentRight = if (reversed) portraitX - 7 else x + width - 10
+        val contentX = if (reversed) x + 8 else x + portraitSize + 10
+        val contentRight = if (reversed) portraitX - 5 else x + width - 8
         val font = client.textRenderer
         val textColor = BattleSurfaceRenderer.withOpacity(BattleUiTheme.TEXT, opacity)
         val muted = BattleSurfaceRenderer.withOpacity(BattleUiTheme.MUTED, opacity)
@@ -75,18 +74,16 @@ object BattleHudRenderer {
             context.drawText(font, font.trimToWidth(displayName.string, contentRight - contentX - 26),
                 contentX, y + 3, textColor, false)
             rightText(context, "$level", contentRight, y + 3, muted)
-            drawHp(context, contentX, minOf(contentX + 60, contentRight - if (flatHealth) 43 else 31),
+            drawHp(context, contentX, minOf(contentX + 48, contentRight - if (flatHealth) 43 else 31),
                 y + 15, ratio, opacity, 4)
             rightText(context, if (flatHealth) "${health.toInt()}/$maxHealth" else "${ceil(ratio * 100).toInt()}%",
                 contentRight, y + 14, textColor)
             if (statusLabel != null) drawStatus(context, font.trimToWidth(statusLabel, 35),
                 contentX, y + 19, status, opacity)
         } else {
-            val role = Text.translatable(if (reversed) "cobblemon_battle_ui.hud.opponent" else "cobblemon_battle_ui.hud.self")
-            context.drawText(font, role, contentX, y + 4, BattleSurfaceRenderer.withOpacity(accent, opacity), false)
             if (statusLabel != null) {
                 val label = font.trimToWidth(statusLabel, 35)
-                drawStatus(context, label, contentRight - font.getWidth(label) - 4, y + 3, status, opacity)
+                drawStatus(context, label, contentRight - font.getWidth(label) - 4, y + 32, status, opacity)
             }
             val genderSymbol = when (gender) {
                 Gender.MALE -> "♂"
@@ -95,12 +92,12 @@ object BattleHudRenderer {
             }
             val name = displayName.string + genderSymbol
             context.drawText(font, font.trimToWidth(name, contentRight - contentX - 30), contentX,
-                y + 15, textColor, false)
-            rightText(context, "$level", contentRight, y + 15, muted)
-            drawHp(context, contentX, contentRight, y + 31, ratio, opacity)
-            context.drawText(font, "HP", contentX, y + 40, muted, false)
+                y + 6, textColor, false)
+            rightText(context, "$level", contentRight, y + 6, muted)
+            drawHp(context, contentX, contentRight, y + 20, ratio, opacity)
             rightText(context, if (flatHealth) "${health.toInt()}/$maxHealth" else "${ceil(ratio * 100).toInt()}%",
-                contentRight, y + 40, textColor)
+                if (statusLabel == null) contentRight else contentRight - font.getWidth(statusLabel) - 8,
+                y + 32, textColor)
         }
         if (dexState == PokedexEntryProgress.OWNED) {
             context.matrices.push()

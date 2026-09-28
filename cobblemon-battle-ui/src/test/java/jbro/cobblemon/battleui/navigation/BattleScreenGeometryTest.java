@@ -19,16 +19,17 @@ class BattleScreenGeometryTest {
     }
 
     @Test
-    void partyGridMatchesTwoColumnsAndThreeRowsInSmallViewport() {
-        assertEquals(new UiRect(83, 82, 260, 150), BattleScreenGeometry.switchPanel(427, 240));
+    void partyListKeepsOnlyExistingPokemonInOneColumn() {
+        assertEquals(new UiRect(18, 82, 300, 150), BattleScreenGeometry.switchPanel(427, 240));
         assertEquals(List.of(
-                new UiRect(92, 107, 118, 34),
-                new UiRect(216, 107, 118, 34),
-                new UiRect(92, 146, 118, 34),
-                new UiRect(216, 146, 118, 34),
-                new UiRect(92, 185, 118, 34),
-                new UiRect(216, 185, 118, 34)
+                new UiRect(26, 99, 132, 20),
+                new UiRect(26, 121, 132, 20),
+                new UiRect(26, 143, 132, 20),
+                new UiRect(26, 165, 132, 20),
+                new UiRect(26, 187, 132, 20),
+                new UiRect(26, 209, 132, 20)
         ), BattleScreenGeometry.switchTiles(427, 240, 6));
+        assertEquals(3, BattleScreenGeometry.switchTiles(427, 240, 3).size());
         for (UiRect tile : BattleScreenGeometry.switchTiles(427, 240, 6)) {
             assertTrue(BattleScreenGeometry.switchPanel(427, 240).contains(tile.x() + 1, tile.y() + 1));
         }

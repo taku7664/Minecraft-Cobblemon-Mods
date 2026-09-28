@@ -303,7 +303,7 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
             int scanCode
     ) {
         List<BattleSwitchPokemonSelection.SwitchTile> tiles = selection.getTiles();
-        return cobblemonBattleUi$handleGridKeys(
+        return cobblemonBattleUi$handleVerticalKeys(
                 selection,
                 tiles,
                 tile -> selection.isReviving() ? tile.isFainted()

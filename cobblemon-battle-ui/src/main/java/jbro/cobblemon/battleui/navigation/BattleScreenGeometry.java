@@ -7,8 +7,8 @@ import java.util.List;
 public final class BattleScreenGeometry {
     public static final int MOVE_WIDTH = 140;
     public static final int MOVE_HEIGHT = 32;
-    public static final int SWITCH_WIDTH = 118;
-    public static final int SWITCH_HEIGHT = 34;
+    public static final int SWITCH_WIDTH = 132;
+    public static final int SWITCH_HEIGHT = 20;
 
     private BattleScreenGeometry() {
     }
@@ -18,8 +18,8 @@ public final class BattleScreenGeometry {
     }
 
     public static UiRect switchPanel(int screenWidth, int screenHeight) {
-        return new UiRect(Math.max(0, (screenWidth - 260) / 2),
-                Math.max(82, (screenHeight - 150) / 2), 260, 150);
+        return new UiRect(Math.max(0, Math.min(18, screenWidth - 300)),
+                Math.max(82, (screenHeight - 150) / 2), 300, 150);
     }
 
     public static List<UiRect> switchTiles(int screenWidth, int screenHeight, int count) {
@@ -29,8 +29,8 @@ public final class BattleScreenGeometry {
         UiRect panel = switchPanel(screenWidth, screenHeight);
         List<UiRect> result = new ArrayList<>(count);
         for (int index = 0; index < count; index++) {
-            result.add(new UiRect(panel.x() + 9 + index % 2 * 124,
-                    panel.y() + 25 + index / 2 * 39, SWITCH_WIDTH, SWITCH_HEIGHT));
+            result.add(new UiRect(panel.x() + 8,
+                    panel.y() + 17 + index * 22, SWITCH_WIDTH, SWITCH_HEIGHT));
         }
         return List.copyOf(result);
     }

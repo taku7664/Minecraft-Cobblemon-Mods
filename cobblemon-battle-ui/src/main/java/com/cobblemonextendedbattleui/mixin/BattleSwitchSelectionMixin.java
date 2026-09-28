@@ -46,7 +46,7 @@ public abstract class BattleSwitchSelectionMixin {
         int width = client.getWindow().getScaledWidth();
         int height = client.getWindow().getScaledHeight();
         UiRect panel = BattleScreenGeometry.switchPanel(width, height);
-        UiRect back = new UiRect(panel.x() + 8, panel.y() + 137, 96, 13);
+        UiRect back = new UiRect(panel.x() + panel.width() - 104, panel.y(), 104, 17);
         if (!selection.getRequest().getForceSwitch() && back.contains(mouseX, mouseY)) {
             selection.getBattleGUI().changeActionSelection(null);
             selection.playDownSound(client.getSoundManager());
