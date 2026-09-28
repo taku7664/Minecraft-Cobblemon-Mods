@@ -661,10 +661,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                         state = RecursiveSnapshotActionConstraints.clearFromProjectedState(rawOutcome.state),
                     )
                     if (budgetExhausted()) return null
-                    val ownActionExecuted = actionExecuted(state, outcome, BattleSide.ALLY, ownAction)
-                    if (ownActionExecuted) {
-                        executionProbability += outcome.probability
-                    }
+                    executionProbability += outcome.probability * executedShare(state, outcome, BattleSide.ALLY, ownAction)
                     val trackedHp = trackedOwnPokemonIds.mapNotNull { id ->
                         outcome.state.pokemon.firstOrNull { it.battlePokemonId == id }?.hpFraction
                     }.averageOrNull() ?: 0.0
@@ -844,6 +841,23 @@ internal object LocalRecursiveLookaheadEvaluator {
             if (!truncated) stateUtilityMemo[key] = value
             return value
         }
+        /**
+         * The share of the submitted actions that went through: 0 or 1 for a single action, and for a doubles
+         * joint action the share of its non-pass slots. Counting a joint action only when every slot
+         * executed made one partner that might be knocked out first veto the other's attack: a real VGC
+         * final turn dropped every line with Ursaluna attacking and kept only Protect + Protect.
+         */
+        private fun executedShare(
+            stateBefore: BattleStateView,
+            outcome: PublicTurnProjection,
+            side: BattleSide,
+            submitted: BattleActionCandidate,
+        ): Double {
+            val acting = primitiveActions(submitted).filter { it.kind != BattleActionKind.WAIT }
+            if (acting.isEmpty()) return 1.0
+            return acting.count { actionExecuted(stateBefore, outcome, side, it) }.toDouble() / acting.size
+        }
+
         private fun actionExecuted(
             stateBefore: BattleStateView,
             outcome: PublicTurnProjection,
