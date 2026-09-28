@@ -271,7 +271,11 @@ internal class LocalTacticalBrain(
             active?.trainerPersonaId, difficultyContext, decisionStartedAtNanos,
         )
         val configuredBudget = lookaheadBudget(profile.difficulty.tier)
-        val budget = if (unboundedTestDecision) configuredBudget.copy(timeMillis = Long.MAX_VALUE) else configuredBudget
+        // The legacy search only: native nodes are full Showdown turns and keep their own bound.
+        val phaseBudget = if (profile.difficulty.tier == BattleTrainerTier.ADVANCED || profile.difficulty.tier == BattleTrainerTier.BOSS) {
+            LocalLookaheadBudgetPolicy.forPosition(configuredBudget, calculatedContext.state)
+        } else configuredBudget
+        val budget = if (unboundedTestDecision) phaseBudget.copy(timeMillis = Long.MAX_VALUE) else phaseBudget
         // Native nodes are full Showdown turns, orders of magnitude costlier than legacy projections,
         // so the node limit alone never stops them in time. AI test battles lift the wall clock for
         // the legacy search only; the native search keeps a bounded clock and falls back when it

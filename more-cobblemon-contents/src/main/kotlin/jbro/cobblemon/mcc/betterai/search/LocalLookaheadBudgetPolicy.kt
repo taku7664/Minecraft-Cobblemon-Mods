@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.search
 
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 
 internal data class LocalLookaheadBudget(
@@ -47,6 +48,27 @@ internal object LocalLookaheadBudgetPolicy {
             chanceBranchesPerMove = 64,
         )
     }
+
+    /**
+     * More search where few Pokemon are left. The tree is small there and each choice decides the battle,
+     * while an opening with a full board leans on the choosing rules. Only the node limit grows; the
+     * wall-clock ceiling stays [MAX_TIME_MILLIS].
+     */
+    fun forPosition(budget: LocalLookaheadBudget, state: BattleStateView): LocalLookaheadBudget {
+        val remaining = state.remainingPokemonBySide.values.sum()
+        val factor = when {
+            remaining <= ENDGAME_REMAINING -> ENDGAME_NODE_FACTOR
+            remaining <= LATE_REMAINING -> LATE_NODE_FACTOR
+            else -> 1
+        }
+        return if (factor == 1) budget else budget.copy(nodeLimit = budget.nodeLimit * factor)
+    }
+
+    /** Both sides' remaining Pokemon: 2 v 1 in doubles, 1 v 2 or 2 v 1 in singles. */
+    const val ENDGAME_REMAINING = 3
+    const val LATE_REMAINING = 5
+    const val ENDGAME_NODE_FACTOR = 3
+    const val LATE_NODE_FACTOR = 2
 
     fun deadline(startMillis: Long, externalDeadlineMillis: Long, budgetMillis: Long): Long {
         val localDeadline = if (startMillis > Long.MAX_VALUE - budgetMillis) {
