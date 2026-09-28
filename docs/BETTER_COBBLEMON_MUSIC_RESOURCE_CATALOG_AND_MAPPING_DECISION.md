@@ -166,7 +166,7 @@ user-music-extension.zip
   "schemaVersion": 1,
   "battle": {
     "content": {
-      "cobblemon_more_battle_content:battle_tower": "username:my_battle_playlist"
+      "more_cobblemon_contents:battle_tower": "username:my_battle_playlist"
     }
   }
 }
@@ -253,7 +253,7 @@ Minecraft 리소스 재로드
 - 구형 config `music/`의 OGG 51개는 모두 공식 ZIP 안의 OGG와 SHA-256이 같다.
 - `battle/content/swsh_gym_leader_battle.ogg`도 ZIP의 `battle/pvp/swsh_gym_leader_battle.ogg`와 같은 파일이다.
 - 현재 `music.json`은 고유 트랙 72개를 참조하지만 40개가 없고, 생성팩에는 32개만 들어간다.
-- 현재 사용자 설정은 스키마 1이며 MBC 타워·팩토리·PvP를 `swsh_gym_leader_battle`에 연결한다.
+- 현재 사용자 설정은 스키마 1이며 MCC 타워·팩토리·PvP를 `swsh_gym_leader_battle`에 연결한다.
 
 따라서 이행 시 공식 ZIP에 없는 40개 음원을 새로 존재하는 것처럼 선언해서는 안 된다 **MUST NOT**. 실제 50곡으로 카탈로그를 만들고, 없는 포켓몬 전용곡 매핑은 기존 일반 전설·야생 폴백을 따라야 **MUST** 한다.
 
@@ -283,7 +283,7 @@ Minecraft 리소스 재로드
 
 - 마이그레이션은 구형 `music.json`과 `music/`을 즉시 삭제하거나 덮어써서는 안 된다 **MUST NOT**.
 - 새 파일은 별도 후보로 생성하고 변환 결과를 검증한 뒤에만 활성화해야 **MUST** 한다.
-- 현재 MBC 세 콘텐츠의 사용자 매핑은 같은 음원의 안정 트랙 ID를 가리키는 오버라이드로 보존해야 **MUST** 한다.
+- 현재 MCC 세 콘텐츠의 사용자 매핑은 같은 음원의 안정 트랙 ID를 가리키는 오버라이드로 보존해야 **MUST** 한다.
 - 새 JAR 또는 ZIP이 실패하면 구형 JAR·ZIP·설정으로 되돌릴 수 있어야 **MUST** 한다.
 
 ### 10.3 종료 선언
