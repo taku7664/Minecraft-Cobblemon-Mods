@@ -43,7 +43,10 @@ internal object LocalLookaheadStateEvaluator {
         val teamCoverage = if (tuning.leafTeamCoverageWeight == 0.0) 0.0 else {
             LocalTeamMatchupCoverage.evaluate(state, source, calculationCache, shouldContinue, tuning)
         }
-        return material + pressure * tuning.leafPressureWeight + speedControl +
+        val persistentStages = if (tuning.leafPersistentStageValue == 0.0) 0.0 else {
+            LocalPersistentStageValue.evaluate(state, source.publicActionCatalog) * tuning.leafPersistentStageValue
+        }
+        return material + pressure * tuning.leafPressureWeight + speedControl + persistentStages +
             teamCoverage * tuning.leafTeamCoverageWeight +
             if (includePositionEffects) LocalImmediateTurnScorer.positionEffectValue(state) else 0.0
     }

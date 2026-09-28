@@ -42,7 +42,10 @@ internal object LocalImmediateTurnScorer {
                 calculationCache,
                 tuning,
                 shouldContinue,
-            ).pressureBoardDelta
+            ).pressureBoardDelta + if (tuning.leafPersistentStageValue == 0.0) 0.0 else {
+                (LocalPersistentStageValue.evaluate(after, it.publicActionCatalog) -
+                    LocalPersistentStageValue.evaluate(before, it.publicActionCatalog)) * tuning.leafPersistentStageValue
+            }
         } ?: 0.0
         val beforeStatus = positionStatus(before)
         val afterStatus = positionStatus(after)

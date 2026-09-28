@@ -121,6 +121,11 @@ internal data class LocalDecisionTuning(
     /** Board value of moving first, when the public speed order is resolvable. */
     val leafSpeedControlValue: Double = 0.15,
     /**
+     * Board value of one stage unit of LocalPersistentStageValue, on top of the pressure the stages add against
+     * the Pokemon in front; zero prices stages by that pressure alone.
+     */
+    val leafPersistentStageValue: Double = 0.0,
+    /**
      * How much more willing the search is to abandon a continuation, in board units.
      *
      * Zero ships, and stays zero. Pruning harder was asked for, built, measured, and rejected.
