@@ -17,9 +17,6 @@ import jbro.cobblemon.uikit.UiCorner
 import jbro.cobblemon.uikit.UiFill
 import jbro.cobblemon.uikit.UiIcon
 import jbro.cobblemon.uikit.UiIconButtonShape
-import jbro.cobblemon.uikit.UiFlowLayout
-import jbro.cobblemon.uikit.UiInsets
-import jbro.cobblemon.uikit.UiLayoutItem
 import jbro.cobblemon.uikit.UiListItemSpec
 import jbro.cobblemon.uikit.UiDialogSpec
 import jbro.cobblemon.uikit.UiOverlayTone
@@ -49,7 +46,6 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
-import kotlin.math.max
 import kotlin.math.min
 
 class ComponentGalleryScreen(
@@ -292,15 +288,7 @@ class ComponentGalleryScreen(
             "toast" to toastButton,
             "help" to helpButton
         )
-        val flowPlacements = UiFlowLayout(5, 5, UiInsets.None).place(
-            availableWidth,
-            flowWidgets.map { (key, widget) -> UiLayoutItem(key, widget.width, widget.height) }
-        )
-        CobblemonUiLayout.apply(contentLeft, viewportTop + cursorY, flowPlacements, flowWidgets)
-        flowPlacements.forEach { placement ->
-            addScrollingWidget(flowWidgets.getValue(placement.key), cursorY + placement.bounds.y)
-        }
-        cursorY += (flowPlacements.maxOfOrNull { it.bounds.bottom } ?: 0) + 6
+        cursorY = addWidgetFlow(contentLeft, contentRight, cursorY, flowWidgets.values.toList()) + 6
 
         val radioGroup = CobblemonUiRadioGroup(
             listOf(
@@ -459,25 +447,7 @@ class ComponentGalleryScreen(
         startY: Int,
         specs: List<UiButtonSpec>,
         availableWidth: Int
-    ): Int {
-        var x = left
-        var y = startY
-        var rowHeight = 0
-        specs.forEach { spec ->
-            var widget = CobblemonUiButton.create(x, viewportTop + y, availableWidth, spec)
-            if (x != left && x + widget.width > right) {
-                x = left
-                y += rowHeight + 5
-                rowHeight = 0
-                widget = CobblemonUiButton.create(x, viewportTop + y, availableWidth, spec)
-            }
-            addWidget(widget)
-            scrollingWidgets += ScrollingWidget(widget, y)
-            x += widget.width + 5
-            rowHeight = max(rowHeight, widget.height)
-        }
-        return y + rowHeight
-    }
+    ): Int = addWidgetFlow(left, right, startY, specs.map { CobblemonUiButton.create(0, 0, availableWidth, it) })
 
     private fun addActionFlow(
         left: Int,
@@ -485,25 +455,9 @@ class ComponentGalleryScreen(
         startY: Int,
         specs: List<Pair<UiButtonSpec, () -> Unit>>,
         availableWidth: Int
-    ): Int {
-        var x = left
-        var y = startY
-        var rowHeight = 0
-        specs.forEach { (spec, press) ->
-            var widget = CobblemonUiButton.create(x, viewportTop + y, availableWidth, spec, press = press)
-            if (x != left && x + widget.width > right) {
-                x = left
-                y += rowHeight + 5
-                rowHeight = 0
-                widget = CobblemonUiButton.create(x, viewportTop + y, availableWidth, spec, press = press)
-            }
-            addWidget(widget)
-            scrollingWidgets += ScrollingWidget(widget, y)
-            x += widget.width + 5
-            rowHeight = max(rowHeight, widget.height)
-        }
-        return y + rowHeight
-    }
+    ): Int = addWidgetFlow(left, right, startY, specs.map { (spec, press) ->
+        CobblemonUiButton.create(0, 0, availableWidth, spec, press = press)
+    })
 
     private fun addStateFlow(
         left: Int,
@@ -511,24 +465,15 @@ class ComponentGalleryScreen(
         startY: Int,
         specs: List<Pair<UiButtonSpec, UiWidgetState>>,
         availableWidth: Int
-    ): Int {
-        var x = left
-        var y = startY
-        var rowHeight = 0
-        specs.forEach { (spec, state) ->
-            var widget = CobblemonUiButton.create(x, viewportTop + y, availableWidth, spec, state)
-            if (x != left && x + widget.width > right) {
-                x = left
-                y += rowHeight + 5
-                rowHeight = 0
-                widget = CobblemonUiButton.create(x, viewportTop + y, availableWidth, spec, state)
-            }
-            addWidget(widget)
-            scrollingWidgets += ScrollingWidget(widget, y)
-            x += widget.width + 5
-            rowHeight = max(rowHeight, widget.height)
-        }
-        return y + rowHeight
+    ): Int = addWidgetFlow(left, right, startY, specs.map { (spec, state) ->
+        CobblemonUiButton.create(0, 0, availableWidth, spec, state)
+    })
+
+    /** Wraps [widgets] 5 apart between [left] and [right] from [startY]; returns the y below the last line. */
+    private fun addWidgetFlow(left: Int, right: Int, startY: Int, widgets: List<AbstractWidget>): Int {
+        val placed = CobblemonUiLayout.flow(left, viewportTop + startY, right - left, widgets, 5, 5)
+        widgets.forEachIndexed { index, widget -> addScrollingWidget(widget, placed[index].y - viewportTop) }
+        return (placed.maxOfOrNull { it.bottom } ?: (viewportTop + startY)) - viewportTop
     }
 
     private fun addScrollingWidget(widget: AbstractWidget, contentY: Int) {

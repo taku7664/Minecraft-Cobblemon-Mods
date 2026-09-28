@@ -57,9 +57,10 @@ class CobblemonUiKitModuleContractTest {
             UiToggleSpec::class.java,
             UiProgressSpec::class.java,
             UiScrollState::class.java,
-            UiStackLayout::class.java,
-            UiFlowLayout::class.java,
-            UiGridLayout::class.java,
+            UiLayoutNode::class.java,
+            UiLayoutResult::class.java,
+            UiLinearBuilder::class.java,
+            UiLayout::class.java,
             UiTooltipSpec::class.java,
             UiDialogSpec::class.java,
             UiToastSpec::class.java,
@@ -74,7 +75,7 @@ class CobblemonUiKitModuleContractTest {
             UiCalloutSpec::class.java,
             UiRenderSlotSpec::class.java,
             UiOrderedSelectionState::class.java,
-            UiAnchorLayout::class.java
+            UiLength::class.java
         )
 
         publicTypes.forEach { type ->

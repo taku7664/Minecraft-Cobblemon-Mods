@@ -2,6 +2,10 @@ package jbro.cobblemon.uikit.client
 
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiButtonVariant
+import jbro.cobblemon.uikit.UiCross
+import jbro.cobblemon.uikit.UiInsets
+import jbro.cobblemon.uikit.UiJustify
+import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiWidgetState
 import net.minecraft.client.Minecraft
@@ -31,9 +35,13 @@ data class UiListRowContent(
  */
 object CobblemonUiListRows {
     /** Where each of [count] actions sits at the end of a row at [bounds]. */
-    fun actionBounds(bounds: UiRect, count: Int): List<UiRect> = (0 until count).map { index ->
+    fun actionBounds(bounds: UiRect, count: Int): List<UiRect> {
+        if (count == 0) return emptyList()
         val size = (bounds.height - 6).coerceAtMost(18)
-        UiRect(bounds.right - 4 - (count - index) * (size + 2) + 2, bounds.y + (bounds.height - size) / 2, size, size)
+        val keys = UiLayout.keys("action", count)
+        return UiLayout.row(gap = 2, padding = UiInsets(0, 0, 4, 0), justify = UiJustify.END) {
+            keys.forEach { fixed(size, it, UiCross.centered(size)) }
+        }.solve(bounds).list("action")
     }
 
     fun draw(
