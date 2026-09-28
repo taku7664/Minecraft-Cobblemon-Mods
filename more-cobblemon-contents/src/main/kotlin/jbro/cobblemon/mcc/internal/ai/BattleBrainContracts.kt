@@ -939,18 +939,24 @@ class BattleActionCandidate(
     val facts: BattleCandidateFactsView? = null,
     tags: Set<String> = emptySet(),
 ) {
-    val targets: List<BattleTargetSlot> = Collections.unmodifiableList(ArrayList(targets))
-    val componentActionIds: List<String> = Collections.unmodifiableList(ArrayList(componentActionIds))
-    val componentActions: List<BattleActionCandidate> = Collections.unmodifiableList(ArrayList(componentActions))
-    val tags: Set<String> = Collections.unmodifiableSet(LinkedHashSet(tags))
+    // The search builds candidates at every node, and most of these collections are empty or hold one
+    // element, so those skip the defensive copy; the result is the same unmodifiable content.
+    val targets: List<BattleTargetSlot> = candidateListCopy(targets)
+    val componentActionIds: List<String> = candidateListCopy(componentActionIds)
+    val componentActions: List<BattleActionCandidate> = candidateListCopy(componentActions)
+    val tags: Set<String> = when (tags.size) {
+        0 -> emptySet()
+        1 -> Collections.singleton(tags.first())
+        else -> Collections.unmodifiableSet(LinkedHashSet(tags))
+    }
 
     init {
         require(actionId.isNotBlank())
         require(actorSlot == null || actorSlot >= 0)
         require(moveSlot == null || moveSlot >= 0)
-        require(targets.distinct().size == targets.size) { "Action targets must be unique" }
+        require(targets.size < 2 || targets.distinct().size == targets.size) { "Action targets must be unique" }
         require(componentActionIds.all { it.isNotBlank() })
-        require(componentActionIds.distinct().size == componentActionIds.size) {
+        require(componentActionIds.size < 2 || componentActionIds.distinct().size == componentActionIds.size) {
             "Composite action components must be unique"
         }
         require(tags.all { it.isNotBlank() })
@@ -1203,4 +1209,10 @@ object BattleDecisionValidator {
         context.candidates.none { it.actionId == decision.actionId } -> BattleDecisionValidationStatus.UNKNOWN_ACTION
         else -> BattleDecisionValidationStatus.VALID
     }
+}
+
+private fun <T> candidateListCopy(values: List<T>): List<T> = when (values.size) {
+    0 -> emptyList()
+    1 -> Collections.singletonList(values[0])
+    else -> Collections.unmodifiableList(ArrayList(values))
 }
