@@ -55,6 +55,8 @@ internal data class LocalLookaheadEvaluation(
     /** Time and nodes spent up to the end of [depthCompleted]; the rest went to a depth that did not finish. */
     val acceptedDepthMillis: Long = 0L,
     val acceptedDepthNodes: Int = 0,
+    /** Candidates that finished the depth after [depthCompleted] before the budget ran out, kept at that depth. */
+    val partialDepthCandidates: Int = 0,
 )
 
 /**
@@ -161,6 +163,8 @@ internal object LocalRecursiveLookaheadEvaluator {
         var lastCoverage = 1.0
         var acceptedDepthMillis = 0L
         var acceptedDepthNodes = 0
+        // Candidates that finished the depth the budget cut short; their deeper values were kept.
+        var partialDepthCandidates = 0
         // Board gain each candidate showed at a single ply, keyed by action.
         //
         // A one-ply search already resolves the whole turn including the opponent's reply, so this is
@@ -326,19 +330,24 @@ internal object LocalRecursiveLookaheadEvaluator {
                     )
                 }
             }
-            val evaluated = if (narrowed) {
-                // The leaders again from the pre-search ranking; everything else as the first turn left it.
-                val deep = ranked.filter { it.outcome.candidate.actionId in searchable.orEmpty() }.map(::evaluateRank)
-                val foresight = deep.mapNotNull { rank ->
-                    accepted.firstOrNull { it.outcome.candidate.actionId == rank.outcome.candidate.actionId }
-                        ?.let { rank.comparisonValue - it.comparisonValue }
-                }.averageOrNull() ?: 0.0
-                val byId = deep.associateBy { it.outcome.candidate.actionId }
-                accepted.map { rank ->
-                    byId[rank.outcome.candidate.actionId]?.let {
-                        it.copy(comparisonValue = it.comparisonValue - foresight, lookaheadUtility = it.lookaheadUtility - foresight)
-                    } ?: rank
-                }.toMutableList()
+            // Candidates this depth finished. A deeper depth takes them in the previous depth's order, so the
+            // leaders finish first; if the budget runs out, the finished ones keep their new values and the
+            // rest keep the previous depth's. Values are per turn, so the two depths compare directly.
+            val finishedIds = linkedSetOf<String>()
+            val evaluated = if (depth > 1) {
+                val original = ranked.associateBy { it.outcome.candidate.actionId }
+                val deeper = HashMap<String, LocalBattleActionRank>()
+                for (previous in accepted) {
+                    val id = previous.outcome.candidate.actionId
+                    if (id in excludedActionIds || searchable != null && id !in searchable) continue
+                    if (search.truncated) break
+                    val rank = evaluateRank(original.getValue(id))
+                    if (!search.truncated) {
+                        deeper[id] = rank
+                        finishedIds += id
+                    }
+                }
+                accepted.map { deeper[it.outcome.candidate.actionId] ?: it }.toMutableList()
             } else {
                 ranked.map { rank ->
                     val id = rank.outcome.candidate.actionId
@@ -377,6 +386,11 @@ internal object LocalRecursiveLookaheadEvaluator {
             if (search.truncated) {
                 truncated = true
                 terminationReason = search.terminationReason ?: LocalLookaheadTerminationReason.TIME_BUDGET
+                if (depth > 1 && finishedIds.isNotEmpty()) {
+                    accepted = LocalBattleActionPolicy.sort(evaluated)
+                    acceptedCoverage = acceptedCoverage + evaluatedCoverage.filterKeys { it in finishedIds }
+                    partialDepthCandidates = finishedIds.size
+                }
                 break
             }
             if (!leaderValidated) {
@@ -447,6 +461,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             elapsedMillis = elapsedMillis(searchStartedAt, clockMillis()),
             acceptedDepthMillis = acceptedDepthMillis,
             acceptedDepthNodes = acceptedDepthNodes,
+            partialDepthCandidates = partialDepthCandidates,
         )
     }
 
@@ -551,9 +566,11 @@ internal object LocalRecursiveLookaheadEvaluator {
                 }
             }
             if (deepResponses != null) {
-                val shift = responseValues.mapNotNull { response ->
+                // Only downward: the reply that punishes this line may be among the ones not searched, so a
+                // shallow reply never borrows the deep ones' gain.
+                val shift = (responseValues.mapNotNull { response ->
                     shallowValues[opponentActions.indexOf(response.action)]?.let { response.value.value - it.value }
-                }.averageOrNull() ?: 0.0
+                }.averageOrNull() ?: 0.0).coerceAtMost(0.0)
                 opponentActions.withIndex().filter { it.index !in deepResponses }.forEach { (index, action) ->
                     shallowValues[index]?.let { responseValues += OpponentTurnValue(action, it.copy(value = it.value + shift)) }
                 }
@@ -590,8 +607,14 @@ internal object LocalRecursiveLookaheadEvaluator {
             return order.take(LocalNarrowSecondTurn.DEEP_RESPONSES).toSet()
         }
 
+        // Narrowing the AI's own options can only make it miss a good line; narrowing the opponent's can
+        // hide the reply that punishes it. So the opponent keeps the wider list.
         private val innerLimitPerSlot: Int
             get() = if (narrow) minOf(LocalNarrowSecondTurn.INNER_PER_SLOT, profile.difficulty.doubleCandidateLimitPerSlot)
+                else profile.difficulty.doubleCandidateLimitPerSlot
+
+        private val innerOpponentLimitPerSlot: Int
+            get() = if (narrow) minOf(LocalNarrowSecondTurn.INNER_OPPONENT_PER_SLOT, profile.difficulty.doubleCandidateLimitPerSlot)
                 else profile.difficulty.doubleCandidateLimitPerSlot
 
         private fun searchState(projectedState: BattleStateView, depth: Int, history: RecursiveActionHistory): Double {
@@ -612,7 +635,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             val ownActions = if (profile.difficulty.tier == BattleTrainerTier.ADVANCED) {
                 futureOwnActions.filterNot { it.containsActionKind(BattleActionKind.SWITCH) }
             } else futureOwnActions
-            val opponentActions = completeOpponentActions(state, history, innerLimitPerSlot) ?: return stateUtility(state, history)
+            val opponentActions = completeOpponentActions(state, history, innerOpponentLimitPerSlot) ?: return stateUtility(state, history)
             if (ownActions.isEmpty() || opponentActions.isEmpty()) {
                 if (opponentActions.isEmpty() && !battleEnded(state)) publicResponseIncomplete = true
                 return stateUtility(state, history)
@@ -808,7 +831,16 @@ internal object LocalRecursiveLookaheadEvaluator {
                             depth - 1,
                             nextHistory,
                         )
-                        immediateValue + FUTURE_DELTA_DISCOUNT * (continuationValue - immediateValue)
+                        // Per turn, not summed: the later turns' own change, measured from the board they start
+                        // on, averaged with this turn's under the future discount. A two-turn line and a one-turn
+                        // line are then on the same scale, and re-reading the board after this turn is not
+                        // counted as something the next turn did.
+                        val nextStart = stateUtility(
+                            LocalBranchMoveInputs.state(outcome.state, context.publicActionCatalog, nextHistory),
+                            nextHistory,
+                        )
+                        turnStartValue + (immediateTurnDelta + FUTURE_DELTA_DISCOUNT * (continuationValue - nextStart)) /
+                            (1.0 + FUTURE_DELTA_DISCOUNT)
                     }
                     val uncertaintyReserve = if (opponentAction.isUnknownPublicResponse()) {
                         UNKNOWN_RESPONSE_RESERVE
