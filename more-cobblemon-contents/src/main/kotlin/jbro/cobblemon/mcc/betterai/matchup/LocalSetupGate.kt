@@ -8,6 +8,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStatusMoveCategories
+import jbro.cobblemon.mcc.internal.ai.PublicIds
 
 /**
  * The path a stat-raising status move has to pass before the AI may pick it.
@@ -74,9 +75,10 @@ internal object LocalSetupGate {
             val boosted = sweeper.boostedByOpponent[opponent.battlePokemonId] ?: 0.0
             if (boosted < DUEL_PASS) failures += "duel:${opponent.speciesId}"
         }
-        // Every attacker on the field may pick the user this turn.
+        // Every attacker on the field may pick the user this turn, if it gets to act at all.
         val survival = onField.fold(1.0) { chance, opponent ->
-            chance * (scores.pokemon(user.battlePokemonId, opponent.battlePokemonId)?.opponentMove?.survivalByUses?.getOrNull(1) ?: 1.0)
+            val hitSurvival = scores.pokemon(user.battlePokemonId, opponent.battlePokemonId)?.opponentMove?.survivalByUses?.getOrNull(1) ?: 1.0
+            chance * (1.0 - actingChance(opponent) * (1.0 - hitSurvival))
         }
         if (survival < SURVIVAL_PASS) failures += "knockout"
         for ((opponent, anti) in fieldStoppers(user, sweeper, context, scores, cache)) {
@@ -90,6 +92,20 @@ internal object LocalSetupGate {
             if (value >= STOPPER_PASS) failures += "stopper:${opponent.speciesId}:${stopper.kind.name.lowercase()}"
         }
         return Verdict(failures.isEmpty(), failures)
+    }
+
+    /**
+     * How likely [opponent] is to act this turn: a Pokemon that must recharge does not, a sleeping one wakes
+     * about half the time, a frozen one thaws one time in five. The window a sleeping or frozen opponent opens is
+     * the classic moment to set up.
+     */
+    private fun actingChance(opponent: BattlePokemonStateView): Double {
+        if (RECHARGE in opponent.canonicalKnownVolatileEffectIds) return 0.0
+        return when (opponent.statusId?.let(PublicIds::canonical)) {
+            "slp", "sleep", "asleep" -> SLEEPING_ACTS
+            "frz", "freeze", "frozen" -> FROZEN_ACTS
+            else -> 1.0
+        }
     }
 
     /**
@@ -124,6 +140,9 @@ internal object LocalSetupGate {
         anti?.let { opponent to it }
     }
 
+    private const val RECHARGE = "mustrecharge"
+    private const val SLEEPING_ACTS = 0.5
+    private const val FROZEN_ACTS = 0.2
     const val REASON = "setup_gate"
     const val SWEEP_PASS = 0.5
     const val DUEL_PASS = 0.5
