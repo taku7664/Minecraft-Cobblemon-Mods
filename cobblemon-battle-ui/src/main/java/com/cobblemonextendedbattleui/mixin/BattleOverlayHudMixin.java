@@ -2,12 +2,14 @@ package jbro.cobblemon.battleui.extended.mixin;
 
 import com.cobblemon.mod.common.api.pokedex.PokedexEntryProgress;
 import com.cobblemon.mod.common.client.battle.ClientBallDisplay;
+import com.cobblemon.mod.common.client.battle.ActiveClientBattlePokemon;
 import com.cobblemon.mod.common.client.gui.battle.BattleOverlay;
 import com.cobblemon.mod.common.client.render.models.blockbench.PosableState;
 import com.cobblemon.mod.common.pokemon.Gender;
 import com.cobblemon.mod.common.pokemon.Species;
 import com.cobblemon.mod.common.pokemon.status.PersistentStatus;
 import jbro.cobblemon.battleui.extended.ui.shared.BattleHudRenderer;
+import jbro.cobblemon.battleui.extended.ui.shared.BattleHudContext;
 import kotlin.Triple;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.MutableText;
@@ -19,6 +21,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /** Keeps Cobblemon's battle data/position animation while restyling its ordinary HUD. */
 @Mixin(value = BattleOverlay.class, remap = false)
 public abstract class BattleOverlayHudMixin {
+    @Inject(method = "drawTile", at = @At("HEAD"))
+    private void cobblemonBattleUi$beginHudTile(DrawContext context, float tickDelta,
+            ActiveClientBattlePokemon activePokemon, boolean left, int rank,
+            PokedexEntryProgress dexState, boolean hasCommand, boolean isHovered,
+            boolean isCompact, CallbackInfo ci) {
+        BattleHudContext.begin(activePokemon.getBattlePokemon() == null
+                ? null : activePokemon.getBattlePokemon().getUuid());
+    }
+
+    @Inject(method = "drawTile", at = @At("RETURN"))
+    private void cobblemonBattleUi$endHudTile(DrawContext context, float tickDelta,
+            ActiveClientBattlePokemon activePokemon, boolean left, int rank,
+            PokedexEntryProgress dexState, boolean hasCommand, boolean isHovered,
+            boolean isCompact, CallbackInfo ci) {
+        BattleHudContext.end();
+    }
+
     @Inject(method = "drawBattleTile", at = @At("HEAD"), cancellable = true)
     private void cobblemonBattleUi$drawHud(DrawContext context, float x, float y, float partialTicks,
             boolean reversed, Species species, int level, MutableText displayName, Gender gender,

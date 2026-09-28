@@ -1,132 +1,67 @@
 package jbro.cobblemon.battleui.extended.ui.shared
 
+import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.api.pokedex.PokedexEntryProgress
+import com.cobblemon.mod.common.client.CobblemonClient
+import com.cobblemon.mod.common.client.gui.battle.BattleOverlay
+import com.cobblemon.mod.common.client.render.models.blockbench.PosableState
 import com.cobblemon.mod.common.pokemon.Gender
 import com.cobblemon.mod.common.pokemon.Species
 import com.cobblemon.mod.common.pokemon.status.PersistentStatus
-import com.cobblemon.mod.common.client.render.models.blockbench.PosableState
-import com.cobblemon.mod.common.client.gui.battle.BattleOverlay
-import com.cobblemon.mod.common.client.CobblemonClient
-import jbro.cobblemon.battleui.extended.pokemon.render.PokemonModelRenderer
 import jbro.cobblemon.battleui.navigation.BattleScreenGeometry
-import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
-import net.minecraft.util.Identifier
 import java.util.UUID
 import kotlin.math.ceil
 
-/** Replaces only the ordinary HUD tile; Cobblemon still owns capture-ball animation. */
+/** Adapts Cobblemon's animated battle tile data to the reviewed edge HUD card. */
 object BattleHudRenderer {
-    private const val WIDTH = 156
-    private const val COMPACT_WIDTH = 132
-    private val caughtIndicator = Identifier.of("cobblemon", "textures/gui/battle/battle_owned_indicator.png")
-
     @JvmStatic
     fun draw(context: DrawContext, nativeX: Float, nativeY: Float, reversed: Boolean, species: Species,
              level: Int, displayName: Text, gender: Gender, status: PersistentStatus?,
              state: PosableState, opacity: Float, maxHealth: Int, health: Float,
              selected: Boolean, hovered: Boolean, compact: Boolean,
              actorName: Text?, flatHealth: Boolean, dexState: PokedexEntryProgress) {
-        val client = MinecraftClient.getInstance()
-        val width = if (compact) COMPACT_WIDTH else WIDTH
         val nativeWidth = if (compact) BattleOverlay.COMPACT_TILE_WIDTH else BattleOverlay.TILE_WIDTH
         val battleType = CobblemonClient.battle?.battleFormat?.battleType
-        val slotIndent = if (compact && battleType != null) {
-            BattleScreenGeometry.compactHudSlotIndent(nativeY,
-                battleType.slotsPerActor, battleType.actorsPerSide)
-        } else 0
-        val x = (nativeX + if (reversed) 2 - (width - nativeWidth) + slotIndent else -2 - slotIndent).toInt()
-        val verticalOffset = if (compact && battleType != null) BattleScreenGeometry.compactHudVerticalOffset(
+        val indent = if (compact && battleType != null) BattleScreenGeometry.compactHudSlotIndent(
             nativeY, battleType.slotsPerActor, battleType.actorsPerSide) else 0
-        val y = nativeY.toInt() + (if (compact) 12 else 18) + verticalOffset
-        val height = if (compact) 30 else 44
-        val accent = if (reversed) BattleUiTheme.PURPLE else BattleUiTheme.CYAN
-        BattleSurfaceRenderer.draw(context, x, y, width, height,
-            BattleUiTheme.panel.copy(top = 0xE5284054.toInt(), bottom = 0xE70C192B.toInt(),
-                borderWidth = 0,
-                cornerCuts = if (reversed) BattleCornerCuts(topRight = 4, bottomLeft = 15)
-                    else BattleCornerCuts(topLeft = 4, bottomRight = 15)), opacity)
-        context.fill(if (reversed) x + width - 3 else x, y + 5,
-            if (reversed) x + width else x + 3, y + height - 6,
-            BattleSurfaceRenderer.withOpacity(if (selected || hovered) BattleUiTheme.FOCUS else accent, opacity))
-
-        val portraitSize = if (compact) 21 else 28
-        val portraitX = if (reversed) x + width - portraitSize - 6 else x + 6
-        val portraitY = y + if (compact) 3 else 5
+        val compression = if (compact && battleType != null) BattleScreenGeometry.compactHudRowCompression(
+            nativeY, battleType.slotsPerActor, battleType.actorsPerSide) else 0
+        // Keep native slide animation, but settle every row flush against the screen edge.
+        val x = (if (reversed) nativeX + nativeWidth + BattleOverlay.HORIZONTAL_INSET -
+            BattleHudCardRenderer.WIDTH + indent else nativeX - BattleOverlay.HORIZONTAL_INSET - indent).toInt()
+        val y = nativeY.toInt() + 13 - compression
         val ratio = (if (flatHealth) health / maxHealth.coerceAtLeast(1) else health).coerceIn(0f, 1f)
-        val stableId = UUID.nameUUIDFromBytes("${species.resourceIdentifier}-$reversed-${displayName.string}".toByteArray())
-        PokemonModelRenderer.drawPokemonModel(context, portraitX + 2, portraitY + 2, portraitSize - 4,
-            null, species.resourceIdentifier, state.currentAspects, stableId,
-            ratio <= 0f, status, !reversed,
-            { BattleSurfaceRenderer.withOpacity(it, opacity) }, 1f)
-
-        val contentX = if (reversed) x + 8 else x + portraitSize + 10
-        val contentRight = if (reversed) portraitX - 5 else x + width - 8
-        val font = client.textRenderer
-        val textColor = BattleSurfaceRenderer.withOpacity(BattleUiTheme.TEXT, opacity)
-        val muted = BattleSurfaceRenderer.withOpacity(BattleUiTheme.MUTED, opacity)
-        val statusLabel = status?.let {
-            val key = it.showdownName.takeIf { name -> name in setOf("brn", "par", "psn", "tox", "slp", "frz") } ?: "other"
-            Text.translatable("cobblemon_battle_ui.switch.status.$key").string
-        }
-        if (compact) {
-            BattleGenderText.draw(context, displayName.string, gender, contentX, y + 3,
-                contentRight - contentX - 26, opacity)
-            rightText(context, "$level", contentRight, y + 3, muted)
-            drawHp(context, contentX, minOf(contentX + 48, contentRight - if (flatHealth) 43 else 31),
-                y + 15, ratio, opacity, 4)
-            rightText(context, if (flatHealth) "${health.toInt()}/$maxHealth" else "${ceil(ratio * 100).toInt()}%",
-                contentRight, y + 14, textColor)
-            if (statusLabel != null) drawStatus(context, font.trimToWidth(statusLabel, 35),
-                contentX, y + 19, status, opacity)
-        } else {
-            if (statusLabel != null) {
-                val label = font.trimToWidth(statusLabel, 35)
-                drawStatus(context, label, contentRight - font.getWidth(label) - 4, y + 32, status, opacity)
-            }
-            BattleGenderText.draw(context, displayName.string, gender, contentX, y + 6,
-                contentRight - contentX - 30, opacity)
-            rightText(context, "$level", contentRight, y + 6, muted)
-            drawHp(context, contentX, contentRight, y + 20, ratio, opacity)
-            rightText(context, if (flatHealth) "${health.toInt()}/$maxHealth" else "${ceil(ratio * 100).toInt()}%",
-                if (statusLabel == null) contentRight else contentRight - font.getWidth(statusLabel) - 8,
-                y + 32, textColor)
-        }
-        if (dexState == PokedexEntryProgress.OWNED) {
-            context.matrices.push()
-            context.matrices.translate((x + if (reversed) 3 else width - 8).toFloat(), (y + 3).toFloat(), 0f)
-            context.matrices.scale(.5f, .5f, 1f)
-            context.drawTexture(caughtIndicator, 0, 0, 0f, 0f, 10, 10, 10, 10)
-            context.matrices.pop()
-        }
-        if (actorName != null) context.drawText(font, font.trimToWidth(actorName.string, width), x,
-            y - 9, muted, false)
+        val pokemonId = BattleHudContext.pokemonId
+        val card = BattleHudCardRenderer.Card(
+            uuid = pokemonId ?: UUID.nameUUIDFromBytes(
+                "${species.resourceIdentifier}-$reversed-${displayName.string}".toByteArray()),
+            species = species.resourceIdentifier,
+            aspects = state.currentAspects.toSet(),
+            name = displayName.string,
+            gender = gender,
+            level = level,
+            hp = ratio,
+            health = if (flatHealth) "${health.toInt()}/$maxHealth" else "${ceil(ratio * 100).toInt()}%",
+            experience = if (!reversed && pokemonId != null) experienceProgress(pokemonId, level) else null,
+            status = status?.showdownName,
+            owned = dexState == PokedexEntryProgress.OWNED,
+            actorName = actorName,
+            selected = selected,
+            hovered = hovered,
+            opacity = opacity
+        )
+        BattleHudCardRenderer.draw(context, x, y, !reversed, card)
     }
 
-    private fun drawStatus(context: DrawContext, label: String, x: Int, y: Int,
-                           status: PersistentStatus, opacity: Float) {
-        val font = MinecraftClient.getInstance().textRenderer
-        context.fill(x, y, x + font.getWidth(label) + 4, y + 9,
-            BattleSurfaceRenderer.withOpacity(BattleStatusPalette.background(status.showdownName), opacity))
-        context.drawText(font, label, x + 2, y, BattleSurfaceRenderer.withOpacity(0xFF182337.toInt(), opacity), false)
-    }
-
-    private fun drawHp(context: DrawContext, left: Int, right: Int, y: Int, ratio: Float, opacity: Float,
-                       height: Int = 6) {
-        val end = left + BattleHealthBarLayout.shortWidth((right - left).coerceAtLeast(0))
-        context.fill(left, y, end, y + height, BattleSurfaceRenderer.withOpacity(BattleUiTheme.TRACK, opacity))
-        val color = when {
-            ratio > .5f -> BattleUiTheme.GOOD
-            ratio > .25f -> BattleUiTheme.FOCUS
-            else -> BattleUiTheme.DANGER
-        }
-        context.fill(left + 1, y + 1, left + 1 + ((end - left - 2) * ratio).toInt(), y + height - 1,
-            BattleSurfaceRenderer.withOpacity(color, opacity))
-    }
-
-    private fun rightText(context: DrawContext, text: String, right: Int, y: Int, color: Int) {
-        val font = MinecraftClient.getInstance().textRenderer
-        context.drawText(font, text, right - font.getWidth(text), y, color, false)
+    private fun experienceProgress(uuid: UUID, battleLevel: Int): Float? {
+        val pokemon = CobblemonClient.storage.party.findByUUID(uuid) ?: return null
+        if (pokemon.level != battleLevel || battleLevel >= Cobblemon.config.maxPokemonLevel) return null
+        val group = pokemon.experienceGroup
+        val start = group.getExperience(battleLevel)
+        val end = group.getExperience(battleLevel + 1)
+        if (end <= start) return null
+        return ((pokemon.experience - start).toFloat() / (end - start)).coerceIn(0f, 1f)
     }
 }

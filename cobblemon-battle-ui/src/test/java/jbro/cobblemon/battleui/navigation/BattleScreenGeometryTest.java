@@ -88,6 +88,15 @@ class BattleScreenGeometryTest {
     }
 
     @Test
+    void edgeHudUsesTheSameTwentyEightPixelRowsAsItsDraft() {
+        assertEquals(0, BattleScreenGeometry.compactHudRowCompression(10f, 3, 1));
+        assertEquals(2, BattleScreenGeometry.compactHudRowCompression(40f, 3, 1));
+        assertEquals(4, BattleScreenGeometry.compactHudRowCompression(70f, 3, 1));
+        assertEquals(0, BattleScreenGeometry.compactHudRowCompression(20f, 2, 2));
+        assertEquals(0, BattleScreenGeometry.compactHudRowCompression(10.4f, 3, 1));
+    }
+
+    @Test
     void targetDraftFitsBetweenCompactHudAndHotbar() {
         assertEquals(new UiRect(121, 110, 184, 74), BattleScreenGeometry.targetPanel(427, 240, 2));
         assertEquals(new UiRect(127, 132, 83, 22), BattleScreenGeometry.targetTile(427, 240, 2, 0, 0));

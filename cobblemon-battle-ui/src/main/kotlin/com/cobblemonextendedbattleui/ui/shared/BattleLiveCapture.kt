@@ -2,6 +2,7 @@ package jbro.cobblemon.battleui.extended.ui.shared
 
 import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.api.pokemon.PokemonProperties
+import com.cobblemon.mod.common.api.pokemon.experience.SidemodExperienceSource
 import com.cobblemon.mod.common.api.pokemon.status.Statuses
 import com.cobblemon.mod.common.battles.BattleBuilder
 import com.cobblemon.mod.common.battles.BattleFormat
@@ -410,6 +411,14 @@ internal object BattleLiveCapture {
             if (System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_STATUS") == "burn") {
                 // Player parties are not auto-healed by this fixture's trainer battle.
                 checkNotNull(party.toList().firstOrNull()).applyStatus(Statuses.BURN)
+            }
+            if (System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_EXPERIENCE") == "half") {
+                val pokemon = checkNotNull(party.toList().firstOrNull())
+                val next = pokemon.experienceGroup.getExperience(pokemon.level + 1)
+                val start = pokemon.experienceGroup.getExperience(pokemon.level)
+                val target = start + (next - start) / 2
+                pokemon.addExperience(SidemodExperienceSource("battle_ui_fixture"),
+                    (target - pokemon.experience).coerceAtLeast(0))
             }
             CobblemonExtendedBattleUI.LOGGER.info("Live fixture party count: {}", party.toList().size)
             val world = player.serverWorld

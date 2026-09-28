@@ -128,4 +128,16 @@ public final class BattleScreenGeometry {
         }
         return rank * 3;
     }
+
+    /** The 25 px edge cards use a 28 px row step instead of Cobblemon's native 30 px. */
+    public static int compactHudRowCompression(float nativeY, int slotsPerActor, int actorsPerSide) {
+        if (slotsPerActor < 2 || actorsPerSide != 1) {
+            return 0;
+        }
+        int rank = Math.round((nativeY - 10f) / 30f);
+        if (rank < 0 || rank >= slotsPerActor || Math.abs(nativeY - (10 + rank * 30)) > 0.5f) {
+            return 0;
+        }
+        return rank * 2;
+    }
 }
