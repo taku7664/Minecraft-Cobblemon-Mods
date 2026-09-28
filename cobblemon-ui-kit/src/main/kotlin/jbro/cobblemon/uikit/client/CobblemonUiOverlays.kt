@@ -5,6 +5,7 @@ import jbro.cobblemon.uikit.UiBorder
 import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiControlSize
+import jbro.cobblemon.uikit.UiDialogLayout
 import jbro.cobblemon.uikit.UiDialogSpec
 import jbro.cobblemon.uikit.UiOverlayPlacement
 import jbro.cobblemon.uikit.UiOverlayTone
@@ -78,14 +79,13 @@ class CobblemonUiDialogScreen(
             if (previousTheme == null) previousTheme = CobblemonUiThemes.registry.snapshot()
             CobblemonUiThemes.registry.install(theme)
         }
-        panel = UiRect((width - 260) / 2, (height - 120) / 2, 260, 120)
-        val hasCancel = spec.cancelLabel != null
-        val buttonWidth = if (hasCancel) 104 else 120
-        val confirmX = if (hasCancel) panel.x + panel.width / 2 + 4 else panel.x + (panel.width - buttonWidth) / 2
+        val layout = UiDialogLayout.calculate(width, height, spec.cancelLabel != null)
+        panel = layout.panel
+        val buttonWidth = layout.confirm.width
         addRenderableWidget(
             CobblemonUiButton.create(
-                confirmX,
-                panel.bottom - 34,
+                layout.confirm.x,
+                layout.confirm.y,
                 buttonWidth,
                 UiButtonSpec(
                     spec.confirmLabel,
@@ -101,8 +101,8 @@ class CobblemonUiDialogScreen(
         spec.cancelLabel?.let { label ->
             addRenderableWidget(
                 CobblemonUiButton.create(
-                    panel.x + panel.width / 2 - buttonWidth - 4,
-                    panel.bottom - 34,
+                    layout.cancel!!.x,
+                    layout.cancel.y,
                     buttonWidth,
                     UiButtonSpec(
                         label,

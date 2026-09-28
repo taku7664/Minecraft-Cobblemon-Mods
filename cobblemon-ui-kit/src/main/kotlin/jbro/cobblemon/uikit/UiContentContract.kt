@@ -37,9 +37,8 @@ data class UiPanelSpec(
 
     fun contentBounds(bounds: UiRect, titleHeight: Int = 0): UiRect {
         require(titleHeight >= 0) { "Panel title height must not be negative" }
-        val width = (bounds.width - padding.left - padding.right).coerceAtLeast(0)
-        val height = (bounds.height - padding.top - padding.bottom - titleHeight).coerceAtLeast(0)
-        return UiRect(bounds.x + padding.left, bounds.y + padding.top + titleHeight, width, height)
+        return UiLayout.inset(UiLayout.leaf("content"), padding.left, padding.top + titleHeight, padding.right, padding.bottom)
+            .solve(bounds)["content"]
     }
 }
 

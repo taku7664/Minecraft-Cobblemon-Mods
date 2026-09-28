@@ -3,6 +3,7 @@ package jbro.cobblemon.uikit.client
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import com.mojang.authlib.GameProfile
 import jbro.cobblemon.uikit.UiIcon
+import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiModelFraming
 import jbro.cobblemon.uikit.UiModelPlacement
 import jbro.cobblemon.uikit.UiRect
@@ -93,12 +94,8 @@ class CobblemonUiRenderSlot private constructor(
     override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         val theme = CobblemonUiThemes.registry.snapshot()
         UiSurfaceRenderer.draw(graphics, x, y, width, height, theme.surfaces.panelAlt)
-        val inner = UiRect(
-            x + spec.padding,
-            y + spec.padding,
-            (width - spec.padding * 2).coerceAtLeast(1),
-            (height - spec.padding * 2).coerceAtLeast(1)
-        )
+        val inner = UiLayout.inset(UiLayout.leaf("inner"), spec.padding, spec.padding, spec.padding, spec.padding, min = 1)
+            .solve(UiRect(x, y, width, height))["inner"]
         drawContent(graphics, inner, content, partialTick, spec.fallbackIcon)
     }
 
