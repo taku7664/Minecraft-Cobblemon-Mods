@@ -216,34 +216,64 @@ class BattlePokemonStateView(
         combatStats, knownFormStates, actionConstraints, knownVolatileEffectIds, knownBaseStabTypeIds,
         knownTeraTypeId, null)
 
+    // Each collection is the view's own frozen copy; one handed on from another view is taken as it is
+    // and was checked when it was first frozen (see FrozenSet).
     /** Observed active effects only. Absence is not proof of complete volatile knowledge or future persistence. */
-    val knownVolatileEffectIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownVolatileEffectIds))
-    val statStages: Map<String, Int> = Collections.unmodifiableMap(LinkedHashMap(statStages))
-    val knownMoveIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownMoveIds))
-    val knownTypeIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownTypeIds))
+    val knownVolatileEffectIds: Set<String> = FrozenSet.of(knownVolatileEffectIds)
+    val statStages: Map<String, Int> = FrozenMap.of(statStages)
+    val knownMoveIds: Set<String> = FrozenSet.of(knownMoveIds)
+    val knownTypeIds: Set<String> = FrozenSet.of(knownTypeIds)
     /** Types retaining ordinary STAB before an active Terastallization; excludes the Tera type. */
-    val knownBaseStabTypeIds: Set<String> = Collections.unmodifiableSet(LinkedHashSet(knownBaseStabTypeIds))
+    val knownBaseStabTypeIds: Set<String> = FrozenSet.of(knownBaseStabTypeIds)
     /**
      * Exact effective move types whose one-use Stellar boost has been consumed, or null when public
      * observation cannot determine the consumption state. An empty set is therefore meaningful.
      */
-    val knownStellarBoostedTypeIds: Set<String>? = knownStellarBoostedTypeIds?.let {
-        Collections.unmodifiableSet(LinkedHashSet(it))
-    }
-    val knownFormStates: Map<String, BattlePokemonFormStateView> =
-        Collections.unmodifiableMap(LinkedHashMap(knownFormStates))
+    val knownStellarBoostedTypeIds: Set<String>? = knownStellarBoostedTypeIds?.let(FrozenSet.Companion::of)
+    val knownFormStates: Map<String, BattlePokemonFormStateView> = FrozenMap.of(knownFormStates)
 
     init {
         require(activeSlot == null || activeSlot >= 0)
         require(level == null || level > 0)
         require(hpFraction in 0.0..1.0)
         require(speciesId.isNotBlank())
-        require(this.knownTypeIds.all { it.isNotBlank() })
-        require(this.knownBaseStabTypeIds.all { it.isNotBlank() })
+        if (knownTypeIds !is FrozenSet<*>) require(this.knownTypeIds.all { it.isNotBlank() })
+        if (knownBaseStabTypeIds !is FrozenSet<*>) require(this.knownBaseStabTypeIds.all { it.isNotBlank() })
         require(knownTeraTypeId == null || knownTeraTypeId.isNotBlank())
-        require(this.knownStellarBoostedTypeIds?.all { it.isNotBlank() } != false)
-        require(this.knownFormStates.keys.all { it.isNotBlank() })
-        require(this.knownVolatileEffectIds.all { it.isNotBlank() })
+        if (knownStellarBoostedTypeIds !is FrozenSet<*>) require(this.knownStellarBoostedTypeIds?.all { it.isNotBlank() } != false)
+        if (knownFormStates !is FrozenMap<*, *>) require(this.knownFormStates.keys.all { it.isNotBlank() })
+        if (knownVolatileEffectIds !is FrozenSet<*>) require(this.knownVolatileEffectIds.all { it.isNotBlank() })
+    }
+
+    // Canonical forms of the ids the public mechanics compare at every search node, worked out on first ask.
+    // A race only computes the same string twice.
+    private var canonicalAbility: Any? = UNSET
+    private var canonicalItem: Any? = UNSET
+    private var canonicalVolatiles: Set<String>? = null
+
+    /** [knownAbilityId] in [PublicIds.canonical] form, null when unknown or blank. */
+    val canonicalKnownAbilityId: String?
+        get() {
+            val cached = canonicalAbility
+            if (cached !== UNSET) return cached as String?
+            return knownAbilityId?.let(PublicIds::canonical)?.takeIf(String::isNotEmpty).also { canonicalAbility = it }
+        }
+
+    /** [knownHeldItemId] in [PublicIds.canonical] form, null when unknown or blank. */
+    val canonicalKnownHeldItemId: String?
+        get() {
+            val cached = canonicalItem
+            if (cached !== UNSET) return cached as String?
+            return knownHeldItemId?.let(PublicIds::canonical)?.takeIf(String::isNotEmpty).also { canonicalItem = it }
+        }
+
+    /** [knownVolatileEffectIds] in [PublicIds.canonical] form. */
+    val canonicalKnownVolatileEffectIds: Set<String>
+        get() = canonicalVolatiles ?: (if (knownVolatileEffectIds.isEmpty()) emptySet()
+            else knownVolatileEffectIds.mapTo(HashSet(), PublicIds::canonical)).also { canonicalVolatiles = it }
+
+    private companion object {
+        val UNSET = Any()
     }
 }
 
