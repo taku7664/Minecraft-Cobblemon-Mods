@@ -49,11 +49,12 @@ class LocalBattleReadTest {
             recordedContexts = contexts,
             lookaheadBudget = { LocalLookaheadBudgetPolicy.forTier(it).copy(timeMillis = Long.MAX_VALUE, nodeLimit = System.getProperty("aiengine.readNodes")?.toIntOrNull() ?: 50_000_000) })
         // Contexts alternate cycle then offense each turn; replacements add more. Take the last ones at the turn.
-        val atTurn = contexts.filter { it.state.turn == turn }
+        // The turn's move decisions, not the replacements before them.
+        val atTurn = contexts.filter { context -> context.state.turn == turn && context.candidates.none { it.actionId.startsWith("forced:") } }
         val context = if (side == "cycle") atTurn.first() else atTurn.last()
         val profile = BattleTrainerProfile(skillLevel = 2, personality = BattleTrainerProfile.champion().personality, difficulty = boss)
         val base = LocalBattleActionPolicy.rank(context, null, profile)
-        val result = LocalRecursiveLookaheadEvaluator.evaluate(base, context, profile, LocalDecisionTuning.CURRENT, clockMillis = { 0L },
+        val result = LocalRecursiveLookaheadEvaluator.evaluate(base, context, profile, readTuning(), clockMillis = { 0L },
             budget = LocalLookaheadBudgetPolicy.forTier(boss.tier).copy(timeMillis = Long.MAX_VALUE, nodeLimit = System.getProperty("aiengine.readNodes")?.toIntOrNull() ?: 50_000_000))
         println("PROBE depth=${result.depthCompleted} nodes=${result.nodesVisited}")
         context.state.pokemon.forEach { println("PROBE mon ${it.side} ${it.speciesId} slot=${it.activeSlot} hp=%.2f st=${it.statusId} stages=${it.statStages}".format(it.hpFraction)) }
@@ -67,7 +68,7 @@ class LocalBattleReadTest {
         }
         for (rank in result.ranked) {
             val b = base.first { it.outcome.candidate.actionId == rank.outcome.candidate.actionId }
-            println("PROBE ${rank.outcome.candidate.actionId} cmp=%.1f look=%.1f base=%.1f exec=%.2f worstHp=%.2f".format(
+            println("PROBE searched=${rank.outcome.candidate.actionId in result.responseCoverageByAction} ${rank.outcome.candidate.actionId} cmp=%.1f look=%.1f base=%.1f exec=%.2f worstHp=%.2f".format(
                 rank.comparisonValue, rank.lookaheadUtility, b.comparisonValue, rank.executionProbability, rank.worstResponseHpRetention))
         }
     }

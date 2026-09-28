@@ -115,10 +115,13 @@ internal data class LocalDecisionTuning(
     val readOpponentRepeats: Boolean = false,
     /**
      * A root candidate the search did not reach takes the searched candidates' median adjustment, when that is a
-     * loss, instead of none. Unclamped, doubles duels at the shipped budget and three times it, six seeds and 126
-     * games, gave it a mean HP lead of +0.23, but it also lifted untested joints into the choice pool.
+     * loss, instead of none. Doubles duels at the shipped budget, four seeds and 80 games: mean HP lead +0.25 for
+     * it (unclamped, six seeds and 126 games: +0.23, but that version lifted untested joints into the choice pool).
+     * On the synthetic root retention fixtures it removes the unsearched Splash and missing-type losses (34 and 13)
+     * and the selector's draws of unsearched joints, and costs 48 and 215 in two redirection fixtures whose best
+     * joint was one it had not searched.
      */
-    val unsearchedTakeMedianAdjustment: Boolean = false,
+    val unsearchedTakeMedianAdjustment: Boolean = true,
     /** How the search's projected hits branch on damage rolls and critical hits. */
     val chanceModel: jbro.cobblemon.mcc.betterai.calculation.LocalChanceModel =
         jbro.cobblemon.mcc.betterai.calculation.LocalChanceModel.HIGH_ROLL,

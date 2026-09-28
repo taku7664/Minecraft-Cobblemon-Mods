@@ -79,13 +79,13 @@ class LocalImmuneSpreadCandidateTest {
         }
         fun evaluate(tuning: LocalDecisionTuning) = LocalRecursiveLookaheadEvaluator.evaluate(
             ranked, calculated, profile, tuning, clockMillis = { 0L })
-        val narrow = evaluate(LocalDecisionTuning.CURRENT)
-        val wide = evaluate(LocalDecisionTuning.CURRENT.copy(maximumRootCandidates = Int.MAX_VALUE))
+        val narrow = evaluate(RETENTION_TUNING)
+        val wide = evaluate(RETENTION_TUNING.copy(maximumRootCandidates = Int.MAX_VALUE))
         CooperativeSearchComparison.verifyPoolRecovery("spread-$spreadSlot-$partnerTypes-$partnerAbility-$opponentCount", narrow,
             LocalRecursiveLookaheadEvaluator.evaluate(ranked, calculated, profile, clockMillis = { 0L },
                 rootChoicePool = CooperativeSearchComparison::choicePool), wide)
         CooperativeSearchComparison.verifyLeaderRecovery("spread-$spreadSlot-$partnerTypes-$partnerAbility-$opponentCount", narrow,
-            evaluate(LocalDecisionTuning.CURRENT.copy(revalidateUnsearchedRootLeaders = true)), wide)
+            evaluate(RETENTION_TUNING.copy(revalidateUnsearchedRootLeaders = true)), wide)
         val referenceLoss = CooperativeSearchComparison.verifyAndReport(
             "spread-$spreadSlot-$partnerTypes-$partnerAbility-$opponentCount", narrow, wide)
         // Characterize missing-type cases choosing an unsearched joint, not a permitted quality loss.
@@ -96,8 +96,8 @@ class LocalImmuneSpreadCandidateTest {
         assertEquals(joints.size, wide.responseCoverageByAction.size)
         assertEquals(expected, cooperative.actionId in narrow.responseCoverageByAction,
             "Only publicly zero ally damage may reserve a spread joint")
-        assertTrue(narrow.responseCoverageByAction.size <= LocalDecisionTuning.CURRENT.maximumRootActionsPerSlot *
-            LocalDecisionTuning.CURRENT.maximumRootActionsPerSlot + 2)
+        assertTrue(narrow.responseCoverageByAction.size <= RETENTION_TUNING.maximumRootActionsPerSlot *
+            RETENTION_TUNING.maximumRootActionsPerSlot + 2)
         println("IMMUNE_SPREAD slot=$spreadSlot types=$partnerTypes ability=$partnerAbility candidates=${joints.size} kept=${narrow.responseCoverageByAction.size} " +
             "nodes=${narrow.nodesVisited} wideNodes=${wide.nodesVisited} baseRank=${ranked.indexOfFirst { it.outcome.candidate.actionId == cooperative.actionId } + 1} " +
             "narrowChoice=${narrow.ranked.first().outcome.candidate.actionId} wideChoice=${wide.ranked.first().outcome.candidate.actionId}")
@@ -116,4 +116,9 @@ class LocalImmuneSpreadCandidateTest {
         fainted = false, knownTypeIds = types, combatStats = if (side == BattleSide.ALLY)
             BattleCombatStatRangesView.exact(200, 100, 100, 100, 100, 100)
         else publicExactStats(200, 100, 100, 100, 100, 90))
+
+    private companion object {
+        /** Root retention without the unsearched median correction, which changes these losses on its own. */
+        val RETENTION_TUNING = LocalDecisionTuning.CURRENT.copy(unsearchedTakeMedianAdjustment = false)
+    }
 }

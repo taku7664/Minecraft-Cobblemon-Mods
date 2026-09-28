@@ -89,7 +89,8 @@ class LocalCooperativeCandidateCoverageTest {
         val profile = BattleTrainerProfile.balanced(2).let {
             it.copy(difficulty = it.difficulty.copy(lookaheadPlies = 1))
         }
-        val tuning = LocalDecisionTuning.CURRENT
+        // Root retention without the unsearched median correction, which changes these losses on its own.
+        val tuning = LocalDecisionTuning.CURRENT.copy(unsearchedTakeMedianAdjustment = false)
         val ranked = LocalBattleActionPolicy.rank(calculated, null, profile, tuning)
         fun evaluate(settings: LocalDecisionTuning) = LocalRecursiveLookaheadEvaluator.evaluate(
             ranked, calculated, profile, settings, clockMillis = { 0L })
