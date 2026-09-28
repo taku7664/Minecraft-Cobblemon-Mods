@@ -128,7 +128,6 @@ object BattleTranscriptOverlay {
 
         context.matrices.push()
         context.matrices.translate(0f, 0f, 1100f)
-        context.fill(0, 0, mc.window.scaledWidth, mc.window.scaledHeight, 0x65040A13)
         BattleSurfaceRenderer.draw(context, x, y, width, height, BattleUiTheme.shell)
         val title = tr("title")
         val titleWidth = maxOf(112, ceil(mc.textRenderer.getWidth(title) * scale).toInt() + 28)

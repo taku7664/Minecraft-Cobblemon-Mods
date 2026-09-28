@@ -24,6 +24,7 @@ import jbro.cobblemon.battleui.navigation.BattleScreenGeometry;
 import jbro.cobblemon.battleui.navigation.SpatialMenuNavigator;
 import jbro.cobblemon.battleui.navigation.UiRect;
 import jbro.cobblemon.battleui.extended.ui.shared.BattleTargetRenderer;
+import jbro.cobblemon.battleui.extended.ui.shared.BattleModalVignette;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import org.lwjgl.glfw.GLFW;
@@ -41,6 +42,18 @@ import java.util.function.Predicate;
 
 @Mixin(value = BattleGUI.class, remap = false)
 public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAccess {
+    @Inject(method = "render", at = @At("HEAD"), remap = true)
+    private void cobblemonBattleUi$renderModalVignette(
+            DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        boolean active = getCurrentActionSelection() instanceof BattleSwitchPokemonSelection
+                || BattleInfoPanel.INSTANCE.isExpanded()
+                || jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.isOpen();
+        MinecraftClient client = MinecraftClient.getInstance();
+        BattleModalVignette.render(context, client.getWindow().getScaledWidth(),
+                client.getWindow().getScaledHeight(), active);
+        context.draw();
+    }
+
     @Unique
     private final FocusOwnership cobblemonBattleUi$focusOwnership = new FocusOwnership();
 

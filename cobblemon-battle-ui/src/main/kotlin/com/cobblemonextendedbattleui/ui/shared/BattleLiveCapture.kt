@@ -26,7 +26,9 @@ import com.cobblemon.mod.common.entity.pokemon.PokemonEntity
 import com.cobblemon.mod.common.entity.npc.NPCEntity
 import com.cobblemon.mod.common.util.isPartyBusy
 import jbro.cobblemon.battleui.extended.BattleDialogue
+import jbro.cobblemon.battleui.extended.BattleInfoPanel
 import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUI
+import jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay
 import jbro.cobblemon.battleui.extended.navigation.KeyboardTileFocus
 import jbro.cobblemon.battleui.navigation.BattleScreenGeometry
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -57,7 +59,7 @@ internal object BattleLiveCapture {
 
     fun install() {
         val page = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_SCREEN") ?: "command"
-        require(page in setOf("command", "moves", "target", "switch", "forfeit"))
+        require(page in setOf("command", "moves", "target", "switch", "forfeit", "log", "info"))
         val trainerBattle = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TRAINER") == "1"
         val acceptForfeit = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_FORFEIT_ACCEPT") == "1"
         val targetSubmit = System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TARGET_SUBMIT")?.takeIf { it.isNotBlank() }
@@ -255,6 +257,15 @@ internal object BattleLiveCapture {
                 val root = selection as? BattleGeneralActionSelection ?: return@register
                 if (++ticks < 20) return@register
                 when (page) {
+                    "log" -> {
+                        check(screen.keyPressed(GLFW.GLFW_KEY_LEFT_SHIFT, 0, 0))
+                        check(BattleTranscriptOverlay.isOpen)
+                    }
+                    "info" -> {
+                        // Tab's registered binding is polled by BattleInfoPanel during the HUD pass.
+                        BattleInfoPanel.toggle()
+                        check(BattleInfoPanel.isExpanded)
+                    }
                     "moves", "target", "switch" -> {
                         val tile = root.tiles[if (page == "switch") 1 else 0]
                         val clicked = screen.mouseClicked(
@@ -276,8 +287,13 @@ internal object BattleLiveCapture {
                 }
                 pageOpened = true
                 ticks = 0
-                CobblemonExtendedBattleUI.LOGGER.info("Live battle page '{}' opened via {}", page,
-                    if (page == "forfeit" && !trainerBattle) "native selection constructor" else "mouse click")
+                val opener = when {
+                    page == "log" -> "Shift key"
+                    page == "info" -> "panel toggle (Tab input not simulated)"
+                    page == "forfeit" && !trainerBattle -> "native selection constructor"
+                    else -> "mouse click"
+                }
+                CobblemonExtendedBattleUI.LOGGER.info("Live battle page '{}' opened via {}", page, opener)
                 return@register
             }
             if (page == "target" && !targetOpened) {
@@ -295,6 +311,8 @@ internal object BattleLiveCapture {
             }
             if (page != "command") {
                 val matches = when (page) {
+                    "log" -> BattleTranscriptOverlay.isOpen
+                    "info" -> BattleInfoPanel.isExpanded
                     "moves" -> selection is BattleMoveSelection
                     "target" -> selection is BattleTargetSelection
                     "switch" -> selection is BattleSwitchPokemonSelection
@@ -302,7 +320,7 @@ internal object BattleLiveCapture {
                 }
                 if (!matches) return@register
             }
-            if (!navigationChecked && ticks >= 5) {
+            if (!navigationChecked && ticks >= 5 && page !in setOf("log", "info")) {
                 check(screen.keyPressed(GLFW.GLFW_KEY_DOWN, 0, 0)) { "Down navigation not handled on $page" }
                 when (selection) {
                     is BattleGeneralActionSelection -> check(selection.tiles.any { it.isFocused })

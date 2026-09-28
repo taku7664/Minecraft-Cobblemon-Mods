@@ -140,10 +140,12 @@ internal object BattleThemeCapture {
             context.fillGradient(0, 0, width, height, 0xFF182A39.toInt(), 0xFF080E17.toInt())
             context.drawText(textRenderer, "DEVELOPMENT FIXTURE / ${client!!.options.language} / not a live battle", 12, 10, BattleUiTheme.MUTED, false)
             if (pages[page].startsWith("log")) {
+                BattleModalVignette.draw(context, width, height, 1f)
                 jbro.cobblemon.battleui.extended.ui.transcript.TranscriptPreview.render(context, pages[page])
                 return
             }
             if (page in 1..3) {
+                BattleModalVignette.draw(context, width, height, 1f)
                 ChampionsBattleInfoOverlay.renderPreview(context, page)
                 return
             }

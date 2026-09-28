@@ -111,9 +111,9 @@ internal object BattleHudCardRenderer {
             val color = BattleSurfaceRenderer.interpolate(top, 0xE70C192B.toInt(), row.toFloat() / (HEIGHT - 1))
             context.fill(start, y + row, end, y + row + 1,
                 BattleSurfaceRenderer.withOpacity(color, card.opacity))
-            // Only the cut-facing diagonal is accented; the other three edges stay borderless.
-            val cutX = if (ally) end - 1 else start
-            context.fill(cutX, y + row, cutX + 1, y + row + 1, edge)
+            // Three pixels along only the cut-facing diagonal; no rectangular outline.
+            val cutX = if (ally) end - 3 else start
+            context.fill(cutX, y + row, cutX + 3, y + row + 1, edge)
         }
     }
 }

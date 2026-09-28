@@ -143,7 +143,6 @@ object ChampionsBattleInfoOverlay {
         val originX = (screenWidth - BASE_W * scale) / 2f
         val originY = ((screenHeight - BASE_H * scale) / 2f).coerceAtLeast(-TITLE_TOP * scale)
 
-        context.fill(0, 0, screenWidth, screenHeight, color(3, 6, 18, 106))
         context.matrices.push()
         context.matrices.translate(originX.toDouble(), originY.toDouble(), UIUtils.MODAL_Z_OFFSET)
         context.matrices.scale(scale, scale, 1f)

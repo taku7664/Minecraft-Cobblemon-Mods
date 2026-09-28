@@ -25,6 +25,7 @@ internal object BattleScreenDraft {
     fun render(context: DrawContext, page: String, width: Int, height: Int) {
         val korean = MinecraftClient.getInstance().options.language == "ko_kr"
         context.fill(0, 0, width, height, 0x4906101E)
+        if (page == "draft-switch") BattleModalVignette.draw(context, width, height, 1f)
         drawCaption(context, page, width, korean)
         if (page == "draft-hud-split") {
             BattleHudSplitDraft.render(context, width, korean)
