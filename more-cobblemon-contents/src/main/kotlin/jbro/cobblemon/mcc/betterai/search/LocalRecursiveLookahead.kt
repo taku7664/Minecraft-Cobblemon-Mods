@@ -207,12 +207,9 @@ internal object LocalRecursiveLookaheadEvaluator {
         var narrowing = false
         // The first turn's value of each root (own action, response) pair, for the narrowed second turn.
         val firstTurnValues = HashMap<Pair<String, String>, TurnValue>()
-        // The first turn's evaluation of each root candidate, the Monte Carlo second turn's starting point.
-        val firstRootEvaluations = HashMap<String, RootActionEvaluation>()
-        val monteCarlo = tuning.searchStrategy == LocalSearchStrategy.MONTE_CARLO
         for (depth in 1..requestedDepth) {
             val depthStartedAt = clockMillis()
-            val narrowed = narrowing && !monteCarlo
+            val narrowed = narrowing
             val search = Search(
                 context = context,
                 profile = profile,
@@ -254,7 +251,6 @@ internal object LocalRecursiveLookaheadEvaluator {
                     singlePlyThreat[id] = immediate.threatDelta
                 }
                 val evaluation = search.rootActionValue(context.state, rank.outcome.candidate, depth)
-                if (depth == 1 && evaluation != null) firstRootEvaluations[id] = evaluation
                 return if (evaluation == null) rank else {
                     // The recursive turn score carries its own knockout value, weighted by the actual
                     // damage-roll KO ratio and execution probability. Remove exactly the knockout
@@ -361,24 +357,12 @@ internal object LocalRecursiveLookaheadEvaluator {
             // leaders finish first; if the budget runs out, the finished ones keep their new values and the
             // rest keep the previous depth's. Values are per turn, so the two depths compare directly.
             val finishedIds = linkedSetOf<String>()
-            if (monteCarlo && depth > 1) {
-                val roots = accepted.map { it.outcome.candidate }.filterNot { it.actionId in excludedActionIds }
-                    .take(LocalMonteCarloSecondTurn.ROOT_CANDIDATES)
-                search.monteCarloResults = search.monteCarloSecondTurn(roots, firstRootEvaluations, baseline)
-            }
             val evaluated = if (depth > 1) {
                 val original = ranked.associateBy { it.outcome.candidate.actionId }
                 val deeper = HashMap<String, LocalBattleActionRank>()
                 for (previous in accepted) {
                     val id = previous.outcome.candidate.actionId
                     if (id in excludedActionIds || searchable != null && id !in searchable) continue
-                    if (monteCarlo) {
-                        // The sampler spent the budget; its averages are read back without more search.
-                        if (id !in search.monteCarloResults) continue
-                        deeper[id] = evaluateRank(original.getValue(id))
-                        finishedIds += id
-                        continue
-                    }
                     if (search.truncated) break
                     val rank = evaluateRank(original.getValue(id))
                     if (!search.truncated) {
@@ -452,9 +436,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 nodesVisited = search.nodesVisited,
             )
             val currentDecisionSignature = decisionSignature?.invoke(accepted)
-            if (depth == 1 && requestedDepth > 1 &&
-                (monteCarlo || tuning.narrowSecondTurn && context.state.format == BattleFormat.DOUBLE)
-            ) {
+            if (depth == 1 && requestedDepth > 1 && tuning.narrowSecondTurn && context.state.format == BattleFormat.DOUBLE) {
                 narrowing = true
                 previousDepthCost = currentDepthCost
                 previousDecisionSignature = currentDecisionSignature
@@ -555,8 +537,6 @@ internal object LocalRecursiveLookaheadEvaluator {
         /** Root (own action, response) pairs projected so far: the width one more turn multiplies by. */
         var rootPairsProjected: Int = 0
             private set
-        /** The Monte Carlo second turn's value per root candidate; see [LocalMonteCarloSecondTurn]. */
-        var monteCarloResults: Map<String, RootActionEvaluation> = emptyMap()
         private val memo = HashMap<SearchKey, Double>()
         // Structural, like the search's own value memo. Keying leaf values by object identity meant a
         // position reached by two different routes was evaluated twice, and a leaf evaluation is a full
@@ -566,7 +546,6 @@ internal object LocalRecursiveLookaheadEvaluator {
         }
 
         fun rootActionValue(state: BattleStateView, ownAction: BattleActionCandidate, depth: Int): RootActionEvaluation? {
-            if (depth > 1) monteCarloResults[ownAction.actionId]?.let { return it }
             // Coverage and memoized leaves describe one root action's public branches. Carrying either
             // into the next candidate makes scores depend on server candidate ordering.
             publicResponseCoverage = 1.0
@@ -642,130 +621,6 @@ internal object LocalRecursiveLookaheadEvaluator {
                     aggregate.threatDelta,
                 )
             }
-        }
-
-        /** See [LocalMonteCarloSecondTurn]. [firstTurn] and [baseline] are the first turn's results. */
-        fun monteCarloSecondTurn(
-            roots: List<BattleActionCandidate>,
-            firstTurn: Map<String, RootActionEvaluation>,
-            baseline: Double,
-        ): Map<String, RootActionEvaluation> {
-            val state = context.state
-            val history = RecursiveSnapshotActionConstraints.seed(
-                state = state,
-                allySwitchedLastTurn = context.memory.turnsSinceLastSwitch?.let { it <= 1 } == true,
-                allyLastMoveId = context.memory.lastMoveId,
-                allySameMoveRepeatCount = context.memory.sameMoveRepeatCount,
-            )
-            val responses = completeOpponentActions(state, history)?.takeIf { it.isNotEmpty() } ?: return emptyMap()
-            val start = stateUtility(state, history)
-            val chances = LocalOpponentIntentWeights.probabilities(responses, opponentIntents, state)
-                ?: List(responses.size) { 1.0 / responses.size }
-            val arms = roots.mapNotNull { own ->
-                val first = firstTurn[own.actionId] ?: return@mapNotNull null
-                val replies = responses.indices.mapNotNull { index ->
-                    val value = firstTurnValues[own.actionId to responses[index].actionId] ?: return@mapNotNull null
-                    LocalMonteCarloSecondTurn.Reply(index, value.value - start, chances[index])
-                }
-                if (replies.isEmpty()) null else LocalMonteCarloSecondTurn.RootArm(own, first.value - baseline, replies)
-            }
-            if (arms.isEmpty()) return emptyMap()
-            val spread = LocalMonteCarloSecondTurn.spread(arms.map { it.prior })
-            val random = kotlin.random.Random(fingerprint(state).hashCode())
-            val inner = java.util.IdentityHashMap<LocalMonteCarloSecondTurn.Outcome, LocalMonteCarloSecondTurn.InnerNode>()
-            var iteration = 0
-            while (!budgetExhausted() && arms.any { !it.dead }) {
-                iteration++
-                val arm = LocalMonteCarloSecondTurn.selectRoot(arms, iteration, spread)
-                val reply = LocalMonteCarloSecondTurn.selectReply(arm, spread)
-                val outcomes = arm.outcomes.getOrPut(reply.index) { firstTurnOutcomes(state, arm.action, responses[reply.index], history) }
-                if (outcomes.isEmpty()) {
-                    reply.dead = true
-                    continue
-                }
-                val outcome = LocalMonteCarloSecondTurn.sample(outcomes, random)
-                // A battle over after the first turn has no second one: the line's value is its first turn.
-                val second = if (battleEnded(outcome.state)) null else {
-                    secondTurnSample(outcome, inner, spread) ?: break
-                }
-                val value = if (second == null) reply.prior else
-                    (reply.prior + FUTURE_DELTA_DISCOUNT * second) / (1.0 + FUTURE_DELTA_DISCOUNT)
-                reply.add(value)
-                arm.add(value)
-            }
-            return arms.filter { it.visits >= LocalMonteCarloSecondTurn.MINIMUM_VISITS }.associate { arm ->
-                arm.action.actionId to firstTurn.getValue(arm.action.actionId).copy(value = baseline + arm.mean)
-            }
-        }
-
-        /** The first turn's outcomes of one root pair, each with the chance of reaching it. */
-        private fun firstTurnOutcomes(
-            state: BattleStateView,
-            ownAction: BattleActionCandidate,
-            opponentAction: BattleActionCandidate,
-            history: RecursiveActionHistory,
-        ): List<LocalMonteCarloSecondTurn.Outcome> {
-            val projectedHistory = LocalOpponentMoveHypotheses.assumeAction(state, context.publicActionCatalog, history, opponentAction)
-            val projectionContext = LocalBranchMoveInputs.context(context, state, projectedHistory)
-            val projections = PublicSingleTurnProjector.project(
-                initialState = state,
-                allyAction = ownAction,
-                opponentAction = opponentAction,
-                sourceContext = projectionContext,
-                history = projectedHistory,
-                maxChanceBranchesPerMove = chanceBranchesPerMove,
-                calculationCache = actionCalculationCache,
-                shouldContinue = ::projectedWorkAvailable,
-            )
-            val originalPool = context.publicActionCatalog.originalEntries.mapTo(hashSetOf()) { it.battlePokemonId }
-            return projections.groupBy(PublicTurnProjection::order).values.flatMap { group ->
-                val total = group.sumOf(PublicTurnProjection::probability)
-                if (total <= 0.0) return@flatMap emptyList()
-                group.map { raw ->
-                    val outcome = raw.copy(state = RecursiveSnapshotActionConstraints.clearFromProjectedState(raw.state))
-                    val nextHistory = RecursiveHistoryProjector.project(
-                        previous = projectedHistory,
-                        stateBefore = state,
-                        outcome = outcome,
-                        allyAction = ownAction,
-                        opponentAction = opponentAction,
-                        originalPoolPokemonIds = originalPool,
-                        publicActionCatalog = context.publicActionCatalog,
-                    )
-                    LocalMonteCarloSecondTurn.Outcome(outcome.orderProbability * outcome.probability / total, outcome.state, nextHistory)
-                }
-            }
-        }
-
-        /** One second-turn line from [outcome]: its change from the board it starts on, or null out of budget. */
-        private fun secondTurnSample(
-            outcome: LocalMonteCarloSecondTurn.Outcome,
-            inner: MutableMap<LocalMonteCarloSecondTurn.Outcome, LocalMonteCarloSecondTurn.InnerNode>,
-            spread: Double,
-        ): Double? {
-            val node = inner.getOrPut(outcome) {
-                val next = LocalBranchMoveInputs.state(outcome.state, context.publicActionCatalog, outcome.history)
-                val start = stateUtility(next, outcome.history)
-                val replacement = forcedReplacementValue(next, 1, outcome.history)
-                val own = if (replacement != null) emptyList() else PublicFutureActionFactory.actions(
-                    next, BattleSide.ALLY, context.publicActionCatalog, outcome.history, LocalMonteCarloSecondTurn.INNER_OWN_PER_SLOT,
-                )
-                val opponent = if (replacement != null) emptyList()
-                    else completeOpponentActions(next, outcome.history, LocalMonteCarloSecondTurn.INNER_OPPONENT_PER_SLOT).orEmpty()
-                val exact = replacement?.let { it - start } ?: if (own.isEmpty() || opponent.isEmpty()) 0.0 else null
-                LocalMonteCarloSecondTurn.InnerNode(next, start, outcome.history, own, opponent, exact)
-            }
-            node.exact?.let { return it }
-            node.visits++
-            val ownIndex = LocalMonteCarloSecondTurn.selectInner(node.ownArms, node.visits, spread, maximize = true)
-            val opponentArms = node.opponentArms[ownIndex]
-            val opponentIndex = LocalMonteCarloSecondTurn.selectInner(opponentArms, node.ownArms[ownIndex].visits + 1, spread, maximize = false)
-            val value = turnValue(node.state, node.own[ownIndex], node.opponent[opponentIndex], 1, node.history,
-                rootTurn = false, turnStartValue = node.start) ?: return null
-            val change = value.value - node.start
-            node.ownArms[ownIndex].add(change)
-            opponentArms[opponentIndex].add(change)
-            return change
         }
 
         /** The indices of [responses] searched deeper when narrowed: the most likely ones. */

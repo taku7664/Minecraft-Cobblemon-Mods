@@ -2,7 +2,6 @@ package jbro.cobblemon.mcc.betterai
 
 import jbro.cobblemon.mcc.betterai.calculation.LocalChanceModel
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
-import jbro.cobblemon.mcc.betterai.search.LocalSearchStrategy
 import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfile
 import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfiles
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
@@ -70,8 +69,6 @@ class LocalSearchSwitchDuelTest {
         /** Challenger against defender; the shipped tuning is on one side of each. */
         val DUELS = mapOf(
             "narrow" to Duel(CURRENT.copy(id = "narrow-second-turn", narrowSecondTurn = true), CURRENT, BattleFormat.DOUBLE),
-            "monte-carlo" to Duel(CURRENT.copy(id = "monte-carlo", searchStrategy = LocalSearchStrategy.MONTE_CARLO), CURRENT, BattleFormat.DOUBLE),
-            "monte-carlo-singles" to Duel(CURRENT.copy(id = "monte-carlo", searchStrategy = LocalSearchStrategy.MONTE_CARLO), CURRENT, BattleFormat.SINGLE),
             "per-turn" to Duel(CURRENT, CURRENT.copy(id = "summed-turns", perTurnSearchValues = false), BattleFormat.DOUBLE),
             "keep-finished" to Duel(CURRENT, CURRENT.copy(id = "discard-cut-depth", keepFinishedCandidates = false), BattleFormat.DOUBLE),
             "intent" to Duel(CURRENT, CURRENT.copy(id = "no-intent", intentResponseWeight = 0.0), BattleFormat.DOUBLE),

@@ -100,9 +100,6 @@ internal data class LocalDecisionTuning(
     val skipHopelessDepth: Boolean = true,
     /** Share of the root response value taken from the opponent-intent prediction; 0 ignores the prediction. */
     val intentResponseWeight: Double = 0.3,
-    /** Which search looks past the first turn. */
-    val searchStrategy: jbro.cobblemon.mcc.betterai.search.LocalSearchStrategy =
-        jbro.cobblemon.mcc.betterai.search.LocalSearchStrategy.MINIMAX,
     /** How the search's projected hits branch on damage rolls and critical hits. */
     val chanceModel: jbro.cobblemon.mcc.betterai.calculation.LocalChanceModel =
         jbro.cobblemon.mcc.betterai.calculation.LocalChanceModel.MEDIAN_ROLL,
