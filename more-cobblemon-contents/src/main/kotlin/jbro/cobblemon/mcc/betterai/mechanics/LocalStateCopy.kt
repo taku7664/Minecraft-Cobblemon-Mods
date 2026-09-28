@@ -20,19 +20,14 @@ import jbro.cobblemon.mcc.internal.ai.BattleStateView
 internal fun BattleStateView.copyState(
     turn: Int = this.turn,
     pokemon: List<BattlePokemonStateView> = this.pokemon,
-): BattleStateView = BattleStateView(
-    battleId = battleId,
-    format = format,
+): BattleStateView = derive(
     turn = turn,
     pokemon = pokemon,
-    field = field,
     remainingPokemonBySide = BattleSide.entries.associateWith { side ->
         val previousKnownLiving = this.pokemon.count { it.side == side && !it.fainted && it.hpFraction > 0.0 }
         val nextKnownLiving = pokemon.count { it.side == side && !it.fainted && it.hpFraction > 0.0 }
         (this.remainingPokemonBySide.getValue(side) + nextKnownLiving - previousKnownLiving).coerceAtLeast(0)
     },
-    observedEvents = observedEvents,
-    inferences = inferences,
 )
 
 internal fun BattlePokemonStateView.copyState(

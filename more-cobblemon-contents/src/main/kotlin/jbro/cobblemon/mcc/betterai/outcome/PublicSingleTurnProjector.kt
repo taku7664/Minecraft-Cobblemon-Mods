@@ -2054,7 +2054,24 @@ internal object PublicSingleTurnProjector {
 
     private fun incrementTurn(state: BattleStateView): BattleStateView = state.copyState(turn = state.turn + 1)
 
-    private fun fingerprint(state: BattleStateView): String = buildString {
+    /**
+     * Merging chance branches keys every branch by its state, and a branch that survives one merge is
+     * keyed again at the next: the same state object had its key rebuilt as a string each time. Keys
+     * are remembered per object, per thread; the map is dropped whenever it grows past [FINGERPRINT_MEMO_LIMIT]
+     * so it never holds a search's worth of states.
+     */
+    private val fingerprintMemo = ThreadLocal.withInitial { java.util.IdentityHashMap<BattleStateView, String>() }
+
+    private fun fingerprint(state: BattleStateView): String {
+        val memo = fingerprintMemo.get()
+        memo[state]?.let { return it }
+        if (memo.size >= FINGERPRINT_MEMO_LIMIT) memo.clear()
+        return buildFingerprint(state).also { memo[state] = it }
+    }
+
+    private const val FINGERPRINT_MEMO_LIMIT = 2_048
+
+    private fun buildFingerprint(state: BattleStateView): String = buildString {
         state.pokemon.sortedBy { it.battlePokemonId }.forEach {
             append(it.battlePokemonId).append(':').append(it.side).append(':').append(it.activeSlot).append(':')
             append((it.hpFraction * 10_000).roundToInt()).append(':').append(it.statusId).append(':')

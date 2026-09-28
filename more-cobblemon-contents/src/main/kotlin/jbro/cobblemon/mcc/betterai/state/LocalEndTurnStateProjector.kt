@@ -63,10 +63,7 @@ internal object LocalEndTurnStateProjector {
             }
             copyPokemon(pokemon, hpFraction = hp, statStages = stages, fainted = hp <= 0.0)
         }
-        return BattleStateView(
-            battleId = state.battleId,
-            format = state.format,
-            turn = state.turn,
+        return state.derive(
             pokemon = next,
             field = nextField,
             remainingPokemonBySide = BattleSide.entries.associateWith { side ->
@@ -79,8 +76,6 @@ internal object LocalEndTurnStateProjector {
                 (state.remainingPokemonBySide.getValue(side) + nextKnownLiving - previousKnownLiving)
                     .coerceAtLeast(0)
             },
-            observedEvents = state.observedEvents,
-            inferences = state.inferences,
         )
     }
 

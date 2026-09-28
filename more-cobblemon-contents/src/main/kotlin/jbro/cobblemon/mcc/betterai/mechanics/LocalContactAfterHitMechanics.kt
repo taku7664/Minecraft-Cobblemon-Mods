@@ -63,19 +63,13 @@ internal object LocalContactAfterHitMechanics {
         update: (BattlePokemonStateView) -> BattlePokemonStateView,
     ): BattleStateView {
         val pokemon = state.pokemon.map { if (it.battlePokemonId == actorId) update(it) else it }
-        return BattleStateView(
-            battleId = state.battleId,
-            format = state.format,
-            turn = state.turn,
+        return state.derive(
             pokemon = pokemon,
-            field = state.field,
             remainingPokemonBySide = BattleSide.entries.associateWith { side ->
                 val oldLiving = state.pokemon.count { it.side == side && !it.fainted && it.hpFraction > 0.0 }
                 val newLiving = pokemon.count { it.side == side && !it.fainted && it.hpFraction > 0.0 }
                 (state.remainingPokemonBySide.getValue(side) + newLiving - oldLiving).coerceAtLeast(0)
             },
-            observedEvents = state.observedEvents,
-            inferences = state.inferences,
         )
     }
 

@@ -103,9 +103,9 @@ internal object LocalSwitchEntryEffectProjector {
         state: BattleStateView,
         pokemon: List<BattlePokemonStateView>,
         field: BattleFieldStateView,
-    ) = BattleStateView(
-        state.battleId, state.format, state.turn, pokemon, field, state.remainingPokemonBySide,
-        state.observedEvents, state.inferences,
+    ) = state.derive(
+        pokemon = pokemon,
+        field = field,
     )
 
     private fun canonical(value: String?): String = PublicIds.canonical(value.orEmpty())

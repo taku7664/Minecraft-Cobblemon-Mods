@@ -559,7 +559,7 @@ private fun BattleCombatStatRangesView.hasExactComponent(): Boolean =
         it.minimum == it.maximum
     }
 
-class BattleStateView(
+class BattleStateView private constructor(
     val battleId: UUID,
     val format: BattleFormat,
     val turn: Int,
@@ -568,16 +568,43 @@ class BattleStateView(
     remainingPokemonBySide: Map<BattleSide, Int>,
     observedEvents: List<BattleObservedEventView>,
     inferences: List<BattleInferenceView>,
+    /** The state this one was derived from; its observations and inferences are reused as validated. */
+    derivedFrom: BattleStateView?,
 ) {
+    constructor(
+        battleId: UUID,
+        format: BattleFormat,
+        turn: Int,
+        pokemon: List<BattlePokemonStateView>,
+        field: BattleFieldStateView,
+        remainingPokemonBySide: Map<BattleSide, Int>,
+        observedEvents: List<BattleObservedEventView>,
+        inferences: List<BattleInferenceView>,
+    ) : this(battleId, format, turn, pokemon, field, remainingPokemonBySide, observedEvents, inferences, null)
+
     val pokemon: List<BattlePokemonStateView> = Collections.unmodifiableList(ArrayList(pokemon))
     val remainingPokemonBySide: Map<BattleSide, Int> =
         Collections.unmodifiableMap(LinkedHashMap(remainingPokemonBySide))
-    val observedEvents: List<BattleObservedEventView> = Collections.unmodifiableList(ArrayList(observedEvents))
-    val inferences: List<BattleInferenceView> = Collections.unmodifiableList(ArrayList(inferences))
+    val observedEvents: List<BattleObservedEventView> =
+        derivedFrom?.observedEvents ?: Collections.unmodifiableList(ArrayList(observedEvents))
+    val inferences: List<BattleInferenceView> = derivedFrom?.inferences ?: Collections.unmodifiableList(ArrayList(inferences))
+
+    /**
+     * The same battle with a new turn, Pokemon, field or remaining counts: what every projected position
+     * is. The observations and inferences carry over already validated. They used to be copied and
+     * checked again on every copy, for up to 64 events, at every node of every search.
+     */
+    internal fun derive(
+        turn: Int = this.turn,
+        pokemon: List<BattlePokemonStateView> = this.pokemon,
+        field: BattleFieldStateView = this.field,
+        remainingPokemonBySide: Map<BattleSide, Int> = this.remainingPokemonBySide,
+    ): BattleStateView = BattleStateView(battleId, format, turn, pokemon, field, remainingPokemonBySide,
+        observedEvents, inferences, this)
 
     init {
         require(turn >= 0)
-        val pokemonIds = pokemon.map { it.battlePokemonId }.toSet()
+        val pokemonIds = pokemon.mapTo(HashSet(pokemon.size * 2)) { it.battlePokemonId }
         require(pokemonIds.size == pokemon.size) {
             "Battle state cannot contain duplicate Pokemon identities"
         }
@@ -585,18 +612,23 @@ class BattleStateView(
             "Battle state must report remaining Pokemon for both sides"
         }
         require(remainingPokemonBySide.values.all { it >= 0 })
-        require(observedEvents.zipWithNext().all { (before, after) -> before.sequence < after.sequence }) {
-            "Public observations must be strictly ordered by sequence"
-        }
-        require(observedEvents.all { it.turn <= turn }) {
-            "Public observations cannot come from a future turn"
-        }
-        require(observedEvents.all { event ->
-            (event.actorPokemonId == null || event.actorPokemonId in pokemonIds) &&
-                event.targetPokemonIds.all { it in pokemonIds }
-        }) { "Public observations must reference Pokemon in the state view" }
-        require(inferences.all { it.subjectPokemonId in pokemonIds }) {
-            "Inferences must reference Pokemon in the state view"
+        val inherited = derivedFrom != null && turn >= derivedFrom.turn &&
+            derivedFrom.pokemon.size == pokemon.size && derivedFrom.pokemon.all { it.battlePokemonId in pokemonIds }
+        if (!inherited) {
+            val events = this.observedEvents
+            require(events.zipWithNext().all { (before, after) -> before.sequence < after.sequence }) {
+                "Public observations must be strictly ordered by sequence"
+            }
+            require(events.all { it.turn <= turn }) {
+                "Public observations cannot come from a future turn"
+            }
+            require(events.all { event ->
+                (event.actorPokemonId == null || event.actorPokemonId in pokemonIds) &&
+                    event.targetPokemonIds.all { it in pokemonIds }
+            }) { "Public observations must reference Pokemon in the state view" }
+            require(this.inferences.all { it.subjectPokemonId in pokemonIds }) {
+                "Inferences must reference Pokemon in the state view"
+            }
         }
         require(pokemon.none {
             it.side == BattleSide.OPPONENT &&

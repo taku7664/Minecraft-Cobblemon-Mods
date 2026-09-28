@@ -65,9 +65,8 @@ internal object LocalEntryAbilityProjector {
             globalEffects = state.field.globalEffects,
             sideConditions = state.field.sideConditions,
         )
-        return BattleStateView(
-            state.battleId, state.format, state.turn, state.pokemon, field, state.remainingPokemonBySide,
-            state.observedEvents, state.inferences,
+        return state.derive(
+            field = field,
         )
     }
 
@@ -100,15 +99,8 @@ internal object LocalEntryAbilityProjector {
         )
     }
 
-    private fun copyState(state: BattleStateView, pokemon: List<BattlePokemonStateView>) = BattleStateView(
-        battleId = state.battleId,
-        format = state.format,
-        turn = state.turn,
+    private fun copyState(state: BattleStateView, pokemon: List<BattlePokemonStateView>) = state.derive(
         pokemon = pokemon,
-        field = state.field,
-        remainingPokemonBySide = state.remainingPokemonBySide,
-        observedEvents = state.observedEvents,
-        inferences = state.inferences,
     )
 
     private fun canonical(value: String?): String? = value?.let(PublicIds::canonical)

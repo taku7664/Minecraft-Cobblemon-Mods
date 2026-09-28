@@ -367,9 +367,9 @@ internal object LocalMatchupScoreCalculator {
         } else {
             field.roomEffects + BattleTimedEffectView(TRICK_ROOM, TRICK_ROOM_TURNS)
         }
-        val toggled = BattleStateView(state.battleId, state.format, state.turn, state.pokemon,
-            BattleFieldStateView(field.weather, field.terrain, rooms, field.globalEffects, field.sideConditions),
-            state.remainingPokemonBySide, state.observedEvents, state.inferences)
+        val toggled = state.derive(
+            field = BattleFieldStateView(field.weather, field.terrain, rooms, field.globalEffects, field.sideConditions),
+        )
         return position.copy(state = toggled)
     }
 

@@ -36,12 +36,8 @@ internal object LocalSwitchStateProjector {
                 else -> pokemon
             }
         }
-        val switched = BattleStateView(
-            battleId = state.battleId,
-            format = state.format,
-            turn = state.turn,
+        val switched = state.derive(
             pokemon = next,
-            field = state.field,
             remainingPokemonBySide = BattleSide.entries.associateWith { currentSide ->
                 val previousKnownLiving = state.pokemon.count {
                     it.side == currentSide && !it.fainted && it.hpFraction > 0.0
@@ -52,8 +48,6 @@ internal object LocalSwitchStateProjector {
                 (state.remainingPokemonBySide.getValue(currentSide) + nextKnownLiving - previousKnownLiving)
                     .coerceAtLeast(0)
             },
-            observedEvents = state.observedEvents,
-            inferences = state.inferences,
         )
         val afterHazards = LocalSwitchEntryEffectProjector.project(switched, incomingId)
         return LocalEntryAbilityProjector.project(afterHazards, incomingId)
