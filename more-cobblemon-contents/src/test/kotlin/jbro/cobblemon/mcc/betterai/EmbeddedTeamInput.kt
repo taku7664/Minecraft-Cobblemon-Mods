@@ -24,7 +24,9 @@ internal object EmbeddedTeamInput {
         var added: String? = null, val stages: MutableMap<String, Int> = mutableMapOf(),
         val moves: MutableSet<String> = linkedSetOf(), var ability: String? = null, var item: String? = null,
         val volatileEffects: MutableSet<String> = linkedSetOf(), var originalMoves: Set<String>? = null,
-        var gastroAcid: Boolean = false, var abilityEnded: Boolean = false)
+        var gastroAcid: Boolean = false, var abilityEnded: Boolean = false,
+        /** The Tera type once it terastallized; it lasts through switches. */
+        var tera: String? = null)
 
     fun identity(ident: String): String = ident.take(2) + ":" + ident.substringAfter(':').trim()
     private fun uuid(ident: String) = UUID.nameUUIDFromBytes(identity(ident).toByteArray(Charsets.UTF_8))
@@ -89,6 +91,7 @@ internal object EmbeddedTeamInput {
         var eventTurn = 0
         fun baseTypes(species: String): Set<String> = if (species.startsWith("arceus")) emptySet() else
             speciesData.getAsJsonObject(species)?.getAsJsonArray("types")?.map { it.asString }?.toSet().orEmpty()
+        fun types(pokemon: Seen): Set<String> = pokemon.tera?.takeUnless { it == "stellar" }?.let { setOf(it) } ?: baseTypes(pokemon.species)
         input.getAsJsonArray("publicLog").forEachIndexed { index, element ->
             constraints.observe(element.asString)
             val p = element.asString.split('|')
@@ -125,7 +128,7 @@ internal object EmbeddedTeamInput {
                             it.originalMoves?.let { moves -> it.moves.clear(); it.moves.addAll(moves) }
                             it.originalMoves = null
                         }
-                        it.active = false; it.stages.clear(); it.added = null; it.types = baseTypes(it.species); it.volatileEffects.clear()
+                        it.active = false; it.stages.clear(); it.added = null; it.types = types(it); it.volatileEffects.clear()
                     }
                     val details = p[3].split(',').map(String::trim)
                     val species = id(details[0])
@@ -133,7 +136,7 @@ internal object EmbeddedTeamInput {
                     val entry = Seen(actor, species, details.firstOrNull { it.matches(Regex("L\\d+")) }?.drop(1)?.toInt() ?: 100,
                         hp.first, hp.second, types = baseTypes(species))
                     current?.let { entry.moves += it.moves; entry.ability = it.ability; entry.item = it.item
-                        entry.originalMoves = it.originalMoves }
+                        entry.originalMoves = it.originalMoves; entry.tera = it.tera; entry.types = types(entry) }
                     entry.volatileEffects += inherited
                     seen[key] = entry
                     events += BattleObservedEventView(index.toLong() * 2, eventTurn, BattleObservedEventKind.SWITCHED, uuid(actor))
@@ -195,7 +198,7 @@ internal object EmbeddedTeamInput {
                     it.moves.clear(); it.moves.addAll(copied)
                     it.types = emptySet(); it.added = null
                 }
-                "-terastallize" -> current?.let { it.types = emptySet(); it.added = null }
+                "-terastallize" -> current?.let { it.tera = id(p[3]); it.types = types(it); it.added = null }
                 "-weather" -> {
                     val next = id(actor).takeUnless { it == "none" }
                     if ("[upkeep]" !in p) started["weather"] = maxOf(eventTurn, 1)
@@ -246,6 +249,8 @@ internal object EmbeddedTeamInput {
                 pokemon.species, null, pokemon.level, pokemon.hp, pokemon.status, pokemon.stages, pokemon.moves,
                 pokemon.ability, pokemon.item, pokemon.hp == 0.0,
                 if (pokemon.types.isEmpty()) emptySet() else pokemon.types + listOfNotNull(pokemon.added),
+                knownTeraTypeId = pokemon.tera,
+                knownBaseStabTypeIds = baseTypes(pokemon.species),
                 combatStats = stats?.let { BattlePublicStatRanges.fromBaseStats(pokemon.level, it["hp"].asInt,
                     it["atk"].asInt, it["def"].asInt, it["spa"].asInt, it["spd"].asInt, it["spe"].asInt) },
                 actionConstraints = constraints.forPokemon(pokemon.ident),
