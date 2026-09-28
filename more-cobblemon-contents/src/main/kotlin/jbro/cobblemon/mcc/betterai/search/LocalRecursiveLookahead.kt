@@ -17,6 +17,7 @@ import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleMind
 import jbro.cobblemon.mcc.betterai.search.LocalResponseValue as TurnValue
 import jbro.cobblemon.mcc.betterai.search.LocalOpponentResponseValue as OpponentTurnValue
+import jbro.cobblemon.mcc.betterai.matchup.OpponentIntent
 import jbro.cobblemon.mcc.betterai.state.LocalRecursiveSwitchTempo
 import jbro.cobblemon.mcc.betterai.state.PublicTurnProjection
 import jbro.cobblemon.mcc.betterai.state.RecursiveActionHistory
@@ -91,6 +92,11 @@ internal object LocalRecursiveLookaheadEvaluator {
          * They keep their root ranking but get no search budget and take no root slot.
          */
         excludedActionIds: Set<String> = emptySet(),
+        /**
+         * What the opponent is predicted to do this turn. It weights the root turn's responses only: deeper
+         * turns are other positions the prediction was not made for.
+         */
+        opponentIntents: List<OpponentIntent> = emptyList(),
     ): LocalLookaheadEvaluation {
         val requestedDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1)
         val moveUsage = moveUsageForFormat(context.state.format)
@@ -180,6 +186,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 clockMillis = clockMillis,
                 moveUsage = moveUsage,
                 opponentThreatWeights = opponentThreatWeights,
+                opponentIntents = opponentIntents,
             )
             // Which candidates this ply is allowed to spend the budget on.
             //
@@ -425,6 +432,7 @@ internal object LocalRecursiveLookaheadEvaluator {
         private val clockMillis: () -> Long,
         private val moveUsage: LocalMoveUsageLookup?,
         private val opponentThreatWeights: Map<UUID, Double> = emptyMap(),
+        private val opponentIntents: List<OpponentIntent> = emptyList(),
     ) {
         var nodesVisited: Int = 0
             private set
@@ -479,7 +487,9 @@ internal object LocalRecursiveLookaheadEvaluator {
                 )?.let { value -> responseValues += OpponentTurnValue(opponentAction, value) }
             }
             val calibratedResponses = calibrateExpectedResponses(responseValues)
-            return aggregateOpponentResponses(calibratedResponses, state, ownAction)?.let { aggregate ->
+            return aggregateOpponentResponses(calibratedResponses, state, ownAction)?.let { robust ->
+                val aggregate = LocalOpponentIntentWeights.probabilities(calibratedResponses.map { it.action }, opponentIntents, state)
+                    ?.let { LocalSearchResponseObjective.withIntent(robust, calibratedResponses, it) } ?: robust
                 // A risky action may still remain the best-ranked fallback, but it must not enter the
                 // exploratory pool merely because some other public response lets it execute.
                 val executionProbability = calibratedResponses.minOfOrNull { it.value.ownExecutionProbability }

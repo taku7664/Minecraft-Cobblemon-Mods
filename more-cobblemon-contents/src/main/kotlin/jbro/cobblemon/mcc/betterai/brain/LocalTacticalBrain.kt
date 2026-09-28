@@ -51,6 +51,7 @@ import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionStatus
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionState
 import jbro.cobblemon.mcc.betterai.evaluation.LocalOpponentThreat
 import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
+import jbro.cobblemon.mcc.betterai.matchup.LocalOpponentIntentPredictor
 import jbro.cobblemon.mcc.betterai.matchup.LocalPublicFailureTriage
 import jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate
 import jbro.cobblemon.mcc.betterai.matchup.LocalStatusMoveTriage
@@ -175,8 +176,8 @@ internal class LocalTacticalBrain(
         val decidingProfile = profile.copy(
             personality = profile.personality.copy(riskTolerance = mind.riskBudget),
         )
-        // Built on the first ranking that holds a candidate a rule can judge, then shared: the search asks
-        // for mixing contexts from its own threads.
+        // Built once per decision on Advanced and Boss (the rules and the opponent-intent prediction read it),
+        // then shared: the search asks for mixing contexts from its own threads.
         val ruleScores by lazy {
             val started = System.nanoTime()
             LocalMatchupScoreCalculator.calculate(
@@ -437,6 +438,9 @@ internal class LocalTacticalBrain(
                 shouldContinue = { System.nanoTime() - threatStartedAtNanos < THREAT_TIME_LIMIT_NANOS },
             ),
             excludedActionIds = ruleExclusions(rootRanked).keys,
+            // Read from the same table as the rules; the AI's threat weights play no part in it.
+            opponentIntents = if (!rulesApply) emptyList()
+                else ruleScores?.let { LocalOpponentIntentPredictor.predict(difficultyContext, it) }.orEmpty(),
             decisionSignature = if (actionSelector !is LocalWeightedActionSelector) null else { tentative ->
                 val refined = LocalRootDecisionPolicy.refine(tentative, difficultyContext).ranked
                 val tentativeSeed = LocalActionChoiceSeed.derive(

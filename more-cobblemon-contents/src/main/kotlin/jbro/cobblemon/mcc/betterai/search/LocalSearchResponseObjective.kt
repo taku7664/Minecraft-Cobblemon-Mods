@@ -73,6 +73,27 @@ internal object LocalSearchResponseObjective {
         )
     }
 
+    /**
+     * [base] with [INTENT_WEIGHT] of it moved to the responses' expected value under the predicted
+     * [probabilities] (one per response, summing to 1). The rest keeps the worst-case share [base] has,
+     * so a wrong prediction still meets the cautious reading.
+     */
+    fun withIntent(base: LocalResponseValue, values: List<LocalOpponentResponseValue>, probabilities: List<Double>): LocalResponseValue {
+        require(values.size == probabilities.size)
+        if (values.isEmpty()) return base
+        fun expected(of: (LocalResponseValue) -> Double) = values.indices.sumOf { of(values[it].value) * probabilities[it] }
+        fun blend(baseValue: Double, predicted: Double) = baseValue * (1.0 - INTENT_WEIGHT) + predicted * INTENT_WEIGHT
+        return LocalResponseValue(
+            value = blend(base.value, expected(LocalResponseValue::value)),
+            ownExecutionProbability = blend(base.ownExecutionProbability, expected(LocalResponseValue::ownExecutionProbability)),
+            ownRemainingHpFraction = base.ownRemainingHpFraction,
+            threatDelta = blend(base.threatDelta, expected(LocalResponseValue::threatDelta)),
+        )
+    }
+
+    /** How much of the root response value the opponent-intent prediction takes. */
+    const val INTENT_WEIGHT = 0.3
+
     fun robust(turns: List<LocalResponseValue>, tier: BattleTrainerTier): LocalResponseValue {
         require(turns.isNotEmpty())
         val worst = turns.minBy(LocalResponseValue::value)
