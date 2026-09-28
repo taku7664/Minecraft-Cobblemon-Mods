@@ -24,6 +24,25 @@ class LocalDepthAdmissionPolicyTest {
     }
 
     @Test
+    fun `a second turn whose root width makes it hopeless is skipped and a singles one is not`() {
+        fun after(nodes: Int, pairs: Int) = LocalDepthAdmissionPolicy.afterCompletedDepth(
+            completedDepth = 1,
+            requestedDepth = 2,
+            remainingMillis = 8_000,
+            previousCost = null,
+            currentCost = LocalCompletedDepthCost(elapsedMillis = 2_000, nodesVisited = nodes),
+            previousSignature = null,
+            currentSignature = null,
+            rootPairs = pairs,
+            nodeLimit = 400_000,
+        )
+        // A doubles turn: 150k nodes over 1,500 root pairs.
+        assertEquals(LocalDepthAdmissionDecision.STOP_PREDICTED_COST, after(nodes = 150_000, pairs = 1_500))
+        // A singles turn: 4k nodes over 81 root pairs.
+        assertEquals(LocalDepthAdmissionDecision.CONTINUE, after(nodes = 4_000, pairs = 81))
+    }
+
+    @Test
     fun `a cheap next depth is still admitted`() {
         val decision = LocalDepthAdmissionPolicy.afterCompletedDepth(
             completedDepth = 3,

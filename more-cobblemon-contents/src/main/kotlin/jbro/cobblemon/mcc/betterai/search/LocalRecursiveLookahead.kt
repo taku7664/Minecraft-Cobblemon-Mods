@@ -52,6 +52,9 @@ internal data class LocalLookaheadEvaluation(
     val terminationReason: LocalLookaheadTerminationReason = LocalLookaheadTerminationReason.COMPLETED,
     /** Wall-clock time consumed inside this evaluator invocation. */
     val elapsedMillis: Long = 0L,
+    /** Time and nodes spent up to the end of [depthCompleted]; the rest went to a depth that did not finish. */
+    val acceptedDepthMillis: Long = 0L,
+    val acceptedDepthNodes: Int = 0,
 )
 
 /**
@@ -156,6 +159,8 @@ internal object LocalRecursiveLookaheadEvaluator {
         var terminationReason = LocalLookaheadTerminationReason.COMPLETED
         var publicResponseIncomplete = false
         var lastCoverage = 1.0
+        var acceptedDepthMillis = 0L
+        var acceptedDepthNodes = 0
         // Board gain each candidate showed at a single ply, keyed by action.
         //
         // A one-ply search already resolves the whole turn including the opponent's reply, so this is
@@ -360,6 +365,8 @@ internal object LocalRecursiveLookaheadEvaluator {
             acceptedCoverage = evaluatedCoverage.toMap()
             completedDepth = depth
             val depthFinishedAt = clockMillis()
+            acceptedDepthMillis = elapsedMillis(searchStartedAt, depthFinishedAt)
+            acceptedDepthNodes = totalNodes
             val currentDepthCost = LocalCompletedDepthCost(
                 elapsedMillis = elapsedMillis(depthStartedAt, depthFinishedAt),
                 nodesVisited = search.nodesVisited,
@@ -373,6 +380,8 @@ internal object LocalRecursiveLookaheadEvaluator {
                 currentCost = currentDepthCost,
                 previousSignature = previousDecisionSignature,
                 currentSignature = currentDecisionSignature,
+                rootPairs = search.rootPairsProjected,
+                nodeLimit = budget.nodeLimit,
             )
             previousDepthCost = currentDepthCost
             previousDecisionSignature = currentDecisionSignature
@@ -403,6 +412,8 @@ internal object LocalRecursiveLookaheadEvaluator {
             responseCoverageByAction = acceptedCoverage,
             terminationReason = terminationReason,
             elapsedMillis = elapsedMillis(searchStartedAt, clockMillis()),
+            acceptedDepthMillis = acceptedDepthMillis,
+            acceptedDepthNodes = acceptedDepthNodes,
         )
     }
 
@@ -448,6 +459,9 @@ internal object LocalRecursiveLookaheadEvaluator {
             private set
         var leafWorkUnits: Int = 0
             private set
+        /** Root (own action, response) pairs projected so far: the width one more turn multiplies by. */
+        var rootPairsProjected: Int = 0
+            private set
         private val memo = HashMap<SearchKey, Double>()
         // Structural, like the search's own value memo. Keying leaf values by object identity meant a
         // position reached by two different routes was evaluated twice, and a leaf evaluation is a full
@@ -476,6 +490,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             val responseValues = mutableListOf<OpponentTurnValue>()
             for (opponentAction in opponentActions) {
                 if (budgetExhausted()) break
+                rootPairsProjected++
                 turnValue(
                     state,
                     ownAction,

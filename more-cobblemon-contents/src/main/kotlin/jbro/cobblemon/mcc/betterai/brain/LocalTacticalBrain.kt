@@ -510,6 +510,8 @@ internal class LocalTacticalBrain(
                     "lookahead_coverage_${(lookahead.publicResponseCoverage * 100).roundToInt()}",
                     "lookahead_stop_${lookahead.terminationReason.name.lowercase(Locale.ROOT)}",
                     "lookahead_elapsed_ms_${lookahead.elapsedMillis}",
+                    "lookahead_accepted_ms_${lookahead.acceptedDepthMillis}",
+                    "lookahead_accepted_nodes_${lookahead.acceptedDepthNodes}",
                      ))
                     if (lookahead.truncated) add("lookahead_truncated")
                     nativeFallbackStatus?.let { add("native_fallback_${it.name.lowercase(Locale.ROOT)}") }
