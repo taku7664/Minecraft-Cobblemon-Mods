@@ -10,6 +10,8 @@ import jbro.cobblemon.mcc.internal.ai.BattleTargetSlot
 import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.mcc.internal.ai.BattlePublicMoveOptionView
 import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
+import jbro.cobblemon.mcc.internal.ai.BattleDamageFractionRange
+import jbro.cobblemon.mcc.internal.ai.BattleFractionRange
 
 /**
  * Reuses an equal projected state's public tactical calculation within one search.
@@ -24,6 +26,24 @@ internal class LocalProjectedActionCalculationCache(
     val fingerprints: LocalBattleStateFingerprint = LocalBattleStateFingerprint(),
 ) {
     private val byState = HashMap<String, MutableMap<ActionKey, BattleDecisionContext>>()
+
+    /**
+     * What a leaf reads from one cached calculation: the same answer every time that calculation comes
+     * back, so it is worked out once. Keyed by the cached result itself.
+     */
+    internal class LeafAttack(
+        val nullified: Boolean,
+        val damageMultiplier: Double,
+        val accuracy: Double,
+        val targetHpFraction: Double?,
+        val damageRange: BattleDamageFractionRange?,
+        val knockoutRange: BattleFractionRange?,
+    )
+
+    private val leafAttacks = java.util.IdentityHashMap<BattleDecisionContext, LeafAttack>()
+
+    internal fun leafAttack(calculated: BattleDecisionContext, compute: () -> LeafAttack): LeafAttack =
+        leafAttacks.getOrPut(calculated, compute)
 
     var calculationsPerformed: Int = 0
         private set

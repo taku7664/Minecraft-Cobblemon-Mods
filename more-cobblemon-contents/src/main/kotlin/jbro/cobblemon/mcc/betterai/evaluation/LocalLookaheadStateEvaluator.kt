@@ -125,25 +125,33 @@ internal object LocalLookaheadStateEvaluator {
                     side,
                 )
             }
-            val calculated = calculatedContext.candidates.single()
-            val mechanics = LocalPublicMechanicsKernel.projectMove(calculated, calculatedContext, side)
-            if (mechanics.publiclyNullified) return@map 0.0
-            val facts = calculated.facts
-            val accuracy = LocalPublicAccuracy.probability(calculated, calculatedContext, side)
-            val targetHp = if (capDamageToRemainingHp) {
-                PublicBattleTacticalCalculator.primaryTargetHpFraction(calculated, calculatedContext, side)
-            } else null
-            val expectedDamage = facts?.standardDamageFractionRange?.let { range ->
+            val leaf = calculationCache.leafAttack(calculatedContext) {
+                val calculated = calculatedContext.candidates.single()
+                val mechanics = LocalPublicMechanicsKernel.projectMove(calculated, calculatedContext, side)
+                LocalProjectedActionCalculationCache.LeafAttack(
+                    nullified = mechanics.publiclyNullified,
+                    damageMultiplier = mechanics.knownDamageMultiplier,
+                    accuracy = if (mechanics.publiclyNullified) 0.0 else LocalPublicAccuracy.probability(calculated, calculatedContext, side),
+                    targetHpFraction = if (mechanics.publiclyNullified) null
+                        else PublicBattleTacticalCalculator.primaryTargetHpFraction(calculated, calculatedContext, side),
+                    damageRange = calculated.facts?.standardDamageFractionRange,
+                    knockoutRange = calculated.facts?.standardDamageRollKoProbabilityRange,
+                )
+            }
+            if (leaf.nullified) return@map 0.0
+            val accuracy = leaf.accuracy
+            val targetHp = if (capDamageToRemainingHp) leaf.targetHpFraction else null
+            val expectedDamage = leaf.damageRange?.let { range ->
                 if (targetHp == null) {
-                    (range.minimum + range.maximum) / 2.0 * accuracy * mechanics.knownDamageMultiplier
+                    (range.minimum + range.maximum) / 2.0 * accuracy * leaf.damageMultiplier
                 } else {
                     // Cap before accuracy: inaccurate overkill is not a certain full HP bar.
-                    val minimum = (range.minimum * mechanics.knownDamageMultiplier).coerceAtMost(targetHp)
-                    val maximum = (range.maximum * mechanics.knownDamageMultiplier).coerceAtMost(targetHp)
+                    val minimum = (range.minimum * leaf.damageMultiplier).coerceAtMost(targetHp)
+                    val maximum = (range.maximum * leaf.damageMultiplier).coerceAtMost(targetHp)
                     (minimum + maximum) / 2.0 * accuracy
                 }
             } ?: 0.0
-            val knockoutProbability = facts?.standardDamageRollKoProbabilityRange?.let { range ->
+            val knockoutProbability = leaf.knockoutRange?.let { range ->
                 (range.minimum + range.maximum) / 2.0 * accuracy
             } ?: 0.0
             expectedDamage + knockoutProbability * tuning.leafKnockoutPressure
