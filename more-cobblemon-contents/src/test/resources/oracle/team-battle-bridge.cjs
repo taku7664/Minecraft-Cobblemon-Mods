@@ -224,6 +224,9 @@ try {
         throw new Error('Choices must match exactly the waiting sides');
       }
       for (const request of pending) {
+        // A scripted replay plays the real players' choices, which may use a gimmick (Terastallization)
+        // the exposed action list does not offer; Showdown still validates them below.
+        if (input.scriptedChoices) continue;
         if (!request.actions.some(action => action.id === message.choices[request.side])) {
           throw new Error(`Action not exposed for ${request.side}`);
         }

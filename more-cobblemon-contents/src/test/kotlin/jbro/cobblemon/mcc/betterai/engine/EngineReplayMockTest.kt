@@ -170,7 +170,8 @@ class EngineReplayMockTest {
 
     private fun hp(line: String): Int? = HP.find(line)?.groupValues?.get(1)?.toInt()
 
-    private class Run(val lines: List<String>, val choices: List<Pair<String, String>>, val stoppedAt: String?, val winner: String?)
+    private class Run(val lines: List<String>, val choices: List<Pair<String, String>>, val stoppedAt: String?, val winner: String?,
+                      val seed: IntArray)
 
     /** Plays the real choices on the engine under one seed until the battle ends or no longer fits them. */
     private fun play(replay: Replay, seed: IntArray): Run {
@@ -203,7 +204,7 @@ class EngineReplayMockTest {
             battle.commitDecisions()
         }
         val lines = publicLines(battle.log).mapNotNull { normalize(it, { ident -> species[ident.substringAfter(": ")] }, emptyMap()) }
-        return Run(lines, choices, stopped, battle.winner.takeIf { battle.ended })
+        return Run(lines, choices, stopped, battle.winner.takeIf { battle.ended }, seed)
     }
 
     /** Showdown writes a private and a public copy of HP lines; keep the public one, as a replay shows. */
@@ -409,6 +410,69 @@ class EngineReplayMockTest {
             Files.createDirectories(dir)
             Files.writeString(dir.resolve("$id.spreads.json"), json)
             println("$id misfit=$best\n$json")
+        }
+    }
+
+    /**
+     * Asks our AI, at every request of the real battle, what it would do (see [EngineReplayAiReview]). The
+     * battle follows the real choices on Showdown under the seed that reproduces the replay best, so each
+     * request is the position the players really faced. Writes `ai-engine-replay-<id>-ai.md`.
+     */
+    @Test
+    fun `our AI reviews every real decision`() {
+        EngineReferee.assumeAvailable()
+        val engine = Path.of(System.getProperty("aiengine.showdown"))
+        for ((id, format) in replays) {
+            val replay = parse(id, format)
+            val stats = stats(replay, 2000)
+            val run = stats.runs[stats.runs.indices.maxBy { stats.reach[it] }]
+            val directory = Files.createTempDirectory("ai-engine-review")
+            val result = try {
+                EngineReplayAiReview.run(replay.teams, replay.gameType, run.seed, run.choices, engine, directory.resolve("battle"))
+            } finally {
+                runCatching { Files.walk(directory).use { s -> s.sorted(Comparator.reverseOrder()).forEach { Files.deleteIfExists(it) } } }
+            }
+            // The bridge names Pokemon by the UUIDs it hands out: side * 100 + slot + 1.
+            val species = replay.teams.flatMap { (side, team) ->
+                team.mapIndexed { i, s -> "00000000-0000-0000-0000-" + ((side.drop(1).toInt()) * 100 + i + 1).toString().padStart(12, '0') to s.species }
+            }.toMap()
+            val bridgeLines = result.publicLog.dropWhile { it != "|start" }
+                .mapNotNull { normalize(it, { ident -> species[ident.substringAfter(": ")] }, emptyMap()) }.map(::shape)
+            // The bridge only passes the event kinds it knows (4x hits are "-extremelyeffective" in Cobblemon and
+            // do not reach the AI), so both logs are compared on the kinds the bridge kept.
+            val kept = bridgeLines.map { it.split("|").getOrNull(1) }.toSet() - setOf("-supereffective", "-resisted")
+            val realShapes = replay.lines.map(::shape).filter { it.split("|").getOrNull(1) in kept }
+            val bridgeShapes = bridgeLines.filter { it.split("|").getOrNull(1) in kept }
+            Files.write(Path.of(System.getProperty("aiengine.coverage") ?: "build/reports/x").parent.resolve("ai-engine-replay-$id-bridge.log"), bridgeLines)
+            val follows = realShapes.indices.firstOrNull { bridgeShapes.getOrNull(it) != realShapes[it] } ?: realShapes.size
+            val text = buildString {
+                appendLine("# ${replay.id}: 실제 선택과 우리 AI의 선택")
+                appendLine()
+                appendLine("- 시드 ${run.seed.joinToString(",")}로 실제 선택을 Showdown에서 재생했다. 로그(피해량 제외)는 실제와 $follows / ${realShapes.size}줄까지 같다.")
+                appendLine("- AI 입력은 embedded team battle과 같다(공개 로그 + 요청, 공개 팀 시트의 상대 기술). 팀 프리뷰와 자기 팀 정보를 채우지 않아 네이티브 탐색이 아니라 로컬 탐색 경로로 판단한다.")
+                result.stoppedAt?.let { appendLine("- 중단: $it") }
+                appendLine()
+                for (row in result.rows) {
+                    appendLine("## ${row.turn}턴 ${row.side}${if (row.forced) " (교체 요청)" else ""}")
+                    appendLine()
+                    appendLine("- 상황: ${row.board}")
+                    appendLine("- 실제: ${row.real}")
+                    if (row.failure != null) {
+                        appendLine("- **AI 예외**: ${row.failure}")
+                    } else {
+                        appendLine("- AI: ${row.ai}${if (row.ai == row.real) " (같음)" else ""}  `${row.aiRaw}` ${row.millis}ms")
+                        appendLine("- 태그: ${row.tags.joinToString(", ")}")
+                        row.openingAccepted?.let { appendLine("- 네이티브 오프닝 조건 충족: $it") }
+                        appendLine("- 후보 순위: " + row.ranked.take(8).joinToString(" / "))
+                    }
+                    appendLine()
+                }
+            }
+            report("$id-ai", text)
+            report("$id-ai-full", result.rows.joinToString("\n\n") { row ->
+                "## ${row.turn}턴 ${row.side}${if (row.forced) " (교체 요청)" else ""}\n" + row.ranked.joinToString("\n") { "- $it" }
+            })
+            println(text.lineSequence().take(6).joinToString("\n"))
         }
     }
 
