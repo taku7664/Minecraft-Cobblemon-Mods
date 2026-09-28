@@ -2,6 +2,8 @@ package jbro.cobblemon.mcc.betterai
 
 import com.google.gson.JsonObject
 import jbro.cobblemon.mcc.internal.ai.*
+import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173PublicEffectDurationKnowledge
+import jbro.cobblemon.mcc.internal.compat.cobblemon173.FieldEffectScope
 import java.util.UUID
 import java.util.zip.ZipInputStream
 
@@ -81,6 +83,9 @@ internal object EmbeddedTeamInput {
         val sideEffects = BattleSide.entries.associateWith { linkedMapOf<String, Int>() }
         val fields = linkedSetOf<String>()
         var weather: String? = null
+        // The turn each timed effect started, as the Cobblemon observer counts it, so the state carries the
+        // same remaining-turn ranges production does.
+        val started = mutableMapOf<String, Int>()
         var eventTurn = 0
         fun baseTypes(species: String): Set<String> = if (species.startsWith("arceus")) emptySet() else
             speciesData.getAsJsonObject(species)?.getAsJsonArray("types")?.map { it.asString }?.toSet().orEmpty()
@@ -191,11 +196,16 @@ internal object EmbeddedTeamInput {
                     it.types = emptySet(); it.added = null
                 }
                 "-terastallize" -> current?.let { it.types = emptySet(); it.added = null }
-                "-weather" -> weather = id(actor).takeUnless { it == "none" }
-                "-fieldstart" -> fields += id(actor)
+                "-weather" -> {
+                    val next = id(actor).takeUnless { it == "none" }
+                    if ("[upkeep]" !in p) started["weather"] = maxOf(eventTurn, 1)
+                    weather = next
+                }
+                "-fieldstart" -> { fields += id(actor); started["field:${id(actor)}"] = maxOf(eventTurn, 1) }
                 "-fieldend" -> fields -= id(actor)
                 "-sidestart" -> { val effects = sideEffects.getValue(side(actor)); val name = id(p[3])
-                    effects[name] = ((effects[name] ?: 0) + 1).coerceAtMost(if (name == "spikes") 3 else if (name == "toxicspikes") 2 else 1) }
+                    effects[name] = ((effects[name] ?: 0) + 1).coerceAtMost(if (name == "spikes") 3 else if (name == "toxicspikes") 2 else 1)
+                    started["side:${side(actor)}:$name"] = maxOf(eventTurn, 1) }
                 "-sideend" -> sideEffects.getValue(side(actor)).remove(id(p[3]))
             }
             EmbeddedPublicMoveOutcomes.read(element.asString, eventTurn, index.toLong() * 2 + 1) { ident ->
@@ -350,10 +360,23 @@ internal object EmbeddedTeamInput {
                 BattlePublicMoveCandidatePoolView(creature.battlePokemonId, creature.speciesId, creature.formId,
                     ids, pool["sourceId"].asString, ids.associateWith { moveDetails(it, remaining(creature, it)) })
             } })
-        fun effect(name: String) = BattleTimedEffectView(name, null)
-        val field = BattleFieldStateView(weather?.let(::effect), fields.firstOrNull { it.endsWith("terrain") }?.let(::effect),
-            fields.filter { it.endsWith("room") }.map(::effect), fields.filterNot { it.endsWith("terrain") || it.endsWith("room") }.map(::effect),
-            sideEffects.mapValues { (_, values) -> values.map { (name, stacks) -> BattleTimedEffectView(name, null, stacks) } })
+        // The Cobblemon observer's reading: the public duration range less the turns since the effect started.
+        fun timed(name: String, key: String, duration: BattleIntegerRange?, stacks: Int? = null): BattleTimedEffectView {
+            val elapsed = (turn - (started[key] ?: turn)).coerceAtLeast(0)
+            val maximum = duration?.let { it.maximum - elapsed } ?: return BattleTimedEffectView(name, null, stacks)
+            if (maximum <= 0) return BattleTimedEffectView(name, null, stacks)
+            val minimum = (duration.minimum - elapsed).coerceAtLeast(1)
+            return if (minimum == maximum) BattleTimedEffectView(name, minimum, stacks)
+            else BattleTimedEffectView(name, null, stacks, remainingTurnsRange = BattleIntegerRange(minimum, maximum))
+        }
+        fun field(name: String, scope: FieldEffectScope) =
+            timed(name, "field:$name", Cobblemon173PublicEffectDurationKnowledge.field(name, scope))
+        val field = BattleFieldStateView(weather?.let { timed(it, "weather", Cobblemon173PublicEffectDurationKnowledge.weather(it)) },
+            fields.firstOrNull { it.endsWith("terrain") }?.let { field(it, FieldEffectScope.TERRAIN) },
+            fields.filter { it.endsWith("room") }.map { field(it, FieldEffectScope.ROOM) },
+            fields.filterNot { it.endsWith("terrain") || it.endsWith("room") }.map { field(it, FieldEffectScope.GLOBAL) },
+            sideEffects.mapValues { (side, values) -> values.map { (name, stacks) ->
+                timed(name, "side:$side:$name", Cobblemon173PublicEffectDurationKnowledge.side(name), stacks) } })
         val state = BattleStateView(battleId, format, turn, pokemon, field,
             mapOf(BattleSide.ALLY to allies.count { !it.fainted }, BattleSide.OPPONENT to
                 ((sizes[BattleSide.OPPONENT] ?: error("Missing public team size")) - opponents.count { it.fainted })),
