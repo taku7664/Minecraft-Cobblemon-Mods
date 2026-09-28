@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.betterai.policy
 import java.util.Locale
 import java.util.SplittableRandom
 import java.util.UUID
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
 import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget
@@ -293,7 +294,11 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
     ): String? = when {
         rank.outcome.publiclyInert -> "publicly_inert"
         rank.outcome.entryFaints -> "entry_faints"
-        rank.executionProbability < MINIMUM_EXPLORATORY_EXECUTION_PROBABILITY -> "low_execution_probability"
+        // Only an action that uses a move can fail to go through. For a switch the "execution" is the
+        // incoming Pokemon surviving the turn, which the switch rules below already price; applying the
+        // gate too kept a Trick Room team from sending in Ursaluna as its replacement.
+        rank.executionProbability < MINIMUM_EXPLORATORY_EXECUTION_PROBABILITY && usesMove(rank.outcome.candidate) ->
+            "low_execution_probability"
         rank.outcome.candidate.kind == BattleActionKind.FORFEIT -> "forfeit"
         rank.outcome.candidate.kind == BattleActionKind.WAIT -> "wait"
         else -> switchExclusion(rank, bestRanked, credibleStayAlternativeExists, riskBudget, memory)
@@ -381,6 +386,9 @@ internal class LocalWeightedActionSelector : LocalActionSelector {
             ?: rank.outcome.candidate.facts?.baseAccuracyProbability
             ?: rank.outcome.candidate.moveDetails?.accuracy?.div(100.0)
             ?: 1.0
+
+    private fun usesMove(candidate: BattleActionCandidate): Boolean =
+        candidate.kind == BattleActionKind.USE_MOVE || candidate.componentActions.any(::usesMove)
 
     private fun isCredibleDamagingStay(rank: LocalBattleActionRank): Boolean =
         rank.outcome.candidate.kind == BattleActionKind.USE_MOVE &&
