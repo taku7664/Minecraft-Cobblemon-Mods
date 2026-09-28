@@ -27,12 +27,6 @@ dependencies {
     // Cobblemon supplies GraalJS at runtime. Better AI compiles only against its public context API
     // so MCC does not package a second JavaScript engine into its own JAR.
     compileOnly("org.graalvm.sdk:graal-sdk:22.3.0")
-    // Modrinth display versions are shared by Fabric and NeoForge releases.
-    // Pin loader-specific version IDs there; use Wisp's Maven for owo so Endec transitives resolve.
-    modRuntimeOnly("maven.modrinth:cobblemon-mega-showdown:${property("mega_showdown_version_id")}")
-    modRuntimeOnly("io.wispforest:owo-lib:${property("owo_lib_version")}")
-    modRuntimeOnly("maven.modrinth:architectury-api:${property("architectury_api_version_id")}")
-    modRuntimeOnly("maven.modrinth:accessories:${property("accessories_version_id")}")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("com.google.code.gson:gson:2.11.0")

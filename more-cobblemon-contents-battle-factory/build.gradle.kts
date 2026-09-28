@@ -24,10 +24,6 @@ dependencies {
         isTransitive = false
     }
     modImplementation("com.cobblemon:fabric:${property("cobblemon_maven_version")}")
-    modRuntimeOnly("maven.modrinth:cobblemon-mega-showdown:${property("mega_showdown_version_id")}")
-    modRuntimeOnly("io.wispforest:owo-lib:${property("owo_lib_version")}")
-    modRuntimeOnly("maven.modrinth:architectury-api:${property("architectury_api_version_id")}")
-    modRuntimeOnly("maven.modrinth:accessories:${property("accessories_version_id")}")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("com.google.code.gson:gson:2.11.0")
