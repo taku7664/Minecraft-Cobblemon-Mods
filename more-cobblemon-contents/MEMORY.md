@@ -5,6 +5,15 @@
 
 ---
 
+## [2026-09-29 02:40] Hub와 모든 탭을 ui-kit 반응형 배치 트리로 — `ce41322a`~ (단위 테스트·개발 클라이언트 캡처 확인, 실서버 미확인)
+
+- **빡대리님 지시:** owo-ui 의존을 모든 모드에서 없애고, 반응형 배치 구조를 만들어 기존 UI가 그대로 나오게 전부 옮긴다. Mega Showdown이 쓰는 owo는 괜찮다. 공용 계약은 루트 `docs/COBBLEMON_UI_RESPONSIVE_LAYOUT_AMENDMENT.md`(88번).
+- **ui-kit:** `UiLayout`(row·column·grid·flow·inset·align·layers·responsive)과 `UiLength`(Fixed·Content·Percent·Weight). 옛 단층 계산기와 MCC의 `MccRect`는 없앴다.
+- **옮긴 것:** Hub 틀·레일·헤더 배지, 대시보드, 상점, 카드 본문, 탭 틀, 푸터(`footerLayout`), 선택 줄(`choiceLayout`), 목록 페이지(`pagedListLayout`), 초상 격자, 타워·팩토리·PvP·리그 탭 안의 나누기, PvP HUD·관전자 격자·나가기 버튼, ui-kit 대화상자·패널 본문·렌더 슬롯.
+- **같은 화면 증명:** 옛 손 계산을 각 모듈 테스트(`*LayoutEquivalenceTest`)에 기준본으로 두고, 넓은 크기 범위에서 사각형이 모두 같은지 비교한다. Hub 틀만 30만 조합 이상이다.
+- **owo:** MCC 모드 빌드에서 뺐다. Mega Showdown·Architectury·Accessories·owo-lib 묶음은 루트 `build.gradle.kts` 한곳에서 개발 실행용으로만 넣는다. `OwoIndependenceTest`가 소스·메타데이터·빌드 파일을 검사한다.
+- **함정:** 캡처 배치가 도는 중에 소스를 고치면 다음 `runClient`가 고치던 코드를 컴파일해 실패한다. 캡처 중에는 소스를 건드리지 않는다.
+
 ## [2026-09-28 05:30] League 야생 스폰 레벨을 지역별로 (단위 테스트 확인, 실제 스폰 분포 미확인)
 
 - **빡대리님 결정:** 스폰은 캡 − 10 ± 7 안에서 나오고, 지역(4×4청크 격자, 월드 시드 해싱, 선형 보간)마다 약한 쪽이나 강한 쪽으로 쏠린다. 범위 자체는 지역과 상관없이 같다.

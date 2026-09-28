@@ -4,7 +4,7 @@
 |---|---|
 | Status | `shared` |
 | Effective | 2026-08-19 |
-| Last reviewed | 2026-09-29 — 현재 모듈 기준으로 항목과 배포 절차 정리 |
+| Last reviewed | 2026-09-29 — Cobblemon UI 반응형 배치 트리와 owo 비의존 결정(88번) 추가 |
 | 주 독자 | 빡대리님과 이후 설계·구현 담당자 |
 | 목적 | 활성 계약, 분석 근거, 폐기 기록과 재개 지점의 라우팅 |
 
@@ -37,6 +37,7 @@
 84. `BETTER_COBBLEMON_MUSIC_RESOURCE_CATALOG_AND_MAPPING_DECISION.md` — 공식 ZIP의 OGG·사운드 이벤트·기본 카탈로그 소유권, 확장 카탈로그, 안정 ID, `settings.json`·`overrides.json`, 구형 생성팩 종료를 확정한 현행 계약
 85. `../better-cobblemon-music/RCT_ROLE_SUPPORT_RETIREMENT_2026-09-22.md` — RCT 역할 조회와 `battle.roles`·`battle.gym`을 전부 제거하고 NPC 여부만 사용하는 현행 종료 계약
 87. `COBBLEMON_UI_DS_WINDOW_STYLE_AMENDMENT.md` — 테마를 스타일과 팔레트로 나누고, 4세대 배틀타워·배틀팩토리 팔레트 여섯 개와 DPPt 메뉴 창 스타일(창 테두리·커서형 선택·색 글자 그림자·규칙선 제목·틀 없는 목록 줄)과 작은 컨트롤 글자 배율 정정을 확정
+88. `COBBLEMON_UI_RESPONSIVE_LAYOUT_AMENDMENT.md` — ui-kit에 반응형 배치 트리(크기 규칙·크기 구간 분기·열 정렬 격자)를 두고 Hub와 모든 탭의 손 계산을 옮기며, 우리 모드는 owo를 쓰지 않고 Mega Showdown의 요구로만 개발 실행 환경에 둔다
 
 ## 2. 현재 확정 결정
 
@@ -45,7 +46,7 @@
 | 저장소 범위 | 서로 독립적인 Cobblemon 애드온을 함께 둘 수 있으며 전체 JAR 수를 제한하지 않음 |
 | 콘텐츠 모드 | More Cobblemon Contents(MCC): 본체 `more_cobblemon_contents`와 콘텐츠 모드 배틀타워·배틀팩토리·PvP·리그 챌린지. 상대 AI는 본체에 들어 있다. 세부 결정은 MCC `MEMORY.md`를 따른다 |
 | 독립 연출 모드 | `Cobblemon: Better Battle Presentation` / `cobblemon_better_battle_presentation`; Mega Showdown만 기능 의존, MCC에는 비의존; 첫 기능은 참가자·등록 관전자 한정 다이맥스 하늘과 약 0.8초 페이드 |
-| Cobblemon UI 툴킷 | 독립 Gradle 클라이언트 소스 모듈 `cobblemon-ui-kit`이 공용 위젯·테마·입력 계약을 가진다. 테마는 스타일과 팔레트의 조합이다(87번) |
+| Cobblemon UI 툴킷 | 독립 Gradle 클라이언트 소스 모듈 `cobblemon-ui-kit`이 공용 위젯·테마·입력 계약을 가진다. 테마는 스타일과 팔레트의 조합이다(87번). 배치는 ui-kit의 반응형 배치 트리로 하며 owo를 쓰지 않는다(88번) |
 | Battle UI 표시 | 명령 선택 때 데이터 기반 행동 메뉴, 연출 때 하단 내레이션, 요청 때만 좌·우·중앙 전체 기록을 표시. 실제 월드 Cobblemon 전투에서 검증한 뒤 기존 상시 로그를 종료 |
 | 음악 연동 | Better Cobblemon Music은 MCC가 설치돼 있으면 MCC의 전투 콘텐츠 ID(`more_cobblemon_contents:battle_tower` 등)로 콘텐츠별 전투 음악을 고른다 |
 | 외부 레퍼런스 | 동작 계약과 UX만 참고하며 ARR 코드·데이터·자산은 복사하지 않음 |
@@ -62,4 +63,4 @@ MCC의 열린 결정과 이슈는 MCC `MEMORY.md`에서 관리한다.
 
 - 작업 브랜치는 `main`이다.
 - MCC는 [`../more-cobblemon-contents/MEMORY.md`](../more-cobblemon-contents/MEMORY.md)의 최근 항목과 "확인하지 않은 것"부터 확인하고 실제 코드와 대조한다.
-- 독립 연출 모드는 `BETTER_BATTLE_PRESENTATION_CONTEXT.md`, 음악 모드는 55·84·85번, UI 툴킷은 73~83·87번 문서에서 시작한다.
+- 독립 연출 모드는 `BETTER_BATTLE_PRESENTATION_CONTEXT.md`, 음악 모드는 55·84·85번, UI 툴킷은 73~83·87·88번 문서에서 시작한다.
