@@ -710,6 +710,9 @@ class Cobblemon173PublicBattleObserverTest {
             "|-supereffective|p2a: Garchomp" to BattleMoveOutcomeKind.SUPER_EFFECTIVE,
             "|-resisted|p2a: Garchomp" to BattleMoveOutcomeKind.RESISTED,
             "|-immune|p2a: Garchomp" to BattleMoveOutcomeKind.IMMUNE,
+            // Cobblemon's own lines for 4x and 1/4x hits.
+            "|-extremelyeffective|p2a: Garchomp" to BattleMoveOutcomeKind.SUPER_EFFECTIVE,
+            "|-mostlyineffective|p2a: Garchomp" to BattleMoveOutcomeKind.RESISTED,
         )
         outcomeKinds.forEach { (raw, expected) ->
             assertEquals(

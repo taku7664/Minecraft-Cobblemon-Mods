@@ -15,7 +15,10 @@ class EmbeddedPublicMoveOutcomesTest {
     @Test
     fun `target-only outcomes never acquire the previous attacker move or secret cause`() {
         mapOf("-crit" to BattleMoveOutcomeKind.CRITICAL_HIT, "-supereffective" to BattleMoveOutcomeKind.SUPER_EFFECTIVE,
-            "-resisted" to BattleMoveOutcomeKind.RESISTED, "-immune" to BattleMoveOutcomeKind.IMMUNE).forEach { (message, kind) ->
+            "-resisted" to BattleMoveOutcomeKind.RESISTED, "-immune" to BattleMoveOutcomeKind.IMMUNE,
+            // Cobblemon's own lines for 4x and 1/4x hits.
+            "-extremelyeffective" to BattleMoveOutcomeKind.SUPER_EFFECTIVE,
+            "-mostlyineffective" to BattleMoveOutcomeKind.RESISTED).forEach { (message, kind) ->
             val event = parse("|$message|p2a: target|[from] ability: Levitate")!!
             assertEquals(kind, event.moveOutcome!!.kind)
             assertEquals(listOf(target), event.targetPokemonIds)

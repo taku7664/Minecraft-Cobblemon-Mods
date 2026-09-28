@@ -30,8 +30,8 @@ internal object EmbeddedPublicMoveOutcomes {
             "-notarget" -> { actor = pokemon(2); BattleMoveOutcomeKind.NO_TARGET }
             "cant" -> { actor = pokemon(2); effect = id(3); move = id(4); BattleMoveOutcomeKind.CANNOT_ACT }
             "-crit" -> { target = pokemon(2); BattleMoveOutcomeKind.CRITICAL_HIT }
-            "-supereffective" -> { target = pokemon(2); BattleMoveOutcomeKind.SUPER_EFFECTIVE }
-            "-resisted" -> { target = pokemon(2); BattleMoveOutcomeKind.RESISTED }
+            "-supereffective", "-extremelyeffective" -> { target = pokemon(2); BattleMoveOutcomeKind.SUPER_EFFECTIVE }
+            "-resisted", "-mostlyineffective" -> { target = pokemon(2); BattleMoveOutcomeKind.RESISTED }
             "-immune" -> { target = pokemon(2); BattleMoveOutcomeKind.IMMUNE }
             "-hitcount" -> {
                 count = p.getOrNull(3)?.toIntOrNull()?.takeIf { it > 0 } ?: return null

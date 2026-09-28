@@ -178,8 +178,8 @@ class Cobblemon173ShowdownObservationAdapter(
                 }
             }
 
-            "-miss", "-fail", "-block", "-notarget", "cant", "-crit", "-supereffective",
-            "-resisted", "-immune", "-hitcount", "-activate", "-singleturn" -> {
+            "-miss", "-fail", "-block", "-notarget", "cant", "-crit", "-supereffective", "-extremelyeffective",
+            "-resisted", "-mostlyineffective", "-immune", "-hitcount", "-activate", "-singleturn" -> {
                 spitePpLoss(message)?.let { (move, amount) ->
                     resolvePokemon(activeBattle, message, 0)?.let { target ->
                         observer.observePpLoss(target.battlePokemonId, move, amount)
@@ -583,8 +583,9 @@ class Cobblemon173ShowdownObservationAdapter(
                 sourceArgument = 0,
             )
             "-crit" -> targetOutcome(BattleMoveOutcomeKind.CRITICAL_HIT)
-            "-supereffective" -> targetOutcome(BattleMoveOutcomeKind.SUPER_EFFECTIVE)
-            "-resisted" -> targetOutcome(BattleMoveOutcomeKind.RESISTED)
+            // Cobblemon's Showdown logs 4x and 1/4x hits as their own lines, apart from 2x and 1/2x.
+            "-supereffective", "-extremelyeffective" -> targetOutcome(BattleMoveOutcomeKind.SUPER_EFFECTIVE)
+            "-resisted", "-mostlyineffective" -> targetOutcome(BattleMoveOutcomeKind.RESISTED)
             "-immune" -> targetOutcome(BattleMoveOutcomeKind.IMMUNE)
             "-hitcount" -> message.argumentAt(1)?.toIntOrNull()?.takeIf { it > 0 }?.let { count ->
                 ShowdownMoveOutcomeDescriptor(
