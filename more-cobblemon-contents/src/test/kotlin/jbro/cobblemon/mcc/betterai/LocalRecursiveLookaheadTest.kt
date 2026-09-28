@@ -1049,10 +1049,10 @@ class LocalRecursiveLookaheadTest {
     fun `difficulty budgets cap the whole iterative search`() {
         assertEquals(
             listOf(
-                Triple(250L, 2_000, 16),
-                Triple(750L, 15_000, 24),
-                Triple(1_500L, 80_000, 40),
-                Triple(1_500L, 400_000, 64),
+                Triple(10_000L, 2_000, 16),
+                Triple(10_000L, 15_000, 24),
+                Triple(10_000L, 80_000, 40),
+                Triple(10_000L, 400_000, 64),
             ),
             BattleTrainerTier.entries.map { tier ->
                 LocalLookaheadBudgetPolicy.forTier(tier).let {

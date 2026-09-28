@@ -18,26 +18,31 @@ internal data class LocalLookaheadBudget(
  * may stop earlier without weakening either hard limit.
  */
 internal object LocalLookaheadBudgetPolicy {
+    /**
+     * One wall-clock ceiling for every tier; the node and chance-branch limits make the tiers differ. At
+     * 1.5 s a Boss doubles search stopped before finishing a single turn in 20 of 22 decisions of a real
+     * battle, so the clock, not the tier, decided how far it saw.
+     */
+    const val MAX_TIME_MILLIS = 10_000L
+
     fun forTier(tier: BattleTrainerTier): LocalLookaheadBudget = when (tier) {
         BattleTrainerTier.INTRODUCTORY -> LocalLookaheadBudget(
-            timeMillis = 250L,
+            timeMillis = MAX_TIME_MILLIS,
             nodeLimit = 2_000,
             chanceBranchesPerMove = 16,
         )
         BattleTrainerTier.STANDARD -> LocalLookaheadBudget(
-            timeMillis = 750L,
+            timeMillis = MAX_TIME_MILLIS,
             nodeLimit = 15_000,
             chanceBranchesPerMove = 24,
         )
         BattleTrainerTier.ADVANCED -> LocalLookaheadBudget(
-            timeMillis = 1_500L,
+            timeMillis = MAX_TIME_MILLIS,
             nodeLimit = 80_000,
             chanceBranchesPerMove = 40,
         )
-        // Boss shares Advanced's wall-clock ceiling but retains the largest deterministic node and
-        // chance-branch limits. This prevents a longer tier-specific stall without flattening width.
         BattleTrainerTier.BOSS -> LocalLookaheadBudget(
-            timeMillis = 1_500L,
+            timeMillis = MAX_TIME_MILLIS,
             nodeLimit = 400_000,
             chanceBranchesPerMove = 64,
         )
