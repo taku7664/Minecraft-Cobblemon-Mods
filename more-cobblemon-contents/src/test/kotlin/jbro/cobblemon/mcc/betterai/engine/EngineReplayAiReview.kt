@@ -15,6 +15,8 @@ import jbro.cobblemon.mcc.betterai.policy.LocalWeightedActionSelector
 import jbro.cobblemon.mcc.betterai.simulation.NativeOpeningStateRules
 import jbro.cobblemon.mcc.betterai.simulation.LocalOpponentStatAssumption
 import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
+import jbro.cobblemon.mcc.betterai.matchup.LocalOpponentIntentPredictor
+import jbro.cobblemon.mcc.betterai.matchup.MatchupScores
 import jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate
 import jbro.cobblemon.mcc.betterai.matchup.MatchupSpeedField
 import jbro.cobblemon.mcc.betterai.matchup.MoveMatchupScore
@@ -60,6 +62,12 @@ internal object EngineReplayAiReview {
         val failure: String?,
         /** The decision's matchup scores, one line per pair (see [matchupLines]). */
         val matchups: List<String> = emptyList(),
+        /** Per opposing active slot, the predicted chance of each action key (see [actionKey]). */
+        val intents: Map<Int, Map<String, Double>> = emptyMap(),
+        /** Per opposing active slot, the plain guess: its strongest attack. */
+        val strongest: Map<Int, String> = emptyMap(),
+        /** Per own active slot, the real choice as an action key. */
+        val realKeys: Map<Int, String> = emptyMap(),
     )
 
     class Result(val rows: List<Row>, val publicLog: List<String>, val stoppedAt: String?)
@@ -180,26 +188,75 @@ internal object EngineReplayAiReview {
                 "${describe(input, built.state, id)} (값 ${"%.1f".format(Locale.ROOT, rank.comparisonValue)}, 예상 피해 $damage, ${weight ?: excluded ?: "-"})"
             }
             val position = finalRanked.indexOfFirst { it.outcome.candidate.actionId == decision.actionId }
+            val view = ruleView(built, profile)
+            val intents = LocalOpponentIntentPredictor.predict(view.context, view.scores)
+            val species = view.context.state.pokemon.associate { it.battlePokemonId to canonical(it.speciesId) }
             Row(step, turn, side, forced, board(built.state), describe(input, built.state, realChoice),
                 describe(input, built.state, decision.actionId) + (if (position >= 0) " [${position + 1}위/${finalRanked.size}]" else "") +
                     (if (mismatch) " **최종 결정이 선택기와 다름**" else ""), decision.actionId, ranked, decision.tags, millis,
                 if (turn <= 1) NativeOpeningStateRules.acceptsObservations(built.state) else null, null,
-                matchupLines(built, profile))
+                matchupLines(view) + intentLines(view, intents),
+                intents = intents.associate { intent ->
+                    intent.activeSlot to intent.options.groupBy { o -> o.moveId?.let { "move:$it" } ?: "switch:${species[o.switchInId]}" }
+                        .mapValues { (_, same) -> same.sumOf { it.probability } }
+                },
+                strongest = view.context.state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted }
+                    .mapNotNull { user ->
+                        view.context.state.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted }
+                            .flatMap { view.scores.moves(user.battlePokemonId, it.battlePokemonId) }
+                            .maxByOrNull { it.score }?.let { requireNotNull(user.activeSlot) to "move:${it.moveId}" }
+                    }.toMap(),
+                realKeys = actionKeys(input, realChoice))
         } catch (failure: Throwable) {
             Row(step, turn, side, forced, context?.state?.let(::board) ?: "", realChoice, null, null, emptyList(), emptySet(), 0,
                 null, failure.toString().lines().first().take(300))
         }
     }
 
+    private class RuleView(val context: BattleDecisionContext, val scores: MatchupScores, val millis: Long)
+
     /** The matchup scores the brain would see: the same catalog binding and opponent stat assumption. */
-    private fun matchupLines(context: BattleDecisionContext, profile: BattleTrainerProfile): List<String> {
+    private fun ruleView(context: BattleDecisionContext, profile: BattleTrainerProfile): RuleView {
         val tier = profile.difficulty.tier
         val bound = context.copy(publicActionCatalog = LocalStatusMoveBinder.bindCatalog(context.state, context.publicActionCatalog,
             tier, LocalOpponentMoveUsage.forFormat(context.state.format)))
         val assumed = LocalOpponentStatAssumption.applyToPublicState(bound, tier)
         val started = System.nanoTime()
         val scores = LocalMatchupScoreCalculator.calculate(assumed)
-        val millis = (System.nanoTime() - started) / 1_000_000
+        return RuleView(assumed, scores, (System.nanoTime() - started) / 1_000_000)
+    }
+
+    private fun intentLines(view: RuleView, intents: List<jbro.cobblemon.mcc.betterai.matchup.OpponentIntent>): List<String> {
+        val species = view.context.state.pokemon.associate { it.battlePokemonId to name(it.speciesId) }
+        return intents.map { intent ->
+            "의도 ${species[intent.pokemonId]}: " + intent.options.take(5).joinToString(" / ") { o ->
+                val what = o.moveId?.let { m -> m + (o.targetId?.let { " → ${species[it]}" } ?: "") } ?: "교체 → ${species[o.switchInId]}"
+                "$what ${"%.0f".format(Locale.ROOT, o.probability * 100)}% (${"%+.2f".format(Locale.ROOT, o.value)})"
+            }
+        }
+    }
+
+    /** A Showdown choice as one key per slot: `move:<id>` or `switch:<species>`. */
+    fun actionKeys(input: JsonObject, choice: String): Map<Int, String> {
+        val request = input.getAsJsonObject("request")
+        val active = request.getAsJsonArray("active")
+        val bench = request.getAsJsonObject("side").getAsJsonArray("pokemon")
+        return choice.split(",").map { it.trim() }.mapIndexedNotNull { slot, part ->
+            val words = part.split(" ")
+            val index = words.getOrNull(1)?.toIntOrNull() ?: return@mapIndexedNotNull null
+            when (words[0]) {
+                "move" -> active?.get(slot)?.asJsonObject?.getAsJsonArray("moves")?.get(index - 1)?.asJsonObject
+                    ?.let { m -> slot to "move:" + canonical((m["id"] ?: m["move"]).asString) }
+                "switch" -> slot to "switch:" + canonical(bench[index - 1].asJsonObject["details"].asString.substringBefore(","))
+                else -> null
+            }
+        }.toMap()
+    }
+
+    private fun matchupLines(view: RuleView): List<String> {
+        val assumed = view.context
+        val scores = view.scores
+        val millis = view.millis
         val species = assumed.state.pokemon.associate { it.battlePokemonId to name(it.speciesId) }
         fun pct(value: Double) = "%.0f%%".format(Locale.ROOT, value * 100)
         fun move(score: MoveMatchupScore?) = score?.let {

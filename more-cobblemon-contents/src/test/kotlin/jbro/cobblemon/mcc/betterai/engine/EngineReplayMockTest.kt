@@ -4,6 +4,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.Locale
 import java.util.Random
 import jbro.cobblemon.mcc.betterai.engine.sim.Battle
 import jbro.cobblemon.mcc.betterai.engine.sim.BattleOptions
@@ -469,6 +470,7 @@ class EngineReplayMockTest {
                 appendLine("- 시드 ${run.seed.joinToString(",")}로 실제 선택을 Showdown에서 재생했다. 로그(피해량 제외)는 실제와 $follows / ${realShapes.size}줄까지 같다.")
                 appendLine("- AI 입력은 embedded team battle과 같다(공개 로그 + 요청, 공개 팀 시트의 상대 기술). 팀 프리뷰와 자기 팀 정보를 채우지 않아 네이티브 탐색이 아니라 로컬 탐색 경로로 판단한다.")
                 result.stoppedAt?.let { appendLine("- 중단: $it") }
+                appendLine(intentSummary(result.rows))
                 appendLine()
                 for (row in result.rows) {
                     appendLine("## ${row.turn}턴 ${row.side}${if (row.forced) " (교체 요청)" else ""}")
@@ -493,6 +495,40 @@ class EngineReplayMockTest {
             })
             println(text.lineSequence().take(6).joinToString("\n"))
         }
+    }
+
+    /**
+     * How often the opponent-intent prediction names what the other side really chose in the same step, per
+     * opposing slot, against the plain guess of its strongest attack. Replacement requests are left out.
+     */
+    private fun intentSummary(rows: List<EngineReplayAiReview.Row>): String {
+        var total = 0
+        var top1 = 0
+        var top3 = 0
+        var strongest = 0
+        var chance = 0.0
+        val misses = ArrayList<String>()
+        for ((_, step) in rows.groupBy { it.step }) for (row in step) {
+            if (row.forced || row.failure != null) continue
+            val other = step.firstOrNull { it.side != row.side && !it.forced } ?: continue
+            for ((slot, predicted) in row.intents) {
+                val actual = other.realKeys[slot] ?: continue
+                val ranked = predicted.entries.sortedByDescending { it.value }.map { it.key }
+                total++
+                if (ranked.firstOrNull() == actual) top1++
+                else misses += "  - ${row.turn}턴 ${row.side}의 예측, 상대 ${slot + 1}번 칸: " +
+                    "${ranked.firstOrNull()} ${"%.0f".format(Locale.ROOT, (predicted[ranked.firstOrNull()] ?: 0.0) * 100)}% / " +
+                    "실제 $actual ${"%.0f".format(Locale.ROOT, (predicted[actual] ?: 0.0) * 100)}% (${ranked.indexOf(actual).let { if (it < 0) "후보 없음" else "${it + 1}위" }})"
+                if (actual in ranked.take(3)) top3++
+                if (row.strongest[slot] == actual) strongest++
+                chance += predicted[actual] ?: 0.0
+            }
+        }
+        if (total == 0) return "- 상대 의도 예측: 비교할 선택 없음"
+        fun pct(count: Int) = "%.0f%%".format(Locale.ROOT, count * 100.0 / total)
+        return "- 상대 의도 예측 ($total 칸): 1순위 적중 ${pct(top1)}, 3순위 안 ${pct(top3)}, 실제 행동에 준 평균 확률 " +
+            "%.0f%%".format(Locale.ROOT, chance * 100 / total) + ". 비교: 가장 센 공격기 ${pct(strongest)}" +
+            (if (misses.isEmpty()) "" else "\n" + misses.joinToString("\n"))
     }
 
     @Test

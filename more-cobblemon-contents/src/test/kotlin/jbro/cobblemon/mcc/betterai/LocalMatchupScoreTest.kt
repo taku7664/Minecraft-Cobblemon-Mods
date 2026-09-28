@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.betterai
 import java.util.UUID
 import jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutProfile
 import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
+import jbro.cobblemon.mcc.betterai.matchup.LocalOpponentIntentPredictor
 import jbro.cobblemon.mcc.betterai.matchup.LocalPublicFailureTriage
 import jbro.cobblemon.mcc.betterai.matchup.AntiAceScore
 import jbro.cobblemon.mcc.betterai.matchup.AntiAceToolKind
@@ -275,6 +276,26 @@ class LocalMatchupScoreTest {
         assertEquals(primary.maximumDamageFraction, secondary.maximumDamageFraction, 0.01)
     }
 
+    @Test
+    fun `the predicted opponent attacks when it wins and protects when it is about to fall`() {
+        val protect = BattlePublicMoveOptionView("protect", BattleMoveCandidateView(typeId = "normal",
+            damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 4, currentPp = 8,
+            targetPattern = BattleMoveTargetPattern.SELF, effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                listOf(BattleMoveEffectView(BattleMoveEffectKind.PROTECT_USER, BattleMoveEffectTarget.USER)), false)),
+            BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
+        fun top(allyPower: Double, foePower: Double, events: List<BattleObservedEventView> = emptyList()): String? {
+            val context = context(allySpeed = 100, foeSpeed = 120, allyPower = allyPower, foePower = foePower,
+                foeExtra = listOf(protect), events = events)
+            return LocalOpponentIntentPredictor.predict(context, LocalMatchupScoreCalculator.calculate(context))
+                .single().options.first().moveId
+        }
+        assertEquals("probe", top(allyPower = 40.0, foePower = 300.0))
+        assertEquals("protect", top(allyPower = 300.0, foePower = 40.0))
+        // A second Protect in a row mostly fails.
+        val protectedBefore = listOf(BattleObservedEventView(1, 0, BattleObservedEventKind.MOVE_USED, FOE, emptyList(), "protect"))
+        assertEquals("probe", top(allyPower = 300.0, foePower = 40.0, events = protectedBefore))
+    }
+
     private fun wisp() = BattlePublicMoveOptionView("willowisp", BattleMoveCandidateView(typeId = "fire",
         damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
         targetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT,
@@ -422,15 +443,16 @@ class LocalMatchupScoreTest {
         foeStatus: String? = null,
         /** The second opponent stands beside the first, in doubles. */
         secondFoeActive: Boolean = false,
+        events: List<BattleObservedEventView> = emptyList(),
     ): BattleDecisionContext {
         val field = if (!rocksOnAllySide) BattleFieldStateView.empty() else BattleFieldStateView(null, null, emptyList(), emptyList(),
             mapOf(BattleSide.ALLY to listOf(BattleTimedEffectView("stealthrock", null)), BattleSide.OPPONENT to emptyList()))
-        val events = if (!foeMovedThisTurn) emptyList() else
-            listOf(BattleObservedEventView(1, 1, BattleObservedEventKind.MOVE_USED, FOE, listOf(ALLY), "probe"))
+        val observed = events + if (!foeMovedThisTurn) emptyList() else
+            listOf(BattleObservedEventView(9, 1, BattleObservedEventKind.MOVE_USED, FOE, listOf(ALLY), "probe"))
         val state = BattleStateView(UUID(0, 918), format, 1,
             listOf(pokemon(ALLY, BattleSide.ALLY, 0, allySpeed, allyItem), pokemon(BENCH, BattleSide.ALLY, if (benchActive) 1 else null, allySpeed),
                 pokemon(FOE, BattleSide.OPPONENT, 0, foeSpeed, status = foeStatus)) + listOfNotNull(if (secondFoe) pokemon(FOE2, BattleSide.OPPONENT, if (secondFoeActive) 1 else null, 50) else null),
-            field, mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to if (secondFoe) 2 else 1), events, emptyList())
+            field, mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to if (secondFoe) 2 else 1), observed, emptyList())
         return BattleDecisionContext(UUID(0, 919), state, listOf(BattleActionCandidate("wait", BattleActionKind.WAIT)), Long.MAX_VALUE,
             publicActionCatalog = BattlePublicActionCatalogView(state.pokemon.map { pokemon ->
                 val power = when (pokemon.battlePokemonId) { BENCH -> benchPower ?: allyPower; FOE -> foePower; FOE2 -> 65.0; else -> allyPower }
