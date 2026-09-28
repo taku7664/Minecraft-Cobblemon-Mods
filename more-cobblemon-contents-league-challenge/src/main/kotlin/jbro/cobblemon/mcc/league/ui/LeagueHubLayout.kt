@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.league.ui
 
 import jbro.cobblemon.mcc.client.hub.MccHubKit
+import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiRect
 
 /**
@@ -17,11 +18,7 @@ data class LeagueHubLayout(
 ) {
     /** Horizontal centers of [count] route nodes, spread across the route with room for the end badges. */
     fun routeCenters(count: Int): List<Int> {
-        if (count <= 0) return emptyList()
-        val first = route.x + ROUTE_EDGE
-        val last = route.right - ROUTE_EDGE
-        if (count == 1) return listOf((first + last) / 2)
-        return (0 until count).map { index -> first + (last - first) * index / (count - 1) }
+        return UiLayout.spread(route.x + ROUTE_EDGE, route.right - ROUTE_EDGE, count)
     }
 
     companion object {
@@ -31,13 +28,14 @@ data class LeagueHubLayout(
 
         fun calculate(bounds: UiRect): LeagueHubLayout {
             require(bounds.width > 0 && bounds.height > 0) { "League hub bounds must be positive" }
-            val summary = UiRect(bounds.x, bounds.y, bounds.width, MccHubKit.STRIP_HEIGHT)
-            val route = UiRect(bounds.x, summary.bottom + GAP, bounds.width, ROUTE_HEIGHT)
-            val footer = UiRect(bounds.x, bounds.bottom - MccHubKit.FOOTER_HEIGHT, bounds.width, MccHubKit.FOOTER_HEIGHT)
-            val body = UiRect(bounds.x, route.bottom + GAP, bounds.width,
-                (footer.y - GAP - route.bottom - GAP).coerceAtLeast(1))
-            val (detail, status) = MccHubKit.columns(body, 55, 45)
-            return LeagueHubLayout(summary, route, detail, status, footer)
+            val layout = MccHubKit.tabFrame(UiLayout.column(gap = GAP) {
+                fixed(ROUTE_HEIGHT, "route")
+                weight(UiLayout.row(gap = GAP) {
+                    weight("detail", 55, min = 1)
+                    weight("status", 45, min = 1)
+                }, min = 1)
+            }).solve(bounds)
+            return LeagueHubLayout(layout["strip"], layout["route"], layout["detail"], layout["status"], layout["footer"])
         }
     }
 }

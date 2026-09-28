@@ -10,10 +10,10 @@ class PvpLoungeExitButtonLayoutTest {
         val screenHeight = 240
         val button = PvpLoungeExitButtonLayout.bounds(screenHeight)
 
-        assertEquals(8, button.left)
+        assertEquals(8, button.x)
         assertEquals(104, button.width)
         assertEquals(20, button.height)
-        assertTrue(button.top >= 8)
+        assertTrue(button.y >= 8)
         assertTrue(button.bottom <= screenHeight)
     }
 }

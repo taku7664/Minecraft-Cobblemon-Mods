@@ -4,13 +4,20 @@ import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiControlSize
+import jbro.cobblemon.uikit.UiCross
 import jbro.cobblemon.uikit.UiDialogSpec
+import jbro.cobblemon.uikit.UiLayout
+import jbro.cobblemon.uikit.UiLayoutNode
+import jbro.cobblemon.uikit.UiLayoutResult
+import jbro.cobblemon.uikit.UiLength
 import jbro.cobblemon.uikit.UiListItemSpec
 import jbro.cobblemon.uikit.UiOverlayTone
 import jbro.cobblemon.uikit.UiPanelSpec
 import jbro.cobblemon.uikit.UiPanelTone
 import jbro.cobblemon.uikit.UiRect
+import jbro.cobblemon.uikit.UiRemainder
 import jbro.cobblemon.uikit.UiScrollState
+import jbro.cobblemon.uikit.UiSize
 import jbro.cobblemon.uikit.UiThemeSnapshot
 import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.UiWidthPolicy
@@ -90,12 +97,14 @@ object MccHubKit {
     }
 
     /** The body [card] would return for [rect], for layouts that size a card around its content. */
-    fun cardBody(rect: UiRect): UiRect = UiRect(
-        rect.x + 6,
-        rect.y + 2 + TITLE_BAND_HEIGHT + 5,
-        (rect.width - 12).coerceAtLeast(1),
-        (rect.height - CARD_CHROME_HEIGHT).coerceAtLeast(1),
-    )
+    fun cardBody(rect: UiRect): UiRect = cardBodyOf(UiLayout.leaf("body")).solve(rect)["body"]
+
+    /** Where a card's body starts below its top edge: the frame, the title band and a little room. */
+    const val CARD_BODY_TOP = 2 + TITLE_BAND_HEIGHT + 5
+
+    /** [content] laid out inside the body of a card that fills the node's bounds. */
+    fun cardBodyOf(content: UiLayoutNode): UiLayoutNode =
+        UiLayout.inset(content, 6, CARD_BODY_TOP, 6, CARD_CHROME_HEIGHT - CARD_BODY_TOP, min = 1)
 
     /**
      * A strip across [rect]: an optional item icon and [start] on the left, [end] right-aligned. [progress]
@@ -118,22 +127,50 @@ object MccHubKit {
      */
     fun footer(host: MccHubContentHost, rect: UiRect, start: List<Action>, end: List<Action>) {
         host.add(Rule(rect))
-        val y = rect.y + (rect.height - CONTROL_HEIGHT + 1) / 2 + 1
-        var right = rect.right
-        end.asReversed().forEach { action ->
-            val button = button(action, 0, y, (rect.width / 2).coerceAtLeast(40))
-            button.x = right - button.width
-            right = button.x - 4
-            host.add(button)
+        val buttons = HashMap<Pair<Boolean, Int>, CobblemonUiButton>()
+        fun measure(isStart: Boolean, index: Int, action: Action): (Int) -> UiSize = { room ->
+            button(action, 0, 0, room).also { buttons[isStart to index] = it }.let { UiSize(it.width, it.height) }
         }
-        var left = rect.x
-        start.forEach { action ->
-            val room = right - left - 4
-            if (room < 24) return@forEach
-            val button = host.add(button(action, left, y, room))
-            left += button.width + 4
-        }
+        val (starts, ends) = footerLayout(rect, start.mapIndexed { i, action -> measure(true, i, action) },
+            end.mapIndexed { i, action -> measure(false, i, action) })
+        // Right-most first, then the start actions, as the footer has always been read.
+        ends.indices.reversed().forEach { index -> host.add(buttons.getValue(false to index).moveTo(ends[index])) }
+        starts.forEachIndexed { index, placed -> placed?.let { host.add(buttons.getValue(true to index).moveTo(it)) } }
     }
+
+    private fun CobblemonUiButton.moveTo(rect: UiRect): CobblemonUiButton = also {
+        x = rect.x
+        y = rect.y
+    }
+
+    /**
+     * Where [footer] puts its controls, each measured by its function for the width it may take. End controls may
+     * take half the footer and pack against the right edge; start controls are then measured one by one in the room
+     * left of them and go from the left edge, a start control with too little room left staying out (null). All sit
+     * [FOOTER_GAP] apart on the footer's control line.
+     */
+    fun footerLayout(rect: UiRect, start: List<(Int) -> UiSize>, end: List<(Int) -> UiSize>): Pair<List<UiRect?>, List<UiRect>> {
+        val ends = end.map { it((rect.width / 2).coerceAtLeast(40)) }
+        var room = rect.width - ends.sumOf { it.width + FOOTER_GAP }
+        val starts = start.map { measure ->
+            if (room - FOOTER_GAP < 24) return@map null
+            measure(room - FOOTER_GAP).also { room -= it.width + FOOTER_GAP }
+        }
+        val shown = starts.filterNotNull()
+        val keys = UiLayout.keys("action", shown.size + ends.size)
+        val offset = (rect.height - CONTROL_HEIGHT + 1) / 2 + 1
+        val placed = UiLayout.row(gap = FOOTER_GAP) {
+            (shown + ends).forEachIndexed { index, size ->
+                if (index == shown.size) spring()
+                fixed(size.width, keys[index], UiCross(size.height, before = offset))
+            }
+            if (ends.isEmpty()) spring()
+        }.solve(rect).list("action")
+        var next = 0
+        return starts.map { size -> size?.let { placed[next++] } } to placed.drop(shown.size)
+    }
+
+    private const val FOOTER_GAP = 4
 
     /** Height of a titled choice row: a title line above one row of controls. */
     const val STACKED_CHOICE_HEIGHT = CONTROL_HEIGHT + 12
@@ -169,37 +206,54 @@ object MccHubKit {
     fun choices(host: MccHubContentHost, rect: UiRect, rows: List<ChoiceRow>): Int {
         if (rows.isEmpty()) return rect.y
         val font = Minecraft.getInstance().font
-        val labelWidth = rows.maxOf { font.width(it.title) } + 8
         fun natural(row: ChoiceRow) = row.options.sumOf { font.width(it.label) + 20 } + (row.options.size - 1) * 2
-        val inline = inlineChoices(rect.width, rows)
-        val titled = !inline && rect.height >= rows.size * (STACKED_CHOICE_HEIGHT + GAP) - GAP
-        var y = rect.y
-        rows.forEach { row ->
+        val mode = choiceMode(rect.width, rect.height, rows)
+        val layout = choiceLayout(rect, mode, rows.map { font.width(it.title) + 8 })
+        rows.forEachIndexed { index, row ->
+            val controls = layout["controls.$index"]
             when {
-                inline -> {
-                    host.add(Label(UiRect(rect.x, y, labelWidth, CONTROL_HEIGHT), row.title))
-                    options(host, UiRect(rect.x + labelWidth, y, rect.width - labelWidth, CONTROL_HEIGHT), row)
-                    y += CONTROL_HEIGHT + GAP
+                mode == ChoiceMode.INLINE -> {
+                    host.add(Label(layout["label.$index"], row.title))
+                    options(host, controls, row)
                 }
-                titled -> {
-                    host.add(Label(UiRect(rect.x, y, rect.width, 10), row.title))
-                    val controls = UiRect(rect.x, y + 12, rect.width, CONTROL_HEIGHT)
+                mode == ChoiceMode.TITLED -> {
+                    host.add(Label(layout["label.$index"], row.title))
                     if (row.multiple || natural(row) <= rect.width) options(host, controls, row) else cycle(host, controls, row, row.currentLabel())
-                    y += STACKED_CHOICE_HEIGHT + GAP
                 }
                 // Without a title line a pick-any row keeps all its options and names itself in their tooltip.
-                row.multiple -> {
-                    options(host, UiRect(rect.x, y, rect.width, CONTROL_HEIGHT), row, row.tooltip ?: row.title)
-                    y += CONTROL_HEIGHT + GAP
-                }
+                row.multiple -> options(host, controls, row, row.tooltip ?: row.title)
                 else -> {
-                    val label = Component.empty().append(row.title).append(Component.literal(": ")).append(row.currentLabel())
-                    cycle(host, UiRect(rect.x, y, rect.width, CONTROL_HEIGHT), row, label)
-                    y += CONTROL_HEIGHT + GAP
+                    val title = Component.empty().append(row.title).append(Component.literal(": ")).append(row.currentLabel())
+                    cycle(host, controls, row, title)
                 }
             }
         }
-        return y - GAP
+        return layout.list("controls").last().bottom
+    }
+
+    /**
+     * Where [choices] puts each row's `label.i` and `controls.i` in [mode]. Inline rows share one label column as
+     * wide as the widest of [labelWidths], so every row's controls start at the same x; titled rows put the label
+     * on a line above the controls; compact rows are controls alone.
+     */
+    fun choiceLayout(rect: UiRect, mode: ChoiceMode, labelWidths: List<Int>): UiLayoutResult {
+        val count = labelWidths.size
+        val node = when (mode) {
+            ChoiceMode.INLINE -> UiLayout.grid(listOf(UiLength.Content, UiLength.Weight()), List(count) { UiLength.Fixed(CONTROL_HEIGHT) },
+                labelWidths.indices.flatMap { listOf(UiLayout.leaf("label.$it", labelWidths[it]), UiLayout.leaf("controls.$it")) },
+                rowGap = GAP)
+            ChoiceMode.TITLED -> UiLayout.column(gap = GAP) {
+                repeat(count) { index ->
+                    fixed(STACKED_CHOICE_HEIGHT, UiLayout.column {
+                        fixed(10, "label.$index")
+                        space(2)
+                        fixed(CONTROL_HEIGHT, "controls.$index")
+                    })
+                }
+            }
+            ChoiceMode.COMPACT -> UiLayout.column(gap = GAP) { repeat(count) { fixed(CONTROL_HEIGHT, "controls.$it") } }
+        }
+        return node.solve(rect)
     }
 
     enum class ChoiceMode {
@@ -226,9 +280,9 @@ object MccHubKit {
      */
     fun buttonRow(host: MccHubContentHost, rect: UiRect, actions: List<Action>, size: UiControlSize = UiControlSize.MEDIUM) {
         if (actions.isEmpty()) return
-        val width = (rect.width - (actions.size - 1) * 2) / actions.size
-        actions.forEachIndexed { index, action ->
-            val button = CobblemonUiButton.create(rect.x + index * (width + 2), rect.y, width,
+        equalParts(rect, actions.size).zip(actions).forEach { (part, action) ->
+            val width = part.width
+            val button = CobblemonUiButton.create(part.x, part.y, width,
                 UiButtonSpec(fitted(action.label, width - 12), variant = action.variant, size = size,
                     width = UiWidthPolicy.Fixed(width)), press = action.press)
             button.active = action.enabled
@@ -256,8 +310,8 @@ object MccHubKit {
     /** The height [choices] would take for [rows] across [width] with [availableHeight] to spare. */
     fun choicesHeight(width: Int, availableHeight: Int, rows: List<ChoiceRow>): Int {
         if (rows.isEmpty()) return 0
-        val titled = !inlineChoices(width, rows) && availableHeight >= rows.size * (STACKED_CHOICE_HEIGHT + GAP) - GAP
-        return rows.size * ((if (titled) STACKED_CHOICE_HEIGHT else CONTROL_HEIGHT) + GAP) - GAP
+        val rowHeight = if (choiceMode(width, availableHeight, rows) == ChoiceMode.TITLED) STACKED_CHOICE_HEIGHT else CONTROL_HEIGHT
+        return UiLayout.column(gap = GAP) { repeat(rows.size) { space(rowHeight) } }.measure().height
     }
 
     private fun inlineChoices(width: Int, rows: List<ChoiceRow>): Boolean {
@@ -268,11 +322,17 @@ object MccHubKit {
 
     private fun ChoiceRow.currentLabel(): Component = options.firstOrNull { it.id == selectedId }?.label ?: Component.literal("-")
 
+    /** [rect] cut into [count] equally wide parts 2 apart; spare pixels stay after the last one. */
+    fun equalParts(rect: UiRect, count: Int): List<UiRect> {
+        val keys = UiLayout.keys("part", count)
+        return UiLayout.row(gap = 2, remainder = UiRemainder.NONE) { keys.forEach { weight(it) } }.solve(rect).list("part")
+    }
+
     private fun options(host: MccHubContentHost, rect: UiRect, row: ChoiceRow, tooltip: Component? = row.tooltip) {
-        val width = (rect.width - (row.options.size - 1) * 2) / row.options.size
-        row.options.forEachIndexed { index, option ->
+        equalParts(rect, row.options.size).zip(row.options).forEach { (part, option) ->
             val selected = row.selectedIds?.contains(option.id) ?: (option.id == row.selectedId)
-            val button = CobblemonUiButton.create(rect.x + index * (width + 2), rect.y, width,
+            val width = part.width
+            val button = CobblemonUiButton.create(part.x, part.y, width,
                 UiButtonSpec(fitted(option.label, width - 8), variant = UiButtonVariant.SECONDARY, size = UiControlSize.MEDIUM,
                     width = UiWidthPolicy.Fixed(width), selected = selected)) { if (row.multiple || !selected) row.select(option.id) }
             button.active = row.enabled
@@ -329,28 +389,53 @@ object MccHubKit {
             return
         }
         val metrics = CobblemonUiThemes.registry.snapshot().metrics(UiControlSize.MEDIUM)
-        val step = (if (entries.any { it.supporting != null }) metrics.supportingHeight else metrics.height) + 2
-        var perPage = ((rect.height + 2) / step).coerceAtLeast(1)
-        if (entries.size > perPage) perPage = ((rect.height - CONTROL_HEIGHT - GAP + 2) / step).coerceAtLeast(1)
-        val pages = (entries.size + perPage - 1) / perPage
-        val current = page.coerceIn(0, pages - 1)
-        entries.drop(current * perPage).take(perPage).forEachIndexed { index, entry ->
-            val item = Row(UiRect(rect.x, rect.y + index * step, rect.width, step - 2), entry)
+        val rowHeight = if (entries.any { it.supporting != null }) metrics.supportingHeight else metrics.height
+        val plan = pagedListLayout(rect, entries.size, rowHeight, page)
+        entries.drop(plan.page * plan.perPage).take(plan.perPage).zip(plan.layout.list("row")).forEach { (entry, bounds) ->
+            val item = Row(bounds, entry)
             item.active = entry.enabled
             entry.tooltip?.let { item.setTooltip(Tooltip.create(it)) }
             host.add(item)
         }
-        if (pages <= 1) return
-        val y = rect.bottom - CONTROL_HEIGHT
-        val previous = CobblemonUiButton.create(rect.x, y, 40, UiButtonSpec(Component.literal("<"), size = UiControlSize.MEDIUM,
-            width = UiWidthPolicy.Fixed(40))) { pageChanged(current - 1) }
+        if (plan.pages <= 1) return
+        val current = plan.page
+        val previous = pageButton(plan.layout["previous"], "<") { pageChanged(current - 1) }
         previous.active = current > 0
         host.add(previous)
-        val next = CobblemonUiButton.create(rect.right - 40, y, 40, UiButtonSpec(Component.literal(">"), size = UiControlSize.MEDIUM,
-            width = UiWidthPolicy.Fixed(40))) { pageChanged(current + 1) }
-        next.active = current < pages - 1
+        val next = pageButton(plan.layout["next"], ">") { pageChanged(current + 1) }
+        next.active = current < plan.pages - 1
         host.add(next)
-        host.add(PageLabel(UiRect(rect.x + 44, y, rect.width - 88, CONTROL_HEIGHT), Component.literal("${current + 1} / $pages")))
+        host.add(PageLabel(plan.layout["page"], Component.literal("${current + 1} / ${plan.pages}")))
+    }
+
+    private fun pageButton(rect: UiRect, label: String, press: () -> Unit): CobblemonUiButton =
+        CobblemonUiButton.create(rect.x, rect.y, rect.width, UiButtonSpec(Component.literal(label), size = UiControlSize.MEDIUM,
+            width = UiWidthPolicy.Fixed(rect.width)), press = press)
+
+    /**
+     * How [pagedList] splits [count] rows [rowHeight] tall over pages of [rect]: the page shown, its `row.i`
+     * rectangles and, when there is more than one page, the `previous`, `page` and `next` pager on the bottom line.
+     */
+    class PagedListLayout(val perPage: Int, val pages: Int, val page: Int, val layout: UiLayoutResult)
+
+    fun pagedListLayout(rect: UiRect, count: Int, rowHeight: Int, page: Int): PagedListLayout {
+        var perPage = UiLayout.fittingCount(rect.height, rowHeight, 2).coerceAtLeast(1)
+        if (count > perPage) perPage = UiLayout.fittingCount(rect.height - CONTROL_HEIGHT - GAP, rowHeight, 2).coerceAtLeast(1)
+        val pages = ((count + perPage - 1) / perPage).coerceAtLeast(1)
+        val current = page.coerceIn(0, pages - 1)
+        val shown = (count - current * perPage).coerceIn(0, perPage)
+        val rows = UiLayout.column(gap = 2) { UiLayout.keys("row", shown).forEach { fixed(rowHeight, it) } }
+        val node = if (pages <= 1) rows else UiLayout.column {
+            weight(rows)
+            fixed(CONTROL_HEIGHT, UiLayout.row {
+                fixed(40, "previous")
+                space(4)
+                weight("page")
+                space(4)
+                fixed(40, "next")
+            })
+        }
+        return PagedListLayout(perPage, pages, current, node.solve(rect))
     }
 
     /** A quiet centered line for a tab still waiting for its server state, or with nothing to show. */
@@ -408,13 +493,39 @@ object MccHubKit {
 
     /** Splits [rect] into columns whose widths follow [weights], [GAP] apart. */
     fun columns(rect: UiRect, vararg weights: Int): List<UiRect> {
-        val total = weights.sum().coerceAtLeast(1)
-        val room = rect.width - GAP * (weights.size - 1)
-        var x = rect.x
-        return weights.mapIndexed { index, weight ->
-            val width = if (index == weights.lastIndex) rect.right - x else room * weight / total
-            UiRect(x, rect.y, width.coerceAtLeast(1), rect.height).also { x += width + GAP }
-        }
+        val keys = UiLayout.keys("column", weights.size)
+        return UiLayout.row(gap = GAP) { weights.forEachIndexed { index, weight -> weight(keys[index], weight, min = 1) } }
+            .solve(rect).list("column")
+    }
+
+    /**
+     * A tab's usual frame: a summary strip on top, a footer at the bottom and [middle] between them, [GAP] apart.
+     * [middle] is laid out in whatever room is left, never less than one pixel tall.
+     */
+    fun tabFrame(middle: UiLayoutNode): UiLayoutNode = UiLayout.column(gap = GAP) {
+        fixed(STRIP_HEIGHT, "strip")
+        weight(middle, min = 1)
+        fixed(FOOTER_HEIGHT, "footer")
+    }
+
+    /** The part of a settings card's [body] its choice rows may take: all but a summary line, and at least one row. */
+    fun settingsArea(body: UiRect): UiRect = UiLayout.column {
+        weight("settings", min = CONTROL_HEIGHT)
+        space(20)
+    }.solve(body)["settings"]
+
+    /** What is left of [rect] below [y], at least [min] tall, for content that follows rows of measured height. */
+    fun below(rect: UiRect, y: Int, min: Int = 0): UiRect =
+        UiLayout.inset(UiLayout.leaf("rest"), top = y - rect.y, min = min).solve(rect)["rest"]
+
+    /** [rect] split into a [lineHeight] line at the top and the room [gap] below it. */
+    fun lineAbove(rect: UiRect, lineHeight: Int = 10, gap: Int = 3): Pair<UiRect, UiRect> {
+        val layout = UiLayout.column {
+            fixed(lineHeight, "line")
+            space(gap)
+            weight("rest", min = 1)
+        }.solve(rect)
+        return layout["line"] to layout["rest"]
     }
 
     private fun button(action: Action, x: Int, y: Int, availableWidth: Int): CobblemonUiButton {

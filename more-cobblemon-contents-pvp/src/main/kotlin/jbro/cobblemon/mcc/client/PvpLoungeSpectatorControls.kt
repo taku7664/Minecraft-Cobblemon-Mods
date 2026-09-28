@@ -4,6 +4,9 @@ import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.client.gui.battle.BattleGUI
 import java.util.WeakHashMap
 import jbro.cobblemon.mcc.internal.pvp.PvpSpectatorInputPolicy
+import jbro.cobblemon.uikit.UiCrossAlignment
+import jbro.cobblemon.uikit.UiLayout
+import jbro.cobblemon.uikit.UiRect
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.fabricmc.fabric.api.client.screen.v1.Screens
@@ -105,10 +108,9 @@ internal object PvpLoungeSpectatorControls {
 }
 
 internal object PvpLoungeExitButtonLayout {
-    fun bounds(screenHeight: Int) = MccRect(
-        left = 8,
-        top = (screenHeight - 56).coerceAtLeast(8),
-        width = 104,
-        height = 20,
-    )
+    /** Low on the left of the battle screen, clear of Cobblemon's own controls, but never above the top margin. */
+    fun bounds(screenHeight: Int): UiRect = UiLayout.inset(
+        UiLayout.align(UiLayout.leaf("exit"), 104, 20, UiCrossAlignment.START, UiCrossAlignment.END, pinStart = true),
+        left = 8, top = 8, bottom = 36,
+    ).solve(UiRect(0, 0, 0, screenHeight))["exit"]
 }

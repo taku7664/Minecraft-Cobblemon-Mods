@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.client.hub
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.internal.hub.BattleHubRecordView
+import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiRect
 
 /** What the dashboard shows, derived from the viewer's own records without any client lookups. */
@@ -72,17 +73,19 @@ data class MccDashboardLayout(
         private const val NAME_ROWS = 13
 
         fun calculate(bounds: UiRect): MccDashboardLayout {
-            val gap = MccHubKit.GAP
-            val trainerWidth = (bounds.width * 34 / 100).coerceIn(96, 150).coerceAtMost((bounds.width - gap - 60).coerceAtLeast(1))
-            val trainer = UiRect(bounds.x, bounds.y, trainerWidth, bounds.height)
-            val records = UiRect(trainer.right + gap, bounds.y, (bounds.width - trainerWidth - gap).coerceAtLeast(1), bounds.height)
-            val trainerBody = MccHubKit.cardBody(trainer)
-            val model = UiRect(trainerBody.x, trainerBody.y, trainerBody.width, (trainerBody.height - NAME_ROWS).coerceAtLeast(16))
-            val recordsBody = MccHubKit.cardBody(records)
-            val summary = UiRect(recordsBody.x, recordsBody.y, recordsBody.width, 22)
-            val rows = UiRect(recordsBody.x - 2, summary.bottom + 4, recordsBody.width + 4,
-                (recordsBody.bottom + 2 - summary.bottom - 4).coerceAtLeast(1))
-            return MccDashboardLayout(trainer, model, model.bottom + 4, records, summary, rows)
+            val layout = UiLayout.row(gap = MccHubKit.GAP) {
+                percent(34, UiLayout.layers(UiLayout.leaf("trainer"), MccHubKit.cardBodyOf(UiLayout.column {
+                    weight("model", min = 16)
+                    space(NAME_ROWS)
+                })), min = 96, max = 150)
+                // Below the summary the record rows reach two pixels past the card body on three sides.
+                weight(UiLayout.layers(UiLayout.leaf("records"), MccHubKit.cardBodyOf(UiLayout.layers(
+                    UiLayout.column { fixed(22, "summary") },
+                    UiLayout.inset(UiLayout.leaf("rows"), left = -2, top = 26, right = -2, bottom = -2, min = 1),
+                ))), min = 1, reserve = 60)
+            }.solve(bounds)
+            val model = layout["model"]
+            return MccDashboardLayout(layout["trainer"], model, model.bottom + 4, layout["records"], layout["summary"], layout["rows"])
         }
     }
 }

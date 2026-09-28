@@ -19,6 +19,7 @@ import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayPhase
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayScreenController
 import jbro.cobblemon.mcc.internal.tower.ui.TowerPlayViewState
 import jbro.cobblemon.uikit.UiButtonVariant
+import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiRect
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.components.Tooltip
@@ -96,8 +97,8 @@ internal class TowerHubTab : MccHubTabContent {
         scrollable?.scroll(mouseX, mouseY, scrollY) == true
 
     private fun buildGuide(host: MccHubContentHost, layout: TowerHubLayout) {
-        val card = UiRect(layout.party.x, layout.party.y, layout.setup.right - layout.party.x, layout.party.height)
-        val body = MccHubKit.card(host, card, Component.translatable(TowerGuideContent.TITLE_KEY), MccHubKit.CardTone.FEATURE)
+        // The guide takes both cards' room.
+        val body = MccHubKit.card(host, layout.body, Component.translatable(TowerGuideContent.TITLE_KEY), MccHubKit.CardTone.FEATURE)
         val sections = TowerGuideContent.sections.map {
             MccHubKit.Section(Component.translatable(it.titleKey), Component.translatable(it.bodyKey))
         }
@@ -140,8 +141,7 @@ internal class TowerHubTab : MccHubTabContent {
         val body = MccHubKit.card(host, layout.setup, tower("section.status"))
         val selecting = state.phase == TowerPlayPhase.SELECTING && !controller.isPending
         // The settings keep at least one summary line below them; a tall card lets them take title lines.
-        val settings = UiRect(body.x, body.y, body.width, (body.height - 20).coerceAtLeast(MccHubKit.CONTROL_HEIGHT))
-        val y = MccHubKit.choices(host, settings, listOf(
+        val y = MccHubKit.choices(host, MccHubKit.settingsArea(body), listOf(
             MccHubKit.ChoiceRow(tower("section.format"),
                 TowerBattleFormat.entries.map { MccHubKit.Choice(it.recordId, tower("format.${it.recordId}")) },
                 state.format.recordId, selecting, tower("format.tooltip", state.format.selectionSize)) { id ->
@@ -168,14 +168,19 @@ internal class TowerHubTab : MccHubTabContent {
             else -> tower("selection_summary", state.selectedPokemonOrder.size, state.format.selectionSize,
                 state.selectedMechanic?.let { tower("mechanic.${it.id}") } ?: tower("mechanic.unselected"))
         }
-        val rest = UiRect(body.x, y, body.width, (body.bottom - y).coerceAtLeast(0))
+        val rest = MccHubKit.below(body, y)
         if (rest.height < 9) return
         val summaryLines = Minecraft.getInstance().font.split(summary, rest.width).size.coerceAtMost(rest.height / 10).coerceAtLeast(1)
-        MccHubKit.text(host, UiRect(rest.x, rest.y, rest.width, summaryLines * 10), summary) { theme ->
+        // Whatever room the summary leaves lists the Tower rules, as far as it goes.
+        val parts = UiLayout.column {
+            fixed(summaryLines * 10, "summary")
+            space(5)
+            weight("rules")
+        }.solve(rest)
+        MccHubKit.text(host, parts["summary"], summary) { theme ->
             if (feedback != null && !controller.isPending) theme.colors.accentDanger else MccHubKit.panelText(theme)
         }
-        // Whatever room is left lists the Tower rules, as far as it goes.
-        val rules = UiRect(rest.x, rest.y + summaryLines * 10 + 5, rest.width, (rest.bottom - rest.y - summaryLines * 10 - 5).coerceAtLeast(0))
+        val rules = parts["rules"]
         if (rules.height >= 10) {
             val text = Component.empty()
             RULES.forEachIndexed { index, key ->

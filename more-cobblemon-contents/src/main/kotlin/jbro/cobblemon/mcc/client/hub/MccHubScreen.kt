@@ -6,6 +6,9 @@ import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiControlSize
+import jbro.cobblemon.uikit.UiCross
+import jbro.cobblemon.uikit.UiJustify
+import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiPanelSpec
 import jbro.cobblemon.uikit.UiPanelTone
 import jbro.cobblemon.uikit.UiRect
@@ -88,16 +91,15 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
         val labelled = badges.map { BADGE_ICON + BADGE_ICON_GAP + font.width(it.label) }
         val brandEnd = header.x + 8 + font.width(hubText("brand")) + 14
         val withLabels = right - labelled.sum() - (badges.size - 1) * BADGE_GAP >= brandEnd
-        var x = right
-        return badges.indices.reversed().map { index ->
-            val width = if (withLabels) labelled[index] else BADGE_ICON
-            x -= width
-            val badge = badges[index]
-            HeaderBadge(UiRect(x, header.y + 2, width, header.height - 4), badge, withLabels).also { widget ->
+        val keys = UiLayout.keys("badge", badges.size)
+        val placed = UiLayout.row(gap = BADGE_GAP, justify = UiJustify.END) {
+            badges.indices.forEach { fixed(if (withLabels) labelled[it] else BADGE_ICON, keys[it], UiCross(before = 2, after = 2)) }
+        }.solve(UiRect(header.x, header.y, (right - header.x).coerceAtLeast(0), header.height)).list("badge")
+        return badges.mapIndexed { index, badge ->
+            HeaderBadge(placed[index], badge, withLabels).also { widget ->
                 (badge.tooltip ?: badge.label.takeUnless { withLabels })?.let { widget.setTooltip(Tooltip.create(it)) }
-                x -= BADGE_GAP
             }
-        }
+        }.asReversed()
     }
 
     /** Switches to [tabId] as if its rail button was pressed; unknown tabs are ignored. */
@@ -106,10 +108,9 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
     }
 
     private fun addTabs(layout: MccHubLayout) {
-        val tabs = MccHubTabs.all().take(layout.visibleTabCount())
-        tabs.forEachIndexed { index, tab ->
+        MccHubTabs.all().zip(layout.tabButtons()).forEach { (tab, button) ->
             val denial = tab.accessContentId?.let(MccBattleHubClientState.deniedById::get)
-            addRenderableWidget(MccHubKit.row(layout.tabButton(index), MccHubKit.ListEntry(
+            addRenderableWidget(MccHubKit.row(button, MccHubKit.ListEntry(
                 tab.label,
                 selected = tab.id == selectedTabId,
                 enabled = denial == null,

@@ -11,9 +11,9 @@ class PvpRoomHudLayoutTest {
 
         assertEquals(954, layout.panel.right)
         assertTrue(layout.panel.bottom <= 507 - PvpRoomHudLayout.HOTBAR_CLEARANCE)
-        assertTrue(layout.leftSide.right < layout.rightSide.left)
+        assertTrue(layout.leftSide.right < layout.rightSide.x)
         assertTrue(layout.spectatorRows.size == 3)
-        assertTrue(layout.openButton.right <= layout.toggleButton.left)
+        assertTrue(layout.openButton.right <= layout.toggleButton.x)
     }
 
     @Test

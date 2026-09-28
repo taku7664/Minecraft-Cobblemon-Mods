@@ -2,7 +2,11 @@ package jbro.cobblemon.mcc.client.hub
 
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiButtonVariant
+import jbro.cobblemon.uikit.UiCrossAlignment
+import jbro.cobblemon.uikit.UiLayout
+import jbro.cobblemon.uikit.UiLength
 import jbro.cobblemon.uikit.UiRect
+import jbro.cobblemon.uikit.UiRemainder
 import jbro.cobblemon.uikit.UiWidgetState
 import jbro.cobblemon.uikit.client.CobblemonUiRenderContent
 import jbro.cobblemon.uikit.client.CobblemonUiRenderSlot
@@ -33,27 +37,41 @@ object MccHubPortraitCards {
         if (count <= 0) return emptyList()
         val best = (1..count).mapNotNull { columns -> candidate(body, count, columns) }
             .maxWithOrNull(compareBy<Candidate> { it.side }.thenBy { -it.rows }) ?: return emptyList()
-        return (0 until count).map { index ->
-            val cell = UiRect(body.x + (index % best.columns) * (best.width + GAP), body.y + (index / best.columns) * (best.height + GAP),
-                best.width, best.height)
-            if (best.stacked) {
-                val side = best.side
-                Cell(cell, UiRect(cell.x + (cell.width - side) / 2, cell.y + 2, side, side),
-                    UiRect(cell.x + 4, cell.bottom - STACKED_TEXT, cell.width - 8, STACKED_TEXT - 2), true)
+        return cells(body, count, best.columns, best.rows).map { cell ->
+            val side = best.side
+            val layout = if (best.stacked) {
+                UiLayout.layers(
+                    UiLayout.inset(UiLayout.align(UiLayout.leaf("portrait"), side, side, vertical = UiCrossAlignment.START), top = 2),
+                    UiLayout.inset(UiLayout.column {
+                        spring()
+                        fixed(STACKED_TEXT - 2, "text")
+                        space(2)
+                    }, left = 4, right = 4),
+                )
             } else {
-                val side = best.side
-                Cell(cell, UiRect(cell.x + 2, cell.y + (cell.height - side) / 2, side, side),
-                    UiRect(cell.x + side + 6, cell.y + (cell.height - 20) / 2, (cell.width - side - 9).coerceAtLeast(1), 20), false)
-            }
+                UiLayout.layers(
+                    UiLayout.inset(UiLayout.align(UiLayout.leaf("portrait"), side, side, horizontal = UiCrossAlignment.START), left = 2),
+                    UiLayout.inset(UiLayout.align(UiLayout.leaf("text"), height = 20), left = side + 6, right = 3, min = 1),
+                )
+            }.solve(cell)
+            Cell(cell, layout["portrait"], layout["text"], best.stacked)
         }
     }
 
     private class Candidate(val columns: Int, val rows: Int, val width: Int, val height: Int, val stacked: Boolean, val side: Int)
 
+    /** [count] equal cells in [columns] by [rows], [GAP] apart, filled row by row. */
+    private fun cells(body: UiRect, count: Int, columns: Int, rows: Int): List<UiRect> {
+        val keys = UiLayout.keys("cell", count)
+        return UiLayout.grid(List(columns) { UiLength.Weight() }, List(rows) { UiLength.Weight() }, keys.map(UiLayout::leaf),
+            GAP, GAP, remainder = UiRemainder.NONE).solve(body).list("cell")
+    }
+
     private fun candidate(body: UiRect, count: Int, columns: Int): Candidate? {
         val rows = (count + columns - 1) / columns
-        val width = (body.width - GAP * (columns - 1)) / columns
-        val height = (body.height - GAP * (rows - 1)) / rows
+        val cell = cells(body, 1, columns, rows).first()
+        val width = cell.width
+        val height = cell.height
         if (width < MIN_WIDTH || height < MIN_HEIGHT) return null
         // A roughly square card reads better with the portrait on top; a wide one with it beside the text.
         val stacked = height >= 44 && width * 5 <= height * 7

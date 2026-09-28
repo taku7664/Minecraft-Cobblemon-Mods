@@ -20,6 +20,7 @@ import jbro.cobblemon.mcc.internal.factory.network.FactoryPlayIntentPayload
 import jbro.cobblemon.mcc.internal.factory.ui.FactoryPlayScreenController
 import jbro.cobblemon.mcc.internal.factory.ui.feedbackId
 import jbro.cobblemon.uikit.UiButtonVariant
+import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.client.CobblemonUiRenderContent
 import net.minecraft.client.Minecraft
@@ -118,18 +119,20 @@ internal class FactoryHubTab : MccHubTabContent {
         val settingsHeight = MccHubKit.choicesHeight(inner.width, inner.height - 20, rows)
         val stepsHeight = Minecraft.getInstance().font.split(steps, inner.width).size * 10
         val wanted = MccHubKit.CARD_CHROME_HEIGHT + settingsHeight + 5 + 10 + 8 + stepsHeight
-        val card = if (wanted < layout.body.height) {
-            UiRect(layout.body.x, layout.body.y + (layout.body.height - wanted) / 2, layout.body.width, wanted)
-        } else {
-            layout.body
-        }
+        val fills = wanted >= layout.body.height
+        val card = UiLayout.align(UiLayout.leaf("card"), height = wanted, fit = true).solve(layout.body)["card"]
         val body = MccHubKit.card(host, card, factory("section.rules"), MccHubKit.CardTone.FEATURE)
         val settingsBottom = MccHubKit.choices(host,
-            UiRect(body.x, body.y, body.width, if (card === layout.body) (body.height - 20).coerceAtLeast(MccHubKit.CONTROL_HEIGHT) else settingsHeight), rows)
-        val instruction = UiRect(body.x, settingsBottom + 5, body.width, 10)
-        instruction(host, instruction, controller)
+            if (fills) MccHubKit.settingsArea(body) else MccHubKit.lineAbove(body, settingsHeight).first, rows)
         // Spare room walks through the run ahead, reusing each phase's own instruction.
-        val stepsRect = UiRect(body.x, instruction.bottom + 8, body.width, (body.bottom - instruction.bottom - 8).coerceAtLeast(0))
+        val parts = UiLayout.column {
+            space(5)
+            fixed(10, "instruction")
+            space(8)
+            weight("steps")
+        }.solve(MccHubKit.below(body, settingsBottom))
+        instruction(host, parts["instruction"], controller)
+        val stepsRect = parts["steps"]
         if (stepsRect.height >= 20) MccHubKit.text(host, stepsRect, steps)
         MccHubKit.footer(host, layout.footer, emptyList(),
             listOf(action(controller, host, "start", UiButtonVariant.PRIMARY, primary = true) { controller.start() }))
@@ -204,8 +207,9 @@ internal class FactoryHubTab : MccHubTabContent {
 
     /** One line of instruction or feedback at the top of [body]; returns the room left below it. */
     private fun instructionAbove(host: MccHubContentHost, body: UiRect, controller: FactoryPlayScreenController): UiRect {
-        instruction(host, UiRect(body.x, body.y, body.width, 10), controller)
-        return UiRect(body.x, body.y + 13, body.width, (body.height - 13).coerceAtLeast(1))
+        val (line, rest) = MccHubKit.lineAbove(body)
+        instruction(host, line, controller)
+        return rest
     }
 
     private fun instruction(host: MccHubContentHost, rect: UiRect, controller: FactoryPlayScreenController) {
@@ -305,11 +309,8 @@ internal class FactoryHubTab : MccHubTabContent {
 internal data class FactoryHubLayout(val strip: UiRect, val body: UiRect, val footer: UiRect) {
     companion object {
         fun calculate(bounds: UiRect): FactoryHubLayout {
-            val gap = MccHubKit.GAP
-            val strip = UiRect(bounds.x, bounds.y, bounds.width, MccHubKit.STRIP_HEIGHT)
-            val footer = UiRect(bounds.x, bounds.bottom - MccHubKit.FOOTER_HEIGHT, bounds.width, MccHubKit.FOOTER_HEIGHT)
-            val body = UiRect(bounds.x, strip.bottom + gap, bounds.width, (footer.y - gap - strip.bottom - gap).coerceAtLeast(1))
-            return FactoryHubLayout(strip, body, footer)
+            val layout = MccHubKit.tabFrame(UiLayout.leaf("body")).solve(bounds)
+            return FactoryHubLayout(layout["strip"], layout["body"], layout["footer"])
         }
     }
 }

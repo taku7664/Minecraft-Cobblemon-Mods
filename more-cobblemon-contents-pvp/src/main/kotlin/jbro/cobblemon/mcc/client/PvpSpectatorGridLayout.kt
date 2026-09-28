@@ -1,43 +1,52 @@
 package jbro.cobblemon.mcc.client
 
+import jbro.cobblemon.uikit.UiCross
+import jbro.cobblemon.uikit.UiCrossAlignment
+import jbro.cobblemon.uikit.UiGridOrder
+import jbro.cobblemon.uikit.UiLayout
+import jbro.cobblemon.uikit.UiLength
+import jbro.cobblemon.uikit.UiRect
+
 internal data class PvpSpectatorSlotLayout(
     val index: Int,
-    val bounds: MccRect,
-    val face: MccRect,
+    val bounds: UiRect,
+    val face: UiRect,
     val nameLeft: Int,
     val nameWidth: Int,
 )
 
+/** Spectators as face-and-name cells filling columns top to bottom, the block centred in its room. */
 internal class PvpSpectatorGridLayout private constructor(
     val rows: Int,
     val columns: Int,
-    val block: MccRect,
+    val block: UiRect,
     val slots: List<PvpSpectatorSlotLayout>,
 ) {
     internal companion object {
-        fun calculate(bounds: MccRect, nameWidths: List<Int>): PvpSpectatorGridLayout {
-            if (nameWidths.isEmpty()) return PvpSpectatorGridLayout(0, 0, MccRect(bounds.left, bounds.top, 0, 0), emptyList())
+        fun calculate(bounds: UiRect, nameWidths: List<Int>): PvpSpectatorGridLayout {
+            if (nameWidths.isEmpty()) return PvpSpectatorGridLayout(0, 0, UiRect(bounds.x, bounds.y, 0, 0), emptyList())
             val rows = (bounds.height / ROW_HEIGHT).coerceIn(1, MAX_ROWS).coerceAtMost(nameWidths.size)
             val columns = (nameWidths.size + rows - 1) / rows
             val desiredCellWidth = (nameWidths.maxOrNull()!! + FACE_SIZE + FACE_NAME_GAP).coerceAtLeast(MIN_CELL_WIDTH)
             val maximumCellWidth = ((bounds.width - COLUMN_GAP * (columns - 1)) / columns).coerceAtLeast(1)
             val cellWidth = desiredCellWidth.coerceAtMost(maximumCellWidth)
-            val blockWidth = cellWidth * columns + COLUMN_GAP * (columns - 1)
-            val blockHeight = rows * ROW_HEIGHT
-            val block = MccRect(bounds.left + (bounds.width - blockWidth) / 2, bounds.top, blockWidth, blockHeight)
-            val slots = nameWidths.mapIndexed { index, _ ->
-                val column = index / rows
-                val row = index % rows
-                val cell = MccRect(
-                    block.left + column * (cellWidth + COLUMN_GAP),
-                    block.top + row * ROW_HEIGHT,
-                    cellWidth,
-                    ROW_HEIGHT,
-                )
-                val face = MccRect(cell.left, cell.top + 1, FACE_SIZE, FACE_SIZE)
-                PvpSpectatorSlotLayout(index, cell, face, face.right + FACE_NAME_GAP, (cell.right - face.right - FACE_NAME_GAP).coerceAtLeast(1))
+            val cells = nameWidths.indices.map { index ->
+                UiLayout.layers(UiLayout.leaf("cell.$index"), UiLayout.row {
+                    fixed(FACE_SIZE, "face.$index", UiCross(FACE_SIZE, before = 1))
+                    space(FACE_NAME_GAP)
+                    weight("name.$index", min = 1)
+                })
             }
-            return PvpSpectatorGridLayout(rows, columns, block, slots)
+            val grid = UiLayout.grid(List(columns) { UiLength.Fixed(cellWidth) }, List(rows) { UiLength.Fixed(ROW_HEIGHT) }, cells,
+                columnGap = COLUMN_GAP, order = UiGridOrder.COLUMN_MAJOR)
+            val size = grid.measure()
+            val layout = UiLayout.align(UiLayout.layers(UiLayout.leaf("block"), grid), size.width, size.height,
+                vertical = UiCrossAlignment.START).solve(bounds)
+            val slots = nameWidths.indices.map { index ->
+                val name = layout["name.$index"]
+                PvpSpectatorSlotLayout(index, layout["cell.$index"], layout["face.$index"], name.x, name.width)
+            }
+            return PvpSpectatorGridLayout(rows, columns, layout["block"], slots)
         }
     }
 }

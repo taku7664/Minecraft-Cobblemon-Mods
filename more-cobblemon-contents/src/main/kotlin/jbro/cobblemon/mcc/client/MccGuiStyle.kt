@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.client
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.uikit.UiRect
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.AbstractButton
@@ -46,14 +47,14 @@ object MccGuiSurface {
         }
     }
 
-    fun drawShell(graphics: GuiGraphics, bounds: MccRect, backgroundAlpha: Int = 0xFF) {
+    fun drawShell(graphics: GuiGraphics, bounds: UiRect, backgroundAlpha: Int = 0xFF) {
         drawFrame(graphics, bounds, withAlpha(MccGuiPalette.SHELL, backgroundAlpha), MccGuiPalette.ACCENT_PRIMARY)
-        graphics.fill(bounds.left + 2, bounds.top + 3, bounds.right - 2, bounds.top + 4, MccGuiPalette.ACCENT_SECONDARY)
+        graphics.fill(bounds.x + 2, bounds.y + 3, bounds.right - 2, bounds.y + 4, MccGuiPalette.ACCENT_SECONDARY)
     }
 
     fun drawPanel(
         graphics: GuiGraphics,
-        bounds: MccRect,
+        bounds: UiRect,
         accent: Int,
         alternate: Boolean = false,
         backgroundAlpha: Int = 0xFF,
@@ -66,13 +67,13 @@ object MccGuiSurface {
         )
     }
 
-    fun drawBadge(graphics: GuiGraphics, bounds: MccRect, accent: Int) {
+    fun drawBadge(graphics: GuiGraphics, bounds: UiRect, accent: Int) {
         drawFrame(graphics, bounds, MccGuiPalette.BUTTON, accent)
     }
 
     fun drawButton(
         graphics: GuiGraphics,
-        bounds: MccRect,
+        bounds: UiRect,
         active: Boolean,
         hovered: Boolean,
         selected: Boolean,
@@ -92,14 +93,14 @@ object MccGuiSurface {
         }
         drawFrame(graphics, bounds, withAlpha(background, backgroundAlpha), border)
         if (selected) {
-            graphics.fill(bounds.left + 1, bounds.top + 1, bounds.left + 3, bounds.bottom - 1, accent)
+            graphics.fill(bounds.x + 1, bounds.y + 1, bounds.x + 3, bounds.bottom - 1, accent)
         }
         if (active && hovered) {
-            graphics.fill(bounds.left + 2, bounds.top + 2, bounds.right - 2, bounds.top + 3, accent)
+            graphics.fill(bounds.x + 2, bounds.y + 2, bounds.right - 2, bounds.y + 3, accent)
         }
     }
 
-    fun drawProgressSegment(graphics: GuiGraphics, bounds: MccRect, filled: Boolean) {
+    fun drawProgressSegment(graphics: GuiGraphics, bounds: UiRect, filled: Boolean) {
         drawFrame(
             graphics,
             bounds,
@@ -108,21 +109,21 @@ object MccGuiSurface {
         )
     }
 
-    private fun drawFrame(graphics: GuiGraphics, bounds: MccRect, fill: Int, border: Int) {
+    private fun drawFrame(graphics: GuiGraphics, bounds: UiRect, fill: Int, border: Int) {
         // Keep the interior free of an opaque backing layer. Otherwise a translucent fill blends
         // against the border color instead of the game world and only looks like a different solid color.
         if (bounds.width <= 0 || bounds.height <= 0) return
-        graphics.fill(bounds.left, bounds.top, bounds.right, bounds.top + 1, border)
+        graphics.fill(bounds.x, bounds.y, bounds.right, bounds.y + 1, border)
         if (bounds.height > 1) {
-            graphics.fill(bounds.left, bounds.bottom - 1, bounds.right, bounds.bottom, border)
+            graphics.fill(bounds.x, bounds.bottom - 1, bounds.right, bounds.bottom, border)
         }
         if (bounds.height > 2) {
-            graphics.fill(bounds.left, bounds.top + 1, bounds.left + 1, bounds.bottom - 1, border)
+            graphics.fill(bounds.x, bounds.y + 1, bounds.x + 1, bounds.bottom - 1, border)
             if (bounds.width > 1) {
-                graphics.fill(bounds.right - 1, bounds.top + 1, bounds.right, bounds.bottom - 1, border)
+                graphics.fill(bounds.right - 1, bounds.y + 1, bounds.right, bounds.bottom - 1, border)
             }
             if (bounds.width > 2) {
-                graphics.fill(bounds.left + 1, bounds.top + 1, bounds.right - 1, bounds.bottom - 1, fill)
+                graphics.fill(bounds.x + 1, bounds.y + 1, bounds.right - 1, bounds.bottom - 1, fill)
             }
         }
     }
@@ -134,12 +135,12 @@ object MccGuiSurface {
 }
 
 class MccStyledButton(
-    bounds: MccRect,
+    bounds: UiRect,
     message: Component,
     private val tone: MccButtonTone = MccButtonTone.NEUTRAL,
     private val selected: Boolean = false,
     private val press: () -> Unit,
-) : AbstractButton(bounds.left, bounds.top, bounds.width, bounds.height, message) {
+) : AbstractButton(bounds.x, bounds.y, bounds.width, bounds.height, message) {
     private var backgroundAlpha = 0xFF
 
     override fun onPress() = press()
@@ -152,7 +153,7 @@ class MccStyledButton(
     override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         MccGuiSurface.drawButton(
             graphics,
-            MccRect(x, y, width, height),
+            UiRect(x, y, width, height),
             active,
             isHoveredOrFocused,
             selected,

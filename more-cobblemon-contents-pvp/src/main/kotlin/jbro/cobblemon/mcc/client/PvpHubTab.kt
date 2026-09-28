@@ -31,6 +31,7 @@ import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiControlSize
 import jbro.cobblemon.uikit.UiModelFraming
+import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiRenderSlotSpec
 import jbro.cobblemon.uikit.UiThemeSnapshot
@@ -213,8 +214,9 @@ internal class PvpHubTab : MccHubTabContent {
         MccHubKit.strip(host, layout.strip, room("title"), room("browser.summary", rooms.size))
         var body = MccHubKit.card(host, layout.body, room("browser.title"), MccHubKit.CardTone.FEATURE)
         PvpHubClient.listFeedbackKey?.let { key ->
-            MccHubKit.text(host, UiRect(body.x, body.y, body.width, 10), Component.translatable(key)) { it.colors.accentDanger }
-            body = UiRect(body.x, body.y + 13, body.width, (body.height - 13).coerceAtLeast(1))
+            val (line, rest) = MccHubKit.lineAbove(body)
+            MccHubKit.text(host, line, Component.translatable(key)) { it.colors.accentDanger }
+            body = rest
         }
         MccHubKit.pagedList(host, body, rooms.map { summary ->
             MccHubKit.ListEntry(
@@ -251,7 +253,7 @@ internal class PvpHubTab : MccHubTabContent {
 
         val body = MccHubKit.card(host, settings, room("settings"))
         val editable = isHost && lobby && idle
-        val settingsArea = UiRect(body.x, body.y, body.width, (body.height - 20).coerceAtLeast(MccHubKit.CONTROL_HEIGHT))
+        val settingsArea = MccHubKit.settingsArea(body)
         val mechanics = state.settings.immutableEnabledMechanics
         fun toggleMechanic(mechanic: PvpBattleMechanic) {
             val next = LinkedHashSet(mechanics)
@@ -278,7 +280,13 @@ internal class PvpHubTab : MccHubTabContent {
         if (MccHubKit.choiceMode(settingsArea.width, settingsArea.height, rows) == MccHubKit.ChoiceMode.COMPACT) {
             // A short card toggles visibility and format side by side, and lists one mechanic per row below them,
             // all with small controls so the four mechanics fit without scrolling where they can.
-            val toggles = UiRect(body.x, body.y, body.width, MccHubKit.controlHeight(UiControlSize.SMALL))
+            val feedback = controller.feedbackKey
+            val parts = UiLayout.column(gap = MccHubKit.GAP) {
+                fixed(MccHubKit.controlHeight(UiControlSize.SMALL), "toggles")
+                weight("list", min = 1)
+                if (feedback != null) fixed(10, "feedback")
+            }.solve(body)
+            val toggles = parts["toggles"]
             val visibility = state.settings.visibility
             val format = state.settings.format
             MccHubKit.buttonRow(host, toggles, listOf(
@@ -289,25 +297,25 @@ internal class PvpHubTab : MccHubTabContent {
                     updateSettings(controller, state.settings.copy(format = PvpBattleFormat.entries[(format.ordinal + 1) % PvpBattleFormat.entries.size]))
                 },
             ), UiControlSize.SMALL)
-            var listBottom = body.bottom
-            controller.feedbackKey?.let { key ->
-                MccHubKit.text(host, UiRect(body.x, body.bottom - 10, body.width, 10), Component.translatable(key)) { it.colors.accentDanger }
-                listBottom -= 13
+            feedback?.let { key ->
+                MccHubKit.text(host, parts["feedback"], Component.translatable(key)) { it.colors.accentDanger }
             }
-            scrollable = MccHubKit.scrollList(host,
-                UiRect(body.x, toggles.bottom + MccHubKit.GAP, body.width, (listBottom - toggles.bottom - MccHubKit.GAP).coerceAtLeast(1)),
+            scrollable = MccHubKit.scrollList(host, parts["list"],
                 PvpBattleMechanic.entries.map { mechanic ->
                     val enabled = mechanic in mechanics
                     MccHubKit.ListEntry(room("mechanic.${mechanic.id}"), trailing = if (enabled) Component.literal("✓") else null,
                         selected = enabled, enabled = editable, tooltip = room("group.mechanics")) { toggleMechanic(mechanic) }
                 }, PvpHubClient.mechanicsOffset, UiControlSize.SMALL) { PvpHubClient.mechanicsOffset = it }
         } else {
-            var y = MccHubKit.choices(host, settingsArea, rows) + MccHubKit.GAP + 2
-            controller.feedbackKey?.let { key ->
-                MccHubKit.text(host, UiRect(body.x, y, body.width, 10), Component.translatable(key)) { it.colors.accentDanger }
-                y += 13
+            val feedback = controller.feedbackKey
+            val parts = UiLayout.column(gap = MccHubKit.GAP) {
+                if (feedback != null) fixed(10, "feedback")
+                weight("spectators")
+            }.solve(MccHubKit.below(body, MccHubKit.choices(host, settingsArea, rows) + MccHubKit.GAP + 2))
+            feedback?.let { key ->
+                MccHubKit.text(host, parts["feedback"], Component.translatable(key)) { it.colors.accentDanger }
             }
-            val spectators = UiRect(body.x, y, body.width, (body.bottom - y).coerceAtLeast(0))
+            val spectators = parts["spectators"]
             if (spectators.height >= 10 && state.spectators.isNotEmpty()) host.add(Faces(spectators, state.spectators))
         }
 
@@ -345,8 +353,15 @@ internal class PvpHubTab : MccHubTabContent {
         val state = controller.state
         val body = MccHubKit.card(host, rect, room("side.${side.name.lowercase()}"),
             if (side == PvpRoomSide.LEFT) MccHubKit.CardTone.FEATURE else MccHubKit.CardTone.INFO)
-        val buttonTop = body.bottom - MccHubKit.CONTROL_HEIGHT
-        val model = UiRect(body.x, body.y, body.width, (buttonTop - 14 - body.y).coerceAtLeast(8))
+        val parts = UiLayout.column {
+            weight("model", min = 8)
+            space(3)
+            fixed(10, "name")
+            space(1)
+            fixed(MccHubKit.CONTROL_HEIGHT, "button")
+        }.solve(body)
+        val model = parts["model"]
+        val buttonRect = parts["button"]
         val profile = occupant?.let { Minecraft.getInstance().connection?.getPlayerInfo(it.playerId)?.profile }
         if (occupant == null || profile == null) {
             MccHubKit.placeholder(host, model, if (occupant == null) Component.literal("+") else Component.literal(occupant.name))
@@ -356,7 +371,7 @@ internal class PvpHubTab : MccHubTabContent {
         }
         if (occupant != null) {
             val name = Component.literal(occupant.name).append(if (occupant.playerId == state.hostId) room("host_suffix") else Component.empty())
-            host.add(CenteredLine(UiRect(body.x, buttonTop - 11, body.width, 10), name))
+            host.add(CenteredLine(parts["name"], name))
         }
         val mine = occupant != null && occupant.playerId == me
         val label = when {
@@ -364,9 +379,9 @@ internal class PvpHubTab : MccHubTabContent {
             mine -> room("observe")
             else -> Component.literal(occupant.name)
         }
-        val button = CobblemonUiButton.create(body.x, buttonTop, body.width,
-            UiButtonSpec(MccHubKit.fitted(label, body.width - 12), variant = if (mine) UiButtonVariant.SECONDARY else UiButtonVariant.PRIMARY,
-                size = UiControlSize.MEDIUM, width = UiWidthPolicy.Fixed(body.width))) {
+        val button = CobblemonUiButton.create(buttonRect.x, buttonRect.y, buttonRect.width,
+            UiButtonSpec(MccHubKit.fitted(label, buttonRect.width - 12), variant = if (mine) UiButtonVariant.SECONDARY else UiButtonVariant.PRIMARY,
+                size = UiControlSize.MEDIUM, width = UiWidthPolicy.Fixed(buttonRect.width))) {
             if (mine) controller.submit(PvpRoomIntent.Observe(UUID.randomUUID(), state.roomId))
             else controller.submit(PvpRoomIntent.ClaimSeat(UUID.randomUUID(), state.roomId, side))
             host.rebuild()
@@ -383,7 +398,7 @@ internal class PvpHubTab : MccHubTabContent {
         val inviting = PvpHubClient.inviting
         MccHubKit.strip(host, layout.strip, room("title"), room("spectators", state.spectators.size))
         val body = MccHubKit.card(host, layout.body, room(if (inviting) "picker.invite" else "picker.transfer"), MccHubKit.CardTone.FEATURE)
-        val listTop = MccHubKit.choices(host, UiRect(body.x, body.y, body.width, MccHubKit.CONTROL_HEIGHT), listOf(
+        val listTop = MccHubKit.choices(host, MccHubKit.lineAbove(body, MccHubKit.CONTROL_HEIGHT).first, listOf(
             MccHubKit.ChoiceRow(room("invite_manage"), listOf(
                 MccHubKit.Choice("invite", room("invite_manage")),
                 MccHubKit.Choice("transfer", room("transfer_manage")),
@@ -392,7 +407,7 @@ internal class PvpHubTab : MccHubTabContent {
             },
         )) + MccHubKit.GAP + 3
         val candidates = if (inviting) state.inviteCandidates else members
-        MccHubKit.pagedList(host, UiRect(body.x, listTop, body.width, (body.bottom - listTop).coerceAtLeast(1)), candidates.map { member ->
+        MccHubKit.pagedList(host, MccHubKit.below(body, listTop, min = 1), candidates.map { member ->
             MccHubKit.ListEntry(Component.literal(member.name), enabled = !controller.isPending) {
                 val intent = if (inviting) PvpRoomIntent.Invite(UUID.randomUUID(), state.roomId, member.playerId)
                     else PvpRoomIntent.TransferHost(UUID.randomUUID(), state.roomId, member.playerId)
@@ -411,7 +426,7 @@ internal class PvpHubTab : MccHubTabContent {
         val state = controller.state
         MccHubKit.strip(host, layout.strip,
             Component.empty().append(pvp("title")).append(" · ").append(pvp("format.${state.format.recordId}")))
-        host.add(LiveLine(UiRect(layout.strip.x, layout.strip.y, layout.strip.width - 6, layout.strip.height), alignEnd = true,
+        host.add(LiveLine(UiLayout.inset(UiLayout.leaf("line"), right = 6).solve(layout.strip)["line"], alignEnd = true,
             color = { it.colors.textPrimary }) { pvp("time_remaining", remainingSeconds(state)) })
         val (left, right) = MccHubKit.columns(layout.body, 1, 1)
         if (state.spectatorMode) {
@@ -427,10 +442,10 @@ internal class PvpHubTab : MccHubTabContent {
         val ownRect = if (state.playerOnLeft) left else right
         val opponentRect = if (state.playerOnLeft) right else left
         val own = MccHubKit.card(host, ownRect, Component.literal(ownName), MccHubKit.CardTone.FEATURE)
-        host.add(LiveLine(UiRect(own.x, own.y, own.width, 10), color = { theme ->
+        val (statusLine, grid) = MccHubKit.lineAbove(own)
+        host.add(LiveLine(statusLine, color = { theme ->
             if (controller.feedbackKey != null && !controller.isPending) theme.colors.accentDanger else theme.colors.textDim
         }) { selectionStatus(controller) })
-        val grid = UiRect(own.x, own.y + 13, own.width, (own.height - 13).coerceAtLeast(1))
         val order = controller.selectedPokemonIds.toList()
         val party = state.ownParty.take(TEAM_SIZE)
         MccHubPortraitCards.grid(grid, party.size).zip(party).forEach { (cell, slot) ->
@@ -518,14 +533,14 @@ internal class PvpHubTab : MccHubTabContent {
             val theme = CobblemonUiThemes.registry.snapshot()
             val font = Minecraft.getInstance().font
             val connection = Minecraft.getInstance().connection
-            val grid = PvpSpectatorGridLayout.calculate(MccRect(rect.x, rect.y, rect.width, rect.height), members.map { font.width(it.name) })
+            val grid = PvpSpectatorGridLayout.calculate(rect, members.map { font.width(it.name) })
             grid.slots.forEach { slot ->
                 val member = members[slot.index]
                 connection?.getPlayerInfo(member.playerId)?.profile?.let { profile ->
-                    CobblemonUiRenderSlot.drawContent(graphics, UiRect(slot.face.left, slot.face.top, slot.face.width, slot.face.height),
+                    CobblemonUiRenderSlot.drawContent(graphics, slot.face,
                         CobblemonUiRenderContent.PlayerFace(profile), partialTick)
                 }
-                graphics.drawString(font, font.plainSubstrByWidth(member.name, slot.nameWidth), slot.nameLeft, slot.bounds.top + 2,
+                graphics.drawString(font, font.plainSubstrByWidth(member.name, slot.nameWidth), slot.nameLeft, slot.bounds.y + 2,
                     MccHubKit.panelText(theme), false)
             }
         }
@@ -574,11 +589,8 @@ internal class PvpHubTab : MccHubTabContent {
 internal data class PvpHubLayout(val strip: UiRect, val body: UiRect, val footer: UiRect) {
     companion object {
         fun calculate(bounds: UiRect): PvpHubLayout {
-            val gap = MccHubKit.GAP
-            val strip = UiRect(bounds.x, bounds.y, bounds.width, MccHubKit.STRIP_HEIGHT)
-            val footer = UiRect(bounds.x, bounds.bottom - MccHubKit.FOOTER_HEIGHT, bounds.width, MccHubKit.FOOTER_HEIGHT)
-            val body = UiRect(bounds.x, strip.bottom + gap, bounds.width, (footer.y - gap - strip.bottom - gap).coerceAtLeast(1))
-            return PvpHubLayout(strip, body, footer)
+            val layout = MccHubKit.tabFrame(UiLayout.leaf("body")).solve(bounds)
+            return PvpHubLayout(layout["strip"], layout["body"], layout["footer"])
         }
     }
 }
