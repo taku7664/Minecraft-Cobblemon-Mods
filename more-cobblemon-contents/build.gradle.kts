@@ -65,7 +65,10 @@ val unitTest by tasks.registering(JavaExec::class) {
     group = "verification"
     description = "Runs JUnit tests without Gradle's broken Windows test worker path."
     dependsOn(tasks.testClasses)
-    classpath = sourceSets.test.get().runtimeClasspath
+    // The AI simulations draw Battle Factory rental sets, which moved to the Battle Factory addon. Its
+    // resources go last, so nothing of the core module is shadowed.
+    classpath = sourceSets.test.get().runtimeClasspath +
+        files(rootProject.file("more-cobblemon-contents-battle-factory/src/main/resources"))
     mainClass.set("org.junit.platform.console.ConsoleLauncher")
     args("execute")
     sourceSets.test.get().output.classesDirs.files.forEach {
