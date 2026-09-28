@@ -57,6 +57,14 @@ class LocalBattleReadTest {
             budget = LocalLookaheadBudgetPolicy.forTier(boss.tier).copy(timeMillis = Long.MAX_VALUE, nodeLimit = System.getProperty("aiengine.readNodes")?.toIntOrNull() ?: 50_000_000))
         println("PROBE depth=${result.depthCompleted} nodes=${result.nodesVisited}")
         context.state.pokemon.forEach { println("PROBE mon ${it.side} ${it.speciesId} slot=${it.activeSlot} hp=%.2f st=${it.statusId} stages=${it.statStages}".format(it.hpFraction)) }
+        val scores = jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.calculate(context)
+        for (candidate in context.candidates.filter { jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate.raisesOwnStats(it) }) {
+            val verdict = jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate.evaluate(candidate, context, scores)
+            val user = context.state.pokemon.firstOrNull { it.side == jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY && it.activeSlot == candidate.actorSlot }
+            val sweep = user?.let { scores.sweeps[it.battlePokemonId] }
+            println("PROBE gate ${candidate.actionId} passes=${verdict?.passes} failures=${verdict?.failures} sweep=%.2f natural=%.2f boosted=%.2f byOpp=${sweep?.boostedByOpponent}".format(
+                sweep?.score ?: -1.0, sweep?.naturalSweep ?: -1.0, sweep?.boostedSweep ?: -1.0))
+        }
         for (rank in result.ranked) {
             val b = base.first { it.outcome.candidate.actionId == rank.outcome.candidate.actionId }
             println("PROBE ${rank.outcome.candidate.actionId} cmp=%.1f look=%.1f base=%.1f exec=%.2f worstHp=%.2f".format(

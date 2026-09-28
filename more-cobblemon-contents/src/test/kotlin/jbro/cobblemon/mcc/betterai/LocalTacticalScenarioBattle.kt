@@ -187,10 +187,10 @@ internal object LocalTacticalScenarioBattle {
                 val offenseCandidates = candidates(BattleSide.OPPONENT)
                 val cycleActual = choose(BattleSide.ALLY, cycleCandidates)
                 val cycleIdeal = selectors.getValue(BattleSide.ALLY).ideal()
-                val cycleTop = topLabel(selectors.getValue(BattleSide.ALLY).lastRanked)
+                val cycleTop = topLabel(selectors.getValue(BattleSide.ALLY))
                 val offenseActual = choose(BattleSide.OPPONENT, offenseCandidates)
                 val offenseIdeal = selectors.getValue(BattleSide.OPPONENT).ideal()
-                val offenseTop = topLabel(selectors.getValue(BattleSide.OPPONENT).lastRanked)
+                val offenseTop = topLabel(selectors.getValue(BattleSide.OPPONENT))
                 val cycleCanonical = toCanonical(cycleActual, BattleSide.ALLY)
                 val offenseCanonical = toCanonical(offenseActual, BattleSide.OPPONENT)
                 val before = state
@@ -674,8 +674,9 @@ internal object LocalTacticalScenarioBattle {
             return parts.ifEmpty { listOf("상태 변화 없음") }.joinToString("; ")
         }
 
-        private fun topLabel(ranked: List<LocalBattleActionRank>): String = ranked.take(TOP_LABELS).joinToString(" | ") {
-            "${actionLabel(it.outcome.candidate)} %.1f(look %.1f)".format(it.comparisonValue, it.lookaheadUtility)
+        private fun topLabel(selector: CapturingWeightedSelector): String = selector.lastRanked.take(TOP_LABELS).joinToString(" | ") {
+            val excluded = selector.lastExclusions[it.outcome.candidate.actionId]?.let { reason -> "[$reason]" }.orEmpty()
+            "${actionLabel(it.outcome.candidate)} %.1f(look %.1f)$excluded".format(it.comparisonValue, it.lookaheadUtility)
         }
 
         private fun actionLabel(action: BattleActionCandidate): String = when (action.kind) {
@@ -770,10 +771,13 @@ internal object LocalTacticalScenarioBattle {
         ): LocalActionSelection {
             lastIdeal = ranked.first()
             lastRanked = ranked
+            lastExclusions = context.ruleExclusions
             return delegate.choose(ranked, seed, context)
         }
 
         var lastRanked: List<LocalBattleActionRank> = emptyList()
+            private set
+        var lastExclusions: Map<String, String> = emptyMap()
             private set
 
         fun ideal(): BattleActionCandidate = requireNotNull(lastIdeal).outcome.candidate
