@@ -5,6 +5,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStatusMoveCategories
 
@@ -15,8 +16,13 @@ import jbro.cobblemon.mcc.internal.ai.BattleStatusMoveCategories
  * - the user is an ace: its [AceScore] reaches [ACE_PASS], and through the setup, not in spite of it;
  * - after setting up it wins against every opponent on the field, the setup turns paid for ([DUEL_PASS]);
  * - the opponents on the field do not knock it out this turn ([SURVIVAL_PASS]);
- * - no opponent it has seen can stop it once boosted ([STOPPER_PASS]): Encore, Haze, a forced switch,
- *   Unaware and the rest of [AntiAceToolKind], except simply beating it, which the ace and duel checks own.
+ * - no opponent on the field can stop it once boosted. A benched stopper has to come in first, which costs
+ *   its side a turn and a hit; the next decision judges it once it is in front of the boosted user.
+ *   - Encore, a forced switch, Unaware and Destiny Bond stop it whenever an opponent has them
+ *     ([ALWAYS_STOPS]). Against the last two the ace should not stay at all: see [retreatReasons].
+ *   - Haze, Clear Smog, Perish Song and Taunt do not: the boost is traded for the opponent's own turn, or
+ *     is already up ([NEVER_STOPS]).
+ *   - Any other tool stops it at [STOPPER_PASS] or more. Simply beating it is the ace and duel checks'.
  */
 internal object LocalSetupGate {
     data class Verdict(val passes: Boolean, val failures: List<String>)
@@ -73,17 +79,49 @@ internal object LocalSetupGate {
             chance * (scores.pokemon(user.battlePokemonId, opponent.battlePokemonId)?.opponentMove?.survivalByUses?.getOrNull(1) ?: 1.0)
         }
         if (survival < SURVIVAL_PASS) failures += "knockout"
-        val seen = state.pokemon.filter { it.side == BattleSide.OPPONENT && !it.fainted && it.hpFraction > 0.0 }
-        for (opponent in seen) {
-            // Scored against this user as the ace, which is not always the side's best one.
-            val anti = scores.antiAces[opponent.battlePokemonId]?.takeIf { it.aceId == user.battlePokemonId }
-                ?: LocalAntiAceScoreCalculator.score(context, opponent, ace, user, scores, cache)
-                ?: continue
-            val stopper = anti.tools.filter { it.kind != AntiAceToolKind.OUTLASTS }.maxByOrNull { it.value } ?: continue
+        for ((opponent, anti) in fieldStoppers(user, ace, context, scores, cache)) {
+            anti.tools.firstOrNull { it.kind in ALWAYS_STOPS }?.let {
+                failures += "stopper:${opponent.speciesId}:${it.kind.name.lowercase()}"
+                continue
+            }
+            val stopper = anti.tools.filter { it.kind != AntiAceToolKind.OUTLASTS && it.kind !in NEVER_STOPS }
+                .maxByOrNull { it.value } ?: continue
             val value = stopper.value + if (anti.oneTimeSurvival != null) AntiAceScore.ONE_TIME_SURVIVAL_BONUS else 0.0
             if (value >= STOPPER_PASS) failures += "stopper:${opponent.speciesId}:${stopper.kind.name.lowercase()}"
         }
         return Verdict(failures.isEmpty(), failures)
+    }
+
+    /**
+     * Why [user], an ace, should leave the field: an opponent there ignores its boosts (Unaware) or takes it
+     * down with it (Destiny Bond). Empty when it is no ace or nothing there does either.
+     */
+    fun retreatReasons(
+        user: BattlePokemonStateView,
+        context: BattleDecisionContext,
+        scores: MatchupScores,
+        cache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
+    ): List<String> {
+        val ace = scores.aces[user.battlePokemonId]?.takeIf { it.score >= ACE_PASS && it.setupMoveId != null } ?: return emptyList()
+        return fieldStoppers(user, ace, context, scores, cache).flatMap { (opponent, anti) ->
+            anti.tools.filter { it.kind in RETREATS_FROM }.map { "${opponent.speciesId}:${it.kind.name.lowercase()}" }
+        }.distinct()
+    }
+
+    /** The anti-ace reading of every opponent on the field against [user] as the ace. */
+    private fun fieldStoppers(
+        user: BattlePokemonStateView,
+        ace: AceScore,
+        context: BattleDecisionContext,
+        scores: MatchupScores,
+        cache: LocalProjectedActionCalculationCache,
+    ): List<Pair<BattlePokemonStateView, AntiAceScore>> = context.state.pokemon.filter {
+        it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
+    }.mapNotNull { opponent ->
+        // Scored against this user as the ace, which is not always the side's best one.
+        val anti = scores.antiAces[opponent.battlePokemonId]?.takeIf { it.aceId == user.battlePokemonId }
+            ?: LocalAntiAceScoreCalculator.score(context, opponent, ace, user, scores, cache)
+        anti?.let { opponent to it }
     }
 
     const val REASON = "setup_gate"
@@ -91,4 +129,8 @@ internal object LocalSetupGate {
     const val DUEL_PASS = 0.5
     const val SURVIVAL_PASS = 0.8
     const val STOPPER_PASS = 0.5
+    val ALWAYS_STOPS = setOf(AntiAceToolKind.ENCORE, AntiAceToolKind.FORCES_SWITCH,
+        AntiAceToolKind.IGNORES_BOOSTS, AntiAceToolKind.DESTINY_BOND)
+    val NEVER_STOPS = setOf(AntiAceToolKind.RESETS_BOOSTS, AntiAceToolKind.PERISH_SONG, AntiAceToolKind.TAUNT)
+    val RETREATS_FROM = setOf(AntiAceToolKind.IGNORES_BOOSTS, AntiAceToolKind.DESTINY_BOND)
 }

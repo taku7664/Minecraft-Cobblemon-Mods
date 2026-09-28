@@ -172,15 +172,51 @@ class LocalMatchupScoreTest {
     }
 
     @Test
-    fun `the setup gate refuses a setup the opponent can haze away`() {
+    fun `haze trades a turn for the boost and does not stop the setup`() {
+        val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0,
+            allySetup = mapOf("atk" to 1, "spe" to 1), foeExtra = listOf(statusMove("haze", BattleMoveTargetPattern.ALL_ACTIVE)))
+        val verdict = LocalSetupGate.evaluate(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context))!!
+        assertTrue(verdict.failures.none { it.startsWith("stopper:") }) { verdict.failures.toString() }
+    }
+
+    @Test
+    fun `encore on the field always stops the setup`() {
+        val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0,
+            allySetup = mapOf("atk" to 1, "spe" to 1), foeExtra = listOf(statusMove("encore")))
+        val verdict = LocalSetupGate.evaluate(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context))!!
+        assertFalse(verdict.passes)
+        assertTrue(verdict.failures.any { it.startsWith("stopper:") && it.endsWith(":encore") }) { verdict.failures.toString() }
+    }
+
+    @Test
+    fun `an ace facing destiny bond does not set up and retreats`() {
+        val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0, benchPower = 65.0,
+            allySetup = mapOf("atk" to 1, "spe" to 1), foeExtra = listOf(statusMove("destinybond", BattleMoveTargetPattern.SELF)))
+        val scores = LocalMatchupScoreCalculator.calculate(context)
+        val verdict = LocalSetupGate.evaluate(setupAction(context), context, scores)!!
+        assertTrue(verdict.failures.any { it.endsWith(":destiny_bond") }) { verdict.failures.toString() }
+        val ally = context.state.pokemon.first { it.battlePokemonId == ALLY }
+        assertTrue(LocalSetupGate.retreatReasons(ally, context, scores).isNotEmpty())
+        val withoutBond = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0, benchPower = 65.0,
+            allySetup = mapOf("atk" to 1, "spe" to 1))
+        fun switchCredit(position: BattleDecisionContext) = LocalSwitchRules.judge(listOf(attackAction(), switchAction()), position,
+            LocalMatchupScoreCalculator.calculate(position)).adjustments["switch"] ?: 0.0
+        assertTrue(switchCredit(context) > switchCredit(withoutBond)) { "${switchCredit(context)} vs ${switchCredit(withoutBond)}" }
+    }
+
+    private fun statusMove(id: String, pattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT) =
+        BattlePublicMoveOptionView(id, BattleMoveCandidateView(typeId = "normal", damageCategory = BattleMoveDamageCategory.STATUS,
+            power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8, targetPattern = pattern), BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
+
+    @Test
+    fun `a haze user on the bench does not stop the setup until it is in front of it`() {
         val haze = BattlePublicMoveOptionView("haze", BattleMoveCandidateView(typeId = "ice",
             damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
             targetPattern = BattleMoveTargetPattern.ALL_ACTIVE), BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
         val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0,
-            allySetup = mapOf("atk" to 1, "spe" to 1), foeExtra = listOf(haze))
+            allySetup = mapOf("atk" to 1, "spe" to 1), secondFoe = true, benchFoeExtra = listOf(haze))
         val verdict = LocalSetupGate.evaluate(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context))!!
-        assertFalse(verdict.passes)
-        assertTrue(verdict.failures.any { it.startsWith("stopper:") && it.endsWith(":resets_boosts") }) { verdict.failures.toString() }
+        assertTrue(verdict.failures.none { it.startsWith("stopper:") }) { verdict.failures.toString() }
     }
 
     @Test
@@ -444,6 +480,8 @@ class LocalMatchupScoreTest {
         /** The second opponent stands beside the first, in doubles. */
         secondFoeActive: Boolean = false,
         events: List<BattleObservedEventView> = emptyList(),
+        /** Moves for the benched second opponent only, in place of [foeExtra]. */
+        benchFoeExtra: List<BattlePublicMoveOptionView>? = null,
     ): BattleDecisionContext {
         val field = if (!rocksOnAllySide) BattleFieldStateView.empty() else BattleFieldStateView(null, null, emptyList(), emptyList(),
             mapOf(BattleSide.ALLY to listOf(BattleTimedEffectView("stealthrock", null)), BattleSide.OPPONENT to emptyList()))
@@ -467,7 +505,11 @@ class LocalMatchupScoreTest {
                         effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, listOf(BattleMoveEffectView(
                             BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.USER, statStages = stages)), false)), knowledge)
                 }
-                val extra = if (pokemon.side == BattleSide.ALLY) allyExtra else foeExtra
+                val extra = when {
+                    pokemon.side == BattleSide.ALLY -> allyExtra
+                    pokemon.battlePokemonId == FOE2 && benchFoeExtra != null -> benchFoeExtra
+                    else -> foeExtra
+                }
                 BattlePokemonActionCatalogView(pokemon.battlePokemonId, listOfNotNull(attack, setup) + extra, moveSetComplete = true)
             }))
     }

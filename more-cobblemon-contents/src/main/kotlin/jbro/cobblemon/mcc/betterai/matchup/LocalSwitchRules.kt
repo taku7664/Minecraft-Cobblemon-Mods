@@ -30,6 +30,9 @@ import jbro.cobblemon.mcc.internal.ai.BattleStateView
  * A pivot (U-turn, Volt Switch, Parting Shot) is a switch that also acts: credited like a clearly better
  * switch into the best Pokemon behind it, whose entry is free with the chance the pivot moves second.
  *
+ * An ace facing Unaware or Destiny Bond retreats ([LocalSetupGate.retreatReasons]): a switch taking it out
+ * is credited by its ace score, as long as the incoming Pokemon survives the entry.
+ *
  * Adjustments are in the ranking's score units and are added after the search; the search owns the rest.
  */
 internal object LocalSwitchRules {
@@ -48,6 +51,12 @@ internal object LocalSwitchRules {
         val replacementValues = linkedMapOf<String, Double>()
         val exclusions = linkedMapOf<String, String>()
         val adjustments = linkedMapOf<String, Double>()
+        // An ace that should retreat, by its ace score; worked out once per Pokemon.
+        val retreatCredits = HashMap<java.util.UUID, Double>()
+        fun retreats(pokemon: BattlePokemonStateView): Double = retreatCredits.getOrPut(pokemon.battlePokemonId) {
+            if (LocalSetupGate.retreatReasons(pokemon, context, scores).isEmpty()) 0.0
+            else scores.aces[pokemon.battlePokemonId]?.score ?: 0.0
+        }
         // A slot that may not move is being asked for a replacement.
         val movingSlots = candidates.flatMap(::parts).filter { it.kind == BattleActionKind.USE_MOVE }.map { it.actorSlot }.toSet()
         for (candidate in candidates) {
@@ -71,7 +80,7 @@ internal object LocalSwitchRules {
                     replacementValues[part.actionId] = midTurnEntry(incoming, replaced, opponents, state, scores) ?: continue
                     continue
                 }
-                val verdict = voluntary(incoming, replaced, opponents, scores) ?: continue
+                val verdict = voluntary(incoming, replaced, opponents, scores, ::retreats) ?: continue
                 verdict.exclusion?.let { exclusions[candidate.actionId] = it }
                 adjustment += verdict.adjustment
             }
@@ -96,6 +105,7 @@ internal object LocalSwitchRules {
         replaced: BattlePokemonStateView,
         opponents: List<BattlePokemonStateView>,
         scores: MatchupScores,
+        retreats: (BattlePokemonStateView) -> Double,
     ): Verdict? {
         val entries = opponents.mapNotNull { scores.switchIn(incoming.battlePokemonId, it.battlePokemonId, replaced.battlePokemonId) }
         if (entries.isEmpty()) return null
@@ -105,6 +115,7 @@ internal object LocalSwitchRules {
         val switchValue = entries.map { it.score }.average()
         val stayValue = stays.map { it.score }.averageOrNull() ?: 0.0
         val keepLeaving = scores.preserves[replaced.battlePokemonId]?.score ?: 0.0
+        val retreat = retreats(replaced)
         val keepIncoming = scores.preserves[incoming.battlePokemonId]?.score ?: 0.0
         val leavingDoomed = stays.any { it.winProbability < 0.5 && (it.opponentMove?.knockoutChanceWithin(1) ?: 0.0) >= DOOMED }
         val sacrifice = leavingDoomed && keepLeaving >= WORTH_KEEPING && keepIncoming <= WORTHLESS
@@ -112,6 +123,7 @@ internal object LocalSwitchRules {
         if (sacrifice) adjustment += keepLeaving * SACRIFICE_SCALE
         val gain = switchValue - stayValue
         if (gain >= SWITCH_MARGIN) adjustment += gain * SCORE_SCALE
+        if (retreat > 0.0 && survival >= SURVIVAL_PASS) adjustment += retreat * SCORE_SCALE
         if (keepLeaving <= WORTHLESS && keepIncoming >= WORTH_KEEPING) {
             // What the incoming Pokemon would face walking in after a knockout, without the hit.
             val free = opponents.mapNotNull { scores.pokemon(incoming.battlePokemonId, it.battlePokemonId)?.score }.averageOrNull()
