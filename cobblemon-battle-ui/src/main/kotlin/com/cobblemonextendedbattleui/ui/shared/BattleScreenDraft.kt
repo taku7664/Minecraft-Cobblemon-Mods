@@ -30,6 +30,10 @@ internal object BattleScreenDraft {
             BattleHudSplitDraft.render(context, width, korean)
             return
         }
+        if (page == "draft-hud-edge") {
+            BattleHudEdgeDraft.render(context, width, korean)
+            return
+        }
         val count = when (page) {
             "draft-hud-double", "draft-target" -> 2
             "draft-hud-triple", "draft-target-triple" -> 3
