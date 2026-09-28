@@ -100,6 +100,10 @@ internal object BattleHudCardRenderer {
 
     private fun drawSlantedPanel(context: DrawContext, x: Int, y: Int, ally: Boolean, card: Card) {
         val top = if (card.selected || card.hovered) 0xE53B536A.toInt() else 0xE5284054.toInt()
+        val edge = BattleSurfaceRenderer.withOpacity(
+            if (card.selected || card.hovered) BattleUiTheme.FOCUS
+            else if (ally) BattleUiTheme.CYAN else BattleUiTheme.PURPLE,
+            card.opacity * .72f)
         for (row in 0 until HEIGHT) {
             val offset = row * END_SLOPE / (HEIGHT - 1)
             val start = if (ally) x else x + END_SLOPE - offset
@@ -107,6 +111,9 @@ internal object BattleHudCardRenderer {
             val color = BattleSurfaceRenderer.interpolate(top, 0xE70C192B.toInt(), row.toFloat() / (HEIGHT - 1))
             context.fill(start, y + row, end, y + row + 1,
                 BattleSurfaceRenderer.withOpacity(color, card.opacity))
+            // Only the cut-facing diagonal is accented; the other three edges stay borderless.
+            val cutX = if (ally) end - 1 else start
+            context.fill(cutX, y + row, cutX + 1, y + row + 1, edge)
         }
     }
 }
