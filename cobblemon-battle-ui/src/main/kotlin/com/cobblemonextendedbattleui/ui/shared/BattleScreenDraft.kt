@@ -26,6 +26,10 @@ internal object BattleScreenDraft {
         val korean = MinecraftClient.getInstance().options.language == "ko_kr"
         context.fill(0, 0, width, height, 0x4906101E)
         drawCaption(context, page, width, korean)
+        if (page == "draft-hud-split") {
+            BattleHudSplitDraft.render(context, width, korean)
+            return
+        }
         val count = when (page) {
             "draft-hud-double", "draft-target" -> 2
             "draft-hud-triple", "draft-target-triple" -> 3
