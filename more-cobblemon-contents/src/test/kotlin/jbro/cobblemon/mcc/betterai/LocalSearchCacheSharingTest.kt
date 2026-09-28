@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfiles
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
@@ -25,6 +26,15 @@ import org.junit.jupiter.api.Test
 class LocalSearchCacheSharingTest {
     @Test
     fun `structural cache keys are measured against identity keys`() {
+        LocalProjectedActionCalculationCache.countIdentityKeying = true
+        try {
+            measure()
+        } finally {
+            LocalProjectedActionCalculationCache.countIdentityKeying = false
+        }
+    }
+
+    private fun measure() {
         val contexts = recordPositions()
         val tiers = listOf(
             "standard" to BattleDifficultyProfiles.STANDARD,

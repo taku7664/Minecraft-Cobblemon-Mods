@@ -33,7 +33,8 @@ internal class LocalProjectedActionCalculationCache(
      *
      * Counted by remembering which (state object, action) pairs have been asked for. The gap between
      * this and [calculationsPerformed] is exactly what structural keying saves, which is worth having
-     * as a number rather than as a wall-clock impression.
+     * as a number rather than as a wall-clock impression. Counted only while [countIdentityKeying] is on:
+     * the count keeps every state asked about and costs two hash operations per call.
      */
     var calculationsUnderIdentityKeying: Int = 0
         private set
@@ -90,7 +91,7 @@ internal class LocalProjectedActionCalculationCache(
             tags = action.tags,
             catalog = catalog?.let(::catalogKey),
         )
-        if (byStateIdentity.getOrPut(state) { HashSet() }.add(key)) calculationsUnderIdentityKeying++
+        if (countIdentityKeying && byStateIdentity.getOrPut(state) { HashSet() }.add(key)) calculationsUnderIdentityKeying++
         val stateEntries = byState.getOrPut(fingerprints.of(state)) { HashMap() }
         return stateEntries.getOrPut(key) {
             calculationsPerformed++
@@ -120,4 +121,10 @@ internal class LocalProjectedActionCalculationCache(
     )
     private data class CatalogEntryKey(val id: UUID, val moves: List<BattlePublicMoveOptionView>, val complete: Boolean)
     private data class CatalogKey(val current: List<CatalogEntryKey>, val original: List<CatalogEntryKey>)
+
+    companion object {
+        /** Measurement switch for [calculationsUnderIdentityKeying]; off in play. */
+        @Volatile
+        internal var countIdentityKeying: Boolean = false
+    }
 }
