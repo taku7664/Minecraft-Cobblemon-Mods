@@ -62,6 +62,9 @@ internal data class LocalTacticalScenarioReport(
     val offenseStatusMoves: Int,
     val offenseVoluntarySwitches: Int,
     val publicEvidenceCounts: Map<BattleObservedEventKind, Int> = emptyMap(),
+    /** Each team's HP left at the end, in whole Pokemon (a full team of four is 4.0). */
+    val cycleRemainingHp: Double = 0.0,
+    val offenseRemainingHp: Double = 0.0,
 ) {
     fun documentationLog(): String = buildString {
         appendLine("SCENARIO=${definition.name} seed=${definition.seed}")
@@ -244,8 +247,13 @@ internal object LocalTacticalScenarioBattle {
                 offenseStatusMoves = offenseStatusMoves,
                 offenseVoluntarySwitches = offenseVoluntarySwitches,
                 publicEvidenceCounts = publicEvidence.counts(),
+                cycleRemainingHp = remainingHp(BattleSide.ALLY),
+                offenseRemainingHp = remainingHp(BattleSide.OPPONENT),
             )
         }
+
+        private fun remainingHp(side: BattleSide): Double = state.pokemon
+            .filter { it.side == side && !it.fainted }.sumOf { it.hpFraction.coerceAtLeast(0.0) }
 
         private fun createTeam(setIds: List<String>): List<UUID> {
             require(setIds.size == definition.teamSize) {
