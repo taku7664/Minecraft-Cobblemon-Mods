@@ -68,7 +68,28 @@ internal object LocalMatchupScoreCalculator {
                     ?.let { antiAces[subject.battlePokemonId] = it }
             }
         }
-        return MatchupScores(moves, pokemon, complete = true, aces = aces, antiAces = antiAces)
+        val statusMoves = linkedMapOf<Pair<UUID, UUID>, List<StatusMoveMatchupScore>>()
+        val switchIns = linkedMapOf<Triple<UUID, UUID, UUID>, SwitchInScore>()
+        fun partial() = MatchupScores(moves, pokemon, complete = false, aces = aces, antiAces = antiAces,
+            statusMovesByPair = statusMoves, switchInsByKey = switchIns)
+        val allyField = allies.filter { it.activeSlot != null }
+        val opponentField = opponents.filter { it.activeSlot != null }
+        for (ally in allyField) for (opponent in opponentField) {
+            if (!shouldContinue()) return partial()
+            statusMoves[ally.battlePokemonId to opponent.battlePokemonId] =
+                LocalTurnCostScoreCalculator.statusMoves(context, ally, opponent, withAces, cache)
+            statusMoves[opponent.battlePokemonId to ally.battlePokemonId] =
+                LocalTurnCostScoreCalculator.statusMoves(context, opponent, ally, withAces, cache)
+        }
+        for (incoming in allies.filter { it.activeSlot == null }) for (replaced in allyField) for (opponent in opponentField) {
+            if (!shouldContinue()) return partial()
+            LocalTurnCostScoreCalculator.switchIn(context, incoming, replaced, opponent, withAces, cache)
+                ?.let { switchIns[Triple(incoming.battlePokemonId, opponent.battlePokemonId, replaced.battlePokemonId)] = it }
+        }
+        val preserves = LocalTurnCostScoreCalculator.preserves(allies, opponents, withAces) +
+            LocalTurnCostScoreCalculator.preserves(opponents, allies, withAces)
+        return MatchupScores(moves, pokemon, complete = true, aces = aces, antiAces = antiAces,
+            statusMovesByPair = statusMoves, switchInsByKey = switchIns, preserves = preserves)
     }
 
     /**

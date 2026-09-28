@@ -22,19 +22,22 @@ internal object LocalMatchupPosition {
 
     /**
      * [pokemon] switched in as the public projection has it: hazards and entry abilities applied, stages
-     * reset. Already active, it is left where it is.
+     * reset. Already active, it is left where it is. [slot] picks the slot in doubles; otherwise the first.
      */
     fun enter(
         source: BattleDecisionContext,
         pokemon: BattlePokemonStateView,
         cache: LocalProjectedActionCalculationCache,
+        slot: Int? = null,
     ): BattleDecisionContext? {
         val state = source.state
         if (state.pokemon.any { it.battlePokemonId == pokemon.battlePokemonId && it.activeSlot != null }) return source
         // Single-slot actions: in doubles the turn-level actions pair both slots, so no plain switch is among them.
         val action = cache.slotActions(state, pokemon.side, source.publicActionCatalog, includeMoveHypotheses = false) {
             PublicFutureActionFactory.slotActions(state, pokemon.side, source.publicActionCatalog)
-        }.firstOrNull { it.kind == BattleActionKind.SWITCH && it.switchPokemonId == pokemon.battlePokemonId }
+        }.firstOrNull {
+            it.kind == BattleActionKind.SWITCH && it.switchPokemonId == pokemon.battlePokemonId && (slot == null || it.actorSlot == slot)
+        }
             ?: return null
         val calculated = cache.getOrCalculate(state, pokemon.side, action, source.publicActionCatalog) {
             PublicBattleTacticalCalculator.calculate(source.copy(state = state, candidates = listOf(action)), pokemon.side)

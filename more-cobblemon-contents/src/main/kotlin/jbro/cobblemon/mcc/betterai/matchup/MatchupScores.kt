@@ -16,6 +16,12 @@ import java.util.UUID
  * | [PokemonMatchupScore] | subject x opponent | the exchange, including who moves first |
  * | [AceScore] | subject, against the whole opposing team | through the matchups |
  * | [AntiAceScore] | subject x the opposing ace, after its setup | through the matchups |
+ * | [StatusMoveMatchupScore] | user x status move x target | through the matchups |
+ * | [SwitchInScore] | incoming x opponent x the ally it replaces | through the matchups |
+ * | [PreserveScore] | subject, within its own team | through the matchups |
+ *
+ * A score for an action that spends a turn pays for it the same way everywhere: the opponent attacks
+ * once meanwhile, and the exchange that follows starts from the HP that leaves.
  */
 
 /**
@@ -174,6 +180,67 @@ internal data class AntiAceScore(
     }
 }
 
+/**
+ * What a status move does to the exchange: the matchup after it lands, the turn spent on it paid for,
+ * against the matchup without it.
+ *
+ * [score] = `survivesTurn * (accuracy * afterLanding + (1 - accuracy) * afterMiss) - (1 - survivesTurn) - before`,
+ * clamped to -1..1: a burn on a physical attacker is positive, the same burn on a special one costs the
+ * turn and comes out negative.
+ */
+internal data class StatusMoveMatchupScore(
+    val userId: UUID,
+    val moveId: String,
+    val targetId: UUID,
+    val accuracy: Double,
+    /** Chance the user survives the target's attack in the turn it spends on the move. */
+    val survivesTurn: Double,
+    /** The exchange without the move. */
+    val before: Double,
+    /** The exchange after the move lands, from the HP the turn left. */
+    val afterLanding: Double,
+    /** The exchange after the move misses: only the turn is gone. */
+    val afterMiss: Double,
+    val score: Double,
+)
+
+/**
+ * [incomingId] switching in for [replacedId] in front of [opponentId]: the hit it takes on the way in,
+ * then the exchange from what that leaves.
+ *
+ * The predicted hit is the opponent's best move against the Pokemon it expected to face; the worst hit is
+ * its most damaging move against the incoming one, for an opponent that saw the switch coming. [score]
+ * reads the predicted hit: `survival * afterEntry - (1 - survival)`.
+ */
+internal data class SwitchInScore(
+    val incomingId: UUID,
+    val opponentId: UUID,
+    val replacedId: UUID,
+    val predictedMoveId: String?,
+    val predictedSurvival: Double,
+    /** HP left after the entry hazards and the predicted hit, in the cases it survives. */
+    val hpAfterEntry: Double,
+    val worstMoveId: String?,
+    val worstSurvival: Double,
+    val afterEntry: PokemonMatchupScore?,
+    val score: Double,
+)
+
+/**
+ * How much of its team's answer to the opposing team goes with [subjectId]: the team's coverage (for each
+ * opponent, the best win chance any living teammate has against it, averaged) with and without it.
+ *
+ * [score] (0..1) is the drop. The only answer to an opponent carries it; one of several carries little.
+ */
+internal data class PreserveScore(
+    val subjectId: UUID,
+    val coverageWith: Double,
+    val coverageWithout: Double,
+    /** Opponents it alone beats (win chance at least one half). */
+    val soleAnswerTo: List<UUID>,
+    val score: Double,
+)
+
 /** One decision's matchup scores, read from the deciding trainer's side of the board. */
 internal class MatchupScores(
     private val movesByPair: Map<Pair<UUID, UUID>, List<MoveMatchupScore>>,
@@ -185,7 +252,21 @@ internal class MatchupScores(
     val aces: Map<UUID, AceScore> = emptyMap(),
     /** Both sides' living Pokemon against the other side's ace, keyed by the subject. */
     val antiAces: Map<UUID, AntiAceScore> = emptyMap(),
+    /** Active Pokemon's status moves against the opposing actives, keyed by (user, target). */
+    private val statusMovesByPair: Map<Pair<UUID, UUID>, List<StatusMoveMatchupScore>> = emptyMap(),
+    /** Keyed by (incoming, opponent, replaced). */
+    private val switchInsByKey: Map<Triple<UUID, UUID, UUID>, SwitchInScore> = emptyMap(),
+    /** Both sides' living Pokemon. */
+    val preserves: Map<UUID, PreserveScore> = emptyMap(),
 ) {
+    /** [userId]'s scored status moves against [targetId], best first. */
+    fun statusMoves(userId: UUID, targetId: UUID): List<StatusMoveMatchupScore> = statusMovesByPair[userId to targetId].orEmpty()
+
+    fun switchIn(incomingId: UUID, opponentId: UUID, replacedId: UUID): SwitchInScore? =
+        switchInsByKey[Triple(incomingId, opponentId, replacedId)]
+
+    val switchIns: Collection<SwitchInScore> get() = switchInsByKey.values
+
     /** The side's best sweeper, if any of its Pokemon was scored. */
     fun ace(side: jbro.cobblemon.mcc.internal.ai.BattleSide, state: jbro.cobblemon.mcc.internal.ai.BattleStateView): AceScore? =
         state.pokemon.filter { it.side == side }.mapNotNull { aces[it.battlePokemonId] }.maxByOrNull { it.score }

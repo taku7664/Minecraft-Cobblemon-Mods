@@ -214,7 +214,22 @@ internal object EngineReplayAiReview {
                 "랭크업 게이트 ${species[assumed.state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot == part.actorSlot }?.battlePokemonId]} " +
                     "${part.moveId}: ${if (verdict.passes) "통과" else "탈락 ${verdict.failures}"}"
             }
-        return listOf("계산 ${millis}ms") + gates + aces + antiAces + scores.pokemonMatchups.filter { it.speedField == MatchupSpeedField.CURRENT }.map { m ->
+        fun signed(value: Double) = "%+.2f".format(Locale.ROOT, value)
+        val active = assumed.state.pokemon.filter { it.activeSlot != null && !it.fainted }
+        val statusLines = active.flatMap { user -> active.filter { it.side != user.side }.flatMap { target ->
+            scores.statusMoves(user.battlePokemonId, target.battlePokemonId).map { m ->
+                "변화기 ${species[m.userId]} ${m.moveId} → ${species[m.targetId]} ${signed(m.score)} (전 ${signed(m.before)} / 성공 ${signed(m.afterLanding)}, 턴 생존 ${pct(m.survivesTurn)})"
+            } } }
+        val switchLines = scores.switchIns.sortedByDescending { it.score }.map { w ->
+            "교체 투입 ${species[w.incomingId]} ← ${species[w.replacedId]} vs ${species[w.opponentId]} ${signed(w.score)}: " +
+                "예상 ${w.predictedMoveId} 생존 ${pct(w.predictedSurvival)} 남는 HP ${pct(w.hpAfterEntry)}, 최악 ${w.worstMoveId} 생존 ${pct(w.worstSurvival)}"
+        }
+        val preserveLines = scores.preserves.values.filter { p -> assumed.state.pokemon.any { it.battlePokemonId == p.subjectId && it.side == BattleSide.ALLY } }
+            .sortedByDescending { it.score }.map { p ->
+                "보존 ${species[p.subjectId]} ${"%.2f".format(Locale.ROOT, p.score)}: 팀 커버 ${pct(p.coverageWith)} → 빠지면 ${pct(p.coverageWithout)}" +
+                    (if (p.soleAnswerTo.isEmpty()) "" else ", 유일한 답 ${p.soleAnswerTo.map { species[it] }}")
+            }
+        return listOf("계산 ${millis}ms") + gates + aces + antiAces + preserveLines + statusLines + switchLines + scores.pokemonMatchups.filter { it.speedField == MatchupSpeedField.CURRENT }.map { m ->
             val reversed = scores.pokemon(m.subjectId, m.opponentId, MatchupSpeedField.TRICK_ROOM_TOGGLED)
             "${species[m.subjectId]} vs ${species[m.opponentId]}: 점수 ${"%+.2f".format(Locale.ROOT, m.score)}" +
                 " (트릭룸 반전 ${reversed?.let { "%+.2f".format(Locale.ROOT, it.score) } ?: "-"}), 승 ${pct(m.winProbability)}" +

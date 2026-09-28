@@ -189,6 +189,56 @@ class LocalMatchupScoreTest {
         assertNull(LocalSetupGate.evaluate(flameCharge, context, LocalMatchupScoreCalculator.calculate(context)))
     }
 
+    @Test
+    fun `will-o-wisp is worth its turn against a physical attacker and not against a special one`() {
+        val wisp = BattlePublicMoveOptionView("willowisp", BattleMoveCandidateView(typeId = "fire",
+            damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
+            effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, listOf(BattleMoveEffectView(
+                BattleMoveEffectKind.STATUS, BattleMoveEffectTarget.SELECTED_TARGET, valueId = "brn")), false)),
+            BattlePublicMoveKnowledge.EXACT_OWN)
+        // The faster foe three-hits the ally, which three-hits it back and loses the race. Burned, the physical
+        // foe needs more hits than the ally has left even after the turn spent on the burn.
+        fun burn(category: BattleMoveDamageCategory) = LocalMatchupScoreCalculator.calculate(context(allySpeed = 100, foeSpeed = 120,
+            allyPower = 65.0, foePower = 65.0, foeCategory = category, allyExtra = listOf(wisp))).statusMoves(ALLY, FOE).single()
+        val physical = burn(BattleMoveDamageCategory.PHYSICAL)
+        val special = burn(BattleMoveDamageCategory.SPECIAL)
+        assertEquals("willowisp", physical.moveId)
+        assertTrue(physical.score > 0.0) { physical.toString() }
+        assertTrue(special.score < 0.0) { special.toString() }
+    }
+
+    @Test
+    fun `status moves are scored in doubles too`() {
+        val snarl = BattlePublicMoveOptionView("partingshot", BattleMoveCandidateView(typeId = "dark",
+            damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
+            effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, listOf(BattleMoveEffectView(
+                BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectTarget.SELECTED_TARGET, statStages = mapOf("atk" to -1, "spa" to -1))), false)),
+            BattlePublicMoveKnowledge.EXACT_OWN)
+        val scores = LocalMatchupScoreCalculator.calculate(context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0,
+            foePower = 65.0, allyExtra = listOf(snarl), format = BattleFormat.DOUBLE))
+        assertEquals(listOf("partingshot"), scores.statusMoves(ALLY, FOE).map { it.moveId })
+    }
+
+    @Test
+    fun `a switch-in takes the hazards and the hit meant for the Pokemon it replaces`() {
+        val scores = LocalMatchupScoreCalculator.calculate(context(allySpeed = 150, foeSpeed = 100, foePower = 65.0,
+            rocksOnAllySide = true))
+        val switchIn = scores.switchIn(BENCH, FOE, ALLY)!!
+        assertEquals("probe", switchIn.predictedMoveId)
+        assertEquals(1.0, switchIn.predictedSurvival, 1e-9)
+        assertTrue(switchIn.hpAfterEntry < 0.875 - 0.3) { switchIn.toString() }
+        assertNotNull(switchIn.afterEntry)
+    }
+
+    @Test
+    fun `the only answer to an opponent is the one worth preserving`() {
+        val scores = LocalMatchupScoreCalculator.calculate(context(allySpeed = 150, foeSpeed = 100, benchPower = 40.0))
+        val sole = scores.preserves.getValue(ALLY)
+        assertEquals(listOf(FOE), sole.soleAnswerTo)
+        assertEquals(1.0, sole.score, 1e-9)
+        assertEquals(0.0, scores.preserves.getValue(BENCH).score, 1e-9)
+    }
+
     private fun setupAction(context: BattleDecisionContext): BattleActionCandidate {
         val option = context.publicActionCatalog.forPokemon(ALLY).first { it.details.damageCategory == BattleMoveDamageCategory.STATUS }
         return BattleActionCandidate("setup", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 1, moveId = option.moveId, moveDetails = option.details)
@@ -205,6 +255,8 @@ class LocalMatchupScoreTest {
         foeSetup: Map<String, Int>? = null,
         foeExtra: List<BattlePublicMoveOptionView> = emptyList(),
         allyItem: String? = null,
+        benchPower: Double? = null,
+        foeCategory: BattleMoveDamageCategory = BattleMoveDamageCategory.PHYSICAL,
         format: BattleFormat = BattleFormat.SINGLE,
     ): BattleDecisionContext {
         val field = if (!rocksOnAllySide) BattleFieldStateView.empty() else BattleFieldStateView(null, null, emptyList(), emptyList(),
@@ -215,10 +267,11 @@ class LocalMatchupScoreTest {
             mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to 1), emptyList(), emptyList())
         return BattleDecisionContext(UUID(0, 919), state, listOf(BattleActionCandidate("wait", BattleActionKind.WAIT)), Long.MAX_VALUE,
             publicActionCatalog = BattlePublicActionCatalogView(state.pokemon.map { pokemon ->
-                val power = if (pokemon.side == BattleSide.ALLY) allyPower else foePower
+                val power = when (pokemon.battlePokemonId) { BENCH -> benchPower ?: allyPower; FOE -> foePower; else -> allyPower }
+                val category = if (pokemon.side == BattleSide.ALLY) BattleMoveDamageCategory.PHYSICAL else foeCategory
                 val knowledge = if (pokemon.side == BattleSide.ALLY) BattlePublicMoveKnowledge.EXACT_OWN else BattlePublicMoveKnowledge.PUBLICLY_REVEALED
                 val attack = BattlePublicMoveOptionView("probe", BattleMoveCandidateView(typeId = "normal",
-                    damageCategory = BattleMoveDamageCategory.PHYSICAL, power = power, accuracy = 100.0, priority = 0, currentPp = 8), knowledge)
+                    damageCategory = category, power = power, accuracy = 100.0, priority = 0, currentPp = 8), knowledge)
                 val setup = (if (pokemon.side == BattleSide.ALLY) allySetup else foeSetup)?.let { stages ->
                     BattlePublicMoveOptionView(if (stages.size > 1) "dragondance" else "swordsdance", BattleMoveCandidateView(typeId = "normal",
                         damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
