@@ -21,7 +21,7 @@ class MusicMappingOverridesParserTest {
               },
               "battle": {
                 "content": {
-                  "cobblemon_more_battle_content:battle_tower": "cobleserver:track/battle/pvp/theme"
+                  "more_cobblemon_contents:battle_tower": "cobleserver:track/battle/pvp/theme"
                 },
                 "pokemon": [
                   {
@@ -38,7 +38,7 @@ class MusicMappingOverridesParserTest {
         assertFalse(parsed.field().dimensions().containsKey("minecraft:the_nether"));
         assertEquals(
             "cobleserver:track/battle/pvp/theme",
-            parsed.battle().content().get("cobblemon_more_battle_content:battle_tower")
+            parsed.battle().content().get("more_cobblemon_contents:battle_tower")
         );
         assertEquals(0, parsed.battle().pokemon().size());
     }

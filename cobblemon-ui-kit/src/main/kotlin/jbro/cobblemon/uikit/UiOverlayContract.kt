@@ -62,6 +62,25 @@ class UiToastQueue {
     }
 }
 
+/** Where a modal dialog's panel and its one or two buttons sit on a screen. */
+data class UiDialogLayout(val panel: UiRect, val confirm: UiRect, val cancel: UiRect?) {
+    companion object {
+        const val PANEL_WIDTH = 260
+        const val PANEL_HEIGHT = 120
+
+        /** A centred panel with its buttons side by side, centred on a line 34 above its bottom edge. */
+        fun calculate(screenWidth: Int, screenHeight: Int, hasCancel: Boolean): UiDialogLayout {
+            val buttonWidth = if (hasCancel) 104 else 120
+            val layout = UiLayout.align(UiLayout.layers(UiLayout.leaf("panel"),
+                UiLayout.inset(UiLayout.row(gap = 8, justify = UiJustify.CENTER) {
+                    if (hasCancel) fixed(buttonWidth, "cancel")
+                    fixed(buttonWidth, "confirm")
+                }, top = PANEL_HEIGHT - 34)), PANEL_WIDTH, PANEL_HEIGHT).solve(UiRect(0, 0, screenWidth, screenHeight))
+            return UiDialogLayout(layout["panel"], layout["confirm"], layout.find("cancel"))
+        }
+    }
+}
+
 object UiOverlayPlacement {
     fun place(anchor: UiRect, overlay: UiSize, screen: UiSize, margin: Int = 4): UiRect {
         require(margin >= 0) { "Overlay margin must not be negative" }

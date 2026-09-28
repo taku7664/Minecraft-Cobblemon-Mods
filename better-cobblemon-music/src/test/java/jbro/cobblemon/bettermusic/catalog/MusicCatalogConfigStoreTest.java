@@ -50,7 +50,7 @@ final class MusicCatalogConfigStoreTest {
             MusicMappingOverrides.Field.empty(),
             new MusicMappingOverrides.Battle(
                 Optional.empty(), Optional.empty(), Optional.empty(),
-                Map.of("cobblemon_more_battle_content:battle_tower", "cobleserver:track/battle/trainer"),
+                Map.of("more_cobblemon_contents:battle_tower", "cobleserver:track/battle/trainer"),
                 Optional.empty(), Optional.empty(), java.util.List.of()
             )
         );

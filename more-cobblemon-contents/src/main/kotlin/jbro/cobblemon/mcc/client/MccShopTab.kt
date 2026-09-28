@@ -19,6 +19,8 @@ import jbro.cobblemon.uikit.UiButtonSpec
 import jbro.cobblemon.uikit.UiButtonVariant
 import jbro.cobblemon.uikit.UiControlSize
 import jbro.cobblemon.uikit.UiIcon
+import jbro.cobblemon.uikit.UiLayout
+import jbro.cobblemon.uikit.UiLayoutResult
 import jbro.cobblemon.uikit.UiModelFraming
 import jbro.cobblemon.uikit.UiRect
 import jbro.cobblemon.uikit.UiRenderSlotSpec
@@ -145,9 +147,10 @@ internal class MccShopTab : MccHubTabContent {
         val idle = !MccShopClient.purchase.isPending
         val total = cart.totalCost(state.entries)
         val after = state.balanceBp - total
-        val button = UiRect(body.x, body.bottom - MccHubKit.CONTROL_HEIGHT, body.width, MccHubKit.CONTROL_HEIGHT)
-        val summary = UiRect(body.x, button.y - 4 - SUMMARY_LINES * 10, body.width, SUMMARY_LINES * 10)
-        val list = UiRect(body.x, body.y, body.width, (summary.y - 4 - body.y).coerceAtLeast(1))
+        val parts = MccShopLayout.cartBody(body, SUMMARY_LINES * 10)
+        val button = parts["button"]
+        val summary = parts["summary"]
+        val list = parts["list"]
         MccHubKit.pagedList(host, list, cart.picked(state.entries).map { (entry, quantity) ->
             MccHubKit.ListEntry(
                 itemName(entry),
@@ -239,22 +242,35 @@ internal data class MccShopLayout(
 ) {
     companion object {
         const val MODEL_MIN_WIDTH = 420
+        private const val MODEL_PERCENT = 17
         private const val ARROW_WIDTH = 12
 
         fun calculate(bounds: UiRect): MccShopLayout {
-            val gap = MccHubKit.GAP
-            val withModels = bounds.width >= MODEL_MIN_WIDTH
-            val modelWidth = if (withModels) (bounds.width * 17 / 100).coerceIn(56, 110) else 0
-            val keeper = if (withModels) UiRect(bounds.x, bounds.y, modelWidth, bounds.height) else null
-            val viewer = if (withModels) UiRect(bounds.right - modelWidth, bounds.y, modelWidth, bounds.height) else null
-            val left = keeper?.let { it.right + gap } ?: bounds.x
-            val right = viewer?.let { it.x - gap } ?: bounds.right
-            val listWidth = (right - left - ARROW_WIDTH) / 2
-            val catalog = UiRect(left, bounds.y, listWidth, bounds.height)
-            val arrow = UiRect(catalog.right, bounds.y, ARROW_WIDTH, bounds.height)
-            val cart = UiRect(arrow.right, bounds.y, right - arrow.right, bounds.height)
-            return MccShopLayout(keeper, catalog, arrow, cart, viewer)
+            val layout = UiLayout.responsive { size ->
+                val withModels = size.width >= MODEL_MIN_WIDTH
+                UiLayout.row {
+                    if (withModels) {
+                        percent(MODEL_PERCENT, "keeper", min = 56, max = 110)
+                        space(MccHubKit.GAP)
+                    }
+                    weight("catalog")
+                    fixed(ARROW_WIDTH, "arrow")
+                    weight("cart")
+                    if (withModels) {
+                        space(MccHubKit.GAP)
+                        percent(MODEL_PERCENT, "viewer", min = 56, max = 110)
+                    }
+                }
+            }.solve(bounds)
+            return MccShopLayout(layout.find("keeper"), layout["catalog"], layout["arrow"], layout["cart"], layout.find("viewer"))
         }
+
+        /** The cart card's body: its lines, then the purchase summary and the buy button at the bottom. */
+        fun cartBody(body: UiRect, summaryHeight: Int): UiLayoutResult = UiLayout.column(gap = 4) {
+            weight("list", min = 1)
+            fixed(summaryHeight, "summary")
+            fixed(MccHubKit.CONTROL_HEIGHT, "button")
+        }.solve(body)
     }
 }
 

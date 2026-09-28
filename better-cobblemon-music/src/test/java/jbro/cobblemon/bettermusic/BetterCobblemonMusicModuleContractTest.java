@@ -50,14 +50,13 @@ final class BetterCobblemonMusicModuleContractTest {
 
         var dependencies = metadata.getAsJsonObject("depends");
         assertEquals(">=1.8.1 <1.9.0", dependencies.get("cobblemon").getAsString());
-        assertFalse(dependencies.has("cobblemon_more_battle_content"));
-        assertFalse(dependencies.has("cobblemon_more_battle_content_better_ai"));
+        assertFalse(dependencies.has("more_cobblemon_contents"));
         assertFalse(dependencies.has("cobblemon_better_battle_presentation"));
         assertFalse(dependencies.has("mega_showdown"));
         assertFalse(dependencies.has("rctmod"));
         assertEquals(
             "*",
-            metadata.getAsJsonObject("suggests").get("cobblemon_more_battle_content").getAsString()
+            metadata.getAsJsonObject("suggests").get("more_cobblemon_contents").getAsString()
         );
         assertEquals("*", metadata.getAsJsonObject("suggests").get("modmenu").getAsString());
         assertEquals("*", metadata.getAsJsonObject("suggests").get("cloth-config").getAsString());
@@ -69,7 +68,7 @@ final class BetterCobblemonMusicModuleContractTest {
 
         assertNotNull(Class.forName("jbro.cobblemon.bettermusic.BetterCobblemonMusicClient"));
         assertNotNull(Class.forName(
-            "jbro.cobblemon.bettermusic.integration.mbc.MoreBattleContentIntegration"
+            "jbro.cobblemon.bettermusic.integration.mcc.MoreCobblemonContentsIntegration"
         ));
     }
 }

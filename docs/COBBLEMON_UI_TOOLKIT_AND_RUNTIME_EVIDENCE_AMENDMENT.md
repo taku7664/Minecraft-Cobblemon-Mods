@@ -4,9 +4,9 @@
 | --- | --- |
 | Status | `shared` |
 | Effective | 2026-09-25 |
-| Updates | [`DECLARATIVE_UI_FRAMEWORK.md`](../more-battle-content/docs/ui/DECLARATIVE_UI_FRAMEWORK.md), [`UI_RESOURCE_BOUNDARY.md`](../more-battle-content/docs/ui/UI_RESOURCE_BOUNDARY.md), [`LEAGUE_UI_BOOTSTRAP.md`](../more-battle-content/docs/ui/LEAGUE_UI_BOOTSTRAP.md), `COBBLEMON_UI_DESIGN_SYSTEM_BOUNDARY_DECISION.md` |
+| Updates | 초기 선언형 UI 결정과 UI 리소스 경계 결정(모두 폐기) |
 | Does not obsolete | 타입 있는 화면 행동, 서버 권위 검증, 내장 기본 자산, 시각 전용 외부 팩 경계 |
-| 적용 대상 | `more-battle-content`, `more-battle-content-league-challenge`, `cobblemon-battle-ui`와 후속 Cobblemon 클라이언트 애드온 |
+| 적용 대상 | `more-cobblemon-contents`와 그 콘텐츠 모드, `cobblemon-battle-ui`와 후속 Cobblemon 클라이언트 애드온 |
 | 주 독자 | UI 툴킷·화면·리소스팩을 구현하는 개발자 |
 
 ## 1. 수정 이유
@@ -22,7 +22,7 @@
 
 ## 2. 제품 범위
 
-새 계층은 임시 명칭 `Cobblemon UI Kit`인 **Cobblemon 전용 클라이언트 UI 툴킷**이다(MUST). MBC, League Challenge, Better Battle UI처럼 Cobblemon 정보와 상호작용을 표현하는 화면을 우선 대상으로 한다.
+새 계층은 임시 명칭 `Cobblemon UI Kit`인 **Cobblemon 전용 클라이언트 UI 툴킷**이다(MUST). MCC와 Better Battle UI처럼 Cobblemon 정보와 상호작용을 표현하는 화면을 우선 대상으로 한다.
 
 - 바닐라 인벤토리, 제작대, 채팅과 모든 Minecraft 화면을 교체하는 범용 UI 모드는 아니다(MUST NOT).
 - 첨부된 인벤토리·포켓몬 메뉴·대화창 이미지는 패널 계층, 아이콘 탐색, 슬롯, 상태 막대와 좌우 대화 기록의 **시각·컴포넌트 언어 참고**일 뿐이다.
@@ -40,13 +40,13 @@
 
 ## 3. 모듈과 배포 경계
 
-공유 런타임은 MBC 내부 전용 구현이 아니라 독립된 Gradle 클라이언트 소스 모듈 경계로 추출한다(MUST). 이 결정은 `COBBLEMON_UI_DESIGN_SYSTEM_BOUNDARY_DECISION.md`의 “현재는 런타임을 추출하지 않는다” 결론을 갱신한다.
+공유 런타임은 특정 모드 내부 구현이 아니라 독립된 Gradle 클라이언트 소스 모듈(`cobblemon-ui-kit`)로 둔다(MUST).
 
 다만 배포 형태는 아직 확정하지 않는다.
 
 - 별도 필수 모드 JAR, 각 소비자 JAR에 포함하는 Jar-in-Jar, 또는 빌드 시 소스 공유 중 무엇을 쓸지는 두 실제 소비자가 같은 생명주기 코드를 사용한 뒤 결정한다(MUST).
-- 패키징 결정 전에도 공개 API는 MBC, League Challenge, Battle UI의 도메인 타입과 패킷 타입을 참조하면 안 된다(MUST NOT).
-- Battle UI는 MBC 없이 설치·실행되는 현재 경계를 유지해야 한다(MUST).
+- 패키징 결정 전에도 공개 API는 MCC와 Battle UI의 도메인 타입과 패킷 타입을 참조하면 안 된다(MUST NOT).
+- Battle UI는 MCC 없이 설치·실행되는 현재 경계를 유지해야 한다(MUST).
 - owo를 채택해도 공개 타입에 owo 컴포넌트, XML 또는 어댑터 타입을 노출하면 안 된다(MUST NOT). owo는 교체 가능한 내부 렌더 백엔드일 뿐이다.
 
 ## 4. 툴킷 계층

@@ -5,6 +5,7 @@ import java.util.WeakHashMap
 import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.internal.pvp.PvpRoomPhase
 import jbro.cobblemon.mcc.internal.pvp.network.PvpRoomClientView
+import jbro.cobblemon.uikit.UiRect
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
@@ -87,30 +88,30 @@ internal object PvpRoomHudOverlay {
             Component.translatable(key("hud.title")).string,
             (layout.title.width - 2).coerceAtLeast(1),
         )
-        graphics.drawString(client.font, title, layout.title.left, layout.title.top + 5, MccGuiPalette.ACCENT_PRIMARY, false)
+        graphics.drawString(client.font, title, layout.title.x, layout.title.y + 5, MccGuiPalette.ACCENT_PRIMARY, false)
         if (!interactive) {
-            graphics.drawCenteredString(client.font, openLabel(), layout.openButton.left + layout.openButton.width / 2, layout.openButton.top + 5, MccGuiPalette.TEXT_PRIMARY)
-            graphics.drawCenteredString(client.font, toggleButtonLabel(layout), layout.toggleButton.left + layout.toggleButton.width / 2, layout.toggleButton.top + 5, MccGuiPalette.TEXT_PRIMARY)
+            graphics.drawCenteredString(client.font, openLabel(), layout.openButton.x + layout.openButton.width / 2, layout.openButton.y + 5, MccGuiPalette.TEXT_PRIMARY)
+            graphics.drawCenteredString(client.font, toggleButtonLabel(layout), layout.toggleButton.x + layout.toggleButton.width / 2, layout.toggleButton.y + 5, MccGuiPalette.TEXT_PRIMARY)
         }
         if (layout.phaseRow == null) return
 
         val phase = Component.translatable(key("phase.${room.phase.name.lowercase()}"))
-        graphics.drawCenteredString(client.font, phase, layout.phaseRow.left + layout.phaseRow.width / 2, layout.phaseRow.top + 1, phaseColor(room.phase))
+        graphics.drawCenteredString(client.font, phase, layout.phaseRow.x + layout.phaseRow.width / 2, layout.phaseRow.y + 1, phaseColor(room.phase))
         drawSide(graphics, client, layout.leftSide, Component.translatable(key("side.left_short")), room.leftPlayer?.name)
         drawSide(graphics, client, layout.rightSide, Component.translatable(key("side.right_short")), room.rightPlayer?.name)
         layout.spectatorHeading?.let { heading ->
-            graphics.drawString(client.font, Component.translatable(key("hud.spectators"), room.spectators.size), heading.left, heading.top + 1, MccGuiPalette.TEXT_SECONDARY, false)
+            graphics.drawString(client.font, Component.translatable(key("hud.spectators"), room.spectators.size), heading.x, heading.y + 1, MccGuiPalette.TEXT_SECONDARY, false)
         }
         layout.spectatorRows.forEachIndexed { index, row ->
             val name = client.font.plainSubstrByWidth(room.spectators[index].name, (row.width - 9).coerceAtLeast(1))
-            graphics.drawString(client.font, "• $name", row.left + 2, row.top + 1, MccGuiPalette.TEXT_PRIMARY, false)
+            graphics.drawString(client.font, "• $name", row.x + 2, row.y + 1, MccGuiPalette.TEXT_PRIMARY, false)
         }
         if (layout.hiddenSpectatorCount > 0) {
             val lastBottom = layout.spectatorRows.lastOrNull()?.bottom ?: layout.spectatorHeading?.bottom ?: layout.panel.bottom
             graphics.drawString(
                 client.font,
                 Component.translatable(key("hud.more_spectators"), layout.hiddenSpectatorCount),
-                layout.panel.left + 7,
+                layout.panel.x + 7,
                 lastBottom + 1,
                 MccGuiPalette.TEXT_DIM,
                 false,
@@ -118,7 +119,7 @@ internal object PvpRoomHudOverlay {
         }
     }
 
-    private fun drawSide(graphics: GuiGraphics, client: Minecraft, bounds: MccRect, label: Component, name: String?) {
+    private fun drawSide(graphics: GuiGraphics, client: Minecraft, bounds: UiRect, label: Component, name: String?) {
         MccGuiSurface.drawPanel(
             graphics,
             bounds,
@@ -126,10 +127,10 @@ internal object PvpRoomHudOverlay {
             alternate = true,
             backgroundAlpha = BACKGROUND_ALPHA_50_PERCENT,
         )
-        graphics.drawString(client.font, label, bounds.left + 4, bounds.top + 3, MccGuiPalette.TEXT_DIM, false)
+        graphics.drawString(client.font, label, bounds.x + 4, bounds.y + 3, MccGuiPalette.TEXT_DIM, false)
         val display = name ?: Component.translatable(key("hud.empty")).string
         val clipped = client.font.plainSubstrByWidth(display, (bounds.width - 8).coerceAtLeast(1))
-        graphics.drawString(client.font, clipped, bounds.left + 4, bounds.top + 12, MccGuiPalette.TEXT_PRIMARY, false)
+        graphics.drawString(client.font, clipped, bounds.x + 4, bounds.y + 12, MccGuiPalette.TEXT_PRIMARY, false)
     }
 
     private fun handleKeys(client: Minecraft) {

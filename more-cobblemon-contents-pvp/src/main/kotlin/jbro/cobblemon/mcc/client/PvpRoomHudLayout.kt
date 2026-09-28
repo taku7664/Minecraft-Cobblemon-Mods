@@ -1,16 +1,21 @@
 package jbro.cobblemon.mcc.client
 
+import jbro.cobblemon.uikit.UiCrossAlignment
+import jbro.cobblemon.uikit.UiLayout
+import jbro.cobblemon.uikit.UiRect
+
+/** The room HUD in the lower right corner, above the hotbar: a header of controls and, expanded, the room at a glance. */
 internal data class PvpRoomHudLayout(
-    val panel: MccRect,
-    val header: MccRect,
-    val title: MccRect,
-    val openButton: MccRect,
-    val toggleButton: MccRect,
-    val phaseRow: MccRect?,
-    val leftSide: MccRect,
-    val rightSide: MccRect,
-    val spectatorHeading: MccRect?,
-    val spectatorRows: List<MccRect>,
+    val panel: UiRect,
+    val header: UiRect,
+    val title: UiRect,
+    val openButton: UiRect,
+    val toggleButton: UiRect,
+    val phaseRow: UiRect?,
+    val leftSide: UiRect,
+    val rightSide: UiRect,
+    val spectatorHeading: UiRect?,
+    val spectatorRows: List<UiRect>,
     val hiddenSpectatorCount: Int,
     val toggleLabel: String,
 ) {
@@ -44,44 +49,44 @@ internal data class PvpRoomHudLayout(
             } else {
                 HEADER_HEIGHT
             }
-            val panel = MccRect(
-                left = (screenWidth - panelWidth - SCREEN_MARGIN).coerceAtLeast(0),
-                top = (screenHeight - HOTBAR_CLEARANCE - panelHeight).coerceAtLeast(SCREEN_MARGIN),
-                width = panelWidth,
-                height = panelHeight,
-            )
-            val header = MccRect(panel.left, panel.top, panel.width, HEADER_HEIGHT)
-            val toggle = MccRect(header.right - TOGGLE_WIDTH, header.top, TOGGLE_WIDTH, header.height)
-            val open = MccRect(toggle.left - CONTROL_GAP - OPEN_WIDTH, header.top, OPEN_WIDTH, header.height)
-            val title = MccRect(header.left + 4, header.top, (open.left - header.left - 6).coerceAtLeast(1), header.height)
+            val rows = UiLayout.keys("spectator", visibleSpectators)
+            val panel = UiLayout.layers(UiLayout.leaf("panel"), UiLayout.column {
+                fixed(HEADER_HEIGHT, UiLayout.layers(UiLayout.leaf("header"), UiLayout.row {
+                    space(4)
+                    weight("title", min = 1)
+                    space(CONTROL_GAP)
+                    fixed(OPEN_WIDTH, "open")
+                    space(CONTROL_GAP)
+                    fixed(TOGGLE_WIDTH, "toggle")
+                }))
+                if (expanded) {
+                    space(CONTROL_GAP)
+                    weight(UiLayout.inset(UiLayout.column {
+                        fixed(PHASE_HEIGHT, "phase")
+                        fixed(SIDE_HEIGHT, UiLayout.row(gap = 4) {
+                            weight("left")
+                            weight("right")
+                        })
+                        fixed(SPECTATOR_HEADING_HEIGHT, "heading")
+                        rows.forEach { fixed(SPECTATOR_ROW_HEIGHT, it) }
+                    }, left = CONTENT_INSET, right = CONTENT_INSET, min = 2))
+                }
+            })
+            // Pinned to the lower right, but never off the left or top edge of a tiny screen.
+            val layout = UiLayout.inset(UiLayout.align(panel, panelWidth, panelHeight, UiCrossAlignment.END, UiCrossAlignment.END,
+                pinStart = true), top = SCREEN_MARGIN, right = SCREEN_MARGIN, bottom = HOTBAR_CLEARANCE)
+                .solve(UiRect(0, 0, screenWidth, screenHeight))
+            val header = layout["header"]
             if (!expanded) {
                 return PvpRoomHudLayout(
-                    panel, header, title, open, toggle, null,
-                    MccRect(0, 0, 0, 0), MccRect(0, 0, 0, 0), null,
+                    layout["panel"], header, layout["title"], layout["open"], layout["toggle"], null,
+                    UiRect(0, 0, 0, 0), UiRect(0, 0, 0, 0), null,
                     emptyList(), 0, "+",
                 )
             }
-
-            val contentLeft = panel.left + CONTENT_INSET
-            val contentWidth = (panel.width - CONTENT_INSET * 2).coerceAtLeast(2)
-            val phase = MccRect(contentLeft, header.bottom + CONTROL_GAP, contentWidth, PHASE_HEIGHT)
-            val sideTop = phase.bottom
-            val sideGap = 4
-            val leftWidth = (contentWidth - sideGap) / 2
-            val left = MccRect(contentLeft, sideTop, leftWidth, SIDE_HEIGHT)
-            val right = MccRect(left.right + sideGap, sideTop, contentWidth - leftWidth - sideGap, SIDE_HEIGHT)
-            val spectatorHeading = MccRect(contentLeft, left.bottom, contentWidth, SPECTATOR_HEADING_HEIGHT)
-            val rows = List(visibleSpectators) { index ->
-                MccRect(
-                    contentLeft,
-                    spectatorHeading.bottom + index * SPECTATOR_ROW_HEIGHT,
-                    contentWidth,
-                    SPECTATOR_ROW_HEIGHT,
-                )
-            }
             return PvpRoomHudLayout(
-                panel, header, title, open, toggle, phase, left, right, spectatorHeading,
-                rows, hiddenSpectators, "-",
+                layout["panel"], header, layout["title"], layout["open"], layout["toggle"], layout["phase"], layout["left"],
+                layout["right"], layout["heading"], layout.list("spectator"), hiddenSpectators, "-",
             )
         }
     }

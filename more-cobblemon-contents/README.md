@@ -1,6 +1,6 @@
 # More Cobblemon Contents (MCC)
 
-Successor of More Battle Content (MBC), split into a core mod and content mods.
+A core mod and content mods for Cobblemon battle facilities.
 
 | Module | Mod ID | Contents |
 |---|---|---|
@@ -8,6 +8,7 @@ Successor of More Battle Content (MBC), split into a core mod and content mods.
 | `more-cobblemon-contents-battle-tower` | `more_cobblemon_contents_battle_tower` | Battle Tower and the Cynthia AI test (`/mcc test`) |
 | `more-cobblemon-contents-battle-factory` | `more_cobblemon_contents_battle_factory` | Battle Factory |
 | `more-cobblemon-contents-pvp` | `more_cobblemon_contents_pvp` | PvP rooms and the battle lounge |
+| `more-cobblemon-contents-league-challenge` | `more_cobblemon_contents_league_challenge` | League Challenge: gyms, the Pokemon League and level caps |
 
 All modules share the package root `jbro.cobblemon.mcc`. Versions live in the root `gradle.properties`
 (`more_cobblemon_contents_version`, `more_cobblemon_contents_battle_tower_version`, ...).

@@ -22,10 +22,6 @@ dependencies {
     testImplementation(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
     modCompileOnly("com.cobblemon:mod:${property("cobblemon_maven_version")}") { isTransitive = false }
     modImplementation("com.cobblemon:fabric:${property("cobblemon_maven_version")}")
-    // Runtime-only companions required by the core; not bundled into the League release.
-    modRuntimeOnly("maven.modrinth:cobblemon-mega-showdown:${property("mega_showdown_version_id")}")
-    modRuntimeOnly("maven.modrinth:architectury-api:${property("architectury_api_version_id")}")
-    modRuntimeOnly("maven.modrinth:accessories:${property("accessories_version_id")}")
     modImplementation("maven.modrinth:pokebadges:A93HZDyB")
     modImplementation("maven.modrinth:cobbled-level-control:uZaphEIC")
     modImplementation("maven.modrinth:matthiesen-core:azvkmoed")
@@ -34,8 +30,6 @@ dependencies {
     runtimeOnly("com.electronwill.night-config:core:3.8.0")
     runtimeOnly("com.electronwill.night-config:toml:3.8.0")
     modCompileOnly("maven.modrinth:modmenu:6lgOkclV")
-    // The retained development spike needs owo's injected vanilla widget interfaces during compilation.
-    modImplementation("io.wispforest:owo-lib:${property("owo_lib_version")}")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("com.google.code.gson:gson:2.11.0")

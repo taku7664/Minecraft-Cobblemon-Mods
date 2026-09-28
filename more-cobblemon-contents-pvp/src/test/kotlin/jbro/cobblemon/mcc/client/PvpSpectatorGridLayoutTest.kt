@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.client
 
+import jbro.cobblemon.uikit.UiRect
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -7,20 +8,20 @@ import org.junit.jupiter.api.Test
 class PvpSpectatorGridLayoutTest {
     @Test
     fun `spectators fill ten vertical rows before adding a centered column`() {
-        val bounds = MccRect(20, 30, 180, 124)
+        val bounds = UiRect(20, 30, 180, 124)
         val layout = PvpSpectatorGridLayout.calculate(bounds, List(11) { 42 })
 
         assertEquals(10, layout.rows)
         assertEquals(2, layout.columns)
-        assertEquals(layout.slots[0].bounds.left, layout.slots[9].bounds.left)
-        assertTrue(layout.slots[10].bounds.left > layout.slots[9].bounds.left)
-        assertEquals(layout.slots[0].bounds.top, layout.slots[10].bounds.top)
-        assertEquals(bounds.left + (bounds.width - layout.block.width) / 2, layout.block.left)
+        assertEquals(layout.slots[0].bounds.x, layout.slots[9].bounds.x)
+        assertTrue(layout.slots[10].bounds.x > layout.slots[9].bounds.x)
+        assertEquals(layout.slots[0].bounds.y, layout.slots[10].bounds.y)
+        assertEquals(bounds.x + (bounds.width - layout.block.width) / 2, layout.block.x)
     }
 
     @Test
     fun `narrow height uses available rows while keeping face and nickname room`() {
-        val bounds = MccRect(7, 11, 96, 40)
+        val bounds = UiRect(7, 11, 96, 40)
         val layout = PvpSpectatorGridLayout.calculate(bounds, listOf(30, 60, 24, 48, 36))
 
         assertEquals(3, layout.rows)
@@ -30,5 +31,5 @@ class PvpSpectatorGridLayoutTest {
     }
 }
 
-private fun MccRect.contains(other: MccRect): Boolean =
-    other.left >= left && other.top >= top && other.right <= right && other.bottom <= bottom
+private fun UiRect.contains(other: UiRect): Boolean =
+    other.x >= x && other.y >= y && other.right <= right && other.bottom <= bottom

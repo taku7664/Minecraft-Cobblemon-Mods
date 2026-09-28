@@ -1,5 +1,8 @@
 package jbro.cobblemon.mcc.client.hub
 
+import jbro.cobblemon.uikit.UiCross
+import jbro.cobblemon.uikit.UiInsets
+import jbro.cobblemon.uikit.UiLayout
 import jbro.cobblemon.uikit.UiRect
 
 /** Logical GUI coordinates of the hub chrome; Minecraft applies the GUI scale afterward. */
@@ -16,12 +19,14 @@ data class MccHubLayout(
 ) {
     val compactTabs: Boolean get() = tabHeight < TAB_HEIGHT
 
-    fun tabButton(index: Int): UiRect = UiRect(
-        rail.x + RAIL_INSET,
-        rail.y + RAIL_INSET + index * (tabHeight + TAB_GAP),
-        rail.width - RAIL_INSET * 2,
-        tabHeight,
-    )
+    /** The rail's tab buttons that fit, top to bottom. */
+    fun tabButtons(): List<UiRect> {
+        val keys = UiLayout.keys("tab", visibleTabCount())
+        return UiLayout.column(gap = TAB_GAP, padding = UiInsets.all(RAIL_INSET)) { keys.forEach { fixed(tabHeight, it) } }
+            .solve(rail).list("tab")
+    }
+
+    fun tabButton(index: Int): UiRect = tabButtons()[index]
 
     fun visibleTabCount(): Int = tabsFitting(rail, tabHeight)
 
@@ -38,27 +43,29 @@ data class MccHubLayout(
         private const val MAX_HEIGHT = 400
 
         private fun tabsFitting(rail: UiRect, tabHeight: Int): Int =
-            ((rail.height - RAIL_INSET * 2 + TAB_GAP) / (tabHeight + TAB_GAP)).coerceAtLeast(0)
+            UiLayout.fittingCount(rail.height - RAIL_INSET * 2, tabHeight, TAB_GAP)
 
         fun calculate(screenWidth: Int, screenHeight: Int, tabCount: Int = 0): MccHubLayout {
             require(screenWidth > 0 && screenHeight > 0)
             val shellWidth = (screenWidth - 12).coerceIn(1, MAX_WIDTH)
             val shellHeight = (screenHeight - 8).coerceIn(1, MAX_HEIGHT)
-            val shell = UiRect((screenWidth - shellWidth) / 2, (screenHeight - shellHeight) / 2, shellWidth, shellHeight)
             val headerHeight = if (shellHeight >= 220) 32 else 26
-            val header = UiRect(shell.x + 4, shell.y + 4, shell.width - 8, headerHeight)
-            val bodyTop = header.bottom + GAP
-            val bodyHeight = (shell.bottom - 6 - bodyTop).coerceAtLeast(1)
-            val railWidth = (shell.width * 22 / 100).coerceIn(84, 120)
-            val rail = UiRect(shell.x + 6, bodyTop, railWidth, bodyHeight)
-            val contentLeft = rail.right + GAP
-            val content = UiRect(contentLeft, bodyTop, (shell.right - 6 - contentLeft).coerceAtLeast(1), bodyHeight)
-            val closeWidth = 52
-            val closeButton = UiRect(header.right - closeWidth - 5, header.y + (header.height - TAB_HEIGHT) / 2, closeWidth, TAB_HEIGHT)
-            val balanceWidth = 90
-            val balance = UiRect(closeButton.x - balanceWidth - 6, header.y + 4, balanceWidth, header.height - 8)
+            val layout = UiLayout.align(UiLayout.layers(UiLayout.leaf("shell"), UiLayout.column(gap = GAP, padding = UiInsets(0, 4, 0, 6)) {
+                fixed(headerHeight, UiLayout.inset(UiLayout.layers(UiLayout.leaf("header"), UiLayout.row(padding = UiInsets(0, 0, 5, 0)) {
+                    spring()
+                    fixed(90, "balance", UiCross(before = 4, after = 4))
+                    space(6)
+                    fixed(52, "close", UiCross.centered(TAB_HEIGHT))
+                }), left = 4, right = 4))
+                weight(UiLayout.row(gap = GAP, padding = UiInsets(6, 0, 6, 0)) {
+                    percent(22, "rail", min = 84, max = 120)
+                    weight("content", min = 1)
+                }, min = 1)
+            }), shellWidth, shellHeight).solve(UiRect(0, 0, screenWidth, screenHeight))
+            val rail = layout["rail"]
             val tabHeight = if (tabsFitting(rail, TAB_HEIGHT) >= tabCount) TAB_HEIGHT else COMPACT_TAB_HEIGHT
-            return MccHubLayout(shell, header, rail, content, closeButton, balance, if (headerHeight >= 32) 2f else 1.5f, tabHeight)
+            return MccHubLayout(layout["shell"], layout["header"], rail, layout["content"], layout["close"], layout["balance"],
+                if (headerHeight >= 32) 2f else 1.5f, tabHeight)
         }
     }
 }

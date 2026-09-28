@@ -28,193 +28,504 @@ data class UiInsets(val left: Int, val top: Int, val right: Int, val bottom: Int
     }
 }
 
-data class UiLayoutItem(
-    val key: String,
-    val width: Int,
-    val height: Int,
-    val weight: Int = 0
-) {
-    init {
-        require(key.isNotBlank()) { "Layout item key must not be blank" }
-        require(width >= 0 && height >= 0) { "Layout item size must not be negative" }
-        require(weight >= 0) { "Layout item weight must not be negative" }
-    }
-}
-
-data class UiLayoutPlacement(val key: String, val bounds: UiRect)
-
 enum class UiAxis { HORIZONTAL, VERTICAL }
+
+/** Where something sits along an axis with room to spare; [STRETCH] fills the room instead. */
 enum class UiCrossAlignment { START, CENTER, END, STRETCH }
 
-data class UiStackLayout(
-    val axis: UiAxis,
-    val gap: Int = 0,
-    val padding: UiInsets = UiInsets.None,
-    val crossAlignment: UiCrossAlignment = UiCrossAlignment.START
-) {
-    init {
-        require(gap >= 0) { "Stack gap must not be negative" }
+/** How a child claims room along its container's main axis, or how a grid track is sized. */
+sealed interface UiLength {
+    /** Exactly [size] pixels. */
+    data class Fixed(val size: Int) : UiLength {
+        init {
+            require(size >= 0) { "Fixed length must not be negative" }
+        }
     }
 
-    fun place(containerWidth: Int, containerHeight: Int, items: List<UiLayoutItem>): List<UiLayoutPlacement> {
-        require(containerWidth >= padding.left + padding.right) { "Stack width is smaller than its padding" }
-        require(containerHeight >= padding.top + padding.bottom) { "Stack height is smaller than its padding" }
-        if (items.isEmpty()) return emptyList()
+    /** The child's own measured size, or for a grid track the largest cell measured in it. */
+    data object Content : UiLength
 
-        val innerWidth = containerWidth - padding.left - padding.right
-        val innerHeight = containerHeight - padding.top - padding.bottom
-        val gapTotal = gap * (items.size - 1)
-        val baseMain = items.sumOf { if (axis == UiAxis.HORIZONTAL) it.width else it.height }
-        val totalWeight = items.sumOf(UiLayoutItem::weight)
-        val extra = max(0, (if (axis == UiAxis.HORIZONTAL) innerWidth else innerHeight) - baseMain - gapTotal)
-        var remainingExtra = extra
-        var remainingWeight = totalWeight
-        var cursor = if (axis == UiAxis.HORIZONTAL) padding.left else padding.top
+    /** [percent] of the container's whole size, padding included, clamped to [min]..[max]. */
+    data class Percent(val percent: Int, val min: Int = 0, val max: Int = Int.MAX_VALUE) : UiLength {
+        init {
+            require(percent >= 0) { "Percent length must not be negative" }
+            require(min in 0..max) { "Percent length bounds are invalid" }
+        }
+    }
 
-        return items.map { item ->
-            val share = if (totalWeight == 0 || item.weight == 0) 0 else {
-                val value = if (item.weight == remainingWeight) {
-                    remainingExtra
-                } else {
-                    remainingExtra * item.weight / remainingWeight
-                }
-                remainingExtra -= value
-                remainingWeight -= item.weight
-                value
-            }
-            val mainSize = (if (axis == UiAxis.HORIZONTAL) item.width else item.height) + share
-            val requestedCross = if (axis == UiAxis.HORIZONTAL) item.height else item.width
-            val availableCross = if (axis == UiAxis.HORIZONTAL) innerHeight else innerWidth
-            val crossSize = if (crossAlignment == UiCrossAlignment.STRETCH) availableCross else requestedCross.coerceAtMost(availableCross)
-            val crossStart = when (crossAlignment) {
-                UiCrossAlignment.START, UiCrossAlignment.STRETCH -> if (axis == UiAxis.HORIZONTAL) padding.top else padding.left
-                UiCrossAlignment.CENTER -> (if (axis == UiAxis.HORIZONTAL) padding.top else padding.left) + (availableCross - crossSize) / 2
-                UiCrossAlignment.END -> (if (axis == UiAxis.HORIZONTAL) padding.top else padding.left) + availableCross - crossSize
-            }
-            val bounds = if (axis == UiAxis.HORIZONTAL) {
-                UiRect(cursor, crossStart, mainSize, crossSize)
+    /**
+     * A [weight] share of the room the sized children leave. A squeezed share is still drawn [min] wide but does
+     * not push its neighbours. A [reserve] makes the sized children give way until the shares keep that much.
+     */
+    data class Weight(val weight: Int = 1, val min: Int = 0, val reserve: Int = 0) : UiLength {
+        init {
+            require(weight > 0) { "Weight must be positive" }
+            require(min >= 0 && reserve >= 0) { "Weight bounds must not be negative" }
+        }
+    }
+}
+
+/**
+ * How a child sits across a row or column: stretched between [before] and [after], or [size] pixels placed by
+ * [align] inside that room.
+ */
+data class UiCross(
+    val size: Int? = null,
+    val align: UiCrossAlignment = UiCrossAlignment.START,
+    val before: Int = 0,
+    val after: Int = 0,
+) {
+    init {
+        require(size == null || size >= 0) { "Cross size must not be negative" }
+        require(before >= 0 && after >= 0) { "Cross margins must not be negative" }
+    }
+
+    companion object {
+        val Stretch = UiCross()
+
+        fun centered(size: Int): UiCross = UiCross(size, UiCrossAlignment.CENTER)
+    }
+}
+
+/** Where a row or column packs its children when they leave room over. */
+enum class UiJustify { START, CENTER, END }
+
+/** Who gets the pixels that dividing the room by weight leaves over. */
+enum class UiRemainder {
+    /** The last weighted child, so the shares end exactly at the container's edge. */
+    LAST,
+
+    /** Nobody: every share is rounded down alike and the rest stays empty after them. */
+    NONE,
+}
+
+/** The order a grid fills its cells in. */
+enum class UiGridOrder { ROW_MAJOR, COLUMN_MAJOR }
+
+/** One child of a row or column. */
+data class UiSlot(val node: UiLayoutNode, val length: UiLength, val cross: UiCross = UiCross.Stretch)
+
+/**
+ * A responsive layout: a tree of containers solved against whatever rectangle it is given. Every leaf with a key
+ * ends up with a rectangle in the [UiLayoutResult]; containers measure their children first for [UiLength.Content]
+ * and [Responsive] nodes rebuild themselves from the size they get. Everything is plain integer arithmetic, so a
+ * layout is testable without Minecraft and lands on whole GUI pixels.
+ */
+sealed class UiLayoutNode {
+    /** The size this node would like, used where a parent sizes it by [UiLength.Content]. */
+    abstract fun measure(): UiSize
+
+    internal abstract fun arrange(bounds: UiRect, into: MutableMap<String, UiRect>)
+
+    fun solve(bounds: UiRect): UiLayoutResult {
+        val rects = LinkedHashMap<String, UiRect>()
+        arrange(bounds, rects)
+        return UiLayoutResult(rects)
+    }
+
+    /** A rectangle the result names [key]; a leaf without a key only takes room. */
+    class Leaf(val key: String?, private val width: Int = 0, private val height: Int = 0) : UiLayoutNode() {
+        init {
+            require(key == null || key.isNotBlank()) { "Layout keys must not be blank" }
+            require(width >= 0 && height >= 0) { "Leaf size must not be negative" }
+        }
+
+        override fun measure() = UiSize(width, height)
+
+        override fun arrange(bounds: UiRect, into: MutableMap<String, UiRect>) {
+            val key = key ?: return
+            require(key !in into) { "Layout key $key is used twice" }
+            into[key] = bounds
+        }
+    }
+
+    /** Children side by side along [axis], [gap] apart inside [padding]. */
+    class Linear(
+        val axis: UiAxis,
+        val slots: List<UiSlot>,
+        val gap: Int = 0,
+        val padding: UiInsets = UiInsets.None,
+        val justify: UiJustify = UiJustify.START,
+        val remainder: UiRemainder = UiRemainder.LAST,
+    ) : UiLayoutNode() {
+        init {
+            require(gap >= 0) { "Gap must not be negative" }
+        }
+
+        private val horizontal get() = axis == UiAxis.HORIZONTAL
+
+        override fun measure(): UiSize {
+            val main = slots.sumOf { slot -> lengthFloor(slot.length) { slot.node.measure().along(axis) } } +
+                gap * (slots.size - 1).coerceAtLeast(0)
+            val cross = slots.maxOfOrNull { slot ->
+                (slot.cross.size ?: slot.node.measure().across(axis)) + slot.cross.before + slot.cross.after
+            } ?: 0
+            return if (horizontal) {
+                UiSize(main + padding.left + padding.right, cross + padding.top + padding.bottom)
             } else {
-                UiRect(crossStart, cursor, crossSize, mainSize)
+                UiSize(cross + padding.left + padding.right, main + padding.top + padding.bottom)
             }
-            cursor += mainSize + gap
-            UiLayoutPlacement(item.key, bounds)
+        }
+
+        override fun arrange(bounds: UiRect, into: MutableMap<String, UiRect>) {
+            val outer = if (horizontal) bounds.width else bounds.height
+            val mainStart = if (horizontal) bounds.x + padding.left else bounds.y + padding.top
+            val inner = outer - if (horizontal) padding.left + padding.right else padding.top + padding.bottom
+            val crossStart = if (horizontal) bounds.y + padding.top else bounds.x + padding.left
+            val crossInner = if (horizontal) bounds.height - padding.top - padding.bottom else bounds.width - padding.left - padding.right
+            val tracks = solveTracks(slots.map(UiSlot::length), { slots[it].node.measure().along(axis) }, outer, inner, gap, remainder)
+            val used = tracks.raw.sum() + gap * (slots.size - 1).coerceAtLeast(0)
+            var cursor = mainStart + when (justify) {
+                UiJustify.START -> 0
+                UiJustify.CENTER -> (inner - used) / 2
+                UiJustify.END -> inner - used
+            }
+            slots.forEachIndexed { index, slot ->
+                val (crossAt, crossSize) = place(slot.cross, crossStart, crossInner)
+                val size = tracks.shown[index]
+                val rect = if (horizontal) UiRect(cursor, crossAt, size, crossSize) else UiRect(crossAt, cursor, crossSize, size)
+                slot.node.arrange(rect, into)
+                cursor += tracks.raw[index] + gap
+            }
+        }
+
+        private fun place(cross: UiCross, start: Int, room: Int): Pair<Int, Int> {
+            val regionStart = start + cross.before
+            val region = room - cross.before - cross.after
+            val size = cross.size
+            if (size == null || cross.align == UiCrossAlignment.STRETCH) return regionStart to region.coerceAtLeast(0)
+            return when (cross.align) {
+                UiCrossAlignment.CENTER -> regionStart + (region - size) / 2
+                UiCrossAlignment.END -> regionStart + region - size
+                else -> regionStart
+            } to size
         }
     }
-}
 
-data class UiFlowLayout(
-    val horizontalGap: Int = 0,
-    val verticalGap: Int = 0,
-    val padding: UiInsets = UiInsets.None
-) {
-    init {
-        require(horizontalGap >= 0 && verticalGap >= 0) { "Flow gaps must not be negative" }
-    }
+    /** [child] moved in by each edge; a negative edge reaches out past the bounds. Sizes stay at least [min]. */
+    class Inset(
+        val child: UiLayoutNode,
+        val left: Int = 0,
+        val top: Int = 0,
+        val right: Int = 0,
+        val bottom: Int = 0,
+        val min: Int = 0,
+    ) : UiLayoutNode() {
+        init {
+            require(min >= 0) { "Inset minimum must not be negative" }
+        }
 
-    fun place(containerWidth: Int, items: List<UiLayoutItem>): List<UiLayoutPlacement> {
-        val right = containerWidth - padding.right
-        require(right >= padding.left) { "Flow width is smaller than its padding" }
-        var x = padding.left
-        var y = padding.top
-        var rowHeight = 0
-        return items.map { item ->
-            val itemWidth = item.width.coerceAtMost(right - padding.left)
-            if (x != padding.left && x + itemWidth > right) {
-                x = padding.left
-                y += rowHeight + verticalGap
-                rowHeight = 0
-            }
-            val placement = UiLayoutPlacement(item.key, UiRect(x, y, itemWidth, item.height))
-            x += itemWidth + horizontalGap
-            rowHeight = max(rowHeight, item.height)
-            placement
+        override fun measure(): UiSize = child.measure().let {
+            UiSize((it.width + left + right).coerceAtLeast(0), (it.height + top + bottom).coerceAtLeast(0))
+        }
+
+        override fun arrange(bounds: UiRect, into: MutableMap<String, UiRect>) {
+            child.arrange(UiRect(bounds.x + left, bounds.y + top,
+                (bounds.width - left - right).coerceAtLeast(min), (bounds.height - top - bottom).coerceAtLeast(min)), into)
         }
     }
-}
 
-data class UiGridLayout(
-    val columns: Int,
-    val horizontalGap: Int = 0,
-    val verticalGap: Int = 0,
-    val padding: UiInsets = UiInsets.None
-) {
-    init {
-        require(columns > 0) { "Grid columns must be positive" }
-        require(horizontalGap >= 0 && verticalGap >= 0) { "Grid gaps must not be negative" }
-    }
-
-    fun place(containerWidth: Int, items: List<UiLayoutItem>): List<UiLayoutPlacement> {
-        val innerWidth = containerWidth - padding.left - padding.right
-        val gapTotal = horizontalGap * (columns - 1)
-        require(innerWidth >= gapTotal) { "Grid width is smaller than its gaps and padding" }
-        val columnWidth = (innerWidth - gapTotal) / columns
-        val result = mutableListOf<UiLayoutPlacement>()
-        var rowTop = padding.top
-        items.chunked(columns).forEach { row ->
-            val rowHeight = row.maxOfOrNull(UiLayoutItem::height) ?: 0
-            row.forEachIndexed { column, item ->
-                val x = padding.left + column * (columnWidth + horizontalGap)
-                result += UiLayoutPlacement(item.key, UiRect(x, rowTop, columnWidth, item.height))
-            }
-            rowTop += rowHeight + verticalGap
+    /**
+     * [child] at [width] x [height] (null fills that axis) placed by [horizontal] and [vertical]. [fit] shrinks it
+     * to the bounds; [pinStart] keeps an oversized child from starting before the bounds do.
+     */
+    class Align(
+        val child: UiLayoutNode,
+        val width: Int? = null,
+        val height: Int? = null,
+        val horizontal: UiCrossAlignment = UiCrossAlignment.CENTER,
+        val vertical: UiCrossAlignment = UiCrossAlignment.CENTER,
+        val fit: Boolean = false,
+        val pinStart: Boolean = false,
+    ) : UiLayoutNode() {
+        init {
+            require((width ?: 0) >= 0 && (height ?: 0) >= 0) { "Aligned size must not be negative" }
         }
-        return result
-    }
-}
 
-enum class UiAnchor {
-    TOP_LEFT,
-    TOP_CENTER,
-    TOP_RIGHT,
-    CENTER_LEFT,
-    CENTER,
-    CENTER_RIGHT,
-    BOTTOM_LEFT,
-    BOTTOM_CENTER,
-    BOTTOM_RIGHT
-}
+        override fun measure(): UiSize = child.measure().let { UiSize(width ?: it.width, height ?: it.height) }
 
-data class UiAnchoredItem(
-    val key: String,
-    val width: Int,
-    val height: Int,
-    val anchor: UiAnchor,
-    val offsetX: Int = 0,
-    val offsetY: Int = 0
-) {
-    init {
-        require(key.isNotBlank()) { "Anchored item key must not be blank" }
-        require(width >= 0 && height >= 0) { "Anchored item size must not be negative" }
-    }
-}
+        override fun arrange(bounds: UiRect, into: MutableMap<String, UiRect>) {
+            val (x, w) = axis(bounds.x, bounds.width, width, horizontal)
+            val (y, h) = axis(bounds.y, bounds.height, height, vertical)
+            child.arrange(UiRect(x, y, w, h), into)
+        }
 
-data class UiAnchorLayout(val padding: UiInsets = UiInsets.None) {
-    fun place(width: Int, height: Int, items: List<UiAnchoredItem>): List<UiLayoutPlacement> {
-        require(width >= padding.left + padding.right) { "Anchor layout width is smaller than its padding" }
-        require(height >= padding.top + padding.bottom) { "Anchor layout height is smaller than its padding" }
-        require(items.map(UiAnchoredItem::key).distinct().size == items.size) { "Anchor layout keys must be unique" }
-        val innerWidth = width - padding.left - padding.right
-        val innerHeight = height - padding.top - padding.bottom
-        return items.map { item ->
-            val horizontal = when (item.anchor) {
-                UiAnchor.TOP_LEFT, UiAnchor.CENTER_LEFT, UiAnchor.BOTTOM_LEFT -> 0
-                UiAnchor.TOP_CENTER, UiAnchor.CENTER, UiAnchor.BOTTOM_CENTER -> (innerWidth - item.width) / 2
-                UiAnchor.TOP_RIGHT, UiAnchor.CENTER_RIGHT, UiAnchor.BOTTOM_RIGHT -> innerWidth - item.width
+        private fun axis(start: Int, room: Int, wanted: Int?, align: UiCrossAlignment): Pair<Int, Int> {
+            if (wanted == null || align == UiCrossAlignment.STRETCH) return start to room
+            val size = if (fit) wanted.coerceAtMost(room) else wanted
+            val offset = when (align) {
+                UiCrossAlignment.CENTER -> (room - size) / 2
+                UiCrossAlignment.END -> room - size
+                else -> 0
             }
-            val vertical = when (item.anchor) {
-                UiAnchor.TOP_LEFT, UiAnchor.TOP_CENTER, UiAnchor.TOP_RIGHT -> 0
-                UiAnchor.CENTER_LEFT, UiAnchor.CENTER, UiAnchor.CENTER_RIGHT -> (innerHeight - item.height) / 2
-                UiAnchor.BOTTOM_LEFT, UiAnchor.BOTTOM_CENTER, UiAnchor.BOTTOM_RIGHT -> innerHeight - item.height
-            }
-            UiLayoutPlacement(
-                item.key,
-                UiRect(
-                    padding.left + horizontal + item.offsetX,
-                    padding.top + vertical + item.offsetY,
-                    item.width,
-                    item.height
-                )
-            )
+            return start + (if (pinStart) offset.coerceAtLeast(0) else offset) to size
         }
     }
+
+    /**
+     * [cells] in a grid of [columns] by [rows] tracks. A [UiLength.Content] column is as wide as its widest cell,
+     * which lines up the controls after a label column however long each label is.
+     */
+    class Grid(
+        val columns: List<UiLength>,
+        val rows: List<UiLength>,
+        val cells: List<UiLayoutNode>,
+        val columnGap: Int = 0,
+        val rowGap: Int = 0,
+        val order: UiGridOrder = UiGridOrder.ROW_MAJOR,
+        val remainder: UiRemainder = UiRemainder.LAST,
+    ) : UiLayoutNode() {
+        init {
+            require(columns.isNotEmpty() && rows.isNotEmpty()) { "A grid needs tracks" }
+            require(cells.size <= columns.size * rows.size) { "A grid has more cells than tracks hold" }
+            require(columnGap >= 0 && rowGap >= 0) { "Grid gaps must not be negative" }
+        }
+
+        private fun cellAt(index: Int): Pair<Int, Int> = when (order) {
+            UiGridOrder.ROW_MAJOR -> index / columns.size to index % columns.size
+            UiGridOrder.COLUMN_MAJOR -> index % rows.size to index / rows.size
+        }
+
+        private fun measured(axis: UiAxis, track: Int): Int = cells.indices
+            .filter { cellAt(it).let { (row, column) -> if (axis == UiAxis.HORIZONTAL) column == track else row == track } }
+            .maxOfOrNull { cells[it].measure().along(axis) } ?: 0
+
+        override fun measure(): UiSize = UiSize(
+            columns.indices.sumOf { lengthFloor(columns[it]) { measured(UiAxis.HORIZONTAL, it) } } + columnGap * (columns.size - 1),
+            rows.indices.sumOf { lengthFloor(rows[it]) { measured(UiAxis.VERTICAL, it) } } + rowGap * (rows.size - 1),
+        )
+
+        override fun arrange(bounds: UiRect, into: MutableMap<String, UiRect>) {
+            val widths = solveTracks(columns, { measured(UiAxis.HORIZONTAL, it) }, bounds.width, bounds.width, columnGap, remainder)
+            val heights = solveTracks(rows, { measured(UiAxis.VERTICAL, it) }, bounds.height, bounds.height, rowGap, remainder)
+            val xs = widths.starts(bounds.x, columnGap)
+            val ys = heights.starts(bounds.y, rowGap)
+            cells.forEachIndexed { index, cell ->
+                val (row, column) = cellAt(index)
+                cell.arrange(UiRect(xs[column], ys[row], widths.shown[column], heights.shown[row]), into)
+            }
+        }
+    }
+
+    /** [children] at their measured sizes, left to right, wrapping to a new line when the next one would not fit. */
+    class Flow(
+        val children: List<UiLayoutNode>,
+        val horizontalGap: Int = 0,
+        val verticalGap: Int = 0,
+    ) : UiLayoutNode() {
+        init {
+            require(horizontalGap >= 0 && verticalGap >= 0) { "Flow gaps must not be negative" }
+        }
+
+        override fun measure(): UiSize {
+            val sizes = children.map(UiLayoutNode::measure)
+            return UiSize(sizes.sumOf(UiSize::width) + horizontalGap * (sizes.size - 1).coerceAtLeast(0), sizes.maxOfOrNull(UiSize::height) ?: 0)
+        }
+
+        override fun arrange(bounds: UiRect, into: MutableMap<String, UiRect>) {
+            var x = bounds.x
+            var y = bounds.y
+            var lineHeight = 0
+            children.forEach { child ->
+                val size = child.measure()
+                if (x != bounds.x && x + size.width > bounds.right) {
+                    x = bounds.x
+                    y += lineHeight + verticalGap
+                    lineHeight = 0
+                }
+                child.arrange(UiRect(x, y, size.width, size.height), into)
+                x += size.width + horizontalGap
+                lineHeight = max(lineHeight, size.height)
+            }
+        }
+    }
+
+    /** [children] stacked over the same bounds, such as a frame and what sits inside it. */
+    class Layers(val children: List<UiLayoutNode>) : UiLayoutNode() {
+        override fun measure(): UiSize = children.map(UiLayoutNode::measure).let { sizes ->
+            UiSize(sizes.maxOfOrNull(UiSize::width) ?: 0, sizes.maxOfOrNull(UiSize::height) ?: 0)
+        }
+
+        override fun arrange(bounds: UiRect, into: MutableMap<String, UiRect>) = children.forEach { it.arrange(bounds, into) }
+    }
+
+    /** A node built from the size it is given, for layouts that change shape as the room grows or shrinks. */
+    class Responsive(private val preferred: UiSize = UiSize(0, 0), val build: (UiSize) -> UiLayoutNode) : UiLayoutNode() {
+        override fun measure(): UiSize = preferred
+
+        override fun arrange(bounds: UiRect, into: MutableMap<String, UiRect>) =
+            build(UiSize(bounds.width, bounds.height)).arrange(bounds, into)
+    }
+}
+
+/** The rectangles a solved layout gave its keyed leaves. */
+class UiLayoutResult internal constructor(private val rects: Map<String, UiRect>) {
+    val keys: Set<String> get() = rects.keys
+
+    operator fun get(key: String): UiRect = requireNotNull(rects[key]) { "Layout has no rectangle named $key" }
+
+    fun find(key: String): UiRect? = rects[key]
+
+    /** The rectangles named `prefix.0`, `prefix.1`, ... in order, as [UiLayout.keys] makes them. */
+    fun list(prefix: String): List<UiRect> = generateSequence(0) { it + 1 }.map { rects["$prefix.$it"] }.takeWhile { it != null }
+        .map { it!! }.toList()
+}
+
+/** Builds the children of a row or column. */
+class UiLinearBuilder internal constructor() {
+    internal val slots = mutableListOf<UiSlot>()
+
+    fun add(node: UiLayoutNode, length: UiLength, cross: UiCross = UiCross.Stretch) {
+        slots += UiSlot(node, length, cross)
+    }
+
+    fun fixed(size: Int, node: UiLayoutNode, cross: UiCross = UiCross.Stretch) = add(node, UiLength.Fixed(size), cross)
+    fun fixed(size: Int, key: String, cross: UiCross = UiCross.Stretch) = fixed(size, UiLayout.leaf(key), cross)
+
+    fun weight(node: UiLayoutNode, weight: Int = 1, min: Int = 0, reserve: Int = 0, cross: UiCross = UiCross.Stretch) =
+        add(node, UiLength.Weight(weight, min, reserve), cross)
+
+    fun weight(key: String, weight: Int = 1, min: Int = 0, reserve: Int = 0, cross: UiCross = UiCross.Stretch) =
+        weight(UiLayout.leaf(key), weight, min, reserve, cross)
+
+    fun percent(percent: Int, node: UiLayoutNode, min: Int = 0, max: Int = Int.MAX_VALUE, cross: UiCross = UiCross.Stretch) =
+        add(node, UiLength.Percent(percent, min, max), cross)
+
+    fun percent(percent: Int, key: String, min: Int = 0, max: Int = Int.MAX_VALUE, cross: UiCross = UiCross.Stretch) =
+        percent(percent, UiLayout.leaf(key), min, max, cross)
+
+    fun content(node: UiLayoutNode, cross: UiCross = UiCross.Stretch) = add(node, UiLength.Content, cross)
+
+    /** Empty room of [size] pixels; a container's own gap still applies around it. */
+    fun space(size: Int) = add(UiLayout.space(), UiLength.Fixed(size))
+
+    /** Empty room that takes a [weight] share, pushing what follows towards the far edge. */
+    fun spring(weight: Int = 1) = add(UiLayout.space(), UiLength.Weight(weight))
+}
+
+/** Entry points for building [UiLayoutNode] trees. */
+object UiLayout {
+    fun leaf(key: String, width: Int = 0, height: Int = 0): UiLayoutNode = UiLayoutNode.Leaf(key, width, height)
+
+    fun space(width: Int = 0, height: Int = 0): UiLayoutNode = UiLayoutNode.Leaf(null, width, height)
+
+    fun row(
+        gap: Int = 0,
+        padding: UiInsets = UiInsets.None,
+        justify: UiJustify = UiJustify.START,
+        remainder: UiRemainder = UiRemainder.LAST,
+        build: UiLinearBuilder.() -> Unit,
+    ): UiLayoutNode = UiLayoutNode.Linear(UiAxis.HORIZONTAL, UiLinearBuilder().apply(build).slots, gap, padding, justify, remainder)
+
+    fun column(
+        gap: Int = 0,
+        padding: UiInsets = UiInsets.None,
+        justify: UiJustify = UiJustify.START,
+        remainder: UiRemainder = UiRemainder.LAST,
+        build: UiLinearBuilder.() -> Unit,
+    ): UiLayoutNode = UiLayoutNode.Linear(UiAxis.VERTICAL, UiLinearBuilder().apply(build).slots, gap, padding, justify, remainder)
+
+    fun inset(child: UiLayoutNode, left: Int = 0, top: Int = 0, right: Int = 0, bottom: Int = 0, min: Int = 0): UiLayoutNode =
+        UiLayoutNode.Inset(child, left, top, right, bottom, min)
+
+    fun align(
+        child: UiLayoutNode,
+        width: Int? = null,
+        height: Int? = null,
+        horizontal: UiCrossAlignment = UiCrossAlignment.CENTER,
+        vertical: UiCrossAlignment = UiCrossAlignment.CENTER,
+        fit: Boolean = false,
+        pinStart: Boolean = false,
+    ): UiLayoutNode = UiLayoutNode.Align(child, width, height, horizontal, vertical, fit, pinStart)
+
+    fun grid(
+        columns: List<UiLength>,
+        rows: List<UiLength>,
+        cells: List<UiLayoutNode>,
+        columnGap: Int = 0,
+        rowGap: Int = 0,
+        order: UiGridOrder = UiGridOrder.ROW_MAJOR,
+        remainder: UiRemainder = UiRemainder.LAST,
+    ): UiLayoutNode = UiLayoutNode.Grid(columns, rows, cells, columnGap, rowGap, order, remainder)
+
+    fun flow(children: List<UiLayoutNode>, horizontalGap: Int = 0, verticalGap: Int = 0): UiLayoutNode =
+        UiLayoutNode.Flow(children, horizontalGap, verticalGap)
+
+    fun layers(vararg children: UiLayoutNode): UiLayoutNode = UiLayoutNode.Layers(children.toList())
+
+    fun responsive(preferred: UiSize = UiSize(0, 0), build: (UiSize) -> UiLayoutNode): UiLayoutNode =
+        UiLayoutNode.Responsive(preferred, build)
+
+    /** `prefix.0` .. `prefix.(count - 1)`, the keys [UiLayoutResult.list] reads back. */
+    fun keys(prefix: String, count: Int): List<String> = (0 until count).map { "$prefix.$it" }
+
+    /** How many items [size] tall fit in [space] with [gap] between neighbours. */
+    fun fittingCount(space: Int, size: Int, gap: Int = 0): Int {
+        require(size + gap > 0) { "Items must take room" }
+        return ((space + gap) / (size + gap)).coerceAtLeast(0)
+    }
+
+    /** [count] positions spread evenly from [first] to [last]; a single one sits halfway. */
+    fun spread(first: Int, last: Int, count: Int): List<Int> = when {
+        count <= 0 -> emptyList()
+        count == 1 -> listOf((first + last) / 2)
+        else -> (0 until count).map { index -> first + (last - first) * index / (count - 1) }
+    }
+}
+
+private fun UiSize.along(axis: UiAxis): Int = if (axis == UiAxis.HORIZONTAL) width else height
+private fun UiSize.across(axis: UiAxis): Int = if (axis == UiAxis.HORIZONTAL) height else width
+
+/** The smallest a length can be, for measuring a container. */
+private inline fun lengthFloor(length: UiLength, measured: () -> Int): Int = when (length) {
+    is UiLength.Fixed -> length.size
+    UiLength.Content -> measured()
+    is UiLength.Percent -> length.min
+    is UiLength.Weight -> length.min
+}
+
+/** Track sizes along one axis: [raw] moves the cursor, [shown] is what each track is drawn at. */
+private class Tracks(val raw: IntArray, val shown: IntArray) {
+    fun starts(origin: Int, gap: Int): IntArray {
+        var cursor = origin
+        return IntArray(raw.size) { index -> cursor.also { cursor += raw[index] + gap } }
+    }
+}
+
+private fun solveTracks(
+    lengths: List<UiLength>,
+    measured: (Int) -> Int,
+    outer: Int,
+    inner: Int,
+    gap: Int,
+    remainder: UiRemainder,
+): Tracks {
+    val raw = IntArray(lengths.size)
+    val gaps = gap * (lengths.size - 1).coerceAtLeast(0)
+    val reserve = lengths.sumOf { (it as? UiLength.Weight)?.reserve ?: 0 }
+    var sized = 0
+    lengths.forEachIndexed { index, length ->
+        val size = when (length) {
+            is UiLength.Fixed -> length.size
+            UiLength.Content -> measured(index)
+            is UiLength.Percent -> (outer * length.percent / 100).coerceIn(length.min, length.max)
+            is UiLength.Weight -> return@forEachIndexed
+        }
+        raw[index] = if (reserve > 0) size.coerceAtMost((inner - gaps - reserve - sized).coerceAtLeast(1)) else size
+        sized += raw[index]
+    }
+    val room = inner - gaps - sized
+    val totalWeight = lengths.sumOf { (it as? UiLength.Weight)?.weight ?: 0 }
+    val lastWeighted = lengths.indexOfLast { it is UiLength.Weight }
+    var given = 0
+    lengths.forEachIndexed { index, length ->
+        if (length !is UiLength.Weight) return@forEachIndexed
+        raw[index] = if (remainder == UiRemainder.LAST && index == lastWeighted) room - given else room * length.weight / totalWeight
+        given += raw[index]
+    }
+    val shown = IntArray(lengths.size) { index ->
+        val length = lengths[index]
+        (if (length is UiLength.Weight) max(raw[index], length.min) else raw[index]).coerceAtLeast(0)
+    }
+    return Tracks(raw, shown)
 }

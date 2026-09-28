@@ -87,9 +87,9 @@
       "trainer": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
       "pvp": "cobleserver:battle_pvp",
       "content": {
-        "cobblemon_more_battle_content:battle_tower": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
-        "cobblemon_more_battle_content:battle_factory": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
-        "cobblemon_more_battle_content:pvp": "cobleserver:battle_pvp"
+        "more_cobblemon_contents:battle_tower": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
+        "more_cobblemon_contents:battle_factory": "cobleserver:track/battle/trainer/sinnoh_trainer_battle",
+        "more_cobblemon_contents:pvp": "cobleserver:battle_pvp"
       },
       "legendary": "cobleserver:battle_legendary_generic",
       "ultraBeast": "cobleserver:track/battle/ultra_beast/alola_ultra_beast_battle",

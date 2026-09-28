@@ -30,7 +30,7 @@ final class LegacyMusicConfigMigratorTest {
 
         assertEquals(
             "cobleserver:gym",
-            result.overrides().battle().content().get("cobblemon_more_battle_content:battle_tower")
+            result.overrides().battle().content().get("more_cobblemon_contents:battle_tower")
         );
         assertEquals(1, result.overrides().battle().content().size());
         assertFalse(result.overrides().field().biomes().containsKey("minecraft:plains"));
@@ -89,7 +89,7 @@ final class LegacyMusicConfigMigratorTest {
                   "trainer": "cobleserver:trainer",
                   "pvp": "cobleserver:pvp",
                   "content": {
-                    "cobblemon_more_battle_content:battle_tower": "cobleserver:trainer"
+                    "more_cobblemon_contents:battle_tower": "cobleserver:trainer"
                   },
                   "legendary": "cobleserver:wild",
                   "ultraBeast": "cobleserver:wild",
@@ -109,6 +109,6 @@ final class LegacyMusicConfigMigratorTest {
     private static String legacyJson(String towerTrack) {
         return MusicCatalogConfigStoreTest.legacyJson()
             .replace("\"biomes\": {}", "\"biomes\": {\"minecraft:plains\": \"field/plains.ogg\"}")
-            .replace("\"content\": {}", "\"content\": {\"cobblemon_more_battle_content:battle_tower\": \"" + towerTrack + "\"}");
+            .replace("\"content\": {}", "\"content\": {\"more_cobblemon_contents:battle_tower\": \"" + towerTrack + "\"}");
     }
 }
