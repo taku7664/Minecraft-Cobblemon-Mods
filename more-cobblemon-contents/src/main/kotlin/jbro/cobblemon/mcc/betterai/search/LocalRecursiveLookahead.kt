@@ -239,6 +239,8 @@ internal object LocalRecursiveLookaheadEvaluator {
                 searchableActionIds(ranked.filterNot { it.outcome.candidate.actionId in excludedActionIds }, tuning, context)
             }
             val evaluatedCoverage = mutableMapOf<String, LocalLookaheadCoverage>()
+            // Each rank this depth produced, with its unbounded adjustment; see boundSharedAdjustments.
+            val producedAdjustments = java.util.IdentityHashMap<LocalBattleActionRank, RawAdjustment>()
             fun evaluateRank(rank: LocalBattleActionRank): LocalBattleActionRank {
                 val id = rank.outcome.candidate.actionId
                 if ((tuning.revalidateUnsearchedRootLeaders || rootChoicePool != null) && depth > 1 && id !in singlePlyGain) {
@@ -309,7 +311,8 @@ internal object LocalRecursiveLookaheadEvaluator {
                         rank.outcome.statStageUtility * (1.0 - authority)
                     // Future unknown replacements must not discount an already modelled current turn.
                     val rawAdjustment = immediateAdjustment * coverage.immediate + foresightGain * coverage.future
-                    val adjustment = if (kotlin.math.abs(searchBoardGain) >= TERMINAL_SCORE_THRESHOLD) {
+                    val terminal = kotlin.math.abs(searchBoardGain) >= TERMINAL_SCORE_THRESHOLD
+                    val adjustment = if (terminal || tuning.sharedAdjustmentBound) {
                         rawAdjustment
                     } else {
                         rawAdjustment.coerceIn(-tuning.maximumLookaheadAdjustment, tuning.maximumLookaheadAdjustment)
@@ -350,7 +353,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                         worstConfirmedResponseHpRetention = evaluation.worstConfirmedResponseRemainingHp
                             ?.let { retention(it, responseHpBaseline) }
                             ?: 1.0,
-                    )
+                    ).also { producedAdjustments[it] = RawAdjustment(rawAdjustment, terminal) }
                 }
             }
             // Candidates this depth finished. A deeper depth takes them in the previous depth's order, so the
@@ -400,6 +403,9 @@ internal object LocalRecursiveLookaheadEvaluator {
                     evaluated[index] = evaluateRank(ranked[index])
                     if (leaderId !in evaluatedCoverage) break
                 }
+            }
+            if (tuning.sharedAdjustmentBound) {
+                boundSharedAdjustments(evaluated, producedAdjustments, tuning.maximumLookaheadAdjustment)
             }
             totalNodes += search.nodesVisited
             totalBranchesPruned += search.branchesPruned
@@ -1225,6 +1231,37 @@ internal object LocalRecursiveLookaheadEvaluator {
     private const val BOARD_TO_SCORE = 100.0
     private const val TERMINAL_SCORE_THRESHOLD = 10_000.0
     private const val MAX_ADJUSTMENT = 800.0
+
+    private class RawAdjustment(val value: Double, val terminal: Boolean)
+
+    /**
+     * Bounds the search's say by [limit] without erasing the differences between candidates. Bounding each
+     * candidate on its own flattened a loss every choice shares: a critical hit that knocks out the last
+     * Pokemon one time in 24 costs every candidate over the bound, and they all came back equal, handing the
+     * choice to the heuristic. The bound applies to the best candidate's adjustment, the rest keep their gap
+     * to it up to twice the bound. A terminal verdict is taken whole, as before.
+     */
+    private fun boundSharedAdjustments(
+        evaluated: MutableList<LocalBattleActionRank>,
+        produced: java.util.IdentityHashMap<LocalBattleActionRank, RawAdjustment>,
+        limit: Double,
+    ) {
+        val raws = evaluated.mapNotNull { produced[it] }
+        if (raws.isEmpty() || raws.any { it.terminal }) return
+        val reference = raws.maxOf { it.value }
+        val boundedReference = reference.coerceIn(-limit, limit)
+        for (index in evaluated.indices) {
+            val rank = evaluated[index]
+            val raw = produced[rank]?.value ?: continue
+            val shift = boundedReference + (raw - reference).coerceAtLeast(-2.0 * limit) - raw
+            if (shift != 0.0) {
+                evaluated[index] = rank.copy(
+                    comparisonValue = rank.comparisonValue + shift,
+                    lookaheadUtility = rank.lookaheadUtility + shift,
+                )
+            }
+        }
+    }
     private const val DEADLINE_MARGIN_MILLIS = 20L
     private const val FUTURE_DELTA_DISCOUNT = 0.90
     private const val UNKNOWN_RESPONSE_RESERVE = 0.20

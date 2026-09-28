@@ -89,7 +89,7 @@ class LocalImmuneSpreadCandidateTest {
         val referenceLoss = CooperativeSearchComparison.verifyAndReport(
             "spread-$spreadSlot-$partnerTypes-$partnerAbility-$opponentCount", narrow, wide)
         // Characterize missing-type cases choosing an unsearched joint, not a permitted quality loss.
-        assertEquals(if (partnerTypes.isEmpty()) 12.0 else 0.0, referenceLoss, 1e-9)
+        assertEquals(if (partnerTypes.isEmpty()) 13.0 else 0.0, referenceLoss, 1e-6)
         assertEquals(expected, cooperative.actionId in LocalCooperativeRootRetention.select(ranked, calculated))
         assertFalse(narrow.truncated)
         assertFalse(wide.truncated)

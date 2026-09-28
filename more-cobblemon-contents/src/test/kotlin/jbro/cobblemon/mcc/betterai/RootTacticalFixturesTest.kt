@@ -89,7 +89,7 @@ class RootTacticalFixturesTest {
     }
 
     @Test
-    fun `setup grid shows third turn setup windows are beyond current boss depth`() {
+    fun `setup grid sets up only where a deeper search agrees`() {
         val introductoryDepth = BattleDifficultyProfiles.INTRODUCTORY.lookaheadPlies
         val bossDepth = BattleDifficultyProfiles.BOSS.lookaheadPlies
         val choices = RootTacticalFixtures.all().filter { it.family == "SETUP_WINDOW" }.map { fixture ->
@@ -101,7 +101,11 @@ class RootTacticalFixturesTest {
                 thirdTurn.isolatedRanking.first())
         }
         assertTrue(choices.all { it[1] == "strike" }, "Introductory depth unexpectedly sets up: $choices")
-        assertTrue(choices.all { it[2] == "strike" }, "Boss depth unexpectedly sees third-turn setup: $choices")
+        // Boss depth sees two turns: it may set up where setting up and then striking deals what two strikes
+        // would, but only where the three-turn search sets up too, and never at low HP against a real reply.
+        assertTrue(choices.all { it[2] == "strike" || it[3] == "setup" }, "Boss depth sets up where three turns would not: $choices")
+        assertTrue(choices.none { it[2] == "setup" && it[0].startsWith("setup_hp40_") && !it[0].endsWith("_reply30") },
+            "Boss depth sets up at low HP against a real reply: $choices")
         assertTrue(choices.any { it[3] == "setup" }, "The fixture has no third-turn setup window: $choices")
     }
 }

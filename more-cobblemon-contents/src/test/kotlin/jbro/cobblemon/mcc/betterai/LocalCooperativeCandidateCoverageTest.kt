@@ -148,7 +148,7 @@ class LocalCooperativeCandidateCoverageTest {
         val referenceLoss = CooperativeSearchComparison.verifyAndReport(
             "redirect-$redirectId-$drawerSlot-$stages-$probability", narrow, wide)
         // Characterize the current unsearched-Splash ranking defect; not a desired loss allowance.
-        assertEquals(if (redirectId == "splash") 31.5 else 0.0, referenceLoss, 1e-9)
+        assertEquals(if (redirectId == "splash") 34.0 else 0.0, referenceLoss, 1e-9)
         assertFalse(narrow.truncated)
         assertFalse(wide.truncated)
         assertEquals(1, narrow.depthCompleted)

@@ -57,6 +57,12 @@ internal data class LocalDecisionTuning(
     val lookaheadLinearCoverage: Boolean = true,
     val maximumLookaheadAdjustment: Double = 800.0,
     /**
+     * When true, [maximumLookaheadAdjustment] bounds the best candidate's adjustment and the others keep their
+     * gap to it; when false, each candidate is cut at the bound on its own, and a loss they all share can
+     * flatten them into a tie.
+     */
+    val sharedAdjustmentBound: Boolean = true,
+    /**
      * How much of the value judgement belongs to the search rather than to the immediate heuristic.
      *
      * Zero leaves the heuristic deciding and the search advising, which is what shipped and what was
@@ -102,7 +108,7 @@ internal data class LocalDecisionTuning(
     val intentResponseWeight: Double = 0.3,
     /** How the search's projected hits branch on damage rolls and critical hits. */
     val chanceModel: jbro.cobblemon.mcc.betterai.calculation.LocalChanceModel =
-        jbro.cobblemon.mcc.betterai.calculation.LocalChanceModel.MEDIAN_ROLL,
+        jbro.cobblemon.mcc.betterai.calculation.LocalChanceModel.HIGH_ROLL,
     /** Experimental public team matchup coverage in board units; zero preserves the default leaf. */
     val leafTeamCoverageWeight: Double = 0.0,
     /** Board value of a certain knockout threat in the leaf, beyond the damage it represents. */

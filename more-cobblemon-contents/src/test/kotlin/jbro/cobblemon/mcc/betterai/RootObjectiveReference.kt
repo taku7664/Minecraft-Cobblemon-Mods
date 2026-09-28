@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.betterai
 
 import jbro.cobblemon.mcc.internal.ai.*
+import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionPolicy
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank
 import jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudget
@@ -35,7 +36,7 @@ internal object RootObjectiveReference {
             difficulty = BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = depth))
         val base = LocalBattleActionPolicy.rank(context, null, profile)
         fun run(ranks: List<LocalBattleActionRank>): LocalLookaheadEvaluation {
-            val result = LocalRecursiveLookaheadEvaluator.evaluate(ranks, context, profile,
+            val result = LocalRecursiveLookaheadEvaluator.evaluate(ranks, context, profile, UNBOUNDED,
                 clockMillis = { 0L }, budget = LocalLookaheadBudget(1_000L, nodeLimit, 64))
             check(!result.truncated && result.depthCompleted == depth) {
                 "Incomplete reference: requested=$depth completed=${result.depthCompleted} nodes=${result.nodesVisited}"
@@ -68,6 +69,12 @@ internal object RootObjectiveReference {
         if (isolatedRanking != whole.ranked.map { it.outcome.candidate.actionId }) mismatches += "ranking"
         return RootReferenceResult(whole, individual, isolatedRanking, mismatches)
     }
+
+    /**
+     * Production bounds the search's adjustment by one shift shared by every candidate, which depends on the
+     * other candidates and so cannot be isolated; a shared shift leaves the ranking as the unbounded one.
+     */
+    private val UNBOUNDED = LocalDecisionTuning.CURRENT.copy(maximumLookaheadAdjustment = Double.MAX_VALUE / 4)
 
     /** Recursive ranking score units, not board bars, win probability or sampled-mean regret. */
     fun loss(scores: Map<String, Double>, chosen: String?): Double? {

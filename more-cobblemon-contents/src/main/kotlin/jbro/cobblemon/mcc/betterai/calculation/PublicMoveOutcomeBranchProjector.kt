@@ -8,6 +8,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.betterai.mechanics.LocalDeclaredMultiHit
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy
 import kotlin.math.pow
+import kotlin.math.roundToInt
 
 /** A narrow, event-free chance model for one attempted move. */
 internal data class PublicMoveOutcomeBranch(
@@ -26,10 +27,11 @@ internal enum class LocalChanceModel {
     /** The sixteen rolls split into knockout and survival, one representative roll each; no random critical hits. */
     ROLL_CLASSES,
     /**
-     * The median roll only. A critical hit ([CRITICAL_HIT_CHANCE], 1.5x) is a branch only where it knocks
-     * out and the median roll does not; otherwise it changes nothing worth a branch.
+     * One roll, the high one at [FIXED_ROLL_PERCENTILE] of the sixteen, as a damage calculation reads a hit;
+     * where the rolls, or a critical hit ([CRITICAL_HIT_CHANCE], 1.5x), straddle the target's HP, a knockout and
+     * a survival branch at their real share instead. A critical hit that knocks out nothing is no branch.
      */
-    MEDIAN_ROLL,
+    HIGH_ROLL,
 }
 
 internal object PublicMoveOutcomeBranchProjector {
@@ -113,17 +115,7 @@ internal object PublicMoveOutcomeBranchProjector {
         criticalHits: Boolean,
     ): List<PublicMoveOutcomeBranch> {
         if (rolls.isEmpty()) return listOf(PublicMoveOutcomeBranch(probability, true, 0.0))
-        if (chanceModel.get() == LocalChanceModel.MEDIAN_ROLL) {
-            val median = rolls.sorted()[(rolls.size - 1) / 2]
-            val critical = median * CRITICAL_HIT_MULTIPLIER
-            val criticalKnocksOut = criticalHits && targetHp != null && median + DAMAGE_EPSILON < targetHp &&
-                critical + DAMAGE_EPSILON >= targetHp
-            if (!criticalKnocksOut) return listOf(PublicMoveOutcomeBranch(probability, true, median))
-            return listOf(
-                PublicMoveOutcomeBranch(probability * (1.0 - CRITICAL_HIT_CHANCE), true, median),
-                PublicMoveOutcomeBranch(probability * CRITICAL_HIT_CHANCE, true, critical),
-            )
-        }
+        if (chanceModel.get() == LocalChanceModel.HIGH_ROLL) return highRollBranches(rolls, targetHp, probability, criticalHits)
         return rolls.groupBy { targetHp != null && it >= targetHp }.values.map { group ->
             PublicMoveOutcomeBranch(
                 probability * group.size / rolls.size,
@@ -132,6 +124,37 @@ internal object PublicMoveOutcomeBranchProjector {
             )
         }
     }
+
+    /**
+     * The fixed high roll alone, unless the rolls straddle the target's HP: then a knockout and a survival
+     * branch at their real share, a critical hit's own knockouts folded into that share. Each branch keeps a
+     * roll it can really reach, the survivors at their own high roll.
+     */
+    private fun highRollBranches(
+        rolls: List<Double>,
+        targetHp: Double?,
+        probability: Double,
+        criticalHits: Boolean,
+    ): List<PublicMoveOutcomeBranch> {
+        val sorted = rolls.sorted()
+        val fixed = highRoll(sorted)
+        if (targetHp == null || targetHp <= 0.0) return listOf(PublicMoveOutcomeBranch(probability, true, fixed))
+        val critical = if (criticalHits) CRITICAL_HIT_CHANCE else 0.0
+        val knockouts = sorted.count { it + DAMAGE_EPSILON >= targetHp }
+        val criticalKnockouts = sorted.count { it * CRITICAL_HIT_MULTIPLIER + DAMAGE_EPSILON >= targetHp }
+        val knockoutShare = (1.0 - critical) * knockouts / sorted.size + critical * criticalKnockouts / sorted.size
+        if (knockoutShare <= 0.0 || knockoutShare >= 1.0) return listOf(PublicMoveOutcomeBranch(probability, true, fixed))
+        val knockoutRoll = if (fixed + DAMAGE_EPSILON >= targetHp) fixed
+            else sorted.firstOrNull { it + DAMAGE_EPSILON >= targetHp }
+                ?: sorted.first { it * CRITICAL_HIT_MULTIPLIER + DAMAGE_EPSILON >= targetHp } * CRITICAL_HIT_MULTIPLIER
+        val survivalRoll = highRoll(sorted.filter { it + DAMAGE_EPSILON < targetHp })
+        return listOf(
+            PublicMoveOutcomeBranch(probability * knockoutShare, true, knockoutRoll),
+            PublicMoveOutcomeBranch(probability * (1.0 - knockoutShare), true, survivalRoll),
+        )
+    }
+
+    private fun highRoll(sorted: List<Double>): Double = sorted[((sorted.size - 1) * FIXED_ROLL_PERCENTILE).roundToInt()]
 
     /**
      * Keeps one mechanically possible representative roll for recursion. With an even roll count,
@@ -166,4 +189,6 @@ internal object PublicMoveOutcomeBranchProjector {
     /** Stage-zero critical hit chance since Generation 7. */
     const val CRITICAL_HIT_CHANCE = 1.0 / 24.0
     private const val CRITICAL_HIT_MULTIPLIER = 1.5
+    /** Where among the sorted rolls the fixed roll sits: the high end, as damage calculations are read. */
+    const val FIXED_ROLL_PERCENTILE = 0.9
 }
