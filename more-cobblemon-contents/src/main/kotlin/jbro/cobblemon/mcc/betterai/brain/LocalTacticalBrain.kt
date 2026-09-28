@@ -50,6 +50,8 @@ import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionEvaluator
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionStatus
 import jbro.cobblemon.mcc.betterai.search.NativeProductSessionState
 import jbro.cobblemon.mcc.betterai.evaluation.LocalOpponentThreat
+import jbro.cobblemon.mcc.betterai.matchup.LocalAceScore
+import jbro.cobblemon.mcc.betterai.matchup.LocalGimmickReserve
 import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
 import jbro.cobblemon.mcc.betterai.matchup.LocalOpponentIntentPredictor
 import jbro.cobblemon.mcc.betterai.matchup.LocalPublicFailureTriage
@@ -462,8 +464,21 @@ internal class LocalTacticalBrain(
             },
         )
         decisionTrace?.legacySearch(lookahead, profile.difficulty.lookaheadPlies, budget)
-        // The switching rules' credits and debits, added to what the search made of each candidate.
-        val switchAdjusted = switchJudgement.adjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
+        // The ace keeps the once-per-battle mechanics: worked out once, and again when a new opponent is seen.
+        val aceScores = if (!rulesApply || active == null) emptyMap() else {
+            val seen = difficultyContext.state.pokemon.filter { it.side == BattleSide.OPPONENT }.mapTo(hashSetOf()) { it.battlePokemonId }
+            if (active.aceScores.isEmpty() || !active.aceOpponentIds.containsAll(seen)) {
+                active.aceScores = LocalAceScore.calculate(difficultyContext)
+                active.aceOpponentIds = seen
+            }
+            active.aceScores
+        }
+        val gimmickAdjustments = LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores)
+        // The switching and mechanic rules' credits and debits, added to what the search made of each candidate.
+        val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys).associateWith {
+            (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0)
+        }
+        val switchAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
             LocalBattleActionPolicy.sort(lookahead.ranked.map { rank ->
                 adjustments[rank.outcome.candidate.actionId]?.let { rank.copy(comparisonValue = rank.comparisonValue + it) } ?: rank
             })
@@ -607,7 +622,11 @@ internal class LocalTacticalBrain(
         val strategy: BattleStrategyBrief?,
         val trainerProfile: BattleTrainerProfile,
         var nativeProductState: NativeProductSessionState? = null,
-    ) : BattleBrainSession
+    ) : BattleBrainSession {
+        /** The AI's ace scores ([LocalAceScore]) and the opponents seen when they were worked out. */
+        @Volatile var aceScores: Map<UUID, Double> = emptyMap()
+        @Volatile var aceOpponentIds: Set<UUID> = emptySet()
+    }
 
     private fun BattleDecisionContext.withoutActivePlan(): BattleDecisionContext = copy(
         memory = BattleTacticalMemoryView(

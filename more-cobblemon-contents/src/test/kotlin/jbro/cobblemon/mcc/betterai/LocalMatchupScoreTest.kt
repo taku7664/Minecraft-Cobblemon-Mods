@@ -2,7 +2,10 @@ package jbro.cobblemon.mcc.betterai
 
 import java.util.UUID
 import jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutProfile
+import jbro.cobblemon.mcc.betterai.matchup.LocalAceScore
+import jbro.cobblemon.mcc.betterai.matchup.LocalGimmickReserve
 import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.matchup.LocalOpponentIntentPredictor
 import jbro.cobblemon.mcc.betterai.matchup.LocalPublicFailureTriage
 import jbro.cobblemon.mcc.betterai.matchup.StopScore
@@ -202,6 +205,28 @@ class LocalMatchupScoreTest {
         fun switchCredit(position: BattleDecisionContext) = LocalSwitchRules.judge(listOf(attackAction(), switchAction()), position,
             LocalMatchupScoreCalculator.calculate(position)).adjustments["switch"] ?: 0.0
         assertTrue(switchCredit(context) > switchCredit(withoutBond)) { "${switchCredit(context)} vs ${switchCredit(withoutBond)}" }
+    }
+
+    @Test
+    fun `the ace score is the fresh-board sweep and does not move with the HP left`() {
+        val full = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0, allySetup = mapOf("atk" to 1, "spe" to 1))
+        val worn = full.copy(state = full.state.copyState(pokemon = full.state.pokemon.map {
+            if (it.battlePokemonId == ALLY) it.copyState(hpFraction = 0.3) else it
+        }))
+        val fresh = LocalAceScore.calculate(full)
+        assertEquals(fresh.getValue(ALLY), LocalAceScore.calculate(worn).getValue(ALLY), 1e-9)
+        assertTrue(LocalMatchupScoreCalculator.calculate(worn).sweeps.getValue(ALLY).score < fresh.getValue(ALLY))
+    }
+
+    @Test
+    fun `a mechanic is kept for a better ace and costs the ace nothing`() {
+        val context = context(allySpeed = 100, foeSpeed = 120)
+        val tera = BattleActionCandidate("tera", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0, moveId = "probe",
+            mechanic = BattleMechanicCandidate("tera", null, null))
+        fun cost(ally: Double, bench: Double) =
+            LocalGimmickReserve.adjustments(listOf(tera), context, mapOf(ALLY to ally, BENCH to bench))["tera"] ?: 0.0
+        assertEquals(-LocalGimmickReserve.RESERVE_SCALE * 0.6, cost(ally = 0.2, bench = 0.8), 1e-9)
+        assertEquals(0.0, cost(ally = 0.8, bench = 0.2), 1e-9)
     }
 
     private fun statusMove(id: String, pattern: BattleMoveTargetPattern = BattleMoveTargetPattern.SELECTED_OPPONENT) =
