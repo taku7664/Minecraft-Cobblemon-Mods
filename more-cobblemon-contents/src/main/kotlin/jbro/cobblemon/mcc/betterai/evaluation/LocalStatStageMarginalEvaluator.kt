@@ -340,7 +340,8 @@ internal object LocalStatStageMarginalEvaluator {
         -> emptySet()
     }
 
-    private fun applyStages(
+    /** [changes] added to the stages of [targetIds], stat names canonicalized and clamped to +-6. */
+    internal fun applyStages(
         state: BattleStateView,
         targetIds: Set<UUID>,
         changes: Map<String, Int>,

@@ -1,7 +1,6 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
 import java.util.UUID
-import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
@@ -12,11 +11,9 @@ import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
-import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
-import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory
+import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupPosition
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.mcc.betterai.mechanics.StandardTypeEffectiveness
-import jbro.cobblemon.mcc.betterai.state.LocalSwitchStateProjector
 
 /**
  * How dangerous each visible opponent is to the AI's living party, as a multiplier on its material.
@@ -239,20 +236,7 @@ internal object LocalOpponentThreat {
         source: BattleDecisionContext,
         pokemon: BattlePokemonStateView,
         cache: LocalProjectedActionCalculationCache,
-    ): BattleDecisionContext? {
-        val state = source.state
-        if (state.pokemon.any { it.battlePokemonId == pokemon.battlePokemonId && it.activeSlot != null }) return source
-        val action = PublicFutureActionFactory.actions(state, pokemon.side, source.publicActionCatalog)
-            .firstOrNull { it.kind == BattleActionKind.SWITCH && it.switchPokemonId == pokemon.battlePokemonId }
-            ?: return null
-        val calculated = cache.getOrCalculate(state, pokemon.side, action, source.publicActionCatalog) {
-            PublicBattleTacticalCalculator.calculate(source.copy(state = state, candidates = listOf(action)), pokemon.side)
-        }
-        val outgoingIds = state.pokemon.filter { it.side == pokemon.side && it.activeSlot == action.actorSlot }
-            .mapTo(hashSetOf()) { it.battlePokemonId }
-        val entered = LocalSwitchStateProjector.project(state, pokemon.side, calculated.candidates.single())
-        return source.copy(state = entered, publicActionCatalog = source.publicActionCatalog.afterSwitch(outgoingIds))
-    }
+    ): BattleDecisionContext? = LocalMatchupPosition.enter(source, pokemon, cache)
 
     private fun fasterCertain(foe: BattlePokemonStateView, ally: BattlePokemonStateView): Boolean {
         val foeSpeed = foe.combatStats?.speed ?: return false
