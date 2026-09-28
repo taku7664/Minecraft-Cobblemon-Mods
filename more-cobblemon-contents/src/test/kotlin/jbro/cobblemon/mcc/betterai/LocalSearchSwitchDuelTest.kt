@@ -121,6 +121,8 @@ class LocalSearchSwitchDuelTest {
             "authority-full-singles" to Duel(CURRENT.copy(id = "authority-full", searchAuthority = 1.0), CURRENT, BattleFormat.SINGLE),
             "authority-depth1-singles" to Duel(AUTHORITY, AUTHORITY, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 1)),
             "authority-depth3-singles" to Duel(AUTHORITY, AUTHORITY, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 3)),
+            "duel-leaf-singles" to Duel(CURRENT.copy(id = "duel-leaf", leafDuelValue = 0.4), CURRENT, BattleFormat.SINGLE),
+            "authority-duel-leaf-singles" to Duel(AUTHORITY.copy(id = "authority-duel-leaf", leafDuelValue = 0.4), CURRENT, BattleFormat.SINGLE),
             "depth1-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 1)),
             "depth3-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 3)),
             "simultaneous" to Duel(CURRENT.copy(id = "simultaneous", simultaneousResponseWeight = 1.0), CURRENT, BattleFormat.DOUBLE),

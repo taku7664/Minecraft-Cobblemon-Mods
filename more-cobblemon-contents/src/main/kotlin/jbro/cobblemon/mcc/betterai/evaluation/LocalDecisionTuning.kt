@@ -129,6 +129,8 @@ internal data class LocalDecisionTuning(
      * the Pokemon in front; zero prices stages by that pressure alone.
      */
     val leafPersistentStageValue: Double = 0.0,
+    /** Board value of winning the singles matchup on the field (LocalLookaheadStateEvaluator.activeDuel); zero leaves it out. */
+    val leafDuelValue: Double = 0.0,
     /**
      * How much more willing the search is to abandon a continuation, in board units.
      *

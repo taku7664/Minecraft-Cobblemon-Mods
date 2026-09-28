@@ -45,6 +45,10 @@ internal object LocalImmediateTurnScorer {
             ).pressureBoardDelta + if (tuning.leafPersistentStageValue == 0.0) 0.0 else {
                 (LocalPersistentStageValue.evaluate(after, it.publicActionCatalog) -
                     LocalPersistentStageValue.evaluate(before, it.publicActionCatalog)) * tuning.leafPersistentStageValue
+            } + if (tuning.leafDuelValue == 0.0) 0.0 else {
+                // The leaf's matchup term, changed by this turn; counted here so a one-turn line sees it too.
+                (LocalLookaheadStateEvaluator.activeDuel(after, it, calculationCache, shouldContinue, tuning) -
+                    LocalLookaheadStateEvaluator.activeDuel(before, it, calculationCache, shouldContinue, tuning)) * tuning.leafDuelValue
             }
         } ?: 0.0
         val beforeStatus = positionStatus(before)

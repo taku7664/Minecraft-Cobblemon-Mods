@@ -43,13 +43,55 @@ internal object LocalLookaheadStateEvaluator {
         val teamCoverage = if (tuning.leafTeamCoverageWeight == 0.0) 0.0 else {
             LocalTeamMatchupCoverage.evaluate(state, source, calculationCache, shouldContinue, tuning)
         }
+        val duel = if (tuning.leafDuelValue == 0.0) 0.0 else {
+            activeDuel(state, source, calculationCache, shouldContinue, tuning) * tuning.leafDuelValue
+        }
         val persistentStages = if (tuning.leafPersistentStageValue == 0.0) 0.0 else {
             LocalPersistentStageValue.evaluate(state, source.publicActionCatalog) * tuning.leafPersistentStageValue
         }
-        return material + pressure * tuning.leafPressureWeight + speedControl + persistentStages +
+        return material + pressure * tuning.leafPressureWeight + speedControl + persistentStages + duel +
             teamCoverage * tuning.leafTeamCoverageWeight +
             if (includePositionEffects) LocalImmediateTurnScorer.positionEffectValue(state) else 0.0
     }
+
+    /**
+     * Who wins the singles matchup on the field if both keep attacking: +1 when the AI's Pokemon knocks the
+     * opponent's out first, -1 when it is knocked out first, counted in hits of each side's best expected
+     * damage and settled by the public speed order (an open order splits it). Pressure alone prices a hit,
+     * not the race: two Pokemon that each take a third per hit look even even when one moves first.
+     */
+    internal fun activeDuel(
+        state: BattleStateView,
+        source: BattleDecisionContext,
+        calculationCache: LocalProjectedActionCalculationCache,
+        shouldContinue: () -> Boolean,
+        tuning: LocalDecisionTuning,
+    ): Double {
+        if (state.format != BattleFormat.SINGLE) return 0.0
+        val ally = state.pokemon.singleOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 } ?: return 0.0
+        val foe = state.pokemon.singleOrNull { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 } ?: return 0.0
+        val damageOnly = tuning.copy(leafKnockoutPressure = 0.0)
+        val outgoing = attackPressure(state, BattleSide.ALLY, source, calculationCache, shouldContinue, damageOnly)
+        val incoming = attackPressure(state, BattleSide.OPPONENT, source, calculationCache, shouldContinue, damageOnly)
+        val ours = hits(foe.hpFraction, outgoing)
+        val theirs = hits(ally.hpFraction, incoming)
+        if (ours == Int.MAX_VALUE && theirs == Int.MAX_VALUE) return 0.0
+        fun result(allyFirst: Boolean): Double = when {
+            ours < theirs -> 1.0
+            ours > theirs -> -1.0
+            else -> if (allyFirst) 1.0 else -1.0
+        }
+        return when (speedRelation(state)) {
+            LocalPublicSpeedRelation.ALLY_FIRST -> result(true)
+            LocalPublicSpeedRelation.OPPONENT_FIRST -> result(false)
+            LocalPublicSpeedRelation.AMBIGUOUS, LocalPublicSpeedRelation.UNAVAILABLE -> (result(true) + result(false)) / 2.0
+        }
+    }
+
+    private fun hits(hp: Double, damage: Double): Int =
+        if (damage <= DUEL_MINIMUM_DAMAGE) Int.MAX_VALUE else kotlin.math.ceil(hp / damage - 1e-9).toInt().coerceAtLeast(1)
+
+    private const val DUEL_MINIMUM_DAMAGE = 0.01
 
     fun speedRelation(state: BattleStateView): LocalPublicSpeedRelation {
         val ally = activeSpeed(state, BattleSide.ALLY) ?: return LocalPublicSpeedRelation.UNAVAILABLE
