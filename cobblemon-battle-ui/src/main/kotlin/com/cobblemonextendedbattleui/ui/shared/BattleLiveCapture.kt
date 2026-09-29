@@ -428,6 +428,13 @@ internal object BattleLiveCapture {
                         val pokemon = PokemonProperties().apply {
                             this.species = species
                             level = 50
+                            if (System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_HELD_ITEMS") == "1") {
+                                heldItem = when (species) {
+                                    "pikachu" -> "cobblemon:light_ball"
+                                    "bulbasaur" -> "cobblemon:miracle_seed"
+                                    else -> "cobblemon:leftovers"
+                                }
+                            }
                         }.create(player)
                         check(party.add(pokemon)) { "Could not add $species to disposable fixture party" }
                     }

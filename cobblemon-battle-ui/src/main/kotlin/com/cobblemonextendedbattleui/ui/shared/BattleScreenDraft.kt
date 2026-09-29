@@ -9,6 +9,8 @@ import jbro.cobblemon.battleui.navigation.BattleScreenGeometry
 import jbro.cobblemon.battleui.extended.pokemon.render.PokemonModelRenderer
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
+import net.minecraft.item.ItemStack
+import net.minecraft.registry.Registries
 import net.minecraft.text.Text
 import net.minecraft.util.Identifier
 import java.util.UUID
@@ -198,6 +200,15 @@ internal object BattleScreenDraft {
             SamplePokemon("charmander", .21f, burned = true), SamplePokemon("jigglypuff", 0f, fainted = true)
         )
         val cards = samples.mapIndexed { index, sample ->
+            val heldItemId = when (sample.species) {
+                "pikachu" -> "light_ball"
+                "bulbasaur" -> "miracle_seed"
+                "eevee" -> "leftovers"
+                else -> null
+            }
+            val heldItem = heldItemId?.let {
+                ItemStack(Registries.ITEM.get(Identifier.of("cobblemon", it)))
+            } ?: ItemStack.EMPTY
             BattlePartyCard(
                 Identifier.of("cobblemon", sample.species), emptySet(),
                 UUID.nameUUIDFromBytes(sample.species.toByteArray()),
@@ -210,10 +221,11 @@ internal object BattleScreenDraft {
                     BattlePartyMove(Moves.getByName(move)?.displayName?.string ?: move, pp,
                         Moves.getByName(move)?.elementalType)
                 }, Text.translatable("cobblemon.ability.runaway").string,
-                    Text.translatable("cobblemon_battle_ui.switch.none").string,
+                    if (heldItem.isEmpty) Text.translatable("cobblemon_battle_ui.switch.none").string
+                    else heldItem.name.string,
                     PokemonSpecies.getByIdentifier(Identifier.of("cobblemon", sample.species))?.standardForm?.let {
                         listOfNotNull(it.primaryType, it.secondaryType)
-                    } ?: emptyList()), sample.gender
+                    } ?: emptyList()), sample.gender, heldItem
             )
         }
         val opponents = listOf("charizard", "venusaur", "blastoise").map { species ->

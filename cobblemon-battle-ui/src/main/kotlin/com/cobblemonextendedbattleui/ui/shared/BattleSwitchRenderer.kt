@@ -7,6 +7,7 @@ import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.client.gui.TypeIcon
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleSwitchPokemonSelection
 import com.cobblemon.mod.common.pokemon.Gender
+import com.mojang.blaze3d.systems.RenderSystem
 import jbro.cobblemon.battleui.extended.TeamIndicatorUI
 import jbro.cobblemon.battleui.extended.navigation.KeyboardTileFocus
 import jbro.cobblemon.battleui.extended.pokemon.render.PokemonModelRenderer
@@ -15,6 +16,7 @@ import jbro.cobblemon.battleui.navigation.BattleScreenGeometry
 import jbro.cobblemon.battleui.navigation.SwitchHealth
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
+import net.minecraft.item.ItemStack
 import net.minecraft.text.Text
 import net.minecraft.util.Identifier
 import java.util.UUID
@@ -31,7 +33,8 @@ data class BattlePartyCard(
     val status: Status?,
     val statusLabel: Text?,
     val details: BattlePartyDetails? = null,
-    val gender: Gender? = null
+    val gender: Gender? = null,
+    val heldItem: ItemStack = ItemStack.EMPTY
 )
 
 data class BattlePartyMove(val name: String, val pp: String, val type: ElementalType?)
@@ -65,7 +68,8 @@ object BattleSwitchRenderer {
             BattlePartyCard(pokemon.species.resourceIdentifier, pokemon.aspects, pokemon.uuid,
                 pokemon.getDisplayName(), pokemon.level,
                 SwitchHealth.ratio(tile.showdownPokemon.condition, pokemon.maxHealth),
-                tile.isFainted, tile.isCurrentlyInBattle, status, statusLabel, details, pokemon.gender)
+                tile.isFainted, tile.isCurrentlyInBattle, status, statusLabel, details, pokemon.gender,
+                heldItem.copy())
         }
         val focused = selection.tiles.indexOfFirst { tile ->
             if (KeyboardTileFocus.allowsMouseHover()) tile.isHovered(mouseX.toDouble(), mouseY.toDouble())
@@ -192,6 +196,7 @@ object BattleSwitchRenderer {
             if (card.statusLabel != null) BattleStatusPalette.background(card.status?.showdownName ?: "other") else ink, opacity)
         PokemonModelRenderer.drawPokemonModel(context, x + 2, y + 1, 19, null,
             card.species, card.aspects, card.uuid, card.fainted, card.status, true, { it }, 1f)
+        drawHeldItemIcon(context, card.heldItem, x + 14, y + 11, 8, opacity)
     }
 
     private fun drawDetails(context: DrawContext, rect: jbro.cobblemon.uikit.UiRect,
@@ -207,6 +212,7 @@ object BattleSwitchRenderer {
                 borderWidth = 0, cornerCuts = BattleCornerCuts(topLeft = 3, bottomRight = 6)), opacity)
         PokemonModelRenderer.drawPokemonModel(context, x - 4, y, 44, null,
             card.species, card.aspects, card.uuid, card.fainted, card.status, true, { it }, 1f)
+        drawHeldItemIcon(context, card.heldItem, x + 26, y + 26, 10, opacity)
         BattleGenderText.draw(context, card.name.string, card.gender, x + 42, y + 4,
             innerWidth - font.getWidth(level) - 50, opacity)
         drawText(context, level, x + innerWidth - font.getWidth(level), y + 4, BattleUiTheme.MUTED, opacity)
@@ -249,6 +255,26 @@ object BattleSwitchRenderer {
         hp > .5f -> BattleUiTheme.GOOD
         hp > .25f -> BattleUiTheme.FOCUS
         else -> BattleUiTheme.DANGER
+    }
+
+    private fun drawHeldItemIcon(context: DrawContext, item: ItemStack, x: Int, y: Int,
+                                 size: Int, opacity: Float) {
+        if (item.isEmpty || opacity <= 0f) return
+        context.draw()
+        context.matrices.push()
+        try {
+            context.matrices.translate(x.toDouble(), y.toDouble(), 0.0)
+            val scale = size / 16f
+            context.matrices.scale(scale, scale, 1f)
+            RenderSystem.enableBlend()
+            RenderSystem.defaultBlendFunc()
+            RenderSystem.setShaderColor(1f, 1f, 1f, opacity.coerceIn(0f, 1f))
+            context.drawItem(item, 0, 0)
+            context.draw()
+        } finally {
+            RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
+            context.matrices.pop()
+        }
     }
 
     private fun drawText(context: DrawContext, value: String, x: Int, y: Int, color: Int, opacity: Float) {
