@@ -199,43 +199,46 @@ object BattleSwitchRenderer {
         val y = rect.y + 4
         val innerWidth = rect.width - 12
         val level = "Lv.${card.level}"
-        PokemonModelRenderer.drawPokemonModel(context, x, y, 19, null,
+        BattleSurfaceRenderer.draw(context, x, y, 36, 36,
+            BattleUiTheme.panel.copy(top = 0xFF29435D.toInt(), bottom = 0xFF13283F.toInt(),
+                borderWidth = 0, cornerCuts = BattleCornerCuts(topLeft = 3, bottomRight = 6)), opacity)
+        PokemonModelRenderer.drawPokemonModel(context, x - 4, y, 44, null,
             card.species, card.aspects, card.uuid, card.fainted, card.status, true, { it }, 1f)
-        BattleGenderText.draw(context, card.name.string, card.gender, x + 23, y,
-            innerWidth - font.getWidth(level) - 31, opacity)
-        drawText(context, level, x + innerWidth - font.getWidth(level), y, BattleUiTheme.MUTED, opacity)
-        var typeX = x + 23
+        BattleGenderText.draw(context, card.name.string, card.gender, x + 42, y + 4,
+            innerWidth - font.getWidth(level) - 50, opacity)
+        drawText(context, level, x + innerWidth - font.getWidth(level), y + 4, BattleUiTheme.MUTED, opacity)
+        var typeX = x + 42
         details?.types?.take(2)?.forEach { type ->
-            TypeIcon(x = (typeX + 5).toFloat(), y = (y + 16).toFloat(),
+            TypeIcon(x = typeX.toFloat(), y = (y + 18).toFloat(),
                 type = type, small = true, opacity = opacity).render(context)
             val label = type.displayName.string
-            drawText(context, label, typeX + 14, y + 12, BattleUiTheme.MUTED, opacity)
-            typeX += 19 + font.getWidth(label) + 8
+            drawText(context, label, typeX + 12, y + 18, BattleUiTheme.MUTED, opacity)
+            typeX += 20 + font.getWidth(label)
         }
-        context.fill(x, y + 25, x + innerWidth, y + 37,
+        context.fill(x, y + 36, x + innerWidth, y + 48,
             BattleSurfaceRenderer.withOpacity(0xFF174058.toInt(), opacity))
         drawText(context, Text.translatable("cobblemon_battle_ui.switch.moves").string,
-            x + 4, y + 27, BattleUiTheme.CYAN, opacity)
+            x + 4, y + 38, BattleUiTheme.CYAN, opacity)
         details?.moves?.forEachIndexed { index, move ->
-            val rowY = y + 39 + index * 14
-            if (index % 2 == 0) context.fill(x, rowY - 1, x + innerWidth, rowY + 11,
+            val rowY = y + 50 + index * 12
+            if (index % 2 == 0) context.fill(x, rowY - 1, x + innerWidth, rowY + 10,
                 BattleSurfaceRenderer.withOpacity(0x7234516A, opacity))
-            move.type?.let { TypeIcon(x = (x + 8).toFloat(), y = (rowY + 5).toFloat(),
+            move.type?.let { TypeIcon(x = (x + 8).toFloat(), y = rowY.toFloat(),
                 type = it, small = true, opacity = opacity).render(context) }
             val ppX = x + innerWidth - 4 - font.getWidth(move.pp)
             drawText(context, font.trimToWidth(move.name, (ppX - x - 23).coerceAtLeast(0)),
                 x + 19, rowY, BattleUiTheme.TEXT, opacity)
             drawText(context, move.pp, ppX, rowY, BattleUiTheme.MUTED, opacity)
         }
-        context.fill(x, y + 92, x + innerWidth, y + 119,
+        context.fill(x, y + 98, x + innerWidth, y + 120,
             BattleSurfaceRenderer.withOpacity(0x6C0B1727, opacity))
         drawText(context, Text.translatable("cobblemon_battle_ui.switch.ability").string,
-            x + 3, y + 95, BattleUiTheme.CYAN, opacity)
-        drawText(context, font.trimToWidth(details?.ability ?: "-", innerWidth - 53), x + 50, y + 95,
+            x + 3, y + 100, BattleUiTheme.CYAN, opacity)
+        drawText(context, font.trimToWidth(details?.ability ?: "-", innerWidth - 53), x + 50, y + 100,
             BattleUiTheme.TEXT, opacity)
         drawText(context, Text.translatable("cobblemon_battle_ui.switch.item").string,
-            x + 3, y + 109, BattleUiTheme.CYAN, opacity)
-        drawText(context, font.trimToWidth(details?.item ?: "-", innerWidth - 53), x + 50, y + 109,
+            x + 3, y + 111, BattleUiTheme.CYAN, opacity)
+        drawText(context, font.trimToWidth(details?.item ?: "-", innerWidth - 53), x + 50, y + 111,
             BattleUiTheme.TEXT, opacity)
     }
 
