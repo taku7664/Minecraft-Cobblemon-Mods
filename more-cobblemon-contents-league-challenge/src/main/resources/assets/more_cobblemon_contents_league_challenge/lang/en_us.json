@@ -102,5 +102,6 @@
   "screen.more_cobblemon_contents_league_challenge.live.show_normal": "Normal League",
   "screen.more_cobblemon_contents_league_challenge.live.difficulty_tooltip": "Switch between the normal League and the hard League the Champion title opens. Hard trainers field fully trained teams that Mega Evolve.",
   "message.more_cobblemon_contents_league_challenge.hard_locked": "Become the normal League Champion to challenge the hard League.",
-  "message.more_cobblemon_contents_league_challenge.opponent_level_unsupported": "An opponent is above Cobblemon's maximum level. Raise maxPokemonLevel in the server's Cobblemon config."
+  "message.more_cobblemon_contents_league_challenge.opponent_level_unsupported": "An opponent is above Cobblemon's maximum level. Raise maxPokemonLevel in the server's Cobblemon config.",
+  "message.more_cobblemon_contents_league_challenge.gimmicks_locked": "Mega Evolution, Dynamax, Terastallization and Z-Moves open once you become the League Champion. Battles between players allow them."
 }

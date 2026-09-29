@@ -102,5 +102,6 @@
   "screen.more_cobblemon_contents_league_challenge.live.show_normal": "노말 도전",
   "screen.more_cobblemon_contents_league_challenge.live.difficulty_tooltip": "챔피언이 되면 열리는 하드 리그와 노말 리그를 오갑니다. 하드는 메가진화를 쓰는 실전 육성 팀과 싸웁니다.",
   "message.more_cobblemon_contents_league_challenge.hard_locked": "노말 리그 챔피언이 되어야 하드 리그에 도전할 수 있습니다.",
-  "message.more_cobblemon_contents_league_challenge.opponent_level_unsupported": "상대 레벨이 Cobblemon 최대 레벨 설정보다 높습니다. 서버의 maxPokemonLevel을 올려 주세요."
+  "message.more_cobblemon_contents_league_challenge.opponent_level_unsupported": "상대 레벨이 Cobblemon 최대 레벨 설정보다 높습니다. 서버의 maxPokemonLevel을 올려 주세요.",
+  "message.more_cobblemon_contents_league_challenge.gimmicks_locked": "리그 챔피언이 되기 전에는 메가진화·다이맥스·테라스탈·Z기술을 쓸 수 없습니다. 플레이어끼리의 배틀에서는 쓸 수 있습니다."
 }
