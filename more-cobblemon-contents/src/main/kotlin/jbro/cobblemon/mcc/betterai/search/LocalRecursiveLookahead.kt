@@ -127,7 +127,10 @@ internal object LocalRecursiveLookaheadEvaluator {
         excludedActionIds: Set<String>,
         opponentIntents: List<OpponentIntent>,
     ): LocalLookaheadEvaluation {
-        val requestedDepth = profile.difficulty.lookaheadPlies.coerceAtLeast(1)
+        // Doubles searches the turn in front of it only: a second turn of joint actions against joint replies does
+        // not fit a decision's budget, and when it was forced in, narrowed or not, it played no better.
+        val requestedDepth = if (tuning.doublesSingleTurn && context.state.format == BattleFormat.DOUBLE) 1
+            else profile.difficulty.lookaheadPlies.coerceAtLeast(1)
         val moveUsage = moveUsageForFormat(context.state.format)
         val searchStartedAt = clockMillis()
         val localDeadline = LocalLookaheadBudgetPolicy.deadline(

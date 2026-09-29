@@ -96,6 +96,8 @@ internal data class LocalDecisionTuning(
      * [jbro.cobblemon.mcc.betterai.search.LocalNarrowSecondTurn]. False skips it.
      */
     val narrowSecondTurn: Boolean = false,
+    /** Doubles searches one turn whatever the tier's depth; off, it asks for the tier's depth like singles. */
+    val doublesSingleTurn: Boolean = true,
     // The search's large design choices, each a switch so any combination can be played against another.
     // Off restores the earlier behaviour.
     /** A deeper turn's value is the discounted average of the turns' own changes; off, the last board reached. */

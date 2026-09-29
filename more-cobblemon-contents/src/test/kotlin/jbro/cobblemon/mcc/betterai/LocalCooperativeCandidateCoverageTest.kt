@@ -131,8 +131,9 @@ class LocalCooperativeCandidateCoverageTest {
                 }
             }
             val deeperProfile = profile.copy(difficulty = profile.difficulty.copy(lookaheadPlies = 2, foresightWeight = 0.0))
+            // The two-turn doubles search, off in the shipped tuning, still has to recover what the narrow root lost.
             fun deeper(settings: LocalDecisionTuning, pool: Boolean = false) = LocalRecursiveLookaheadEvaluator.evaluate(
-                ranked, calculated, deeperProfile, settings, clockMillis = { 0L },
+                ranked, calculated, deeperProfile, settings.copy(doublesSingleTurn = false), clockMillis = { 0L },
                 budget = budget.copy(nodeLimit = 1_000_000),
                 rootChoicePool = if (pool) CooperativeSearchComparison::choicePool else null)
             val repaired = deeper(enabled)
