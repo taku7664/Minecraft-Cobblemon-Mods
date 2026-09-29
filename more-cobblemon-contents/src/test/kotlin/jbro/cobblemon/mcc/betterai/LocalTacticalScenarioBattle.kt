@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.betterai
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.outcome.ChanceEffectProjectionMode
@@ -91,6 +92,14 @@ internal data class LocalTacticalScenarioReport(
     }
 }
 
+/** A puzzle's starting position, keyed by (side, team index): the first member of each side is in front. */
+internal data class LocalScenarioStart(
+    val hp: Map<Pair<BattleSide, Int>, Double> = emptyMap(),
+    val status: Map<Pair<BattleSide, Int>, String> = emptyMap(),
+    val stages: Map<Pair<BattleSide, Int>, Map<String, Int>> = emptyMap(),
+    val revealAll: Boolean = true,
+)
+
 /** One decision of a replayed battle played as [actionId] by [side] at [turn], the rest drawn from [rolloutSeed]. */
 internal data class LocalScenarioFork(val turn: Int, val side: BattleSide, val actionId: String, val rolloutSeed: Long)
 
@@ -116,9 +125,11 @@ internal object LocalTacticalScenarioBattle {
         lookaheadBudget: ((BattleTrainerTier) -> LocalLookaheadBudget)? = null,
         /** Replays the battle up to one decision, plays the given action there, and draws the rest afresh. */
         fork: LocalScenarioFork? = null,
+        /** A position to start from instead of a fresh lead: HP, stages and status per team member, all revealed. */
+        start: LocalScenarioStart? = null,
     ): LocalTacticalScenarioReport = Battle(
         definition, cycleTuning, offenseTuning, cycleDifficulty, offenseDifficulty, recordedContexts, recordedDecisions,
-        lookaheadBudget, fork,
+        lookaheadBudget, fork, start,
     ).run(maximumTurns)
 
     private class Battle(
@@ -131,6 +142,7 @@ internal object LocalTacticalScenarioBattle {
         private val recordedDecisions: MutableList<LocalScenarioDecisionTrace>?,
         private val lookaheadBudget: ((BattleTrainerTier) -> LocalLookaheadBudget)?,
         private val fork: LocalScenarioFork?,
+        private val start: LocalScenarioStart?,
     ) {
         private val difficulties = mapOf(
             BattleSide.ALLY to cycleDifficulty,
@@ -179,7 +191,30 @@ internal object LocalTacticalScenarioBattle {
         private val memories = BattleSide.entries.associateWith { ScenarioMemory() }
         private val publicEvidence = LocalScenarioPublicEvidence()
         private var history = RecursiveActionHistory()
-        private var state = initialState()
+        private var state = initialState().let { initial -> start?.let { applyStart(initial, it) } ?: initial }
+
+        /** The puzzle's position: each side's members in team order, the first of them in front. */
+        private fun applyStart(initial: BattleStateView, start: LocalScenarioStart): BattleStateView {
+            fun member(side: BattleSide, index: Int) = (if (side == BattleSide.ALLY) cycleIds else offenseIds)[index]
+            val adjusted = initial.pokemon.map { pokemon ->
+                val side = pokemon.side
+                val index = (if (side == BattleSide.ALLY) cycleIds else offenseIds).indexOf(pokemon.battlePokemonId)
+                val hp = start.hp[side to index] ?: pokemon.hpFraction
+                pokemon.copyState(
+                    hpFraction = hp,
+                    // Zero HP starts it knocked out: a position later in the battle.
+                    fainted = pokemon.fainted || hp <= 0.0,
+                    statusId = start.status[side to index] ?: pokemon.statusId,
+                    statStages = start.stages[side to index] ?: pokemon.statStages,
+                )
+            }
+            if (start.revealAll) {
+                revealedPokemonIds += cycleIds + offenseIds
+                templates.forEach { (id, template) -> revealedMoveIds.getOrPut(id, ::linkedSetOf).addAll(template.moves.map { it.id }) }
+            }
+            check(member(BattleSide.ALLY, 0) in adjusted.filter { it.activeSlot != null }.map { it.battlePokemonId })
+            return initial.copyState(pokemon = adjusted)
+        }
         private var cycleStatusMoves = 0
         private var offenseStatusMoves = 0
         private var cycleVoluntarySwitches = 0

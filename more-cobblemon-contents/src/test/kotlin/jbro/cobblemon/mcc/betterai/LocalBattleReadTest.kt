@@ -139,6 +139,8 @@ class LocalBattleReadTest {
         Assumptions.assumeTrue(games > 0)
         val from = System.getProperty("aiengine.oracleFrom")?.toIntOrNull() ?: 0
         val rollouts = System.getProperty("aiengine.oracleRollouts")?.toIntOrNull() ?: 12
+        // Optional focus: "selfplay-5:4:OPPONENT,selfplay-9:9:OPPONENT" plays out only those decisions.
+        val focus = System.getProperty("aiengine.oracleFocus")?.split(',')?.map(String::trim)?.filter(String::isNotEmpty)?.toSet()
         val boss = BattleDifficultyProfiles.BOSS
         val profile = BattleTrainerProfile(skillLevel = 2, personality = BattleTrainerProfile.champion().personality, difficulty = boss)
         val budget: (BattleTrainerTier) -> jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudget = {
@@ -149,6 +151,7 @@ class LocalBattleReadTest {
         val diffs = mutableMapOf<String, MutableList<Double>>()
         var positions = 0
         for (definition in LocalSelfPlayMeasurement.definitions(from + games, 20261201, BattleFormat.SINGLE).drop(from)) {
+            if (focus != null && focus.none { it.startsWith("${definition.name}:") }) continue
             val contexts = mutableListOf<BattleDecisionContext>()
             val decisions = mutableListOf<LocalScenarioDecisionTrace>()
             LocalTacticalScenarioBattle.run(definition, 20, readTuning(), readTuning(), boss, boss,
@@ -156,6 +159,7 @@ class LocalBattleReadTest {
             for ((index, context) in contexts.withIndex()) {
                 if (context.candidates.size < 2 || context.candidates.any { it.actionId.startsWith("forced:") }) continue
                 val side = BattleSide.valueOf(decisions[index].side)
+                if (focus != null && "${definition.name}:${context.state.turn}:$side" !in focus) continue
                 val base = LocalBattleActionPolicy.rank(context, null, profile)
                 fun top(depth: Int) = LocalRecursiveLookaheadEvaluator.evaluate(base, context,
                     profile.copy(difficulty = boss.copy(lookaheadPlies = depth)), readTuning(), clockMillis = { 0L },
