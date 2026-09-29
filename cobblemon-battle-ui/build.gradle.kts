@@ -20,6 +20,9 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
     modImplementation("maven.modrinth:cobblemon:${property("cobblemon_version_id")}")
+    modCompileOnly(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
+    modRuntimeOnly(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
+    testImplementation(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
     // Modrinth metadata does not expose Cobblemon's development runtime libraries.
     // Versions match the official Cobblemon 1.8.1 Fabric POM; never bundle these in our JAR.
     runtimeOnly("org.graalvm.js:js:22.3.0")

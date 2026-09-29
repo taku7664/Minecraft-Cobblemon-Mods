@@ -1,6 +1,6 @@
 package jbro.cobblemon.battleui.navigation;
 
-import java.util.ArrayList;
+import jbro.cobblemon.battleui.extended.ui.shared.BattleControlLayout;
 import java.util.List;
 
 public final class BattleMenuLayout {
@@ -21,13 +21,9 @@ public final class BattleMenuLayout {
             throw new IllegalArgumentException("Button dimensions, gap, and count must be non-negative");
         }
 
-        int x = Math.max(0, screenWidth - rightMargin - buttonWidth);
-        int totalHeight = count == 0 ? 0 : count * buttonHeight + (count - 1) * gap;
-        int firstY = Math.max(0, screenHeight - bottomMargin - totalHeight);
-        List<UiRect> result = new ArrayList<>(count);
-        for (int index = 0; index < count; index++) {
-            result.add(new UiRect(x, firstY + index * (buttonHeight + gap), buttonWidth, buttonHeight));
-        }
-        return List.copyOf(result);
+        return BattleControlLayout.vertical(screenWidth, screenHeight, buttonWidth, buttonHeight,
+                        gap, rightMargin, bottomMargin, count).stream()
+                .map(rect -> new UiRect(rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight()))
+                .toList();
     }
 }
