@@ -160,6 +160,12 @@ internal data class LocalDecisionTuning(
     /** Board value of winning the singles matchup on the field (LocalLookaheadStateEvaluator.activeDuel); zero leaves it out. */
     val leafDuelValue: Double = 0.0,
     /**
+     * Board value of the team matchup reading (LocalLeafMatchups: each side's best answers to the other, -1..1) and
+     * of the field matchup's score, in the leaf; they reach the root through [positionalTurnDeltas].
+     */
+    val leafMatchupTeamWeight: Double = 0.0,
+    val leafMatchupFieldWeight: Double = 0.0,
+    /**
      * How much more willing the search is to abandon a continuation, in board units.
      *
      * Zero ships, and stays zero. Pruning harder was asked for, built, measured, and rejected.

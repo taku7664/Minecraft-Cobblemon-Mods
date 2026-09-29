@@ -42,6 +42,12 @@ internal class LocalProjectedActionCalculationCache(
 
     private val leafAttacks = java.util.IdentityHashMap<BattleDecisionContext, LeafAttack>()
 
+    /** A cached reading that may be absent (the pair could not be scored), so a miss and a null differ. */
+    internal class Cached(val value: Pair<Double, Double>?)
+
+    /** The leaf's matchup pairs (LocalLeafMatchups), keyed by what the exchange reads. */
+    internal val leafMatchups = HashMap<Any, Cached>()
+
     internal fun leafAttack(calculated: BattleDecisionContext, compute: () -> LeafAttack): LeafAttack =
         leafAttacks.getOrPut(calculated, compute)
 

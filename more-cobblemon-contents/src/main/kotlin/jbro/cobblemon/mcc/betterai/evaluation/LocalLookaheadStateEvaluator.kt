@@ -46,10 +46,15 @@ internal object LocalLookaheadStateEvaluator {
         val duel = if (tuning.leafDuelValue == 0.0) 0.0 else {
             activeDuel(state, source, calculationCache, shouldContinue, tuning) * tuning.leafDuelValue
         }
+        val matchups = if (tuning.leafMatchupTeamWeight == 0.0 && tuning.leafMatchupFieldWeight == 0.0) 0.0 else {
+            LocalLeafMatchups.evaluate(state, source, calculationCache, shouldContinue)?.let {
+                it.team * tuning.leafMatchupTeamWeight + it.field * tuning.leafMatchupFieldWeight
+            } ?: 0.0
+        }
         val persistentStages = if (tuning.leafPersistentStageValue == 0.0) 0.0 else {
             LocalPersistentStageValue.evaluate(state, source.publicActionCatalog) * tuning.leafPersistentStageValue
         }
-        return material + pressure * tuning.leafPressureWeight + speedControl + persistentStages + duel +
+        return material + pressure * tuning.leafPressureWeight + speedControl + persistentStages + duel + matchups +
             teamCoverage * tuning.leafTeamCoverageWeight +
             if (includePositionEffects) LocalImmediateTurnScorer.positionEffectValue(state) else 0.0
     }
