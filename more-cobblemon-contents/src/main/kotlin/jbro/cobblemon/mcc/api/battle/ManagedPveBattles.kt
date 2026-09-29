@@ -82,7 +82,7 @@ object ManagedPveBattles {
             }, request.opponentProperties.map { raw ->
                 val properties = PokemonProperties.Companion.parse(raw)
                 require(properties.species != null && properties.species != "random") { "Unknown or random opponent species" }
-                require(properties.level in 1..100) { "Opponent level must be explicit" }
+                require(properties.level in 1..Cobblemon.config.maxPokemonLevel) { "Opponent level must be explicit and within Cobblemon's maximum" }
                 require(!properties.moves.isNullOrEmpty()) { "Opponent moves must be explicit" }
                 BattlePokemon.Companion.safeCopyOf(Cobblemon173CatalogPokemonCreator.create(properties, properties.form)).also {
                     protectManagedOpponent(it)
