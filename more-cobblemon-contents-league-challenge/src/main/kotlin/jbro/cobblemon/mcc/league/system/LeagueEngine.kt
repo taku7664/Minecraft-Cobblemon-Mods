@@ -25,17 +25,25 @@ data class LeagueCatalog(
     val finals: List<String>,
     val challenges: Map<String, Challenge>,
     val wildLevel: WildLevelRule = WildLevelRule(),
+    /** The hard route, opened by the normal Champion: eight gyms then five finals, empty when a league has none. */
+    val hardGyms: List<String> = emptyList(),
+    val hardFinals: List<String> = emptyList(),
 ) {
+    val hasHard: Boolean get() = hardGyms.isNotEmpty()
+
     init {
         requireId(id)
         require(initialCap in 1..100)
         require(gyms.size == 8 && finals.size == 5)
-        require((gyms + finals).distinct().size == 13)
-        require((gyms + finals).all { it in challenges })
+        require((hardGyms.isEmpty() && hardFinals.isEmpty()) || (hardGyms.size == 8 && hardFinals.size == 5))
+        val route = gyms + finals + hardGyms + hardFinals
+        require(route.distinct().size == route.size)
+        require(route.all { it in challenges })
         require(gyms.all { challenges.getValue(it).badge != null })
         require(gyms.map { challenges.getValue(it).badge }.distinct().size == 8)
-        require(finals.all { challenges.getValue(it).badge == null })
-        val caps = listOf(initialCap) + (gyms + finals).map { challenges.getValue(it).unlockCap }
+        // Badges come from the normal gyms; the hard route only replays them.
+        require((finals + hardGyms + hardFinals).all { challenges.getValue(it).badge == null })
+        val caps = listOf(initialCap) + route.map { challenges.getValue(it).unlockCap }
         require(caps.zipWithNext().all { (a, b) -> a <= b }) { "Level caps must never decrease" }
         challenges.forEach { (id, challenge) ->
             requireId(id)
@@ -75,6 +83,8 @@ data class LeagueProgress(
     val cleared: Set<String> = emptySet(),
     val champion: Boolean = false,
     val championAt: Long? = null,
+    /** The hard route's Champion was beaten too. */
+    val hardChampion: Boolean = false,
     val unlockedCap: Int = 0,
     val run: LeagueRun? = null,
     val rewards: List<LeagueReward> = emptyList(),
@@ -84,6 +94,9 @@ data class LeagueProgress(
 class LeagueEngine(private val catalog: LeagueCatalog) {
     companion object { const val MAX_REWARDS = 4096 }
     fun badgeCount(state: LeagueProgress): Int = catalog.gyms.count { it in state.cleared }
+
+    /** The normal Champion opens the hard route. */
+    fun hardUnlocked(state: LeagueProgress): Boolean = catalog.hasHard && state.champion
     /**
      * The cap the cleared challenges earn under the current catalog. It is derived rather than read from the stored
      * [LeagueProgress.unlockedCap], so a data pack that moves the caps also moves the caps of progress saved before.
@@ -95,13 +108,17 @@ class LeagueEngine(private val catalog: LeagueCatalog) {
         require(state.run == null) { "run_active" }
         require(party.size == 6 && party.all { it.isNotBlank() }) { "party_required" }
         require(state.rewards.all { it.badgeDone && it.bpDone }) { "rewards_pending" }
-        val gymIndex = catalog.gyms.indexOf(challengeId)
+        val hard = challengeId in catalog.hardGyms || challengeId in catalog.hardFinals
+        if (hard) require(hardUnlocked(state)) { "hard_locked" }
+        val gyms = if (hard) catalog.hardGyms else catalog.gyms
+        val finals = if (hard) catalog.hardFinals else catalog.finals
+        val gymIndex = gyms.indexOf(challengeId)
         val encounters = if (gymIndex >= 0) {
-            require(catalog.gyms.take(gymIndex).all { it in state.cleared }) { "prerequisite" }
+            require(gyms.take(gymIndex).all { it in state.cleared }) { "prerequisite" }
             listOf(catalog.challenges.getValue(challengeId))
         } else {
-            require(challengeId == catalog.finals.first() && badgeCount(state) == 8) { "prerequisite" }
-            catalog.finals.map { catalog.challenges.getValue(it) }
+            require(challengeId == finals.first() && gyms.all { it in state.cleared }) { "prerequisite" }
+            finals.map { catalog.challenges.getValue(it) }
         }
         // Reserve the entire run before battle, so a later victory cannot exceed storage capacity.
         require(state.rewards.size + encounters.size <= MAX_REWARDS) { "history_full" }
@@ -127,11 +144,14 @@ class LeagueEngine(private val catalog: LeagueCatalog) {
         require(now >= 0)
         val challenge = run.encounters[run.index]
         val first = challenge.id !in state.cleared
-        val champion = state.champion || (run.encounters.size == 5 && run.index == 4)
+        val finalWin = run.encounters.size == 5 && run.index == 4
+        val hardRun = run.encounters.first().id in catalog.hardFinals
+        val champion = state.champion || (finalWin && !hardRun)
+        val hardChampion = state.hardChampion || (finalWin && hardRun)
         val reward = LeagueReward(battleToken, challenge.id, challenge.badge,
             if (first) challenge.firstBp else challenge.repeatBp)
         return state.copy(revision = state.revision + 1, cleared = state.cleared + challenge.id,
-            champion = champion, championAt = state.championAt ?: now.takeIf { champion },
+            champion = champion, championAt = state.championAt ?: now.takeIf { champion }, hardChampion = hardChampion,
             unlockedCap = maxOf(state.unlockedCap, challenge.unlockCap),
             run = if (run.index == run.encounters.lastIndex) null else run.copy(awaitingNext = true),
             // Keep paid BP receipts: reconciliation can repair a lagging BP save idempotently.

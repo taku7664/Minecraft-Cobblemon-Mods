@@ -249,19 +249,23 @@ object LeagueServer {
         val engine = LeagueEngine(catalog)
         val badges = engine.badgeCount(state)
         val rank = rank(catalog, state)
-        val views = (catalog.gyms + catalog.finals.first()).map { id ->
-            val index = catalog.gyms.indexOf(id)
-            val available = if (index >= 0) catalog.gyms.take(index).all { it in state.cleared } else badges == 8
+        fun route(gyms: List<String>, finals: List<String>) = (gyms + finals.first()).map { id ->
+            val index = gyms.indexOf(id)
+            val available = if (index >= 0) gyms.take(index).all { it in state.cleared } else gyms.all { it in state.cleared }
             val challenge = catalog.challenges.getValue(id)
             LeagueChallengeView(id, challenge.nameKey,
                 if (id in state.cleared) "CLEARED" else if (available) "AVAILABLE" else "LOCKED", challenge.unlockCap,
-                challenge.badge)
+                challenge.badge ?: gyms.indexOf(id).takeIf { it >= 0 }?.let { catalog.challenges.getValue(catalog.gyms[it]).badge })
         }
+        val views = route(catalog.gyms, catalog.finals)
+        val hardUnlocked = engine.hardUnlocked(state)
         val view = LeagueView(session.nonce, state.revision, LeagueCatalogResources.revision, catalog.nameKey,
             badges, rank, engine.cap(state), state.champion, BattlePointRewards.balance(player.server, player.uuid), views,
             state.run?.challengeId, state.run?.awaitingNext ?: false, state.rewards.any { !it.badgeDone || !it.bpDone }, errorKey,
             openScreen && runCatching { validate(player, session) }.isSuccess,
-            state.run?.let { it.encounters[it.index].nameKey })
+            state.run?.let { it.encounters[it.index].nameKey },
+            hardUnlocked, state.hardChampion, if (hardUnlocked) route(catalog.hardGyms, catalog.hardFinals) else emptyList(),
+            state.run?.let { run -> run.encounters.first().id in catalog.hardGyms + catalog.hardFinals } ?: false)
         if (ServerPlayNetworking.canSend(player, LeagueStatePayload.TYPE)) ServerPlayNetworking.send(player, LeagueStatePayload(gson.toJson(view)))
     }
 
@@ -269,7 +273,8 @@ object LeagueServer {
         Mod.LOGGER.warn("League request rejected for {}: {}", player.uuid, failure.message)
         val reason = failure.message?.substringBefore(':')
         val known = setOf("cap_disabled", "catching_cap_disabled", "spawn_scaling_conflict", "cap_unmapped", "cap_unavailable", "cap_sync_failed", "badge_failed",
-            "run_active", "party_required", "rewards_pending", "history_full", "prerequisite", "no_run", "phase_invalid", "level_cap",
+            "run_active", "party_required", "rewards_pending", "history_full", "prerequisite", "hard_locked", "no_run", "phase_invalid", "level_cap",
+            "opponent_level_unsupported",
             "battle_active", "battle_unavailable", "catalog_unavailable", "terminal_invalid", "terminal_expired",
             "client_missing", "request_conflict", "stale_revision")
         val key = ERROR_PREFIX + if (reason in known) reason else "request_failed"
