@@ -132,7 +132,7 @@ final class MusicCatalogCompilerTest {
               "schemaVersion": 1,
               "battle": {
                 "content": {
-                  "cobblemon_more_battle_content:battle_tower": "missing:playlist"
+                  "more_cobblemon_contents:battle_tower": "missing:playlist"
                 }
               }
             }
@@ -146,11 +146,11 @@ final class MusicCatalogCompilerTest {
         );
 
         assertFalse(compiled.snapshot().battle().content().containsKey(
-            "cobblemon_more_battle_content:battle_tower"
+            "more_cobblemon_contents:battle_tower"
         ));
         assertEquals(
             "missing:playlist",
-            compiled.inactiveOverrides().get("battle.content.cobblemon_more_battle_content:battle_tower")
+            compiled.inactiveOverrides().get("battle.content.more_cobblemon_contents:battle_tower")
         );
     }
 

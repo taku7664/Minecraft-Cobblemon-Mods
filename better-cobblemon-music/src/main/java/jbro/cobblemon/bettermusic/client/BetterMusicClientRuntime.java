@@ -32,8 +32,7 @@ public final class BetterMusicClientRuntime {
     private final Map<String, PlaylistDefinition> playlistsById = new HashMap<>();
     private final Map<String, String> fallbackPlaylistIds = new HashMap<>();
     private final PlaylistNavigator playlistNavigator = new PlaylistNavigator(ThreadLocalRandom.current());
-    private final LastPokemonHeartbeatPlayer heartbeatPlayer = new LastPokemonHeartbeatPlayer();
-
+    private final LastPokemonLowHpAlertPlayer lowHpAlertPlayer = new LastPokemonLowHpAlertPlayer();
     private BetterMusicConfigSnapshot snapshot;
     private CompiledMusicConfiguration configuration;
     private MinecraftMusicBackend backend;
@@ -73,14 +72,13 @@ public final class BetterMusicClientRuntime {
             inWorld = true;
             scanContextIfDue(client, nowSeconds);
         }
-        heartbeatPlayer.tick(
+        lowHpAlertPlayer.tick(
             client,
             nowSeconds,
-            lastPokemonEffect.heartbeat(),
+            lastPokemonEffect.lowHpAlert(),
             audioEffects.lastPokemonHpEffectVolume(),
-            configuration.audioEvents().heartbeat()
+            configuration.audioEvents().lowHpAlert()
         );
-
         if (suppressOriginalMusic || player.ownsMusic()) {
             client.getMusicManager().stopPlaying();
         }

@@ -1,0 +1,104 @@
+package jbro.cobblemon.mcc.betterai.state
+
+import java.util.Collections
+import java.util.Locale
+import jbro.cobblemon.mcc.internal.ai.*
+
+/** Lazy moveset hypotheses. Usage is a move-presence prior, never a turn-choice distribution. */
+internal object LocalOpponentMoveHypotheses {
+    data class InferredOption(
+        val details: BattleMoveCandidateView,
+        val knowledge: BattleOpponentMoveKnowledge,
+    )
+
+    /** Templates retain source PP; the action factory deducts branch uses exactly once. */
+    fun options(pokemon: BattlePokemonStateView, catalog: BattlePublicActionCatalogView,
+                history: RecursiveActionHistory): Map<String, BattleMoveCandidateView> {
+        if (pokemon.side != BattleSide.OPPONENT || pokemon.fainted) return emptyMap()
+        catalog.inferredMovesForPokemon(pokemon.battlePokemonId)?.let { inference ->
+            return inference.slots.asSequence()
+                .filter { it.knowledge != BattleOpponentMoveKnowledge.GUESS }
+                .mapNotNull { slot -> slot.moveId?.let { move -> slot.details?.let { move to it } } }
+                .filter { (move, details) ->
+                    val used = history.moveUses.entries.filter {
+                        it.key.pokemonId == pokemon.battlePokemonId && canonical(it.key.moveId) == canonical(move)
+                    }.sumOf { it.value }
+                    details.currentPp > used || history.chargingMoveByPokemon[pokemon.battlePokemonId] == move
+                }
+                .associateTo(linkedMapOf()) { it }
+        }
+        if (catalog.isMoveSetComplete(pokemon.battlePokemonId)) return emptyMap()
+        val pool = catalog.candidatePools.singleOrNull { it.battlePokemonId == pokemon.battlePokemonId }
+            ?.takeIf { it.speciesId == pokemon.speciesId && it.formId == pokemon.formId } ?: return emptyMap()
+        val known = pokemon.knownMoveIds.mapTo(hashSetOf(), ::canonical)
+        val assumed = history.assumedOpponentMoveIds[pokemon.battlePokemonId].orEmpty()
+        val occupied = known + assumed
+        return pool.moveDetails.filter { (move, details) ->
+            val key = canonical(move)
+            val used = history.moveUses.entries.filter {
+                it.key.pokemonId == pokemon.battlePokemonId && canonical(it.key.moveId) == key
+            }.sumOf { it.value }
+            key !in known && (key in assumed || occupied.size < 4) &&
+                (details.currentPp > used || history.chargingMoveByPokemon[pokemon.battlePokemonId] == move)
+        }
+    }
+
+    /** Keep only publicly sourced moves and order them by marginal set presence. */
+    fun usageRankedOptions(
+        pokemon: BattlePokemonStateView,
+        catalog: BattlePublicActionCatalogView,
+        history: RecursiveActionHistory,
+        usage: LocalMoveUsageLookup,
+    ): Map<String, BattleMoveCandidateView> = options(pokemon, catalog, history).entries.mapNotNull { entry ->
+        usage.rate(pokemon.speciesId, pokemon.formId, entry.key)?.let { rate -> Triple(entry.key, entry.value, rate) }
+    }.sortedWith(compareByDescending<Triple<String, BattleMoveCandidateView, Double>> { it.third }
+        .thenBy { canonical(it.first) })
+        .associateTo(linkedMapOf()) { (move, details) -> move to details }
+
+    /** Normalized slots are already ranked. Usage remains only as a compatibility fallback. */
+    fun inferredOptions(
+        pokemon: BattlePokemonStateView,
+        catalog: BattlePublicActionCatalogView,
+        history: RecursiveActionHistory,
+        usage: LocalMoveUsageLookup?,
+    ): Map<String, InferredOption> {
+        val inference = catalog.inferredMovesForPokemon(pokemon.battlePokemonId)
+        if (inference != null) {
+            val available = options(pokemon, catalog, history)
+            return inference.slots.asSequence().mapNotNull { slot ->
+                val id = slot.moveId ?: return@mapNotNull null
+                available.entries.singleOrNull { canonical(it.key) == canonical(id) }?.let { entry ->
+                    entry.key to InferredOption(entry.value, slot.knowledge)
+                }
+            }.associateTo(linkedMapOf()) { it }
+        }
+        val legacy = usage?.let { usageRankedOptions(pokemon, catalog, history, it) }
+            ?: options(pokemon, catalog, history)
+        return legacy.mapValuesTo(linkedMapOf()) { (_, details) ->
+            InferredOption(details, BattleOpponentMoveKnowledge.EXPECTED)
+        }
+    }
+
+    fun assumeAction(state: BattleStateView, catalog: BattlePublicActionCatalogView,
+                     history: RecursiveActionHistory, action: BattleActionCandidate): RecursiveActionHistory {
+        if (action.kind == BattleActionKind.COMPOSITE) return action.componentActions.fold(history) { branch, component ->
+            assumeAction(state, catalog, branch, component)
+        }
+        if ("hypothetical_public_move" !in action.tags && "inferred_opponent_move" !in action.tags) return history
+        require(action.kind == BattleActionKind.USE_MOVE)
+        val actor = state.pokemon.single { it.side == BattleSide.OPPONENT && it.activeSlot == action.actorSlot }
+        return assume(actor, catalog, history, requireNotNull(action.moveId))
+    }
+
+    /** Commit on selection, even if the projected move later fails or is interrupted. */
+    fun assume(pokemon: BattlePokemonStateView, catalog: BattlePublicActionCatalogView,
+               history: RecursiveActionHistory, moveId: String): RecursiveActionHistory {
+        require(moveId in options(pokemon, catalog, history)) { "Move is not an available hypothesis" }
+        val id = pokemon.battlePokemonId
+        val moves = history.assumedOpponentMoveIds[id].orEmpty() + canonical(moveId)
+        return history.copy(assumedOpponentMoveIds = Collections.unmodifiableMap(
+            history.assumedOpponentMoveIds + (id to Collections.unmodifiableSet(moves))))
+    }
+
+    private fun canonical(value: String) = PublicIds.canonical(value)
+}

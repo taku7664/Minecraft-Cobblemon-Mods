@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "cobblemon_ui_kit",
+  "version": "${version}",
+  "name": "Cobblemon UI Kit",
+  "description": "Shared client-side widgets and themes for Cobblemon interfaces.",
+  "authors": ["jbro"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.uikit.client.CobblemonUiKitClient"
+      }
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "fabric-api": "*",
+    "fabric-language-kotlin": ">=1.14.1+kotlin.2.4.20",
+    "cobblemon": ">=1.8.1 <1.9.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21"
+  }
+}

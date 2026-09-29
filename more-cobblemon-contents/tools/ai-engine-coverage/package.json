@@ -1,0 +1,6 @@
+{
+  "name": "ai-engine-coverage",
+  "private": true,
+  "description": "Generates docs/betterai/engine/AI_엔진_구현_현황.xlsx",
+  "dependencies": { "exceljs": "4.4.0" }
+}

@@ -1,0 +1,79 @@
+package jbro.cobblemon.mcc.betterai
+
+import jbro.cobblemon.mcc.betterai.evaluation.LocalHypothesisPriorityReservation
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Test
+
+class EmbeddedPolicyComparisonTest {
+    @Test
+    fun `uncapped leaf arm changes only the diagnostic flag and identity`() {
+        val current = EmbeddedPolicyComparison.tuning("CURRENT")
+        assertTrue(current.capLeafDamageToRemainingHp)
+        assertTrue(EmbeddedPolicyComparison.tuning("LEGACY").capLeafDamageToRemainingHp)
+        assertTrue(EmbeddedPolicyComparison.tuning("CURRENT_TEAM_COVERAGE").capLeafDamageToRemainingHp)
+        assertEquals(current.copy(id = "current_uncapped_leaf", capLeafDamageToRemainingHp = false),
+            EmbeddedPolicyComparison.tuning("CURRENT_UNCAPPED_LEAF"))
+    }
+
+    @Test
+    fun `current four slot usage policy retains explicit capped comparison arms`() {
+        val current = EmbeddedPolicyComparison.tuning("CURRENT")
+        assertEquals(0.0, current.leafTeamCoverageWeight)
+        assertEquals(current.copy(id = "current_team_coverage", leafTeamCoverageWeight = 0.25),
+            EmbeddedPolicyComparison.tuning("CURRENT_TEAM_COVERAGE"))
+        assertEquals(current.copy(id = "current_public_move_hypotheses", lookaheadMoveHypotheses = true),
+            EmbeddedPolicyComparison.tuning("CURRENT_PUBLIC_MOVE_HYPOTHESES"))
+        assertTrue(current.lookaheadMoveHypotheses)
+        assertEquals(4, current.hypotheticalMoveLimitPerSlot)
+        assertEquals(LocalHypothesisPriorityReservation.CONDITION_GROUPS, current.hypotheticalPriorityReservation)
+        assertEquals(current.copy(id = "current_no_move_usage", lookaheadMoveHypotheses = false),
+            EmbeddedPolicyComparison.tuning("CURRENT_NO_MOVE_USAGE"))
+        assertEquals(current.copy(id = "current_public_move_hypotheses_cap3_priority_conditions", lookaheadMoveHypotheses = true,
+            hypotheticalMoveLimitPerSlot = 3, hypotheticalPriorityReservation = LocalHypothesisPriorityReservation.CONDITION_GROUPS),
+            EmbeddedPolicyComparison.tuning("CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY_CONDITIONS"))
+        assertEquals(current.copy(id = "current_public_move_hypotheses_cap3_priority", lookaheadMoveHypotheses = true,
+            hypotheticalMoveLimitPerSlot = 3, hypotheticalPriorityReservation = LocalHypothesisPriorityReservation.SINGLE),
+            EmbeddedPolicyComparison.tuning("CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3_PRIORITY"))
+        assertEquals(current.copy(id = "current_public_move_hypotheses_cap3", lookaheadMoveHypotheses = true,
+            hypotheticalMoveLimitPerSlot = 3), EmbeddedPolicyComparison.tuning("CURRENT_PUBLIC_MOVE_HYPOTHESES_CAP3"))
+        assertThrows(IllegalArgumentException::class.java) { current.copy(hypotheticalMoveLimitPerSlot = 0) }
+        assertFalse(EmbeddedPolicyComparison.tuning("LEGACY").lookaheadMoveHypotheses)
+        assertThrows(IllegalStateException::class.java) { EmbeddedPolicyComparison.tuning("UNKNOWN") }
+    }
+
+    @Test
+    fun `comparison profiles preserve default and support explicit boss without changing personality`() {
+        val default = EmbeddedPolicyComparison.profileForSkill(0)
+        val boss = EmbeddedPolicyComparison.profileForSkill(5)
+        assertEquals(jbro.cobblemon.mcc.internal.ai.BattleTrainerTier.INTRODUCTORY, default.difficulty.tier)
+        assertEquals(jbro.cobblemon.mcc.internal.ai.BattleTrainerTier.BOSS, boss.difficulty.tier)
+        assertEquals(default.personality, boss.personality)
+        assertEquals(5, boss.skillLevel)
+        assertThrows(IllegalArgumentException::class.java) { EmbeddedPolicyComparison.profileForSkill(6) }
+        assertThrows(IllegalArgumentException::class.java) { EmbeddedPolicyComparison.profileForSkill(-1) }
+    }
+
+    @Test
+    fun `four games balance challenger team and seat and rotate execution order`() {
+        val schedule = EmbeddedPolicyComparison.schedule(0)
+        assertEquals(4, schedule.size)
+        assertEquals(4, schedule.toSet().size)
+        assertEquals(2, schedule.count { it.challengerP1 })
+        assertEquals(2, schedule.count { it.reverseTeams })
+        assertEquals(2, schedule.count { it.challengerP1 != it.reverseTeams })
+        assertEquals(schedule.toSet(), EmbeddedPolicyComparison.schedule(1).toSet())
+        assertNotEquals(schedule.first(), EmbeddedPolicyComparison.schedule(1).first())
+    }
+
+    @Test
+    fun `pair score uses four games and incomplete outcomes retain uncertainty`() {
+        val complete = EmbeddedPolicyComparison.score(listOf("WIN", "LOSS", "DRAW", "WIN"))
+        assertEquals(0.625, complete.first)
+        assertEquals(complete.first, complete.second)
+        val incomplete = EmbeddedPolicyComparison.score(listOf("WIN", "LOSS", "DRAW", "INCOMPLETE"))
+        assertEquals(0.375, incomplete.first)
+        assertEquals(0.625, incomplete.second)
+        assertThrows(IllegalArgumentException::class.java) { EmbeddedPolicyComparison.score(listOf("WIN")) }
+        assertThrows(IllegalArgumentException::class.java) { EmbeddedPolicyComparison.score(List(4) { "UNKNOWN" }) }
+    }
+}

@@ -179,19 +179,19 @@ public final class LastPokemonMuffleTracker {
         CRITICAL(true, true);
 
         private final boolean muffled;
-        private final boolean heartbeat;
+        private final boolean lowHpAlert;
 
-        Effect(boolean muffled, boolean heartbeat) {
+        Effect(boolean muffled, boolean lowHpAlert) {
             this.muffled = muffled;
-            this.heartbeat = heartbeat;
+            this.lowHpAlert = lowHpAlert;
         }
 
         boolean muffled() {
             return muffled;
         }
 
-        boolean heartbeat() {
-            return heartbeat;
+        boolean lowHpAlert() {
+            return lowHpAlert;
         }
     }
 }

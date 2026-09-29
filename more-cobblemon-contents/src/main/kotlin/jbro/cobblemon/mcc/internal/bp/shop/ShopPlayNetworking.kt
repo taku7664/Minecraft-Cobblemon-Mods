@@ -1,0 +1,205 @@
+package jbro.cobblemon.mcc.internal.bp.shop
+
+import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
+import jbro.cobblemon.mcc.internal.hub.BattleHubIds
+import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
+import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
+import jbro.cobblemon.mcc.internal.bp.BattlePointApplyResult
+import jbro.cobblemon.mcc.internal.bp.BattlePointAtomicApplier
+import jbro.cobblemon.mcc.internal.bp.BattlePointRequest
+import jbro.cobblemon.mcc.internal.bp.BattlePointService
+import jbro.cobblemon.mcc.internal.compat.cobblemon173.reportManagedCleanupFailureSafely
+import jbro.cobblemon.mcc.internal.compat.cobblemon173.runManagedCleanupActionsSafely
+import jbro.cobblemon.mcc.internal.compat.fabric.BattlePointShopCatalogResources
+import jbro.cobblemon.mcc.internal.compat.fabric.MinecraftBattlePointShopDelivery
+import jbro.cobblemon.mcc.internal.hub.BattleHubNetworking
+import jbro.cobblemon.mcc.internal.record.BattleRecordCategory
+import jbro.cobblemon.mcc.internal.record.BattleRecordService
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
+import net.minecraft.server.level.ServerPlayer
+
+internal object ShopPlayNetworking {
+    fun registerServer() {
+        BattleHubEntries.register(BattleHubEntry(BattleHubIds.SHOP, accessContentId = null) { player, _ -> open(player) })
+        PayloadTypeRegistry.playS2C().register(ShopStatePayload.TYPE, ShopStatePayload.CODEC)
+        PayloadTypeRegistry.playS2C().register(HomeLeaderboardStatePayload.TYPE, HomeLeaderboardStatePayload.CODEC)
+        PayloadTypeRegistry.playS2C().register(HomeLeaderboardCatalogPayload.TYPE, HomeLeaderboardCatalogPayload.CODEC)
+        PayloadTypeRegistry.playC2S().register(ShopOpenPayload.TYPE, ShopOpenPayload.CODEC)
+        PayloadTypeRegistry.playC2S().register(ShopPurchasePayload.TYPE, ShopPurchasePayload.CODEC)
+        ServerPlayNetworking.registerGlobalReceiver(ShopOpenPayload.TYPE) { _, context ->
+            open(context.player())
+        }
+        ServerPlayNetworking.registerGlobalReceiver(ShopPurchasePayload.TYPE) { payload, context ->
+            purchase(context.player(), payload)
+        }
+    }
+
+    fun open(player: ServerPlayer): Boolean {
+        return try {
+            if (!ServerPlayNetworking.canSend(player, ShopStatePayload.TYPE)) {
+                false
+            } else {
+                sendState(player, null)
+                sendLeaderboardSafely(player)
+                true
+            }
+        } catch (failure: RuntimeException) {
+            reportOpenFailure(player, failure)
+            false
+        } catch (failure: LinkageError) {
+            reportOpenFailure(player, failure)
+            false
+        }
+    }
+
+    private fun purchase(player: ServerPlayer, payload: ShopPurchasePayload) {
+        val result = try {
+            val service = BattlePointShopService(
+                catalog = BattlePointShopCatalogResources.store::snapshot,
+                battlePoints = ServerBattlePointAtomicApplier(player),
+                delivery = MinecraftBattlePointShopDelivery(player.server),
+            )
+            service.purchase(
+                BattlePointShopPurchaseRequest(
+                    purchaseId = payload.purchaseId,
+                    playerId = player.uuid,
+                    catalogId = payload.catalogId,
+                    catalogRevision = payload.catalogRevision,
+                    lines = payload.lines,
+                ),
+            )
+        } catch (failure: RuntimeException) {
+            failedPurchaseResult(player, failure)
+        } catch (failure: LinkageError) {
+            failedPurchaseResult(player, failure)
+        }
+        runManagedCleanupActionsSafely(
+            reportFailure = { failure ->
+                MoreCobblemonContents.LOGGER.error("BP shop purchase response failed for ${player.uuid}", failure)
+            },
+            { sendState(player, result.status) },
+            { BattleHubNetworking.sendHeader(player) },
+        )
+    }
+
+    private fun sendState(player: ServerPlayer, result: BattlePointShopPurchaseStatus?): Boolean {
+        val catalog = BattlePointShopCatalogResources.store.snapshot()
+        ServerPlayNetworking.send(
+            player,
+            shopStatePayload(catalog, BattlePointService.balance(player.server, player.uuid), result),
+        )
+        return true
+    }
+
+    private fun sendLeaderboardSafely(player: ServerPlayer) {
+        runManagedCleanupActionsSafely(
+            reportFailure = { failure ->
+                MoreCobblemonContents.LOGGER.error("BP shop leaderboard response failed for ${player.uuid}", failure)
+            },
+            {
+                if (ServerPlayNetworking.canSend(player, HomeLeaderboardStatePayload.TYPE)) {
+                    val entries = leaderboardEntrySource(player)
+                    ServerPlayNetworking.send(
+                        player,
+                        HomeLeaderboardStatePayload(
+                            singles = entries(ManagedBattleContentIds.BATTLE_TOWER, "single", HomeLeaderboardRanking.TOWER),
+                            doubles = entries(ManagedBattleContentIds.BATTLE_TOWER, "double", HomeLeaderboardRanking.TOWER),
+                        ),
+                    )
+                }
+            },
+            {
+                if (ServerPlayNetworking.canSend(player, HomeLeaderboardCatalogPayload.TYPE)) {
+                    val entries = leaderboardEntrySource(player)
+                    val boards = homeLeaderboardBoardSpecs().map { spec ->
+                        HomeLeaderboardBoard(
+                            spec.contentId,
+                            spec.formatId,
+                            entries(spec.contentId, spec.formatId, spec.ranking),
+                        )
+                    }
+                    ServerPlayNetworking.send(player, HomeLeaderboardCatalogPayload(boards))
+                }
+            },
+        )
+    }
+
+    private fun leaderboardEntrySource(
+        player: ServerPlayer,
+    ): (String, String, HomeLeaderboardRanking) -> List<HomeLeaderboardEntry> {
+        val server = player.server
+        val onlineNames = server.playerList.players.associate { it.uuid to it.scoreboardName }
+        fun name(playerId: java.util.UUID): String? =
+            onlineNames[playerId] ?: server.profileCache?.get(playerId)?.orElse(null)?.name
+        return { contentId, formatId, ranking ->
+            HomeLeaderboard.project(
+                BattleRecordService.all(server, BattleRecordCategory(contentId, formatId)),
+                ranking,
+                ::name,
+            )
+        }
+    }
+
+    private fun failedPurchaseResult(player: ServerPlayer, failure: Throwable): BattlePointShopPurchaseResult {
+        reportManagedCleanupFailureSafely(failure) {
+            MoreCobblemonContents.LOGGER.error("BP shop purchase failed for ${player.uuid}", it)
+        }
+        return BattlePointShopPurchaseResult(BattlePointShopPurchaseStatus.DELIVERY_FAILED)
+    }
+
+    private fun reportOpenFailure(player: ServerPlayer, failure: Throwable) {
+        reportManagedCleanupFailureSafely(failure) {
+            MoreCobblemonContents.LOGGER.error("BP shop could not be opened for ${player.uuid}", it)
+        }
+    }
+
+    private class ServerBattlePointAtomicApplier(
+        private val player: ServerPlayer,
+    ) : BattlePointAtomicApplier {
+        override fun applyAtomically(
+            request: BattlePointRequest,
+            commit: () -> Boolean,
+        ): BattlePointApplyResult = BattlePointService.applyAtomically(player.server, request, commit)
+    }
+}
+
+internal data class HomeLeaderboardBoardSpec(
+    val contentId: String,
+    val formatId: String,
+    val ranking: HomeLeaderboardRanking,
+)
+
+// Stopgap until the hub rewrite replaces the home leaderboard: record IDs are spelled out so the core
+// does not import the content mods.
+internal fun homeLeaderboardBoardSpecs(): List<HomeLeaderboardBoardSpec> = buildList {
+    val formats = listOf("single", "double")
+    formats.forEach { format ->
+        add(HomeLeaderboardBoardSpec(ManagedBattleContentIds.BATTLE_TOWER, format, HomeLeaderboardRanking.TOWER))
+    }
+    formats.forEach { format ->
+        listOf("level_50", "open_level").forEach { levelMode ->
+            add(HomeLeaderboardBoardSpec(ManagedBattleContentIds.BATTLE_FACTORY, "${format}_$levelMode", HomeLeaderboardRanking.FACTORY))
+        }
+    }
+    formats.forEach { format ->
+        add(HomeLeaderboardBoardSpec(ManagedBattleContentIds.PVP, format, HomeLeaderboardRanking.PVP))
+    }
+}
+
+internal fun shopStatePayload(
+    catalog: BattlePointShopCatalog?,
+    balanceBp: Long,
+    result: BattlePointShopPurchaseStatus?,
+): ShopStatePayload = ShopStatePayload(
+    catalogId = catalog?.catalogId.orEmpty(),
+    catalogRevision = catalog?.revision.orEmpty(),
+    balanceBp = balanceBp,
+    limits = catalog?.limits ?: BattlePointShopLimits(1, 1, 1),
+    entries = catalog?.entries()?.map { entry ->
+        ShopEntryView(entry.entryId, entry.itemId, entry.itemCount, entry.priceBp)
+    }.orEmpty(),
+    result = if (catalog == null) BattlePointShopPurchaseStatus.CATALOG_UNAVAILABLE else result,
+    shopkeeper = catalog?.shopkeeper ?: BattlePointShopkeeperAppearance.DEFAULT,
+)

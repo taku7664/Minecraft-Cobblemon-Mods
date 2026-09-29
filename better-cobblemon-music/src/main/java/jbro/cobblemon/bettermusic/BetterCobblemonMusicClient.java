@@ -4,7 +4,7 @@ import jbro.cobblemon.bettermusic.client.BetterMusicClientCommands;
 import jbro.cobblemon.bettermusic.client.BetterMusicClientRuntime;
 import jbro.cobblemon.bettermusic.client.MusicCatalogResourceReloadListener;
 import jbro.cobblemon.bettermusic.config.BetterMusicConfigManager;
-import jbro.cobblemon.bettermusic.integration.mbc.MoreBattleContentIntegration;
+import jbro.cobblemon.bettermusic.integration.mcc.MoreCobblemonContentsIntegration;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
@@ -23,7 +23,7 @@ public final class BetterCobblemonMusicClient implements ClientModInitializer {
             jbro.cobblemon.bettermusic.audio.ClientHitSoundTracker.INSTANCE.clear();
             jbro.cobblemon.bettermusic.client.LastPokemonMuffleTracker.INSTANCE.clear();
         });
-        MoreBattleContentIntegration.registerIfInstalled(LOGGER);
+        MoreCobblemonContentsIntegration.registerIfInstalled(LOGGER);
         var configDirectory = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID);
         var configManager = new BetterMusicConfigManager(configDirectory);
         var initialLoad = configManager.initialize();

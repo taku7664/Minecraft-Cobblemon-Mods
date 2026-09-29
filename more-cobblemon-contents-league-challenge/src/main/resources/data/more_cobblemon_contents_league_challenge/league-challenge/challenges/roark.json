@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "trainer": "more_cobblemon_contents_league_challenge:roark",
+  "reward": "more_cobblemon_contents_league_challenge:roark",
+  "badge": "pokebadges:coal_sinnoh_badge",
+  "format": "SINGLE",
+  "mechanic": "NONE"
+}

@@ -21,3 +21,7 @@ option.BORDER_FOG=Border fog
 option.BORDER_FOG.comment=Completely blends distant terrain into the sky before the render-distance edge.
 option.BORDER_FOG_START=Border fog start
 option.BORDER_FOG_START.comment=Sets where border fog starts as a fraction of the render distance.
+option.HORIZON_HAZE=Horizon haze
+option.HORIZON_HAZE.comment=Uses a soft, stylized color gradient to hide the hard lower-sky seam.
+option.HORIZON_HAZE_HEIGHT=Horizon haze width
+option.HORIZON_HAZE_HEIGHT.comment=Adjusts how far the soft haze spreads above and below the horizon.

@@ -1,12 +1,12 @@
 package jbro.cobblemon.bettermusic.catalog;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import java.io.Reader;
 import java.util.Map;
-import java.util.Optional;
 
 public final class MusicMappingOverridesParser {
     private MusicMappingOverridesParser() {
@@ -28,6 +28,7 @@ public final class MusicMappingOverridesParser {
         if (schema != 1) {
             throw CatalogJson.error("$.schemaVersion", "must be 1");
         }
+        discardRenderedPackDefaults(root);
         return new MusicMappingOverrides(
             root.has("field") ? field(CatalogJson.object(root, "field", "$")) : MusicMappingOverrides.Field.empty(),
             root.has("battle") ? battle(CatalogJson.object(root, "battle", "$")) : MusicMappingOverrides.Battle.empty()
@@ -67,5 +68,77 @@ public final class MusicMappingOverridesParser {
             MusicCatalogParser.optionalId(object, "ultraBeast", path),
             MusicCatalogParser.pokemon(CatalogJson.optionalArray(object, "pokemon", path), path + ".pokemon")
         );
+    }
+
+    private static void discardRenderedPackDefaults(JsonObject root) {
+        JsonObject field = objectIfPresent(root, "field");
+        if (field != null) {
+            discardProperty(field, "default");
+            discardMapValues(field, "dimensions");
+            discardMapValues(field, "biomes");
+            discardMapValues(field, "biomePathContains");
+            discardProperty(field, "underground");
+        }
+        JsonObject battle = objectIfPresent(root, "battle");
+        if (battle != null) {
+            discardProperty(battle, "wild");
+            discardProperty(battle, "trainer");
+            discardProperty(battle, "pvp");
+            discardMapValues(battle, "content");
+            discardProperty(battle, "legendary");
+            discardProperty(battle, "ultraBeast");
+            discardPokemon(battle);
+        }
+    }
+
+    private static JsonObject objectIfPresent(JsonObject parent, String key) {
+        JsonElement value = parent.get(key);
+        return value != null && value.isJsonObject() ? value.getAsJsonObject() : null;
+    }
+
+    private static void discardProperty(JsonObject object, String key) {
+        JsonElement value = object.get(key);
+        if (renderedPackDefault(value)) {
+            object.remove(key);
+        }
+    }
+
+    private static void discardMapValues(JsonObject parent, String key) {
+        JsonObject object = objectIfPresent(parent, key);
+        if (object != null) {
+            object.entrySet().removeIf(entry -> renderedPackDefault(entry.getValue()));
+        }
+    }
+
+    private static void discardPokemon(JsonObject battle) {
+        JsonElement value = battle.get("pokemon");
+        if (value == null || !value.isJsonArray()) {
+            return;
+        }
+        JsonArray pokemon = value.getAsJsonArray();
+        for (int index = pokemon.size() - 1; index >= 0; index--) {
+            JsonElement rule = pokemon.get(index);
+            if (rule.isJsonObject() && renderedPackDefault(rule.getAsJsonObject().get("playlist"))) {
+                pokemon.remove(index);
+            }
+        }
+    }
+
+    private static boolean renderedPackDefault(JsonElement element) {
+        if (element == null || !element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
+            return false;
+        }
+        String value = element.getAsString();
+        int separator = value.lastIndexOf(" (");
+        if (separator <= 0 || !value.endsWith(")")) {
+            return false;
+        }
+        String displayedId = value.substring(separator + 2, value.length() - 1);
+        try {
+            CatalogJson.resourceId(displayedId, "$renderedPackDefault");
+            return true;
+        } catch (CatalogValidationException ignored) {
+            return false;
+        }
     }
 }

@@ -53,7 +53,7 @@ JAR은 상황 판정과 재생을 담당합니다. ZIP은 OGG, `sounds.json`, �
   "schemaVersion": 1,
   "battle": {
     "content": {
-      "cobblemon_more_battle_content:battle_tower": "cobleserver:track/battle/pvp/swsh_gym_leader_battle"
+      "more_cobblemon_contents:battle_tower": "cobleserver:track/battle/pvp/swsh_gym_leader_battle"
     }
   }
 }
@@ -70,7 +70,7 @@ Mod Menu 설정 화면에서 기본 음악팩, 재생·효과 설정과 리소�
 
 RCT NPC는 NPC 여부만 사용합니다. 역할·사천왕·챔피언 같은 분류는 조회하지 않습니다.
 
-마지막 전투 가능 포켓몬이 한 마리이고 HP가 절반 이하이면 Better Cobblemon Music이 재생한 곡에만 먹먹한 효과를 적용합니다. 빨간 HP 구간에서는 카탈로그가 지정한 심장박동 이벤트도 재생합니다.
+마지막 전투 가능 포켓몬이 한 마리이고 HP가 절반 이하이면 Better Cobblemon Music이 재생한 곡에만 먹먹한 효과를 적용합니다. 빨간 HP 구간에서는 자체 제작한 짧은 2음 경고음을 1초 간격으로 반복합니다. 회복·교체·기절·전투 종료 시 경고음은 즉시 해제됩니다.
 
 ## 다시 불러오기
 
@@ -97,13 +97,13 @@ user-music-extension.zip
 
 확장 카탈로그는 기본 매핑을 자동으로 바꾸지 않습니다. 팩을 활성화한 뒤 Mod Menu나 `overrides.json`에서 새 플레이리스트를 상황에 연결합니다.
 
-## More Battle Content 연동
+## More Cobblemon Contents 연동
 
-More Battle Content가 설치돼 있으면 다음 콘텐츠 ID를 자동으로 인식합니다.
+More Cobblemon Contents가 설치돼 있으면 다음 콘텐츠 ID를 자동으로 인식합니다.
 
-- `cobblemon_more_battle_content:battle_tower`
-- `cobblemon_more_battle_content:battle_factory`
-- `cobblemon_more_battle_content:pvp`
+- `more_cobblemon_contents:battle_tower`
+- `more_cobblemon_contents:battle_factory`
+- `more_cobblemon_contents:pvp`
 
 연동 모드가 없거나 콘텐츠 ID를 얻지 못하면 일반 전투 매핑으로 돌아갑니다.
 

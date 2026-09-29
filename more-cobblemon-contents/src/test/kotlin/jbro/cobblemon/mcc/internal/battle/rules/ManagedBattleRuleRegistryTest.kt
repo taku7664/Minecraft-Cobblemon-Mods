@@ -1,0 +1,290 @@
+package jbro.cobblemon.mcc.internal.battle.rules
+
+import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import java.util.UUID
+
+class ManagedBattleRuleRegistryTest {
+    @Test
+    fun `allowed mechanic snapshot distinguishes unmanaged factory tower and pvp battles`() {
+        val registry = ManagedBattleRuleRegistry()
+        val actors = setOf(UUID.randomUUID(), UUID.randomUUID())
+        val factoryBattle = UUID.randomUUID()
+        val towerBattle = UUID.randomUUID()
+        val pvpBattle = UUID.randomUUID()
+
+        assertNull(registry.allowedMechanics(UUID.randomUUID()))
+        assertTrue(registry.register(factoryBattle, null, actors))
+        assertEquals(emptySet<ManagedSubmittedMechanic>(), registry.allowedMechanics(factoryBattle))
+        assertTrue(registry.register(towerBattle, MajorBattleMechanic.TERA, actors))
+        assertEquals(setOf(ManagedSubmittedMechanic.TERA), registry.allowedMechanics(towerBattle))
+        assertTrue(
+            registry.registerMultiple(
+                pvpBattle,
+                setOf(ManagedSubmittedMechanic.MEGA, ManagedSubmittedMechanic.Z_MOVE),
+                actors,
+            ),
+        )
+        assertEquals(
+            setOf(ManagedSubmittedMechanic.MEGA, ManagedSubmittedMechanic.Z_MOVE),
+            registry.allowedMechanics(pvpBattle),
+        )
+    }
+
+    private val battleId = UUID.randomUUID()
+    private val playerActorId = UUID.randomUUID()
+    private val trainerActorId = UUID.randomUUID()
+
+    @Test
+    fun `untracked battles are not changed`() {
+        val registry = ManagedBattleRuleRegistry()
+
+        assertNull(
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                ManagedActionSubmission(hasBagItem = true, mechanics = listOf(ManagedSubmittedMechanic.UNSUPPORTED)),
+            ),
+        )
+    }
+
+    @Test
+    fun `tracked battles reject bag items and actors outside the registered sides`() {
+        val registry = registered(MajorBattleMechanic.MEGA)
+
+        assertEquals(
+            ManagedRuleRejection.BAG_ITEMS_DISABLED,
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                ManagedActionSubmission(hasBagItem = true),
+            ),
+        )
+        assertEquals(
+            ManagedRuleRejection.ACTOR_NOT_REGISTERED,
+            registry.rejectionReason(
+                battleId,
+                UUID.randomUUID(),
+                ManagedActionSubmission(),
+            ),
+        )
+    }
+
+    @Test
+    fun `only the selected mechanic is accepted and unsupported gimmicks fail closed`() {
+        val registry = registered(MajorBattleMechanic.DYNAMAX)
+
+        assertNull(
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.DYNAMAX)),
+            ),
+        )
+        assertEquals(
+            ManagedRuleRejection.WRONG_MECHANIC,
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.MEGA)),
+            ),
+        )
+        assertEquals(
+            ManagedRuleRejection.WRONG_MECHANIC,
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.UNSUPPORTED)),
+            ),
+        )
+    }
+
+    @Test
+    fun `a regulated battle without a selected mechanic rejects every gimmick`() {
+        val registry = ManagedBattleRuleRegistry()
+        assertTrue(registry.register(battleId, null, setOf(playerActorId, trainerActorId)))
+
+        assertEquals(
+            ManagedRuleRejection.WRONG_MECHANIC,
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.MEGA)),
+            ),
+        )
+        assertEquals(ManagedActorMechanicState(null, false), registry.actorMechanicState(battleId, playerActorId))
+    }
+
+    @Test
+    fun `double submissions cannot spend more than one mechanic in the same turn`() {
+        val registry = registered(MajorBattleMechanic.TERA)
+
+        assertEquals(
+            ManagedRuleRejection.MULTIPLE_MECHANICS,
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.TERA, ManagedSubmittedMechanic.TERA)),
+            ),
+        )
+    }
+
+    @Test
+    fun `successful mechanic use is consumed independently for each side`() {
+        val registry = registered(MajorBattleMechanic.MEGA)
+        val mega = ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.MEGA))
+
+        assertTrue(registry.recordAccepted(battleId, playerActorId, mega))
+        assertEquals(
+            ManagedRuleRejection.MECHANIC_ALREADY_USED,
+            registry.rejectionReason(battleId, playerActorId, mega),
+        )
+        assertNull(registry.rejectionReason(battleId, trainerActorId, mega))
+        assertEquals(
+            ManagedActorMechanicState(MajorBattleMechanic.MEGA, consumed = true),
+            registry.actorMechanicState(battleId, playerActorId),
+        )
+        assertEquals(
+            ManagedActorMechanicState(MajorBattleMechanic.MEGA, consumed = false),
+            registry.actorMechanicState(battleId, trainerActorId),
+        )
+    }
+
+    @Test
+    fun `pvp policy permits every enabled mechanic once per side including z moves`() {
+        val registry = ManagedBattleRuleRegistry()
+        assertTrue(
+            registry.registerMultiple(
+                battleId,
+                setOf(
+                    ManagedSubmittedMechanic.MEGA,
+                    ManagedSubmittedMechanic.DYNAMAX,
+                    ManagedSubmittedMechanic.TERA,
+                    ManagedSubmittedMechanic.Z_MOVE,
+                ),
+                setOf(playerActorId, trainerActorId),
+            ),
+        )
+        val firstTurn = ManagedActionSubmission(
+            mechanics = listOf(ManagedSubmittedMechanic.MEGA, ManagedSubmittedMechanic.Z_MOVE),
+        )
+        assertNull(registry.rejectionReason(battleId, playerActorId, firstTurn))
+        assertTrue(registry.recordAccepted(battleId, playerActorId, firstTurn))
+        assertEquals(
+            ManagedRuleRejection.MECHANIC_ALREADY_USED,
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.Z_MOVE)),
+            ),
+        )
+        assertNull(
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.TERA)),
+            ),
+        )
+        assertNull(registry.rejectionReason(battleId, trainerActorId, firstTurn))
+    }
+
+    @Test
+    fun `pvp policy rejects disabled mechanics and duplicate use in one submission`() {
+        val registry = ManagedBattleRuleRegistry()
+        registry.registerMultiple(
+            battleId,
+            setOf(ManagedSubmittedMechanic.MEGA, ManagedSubmittedMechanic.Z_MOVE),
+            setOf(playerActorId, trainerActorId),
+        )
+
+        assertEquals(
+            ManagedRuleRejection.WRONG_MECHANIC,
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.TERA)),
+            ),
+        )
+        assertEquals(
+            ManagedRuleRejection.MULTIPLE_MECHANICS,
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.MEGA, ManagedSubmittedMechanic.MEGA)),
+            ),
+        )
+    }
+
+    @Test
+    fun `registered mechanics cannot be changed through the caller collection`() {
+        val registry = ManagedBattleRuleRegistry()
+        val enabled = linkedSetOf(ManagedSubmittedMechanic.MEGA)
+        assertTrue(registry.registerMultiple(battleId, enabled, setOf(playerActorId, trainerActorId)))
+
+        enabled.clear()
+        enabled += ManagedSubmittedMechanic.TERA
+
+        assertNull(
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.MEGA)),
+            ),
+        )
+        assertEquals(
+            ManagedRuleRejection.WRONG_MECHANIC,
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                ManagedActionSubmission(mechanics = listOf(ManagedSubmittedMechanic.TERA)),
+            ),
+        )
+    }
+
+    @Test
+    fun `duplicate registration cannot replace active rules and unregister removes them`() {
+        val registry = registered(MajorBattleMechanic.MEGA)
+
+        assertTrue(registry.isRegistered(battleId))
+        assertEquals(setOf(battleId), registry.registeredBattleIds())
+
+        assertFalse(
+            registry.register(
+                battleId,
+                MajorBattleMechanic.TERA,
+                setOf(playerActorId, trainerActorId),
+            ),
+        )
+        assertTrue(registry.unregister(battleId))
+        assertFalse(registry.isRegistered(battleId))
+        assertTrue(registry.registeredBattleIds().isEmpty())
+        assertNull(
+            registry.rejectionReason(
+                battleId,
+                playerActorId,
+                ManagedActionSubmission(hasBagItem = true),
+            ),
+        )
+    }
+
+    @Test
+    fun `server reset removes every registered battle rule`() {
+        val registry = registered(MajorBattleMechanic.MEGA)
+        val otherBattleId = UUID.randomUUID()
+        assertTrue(registry.register(otherBattleId, MajorBattleMechanic.TERA, setOf(playerActorId)))
+
+        registry.clear()
+
+        assertTrue(registry.registeredBattleIds().isEmpty())
+        assertNull(registry.rejectionReason(battleId, playerActorId, ManagedActionSubmission(hasBagItem = true)))
+    }
+
+    private fun registered(mechanic: MajorBattleMechanic): ManagedBattleRuleRegistry =
+        ManagedBattleRuleRegistry().also {
+            assertTrue(it.register(battleId, mechanic, setOf(playerActorId, trainerActorId)))
+        }
+}

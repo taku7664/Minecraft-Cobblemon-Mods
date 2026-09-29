@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "more_cobblemon_contents_battle_tower",
+  "version": "${version}",
+  "name": "More Cobblemon Contents: Battle Tower",
+  "description": "Battle Tower streak battles and the Cynthia AI test for More Cobblemon Contents.",
+  "authors": [
+    "jbro"
+  ],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.mcc.internal.tower.BattleTowerContent"
+      }
+    ],
+    "client": [
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.mcc.client.BattleTowerContentClient"
+      }
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "fabric-api": "*",
+    "fabric-language-kotlin": ">=1.14.1+kotlin.2.4.20",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "cobblemon": ">=1.8.1 <1.9.0",
+    "more_cobblemon_contents": ">=0.1.0 <1.0.0"
+  }
+}

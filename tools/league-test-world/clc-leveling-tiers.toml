@@ -1,0 +1,35 @@
+# Approved leveling tiers for the bundled Sinnoh League route.
+# Reference fragment only: retain every other setting in CLC's existing server.toml.
+[server.main.levelingModule]
+restrictLeveling = true
+
+[[server.main.levelingModule.tiersConfig]]
+tier = "1"
+level = 15
+[[server.main.levelingModule.tiersConfig]]
+tier = "2"
+level = 20
+[[server.main.levelingModule.tiersConfig]]
+tier = "3"
+level = 30
+[[server.main.levelingModule.tiersConfig]]
+tier = "4"
+level = 40
+[[server.main.levelingModule.tiersConfig]]
+tier = "5"
+level = 45
+[[server.main.levelingModule.tiersConfig]]
+tier = "6"
+level = 50
+[[server.main.levelingModule.tiersConfig]]
+tier = "7"
+level = 55
+[[server.main.levelingModule.tiersConfig]]
+tier = "8"
+level = 60
+[[server.main.levelingModule.tiersConfig]]
+tier = "9"
+level = 70
+[[server.main.levelingModule.tiersConfig]]
+tier = "10"
+level = 100

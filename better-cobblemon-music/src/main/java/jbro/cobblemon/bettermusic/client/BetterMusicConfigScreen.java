@@ -246,8 +246,12 @@ public final class BetterMusicConfigScreen {
         selections.add(USE_PACK_DEFAULT);
         selections.addAll(playlists);
         String initial = override.orElse(USE_PACK_DEFAULT);
-        category.addEntry(entries.startStringDropdownMenu(label, initial, value ->
-                value.isEmpty() ? text("mapping.use_pack_default", packDefault) : Component.literal(value)
+        Component packDefaultDisplay = text("mapping.use_pack_default", packDefault);
+        category.addEntry(entries.startDropdownMenu(
+                label,
+                initial,
+                value -> PlaylistChoiceCodec.parseInput(value, packDefaultDisplay.getString()),
+                value -> value.isEmpty() ? packDefaultDisplay : Component.literal(value)
             ).setSelections(selections).setDefaultValue(USE_PACK_DEFAULT)
             .setSaveConsumer(value -> save.accept(value.isEmpty() ? Optional.empty() : Optional.of(value)))
             .build());

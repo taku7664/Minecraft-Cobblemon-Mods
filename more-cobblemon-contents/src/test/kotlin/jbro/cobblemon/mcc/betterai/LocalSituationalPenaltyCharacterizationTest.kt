@@ -1,0 +1,163 @@
+package jbro.cobblemon.mcc.betterai
+
+import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
+import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
+import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfiles
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
+import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalSituationalEvaluator
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+/**
+ * Pins what the situational penalties currently do, before the root comparison is rewritten.
+ *
+ * These ten penalties are the part of the immediate heuristic that is not a value judgement. They
+ * are statements about the *candidate* - this move repeats Protect, this move's stat boost is already
+ * saturated, this move's public requirement is not met - which is why they cannot move into the leaf
+ * evaluator: the leaf scores a state and never sees a candidate. When the search takes over the value
+ * half of the comparison, these have to survive unchanged at the root.
+ *
+ * Only one of the ten is named anywhere in the test suite today, so there is nothing to notice if a
+ * rewrite quietly drops one. This is a characterization test, not a specification: it records what
+ * they do on a fixed set of real positions so that a change shows up as a diff rather than as a bug
+ * reported months later. A failure here is a question - "did you mean to change this?" - not a defect.
+ */
+class LocalSituationalPenaltyCharacterizationTest {
+    @Test
+    fun `situational penalties are recorded across real positions`() {
+        val contexts = recordPositions()
+        val counts = PENALTIES.associate { (name, penalty) ->
+            name to contexts.sumOf { context ->
+                calculated(context).candidates.count { candidate -> penalty(candidate, context) > 0.0 }
+            }
+        }
+        val decisive = PENALTIES.associate { (name, penalty) ->
+            name to contexts.count { context -> isDecisive(context, penalty) }
+        }
+
+        val report = buildString {
+            appendLine("=".repeat(100))
+            appendLine("SITUATIONAL PENALTY CHARACTERIZATION  positions=${contexts.size}")
+            appendLine("=".repeat(100))
+            appendLine("applied  = candidate/position pairs where the penalty is non-zero")
+            appendLine("decisive = positions where the top-scoring candidate would change if this")
+            appendLine("           penalty alone were removed")
+            appendLine()
+            appendLine("  %-38s %8s %9s".format("penalty", "applied", "decisive"))
+            PENALTIES.forEach { (name, _) ->
+                appendLine("  %-38s %8d %9d".format(name, counts.getValue(name), decisive.getValue(name)))
+            }
+            appendLine()
+            val watched = PENALTIES.count { (name, _) -> counts.getValue(name) > 0 }
+            appendLine("COVERAGE: %d of %d penalties are exercised by this fixture.".format(watched, PENALTIES.size))
+            appendLine()
+            appendLine("A penalty that is never applied here is not proven dead - it may simply need a")
+            appendLine("position self-play does not reach. It is proven unwatched, which is the useful")
+            appendLine("thing to know before anything reprices the comparison they live in.")
+        }
+        println(report)
+
+        // The fixture has to keep producing positions, or this test silently measures nothing.
+        assertTrue(contexts.size >= 20, report)
+        // There is deliberately no assertion about the penalties here, and that is the finding rather
+        // than an omission.
+        //
+        // This test was written to pin `applied`, on the reasoning that it reads only the candidate
+        // and the board and so could not move when scoring changed. That was wrong twice over. The
+        // positions are not fixed - they are recorded from self-play, so changing how the AI plays
+        // changes which forty positions exist at all. And once that is understood, the reading it
+        // produced was never worth pinning: one penalty of nine fired when this was written, and none
+        // of the nine fires now.
+        //
+        // Weakening the assertion until it passes would turn a real coverage gap into a green tick.
+        // The honest state is that this fixture exercises none of these guards, the report says so on
+        // every run, and crafted positions are owed before anything reprices them. All that is
+        // asserted is that the measurement itself ran.
+    }
+
+    /** Whether dropping this one penalty would change which candidate scores highest. */
+    private fun isDecisive(
+        context: BattleDecisionContext,
+        penalty: (BattleActionCandidate, BattleDecisionContext) -> Double,
+    ): Boolean {
+        // Memoized because the ranking does not depend on which penalty is being examined, while
+        // producing it runs a full Boss search with a 1500ms ceiling. Recomputing it per
+        // penalty made this one test 360 searches and roughly nine minutes, over a third of the whole
+        // suite, for a report that nine calls could produce.
+        val breakdown = breakdownCache.getOrPut(context) {
+            LocalDecisionInstrumentation.inspect(context = context, profile = PROFILE)
+        }
+        val withPenalty = breakdown.candidates.maxByOrNull { it.comparisonValue }?.actionId
+        val without = breakdown.candidates.maxByOrNull { candidate ->
+            val original = calculated(context).candidates.firstOrNull { it.actionId == candidate.actionId }
+            candidate.comparisonValue + (original?.let { penalty(it, context) } ?: 0.0)
+        }?.actionId
+        return withPenalty != without
+    }
+
+    private val breakdownCache = mutableMapOf<BattleDecisionContext, LocalDecisionBreakdown>()
+
+    private val calculatedCache = mutableMapOf<BattleDecisionContext, BattleDecisionContext>()
+
+    private fun calculated(context: BattleDecisionContext): BattleDecisionContext =
+        calculatedCache.getOrPut(context) { PublicBattleTacticalCalculator.calculate(context) }
+
+    private fun recordPositions(): List<BattleDecisionContext> {
+        val recorded = mutableListOf<BattleDecisionContext>()
+        LocalSelfPlayMeasurement.definitions(BATTLES, SEED).forEach { definition ->
+            LocalTacticalScenarioBattle.run(definition, maximumTurns = 20, recordedContexts = recorded)
+        }
+        return recorded.filter { it.candidates.size > 1 }.take(POSITION_LIMIT)
+    }
+
+    private companion object {
+        const val BATTLES = 4
+        const val POSITION_LIMIT = 40
+        const val SEED = 20260825
+
+        val PROFILE = BattleTrainerProfile(
+            skillLevel = 2,
+            personality = BattleTrainerProfile.champion().personality,
+            difficulty = BattleDifficultyProfiles.BOSS,
+        )
+
+        val PENALTIES: List<Pair<String, (BattleActionCandidate, BattleDecisionContext) -> Double>> = listOf(
+            "activePersistentEffectRefreshPenalty" to
+                LocalTacticalSituationalEvaluator::activePersistentEffectRefreshPenalty,
+            "expiredFirstActiveTurnPenalty" to
+                LocalTacticalSituationalEvaluator::expiredFirstActiveTurnPenalty,
+            "saturatedStatStagePenalty" to LocalTacticalSituationalEvaluator::saturatedStatStagePenalty,
+            "unmetPublicRequirementPenalty" to
+                LocalTacticalSituationalEvaluator::unmetPublicRequirementPenalty,
+            "recentPublicFailurePenalty" to LocalTacticalSituationalEvaluator::recentPublicFailurePenalty,
+            "repeatedProtectionPenalty" to LocalTacticalSituationalEvaluator::repeatedProtectionPenalty,
+            "pendingDamagingMoveRiskPenalty" to
+                LocalTacticalSituationalEvaluator::pendingDamagingMoveRiskPenalty,
+            "consecutiveUseForbiddenPenalty" to
+                LocalTacticalSituationalEvaluator::consecutiveUseForbiddenPenalty,
+            "forcedTempoPenalty" to LocalTacticalSituationalEvaluator::forcedTempoPenalty,
+        )
+
+        /**
+         * The reading taken when this test was written, kept for eyeball comparison rather than
+         * asserted. See the note at the assertion for why an exact pin is not available here.
+         *
+         * Eight of the nine never fire here. That is the finding, and it is worth more than the pin:
+         * the self-play fixture never reaches a saturated stat stage, an unmet public requirement, a
+         * repeated Protect, or a forced tempo turn, so none of those guards is under measurement at
+         * all. They are not proven dead - they are proven unwatched, and a rewrite that broke one
+         * would produce a green suite.
+         *
+         * They are nonetheless low risk for the search-led rewrite specifically, because that rewrite
+         * replaces the value half of the comparison and leaves these terms untouched. The risk it does
+         * carry is calibration: these magnitudes were tuned against heuristic-scale scores, and a
+         * search-scale score may make them negligible or overwhelming. `decisive` in the report is the
+         * tripwire for that, which is why it is printed on every run.
+         */
+        @Suppress("unused")
+        val FIRST_READING: Map<String, Int> = mapOf(
+            "pendingDamagingMoveRiskPenalty" to 4,
+        )
+    }
+}

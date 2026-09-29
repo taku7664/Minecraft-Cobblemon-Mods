@@ -1,0 +1,1028 @@
+package jbro.cobblemon.mcc.internal.compat.cobblemon173
+
+import java.util.UUID
+import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
+import jbro.cobblemon.mcc.internal.ai.BattleCombatStatRangesView
+import jbro.cobblemon.mcc.internal.ai.BattleFieldStateView
+import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceBasis
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceConfidence
+import jbro.cobblemon.mcc.internal.ai.BattleInferenceView
+import jbro.cobblemon.mcc.internal.ai.BattleMoveOutcomeKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveOutcomeView
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind
+import jbro.cobblemon.mcc.internal.ai.BattleObservedEventView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonFormStateView
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonActionConstraintView
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleStateView
+import jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView
+import jbro.cobblemon.mcc.internal.ai.PublicBattleInferenceEngine
+import jbro.cobblemon.mcc.internal.ai.PublicSpeciesInferenceKnowledge
+
+/**
+ * Stateful knowledge store that accepts only sanitized, publicly observable battle events.
+ * Hidden moves, abilities and held items cannot enter through [Cobblemon173PublicPokemonSnapshot].
+ */
+internal class Cobblemon173PublicBattleObserver(
+    private val initialOpponentPokemonCount: Int,
+    private val maximumRecentEvents: Int = DEFAULT_MAXIMUM_RECENT_EVENTS,
+) {
+    private val pokemon = linkedMapOf<UUID, BattlePokemonStateView>()
+    private val publicTypes = Cobblemon173PublicTypeKnowledge()
+    private val events = ArrayDeque<BattleObservedEventView>()
+    private val moveUses = linkedMapOf<UUID, MutableMap<String, Int>>()
+    private val ppSpent = linkedMapOf<UUID, MutableMap<String, Int>>()
+    private val copiedPpSpent = linkedMapOf<UUID, MutableMap<String, Int>>()
+    private val originalMoves = linkedMapOf<UUID, Set<String>>()
+    private val gastroAcid = linkedSetOf<UUID>()
+    private val endedGas = linkedSetOf<UUID>()
+    private val faintedOpponents = linkedSetOf<UUID>()
+    private var sequence = 0L
+    private var currentTurn = 0
+    private var weather: TrackedTimedEffect? = null
+    private var terrain: TrackedTimedEffect? = null
+    private val roomEffects = linkedMapOf<String, TrackedTimedEffect>()
+    private val globalEffects = linkedMapOf<String, TrackedTimedEffect>()
+    private val sideConditions = BattleSide.entries.associateWith {
+        linkedMapOf<String, TrackedTimedEffect>()
+    }
+    private var activeActionWindow: ActiveActionWindow? = null
+
+    init {
+        require(initialOpponentPokemonCount > 0)
+        require(maximumRecentEvents > 0)
+    }
+
+    @Synchronized
+    fun observe(observation: Cobblemon173PublicObservation) {
+        advanceTurn(observation.turn)
+        when (observation) {
+            is Cobblemon173PublicObservation.PokemonPresented -> {
+                closeActionWindow()
+                val incoming = observation.pokemon
+                finishTransformation(incoming.battlePokemonId)?.let { moves ->
+                    pokemon[incoming.battlePokemonId]?.let { current ->
+                        pokemon[incoming.battlePokemonId] = current.copyView(knownMoveIds = moves)
+                    }
+                }
+                gastroAcid.remove(incoming.battlePokemonId)
+                endedGas.remove(incoming.battlePokemonId)
+                val inherited = if (observation.transfersSubstitute && incoming.activeSlot != null) {
+                    pokemon.values.singleOrNull { it.side == incoming.side && it.activeSlot == incoming.activeSlot }
+                        ?.knownVolatileEffectIds.orEmpty().intersect(setOf("substitute"))
+                } else emptySet()
+                val presented = upsert(incoming, refreshPublicIdentity = true)
+                pokemon[presented.battlePokemonId] = presented.copyView(knownVolatileEffectIds = inherited)
+                appendEvent(
+                    turn = observation.turn,
+                    kind = BattleObservedEventKind.SWITCHED,
+                    actor = observation.pokemon.battlePokemonId,
+                )
+            }
+
+            is Cobblemon173PublicObservation.MoveUsed -> {
+                val actor = upsert(observation.actor)
+                if (publicTypes.teraType(actor.battlePokemonId) == "stellar") {
+                    publicTypes.invalidateStellarBoostedTypes(actor.battlePokemonId)
+                    pokemon[actor.battlePokemonId] = actor.copyView(knownStellarBoostedTypeIds = null)
+                }
+                val uses = moveUses.getOrPut(actor.battlePokemonId) { linkedMapOf() }
+                uses[observation.moveId] = ((uses[observation.moveId] ?: 0).toLong() + 1)
+                    .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+                if (observation.ppCallerMoveId == null && !observation.ppLockedContinuation)
+                    observePpLoss(actor.battlePokemonId, observation.moveId, 1)
+                observation.targets.forEach(::upsert)
+                val pressureLoss = if (observation.ppLockedContinuation) 0 else pressureLoss(actor, observation)
+                if (pressureLoss > 0) observePpLoss(actor.battlePokemonId,
+                    observation.ppCallerMoveId ?: observation.moveId, pressureLoss)
+                // A called move is public action evidence, but it is not evidence that the move
+                // occupies this Pokemon's set. Sleep Talk, Metronome, Copycat and similar callers
+                // spend the caller's PP and must not permanently confirm the invoked move slot.
+                val currentActor = pokemon[actor.battlePokemonId] ?: actor
+                pokemon[actor.battlePokemonId] = if (observation.ppCallerMoveId == null) {
+                    currentActor.withKnownMove(observation.moveId)
+                } else {
+                    currentActor
+                }
+                val actionSequence = appendEvent(
+                    turn = observation.turn,
+                    kind = BattleObservedEventKind.ACTION_ORDER,
+                    actor = actor.battlePokemonId,
+                    publicValueId = observation.moveId,
+                    baseMovePriority = observation.baseMovePriority,
+                )
+                appendEvent(
+                    turn = observation.turn,
+                    kind = BattleObservedEventKind.MOVE_USED,
+                    actor = actor.battlePokemonId,
+                    targets = observation.targets.map { it.battlePokemonId },
+                    publicValueId = observation.moveId,
+                )
+                activeActionWindow = ActiveActionWindow(
+                    turn = observation.turn,
+                    actionSequence = actionSequence,
+                    actorPokemonId = actor.battlePokemonId,
+                    moveId = observation.moveId,
+                    targetPokemonIds = observation.targets.mapTo(linkedSetOf()) { it.battlePokemonId },
+                )
+                if (observation.missed) {
+                    appendMoveOutcome(
+                        Cobblemon173PublicObservation.MoveOutcome(
+                            turn = observation.turn,
+                            outcome = BattleMoveOutcomeView(
+                                BattleMoveOutcomeKind.MISSED,
+                                moveId = observation.moveId,
+                            ),
+                            source = observation.actor,
+                            targets = observation.targets,
+                        ),
+                    )
+                }
+            }
+
+            is Cobblemon173PublicObservation.MoveOutcome -> appendMoveOutcome(observation)
+
+            is Cobblemon173PublicObservation.SubstituteChanged -> {
+                val actor = knownOrUpsert(observation.pokemon)
+                pokemon[actor.battlePokemonId] = actor.copyView(knownVolatileEffectIds =
+                    if (observation.active) actor.knownVolatileEffectIds + "substitute"
+                    else actor.knownVolatileEffectIds - "substitute")
+            }
+
+            is Cobblemon173PublicObservation.TypesChanged -> {
+                val actor = knownOrUpsert(observation.pokemon)
+                val knownTypes = publicTypes.apply(
+                    actor.battlePokemonId,
+                    actor.knownTypeIds,
+                    observation.change,
+                )
+                pokemon[actor.battlePokemonId] = actor.copyView(
+                    knownTypeIds = knownTypes,
+                    knownBaseStabTypeIds = publicTypes.baseStabTypes(actor.battlePokemonId) ?: knownTypes,
+                    knownTeraTypeId = publicTypes.teraType(actor.battlePokemonId),
+                    knownStellarBoostedTypeIds = publicTypes.stellarBoostedTypes(actor.battlePokemonId),
+                )
+                if (observation.change.kind == PublicTypeChangeKind.TERA) {
+                    observation.change.types.singleOrNull()?.let { teraType ->
+                        appendEvent(
+                            observation.turn,
+                            BattleObservedEventKind.TERA_TYPE_REVEALED,
+                            actor.battlePokemonId,
+                            publicValueId = teraType,
+                        )
+                    }
+                }
+            }
+
+            is Cobblemon173PublicObservation.ActionConstraintChanged -> {
+                val actor = knownOrUpsert(observation.pokemon)
+                val previous = actor.actionConstraints
+                val updated = when (observation.kind) {
+                    BattleActionConstraintKind.TAUNT -> previous.copy(taunted = observation.active)
+                    BattleActionConstraintKind.ENCORE -> previous.copy(
+                        encoreMoveId = observation.lockedMoveId.takeIf { observation.active },
+                    )
+                    BattleActionConstraintKind.TRAPPED -> previous.copy(trapped = observation.active)
+                    BattleActionConstraintKind.RECHARGE -> previous.copy(mustRecharge = observation.active)
+                }
+                pokemon[actor.battlePokemonId] = actor.copyView(actionConstraints = updated)
+            }
+
+            is Cobblemon173PublicObservation.AbilityRevealed -> {
+                val actor = knownOrUpsert(observation.pokemon)
+                pokemon[actor.battlePokemonId] = actor.withKnownAbility(observation.abilityId)
+                if (observation.abilityId == "neutralizinggas") endedGas.remove(actor.battlePokemonId)
+                appendEvent(
+                    observation.turn,
+                    BattleObservedEventKind.ABILITY_REVEALED,
+                    actor.battlePokemonId,
+                    publicValueId = observation.abilityId,
+                )
+            }
+
+            is Cobblemon173PublicObservation.HeldItemRevealed -> {
+                val actor = knownOrUpsert(observation.pokemon)
+                pokemon[actor.battlePokemonId] = actor.withKnownHeldItem(observation.itemId)
+                appendEvent(
+                    observation.turn,
+                    BattleObservedEventKind.HELD_ITEM_REVEALED,
+                    actor.battlePokemonId,
+                    publicValueId = observation.itemId,
+                )
+            }
+
+            is Cobblemon173PublicObservation.HpChanged -> {
+                val previous = pokemon[observation.pokemon.battlePokemonId]
+                val current = upsert(observation.pokemon)
+                val hpFractionDelta = previous?.let { current.hpFraction - it.hpFraction }
+                val precedingAction = activeActionWindow?.takeIf {
+                    observation.allowPrecedingActionLink &&
+                        observation.publicSourceEffectId == null &&
+                        hpFractionDelta != null && hpFractionDelta < 0.0 &&
+                        it.turn == observation.turn && current.battlePokemonId in it.targetPokemonIds
+                }
+                appendEvent(
+                    observation.turn,
+                    BattleObservedEventKind.HP_CHANGED,
+                    current.battlePokemonId,
+                    hpFractionDelta = hpFractionDelta,
+                    precedingActionSequence = precedingAction?.actionSequence,
+                    precedingActionActorPokemonId = precedingAction?.actorPokemonId,
+                    precedingActionMoveId = precedingAction?.moveId,
+                    publicSourceEffectId = observation.publicSourceEffectId,
+                )
+            }
+
+            is Cobblemon173PublicObservation.StatusChanged -> {
+                val current = upsert(observation.pokemon)
+                appendEvent(
+                    observation.turn,
+                    BattleObservedEventKind.STATUS_CHANGED,
+                    current.battlePokemonId,
+                    publicValueId = current.statusId,
+                )
+            }
+
+            is Cobblemon173PublicObservation.Fainted -> {
+                val current = upsert(observation.pokemon.copy(hpFraction = 0.0, fainted = true))
+                pokemon[current.battlePokemonId] = current.copyView(knownVolatileEffectIds = emptySet())
+                if (current.side == BattleSide.OPPONENT) faintedOpponents += current.battlePokemonId
+                appendEvent(observation.turn, BattleObservedEventKind.FAINTED, current.battlePokemonId)
+            }
+
+            is Cobblemon173PublicObservation.WeatherChanged -> {
+                val previousWeatherId = weather?.effectId
+                weather = when {
+                    observation.weatherId == null -> null
+                    observation.upkeep && previousWeatherId == observation.weatherId -> weather
+                    observation.upkeep -> TrackedTimedEffect.unknown(observation.weatherId, observation.turn)
+                    else -> TrackedTimedEffect.started(
+                        observation.weatherId,
+                        observation.turn,
+                        observation.durationTurns,
+                    )
+                }
+                if (!observation.upkeep || previousWeatherId != observation.weatherId) {
+                    appendEvent(
+                        observation.turn,
+                        BattleObservedEventKind.FIELD_EFFECT_CHANGED,
+                        publicValueId = observation.weatherId,
+                    )
+                }
+            }
+
+            is Cobblemon173PublicObservation.FieldEffectChanged -> {
+                setFieldEffect(
+                    observation.effectId,
+                    observation.scope,
+                    observation.active,
+                    observation.turn,
+                    observation.durationTurns,
+                )
+                appendEvent(
+                    observation.turn,
+                    BattleObservedEventKind.FIELD_EFFECT_CHANGED,
+                    publicValueId = observation.effectId,
+                )
+            }
+
+            is Cobblemon173PublicObservation.SideConditionChanged -> {
+                val conditions = sideConditions.getValue(observation.side)
+                if (observation.active) {
+                    val maximumStacks = STACKABLE_SIDE_CONDITIONS[observation.effectId]
+                    val stacks = maximumStacks?.let {
+                        ((conditions[observation.effectId]?.stacks ?: 0) + 1).coerceAtMost(it)
+                    }
+                    conditions[observation.effectId] = TrackedTimedEffect.started(
+                        effectId = observation.effectId,
+                        turn = observation.turn,
+                        durationTurns = observation.durationTurns,
+                        stacks = stacks,
+                    )
+                } else {
+                    conditions.remove(observation.effectId)
+                }
+                appendEvent(
+                    observation.turn,
+                    BattleObservedEventKind.FIELD_EFFECT_CHANGED,
+                    publicValueId = observation.effectId,
+                )
+            }
+        }
+    }
+
+    @Synchronized
+    fun advanceTurn(turn: Int) {
+        require(turn >= 0)
+        currentTurn = maxOf(currentTurn, turn)
+    }
+
+    private fun pressureLoss(actor: BattlePokemonStateView, move: Cobblemon173PublicObservation.MoveUsed): Int {
+        val active = pokemon.values.filter { it.activeSlot != null && !it.fainted }
+        val targets = when (move.pressureTargetPattern) {
+            BattleMoveTargetPattern.ALL_OPPONENTS, BattleMoveTargetPattern.ALL_ADJACENT,
+            BattleMoveTargetPattern.ALL_ACTIVE -> active.filter { it.side != actor.side }
+            BattleMoveTargetPattern.SELECTED_OPPONENT, BattleMoveTargetPattern.SELECTED,
+            BattleMoveTargetPattern.RANDOM_OPPONENT -> {
+                val ids = move.targets.map { it.battlePokemonId }.toSet()
+                active.filter { it.battlePokemonId in ids && it.side != actor.side }
+            }
+            else -> emptyList()
+        }
+        val gas = active.any { it.knownAbilityId == "neutralizinggas" &&
+            it.battlePokemonId !in gastroAcid && it.battlePokemonId !in endedGas }
+        fun exertsPressure(target: BattlePokemonStateView) = target.knownAbilityId == "pressure" &&
+            target.battlePokemonId !in gastroAcid && (!gas || target.knownHeldItemId == "abilityshield")
+        if (move.ppPreparing && move.targets.isEmpty() &&
+            move.pressureTargetPattern == BattleMoveTargetPattern.SELECTED_OPPONENT) {
+            val possibleTargets = active.filter { it.side != actor.side }
+            // The target is not public, but a unanimous cost is public without choosing its identity.
+            return if (possibleTargets.isNotEmpty() && possibleTargets.all(::exertsPressure)) 1 else 0
+        }
+        return targets.count(::exertsPressure)
+    }
+
+    @Synchronized
+    fun observeAbilityPpEffect(pokemonId: UUID, effectId: String, active: Boolean) {
+        when (effectId) {
+            "gastroacid" -> if (active) gastroAcid.add(pokemonId) else gastroAcid.remove(pokemonId)
+            "neutralizinggas" -> if (active) endedGas.remove(pokemonId) else endedGas.add(pokemonId)
+            else -> error("Unsupported public PP ability effect: $effectId")
+        }
+    }
+
+    /** A successful public Transform starts a fresh temporary PP pool, retaining the original. */
+    @Synchronized
+    fun observeTransformation(pokemonId: UUID, targetId: UUID? = null) {
+        val copiedMoves = pokemon[targetId]?.knownMoveIds.orEmpty().toSet()
+        pokemon[pokemonId]?.let { current ->
+            originalMoves.putIfAbsent(pokemonId, current.knownMoveIds.toSet())
+            pokemon[pokemonId] = current.copyView(knownMoveIds = copiedMoves)
+        }
+        copiedPpSpent[pokemonId] = linkedMapOf()
+    }
+
+    private fun finishTransformation(pokemonId: UUID): Set<String>? {
+        copiedPpSpent.remove(pokemonId)
+        return originalMoves.remove(pokemonId)
+    }
+
+    @Synchronized
+    fun transformedPokemon(): Set<UUID> = copiedPpSpent.keys.toSet()
+
+    @Synchronized
+    fun originalMoveIds(): Map<UUID, Set<String>> = originalMoves.mapValues { it.value.toSet() }
+
+    @Synchronized
+    fun originalPpSpent(): Map<UUID, Map<String, Int>> = ppSpent.mapValues { it.value.toMap() }
+
+    /** Own request knowledge is allowed; a locked request is not a complete replacement list. */
+    @Synchronized
+    fun observeOwnCopiedMoves(pokemonId: UUID, moveIds: Set<String>) {
+        val current = pokemon[pokemonId] ?: return
+        if (current.side != BattleSide.ALLY || pokemonId !in copiedPpSpent || current.activeSlot == null) return
+        require(moveIds.all(String::isNotBlank))
+        val learned = moveIds - setOf("recharge", "struggle")
+        pokemon[pokemonId] = current.copyView(knownMoveIds = current.knownMoveIds + learned)
+    }
+
+    private fun expenditure(pokemonId: UUID): MutableMap<String, Int> =
+        copiedPpSpent[pokemonId] ?: ppSpent.getOrPut(pokemonId) { linkedMapOf() }
+
+    /** Records modeled use expenditure or a PP loss explicitly named by a public effect. */
+    @Synchronized
+    fun observePpLoss(pokemonId: UUID, moveId: String, amount: Int) {
+        require(moveId.isNotBlank() && amount > 0)
+        val losses = expenditure(pokemonId)
+        losses[moveId] = ((losses[moveId] ?: 0).toLong() + amount)
+            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+    }
+
+    /** Apply restoration now, so unused recovery cannot cancel a later move's expenditure. */
+    @Synchronized
+    fun observePpRestore(pokemonId: UUID, moveId: String, amount: Int, maximumPp: Int) {
+        require(moveId.isNotBlank() && amount > 0 && maximumPp >= 0)
+        val spent = expenditure(pokemonId)
+        val capacity = Cobblemon173PublicActionCatalog.ppCapacity(maximumPp, pokemonId in copiedPpSpent)
+        spent[moveId] = ((spent[moveId] ?: 0).coerceAtMost(capacity) - amount).coerceAtLeast(0)
+    }
+
+    /** Publicly modeled net expenditure; raw use counts remain available for auditing. */
+    @Synchronized
+    fun publicPpSpent(): Map<UUID, Map<String, Int>> =
+        (ppSpent + copiedPpSpent).mapValues { it.value.toMap() }
+
+    @Synchronized
+    fun publicSnapshot(): Cobblemon173PublicBattleSnapshot = Cobblemon173PublicBattleSnapshot(
+        pokemon = pokemon.values.sortedBy { it.battlePokemonId.toString() },
+        field = BattleFieldStateView(
+            weather = weather?.toView(currentTurn),
+            terrain = terrain?.toView(currentTurn),
+            roomEffects = roomEffects.values.map { it.toView(currentTurn) },
+            globalEffects = globalEffects.values.map { it.toView(currentTurn) },
+            sideConditions = sideConditions.mapValues { (_, effects) ->
+                effects.values.map { it.toView(currentTurn) }
+            },
+        ),
+        events = events.toList(),
+        remainingOpponentPokemon = (initialOpponentPokemonCount - faintedOpponents.size).coerceAtLeast(0),
+        typeOverrides = publicTypes.snapshot(),
+        baseStabTypeOverrides = publicTypes.baseStabSnapshot(),
+        teraTypes = publicTypes.teraSnapshot(),
+        stellarBoostedTypeStates = publicTypes.stellarBoostedTypeSnapshot(),
+        moveUses = moveUses,
+        transformedPokemon = copiedPpSpent.keys,
+    )
+
+    @Synchronized
+    fun reset() {
+        pokemon.clear()
+        publicTypes.reset()
+        events.clear()
+        moveUses.clear()
+        ppSpent.clear()
+        copiedPpSpent.clear()
+        originalMoves.clear()
+        gastroAcid.clear()
+        endedGas.clear()
+        faintedOpponents.clear()
+        sequence = 0
+        currentTurn = 0
+        weather = null
+        terrain = null
+        roomEffects.clear()
+        globalEffects.clear()
+        sideConditions.values.forEach(MutableMap<String, TrackedTimedEffect>::clear)
+        activeActionWindow = null
+    }
+
+    @Synchronized
+    fun closeActionWindow() {
+        activeActionWindow = null
+    }
+
+    private fun upsert(
+        snapshot: Cobblemon173PublicPokemonSnapshot,
+        refreshPublicIdentity: Boolean = false,
+    ): BattlePokemonStateView {
+        val persistentTypes = if (refreshPublicIdentity) publicTypes.clear(snapshot.battlePokemonId) else null
+        val persistentBaseStabTypes = if (refreshPublicIdentity) {
+            publicTypes.baseStabTypes(snapshot.battlePokemonId) ?: persistentTypes
+        } else {
+            null
+        }
+        val persistentTeraType = if (refreshPublicIdentity) publicTypes.teraType(snapshot.battlePokemonId) else null
+        val persistentStellarBoostedTypes = if (refreshPublicIdentity) {
+            publicTypes.stellarBoostedTypes(snapshot.battlePokemonId)
+        } else {
+            null
+        }
+        if (snapshot.activeSlot != null) {
+            pokemon.replaceAll { id, current ->
+                if (
+                    id != snapshot.battlePokemonId &&
+                    current.side == snapshot.side &&
+                    current.activeSlot == snapshot.activeSlot
+                ) {
+                    val restoredMoves = finishTransformation(id)
+                    val restoredTypes = publicTypes.clear(id)
+                    current.copyView(
+                        knownMoveIds = restoredMoves ?: current.knownMoveIds,
+                        activeSlot = null,
+                        actionConstraints = BattlePokemonActionConstraintView.empty(),
+                        knownVolatileEffectIds = emptySet(),
+                        knownTypeIds = restoredTypes ?: current.knownTypeIds,
+                        knownBaseStabTypeIds = publicTypes.baseStabTypes(id) ?: restoredTypes
+                            ?: current.knownBaseStabTypeIds,
+                        knownTeraTypeId = publicTypes.teraType(id),
+                        knownStellarBoostedTypeIds = publicTypes.stellarBoostedTypes(id),
+                    )
+                } else {
+                    current
+                }
+            }
+        }
+        val previous = pokemon[snapshot.battlePokemonId]
+        val publicSnapshot = if (persistentTypes == null) snapshot else snapshot.copy(
+            knownTypeIds = persistentTypes,
+            knownBaseStabTypeIds = persistentBaseStabTypes ?: persistentTypes,
+            knownTeraTypeId = persistentTeraType,
+            knownStellarBoostedTypeIds = persistentStellarBoostedTypes,
+        )
+        return publicSnapshot.toView(previous, refreshPublicIdentity).also { pokemon[it.battlePokemonId] = it }
+    }
+
+    /**
+     * Records a Pokemon that is standing on the field right now.
+     *
+     * The store is filled by protocol messages, which means it knows nothing until one arrives - and
+     * the first decision of a battle is made before the opening `switch` lines are consumed. The
+     * opponent was therefore absent from the state entirely on the turn that decides a player's first
+     * impression: no types, no stats, no target. Every attack scored on base power alone, four moves
+     * came out nearly level, and the draw could land on one the type chart would have ruled out. That
+     * is how a Chandelure opens with Energy Ball into an Abomasnow.
+     *
+     * Reading the active Pokemon off the field is not an exception to the public-information policy.
+     * It is the most public thing in the battle - the player is looking straight at it. Illusion is
+     * still respected, because the snapshot is built from the visible Pokemon rather than the real
+     * one.
+     *
+     * No event is appended. This is not something that happened; it is something that is true.
+     */
+    @Synchronized
+    fun observeActivePresence(snapshot: Cobblemon173PublicPokemonSnapshot) {
+        if (snapshot.activeSlot == null) return
+        upsert(snapshot, refreshPublicIdentity = pokemon[snapshot.battlePokemonId] == null)
+    }
+
+    private fun knownOrUpsert(snapshot: Cobblemon173PublicPokemonSnapshot): BattlePokemonStateView =
+        pokemon[snapshot.battlePokemonId] ?: upsert(snapshot)
+
+    private fun setFieldEffect(
+        effectId: String,
+        scope: FieldEffectScope,
+        active: Boolean,
+        turn: Int,
+        durationTurns: BattleIntegerRange?,
+    ) {
+        when (scope) {
+            FieldEffectScope.TERRAIN -> terrain = TrackedTimedEffect.started(
+                effectId,
+                turn,
+                durationTurns,
+            ).takeIf { active }
+            FieldEffectScope.ROOM -> if (active) {
+                roomEffects[effectId] = TrackedTimedEffect.started(effectId, turn, durationTurns)
+            } else {
+                roomEffects.remove(effectId)
+            }
+
+            FieldEffectScope.GLOBAL -> if (active) {
+                globalEffects[effectId] = TrackedTimedEffect.started(effectId, turn, durationTurns)
+            } else {
+                globalEffects.remove(effectId)
+            }
+        }
+    }
+
+    private fun appendMoveOutcome(observation: Cobblemon173PublicObservation.MoveOutcome) {
+        val source = observation.source?.let(::knownOrUpsert)
+        val targets = observation.targets.map(::knownOrUpsert)
+        val targetIds = targets.map { it.battlePokemonId }
+        val previous = events.lastOrNull()
+        val duplicateMiss = observation.outcome.kind == BattleMoveOutcomeKind.MISSED &&
+            previous?.kind == BattleObservedEventKind.MOVE_OUTCOME &&
+            previous.turn == observation.turn &&
+            previous.actorPokemonId == source?.battlePokemonId &&
+            previous.targetPokemonIds == targetIds &&
+            previous.moveOutcome?.kind == BattleMoveOutcomeKind.MISSED &&
+            previous.moveOutcome.publicEffectId == observation.outcome.publicEffectId &&
+            previous.moveOutcome.hitCount == observation.outcome.hitCount &&
+            (previous.moveOutcome.moveId == observation.outcome.moveId || observation.outcome.moveId == null)
+        if (duplicateMiss) return
+        appendEvent(
+            turn = observation.turn,
+            kind = BattleObservedEventKind.MOVE_OUTCOME,
+            actor = source?.battlePokemonId,
+            targets = targetIds,
+            moveOutcome = observation.outcome,
+        )
+    }
+
+    private fun appendEvent(
+        turn: Int,
+        kind: BattleObservedEventKind,
+        actor: UUID? = null,
+        targets: List<UUID> = emptyList(),
+        publicValueId: String? = null,
+        hpFractionDelta: Double? = null,
+        baseMovePriority: Int? = null,
+        precedingActionSequence: Long? = null,
+        precedingActionActorPokemonId: UUID? = null,
+        precedingActionMoveId: String? = null,
+        publicSourceEffectId: String? = null,
+        moveOutcome: BattleMoveOutcomeView? = null,
+    ): Long {
+        val event = BattleObservedEventView(
+            sequence = ++sequence,
+            turn = turn,
+            kind = kind,
+            actorPokemonId = actor,
+            targetPokemonIds = targets,
+            publicValueId = publicValueId,
+            hpFractionDelta = hpFractionDelta,
+            baseMovePriority = baseMovePriority,
+            precedingActionSequence = precedingActionSequence,
+            precedingActionActorPokemonId = precedingActionActorPokemonId,
+            precedingActionMoveId = precedingActionMoveId,
+            publicSourceEffectId = publicSourceEffectId,
+            moveOutcome = moveOutcome,
+            actorSlot = actor?.let { pokemon[it]?.activeSlot },
+        )
+        events += event
+        while (events.size > maximumRecentEvents) events.removeFirst()
+        return event.sequence
+    }
+
+    private companion object {
+        const val DEFAULT_MAXIMUM_RECENT_EVENTS = 128
+        val STACKABLE_SIDE_CONDITIONS = mapOf("spikes" to 3, "toxicspikes" to 2)
+    }
+
+    private data class ActiveActionWindow(
+        val turn: Int,
+        val actionSequence: Long,
+        val actorPokemonId: UUID,
+        val moveId: String,
+        val targetPokemonIds: Set<UUID>,
+    )
+
+    private data class TrackedTimedEffect(
+        val effectId: String,
+        val activationTurn: Int,
+        val durationTurns: BattleIntegerRange?,
+        val stacks: Int? = null,
+    ) {
+        fun toView(turn: Int): BattleTimedEffectView {
+            val duration = durationTurns ?: return BattleTimedEffectView(effectId, null, stacks)
+            val elapsedTurns = (turn - activationTurn).coerceAtLeast(0)
+            val maximum = duration.maximum - elapsedTurns
+            if (maximum <= 0) return BattleTimedEffectView(effectId, null, stacks)
+            val minimum = (duration.minimum - elapsedTurns).coerceAtLeast(1)
+            return if (minimum == maximum) {
+                BattleTimedEffectView(effectId, minimum, stacks)
+            } else {
+                BattleTimedEffectView(
+                    effectId = effectId,
+                    remainingTurns = null,
+                    stacks = stacks,
+                    remainingTurnsRange = BattleIntegerRange(minimum, maximum),
+                )
+            }
+        }
+
+        companion object {
+            fun started(
+                effectId: String,
+                turn: Int,
+                durationTurns: BattleIntegerRange?,
+                stacks: Int? = null,
+            ) = TrackedTimedEffect(
+                effectId = effectId,
+                activationTurn = maxOf(turn, 1),
+                durationTurns = durationTurns,
+                stacks = stacks,
+            )
+
+            fun unknown(effectId: String, turn: Int) = started(effectId, turn, null)
+        }
+    }
+}
+
+internal data class Cobblemon173PublicPokemonSnapshot(
+    val battlePokemonId: UUID,
+    val side: BattleSide,
+    val activeSlot: Int?,
+    val speciesId: String,
+    val formId: String?,
+    val level: Int?,
+    val hpFraction: Double,
+    val statusId: String?,
+    val statStages: Map<String, Int>,
+    val fainted: Boolean,
+    val knownTypeIds: Set<String> = emptySet(),
+    val knownBaseStabTypeIds: Set<String> = knownTypeIds,
+    val knownTeraTypeId: String? = null,
+    val combatStats: BattleCombatStatRangesView? = null,
+    val knownFormStates: Map<String, BattlePokemonFormStateView> = emptyMap(),
+    val knownStellarBoostedTypeIds: Set<String>? = null,
+) {
+    init {
+        require(activeSlot == null || activeSlot >= 0)
+        require(speciesId.isNotBlank())
+        require(level == null || level > 0)
+        require(hpFraction in 0.0..1.0)
+    }
+
+    fun toView(
+        previous: BattlePokemonStateView?,
+        refreshPublicIdentity: Boolean,
+    ): BattlePokemonStateView = BattlePokemonStateView(
+        battlePokemonId = battlePokemonId,
+        side = side,
+        activeSlot = activeSlot,
+        speciesId = previous?.speciesId?.takeUnless { refreshPublicIdentity } ?: speciesId,
+        formId = if (previous != null && !refreshPublicIdentity) previous.formId else formId,
+        level = if (previous != null && !refreshPublicIdentity) previous.level else level,
+        hpFraction = hpFraction,
+        statusId = statusId,
+        statStages = statStages,
+        knownMoveIds = previous?.knownMoveIds.orEmpty(),
+        knownAbilityId = previous?.knownAbilityId,
+        knownHeldItemId = previous?.knownHeldItemId,
+        fainted = fainted,
+        knownTypeIds = if (previous != null && !refreshPublicIdentity) previous.knownTypeIds else knownTypeIds,
+        knownBaseStabTypeIds = if (previous != null && !refreshPublicIdentity) {
+            previous.knownBaseStabTypeIds
+        } else {
+            knownBaseStabTypeIds
+        },
+        knownTeraTypeId = if (previous != null && !refreshPublicIdentity) {
+            previous.knownTeraTypeId
+        } else {
+            knownTeraTypeId
+        },
+        knownStellarBoostedTypeIds = if (previous != null && !refreshPublicIdentity) {
+            previous.knownStellarBoostedTypeIds
+        } else {
+            knownStellarBoostedTypeIds
+        },
+        combatStats = if (previous != null && !refreshPublicIdentity) previous.combatStats else combatStats,
+        knownFormStates = if (previous != null && !refreshPublicIdentity) previous.knownFormStates else knownFormStates,
+        knownVolatileEffectIds = if (refreshPublicIdentity || fainted) emptySet() else previous?.knownVolatileEffectIds.orEmpty(),
+        actionConstraints = if (refreshPublicIdentity && activeSlot != null) {
+            BattlePokemonActionConstraintView.empty()
+        } else {
+            previous?.actionConstraints ?: BattlePokemonActionConstraintView.empty()
+        },
+    )
+}
+
+internal sealed interface Cobblemon173PublicObservation {
+    val turn: Int
+
+    data class PokemonPresented(override val turn: Int, val pokemon: Cobblemon173PublicPokemonSnapshot,
+        val transfersSubstitute: Boolean = false) :
+        Cobblemon173PublicObservation
+
+    data class SubstituteChanged(override val turn: Int, val pokemon: Cobblemon173PublicPokemonSnapshot,
+        val active: Boolean) : Cobblemon173PublicObservation
+
+    data class TypesChanged(
+        override val turn: Int,
+        val pokemon: Cobblemon173PublicPokemonSnapshot,
+        val change: Cobblemon173PublicTypeChange,
+    ) : Cobblemon173PublicObservation
+
+    data class MoveUsed(
+        override val turn: Int,
+        val actor: Cobblemon173PublicPokemonSnapshot,
+        val moveId: String,
+        val targets: List<Cobblemon173PublicPokemonSnapshot>,
+        val baseMovePriority: Int? = null,
+        val missed: Boolean = false,
+        val pressureTargetPattern: BattleMoveTargetPattern? = null,
+        val ppCallerMoveId: String? = null,
+        val ppLockedContinuation: Boolean = false,
+        val ppPreparing: Boolean = false,
+    ) : Cobblemon173PublicObservation {
+        init {
+            require(moveId.isNotBlank())
+            require(ppCallerMoveId == null || ppCallerMoveId.isNotBlank())
+        }
+    }
+
+    data class MoveOutcome(
+        override val turn: Int,
+        val outcome: BattleMoveOutcomeView,
+        val source: Cobblemon173PublicPokemonSnapshot? = null,
+        val targets: List<Cobblemon173PublicPokemonSnapshot> = emptyList(),
+    ) : Cobblemon173PublicObservation {
+        init {
+            require(targets.map { it.battlePokemonId }.distinct().size == targets.size)
+        }
+    }
+
+    data class ActionConstraintChanged(
+        override val turn: Int,
+        val pokemon: Cobblemon173PublicPokemonSnapshot,
+        val kind: BattleActionConstraintKind,
+        val active: Boolean,
+        val lockedMoveId: String? = null,
+    ) : Cobblemon173PublicObservation {
+        init {
+            require(lockedMoveId == null || lockedMoveId.isNotBlank())
+            require(kind != BattleActionConstraintKind.ENCORE || !active || lockedMoveId != null) {
+                "An active public Encore requires its publicly observed locked move"
+            }
+            require(kind == BattleActionConstraintKind.ENCORE || lockedMoveId == null)
+        }
+    }
+
+    data class AbilityRevealed(
+        override val turn: Int,
+        val pokemon: Cobblemon173PublicPokemonSnapshot,
+        val abilityId: String,
+    ) : Cobblemon173PublicObservation {
+        init {
+            require(abilityId.isNotBlank())
+        }
+    }
+
+    data class HeldItemRevealed(
+        override val turn: Int,
+        val pokemon: Cobblemon173PublicPokemonSnapshot,
+        val itemId: String,
+    ) : Cobblemon173PublicObservation {
+        init {
+            require(itemId.isNotBlank())
+        }
+    }
+
+    data class HpChanged(
+        override val turn: Int,
+        val pokemon: Cobblemon173PublicPokemonSnapshot,
+        val allowPrecedingActionLink: Boolean = false,
+        val publicSourceEffectId: String? = null,
+    ) : Cobblemon173PublicObservation {
+        init {
+            require(publicSourceEffectId == null || publicSourceEffectId.isNotBlank())
+        }
+    }
+
+    data class StatusChanged(override val turn: Int, val pokemon: Cobblemon173PublicPokemonSnapshot) :
+        Cobblemon173PublicObservation
+
+    data class Fainted(override val turn: Int, val pokemon: Cobblemon173PublicPokemonSnapshot) :
+        Cobblemon173PublicObservation
+
+    data class WeatherChanged(
+        override val turn: Int,
+        val weatherId: String?,
+        val durationTurns: BattleIntegerRange? = null,
+        val upkeep: Boolean = false,
+    ) : Cobblemon173PublicObservation {
+        init {
+            require(weatherId == null || weatherId.isNotBlank())
+            require(!upkeep || weatherId != null)
+        }
+    }
+
+    data class FieldEffectChanged(
+        override val turn: Int,
+        val effectId: String,
+        val scope: FieldEffectScope,
+        val active: Boolean,
+        val durationTurns: BattleIntegerRange? = null,
+    ) : Cobblemon173PublicObservation {
+        init {
+            require(effectId.isNotBlank())
+        }
+    }
+
+    data class SideConditionChanged(
+        override val turn: Int,
+        val side: BattleSide,
+        val effectId: String,
+        val active: Boolean,
+        val durationTurns: BattleIntegerRange? = null,
+    ) : Cobblemon173PublicObservation {
+        init {
+            require(effectId.isNotBlank())
+        }
+    }
+}
+
+internal enum class FieldEffectScope { TERRAIN, ROOM, GLOBAL }
+
+internal enum class BattleActionConstraintKind { TAUNT, ENCORE, TRAPPED, RECHARGE }
+
+internal class Cobblemon173PublicBattleSnapshot(
+    pokemon: List<BattlePokemonStateView>,
+    val field: BattleFieldStateView,
+    events: List<BattleObservedEventView>,
+    val remainingOpponentPokemon: Int,
+    typeOverrides: Map<UUID, Set<String>> = emptyMap(),
+    baseStabTypeOverrides: Map<UUID, Set<String>> = emptyMap(),
+    teraTypes: Map<UUID, String> = emptyMap(),
+    stellarBoostedTypeStates: Map<UUID, Set<String>?> = emptyMap(),
+    moveUses: Map<UUID, Map<String, Int>> = emptyMap(),
+    transformedPokemon: Set<UUID> = emptySet(),
+) {
+    val transformedPokemon = transformedPokemon.toSet()
+    val pokemon = pokemon.toList()
+    val events = events.toList()
+    val typeOverrides = typeOverrides.mapValues { it.value.toSet() }
+    val baseStabTypeOverrides = baseStabTypeOverrides.mapValues { it.value.toSet() }
+    val teraTypes = teraTypes.toMap()
+    val stellarBoostedTypeStates = stellarBoostedTypeStates.mapValues { (_, types) -> types?.toSet() }
+    /** Public uses across the whole battle, independent of the bounded event window; not exact PP loss. */
+    val moveUses = moveUses.mapValues { it.value.toMap() }
+
+    init {
+        require(remainingOpponentPokemon >= 0)
+    }
+}
+
+internal object Cobblemon173BattleStateAssembler {
+    fun assemble(
+        battleId: UUID,
+        format: BattleFormat,
+        turn: Int,
+        ownPokemon: List<BattlePokemonStateView>,
+        publicSnapshot: Cobblemon173PublicBattleSnapshot,
+        inferenceKnowledge: PublicSpeciesInferenceKnowledge = Cobblemon173PublicSpeciesInferenceKnowledge,
+    ): BattleStateView {
+        require(ownPokemon.all { it.side == BattleSide.ALLY })
+        val publicById = publicSnapshot.pokemon.associateBy(BattlePokemonStateView::battlePokemonId)
+        val allies = ownPokemon.map { own ->
+            own.copyView(
+                knownMoveIds = if (own.activeSlot != null && own.battlePokemonId in publicSnapshot.transformedPokemon)
+                    publicById[own.battlePokemonId]?.knownMoveIds.orEmpty() else own.knownMoveIds,
+                actionConstraints = publicById[own.battlePokemonId]?.actionConstraints ?: own.actionConstraints,
+                knownVolatileEffectIds = if (own.activeSlot == null || own.fainted) emptySet()
+                    else publicById[own.battlePokemonId]?.knownVolatileEffectIds.orEmpty(),
+                knownTypeIds = if (own.activeSlot == null) own.knownTypeIds else
+                    publicSnapshot.typeOverrides[own.battlePokemonId] ?: own.knownTypeIds,
+                knownBaseStabTypeIds = if (own.activeSlot == null) own.knownBaseStabTypeIds else
+                    publicSnapshot.baseStabTypeOverrides[own.battlePokemonId] ?: own.knownBaseStabTypeIds,
+                knownTeraTypeId = publicSnapshot.teraTypes[own.battlePokemonId] ?: own.knownTeraTypeId,
+                knownStellarBoostedTypeIds = if (
+                    own.activeSlot != null && publicSnapshot.stellarBoostedTypeStates.containsKey(own.battlePokemonId)
+                ) {
+                    publicSnapshot.stellarBoostedTypeStates[own.battlePokemonId]
+                } else {
+                    own.knownStellarBoostedTypeIds
+                },
+            )
+        }
+        val opponents = publicSnapshot.pokemon.filter { it.side == BattleSide.OPPONENT }
+        val pokemon = allies + opponents
+        val teraInferences = publicSnapshot.teraTypes.entries.sortedBy { it.key.toString() }.map { (id, type) ->
+            BattleInferenceView(
+                subjectPokemonId = id,
+                categoryId = "tera_type",
+                candidateId = type,
+                confidence = BattleInferenceConfidence.CONFIRMED,
+                basis = setOf(BattleInferenceBasis.PUBLIC_REVEAL),
+                evidenceEventSequences = publicSnapshot.events.asSequence()
+                    .filter {
+                        it.kind == BattleObservedEventKind.TERA_TYPE_REVEALED &&
+                            it.actorPokemonId == id && it.publicValueId == type
+                    }
+                    .map { it.sequence }
+                    .toList(),
+            )
+        }
+        return BattleStateView(
+            battleId = battleId,
+            format = format,
+            turn = turn,
+            pokemon = pokemon,
+            field = publicSnapshot.field,
+            remainingPokemonBySide = mapOf(
+                BattleSide.ALLY to ownPokemon.count { !it.fainted },
+                BattleSide.OPPONENT to publicSnapshot.remainingOpponentPokemon,
+            ),
+            observedEvents = publicSnapshot.events,
+            inferences = PublicBattleInferenceEngine.infer(pokemon, inferenceKnowledge, publicSnapshot.events) +
+                teraInferences,
+        )
+    }
+}
+
+private fun BattlePokemonStateView.withKnownMove(moveId: String) = copyView(knownMoveIds = knownMoveIds + moveId)
+
+private fun BattlePokemonStateView.withKnownAbility(abilityId: String) = copyView(knownAbilityId = abilityId)
+
+private fun BattlePokemonStateView.withKnownHeldItem(itemId: String) = copyView(knownHeldItemId = itemId)
+
+private fun BattlePokemonStateView.withActiveSlot(slot: Int?) = copyView(activeSlot = slot)
+
+private fun BattlePokemonStateView.copyView(
+    activeSlot: Int? = this.activeSlot,
+    knownMoveIds: Set<String> = this.knownMoveIds,
+    knownAbilityId: String? = this.knownAbilityId,
+    knownHeldItemId: String? = this.knownHeldItemId,
+    actionConstraints: BattlePokemonActionConstraintView = this.actionConstraints,
+    knownTypeIds: Set<String> = this.knownTypeIds,
+    knownBaseStabTypeIds: Set<String> = this.knownBaseStabTypeIds,
+    knownTeraTypeId: String? = this.knownTeraTypeId,
+    knownStellarBoostedTypeIds: Set<String>? = this.knownStellarBoostedTypeIds,
+    knownVolatileEffectIds: Set<String> = this.knownVolatileEffectIds,
+) = BattlePokemonStateView(
+    battlePokemonId = battlePokemonId,
+    side = side,
+    activeSlot = activeSlot,
+    speciesId = speciesId,
+    formId = formId,
+    level = level,
+    hpFraction = hpFraction,
+    statusId = statusId,
+    statStages = statStages,
+    knownMoveIds = knownMoveIds,
+    knownAbilityId = knownAbilityId,
+    knownHeldItemId = knownHeldItemId,
+    fainted = fainted,
+    knownTypeIds = knownTypeIds,
+    combatStats = combatStats,
+    knownFormStates = knownFormStates,
+    actionConstraints = actionConstraints,
+    knownVolatileEffectIds = knownVolatileEffectIds,
+    knownBaseStabTypeIds = knownBaseStabTypeIds,
+    knownTeraTypeId = knownTeraTypeId,
+    knownStellarBoostedTypeIds = knownStellarBoostedTypeIds,
+)

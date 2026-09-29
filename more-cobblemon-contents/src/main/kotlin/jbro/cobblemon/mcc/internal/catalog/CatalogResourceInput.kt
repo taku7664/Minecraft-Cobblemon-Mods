@@ -1,0 +1,20 @@
+package jbro.cobblemon.mcc.internal.catalog
+
+import java.io.Reader
+
+data class CatalogResourceInput(
+    val resourceId: String,
+    val openReader: () -> Reader,
+)
+
+fun closeCatalogResourcesSafely(resources: Iterable<AutoCloseable>) {
+    resources.forEach { resource ->
+        try {
+            resource.close()
+        } catch (_: Exception) {
+            // Closing one catalog input must not leave later inputs open.
+        } catch (_: LinkageError) {
+            // Resource implementations from optional integrations may drift independently.
+        }
+    }
+}

@@ -24,15 +24,15 @@ final class DefaultMusicConfigResourceTest {
         assertEquals(4, config.battle().pvp().tracks().size());
         assertEquals(
             config.battle().trainer().tracks(),
-            config.battle().content().get("cobblemon_more_battle_content:battle_tower").tracks()
+            config.battle().content().get("more_cobblemon_contents:battle_tower").tracks()
         );
         assertEquals(
             config.battle().trainer().tracks(),
-            config.battle().content().get("cobblemon_more_battle_content:battle_factory").tracks()
+            config.battle().content().get("more_cobblemon_contents:battle_factory").tracks()
         );
         assertEquals(
             config.battle().pvp().tracks(),
-            config.battle().content().get("cobblemon_more_battle_content:pvp").tracks()
+            config.battle().content().get("more_cobblemon_contents:pvp").tracks()
         );
         assertEquals(
             java.util.List.of("battle/legendary/generic_legendary_battle.ogg"),

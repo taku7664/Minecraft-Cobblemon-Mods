@@ -61,9 +61,9 @@
       "battle/pvp/xy_elite_four_battle.ogg"
     ],
     "content": {
-      "cobblemon_more_battle_content:battle_tower": "battle/trainer/sinnoh_trainer_battle.ogg",
-      "cobblemon_more_battle_content:battle_factory": "battle/trainer/sinnoh_trainer_battle.ogg",
-      "cobblemon_more_battle_content:pvp": [
+      "more_cobblemon_contents:battle_tower": "battle/trainer/sinnoh_trainer_battle.ogg",
+      "more_cobblemon_contents:battle_factory": "battle/trainer/sinnoh_trainer_battle.ogg",
+      "more_cobblemon_contents:pvp": [
         "battle/pvp/pokemon_champions_arena_battle.ogg",
         "battle/pvp/swsh_elite_leader_battle.ogg",
         "battle/pvp/swsh_gym_leader_battle.ogg",

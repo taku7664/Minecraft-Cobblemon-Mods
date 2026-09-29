@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "trainer": "more_cobblemon_contents_league_challenge:volkner",
+  "reward": "more_cobblemon_contents_league_challenge:volkner",
+  "badge": "pokebadges:beacon_sinnoh_badge",
+  "format": "SINGLE",
+  "mechanic": "NONE"
+}

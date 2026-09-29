@@ -1,0 +1,9155 @@
+{
+ "abilities": [
+  {
+   "id": "intimidate",
+   "usage": 32.017897,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "multitype",
+   "usage": 32,
+   "hooks": []
+  },
+  {
+   "id": "levitate",
+   "usage": 28.973784,
+   "hooks": []
+  },
+  {
+   "id": "pressure",
+   "usage": 22.812154,
+   "hooks": [
+    "onStart",
+    "onDeductPP"
+   ]
+  },
+  {
+   "id": "prankster",
+   "usage": 22.676817,
+   "hooks": [
+    "onModifyPriority"
+   ]
+  },
+  {
+   "id": "chlorophyll",
+   "usage": 21.797998,
+   "hooks": [
+    "onModifySpe"
+   ]
+  },
+  {
+   "id": "protosynthesis",
+   "usage": 20,
+   "hooks": [
+    "onStart",
+    "onWeatherChange",
+    "onEnd",
+    "condition.onStart",
+    "condition.onModifyAtk",
+    "condition.onModifyDef",
+    "condition.onModifySpA",
+    "condition.onModifySpD",
+    "condition.onModifySpe",
+    "condition.onEnd"
+   ]
+  },
+  {
+   "id": "quarkdrive",
+   "usage": 19,
+   "hooks": [
+    "onStart",
+    "onTerrainChange",
+    "onEnd",
+    "condition.onStart",
+    "condition.onModifyAtk",
+    "condition.onModifyDef",
+    "condition.onModifySpA",
+    "condition.onModifySpD",
+    "condition.onModifySpe",
+    "condition.onEnd"
+   ]
+  },
+  {
+   "id": "sturdy",
+   "usage": 18.805338,
+   "hooks": [
+    "onTryHit",
+    "onDamage"
+   ]
+  },
+  {
+   "id": "regenerator",
+   "usage": 17.462556,
+   "hooks": [
+    "onSwitchOut"
+   ]
+  },
+  {
+   "id": "swiftswim",
+   "usage": 11.242152,
+   "hooks": [
+    "onModifySpe"
+   ]
+  },
+  {
+   "id": "waterabsorb",
+   "usage": 11.015359,
+   "hooks": [
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "innerfocus",
+   "usage": 10.490937,
+   "hooks": [
+    "onTryAddVolatile",
+    "onTryBoost"
+   ]
+  },
+  {
+   "id": "frisk",
+   "usage": 10.45864,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "technician",
+   "usage": 10.409921,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "flashfire",
+   "usage": 10.385023,
+   "hooks": [
+    "onTryHit",
+    "onEnd",
+    "condition.onStart",
+    "condition.onModifyAtk",
+    "condition.onModifySpA",
+    "condition.onEnd"
+   ]
+  },
+  {
+   "id": "clearbody",
+   "usage": 9.989117,
+   "hooks": [
+    "onTryBoost"
+   ]
+  },
+  {
+   "id": "defiant",
+   "usage": 9.896643,
+   "hooks": [
+    "onAfterEachBoost"
+   ]
+  },
+  {
+   "id": "unburden",
+   "usage": 9.123388,
+   "hooks": [
+    "onAfterUseItem",
+    "onTakeItem",
+    "onEnd",
+    "condition.onModifySpe"
+   ]
+  },
+  {
+   "id": "serenegrace",
+   "usage": 8.712938,
+   "hooks": [
+    "onModifyMove",
+    "onSwitchOut"
+   ]
+  },
+  {
+   "id": "torrent",
+   "usage": 8.61332,
+   "hooks": [
+    "onModifyAtk",
+    "onModifySpA"
+   ]
+  },
+  {
+   "id": "moldbreaker",
+   "usage": 8.011529,
+   "hooks": [
+    "onStart",
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "sheerforce",
+   "usage": 7.58042,
+   "hooks": [
+    "onModifyMove",
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "thickfat",
+   "usage": 7.557651,
+   "hooks": [
+    "onSourceModifyAtk",
+    "onSourceModifySpA"
+   ]
+  },
+  {
+   "id": "voltabsorb",
+   "usage": 7.548905,
+   "hooks": [
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "flamebody",
+   "usage": 7.237033,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "unaware",
+   "usage": 6.981284,
+   "hooks": [
+    "onAnyModifyBoost"
+   ]
+  },
+  {
+   "id": "adaptability",
+   "usage": 6.631318,
+   "hooks": [
+    "onModifySTAB"
+   ]
+  },
+  {
+   "id": "guts",
+   "usage": 6.574875,
+   "hooks": [
+    "onModifyAtk"
+   ]
+  },
+  {
+   "id": "speedboost",
+   "usage": 6.551058,
+   "hooks": [
+    "onResidual"
+   ]
+  },
+  {
+   "id": "contrary",
+   "usage": 6.39193,
+   "hooks": [
+    "onChangeBoost"
+   ]
+  },
+  {
+   "id": "drizzle",
+   "usage": 5.916392,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "drought",
+   "usage": 5.782575,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "sharpness",
+   "usage": 5.693636,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "overcoat",
+   "usage": 5.643773,
+   "hooks": [
+    "onImmunity",
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "lightningrod",
+   "usage": 5.360296,
+   "hooks": [
+    "onTryHit",
+    "onAnyRedirectTarget"
+   ]
+  },
+  {
+   "id": "justified",
+   "usage": 5.27072,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "compoundeyes",
+   "usage": 5.257102,
+   "hooks": [
+    "onSourceModifyAccuracy"
+   ]
+  },
+  {
+   "id": "prismarmor",
+   "usage": 5,
+   "hooks": [
+    "onSourceModifyDamage"
+   ]
+  },
+  {
+   "id": "static",
+   "usage": 4.986844,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "blaze",
+   "usage": 4.979776,
+   "hooks": [
+    "onModifyAtk",
+    "onModifySpA"
+   ]
+  },
+  {
+   "id": "infiltrator",
+   "usage": 4.757587,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "telepathy",
+   "usage": 4.607314,
+   "hooks": [
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "naturalcure",
+   "usage": 4.605799,
+   "hooks": [
+    "onCheckShow",
+    "onSwitchOut"
+   ]
+  },
+  {
+   "id": "synchronize",
+   "usage": 4.473513,
+   "hooks": [
+    "onAfterSetStatus"
+   ]
+  },
+  {
+   "id": "competitive",
+   "usage": 4.467658,
+   "hooks": [
+    "onAfterEachBoost"
+   ]
+  },
+  {
+   "id": "overgrow",
+   "usage": 4.319459,
+   "hooks": [
+    "onModifyAtk",
+    "onModifySpA"
+   ]
+  },
+  {
+   "id": "cursedbody",
+   "usage": 4.261583,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "dancer",
+   "usage": 4,
+   "hooks": []
+  },
+  {
+   "id": "dauntlessshield",
+   "usage": 4,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "illusion",
+   "usage": 4,
+   "hooks": [
+    "onBeforeSwitchIn",
+    "onDamagingHit",
+    "onEnd",
+    "onFaint"
+   ]
+  },
+  {
+   "id": "intrepidsword",
+   "usage": 4,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "teravolt",
+   "usage": 4,
+   "hooks": [
+    "onStart",
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "turboblaze",
+   "usage": 4,
+   "hooks": [
+    "onStart",
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "unseenfist",
+   "usage": 4,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "snowwarning",
+   "usage": 3.959364,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "sandstream",
+   "usage": 3.94372,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "psychicsurge",
+   "usage": 3.915203,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "shellarmor",
+   "usage": 3.811793,
+   "hooks": []
+  },
+  {
+   "id": "magicbounce",
+   "usage": 3.775693,
+   "hooks": [
+    "onTryHit",
+    "onAllyTryHitSide"
+   ]
+  },
+  {
+   "id": "sandrush",
+   "usage": 3.760857,
+   "hooks": [
+    "onModifySpe",
+    "onImmunity"
+   ]
+  },
+  {
+   "id": "magician",
+   "usage": 3.604549,
+   "hooks": [
+    "onAfterMoveSecondarySelf"
+   ]
+  },
+  {
+   "id": "moody",
+   "usage": 3.525036,
+   "hooks": [
+    "onResidual"
+   ]
+  },
+  {
+   "id": "windrider",
+   "usage": 3.52008,
+   "hooks": [
+    "onStart",
+    "onTryHit",
+    "onAllySideConditionStart"
+   ]
+  },
+  {
+   "id": "ironfist",
+   "usage": 3.515768,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "moxie",
+   "usage": 3.478504,
+   "hooks": [
+    "onSourceAfterFaint"
+   ]
+  },
+  {
+   "id": "sapsipper",
+   "usage": 3.472572,
+   "hooks": [
+    "onTryHit",
+    "onAllyTryHitSide"
+   ]
+  },
+  {
+   "id": "skilllink",
+   "usage": 3.465402,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "oblivious",
+   "usage": 3.399649,
+   "hooks": [
+    "onUpdate",
+    "onImmunity",
+    "onTryHit",
+    "onTryBoost"
+   ]
+  },
+  {
+   "id": "tintedlens",
+   "usage": 3.310832,
+   "hooks": [
+    "onModifyDamage"
+   ]
+  },
+  {
+   "id": "hydration",
+   "usage": 3.245206,
+   "hooks": [
+    "onResidual"
+   ]
+  },
+  {
+   "id": "multiscale",
+   "usage": 3.233852,
+   "hooks": [
+    "onSourceModifyDamage"
+   ]
+  },
+  {
+   "id": "stormdrain",
+   "usage": 3.229891,
+   "hooks": [
+    "onTryHit",
+    "onAnyRedirectTarget"
+   ]
+  },
+  {
+   "id": "scrappy",
+   "usage": 3.200744,
+   "hooks": [
+    "onModifyMove",
+    "onTryBoost"
+   ]
+  },
+  {
+   "id": "harvest",
+   "usage": 3.163882,
+   "hooks": [
+    "onResidual"
+   ]
+  },
+  {
+   "id": "reckless",
+   "usage": 3.039235,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "vitalspirit",
+   "usage": 3.028684,
+   "hooks": [
+    "onUpdate",
+    "onSetStatus",
+    "onTryAddVolatile"
+   ]
+  },
+  {
+   "id": "shadowtag",
+   "usage": 2.9932,
+   "hooks": [
+    "onFoeTrapPokemon",
+    "onFoeMaybeTrapPokemon"
+   ]
+  },
+  {
+   "id": "grassysurge",
+   "usage": 2.975286,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "stamina",
+   "usage": 2.944488,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "arenatrap",
+   "usage": 2.855445,
+   "hooks": [
+    "onFoeTrapPokemon",
+    "onFoeMaybeTrapPokemon"
+   ]
+  },
+  {
+   "id": "snowcloak",
+   "usage": 2.839418,
+   "hooks": [
+    "onImmunity",
+    "onModifyAccuracy"
+   ]
+  },
+  {
+   "id": "galewings",
+   "usage": 2.772154,
+   "hooks": [
+    "onModifyPriority"
+   ]
+  },
+  {
+   "id": "magicguard",
+   "usage": 2.747025,
+   "hooks": [
+    "onDamage"
+   ]
+  },
+  {
+   "id": "poisonheal",
+   "usage": 2.650323,
+   "hooks": [
+    "onDamage"
+   ]
+  },
+  {
+   "id": "neutralizinggas",
+   "usage": 2.598523,
+   "hooks": [
+    "onPreStart",
+    "onAnySwitchIn",
+    "onEnd"
+   ]
+  },
+  {
+   "id": "toxicchain",
+   "usage": 2.564677,
+   "hooks": [
+    "onSourceDamagingHit"
+   ]
+  },
+  {
+   "id": "leafguard",
+   "usage": 2.484389,
+   "hooks": [
+    "onSetStatus",
+    "onTryAddVolatile"
+   ]
+  },
+  {
+   "id": "aftermath",
+   "usage": 2.421219,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "aromaveil",
+   "usage": 2.409427,
+   "hooks": [
+    "onAllyTryAddVolatile"
+   ]
+  },
+  {
+   "id": "guarddog",
+   "usage": 2.209374,
+   "hooks": [
+    "onDragOut",
+    "onTryBoost"
+   ]
+  },
+  {
+   "id": "angerpoint",
+   "usage": 2.083399,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "shielddust",
+   "usage": 2.081536,
+   "hooks": [
+    "onModifySecondaries"
+   ]
+  },
+  {
+   "id": "gooey",
+   "usage": 2.067706,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "corrosion",
+   "usage": 2.042336,
+   "hooks": []
+  },
+  {
+   "id": "airlock",
+   "usage": 2,
+   "hooks": [
+    "onSwitchIn",
+    "onStart",
+    "onEnd"
+   ]
+  },
+  {
+   "id": "asoneglastrier",
+   "usage": 2,
+   "hooks": [
+    "onPreStart",
+    "onEnd",
+    "onFoeTryEatItem",
+    "onSourceAfterFaint"
+   ]
+  },
+  {
+   "id": "asonespectrier",
+   "usage": 2,
+   "hooks": [
+    "onPreStart",
+    "onEnd",
+    "onFoeTryEatItem",
+    "onSourceAfterFaint"
+   ]
+  },
+  {
+   "id": "baddreams",
+   "usage": 2,
+   "hooks": [
+    "onResidual"
+   ]
+  },
+  {
+   "id": "battery",
+   "usage": 2,
+   "hooks": [
+    "onAllyBasePower"
+   ]
+  },
+  {
+   "id": "beadsofruin",
+   "usage": 2,
+   "hooks": [
+    "onStart",
+    "onAnyModifySpD"
+   ]
+  },
+  {
+   "id": "berserk",
+   "usage": 2,
+   "hooks": [
+    "onDamage",
+    "onTryEatItem",
+    "onAfterMoveSecondary"
+   ]
+  },
+  {
+   "id": "chillingneigh",
+   "usage": 2,
+   "hooks": [
+    "onSourceAfterFaint"
+   ]
+  },
+  {
+   "id": "disguise",
+   "usage": 2,
+   "hooks": [
+    "onDamage",
+    "onCriticalHit",
+    "onEffectiveness",
+    "onUpdate"
+   ]
+  },
+  {
+   "id": "dragonsmaw",
+   "usage": 2,
+   "hooks": [
+    "onModifyAtk",
+    "onModifySpA"
+   ]
+  },
+  {
+   "id": "eartheater",
+   "usage": 2,
+   "hooks": [
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "fullmetalbody",
+   "usage": 2,
+   "hooks": [
+    "onTryBoost"
+   ]
+  },
+  {
+   "id": "goodasgold",
+   "usage": 2,
+   "hooks": [
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "grimneigh",
+   "usage": 2,
+   "hooks": [
+    "onSourceAfterFaint"
+   ]
+  },
+  {
+   "id": "gulpmissile",
+   "usage": 2,
+   "hooks": [
+    "onDamagingHit",
+    "onSourceTryPrimaryHit"
+   ]
+  },
+  {
+   "id": "hadronengine",
+   "usage": 2,
+   "hooks": [
+    "onStart",
+    "onModifySpA"
+   ]
+  },
+  {
+   "id": "hungerswitch",
+   "usage": 2,
+   "hooks": [
+    "onResidual"
+   ]
+  },
+  {
+   "id": "iceface",
+   "usage": 2,
+   "hooks": [
+    "onStart",
+    "onDamage",
+    "onCriticalHit",
+    "onEffectiveness",
+    "onUpdate",
+    "onWeatherChange"
+   ]
+  },
+  {
+   "id": "mindseye",
+   "usage": 2,
+   "hooks": [
+    "onTryBoost",
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "myceliummight",
+   "usage": 2,
+   "hooks": [
+    "onFractionalPriority",
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "orichalcumpulse",
+   "usage": 2,
+   "hooks": [
+    "onStart",
+    "onModifyAtk"
+   ]
+  },
+  {
+   "id": "poisonpuppeteer",
+   "usage": 2,
+   "hooks": [
+    "onAnyAfterSetStatus"
+   ]
+  },
+  {
+   "id": "shadowshield",
+   "usage": 2,
+   "hooks": [
+    "onSourceModifyDamage"
+   ]
+  },
+  {
+   "id": "slowstart",
+   "usage": 2,
+   "hooks": [
+    "onStart",
+    "onEnd",
+    "condition.onStart",
+    "condition.onModifyAtk",
+    "condition.onModifySpe",
+    "condition.onEnd"
+   ]
+  },
+  {
+   "id": "soulheart",
+   "usage": 2,
+   "hooks": [
+    "onAnyFaint"
+   ]
+  },
+  {
+   "id": "swordofruin",
+   "usage": 2,
+   "hooks": [
+    "onStart",
+    "onAnyModifyDef"
+   ]
+  },
+  {
+   "id": "tabletsofruin",
+   "usage": 2,
+   "hooks": [
+    "onStart",
+    "onAnyModifyAtk"
+   ]
+  },
+  {
+   "id": "terashift",
+   "usage": 2,
+   "hooks": [
+    "onPreStart"
+   ]
+  },
+  {
+   "id": "transistor",
+   "usage": 2,
+   "hooks": [
+    "onModifyAtk",
+    "onModifySpA"
+   ]
+  },
+  {
+   "id": "truant",
+   "usage": 2,
+   "hooks": [
+    "onStart",
+    "onBeforeMove"
+   ]
+  },
+  {
+   "id": "vesselofruin",
+   "usage": 2,
+   "hooks": [
+    "onStart",
+    "onAnyModifySpA"
+   ]
+  },
+  {
+   "id": "zerotohero",
+   "usage": 2,
+   "hooks": [
+    "onSwitchOut",
+    "onSwitchIn",
+    "onStart"
+   ]
+  },
+  {
+   "id": "wellbakedbody",
+   "usage": 1.997474,
+   "hooks": [
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "friendguard",
+   "usage": 1.995281,
+   "hooks": [
+    "onAnyModifyDamage"
+   ]
+  },
+  {
+   "id": "electromorphosis",
+   "usage": 1.986103,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "triage",
+   "usage": 1.985622,
+   "hooks": [
+    "onModifyPriority"
+   ]
+  },
+  {
+   "id": "rockhead",
+   "usage": 1.977416,
+   "hooks": [
+    "onDamage"
+   ]
+  },
+  {
+   "id": "imposter",
+   "usage": 1.975369,
+   "hooks": [
+    "onSwitchIn",
+    "onStart"
+   ]
+  },
+  {
+   "id": "pixilate",
+   "usage": 1.96726,
+   "hooks": [
+    "onModifyType",
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "electricsurge",
+   "usage": 1.942893,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "sniper",
+   "usage": 1.940068,
+   "hooks": [
+    "onModifyDamage"
+   ]
+  },
+  {
+   "id": "protean",
+   "usage": 1.931091,
+   "hooks": [
+    "onPrepareHit",
+    "onSwitchIn"
+   ]
+  },
+  {
+   "id": "analytic",
+   "usage": 1.923277,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "rattled",
+   "usage": 1.916012,
+   "hooks": [
+    "onDamagingHit",
+    "onAfterBoost"
+   ]
+  },
+  {
+   "id": "insomnia",
+   "usage": 1.912804,
+   "hooks": [
+    "onUpdate",
+    "onSetStatus",
+    "onTryAddVolatile"
+   ]
+  },
+  {
+   "id": "galvanize",
+   "usage": 1.907195,
+   "hooks": [
+    "onModifyType",
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "toxicdebris",
+   "usage": 1.904254,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "motordrive",
+   "usage": 1.885258,
+   "hooks": [
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "dryskin",
+   "usage": 1.883196,
+   "hooks": [
+    "onTryHit",
+    "onSourceBasePower",
+    "onWeather"
+   ]
+  },
+  {
+   "id": "icescales",
+   "usage": 1.871906,
+   "hooks": [
+    "onSourceModifyDamage"
+   ]
+  },
+  {
+   "id": "soundproof",
+   "usage": 1.867391,
+   "hooks": [
+    "onTryHit",
+    "onAllyTryHitSide"
+   ]
+  },
+  {
+   "id": "purifyingsalt",
+   "usage": 1.843526,
+   "hooks": [
+    "onSetStatus",
+    "onTryAddVolatile",
+    "onSourceModifyAtk",
+    "onSourceModifySpA"
+   ]
+  },
+  {
+   "id": "trace",
+   "usage": 1.840327,
+   "hooks": [
+    "onStart",
+    "onUpdate"
+   ]
+  },
+  {
+   "id": "weakarmor",
+   "usage": 1.838496,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "bulletproof",
+   "usage": 1.836146,
+   "hooks": [
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "thermalexchange",
+   "usage": 1.835878,
+   "hooks": [
+    "onDamagingHit",
+    "onUpdate",
+    "onSetStatus"
+   ]
+  },
+  {
+   "id": "libero",
+   "usage": 1.804546,
+   "hooks": [
+    "onPrepareHit",
+    "onSwitchIn"
+   ]
+  },
+  {
+   "id": "punkrock",
+   "usage": 1.799465,
+   "hooks": [
+    "onBasePower",
+    "onSourceModifyDamage"
+   ]
+  },
+  {
+   "id": "swarm",
+   "usage": 1.741511,
+   "hooks": [
+    "onModifyAtk",
+    "onModifySpA"
+   ]
+  },
+  {
+   "id": "roughskin",
+   "usage": 1.711428,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "hugepower",
+   "usage": 1.706874,
+   "hooks": [
+    "onModifyAtk"
+   ]
+  },
+  {
+   "id": "solidrock",
+   "usage": 1.617442,
+   "hooks": [
+    "onSourceModifyDamage"
+   ]
+  },
+  {
+   "id": "solarpower",
+   "usage": 1.589746,
+   "hooks": [
+    "onModifySpA",
+    "onWeather"
+   ]
+  },
+  {
+   "id": "waterbubble",
+   "usage": 1.565346,
+   "hooks": [
+    "onSourceModifyAtk",
+    "onSourceModifySpA",
+    "onModifyAtk",
+    "onModifySpA",
+    "onUpdate",
+    "onSetStatus"
+   ]
+  },
+  {
+   "id": "supersweetsyrup",
+   "usage": 1.547374,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "icebody",
+   "usage": 1.50448,
+   "hooks": [
+    "onWeather",
+    "onImmunity"
+   ]
+  },
+  {
+   "id": "download",
+   "usage": 1.500867,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "hustle",
+   "usage": 1.497369,
+   "hooks": [
+    "onModifyAtk",
+    "onSourceModifyAccuracy"
+   ]
+  },
+  {
+   "id": "armortail",
+   "usage": 1.460582,
+   "hooks": [
+    "onFoeTryMove"
+   ]
+  },
+  {
+   "id": "damp",
+   "usage": 1.441388,
+   "hooks": [
+    "onAnyTryMove",
+    "onAnyDamage"
+   ]
+  },
+  {
+   "id": "keeneye",
+   "usage": 1.430976,
+   "hooks": [
+    "onTryBoost",
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "poisontouch",
+   "usage": 1.429328,
+   "hooks": [
+    "onSourceDamagingHit"
+   ]
+  },
+  {
+   "id": "quickdraw",
+   "usage": 1.343254,
+   "hooks": [
+    "onFractionalPriority"
+   ]
+  },
+  {
+   "id": "heatproof",
+   "usage": 1.340964,
+   "hooks": [
+    "onSourceModifyAtk",
+    "onSourceModifySpA",
+    "onDamage"
+   ]
+  },
+  {
+   "id": "seedsower",
+   "usage": 1.31556,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "flowerveil",
+   "usage": 1.297638,
+   "hooks": [
+    "onAllyTryBoost",
+    "onAllySetStatus",
+    "onAllyTryAddVolatile"
+   ]
+  },
+  {
+   "id": "unnerve",
+   "usage": 1.281557,
+   "hooks": [
+    "onPreStart",
+    "onStart",
+    "onEnd",
+    "onFoeTryEatItem"
+   ]
+  },
+  {
+   "id": "owntempo",
+   "usage": 1.262087,
+   "hooks": [
+    "onUpdate",
+    "onTryAddVolatile",
+    "onHit",
+    "onTryBoost"
+   ]
+  },
+  {
+   "id": "pickpocket",
+   "usage": 1.156845,
+   "hooks": [
+    "onAfterMoveSecondary"
+   ]
+  },
+  {
+   "id": "liquidvoice",
+   "usage": 1.127154,
+   "hooks": [
+    "onModifyType"
+   ]
+  },
+  {
+   "id": "commander",
+   "usage": 1.097428,
+   "hooks": [
+    "onUpdate"
+   ]
+  },
+  {
+   "id": "stakeout",
+   "usage": 1.095336,
+   "hooks": [
+    "onModifyAtk",
+    "onModifySpA"
+   ]
+  },
+  {
+   "id": "sweetveil",
+   "usage": 1.083283,
+   "hooks": [
+    "onAllySetStatus",
+    "onAllyTryAddVolatile"
+   ]
+  },
+  {
+   "id": "sandveil",
+   "usage": 1.058646,
+   "hooks": [
+    "onImmunity",
+    "onModifyAccuracy"
+   ]
+  },
+  {
+   "id": "toughclaws",
+   "usage": 1.058641,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "raindish",
+   "usage": 1.057413,
+   "hooks": [
+    "onWeather"
+   ]
+  },
+  {
+   "id": "strongjaw",
+   "usage": 1.042237,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "immunity",
+   "usage": 1.038063,
+   "hooks": [
+    "onUpdate",
+    "onSetStatus"
+   ]
+  },
+  {
+   "id": "marvelscale",
+   "usage": 1.008253,
+   "hooks": [
+    "onModifyDef"
+   ]
+  },
+  {
+   "id": "mirrorarmor",
+   "usage": 1.002641,
+   "hooks": [
+    "onTryBoost"
+   ]
+  },
+  {
+   "id": "megalauncher",
+   "usage": 1,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "powerspot",
+   "usage": 1,
+   "hooks": [
+    "onAllyBasePower"
+   ]
+  },
+  {
+   "id": "rockypayload",
+   "usage": 1,
+   "hooks": [
+    "onModifyAtk",
+    "onModifySpA"
+   ]
+  },
+  {
+   "id": "shieldsdown",
+   "usage": 1,
+   "hooks": [
+    "onStart",
+    "onResidual",
+    "onSetStatus",
+    "onTryAddVolatile"
+   ]
+  },
+  {
+   "id": "surgesurfer",
+   "usage": 1,
+   "hooks": [
+    "onModifySpe"
+   ]
+  },
+  {
+   "id": "healer",
+   "usage": 0.998445,
+   "hooks": [
+    "onResidual"
+   ]
+  },
+  {
+   "id": "filter",
+   "usage": 0.99562,
+   "hooks": [
+    "onSourceModifyDamage"
+   ]
+  },
+  {
+   "id": "dazzling",
+   "usage": 0.995025,
+   "hooks": [
+    "onFoeTryMove"
+   ]
+  },
+  {
+   "id": "slushrush",
+   "usage": 0.983588,
+   "hooks": [
+    "onModifySpe"
+   ]
+  },
+  {
+   "id": "angershell",
+   "usage": 0.979202,
+   "hooks": [
+    "onDamage",
+    "onTryEatItem",
+    "onAfterMoveSecondary"
+   ]
+  },
+  {
+   "id": "purepower",
+   "usage": 0.974209,
+   "hooks": [
+    "onModifyAtk"
+   ]
+  },
+  {
+   "id": "noguard",
+   "usage": 0.964631,
+   "hooks": [
+    "onAnyInvulnerability",
+    "onAnyAccuracy"
+   ]
+  },
+  {
+   "id": "hospitality",
+   "usage": 0.96331,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "stench",
+   "usage": 0.946656,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "heavymetal",
+   "usage": 0.942534,
+   "hooks": [
+    "onModifyWeight"
+   ]
+  },
+  {
+   "id": "powerofalchemy",
+   "usage": 0.93887,
+   "hooks": [
+    "onAllyFaint"
+   ]
+  },
+  {
+   "id": "steamengine",
+   "usage": 0.924356,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "steelyspirit",
+   "usage": 0.920133,
+   "hooks": [
+    "onAllyBasePower"
+   ]
+  },
+  {
+   "id": "longreach",
+   "usage": 0.893766,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "queenlymajesty",
+   "usage": 0.887145,
+   "hooks": [
+    "onFoeTryMove"
+   ]
+  },
+  {
+   "id": "stalwart",
+   "usage": 0.882282,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "cloudnine",
+   "usage": 0.878738,
+   "hooks": [
+    "onSwitchIn",
+    "onStart",
+    "onEnd"
+   ]
+  },
+  {
+   "id": "magnetpull",
+   "usage": 0.867762,
+   "hooks": [
+    "onFoeTrapPokemon",
+    "onFoeMaybeTrapPokemon"
+   ]
+  },
+  {
+   "id": "symbiosis",
+   "usage": 0.81646,
+   "hooks": [
+    "onAllyAfterUseItem"
+   ]
+  },
+  {
+   "id": "quickfeet",
+   "usage": 0.788214,
+   "hooks": [
+    "onModifySpe"
+   ]
+  },
+  {
+   "id": "shedskin",
+   "usage": 0.757235,
+   "hooks": [
+    "onResidual"
+   ]
+  },
+  {
+   "id": "costar",
+   "usage": 0.733823,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "supremeoverlord",
+   "usage": 0.627829,
+   "hooks": [
+    "onStart",
+    "onEnd",
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "watercompaction",
+   "usage": 0.587595,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "hypercutter",
+   "usage": 0.579987,
+   "hooks": [
+    "onTryBoost"
+   ]
+  },
+  {
+   "id": "cutecharm",
+   "usage": 0.557429,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "effectspore",
+   "usage": 0.522613,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "furcoat",
+   "usage": 0.51944,
+   "hooks": [
+    "onModifyDef"
+   ]
+  },
+  {
+   "id": "sandspit",
+   "usage": 0.472148,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "steadfast",
+   "usage": 0.468021,
+   "hooks": [
+    "onFlinch"
+   ]
+  },
+  {
+   "id": "fluffy",
+   "usage": 0.438107,
+   "hooks": [
+    "onSourceModifyDamage"
+   ]
+  },
+  {
+   "id": "superluck",
+   "usage": 0.434147,
+   "hooks": [
+    "onModifyCritRatio"
+   ]
+  },
+  {
+   "id": "gluttony",
+   "usage": 0.431001,
+   "hooks": [
+    "onStart",
+    "onDamage"
+   ]
+  },
+  {
+   "id": "stickyhold",
+   "usage": 0.37119,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "windpower",
+   "usage": 0.335852,
+   "hooks": [
+    "onDamagingHit",
+    "onAllySideConditionStart"
+   ]
+  },
+  {
+   "id": "battlearmor",
+   "usage": 0.335214,
+   "hooks": []
+  },
+  {
+   "id": "plus",
+   "usage": 0.314354,
+   "hooks": [
+    "onModifySpA"
+   ]
+  },
+  {
+   "id": "lightmetal",
+   "usage": 0.309116,
+   "hooks": [
+    "onModifyWeight"
+   ]
+  },
+  {
+   "id": "sandforce",
+   "usage": 0.260675,
+   "hooks": [
+    "onBasePower",
+    "onImmunity"
+   ]
+  },
+  {
+   "id": "suctioncups",
+   "usage": 0.197044,
+   "hooks": [
+    "onDragOut"
+   ]
+  },
+  {
+   "id": "merciless",
+   "usage": 0.184281,
+   "hooks": [
+    "onModifyCritRatio"
+   ]
+  },
+  {
+   "id": "poisonpoint",
+   "usage": 0.139544,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "rivalry",
+   "usage": 0.134108,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "earlybird",
+   "usage": 0.126172,
+   "hooks": []
+  },
+  {
+   "id": "limber",
+   "usage": 0.120885,
+   "hooks": [
+    "onUpdate",
+    "onSetStatus"
+   ]
+  },
+  {
+   "id": "bigpecks",
+   "usage": 0.094671,
+   "hooks": [
+    "onTryBoost"
+   ]
+  },
+  {
+   "id": "mistysurge",
+   "usage": 0.091584,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "curiousmedicine",
+   "usage": 0.087488,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "minus",
+   "usage": 0.082731,
+   "hooks": [
+    "onModifySpA"
+   ]
+  },
+  {
+   "id": "runaway",
+   "usage": 0.062565,
+   "hooks": []
+  },
+  {
+   "id": "waterveil",
+   "usage": 0.055872,
+   "hooks": [
+    "onUpdate",
+    "onSetStatus"
+   ]
+  },
+  {
+   "id": "propellertail",
+   "usage": 0.049329,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "magmaarmor",
+   "usage": 0.047576,
+   "hooks": [
+    "onUpdate",
+    "onImmunity"
+   ]
+  },
+  {
+   "id": "opportunist",
+   "usage": 0.040955,
+   "hooks": [
+    "onFoeAfterBoost"
+   ]
+  },
+  {
+   "id": "cheekpouch",
+   "usage": 0.040577,
+   "hooks": [
+    "onEatItem"
+   ]
+  },
+  {
+   "id": "honeygather",
+   "usage": 0.030846,
+   "hooks": []
+  },
+  {
+   "id": "illuminate",
+   "usage": 0.028753,
+   "hooks": [
+    "onTryBoost",
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "anticipation",
+   "usage": 0.027427,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "toxicboost",
+   "usage": 0.026412,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "cudchew",
+   "usage": 0.02106,
+   "hooks": [
+    "onEatItem",
+    "onEnd",
+    "condition.onRestart",
+    "condition.onEnd"
+   ]
+  },
+  {
+   "id": "pickup",
+   "usage": 0.018918,
+   "hooks": [
+    "onResidual"
+   ]
+  },
+  {
+   "id": "flareboost",
+   "usage": 0.018071,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "whitesmoke",
+   "usage": 0.012355,
+   "hooks": [
+    "onTryBoost"
+   ]
+  },
+  {
+   "id": "ripen",
+   "usage": 0.003885,
+   "hooks": [
+    "onTryHeal",
+    "onChangeBoost",
+    "onSourceModifyDamage",
+    "onTryEatItem",
+    "onEatItem"
+   ]
+  },
+  {
+   "id": "klutz",
+   "usage": 0.003696,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "tangledfeet",
+   "usage": 0.001733,
+   "hooks": [
+    "onModifyAccuracy"
+   ]
+  },
+  {
+   "id": "stall",
+   "usage": 0.000326,
+   "hooks": []
+  },
+  {
+   "id": "aerilate",
+   "usage": 0,
+   "hooks": [
+    "onModifyType",
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "aurabreak",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onAnyTryPrimaryHit"
+   ]
+  },
+  {
+   "id": "ballfetch",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "battlebond",
+   "usage": 0,
+   "hooks": [
+    "onSourceAfterFaint"
+   ]
+  },
+  {
+   "id": "beastboost",
+   "usage": 0,
+   "hooks": [
+    "onSourceAfterFaint"
+   ]
+  },
+  {
+   "id": "colorchange",
+   "usage": 0,
+   "hooks": [
+    "onAfterMoveSecondary"
+   ]
+  },
+  {
+   "id": "comatose",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onSetStatus"
+   ]
+  },
+  {
+   "id": "cottondown",
+   "usage": 0,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "darkaura",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onAnyBasePower"
+   ]
+  },
+  {
+   "id": "defeatist",
+   "usage": 0,
+   "hooks": [
+    "onModifyAtk",
+    "onModifySpA"
+   ]
+  },
+  {
+   "id": "deltastream",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onAnySetWeather",
+    "onEnd"
+   ]
+  },
+  {
+   "id": "desolateland",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onAnySetWeather",
+    "onEnd"
+   ]
+  },
+  {
+   "id": "embodyaspectcornerstone",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onSwitchIn"
+   ]
+  },
+  {
+   "id": "embodyaspecthearthflame",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onSwitchIn"
+   ]
+  },
+  {
+   "id": "embodyaspectteal",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onSwitchIn"
+   ]
+  },
+  {
+   "id": "embodyaspectwellspring",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onSwitchIn"
+   ]
+  },
+  {
+   "id": "emergencyexit",
+   "usage": 0,
+   "hooks": [
+    "onEmergencyExit"
+   ]
+  },
+  {
+   "id": "fairyaura",
+   "usage": 0,
+   "hooks": [
+    "onPreStart",
+    "onStart",
+    "onAnyBasePower"
+   ]
+  },
+  {
+   "id": "flowergift",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onWeatherChange",
+    "onAllyModifyAtk",
+    "onAllyModifySpD"
+   ]
+  },
+  {
+   "id": "forecast",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onWeatherChange"
+   ]
+  },
+  {
+   "id": "forewarn",
+   "usage": 0,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "gorillatactics",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onBeforeMove",
+    "onModifyMove",
+    "onModifyAtk",
+    "onDisableMove",
+    "onEnd"
+   ]
+  },
+  {
+   "id": "grasspelt",
+   "usage": 0,
+   "hooks": [
+    "onModifyDef"
+   ]
+  },
+  {
+   "id": "innardsout",
+   "usage": 0,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "ironbarbs",
+   "usage": 0,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "lingeringaroma",
+   "usage": 0,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "liquidooze",
+   "usage": 0,
+   "hooks": [
+    "onSourceTryHeal"
+   ]
+  },
+  {
+   "id": "mimicry",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onTerrainChange"
+   ]
+  },
+  {
+   "id": "mummy",
+   "usage": 0,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "neuroforce",
+   "usage": 0,
+   "hooks": [
+    "onModifyDamage"
+   ]
+  },
+  {
+   "id": "normalize",
+   "usage": 0,
+   "hooks": [
+    "onModifyType",
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "parentalbond",
+   "usage": 0,
+   "hooks": [
+    "onPrepareHit",
+    "onSourceModifySecondaries"
+   ]
+  },
+  {
+   "id": "pastelveil",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onUpdate",
+    "onAllySwitchIn",
+    "onSetStatus",
+    "onAllySetStatus"
+   ]
+  },
+  {
+   "id": "perishbody",
+   "usage": 0,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "piercingdrill",
+   "usage": 0,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "powerconstruct",
+   "usage": 0,
+   "hooks": [
+    "onResidual"
+   ]
+  },
+  {
+   "id": "primordialsea",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onAnySetWeather",
+    "onEnd"
+   ]
+  },
+  {
+   "id": "receiver",
+   "usage": 0,
+   "hooks": [
+    "onAllyFaint"
+   ]
+  },
+  {
+   "id": "refrigerate",
+   "usage": 0,
+   "hooks": [
+    "onModifyType",
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "rkssystem",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "schooling",
+   "usage": 0,
+   "hooks": [
+    "onStart",
+    "onResidual"
+   ]
+  },
+  {
+   "id": "screencleaner",
+   "usage": 0,
+   "hooks": [
+    "onStart"
+   ]
+  },
+  {
+   "id": "simple",
+   "usage": 0,
+   "hooks": [
+    "onChangeBoost"
+   ]
+  },
+  {
+   "id": "spicyspray",
+   "usage": 0,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "stancechange",
+   "usage": 0,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "steelworker",
+   "usage": 0,
+   "hooks": [
+    "onModifyAtk",
+    "onModifySpA"
+   ]
+  },
+  {
+   "id": "tanglinghair",
+   "usage": 0,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "teraformzero",
+   "usage": 0,
+   "hooks": [
+    "onAfterTerastallization"
+   ]
+  },
+  {
+   "id": "terashell",
+   "usage": 0,
+   "hooks": [
+    "onEffectiveness",
+    "onAnyAfterMove"
+   ]
+  },
+  {
+   "id": "victorystar",
+   "usage": 0,
+   "hooks": [
+    "onAnyModifyAccuracy"
+   ]
+  },
+  {
+   "id": "wanderingspirit",
+   "usage": 0,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "wimpout",
+   "usage": 0,
+   "hooks": [
+    "onEmergencyExit"
+   ]
+  },
+  {
+   "id": "wonderguard",
+   "usage": 0,
+   "hooks": [
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "wonderskin",
+   "usage": 0,
+   "hooks": [
+    "onModifyAccuracy"
+   ]
+  },
+  {
+   "id": "zenmode",
+   "usage": 0,
+   "hooks": [
+    "onResidual",
+    "onEnd",
+    "condition.onStart",
+    "condition.onEnd"
+   ]
+  }
+ ],
+ "moves": [
+  {
+   "id": "protect",
+   "usage": 221.079454,
+   "hooks": [
+    "onPrepareHit",
+    "onHit",
+    "condition.onStart",
+    "condition.onTryHit"
+   ]
+  },
+  {
+   "id": "knockoff",
+   "usage": 67.280511,
+   "hooks": [
+    "onBasePower",
+    "onAfterHit"
+   ]
+  },
+  {
+   "id": "earthquake",
+   "usage": 62.333518,
+   "hooks": []
+  },
+  {
+   "id": "closecombat",
+   "usage": 58.282547,
+   "hooks": []
+  },
+  {
+   "id": "trickroom",
+   "usage": 56.04841,
+   "hooks": [
+    "condition.durationCallback",
+    "condition.onFieldStart",
+    "condition.onFieldRestart",
+    "condition.onFieldEnd"
+   ]
+  },
+  {
+   "id": "taunt",
+   "usage": 52.260338,
+   "hooks": [
+    "condition.onStart",
+    "condition.onEnd",
+    "condition.onDisableMove",
+    "condition.onBeforeMove"
+   ]
+  },
+  {
+   "id": "terablast",
+   "usage": 48.345751,
+   "hooks": [
+    "basePowerCallback",
+    "onPrepareHit",
+    "onModifyType",
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "tailwind",
+   "usage": 44.485549,
+   "hooks": [
+    "condition.durationCallback",
+    "condition.onSideStart",
+    "condition.onModifySpe",
+    "condition.onSideEnd"
+   ]
+  },
+  {
+   "id": "uturn",
+   "usage": 40.828584,
+   "hooks": []
+  },
+  {
+   "id": "recover",
+   "usage": 38.44996,
+   "hooks": []
+  },
+  {
+   "id": "fakeout",
+   "usage": 37.921686,
+   "hooks": [
+    "onTry"
+   ]
+  },
+  {
+   "id": "shadowball",
+   "usage": 36.026422,
+   "hooks": []
+  },
+  {
+   "id": "bodypress",
+   "usage": 35.892628,
+   "hooks": []
+  },
+  {
+   "id": "earthpower",
+   "usage": 34.715321,
+   "hooks": []
+  },
+  {
+   "id": "substitute",
+   "usage": 32.142438,
+   "hooks": [
+    "onTryHit",
+    "onHit",
+    "condition.onStart",
+    "condition.onTryPrimaryHit",
+    "condition.onEnd"
+   ]
+  },
+  {
+   "id": "suckerpunch",
+   "usage": 32.068619,
+   "hooks": [
+    "onTry"
+   ]
+  },
+  {
+   "id": "thunderwave",
+   "usage": 31.573883,
+   "hooks": []
+  },
+  {
+   "id": "encore",
+   "usage": 31.221503,
+   "hooks": [
+    "condition.onStart",
+    "condition.onOverrideAction",
+    "condition.onResidual",
+    "condition.onEnd",
+    "condition.onDisableMove"
+   ]
+  },
+  {
+   "id": "helpinghand",
+   "usage": 30.699876,
+   "hooks": [
+    "onTryHit",
+    "condition.onStart",
+    "condition.onRestart",
+    "condition.onBasePower"
+   ]
+  },
+  {
+   "id": "willowisp",
+   "usage": 30.064902,
+   "hooks": []
+  },
+  {
+   "id": "stealthrock",
+   "usage": 29.699942,
+   "hooks": [
+    "condition.onSideStart",
+    "condition.onEntryHazard"
+   ]
+  },
+  {
+   "id": "calmmind",
+   "usage": 29.191965,
+   "hooks": []
+  },
+  {
+   "id": "dracometeor",
+   "usage": 29.066131,
+   "hooks": []
+  },
+  {
+   "id": "icebeam",
+   "usage": 27.50926,
+   "hooks": []
+  },
+  {
+   "id": "wideguard",
+   "usage": 27.19703,
+   "hooks": [
+    "onTry",
+    "onHitSide",
+    "condition.onSideStart",
+    "condition.onTryHit"
+   ]
+  },
+  {
+   "id": "endeavor",
+   "usage": 25.991629,
+   "hooks": [
+    "damageCallback",
+    "onTryImmunity"
+   ]
+  },
+  {
+   "id": "voltswitch",
+   "usage": 24.81319,
+   "hooks": []
+  },
+  {
+   "id": "ironhead",
+   "usage": 24.559858,
+   "hooks": []
+  },
+  {
+   "id": "swordsdance",
+   "usage": 24.050311,
+   "hooks": []
+  },
+  {
+   "id": "thunderbolt",
+   "usage": 22.133695,
+   "hooks": []
+  },
+  {
+   "id": "flamethrower",
+   "usage": 21.037101,
+   "hooks": []
+  },
+  {
+   "id": "icywind",
+   "usage": 20.731027,
+   "hooks": []
+  },
+  {
+   "id": "moonblast",
+   "usage": 20.365927,
+   "hooks": []
+  },
+  {
+   "id": "foulplay",
+   "usage": 19.526533,
+   "hooks": []
+  },
+  {
+   "id": "rockslide",
+   "usage": 19.424687,
+   "hooks": []
+  },
+  {
+   "id": "judgment",
+   "usage": 19.277705,
+   "hooks": [
+    "onModifyType"
+   ]
+  },
+  {
+   "id": "aquajet",
+   "usage": 19.103463,
+   "hooks": []
+  },
+  {
+   "id": "crunch",
+   "usage": 18.982095,
+   "hooks": []
+  },
+  {
+   "id": "dazzlinggleam",
+   "usage": 18.648716,
+   "hooks": []
+  },
+  {
+   "id": "playrough",
+   "usage": 18.640919,
+   "hooks": []
+  },
+  {
+   "id": "psychic",
+   "usage": 18.598226,
+   "hooks": []
+  },
+  {
+   "id": "flashcannon",
+   "usage": 18.05767,
+   "hooks": []
+  },
+  {
+   "id": "batonpass",
+   "usage": 17.393149,
+   "hooks": [
+    "onHit",
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "flareblitz",
+   "usage": 17.07722,
+   "hooks": []
+  },
+  {
+   "id": "irondefense",
+   "usage": 17.010286,
+   "hooks": []
+  },
+  {
+   "id": "toxic",
+   "usage": 17.009205,
+   "hooks": []
+  },
+  {
+   "id": "yawn",
+   "usage": 16.965077,
+   "hooks": [
+    "onTryHit",
+    "condition.onStart",
+    "condition.onEnd"
+   ]
+  },
+  {
+   "id": "toxicspikes",
+   "usage": 16.069776,
+   "hooks": [
+    "condition.onSideStart",
+    "condition.onSideRestart",
+    "condition.onEntryHazard"
+   ]
+  },
+  {
+   "id": "snarl",
+   "usage": 15.897873,
+   "hooks": []
+  },
+  {
+   "id": "extremespeed",
+   "usage": 15.599691,
+   "hooks": []
+  },
+  {
+   "id": "darkpulse",
+   "usage": 15.580889,
+   "hooks": []
+  },
+  {
+   "id": "roost",
+   "usage": 15.56951,
+   "hooks": [
+    "condition.onStart",
+    "condition.onType"
+   ]
+  },
+  {
+   "id": "drainpunch",
+   "usage": 15.353409,
+   "hooks": []
+  },
+  {
+   "id": "hydropump",
+   "usage": 15.337361,
+   "hooks": []
+  },
+  {
+   "id": "highhorsepower",
+   "usage": 15.100671,
+   "hooks": []
+  },
+  {
+   "id": "leechseed",
+   "usage": 15.074558,
+   "hooks": [
+    "condition.onStart",
+    "condition.onResidual",
+    "onTryImmunity"
+   ]
+  },
+  {
+   "id": "dragondance",
+   "usage": 14.883876,
+   "hooks": []
+  },
+  {
+   "id": "followme",
+   "usage": 14.643461,
+   "hooks": [
+    "onTry",
+    "condition.onStart",
+    "condition.onFoeRedirectTarget"
+   ]
+  },
+  {
+   "id": "expandingforce",
+   "usage": 14.532859,
+   "hooks": [
+    "onBasePower",
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "lightscreen",
+   "usage": 14.443461,
+   "hooks": [
+    "condition.durationCallback",
+    "condition.onAnyModifyDamage",
+    "condition.onSideStart",
+    "condition.onSideEnd"
+   ]
+  },
+  {
+   "id": "flipturn",
+   "usage": 14.405248,
+   "hooks": []
+  },
+  {
+   "id": "airslash",
+   "usage": 14.221323,
+   "hooks": []
+  },
+  {
+   "id": "gigadrain",
+   "usage": 14.103798,
+   "hooks": []
+  },
+  {
+   "id": "liquidation",
+   "usage": 14.047952,
+   "hooks": []
+  },
+  {
+   "id": "heatwave",
+   "usage": 13.830644,
+   "hooks": []
+  },
+  {
+   "id": "hurricane",
+   "usage": 13.387268,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "weatherball",
+   "usage": 13.257565,
+   "hooks": [
+    "onModifyType",
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "surf",
+   "usage": 12.91845,
+   "hooks": []
+  },
+  {
+   "id": "trick",
+   "usage": 12.381855,
+   "hooks": [
+    "onTryImmunity",
+    "onHit"
+   ]
+  },
+  {
+   "id": "sludgebomb",
+   "usage": 12.332855,
+   "hooks": []
+  },
+  {
+   "id": "reflect",
+   "usage": 12.033809,
+   "hooks": [
+    "condition.durationCallback",
+    "condition.onAnyModifyDamage",
+    "condition.onSideStart",
+    "condition.onSideEnd"
+   ]
+  },
+  {
+   "id": "scald",
+   "usage": 11.731706,
+   "hooks": []
+  },
+  {
+   "id": "bravebird",
+   "usage": 11.637174,
+   "hooks": []
+  },
+  {
+   "id": "destinybond",
+   "usage": 11.588305,
+   "hooks": [
+    "onPrepareHit",
+    "condition.onStart",
+    "condition.onFaint",
+    "condition.onBeforeMove",
+    "condition.onMoveAborted"
+   ]
+  },
+  {
+   "id": "rockblast",
+   "usage": 11.58479,
+   "hooks": []
+  },
+  {
+   "id": "blizzard",
+   "usage": 11.547089,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "curse",
+   "usage": 11.457306,
+   "hooks": [
+    "onModifyMove",
+    "onTryHit",
+    "onHit",
+    "condition.onStart",
+    "condition.onResidual"
+   ]
+  },
+  {
+   "id": "dragonpulse",
+   "usage": 11.360868,
+   "hooks": []
+  },
+  {
+   "id": "icepunch",
+   "usage": 11.343118,
+   "hooks": []
+  },
+  {
+   "id": "quiverdance",
+   "usage": 10.933567,
+   "hooks": []
+  },
+  {
+   "id": "painsplit",
+   "usage": 10.748813,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "thunder",
+   "usage": 10.624751,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "leafstorm",
+   "usage": 10.425039,
+   "hooks": []
+  },
+  {
+   "id": "psychicnoise",
+   "usage": 10.144082,
+   "hooks": []
+  },
+  {
+   "id": "grassknot",
+   "usage": 10.071364,
+   "hooks": [
+    "basePowerCallback",
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "alluringvoice",
+   "usage": 10.062911,
+   "hooks": [
+    "secondary.onHit",
+    "secondaries.0.onHit"
+   ]
+  },
+  {
+   "id": "overheat",
+   "usage": 9.912374,
+   "hooks": []
+  },
+  {
+   "id": "shadowsneak",
+   "usage": 9.895223,
+   "hooks": []
+  },
+  {
+   "id": "heavyslam",
+   "usage": 9.768198,
+   "hooks": [
+    "basePowerCallback",
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "roar",
+   "usage": 9.698457,
+   "hooks": []
+  },
+  {
+   "id": "energyball",
+   "usage": 9.585508,
+   "hooks": []
+  },
+  {
+   "id": "doubleedge",
+   "usage": 9.475616,
+   "hooks": []
+  },
+  {
+   "id": "poisonjab",
+   "usage": 9.40003,
+   "hooks": []
+  },
+  {
+   "id": "explosion",
+   "usage": 9.306468,
+   "hooks": []
+  },
+  {
+   "id": "stickyweb",
+   "usage": 9.218435,
+   "hooks": [
+    "condition.onSideStart",
+    "condition.onEntryHazard"
+   ]
+  },
+  {
+   "id": "rest",
+   "usage": 9.153559,
+   "hooks": [
+    "onTry",
+    "onHit"
+   ]
+  },
+  {
+   "id": "pollenpuff",
+   "usage": 9.001828,
+   "hooks": [
+    "onTryHit",
+    "onTryMove",
+    "onHit"
+   ]
+  },
+  {
+   "id": "hypervoice",
+   "usage": 8.928725,
+   "hooks": []
+  },
+  {
+   "id": "storedpower",
+   "usage": 8.849486,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "icespinner",
+   "usage": 8.788734,
+   "hooks": [
+    "onAfterHit",
+    "onAfterSubDamage"
+   ]
+  },
+  {
+   "id": "bugbuzz",
+   "usage": 8.730069,
+   "hooks": []
+  },
+  {
+   "id": "freezedry",
+   "usage": 8.725955,
+   "hooks": [
+    "onEffectiveness"
+   ]
+  },
+  {
+   "id": "endure",
+   "usage": 8.622143,
+   "hooks": [
+    "onPrepareHit",
+    "onHit",
+    "condition.onStart",
+    "condition.onDamage"
+   ]
+  },
+  {
+   "id": "spore",
+   "usage": 8.579124,
+   "hooks": []
+  },
+  {
+   "id": "iciclespear",
+   "usage": 8.573844,
+   "hooks": []
+  },
+  {
+   "id": "trailblaze",
+   "usage": 8.529882,
+   "hooks": []
+  },
+  {
+   "id": "focusblast",
+   "usage": 8.50592,
+   "hooks": []
+  },
+  {
+   "id": "nastyplot",
+   "usage": 8.467119,
+   "hooks": []
+  },
+  {
+   "id": "counter",
+   "usage": 8.3178,
+   "hooks": [
+    "damageCallback",
+    "beforeTurnCallback",
+    "onTry",
+    "condition.onStart",
+    "condition.onRedirectTarget",
+    "condition.onDamagingHit"
+   ]
+  },
+  {
+   "id": "stoneedge",
+   "usage": 8.230077,
+   "hooks": []
+  },
+  {
+   "id": "sleeppowder",
+   "usage": 8.131903,
+   "hooks": []
+  },
+  {
+   "id": "leafblade",
+   "usage": 8.103616,
+   "hooks": []
+  },
+  {
+   "id": "iceshard",
+   "usage": 8.032671,
+   "hooks": []
+  },
+  {
+   "id": "partingshot",
+   "usage": 8.017848,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "bulkup",
+   "usage": 7.934871,
+   "hooks": []
+  },
+  {
+   "id": "electroweb",
+   "usage": 7.854484,
+   "hooks": []
+  },
+  {
+   "id": "discharge",
+   "usage": 7.837397,
+   "hooks": []
+  },
+  {
+   "id": "healingwish",
+   "usage": 7.819152,
+   "hooks": [
+    "onTryHit",
+    "condition.onSwap"
+   ]
+  },
+  {
+   "id": "lowkick",
+   "usage": 7.798059,
+   "hooks": [
+    "basePowerCallback",
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "mirrorcoat",
+   "usage": 7.784751,
+   "hooks": [
+    "damageCallback",
+    "beforeTurnCallback",
+    "onTry",
+    "condition.onStart",
+    "condition.onRedirectTarget",
+    "condition.onDamagingHit"
+   ]
+  },
+  {
+   "id": "brickbreak",
+   "usage": 7.748406,
+   "hooks": [
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "bulletpunch",
+   "usage": 7.596878,
+   "hooks": []
+  },
+  {
+   "id": "iciclecrash",
+   "usage": 7.581512,
+   "hooks": []
+  },
+  {
+   "id": "acrobatics",
+   "usage": 7.473407,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "facade",
+   "usage": 7.470776,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "coaching",
+   "usage": 7.443318,
+   "hooks": []
+  },
+  {
+   "id": "ivycudgel",
+   "usage": 7.425334,
+   "hooks": [
+    "onPrepareHit",
+    "onModifyType"
+   ]
+  },
+  {
+   "id": "sludgewave",
+   "usage": 7.317586,
+   "hooks": []
+  },
+  {
+   "id": "sacredsword",
+   "usage": 7.25079,
+   "hooks": []
+  },
+  {
+   "id": "outrage",
+   "usage": 7.247975,
+   "hooks": [
+    "onAfterMove"
+   ]
+  },
+  {
+   "id": "ragepowder",
+   "usage": 7.161349,
+   "hooks": [
+    "onTry",
+    "condition.onStart",
+    "condition.onFoeRedirectTarget"
+   ]
+  },
+  {
+   "id": "shellsmash",
+   "usage": 6.980856,
+   "hooks": []
+  },
+  {
+   "id": "perishsong",
+   "usage": 6.975454,
+   "hooks": [
+    "onHitField",
+    "condition.onEnd",
+    "condition.onResidual"
+   ]
+  },
+  {
+   "id": "poltergeist",
+   "usage": 6.945146,
+   "hooks": [
+    "onTry",
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "acidspray",
+   "usage": 6.874217,
+   "hooks": []
+  },
+  {
+   "id": "scaleshot",
+   "usage": 6.836717,
+   "hooks": []
+  },
+  {
+   "id": "bulletseed",
+   "usage": 6.818197,
+   "hooks": []
+  },
+  {
+   "id": "superfang",
+   "usage": 6.684868,
+   "hooks": [
+    "damageCallback"
+   ]
+  },
+  {
+   "id": "hex",
+   "usage": 6.505637,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "solarbeam",
+   "usage": 6.479306,
+   "hooks": [
+    "onTryMove",
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "raindance",
+   "usage": 6.467067,
+   "hooks": []
+  },
+  {
+   "id": "wavecrash",
+   "usage": 6.365083,
+   "hooks": []
+  },
+  {
+   "id": "hornleech",
+   "usage": 6.22735,
+   "hooks": []
+  },
+  {
+   "id": "aurasphere",
+   "usage": 6.176907,
+   "hooks": []
+  },
+  {
+   "id": "wish",
+   "usage": 6.075913,
+   "hooks": [
+    "condition.onStart",
+    "condition.onEnd"
+   ]
+  },
+  {
+   "id": "tripleaxel",
+   "usage": 6.063046,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "dragonclaw",
+   "usage": 6.032405,
+   "hooks": []
+  },
+  {
+   "id": "throatchop",
+   "usage": 6.007323,
+   "hooks": [
+    "condition.onStart",
+    "condition.onDisableMove",
+    "condition.onBeforeMove",
+    "condition.onModifyMove",
+    "condition.onEnd",
+    "secondary.onHit",
+    "secondaries.0.onHit"
+   ]
+  },
+  {
+   "id": "quickattack",
+   "usage": 5.984159,
+   "hooks": []
+  },
+  {
+   "id": "skillswap",
+   "usage": 5.979975,
+   "hooks": [
+    "onTryHit",
+    "onHit"
+   ]
+  },
+  {
+   "id": "supercellslam",
+   "usage": 5.929507,
+   "hooks": [
+    "onMoveFail"
+   ]
+  },
+  {
+   "id": "drainingkiss",
+   "usage": 5.906226,
+   "hooks": []
+  },
+  {
+   "id": "minimize",
+   "usage": 5.900331,
+   "hooks": [
+    "condition.onRestart",
+    "condition.onSourceModifyDamage",
+    "condition.onAccuracy"
+   ]
+  },
+  {
+   "id": "stompingtantrum",
+   "usage": 5.879954,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "detect",
+   "usage": 5.805827,
+   "hooks": [
+    "onPrepareHit",
+    "onHit"
+   ]
+  },
+  {
+   "id": "feint",
+   "usage": 5.771837,
+   "hooks": []
+  },
+  {
+   "id": "rapidspin",
+   "usage": 5.761738,
+   "hooks": [
+    "onAfterHit",
+    "onAfterSubDamage"
+   ]
+  },
+  {
+   "id": "slackoff",
+   "usage": 5.741414,
+   "hooks": []
+  },
+  {
+   "id": "haze",
+   "usage": 5.733115,
+   "hooks": [
+    "onHitField"
+   ]
+  },
+  {
+   "id": "upperhand",
+   "usage": 5.713237,
+   "hooks": [
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "whirlwind",
+   "usage": 5.679293,
+   "hooks": []
+  },
+  {
+   "id": "muddywater",
+   "usage": 5.573339,
+   "hooks": []
+  },
+  {
+   "id": "nuzzle",
+   "usage": 5.511492,
+   "hooks": []
+  },
+  {
+   "id": "memento",
+   "usage": 5.466523,
+   "hooks": []
+  },
+  {
+   "id": "shadowclaw",
+   "usage": 5.45532,
+   "hooks": []
+  },
+  {
+   "id": "meteorbeam",
+   "usage": 5.433139,
+   "hooks": [
+    "onTryMove"
+   ]
+  },
+  {
+   "id": "vacuumwave",
+   "usage": 5.356868,
+   "hooks": []
+  },
+  {
+   "id": "woodhammer",
+   "usage": 5.253632,
+   "hooks": []
+  },
+  {
+   "id": "strengthsap",
+   "usage": 5.251436,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "spikes",
+   "usage": 5.105326,
+   "hooks": [
+    "condition.onSideStart",
+    "condition.onSideRestart",
+    "condition.onEntryHazard"
+   ]
+  },
+  {
+   "id": "psychicfangs",
+   "usage": 5.099432,
+   "hooks": [
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "bodyslam",
+   "usage": 5.094354,
+   "hooks": []
+  },
+  {
+   "id": "wildcharge",
+   "usage": 5.01304,
+   "hooks": []
+  },
+  {
+   "id": "bulldoze",
+   "usage": 5.012685,
+   "hooks": []
+  },
+  {
+   "id": "flamecharge",
+   "usage": 4.997489,
+   "hooks": []
+  },
+  {
+   "id": "fireblast",
+   "usage": 4.986562,
+   "hooks": []
+  },
+  {
+   "id": "spikyshield",
+   "usage": 4.970322,
+   "hooks": [
+    "onPrepareHit",
+    "onHit",
+    "condition.onStart",
+    "condition.onTryHit",
+    "condition.onHit"
+   ]
+  },
+  {
+   "id": "psyshock",
+   "usage": 4.851507,
+   "hooks": []
+  },
+  {
+   "id": "dualwingbeat",
+   "usage": 4.825461,
+   "hooks": []
+  },
+  {
+   "id": "firespin",
+   "usage": 4.769601,
+   "hooks": []
+  },
+  {
+   "id": "eruption",
+   "usage": 4.761707,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "zenheadbutt",
+   "usage": 4.672757,
+   "hooks": []
+  },
+  {
+   "id": "lunge",
+   "usage": 4.561971,
+   "hooks": []
+  },
+  {
+   "id": "clearsmog",
+   "usage": 4.504406,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "gunkshot",
+   "usage": 4.471692,
+   "hooks": []
+  },
+  {
+   "id": "superpower",
+   "usage": 4.443991,
+   "hooks": []
+  },
+  {
+   "id": "strugglebug",
+   "usage": 4.416323,
+   "hooks": []
+  },
+  {
+   "id": "headsmash",
+   "usage": 4.381459,
+   "hooks": []
+  },
+  {
+   "id": "lifedew",
+   "usage": 4.359776,
+   "hooks": []
+  },
+  {
+   "id": "firstimpression",
+   "usage": 4.310884,
+   "hooks": [
+    "onTry"
+   ]
+  },
+  {
+   "id": "moonlight",
+   "usage": 4.288402,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "synthesis",
+   "usage": 4.26424,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "headlongrush",
+   "usage": 4.189144,
+   "hooks": []
+  },
+  {
+   "id": "dragontail",
+   "usage": 4.117377,
+   "hooks": []
+  },
+  {
+   "id": "lastrespects",
+   "usage": 4.012934,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "waterfall",
+   "usage": 3.99318,
+   "hooks": []
+  },
+  {
+   "id": "gyroball",
+   "usage": 3.983597,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "healpulse",
+   "usage": 3.980456,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "bellydrum",
+   "usage": 3.967969,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "firepunch",
+   "usage": 3.961807,
+   "hooks": []
+  },
+  {
+   "id": "afteryou",
+   "usage": 3.932588,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "moongeistbeam",
+   "usage": 3.887321,
+   "hooks": []
+  },
+  {
+   "id": "machpunch",
+   "usage": 3.864123,
+   "hooks": []
+  },
+  {
+   "id": "boomburst",
+   "usage": 3.811864,
+   "hooks": []
+  },
+  {
+   "id": "sacredfire",
+   "usage": 3.805463,
+   "hooks": []
+  },
+  {
+   "id": "cosmicpower",
+   "usage": 3.791661,
+   "hooks": []
+  },
+  {
+   "id": "hypnosis",
+   "usage": 3.785566,
+   "hooks": []
+  },
+  {
+   "id": "auroraveil",
+   "usage": 3.780764,
+   "hooks": [
+    "onTry",
+    "condition.durationCallback",
+    "condition.onAnyModifyDamage",
+    "condition.onSideStart",
+    "condition.onSideEnd"
+   ]
+  },
+  {
+   "id": "morningsun",
+   "usage": 3.776528,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "disable",
+   "usage": 3.767729,
+   "hooks": [
+    "onTryHit",
+    "condition.onStart",
+    "condition.onEnd",
+    "condition.onBeforeMove",
+    "condition.onDisableMove"
+   ]
+  },
+  {
+   "id": "photongeyser",
+   "usage": 3.742266,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "avalanche",
+   "usage": 3.74208,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "scorchingsands",
+   "usage": 3.665245,
+   "hooks": []
+  },
+  {
+   "id": "spacialrend",
+   "usage": 3.657401,
+   "hooks": []
+  },
+  {
+   "id": "shedtail",
+   "usage": 3.627322,
+   "hooks": [
+    "onTryHit",
+    "onHit",
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "finalgambit",
+   "usage": 3.619941,
+   "hooks": [
+    "damageCallback"
+   ]
+  },
+  {
+   "id": "sunnyday",
+   "usage": 3.604046,
+   "hooks": []
+  },
+  {
+   "id": "reversal",
+   "usage": 3.515425,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "revivalblessing",
+   "usage": 3.501403,
+   "hooks": [
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "gravity",
+   "usage": 3.498419,
+   "hooks": [
+    "condition.durationCallback",
+    "condition.onFieldStart",
+    "condition.onModifyAccuracy",
+    "condition.onDisableMove",
+    "condition.onBeforeMove",
+    "condition.onModifyMove",
+    "condition.onFieldEnd"
+   ]
+  },
+  {
+   "id": "agility",
+   "usage": 3.456336,
+   "hooks": []
+  },
+  {
+   "id": "sunsteelstrike",
+   "usage": 3.387987,
+   "hooks": []
+  },
+  {
+   "id": "steelbeam",
+   "usage": 3.384318,
+   "hooks": [
+    "onAfterMove"
+   ]
+  },
+  {
+   "id": "xscissor",
+   "usage": 3.372164,
+   "hooks": []
+  },
+  {
+   "id": "psychocut",
+   "usage": 3.318815,
+   "hooks": []
+  },
+  {
+   "id": "softboiled",
+   "usage": 3.301863,
+   "hooks": []
+  },
+  {
+   "id": "heatcrash",
+   "usage": 3.27723,
+   "hooks": [
+    "basePowerCallback",
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "fissure",
+   "usage": 3.23515,
+   "hooks": []
+  },
+  {
+   "id": "grassyglide",
+   "usage": 3.203986,
+   "hooks": [
+    "onModifyPriority"
+   ]
+  },
+  {
+   "id": "hyperbeam",
+   "usage": 3.180799,
+   "hooks": []
+  },
+  {
+   "id": "copycat",
+   "usage": 3.130402,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "sheercold",
+   "usage": 3.126169,
+   "hooks": []
+  },
+  {
+   "id": "powergem",
+   "usage": 3.054449,
+   "hooks": []
+  },
+  {
+   "id": "gigaimpact",
+   "usage": 2.99714,
+   "hooks": []
+  },
+  {
+   "id": "imprison",
+   "usage": 2.940448,
+   "hooks": [
+    "condition.onStart",
+    "condition.onFoeDisableMove",
+    "condition.onFoeBeforeMove"
+   ]
+  },
+  {
+   "id": "bleakwindstorm",
+   "usage": 2.931982,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "revelationdance",
+   "usage": 2.916018,
+   "hooks": [
+    "onModifyType"
+   ]
+  },
+  {
+   "id": "psychup",
+   "usage": 2.907942,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "sleeptalk",
+   "usage": 2.90433,
+   "hooks": [
+    "onTry",
+    "onHit"
+   ]
+  },
+  {
+   "id": "whirlpool",
+   "usage": 2.887203,
+   "hooks": []
+  },
+  {
+   "id": "chillingwater",
+   "usage": 2.878119,
+   "hooks": []
+  },
+  {
+   "id": "mysticalfire",
+   "usage": 2.820207,
+   "hooks": []
+  },
+  {
+   "id": "fusionflare",
+   "usage": 2.817687,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "breakingswipe",
+   "usage": 2.815912,
+   "hooks": []
+  },
+  {
+   "id": "fusionbolt",
+   "usage": 2.794788,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "nightslash",
+   "usage": 2.770145,
+   "hooks": []
+  },
+  {
+   "id": "powerwhip",
+   "usage": 2.750784,
+   "hooks": []
+  },
+  {
+   "id": "transform",
+   "usage": 2.749658,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "metalburst",
+   "usage": 2.726474,
+   "hooks": [
+    "damageCallback",
+    "onTry",
+    "onModifyTarget"
+   ]
+  },
+  {
+   "id": "fling",
+   "usage": 2.72068,
+   "hooks": [
+    "onPrepareHit",
+    "condition.onUpdate"
+   ]
+  },
+  {
+   "id": "ancientpower",
+   "usage": 2.674402,
+   "hooks": []
+  },
+  {
+   "id": "ragingbull",
+   "usage": 2.64684,
+   "hooks": [
+    "onTryHit",
+    "onModifyType"
+   ]
+  },
+  {
+   "id": "fierydance",
+   "usage": 2.643556,
+   "hooks": []
+  },
+  {
+   "id": "stringshot",
+   "usage": 2.545691,
+   "hooks": []
+  },
+  {
+   "id": "rocktomb",
+   "usage": 2.532457,
+   "hooks": []
+  },
+  {
+   "id": "solarblade",
+   "usage": 2.455779,
+   "hooks": [
+    "onTryMove",
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "tailglow",
+   "usage": 2.384941,
+   "hooks": []
+  },
+  {
+   "id": "stunspore",
+   "usage": 2.354691,
+   "hooks": []
+  },
+  {
+   "id": "thunderpunch",
+   "usage": 2.305943,
+   "hooks": []
+  },
+  {
+   "id": "faketears",
+   "usage": 2.298462,
+   "hooks": []
+  },
+  {
+   "id": "focuspunch",
+   "usage": 2.293131,
+   "hooks": [
+    "priorityChargeCallback",
+    "beforeMoveCallback",
+    "condition.onStart",
+    "condition.onHit",
+    "condition.onTryAddVolatile"
+   ]
+  },
+  {
+   "id": "triattack",
+   "usage": 2.285741,
+   "hooks": [
+    "secondary.onHit",
+    "secondaries.0.onHit"
+   ]
+  },
+  {
+   "id": "ruination",
+   "usage": 2.266561,
+   "hooks": [
+    "damageCallback"
+   ]
+  },
+  {
+   "id": "chillyreception",
+   "usage": 2.26357,
+   "hooks": []
+  },
+  {
+   "id": "sandtomb",
+   "usage": 2.256022,
+   "hooks": []
+  },
+  {
+   "id": "mudslap",
+   "usage": 2.252182,
+   "hooks": []
+  },
+  {
+   "id": "leechlife",
+   "usage": 2.249759,
+   "hooks": []
+  },
+  {
+   "id": "featherdance",
+   "usage": 2.198759,
+   "hooks": []
+  },
+  {
+   "id": "charm",
+   "usage": 2.166472,
+   "hooks": []
+  },
+  {
+   "id": "spiritbreak",
+   "usage": 2.157012,
+   "hooks": []
+  },
+  {
+   "id": "switcheroo",
+   "usage": 2.150506,
+   "hooks": [
+    "onTryImmunity",
+    "onHit"
+   ]
+  },
+  {
+   "id": "defog",
+   "usage": 2.150161,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "dragoncheer",
+   "usage": 2.149977,
+   "hooks": [
+    "condition.onStart",
+    "condition.onModifyCritRatio"
+   ]
+  },
+  {
+   "id": "seismictoss",
+   "usage": 2.128506,
+   "hooks": []
+  },
+  {
+   "id": "acidarmor",
+   "usage": 2.118936,
+   "hooks": []
+  },
+  {
+   "id": "guillotine",
+   "usage": 2.113275,
+   "hooks": []
+  },
+  {
+   "id": "waterspout",
+   "usage": 2.097273,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "psychoboost",
+   "usage": 2.061382,
+   "hooks": []
+  },
+  {
+   "id": "phantomforce",
+   "usage": 2.059224,
+   "hooks": [
+    "onTryMove"
+   ]
+  },
+  {
+   "id": "cottonguard",
+   "usage": 2.031266,
+   "hooks": []
+  },
+  {
+   "id": "stoneaxe",
+   "usage": 2.018765,
+   "hooks": [
+    "onAfterHit",
+    "onAfterSubDamage"
+   ]
+  },
+  {
+   "id": "crabhammer",
+   "usage": 2.011296,
+   "hooks": []
+  },
+  {
+   "id": "saltcure",
+   "usage": 2.003638,
+   "hooks": [
+    "condition.onStart",
+    "condition.onResidual",
+    "condition.onEnd"
+   ]
+  },
+  {
+   "id": "aurawheel",
+   "usage": 2,
+   "hooks": [
+    "onTry",
+    "onModifyType"
+   ]
+  },
+  {
+   "id": "surgingstrikes",
+   "usage": 1.998031,
+   "hooks": []
+  },
+  {
+   "id": "terastarstorm",
+   "usage": 1.996827,
+   "hooks": [
+    "onModifyType",
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "glare",
+   "usage": 1.995775,
+   "hooks": []
+  },
+  {
+   "id": "wickedblow",
+   "usage": 1.99297,
+   "hooks": []
+  },
+  {
+   "id": "bloodmoon",
+   "usage": 1.986254,
+   "hooks": []
+  },
+  {
+   "id": "ceaselessedge",
+   "usage": 1.983063,
+   "hooks": [
+    "onAfterHit",
+    "onAfterSubDamage"
+   ]
+  },
+  {
+   "id": "hydrosteam",
+   "usage": 1.977747,
+   "hooks": []
+  },
+  {
+   "id": "flowertrick",
+   "usage": 1.962011,
+   "hooks": []
+  },
+  {
+   "id": "astralbarrage",
+   "usage": 1.960849,
+   "hooks": []
+  },
+  {
+   "id": "psyblade",
+   "usage": 1.960087,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "bitterblade",
+   "usage": 1.957432,
+   "hooks": []
+  },
+  {
+   "id": "thunderclap",
+   "usage": 1.956762,
+   "hooks": [
+    "onTry"
+   ]
+  },
+  {
+   "id": "tachyoncutter",
+   "usage": 1.955997,
+   "hooks": []
+  },
+  {
+   "id": "soak",
+   "usage": 1.955415,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "barbbarrage",
+   "usage": 1.945511,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "dragonascent",
+   "usage": 1.915902,
+   "hooks": []
+  },
+  {
+   "id": "aquastep",
+   "usage": 1.911345,
+   "hooks": []
+  },
+  {
+   "id": "makeitrain",
+   "usage": 1.90254,
+   "hooks": []
+  },
+  {
+   "id": "electrodrift",
+   "usage": 1.895881,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "scaryface",
+   "usage": 1.889364,
+   "hooks": []
+  },
+  {
+   "id": "highjumpkick",
+   "usage": 1.884762,
+   "hooks": [
+    "onMoveFail"
+   ]
+  },
+  {
+   "id": "kowtowcleave",
+   "usage": 1.872465,
+   "hooks": []
+  },
+  {
+   "id": "mightycleave",
+   "usage": 1.865869,
+   "hooks": []
+  },
+  {
+   "id": "hyperspacefury",
+   "usage": 1.846,
+   "hooks": [
+    "onTry"
+   ]
+  },
+  {
+   "id": "pyroball",
+   "usage": 1.822746,
+   "hooks": []
+  },
+  {
+   "id": "icefang",
+   "usage": 1.819347,
+   "hooks": []
+  },
+  {
+   "id": "seedflare",
+   "usage": 1.817502,
+   "hooks": []
+  },
+  {
+   "id": "precipiceblades",
+   "usage": 1.814257,
+   "hooks": []
+  },
+  {
+   "id": "steameruption",
+   "usage": 1.805148,
+   "hooks": []
+  },
+  {
+   "id": "dig",
+   "usage": 1.800167,
+   "hooks": [
+    "onTryMove",
+    "condition.onImmunity",
+    "condition.onInvulnerability",
+    "condition.onSourceModifyDamage"
+   ]
+  },
+  {
+   "id": "ragefist",
+   "usage": 1.799112,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "amnesia",
+   "usage": 1.778772,
+   "hooks": []
+  },
+  {
+   "id": "triplearrows",
+   "usage": 1.778505,
+   "hooks": []
+  },
+  {
+   "id": "growth",
+   "usage": 1.748758,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "torchsong",
+   "usage": 1.735796,
+   "hooks": []
+  },
+  {
+   "id": "poisongas",
+   "usage": 1.725019,
+   "hooks": []
+  },
+  {
+   "id": "dragonenergy",
+   "usage": 1.708908,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "gigatonhammer",
+   "usage": 1.684611,
+   "hooks": []
+  },
+  {
+   "id": "accelerock",
+   "usage": 1.669068,
+   "hooks": []
+  },
+  {
+   "id": "razorshell",
+   "usage": 1.651963,
+   "hooks": []
+  },
+  {
+   "id": "glaciallance",
+   "usage": 1.648271,
+   "hooks": []
+  },
+  {
+   "id": "futuresight",
+   "usage": 1.641338,
+   "hooks": [
+    "onTry"
+   ]
+  },
+  {
+   "id": "direclaw",
+   "usage": 1.636095,
+   "hooks": [
+    "secondary.onHit",
+    "secondaries.0.onHit"
+   ]
+  },
+  {
+   "id": "fierywrath",
+   "usage": 1.613494,
+   "hooks": []
+  },
+  {
+   "id": "mortalspin",
+   "usage": 1.608894,
+   "hooks": [
+    "onAfterHit",
+    "onAfterSubDamage"
+   ]
+  },
+  {
+   "id": "entrainment",
+   "usage": 1.600693,
+   "hooks": [
+    "onTryHit",
+    "onHit"
+   ]
+  },
+  {
+   "id": "decorate",
+   "usage": 1.593992,
+   "hooks": []
+  },
+  {
+   "id": "tidyup",
+   "usage": 1.589852,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "paraboliccharge",
+   "usage": 1.566434,
+   "hooks": []
+  },
+  {
+   "id": "populationbomb",
+   "usage": 1.564532,
+   "hooks": []
+  },
+  {
+   "id": "wildboltstorm",
+   "usage": 1.561197,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "shellsidearm",
+   "usage": 1.548438,
+   "hooks": [
+    "onPrepareHit",
+    "onModifyMove",
+    "onHit",
+    "onAfterSubDamage"
+   ]
+  },
+  {
+   "id": "infestation",
+   "usage": 1.525551,
+   "hooks": []
+  },
+  {
+   "id": "seedbomb",
+   "usage": 1.524021,
+   "hooks": []
+  },
+  {
+   "id": "quickguard",
+   "usage": 1.521394,
+   "hooks": [
+    "onTry",
+    "onHitSide",
+    "condition.onSideStart",
+    "condition.onTryHit"
+   ]
+  },
+  {
+   "id": "armorcannon",
+   "usage": 1.502352,
+   "hooks": []
+  },
+  {
+   "id": "thunderouskick",
+   "usage": 1.50146,
+   "hooks": []
+  },
+  {
+   "id": "petalblizzard",
+   "usage": 1.499098,
+   "hooks": []
+  },
+  {
+   "id": "jetpunch",
+   "usage": 1.481792,
+   "hooks": []
+  },
+  {
+   "id": "hammerarm",
+   "usage": 1.469938,
+   "hooks": []
+  },
+  {
+   "id": "diamondstorm",
+   "usage": 1.460649,
+   "hooks": []
+  },
+  {
+   "id": "malignantchain",
+   "usage": 1.45816,
+   "hooks": []
+  },
+  {
+   "id": "psystrike",
+   "usage": 1.457608,
+   "hooks": []
+  },
+  {
+   "id": "snipeshot",
+   "usage": 1.440823,
+   "hooks": []
+  },
+  {
+   "id": "aerialace",
+   "usage": 1.434693,
+   "hooks": []
+  },
+  {
+   "id": "aquatail",
+   "usage": 1.428581,
+   "hooks": []
+  },
+  {
+   "id": "ficklebeam",
+   "usage": 1.428174,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "allyswitch",
+   "usage": 1.425998,
+   "hooks": [
+    "onPrepareHit",
+    "onHit",
+    "condition.onStart",
+    "condition.onRestart"
+   ]
+  },
+  {
+   "id": "snowscape",
+   "usage": 1.408016,
+   "hooks": []
+  },
+  {
+   "id": "banefulbunker",
+   "usage": 1.40756,
+   "hooks": [
+    "onPrepareHit",
+    "onHit",
+    "condition.onStart",
+    "condition.onTryHit",
+    "condition.onHit"
+   ]
+  },
+  {
+   "id": "electricterrain",
+   "usage": 1.406788,
+   "hooks": [
+    "condition.durationCallback",
+    "condition.onSetStatus",
+    "condition.onTryAddVolatile",
+    "condition.onBasePower",
+    "condition.onFieldStart",
+    "condition.onFieldEnd"
+   ]
+  },
+  {
+   "id": "temperflare",
+   "usage": 1.401312,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "nightshade",
+   "usage": 1.39276,
+   "hooks": []
+  },
+  {
+   "id": "dynamaxcannon",
+   "usage": 1.385448,
+   "hooks": []
+  },
+  {
+   "id": "flail",
+   "usage": 1.374738,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "grasspledge",
+   "usage": 1.369875,
+   "hooks": [
+    "basePowerCallback",
+    "onPrepareHit",
+    "onModifyMove",
+    "condition.onSideStart",
+    "condition.onSideEnd",
+    "condition.onModifySpe"
+   ]
+  },
+  {
+   "id": "mistball",
+   "usage": 1.364727,
+   "hooks": []
+  },
+  {
+   "id": "clangingscales",
+   "usage": 1.338664,
+   "hooks": []
+  },
+  {
+   "id": "mistyexplosion",
+   "usage": 1.32508,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "lusterpurge",
+   "usage": 1.315782,
+   "hooks": []
+  },
+  {
+   "id": "strangesteam",
+   "usage": 1.291922,
+   "hooks": []
+  },
+  {
+   "id": "circlethrow",
+   "usage": 1.290037,
+   "hooks": []
+  },
+  {
+   "id": "fleurcannon",
+   "usage": 1.286489,
+   "hooks": []
+  },
+  {
+   "id": "boltstrike",
+   "usage": 1.283195,
+   "hooks": []
+  },
+  {
+   "id": "dragondarts",
+   "usage": 1.27528,
+   "hooks": []
+  },
+  {
+   "id": "lavaplume",
+   "usage": 1.274304,
+   "hooks": []
+  },
+  {
+   "id": "burningjealousy",
+   "usage": 1.257048,
+   "hooks": [
+    "secondary.onHit",
+    "secondaries.0.onHit"
+   ]
+  },
+  {
+   "id": "mudshot",
+   "usage": 1.256527,
+   "hooks": []
+  },
+  {
+   "id": "tickle",
+   "usage": 1.256257,
+   "hooks": []
+  },
+  {
+   "id": "drillrun",
+   "usage": 1.24142,
+   "hooks": []
+  },
+  {
+   "id": "extrasensory",
+   "usage": 1.22812,
+   "hooks": []
+  },
+  {
+   "id": "sandstorm",
+   "usage": 1.221469,
+   "hooks": []
+  },
+  {
+   "id": "darkvoid",
+   "usage": 1.186428,
+   "hooks": [
+    "onTry"
+   ]
+  },
+  {
+   "id": "meanlook",
+   "usage": 1.167387,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "inferno",
+   "usage": 1.156453,
+   "hooks": []
+  },
+  {
+   "id": "meteormash",
+   "usage": 1.153655,
+   "hooks": []
+  },
+  {
+   "id": "matchagotcha",
+   "usage": 1.153411,
+   "hooks": []
+  },
+  {
+   "id": "icehammer",
+   "usage": 1.137983,
+   "hooks": []
+  },
+  {
+   "id": "sparklingaria",
+   "usage": 1.136983,
+   "hooks": [
+    "onAfterMove"
+   ]
+  },
+  {
+   "id": "waterpledge",
+   "usage": 1.132778,
+   "hooks": [
+    "basePowerCallback",
+    "onPrepareHit",
+    "onModifyMove",
+    "condition.onSideStart",
+    "condition.onSideEnd",
+    "condition.onModifyMove"
+   ]
+  },
+  {
+   "id": "clangoroussoul",
+   "usage": 1.128208,
+   "hooks": [
+    "onTry",
+    "onTryHit",
+    "onHit"
+   ]
+  },
+  {
+   "id": "magmastorm",
+   "usage": 1.112426,
+   "hooks": []
+  },
+  {
+   "id": "luminacrash",
+   "usage": 1.091417,
+   "hooks": []
+  },
+  {
+   "id": "electroshot",
+   "usage": 1.085898,
+   "hooks": [
+    "onTryMove"
+   ]
+  },
+  {
+   "id": "aeroblast",
+   "usage": 1.085143,
+   "hooks": []
+  },
+  {
+   "id": "tackle",
+   "usage": 1.082509,
+   "hooks": []
+  },
+  {
+   "id": "horndrill",
+   "usage": 1.072076,
+   "hooks": []
+  },
+  {
+   "id": "blueflare",
+   "usage": 1.064043,
+   "hooks": []
+  },
+  {
+   "id": "spiritshackle",
+   "usage": 1.036209,
+   "hooks": [
+    "secondary.onHit",
+    "secondaries.0.onHit"
+   ]
+  },
+  {
+   "id": "pounce",
+   "usage": 1.022822,
+   "hooks": []
+  },
+  {
+   "id": "doubleshock",
+   "usage": 1.009042,
+   "hooks": [
+    "onTryMove",
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "skittersmack",
+   "usage": 1.000646,
+   "hooks": []
+  },
+  {
+   "id": "splash",
+   "usage": 1.000088,
+   "hooks": [
+    "onTry",
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "tripledive",
+   "usage": 1,
+   "hooks": []
+  },
+  {
+   "id": "shoreup",
+   "usage": 0.996739,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "electroball",
+   "usage": 0.993677,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "instruct",
+   "usage": 0.98519,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "floralhealing",
+   "usage": 0.973781,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "sandsearstorm",
+   "usage": 0.962303,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "originpulse",
+   "usage": 0.955808,
+   "hooks": []
+  },
+  {
+   "id": "bittermalice",
+   "usage": 0.950896,
+   "hooks": []
+  },
+  {
+   "id": "waterpulse",
+   "usage": 0.943647,
+   "hooks": []
+  },
+  {
+   "id": "watershuriken",
+   "usage": 0.942632,
+   "hooks": [
+    "basePowerCallback",
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "beakblast",
+   "usage": 0.932597,
+   "hooks": [
+    "priorityChargeCallback",
+    "condition.onStart",
+    "condition.onHit",
+    "onAfterMove"
+   ]
+  },
+  {
+   "id": "spinout",
+   "usage": 0.911112,
+   "hooks": []
+  },
+  {
+   "id": "glaiverush",
+   "usage": 0.909803,
+   "hooks": [
+    "condition.onStart",
+    "condition.onAccuracy",
+    "condition.onSourceModifyDamage",
+    "condition.onBeforeMove"
+   ]
+  },
+  {
+   "id": "dynamicpunch",
+   "usage": 0.900141,
+   "hooks": []
+  },
+  {
+   "id": "firefang",
+   "usage": 0.899734,
+   "hooks": []
+  },
+  {
+   "id": "psychicterrain",
+   "usage": 0.89372,
+   "hooks": [
+    "condition.durationCallback",
+    "condition.onTryHit",
+    "condition.onBasePower",
+    "condition.onFieldStart",
+    "condition.onFieldEnd"
+   ]
+  },
+  {
+   "id": "spicyextract",
+   "usage": 0.885293,
+   "hooks": []
+  },
+  {
+   "id": "aquacutter",
+   "usage": 0.878774,
+   "hooks": []
+  },
+  {
+   "id": "stockpile",
+   "usage": 0.877136,
+   "hooks": [
+    "onTry",
+    "condition.onStart",
+    "condition.onRestart",
+    "condition.onEnd"
+   ]
+  },
+  {
+   "id": "lunarblessing",
+   "usage": 0.873652,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "focusenergy",
+   "usage": 0.870695,
+   "hooks": [
+    "condition.onStart",
+    "condition.onModifyCritRatio"
+   ]
+  },
+  {
+   "id": "ragingfury",
+   "usage": 0.864656,
+   "hooks": [
+    "onAfterMove"
+   ]
+  },
+  {
+   "id": "overdrive",
+   "usage": 0.860681,
+   "hooks": []
+  },
+  {
+   "id": "mysticalpower",
+   "usage": 0.853327,
+   "hooks": []
+  },
+  {
+   "id": "teeterdance",
+   "usage": 0.841929,
+   "hooks": []
+  },
+  {
+   "id": "doublekick",
+   "usage": 0.838414,
+   "hooks": []
+  },
+  {
+   "id": "eerieimpulse",
+   "usage": 0.833747,
+   "hooks": []
+  },
+  {
+   "id": "secretsword",
+   "usage": 0.822372,
+   "hooks": []
+  },
+  {
+   "id": "defensecurl",
+   "usage": 0.822171,
+   "hooks": [
+    "condition.onRestart"
+   ]
+  },
+  {
+   "id": "tailslap",
+   "usage": 0.817412,
+   "hooks": []
+  },
+  {
+   "id": "quash",
+   "usage": 0.816933,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "megahorn",
+   "usage": 0.8149,
+   "hooks": []
+  },
+  {
+   "id": "rollout",
+   "usage": 0.799924,
+   "hooks": [
+    "basePowerCallback",
+    "onModifyMove",
+    "onAfterMove",
+    "condition.onStart",
+    "condition.onResidual"
+   ]
+  },
+  {
+   "id": "howl",
+   "usage": 0.796143,
+   "hooks": []
+  },
+  {
+   "id": "bite",
+   "usage": 0.792589,
+   "hooks": []
+  },
+  {
+   "id": "orderup",
+   "usage": 0.780527,
+   "hooks": [
+    "onAfterMoveSecondarySelf"
+   ]
+  },
+  {
+   "id": "relicsong",
+   "usage": 0.776916,
+   "hooks": [
+    "onHit",
+    "onAfterMoveSecondarySelf"
+   ]
+  },
+  {
+   "id": "lashout",
+   "usage": 0.756988,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "syrupbomb",
+   "usage": 0.755155,
+   "hooks": [
+    "condition.onStart",
+    "condition.onResidual",
+    "condition.onEnd"
+   ]
+  },
+  {
+   "id": "psyshieldbash",
+   "usage": 0.744952,
+   "hooks": []
+  },
+  {
+   "id": "coil",
+   "usage": 0.722001,
+   "hooks": []
+  },
+  {
+   "id": "noretreat",
+   "usage": 0.71985,
+   "hooks": [
+    "onTry",
+    "condition.onStart",
+    "condition.onTrapPokemon"
+   ]
+  },
+  {
+   "id": "axekick",
+   "usage": 0.716029,
+   "hooks": [
+    "onMoveFail"
+   ]
+  },
+  {
+   "id": "bugbite",
+   "usage": 0.684747,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "lunardance",
+   "usage": 0.682907,
+   "hooks": [
+    "onTryHit",
+    "condition.onSwap"
+   ]
+  },
+  {
+   "id": "drumbeating",
+   "usage": 0.661917,
+   "hooks": []
+  },
+  {
+   "id": "steelroller",
+   "usage": 0.657862,
+   "hooks": [
+    "onTry",
+    "onHit",
+    "onAfterSubDamage"
+   ]
+  },
+  {
+   "id": "crushgrip",
+   "usage": 0.656636,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "mistyterrain",
+   "usage": 0.643985,
+   "hooks": [
+    "condition.durationCallback",
+    "condition.onSetStatus",
+    "condition.onTryAddVolatile",
+    "condition.onBasePower",
+    "condition.onFieldStart",
+    "condition.onFieldEnd"
+   ]
+  },
+  {
+   "id": "freezingglare",
+   "usage": 0.636629,
+   "hooks": []
+  },
+  {
+   "id": "confuseray",
+   "usage": 0.620898,
+   "hooks": []
+  },
+  {
+   "id": "blastburn",
+   "usage": 0.615162,
+   "hooks": []
+  },
+  {
+   "id": "frostbreath",
+   "usage": 0.614341,
+   "hooks": []
+  },
+  {
+   "id": "ingrain",
+   "usage": 0.613709,
+   "hooks": [
+    "condition.onStart",
+    "condition.onResidual",
+    "condition.onTrapPokemon",
+    "condition.onDragOut"
+   ]
+  },
+  {
+   "id": "firepledge",
+   "usage": 0.611829,
+   "hooks": [
+    "basePowerCallback",
+    "onPrepareHit",
+    "onModifyMove",
+    "condition.onSideStart",
+    "condition.onResidual",
+    "condition.onSideEnd"
+   ]
+  },
+  {
+   "id": "hyperspacehole",
+   "usage": 0.608534,
+   "hooks": []
+  },
+  {
+   "id": "chargebeam",
+   "usage": 0.608239,
+   "hooks": []
+  },
+  {
+   "id": "springtidestorm",
+   "usage": 0.599268,
+   "hooks": []
+  },
+  {
+   "id": "collisioncourse",
+   "usage": 0.598671,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "burningbulwark",
+   "usage": 0.567972,
+   "hooks": [
+    "onPrepareHit",
+    "onHit",
+    "condition.onStart",
+    "condition.onTryHit",
+    "condition.onHit"
+   ]
+  },
+  {
+   "id": "beatup",
+   "usage": 0.559249,
+   "hooks": [
+    "basePowerCallback",
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "healbell",
+   "usage": 0.557382,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "rockpolish",
+   "usage": 0.554921,
+   "hooks": []
+  },
+  {
+   "id": "jawlock",
+   "usage": 0.549395,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "sweetscent",
+   "usage": 0.542482,
+   "hooks": []
+  },
+  {
+   "id": "junglehealing",
+   "usage": 0.541351,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "shadowforce",
+   "usage": 0.539708,
+   "hooks": [
+    "onTryMove"
+   ]
+  },
+  {
+   "id": "shiftgear",
+   "usage": 0.530732,
+   "hooks": []
+  },
+  {
+   "id": "simplebeam",
+   "usage": 0.529995,
+   "hooks": [
+    "onTryHit",
+    "onHit"
+   ]
+  },
+  {
+   "id": "courtchange",
+   "usage": 0.500377,
+   "hooks": [
+    "onHitField"
+   ]
+  },
+  {
+   "id": "chloroblast",
+   "usage": 0.492674,
+   "hooks": []
+  },
+  {
+   "id": "zapcannon",
+   "usage": 0.492443,
+   "hooks": []
+  },
+  {
+   "id": "nobleroar",
+   "usage": 0.484035,
+   "hooks": []
+  },
+  {
+   "id": "blazekick",
+   "usage": 0.479927,
+   "hooks": []
+  },
+  {
+   "id": "safeguard",
+   "usage": 0.476468,
+   "hooks": [
+    "condition.durationCallback",
+    "condition.onSetStatus",
+    "condition.onTryAddVolatile",
+    "condition.onSideStart",
+    "condition.onSideEnd"
+   ]
+  },
+  {
+   "id": "sing",
+   "usage": 0.470726,
+   "hooks": []
+  },
+  {
+   "id": "attackorder",
+   "usage": 0.46726,
+   "hooks": []
+  },
+  {
+   "id": "poisonpowder",
+   "usage": 0.459183,
+   "hooks": []
+  },
+  {
+   "id": "mountaingale",
+   "usage": 0.453693,
+   "hooks": []
+  },
+  {
+   "id": "venoshock",
+   "usage": 0.450045,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "hydrocannon",
+   "usage": 0.442793,
+   "hooks": []
+  },
+  {
+   "id": "leer",
+   "usage": 0.44015,
+   "hooks": []
+  },
+  {
+   "id": "poisonfang",
+   "usage": 0.437398,
+   "hooks": []
+  },
+  {
+   "id": "acupressure",
+   "usage": 0.436926,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "doubleteam",
+   "usage": 0.436684,
+   "hooks": []
+  },
+  {
+   "id": "roaroftime",
+   "usage": 0.430589,
+   "hooks": []
+  },
+  {
+   "id": "thief",
+   "usage": 0.429464,
+   "hooks": [
+    "onAfterHit"
+   ]
+  },
+  {
+   "id": "assurance",
+   "usage": 0.428862,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "skyattack",
+   "usage": 0.403663,
+   "hooks": [
+    "onTryMove"
+   ]
+  },
+  {
+   "id": "powertrip",
+   "usage": 0.398709,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "payback",
+   "usage": 0.384792,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "zingzap",
+   "usage": 0.383841,
+   "hooks": []
+  },
+  {
+   "id": "pinmissile",
+   "usage": 0.382116,
+   "hooks": []
+  },
+  {
+   "id": "takeheart",
+   "usage": 0.381839,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "aircutter",
+   "usage": 0.376033,
+   "hooks": []
+  },
+  {
+   "id": "swagger",
+   "usage": 0.37026,
+   "hooks": []
+  },
+  {
+   "id": "spitup",
+   "usage": 0.367651,
+   "hooks": [
+    "basePowerCallback",
+    "onTry",
+    "onAfterMove"
+   ]
+  },
+  {
+   "id": "topsyturvy",
+   "usage": 0.365064,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "heartswap",
+   "usage": 0.35992,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "worryseed",
+   "usage": 0.358819,
+   "hooks": [
+    "onTryImmunity",
+    "onTryHit",
+    "onHit"
+   ]
+  },
+  {
+   "id": "fly",
+   "usage": 0.354666,
+   "hooks": [
+    "onTryMove",
+    "condition.onInvulnerability",
+    "condition.onSourceModifyDamage"
+   ]
+  },
+  {
+   "id": "speedswap",
+   "usage": 0.348613,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "aquaring",
+   "usage": 0.34733,
+   "hooks": [
+    "condition.onStart",
+    "condition.onResidual"
+   ]
+  },
+  {
+   "id": "fellstinger",
+   "usage": 0.342514,
+   "hooks": [
+    "onAfterMoveSecondarySelf"
+   ]
+  },
+  {
+   "id": "defendorder",
+   "usage": 0.331428,
+   "hooks": []
+  },
+  {
+   "id": "forestscurse",
+   "usage": 0.318154,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "covet",
+   "usage": 0.302895,
+   "hooks": [
+    "onAfterHit"
+   ]
+  },
+  {
+   "id": "smackdown",
+   "usage": 0.28583,
+   "hooks": [
+    "condition.onStart",
+    "condition.onRestart"
+   ]
+  },
+  {
+   "id": "drillpeck",
+   "usage": 0.283457,
+   "hooks": []
+  },
+  {
+   "id": "esperwing",
+   "usage": 0.282192,
+   "hooks": []
+  },
+  {
+   "id": "magicroom",
+   "usage": 0.281906,
+   "hooks": [
+    "condition.durationCallback",
+    "condition.onFieldStart",
+    "condition.onFieldRestart",
+    "condition.onFieldEnd"
+   ]
+  },
+  {
+   "id": "torment",
+   "usage": 0.281211,
+   "hooks": [
+    "condition.onStart",
+    "condition.onEnd",
+    "condition.onDisableMove"
+   ]
+  },
+  {
+   "id": "toxicthread",
+   "usage": 0.277901,
+   "hooks": []
+  },
+  {
+   "id": "metalsound",
+   "usage": 0.269422,
+   "hooks": []
+  },
+  {
+   "id": "brutalswing",
+   "usage": 0.255525,
+   "hooks": []
+  },
+  {
+   "id": "lowsweep",
+   "usage": 0.255333,
+   "hooks": []
+  },
+  {
+   "id": "honeclaws",
+   "usage": 0.253915,
+   "hooks": []
+  },
+  {
+   "id": "grassyterrain",
+   "usage": 0.250403,
+   "hooks": [
+    "condition.durationCallback",
+    "condition.onBasePower",
+    "condition.onFieldStart",
+    "condition.onResidual",
+    "condition.onFieldEnd"
+   ]
+  },
+  {
+   "id": "screech",
+   "usage": 0.248166,
+   "hooks": []
+  },
+  {
+   "id": "comeuppance",
+   "usage": 0.235731,
+   "hooks": [
+    "damageCallback",
+    "onTry",
+    "onModifyTarget"
+   ]
+  },
+  {
+   "id": "dragonrush",
+   "usage": 0.21171,
+   "hooks": []
+  },
+  {
+   "id": "thunderfang",
+   "usage": 0.209351,
+   "hooks": []
+  },
+  {
+   "id": "irontail",
+   "usage": 0.208553,
+   "hooks": []
+  },
+  {
+   "id": "crosschop",
+   "usage": 0.204746,
+   "hooks": []
+  },
+  {
+   "id": "uproar",
+   "usage": 0.201654,
+   "hooks": [
+    "onTryHit",
+    "condition.onStart",
+    "condition.onResidual",
+    "condition.onEnd",
+    "condition.onAnySetStatus"
+   ]
+  },
+  {
+   "id": "recycle",
+   "usage": 0.200717,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "tarshot",
+   "usage": 0.200551,
+   "hooks": [
+    "condition.onStart",
+    "condition.onEffectiveness"
+   ]
+  },
+  {
+   "id": "volttackle",
+   "usage": 0.196162,
+   "hooks": []
+  },
+  {
+   "id": "terrainpulse",
+   "usage": 0.195433,
+   "hooks": [
+    "onModifyType",
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "hyperdrill",
+   "usage": 0.187102,
+   "hooks": []
+  },
+  {
+   "id": "victorydance",
+   "usage": 0.184198,
+   "hooks": []
+  },
+  {
+   "id": "lastresort",
+   "usage": 0.180248,
+   "hooks": [
+    "onTry"
+   ]
+  },
+  {
+   "id": "dreameater",
+   "usage": 0.179796,
+   "hooks": [
+    "onTryImmunity"
+   ]
+  },
+  {
+   "id": "thundercage",
+   "usage": 0.176498,
+   "hooks": []
+  },
+  {
+   "id": "present",
+   "usage": 0.172191,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "disarmingvoice",
+   "usage": 0.170401,
+   "hooks": []
+  },
+  {
+   "id": "hardpress",
+   "usage": 0.165203,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "nightdaze",
+   "usage": 0.164489,
+   "hooks": []
+  },
+  {
+   "id": "dragonbreath",
+   "usage": 0.156493,
+   "hooks": []
+  },
+  {
+   "id": "shelter",
+   "usage": 0.152929,
+   "hooks": []
+  },
+  {
+   "id": "infernalparade",
+   "usage": 0.152522,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "doodle",
+   "usage": 0.149551,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "metronome",
+   "usage": 0.147943,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "razorleaf",
+   "usage": 0.147939,
+   "hooks": []
+  },
+  {
+   "id": "flatter",
+   "usage": 0.140352,
+   "hooks": []
+  },
+  {
+   "id": "dive",
+   "usage": 0.13906,
+   "hooks": [
+    "onTryMove",
+    "condition.onImmunity",
+    "condition.onInvulnerability",
+    "condition.onSourceModifyDamage"
+   ]
+  },
+  {
+   "id": "babydolleyes",
+   "usage": 0.138575,
+   "hooks": []
+  },
+  {
+   "id": "doublehit",
+   "usage": 0.133685,
+   "hooks": []
+  },
+  {
+   "id": "eeriespell",
+   "usage": 0.130295,
+   "hooks": [
+    "secondary.onHit",
+    "secondaries.0.onHit"
+   ]
+  },
+  {
+   "id": "gastroacid",
+   "usage": 0.13027,
+   "hooks": [
+    "onTryHit",
+    "condition.onStart",
+    "condition.onCopy"
+   ]
+  },
+  {
+   "id": "headbutt",
+   "usage": 0.129045,
+   "hooks": []
+  },
+  {
+   "id": "swift",
+   "usage": 0.122918,
+   "hooks": []
+  },
+  {
+   "id": "shadowpunch",
+   "usage": 0.122013,
+   "hooks": []
+  },
+  {
+   "id": "mist",
+   "usage": 0.116095,
+   "hooks": [
+    "condition.onTryBoost",
+    "condition.onSideStart",
+    "condition.onSideEnd"
+   ]
+  },
+  {
+   "id": "sandattack",
+   "usage": 0.111092,
+   "hooks": []
+  },
+  {
+   "id": "silktrap",
+   "usage": 0.103657,
+   "hooks": [
+    "onPrepareHit",
+    "onHit",
+    "condition.onStart",
+    "condition.onTryHit",
+    "condition.onHit"
+   ]
+  },
+  {
+   "id": "doomdesire",
+   "usage": 0.10194,
+   "hooks": [
+    "onTry"
+   ]
+  },
+  {
+   "id": "teleport",
+   "usage": 0.094844,
+   "hooks": [
+    "onTry"
+   ]
+  },
+  {
+   "id": "takedown",
+   "usage": 0.092248,
+   "hooks": []
+  },
+  {
+   "id": "appleacid",
+   "usage": 0.090781,
+   "hooks": []
+  },
+  {
+   "id": "slash",
+   "usage": 0.08634,
+   "hooks": []
+  },
+  {
+   "id": "prismaticlaser",
+   "usage": 0.086132,
+   "hooks": []
+  },
+  {
+   "id": "rockwrecker",
+   "usage": 0.085688,
+   "hooks": []
+  },
+  {
+   "id": "conversion",
+   "usage": 0.084568,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "wingattack",
+   "usage": 0.083985,
+   "hooks": []
+  },
+  {
+   "id": "echoedvoice",
+   "usage": 0.08368,
+   "hooks": [
+    "basePowerCallback",
+    "onTry",
+    "condition.onFieldStart",
+    "condition.onFieldRestart"
+   ]
+  },
+  {
+   "id": "roleplay",
+   "usage": 0.083279,
+   "hooks": [
+    "onTryHit",
+    "onHit"
+   ]
+  },
+  {
+   "id": "tropkick",
+   "usage": 0.08034,
+   "hooks": []
+  },
+  {
+   "id": "flyingpress",
+   "usage": 0.080219,
+   "hooks": [
+    "onEffectiveness"
+   ]
+  },
+  {
+   "id": "charge",
+   "usage": 0.079613,
+   "hooks": [
+    "condition.onStart",
+    "condition.onRestart",
+    "condition.onBasePower",
+    "condition.onMoveAborted",
+    "condition.onAfterMove",
+    "condition.onEnd"
+   ]
+  },
+  {
+   "id": "smartstrike",
+   "usage": 0.078249,
+   "hooks": []
+  },
+  {
+   "id": "watergun",
+   "usage": 0.076617,
+   "hooks": []
+  },
+  {
+   "id": "aromaticmist",
+   "usage": 0.070831,
+   "hooks": []
+  },
+  {
+   "id": "twister",
+   "usage": 0.069478,
+   "hooks": []
+  },
+  {
+   "id": "armthrust",
+   "usage": 0.069044,
+   "hooks": []
+  },
+  {
+   "id": "magneticflux",
+   "usage": 0.066786,
+   "hooks": [
+    "onHitSide"
+   ]
+  },
+  {
+   "id": "peck",
+   "usage": 0.062416,
+   "hooks": []
+  },
+  {
+   "id": "brine",
+   "usage": 0.05892,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "forcepalm",
+   "usage": 0.055166,
+   "hooks": []
+  },
+  {
+   "id": "selfdestruct",
+   "usage": 0.055154,
+   "hooks": []
+  },
+  {
+   "id": "block",
+   "usage": 0.052534,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "supersonic",
+   "usage": 0.050313,
+   "hooks": []
+  },
+  {
+   "id": "shockwave",
+   "usage": 0.046079,
+   "hooks": []
+  },
+  {
+   "id": "smokescreen",
+   "usage": 0.045344,
+   "hooks": []
+  },
+  {
+   "id": "furycutter",
+   "usage": 0.045167,
+   "hooks": [
+    "basePowerCallback",
+    "condition.onStart",
+    "condition.onRestart"
+   ]
+  },
+  {
+   "id": "powersplit",
+   "usage": 0.044654,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "furyswipes",
+   "usage": 0.043995,
+   "hooks": []
+  },
+  {
+   "id": "bind",
+   "usage": 0.043142,
+   "hooks": []
+  },
+  {
+   "id": "bounce",
+   "usage": 0.04278,
+   "hooks": [
+    "onTryMove",
+    "condition.onInvulnerability",
+    "condition.onSourceBasePower"
+   ]
+  },
+  {
+   "id": "magnetrise",
+   "usage": 0.041786,
+   "hooks": [
+    "onTry",
+    "condition.onStart",
+    "condition.onImmunity",
+    "condition.onEnd"
+   ]
+  },
+  {
+   "id": "darkestlariat",
+   "usage": 0.038385,
+   "hooks": []
+  },
+  {
+   "id": "triplekick",
+   "usage": 0.038245,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "absorb",
+   "usage": 0.037574,
+   "hooks": []
+  },
+  {
+   "id": "spite",
+   "usage": 0.035928,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "freezeshock",
+   "usage": 0.031902,
+   "hooks": [
+    "onTryMove"
+   ]
+  },
+  {
+   "id": "bonerush",
+   "usage": 0.030842,
+   "hooks": []
+  },
+  {
+   "id": "dragonhammer",
+   "usage": 0.030214,
+   "hooks": []
+  },
+  {
+   "id": "round",
+   "usage": 0.02944,
+   "hooks": [
+    "basePowerCallback",
+    "onTry"
+   ]
+  },
+  {
+   "id": "crushclaw",
+   "usage": 0.024575,
+   "hooks": []
+  },
+  {
+   "id": "psybeam",
+   "usage": 0.024415,
+   "hooks": []
+  },
+  {
+   "id": "guardsplit",
+   "usage": 0.022291,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "risingvoltage",
+   "usage": 0.021256,
+   "hooks": [
+    "basePowerCallback"
+   ]
+  },
+  {
+   "id": "crosspoison",
+   "usage": 0.020419,
+   "hooks": []
+  },
+  {
+   "id": "petaldance",
+   "usage": 0.020173,
+   "hooks": [
+    "onAfterMove"
+   ]
+  },
+  {
+   "id": "workup",
+   "usage": 0.020093,
+   "hooks": []
+  },
+  {
+   "id": "spark",
+   "usage": 0.018473,
+   "hooks": []
+  },
+  {
+   "id": "sweetkiss",
+   "usage": 0.017958,
+   "hooks": []
+  },
+  {
+   "id": "poisontail",
+   "usage": 0.015712,
+   "hooks": []
+  },
+  {
+   "id": "stuffcheeks",
+   "usage": 0.015096,
+   "hooks": [
+    "onDisableMove",
+    "onTry",
+    "onHit"
+   ]
+  },
+  {
+   "id": "steelwing",
+   "usage": 0.01472,
+   "hooks": []
+  },
+  {
+   "id": "fairylock",
+   "usage": 0.013589,
+   "hooks": [
+    "condition.onFieldStart",
+    "condition.onTrapPokemon"
+   ]
+  },
+  {
+   "id": "thundershock",
+   "usage": 0.012476,
+   "hooks": []
+  },
+  {
+   "id": "pluck",
+   "usage": 0.012215,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "twinbeam",
+   "usage": 0.012102,
+   "hooks": []
+  },
+  {
+   "id": "megadrain",
+   "usage": 0.011846,
+   "hooks": []
+  },
+  {
+   "id": "falsesurrender",
+   "usage": 0.011067,
+   "hooks": []
+  },
+  {
+   "id": "lockon",
+   "usage": 0.009538,
+   "hooks": [
+    "onTryHit",
+    "onHit",
+    "condition.onSourceInvulnerability",
+    "condition.onSourceAccuracy"
+   ]
+  },
+  {
+   "id": "metalclaw",
+   "usage": 0.009365,
+   "hooks": []
+  },
+  {
+   "id": "magicalleaf",
+   "usage": 0.008423,
+   "hooks": []
+  },
+  {
+   "id": "ember",
+   "usage": 0.008253,
+   "hooks": []
+  },
+  {
+   "id": "iceburn",
+   "usage": 0.00768,
+   "hooks": [
+    "onTryMove"
+   ]
+  },
+  {
+   "id": "fairywind",
+   "usage": 0.007584,
+   "hooks": []
+  },
+  {
+   "id": "frenzyplant",
+   "usage": 0.007433,
+   "hooks": []
+  },
+  {
+   "id": "playnice",
+   "usage": 0.006471,
+   "hooks": []
+  },
+  {
+   "id": "magicpowder",
+   "usage": 0.006461,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "confusion",
+   "usage": 0.00624,
+   "hooks": []
+  },
+  {
+   "id": "falseswipe",
+   "usage": 0.005938,
+   "hooks": [
+    "onDamage"
+   ]
+  },
+  {
+   "id": "aurorabeam",
+   "usage": 0.005699,
+   "hooks": []
+  },
+  {
+   "id": "powertrick",
+   "usage": 0.005075,
+   "hooks": [
+    "condition.onStart",
+    "condition.onCopy",
+    "condition.onEnd",
+    "condition.onRestart"
+   ]
+  },
+  {
+   "id": "astonish",
+   "usage": 0.004887,
+   "hooks": []
+  },
+  {
+   "id": "firelash",
+   "usage": 0.004869,
+   "hooks": []
+  },
+  {
+   "id": "cottonspore",
+   "usage": 0.004402,
+   "hooks": []
+  },
+  {
+   "id": "guardswap",
+   "usage": 0.00421,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "powerswap",
+   "usage": 0.004098,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "thrash",
+   "usage": 0.003767,
+   "hooks": [
+    "onAfterMove"
+   ]
+  },
+  {
+   "id": "megakick",
+   "usage": 0.003359,
+   "hooks": []
+  },
+  {
+   "id": "pound",
+   "usage": 0.003124,
+   "hooks": []
+  },
+  {
+   "id": "attract",
+   "usage": 0.002692,
+   "hooks": [
+    "condition.onStart",
+    "condition.onUpdate",
+    "condition.onBeforeMove",
+    "condition.onEnd",
+    "onTryImmunity"
+   ]
+  },
+  {
+   "id": "leafage",
+   "usage": 0.002491,
+   "hooks": []
+  },
+  {
+   "id": "belch",
+   "usage": 0.002449,
+   "hooks": [
+    "onDisableMove"
+   ]
+  },
+  {
+   "id": "growl",
+   "usage": 0.002126,
+   "hooks": []
+  },
+  {
+   "id": "swallow",
+   "usage": 0.001999,
+   "hooks": [
+    "onTry",
+    "onHit"
+   ]
+  },
+  {
+   "id": "reflecttype",
+   "usage": 0.001661,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "mimic",
+   "usage": 0.001435,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "harden",
+   "usage": 0.001403,
+   "hooks": []
+  },
+  {
+   "id": "wonderroom",
+   "usage": 0.001148,
+   "hooks": [
+    "condition.durationCallback",
+    "condition.onModifyMove",
+    "condition.onFieldStart",
+    "condition.onFieldRestart",
+    "condition.onFieldEnd"
+   ]
+  },
+  {
+   "id": "poisonsting",
+   "usage": 0.001143,
+   "hooks": []
+  },
+  {
+   "id": "celebrate",
+   "usage": 0.000603,
+   "hooks": [
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "tearfullook",
+   "usage": 0.000581,
+   "hooks": []
+  },
+  {
+   "id": "conversion2",
+   "usage": 0.000561,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "slam",
+   "usage": 0.000519,
+   "hooks": []
+  },
+  {
+   "id": "sketch",
+   "usage": 0.000507,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "sludge",
+   "usage": 0.000485,
+   "hooks": []
+  },
+  {
+   "id": "wrap",
+   "usage": 0.000415,
+   "hooks": []
+  },
+  {
+   "id": "vinewhip",
+   "usage": 0.000405,
+   "hooks": []
+  },
+  {
+   "id": "withdraw",
+   "usage": 0.000236,
+   "hooks": []
+  },
+  {
+   "id": "incinerate",
+   "usage": 0.000211,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "flamewheel",
+   "usage": 0.000185,
+   "hooks": []
+  },
+  {
+   "id": "stomp",
+   "usage": 0.000175,
+   "hooks": []
+  },
+  {
+   "id": "bubblebeam",
+   "usage": 0.000125,
+   "hooks": []
+  },
+  {
+   "id": "gust",
+   "usage": 0.000093,
+   "hooks": []
+  },
+  {
+   "id": "tailwhip",
+   "usage": 0.000078,
+   "hooks": []
+  },
+  {
+   "id": "filletaway",
+   "usage": 0.000064,
+   "hooks": [
+    "onTry",
+    "onTryHit",
+    "onHit"
+   ]
+  },
+  {
+   "id": "snore",
+   "usage": 0.000052,
+   "hooks": [
+    "onTry"
+   ]
+  },
+  {
+   "id": "confide",
+   "usage": 0.000043,
+   "hooks": []
+  },
+  {
+   "id": "lick",
+   "usage": 0.00003,
+   "hooks": []
+  },
+  {
+   "id": "glaciate",
+   "usage": 0.000027,
+   "hooks": []
+  },
+  {
+   "id": "behemothblade",
+   "usage": 0.000011,
+   "hooks": []
+  },
+  {
+   "id": "megapunch",
+   "usage": 0.00001,
+   "hooks": []
+  },
+  {
+   "id": "rocksmash",
+   "usage": 0.000008,
+   "hooks": []
+  },
+  {
+   "id": "powdersnow",
+   "usage": 0.000007,
+   "hooks": []
+  },
+  {
+   "id": "branchpoke",
+   "usage": 0.000001,
+   "hooks": []
+  },
+  {
+   "id": "acid",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "behemothbash",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "blazingtorque",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "burnup",
+   "usage": 0,
+   "hooks": [
+    "onTryMove",
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "combattorque",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "corrosivegas",
+   "usage": 0,
+   "hooks": [
+    "onHit"
+   ]
+  },
+  {
+   "id": "cut",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "furyattack",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "gmaxbefuddle",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxcannonade",
+   "usage": 0,
+   "hooks": [
+    "self.onHit",
+    "condition.onSideStart",
+    "condition.onResidual",
+    "condition.onSideEnd"
+   ]
+  },
+  {
+   "id": "gmaxcentiferno",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxchistrike",
+   "usage": 0,
+   "hooks": [
+    "self.onHit",
+    "condition.onStart",
+    "condition.onRestart",
+    "condition.onModifyCritRatio"
+   ]
+  },
+  {
+   "id": "gmaxcuddle",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxdepletion",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxdrumsolo",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "gmaxfinale",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxfireball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "gmaxfoamburst",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxgoldrush",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxgravitas",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "gmaxhydrosnipe",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "gmaxmalodor",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxmeltdown",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxoneblow",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "gmaxrapidflow",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "gmaxreplenish",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxresonance",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "gmaxsandblast",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxsmite",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxsnooze",
+   "usage": 0,
+   "hooks": [
+    "onHit",
+    "onAfterSubDamage"
+   ]
+  },
+  {
+   "id": "gmaxsteelsurge",
+   "usage": 0,
+   "hooks": [
+    "self.onHit",
+    "condition.onSideStart",
+    "condition.onEntryHazard"
+   ]
+  },
+  {
+   "id": "gmaxstonesurge",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxstunshock",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxsweetness",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxtartness",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxterror",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxvinelash",
+   "usage": 0,
+   "hooks": [
+    "self.onHit",
+    "condition.onSideStart",
+    "condition.onResidual",
+    "condition.onSideEnd"
+   ]
+  },
+  {
+   "id": "gmaxvolcalith",
+   "usage": 0,
+   "hooks": [
+    "self.onHit",
+    "condition.onSideStart",
+    "condition.onResidual",
+    "condition.onSideEnd"
+   ]
+  },
+  {
+   "id": "gmaxvoltcrash",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gmaxwildfire",
+   "usage": 0,
+   "hooks": [
+    "self.onHit",
+    "condition.onSideStart",
+    "condition.onResidual",
+    "condition.onSideEnd"
+   ]
+  },
+  {
+   "id": "gmaxwindrage",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "gravapple",
+   "usage": 0,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "happyhour",
+   "usage": 0,
+   "hooks": [
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "holdback",
+   "usage": 0,
+   "hooks": [
+    "onDamage"
+   ]
+  },
+  {
+   "id": "holdhands",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "hornattack",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "magicaltorque",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "maxairstream",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxdarkness",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxflare",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxflutterby",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxgeyser",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxguard",
+   "usage": 0,
+   "hooks": [
+    "onPrepareHit",
+    "onHit",
+    "condition.onStart",
+    "condition.onTryHit"
+   ]
+  },
+  {
+   "id": "maxhailstorm",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxknuckle",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxlightning",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxmindstorm",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxooze",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxovergrowth",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxphantasm",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxquake",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxrockfall",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxstarfall",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxsteelspike",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxstrike",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "maxwyrmwind",
+   "usage": 0,
+   "hooks": [
+    "self.onHit"
+   ]
+  },
+  {
+   "id": "milkdrink",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "noxioustorque",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "payday",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "powershift",
+   "usage": 0,
+   "hooks": [
+    "condition.onStart",
+    "condition.onCopy",
+    "condition.onEnd",
+    "condition.onRestart"
+   ]
+  },
+  {
+   "id": "retaliate",
+   "usage": 0,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "rockthrow",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "scratch",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "smog",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "strength",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "struggle",
+   "usage": 0,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "teatime",
+   "usage": 0,
+   "hooks": [
+    "onHitField"
+   ]
+  },
+  {
+   "id": "vcreate",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "visegrip",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "wickedtorque",
+   "usage": 0,
+   "hooks": []
+  }
+ ],
+ "items": [
+  {
+   "id": "focussash",
+   "usage": 116.398265,
+   "hooks": [
+    "onDamage"
+   ]
+  },
+  {
+   "id": "leftovers",
+   "usage": 66.003381,
+   "hooks": [
+    "onResidual"
+   ]
+  },
+  {
+   "id": "assaultvest",
+   "usage": 57.611678,
+   "hooks": [
+    "onModifySpD",
+    "onDisableMove"
+   ]
+  },
+  {
+   "id": "lifeorb",
+   "usage": 56.137424,
+   "hooks": [
+    "onModifyDamage",
+    "onAfterMoveSecondarySelf"
+   ]
+  },
+  {
+   "id": "sitrusberry",
+   "usage": 39.750518,
+   "hooks": [
+    "onUpdate",
+    "onTryEatItem",
+    "onEat"
+   ]
+  },
+  {
+   "id": "eviolite",
+   "usage": 39.100025,
+   "hooks": [
+    "onModifyDef",
+    "onModifySpD"
+   ]
+  },
+  {
+   "id": "covertcloak",
+   "usage": 37.950445,
+   "hooks": [
+    "onModifySecondaries"
+   ]
+  },
+  {
+   "id": "rockyhelmet",
+   "usage": 37.798899,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "choicescarf",
+   "usage": 34.582569,
+   "hooks": [
+    "onStart",
+    "onModifyMove",
+    "onModifySpe"
+   ]
+  },
+  {
+   "id": "choiceband",
+   "usage": 29.710199,
+   "hooks": [
+    "onStart",
+    "onModifyMove",
+    "onModifyAtk"
+   ]
+  },
+  {
+   "id": "choicespecs",
+   "usage": 26.331892,
+   "hooks": [
+    "onStart",
+    "onModifyMove",
+    "onModifySpA"
+   ]
+  },
+  {
+   "id": "mentalherb",
+   "usage": 17.780913,
+   "hooks": [
+    "fling.effect",
+    "onUpdate"
+   ]
+  },
+  {
+   "id": "boosterenergy",
+   "usage": 13.364611,
+   "hooks": [
+    "onStart",
+    "onUpdate",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "loadeddice",
+   "usage": 13.246199,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "clearamulet",
+   "usage": 11.571647,
+   "hooks": [
+    "onTryBoost"
+   ]
+  },
+  {
+   "id": "safetygoggles",
+   "usage": 11.508688,
+   "hooks": [
+    "onImmunity",
+    "onTryHit"
+   ]
+  },
+  {
+   "id": "heavydutyboots",
+   "usage": 11.457148,
+   "hooks": []
+  },
+  {
+   "id": "weaknesspolicy",
+   "usage": 10.836214,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "custapberry",
+   "usage": 8.620565,
+   "hooks": [
+    "onFractionalPriority",
+    "onEat"
+   ]
+  },
+  {
+   "id": "electricseed",
+   "usage": 8.192344,
+   "hooks": [
+    "onStart",
+    "onTerrainChange"
+   ]
+  },
+  {
+   "id": "flameorb",
+   "usage": 8.018089,
+   "hooks": [
+    "onResidual"
+   ]
+  },
+  {
+   "id": "lightclay",
+   "usage": 7.763666,
+   "hooks": []
+  },
+  {
+   "id": "airballoon",
+   "usage": 6.999604,
+   "hooks": [
+    "onStart",
+    "onDamagingHit",
+    "onAfterSubDamage"
+   ]
+  },
+  {
+   "id": "powerherb",
+   "usage": 6.366344,
+   "hooks": [
+    "onChargeMove"
+   ]
+  },
+  {
+   "id": "widelens",
+   "usage": 5.636874,
+   "hooks": [
+    "onSourceModifyAccuracy"
+   ]
+  },
+  {
+   "id": "blacksludge",
+   "usage": 4.965887,
+   "hooks": [
+    "onResidual"
+   ]
+  },
+  {
+   "id": "ejectbutton",
+   "usage": 4.746015,
+   "hooks": [
+    "onAfterMoveSecondary"
+   ]
+  },
+  {
+   "id": "throatspray",
+   "usage": 4.224758,
+   "hooks": [
+    "onAfterMoveSecondarySelf"
+   ]
+  },
+  {
+   "id": "toxicorb",
+   "usage": 4.17293,
+   "hooks": [
+    "onResidual"
+   ]
+  },
+  {
+   "id": "lumberry",
+   "usage": 4.157332,
+   "hooks": [
+    "onAfterSetStatus",
+    "onUpdate",
+    "onEat"
+   ]
+  },
+  {
+   "id": "ejectpack",
+   "usage": 4.013454,
+   "hooks": [
+    "onAfterBoost"
+   ]
+  },
+  {
+   "id": "whiteherb",
+   "usage": 3.725255,
+   "hooks": [
+    "fling.effect",
+    "onUpdate"
+   ]
+  },
+  {
+   "id": "salacberry",
+   "usage": 3.701922,
+   "hooks": [
+    "onUpdate",
+    "onEat"
+   ]
+  },
+  {
+   "id": "expertbelt",
+   "usage": 3.556471,
+   "hooks": [
+    "onModifyDamage"
+   ]
+  },
+  {
+   "id": "brightpowder",
+   "usage": 3.336946,
+   "hooks": [
+    "onModifyAccuracy"
+   ]
+  },
+  {
+   "id": "pixieplate",
+   "usage": 2.965002,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "quickclaw",
+   "usage": 2.759568,
+   "hooks": [
+    "onFractionalPriority"
+   ]
+  },
+  {
+   "id": "meadowplate",
+   "usage": 2.627072,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "roomservice",
+   "usage": 2.388306,
+   "hooks": [
+    "onStart",
+    "onAnyPseudoWeatherChange"
+   ]
+  },
+  {
+   "id": "keeberry",
+   "usage": 2.362087,
+   "hooks": [
+    "onAfterMoveSecondary",
+    "onEat"
+   ]
+  },
+  {
+   "id": "normalgem",
+   "usage": 2.35428,
+   "hooks": [
+    "onSourceTryPrimaryHit"
+   ]
+  },
+  {
+   "id": "scopelens",
+   "usage": 2.330061,
+   "hooks": [
+    "onModifyCritRatio"
+   ]
+  },
+  {
+   "id": "zapplate",
+   "usage": 2.279205,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "psychicseed",
+   "usage": 2.266883,
+   "hooks": [
+    "onStart",
+    "onTerrainChange"
+   ]
+  },
+  {
+   "id": "kingsrock",
+   "usage": 2.262756,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "dreadplate",
+   "usage": 2.259712,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "redcard",
+   "usage": 2.252694,
+   "hooks": [
+    "onAfterMoveSecondary"
+   ]
+  },
+  {
+   "id": "splashplate",
+   "usage": 2.20491,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "spookyplate",
+   "usage": 2.188052,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "insectplate",
+   "usage": 2.170097,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "mysticwater",
+   "usage": 2.16307,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "flameplate",
+   "usage": 2.151034,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "earthplate",
+   "usage": 2.145769,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "ironplate",
+   "usage": 2.140297,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "fistplate",
+   "usage": 2.103246,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "mindplate",
+   "usage": 2.059085,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "skyplate",
+   "usage": 2.044556,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "toxicplate",
+   "usage": 2.007798,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "adamantcrystal",
+   "usage": 2.000026,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "cornerstonemask",
+   "usage": 2,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "griseouscore",
+   "usage": 2,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "hearthflamemask",
+   "usage": 2,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "lustrousglobe",
+   "usage": 2,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "rustedshield",
+   "usage": 2,
+   "hooks": [
+    "onSwitchIn",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "rustedsword",
+   "usage": 2,
+   "hooks": [
+    "onSwitchIn",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "wellspringmask",
+   "usage": 2,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "ironball",
+   "usage": 1.929383,
+   "hooks": [
+    "onEffectiveness",
+    "onModifySpe"
+   ]
+  },
+  {
+   "id": "silkscarf",
+   "usage": 1.890733,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "lightball",
+   "usage": 1.809815,
+   "hooks": [
+    "onModifyAtk",
+    "onModifySpA"
+   ]
+  },
+  {
+   "id": "grassyseed",
+   "usage": 1.766929,
+   "hooks": [
+    "onStart",
+    "onTerrainChange"
+   ]
+  },
+  {
+   "id": "laggingtail",
+   "usage": 1.728891,
+   "hooks": []
+  },
+  {
+   "id": "blackglasses",
+   "usage": 1.722258,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "aguavberry",
+   "usage": 1.620809,
+   "hooks": [
+    "onUpdate",
+    "onTryEatItem",
+    "onEat"
+   ]
+  },
+  {
+   "id": "dragonfang",
+   "usage": 1.50553,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "punchingglove",
+   "usage": 1.389384,
+   "hooks": [
+    "onBasePower",
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "magnet",
+   "usage": 1.369606,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "sharpbeak",
+   "usage": 1.242942,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "yacheberry",
+   "usage": 1.216982,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "charcoal",
+   "usage": 1.177758,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "abilityshield",
+   "usage": 1.167117,
+   "hooks": [
+    "onSetAbility"
+   ]
+  },
+  {
+   "id": "shellbell",
+   "usage": 1.083648,
+   "hooks": [
+    "onAfterMoveSecondarySelf"
+   ]
+  },
+  {
+   "id": "blunderpolicy",
+   "usage": 1.082898,
+   "hooks": []
+  },
+  {
+   "id": "lustrousorb",
+   "usage": 1.080649,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "icicleplate",
+   "usage": 1.063556,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "stoneplate",
+   "usage": 1.019251,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "figyberry",
+   "usage": 0.961431,
+   "hooks": [
+    "onUpdate",
+    "onTryEatItem",
+    "onEat"
+   ]
+  },
+  {
+   "id": "damprock",
+   "usage": 0.894598,
+   "hooks": []
+  },
+  {
+   "id": "muscleband",
+   "usage": 0.89013,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "heatrock",
+   "usage": 0.85454,
+   "hooks": []
+  },
+  {
+   "id": "miracleseed",
+   "usage": 0.829173,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "terrainextender",
+   "usage": 0.817076,
+   "hooks": []
+  },
+  {
+   "id": "adrenalineorb",
+   "usage": 0.70871,
+   "hooks": [
+    "onAfterBoost"
+   ]
+  },
+  {
+   "id": "wikiberry",
+   "usage": 0.701153,
+   "hooks": [
+    "onUpdate",
+    "onTryEatItem",
+    "onEat"
+   ]
+  },
+  {
+   "id": "souldew",
+   "usage": 0.557438,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "leppaberry",
+   "usage": 0.556894,
+   "hooks": [
+    "onUpdate",
+    "onEat"
+   ]
+  },
+  {
+   "id": "metalcoat",
+   "usage": 0.543855,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "nevermeltice",
+   "usage": 0.542947,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "mirrorherb",
+   "usage": 0.533201,
+   "hooks": [
+    "onFoeAfterBoost"
+   ]
+  },
+  {
+   "id": "chestoberry",
+   "usage": 0.525655,
+   "hooks": [
+    "onUpdate",
+    "onEat"
+   ]
+  },
+  {
+   "id": "marangaberry",
+   "usage": 0.483621,
+   "hooks": [
+    "onAfterMoveSecondary",
+    "onEat"
+   ]
+  },
+  {
+   "id": "bignugget",
+   "usage": 0.474191,
+   "hooks": []
+  },
+  {
+   "id": "razorclaw",
+   "usage": 0.447209,
+   "hooks": [
+    "onModifyCritRatio"
+   ]
+  },
+  {
+   "id": "poisonbarb",
+   "usage": 0.443618,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "zoomlens",
+   "usage": 0.432671,
+   "hooks": [
+    "onSourceModifyAccuracy"
+   ]
+  },
+  {
+   "id": "spelltag",
+   "usage": 0.40011,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "protectivepads",
+   "usage": 0.395277,
+   "hooks": []
+  },
+  {
+   "id": "bigroot",
+   "usage": 0.39494,
+   "hooks": [
+    "onTryHeal"
+   ]
+  },
+  {
+   "id": "shucaberry",
+   "usage": 0.394094,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "fairyfeather",
+   "usage": 0.383863,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "griseousorb",
+   "usage": 0.368162,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "icyrock",
+   "usage": 0.364691,
+   "hooks": []
+  },
+  {
+   "id": "chopleberry",
+   "usage": 0.352264,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "rindoberry",
+   "usage": 0.285902,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "blackbelt",
+   "usage": 0.27522,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "hardstone",
+   "usage": 0.266749,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "metronome",
+   "usage": 0.253913,
+   "hooks": [
+    "onStart",
+    "condition.onStart",
+    "condition.onTryMove",
+    "condition.onModifyDamage"
+   ]
+  },
+  {
+   "id": "absorbbulb",
+   "usage": 0.253669,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "habanberry",
+   "usage": 0.233634,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "colburberry",
+   "usage": 0.230003,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "wiseglasses",
+   "usage": 0.229438,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "lansatberry",
+   "usage": 0.214497,
+   "hooks": [
+    "onUpdate",
+    "onEat"
+   ]
+  },
+  {
+   "id": "liechiberry",
+   "usage": 0.214188,
+   "hooks": [
+    "onUpdate",
+    "onEat"
+   ]
+  },
+  {
+   "id": "occaberry",
+   "usage": 0.211981,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "adamantorb",
+   "usage": 0.207351,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "wacanberry",
+   "usage": 0.205135,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "powerlens",
+   "usage": 0.188221,
+   "hooks": [
+    "onModifySpe"
+   ]
+  },
+  {
+   "id": "iapapaberry",
+   "usage": 0.169046,
+   "hooks": [
+    "onUpdate",
+    "onTryEatItem",
+    "onEat"
+   ]
+  },
+  {
+   "id": "petayaberry",
+   "usage": 0.163542,
+   "hooks": [
+    "onUpdate",
+    "onEat"
+   ]
+  },
+  {
+   "id": "mistyseed",
+   "usage": 0.144956,
+   "hooks": [
+    "onStart",
+    "onTerrainChange"
+   ]
+  },
+  {
+   "id": "jabocaberry",
+   "usage": 0.143902,
+   "hooks": [
+    "onDamagingHit",
+    "onEat"
+   ]
+  },
+  {
+   "id": "focusband",
+   "usage": 0.139665,
+   "hooks": [
+    "onDamage"
+   ]
+  },
+  {
+   "id": "poweranklet",
+   "usage": 0.133363,
+   "hooks": [
+    "onModifySpe"
+   ]
+  },
+  {
+   "id": "silverpowder",
+   "usage": 0.132584,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "shedshell",
+   "usage": 0.13058,
+   "hooks": [
+    "onTrapPokemon"
+   ]
+  },
+  {
+   "id": "bindingband",
+   "usage": 0.127947,
+   "hooks": []
+  },
+  {
+   "id": "twistedspoon",
+   "usage": 0.126609,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "roseliberry",
+   "usage": 0.125448,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "kasibberry",
+   "usage": 0.123079,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "magoberry",
+   "usage": 0.115523,
+   "hooks": [
+    "onUpdate",
+    "onTryEatItem",
+    "onEat"
+   ]
+  },
+  {
+   "id": "softsand",
+   "usage": 0.099238,
+   "hooks": [
+    "onBasePower"
+   ]
+  },
+  {
+   "id": "dracoplate",
+   "usage": 0.083393,
+   "hooks": [
+    "onBasePower",
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "babiriberry",
+   "usage": 0.07732,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "cellbattery",
+   "usage": 0.073405,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "persimberry",
+   "usage": 0.056663,
+   "hooks": [
+    "onUpdate",
+    "onEat"
+   ]
+  },
+  {
+   "id": "cobaberry",
+   "usage": 0.049658,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "gripclaw",
+   "usage": 0.045275,
+   "hooks": []
+  },
+  {
+   "id": "powerbracer",
+   "usage": 0.043641,
+   "hooks": [
+    "onModifySpe"
+   ]
+  },
+  {
+   "id": "razorfang",
+   "usage": 0.039272,
+   "hooks": [
+    "onModifyMove"
+   ]
+  },
+  {
+   "id": "stickybarb",
+   "usage": 0.037971,
+   "hooks": [
+    "onResidual",
+    "onHit"
+   ]
+  },
+  {
+   "id": "payapaberry",
+   "usage": 0.036599,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "smoothrock",
+   "usage": 0.029833,
+   "hooks": []
+  },
+  {
+   "id": "starfberry",
+   "usage": 0.028428,
+   "hooks": [
+    "onUpdate",
+    "onEat"
+   ]
+  },
+  {
+   "id": "passhoberry",
+   "usage": 0.027573,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "powerweight",
+   "usage": 0.026893,
+   "hooks": [
+    "onModifySpe"
+   ]
+  },
+  {
+   "id": "ganlonberry",
+   "usage": 0.025724,
+   "hooks": [
+    "onUpdate",
+    "onEat"
+   ]
+  },
+  {
+   "id": "ringtarget",
+   "usage": 0.025147,
+   "hooks": []
+  },
+  {
+   "id": "powerband",
+   "usage": 0.022606,
+   "hooks": [
+    "onModifySpe"
+   ]
+  },
+  {
+   "id": "chartiberry",
+   "usage": 0.022111,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "utilityumbrella",
+   "usage": 0.021574,
+   "hooks": [
+    "onStart",
+    "onUpdate",
+    "onEnd"
+   ]
+  },
+  {
+   "id": "rowapberry",
+   "usage": 0.0168,
+   "hooks": [
+    "onDamagingHit",
+    "onEat"
+   ]
+  },
+  {
+   "id": "destinyknot",
+   "usage": 0.014614,
+   "hooks": [
+    "onAttract"
+   ]
+  },
+  {
+   "id": "powerbelt",
+   "usage": 0.008255,
+   "hooks": [
+    "onModifySpe"
+   ]
+  },
+  {
+   "id": "loveball",
+   "usage": 0.007188,
+   "hooks": []
+  },
+  {
+   "id": "oranberry",
+   "usage": 0.005909,
+   "hooks": [
+    "onUpdate",
+    "onTryEatItem",
+    "onEat"
+   ]
+  },
+  {
+   "id": "pokeball",
+   "usage": 0.005527,
+   "hooks": []
+  },
+  {
+   "id": "safariball",
+   "usage": 0.005497,
+   "hooks": []
+  },
+  {
+   "id": "enigmaberry",
+   "usage": 0.004384,
+   "hooks": [
+    "onHit",
+    "onTryEatItem",
+    "onEat"
+   ]
+  },
+  {
+   "id": "snowball",
+   "usage": 0.004334,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "goldbottlecap",
+   "usage": 0.002636,
+   "hooks": []
+  },
+  {
+   "id": "luminousmoss",
+   "usage": 0.002616,
+   "hooks": [
+    "onDamagingHit"
+   ]
+  },
+  {
+   "id": "metalalloy",
+   "usage": 0.002438,
+   "hooks": []
+  },
+  {
+   "id": "heavyball",
+   "usage": 0.002209,
+   "hooks": []
+  },
+  {
+   "id": "masterball",
+   "usage": 0.002026,
+   "hooks": []
+  },
+  {
+   "id": "maliciousarmor",
+   "usage": 0.001797,
+   "hooks": []
+  },
+  {
+   "id": "grepaberry",
+   "usage": 0.001658,
+   "hooks": []
+  },
+  {
+   "id": "micleberry",
+   "usage": 0.001649,
+   "hooks": [
+    "onResidual",
+    "onEat",
+    "condition.onSourceAccuracy"
+   ]
+  },
+  {
+   "id": "apicotberry",
+   "usage": 0.001121,
+   "hooks": [
+    "onUpdate",
+    "onEat"
+   ]
+  },
+  {
+   "id": "tangaberry",
+   "usage": 0.00089,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "leafstone",
+   "usage": 0.000879,
+   "hooks": []
+  },
+  {
+   "id": "duskstone",
+   "usage": 0.000415,
+   "hooks": []
+  },
+  {
+   "id": "kebiaberry",
+   "usage": 0.000181,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "friendball",
+   "usage": 0.000162,
+   "hooks": []
+  },
+  {
+   "id": "floatstone",
+   "usage": 0.00014,
+   "hooks": [
+    "onModifyWeight"
+   ]
+  },
+  {
+   "id": "rawstberry",
+   "usage": 0.000121,
+   "hooks": [
+    "onUpdate",
+    "onEat"
+   ]
+  },
+  {
+   "id": "tartapple",
+   "usage": 0.000111,
+   "hooks": []
+  },
+  {
+   "id": "prismscale",
+   "usage": 0.0001,
+   "hooks": []
+  },
+  {
+   "id": "syrupyapple",
+   "usage": 0.000072,
+   "hooks": []
+  },
+  {
+   "id": "chilanberry",
+   "usage": 0.00004,
+   "hooks": [
+    "onSourceModifyDamage",
+    "onEat"
+   ]
+  },
+  {
+   "id": "sweetapple",
+   "usage": 0.000034,
+   "hooks": []
+  },
+  {
+   "id": "dreamball",
+   "usage": 0.000033,
+   "hooks": []
+  },
+  {
+   "id": "cheriberry",
+   "usage": 0.00001,
+   "hooks": [
+    "onUpdate",
+    "onEat"
+   ]
+  },
+  {
+   "id": "dragonscale",
+   "usage": 0.000001,
+   "hooks": []
+  },
+  {
+   "id": "berrysweet",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "icestone",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "netball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "nestball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "ultraball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "abomasite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "absolite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "aerodactylite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "aggronite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "alakazite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "altarianite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "ampharosite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "aspearberry",
+   "usage": 0,
+   "hooks": [
+    "onUpdate",
+    "onEat"
+   ]
+  },
+  {
+   "id": "audinite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "auspiciousarmor",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "banettite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "beastball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "beedrillite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "blastoisinite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "blazikenite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "bottlecap",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "cameruptite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "charizarditex",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "charizarditey",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "cherishball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "chippedpot",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "cloversweet",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "crackedpot",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "dawnstone",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "diancite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "diveball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "dubiousdisc",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "duskball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "electirizer",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "fastball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "firestone",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "flowersweet",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "galaricacuff",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "galaricawreath",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "galladite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "garchompite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "gardevoirite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "gengarite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "glalitite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "greatball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "gyaradosite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "healball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "heracronite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "hondewberry",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "houndoominite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "kangaskhanite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "kelpsyberry",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "latiasite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "latiosite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "legendplate",
+   "usage": 0,
+   "hooks": [
+    "onTryMove"
+   ]
+  },
+  {
+   "id": "levelball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "lopunnite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "lovesweet",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "lucarionite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "lureball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "luxuryball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "magmarizer",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "manectite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "masterpieceteacup",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "mawilite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "medichamite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "metagrossite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "mewtwonitex",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "mewtwonitey",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "moonball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "moonstone",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "ovalstone",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "parkball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "pechaberry",
+   "usage": 0,
+   "hooks": [
+    "onUpdate",
+    "onEat"
+   ]
+  },
+  {
+   "id": "pidgeotite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "pinsirite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "pomegberry",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "premierball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "protector",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "qualotberry",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "quickball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "rarebone",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "reapercloth",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "repeatball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "ribbonsweet",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "sablenite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "salamencite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "sceptilite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "scizorite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "sharpedonite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "shinystone",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "slowbronite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "sportball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "starsweet",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "steelixite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "strangeball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "strawberrysweet",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "sunstone",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "swampertite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "tamatoberry",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "thunderstone",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "timerball",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "tyranitarite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "unremarkableteacup",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "upgrade",
+   "usage": 0,
+   "hooks": []
+  },
+  {
+   "id": "venusaurite",
+   "usage": 0,
+   "hooks": [
+    "onTakeItem"
+   ]
+  },
+  {
+   "id": "waterstone",
+   "usage": 0,
+   "hooks": []
+  }
+ ]
+}

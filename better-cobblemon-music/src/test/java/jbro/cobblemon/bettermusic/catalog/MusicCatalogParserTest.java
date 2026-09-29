@@ -30,6 +30,10 @@ final class MusicCatalogParserTest {
             "cobleserver:battle.hit.normal",
             catalog.audioEvents().orElseThrow().hitNormal()
         );
+        assertEquals(
+            "cobleserver:battle.low_hp.alert",
+            catalog.audioEvents().orElseThrow().lowHpAlert()
+        );
     }
 
     @Test
@@ -43,6 +47,18 @@ final class MusicCatalogParserTest {
         );
 
         assertTrue(exception.getMessage().contains("$.mappings"));
+    }
+
+    @Test
+    void acceptsLegacyHeartbeatKeyAsTheLowHpAlertEvent() {
+        String json = baseCatalogJson().replace(
+            "\"lowHpAlert\": \"cobleserver:battle.low_hp.alert\"",
+            "\"heartbeat\": \"minecraft:entity.warden.heartbeat\""
+        );
+
+        MusicCatalog catalog = MusicCatalogParser.parse(new StringReader(json));
+
+        assertEquals("minecraft:entity.warden.heartbeat", catalog.audioEvents().orElseThrow().lowHpAlert());
     }
 
     @Test
@@ -113,7 +129,7 @@ final class MusicCatalogParserTest {
                 "hitNormal": "cobleserver:battle.hit.normal",
                 "hitSuperEffective": "cobleserver:battle.hit.super_effective",
                 "hitNotVeryEffective": "cobleserver:battle.hit.not_very_effective",
-                "heartbeat": "minecraft:entity.warden.heartbeat"
+                "lowHpAlert": "cobleserver:battle.low_hp.alert"
               }
             }
             """;

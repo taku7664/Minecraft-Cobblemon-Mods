@@ -1,0 +1,36 @@
+package jbro.cobblemon.bettermusic.client;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
+
+final class LastPokemonLowHpAlertPlayer {
+    static final double CADENCE_SECONDS = 0.70;
+    private static final float PITCH = 1.0F;
+    private static final float BASE_VOLUME = 1.0F;
+
+    private final LowHpAlertPulseScheduler scheduler = new LowHpAlertPulseScheduler(CADENCE_SECONDS);
+
+    void tick(Minecraft client, double nowSeconds, boolean active, double volumeMultiplier, String eventId) {
+        if (!scheduler.shouldPulse(nowSeconds, active)) {
+            return;
+        }
+        float volume = scaledVolume(volumeMultiplier);
+        if (volume == 0.0F) {
+            return;
+        }
+        client.getSoundManager().play(SimpleSoundInstance.forUI(
+            SoundEvent.createVariableRangeEvent(ResourceLocation.parse(eventId)),
+            PITCH,
+            volume
+        ));
+    }
+
+    static float scaledVolume(double volumeMultiplier) {
+        if (!Double.isFinite(volumeMultiplier) || volumeMultiplier < 0.0) {
+            throw new IllegalArgumentException("volumeMultiplier must be non-negative and finite");
+        }
+        return (float) (BASE_VOLUME * volumeMultiplier);
+    }
+}

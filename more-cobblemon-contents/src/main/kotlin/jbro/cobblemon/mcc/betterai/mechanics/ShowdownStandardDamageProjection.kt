@@ -1,0 +1,224 @@
+package jbro.cobblemon.mcc.betterai.mechanics
+
+import jbro.cobblemon.mcc.internal.ai.BattleDamageFractionRange
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
+import jbro.cobblemon.mcc.internal.ai.BattleFractionRange
+import jbro.cobblemon.mcc.internal.ai.BattleIntegerRange
+import jbro.cobblemon.mcc.internal.ai.BattleKnockoutAssessment
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.roundToInt
+
+internal data class ShowdownStandardDamageProjectionResult(
+    val minimumDamage: Int,
+    val maximumDamage: Int,
+    val minimumHypothesisRolls: List<Int>,
+    val maximumHypothesisRolls: List<Int>,
+    val damageFractionRange: BattleDamageFractionRange,
+    val koProbabilityRange: BattleFractionRange,
+    val knockoutAssessment: BattleKnockoutAssessment,
+) {
+    /**
+     * The same hit against a defender that cannot be knocked out by it.
+     *
+     * Damage still lands - a Sash user drops to one health, not to none - so only the knockout half is
+     * rewritten. The reported fraction is capped at what actually leaves the defender alive, because a
+     * reader that trusted the raw number would still conclude the target is gone.
+     */
+    fun withoutKnockout(target: BattlePokemonStateView): ShowdownStandardDamageProjectionResult {
+        if (knockoutAssessment == BattleKnockoutAssessment.IMPOSSIBLE) return this
+        val survivingFraction = (target.hpFraction - oneHealthFraction(target)).coerceAtLeast(0.0)
+        return copy(
+            damageFractionRange = BattleDamageFractionRange(
+                minimum = minOf(damageFractionRange.minimum, survivingFraction),
+                maximum = minOf(damageFractionRange.maximum, survivingFraction),
+            ),
+            koProbabilityRange = BattleFractionRange(0.0, 0.0),
+            knockoutAssessment = BattleKnockoutAssessment.IMPOSSIBLE,
+        )
+    }
+
+    private fun oneHealthFraction(target: BattlePokemonStateView): Double {
+        val maximumHp = target.combatStats?.maxHp?.maximum?.takeIf { it > 0 } ?: return 0.0
+        return 1.0 / maximumHp
+    }
+}
+
+/**
+ * Pure projection of the Gen 9 Showdown base single-target damage path.
+ *
+ * It intentionally excludes ability, held-item, weather, field, mechanic, and move-specific
+ * callbacks. Callers must retain those exclusions as explicit unknowns.
+ */
+internal object ShowdownStandardDamageProjection {
+    private val randomRolls = 85..100
+
+    fun project(
+        level: Int,
+        power: Int,
+        attack: BattleIntegerRange,
+        defence: BattleIntegerRange,
+        targetMaxHp: BattleIntegerRange,
+        targetHpFraction: Double,
+        stab: Double,
+        typeMultiplier: Double,
+        guaranteedCritical: Boolean = false,
+        spreadMultiplier: Double = 1.0,
+        itemDamageMultiplier: Double = 1.0,
+    ): ShowdownStandardDamageProjectionResult = project(
+        level = level,
+        power = BattleIntegerRange(power, power),
+        attack = attack,
+        defence = defence,
+        targetMaxHp = targetMaxHp,
+        targetHpFraction = targetHpFraction,
+        stab = stab,
+        typeMultiplier = typeMultiplier,
+        guaranteedCritical = guaranteedCritical,
+        spreadMultiplier = spreadMultiplier,
+        itemDamageMultiplier = itemDamageMultiplier,
+    )
+
+    fun project(
+        level: Int,
+        power: BattleIntegerRange,
+        attack: BattleIntegerRange,
+        defence: BattleIntegerRange,
+        targetMaxHp: BattleIntegerRange,
+        targetHpFraction: Double,
+        stab: Double,
+        typeMultiplier: Double,
+        guaranteedCritical: Boolean = false,
+        /**
+         * Gen 9 reduction for a move that actually lands on more than one target.
+         *
+         * Kept separate from [typeMultiplier] on purpose. That parameter is contractually a type-chart
+         * value and is checked against the chart below, so folding the reduction into it would both
+         * break the check and misreport the move's effectiveness to anything reading it back.
+         */
+        spreadMultiplier: Double = 1.0,
+        itemDamageMultiplier: Double = 1.0,
+    ): ShowdownStandardDamageProjectionResult {
+        require(level > 0)
+        require(power.minimum > 0 && power.maximum >= power.minimum)
+        require(targetHpFraction.isFinite() && targetHpFraction in 0.0..1.0)
+        // Besides ordinary and matching-Tera STAB, Stellar gives an off-type move a one-use
+        // 4915/4096 modifier. Keep the exact fixed-point ratio accepted here and below.
+        require(stab in SUPPORTED_SAME_TYPE_BONUSES)
+        require(typeMultiplier in setOf(0.0, 0.25, 0.5, 1.0, 2.0, 4.0))
+        require(spreadMultiplier == 1.0 || spreadMultiplier == 0.75)
+
+        val minimumRolls = rolls(
+            level, power.minimum, attack.minimum, defence.maximum, stab, typeMultiplier, guaranteedCritical,
+            spreadMultiplier, itemDamageMultiplier,
+        )
+        val maximumRolls = rolls(
+            level, power.maximum, attack.maximum, defence.minimum, stab, typeMultiplier, guaranteedCritical,
+            spreadMultiplier, itemDamageMultiplier,
+        )
+        val minimumDamage = minimumRolls.min()
+        val maximumDamage = maximumRolls.max()
+        val minimumKoProbability = knockoutProbability(
+            minimumRolls,
+            currentHp(targetMaxHp.maximum, targetHpFraction),
+        )
+        val maximumKoProbability = knockoutProbability(
+            maximumRolls,
+            currentHp(targetMaxHp.minimum, targetHpFraction),
+        )
+        val assessment = when {
+            minimumKoProbability == 1.0 -> BattleKnockoutAssessment.GUARANTEED
+            maximumKoProbability == 0.0 -> BattleKnockoutAssessment.IMPOSSIBLE
+            else -> BattleKnockoutAssessment.POSSIBLE
+        }
+        return ShowdownStandardDamageProjectionResult(
+            minimumDamage = minimumDamage,
+            maximumDamage = maximumDamage,
+            minimumHypothesisRolls = minimumRolls,
+            maximumHypothesisRolls = maximumRolls,
+            damageFractionRange = BattleDamageFractionRange(
+                minimum = minimumDamage.toDouble() / targetMaxHp.maximum,
+                maximum = maximumDamage.toDouble() / targetMaxHp.minimum,
+            ),
+            koProbabilityRange = BattleFractionRange(minimumKoProbability, maximumKoProbability),
+            knockoutAssessment = assessment,
+        )
+    }
+
+    private fun rolls(
+        level: Int,
+        power: Int,
+        attack: Int,
+        defence: Int,
+        stab: Double,
+        typeMultiplier: Double,
+        guaranteedCritical: Boolean,
+        spreadMultiplier: Double,
+        itemDamageMultiplier: Double,
+    ): List<Int> {
+        val levelFactor = 2L * level / 5L + 2L
+        val unreducedBaseDamage = (((levelFactor * power * attack) / defence) / 50L).toInt() + 2
+        // Showdown applies the spread reduction to the base damage, ahead of the critical, random and
+        // STAB steps, so it is applied here rather than to the finished roll.
+        val baseDamage = if (spreadMultiplier == 0.75) {
+            showdownModify(unreducedBaseDamage, 3, 4)
+        } else {
+            unreducedBaseDamage
+        }
+        return randomRolls.map { randomRoll ->
+            var damage = if (guaranteedCritical) showdownModify(baseDamage, 3, 2) else baseDamage
+            damage = damage * randomRoll / 100
+            damage = applySameTypeBonus(damage, stab)
+            damage = applyTypeMultiplier(damage, typeMultiplier)
+            // Item modifiers land after the type chart, the way Showdown orders them, and go through
+            // the same rounding every other modifier does so the rolls stay comparable.
+            damage = applyItemMultiplier(damage, itemDamageMultiplier)
+            if (typeMultiplier == 0.0) 0 else damage.coerceAtLeast(1)
+        }
+    }
+
+    private fun applySameTypeBonus(value: Int, stab: Double): Int = when (stab) {
+        1.5 -> showdownModify(value, 3, 2)
+        2.0 -> showdownModify(value, 2, 1)
+        STELLAR_OTHER_FIRST_USE -> showdownModify(value, 4915, 4096)
+        else -> value
+    }
+
+    private fun applyItemMultiplier(value: Int, multiplier: Double): Int = when (multiplier) {
+        1.3 -> showdownModify(value, 5324, 4096)
+        1.2 -> showdownModify(value, 4915, 4096)
+        else -> value
+    }
+
+    private fun showdownModify(value: Int, numerator: Int, denominator: Int): Int {
+        val modifier = floor(numerator.toDouble() * 4096.0 / denominator).toLong()
+        return ((value.toLong() * modifier + 2047L) / 4096L).toInt()
+    }
+
+    private const val STELLAR_OTHER_FIRST_USE = 4915.0 / 4096.0
+    private val SUPPORTED_SAME_TYPE_BONUSES = setOf(1.0, STELLAR_OTHER_FIRST_USE, 1.5, 2.0)
+
+    private fun applyTypeMultiplier(value: Int, multiplier: Double): Int = when (multiplier) {
+        0.0 -> 0
+        0.25 -> value / 2 / 2
+        0.5 -> value / 2
+        1.0 -> value
+        2.0 -> value * 2
+        4.0 -> value * 2 * 2
+        else -> error("Unsupported standard type multiplier: $multiplier")
+    }
+
+    private fun currentHp(maxHp: Int, fraction: Double): Int {
+        if (fraction == 0.0) return 0
+        val scaled = maxHp * fraction
+        val nearest = scaled.roundToInt()
+        // An integer HP ratio can multiply back just above that integer (122/362 ->
+        // 122.00000000000001). Recognize the exact ratio, not a broad epsilon that
+        // would also round down genuinely higher public fractions.
+        val hp = if (nearest.toDouble() / maxHp == fraction) nearest else ceil(scaled).toInt()
+        return hp.coerceIn(1, maxHp)
+    }
+
+    private fun knockoutProbability(rolls: List<Int>, currentHp: Int): Double =
+        if (currentHp == 0) 1.0 else rolls.count { it >= currentHp }.toDouble() / rolls.size
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "whiscash level=55 moves=earthquake,aquatail,zenheadbutt",
+    "gliscor level=56 moves=earthquake,icefang,firefang",
+    "golem level=56 moves=earthquake,stoneedge,firepunch",
+    "rhyperior level=59 moves=earthquake,rockwrecker,megahorn",
+    "hippowdon level=57 moves=earthquake,crunch,stoneedge"
+  ]
+}

@@ -24,6 +24,7 @@ final class MusicResourcePackBuildToolTest {
         Path output = temporaryDirectory.resolve("output");
         write(source.resolve("pack.mcmeta"), "{\"pack\":{\"pack_format\":34,\"description\":\"test\"}}");
         writeOgg(source.resolve("assets/cobleserver/sounds/music/field/plains/theme.ogg"));
+        writeOgg(source.resolve("assets/cobleserver/sounds/battle/low_hp/alert.ogg"));
         writeOgg(source.resolve("assets/cobleserver/sounds/battle/hit/normal.ogg"));
         writeOgg(source.resolve("assets/cobleserver/sounds/battle/hit/super_effective.ogg"));
         writeOgg(source.resolve("assets/cobleserver/sounds/battle/hit/not_very_effective.ogg"));
@@ -35,7 +36,7 @@ final class MusicResourcePackBuildToolTest {
         var sounds = JsonParser.parseString(Files.readString(
             output.resolve("assets/cobleserver/sounds.json"), StandardCharsets.UTF_8
         )).getAsJsonObject();
-        assertEquals(4, sounds.size());
+        assertEquals(5, sounds.size());
         assertEquals(1, sounds.getAsJsonObject("music.track.field.plains.theme").getAsJsonArray("sounds").size());
         String catalogJson = Files.readString(
             output.resolve("assets/better_cobblemon_music/catalogs/base/cobleserver.json"),
@@ -98,7 +99,7 @@ final class MusicResourcePackBuildToolTest {
                 "hitNormal": "cobleserver:battle.hit.normal",
                 "hitSuperEffective": "cobleserver:battle.hit.super_effective",
                 "hitNotVeryEffective": "cobleserver:battle.hit.not_very_effective",
-                "heartbeat": "minecraft:entity.warden.heartbeat"
+                "lowHpAlert": "cobleserver:battle.low_hp.alert"
               }
             }
             """;

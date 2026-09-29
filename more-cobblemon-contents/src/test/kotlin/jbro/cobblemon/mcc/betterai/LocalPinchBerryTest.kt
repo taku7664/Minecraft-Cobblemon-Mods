@@ -1,0 +1,167 @@
+package jbro.cobblemon.mcc.betterai
+
+import jbro.cobblemon.mcc.internal.ai.*
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDirectHitMechanics
+import jbro.cobblemon.mcc.betterai.mechanics.LocalAppliedDirectHit
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import java.util.UUID
+
+/**
+ * A pinch berry changes what the next attack has to get through.
+ *
+ * It never saves anything from a knockout - it only fires on a survivor - so it does not belong with
+ * the knockout assessment. What it does is move the health a second hit must cover, which is exactly
+ * the arithmetic every patient line in this AI is built on. 394 of the battle tower's sets carry a
+ * Sitrus Berry and none of them were modelled.
+ */
+class LocalPinchBerryTest {
+    @Test
+    fun `magic room prevents berry recovery and consumption but trick room does not`() {
+        fun field(room: String) = BattleFieldStateView(null, null, listOf(BattleTimedEffectView(room, 1)),
+            emptyList(), BattleSide.entries.associateWith { emptyList() })
+        for (item in listOf("oranberry", "sitrusberry", "figyberry", "wikiberry", "magoberry", "aguavberry", "iapapaberry")) {
+            val suppressed = hitResult(item, 0.8, 0.6, field = field("cobblemon:magic_room"))
+            val target = suppressed.state.pokemon.single { it.side == BattleSide.OPPONENT }
+            assertEquals(0.2, target.hpFraction, 1e-12, item)
+            assertEquals(item, target.knownHeldItemId, item)
+            assertEquals(0.6, suppressed.directDamageFraction, 1e-12)
+            val unsuppressed = hitResult(item, 0.8, 0.6, field = field("trickroom"))
+                .state.pokemon.single { it.side == BattleSide.OPPONENT }
+            assertTrue(unsuppressed.hpFraction > 0.2, item)
+            assertEquals(null, unsuppressed.knownHeldItemId, item)
+        }
+    }
+
+    @Test
+    fun `fractional berries heal integer HP when the public maximum is exact`() {
+        for ((item, healedHp) in mapOf("sitrusberry" to 40, "figyberry" to 54, "oranberry" to 10)) {
+            val result = hitResult(item, 100.0 / 163, 70.0 / 163, BattleIntegerRange(163, 163))
+            val target = result.state.pokemon.single { it.side == BattleSide.OPPONENT }
+            assertEquals((30.0 + healedHp) / 163, target.hpFraction, 1e-12, item)
+            assertEquals(70.0 / 163, result.directDamageFraction, 1e-12)
+        }
+    }
+
+    @Test
+    fun `third-healing berries normally trigger at a quarter rather than half`() {
+        for (item in listOf("figyberry", "wikiberry", "magoberry", "aguavberry", "iapapaberry")) {
+            val atHalf = hit(item, 0.8, 0.3)
+            assertEquals(0.5, atHalf.hpFraction, 1e-12, item)
+            assertEquals(item, atHalf.knownHeldItemId, item)
+            val atQuarter = hit(item, 0.4, 0.15)
+            assertEquals(0.25 + 1.0 / 3.0, atQuarter.hpFraction, 1e-12, item)
+            assertEquals(null, atQuarter.knownHeldItemId, item)
+            val gluttony = hitResult(item, 0.8, 0.3, ability = "cobblemon:gluttony")
+                .state.pokemon.single { it.side == BattleSide.OPPONENT }
+            assertEquals(0.5 + 1.0 / 3.0, gluttony.hpFraction, 1e-12, "$item with revealed Gluttony")
+            assertEquals(null, gluttony.knownHeldItemId)
+        }
+    }
+
+    @Test
+    fun `neutralizing gas restores the ordinary pinch berry threshold`() {
+        val result = hitResult(
+            item = "figyberry",
+            startHp = 0.8,
+            damage = 0.3,
+            ability = "gluttony",
+            neutralizingGas = true,
+        ).state.pokemon.single { it.side == BattleSide.OPPONENT && it.activeSlot == 0 }
+
+        assertEquals(0.5, result.hpFraction, 1e-12)
+        assertEquals("figyberry", result.knownHeldItemId)
+    }
+
+    @Test
+    fun `oran berry heals ten HP rather than ten percent`() {
+        val after = hit(item = "cobblemon:oran_berry", startHp = 0.8, damage = 0.5)
+        // The public maximum is 150..170, so the current point projection uses its midpoint 160.
+        assertEquals(0.3 + 10.0 / 160, after.hpFraction, 1e-12)
+        assertEquals(null, after.knownHeldItemId)
+        for (maximum in listOf(100, 200, 400)) {
+            val exact = hitResult("cobblemon:oran_berry", 0.8, 0.5, BattleIntegerRange(maximum, maximum))
+                .state.pokemon.single { it.side == BattleSide.OPPONENT }
+            assertEquals(0.3 + 10.0 / maximum, exact.hpFraction, 1e-12)
+        }
+    }
+
+    @Test
+    fun `berry healing does not subtract from damage attributed to the hit`() {
+        val applied = hitResult(item = "cobblemon:sitrus_berry", startHp = 0.8, damage = 0.5)
+        assertEquals(0.5, applied.directDamageFraction, 1e-9)
+        assertEquals(0.55, applied.state.pokemon.single { it.side == BattleSide.OPPONENT }.hpFraction, 1e-9)
+        assertEquals(0.1, hitResult("cobblemon:sitrus_berry", 0.6, 0.1).directDamageFraction, 1e-9,
+            "The berry can heal more than the hit removed without making inflicted damage zero")
+        assertEquals(0.4, hitResult("cobblemon:sitrus_berry", 0.4, 1.0).directDamageFraction, 1e-9,
+            "Overkill still caps damage at the holder's pre-hit HP")
+    }
+
+    @Test
+    fun `a sitrus berry restores a quarter once the hit brings its holder to half`() {
+        val after = hit(item = "cobblemon:sitrus_berry", startHp = 0.8, damage = 0.5)
+        assertEquals(0.55, after.hpFraction, 1e-6, "0.30 left, plus a quarter of maximum.")
+        assertEquals(null, after.knownHeldItemId, "The berry is eaten.")
+    }
+
+    @Test
+    fun `a berry does not fire while its holder is still above half`() {
+        val after = hit(item = "cobblemon:sitrus_berry", startHp = 1.0, damage = 0.2)
+        assertEquals(0.8, after.hpFraction, 1e-6, "Nothing triggered it.")
+        assertEquals("cobblemon:sitrus_berry", after.knownHeldItemId, "So it is still held.")
+    }
+
+    @Test
+    fun `a berry does not rescue a fainted holder`() {
+        val after = hit(item = "cobblemon:sitrus_berry", startHp = 0.4, damage = 1.0)
+        assertTrue(after.fainted, "A knockout is a knockout; the berry only reacts to surviving.")
+    }
+
+    @Test
+    fun `an unheld berry changes nothing`() {
+        val after = hit(item = null, startHp = 0.8, damage = 0.5)
+        assertEquals(0.3, after.hpFraction, 1e-6, "Plain damage.")
+    }
+
+    private fun hit(item: String?, startHp: Double, damage: Double): BattlePokemonStateView =
+        hitResult(item, startHp, damage).state.pokemon.single { it.side == BattleSide.OPPONENT }
+
+    private fun hitResult(item: String?, startHp: Double, damage: Double, maxHp: BattleIntegerRange = BattleIntegerRange(150, 170), ability: String? = null, field: BattleFieldStateView = BattleFieldStateView.empty(), neutralizingGas: Boolean = false): LocalAppliedDirectHit {
+        val ally = mon(BattleSide.ALLY, null, 1.0)
+        val opponent = mon(BattleSide.OPPONENT, item, startHp, maxHp, ability)
+        val gas = mon(BattleSide.ALLY, null, 1.0, ability = "neutralizinggas", activeSlot = 1)
+        val state = BattleStateView(
+            battleId = UUID.randomUUID(), format = if (neutralizingGas) BattleFormat.DOUBLE else BattleFormat.SINGLE, turn = 2,
+            pokemon = listOf(ally, opponent) + listOfNotNull(gas.takeIf { neutralizingGas }), field = field,
+            remainingPokemonBySide = BattleSide.entries.associateWith { 2 },
+            observedEvents = emptyList(), inferences = emptyList(),
+        )
+        val applied = LocalDirectHitMechanics.apply(
+            state = state,
+            actorId = ally.battlePokemonId,
+            targetId = opponent.battlePokemonId,
+            incomingDamageFraction = damage,
+            effects = emptyList(),
+            ignoreTargetAbility = false,
+        )
+        return applied
+    }
+
+    private fun mon(side: BattleSide, item: String?, hpFraction: Double, maxHp: BattleIntegerRange = BattleIntegerRange(150, 170), ability: String? = null, activeSlot: Int = 0) = BattlePokemonStateView(
+        battlePokemonId = UUID.randomUUID(), side = side, activeSlot = activeSlot,
+        speciesId = "cobblemon:probe", formId = null, level = 50, hpFraction = hpFraction,
+        statusId = null, statStages = emptyMap(), knownMoveIds = emptySet(),
+        knownAbilityId = ability, knownHeldItemId = item, fainted = false,
+        knownTypeIds = setOf("normal"),
+        combatStats = if (side == BattleSide.ALLY) {
+            BattleCombatStatRangesView.exact(160, 120, 100, 100, 100, 100)
+        } else {
+            BattleCombatStatRangesView(
+                maxHp, BattleIntegerRange(110, 130), BattleIntegerRange(90, 110),
+                BattleIntegerRange(90, 110), BattleIntegerRange(90, 110), BattleIntegerRange(90, 110),
+                BattleCombatStatKnowledge.PUBLIC_SPECIES_RANGE,
+            )
+        },
+    )
+}
