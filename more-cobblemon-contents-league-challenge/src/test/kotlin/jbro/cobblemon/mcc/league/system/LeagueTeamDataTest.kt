@@ -135,8 +135,9 @@ class LeagueTeamDataTest {
             }
         }
         assertEquals(85, gyms.maxOf { team("${it}_hard").maxOf(::level) })
-        assertEquals(100, finals.dropLast(1).maxOf { team("${it}_hard").maxOf(::level) })
-        assertEquals(110, level(team("cynthia_hard").last()))
+        assertEquals(95, finals.dropLast(1).maxOf { team("${it}_hard").maxOf(::level) })
+        // Cobblemon's default maximum level; the hard Champion stays within it.
+        assertEquals(100, level(team("cynthia_hard").last()))
     }
 
     @Test
@@ -182,7 +183,7 @@ class LeagueTeamDataTest {
             SharedConstants.tryDetectVersion()
             Bootstrap.bootStrap()
             // The property parser reads Cobblemon's config, which only the mod's own start-up normally creates.
-            Cobblemon.config = CobblemonConfig().also { it.maxPokemonLevel = 110 }
+            Cobblemon.config = CobblemonConfig()
             val path = Paths.get(PokemonSpecies::class.java.protectionDomain.codeSource.location.toURI())
             val cobblemon = JarFile(path.toFile())
             val mega = megaShowdownJar()

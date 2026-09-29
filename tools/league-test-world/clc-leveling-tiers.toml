@@ -1,7 +1,6 @@
 # Approved level-cap tiers for the bundled Sinnoh League: normal caps are the next opponent's highest level + 2,
 # the normal Champion opens the hard route at 80 and the last hard gym lifts it to 100.
 # League checks both modules. Reference fragment only: retain every other setting in CLC's existing server.toml.
-# The hard Champion fields a level 110 ace, so Cobblemon's maxPokemonLevel must be at least 110.
 [server.main.levelingModule]
 restrictLeveling = true
 
