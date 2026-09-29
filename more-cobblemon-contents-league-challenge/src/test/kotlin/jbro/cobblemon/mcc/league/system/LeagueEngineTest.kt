@@ -17,6 +17,15 @@ class LeagueEngineTest {
     private fun party() = (1..6).map { "locked-pokemon-$it" }
     private fun delivered(state: LeagueProgress) = state.copy(rewards = state.rewards.map { it.copy(badgeDone = true, bpDone = true) })
 
+    @Test fun `the cap follows the current catalog for progress saved under older caps`() {
+        val engine = LeagueEngine(catalog())
+        // Saved when the first gym still unlocked 15; this catalog gives 20 for it.
+        assertEquals(20, engine.cap(LeagueProgress(cleared = setOf("test:g1"), unlockedCap = 15)))
+        // A stored cap above anything cleared, or a challenge the catalog no longer has, earns nothing.
+        assertEquals(10, engine.cap(LeagueProgress(unlockedCap = 70)))
+        assertEquals(30, engine.cap(LeagueProgress(cleared = setOf("test:g1", "test:g2", "test:removed"))))
+    }
+
     @Test fun `cannot skip gym or enter league early`() {
         val engine = LeagueEngine(catalog())
         assertThrows(IllegalArgumentException::class.java) { engine.begin(LeagueProgress(), "test:g2", party()) }

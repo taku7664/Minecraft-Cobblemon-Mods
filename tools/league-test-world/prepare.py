@@ -20,7 +20,7 @@ def prepare(template: Path, destination: Path) -> None:
     level = nbtlib.load(template / "level.dat")
     data = level["Data"]
     data.pop("Player", None)
-    data["LevelName"] = String("League Cap Test - 15 to 20")
+    data["LevelName"] = String("League Cap Test - 16 to 24")
     data["allowCommands"] = Byte(1)
     data["GameType"] = Int(0)
     data["SpawnX"], data["SpawnY"], data["SpawnZ"] = Int(0), Int(127), Int(1)
@@ -38,7 +38,7 @@ def prepare(template: Path, destination: Path) -> None:
     level.save(destination / "level.dat")
     saved = nbtlib.load(destination / "level.dat")["Data"]
     assert "Player" not in saved
-    assert str(saved["LevelName"]) == "League Cap Test - 15 to 20"
+    assert str(saved["LevelName"]) == "League Cap Test - 16 to 24"
     assert not (destination / "pokemon").exists()
     assert not (destination / "data").exists()
     print(f"Prepared new test world: {destination}")

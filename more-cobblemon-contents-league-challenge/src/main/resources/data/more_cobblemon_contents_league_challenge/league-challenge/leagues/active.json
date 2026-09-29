@@ -2,7 +2,7 @@
   "schema_version": 1,
   "progress_id": "more_cobblemon_contents_league_challenge:sinnoh",
   "name_key": "league.more_cobblemon_contents_league_challenge.sinnoh",
-  "initial_cap": 15,
+  "initial_cap": 16,
   "wild_level": {
     "below_cap": 10,
     "spread": 7,

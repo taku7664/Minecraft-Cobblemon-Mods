@@ -84,7 +84,12 @@ data class LeagueProgress(
 class LeagueEngine(private val catalog: LeagueCatalog) {
     companion object { const val MAX_REWARDS = 4096 }
     fun badgeCount(state: LeagueProgress): Int = catalog.gyms.count { it in state.cleared }
-    fun cap(state: LeagueProgress): Int = maxOf(catalog.initialCap, state.unlockedCap)
+    /**
+     * The cap the cleared challenges earn under the current catalog. It is derived rather than read from the stored
+     * [LeagueProgress.unlockedCap], so a data pack that moves the caps also moves the caps of progress saved before.
+     */
+    fun cap(state: LeagueProgress): Int =
+        (state.cleared.mapNotNull { catalog.challenges[it]?.unlockCap } + catalog.initialCap).max()
 
     fun begin(state: LeagueProgress, challengeId: String, party: List<String>): LeagueProgress {
         require(state.run == null) { "run_active" }

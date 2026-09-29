@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "unlock_cap": 40,
+  "unlock_cap": 34,
   "first_bp": 10,
   "repeat_bp": 0
 }
