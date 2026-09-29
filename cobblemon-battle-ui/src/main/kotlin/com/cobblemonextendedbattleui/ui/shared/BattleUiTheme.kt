@@ -17,9 +17,12 @@ object BattleUiTheme {
     const val PANEL = 0xFF101A2D.toInt()
     const val PANEL_ALT = 0xFF0C1525.toInt()
     const val TRACK = 0xFF101724.toInt()
+    const val MODAL_SCRIM = 0x8C000000.toInt()
 
     val shell = BattleSurface(0xF214263B.toInt(), 0xF2080E1D.toInt(), CYAN, 0, 6)
     val panel = BattleSurface(0xF2182941.toInt(), 0xF2101A2D.toInt(), BORDER, 0, 3)
+    val modalBackdrop = panel.copy(top = 0xB32A4664.toInt(), bottom = 0xC4193049.toInt(),
+        borderWidth = 0, cornerCuts = BattleCornerCuts(5, 5, 8, 8))
     val row = BattleSurface(PANEL_ALT, PANEL_ALT, borderWidth = 0, cut = 0)
     val primary = BattleSurface(0xFF39E4E4.toInt(), 0xFF269BA3.toInt(), CYAN, 0, 4, 0b1010)
     val secondary = BattleSurface(0xFF203D55.toInt(), 0xFF203D55.toInt(), BORDER, 0, 0)
