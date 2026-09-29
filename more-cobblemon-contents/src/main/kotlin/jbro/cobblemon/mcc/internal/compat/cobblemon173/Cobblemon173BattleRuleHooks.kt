@@ -12,6 +12,7 @@ import jbro.cobblemon.mcc.internal.battle.rules.ManagedBattleRuleRegistrationWin
 import jbro.cobblemon.mcc.internal.battle.rules.ManagedSubmittedMechanic
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleMechanic
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleMechanicVisibilityNetworking
+import jbro.cobblemon.mcc.internal.battle.GimmickLockedBattles
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleContentNetworking
 import jbro.cobblemon.mcc.internal.battle.ManagedTurnInterceptors
 import java.util.UUID
@@ -21,8 +22,11 @@ object Cobblemon173BattleRuleHooks {
     private val registrationWindow = ManagedBattleRuleRegistrationWindow(registry)
 
     @JvmStatic
-    fun rejectionMessage(actor: BattleActor, responses: List<ShowdownActionResponse>): String? =
-        registry.rejectionReason(actor.battle.battleId, actor.uuid, inspect(responses))?.message
+    fun rejectionMessage(actor: BattleActor, responses: List<ShowdownActionResponse>): String? {
+        val submission = inspect(responses)
+        return registry.rejectionReason(actor.battle.battleId, actor.uuid, submission)?.message
+            ?: GimmickLockedBattles.rejection(actor.battle.battleId, actor.uuid, submission)
+    }
 
     @JvmStatic
     fun recordAccepted(actor: BattleActor, responses: List<ShowdownActionResponse>) {
@@ -40,7 +44,11 @@ object Cobblemon173BattleRuleHooks {
 
     @JvmStatic
     fun attachConstructed(battle: PokemonBattle) {
-        if (!registrationWindow.attachIfPending(battle.battleId, battle.actors.map { actor -> actor.uuid }.toSet())) return
+        if (!registrationWindow.attachIfPending(battle.battleId, battle.actors.map { actor -> actor.uuid }.toSet())) {
+            // Not MCC content: players who have not earned gimmicks yet battle without them.
+            GimmickLockedBattles.attach(battle)
+            return
+        }
         val mechanics = requireNotNull(registry.allowedMechanics(battle.battleId)) {
             "Managed battle rules were attached without an allowed mechanic snapshot"
         }.mapNotNullTo(LinkedHashSet()) { mechanic -> mechanic.toManagedMechanic() }
@@ -65,6 +73,7 @@ object Cobblemon173BattleRuleHooks {
             },
             { ManagedTurnInterceptors.forget(battle.battleId) },
             { hideClientMechanicPolicy(battle) },
+            { GimmickLockedBattles.detach(battle) },
         )
     }
 

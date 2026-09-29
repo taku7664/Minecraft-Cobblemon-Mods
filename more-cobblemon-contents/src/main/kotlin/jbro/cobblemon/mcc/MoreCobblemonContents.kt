@@ -34,6 +34,7 @@ object MoreCobblemonContents : ModInitializer {
         ShadowTrainerProjectionNetworking.registerServer()
         BattleArenaHologramNetworking.registerServer()
         ManagedBattleMechanicVisibilityNetworking.registerServer()
+        jbro.cobblemon.mcc.internal.battle.GimmickLockedBattles.register()
         ManagedBattleContentNetworking.registerServer()
         ManagedBattleLifecycleEvents.registerServer()
         BattleContentCommands.register(
