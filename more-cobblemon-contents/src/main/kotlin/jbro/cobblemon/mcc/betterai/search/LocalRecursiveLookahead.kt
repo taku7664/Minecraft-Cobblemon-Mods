@@ -8,6 +8,7 @@ import jbro.cobblemon.mcc.betterai.calculation.PublicFutureActionFactory
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.evaluation.LocalImmediateTurnScorer
 import jbro.cobblemon.mcc.betterai.evaluation.LocalLookaheadStateEvaluator
+import jbro.cobblemon.mcc.betterai.evaluation.LocalBoardMaterial
 import jbro.cobblemon.mcc.betterai.evaluation.LocalOpponentThreat
 import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
@@ -587,7 +588,7 @@ internal object LocalRecursiveLookaheadEvaluator {
         /** Root (own action, response) pairs projected so far: the width one more turn multiplies by. */
         var rootPairsProjected: Int = 0
             private set
-        private val memo = HashMap<SearchKey, Double>()
+        private val memo = HashMap<SearchKey, Continuation>()
         // Structural, like the search's own value memo. Keying leaf values by object identity meant a
         // position reached by two different routes was evaluated twice, and a leaf evaluation is a full
         // tactical calculation for every damaging move on both sides.
@@ -694,9 +695,18 @@ internal object LocalRecursiveLookaheadEvaluator {
             get() = if (narrow) minOf(LocalNarrowSecondTurn.INNER_OPPONENT_PER_SLOT, profile.difficulty.doubleCandidateLimitPerSlot)
                 else profile.difficulty.doubleCandidateLimitPerSlot
 
-        private fun searchState(projectedState: BattleStateView, depth: Int, history: RecursiveActionHistory): Double {
+        /**
+         * A continuation's value, and the value of the board it started from: after any forced replacement, which
+         * belongs to the turn that knocked out, not to the one that follows.
+         */
+        private class Continuation(val value: Double, val start: Double, val startMaterial: Double)
+
+        private fun leaf(state: BattleStateView, history: RecursiveActionHistory): Continuation =
+            stateUtility(state, history).let { Continuation(it, it, LocalBoardMaterial.evaluate(state)) }
+
+        private fun searchState(projectedState: BattleStateView, depth: Int, history: RecursiveActionHistory): Continuation {
             val state = LocalBranchMoveInputs.state(projectedState, context.publicActionCatalog, history)
-            if (depth <= 0 || battleEnded(state) || budgetExhausted()) return stateUtility(state, history)
+            if (depth <= 0 || battleEnded(state) || budgetExhausted()) return leaf(state, history)
             forcedReplacementValue(state, depth, history)?.let { return it }
             val key = SearchKey(depth, fingerprint(state), history)
             memo[key]?.let { return it }
@@ -712,10 +722,10 @@ internal object LocalRecursiveLookaheadEvaluator {
             val ownActions = if (profile.difficulty.tier == BattleTrainerTier.ADVANCED) {
                 futureOwnActions.filterNot { it.containsActionKind(BattleActionKind.SWITCH) }
             } else futureOwnActions
-            val opponentActions = completeOpponentActions(state, history, innerOpponentLimitPerSlot) ?: return stateUtility(state, history)
+            val opponentActions = completeOpponentActions(state, history, innerOpponentLimitPerSlot) ?: return leaf(state, history)
             if (ownActions.isEmpty() || opponentActions.isEmpty()) {
                 if (opponentActions.isEmpty() && !battleEnded(state)) publicResponseIncomplete = true
-                return stateUtility(state, history)
+                return leaf(state, history)
             }
             val turnStartValue = stateUtility(state, history)
             var best = Double.NEGATIVE_INFINITY
@@ -748,9 +758,10 @@ internal object LocalRecursiveLookaheadEvaluator {
             val sequential = if (best.isFinite()) best else stateUtility(state, history)
             // A row whose replies came back short of the full list cannot sit in the table; the sequential value
             // stands alone then.
-            val result = if (table != null && table.size >= 2 && best.isFinite()) {
+            val value = if (table != null && table.size >= 2 && best.isFinite()) {
                 sequential * (1.0 - simultaneous) + LocalMatrixGame.solve(table.toTypedArray()).value * simultaneous
             } else sequential
+            val result = Continuation(value, turnStartValue, LocalBoardMaterial.evaluate(state))
             if (!truncated) memo[key] = result
             return result
         }
@@ -759,7 +770,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             state: BattleStateView,
             depth: Int,
             history: RecursiveActionHistory,
-        ): Double? {
+        ): Continuation? {
             fun needsReplacement(side: BattleSide, current: BattleStateView): Boolean =
                 current.remainingPokemonBySide.getValue(side).let { remaining ->
                     val slotCapacity = if (current.format == BattleFormat.DOUBLE) 2 else 1
@@ -783,7 +794,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             recordReplacementCoverage(allyResolution)
             val allyOptions = allyResolution.states
             if (allyOptions.isEmpty()) {
-                return stateUtility(state, history)
+                return leaf(state, history)
             }
             val allyValues = allyOptions.map { allyState ->
                 val opponentResolution = if (opponentMissing) {
@@ -795,14 +806,12 @@ internal object LocalRecursiveLookaheadEvaluator {
                 recordReplacementCoverage(opponentResolution)
                 val opponentOptions = opponentResolution.states
                 if (opponentOptions.isEmpty()) {
-                    stateUtility(allyState, history)
+                    leaf(allyState, history)
                 } else {
-                    opponentOptions.minOf { replacementState ->
-                        searchState(replacementState, depth, history)
-                    }
+                    opponentOptions.map { replacementState -> searchState(replacementState, depth, history) }.minBy { it.value }
                 }
             }
-            return if (allyMissing) allyValues.maxOrNull() else allyValues.single()
+            return if (allyMissing) allyValues.maxByOrNull { it.value } else allyValues.single()
         }
 
         private fun recordReplacementCoverage(resolution: LocalForcedReplacementResolution) {
@@ -858,6 +867,7 @@ internal object LocalRecursiveLookaheadEvaluator {
             )
             if (projections.isEmpty()) return null
             val trackedOwnPokemonIds = trackedOwnPokemonIds(state, ownAction)
+            val turnStartMaterial = if (tuning.positionalTurnDeltas) LocalBoardMaterial.evaluate(state) else 0.0
             val orderExpectations = projections.groupBy(PublicTurnProjection::order).values.mapNotNull { outcomes ->
                 val totalProbability = outcomes.sumOf(PublicTurnProjection::probability)
                 if (totalProbability <= 0.0) return@mapNotNull null
@@ -904,7 +914,13 @@ internal object LocalRecursiveLookaheadEvaluator {
                         )
                     val value = if (depth <= 1 || battleEnded(outcome.state) || stopBranch) {
                         if (stopBranch) branchesPruned++
-                        immediateValue
+                        if (depth > 1 && tuning.perTurnSearchValues && tuning.perTurnShortLines) {
+                            // On the same scale as the lines that go on: their turns' changes are averaged, and a
+                            // line that ends here, or is not followed, has no later change. Taken whole, a loss on
+                            // this turn weighed 1.9 times a loss on the next and every other change, and at two
+                            // turns a Boss stalled rather than risk one.
+                            turnStartValue + immediateTurnDelta / (1.0 + FUTURE_DELTA_DISCOUNT)
+                        } else immediateValue
                     } else {
                         val nextHistory = RecursiveHistoryProjector.project(
                             previous = projectedHistory,
@@ -916,21 +932,34 @@ internal object LocalRecursiveLookaheadEvaluator {
                                 .mapTo(hashSetOf()) { it.battlePokemonId },
                             publicActionCatalog = context.publicActionCatalog,
                         )
-                        val continuationValue = searchState(
+                        val continuation = searchState(
                             outcome.state,
                             depth - 1,
                             nextHistory,
                         )
+                        val continuationValue = continuation.value
+                        // What this turn did to the position the leaf reads, beyond material: the matchup a switch
+                        // or a replacement brings, a boost's standing pressure. The turn scorer prices material,
+                        // stages, status and the field; the leaf's positional terms entered only as the next turn's
+                        // change, measured from and to leaf boards, so they cancelled and never reached the root.
+                        val positionalDelta = if (!tuning.positionalTurnDeltas || !tuning.replacementAwareTurnStart) 0.0 else {
+                            (continuation.start - continuation.startMaterial) - (turnStartValue - turnStartMaterial)
+                        }
                         // Per turn, not summed: the later turns' own change, measured from the board they start
                         // on, averaged with this turn's under the future discount. A two-turn line and a one-turn
                         // line are then on the same scale, and re-reading the board after this turn is not
                         // counted as something the next turn did.
-                        val nextStart = stateUtility(
+                        //
+                        // The board the next turn starts on is the one after a forced replacement. Measured before
+                        // it, a knockout's next turn began on a board with an empty slot, and the replacement's
+                        // arrival was charged to that turn as a loss: at two turns a Boss preferred Nasty Plot to
+                        // the Power Gem that knocks out the Ho-Oh in front of it.
+                        val nextStart = if (tuning.replacementAwareTurnStart) continuation.start else stateUtility(
                             LocalBranchMoveInputs.state(outcome.state, context.publicActionCatalog, nextHistory),
                             nextHistory,
                         )
                         if (tuning.perTurnSearchValues) {
-                            turnStartValue + (immediateTurnDelta + FUTURE_DELTA_DISCOUNT * (continuationValue - nextStart)) /
+                            turnStartValue + (immediateTurnDelta + positionalDelta + FUTURE_DELTA_DISCOUNT * (continuationValue - nextStart)) /
                                 (1.0 + FUTURE_DELTA_DISCOUNT)
                         } else {
                             immediateValue + FUTURE_DELTA_DISCOUNT * (continuationValue - immediateValue)

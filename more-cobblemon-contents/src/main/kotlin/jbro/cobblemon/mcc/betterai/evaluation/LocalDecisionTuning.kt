@@ -100,6 +100,19 @@ internal data class LocalDecisionTuning(
     // Off restores the earlier behaviour.
     /** A deeper turn's value is the discounted average of the turns' own changes; off, the last board reached. */
     val perTurnSearchValues: Boolean = true,
+    /** A later turn's change is measured from its board after forced replacements; off, from the board before them. */
+    val replacementAwareTurnStart: Boolean = true,
+    /**
+     * A line that ends, or is not followed, before the search's depth is averaged like the others with no later
+     * change; off, its one turn is taken whole, next to lines whose turns are averaged.
+     */
+    val perTurnShortLines: Boolean = true,
+    /**
+     * A turn that the search follows adds the change it made to the leaf's positional terms (its value beyond
+     * material) to the turn scorer's change; off, those terms cancel between the next turn's start and end and the
+     * leaf's reading of a position never reaches the root.
+     */
+    val positionalTurnDeltas: Boolean = false,
     /** A depth the budget cuts short keeps the candidates it finished; off, the whole depth is discarded. */
     val keepFinishedCandidates: Boolean = true,
     /** A next depth whose node count cannot fit the budget is not started. */
