@@ -6,6 +6,7 @@ import jbro.cobblemon.mcc.api.access.*
 import jbro.cobblemon.mcc.api.battle.ManagedPveBattles
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.rewards.BattlePointRewards
+import jbro.cobblemon.mcc.api.rules.BattleGimmickLocks
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
@@ -32,6 +33,7 @@ object LeagueServer {
     private val lastRequestTick = mutableMapOf<UUID, Int>()
     private val sentRanks = mutableMapOf<UUID, String>()
     private var access: AutoCloseable? = null
+    private var gimmickLock: AutoCloseable? = null
     private val gson = Gson()
     private const val CONTENT = ManagedBattleContentIds.LEAGUE_CHALLENGE
     private const val ERROR_PREFIX = "message.${Mod.MOD_ID}."
@@ -51,9 +53,16 @@ object LeagueServer {
                 if (catalog != null && LeagueSavedData.get(server).read(catalog.id, player).champion) ContentAccessDecision.Allowed
                 else ContentAccessDecision.Denied(ERROR_PREFIX + "champion_required", "champion_required")
             }
+            // Gimmicks are the normal Champion's to use outside MCC content and player battles.
+            gimmickLock?.close()
+            gimmickLock = BattleGimmickLocks.register { player ->
+                val catalog = LeagueCatalogResources.current ?: return@register null
+                if (LeagueSavedData.get(server).read(catalog.id, player.uuid).champion) null
+                else Component.translatable(ERROR_PREFIX + "gimmicks_locked")
+            }
         }
         ServerLifecycleEvents.SERVER_STARTED.register { LeagueSavedData.get(it).cancelInterruptedRuns() }
-        ServerLifecycleEvents.SERVER_STOPPED.register { access?.close(); access = null; sessions.clear(); lastRequestTick.clear(); sentRanks.clear(); LeagueCatalogResources.clear() }
+        ServerLifecycleEvents.SERVER_STOPPED.register { access?.close(); access = null; gimmickLock?.close(); gimmickLock = null; sessions.clear(); lastRequestTick.clear(); sentRanks.clear(); LeagueCatalogResources.clear() }
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ -> reconcileSafely(handler.player) }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, server ->
             sessions.remove(handler.player.uuid)
