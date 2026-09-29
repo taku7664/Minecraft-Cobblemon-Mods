@@ -1,5 +1,7 @@
 package jbro.cobblemon.mcc.betterai.matchup
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
@@ -13,7 +15,8 @@ import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 
 /**
- * Rules out a status move that only spends a turn: its [StatusMoveMatchupScore] is [WASTED] or worse.
+ * Rules out a status move that only spends a turn: its [StatusMoveMatchupScore] is [WASTED] or worse, and the
+ * status does not lift any benched ally's matchup against the target by [LASTING_PASS] either.
  *
  * Only where the exchange holds the move's whole value, so the rule can be trusted over the search: one
  * opponent it aims at, with nothing but effects the exchange plays out (a burn or paralysis on the target,
@@ -23,6 +26,8 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
  */
 internal object LocalStatusMoveTriage {
     const val WASTED = -0.25
+    /** The matchup gain behind at which a status is kept despite its exchange. */
+    const val LASTING_PASS = 0.2
     const val REASON = "status_wasted"
 
     fun wasted(candidate: BattleActionCandidate, context: BattleDecisionContext, scores: MatchupScores): Boolean =
@@ -37,7 +42,36 @@ internal object LocalStatusMoveTriage {
         val target = target(move, context) ?: return false
         val moveId = PublicIds.canonical(move.moveId ?: return false)
         val score = scores.statusMoves(user.battlePokemonId, target.battlePokemonId).firstOrNull { it.moveId == moveId } ?: return false
-        return score.score <= WASTED
+        if (score.score > WASTED) return false
+        // A status outlasts the exchange: worth the turn when it turns the target's matchups against the allies behind.
+        val status = move.moveDetails?.effects?.effects.orEmpty()
+            .firstNotNullOfOrNull { effect -> effect.valueId?.let(PublicIds::canonical).takeIf { effect.kind == BattleMoveEffectKind.STATUS } }
+        return status == null || lastingGain(target, status, context, scores) < LASTING_PASS
+    }
+
+    /**
+     * The most [status] on [target] adds to any benched ally's matchup against it. The exchange only reads the two
+     * in front, so a burn that makes no difference to a matchup already won looked wasted, when the physical
+     * attacker it cripples is the one every Pokemon behind has to face next.
+     */
+    private fun lastingGain(target: BattlePokemonStateView, status: String, context: BattleDecisionContext, scores: MatchupScores): Double {
+        val state = context.state
+        if (target.statusId != null) return 0.0
+        val bench = state.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot == null && !it.fainted && it.hpFraction > 0.0 }
+        if (bench.isEmpty()) return 0.0
+        val statused = context.copy(state = state.copyState(pokemon = state.pokemon.map {
+            if (it.battlePokemonId == target.battlePokemonId) it.copyState(statusId = status) else it
+        }))
+        val cache = LocalProjectedActionCalculationCache()
+        return bench.mapNotNull { ally ->
+            val before = scores.pokemon(ally.battlePokemonId, target.battlePokemonId)?.score ?: return@mapNotNull null
+            val placed = statused.state.pokemon.first { it.battlePokemonId == ally.battlePokemonId }
+            val faced = statused.state.pokemon.first { it.battlePokemonId == target.battlePokemonId }
+            val position = LocalMatchupPosition.face(statused, placed, faced, cache) ?: return@mapNotNull null
+            val after = LocalMatchupScoreCalculator.pairMatchup(position, ally.battlePokemonId, target.battlePokemonId,
+                MatchupSpeedField.CURRENT, cache)?.score ?: return@mapNotNull null
+            after - before
+        }.maxOrNull() ?: 0.0
     }
 
     /** Whether the rule may judge [candidate] at all. */
