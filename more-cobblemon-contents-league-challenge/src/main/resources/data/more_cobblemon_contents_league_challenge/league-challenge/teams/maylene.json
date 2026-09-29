@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "pokemon": [
-    "meditite level=28 moves=drainpunch,confusion,detect",
-    "machoke level=29 moves=karatechop,rocktomb,focusenergy",
-    "lucario level=32 moves=drainpunch,metalclaw,bonerush"
+    "meditite level=28 moves=drainpunch,confusion,rocktomb,fakeout ability=purepower nature=brave gender=female hp_iv=24 attack_iv=24 defence_iv=24 special_attack_iv=24 special_defence_iv=24 speed_iv=24 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "machoke level=29 moves=karatechop,rocktomb,strength,focusenergy ability=guts nature=naughty gender=male hp_iv=24 attack_iv=24 defence_iv=24 special_attack_iv=24 special_defence_iv=24 speed_iv=24 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "lucario level=32 moves=drainpunch,forcepalm,metalclaw,bonerush ability=steadfast nature=hasty gender=male hp_iv=24 attack_iv=24 defence_iv=24 special_attack_iv=24 special_defence_iv=24 speed_iv=24 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0"
   ]
 }

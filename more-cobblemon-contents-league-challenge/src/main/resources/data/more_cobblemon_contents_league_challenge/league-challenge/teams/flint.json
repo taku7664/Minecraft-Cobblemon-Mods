@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "pokemon": [
-    "houndoom level=58 moves=flamethrower,darkpulse,sludgebomb",
-    "flareon level=55 moves=flareblitz,quickattack,superpower",
-    "rapidash level=58 moves=flareblitz,megahorn,bounce",
-    "infernape level=61 moves=flareblitz,closecombat,thunderpunch",
-    "magmortar level=57 moves=flamethrower,thunderbolt,focusblast"
+    "houndoom level=52 moves=flamethrower,sludgebomb,darkpulse,sunnyday ability=earlybird nature=relaxed gender=male hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "flareon level=55 moves=overheat,gigaimpact,quickattack,willowisp ability=flashfire nature=quirky gender=male hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "rapidash level=53 moves=flareblitz,solarbeam,bounce,sunnyday ability=runaway nature=docile gender=male hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "infernape level=55 moves=flareblitz,thunderpunch,machpunch,earthquake ability=blaze nature=bold gender=male hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "magmortar level=57 moves=flamethrower,thunderbolt,solarbeam,hyperbeam ability=flamebody nature=gentle gender=male held_item=cobblemon:sitrus_berry hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0"
   ]
 }

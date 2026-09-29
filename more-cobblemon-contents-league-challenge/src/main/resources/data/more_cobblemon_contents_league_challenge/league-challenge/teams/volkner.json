@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "pokemon": [
-    "jolteon level=46 moves=thunderbolt,shadowball,thunderwave",
-    "raichu level=46 moves=thunderbolt,focusblast,quickattack",
-    "luxray level=48 moves=thunderfang,crunch,icefang",
-    "electivire level=50 moves=thunderpunch,icepunch,firepunch,earthquake"
+    "jolteon level=46 moves=thunderwave,chargebeam,irontail,quickattack ability=voltabsorb nature=relaxed gender=male hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "raichu level=46 moves=chargebeam,focusblast,signalbeam,quickattack ability=static nature=gentle gender=male hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "luxray level=48 moves=icefang,thunderfang,crunch,firefang ability=rivalry nature=lax gender=male hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "electivire level=50 moves=thunderpunch,firepunch,quickattack,gigaimpact ability=motordrive nature=impish gender=male held_item=cobblemon:sitrus_berry hp_iv=4 attack_iv=3 defence_iv=29 special_attack_iv=18 special_defence_iv=15 speed_iv=19 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0"
   ]
 }
