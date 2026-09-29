@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "pokemon": [
-    "magneton level=37 moves=flashcannon,thunderbolt,thunderwave",
-    "steelix level=38 moves=irontail,earthquake,stealthrock",
-    "bastiodon level=41 moves=metalburst,ancientpower,taunt"
+    "magneton level=37 moves=flashcannon,thunderbolt,triattack,metalsound ability=magnetpull nature=relaxed hp_iv=24 attack_iv=24 defence_iv=24 special_attack_iv=24 special_defence_iv=24 speed_iv=24 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "steelix level=38 moves=flashcannon,icefang,earthquake,sandstorm ability=rockhead nature=serious gender=male hp_iv=24 attack_iv=24 defence_iv=24 special_attack_iv=24 special_defence_iv=24 speed_iv=24 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "bastiodon level=41 moves=metalburst,stoneedge,irondefense,taunt ability=sturdy nature=lax gender=male held_item=cobblemon:sitrus_berry hp_iv=24 attack_iv=24 defence_iv=24 special_attack_iv=24 special_defence_iv=24 speed_iv=24 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0"
   ]
 }

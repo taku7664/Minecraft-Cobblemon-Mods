@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "pokemon": [
-    "gyarados level=33 moves=waterfall,bite,twister",
-    "quagsire level=34 moves=mudshot,waterpulse,yawn",
-    "floatzel level=37 moves=aquajet,icefang,crunch"
+    "gyarados level=33 moves=waterfall,brine,bite,twister ability=intimidate nature=lax gender=male hp_iv=18 attack_iv=18 defence_iv=18 special_attack_iv=18 special_defence_iv=18 speed_iv=18 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "quagsire level=34 moves=mudshot,rocktomb,waterpulse,yawn ability=damp nature=naughty gender=male hp_iv=18 attack_iv=18 defence_iv=18 special_attack_iv=18 special_defence_iv=18 speed_iv=18 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "floatzel level=37 moves=brine,icefang,crunch,aquajet ability=swiftswim nature=naughty gender=male held_item=cobblemon:sitrus_berry hp_iv=18 attack_iv=18 defence_iv=18 special_attack_iv=18 special_defence_iv=18 speed_iv=18 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0"
   ]
 }

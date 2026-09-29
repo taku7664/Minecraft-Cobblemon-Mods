@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "pokemon": [
-    "whiscash level=55 moves=earthquake,aquatail,zenheadbutt",
-    "gliscor level=56 moves=earthquake,icefang,firefang",
-    "golem level=56 moves=earthquake,stoneedge,firepunch",
-    "rhyperior level=59 moves=earthquake,rockwrecker,megahorn",
-    "hippowdon level=57 moves=earthquake,crunch,stoneedge"
+    "whiscash level=50 moves=earthpower,aquatail,zenheadbutt,sandstorm ability=oblivious nature=mild gender=female hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "gliscor level=53 moves=earthquake,icefang,firefang,thunderfang ability=hypercutter nature=serious gender=female hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "hippowdon level=52 moves=earthquake,stoneedge,crunch,yawn ability=sandstream nature=quirky gender=female hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "golem level=52 moves=earthquake,firepunch,thunderpunch,sandstorm ability=rockhead nature=docile gender=female hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "rhyperior level=55 moves=earthquake,rockwrecker,megahorn,avalanche ability=lightningrod nature=naughty gender=female held_item=cobblemon:sitrus_berry hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0"
   ]
 }

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "progress_id": "more_cobblemon_contents_league_challenge:sinnoh",
   "name_key": "league.more_cobblemon_contents_league_challenge.sinnoh",
-  "initial_cap": 15,
+  "initial_cap": 16,
   "wild_level": {
     "below_cap": 10,
     "spread": 7,
@@ -24,5 +24,24 @@
     "more_cobblemon_contents_league_challenge:flint",
     "more_cobblemon_contents_league_challenge:lucian",
     "more_cobblemon_contents_league_challenge:cynthia"
-  ]
+  ],
+  "hard": {
+    "gyms": [
+      "more_cobblemon_contents_league_challenge:roark_hard",
+      "more_cobblemon_contents_league_challenge:gardenia_hard",
+      "more_cobblemon_contents_league_challenge:fantina_hard",
+      "more_cobblemon_contents_league_challenge:maylene_hard",
+      "more_cobblemon_contents_league_challenge:wake_hard",
+      "more_cobblemon_contents_league_challenge:byron_hard",
+      "more_cobblemon_contents_league_challenge:candice_hard",
+      "more_cobblemon_contents_league_challenge:volkner_hard"
+    ],
+    "finals": [
+      "more_cobblemon_contents_league_challenge:aaron_hard",
+      "more_cobblemon_contents_league_challenge:bertha_hard",
+      "more_cobblemon_contents_league_challenge:flint_hard",
+      "more_cobblemon_contents_league_challenge:lucian_hard",
+      "more_cobblemon_contents_league_challenge:cynthia_hard"
+    ]
+  }
 }

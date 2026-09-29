@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "cherrim level=76 moves=sunnyday,weatherball,solarbeam,leechseed ability=flowergift nature=timid held_item=cobblemon:heat_rock hp_iv=31 attack_iv=0 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=0 defence_ev=0 special_attack_ev=252 special_defence_ev=0 speed_ev=252",
+    "tangrowth level=77 moves=gigadrain,knockoff,earthquake,sludgebomb ability=regenerator nature=sassy held_item=cobblemon:assault_vest hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=4 defence_ev=0 special_attack_ev=0 special_defence_ev=252 speed_ev=0",
+    "leafeon level=77 moves=swordsdance,leafblade,xscissor,knockoff ability=chlorophyll nature=jolly held_item=cobblemon:life_orb hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=252",
+    "torterra level=78 moves=shellsmash,woodhammer,headlongrush,stoneedge ability=overgrow nature=adamant held_item=cobblemon:white_herb hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=4 speed_ev=0",
+    "roserade level=78 moves=sleeppowder,leafstorm,sludgebomb,shadowball ability=naturalcure nature=timid held_item=cobblemon:focus_sash hp_iv=31 attack_iv=0 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=0 defence_ev=0 special_attack_ev=252 special_defence_ev=0 speed_ev=252",
+    "venusaur level=79 moves=gigadrain,sludgebomb,earthpower,synthesis ability=chlorophyll nature=modest held_item=mega_showdown:venusaurite hp_iv=31 attack_iv=0 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=0 defence_ev=0 special_attack_ev=252 special_defence_ev=4 speed_ev=0"
+  ]
+}

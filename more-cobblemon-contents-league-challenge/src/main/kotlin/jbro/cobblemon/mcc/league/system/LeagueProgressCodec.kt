@@ -21,6 +21,7 @@ object LeagueProgressCodec {
         val state = requireNotNull(gson.fromJson(objectData, LeagueProgress::class.java))
         require(state.revision >= 0 && state.unlockedCap in 0..100)
         require(state.champion == (state.championAt != null))
+        require(!state.hardChampion || state.champion) { "Hard Champion without the normal title" }
         require(state.championAt == null || state.championAt >= 0)
         require(state.cleared.size <= 4096)
         state.cleared.forEach(::requireId)

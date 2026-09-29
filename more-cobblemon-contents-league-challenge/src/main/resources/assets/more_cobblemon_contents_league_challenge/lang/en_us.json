@@ -96,5 +96,11 @@
   "screen.more_cobblemon_contents_league_challenge.home.rank.poke_ball": "Poké Ball",
   "screen.more_cobblemon_contents_league_challenge.home.rank.ultra_ball": "Ultra Ball",
   "screen.more_cobblemon_contents.hub.tab.league_challenge": "League Challenge",
-  "screen.more_cobblemon_contents.hub.unavailable.league_challenge": "The League Challenge screen could not be opened."
+  "screen.more_cobblemon_contents.hub.unavailable.league_challenge": "The League Challenge screen could not be opened.",
+  "screen.more_cobblemon_contents_league_challenge.live.difficulty_hard": "Hard",
+  "screen.more_cobblemon_contents_league_challenge.live.show_hard": "Hard League",
+  "screen.more_cobblemon_contents_league_challenge.live.show_normal": "Normal League",
+  "screen.more_cobblemon_contents_league_challenge.live.difficulty_tooltip": "Switch between the normal League and the hard League the Champion title opens. Hard trainers field fully trained teams that Mega Evolve.",
+  "message.more_cobblemon_contents_league_challenge.hard_locked": "Become the normal League Champion to challenge the hard League.",
+  "message.more_cobblemon_contents_league_challenge.opponent_level_unsupported": "An opponent is above Cobblemon's maximum level. Raise maxPokemonLevel in the server's Cobblemon config."
 }

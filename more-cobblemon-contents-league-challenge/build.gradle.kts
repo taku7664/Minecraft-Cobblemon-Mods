@@ -67,6 +67,11 @@ val unitTest by tasks.registering(JavaExec::class) {
         args("--scan-class-path=${it.absolutePath}")
     }
     args("--fail-if-no-tests", "--details=summary")
+    // The hard League's data test reads Mega Showdown's items and which species each Mega Stone evolves.
+    val megaShowdown = project.configurations.detachedConfiguration(
+        project.dependencies.create("maven.modrinth:cobblemon-mega-showdown:${project.property("mega_showdown_version_id")}"),
+    ).apply { isTransitive = false }
+    jvmArgumentProviders += CommandLineArgumentProvider { listOf("-Dleague.megaShowdownJar=${megaShowdown.singleFile.absolutePath}") }
 }
 
 tasks.check { dependsOn(unitTest) }
