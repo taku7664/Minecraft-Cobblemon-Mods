@@ -45,8 +45,7 @@ public abstract class BattleSwitchSelectionMixin {
         MinecraftClient client = MinecraftClient.getInstance();
         int width = client.getWindow().getScaledWidth();
         int height = client.getWindow().getScaledHeight();
-        UiRect panel = BattleScreenGeometry.switchPanel(width, height);
-        UiRect back = new UiRect(panel.x() + panel.width() - 104, panel.y(), 104, 17);
+        UiRect back = BattleScreenGeometry.switchBack(width, height);
         if (!selection.getRequest().getForceSwitch() && back.contains(mouseX, mouseY)) {
             selection.getBattleGUI().changeActionSelection(null);
             selection.playDownSound(client.getSoundManager());

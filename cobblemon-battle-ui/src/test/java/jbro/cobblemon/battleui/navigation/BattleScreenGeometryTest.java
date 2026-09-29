@@ -20,20 +20,22 @@ class BattleScreenGeometryTest {
 
     @Test
     void partyListKeepsOnlyExistingPokemonInOneColumn() {
-        assertEquals(new UiRect(13, 82, 274, 150), BattleScreenGeometry.switchPanel(427, 240));
+        assertEquals(new UiRect(13, 70, 401, 150), BattleScreenGeometry.switchPanel(427, 240));
         assertEquals(List.of(
-                new UiRect(13, 99, 120, 20),
-                new UiRect(13, 121, 120, 20),
-                new UiRect(13, 143, 120, 20),
-                new UiRect(13, 165, 120, 20),
-                new UiRect(13, 187, 120, 20),
-                new UiRect(13, 209, 120, 20)
+                new UiRect(13, 87, 105, 20),
+                new UiRect(13, 109, 105, 20),
+                new UiRect(13, 131, 105, 20),
+                new UiRect(13, 153, 105, 20),
+                new UiRect(13, 175, 105, 20),
+                new UiRect(13, 197, 105, 20)
         ), BattleScreenGeometry.switchTiles(427, 240, 6));
         assertEquals(List.of(
-                new UiRect(294, 99, 120, 20),
-                new UiRect(294, 121, 120, 20),
-                new UiRect(294, 143, 120, 20)
+                new UiRect(309, 87, 105, 20),
+                new UiRect(309, 109, 105, 20),
+                new UiRect(309, 131, 105, 20)
         ), BattleScreenGeometry.switchOpponentTiles(427, 240, 3));
+        assertEquals(new UiRect(124, 87, 179, 125), BattleScreenGeometry.switchDetails(427, 240));
+        assertEquals(new UiRect(380, 70, 34, 17), BattleScreenGeometry.switchBack(427, 240));
         for (int i = 0; i < 3; i++) {
             UiRect ally = BattleScreenGeometry.switchTiles(427, 240, 3).get(i);
             UiRect opponent = BattleScreenGeometry.switchOpponentTiles(427, 240, 3).get(i);
@@ -41,6 +43,8 @@ class BattleScreenGeometryTest {
             assertEquals(ally.y(), opponent.y());
         }
         assertTrue(BattleScreenGeometry.switchOpponentTiles(320, 240, 3).isEmpty());
+        assertTrue(BattleScreenGeometry.switchDetails(320, 240).width() >
+                BattleScreenGeometry.switchDetails(427, 240).width());
         assertEquals(3, BattleScreenGeometry.switchTiles(427, 240, 3).size());
         for (UiRect tile : BattleScreenGeometry.switchTiles(427, 240, 6)) {
             assertTrue(BattleScreenGeometry.switchPanel(427, 240).contains(tile.x() + 1, tile.y() + 1));

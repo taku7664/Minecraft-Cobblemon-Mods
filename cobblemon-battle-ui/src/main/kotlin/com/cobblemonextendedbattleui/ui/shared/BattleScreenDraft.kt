@@ -1,6 +1,7 @@
 package jbro.cobblemon.battleui.extended.ui.shared
 
 import com.cobblemon.mod.common.api.moves.Moves
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.cobblemon.mod.common.api.pokemon.status.Statuses
 import com.cobblemon.mod.common.api.types.ElementalTypes
 import com.cobblemon.mod.common.pokemon.Gender
@@ -206,9 +207,13 @@ internal object BattleScreenDraft {
                 if (sample.burned) Text.translatable("cobblemon_battle_ui.switch.status.brn") else null,
                 BattlePartyDetails(listOf("quickattack" to "25/30", "bite" to "25/25",
                     "babydolleyes" to "30/30", "swift" to "20/20").map { (move, pp) ->
-                    (Moves.getByName(move)?.displayName?.string ?: move) to pp
+                    BattlePartyMove(Moves.getByName(move)?.displayName?.string ?: move, pp,
+                        Moves.getByName(move)?.elementalType)
                 }, Text.translatable("cobblemon.ability.runaway").string,
-                    Text.translatable("cobblemon_battle_ui.switch.none").string), sample.gender
+                    Text.translatable("cobblemon_battle_ui.switch.none").string,
+                    PokemonSpecies.getByIdentifier(Identifier.of("cobblemon", sample.species))?.standardForm?.let {
+                        listOfNotNull(it.primaryType, it.secondaryType)
+                    } ?: emptyList()), sample.gender
             )
         }
         val opponents = listOf("charizard", "venusaur", "blastoise").map { species ->

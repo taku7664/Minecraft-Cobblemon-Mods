@@ -1,7 +1,7 @@
 package jbro.cobblemon.battleui.navigation;
 
 import jbro.cobblemon.battleui.extended.ui.shared.BattleTargetLayout;
-import java.util.ArrayList;
+import jbro.cobblemon.battleui.extended.ui.shared.BattleSwitchLayout;
 import java.util.List;
 
 /** Shared visual and input bounds for the redesigned battle controls. */
@@ -9,7 +9,7 @@ public final class BattleScreenGeometry {
     public static final int MOVE_WIDTH = 140;
     public static final int MOVE_HEIGHT = 32;
     public static final int FOCUS_PROTRUSION = 5;
-    public static final int SWITCH_WIDTH = 120;
+    public static final int SWITCH_WIDTH = 105;
     public static final int SWITCH_HEIGHT = 20;
 
     private BattleScreenGeometry() {
@@ -20,21 +20,15 @@ public final class BattleScreenGeometry {
     }
 
     public static UiRect switchPanel(int screenWidth, int screenHeight) {
-        return new UiRect(Math.max(0, (screenWidth - 400) / 2),
-                Math.max(82, (screenHeight - 150) / 2), 274, 150);
+        return fromKit(BattleSwitchLayout.calculate(screenWidth, screenHeight).getPanel());
     }
 
     public static List<UiRect> switchTiles(int screenWidth, int screenHeight, int count) {
         if (count < 0 || count > 6) {
             throw new IllegalArgumentException("Party slot count must be between 0 and 6");
         }
-        UiRect panel = switchPanel(screenWidth, screenHeight);
-        List<UiRect> result = new ArrayList<>(count);
-        for (int index = 0; index < count; index++) {
-            result.add(new UiRect(panel.x(),
-                    panel.y() + 17 + index * 22, SWITCH_WIDTH, SWITCH_HEIGHT));
-        }
-        return List.copyOf(result);
+        return BattleSwitchLayout.calculate(screenWidth, screenHeight).getAllies().stream()
+                .limit(count).map(BattleScreenGeometry::fromKit).toList();
     }
 
     /** Preview-only rows mirror the player's hitboxes without introducing opponent click targets. */
@@ -43,13 +37,16 @@ public final class BattleScreenGeometry {
         if (count < 0 || count > 6) {
             throw new IllegalArgumentException("Party preview count must be between 0 and 6");
         }
-        UiRect panel = switchPanel(screenWidth, screenHeight);
-        List<UiRect> result = new ArrayList<>(count);
-        for (int index = 0; index < count; index++) {
-            result.add(new UiRect(screenWidth - panel.x() - SWITCH_WIDTH,
-                    panel.y() + 17 + index * 22, SWITCH_WIDTH, SWITCH_HEIGHT));
-        }
-        return List.copyOf(result);
+        return BattleSwitchLayout.calculate(screenWidth, screenHeight).getOpponents().stream()
+                .limit(count).map(BattleScreenGeometry::fromKit).toList();
+    }
+
+    public static UiRect switchDetails(int screenWidth, int screenHeight) {
+        return fromKit(BattleSwitchLayout.calculate(screenWidth, screenHeight).getDetailBody());
+    }
+
+    public static UiRect switchBack(int screenWidth, int screenHeight) {
+        return fromKit(BattleSwitchLayout.calculate(screenWidth, screenHeight).getBack());
     }
 
     public static UiRect forfeitPanel(int screenWidth, int screenHeight) {
