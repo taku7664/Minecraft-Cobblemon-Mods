@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "hitmontop level=78 moves=fakeout,closecombat,rapidspin,suckerpunch ability=intimidate nature=impish held_item=cobblemon:leftovers hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=0 defence_ev=252 special_attack_ev=0 special_defence_ev=4 speed_ev=0",
+    "breloom level=79 moves=spore,bulletseed,machpunch,rocktomb ability=technician nature=jolly held_item=cobblemon:focus_sash hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=252",
+    "medicham level=79 moves=highjumpkick,zenheadbutt,icepunch,bulletpunch ability=purepower nature=jolly held_item=cobblemon:choice_scarf hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=252",
+    "conkeldurr level=80 moves=drainpunch,machpunch,knockoff,icepunch ability=guts nature=adamant held_item=cobblemon:flame_orb hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=4 speed_ev=0",
+    "machamp level=80 moves=dynamicpunch,knockoff,stoneedge,bulletpunch ability=noguard nature=adamant held_item=cobblemon:assault_vest hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=4 speed_ev=0",
+    "lucario level=81 moves=swordsdance,closecombat,meteormash,extremespeed ability=innerfocus nature=jolly held_item=mega_showdown:lucarionite hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=252"
+  ]
+}

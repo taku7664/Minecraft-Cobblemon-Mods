@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "bastiodon level=80 moves=stealthrock,metalburst,roar,bodypress ability=sturdy nature=careful held_item=cobblemon:leftovers hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=0 defence_ev=4 special_attack_ev=0 special_defence_ev=252 speed_ev=0",
+    "skarmory level=81 moves=spikes,bravebird,roost,whirlwind ability=sturdy nature=impish held_item=cobblemon:rocky_helmet hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=0 defence_ev=252 special_attack_ev=0 special_defence_ev=4 speed_ev=0",
+    "steelix level=81 moves=heavyslam,earthquake,toxic,roar ability=sturdy nature=impish held_item=cobblemon:leftovers hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=0 defence_ev=252 special_attack_ev=0 special_defence_ev=4 speed_ev=0",
+    "magnezone level=82 moves=thunderbolt,flashcannon,voltswitch,triattack ability=magnetpull nature=modest held_item=cobblemon:choice_specs hp_iv=31 attack_iv=0 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=0 defence_ev=0 special_attack_ev=252 special_defence_ev=0 speed_ev=252",
+    "metagross level=82 moves=meteormash,zenheadbutt,earthquake,bulletpunch ability=clearbody nature=adamant held_item=cobblemon:choice_band hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=252",
+    "aggron level=83 moves=heavyslam,earthquake,stoneedge,thunderwave ability=rockhead nature=adamant held_item=mega_showdown:aggronite hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=4 speed_ev=0"
+  ]
+}

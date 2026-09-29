@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "galvantula level=82 moves=stickyweb,thunder,bugbuzz,energyball ability=compoundeyes nature=timid held_item=cobblemon:focus_sash hp_iv=31 attack_iv=0 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=0 defence_ev=0 special_attack_ev=252 special_defence_ev=0 speed_ev=252",
+    "lanturn level=83 moves=scald,voltswitch,icebeam,thunderwave ability=voltabsorb nature=calm held_item=cobblemon:leftovers hp_iv=31 attack_iv=0 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=0 defence_ev=0 special_attack_ev=4 special_defence_ev=252 speed_ev=0",
+    "jolteon level=83 moves=thunderbolt,voltswitch,shadowball,hypervoice ability=voltabsorb nature=timid held_item=cobblemon:choice_specs hp_iv=31 attack_iv=0 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=0 defence_ev=0 special_attack_ev=252 special_defence_ev=0 speed_ev=252",
+    "luxray level=84 moves=wildcharge,crunch,icefang,playrough ability=intimidate nature=adamant held_item=cobblemon:choice_band hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=252",
+    "electivire level=84 moves=wildcharge,icepunch,earthquake,firepunch ability=motordrive nature=jolly held_item=cobblemon:life_orb hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=252",
+    "raichu level=85 moves=thunder,focusblast,grassknot,nastyplot ability=lightningrod nature=timid held_item=mega_showdown:raichunite_y hp_iv=31 attack_iv=0 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=0 defence_ev=0 special_attack_ev=252 special_defence_ev=0 speed_ev=252"
+  ]
+}
