@@ -99,6 +99,10 @@ object BattleSwitchRenderer {
         // The switch UI stays legible while the battle scene and HUD recede behind this modal.
         context.fill(0, 0, width, height,
             BattleSurfaceRenderer.withOpacity(0x8C000000.toInt(), opacity))
+        BattleSurfaceRenderer.draw(context, layout.panel.x - 3, layout.panel.y - 3,
+            layout.panel.width + 6, layout.detailBody.bottom - layout.panel.y + 6,
+            BattleUiTheme.panel.copy(top = 0xB32A4664.toInt(), bottom = 0xC4193049.toInt(),
+                borderWidth = 0, cornerCuts = BattleCornerCuts(5, 5, 8, 8)), opacity)
         drawHeader(context, layout.allyHeader, 0xF81A2941.toInt(), 0xF8111D30.toInt(), opacity)
         drawHeader(context, layout.detailHeader, 0xF8233A53.toInt(), 0xF814283E.toInt(), opacity)
         BattleSurfaceRenderer.draw(context, layout.detailBody.x, layout.detailBody.y,
