@@ -4,6 +4,8 @@ import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudgetPolicy
 import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfiles
 import jbro.cobblemon.mcc.internal.ai.BattleFormat
+import jbro.cobblemon.mcc.internal.ai.BattleSide
+import jbro.cobblemon.mcc.internal.ai.BattleTrainerTier
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Test
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionPolicy
@@ -122,6 +124,72 @@ class LocalBattleReadTest {
             }
         }
         println("DEPTH summary decisions=$decisions differ=$differ")
+    }
+
+    /**
+     * Whether a deeper search's different answer is the better one, judged by playing the battle out: at every
+     * move decision where the depth 1, 2 and 3 leaders (and the Brain's own pick) are not all the same, each
+     * distinct choice is forced there and the rest of the battle played -Daiengine.oracleRollouts times with fresh
+     * draws, both sides the current Boss. The value of a choice is the mean final HP lead of the side that made it.
+     * Games -Daiengine.oracleFrom until +oracleGames of seed 20261201, so runs can split the work.
+     */
+    @Test
+    fun `depth oracle`() {
+        val games = System.getProperty("aiengine.oracleGames")?.toIntOrNull() ?: 0
+        Assumptions.assumeTrue(games > 0)
+        val from = System.getProperty("aiengine.oracleFrom")?.toIntOrNull() ?: 0
+        val rollouts = System.getProperty("aiengine.oracleRollouts")?.toIntOrNull() ?: 12
+        val boss = BattleDifficultyProfiles.BOSS
+        val profile = BattleTrainerProfile(skillLevel = 2, personality = BattleTrainerProfile.champion().personality, difficulty = boss)
+        val budget: (BattleTrainerTier) -> jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudget = {
+            LocalLookaheadBudgetPolicy.forTier(it).copy(timeMillis = Long.MAX_VALUE, nodeLimit = 50_000_000)
+        }
+        val arms = listOf("d1", "d2", "d3", "brain")
+        val sums = arms.associateWith { 0.0 }.toMutableMap()
+        val diffs = mutableMapOf<String, MutableList<Double>>()
+        var positions = 0
+        for (definition in LocalSelfPlayMeasurement.definitions(from + games, 20261201, BattleFormat.SINGLE).drop(from)) {
+            val contexts = mutableListOf<BattleDecisionContext>()
+            val decisions = mutableListOf<LocalScenarioDecisionTrace>()
+            LocalTacticalScenarioBattle.run(definition, 20, readTuning(), readTuning(), boss, boss,
+                recordedContexts = contexts, recordedDecisions = decisions, lookaheadBudget = budget)
+            for ((index, context) in contexts.withIndex()) {
+                if (context.candidates.size < 2 || context.candidates.any { it.actionId.startsWith("forced:") }) continue
+                val side = BattleSide.valueOf(decisions[index].side)
+                val base = LocalBattleActionPolicy.rank(context, null, profile)
+                fun top(depth: Int) = LocalRecursiveLookaheadEvaluator.evaluate(base, context,
+                    profile.copy(difficulty = boss.copy(lookaheadPlies = depth)), readTuning(), clockMillis = { 0L },
+                    budget = budget(boss.tier)).ranked.first().outcome.candidate.actionId
+                val choice = mapOf("d1" to top(1), "d2" to top(2), "d3" to top(3), "brain" to decisions[index].actionId)
+                if (choice.values.distinct().size < 2) continue
+                val value = choice.values.distinct().associateWith { actionId ->
+                    (0 until rollouts).map { k ->
+                        val report = LocalTacticalScenarioBattle.run(definition, 20, readTuning(), readTuning(), boss, boss,
+                            lookaheadBudget = budget, fork = LocalScenarioFork(context.state.turn, side, actionId, 7_000L + k))
+                        val lead = report.cycleRemainingHp - report.offenseRemainingHp
+                        if (side == BattleSide.ALLY) lead else -lead
+                    }.average()
+                }
+                positions++
+                arms.forEach { sums[it] = sums.getValue(it) + value.getValue(choice.getValue(it)) }
+                for ((a, b) in listOf("d2" to "d1", "d3" to "d2", "d3" to "d1", "brain" to "d1")) {
+                    diffs.getOrPut("$b->$a", ::mutableListOf) += value.getValue(choice.getValue(a)) - value.getValue(choice.getValue(b))
+                }
+                fun label(id: String) = id.substringAfterLast("move:").substringAfterLast("switch:").substringBefore(":target").take(22)
+                val active = context.state.pokemon.filter { it.activeSlot != null }.joinToString(" ") {
+                    "${it.side.name.take(1)}:${it.speciesId.substringAfter(':')}@%.0f%%".format(it.hpFraction * 100)
+                }
+                println("ORACLE ${definition.name} T${context.state.turn} $side $active :: " + arms.joinToString(" | ") {
+                    "$it=${label(choice.getValue(it))} %+.3f".format(value.getValue(choice.getValue(it)))
+                })
+            }
+        }
+        println("ORACLE positions=$positions mean " + arms.joinToString(" ") { "$it=%+.3f".format(sums.getValue(it) / positions.coerceAtLeast(1)) })
+        for ((name, list) in diffs) {
+            val mean = list.average()
+            val se = kotlin.math.sqrt(list.sumOf { (it - mean) * (it - mean) } / (list.size - 1).coerceAtLeast(1) / list.size)
+            println("ORACLE diff $name mean=%+.3f se=%.3f n=${list.size}".format(mean, se))
+        }
     }
 
     /** CURRENT with the switches named in -Daiengine.readFlags (comma separated) turned on. */

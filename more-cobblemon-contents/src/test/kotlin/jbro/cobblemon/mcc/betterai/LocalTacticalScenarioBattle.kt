@@ -91,6 +91,9 @@ internal data class LocalTacticalScenarioReport(
     }
 }
 
+/** One decision of a replayed battle played as [actionId] by [side] at [turn], the rest drawn from [rolloutSeed]. */
+internal data class LocalScenarioFork(val turn: Int, val side: BattleSide, val actionId: String, val rolloutSeed: Long)
+
 /** Focused 3v3 executor that reuses the production public single-turn projector. */
 internal object LocalTacticalScenarioBattle {
     fun run(
@@ -111,9 +114,11 @@ internal object LocalTacticalScenarioBattle {
         recordedDecisions: MutableList<LocalScenarioDecisionTrace>? = null,
         /** The search budget both sides get; null is the shipped one. */
         lookaheadBudget: ((BattleTrainerTier) -> LocalLookaheadBudget)? = null,
+        /** Replays the battle up to one decision, plays the given action there, and draws the rest afresh. */
+        fork: LocalScenarioFork? = null,
     ): LocalTacticalScenarioReport = Battle(
         definition, cycleTuning, offenseTuning, cycleDifficulty, offenseDifficulty, recordedContexts, recordedDecisions,
-        lookaheadBudget,
+        lookaheadBudget, fork,
     ).run(maximumTurns)
 
     private class Battle(
@@ -125,6 +130,7 @@ internal object LocalTacticalScenarioBattle {
         private val recordedContexts: MutableList<BattleDecisionContext>?,
         private val recordedDecisions: MutableList<LocalScenarioDecisionTrace>?,
         private val lookaheadBudget: ((BattleTrainerTier) -> LocalLookaheadBudget)?,
+        private val fork: LocalScenarioFork?,
     ) {
         private val difficulties = mapOf(
             BattleSide.ALLY to cycleDifficulty,
@@ -134,7 +140,7 @@ internal object LocalTacticalScenarioBattle {
             BattleSide.ALLY to cycleTuning,
             BattleSide.OPPONENT to offenseTuning,
         )
-        private val random = Random(definition.seed)
+        private var random = Random(definition.seed)
         private val roster = LocalTacticalSimulationRoster.loadAll()
         private val battleId = UUID(random.nextLong(), random.nextLong())
         private val templates = linkedMapOf<UUID, LocalTacticalSimulationEntry>()
@@ -367,6 +373,11 @@ internal object LocalTacticalScenarioBattle {
                 source = "LOCAL_BRAIN_DIRECT",
                 tags = decision.tags.sorted(),
             ))
+            if (fork != null && fork.turn == state.turn && fork.side == side && candidates.none { it.actionId.startsWith("forced:") }) {
+                // Everything before this point replays the recorded battle; from here the draws are the rollout's own.
+                random = Random(fork.rolloutSeed)
+                return candidates.single { it.actionId == fork.actionId }
+            }
             return candidates.single { it.actionId == decision.actionId }
         }
 
