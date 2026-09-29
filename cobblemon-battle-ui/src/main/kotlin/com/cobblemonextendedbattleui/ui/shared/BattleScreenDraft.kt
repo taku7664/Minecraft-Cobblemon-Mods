@@ -25,7 +25,8 @@ internal object BattleScreenDraft {
     fun render(context: DrawContext, page: String, width: Int, height: Int) {
         val korean = MinecraftClient.getInstance().options.language == "ko_kr"
         context.fill(0, 0, width, height, 0x4906101E)
-        if (page == "draft-switch") BattleModalVignette.draw(context, width, height, 1f)
+        if (page == "draft-switch" || page == "draft-target" || page == "draft-target-triple")
+            BattleModalVignette.draw(context, width, height, 1f)
         drawCaption(context, page, width, korean)
         if (page == "draft-hud-split") {
             BattleHudSplitDraft.render(context, width, korean)
@@ -41,15 +42,21 @@ internal object BattleScreenDraft {
             else -> 1
         }
         if (count > 1) {
-            val allies = listOf(SamplePokemon("pikachu", .72f, gender = Gender.MALE),
-                SamplePokemon("bulbasaur", .91f, gender = Gender.FEMALE), SamplePokemon("eevee", .48f))
-            val opponents = listOf(SamplePokemon("charizard", .36f, gender = Gender.FEMALE), SamplePokemon("venusaur", .54f, burned = true),
-                SamplePokemon("blastoise", .67f))
-            repeat(count) { index ->
-                drawHud(context, 10, 22 + index * 33, allies[index], true, korean, compact = true)
-                drawHud(context, width - COMPACT_CARD_W - 10, 22 + index * 33, opponents[index], false, korean, compact = true)
+            val targetPage = page == "draft-target" || page == "draft-target-triple"
+            if (targetPage) {
+                BattleHudEdgeDraft.render(context, width, korean, count)
+            } else {
+                val allies = listOf(SamplePokemon("pikachu", .72f, gender = Gender.MALE),
+                    SamplePokemon("bulbasaur", .91f, gender = Gender.FEMALE), SamplePokemon("eevee", .48f))
+                val opponents = listOf(SamplePokemon("charizard", .36f, gender = Gender.FEMALE),
+                    SamplePokemon("venusaur", .54f, burned = true), SamplePokemon("blastoise", .67f))
+                repeat(count) { index ->
+                    drawHud(context, 10, 22 + index * 33, allies[index], true, korean, compact = true)
+                    drawHud(context, width - COMPACT_CARD_W - 10, 22 + index * 33,
+                        opponents[index], false, korean, compact = true)
+                }
             }
-            if (page == "draft-target" || page == "draft-target-triple")
+            if (targetPage)
                 drawTarget(context, width, height, count)
             return
         }
@@ -219,12 +226,16 @@ internal object BattleScreenDraft {
         val allies = if (slots == 2) listOf("pikachu", "bulbasaur")
             else listOf("pikachu", "bulbasaur", "eevee")
         allies.forEachIndexed { column, species ->
-            BattleTargetRenderer.drawCard(context, BattleScreenGeometry.targetTile(width, height, slots, 0, column),
-                previewTargetCard(species, ally = true, selectable = column != 0, focused = false))
+            val card = previewTargetCard(species, ally = true, selectable = column != 0, focused = false)
+            val slot = BattleScreenGeometry.targetTile(width, height, slots, 0, column)
+            val rect = BattleScreenGeometry.targetCard(slot)
+            BattleTargetRenderer.drawCard(context, rect, card)
         }
         opponents.forEachIndexed { column, species ->
-            BattleTargetRenderer.drawCard(context, BattleScreenGeometry.targetTile(width, height, slots, 1, column),
-                previewTargetCard(species, ally = false, selectable = true, focused = column == 1))
+            val card = previewTargetCard(species, ally = false, selectable = true, focused = column == 1)
+            val slot = BattleScreenGeometry.targetTile(width, height, slots, 1, column)
+            val rect = BattleScreenGeometry.targetCard(slot)
+            BattleTargetRenderer.drawCard(context, rect, card)
         }
     }
 

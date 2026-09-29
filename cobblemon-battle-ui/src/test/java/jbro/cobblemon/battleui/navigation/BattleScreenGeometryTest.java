@@ -98,27 +98,38 @@ class BattleScreenGeometryTest {
 
     @Test
     void targetDraftFitsBetweenCompactHudAndHotbar() {
-        assertEquals(new UiRect(121, 110, 184, 74), BattleScreenGeometry.targetPanel(427, 240, 2));
-        assertEquals(new UiRect(127, 132, 83, 22), BattleScreenGeometry.targetTile(427, 240, 2, 0, 0));
-        assertEquals(new UiRect(216, 156, 83, 22), BattleScreenGeometry.targetTile(427, 240, 2, 1, 1));
-        assertEquals(new UiRect(269, 113, 30, 13), BattleScreenGeometry.targetBack(427, 240, 2));
+        assertEquals(new UiRect(123, 114, 180, 96), BattleScreenGeometry.targetPanel(427, 240, 2));
+        assertEquals(new UiRect(133, 185, 75, 20), BattleScreenGeometry.targetTile(427, 240, 2, 0, 0));
+        assertEquals(new UiRect(218, 150, 75, 20), BattleScreenGeometry.targetTile(427, 240, 2, 1, 1));
+        assertEquals(new UiRect(253, 120, 40, 16), BattleScreenGeometry.targetBack(427, 240, 2));
 
-        assertEquals(new UiRect(121, 126, 184, 84), BattleScreenGeometry.targetPanel(427, 240, 3));
-        assertEquals(new UiRect(127, 148, 83, 19), BattleScreenGeometry.targetTile(427, 240, 3, 0, 0));
-        assertEquals(new UiRect(216, 188, 83, 19), BattleScreenGeometry.targetTile(427, 240, 3, 1, 2));
+        assertEquals(new UiRect(90, 114, 246, 96), BattleScreenGeometry.targetPanel(427, 240, 3));
+        assertEquals(new UiRect(100, 185, 70, 18), BattleScreenGeometry.targetTile(427, 240, 3, 0, 0));
+        assertEquals(new UiRect(256, 150, 70, 18), BattleScreenGeometry.targetTile(427, 240, 3, 1, 2));
         assertTrue(BattleScreenGeometry.targetPanel(427, 240, 3).y() +
                 BattleScreenGeometry.targetPanel(427, 240, 3).height() < 217);
     }
 
     @Test
     void targetCardsPreserveNativeSideAndFieldPositionOrdering() {
-        assertEquals(new UiRect(127, 148, 83, 19),
+        assertEquals(new UiRect(100, 185, 70, 18),
                 BattleScreenGeometry.targetTileForIndex(427, 240, 3, 0, true));
-        assertEquals(new UiRect(127, 188, 83, 19),
+        assertEquals(new UiRect(256, 185, 70, 18),
                 BattleScreenGeometry.targetTileForIndex(427, 240, 3, 2, true));
-        assertEquals(new UiRect(216, 188, 83, 19),
+        assertEquals(new UiRect(256, 150, 70, 18),
                 BattleScreenGeometry.targetTileForIndex(427, 240, 3, 3, false));
-        assertEquals(new UiRect(216, 148, 83, 19),
+        assertEquals(new UiRect(100, 150, 70, 18),
                 BattleScreenGeometry.targetTileForIndex(427, 240, 3, 5, false));
+    }
+
+    @Test
+    void targetButtonsHaveOneCompactWidthAndOnlyTheirVisibleAreaIsClickable() {
+        UiRect slot = BattleScreenGeometry.targetTile(427, 240, 2, 1, 0);
+        UiRect button = BattleScreenGeometry.targetCard(slot);
+        assertEquals(new UiRect(slot.x() + 2, slot.y(), 70, slot.height()), button);
+        assertTrue(button.contains(button.x() + 1, button.y() + 1));
+        assertFalse(button.contains(slot.x() + 1, slot.y() + 1));
+        assertEquals(70, BattleScreenGeometry.targetCard(
+                BattleScreenGeometry.targetTile(427, 240, 3, 1, 0)).width());
     }
 }

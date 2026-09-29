@@ -46,6 +46,8 @@ public abstract class BattleGuiNavigationMixin implements BattleGuiNavigationAcc
     private void cobblemonBattleUi$renderModalVignette(
             DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         boolean active = getCurrentActionSelection() instanceof BattleSwitchPokemonSelection
+                || getCurrentActionSelection() instanceof BattleTargetSelection targetSelection
+                    && BattleTargetRenderer.supports(targetSelection)
                 || BattleInfoPanel.INSTANCE.isExpanded()
                 || jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay.INSTANCE.isOpen();
         MinecraftClient client = MinecraftClient.getInstance();

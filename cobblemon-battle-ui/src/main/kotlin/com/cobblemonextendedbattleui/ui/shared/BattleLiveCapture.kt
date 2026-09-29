@@ -330,10 +330,17 @@ internal object BattleLiveCapture {
                             client.window.scaledWidth, client.window.scaledHeight)
                         val initial = KeyboardTileFocus.focusedIndex(selection.targetTiles)
                         check(initial >= 0)
-                        check(screen.keyPressed(GLFW.GLFW_KEY_RIGHT, 0, 0))
-                        val right = KeyboardTileFocus.focusedIndex(selection.targetTiles)
-                        check(right >= 0 && cards[right].x() > cards[initial].x()) {
-                            "Right navigation did not reach the visible opponent column"
+                        val moveRight = cards.indices.any { index ->
+                            selection.targetTiles[index].selectable &&
+                                cards[index].y() == cards[initial].y() &&
+                                cards[index].x() > cards[initial].x()
+                        }
+                        check(screen.keyPressed(if (moveRight) GLFW.GLFW_KEY_RIGHT else GLFW.GLFW_KEY_LEFT, 0, 0))
+                        val adjacent = KeyboardTileFocus.focusedIndex(selection.targetTiles)
+                        check(adjacent >= 0 && cards[adjacent].y() == cards[initial].y() &&
+                            if (moveRight) cards[adjacent].x() > cards[initial].x()
+                            else cards[adjacent].x() < cards[initial].x()) {
+                            "Horizontal navigation did not reach the next target in the visible side row"
                         }
                     }
                     is BattleSwitchPokemonSelection -> check(KeyboardTileFocus.focusedIndex(selection.tiles) >= 0)

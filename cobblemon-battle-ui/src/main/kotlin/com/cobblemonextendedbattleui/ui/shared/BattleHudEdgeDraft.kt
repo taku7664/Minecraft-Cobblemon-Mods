@@ -10,7 +10,8 @@ import java.util.UUID
 internal object BattleHudEdgeDraft {
     private const val ROW_STEP = 28
 
-    fun render(context: DrawContext, screenWidth: Int, korean: Boolean) {
+    fun render(context: DrawContext, screenWidth: Int, korean: Boolean, slots: Int = 3) {
+        require(slots in 1..3)
         val allies = listOf(
             card("pikachu", Gender.MALE, .72f, "86/120", .38f, "par"),
             card("bulbasaur", Gender.FEMALE, .91f, "91/100", .72f),
@@ -21,10 +22,10 @@ internal object BattleHudEdgeDraft {
             card("venusaur", Gender.MALE, .54f, "54%", status = "par"),
             card("blastoise", Gender.MALE, .67f, "67%")
         )
-        allies.forEachIndexed { index, pokemon ->
+        allies.take(slots).forEachIndexed { index, pokemon ->
             BattleHudCardRenderer.draw(context, 0, 23 + index * ROW_STEP, true, pokemon)
         }
-        opponents.forEachIndexed { index, pokemon ->
+        opponents.take(slots).forEachIndexed { index, pokemon ->
             BattleHudCardRenderer.draw(context, screenWidth - BattleHudCardRenderer.WIDTH,
                 23 + index * ROW_STEP, false, pokemon)
         }

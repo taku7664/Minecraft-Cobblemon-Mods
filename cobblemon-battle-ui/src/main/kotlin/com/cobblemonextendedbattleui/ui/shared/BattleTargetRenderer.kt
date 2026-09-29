@@ -40,7 +40,9 @@ object BattleTargetRenderer {
         val active = selection.request.activePokemon
         val slots = active.getSidePokemon().count()
         return selection.targetTiles.mapIndexed { index, tile ->
-            BattleScreenGeometry.targetTileForIndex(width, height, slots, index, tile.target.isAllied(active))
+            val slot = BattleScreenGeometry.targetTileForIndex(width, height, slots, index,
+                tile.target.isAllied(active))
+            BattleScreenGeometry.targetCard(slot)
         }
     }
 
@@ -50,7 +52,7 @@ object BattleTargetRenderer {
         val opacity = selection.opacity
         if (opacity <= .05f) return
         val slots = selection.request.activePokemon.getSidePokemon().count()
-        drawChrome(context, width, height, slots, opacity, true)
+        drawChrome(context, width, height, slots, opacity)
         val cards = bounds(selection, width, height)
         selection.targetTiles.forEachIndexed { index, tile ->
             val pokemon = tile.target.battlePokemon ?: return@forEachIndexed
@@ -82,23 +84,25 @@ object BattleTargetRenderer {
     }
 
     internal fun drawChrome(context: DrawContext, width: Int, height: Int, slots: Int,
-                            opacity: Float = 1f, dimBackground: Boolean = false) {
-        if (dimBackground) context.fill(0, 0, width, height,
-            BattleSurfaceRenderer.withOpacity(0x4906101E, opacity))
+                            opacity: Float = 1f) {
         val panel = BattleScreenGeometry.targetPanel(width, height, slots)
-        drawLabel(context, Text.translatable("cobblemon_battle_ui.target.title").string,
-            panel.x() + 6, panel.y() + 2, opacity)
-        drawLabel(context, Text.translatable("cobblemon_battle_ui.target.ally").string,
-            panel.x() + 6, panel.y() + 12, opacity)
-        drawLabel(context, Text.translatable("cobblemon_battle_ui.target.opponent").string,
-            BattleScreenGeometry.targetTile(width, height, slots, 1, 0).x(), panel.y() + 12, opacity)
+        BattleSurfaceRenderer.draw(context, panel.x(), panel.y(), panel.width(), panel.height(),
+            BattleUiTheme.shell.copy(cut = 7), opacity)
+        BattleSurfaceRenderer.draw(context, panel.x() + 6, panel.y() + 4,
+            panel.width() - 12, 18, BattleUiTheme.panel.copy(cut = 4), opacity)
+        val font = MinecraftClient.getInstance().textRenderer
+        drawText(context, Text.translatable("cobblemon_battle_ui.target.title").string,
+            panel.x() + 13, panel.y() + 8, BattleUiTheme.TEXT, opacity)
+        drawText(context, Text.translatable("cobblemon_battle_ui.target.opponent").string,
+            panel.x() + 10, panel.y() + 25, BattleUiTheme.PURPLE, opacity)
+        drawText(context, Text.translatable("cobblemon_battle_ui.target.ally").string,
+            panel.x() + 10, panel.y() + 59, BattleUiTheme.CYAN, opacity)
         val back = BattleScreenGeometry.targetBack(width, height, slots)
         BattleSurfaceRenderer.draw(context, back.x(), back.y(), back.width(), back.height(),
             BattleUiTheme.secondary.copy(cut = 3, corners = 0b1010), opacity)
         val label = Text.translatable("cobblemon_battle_ui.target.back").string
-        val font = MinecraftClient.getInstance().textRenderer
         drawText(context, label, back.x() + (back.width() - font.getWidth(label)) / 2,
-            back.y() + 2, BattleUiTheme.TEXT, opacity)
+            back.y() + (back.height() - font.fontHeight) / 2, BattleUiTheme.TEXT, opacity)
     }
 
     internal fun drawCard(context: DrawContext, rect: UiRect, card: BattleTargetCard,
@@ -106,19 +110,26 @@ object BattleTargetRenderer {
         val x = rect.x()
         val y = rect.y()
         val portraitSize = 16
-        val portraitX = x + rect.width() - portraitSize - 4
         val cardOpacity = opacity * if (card.selectable) 1f else .7f
         BattleSurfaceRenderer.draw(context, x, y, rect.width(), rect.height(),
             BattleUiTheme.panel.copy(top = if (card.focused && card.selectable) 0xF22D4560.toInt() else BattleUiTheme.panel.top,
                 cut = 3, corners = 0b1001), cardOpacity)
+        if (card.focused && card.selectable) context.fill(x + 2, y + 3, x + 4, y + rect.height() - 3,
+            BattleSurfaceRenderer.withOpacity(BattleUiTheme.FOCUS, cardOpacity))
         val font = MinecraftClient.getInstance().textRenderer
-        val textX = x + if (card.selectable) 5 else 15
-        drawText(context, font.trimToWidth(card.name.string, portraitX - textX - 5),
-            textX, y + 7, if (card.selectable) BattleUiTheme.TEXT else BattleUiTheme.MUTED, cardOpacity)
-        if (!card.selectable) drawText(context, "×", x + 5, y + 7, BattleUiTheme.DANGER, cardOpacity)
-        BattleSurfaceRenderer.draw(context, portraitX, y + 3, portraitSize, portraitSize,
+        val name = font.trimToWidth(card.name.string,
+            (rect.width() - portraitSize - if (card.selectable) 15 else 23).coerceAtLeast(0))
+        val groupWidth = font.getWidth(name) + 5 + portraitSize
+        val textX = x + maxOf((rect.width() - groupWidth) / 2, if (card.selectable) 0 else 12)
+        val portraitX = textX + font.getWidth(name) + 5
+        val textY = y + (rect.height() - font.fontHeight) / 2
+        drawText(context, name,
+            textX, textY, if (card.selectable) BattleUiTheme.TEXT else BattleUiTheme.MUTED, cardOpacity)
+        if (!card.selectable) drawText(context, "×", x + 3, textY, BattleUiTheme.DANGER, cardOpacity)
+        val portraitY = y + (rect.height() - portraitSize) / 2
+        BattleSurfaceRenderer.draw(context, portraitX, portraitY, portraitSize, portraitSize,
             BattleUiTheme.panel.copy(cut = 3), cardOpacity)
-        PokemonModelRenderer.drawPokemonModel(context, portraitX + 1, y + 4, portraitSize - 2,
+        PokemonModelRenderer.drawPokemonModel(context, portraitX + 1, portraitY + 1, portraitSize - 2,
             null, card.species, card.aspects, card.uuid, card.fainted, card.status, card.ally,
             { BattleSurfaceRenderer.withOpacity(it, cardOpacity) }, 1f)
     }
@@ -129,11 +140,4 @@ object BattleTargetRenderer {
             BattleSurfaceRenderer.withOpacity(color, opacity), false)
     }
 
-    private fun drawLabel(context: DrawContext, value: String, x: Int, y: Int, opacity: Float) {
-        val font = MinecraftClient.getInstance().textRenderer
-        BattleSurfaceRenderer.draw(context, x - 2, y - 1, font.getWidth(value) + 4, 11,
-            BattleUiTheme.row.copy(top = 0xD9101A2D.toInt(), bottom = 0xD9101A2D.toInt(),
-                cut = 2, corners = 0b1010), opacity)
-        drawText(context, value, x, y, BattleUiTheme.TEXT, opacity)
-    }
 }

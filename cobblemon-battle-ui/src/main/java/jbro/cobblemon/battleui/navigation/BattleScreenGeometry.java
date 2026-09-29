@@ -66,15 +66,14 @@ public final class BattleScreenGeometry {
         return new UiRect(panel.x() + 116, panel.y() + 50, 68, 24);
     }
 
-    /** Shared draft/live target grid: one narrow column per side, below the HUD and above the hotbar. */
+    /** Shared draft/live modal: one horizontal field row per side, plus Back inside one shell. */
     public static UiRect targetPanel(int screenWidth, int screenHeight, int slotsPerSide) {
         if (slotsPerSide < 2 || slotsPerSide > 3) {
             throw new IllegalArgumentException("Target selection supports two or three slots per side");
         }
-        int width = Math.min(184, Math.max(0, screenWidth - 20));
-        int height = slotsPerSide == 3 ? 84 : 74;
-        int minY = slotsPerSide == 3 ? 126 : 88;
-        int y = Math.max(0, Math.min(Math.max(minY, screenHeight - height - 56), screenHeight - height - 8));
+        int width = Math.min(slotsPerSide == 3 ? 246 : 180, Math.max(0, screenWidth - 20));
+        int height = 96;
+        int y = Math.max(0, Math.min(Math.max(70, screenHeight - height - 30), screenHeight - height - 8));
         return new UiRect(Math.max(0, (screenWidth - width) / 2), y, width, height);
     }
 
@@ -83,11 +82,11 @@ public final class BattleScreenGeometry {
             throw new IllegalArgumentException("Target tile must be inside the two-side battle grid");
         }
         UiRect panel = targetPanel(screenWidth, screenHeight, slotsPerSide);
-        int width = (panel.width() - 18) / 2;
-        int rowStep = slotsPerSide == 3 ? 20 : 24;
-        int rowHeight = slotsPerSide == 3 ? 19 : 22;
-        return new UiRect(panel.x() + 6 + row * (width + 6),
-                panel.y() + 22 + column * rowStep, width, rowHeight);
+        int gap = slotsPerSide == 3 ? 8 : 10;
+        int width = Math.max(0, (panel.width() - 20 - (slotsPerSide - 1) * gap) / slotsPerSide);
+        int rowHeight = slotsPerSide == 3 ? 18 : 20;
+        return new UiRect(panel.x() + 10 + column * (width + gap),
+                panel.y() + (row == 0 ? 71 : 36), width, rowHeight);
     }
 
     /** Mirrors Cobblemon's opponent field order without relying on list index as visual row. */
@@ -101,9 +100,15 @@ public final class BattleScreenGeometry {
                 ally ? fieldPosition : slotsPerSide - 1 - fieldPosition);
     }
 
+    /** Equal compact buttons for both sides; the unused field slot is never a click target. */
+    public static UiRect targetCard(UiRect slot) {
+        int width = Math.min(slot.width(), 70);
+        return new UiRect(slot.x() + (slot.width() - width) / 2, slot.y(), width, slot.height());
+    }
+
     public static UiRect targetBack(int screenWidth, int screenHeight, int slotsPerSide) {
         UiRect panel = targetPanel(screenWidth, screenHeight, slotsPerSide);
-        return new UiRect(panel.x() + panel.width() - 36, panel.y() + 3, 30, 13);
+        return new UiRect(panel.x() + panel.width() - 50, panel.y() + 6, 40, 16);
     }
 
     /** Cancels Cobblemon 1.8.1's 4 px per-slot X stagger in single-actor compact HUDs. */

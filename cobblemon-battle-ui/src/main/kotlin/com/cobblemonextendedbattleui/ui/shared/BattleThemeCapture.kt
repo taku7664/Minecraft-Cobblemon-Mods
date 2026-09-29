@@ -92,6 +92,8 @@ internal object BattleThemeCapture {
 
     private class CaptureScreen : Screen(Text.literal("Battle UI rendering fixture")) {
         private val pages = when {
+            System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_TARGET_ONLY") == "1" ->
+                listOf("draft-target", "draft-target-triple")
             System.getenv("COBBLEMON_BATTLE_UI_CAPTURE_DRAFT_ONLY") == "1" ->
                 listOf("draft-menu-rail", "draft-menu-blade", "draft-moves", "draft-hud-split", "draft-hud-edge", "draft-hud-double",
                     "draft-hud-triple", "draft-switch", "draft-forfeit", "draft-target", "draft-target-triple")
