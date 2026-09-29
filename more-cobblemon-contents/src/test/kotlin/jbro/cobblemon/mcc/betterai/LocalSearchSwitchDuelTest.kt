@@ -100,6 +100,10 @@ class LocalSearchSwitchDuelTest {
         const val DECISIVE_LEAD = 0.5
         val CURRENT = LocalDecisionTuning.CURRENT
         val AUTHORITY = CURRENT.copy(id = "authority-full", searchAuthority = 1.0)
+        /** Before the fitted switch model: one softmax over moves and switches, no attack priced against a switch-in. */
+        val UNPREDICTED = CURRENT.copy(id = "unpredicted-switches", scoredSwitchIntent = false, predictedSwitchShare = 0.0)
+        val LEAF_MATCHUPS = CURRENT.copy(id = "leaf-matchups", positionalTurnDeltas = true,
+            leafMatchupTeamWeight = 1.0, leafMatchupFieldWeight = 0.5)
         val UNLIMITED: (BattleTrainerTier) -> LocalLookaheadBudget = { tier ->
             // A doubles search with no node limit at all fills any heap with its memo, so the ceiling stays, far
             // above the shipped one; aiengine.duelNodes moves it.
@@ -143,6 +147,10 @@ class LocalSearchSwitchDuelTest {
                 CURRENT.copy(id = "positional-turns", positionalTurnDeltas = true), BattleFormat.SINGLE,
                 BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 1)),
             "positional" to Duel(CURRENT.copy(id = "positional-turns", positionalTurnDeltas = true), CURRENT, BattleFormat.DOUBLE),
+            "predicted-singles" to Duel(CURRENT, UNPREDICTED, BattleFormat.SINGLE),
+            "intent-only-singles" to Duel(CURRENT.copy(id = "switch-intent-only", predictedSwitchShare = 0.0), UNPREDICTED, BattleFormat.SINGLE),
+            "predicted-half-singles" to Duel(CURRENT.copy(id = "predicted-switches-half", predictedSwitchShare = 0.5), CURRENT, BattleFormat.SINGLE),
+            "leaf-matchups-singles" to Duel(LEAF_MATCHUPS, CURRENT, BattleFormat.SINGLE),
             "depth1-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 1)),
             "depth3-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, BattleDifficultyProfiles.BOSS.copy(lookaheadPlies = 3)),
             "simultaneous" to Duel(CURRENT.copy(id = "simultaneous", simultaneousResponseWeight = 1.0), CURRENT, BattleFormat.DOUBLE),
