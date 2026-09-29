@@ -131,7 +131,10 @@ internal object LocalMatchupScoreCalculator {
             if (sweep > best.sweep + 1e-9) best = Boost(moveId, uses, sweep, outcomes.map { it.second }.average(),
                 outcomes.associate { it.first to it.third }, outcomes.associate { it.first to it.second })
         }
+        val window = windowSweep(context, subject, foes, pairs, cache)
         return SweepScore(
+            windowSweep = window?.first,
+            windowByOpponent = window?.second.orEmpty(),
             subjectId = subject.battlePokemonId,
             naturalSweep = natural,
             setupMoveId = best.moveId,
@@ -142,6 +145,45 @@ internal object LocalMatchupScoreCalculator {
             boostedByOpponent = best.byOpponent,
             setupSurvivalByOpponent = best.survivalByOpponent,
         )
+    }
+
+    /** [SweepScore.windowSweep] and its per-opponent values: the best setup move and use count, from this window. */
+    private fun windowSweep(
+        context: BattleDecisionContext,
+        subject: BattlePokemonStateView,
+        foes: List<BattlePokemonStateView>,
+        pairs: MatchupScores,
+        cache: LocalProjectedActionCalculationCache,
+    ): Pair<Double, Map<UUID, Double>>? {
+        if (subject.activeSlot == null) return null
+        val facing = foes.filter { it.activeSlot != null }
+        if (facing.isEmpty()) return null
+        var best: Pair<Double, Map<UUID, Double>>? = null
+        for ((_, stages) in setupMoves(context, subject)) for (uses in 1..MAXIMUM_SETUP_USES) {
+            var survives = 1.0
+            var taken = 0.0
+            for (foe in facing) {
+                val base = pairs.pokemon(subject.battlePokemonId, foe.battlePokemonId) ?: continue
+                survives *= base.opponentMove?.survivalByUses?.getOrNull(uses) ?: 1.0
+                taken += base.opponentMove?.damageWhileStandingByUses?.getOrNull(uses) ?: 0.0
+            }
+            val byOpponent = foes.mapNotNull { foe ->
+                val position = LocalMatchupPosition.face(context, subject, foe, cache) ?: return@mapNotNull null
+                val raised = LocalStatStageMarginalEvaluator.applyStages(position.state,
+                    setOf(subject.battlePokemonId), stages.mapValues { it.value * uses })
+                val worn = raised.copyState(pokemon = raised.pokemon.map {
+                    if (it.battlePokemonId != subject.battlePokemonId) it
+                    else it.copyState(hpFraction = (it.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP))
+                })
+                val win = pairMatchup(position.copy(state = worn), subject.battlePokemonId, foe.battlePokemonId,
+                    MatchupSpeedField.CURRENT, cache)?.winProbability ?: return@mapNotNull null
+                foe.battlePokemonId to survives * win
+            }.toMap()
+            if (byOpponent.isEmpty()) continue
+            val sweep = byOpponent.values.average()
+            if (best == null || sweep > best.first + 1e-9) best = sweep to byOpponent
+        }
+        return best
     }
 
     private class Boost(

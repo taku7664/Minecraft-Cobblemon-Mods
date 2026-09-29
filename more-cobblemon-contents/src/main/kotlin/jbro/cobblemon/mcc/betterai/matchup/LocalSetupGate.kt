@@ -67,7 +67,9 @@ internal object LocalSetupGate {
         } ?: return null
         val sweeper = scores.sweeps[user.battlePokemonId] ?: return Verdict(false, listOf("no_sweep_score"))
         val failures = mutableListOf<String>()
-        if (sweeper.score < SWEEP_PASS || sweeper.boostedSweep <= sweeper.naturalSweep) failures += "sweep"
+        // Read from the window it has: boosted in front of the Pokemon it faces, then against every opponent.
+        val windowBoost = sweeper.windowSweep ?: sweeper.boostedSweep
+        if (maxOf(sweeper.naturalSweep, windowBoost) < SWEEP_PASS || windowBoost <= sweeper.naturalSweep) failures += "sweep"
         val onField = state.pokemon.filter {
             it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         }

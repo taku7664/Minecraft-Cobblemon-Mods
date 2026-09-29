@@ -124,6 +124,14 @@ internal data class SweepScore(
     val boostedByOpponent: Map<UUID, Double> = emptyMap(),
     /** Per opponent: the chance of surviving the setup turns. */
     val setupSurvivalByOpponent: Map<UUID, Double> = emptyMap(),
+    /**
+     * The sweep from here: for a subject on the field, the setup taken in front of the Pokemon it faces now (their
+     * hits, their survival), then the boosted exchange against each opponent from what is left. The boosted reading
+     * above sets up in front of each opponent in turn, which is not the plan: a sweeper boosts in the window it
+     * has. Null off the field.
+     */
+    val windowSweep: Double? = null,
+    val windowByOpponent: Map<UUID, Double> = emptyMap(),
 )
 
 /** A way to stop a sweeper that has set up. */
