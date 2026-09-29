@@ -13,6 +13,8 @@ internal data class LocalResponseValue(
      * so the modelled opponent keeps acting on its own interests. The root adds this afterwards.
      */
     val threatDelta: Double = 0.0,
+    /** Opposing Pokemon expected to be knocked out on the root turn: the knockouts the search itself re-derived. */
+    val opponentKnockouts: Double = 0.0,
 )
 internal data class LocalOpponentResponseValue(val action: BattleActionCandidate, val value: LocalResponseValue)
 
@@ -63,6 +65,7 @@ internal object LocalSearchResponseObjective {
                 response.ownRemainingHpFraction
             },
             threatDelta = weightedCategories.sumOf { (mass, response) -> response.threatDelta * mass } / learnedTotal,
+            opponentKnockouts = weightedCategories.sumOf { (mass, response) -> response.opponentKnockouts * mass } / learnedTotal,
         )
         return LocalResponseValue(
             value = robust.value * (1.0 - learned.influence) + modeled.value * learned.influence,
@@ -70,6 +73,7 @@ internal object LocalSearchResponseObjective {
                 modeled.ownExecutionProbability * learned.influence,
             ownRemainingHpFraction = minOf(robust.ownRemainingHpFraction, modeled.ownRemainingHpFraction),
             threatDelta = robust.threatDelta * (1.0 - learned.influence) + modeled.threatDelta * learned.influence,
+            opponentKnockouts = robust.opponentKnockouts * (1.0 - learned.influence) + modeled.opponentKnockouts * learned.influence,
         )
     }
 
@@ -93,6 +97,7 @@ internal object LocalSearchResponseObjective {
             ownExecutionProbability = blend(base.ownExecutionProbability, expected(LocalResponseValue::ownExecutionProbability)),
             ownRemainingHpFraction = base.ownRemainingHpFraction,
             threatDelta = blend(base.threatDelta, expected(LocalResponseValue::threatDelta)),
+            opponentKnockouts = blend(base.opponentKnockouts, expected(LocalResponseValue::opponentKnockouts)),
         )
     }
 
@@ -114,6 +119,7 @@ internal object LocalSearchResponseObjective {
                 } / weightTotal,
                 ownRemainingHpFraction = turns.minOf(LocalResponseValue::ownRemainingHpFraction),
                 threatDelta = turns.indices.sumOf { index -> turns[index].threatDelta * weights[index] } / weightTotal,
+                opponentKnockouts = turns.indices.sumOf { index -> turns[index].opponentKnockouts * weights[index] } / weightTotal,
             )
         } else {
             worst
@@ -125,6 +131,7 @@ internal object LocalSearchResponseObjective {
                 worst.ownExecutionProbability * worstWeight,
             ownRemainingHpFraction = minOf(expected.ownRemainingHpFraction, worst.ownRemainingHpFraction),
             threatDelta = expected.threatDelta * (1.0 - worstWeight) + worst.threatDelta * worstWeight,
+            opponentKnockouts = expected.opponentKnockouts * (1.0 - worstWeight) + worst.opponentKnockouts * worstWeight,
         )
     }
 

@@ -114,6 +114,12 @@ internal data class LocalDecisionTuning(
     /** The opponent intents lean toward what the opponent did before in the same matchup (LocalOpponentRepeats). */
     val readOpponentRepeats: Boolean = false,
     /**
+     * The root knockout correction removes the knockouts the search itself re-derived (expected opposing
+     * knockouts on the root turn times [knockoutMaterialScore]); off, it removes up to the search's whole gain,
+     * which erased the damage a knockout move cost whenever that gain stayed below the heuristic's credit.
+     */
+    val realizedKnockoutCorrection: Boolean = false,
+    /**
      * A root candidate the search did not reach takes the searched candidates' median adjustment, when that is a
      * loss, instead of none. Doubles duels at the shipped budget, four seeds and 80 games: mean HP lead +0.25 for
      * it (unclamped, six seeds and 126 games: +0.23, but that version lifted untested joints into the choice pool).

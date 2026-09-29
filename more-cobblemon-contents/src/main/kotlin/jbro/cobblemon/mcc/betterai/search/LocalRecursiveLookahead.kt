@@ -200,6 +200,8 @@ internal object LocalRecursiveLookaheadEvaluator {
         // The threat adjustment belongs to the root turn, so it takes the one-ply response weighting;
         // deeper values reweighing the same replies would leak foresight through a zero future weight.
         val singlePlyThreat = mutableMapOf<String, Double>()
+        // Opposing Pokemon each candidate's single ply knocked out, for the knockout correction.
+        val singlePlyKnockouts = mutableMapOf<String, Double>()
         var acceptedCoverage = emptyMap<String, LocalLookaheadCoverage>()
         var previousDepthCost: LocalCompletedDepthCost? = null
         var previousDecisionSignature: LocalLookaheadDecisionSignature? = null
@@ -254,6 +256,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     singlePlyGain[id] = (immediate.value - baseline) * BOARD_TO_SCORE
                     singlePlyCoverage[id] = search.publicResponseCoverage
                     singlePlyThreat[id] = immediate.threatDelta
+                    singlePlyKnockouts[id] = immediate.opponentKnockouts
                 }
                 val searched = (if (opponentMix != null) rootSearches[id] else null)
                     ?: search.rootActionValue(context.state, rank.outcome.candidate, depth)?.also { rootSearches[id] = it }
@@ -271,6 +274,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     if (depth == 1) singlePlyGain[actionId] = searchBoardGain
                     if (depth == 1) singlePlyCoverage[actionId] = search.publicResponseCoverage
                     if (depth == 1) singlePlyThreat[actionId] = evaluation.threatDelta
+                    if (depth == 1) singlePlyKnockouts[actionId] = evaluation.opponentKnockouts
                     val immediateGain = singlePlyGain[actionId] ?: searchBoardGain
                     val coverage = LocalLookaheadCoverage(
                         singlePlyCoverage[actionId] ?: search.publicResponseCoverage,
@@ -291,7 +295,14 @@ internal object LocalRecursiveLookaheadEvaluator {
                         // no re-derivation, no removal.
                         // This corrects the root turn, not later turns. Using the current depth's
                         // gain here leaks future losses/gains into ranking even at zero foresight.
-                        rank.outcome.knockoutUtility.coerceAtMost(immediateGain.coerceAtLeast(0.0))
+                        if (tuning.realizedKnockoutCorrection) {
+                            // Only the knockouts the search re-derived: capping at its whole gain instead took a
+                            // knockout that cost heavy damage for one it had not re-derived, and erased the damage.
+                            val realized = (singlePlyKnockouts[actionId] ?: evaluation.opponentKnockouts) * tuning.knockoutMaterialScore
+                            rank.outcome.knockoutUtility.coerceAtMost(realized.coerceAtLeast(0.0))
+                        } else {
+                            rank.outcome.knockoutUtility.coerceAtMost(immediateGain.coerceAtLeast(0.0))
+                        }
                     }
                     // Split the search result at the turn boundary and scale only the far side.
                     //
@@ -658,6 +669,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     worstResponseRemainingHp,
                     worstConfirmedResponseRemainingHp,
                     aggregate.threatDelta,
+                    opponentKnockouts = aggregate.opponentKnockouts,
                     responses = if (tuning.simultaneousResponseWeight > 0.0) {
                         calibratedResponses.associate { it.action.actionId to it.value.value }
                     } else emptyMap(),
@@ -853,6 +865,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                 var executionProbability = 0.0
                 var remainingHpFraction = 0.0
                 var threatDelta = 0.0
+                var opponentKnockouts = 0.0
                 val turnStartThreat = if (rootTurn) LocalOpponentThreat.materialAdjustment(state, opponentThreatWeights) else 0.0
                 val value = outcomes.sumOf { rawOutcome ->
                     val outcome = rawOutcome.copy(
@@ -865,6 +878,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     }.averageOrNull() ?: 0.0
                     remainingHpFraction += trackedHp * outcome.probability
                     if (rootTurn) {
+                        opponentKnockouts += knockedOutOpponents(state, outcome.state) * outcome.probability
                         threatDelta += (LocalOpponentThreat.materialAdjustment(outcome.state, opponentThreatWeights) -
                             turnStartThreat) * outcome.probability
                     }
@@ -949,6 +963,7 @@ internal object LocalRecursiveLookaheadEvaluator {
                     (executionProbability / totalProbability).coerceIn(0.0, 1.0),
                     (remainingHpFraction / totalProbability).coerceIn(0.0, 1.0),
                     threatDelta / totalProbability,
+                    opponentKnockouts / totalProbability,
                 )
             }
             // Turn order is chance, not choice, and it used to be collapsed by a flat minimum - full
@@ -989,6 +1004,10 @@ internal object LocalRecursiveLookaheadEvaluator {
                 ownExecutionProbability = meanExecution * (1.0 - pessimism) +
                     worstOrder.second.ownExecutionProbability * pessimism,
                 ownRemainingHpFraction = orderExpectations.minOf { it.second.ownRemainingHpFraction },
+                opponentKnockouts = if (weightTotal > 0.0) {
+                    orderExpectations.sumOf { it.first * it.second.opponentKnockouts } / weightTotal * (1.0 - pessimism) +
+                        worstOrder.second.opponentKnockouts * pessimism
+                } else worstOrder.second.opponentKnockouts,
                 threatDelta = run {
                     val meanThreat = if (weightTotal > 0.0) {
                         orderExpectations.sumOf { it.first * it.second.threatDelta } / weightTotal
@@ -1185,6 +1204,8 @@ internal object LocalRecursiveLookaheadEvaluator {
         /** Null when every evaluated reply was an expected move slot. */
         val worstConfirmedResponseRemainingHp: Double?,
         val threatDelta: Double = 0.0,
+        /** Opposing Pokemon expected to be knocked out on the root turn. */
+        val opponentKnockouts: Double = 0.0,
         /** Each reply's value, keyed by the reply's action id. */
         val responses: Map<String, Double> = emptyMap(),
     ) {
@@ -1343,6 +1364,17 @@ internal object LocalRecursiveLookaheadEvaluator {
     private const val UNKNOWN_PUBLIC_RESPONSE_TAG = "unknown_public_response"
     private const val EXPECTED_OPPONENT_MOVE_TAG = "expected_opponent_move"
     private const val STANDARD_MOVE_SLOTS = 4.0
+
+    /** Opposing Pokemon standing in [before] and fainted in [after]. */
+    private fun knockedOutOpponents(before: BattleStateView, after: BattleStateView): Int {
+        var count = 0
+        for (pokemon in before.pokemon) {
+            if (pokemon.side != BattleSide.OPPONENT || pokemon.fainted || pokemon.hpFraction <= 0.0) continue
+            val now = after.pokemon.firstOrNull { it.battlePokemonId == pokemon.battlePokemonId } ?: continue
+            if (now.fainted || now.hpFraction <= 0.0) count++
+        }
+        return count
+    }
 
     private fun BattleActionCandidate.isUnknownPublicResponse(): Boolean =
         UNKNOWN_PUBLIC_RESPONSE_TAG in tags || componentActions.any { it.isUnknownPublicResponse() }
