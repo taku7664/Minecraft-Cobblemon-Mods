@@ -129,6 +129,20 @@ internal data class LocalDecisionTuning(
     /** The opponent intents lean toward what the opponent did before in the same matchup (LocalOpponentRepeats). */
     val readOpponentRepeats: Boolean = false,
     /**
+     * The opponent intent takes the chance of a switch from the fitted switch model
+     * (LocalOpponentIntentPredictor.switchChance: the threat of falling before acting, the entry gain behind it, its
+     * worth to its team, its best attack and HP) and spreads the rest over its moves. Off, moves and switches share
+     * one softmax, which read a switch in most losing matchups where the opponent switched one turn in ten.
+     * Singles only; doubles keeps the one softmax.
+     */
+    val scoredSwitchIntent: Boolean = true,
+    /**
+     * Share of the predicted switch chances the root heuristic acts on (singles): an attack aimed at a Pokemon
+     * predicted to switch is priced against the incoming one by that much (LocalSwitchPrediction). Zero leaves it to
+     * the repeat record alone.
+     */
+    val predictedSwitchShare: Double = 1.0,
+    /**
      * The root knockout correction removes the knockouts the search itself re-derived (expected opposing
      * knockouts on the root turn times [knockoutMaterialScore]); off, it removes up to the search's whole gain,
      * which erased the damage a knockout move cost whenever that gain stayed below the heuristic's credit.

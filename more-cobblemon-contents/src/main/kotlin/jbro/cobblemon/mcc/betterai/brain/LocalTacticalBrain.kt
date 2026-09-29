@@ -423,6 +423,11 @@ internal class LocalTacticalBrain(
         val baseRanked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
         val threatStartedAtNanos = System.nanoTime()
         val rootRanked = baseRanked
+        // Read from the same table as the rules; the AI's threat weights play no part in it.
+        val opponentIntents = if (!rulesApply) emptyList()
+            else ruleScores?.let { LocalOpponentIntentPredictor.predict(difficultyContext, it, tuning.scoredSwitchIntent) }.orEmpty().let { intents ->
+                if (tuning.readOpponentRepeats && active != null) active.repeats.apply(intents, difficultyContext.state) else intents
+            }
         val lookahead = LocalRecursiveLookaheadEvaluator.evaluate(
             rootRanked,
             difficultyContext,
@@ -442,10 +447,7 @@ internal class LocalTacticalBrain(
             ),
             excludedActionIds = ruleExclusions(rootRanked).keys,
             // Read from the same table as the rules; the AI's threat weights play no part in it.
-            opponentIntents = if (!rulesApply) emptyList()
-                else ruleScores?.let { LocalOpponentIntentPredictor.predict(difficultyContext, it) }.orEmpty().let { intents ->
-                    if (tuning.readOpponentRepeats && active != null) active.repeats.apply(intents, difficultyContext.state) else intents
-                },
+            opponentIntents = opponentIntents,
             decisionSignature = if (actionSelector !is LocalWeightedActionSelector) null else { tentative ->
                 val refined = LocalRootDecisionPolicy.refine(tentative, difficultyContext).ranked
                 val tentativeSeed = LocalActionChoiceSeed.derive(
@@ -479,10 +481,22 @@ internal class LocalTacticalBrain(
         val gimmickAdjustments = LocalGimmickReserve.adjustments(difficultyContext.candidates, difficultyContext, aceScores)
         // The switching and mechanic rules' credits and debits, added to what the search made of each candidate.
         // An attack aimed at a Pokemon the opponent keeps switching out is priced against the one coming in.
-        val predictionAdjustments = if (!tuning.readOpponentRepeats || active == null || !rulesApply) emptyMap() else {
+        val expectedSwitches = when {
+            !rulesApply -> emptyMap()
+            // The predicted switches themselves, the repeats already folded in when they are read (singles, where
+            // the switch model was fitted).
+            tuning.predictedSwitchShare > 0.0 && difficultyContext.state.format == jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE ->
+                opponentIntents.associate { intent ->
+                    intent.pokemonId to intent.options.filter { it.kind == jbro.cobblemon.mcc.betterai.matchup.IntentKind.SWITCH && it.switchInId != null }
+                        .groupBy { requireNotNull(it.switchInId) }.mapValues { (_, same) -> same.sumOf { it.probability } * tuning.predictedSwitchShare }
+                }.filterValues { it.isNotEmpty() }
+            tuning.readOpponentRepeats && active != null -> active.repeats.expectedSwitches(difficultyContext.state)
+            else -> emptyMap()
+        }
+        val predictionAdjustments = if (expectedSwitches.isEmpty()) emptyMap() else {
             ruleScores?.let { scores ->
                 jbro.cobblemon.mcc.betterai.matchup.LocalSwitchPrediction.adjustments(
-                    difficultyContext.candidates, difficultyContext, scores, active.repeats.expectedSwitches(difficultyContext.state))
+                    difficultyContext.candidates, difficultyContext, scores, expectedSwitches, tuning)
             }.orEmpty()
         }
         val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys).associateWith {
