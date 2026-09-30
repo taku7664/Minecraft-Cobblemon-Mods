@@ -500,8 +500,16 @@ internal class LocalTacticalBrain(
                     difficultyContext.candidates, difficultyContext, scores, expectedSwitches, tuning)
             }.orEmpty()
         }
-        val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys).associateWith {
-            (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0)
+        // A stat raise the gate lets through is credited for the sweep it adds (singles).
+        val setupAdjustments = if (!rulesApply || tuning.setupSweepCredit <= 0.0 ||
+            difficultyContext.state.format != jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE) emptyMap()
+        else ruleScores?.let { scores ->
+            difficultyContext.candidates.filter(LocalSetupGate::raisesOwnStats).associate { candidate ->
+                candidate.actionId to LocalSetupGate.credit(candidate, difficultyContext, scores, tuning.setupSweepCredit, tuning.knockoutMaterialScore)
+            }.filterValues { it > 0.0 }
+        }.orEmpty()
+        val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys + setupAdjustments.keys).associateWith {
+            (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) + (setupAdjustments[it] ?: 0.0)
         }
         val switchAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
             LocalBattleActionPolicy.sort(lookahead.ranked.map { rank ->

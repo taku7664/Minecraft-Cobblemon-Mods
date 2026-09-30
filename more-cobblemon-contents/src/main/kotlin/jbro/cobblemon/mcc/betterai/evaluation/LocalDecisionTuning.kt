@@ -149,6 +149,8 @@ internal data class LocalDecisionTuning(
      * rest of the opposing team does not let it be (Toxapex into Weavile with Garchomp behind: -1.79 played out).
      */
     val matchupRecovery: Boolean = false,
+    /** Weight of the credit a stat raise that passes the setup gate gets for the sweep it adds (LocalSetupGate.credit); singles. */
+    val setupSweepCredit: Double = 0.0,
     /**
      * Root points a self-heal loses for each turn in a row its user healed and still ended lower
      * (LocalRecoveryLoop): the heal is not keeping up, and another one only spends a turn behind.

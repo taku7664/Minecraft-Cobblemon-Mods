@@ -97,6 +97,32 @@ internal object LocalSetupGate {
     }
 
     /**
+     * What a stat raise that passes the gate is worth over attacking now, in the root's units: the sweep it adds
+     * ((windowSweep or boostedSweep) - naturalSweep, a mean win chance over the living opponents) times those
+     * opponents, the knockouts it is expected to add, at [LocalDecisionTuning.knockoutMaterialScore] each, times
+     * [weight]. The gate only rules a setup out; passed, it still ranked by the one boosted hit the search sees,
+     * below any attack with a chance to knock out, and a sweeper that should boost kept attacking.
+     */
+    fun credit(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        scores: MatchupScores,
+        weight: Double,
+        knockoutMaterialScore: Double,
+    ): Double {
+        if (weight <= 0.0 || candidate.kind != BattleActionKind.USE_MOVE) return 0.0
+        if (evaluate(candidate, context, scores)?.passes != true) return 0.0
+        val user = context.state.pokemon.firstOrNull {
+            it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted && it.hpFraction > 0.0
+        } ?: return 0.0
+        val sweeper = scores.sweeps[user.battlePokemonId] ?: return 0.0
+        val gain = (sweeper.windowSweep ?: sweeper.boostedSweep) - sweeper.naturalSweep
+        if (gain <= 0.0) return 0.0
+        val opponents = context.state.pokemon.count { it.side == BattleSide.OPPONENT && !it.fainted && it.hpFraction > 0.0 }
+        return weight * gain * opponents * knockoutMaterialScore
+    }
+
+    /**
      * How likely [opponent] is to act this turn: a Pokemon that must recharge does not, a sleeping one wakes
      * about half the time, a frozen one thaws one time in five. The window a sleeping or frozen opponent opens is
      * the classic moment to set up.
