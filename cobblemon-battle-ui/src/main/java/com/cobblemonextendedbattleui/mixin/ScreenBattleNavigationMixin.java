@@ -11,6 +11,7 @@ import jbro.cobblemon.battleui.extended.navigation.BattleGuiNavigationAccess;
 import jbro.cobblemon.battleui.extended.BattleInfoPanel;
 import jbro.cobblemon.battleui.extended.BattleDialogue;
 import jbro.cobblemon.battleui.extended.CobblemonExtendedBattleUIClient;
+import jbro.cobblemon.battleui.extended.ui.shared.BattleUiSounds;
 import net.minecraft.client.gui.screen.Screen;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
@@ -58,7 +59,9 @@ public abstract class ScreenBattleNavigationMixin {
         boolean cancel = keyCode == GLFW.GLFW_KEY_ESCAPE
                 || CobblemonExtendedBattleUIClient.INSTANCE.getCancelActionKey().matchesKey(keyCode, scanCode);
         if (cancel && selection != null) {
+            // Backing out by keyboard clicks as Cobblemon's own back button does.
             if (selection instanceof ForfeitConfirmationSelection) {
+                BattleUiSounds.click();
                 battleGUI.changeActionSelection(null);
                 cir.setReturnValue(true);
                 return;
@@ -69,11 +72,13 @@ public abstract class ScreenBattleNavigationMixin {
                 return;
             }
             if (selection instanceof BattleTargetSelection) {
+                BattleUiSounds.click();
                 battleGUI.changeActionSelection(new BattleMoveSelection(battleGUI, selection.getRequest()));
                 cir.setReturnValue(true);
                 return;
             }
             if (selection instanceof BattleMoveSelection || selection instanceof BattleSwitchPokemonSelection) {
+                BattleUiSounds.click();
                 battleGUI.changeActionSelection(null);
                 cir.setReturnValue(true);
                 return;

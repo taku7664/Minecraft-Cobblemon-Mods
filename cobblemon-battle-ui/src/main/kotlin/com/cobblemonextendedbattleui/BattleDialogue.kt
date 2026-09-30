@@ -7,6 +7,7 @@ import jbro.cobblemon.battleui.extended.ui.shared.BattleCornerCuts
 import jbro.cobblemon.battleui.extended.ui.shared.BattleFocusMotion
 import jbro.cobblemon.battleui.extended.ui.shared.BattleSurface
 import jbro.cobblemon.battleui.extended.ui.shared.BattleSurfaceRenderer
+import jbro.cobblemon.battleui.extended.ui.shared.BattleUiSounds
 import jbro.cobblemon.battleui.extended.ui.shared.BattleUiTheme
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
@@ -45,8 +46,11 @@ object BattleDialogue {
         if (current != null && !queue.isConfirmHeld && revealed(current) < current.string.length) {
             revealNanos = 0L
             revealHeld = true
+            BattleUiSounds.click()
             return true
         }
+        // A held key only waits for its release; the press that moves on clicks.
+        if (!queue.isConfirmHeld && current != null) BattleUiSounds.click()
         queue.pressConfirm()
         return true
     }

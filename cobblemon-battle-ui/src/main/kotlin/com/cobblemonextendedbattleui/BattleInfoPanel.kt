@@ -34,6 +34,7 @@ object BattleInfoPanel {
 
     fun toggle() {
         isExpanded = !isExpanded
+        jbro.cobblemon.battleui.extended.ui.shared.BattleUiSounds.click()
         if (isExpanded) {
             jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay.close()
             ChampionsBattleInfoOverlay.onOpened()

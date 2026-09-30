@@ -5,6 +5,7 @@ import jbro.cobblemon.battleui.extended.*
 import jbro.cobblemon.battleui.extended.ui.shared.BattleCornerCuts
 import jbro.cobblemon.battleui.extended.ui.shared.BattleSurface
 import jbro.cobblemon.battleui.extended.ui.shared.BattleSurfaceRenderer
+import jbro.cobblemon.battleui.extended.ui.shared.BattleUiSounds
 import jbro.cobblemon.battleui.extended.ui.shared.BattleUiTheme
 import jbro.cobblemon.battleui.transcript.TranscriptPolicy
 import net.minecraft.client.MinecraftClient
@@ -57,8 +58,12 @@ object BattleTranscriptOverlay {
         if (CobblemonExtendedBattleUIClient.toggleLogKey.matchesKey(keyCode, scanCode)) {
             if (!toggleHeld) {
                 toggleHeld = true
-                if (isOpen) close() else if (CobblemonClient.battle?.minimised == false) {
-                    if (BattleInfoPanel.isExpanded) BattleInfoPanel.toggle()
+                if (isOpen) {
+                    close()
+                    BattleUiSounds.click()
+                } else if (CobblemonClient.battle?.minimised == false) {
+                    // Closing the information panel clicks already; one click for the swap.
+                    if (BattleInfoPanel.isExpanded) BattleInfoPanel.toggle() else BattleUiSounds.click()
                     isOpen = true
                     followBottom = true
                     MoveTooltipRenderer.suspendForModal()
@@ -68,7 +73,10 @@ object BattleTranscriptOverlay {
         }
         if (!isOpen) return false
         when {
-            keyCode == GLFW.GLFW_KEY_ESCAPE || CobblemonExtendedBattleUIClient.cancelActionKey.matchesKey(keyCode, scanCode) -> close()
+            keyCode == GLFW.GLFW_KEY_ESCAPE || CobblemonExtendedBattleUIClient.cancelActionKey.matchesKey(keyCode, scanCode) -> {
+                close()
+                BattleUiSounds.click()
+            }
             keyCode == GLFW.GLFW_KEY_UP -> scrollBy(-24)
             keyCode == GLFW.GLFW_KEY_DOWN -> scrollBy(24)
             keyCode == GLFW.GLFW_KEY_PAGE_UP -> scrollBy(-viewportHeight)
@@ -90,7 +98,10 @@ object BattleTranscriptOverlay {
 
     fun mouseClicked(x: Double, y: Double): Boolean {
         if (!isOpen) return false
-        if (x >= closeLeft && x < closeRight && y >= closeTop && y < closeBottom) close()
+        if (x >= closeLeft && x < closeRight && y >= closeTop && y < closeBottom) {
+            close()
+            BattleUiSounds.click()
+        }
         return true
     }
 
