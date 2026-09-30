@@ -54,10 +54,17 @@ class LocalPuzzleSuiteTest {
             val rollouts = System.getProperty("aiengine.puzzleRollouts")?.toIntOrNull() ?: 0
             if (rollouts > 0) {
                 // Every candidate played out from the puzzle, both sides the Boss: the mean final HP lead it leads to.
+                // What the opponent answered on the first turn, per candidate: the read the position turns on.
+                val replies = linkedMapOf<String, MutableMap<String, Int>>()
                 val samples = contexts.first().candidates.associate { candidate ->
                     candidate.actionId to (0 until rollouts).map { k ->
                         val played = LocalTacticalScenarioBattle.run(definition, 30, tuning, tuning, boss, boss, lookaheadBudget = budget,
                             start = puzzle.start, fork = LocalScenarioFork(1, BattleSide.ALLY, candidate.actionId, 9_000L + k))
+                        played.turns.firstOrNull()?.let { replies.getOrPut(candidate.actionId, ::linkedMapOf).merge(it.offenseActual, 1, Int::plus) }
+                        if (k < (System.getProperty("aiengine.puzzleTrace")?.toIntOrNull() ?: 0)) {
+                            println("   trace ${candidate.actionId.takeLast(30)} #$k lead=%+.2f: ".format(played.cycleRemainingHp - played.offenseRemainingHp) +
+                                played.turns.joinToString(" / ") { "T${it.turn} ${it.cycleActual} vs ${it.offenseActual} ${it.result}" })
+                        }
                         played.cycleRemainingHp - played.offenseRemainingHp
                     }
                 }
@@ -76,6 +83,7 @@ class LocalPuzzleSuiteTest {
                 println("   rollouts: " + values.entries.sortedByDescending { it.value }.joinToString(" | ") {
                     "${label(it.key)} %+.2f±%.2f".format(it.value, error(it.key))
                 })
+                replies.forEach { (actionId, counts) -> println("   replies to ${label(actionId)}: $counts") }
             }
             val ok = puzzle.passes(turn.cycleActual)
             if (ok) passed++
@@ -130,6 +138,9 @@ class LocalPuzzleSuiteTest {
             val value = flag.substringAfter('=', "").toDoubleOrNull()
             tuning = when (name) {
                 "plainSwitch" -> tuning.copy(scoredSwitchIntent = false)
+                "recovery" -> tuning.copy(matchupRecovery = true)
+                "noLoop" -> tuning.copy(recoveryLoopPenalty = 0.0)
+                "setupCredit" -> tuning.copy(setupSweepCredit = value ?: 1.0)
                 "predicted" -> tuning.copy(predictedSwitchShare = value ?: 1.0)
                 "repeats" -> tuning.copy(readOpponentRepeats = true)
                 "positional" -> tuning.copy(positionalTurnDeltas = true)
