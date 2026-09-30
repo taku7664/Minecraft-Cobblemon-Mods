@@ -1,3 +1,4 @@
 {
-  "parent": "more_cobblemon_contents_league_challenge:block/league_terminal"
+  "parent": "builtin/entity",
+  "gui_light": "front"
 }
