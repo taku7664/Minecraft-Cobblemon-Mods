@@ -7,6 +7,7 @@ jbro 포켓몬 서버에 적용하는 정책과 다듬기 기능을 하나로 �
 - 필요 모드: Fabric API, Fabric Language Kotlin, Cobblemon 1.8.1
 - 선택 모드: More Cobblemon Contents: League Challenge(채팅 등급), Cobblenav(`/pokenav`)
 - 설정 파일: `config/jbro-policy.json`
+- 새 서버를 열 때 맞출 설정: [docs/SERVER_OPEN_CHECKLIST.md](docs/SERVER_OPEN_CHECKLIST.md)
 
 ## 광장
 
