@@ -274,6 +274,30 @@ class LocalMatchupScoreTest {
     }
 
     @Test
+    fun `heals in a row that still ended lower make a losing loop`() {
+        val recover = BattlePublicMoveOptionView("recover", BattleMoveCandidateView(typeId = "normal",
+            damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
+            targetPattern = BattleMoveTargetPattern.SELF,
+            effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, listOf(BattleMoveEffectView(
+                BattleMoveEffectKind.HEAL_FRACTION, BattleMoveEffectTarget.USER,
+                fractionRange = BattleFractionRange(0.5, 0.5))), false)),
+            BattlePublicMoveKnowledge.EXACT_OWN)
+        var sequence = 0L
+        fun turn(turn: Int, move: String, net: Double) = listOf(
+            BattleObservedEventView(sequence++, turn, BattleObservedEventKind.MOVE_USED, ALLY, listOf(ALLY), move),
+            BattleObservedEventView(sequence++, turn, BattleObservedEventKind.HP_CHANGED, ALLY, hpFractionDelta = net))
+        fun streak(vararg turns: List<BattleObservedEventView>): Int {
+            val context = context(allySpeed = 100, foeSpeed = 100, allyExtra = listOf(recover), events = turns.flatMap { it }, turn = 4)
+            return jbro.cobblemon.mcc.betterai.evaluation.LocalRecoveryLoop.failedStreak(ALLY, context)
+        }
+        // Turns 1-3: an attack, then two heals that still lost HP.
+        assertEquals(2, streak(turn(1, "probe", -0.3), turn(2, "recover", -0.1), turn(3, "recover", -0.05)))
+        // The heal that kept up breaks the run.
+        assertEquals(0, streak(turn(2, "recover", -0.1), turn(3, "recover", 0.1)))
+        assertEquals(0, streak(turn(3, "probe", -0.2)))
+    }
+
+    @Test
     fun `a wall that heals off the hit is never worn down by it`() {
         val recover = BattlePublicMoveOptionView("recover", BattleMoveCandidateView(typeId = "normal",
             damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
@@ -534,12 +558,13 @@ class LocalMatchupScoreTest {
         events: List<BattleObservedEventView> = emptyList(),
         /** Moves for the benched second opponent only, in place of [foeExtra]. */
         benchFoeExtra: List<BattlePublicMoveOptionView>? = null,
+        turn: Int = 1,
     ): BattleDecisionContext {
         val field = if (!rocksOnAllySide) BattleFieldStateView.empty() else BattleFieldStateView(null, null, emptyList(), emptyList(),
             mapOf(BattleSide.ALLY to listOf(BattleTimedEffectView("stealthrock", null)), BattleSide.OPPONENT to emptyList()))
         val observed = events + if (!foeMovedThisTurn) emptyList() else
             listOf(BattleObservedEventView(9, 1, BattleObservedEventKind.MOVE_USED, FOE, listOf(ALLY), "probe"))
-        val state = BattleStateView(UUID(0, 918), format, 1,
+        val state = BattleStateView(UUID(0, 918), format, turn,
             listOf(pokemon(ALLY, BattleSide.ALLY, 0, allySpeed, allyItem), pokemon(BENCH, BattleSide.ALLY, if (benchActive) 1 else null, allySpeed),
                 pokemon(FOE, BattleSide.OPPONENT, 0, foeSpeed, status = foeStatus)) + listOfNotNull(if (secondFoe) pokemon(FOE2, BattleSide.OPPONENT, if (secondFoeActive) 1 else null, 50) else null),
             field, mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to if (secondFoe) 2 else 1), observed, emptyList())

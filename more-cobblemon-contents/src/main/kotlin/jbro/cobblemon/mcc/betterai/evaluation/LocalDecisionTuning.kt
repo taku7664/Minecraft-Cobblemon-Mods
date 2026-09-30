@@ -150,6 +150,11 @@ internal data class LocalDecisionTuning(
      */
     val matchupRecovery: Boolean = false,
     /**
+     * Root points a self-heal loses for each turn in a row its user healed and still ended lower
+     * (LocalRecoveryLoop): the heal is not keeping up, and another one only spends a turn behind.
+     */
+    val recoveryLoopPenalty: Double = 30.0,
+    /**
      * The root knockout correction removes the knockouts the search itself re-derived (expected opposing
      * knockouts on the root turn times [knockoutMaterialScore]); off, it removes up to the search's whole gain,
      * which erased the damage a knockout move cost whenever that gain stayed below the heuristic's credit.
