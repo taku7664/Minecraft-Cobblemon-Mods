@@ -45,7 +45,7 @@ internal object MccShopClient {
         private set
     val cart = ShopCart()
     val purchase = PendingClientRequest()
-    var itemPage = 0
+    var itemOffset = 0
     var cartPage = 0
     private var openedByServer = false
 
@@ -53,7 +53,7 @@ internal object MccShopClient {
         val previous = state
         if (previous != null && (previous.catalogId != next.catalogId || previous.catalogRevision != next.catalogRevision)) {
             cart.clear()
-            itemPage = 0
+            itemOffset = 0
         }
         if (next.result == BattlePointShopPurchaseStatus.APPLIED || next.result == BattlePointShopPurchaseStatus.ALREADY_APPLIED) {
             cart.clear()
@@ -83,7 +83,7 @@ internal object MccShopClient {
         state = null
         cart.clear()
         purchase.reset()
-        itemPage = 0
+        itemOffset = 0
         cartPage = 0
     }
 
@@ -96,11 +96,17 @@ internal object MccShopClient {
  * the purchase, and the viewer. Goods move left to right from the catalog into the cart.
  */
 internal class MccShopTab : MccHubTabContent {
+    private var catalog: MccHubKit.Scrollable? = null
+
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, scrollY: Double): Boolean =
+        catalog?.scroll(mouseX, mouseY, scrollY) == true
+
     override fun shown() {
         if (!MccShopClient.takeOpenedByServer()) MccHubTabs.requestContent(MccShopClient.CONTENT)
     }
 
     override fun build(host: MccHubContentHost, bounds: UiRect) {
+        catalog = null
         val state = MccShopClient.state
         if (state == null) {
             MccHubKit.placeholder(host, bounds, shop("loading"))
@@ -124,7 +130,11 @@ internal class MccShopTab : MccHubTabContent {
     private fun addCatalog(host: MccHubContentHost, layout: MccShopLayout, state: ShopStatePayload, icon: CobblemonUiRenderContent?) {
         val body = MccHubKit.card(host, layout.catalog, shop("items"), MccHubKit.CardTone.FEATURE, icon)
         val idle = !MccShopClient.purchase.isPending
-        MccHubKit.pagedList(host, body, state.entries.map { entry ->
+        if (state.entries.isEmpty()) {
+            MccHubKit.placeholder(host, body, shop("empty"))
+            return
+        }
+        catalog = MccHubKit.scrollList(host, body, state.entries.map { entry ->
             MccHubKit.ListEntry(
                 itemName(entry),
                 trailing = Component.literal(bp(entry.priceBp)),
@@ -134,10 +144,7 @@ internal class MccShopTab : MccHubTabContent {
             ) {
                 if (MccShopClient.cart.add(entry, state.limits, state.entries)) host.rebuild()
             }
-        }, MccShopClient.itemPage, shop("empty")) { page ->
-            MccShopClient.itemPage = page
-            host.rebuild()
-        }
+        }, MccShopClient.itemOffset) { MccShopClient.itemOffset = it }
     }
 
     private fun addCart(host: MccHubContentHost, layout: MccShopLayout, state: ShopStatePayload, icon: CobblemonUiRenderContent?) {

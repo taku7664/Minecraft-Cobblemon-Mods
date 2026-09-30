@@ -12,8 +12,8 @@ A core mod and content mods for Cobblemon battle facilities.
 
 ## Terminals and hub tabs
 
-Each content mod registers a hologram terminal through `HoloTerminals.register` (`api.terminal`): an ID, the tab
-the hub opens on, its default tabs and a colour palette. The server reads which tabs each way into the hub shows
+Each content mod registers a hologram terminal through `HoloTerminals.register` (`api.terminal`): an ID, its
+default tabs and a colour palette. Like `/mcc`, a terminal opens the hub on the dashboard when it is listed. The server reads which tabs each way into the hub shows
 from `config/more-cobblemon-contents/hub_tabs.json`, written with the defaults on first start and read again on
 `/reload`:
 

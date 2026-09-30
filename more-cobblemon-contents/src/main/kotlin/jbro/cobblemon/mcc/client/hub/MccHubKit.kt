@@ -760,6 +760,7 @@ object MccHubKit {
                     if (bounds.bottom < rect.y || bounds.y > rect.bottom) return@forEachIndexed
                     val hovered = rect.contains(mouseX.toDouble(), mouseY.toDouble()) && bounds.contains(mouseX.toDouble(), mouseY.toDouble())
                     CobblemonUiListRows.draw(graphics, bounds, entry.content(), entry.enabled, hovered, mouseX, mouseY, partialTick)
+                    if (hovered) entry.tooltip?.let { Minecraft.getInstance().screen?.setTooltipForNextRenderPass(it) }
                 }
             } finally {
                 graphics.disableScissor()

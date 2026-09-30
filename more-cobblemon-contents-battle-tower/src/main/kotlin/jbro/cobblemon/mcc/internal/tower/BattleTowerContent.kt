@@ -21,7 +21,7 @@ object BattleTowerContent : ModInitializer {
         TowerPlayNetworking.registerServer()
         MoreCobblemonContents.CONTENTS.register(BattleTowerContentApplication(TowerPlayNetworking))
         MccCommandContributors.register { AiTestCommands.build(Cobblemon173AiTestBattleRuntime) }
-        HoloTerminals.register(ResourceLocation.fromNamespaceAndPath(MOD_ID, "battle_tower_terminal"), ManagedBattleContentIds.BATTLE_TOWER,
+        HoloTerminals.register(ResourceLocation.fromNamespaceAndPath(MOD_ID, "battle_tower_terminal"),
             listOf(BattleHubIds.DASHBOARD, BattleHubIds.SHOP, ManagedBattleContentIds.BATTLE_TOWER),
             // Tower crimson with an ember crystal.
             HoloTerminalPalette(0x5A1620, 0xA8283A, 0xFF5A4E, 0xFF9A7A, 0xFFB38A, 0xE0483C, 0xFF7A60))

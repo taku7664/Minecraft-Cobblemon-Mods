@@ -62,10 +62,11 @@ object BattleHubNetworking {
     /** Opens the hub from [terminal]; the verified [use] stays attached to the entries opened during this hub session. */
     fun openTerminal(player: ServerPlayer, terminal: HoloTerminal, use: TerminalInteractionResult.Verified): Boolean {
         val tabs = BattleHubTabConfigFile.current.terminals[terminal.id.toString()] ?: terminal.defaultTabs
-        return open(player, tabs, terminal.homeTab, use)
+        return open(player, tabs, BattleHubIds.DASHBOARD, use)
     }
 
-    private fun open(player: ServerPlayer, configured: List<String>, home: String?, terminal: TerminalInteractionResult.Verified?): Boolean {
+    /** Shows [configured] on [home], or on the first tab when the list leaves [home] out. */
+    private fun open(player: ServerPlayer, configured: List<String>, home: String, terminal: TerminalInteractionResult.Verified?): Boolean {
         val tabs = configured.take(BattleHubStatePayload.MAX_TABS)
         val opened = attemptServerUiOperation(
             reportFailure = { failure -> reportFailure(player, "open", failure) },
@@ -74,7 +75,7 @@ object BattleHubNetworking {
             sessions[player.uuid] = Session(tabs, terminal)
             sendHeader(player)
             sendDashboard(player)
-            ServerPlayNetworking.send(player, BattleHubStatePayload(tabs, home?.takeIf { it in tabs } ?: tabs.first()))
+            ServerPlayNetworking.send(player, BattleHubStatePayload(tabs, home.takeIf { it in tabs } ?: tabs.first()))
             true
         }
         if (!opened) sessions.remove(player.uuid)

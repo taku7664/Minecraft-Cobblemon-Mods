@@ -102,7 +102,7 @@ private object HoloTerminalGeometry {
         repeat(RING_SEGMENTS) { segment ->
             val start = rotation + FULL_TURN * segment / RING_SEGMENTS
             val end = rotation + FULL_TURN * (segment + 1) / RING_SEGMENTS
-            quad(
+            sheet(
                 vertices,
                 matrix,
                 point(cos(start) * (radius - halfWidth), y, sin(start) * (radius - halfWidth)),
@@ -120,7 +120,7 @@ private object HoloTerminalGeometry {
         val z = sin(rotation) * radius
         val perpendicularX = -z
         val perpendicularZ = x
-        quad(
+        sheet(
             vertices,
             matrix,
             point(0.0f, centerY + radius, 0.0f),
@@ -130,7 +130,7 @@ private object HoloTerminalGeometry {
             palette.crystal,
             178,
         )
-        quad(
+        sheet(
             vertices,
             matrix,
             point(0.0f, centerY + radius, 0.0f),
@@ -143,7 +143,7 @@ private object HoloTerminalGeometry {
     }
 
     private fun scanPlane(vertices: VertexConsumer, matrix: Matrix4f, y: Float, rgb: Int) {
-        quad(
+        sheet(
             vertices,
             matrix,
             point(-0.32f, y, -0.32f),
@@ -175,12 +175,28 @@ private object HoloTerminalGeometry {
         val p101 = point(maxX, minY, maxZ)
         val p110 = point(maxX, maxY, minZ)
         val p111 = point(maxX, maxY, maxZ)
-        quad(vertices, matrix, p000, p100, p110, p010, rgb, alpha)
-        quad(vertices, matrix, p101, p001, p011, p111, rgb, alpha)
-        quad(vertices, matrix, p001, p000, p010, p011, rgb, alpha)
-        quad(vertices, matrix, p100, p101, p111, p110, rgb, alpha)
-        quad(vertices, matrix, p010, p110, p111, p011, rgb, alpha)
-        quad(vertices, matrix, p001, p101, p100, p000, rgb, alpha)
+        // Counter-clockwise seen from outside, so culling keeps the faces toward the viewer.
+        quad(vertices, matrix, p010, p110, p100, p000, rgb, alpha)
+        quad(vertices, matrix, p111, p011, p001, p101, rgb, alpha)
+        quad(vertices, matrix, p011, p010, p000, p001, rgb, alpha)
+        quad(vertices, matrix, p110, p111, p101, p100, rgb, alpha)
+        quad(vertices, matrix, p011, p111, p110, p010, rgb, alpha)
+        quad(vertices, matrix, p000, p100, p101, p001, rgb, alpha)
+    }
+
+    /** A flat part seen from both sides: the lightning render type culls back faces. */
+    private fun sheet(
+        vertices: VertexConsumer,
+        matrix: Matrix4f,
+        first: Point,
+        second: Point,
+        third: Point,
+        fourth: Point,
+        rgb: Int,
+        alpha: Int,
+    ) {
+        quad(vertices, matrix, first, second, third, fourth, rgb, alpha)
+        quad(vertices, matrix, fourth, third, second, first, rgb, alpha)
     }
 
     private fun quad(
