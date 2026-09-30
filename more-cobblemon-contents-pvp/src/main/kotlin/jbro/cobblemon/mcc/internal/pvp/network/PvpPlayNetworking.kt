@@ -1260,6 +1260,13 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                         finishRoom(pending.matchId)
                     },
                 )
+                if (accepted && !pending.cancelled) {
+                    val winner = server.playerList.getPlayer(checkNotNull(pending.winnerId))
+                    val loser = server.playerList.getPlayer(checkNotNull(pending.loserId))
+                    fun name(id: UUID) = Component.literal(jbro.cobblemon.mcc.internal.command.MccAdminArguments.name(server, id))
+                    winner?.let { jbro.cobblemon.mcc.api.presentation.BattleResultNotices.victory(it, name(pending.loserId)) }
+                    loser?.let { jbro.cobblemon.mcc.api.presentation.BattleResultNotices.defeat(it, name(pending.winnerId)) }
+                }
                 if (!accepted) {
                     MoreCobblemonContents.LOGGER.warn(
                         "Dropping stale PvP completion retry for match {} and battle {}",

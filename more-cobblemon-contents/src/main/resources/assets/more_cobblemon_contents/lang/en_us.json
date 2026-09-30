@@ -128,5 +128,6 @@
   "command.more_cobblemon_contents.admin.source_failed": "Reading this content's state failed. See the server log.",
   "message.more_cobblemon_contents.battle_result.victory_bp": "▶ You beat %s! %s",
   "message.more_cobblemon_contents.battle_result.victory": "▶ You beat %s!",
-  "message.more_cobblemon_contents.battle_result.defeat": "▶ You lost to %s."
+  "message.more_cobblemon_contents.battle_result.defeat": "▶ You lost to %s.",
+  "message.more_cobblemon_contents.battle_result.opponent": "the opposing trainer"
 }

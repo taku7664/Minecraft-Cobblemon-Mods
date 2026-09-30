@@ -128,5 +128,6 @@
   "command.more_cobblemon_contents.admin.source_failed": "이 콘텐츠의 상태를 읽다가 오류가 났습니다. 서버 로그를 확인하세요.",
   "message.more_cobblemon_contents.battle_result.victory_bp": "▶ %s에게 승리했습니다! %s",
   "message.more_cobblemon_contents.battle_result.victory": "▶ %s에게 승리했습니다!",
-  "message.more_cobblemon_contents.battle_result.defeat": "▶ %s에게 패배했습니다."
+  "message.more_cobblemon_contents.battle_result.defeat": "▶ %s에게 패배했습니다.",
+  "message.more_cobblemon_contents.battle_result.opponent": "상대 트레이너"
 }
