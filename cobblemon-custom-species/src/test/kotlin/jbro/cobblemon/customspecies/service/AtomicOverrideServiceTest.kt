@@ -67,15 +67,44 @@ class AtomicOverrideServiceTest {
         assertEquals(100, backing.requireTarget("cobblemon:charizard", "base").baseStats["attack"])
     }
 
+    @Test
+    fun `form edit writes only the fields it changed so the rest keeps inheriting`() {
+        val catalog = FakeSpeciesCatalog.rotomWithInheritedWashForm()
+        val service = AtomicOverrideService(catalog)
+        val config = CustomSpeciesConfigParser().parse(
+            """{"schema":1,"overrides":[
+                {"species":"cobblemon:rotom","form":"base","base_stats":{"speed":120}},
+                {"species":"cobblemon:rotom","form":"wash","moves":{"add":["tm:hydropump"]}}
+            ]}"""
+        )
+
+        service.apply(config)
+
+        assertEquals(setOf(TargetField.BASE_STATS), catalog.writtenFields[SpeciesTargetKey("cobblemon:rotom", "base")])
+        assertEquals(setOf(TargetField.MOVES), catalog.writtenFields[SpeciesTargetKey("cobblemon:rotom", "wash")])
+    }
+
+    @Test
+    fun `unknown remove_moves name rejects the whole config`() {
+        val catalog = FakeSpeciesCatalog.charizard().also { it.knownMoveNames = setOf("growl") }
+        val service = AtomicOverrideService(catalog)
+        val config = CustomSpeciesConfigParser().parse(
+            """{"schema":1,"overrides":[{"species":"cobblemon:charizard","form":"base","moves":{"remove_moves":["growll"]}}]}"""
+        )
+
+        assertThrows(OverrideApplicationException::class.java) { service.apply(config) }
+        assertEquals(setOf("1:growl"), catalog.requireTarget("cobblemon:charizard", "base").moves)
+    }
+
     private class FailOnceCatalog(private val delegate: SpeciesCatalog) : SpeciesCatalog by delegate {
         var failNextWrite = false
 
-        override fun write(key: SpeciesTargetKey, state: SpeciesTargetState) {
+        override fun write(key: SpeciesTargetKey, state: SpeciesTargetState, fields: Set<TargetField>) {
             if (failNextWrite) {
                 failNextWrite = false
                 error("simulated publication failure")
             }
-            delegate.write(key, state)
+            delegate.write(key, state, fields)
         }
     }
 }

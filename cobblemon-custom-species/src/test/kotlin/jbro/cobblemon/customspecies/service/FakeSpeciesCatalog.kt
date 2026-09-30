@@ -11,9 +11,20 @@ class FakeSpeciesCatalog private constructor(private val targets: MutableMap<Spe
 
     override fun read(key: SpeciesTargetKey): SpeciesTargetState = targets.getValue(key)
 
-    override fun write(key: SpeciesTargetKey, state: SpeciesTargetState) {
-        targets[key] = state
+    val writtenFields = mutableMapOf<SpeciesTargetKey, Set<TargetField>>()
+    var knownMoveNames: Set<String>? = null
+
+    override fun write(key: SpeciesTargetKey, state: SpeciesTargetState, fields: Set<TargetField>) {
+        val current = targets.getValue(key)
+        targets[key] = SpeciesTargetState(
+            if (TargetField.BASE_STATS in fields) state.baseStats else current.baseStats,
+            if (TargetField.ABILITIES in fields) state.abilities else current.abilities,
+            if (TargetField.MOVES in fields) state.moves else current.moves
+        )
+        writtenFields[key] = fields
     }
+
+    override fun validateMoveName(name: String): Boolean = knownMoveNames?.contains(name) ?: true
 
     fun requireTarget(species: String, form: String): SpeciesTargetState = targets.getValue(SpeciesTargetKey(species, form))
 
