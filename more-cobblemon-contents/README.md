@@ -39,7 +39,8 @@ with, so a tab left out cannot be reached by a modified client either.
 ## Operator commands
 
 These need permission level 2; `/mcc` itself follows `command_permission_level`, and players keep `/mcc bp` and
-`/mcc bp history [count]` for their own BP. Player arguments that read or edit saved data take offline
+`/mcc bp history [count]` for their own BP, and `/mcc wiki` and `/mcc wiki reset` for their wiki link while the
+wiki runs. Player arguments that read or edit saved data take offline
 players too.
 
 | Command | What it does |
@@ -60,6 +61,23 @@ players too.
 | `/mcc league trainer spawn <kind>`, `despawn [radius]`, `list [radius]`, `cooldown reset <player>` | Wild trainers |
 
 Contents take part in `status`, `battle pending` and the record reset check through `MccAdminSources`.
+
+## Server wiki
+
+With `enabled` set in `config/more-cobblemon-contents/wiki.json`, the server serves the wiki (the repository's
+`server-wiki/`, copied into `directory`) over HTTP while it runs, and `/api/me` answers with the asking player's
+BP, records and content sections, read fresh on every request:
+
+```json
+{ "enabled": true, "bind": "0.0.0.0", "port": 8100, "public_url": "http://play.example.com:8100",
+  "directory": "config/more-cobblemon-contents/wiki" }
+```
+
+It is off by default, since it opens a port. `public_url` is the address players' browsers reach; without it links
+point at `http://localhost:<port>`. `/mcc wiki` gives a player a link carrying their token, which the wiki keeps in
+the browser and sends with each `/api/me` request; `/mcc wiki reset` issues a new token and ends the old links, and
+`/mcc wiki link <player>` gives operators anyone's link. Tokens live in the world's `data/mcc_wiki_tokens.json`.
+Contents add their own data to `/api/me` with `WikiPlayerData.register(key) { server, playerId -> json }`.
 
 All modules share the package root `jbro.cobblemon.mcc`. Versions live in the root `gradle.properties`
 (`more_cobblemon_contents_version`, `more_cobblemon_contents_battle_tower_version`, ...).

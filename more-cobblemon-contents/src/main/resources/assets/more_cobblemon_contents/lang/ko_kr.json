@@ -129,5 +129,10 @@
   "message.more_cobblemon_contents.battle_result.victory_bp": "▶ %s에게 승리했습니다! %s",
   "message.more_cobblemon_contents.battle_result.victory": "▶ %s에게 승리했습니다!",
   "message.more_cobblemon_contents.battle_result.defeat": "▶ %s에게 패배했습니다.",
-  "message.more_cobblemon_contents.battle_result.opponent": "상대 트레이너"
+  "message.more_cobblemon_contents.battle_result.opponent": "상대 트레이너",
+  "command.more_cobblemon_contents.wiki.link": "내 위키 링크: %s",
+  "command.more_cobblemon_contents.wiki.reset": "새 위키 링크입니다. 전에 쓰던 링크는 더 이상 열리지 않습니다: %s",
+  "command.more_cobblemon_contents.wiki.link_for": "%s의 위키 링크: %s",
+  "command.more_cobblemon_contents.wiki.hover": "브라우저에서 위키를 엽니다. 이 링크는 다른 사람에게 알려 주지 마세요.",
+  "command.more_cobblemon_contents.wiki.off": "서버 위키가 꺼져 있습니다."
 }
