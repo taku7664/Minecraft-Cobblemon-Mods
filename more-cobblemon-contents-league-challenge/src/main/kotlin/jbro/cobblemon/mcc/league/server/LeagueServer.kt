@@ -199,7 +199,7 @@ object LeagueServer {
         val storage = LeagueSavedData.get(player.server)
         var state = storage.read(catalog.id, player.uuid)
         // Before the integration steps below, which can fail and must not keep the header's rank stale.
-        syncRank(player, rank(catalog, state))
+        syncRank(player, rank(catalog, state).name)
         LeagueIntegrations.syncCap(player, LeagueEngine(catalog).cap(state))
         // Player data and world SavedData do not share one disk transaction. Repair badges from wins.
         for (id in catalog.gyms.filter { it in state.cleared }) {
@@ -217,9 +217,9 @@ object LeagueServer {
         }
     }
 
-    private fun rank(catalog: LeagueCatalog, state: LeagueProgress): String {
+    internal fun rank(catalog: LeagueCatalog, state: LeagueProgress): LeagueRank {
         val badges = LeagueEngine(catalog).badgeCount(state).coerceIn(0, 8)
-        return LeagueRank.fromProgress(badges, state.champion && badges == 8).name
+        return LeagueRank.fromProgress(badges, state.champion && badges == 8)
     }
 
     /** Tells the client its rank when it changed; reconcile repeats this, so admin edits reach it too. */
@@ -240,7 +240,7 @@ object LeagueServer {
         server.overworld().dataStorage.save()
         val catalog = LeagueCatalogResources.current
         val online = server.playerList.getPlayer(player)
-        if (catalog != null && catalog.id == league && online != null) syncRank(online, rank(catalog, state))
+        if (catalog != null && catalog.id == league && online != null) syncRank(online, rank(catalog, state).name)
     }
 
     private fun send(player: ServerPlayer, errorKey: String? = null, openScreen: Boolean = false) {
@@ -249,7 +249,7 @@ object LeagueServer {
         val state = LeagueSavedData.get(player.server).read(catalog.id, player.uuid)
         val engine = LeagueEngine(catalog)
         val badges = engine.badgeCount(state)
-        val rank = rank(catalog, state)
+        val rank = rank(catalog, state).name
         fun route(gyms: List<String>, finals: List<String>) = (gyms + finals.first()).map { id ->
             val index = gyms.indexOf(id)
             val available = if (index >= 0) gyms.take(index).all { it in state.cleared } else gyms.all { it in state.cleared }
