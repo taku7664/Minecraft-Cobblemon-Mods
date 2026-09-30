@@ -55,6 +55,9 @@ internal data class LocalTacticalScenarioTurn(
     /** The top of each side's ranking, with comparison values, for reading a battle back. */
     val cycleTop: String = "",
     val offenseTop: String = "",
+    /** The ally side's chosen action id and its ranking's action ids, best first. */
+    val cycleActualId: String = "",
+    val cycleRankedIds: List<String> = emptyList(),
 )
 
 internal data class LocalTacticalScenarioReport(
@@ -235,6 +238,7 @@ internal object LocalTacticalScenarioBattle {
                 val cycleActual = choose(BattleSide.ALLY, cycleCandidates)
                 val cycleIdeal = selectors.getValue(BattleSide.ALLY).ideal()
                 val cycleTop = topLabel(selectors.getValue(BattleSide.ALLY))
+                val cycleRankedIds = selectors.getValue(BattleSide.ALLY).lastRanked.map { it.outcome.candidate.actionId }
                 val offenseActual = choose(BattleSide.OPPONENT, offenseCandidates)
                 val offenseIdeal = selectors.getValue(BattleSide.OPPONENT).ideal()
                 val offenseTop = topLabel(selectors.getValue(BattleSide.OPPONENT))
@@ -289,6 +293,8 @@ internal object LocalTacticalScenarioBattle {
                     result = resultSummary(before, state, cycleCanonical, offenseCanonical, outcome),
                     cycleTop = cycleTop,
                     offenseTop = offenseTop,
+                    cycleActualId = cycleActual.actionId,
+                    cycleRankedIds = cycleRankedIds,
                 )
                 if (ended()) break
             }

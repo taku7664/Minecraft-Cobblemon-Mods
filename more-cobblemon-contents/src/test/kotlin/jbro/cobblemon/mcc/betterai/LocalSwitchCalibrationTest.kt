@@ -24,7 +24,8 @@ import org.junit.jupiter.api.Test
  * matchup was the one that came in, then [LocalOpponentIntentPredictor.SwitchFeatures]); tools/fit_switch_model.py
  * fits the switch model on them.
  *
- * Opt-in: -Daiengine.calibrationGames=<n> [-Daiengine.calibrationSeed=<seed>].
+ * Opt-in: -Daiengine.calibrationGames=<n> [-Daiengine.calibrationSeed=<seed>] [-Daiengine.calibrationFrom=<skip>]
+ * [-Daiengine.calibrationFormat=double]. In doubles each opposing slot is a sample of its own.
  */
 class LocalSwitchCalibrationTest {
     private class Sample(val predicted: Double, val switched: Boolean, val predictedIncoming: String?, val incoming: String?, val seenBench: Boolean)
@@ -38,8 +39,13 @@ class LocalSwitchCalibrationTest {
             LocalLookaheadBudgetPolicy.forTier(tier).copy(timeMillis = Long.MAX_VALUE, nodeLimit = 50_000_000)
         }
         val tuning = LocalDecisionTuning.CURRENT
-        val samples = mapOf(false to mutableListOf<Sample>(), true to mutableListOf())
-        for (definition in LocalSelfPlayMeasurement.definitions(games, System.getProperty("aiengine.calibrationSeed")?.toIntOrNull() ?: 20261215, BattleFormat.SINGLE)) {
+        // "plain": the one softmax; "scored": what the predictor ships for the format; "model": the fitted switch
+        // model read straight from the features (in doubles, the singles weights carried over).
+        val samples = linkedMapOf("plain" to mutableListOf<Sample>(), "scored" to mutableListOf(), "model" to mutableListOf())
+        val format = if (System.getProperty("aiengine.calibrationFormat") == "double") BattleFormat.DOUBLE else BattleFormat.SINGLE
+        val from = System.getProperty("aiengine.calibrationFrom")?.toIntOrNull() ?: 0
+        val seed = System.getProperty("aiengine.calibrationSeed")?.toIntOrNull() ?: 20261215
+        for (definition in LocalSelfPlayMeasurement.definitions(from + games, seed, format).drop(from)) {
             val contexts = mutableListOf<BattleDecisionContext>()
             val decisions = mutableListOf<LocalScenarioDecisionTrace>()
             LocalTacticalScenarioBattle.run(definition, 30, tuning, tuning, boss, boss,
@@ -47,34 +53,48 @@ class LocalSwitchCalibrationTest {
             val chosen = contexts.indices.filter { index ->
                 val context = contexts[index]
                 context.candidates.size >= 2 && context.candidates.none { it.actionId.startsWith("forced:") } &&
-                    context.candidates.any { it.kind == BattleActionKind.USE_MOVE }
+                    context.candidates.any { candidate -> parts(candidate).any { it.kind == BattleActionKind.USE_MOVE } }
             }
             for (index in chosen) {
                 val context = contexts[index]
                 val side = decisions[index].side
                 // The other side's decision on the same turn, a free choice between moving and switching.
                 val reply = chosen.firstOrNull { decisions[it].side != side && contexts[it].state.turn == context.state.turn } ?: continue
-                val replyContext = contexts[reply]
-                val replyAction = replyContext.candidates.first { it.actionId == decisions[reply].actionId }
-                val switchedIn = replyAction.switchPokemonId?.takeIf { replyAction.kind == BattleActionKind.SWITCH }
+                val replyAction = contexts[reply].candidates.first { it.actionId == decisions[reply].actionId }
                 val calculated = PublicBattleTacticalCalculator.calculate(context)
                 val scores = LocalMatchupScoreCalculator.calculate(calculated)
-                // One line per position for fitting the switch model offline.
-                val front = context.state.pokemon.singleOrNull { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted }
-                val features = LocalOpponentIntentPredictor.switchFeatures(calculated, scores)[front?.battlePokemonId]
-                features?.let { f ->
-                    println("FEAT,${if (switchedIn != null) 1 else 0},${if (switchedIn != null && switchedIn == f.freeIncoming) 1 else 0}," +
-                        listOf(f.threatened, f.stay, f.bestGain, f.preserve, f.sweep, f.stop, f.bestAttack, f.hp, f.bench.toDouble(), f.freeGain)
-                            .joinToString(",") { "%.4f".format(it) })
-                }
+                val allFeatures = LocalOpponentIntentPredictor.switchFeatures(calculated, scores)
+                val intents = mapOf(
+                    "plain" to LocalOpponentIntentPredictor.predict(calculated, scores, false),
+                    "scored" to LocalOpponentIntentPredictor.predict(calculated, scores, true),
+                )
                 fun name(id: java.util.UUID?) = id?.let { found -> context.state.pokemon.firstOrNull { it.battlePokemonId == found }?.speciesId }
-                for (scored in listOf(false, true)) {
-                    val intent = LocalOpponentIntentPredictor.predict(calculated, scores, scored).singleOrNull() ?: continue
-                    val switches = intent.options.filter { it.kind == IntentKind.SWITCH }
-                    samples.getValue(scored) += Sample(
-                        predicted = switches.sumOf { it.probability },
+                // Each opposing Pokemon in front, against what its own slot did in the reply.
+                for (front in context.state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }) {
+                    val slotAction = parts(replyAction).firstOrNull { it.actorSlot == front.activeSlot } ?: continue
+                    val switchedIn = slotAction.switchPokemonId?.takeIf { slotAction.kind == BattleActionKind.SWITCH }
+                    val features = allFeatures[front.battlePokemonId]
+                    // One line per position for fitting the switch model offline.
+                    features?.let { f ->
+                        println("FEAT,${if (switchedIn != null) 1 else 0},${if (switchedIn != null && switchedIn == f.freeIncoming) 1 else 0}," +
+                            listOf(f.threatened, f.stay, f.bestGain, f.preserve, f.sweep, f.stop, f.bestAttack, f.hp, f.bench.toDouble(), f.freeGain)
+                                .joinToString(",") { "%.4f".format(it) })
+                    }
+                    for ((kind, list) in intents) {
+                        val intent = list.firstOrNull { it.pokemonId == front.battlePokemonId } ?: continue
+                        val switches = intent.options.filter { it.kind == IntentKind.SWITCH }
+                        samples.getValue(kind) += Sample(
+                            predicted = switches.sumOf { it.probability },
+                            switched = switchedIn != null,
+                            predictedIncoming = name(switches.maxByOrNull { it.probability }?.switchInId),
+                            incoming = name(switchedIn),
+                            seenBench = features != null,
+                        )
+                    }
+                    samples.getValue("model") += Sample(
+                        predicted = features?.let(LocalOpponentIntentPredictor::switchChance) ?: 0.0,
                         switched = switchedIn != null,
-                        predictedIncoming = name(switches.maxByOrNull { it.probability }?.switchInId),
+                        predictedIncoming = name(features?.freeIncoming),
                         incoming = name(switchedIn),
                         seenBench = features != null,
                     )
@@ -83,7 +103,7 @@ class LocalSwitchCalibrationTest {
         }
         // Every position, and those with some of the opponent's bench seen: a switch into one not yet seen cannot be
         // priced, so the model leaves it out.
-        for ((label, list) in samples.flatMap { (scored, all) -> listOf("scored=$scored" to all, "scored=$scored seen" to all.filter { it.seenBench }) }) {
+        for ((label, list) in samples.flatMap { (kind, all) -> listOf(kind to all, "$kind seen" to all.filter { it.seenBench }) }) {
             val brier = list.sumOf { (it.predicted - if (it.switched) 1.0 else 0.0).let { e -> e * e } } / list.size.coerceAtLeast(1)
             val baseRate = list.count { it.switched }.toDouble() / list.size.coerceAtLeast(1)
             val switchedCases = list.filter { it.switched }
@@ -97,4 +117,7 @@ class LocalSwitchCalibrationTest {
             }
         }
     }
+
+    private fun parts(candidate: jbro.cobblemon.mcc.internal.ai.BattleActionCandidate) =
+        if (candidate.kind == BattleActionKind.COMPOSITE) candidate.componentActions else listOf(candidate)
 }
