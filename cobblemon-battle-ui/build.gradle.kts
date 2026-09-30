@@ -20,10 +20,23 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
     modImplementation("maven.modrinth:cobblemon:${property("cobblemon_version_id")}")
-    modCompileOnly(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
+    // Loom remaps mod dependencies while Gradle configures the build, so UI Kit's JARs must already exist. Without
+    // them only Battle UI is left unbuildable, with a warning, instead of every project failing to configure.
+    // Build them first: gradlew --configure-on-demand :cobblemon-ui-kit:jar :cobblemon-ui-kit:remapJar
+    val uiKitVersion = property("cobblemon_ui_kit_version")
+    val uiKitDev = rootProject.file("cobblemon-ui-kit/build/devlibs/cobblemon-ui-kit-$uiKitVersion-dev.jar")
     // UI Kit is built with Mojang names; the dev client runs Yarn names, so it needs the remapped mod JAR.
-    // Build it first: gradlew --configure-on-demand :cobblemon-ui-kit:remapJar
-    modRuntimeOnly(files(rootProject.file("cobblemon-ui-kit/build/libs/cobblemon-ui-kit-${property("cobblemon_ui_kit_version")}.jar")))
+    val uiKitRemapped = rootProject.file("cobblemon-ui-kit/build/libs/cobblemon-ui-kit-$uiKitVersion.jar")
+    if (uiKitDev.exists()) {
+        modCompileOnly(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
+    } else {
+        logger.warn("Battle UI cannot compile until UI Kit is built: missing ${uiKitDev.name}")
+    }
+    if (uiKitRemapped.exists()) {
+        modRuntimeOnly(files(uiKitRemapped))
+    } else {
+        logger.warn("Battle UI's dev client needs the remapped UI Kit: missing ${uiKitRemapped.name}")
+    }
     testImplementation(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
     // Modrinth metadata does not expose Cobblemon's development runtime libraries.
     // Versions match the official Cobblemon 1.8.1 Fabric POM; never bundle these in our JAR.
