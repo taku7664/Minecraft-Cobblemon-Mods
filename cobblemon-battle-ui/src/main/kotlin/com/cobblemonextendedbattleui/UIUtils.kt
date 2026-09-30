@@ -404,10 +404,15 @@ object UIUtils {
     val POPUP_FRAME_INSETS = NineSliceRenderer.SliceInsets(POPUP_SLICE)
 
     /**
-     * Renders the same chamfered navy surface used by battle narration and TAB.
+     * The rounded navy surface shared with battle narration and TAB: a soft shadow, then the shell with a faint
+     * cyan rim.
      */
     fun renderPopupFrame(context: DrawContext, x: Int, y: Int, width: Int, height: Int) {
-        BattleSurfaceRenderer.draw(context, x, y, width, height, BattleUiTheme.shell.copy(cut = 4))
+        val corners = jbro.cobblemon.battleui.extended.ui.shared.BattleCornerCuts(8, 8, 8, 8)
+        BattleSurfaceRenderer.draw(context, x, y + 2, width, height,
+            jbro.cobblemon.battleui.extended.ui.shared.BattleSurface(0x50000000, cornerCuts = corners))
+        BattleSurfaceRenderer.draw(context, x, y, width, height,
+            BattleUiTheme.shell.copy(border = 0x5569D6E8, borderWidth = 1, cornerCuts = corners))
     }
 
     /**
@@ -418,7 +423,8 @@ object UIUtils {
         context: DrawContext, x: Int, y: Int, w: Int, h: Int,
         colorTransform: (Int) -> Int = { it }
     ) {
-        context.fill(x, y, x + w, y + h, colorTransform(CELL_BG))
+        BattleSurfaceRenderer.draw(context, x, y, w, h,
+            jbro.cobblemon.battleui.extended.ui.shared.BattleSurface(colorTransform(CELL_BG), cut = 4))
     }
 
     /**
@@ -429,7 +435,7 @@ object UIUtils {
         context: DrawContext, cellX: Int, cellW: Int, y: Int,
         colorTransform: (Int) -> Int = { it }
     ) {
-        context.fill(cellX + 1, y, cellX + cellW - 1, y + 1, colorTransform(ROW_DIVIDER_COLOR))
+        BattleSurfaceRenderer.capsule(context, cellX + 4, y, cellW - 8, 1, colorTransform(ROW_DIVIDER_COLOR))
     }
 
 

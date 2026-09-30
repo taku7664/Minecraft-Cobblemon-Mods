@@ -72,10 +72,11 @@ object PokemonInfoPopup {
         isMinimised: Boolean
     ): TooltipBoundsData {
         val tr = MinecraftClient.getInstance().textRenderer
-        val fontScale = TeamIndicatorUI.TOOLTIP_FONT_SCALE * PanelConfig.tooltipFontScale
+        // Whole text sizes only; the width keeps the designed proportion to the text.
+        val fontScale = PixelTextLayout.crisp(TeamIndicatorUI.TOOLTIP_FONT_SCALE * PanelConfig.tooltipFontScale)
         val lineH = (TeamIndicatorUI.TOOLTIP_BASE_LINE_HEIGHT * fontScale).toInt().coerceAtLeast(7)
 
-        val popupWidth = (POPUP_BASE_WIDTH * PanelConfig.tooltipFontScale).toInt()
+        val popupWidth = (POPUP_BASE_WIDTH * fontScale / TeamIndicatorUI.TOOLTIP_FONT_SCALE).toInt()
         val contentWidth = popupWidth - UIUtils.FRAME_INSET * 2
         val leftCellW = ((contentWidth - UIUtils.COL_GAP) * LEFT_COL_RATIO).toInt()
         val rightCellW = contentWidth - UIUtils.COL_GAP - leftCellW

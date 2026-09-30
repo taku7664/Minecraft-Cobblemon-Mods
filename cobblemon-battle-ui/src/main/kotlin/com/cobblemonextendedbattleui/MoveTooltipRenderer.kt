@@ -150,10 +150,11 @@ object MoveTooltipRenderer {
         val screenWidth = mc.window.scaledWidth
         val screenHeight = mc.window.scaledHeight
         val tr = mc.textRenderer
-        val fontScale = TOOLTIP_FONT_SCALE * PanelConfig.moveTooltipFontScale
+        // Whole text sizes only; the width keeps the designed proportion to the text.
+        val fontScale = PixelTextLayout.crisp(TOOLTIP_FONT_SCALE * PanelConfig.moveTooltipFontScale)
         val lineH = (TOOLTIP_BASE_LINE_HEIGHT * fontScale).toInt().coerceAtLeast(7)
 
-        val tooltipWidth = (TOOLTIP_BASE_WIDTH * PanelConfig.moveTooltipFontScale).toInt()
+        val tooltipWidth = (TOOLTIP_BASE_WIDTH * fontScale / TOOLTIP_FONT_SCALE).toInt()
         val contentWidth = tooltipWidth - UIUtils.FRAME_INSET * 2
 
         // ── Compute data ──
@@ -227,8 +228,11 @@ object MoveTooltipRenderer {
         val cellX = px + UIUtils.FRAME_INSET
         var curY = py + UIUtils.FRAME_INSET
 
-        // Header cell
-        drawCell(context, cellX, curY, contentWidth, headerCellH)
+        // Header cell, washed with the move's type color.
+        jbro.cobblemon.battleui.extended.ui.shared.BattleSurfaceRenderer.draw(context, cellX, curY, contentWidth, headerCellH,
+            jbro.cobblemon.battleui.extended.ui.shared.BattleSurface(
+                jbro.cobblemon.battleui.extended.ui.shared.BattleSurfaceRenderer.interpolate(data.typeColor, UIUtils.CELL_BG, .72f),
+                UIUtils.CELL_BG, cut = 4))
         renderHeaderText(context, data, cellX + UIUtils.CELL_PAD, curY + UIUtils.CELL_VPAD_TOP,
             contentWidth - UIUtils.CELL_PAD * 2, fontScale, tr)
         curY += headerCellH + UIUtils.CELL_GAP
@@ -466,8 +470,8 @@ object MoveTooltipRenderer {
         val xf = x.toFloat()
         val yf = y.toFloat()
 
-        // Left: Move name (type-colored)
-        draw(context, data.moveName, xf, yf, data.typeColor, fontScale)
+        // Left: Move name, white on the type-washed header
+        draw(context, data.moveName, xf, yf, jbro.cobblemon.battleui.extended.ui.shared.BattleUiTheme.TEXT, fontScale)
 
         // Right: Type · Category
         val catW = tr.getWidth(data.categoryName) * fontScale

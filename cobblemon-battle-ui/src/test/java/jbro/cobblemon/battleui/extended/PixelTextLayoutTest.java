@@ -6,23 +6,21 @@ import org.junit.jupiter.api.Test;
 
 final class PixelTextLayoutTest {
     @Test
-    void nestedFontScalePreservesTheOversampledFontStrokes() {
-        float parent = .426f;
-        float gui = 2f;
-        assertEquals(1.5f, PixelTextLayout.fontScale(.85f, parent, gui) * parent * gui, .0001f);
+    void textLandsOnAWholeMultipleOfTheGameTextSize() {
+        for (float parent : new float[]{.426f, .816f, 1f, 1.25f, 2f}) {
+            for (float requested : new float[]{.6f, .7f, .85f, 1f, 1.2f, 1.6f, 2.2f}) {
+                float effective = PixelTextLayout.fontScale(requested, parent, 2f) * parent;
+                assertTrue(effective >= .9999f, "never below the game's text size");
+                assertEquals(Math.round(effective), effective, .0001f);
+            }
+        }
     }
 
     @Test
-    void allModalFontSizesUseReadableHalfOrWholePhysicalScale() {
-        for (float parent : new float[]{.426f, .816f, 1.25f}) {
-            for (float gui : new float[]{1f, 2f, 3f, 4f}) {
-                for (float requested : new float[]{.85f, .9f, .95f, 1f, 1.05f, 1.15f, 1.2f}) {
-                    float effective = PixelTextLayout.fontScale(requested, parent, gui) * parent * gui;
-                    assertTrue(effective >= 1.4999f);
-                    assertEquals(Math.round(effective * 2), effective * 2, .0001f);
-                }
-            }
-        }
+    void smallRequestsDrawAtTheGameTextSize() {
+        assertEquals(1f, PixelTextLayout.crisp(.7f));
+        assertEquals(1f, PixelTextLayout.crisp(1.2f));
+        assertEquals(2f, PixelTextLayout.crisp(1.6f));
     }
 
     @Test
