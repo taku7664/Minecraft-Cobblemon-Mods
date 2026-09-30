@@ -2,6 +2,8 @@ package jbro.cobblemon.battleui.extended.ui.transcript
 
 import com.cobblemon.mod.common.client.CobblemonClient
 import jbro.cobblemon.battleui.extended.*
+import jbro.cobblemon.battleui.extended.ui.shared.BattleCornerCuts
+import jbro.cobblemon.battleui.extended.ui.shared.BattleSurface
 import jbro.cobblemon.battleui.extended.ui.shared.BattleSurfaceRenderer
 import jbro.cobblemon.battleui.extended.ui.shared.BattleUiTheme
 import jbro.cobblemon.battleui.transcript.TranscriptPolicy
@@ -128,15 +130,21 @@ object BattleTranscriptOverlay {
 
         context.matrices.push()
         context.matrices.translate(0f, 0f, 1100f)
-        BattleSurfaceRenderer.draw(context, x, y, width, height, BattleUiTheme.shell)
+        val shellCorners = BattleCornerCuts(10, 10, 10, 10)
+        BattleSurfaceRenderer.draw(context, x, y + 3, width, height, BattleSurface(0x55000000, cornerCuts = shellCorners))
+        BattleSurfaceRenderer.draw(context, x, y, width, height, BattleUiTheme.shell.copy(cornerCuts = shellCorners))
         val title = tr("title")
-        val titleWidth = maxOf(112, ceil(mc.textRenderer.getWidth(title) * scale).toInt() + 28)
-        BattleSurfaceRenderer.draw(context, x + (width - titleWidth) / 2, y - titleHeight / 2, titleWidth, titleHeight,
-            BattleUiTheme.panel.copy(border = BattleUiTheme.CYAN, corners = 0b0101, cut = 5))
+        val titleWidth = maxOf(96, ceil(mc.textRenderer.getWidth(title) * scale).toInt() + 28)
+        // The title is a pill riding the window's top edge.
+        BattleSurfaceRenderer.capsule(context, x + (width - titleWidth) / 2 - 1, y - titleHeight / 2 - 1,
+            titleWidth + 2, titleHeight + 2, BattleUiTheme.CYAN, .55f)
+        BattleSurfaceRenderer.capsule(context, x + (width - titleWidth) / 2, y - titleHeight / 2, titleWidth, titleHeight,
+            BattleUiTheme.PANEL)
         drawCentered(context, title, x + width / 2, y - (lineHeight - 4) / 2, BattleUiTheme.TEXT, scale)
-        draw(context, tr("self"), x + 14, labelY, BattleUiTheme.CYAN, scale)
+        drawTag(context, tr("self"), x + 12, labelY - 1, BattleUiTheme.CYAN, scale, lineHeight)
         val rightLabel = tr("opponent")
-        draw(context, rightLabel, x + width - 14 - ceil(mc.textRenderer.getWidth(rightLabel) * scale).toInt(), labelY, BattleUiTheme.TRANSCRIPT_OPPONENT, scale)
+        drawTag(context, rightLabel, x + width - 12 - ceil(mc.textRenderer.getWidth(rightLabel) * scale).toInt() - 10,
+            labelY - 1, BattleUiTheme.TRANSCRIPT_OPPONENT, scale, lineHeight)
         context.draw()
         context.enableScissor(x + 8, top, x + width - 8, bottom)
         var rowY = top - scroll
@@ -146,17 +154,25 @@ object BattleTranscriptOverlay {
                     val label = if (row.turn == 0) tr("start") else Text.translatable("cobblemon_battle_ui.transcript.turn", row.turn).string
                     val textW = ceil(mc.textRenderer.getWidth(label) * scale).toInt()
                     val center = x + width / 2
-                    context.fill(x + 14, rowY + lineHeight / 2, center - textW / 2 - 9, rowY + lineHeight / 2 + 1, BattleUiTheme.BORDER)
-                    context.fill(center + textW / 2 + 9, rowY + lineHeight / 2, x + width - 14, rowY + lineHeight / 2 + 1, BattleUiTheme.BORDER)
+                    val chipWidth = textW + 14
+                    val lineY = rowY + lineHeight / 2 - 1
+                    BattleSurfaceRenderer.capsule(context, x + 14, lineY, center - chipWidth / 2 - 6 - x - 14, 2, BattleUiTheme.BORDER, .7f)
+                    BattleSurfaceRenderer.capsule(context, center + chipWidth / 2 + 6, lineY, x + width - 14 - center - chipWidth / 2 - 6, 2, BattleUiTheme.BORDER, .7f)
+                    BattleSurfaceRenderer.capsule(context, center - chipWidth / 2, rowY - 3, chipWidth, lineHeight + 2, CHIP)
                     drawCentered(context, label, center, rowY, BattleUiTheme.MUTED, scale)
                 } else if (row.speaker != null) {
                     val speaker = row.speaker
                     val faceX = if (speaker.left) x + 14 else x + width - 14 - avatar
                     val boxX = if (speaker.left) faceX + avatar + 8 else faceX - 8 - bubbleWidth
                     val accent = if (speaker.left) BattleUiTheme.CYAN else BattleUiTheme.TRANSCRIPT_OPPONENT
-                    BattleSurfaceRenderer.draw(context, boxX, rowY, bubbleWidth, row.height - 10, if (speaker.left) BattleUiTheme.transcriptSelf else BattleUiTheme.transcriptOpponent)
-                    BattleSurfaceRenderer.draw(context, faceX, rowY, avatar, avatar, BattleUiTheme.panel.copy(cut = 5, borderWidth = 0))
-                    context.fill(faceX, rowY + avatar - 1, faceX + avatar, rowY + avatar, accent)
+                    // A speech bubble: round everywhere except the small corner facing its speaker.
+                    val bubble = if (speaker.left) BattleCornerCuts(2, 8, 8, 8) else BattleCornerCuts(8, 2, 8, 8)
+                    BattleSurfaceRenderer.draw(context, boxX, rowY, bubbleWidth, row.height - 10,
+                        (if (speaker.left) BattleUiTheme.transcriptSelf else BattleUiTheme.transcriptOpponent).copy(cornerCuts = bubble))
+                    BattleSurfaceRenderer.draw(context, faceX - 1, rowY - 1, avatar + 2, avatar + 2,
+                        BattleSurface(accent, cornerCuts = BattleCornerCuts(8, 8, 8, 8)), .8f)
+                    BattleSurfaceRenderer.draw(context, faceX, rowY, avatar, avatar,
+                        BattleUiTheme.panel.copy(cornerCuts = BattleCornerCuts(7, 7, 7, 7), borderWidth = 0))
                     // Fallback remains a labelled unknown portrait, never another Pokémon or a trainer.
                     if (!TranscriptPortraits.draw(context, speaker, faceX + 2, rowY + 2, avatar - 4)) {
                         drawCentered(context, "?", faceX + avatar / 2, rowY + 9, BattleUiTheme.MUTED, scale)
@@ -165,7 +181,7 @@ object BattleTranscriptOverlay {
                     draw(context, name, boxX + 9, rowY + 7, accent, scale)
                     var textY = rowY + 9 + lineHeight
                     row.lines.forEach { line ->
-                        if (line.result) context.fill(boxX + 9, textY, boxX + 10, textY + lineHeight - 2, BattleUiTheme.BORDER)
+                        if (line.result) BattleSurfaceRenderer.capsule(context, boxX + 9, textY, 2, lineHeight - 3, accent, .45f)
                         draw(context, line.text, boxX + if (line.result) 15 else 9, textY, line.color, scale)
                         textY += lineHeight
                     }
@@ -187,9 +203,9 @@ object BattleTranscriptOverlay {
             BattleSurfaceRenderer.capsule(context, x + width - 7, top, 3, bottom - top, BattleUiTheme.TRACK)
             BattleSurfaceRenderer.capsule(context, x + width - 7, thumbY, 3, thumb, BattleUiTheme.CYAN)
         }
-        context.fill(x + 14, bottom + 6, x + width - 14, bottom + 7, BattleUiTheme.BORDER)
         val close = Text.translatable("cobblemon_battle_ui.transcript.close", CobblemonExtendedBattleUIClient.toggleLogKey.boundKeyLocalizedText).string
         val closeWidth = ceil(mc.textRenderer.getWidth(close) * scale).toInt() + 12
+        BattleSurfaceRenderer.capsule(context, x + width - 14 - closeWidth, bottom + 7, closeWidth + 6, lineHeight + 3, CHIP)
         closeLeft = x + width - 14 - closeWidth
         closeRight = x + width - 8
         closeTop = bottom + 9
@@ -228,6 +244,15 @@ object BattleTranscriptOverlay {
     }
 
     private fun tr(key: String) = Text.translatable("cobblemon_battle_ui.transcript.$key").string
+
+    /** A side label on a quiet pill. */
+    private fun drawTag(context: DrawContext, label: String, x: Int, y: Int, color: Int, scale: Float, lineHeight: Int) {
+        val width = ceil(MinecraftClient.getInstance().textRenderer.getWidth(label) * scale).toInt() + 10
+        BattleSurfaceRenderer.capsule(context, x, y - 1, width, lineHeight + 1, CHIP)
+        draw(context, label, x + 5, y + 1, color, scale)
+    }
+
+    private const val CHIP = 0xFF1B2C42.toInt()
     private fun drawCentered(context: DrawContext, text: String, center: Int, y: Int, color: Int, scale: Float) {
         val width = MinecraftClient.getInstance().textRenderer.getWidth(text) * scale
         draw(context, text, (center - width / 2).roundToInt(), y, color, scale)

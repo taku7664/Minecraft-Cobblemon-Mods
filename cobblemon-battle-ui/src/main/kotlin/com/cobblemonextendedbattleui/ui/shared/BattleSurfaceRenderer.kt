@@ -67,11 +67,55 @@ object BattleSurfaceRenderer {
         }
     }
 
-    /** A pill: a surface whose ends are half-circles, for bars, badges and markers. */
+    /**
+     * A pill: its short side is a full half-circle at any size, odd widths included, so a 3 px scrollbar still gets
+     * round ends. The straight middle is one run; each end pixel is covered by how much of it lies within half the
+     * short side of the pill's spine (4x4 samples).
+     */
     @JvmStatic
     fun capsule(context: DrawContext, x: Int, y: Int, width: Int, height: Int, color: Int, opacity: Float = 1f) {
-        if (width <= 0 || height <= 0) return
-        draw(context, x, y, width, height, BattleSurface(color, color, cut = minOf(width, height) / 2, rounded = true), opacity)
+        if (width <= 0 || height <= 0 || opacity <= 0f) return
+        val argb = withOpacity(color, opacity)
+        if (argb ushr 24 == 0) return
+        val vertical = height > width
+        val long = if (vertical) height else width
+        val short = if (vertical) width else height
+        val radius = short / 2f
+        val cap = minOf(kotlin.math.ceil(radius).toInt(), long / 2)
+        // The straight middle, between the two ends.
+        if (long - cap * 2 > 0) {
+            if (vertical) context.fill(x, y + cap, x + width, y + height - cap, argb)
+            else context.fill(x + cap, y, x + width - cap, y + height, argb)
+        }
+        val alpha = argb ushr 24
+        for (along in 0 until cap) for (across in 0 until short) {
+            val covered = pillCoverage(along, across, long, short, radius)
+            if (covered <= 0f) continue
+            val pixel = (argb and 0xFFFFFF) or ((alpha * covered).roundToInt().coerceIn(0, 255) shl 24)
+            // The same coverage serves both ends, mirrored along the pill.
+            if (vertical) {
+                context.fill(x + across, y + along, x + across + 1, y + along + 1, pixel)
+                context.fill(x + across, y + height - 1 - along, x + across + 1, y + height - along, pixel)
+            } else {
+                context.fill(x + along, y + across, x + along + 1, y + across + 1, pixel)
+                context.fill(x + width - 1 - along, y + across, x + width - along, y + across + 1, pixel)
+            }
+        }
+    }
+
+    /** Coverage of end pixel ([along], [across]) of a pill [long] by [short]: its distance to the spine within [radius]. */
+    internal fun pillCoverage(along: Int, across: Int, long: Int, short: Int, radius: Float): Float {
+        var inside = 0
+        val spineStart = radius
+        val spineEnd = long - radius
+        for (sa in 0 until 4) for (sc in 0 until 4) {
+            val u = along + (sa + .5f) / 4f
+            val v = across + (sc + .5f) / 4f
+            val du = u - u.coerceIn(spineStart, maxOf(spineStart, spineEnd))
+            val dv = v - short / 2f
+            if (du * du + dv * dv <= radius * radius) inside++
+        }
+        return inside / 16f
     }
 
     /** A rounded gauge: the track, then [ratio] of its inner width in [fill], both capsules. */
