@@ -4,12 +4,13 @@ import io.netty.buffer.Unpooled
 import net.minecraft.core.RegistryAccess
 import net.minecraft.network.RegistryFriendlyByteBuf
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 
 class BattleHubPayloadsTest {
     @Test
     fun `hub state and every tab intent round trip`() {
-        val state = BattleHubStatePayload
+        val state = BattleHubStatePayload(listOf(BattleHubIds.DASHBOARD, BattleHubIds.SHOP, "more_cobblemon_contents:pvp"), BattleHubIds.SHOP)
         assertEquals(state, roundTrip(BattleHubStatePayload.CODEC, state))
         val header = BattleHubHeaderStatePayload(275L)
         assertEquals(header, roundTrip(BattleHubHeaderStatePayload.CODEC, header))
@@ -20,8 +21,12 @@ class BattleHubPayloadsTest {
     }
 
     @Test
-    fun `legacy hub state remains an empty payload while BP uses the header payload`() {
-        assertEquals(0, encodedSize(BattleHubStatePayload.CODEC, BattleHubStatePayload))
+    fun `hub state names at least one tab and opens on one of them`() {
+        assertThrows(IllegalArgumentException::class.java) { BattleHubStatePayload(emptyList(), BattleHubIds.DASHBOARD) }
+        assertThrows(IllegalArgumentException::class.java) { BattleHubStatePayload(listOf(BattleHubIds.SHOP), BattleHubIds.DASHBOARD) }
+        assertThrows(IllegalArgumentException::class.java) {
+            BattleHubStatePayload(listOf(BattleHubIds.SHOP, BattleHubIds.SHOP), BattleHubIds.SHOP)
+        }
         assertEquals(2, encodedSize(BattleHubHeaderStatePayload.CODEC, BattleHubHeaderStatePayload(275L)))
     }
 

@@ -1,4 +1,5 @@
 {
+  "block.more_cobblemon_contents_battle_tower.battle_tower_terminal": "배틀타워 터미널",
   "command.more_cobblemon_contents.test.ai.started": "난천 챔피언전 Better AI 테스트를 %s 난이도로 시작했습니다.",
   "command.more_cobblemon_contents.test.ai.difficulty.introductory": "입문",
   "command.more_cobblemon_contents.test.ai.difficulty.standard": "표준",

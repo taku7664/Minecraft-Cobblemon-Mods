@@ -6,7 +6,8 @@ import jbro.cobblemon.mcc.internal.terminal.TerminalInteractionResult
 import net.minecraft.server.level.ServerPlayer
 
 /** Hub-owned entries that are not battle contents. */
-internal object BattleHubIds {
+object BattleHubIds {
+    const val DASHBOARD: String = "${MoreCobblemonContents.MOD_ID}:dashboard"
     const val SHOP: String = "${MoreCobblemonContents.MOD_ID}:shop"
     const val BOSS_RAID: String = "${MoreCobblemonContents.MOD_ID}:boss_raid"
 }

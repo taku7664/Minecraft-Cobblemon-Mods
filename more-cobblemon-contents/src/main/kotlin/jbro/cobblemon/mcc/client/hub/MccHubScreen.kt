@@ -50,7 +50,7 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
 
     override fun rebuild() {
         clearWidgets()
-        val layout = MccHubLayout.calculate(width, height, MccHubTabs.all().size)
+        val layout = MccHubLayout.calculate(width, height, MccHubTabs.shown().size)
         addRenderableWidget(
             CobblemonUiPanel.create(layout.shell.x, layout.shell.y, layout.shell.width, layout.shell.height,
                 UiPanelSpec(tone = UiPanelTone.SHELL)),
@@ -67,7 +67,8 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
                 UiButtonSpec(hubText("close"), variant = UiButtonVariant.GHOST, size = UiControlSize.MEDIUM,
                     width = UiWidthPolicy.Fixed(layout.closeButton.width))) { onClose() },
         )
-        val tab = MccHubTabs.get(selectedTabId) ?: MccHubTabs.all().firstOrNull { it.kind is MccHubTabKind.Embedded }
+        val shown = MccHubTabs.shown()
+        val tab = shown.firstOrNull { it.id == selectedTabId } ?: shown.firstOrNull { it.kind is MccHubTabKind.Embedded }
         val embedded = tab?.kind as? MccHubTabKind.Embedded
         activeContent = embedded?.let { contents.getOrPut(tab.id) { it.create() } }
         if (activeContent !== shownContent) {
@@ -104,11 +105,11 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
 
     /** Switches to [tabId] as if its rail button was pressed; unknown tabs are ignored. */
     fun selectTab(tabId: String) {
-        MccHubTabs.get(tabId)?.let(::select)
+        MccHubTabs.shown().firstOrNull { it.id == tabId }?.let(::select)
     }
 
     private fun addTabs(layout: MccHubLayout) {
-        MccHubTabs.all().zip(layout.tabButtons()).forEach { (tab, button) ->
+        MccHubTabs.shown().zip(layout.tabButtons()).forEach { (tab, button) ->
             val denial = tab.accessContentId?.let(MccBattleHubClientState.deniedById::get)
             addRenderableWidget(MccHubKit.row(button, MccHubKit.ListEntry(
                 tab.label,
@@ -214,6 +215,8 @@ class MccHubScreen(selectedTabId: String = MccHubTabs.DASHBOARD) :
          * when it is already the one shown.
          */
         fun open(tabId: String) {
+            // The server opened this content itself, so it shows even when the hub's tabs left it out.
+            MccBattleHubClientState.reveal(tabId)
             val client = Minecraft.getInstance()
             val hub = current
             when {

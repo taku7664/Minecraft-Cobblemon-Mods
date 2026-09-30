@@ -1,4 +1,5 @@
 {
+  "block.more_cobblemon_contents_battle_factory.battle_factory_terminal": "Battle Factory Terminal",
   "command.more_cobblemon_contents.factory.floor.changed": "Set %s's Battle Factory %s/%s current floor to %s. Highest floor: %s",
   "command.more_cobblemon_contents.factory.floor.queried": "%s's Battle Factory %s/%s current floor: %s, highest floor: %s",
   "command.more_cobblemon_contents.factory.floor.reset": "Reset %s's Battle Factory %s/%s floor (scope: %s). Current floor: %s, highest floor: %s",

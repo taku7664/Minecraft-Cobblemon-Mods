@@ -1,4 +1,5 @@
 {
+  "block.more_cobblemon_contents_battle_tower.battle_tower_terminal": "Battle Tower Terminal",
   "command.more_cobblemon_contents.test.ai.started": "Started the Cynthia Champion Better AI test on %s difficulty.",
   "command.more_cobblemon_contents.test.ai.difficulty.introductory": "Introductory",
   "command.more_cobblemon_contents.test.ai.difficulty.standard": "Standard",

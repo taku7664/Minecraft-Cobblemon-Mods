@@ -1,7 +1,8 @@
 package jbro.cobblemon.mcc.client.hub
 
 import java.util.concurrent.CopyOnWriteArrayList
-import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.client.MccBattleHubClientState
+import jbro.cobblemon.mcc.internal.hub.BattleHubIds
 import jbro.cobblemon.mcc.internal.hub.BattleHubOpenContentPayload
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import jbro.cobblemon.uikit.UiRect
@@ -61,7 +62,7 @@ interface MccHubTabContent {
 }
 
 object MccHubTabs {
-    const val DASHBOARD: String = "${MoreCobblemonContents.MOD_ID}:dashboard"
+    const val DASHBOARD: String = BattleHubIds.DASHBOARD
 
     private val tabs = CopyOnWriteArrayList<MccHubTab>()
 
@@ -72,6 +73,12 @@ object MccHubTabs {
     }
 
     fun all(): List<MccHubTab> = tabs.sortedWith(compareBy({ it.order }, { it.id }))
+
+    /** The tabs the server lets this hub session show, in rail order. */
+    fun shown(): List<MccHubTab> {
+        val visible = MccBattleHubClientState.visibleTabs ?: return all()
+        return all().filter { it.id in visible }
+    }
 
     fun get(id: String): MccHubTab? = tabs.firstOrNull { it.id == id }
 
