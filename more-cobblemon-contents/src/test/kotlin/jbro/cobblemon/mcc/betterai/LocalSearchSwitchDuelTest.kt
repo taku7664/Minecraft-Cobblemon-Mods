@@ -33,6 +33,8 @@ class LocalSearchSwitchDuelTest {
         val challengerDifficulty: BattleDifficultyProfile? = null,
         /** The defender's own difficulty, for calibrating how much a duel can tell apart. */
         val defenderDifficulty: BattleDifficultyProfile? = null,
+        /** A fixed policy for the defender instead of its brain's choice: a yardstick for what the brain adds. */
+        val defenderPolicy: LocalScenarioPolicy? = null,
     )
 
     @Test
@@ -59,10 +61,13 @@ class LocalSearchSwitchDuelTest {
         for (definition in LocalSelfPlayMeasurement.definitions(pairs, seed, duel.format)) {
             val challengerDifficulty = duel.challengerDifficulty ?: difficulty
             val defenderDifficulty = duel.defenderDifficulty ?: difficulty
+            val policy = duel.defenderPolicy
             val asCycle = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.challenger, duel.defender,
-                challengerDifficulty, defenderDifficulty, lookaheadBudget = UNLIMITED)
+                challengerDifficulty, defenderDifficulty, lookaheadBudget = UNLIMITED,
+                policies = policy?.let { mapOf(jbro.cobblemon.mcc.internal.ai.BattleSide.OPPONENT to it) }.orEmpty())
             val asOffense = LocalTacticalScenarioBattle.run(definition, MAXIMUM_TURNS, duel.defender, duel.challenger,
-                defenderDifficulty, challengerDifficulty, lookaheadBudget = UNLIMITED)
+                defenderDifficulty, challengerDifficulty, lookaheadBudget = UNLIMITED,
+                policies = policy?.let { mapOf(jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY to it) }.orEmpty())
             // The challenger's HP lead at the end of each game.
             val leads = listOf(asCycle.cycleRemainingHp - asCycle.offenseRemainingHp,
                 asOffense.offenseRemainingHp - asOffense.cycleRemainingHp)
@@ -138,6 +143,16 @@ class LocalSearchSwitchDuelTest {
             "authority-duel-leaf-singles" to Duel(AUTHORITY.copy(id = "authority-duel-leaf", leafDuelValue = 0.4), CURRENT, BattleFormat.SINGLE),
             "baseline-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE),
             "boss-vs-standard-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, defenderDifficulty = BattleDifficultyProfiles.STANDARD),
+            "boss-vs-random-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE,
+                defenderDifficulty = BattleDifficultyProfiles.INTRODUCTORY, defenderPolicy = LocalScenarioPolicy.RANDOM),
+            "boss-vs-greedy-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE,
+                defenderDifficulty = BattleDifficultyProfiles.INTRODUCTORY, defenderPolicy = LocalScenarioPolicy.GREEDY),
+            "introductory-vs-random-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE,
+                challengerDifficulty = BattleDifficultyProfiles.INTRODUCTORY, defenderDifficulty = BattleDifficultyProfiles.INTRODUCTORY,
+                defenderPolicy = LocalScenarioPolicy.RANDOM),
+            "introductory-vs-greedy-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE,
+                challengerDifficulty = BattleDifficultyProfiles.INTRODUCTORY, defenderDifficulty = BattleDifficultyProfiles.INTRODUCTORY,
+                defenderPolicy = LocalScenarioPolicy.GREEDY),
             "boss-vs-introductory-singles" to Duel(CURRENT, CURRENT, BattleFormat.SINGLE, defenderDifficulty = BattleDifficultyProfiles.INTRODUCTORY),
             "turn-start-singles" to Duel(CURRENT, CURRENT.copy(id = "pre-replacement-start", replacementAwareTurnStart = false), BattleFormat.SINGLE),
             "knockout-correction-singles" to Duel(CURRENT.copy(id = "realized-knockouts", realizedKnockoutCorrection = true), CURRENT, BattleFormat.SINGLE),
