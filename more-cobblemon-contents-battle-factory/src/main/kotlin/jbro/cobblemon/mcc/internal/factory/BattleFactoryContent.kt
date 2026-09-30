@@ -14,7 +14,7 @@ object BattleFactoryContent : ModInitializer {
     override fun onInitialize() {
         FactoryCatalogResources.register()
         FactoryCommandRuntime.registerServer()
-        HoloTerminals.register(ResourceLocation.fromNamespaceAndPath(MOD_ID, "battle_factory_terminal"), ManagedBattleContentIds.BATTLE_FACTORY,
+        HoloTerminals.register(ResourceLocation.fromNamespaceAndPath(MOD_ID, "battle_factory_terminal"),
             listOf(BattleHubIds.DASHBOARD, BattleHubIds.SHOP, ManagedBattleContentIds.BATTLE_FACTORY),
             // Factory green with an amber scan line.
             HoloTerminalPalette(0x173D24, 0x2A8A4A, 0x5CE68A, 0xA6F5B8, 0xC8FFD2, 0x3CB86A, 0xFFC857))
