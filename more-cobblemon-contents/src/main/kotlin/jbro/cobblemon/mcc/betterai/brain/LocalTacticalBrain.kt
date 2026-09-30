@@ -508,8 +508,15 @@ internal class LocalTacticalBrain(
                 candidate.actionId to LocalSetupGate.credit(candidate, difficultyContext, scores, tuning.setupSweepCredit, tuning.knockoutMaterialScore)
             }.filterValues { it > 0.0 }
         }.orEmpty()
-        val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys + setupAdjustments.keys).associateWith {
-            (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) + (setupAdjustments[it] ?: 0.0)
+        // A doubles Protect is credited for the hits the opponents are predicted to aim at its user.
+        val protectAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
+            jbro.cobblemon.mcc.betterai.matchup.LocalProtectCredit.adjustments(
+                difficultyContext.candidates, difficultyContext, scores, opponentIntents, tuning)
+        }.orEmpty()
+        val ruleAdjustments = (switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys +
+            setupAdjustments.keys + protectAdjustments.keys).associateWith {
+            (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
+                (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0)
         }
         val switchAdjusted = ruleAdjustments.takeIf { it.isNotEmpty() }?.let { adjustments ->
             LocalBattleActionPolicy.sort(lookahead.ranked.map { rank ->

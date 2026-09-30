@@ -27,9 +27,40 @@ class LocalPuzzleSuiteTest {
         val accepted: Set<String> = emptySet(),
         /** When set, every label but these passes. */
         val rejected: Set<String> = emptySet(),
+        val format: jbro.cobblemon.mcc.internal.ai.BattleFormat = jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE,
+        /**
+         * Doubles: whether the turn passes, from each ally slot's label in slot order ("move>target species",
+         * "move" for a spread or self move, "교체→species"). Replaces [accepted] and [rejected].
+         */
+        val slots: ((List<String>) -> Boolean)? = null,
+        /** How the doubles answer reads, for the report. */
+        val want: String = "",
     ) {
         fun passes(label: String): Boolean =
             if (rejected.isNotEmpty()) rejected.none { label.startsWith(it) } else accepted.any { label.startsWith(it) }
+    }
+
+    /** Each slot's part of [candidate], labelled with its target as it stands in [state]. */
+    private fun slotLabels(candidate: jbro.cobblemon.mcc.internal.ai.BattleActionCandidate, state: jbro.cobblemon.mcc.internal.ai.BattleStateView): List<String> {
+        val parts = if (candidate.kind == jbro.cobblemon.mcc.internal.ai.BattleActionKind.COMPOSITE) candidate.componentActions else listOf(candidate)
+        return parts.sortedBy { it.actorSlot ?: 0 }.map { part ->
+            fun species(id: java.util.UUID?) = state.pokemon.firstOrNull { it.battlePokemonId == id }?.speciesId?.substringAfter(':')
+            when (part.kind) {
+                jbro.cobblemon.mcc.internal.ai.BattleActionKind.SWITCH -> "교체→${species(part.switchPokemonId)}"
+                jbro.cobblemon.mcc.internal.ai.BattleActionKind.USE_MOVE -> {
+                    val move = part.moveId?.substringAfter(':') ?: "?"
+                    val pattern = part.moveDetails?.targetPattern
+                    val single = pattern == null || pattern == jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern.SELECTED_OPPONENT ||
+                        pattern == jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern.SELECTED
+                    val target = part.targets.singleOrNull()?.takeIf { single }?.let { slot ->
+                        state.pokemon.firstOrNull { it.side == slot.side && it.activeSlot == slot.slot && !it.fainted }
+                    }
+                    if (target == null) move
+                    else move + ">" + (if (target.side == BattleSide.ALLY) "ally:" else "") + target.speciesId.substringAfter(':')
+                }
+                else -> part.kind.name.lowercase()
+            }
+        }
     }
 
     @Test
@@ -45,7 +76,7 @@ class LocalPuzzleSuiteTest {
         for ((index, puzzle) in PUZZLES.withIndex()) {
             val only = System.getProperty("aiengine.puzzleOnly")?.split(',')?.map(String::trim)?.filter(String::isNotEmpty)
             if (only != null && puzzle.name !in only) continue
-            val definition = LocalTacticalScenarioDefinition(puzzle.name, puzzle.ally, puzzle.opponent, 30_000 + index)
+            val definition = LocalTacticalScenarioDefinition(puzzle.name, puzzle.ally, puzzle.opponent, 30_000 + index, puzzle.format)
             val contexts = mutableListOf<jbro.cobblemon.mcc.internal.ai.BattleDecisionContext>()
             val report = LocalTacticalScenarioBattle.run(definition, 1, tuning, tuning, boss, boss,
                 recordedContexts = contexts, lookaheadBudget = budget, start = puzzle.start)
@@ -56,7 +87,19 @@ class LocalPuzzleSuiteTest {
                 // Every candidate played out from the puzzle, both sides the Boss: the mean final HP lead it leads to.
                 // What the opponent answered on the first turn, per candidate: the read the position turns on.
                 val replies = linkedMapOf<String, MutableMap<String, Int>>()
-                val samples = contexts.first().candidates.associate { candidate ->
+                // Doubles has a candidate per pair of slot actions: the Boss's ranking's top ones and the best-ranked
+                // one that passes are played out.
+                val first = contexts.first()
+                val played = if (puzzle.slots == null) first.candidates else {
+                    val byId = first.candidates.associateBy { it.actionId }
+                    val top = turn.cycleRankedIds.take(System.getProperty("aiengine.puzzleRolloutTop")?.toIntOrNull() ?: 6)
+                    fun passes(id: String) = byId[id]?.let { puzzle.slots.invoke(slotLabels(it, first.state)) } == true
+                    // The best on each side of the answer, so the answer is tested against its alternative.
+                    val passing = turn.cycleRankedIds.firstOrNull(::passes)
+                    val failing = turn.cycleRankedIds.firstOrNull { !passes(it) }
+                    (top + listOfNotNull(passing, failing, turn.cycleActualId)).distinct().mapNotNull { byId[it] }
+                }
+                val samples = played.associate { candidate ->
                     candidate.actionId to (0 until rollouts).map { k ->
                         val played = LocalTacticalScenarioBattle.run(definition, 30, tuning, tuning, boss, boss, lookaheadBudget = budget,
                             start = puzzle.start, fork = LocalScenarioFork(1, BattleSide.ALLY, candidate.actionId, 9_000L + k))
@@ -77,6 +120,7 @@ class LocalPuzzleSuiteTest {
                 val state = contexts.first().state
                 fun label(actionId: String): String {
                     val candidate = contexts.first().candidates.first { it.actionId == actionId }
+                    if (puzzle.slots != null) return slotLabels(candidate, state).joinToString("+")
                     val incoming = candidate.switchPokemonId?.let { id -> state.pokemon.firstOrNull { it.battlePokemonId == id } }
                     return incoming?.let { "교체→" + it.speciesId.substringAfter(':') } ?: candidate.moveId?.substringAfter(':') ?: actionId.takeLast(24)
                 }
@@ -85,12 +129,16 @@ class LocalPuzzleSuiteTest {
                 })
                 replies.forEach { (actionId, counts) -> println("   replies to ${label(actionId)}: $counts") }
             }
-            val ok = puzzle.passes(turn.cycleActual)
+            val chosenLabels = contexts.first().candidates.firstOrNull { it.actionId == turn.cycleActualId }
+                ?.let { slotLabels(it, contexts.first().state) }
+            val ok = puzzle.slots?.let { check -> chosenLabels?.let(check) == true } ?: puzzle.passes(turn.cycleActual)
             if (ok) passed++
             val (p, n) = byCategory[puzzle.category] ?: (0 to 0)
             byCategory[puzzle.category] = (p + if (ok) 1 else 0) to (n + 1)
-            println("PUZZLE ${if (ok) "PASS" else "FAIL"} ${puzzle.name} [${puzzle.category}] chose=${turn.cycleActual} " +
-                "want=${if (puzzle.rejected.isNotEmpty()) "not ${puzzle.rejected}" else puzzle.accepted.toString()}")
+            val chose = if (puzzle.slots != null) chosenLabels?.joinToString("+") else turn.cycleActual
+            val want = if (puzzle.slots != null) puzzle.want
+                else if (puzzle.rejected.isNotEmpty()) "not ${puzzle.rejected}" else puzzle.accepted.toString()
+            println("PUZZLE ${if (ok) "PASS" else "FAIL"} ${puzzle.name} [${puzzle.category}] chose=$chose want=$want")
             println("   top: ${turn.cycleTop}")
         }
         println("PUZZLE summary $passed/${PUZZLES.size} " + byCategory.entries.joinToString(" ") { "${it.key}=${it.value.first}/${it.value.second}" })
@@ -139,6 +187,7 @@ class LocalPuzzleSuiteTest {
             tuning = when (name) {
                 "plainSwitch" -> tuning.copy(scoredSwitchIntent = false)
                 "recovery" -> tuning.copy(matchupRecovery = true)
+                "protect" -> tuning.copy(doublesProtectCredit = value ?: 1.0)
                 "noLoop" -> tuning.copy(recoveryLoopPenalty = 0.0)
                 "setupCredit" -> tuning.copy(setupSweepCredit = value ?: 1.0)
                 "predicted" -> tuning.copy(predictedSwitchShare = value ?: 1.0)
@@ -156,6 +205,7 @@ class LocalPuzzleSuiteTest {
     private companion object {
         val A = BattleSide.ALLY
         val O = BattleSide.OPPONENT
+        val DOUBLE = jbro.cobblemon.mcc.internal.ai.BattleFormat.DOUBLE
         fun hp(vararg values: Pair<Pair<BattleSide, Int>, Double>) = LocalScenarioStart(hp = values.toMap())
 
         val PUZZLES = listOf(
@@ -251,6 +301,40 @@ class LocalPuzzleSuiteTest {
                 listOf("toxapex_preset_1", "skarmory_preset_2", "swampert_preset_1"),
                 listOf("clefable_preset_1", "garchomp_preset_2", "heatran_preset_1"),
                 accepted = setOf("toxic")),
+
+            // Doubles: the first two sets of each side are in front, slot 0 then slot 1.
+            // A spread move beside a partner it cannot hit, and beside one it would take out.
+            Puzzle("eq-beside-a-flyer", "doubles_spread",
+                listOf("garchomp_preset_1", "corviknight_preset_1", "blissey_preset_1", "toxapex_preset_4"),
+                listOf("heatran_preset_1", "tyranitar_preset_2", "clefable_preset_1", "skarmory_preset_2"),
+                format = DOUBLE, slots = { it[0] == "earthquake" }, want = "earthquake+*"),
+            // No Ground move on the other side, so only Garchomp's own Earthquake takes Heatran out. (With Tyranitar
+            // across, its Earthquake did either way and the Earthquake played out no worse.)
+            Puzzle("eq-restraint-beside-heatran", "doubles_spread_restraint",
+                listOf("garchomp_preset_1", "heatran_preset_1", "blissey_preset_1", "toxapex_preset_3"),
+                listOf("toxapex_preset_2", "clefable_preset_1", "skarmory_preset_3", "blissey_preset_2"),
+                format = DOUBLE, slots = { it[0] != "earthquake" }, want = "not earthquake+*"),
+            Puzzle("spread-into-two-weak", "doubles_spread",
+                listOf("landorus_preset_2", "clefable_preset_1", "toxapex_preset_1", "blissey_preset_1"),
+                listOf("volcarona_preset_2", "moltres_preset_1", "skarmory_preset_2", "garchomp_preset_2"),
+                format = DOUBLE, slots = { it[0] == "rockslide" }, want = "rockslide+*"),
+            // A defensive switch out of two threats at once.
+            Puzzle("heatran-leaves-two-grounders", "doubles_switch",
+                listOf("heatran_preset_1", "clefable_preset_1", "rotomwash_preset_1", "blissey_preset_1"),
+                listOf("garchomp_preset_1", "swampert_preset_3", "skarmory_preset_2", "toxapex_preset_3"),
+                format = DOUBLE, slots = { it[0].startsWith("교체→rotom") }, want = "교체→rotom+*"),
+            // Two single-target hits into a foe one of them already knocks out wastes the second.
+            Puzzle("focus-not-overkill", "doubles_focus",
+                listOf("garchomp_preset_1", "heatran_preset_1", "blissey_preset_1", "toxapex_preset_3"),
+                listOf("clefable_preset_1", "tyranitar_preset_2", "skarmory_preset_2", "gyarados_preset_2"),
+                start = hp((O to 0) to 0.2),
+                format = DOUBLE, slots = { labels -> !labels.all { it.endsWith(">clefable") } }, want = "not both >clefable"),
+            // Protect the slot both foes knock out, while the partner acts.
+            Puzzle("protect-the-threatened", "doubles_protect",
+                listOf("blaziken_preset_2", "clefable_preset_1", "toxapex_preset_1", "blissey_preset_1"),
+                listOf("garchomp_preset_1", "rotomwash_preset_4", "skarmory_preset_2", "heatran_preset_1"),
+                start = hp((A to 0) to 0.3),
+                format = DOUBLE, slots = { it[0] == "protect" }, want = "protect+*"),
         )
     }
 }

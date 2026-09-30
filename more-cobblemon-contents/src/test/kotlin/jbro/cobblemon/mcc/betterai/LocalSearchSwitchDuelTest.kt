@@ -150,6 +150,8 @@ class LocalSearchSwitchDuelTest {
             "predicted-singles" to Duel(CURRENT, UNPREDICTED, BattleFormat.SINGLE),
             "setup-credit-singles" to Duel(CURRENT.copy(id = "setup-credit", setupSweepCredit = 0.5), CURRENT, BattleFormat.SINGLE),
             "setup-credit-full-singles" to Duel(CURRENT.copy(id = "setup-credit-full", setupSweepCredit = 1.0), CURRENT, BattleFormat.SINGLE),
+            "protect-credit" to Duel(CURRENT.copy(id = "protect-credit", doublesProtectCredit = 1.0), CURRENT, BattleFormat.DOUBLE),
+            "protect-credit-half" to Duel(CURRENT.copy(id = "protect-credit-half", doublesProtectCredit = 0.5), CURRENT, BattleFormat.DOUBLE),
             "recovery-loop-singles" to Duel(CURRENT, CURRENT.copy(id = "no-recovery-loop-penalty", recoveryLoopPenalty = 0.0), BattleFormat.SINGLE),
             "recovery-singles" to Duel(CURRENT.copy(id = "matchup-recovery", matchupRecovery = true), CURRENT, BattleFormat.SINGLE),
             "intent-only-singles" to Duel(CURRENT.copy(id = "switch-intent-only", predictedSwitchShare = 0.0), UNPREDICTED, BattleFormat.SINGLE),

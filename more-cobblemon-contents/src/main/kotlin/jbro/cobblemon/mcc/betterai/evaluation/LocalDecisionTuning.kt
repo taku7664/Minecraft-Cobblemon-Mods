@@ -157,6 +157,13 @@ internal data class LocalDecisionTuning(
      */
     val recoveryLoopPenalty: Double = 30.0,
     /**
+     * Weight of a doubles Protect's credit for the hits it turns away (LocalProtectCredit): the opponents' predicted
+     * knockout chance on the user in knockout material, and the HP they are expected to take. At 0.5: it fixes the
+     * doubles Protect puzzle (played out, Protect -2.11 against Close Combat -3.76) and doubles duels at 1.0 were
+     * even (165 pairs, -0.012 +- 0.017), so half the credit, enough for the puzzle, keeps the root's other terms ahead.
+     */
+    val doublesProtectCredit: Double = 0.5,
+    /**
      * The root knockout correction removes the knockouts the search itself re-derived (expected opposing
      * knockouts on the root turn times [knockoutMaterialScore]); off, it removes up to the search's whole gain,
      * which erased the damage a knockout move cost whenever that gain stayed below the heuristic's credit.
