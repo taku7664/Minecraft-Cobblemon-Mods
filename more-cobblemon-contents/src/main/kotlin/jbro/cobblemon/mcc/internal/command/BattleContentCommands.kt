@@ -30,7 +30,8 @@ internal object BattleContentCommands {
         openScreen: (ServerPlayer) -> Boolean = { false },
         contributors: List<MccCommandContributor> = MccCommandContributors.all(),
     ): LiteralArgumentBuilder<CommandSourceStack> = Commands.literal("mcc")
-        // Opening the hub takes the level set in hub_tabs.json; everything under it is for operators.
+        // Opening the hub takes the level set in hub_tabs.json. Each command under it guards its own nodes: players
+        // keep `/mcc bp` and `/mcc bp history` for their own BP, and every admin node needs operator level.
         .requires { source -> source.hasPermission(BattleHubTabConfigFile.current.commandPermission) }
         .executes { command ->
             val result = service.open(requestContext(command.source))
@@ -40,13 +41,8 @@ internal object BattleContentCommands {
                 respond(command.source, result)
             }
         }
-        .then(adminOnly(BattlePointCommands.build()))
-        .also { root -> contributors.forEach { contributor -> root.then(adminOnly(contributor.build())) } }
-
-    private fun adminOnly(node: LiteralArgumentBuilder<CommandSourceStack>): LiteralArgumentBuilder<CommandSourceStack> {
-        val own = node.requirement
-        return node.requires { source -> source.hasPermission(BattlePointCommands.ADMIN_PERMISSION_LEVEL) && own.test(source) }
-    }
+        .then(BattlePointCommands.build())
+        .also { root -> contributors.forEach { contributor -> root.then(contributor.build()) } }
 
     private fun requestContext(source: CommandSourceStack): BattleApplicationRequestContext =
         BattleApplicationRequestContext(

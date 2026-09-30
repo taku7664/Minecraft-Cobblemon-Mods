@@ -46,6 +46,7 @@ internal object TowerProgressCommands {
     fun build(
         backend: TowerProgressCommandBackend = LiveTowerProgressCommandBackend,
     ): LiteralArgumentBuilder<CommandSourceStack> = Commands.literal("tower")
+        .requires(BattleProgressCommands::isAdmin)
         .then(
             Commands.literal("streak")
                 .then(get(backend))

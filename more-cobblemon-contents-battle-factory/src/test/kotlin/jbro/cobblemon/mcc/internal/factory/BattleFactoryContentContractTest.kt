@@ -58,4 +58,15 @@ class BattleFactoryContentContractTest {
     }
 
     private fun source(path: String): String = Files.readString(Path.of("src/main/kotlin/jbro/cobblemon/mcc", path))
+
+    @Test
+    fun `players cannot reach the factory operator commands`() {
+        fun source(level: Int) = net.minecraft.commands.CommandSourceStack(net.minecraft.commands.CommandSource.NULL,
+            net.minecraft.world.phys.Vec3.ZERO, net.minecraft.world.phys.Vec2.ZERO, null, level, "test",
+            net.minecraft.network.chat.Component.literal("test"), null, null)
+        listOf(FactoryProgressCommands.build().build()).forEach { root ->
+            org.junit.jupiter.api.Assertions.assertFalse(root.requirement.test(source(0)), root.name)
+            org.junit.jupiter.api.Assertions.assertTrue(root.requirement.test(source(2)), root.name)
+        }
+    }
 }

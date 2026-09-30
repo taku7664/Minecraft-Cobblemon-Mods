@@ -65,6 +65,7 @@ internal object FactoryProgressCommands {
     fun build(
         backend: FactoryProgressCommandBackend = LiveFactoryProgressCommandBackend,
     ): LiteralArgumentBuilder<CommandSourceStack> = Commands.literal("factory")
+        .requires(BattleProgressCommands::isAdmin)
         .then(
             Commands.literal("floor")
                 .then(get(backend))

@@ -30,14 +30,16 @@ from `config/more-cobblemon-contents/hub_tabs.json`, written with the defaults o
 ```
 
 `command` is `/mcc`; `command_permission_level` is the level `/mcc` needs to open the hub (0, the default, lets
-every player; 2 only operators), while everything under it needs level 2. `terminals` is keyed by
+every player; 2 only operators). Under it players have only `/mcc bp` and `/mcc bp history [count]` for their own
+BP; every other command needs level 2. `terminals` is keyed by
 terminal block ID. A missing entry takes its default, and a broken one
 falls back to its default with a warning in the log. The server refuses to open a content the hub was not opened
 with, so a tab left out cannot be reached by a modified client either.
 
 ## Operator commands
 
-Everything under `/mcc` needs permission level 2; `/mcc` itself follows `command_permission_level`. Player arguments that read or edit saved data take offline
+These need permission level 2; `/mcc` itself follows `command_permission_level`, and players keep `/mcc bp` and
+`/mcc bp history [count]` for their own BP. Player arguments that read or edit saved data take offline
 players too.
 
 | Command | What it does |

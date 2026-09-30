@@ -45,29 +45,41 @@ class BattleContentCommandsTest {
     }
 
     @Test
-    fun `every player opens the hub by default while the commands under it stay for operators`() {
-        val contributed = object : MccCommandContributor {
-            override fun build() = net.minecraft.commands.Commands.literal("status")
-        }
+    fun `a player can run only the hub and their own BP, and operators everything`() {
         val dir = java.nio.file.Files.createTempDirectory("mcc-command")
-        fun source(level: Int) = CommandSourceStack(CommandSource.NULL, Vec3.ZERO, Vec2.ZERO, null, level, "test",
-            Component.literal("test"), null, null)
-        fun root() = BattleContentCommands.build(DefaultBattleContentApplicationService(emptyList()), contributors = listOf(contributed)).build()
+        val admin = listOf(MccAdminCommands::status, MccAdminCommands::records, MccAdminCommands::battle).map { make ->
+            object : MccCommandContributor {
+                override fun build() = make()
+            }
+        }
+        fun root() = BattleContentCommands.build(DefaultBattleContentApplicationService(emptyList()), contributors = admin).build()
 
         jbro.cobblemon.mcc.internal.hub.BattleHubTabConfigFile.load(dir.resolve("default.json"))
-        val open = root()
-        assertTrue(open.requirement.test(source(0)))
-        listOf("bp", "status").forEach { name ->
-            assertFalse(open.getChild(name).requirement.test(source(0)), name)
-            assertTrue(open.getChild(name).requirement.test(source(2)), name)
+        assertEquals(setOf("mcc", "mcc bp", "mcc bp history", "mcc bp history <count>"), runnable(root(), source(0)))
+        val everything = runnable(root(), source(2))
+        listOf("mcc status", "mcc records reset <player>", "mcc battle list", "mcc bp add <player> <amount>").forEach {
+            assertTrue(it in everything, it)
         }
 
         val restricted = dir.resolve("restricted.json")
         java.nio.file.Files.writeString(restricted, """{"command_permission_level": 2}""")
         jbro.cobblemon.mcc.internal.hub.BattleHubTabConfigFile.load(restricted)
-        val closed = root()
-        assertFalse(closed.requirement.test(source(0)))
-        assertTrue(closed.requirement.test(source(2)))
+        assertTrue(runnable(root(), source(0)).isEmpty())
+        assertTrue("mcc" in runnable(root(), source(2)))
         jbro.cobblemon.mcc.internal.hub.BattleHubTabConfigFile.load(dir.resolve("default.json"))
+    }
+
+    companion object {
+        fun source(level: Int) = CommandSourceStack(CommandSource.NULL, Vec3.ZERO, Vec2.ZERO, null, level, "test",
+            Component.literal("test"), null, null)
+
+        /** Every path under [node] that [source] may reach and that runs something, as "mcc bp history <count>". */
+        fun runnable(node: com.mojang.brigadier.tree.CommandNode<CommandSourceStack>, source: CommandSourceStack,
+                     path: String = ""): Set<String> {
+            if (!node.requirement.test(source)) return emptySet()
+            val name = if (node is com.mojang.brigadier.tree.ArgumentCommandNode<*, *>) "<${node.name}>" else node.name
+            val here = if (path.isEmpty()) name else "$path $name"
+            return (if (node.command != null) setOf(here) else emptySet()) + node.children.flatMap { runnable(it, source, here) }
+        }
     }
 }
