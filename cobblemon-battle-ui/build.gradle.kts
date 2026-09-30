@@ -21,7 +21,9 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
     modImplementation("maven.modrinth:cobblemon:${property("cobblemon_version_id")}")
     modCompileOnly(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
-    modRuntimeOnly(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
+    // UI Kit is built with Mojang names; the dev client runs Yarn names, so it needs the remapped mod JAR.
+    // Build it first: gradlew --configure-on-demand :cobblemon-ui-kit:remapJar
+    modRuntimeOnly(files(rootProject.file("cobblemon-ui-kit/build/libs/cobblemon-ui-kit-${property("cobblemon_ui_kit_version")}.jar")))
     testImplementation(project(path = ":cobblemon-ui-kit", configuration = "namedElements")) { isTransitive = false }
     // Modrinth metadata does not expose Cobblemon's development runtime libraries.
     // Versions match the official Cobblemon 1.8.1 Fabric POM; never bundle these in our JAR.
