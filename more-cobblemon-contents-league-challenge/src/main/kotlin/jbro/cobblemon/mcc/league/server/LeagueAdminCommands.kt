@@ -95,6 +95,7 @@ object LeagueAdminCommands {
             context.source.sendSuccess({ Component.translatable("$KEY.validate.ok") }, false)
             1
         })
+        .then(jbro.cobblemon.mcc.league.trainer.WildTrainerCommands.build())
         .then(literal("catalog").executes { context ->
             catalogStatus().forEach { line -> context.source.sendSuccess({ line }, false) }
             1

@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_channeler",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "gastly",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "haunter",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "gengar",
+      "min_level": 45,
+      "max_level": 100
+    },
+    {
+      "species": "misdreavus",
+      "min_level": 1,
+      "max_level": 100
+    },
+    {
+      "species": "duskull",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "dusclops",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "shuppet",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "banette",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "drifloon",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "drifblim",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "litwick",
+      "min_level": 1,
+      "max_level": 40
+    },
+    {
+      "species": "lampent",
+      "min_level": 41,
+      "max_level": 100
+    },
+    {
+      "species": "yamask",
+      "min_level": 1,
+      "max_level": 33
+    },
+    {
+      "species": "cofagrigus",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "sableye",
+      "min_level": 1,
+      "max_level": 100
+    }
+  ]
+}

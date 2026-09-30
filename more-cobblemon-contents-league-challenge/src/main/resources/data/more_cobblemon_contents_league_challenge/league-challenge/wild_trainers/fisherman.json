@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_fisherman",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "magikarp",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "gyarados",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "goldeen",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "seaking",
+      "min_level": 33,
+      "max_level": 100
+    },
+    {
+      "species": "remoraid",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "octillery",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "barboach",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "whiscash",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "carvanha",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "sharpedo",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "finneon",
+      "min_level": 1,
+      "max_level": 30
+    },
+    {
+      "species": "lumineon",
+      "min_level": 31,
+      "max_level": 100
+    },
+    {
+      "species": "wooper",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "quagsire",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "krabby",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "kingler",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "chinchou",
+      "min_level": 1,
+      "max_level": 26
+    },
+    {
+      "species": "lanturn",
+      "min_level": 27,
+      "max_level": 100
+    }
+  ]
+}

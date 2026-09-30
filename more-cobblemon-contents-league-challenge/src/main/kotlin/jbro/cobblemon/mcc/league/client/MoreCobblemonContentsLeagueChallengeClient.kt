@@ -16,6 +16,8 @@ import jbro.cobblemon.uikit.client.CobblemonUiRenderContent
 object MoreCobblemonContentsLeagueChallengeClient : ClientModInitializer {
     override fun onInitializeClient() {
         LeagueClientSession.register()
+        net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.server.packs.PackType.CLIENT_RESOURCES)
+            .registerReloadListener(WildTrainerTextures)
         LeagueHomeController.register()
         // League gates Tower and Factory behind the champion title, so it leads the content tabs.
         MccHubTabs.register(

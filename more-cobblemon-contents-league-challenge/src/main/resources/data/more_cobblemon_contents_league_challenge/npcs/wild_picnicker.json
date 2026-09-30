@@ -1,0 +1,79 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.picnicker"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_picnicker_alicia_009a",
+      "rct_picnicker_alicia_0280",
+      "rct_picnicker_alicia_0281",
+      "rct_picnicker_alicia_0282",
+      "rct_picnicker_alma_01d2",
+      "rct_picnicker_ana_0442",
+      "rct_picnicker_ariana_01db",
+      "rct_picnicker_becky_01e0",
+      "rct_picnicker_becky_029d",
+      "rct_picnicker_becky_029e",
+      "rct_picnicker_becky_029f",
+      "rct_picnicker_caitlin_009b",
+      "rct_picnicker_carol_009d",
+      "rct_picnicker_celia_01e1",
+      "rct_picnicker_cheyenne_03e4",
+      "rct_picnicker_claire_022c",
+      "rct_picnicker_dana_01da",
+      "rct_picnicker_diana_0096",
+      "rct_picnicker_diana_03e3",
+      "rct_picnicker_gwen_01d5",
+      "rct_picnicker_hannah_00a1",
+      "rct_picnicker_heidi_009c",
+      "rct_picnicker_irene_01d9",
+      "rct_picnicker_isabelle_0098",
+      "rct_picnicker_isabelle_0276",
+      "rct_picnicker_isabelle_0277",
+      "rct_picnicker_isabelle_0278",
+      "rct_picnicker_karina_043f",
+      "rct_picnicker_karina_0536",
+      "rct_picnicker_karina_0537",
+      "rct_picnicker_karina_0538",
+      "rct_picnicker_kelsey_0099",
+      "rct_picnicker_kelsey_026d",
+      "rct_picnicker_kelsey_026e",
+      "rct_picnicker_kelsey_026f",
+      "rct_picnicker_kindra_01df",
+      "rct_picnicker_lauren_0305",
+      "rct_picnicker_leah_01dc",
+      "rct_picnicker_marcy_026b",
+      "rct_picnicker_martha_009f",
+      "rct_picnicker_missy_01d8",
+      "rct_picnicker_missy_02ac",
+      "rct_picnicker_missy_02ad",
+      "rct_picnicker_nancy_0097",
+      "rct_picnicker_siena_02f3",
+      "rct_picnicker_sofia_009e",
+      "rct_picnicker_summer_0440",
+      "rct_picnicker_susie_01d3",
+      "rct_picnicker_susie_0292",
+      "rct_picnicker_susie_0293",
+      "rct_picnicker_susie_0294",
+      "rct_picnicker_tina_00a0",
+      "rct_picnicker_tori_0441",
+      "rct_picnicker_valerie_01d4",
+      "rct_picnicker_yazmin_01de"
+    ]
+  }
+}

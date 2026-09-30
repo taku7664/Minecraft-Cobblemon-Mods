@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_swimmer",
+  "bp": 10,
+  "strong": false,
+  "pokemon": [
+    {
+      "species": "tentacool",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "tentacruel",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "goldeen",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "seaking",
+      "min_level": 33,
+      "max_level": 100
+    },
+    {
+      "species": "staryu",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "starmie",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "horsea",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "seadra",
+      "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "poliwag",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "poliwhirl",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "buizel",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "floatzel",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "seel",
+      "min_level": 1,
+      "max_level": 33
+    },
+    {
+      "species": "dewgong",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "wingull",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "pelipper",
+      "min_level": 25,
+      "max_level": 100
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.dragon_tamer"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 4,
+  "variation": {
+    "skin": [
+      "rct_dragon_tamer_andre_0388",
+      "rct_dragon_tamer_clinton_0389",
+      "rct_dragon_tamer_darien_0497",
+      "rct_dragon_tamer_drake_049a",
+      "rct_dragon_tamer_geoffrey_0496",
+      "rct_dragon_tamer_geoffrey_04fc",
+      "rct_dragon_tamer_hayden_03af",
+      "rct_dragon_tamer_hayden_04fb",
+      "rct_dragon_tamer_joe_040c",
+      "rct_dragon_tamer_keegan_0498",
+      "rct_dragon_tamer_kenny_049b",
+      "rct_dragon_tamer_patrick_0322",
+      "rct_dragon_tamer_patrick_04f9",
+      "rct_dragon_tamer_patrick_04fa",
+      "rct_dragon_tamer_ramiro_0134",
+      "rct_dragon_tamer_stanley_0499"
+    ]
+  }
+}

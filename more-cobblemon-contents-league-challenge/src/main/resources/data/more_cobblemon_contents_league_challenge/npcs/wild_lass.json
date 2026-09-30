@@ -1,0 +1,66 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.lass"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_lass_ali_007b",
+      "rct_lass_andrea_0081",
+      "rct_lass_ann_007e",
+      "rct_lass_anne_0004",
+      "rct_lass_blythe_0489",
+      "rct_lass_briana_037f",
+      "rct_lass_caroline_03de",
+      "rct_lass_cassidy_0439",
+      "rct_lass_crissy_0077",
+      "rct_lass_dalia_0268",
+      "rct_lass_dawn_007f",
+      "rct_lass_haley_007d",
+      "rct_lass_iris_0079",
+      "rct_lass_janice_0074",
+      "rct_lass_janice_01fb",
+      "rct_lass_janice_01fc",
+      "rct_lass_joana_0269",
+      "rct_lass_julia_0083",
+      "rct_lass_kaitlin_03dd",
+      "rct_lass_kay_0084",
+      "rct_lass_lisa_0085",
+      "rct_lass_madeline_03dc",
+      "rct_lass_madeline_052a",
+      "rct_lass_madeline_052b",
+      "rct_lass_madeline_052c",
+      "rct_lass_megan_0082",
+      "rct_lass_megan_0288",
+      "rct_lass_megan_0289",
+      "rct_lass_miriam_0078",
+      "rct_lass_molly_03df",
+      "rct_lass_natalie_02e9",
+      "rct_lass_paige_0080",
+      "rct_lass_reli_007a",
+      "rct_lass_reli_01f5",
+      "rct_lass_reli_01f6",
+      "rct_lass_robin_0076",
+      "rct_lass_sally_0075",
+      "rct_lass_samantha_02ec",
+      "rct_lass_samantha_0527",
+      "rct_lass_samantha_0528",
+      "rct_lass_samantha_0529",
+      "rct_lass_sarah_02ed"
+    ]
+  }
+}
