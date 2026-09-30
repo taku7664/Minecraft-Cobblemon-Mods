@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "jbro.cobblemon.policy.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ServerGamePacketListenerChatRankMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
