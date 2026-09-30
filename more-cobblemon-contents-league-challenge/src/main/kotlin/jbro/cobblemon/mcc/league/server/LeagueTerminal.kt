@@ -8,14 +8,14 @@ import jbro.cobblemon.mcc.internal.hub.BattleHubIds
 import jbro.cobblemon.mcc.league.MoreCobblemonContentsLeagueChallenge as Mod
 import net.minecraft.resources.ResourceLocation
 
-/** The League's hologram terminal: the hub on its League tab, with the dashboard and the shop beside it. */
+/** The League's hologram terminal: the hub's dashboard and shop with the League tab. */
 object LeagueTerminal {
     val id: ResourceLocation = ResourceLocation.fromNamespaceAndPath(Mod.MOD_ID, "league_terminal")
     lateinit var terminal: HoloTerminal
         private set
 
     fun register() {
-        terminal = HoloTerminals.register(id, ManagedBattleContentIds.LEAGUE_CHALLENGE,
+        terminal = HoloTerminals.register(id,
             listOf(BattleHubIds.DASHBOARD, BattleHubIds.SHOP, ManagedBattleContentIds.LEAGUE_CHALLENGE),
             // Champion gold over a royal violet base.
             HoloTerminalPalette(0x3A2466, 0x6C3FB0, 0xFFC844, 0xFFE38A, 0xFFE9A6, 0xE0A93A, 0xFFD36A))

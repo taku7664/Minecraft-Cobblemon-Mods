@@ -40,11 +40,10 @@ data class HoloTerminalPalette(
 
 /**
  * A hologram terminal block. Using it opens the MCC hub on the tabs the server's hub tab config lists for [id],
- * [defaultTabs] until an admin changes them, starting on [homeTab] when that tab is listed.
+ * [defaultTabs] until an admin changes them. The hub starts on the dashboard, like `/mcc`.
  */
 class HoloTerminal internal constructor(
     val id: ResourceLocation,
-    val homeTab: String?,
     val defaultTabs: List<String>,
     val palette: HoloTerminalPalette,
 ) {
@@ -74,13 +73,12 @@ class HoloTerminal internal constructor(
 object HoloTerminals {
     private val terminals = CopyOnWriteArrayList<HoloTerminal>()
 
-    fun register(id: ResourceLocation, homeTab: String?, defaultTabs: List<String>, palette: HoloTerminalPalette): HoloTerminal {
+    fun register(id: ResourceLocation, defaultTabs: List<String>, palette: HoloTerminalPalette): HoloTerminal {
         require(terminals.none { it.id == id }) { "Duplicate hologram terminal: $id" }
         require(defaultTabs.isNotEmpty() && defaultTabs.distinct().size == defaultTabs.size && defaultTabs.all(ManagedBattleContentIds::isValid)) {
             "Invalid default tabs for $id: $defaultTabs"
         }
-        require(homeTab == null || homeTab in defaultTabs) { "The home tab of $id must be one of its default tabs" }
-        return HoloTerminal(id, homeTab, defaultTabs.toList(), palette).also {
+        return HoloTerminal(id, defaultTabs.toList(), palette).also {
             it.register()
             terminals += it
         }
