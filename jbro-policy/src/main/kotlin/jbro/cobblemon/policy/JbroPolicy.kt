@@ -1,6 +1,7 @@
 package jbro.cobblemon.policy
 
 import jbro.cobblemon.policy.api.Announcements
+import jbro.cobblemon.policy.api.Tips
 import jbro.cobblemon.policy.config.PolicyConfig
 import jbro.cobblemon.policy.legend.LegendCommand
 import jbro.cobblemon.policy.legend.LegendPolicy
@@ -39,6 +40,7 @@ object JbroPolicy : ModInitializer {
         LegendPolicy.register()
         LegendCommand.register()
         Announcements.register()
+        Tips.register(config.tipIntervalSeconds, config.tips)
         // Built-in data packs, so either can be turned off per world with /datapack disable.
         val mod = FabricLoader.getInstance().getModContainer(MOD_ID).orElseThrow()
         for (pack in listOf("legendary_spawns", "no_stat_candy_l_xl")) {
