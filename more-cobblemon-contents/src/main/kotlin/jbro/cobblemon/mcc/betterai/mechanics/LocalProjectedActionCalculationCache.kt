@@ -27,6 +27,9 @@ internal class LocalProjectedActionCalculationCache(
 ) {
     private val byState = HashMap<String, MutableMap<ActionKey, BattleDecisionContext>>()
 
+    /** Whether the matchup exchanges scored with this cache read recovery moves (LocalDecisionTuning.matchupRecovery). */
+    internal var matchupRecovery: Boolean = false
+
     /**
      * What a leaf reads from one cached calculation: the same answer every time that calculation comes
      * back, so it is worked out once. Keyed by the cached result itself.

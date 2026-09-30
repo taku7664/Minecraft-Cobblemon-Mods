@@ -186,6 +186,7 @@ internal class LocalTacticalBrain(
             LocalMatchupScoreCalculator.calculate(
                 difficultyContext,
                 shouldContinue = { System.nanoTime() - started < RULE_SCORES_TIME_LIMIT_NANOS },
+                recovery = tuning.matchupRecovery,
             ).takeIf { it.complete }
         }
         val setupGatePasses = java.util.concurrent.ConcurrentHashMap<String, Boolean>()

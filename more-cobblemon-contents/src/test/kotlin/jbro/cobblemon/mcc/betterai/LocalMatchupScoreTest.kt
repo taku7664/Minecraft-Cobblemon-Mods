@@ -274,6 +274,33 @@ class LocalMatchupScoreTest {
     }
 
     @Test
+    fun `a wall that heals off the hit is never worn down by it`() {
+        val recover = BattlePublicMoveOptionView("recover", BattleMoveCandidateView(typeId = "normal",
+            damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,
+            targetPattern = BattleMoveTargetPattern.SELF,
+            effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL, listOf(BattleMoveEffectView(
+                BattleMoveEffectKind.HEAL_FRACTION, BattleMoveEffectTarget.USER,
+                fractionRange = BattleFractionRange(0.5, 0.5))), false)),
+            BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
+        fun matchup(power: Double, foeExtra: List<BattlePublicMoveOptionView>, recovery: Boolean = true) =
+            LocalMatchupScoreCalculator.calculate(context(allySpeed = 120, foeSpeed = 100, allyPower = power, foePower = 40.0,
+                foeExtra = foeExtra), recovery = recovery).pokemon(ALLY, FOE)!!
+        // The shipped reading leaves healing out.
+        assertEquals(matchup(40.0, emptyList()).winProbability,
+            LocalMatchupScoreCalculator.calculate(context(allySpeed = 120, foeSpeed = 100, allyPower = 40.0, foePower = 40.0,
+                foeExtra = listOf(recover))).pokemon(ALLY, FOE)!!.winProbability, 1e-9)
+        // A weak attack wins the plain race by speed and loses to the heal.
+        val plain = matchup(40.0, emptyList())
+        val walled = matchup(40.0, listOf(recover))
+        assertTrue(plain.winProbability > 0.5) { plain.toString() }
+        assertTrue(walled.winProbability < 0.5) { walled.toString() }
+        assertEquals(plain.winProbability, matchup(40.0, listOf(recover), recovery = false).winProbability, 1e-9)
+        // A hit bigger than the heal still breaks it.
+        val strong = matchup(300.0, listOf(recover))
+        assertEquals(matchup(300.0, emptyList()).winProbability, strong.winProbability, 1e-9)
+    }
+
+    @Test
     fun `a status move that only spends the turn is ruled out, in singles only`() {
         val wisp = BattlePublicMoveOptionView("willowisp", BattleMoveCandidateView(typeId = "fire",
             damageCategory = BattleMoveDamageCategory.STATUS, power = 0.0, accuracy = 100.0, priority = 0, currentPp = 8,

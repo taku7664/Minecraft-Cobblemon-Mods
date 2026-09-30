@@ -143,6 +143,13 @@ internal data class LocalDecisionTuning(
      */
     val predictedSwitchShare: Double = 1.0,
     /**
+     * The matchup exchange reads self-heals (LocalMatchupScoreCalculator.pokemonMatchup): an attack that does less
+     * than one heal never knocks the healer out, and the healer attacks less often. Off, both sides only attack.
+     * Off: in singles duels it measured +0.012 over five seeds, and it made a healer's switch-in read as a wall the
+     * rest of the opposing team does not let it be (Toxapex into Weavile with Garchomp behind: -1.79 played out).
+     */
+    val matchupRecovery: Boolean = false,
+    /**
      * The root knockout correction removes the knockouts the search itself re-derived (expected opposing
      * knockouts on the root turn times [knockoutMaterialScore]); off, it removes up to the search's whole gain,
      * which erased the damage a knockout move cost whenever that gain stayed below the heuristic's credit.
