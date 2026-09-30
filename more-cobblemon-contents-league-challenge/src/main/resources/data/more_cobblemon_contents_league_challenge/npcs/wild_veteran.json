@@ -1,0 +1,36 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.veteran"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 3,
+  "variation": {
+    "skin": [
+      "rct_veteran_armando_03fb",
+      "rct_veteran_armando_0571",
+      "rct_veteran_brenden_045e",
+      "rct_veteran_brian_031d",
+      "rct_veteran_brian_056e",
+      "rct_veteran_brian_0570",
+      "rct_veteran_clayton_0387",
+      "rct_veteran_edgar_0386",
+      "rct_veteran_emanuel_0491",
+      "rct_veteran_grant_0392",
+      "rct_veteran_harlan_04c6",
+      "rct_veteran_terrell_045d"
+    ]
+  }
+}

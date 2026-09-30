@@ -1,0 +1,113 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_archaeologist",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "omanyte",
+      "min_level": 5,
+      "max_level": 39
+    },
+    {
+      "species": "omastar",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "kabuto",
+      "min_level": 5,
+      "max_level": 39
+    },
+    {
+      "species": "kabutops",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "aerodactyl",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "lileep",
+      "min_level": 5,
+      "max_level": 39
+    },
+    {
+      "species": "cradily",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "anorith",
+      "min_level": 5,
+      "max_level": 39
+    },
+    {
+      "species": "armaldo",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "cranidos",
+      "min_level": 5,
+      "max_level": 29
+    },
+    {
+      "species": "rampardos",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "shieldon",
+      "min_level": 5,
+      "max_level": 29
+    },
+    {
+      "species": "bastiodon",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "tirtouga",
+      "min_level": 5,
+      "max_level": 36
+    },
+    {
+      "species": "carracosta",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "archen",
+      "min_level": 5,
+      "max_level": 36
+    },
+    {
+      "species": "archeops",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "tyrunt",
+      "min_level": 5,
+      "max_level": 38
+    },
+    {
+      "species": "tyrantrum",
+      "min_level": 39,
+      "max_level": 100
+    },
+    {
+      "species": "amaura",
+      "min_level": 5,
+      "max_level": 38
+    },
+    {
+      "species": "aurorus",
+      "min_level": 39,
+      "max_level": 100
+    }
+  ]
+}

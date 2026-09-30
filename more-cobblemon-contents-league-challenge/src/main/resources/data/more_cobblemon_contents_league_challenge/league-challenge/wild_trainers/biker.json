@@ -1,0 +1,118 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_biker",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "grimer",
+      "min_level": 1,
+      "max_level": 37
+    },
+    {
+      "species": "muk",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "koffing",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "weezing",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "zubat",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "golbat",
+      "min_level": 22,
+      "max_level": 37
+    },
+    {
+      "species": "crobat",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "trubbish",
+      "min_level": 1,
+      "max_level": 35
+    },
+    {
+      "species": "garbodor",
+      "min_level": 36,
+      "max_level": 100
+    },
+    {
+      "species": "scraggy",
+      "min_level": 1,
+      "max_level": 38
+    },
+    {
+      "species": "scrafty",
+      "min_level": 39,
+      "max_level": 100
+    },
+    {
+      "species": "stunky",
+      "min_level": 1,
+      "max_level": 33
+    },
+    {
+      "species": "skuntank",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "sandile",
+      "min_level": 1,
+      "max_level": 28
+    },
+    {
+      "species": "krokorok",
+      "min_level": 29,
+      "max_level": 39
+    },
+    {
+      "species": "krookodile",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "houndour",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "houndoom",
+      "min_level": 24,
+      "max_level": 100
+    },
+    {
+      "species": "poochyena",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "mightyena",
+      "min_level": 18,
+      "max_level": 100
+    },
+    {
+      "species": "varoom",
+      "min_level": 1,
+      "max_level": 39
+    },
+    {
+      "species": "revavroom",
+      "min_level": 40,
+      "max_level": 100
+    }
+  ]
+}

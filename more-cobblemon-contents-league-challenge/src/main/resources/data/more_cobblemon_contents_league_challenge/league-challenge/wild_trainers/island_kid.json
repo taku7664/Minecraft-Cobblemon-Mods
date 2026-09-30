@@ -1,0 +1,108 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_island_kid",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "exeggcute",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "exeggutor",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "wingull",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "pelipper",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "pikipek",
+      "min_level": 1,
+      "max_level": 13
+    },
+    {
+      "species": "trumbeak",
+      "min_level": 14,
+      "max_level": 27
+    },
+    {
+      "species": "toucannon",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "yungoos",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "gumshoos",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "mareanie",
+      "min_level": 1,
+      "max_level": 37
+    },
+    {
+      "species": "toxapex",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "wishiwashi",
+      "min_level": 1,
+      "max_level": 100
+    },
+    {
+      "species": "pyukumuku",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "bounsweet",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "steenee",
+      "min_level": 18,
+      "max_level": 37
+    },
+    {
+      "species": "tsareena",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "salandit",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "salazzle",
+      "min_level": 33,
+      "max_level": 100
+    },
+    {
+      "species": "cutiefly",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "ribombee",
+      "min_level": 25,
+      "max_level": 100
+    }
+  ]
+}

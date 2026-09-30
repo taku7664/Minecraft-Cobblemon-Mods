@@ -1,0 +1,123 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_blacksmith",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "magby",
+      "min_level": 5,
+      "max_level": 29
+    },
+    {
+      "species": "magmar",
+      "min_level": 30,
+      "max_level": 37
+    },
+    {
+      "species": "magmortar",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "slugma",
+      "min_level": 1,
+      "max_level": 37
+    },
+    {
+      "species": "magcargo",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "heatmor",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "honedge",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "doublade",
+      "min_level": 35,
+      "max_level": 42
+    },
+    {
+      "species": "aegislash",
+      "min_level": 43,
+      "max_level": 100
+    },
+    {
+      "species": "klefki",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "tinkatink",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "tinkatuff",
+      "min_level": 24,
+      "max_level": 37
+    },
+    {
+      "species": "tinkaton",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "pawniard",
+      "min_level": 1,
+      "max_level": 51
+    },
+    {
+      "species": "bisharp",
+      "min_level": 52,
+      "max_level": 59
+    },
+    {
+      "species": "kingambit",
+      "min_level": 60,
+      "max_level": 100
+    },
+    {
+      "species": "litwick",
+      "min_level": 1,
+      "max_level": 40
+    },
+    {
+      "species": "lampent",
+      "min_level": 41,
+      "max_level": 48
+    },
+    {
+      "species": "chandelure",
+      "min_level": 49,
+      "max_level": 100
+    },
+    {
+      "species": "sizzlipede",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "centiskorch",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "varoom",
+      "min_level": 1,
+      "max_level": 39
+    },
+    {
+      "species": "revavroom",
+      "min_level": 40,
+      "max_level": 100
+    }
+  ]
+}

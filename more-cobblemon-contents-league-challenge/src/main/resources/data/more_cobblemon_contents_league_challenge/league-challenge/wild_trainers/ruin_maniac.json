@@ -1,29 +1,9 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "npc_class": "more_cobblemon_contents_league_challenge:wild_ruin_maniac",
+  "tier": "normal",
   "bp": 10,
-  "strong": false,
   "pokemon": [
-    {
-      "species": "sandshrew",
-      "min_level": 1,
-      "max_level": 21
-    },
-    {
-      "species": "sandslash",
-      "min_level": 22,
-      "max_level": 100
-    },
-    {
-      "species": "diglett",
-      "min_level": 1,
-      "max_level": 25
-    },
-    {
-      "species": "dugtrio",
-      "min_level": 26,
-      "max_level": 100
-    },
     {
       "species": "baltoy",
       "min_level": 1,
@@ -85,13 +65,48 @@
       "max_level": 100
     },
     {
-      "species": "onix",
-      "min_level": 10,
+      "species": "yamask",
+      "min_level": 1,
+      "max_level": 33
+    },
+    {
+      "species": "cofagrigus",
+      "min_level": 34,
       "max_level": 100
     },
     {
       "species": "sigilyph",
-      "min_level": 15,
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "bronzor",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "bronzong",
+      "min_level": 33,
+      "max_level": 100
+    },
+    {
+      "species": "golett",
+      "min_level": 1,
+      "max_level": 42
+    },
+    {
+      "species": "golurk",
+      "min_level": 43,
+      "max_level": 100
+    },
+    {
+      "species": "elgyem",
+      "min_level": 1,
+      "max_level": 41
+    },
+    {
+      "species": "beheeyem",
+      "min_level": 42,
       "max_level": 100
     }
   ]

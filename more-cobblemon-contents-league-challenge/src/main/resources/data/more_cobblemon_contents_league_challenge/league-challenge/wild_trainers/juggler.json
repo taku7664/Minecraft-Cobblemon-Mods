@@ -1,0 +1,103 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_juggler",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "voltorb",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "electrode",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "drowzee",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "hypno",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "mimejr",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "mrmime",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "koffing",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "weezing",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "magnemite",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "magneton",
+      "min_level": 30,
+      "max_level": 37
+    },
+    {
+      "species": "magnezone",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "baltoy",
+      "min_level": 1,
+      "max_level": 35
+    },
+    {
+      "species": "claydol",
+      "min_level": 36,
+      "max_level": 100
+    },
+    {
+      "species": "bronzor",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "bronzong",
+      "min_level": 33,
+      "max_level": 100
+    },
+    {
+      "species": "solrock",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "lunatone",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "spoink",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "grumpig",
+      "min_level": 32,
+      "max_level": 100
+    }
+  ]
+}

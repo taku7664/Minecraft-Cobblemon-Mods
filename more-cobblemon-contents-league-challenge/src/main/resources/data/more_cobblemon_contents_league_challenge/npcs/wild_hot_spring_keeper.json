@@ -1,0 +1,37 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.hot_spring_keeper"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_waitress_kati_03fc",
+      "rct_worker_braden_0460",
+      "rct_worker_brendon_0461",
+      "rct_worker_colin_037a",
+      "rct_worker_conrad_0586",
+      "rct_worker_dillan_0584",
+      "rct_worker_gary_039b",
+      "rct_worker_gerardo_03fd",
+      "rct_worker_holden_0585",
+      "rct_worker_jackson_039a",
+      "rct_worker_mason_037b",
+      "rct_worker_quentin_0462",
+      "rct_worker_willy_045f"
+    ]
+  }
+}

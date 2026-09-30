@@ -1,0 +1,103 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_gentleman",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "growlithe",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "arcanine",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "houndour",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "houndoom",
+      "min_level": 24,
+      "max_level": 100
+    },
+    {
+      "species": "snubbull",
+      "min_level": 1,
+      "max_level": 22
+    },
+    {
+      "species": "granbull",
+      "min_level": 23,
+      "max_level": 100
+    },
+    {
+      "species": "lillipup",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "herdier",
+      "min_level": 16,
+      "max_level": 31
+    },
+    {
+      "species": "stoutland",
+      "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "rockruff",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "lycanroc",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "yamper",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "boltund",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "espurr",
+      "min_level": 5,
+      "max_level": 24
+    },
+    {
+      "species": "meowstic",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "meowth",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "persian",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "bronzor",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "bronzong",
+      "min_level": 33,
+      "max_level": 100
+    }
+  ]
+}

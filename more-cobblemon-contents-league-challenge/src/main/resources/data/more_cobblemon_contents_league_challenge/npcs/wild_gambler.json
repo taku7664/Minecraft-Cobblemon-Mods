@@ -1,0 +1,32 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.gambler"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_gambler_darian_0105",
+      "rct_gambler_darian_027c",
+      "rct_gambler_dirk_0104",
+      "rct_gambler_hugo_0102",
+      "rct_gambler_jasper_0103",
+      "rct_gambler_rich_0108",
+      "rct_gambler_rich_028b",
+      "rct_gambler_stan_0106"
+    ]
+  }
+}

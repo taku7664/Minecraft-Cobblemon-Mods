@@ -1,0 +1,34 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.twins"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_twins_emma_03c0",
+      "rct_twins_lil_03c1",
+      "rct_twins_liv_02f0",
+      "rct_twins_liz_02f1",
+      "rct_twins_teri_0319",
+      "rct_twins_teri_0515",
+      "rct_twins_teri_0517",
+      "rct_twins_tia_031a",
+      "rct_twins_tia_0516",
+      "rct_twins_tia_0518"
+    ]
+  }
+}

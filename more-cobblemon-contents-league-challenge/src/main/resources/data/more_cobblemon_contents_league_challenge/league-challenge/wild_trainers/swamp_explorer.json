@@ -1,0 +1,98 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_swamp_explorer",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "wooper",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "quagsire",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "lotad",
+      "min_level": 1,
+      "max_level": 13
+    },
+    {
+      "species": "lombre",
+      "min_level": 14,
+      "max_level": 37
+    },
+    {
+      "species": "ludicolo",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "croagunk",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "toxicroak",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "stunfisk",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "shroomish",
+      "min_level": 1,
+      "max_level": 22
+    },
+    {
+      "species": "breloom",
+      "min_level": 23,
+      "max_level": 100
+    },
+    {
+      "species": "barboach",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "whiscash",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "grimer",
+      "min_level": 1,
+      "max_level": 37
+    },
+    {
+      "species": "muk",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "chewtle",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "drednaw",
+      "min_level": 22,
+      "max_level": 100
+    },
+    {
+      "species": "skorupi",
+      "min_level": 1,
+      "max_level": 39
+    },
+    {
+      "species": "drapion",
+      "min_level": 40,
+      "max_level": 100
+    }
+  ]
+}

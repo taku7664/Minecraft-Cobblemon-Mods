@@ -1,0 +1,36 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.cue_ball"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_cue_ball_camron_00fb",
+      "rct_cue_ball_camron_02a4",
+      "rct_cue_ball_chase_0101",
+      "rct_cue_ball_corey_0100",
+      "rct_cue_ball_corey_02a7",
+      "rct_cue_ball_isaiah_00fd",
+      "rct_cue_ball_isaiah_02a6",
+      "rct_cue_ball_jamal_00ff",
+      "rct_cue_ball_koji_00f9",
+      "rct_cue_ball_luke_00fa",
+      "rct_cue_ball_raul_00fc",
+      "rct_cue_ball_zeek_00fe"
+    ]
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_miner",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "drilbur",
+      "min_level": 1,
+      "max_level": 30
+    },
+    {
+      "species": "excadrill",
+      "min_level": 31,
+      "max_level": 100
+    },
+    {
+      "species": "roggenrola",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "boldore",
+      "min_level": 25,
+      "max_level": 37
+    },
+    {
+      "species": "gigalith",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "onix",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "steelix",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "geodude",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "graveler",
+      "min_level": 25,
+      "max_level": 37
+    },
+    {
+      "species": "golem",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "aron",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "lairon",
+      "min_level": 32,
+      "max_level": 41
+    },
+    {
+      "species": "aggron",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "nosepass",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "probopass",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "carbink",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "rolycoly",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "carkol",
+      "min_level": 18,
+      "max_level": 33
+    },
+    {
+      "species": "coalossal",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "nacli",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "naclstack",
+      "min_level": 24,
+      "max_level": 37
+    },
+    {
+      "species": "garganacl",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "glimmet",
+      "min_level": 5,
+      "max_level": 34
+    },
+    {
+      "species": "glimmora",
+      "min_level": 35,
+      "max_level": 100
+    }
+  ]
+}

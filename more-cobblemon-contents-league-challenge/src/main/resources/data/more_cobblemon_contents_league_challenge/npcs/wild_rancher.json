@@ -1,0 +1,31 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.rancher"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_rancher_marco_03be",
+      "rct_rancher_marco_050f",
+      "rct_rancher_marco_0510",
+      "rct_ranchers_ava_03bc",
+      "rct_ranchers_beth_047c",
+      "rct_ranchers_bob_047d",
+      "rct_ranchers_matt_03bd"
+    ]
+  }
+}

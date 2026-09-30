@@ -1,0 +1,33 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.crush_girl"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_crush_girl_cyndy_024f",
+      "rct_crush_girl_cyndy_02d2",
+      "rct_crush_girl_jocelyn_0250",
+      "rct_crush_girl_sharon_0206",
+      "rct_crush_girl_sharon_02b3",
+      "rct_crush_girl_sharon_02b4",
+      "rct_crush_girl_tanya_0228",
+      "rct_crush_girl_tanya_02b5",
+      "rct_crush_girl_tanya_02b6"
+    ]
+  }
+}

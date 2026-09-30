@@ -1,0 +1,108 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_surfer",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "wingull",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "pelipper",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "tentacool",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "tentacruel",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "horsea",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "seadra",
+      "min_level": 32,
+      "max_level": 39
+    },
+    {
+      "species": "kingdra",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "buizel",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "floatzel",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "mantine",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "remoraid",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "octillery",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "finneon",
+      "min_level": 1,
+      "max_level": 30
+    },
+    {
+      "species": "lumineon",
+      "min_level": 31,
+      "max_level": 100
+    },
+    {
+      "species": "chinchou",
+      "min_level": 1,
+      "max_level": 26
+    },
+    {
+      "species": "lanturn",
+      "min_level": 27,
+      "max_level": 100
+    },
+    {
+      "species": "finizen",
+      "min_level": 1,
+      "max_level": 37
+    },
+    {
+      "species": "palafin",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "wailmer",
+      "min_level": 5,
+      "max_level": 39
+    },
+    {
+      "species": "wailord",
+      "min_level": 40,
+      "max_level": 100
+    }
+  ]
+}

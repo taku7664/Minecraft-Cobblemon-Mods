@@ -1,0 +1,138 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_ground_ace",
+  "tier": "ace",
+  "bp": 20,
+  "pokemon": [
+    {
+      "species": "rhyhorn",
+      "min_level": 1,
+      "max_level": 41
+    },
+    {
+      "species": "rhydon",
+      "min_level": 42,
+      "max_level": 49
+    },
+    {
+      "species": "rhyperior",
+      "min_level": 50,
+      "max_level": 100
+    },
+    {
+      "species": "cubone",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "marowak",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "gligar",
+      "min_level": 12,
+      "max_level": 25
+    },
+    {
+      "species": "gliscor",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "phanpy",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "donphan",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "trapinch",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "vibrava",
+      "min_level": 35,
+      "max_level": 44
+    },
+    {
+      "species": "flygon",
+      "min_level": 45,
+      "max_level": 100
+    },
+    {
+      "species": "hippopotas",
+      "min_level": 1,
+      "max_level": 33
+    },
+    {
+      "species": "hippowdon",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "gible",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "gabite",
+      "min_level": 24,
+      "max_level": 47
+    },
+    {
+      "species": "garchomp",
+      "min_level": 48,
+      "max_level": 100
+    },
+    {
+      "species": "drilbur",
+      "min_level": 1,
+      "max_level": 30
+    },
+    {
+      "species": "excadrill",
+      "min_level": 31,
+      "max_level": 100
+    },
+    {
+      "species": "sandile",
+      "min_level": 1,
+      "max_level": 28
+    },
+    {
+      "species": "krokorok",
+      "min_level": 29,
+      "max_level": 39
+    },
+    {
+      "species": "krookodile",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "mudbray",
+      "min_level": 5,
+      "max_level": 29
+    },
+    {
+      "species": "mudsdale",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "silicobra",
+      "min_level": 1,
+      "max_level": 35
+    },
+    {
+      "species": "sandaconda",
+      "min_level": 36,
+      "max_level": 100
+    }
+  ]
+}

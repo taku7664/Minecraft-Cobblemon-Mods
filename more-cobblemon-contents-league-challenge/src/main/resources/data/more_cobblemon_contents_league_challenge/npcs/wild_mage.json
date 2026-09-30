@@ -1,0 +1,66 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.mage"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_painter_celina_0232",
+      "rct_painter_daisy_020e",
+      "rct_painter_edna_025c",
+      "rct_painter_rayna_0233",
+      "rct_painter_rayna_02bf",
+      "rct_psychic_abigail_0345",
+      "rct_psychic_abigail_050b",
+      "rct_psychic_abigail_050c",
+      "rct_psychic_brittney_03bb",
+      "rct_psychic_brittney_050d",
+      "rct_psychic_bryce_038c",
+      "rct_psychic_cameron_011a",
+      "rct_psychic_chelsey_04b3",
+      "rct_psychic_corbin_04b0",
+      "rct_psychic_corbin_050a",
+      "rct_psychic_daisy_04b2",
+      "rct_psychic_daisy_050e",
+      "rct_psychic_dario_024a",
+      "rct_psychic_dario_02cd",
+      "rct_psychic_deandre_0415",
+      "rct_psychic_desiree_0417",
+      "rct_psychic_elijah_0380",
+      "rct_psychic_jaclyn_0205",
+      "rct_psychic_jaclyn_02c8",
+      "rct_psychic_johan_0118",
+      "rct_psychic_kendra_0418",
+      "rct_psychic_kody_0413",
+      "rct_psychic_landon_0414",
+      "rct_psychic_laura_0260",
+      "rct_psychic_lindsey_0381",
+      "rct_psychic_maxwell_03ba",
+      "rct_psychic_maxwell_0509",
+      "rct_psychic_mitchell_0344",
+      "rct_psychic_mitchell_0507",
+      "rct_psychic_mitchell_0508",
+      "rct_psychic_preston_011b",
+      "rct_psychic_rachael_0416",
+      "rct_psychic_rodette_024b",
+      "rct_psychic_rodette_02ce",
+      "rct_psychic_sterling_04b1",
+      "rct_psychic_tyron_0119",
+      "rct_psychic_valencia_038d"
+    ]
+  }
+}

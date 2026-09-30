@@ -1,0 +1,34 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.desert_wanderer"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_cowgirl_shelley_0312",
+      "rct_ruin_maniac_bryan_0342",
+      "rct_ruin_maniac_calvin_03cb",
+      "rct_ruin_maniac_gerald_0434",
+      "rct_ruin_maniac_harry_0433",
+      "rct_ruin_maniac_harry_051f",
+      "rct_ruin_maniac_harry_0520",
+      "rct_ruin_maniac_hunter_0343",
+      "rct_ruin_maniac_karl_0492",
+      "rct_ruin_maniac_larry_03cc"
+    ]
+  }
+}

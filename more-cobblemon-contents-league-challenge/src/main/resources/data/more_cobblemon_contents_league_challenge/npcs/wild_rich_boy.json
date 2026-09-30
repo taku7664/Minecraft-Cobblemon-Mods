@@ -1,0 +1,29 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.rich_boy"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_rich_boy_jason_032b",
+      "rct_rich_boy_roman_048a",
+      "rct_rich_boy_trey_03e8",
+      "rct_rich_boy_trey_053f",
+      "rct_rich_boy_trey_0540"
+    ]
+  }
+}

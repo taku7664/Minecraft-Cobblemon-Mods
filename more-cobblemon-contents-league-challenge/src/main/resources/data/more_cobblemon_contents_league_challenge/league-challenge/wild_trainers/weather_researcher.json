@@ -1,0 +1,83 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_weather_researcher",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "drifloon",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "drifblim",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "snorunt",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "glalie",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "froslass",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "hippopotas",
+      "min_level": 1,
+      "max_level": 33
+    },
+    {
+      "species": "hippowdon",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "pelipper",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "wingull",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "tyrunt",
+      "min_level": 5,
+      "max_level": 38
+    },
+    {
+      "species": "tyrantrum",
+      "min_level": 39,
+      "max_level": 100
+    },
+    {
+      "species": "amaura",
+      "min_level": 5,
+      "max_level": 38
+    },
+    {
+      "species": "aurorus",
+      "min_level": 39,
+      "max_level": 100
+    },
+    {
+      "species": "cherubi",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "cherrim",
+      "min_level": 25,
+      "max_level": 100
+    }
+  ]
+}

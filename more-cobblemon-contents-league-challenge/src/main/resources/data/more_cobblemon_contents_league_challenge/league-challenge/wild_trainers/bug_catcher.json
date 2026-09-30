@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "npc_class": "more_cobblemon_contents_league_challenge:wild_bug_catcher",
+  "tier": "normal",
   "bp": 10,
-  "strong": false,
   "pokemon": [
     {
       "species": "caterpie",
@@ -45,7 +45,17 @@
       "max_level": 9
     },
     {
+      "species": "cascoon",
+      "min_level": 7,
+      "max_level": 9
+    },
+    {
       "species": "beautifly",
+      "min_level": 10,
+      "max_level": 100
+    },
+    {
+      "species": "dustox",
       "min_level": 10,
       "max_level": 100
     },
@@ -110,18 +120,43 @@
       "max_level": 100
     },
     {
-      "species": "scyther",
-      "min_level": 15,
+      "species": "scatterbug",
+      "min_level": 1,
+      "max_level": 8
+    },
+    {
+      "species": "spewpa",
+      "min_level": 9,
+      "max_level": 11
+    },
+    {
+      "species": "vivillon",
+      "min_level": 12,
       "max_level": 100
     },
     {
-      "species": "pinsir",
-      "min_level": 15,
+      "species": "sewaddle",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "swadloon",
+      "min_level": 20,
+      "max_level": 37
+    },
+    {
+      "species": "leavanny",
+      "min_level": 38,
       "max_level": 100
     },
     {
-      "species": "heracross",
-      "min_level": 15,
+      "species": "dewpider",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "araquanid",
+      "min_level": 22,
       "max_level": 100
     }
   ]

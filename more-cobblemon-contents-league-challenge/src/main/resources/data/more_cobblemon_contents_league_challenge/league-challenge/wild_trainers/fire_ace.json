@@ -1,0 +1,128 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_fire_ace",
+  "tier": "ace",
+  "bp": 20,
+  "pokemon": [
+    {
+      "species": "growlithe",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "arcanine",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "ponyta",
+      "min_level": 5,
+      "max_level": 39
+    },
+    {
+      "species": "rapidash",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "magby",
+      "min_level": 5,
+      "max_level": 29
+    },
+    {
+      "species": "magmar",
+      "min_level": 30,
+      "max_level": 37
+    },
+    {
+      "species": "magmortar",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "houndour",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "houndoom",
+      "min_level": 24,
+      "max_level": 100
+    },
+    {
+      "species": "torkoal",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "litleo",
+      "min_level": 5,
+      "max_level": 34
+    },
+    {
+      "species": "pyroar",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "larvesta",
+      "min_level": 5,
+      "max_level": 58
+    },
+    {
+      "species": "volcarona",
+      "min_level": 59,
+      "max_level": 100
+    },
+    {
+      "species": "salandit",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "salazzle",
+      "min_level": 33,
+      "max_level": 100
+    },
+    {
+      "species": "sizzlipede",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "centiskorch",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "charcadet",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "armarouge",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "ceruledge",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "heatmor",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "vulpix",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "ninetales",
+      "min_level": 26,
+      "max_level": 100
+    }
+  ]
+}

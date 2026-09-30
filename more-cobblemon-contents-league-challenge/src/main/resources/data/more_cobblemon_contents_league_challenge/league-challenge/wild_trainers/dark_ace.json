@@ -1,0 +1,123 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_dark_ace",
+  "tier": "ace",
+  "bp": 20,
+  "pokemon": [
+    {
+      "species": "houndour",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "houndoom",
+      "min_level": 24,
+      "max_level": 100
+    },
+    {
+      "species": "sneasel",
+      "min_level": 12,
+      "max_level": 25
+    },
+    {
+      "species": "weavile",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "absol",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "pawniard",
+      "min_level": 1,
+      "max_level": 51
+    },
+    {
+      "species": "bisharp",
+      "min_level": 52,
+      "max_level": 59
+    },
+    {
+      "species": "kingambit",
+      "min_level": 60,
+      "max_level": 100
+    },
+    {
+      "species": "zorua",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "zoroark",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "deino",
+      "min_level": 1,
+      "max_level": 49
+    },
+    {
+      "species": "zweilous",
+      "min_level": 50,
+      "max_level": 63
+    },
+    {
+      "species": "hydreigon",
+      "min_level": 64,
+      "max_level": 100
+    },
+    {
+      "species": "scraggy",
+      "min_level": 1,
+      "max_level": 38
+    },
+    {
+      "species": "scrafty",
+      "min_level": 39,
+      "max_level": 100
+    },
+    {
+      "species": "sandile",
+      "min_level": 1,
+      "max_level": 28
+    },
+    {
+      "species": "krokorok",
+      "min_level": 29,
+      "max_level": 39
+    },
+    {
+      "species": "krookodile",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "impidimp",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "morgrem",
+      "min_level": 32,
+      "max_level": 41
+    },
+    {
+      "species": "grimmsnarl",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "murkrow",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "honchkrow",
+      "min_level": 26,
+      "max_level": 100
+    }
+  ]
+}

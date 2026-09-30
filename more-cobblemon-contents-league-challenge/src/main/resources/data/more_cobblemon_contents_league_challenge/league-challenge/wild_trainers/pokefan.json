@@ -1,0 +1,108 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_pokefan",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "pikachu",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "raichu",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "clefairy",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "clefable",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "jigglypuff",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "wigglytuff",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "snubbull",
+      "min_level": 1,
+      "max_level": 22
+    },
+    {
+      "species": "granbull",
+      "min_level": 23,
+      "max_level": 100
+    },
+    {
+      "species": "skitty",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "delcatty",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "plusle",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "minun",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "pachirisu",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "dedenne",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "togepi",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "togetic",
+      "min_level": 26,
+      "max_level": 37
+    },
+    {
+      "species": "togekiss",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "marill",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "azumarill",
+      "min_level": 18,
+      "max_level": 100
+    },
+    {
+      "species": "emolga",
+      "min_level": 12,
+      "max_level": 100
+    }
+  ]
+}

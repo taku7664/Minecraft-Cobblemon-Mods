@@ -12,8 +12,6 @@ import com.cobblemon.mod.common.api.dialogue.ReferenceDialogueFaceProvider
 import com.cobblemon.mod.common.api.dialogue.input.DialogueOption
 import com.cobblemon.mod.common.api.dialogue.input.DialogueOptionSetInput
 import com.cobblemon.mod.common.api.events.CobblemonEvents
-import com.cobblemon.mod.common.api.pokemon.PokemonProperties
-import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.cobblemon.mod.common.api.storage.party.NPCPartyStore
 import com.cobblemon.mod.common.battles.BattleBuilder
 import com.cobblemon.mod.common.battles.BattleFormat
@@ -212,14 +210,23 @@ object WildTrainers {
         if (!npc.isAlive || npc.isInBattle() || BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) != null) return
         val lead = Cobblemon.storage.getParty(player).firstOrNull { !it.isFainted() } ?: return say(player, npc, "$KEY.refuse.no_pokemon")
         val party = NPCPartyStore(npc)
-        WildTrainerParty.roll(definition, cap(player), Random.Default).forEach { (species, level) ->
-            if (PokemonSpecies.getByName(species) == null) {
+        val cap = cap(player)
+        val heldItems = HashSet<String>()
+        WildTrainerParty.roll(definition, cap, Random.Default).forEach { (species, level) ->
+            val pokemon = try {
+                WildTrainerPokemon.create(species, level, definition.tier, cap, heldItems, Random.Default)
+            } catch (failure: RuntimeException) {
+                Mod.LOGGER.warn("Wild trainer {} could not raise {} at level {}", definition.npcClass, species, level, failure)
+                null
+            }
+            if (pokemon == null) {
                 Mod.LOGGER.warn("Wild trainer {} names unknown species {}", definition.npcClass, species)
                 return@forEach
             }
-            party.add(PokemonProperties.parse("$species level=$level").create())
+            party.add(pokemon)
         }
         if (party.none()) return say(player, npc, "$KEY.refuse.busy")
+        npc.skill = WildTrainerQuality.of(definition.tier, cap).skill
         starting += npc.uuid
         val result = try {
             BattleBuilder.pvn(player, npc, lead.uuid, BattleFormat.GEN_9_SINGLES, false, false, party)

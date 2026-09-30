@@ -1,0 +1,42 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.breeder"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_breeder_alize_0208",
+      "rct_breeder_alize_02c1",
+      "rct_breeder_allison_0262",
+      "rct_breeder_annie_05a9",
+      "rct_breeder_annie_05d8",
+      "rct_breeder_annie_0604",
+      "rct_breeder_bethany_0261",
+      "rct_pokemon_breeder_albert_0310",
+      "rct_pokemon_breeder_albert_04e7",
+      "rct_pokemon_breeder_albert_04e8",
+      "rct_pokemon_breeder_albert_04e9",
+      "rct_pokemon_breeder_amber_0318",
+      "rct_pokemon_breeder_jennifer_0311",
+      "rct_pokemon_breeder_jennifer_04ea",
+      "rct_pokemon_breeder_jennifer_04eb",
+      "rct_pokemon_breeder_jennifer_04ec",
+      "rct_pokemon_breeder_kahlil_0317",
+      "rct_pokemon_breeder_kaylee_0482"
+    ]
+  }
+}

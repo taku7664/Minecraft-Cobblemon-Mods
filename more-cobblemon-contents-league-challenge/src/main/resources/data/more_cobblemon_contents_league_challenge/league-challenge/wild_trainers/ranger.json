@@ -1,0 +1,128 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_ranger",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "sneasel",
+      "min_level": 12,
+      "max_level": 25
+    },
+    {
+      "species": "weavile",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "snorunt",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "glalie",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "froslass",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "swinub",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "piloswine",
+      "min_level": 33,
+      "max_level": 40
+    },
+    {
+      "species": "mamoswine",
+      "min_level": 41,
+      "max_level": 100
+    },
+    {
+      "species": "stantler",
+      "min_level": 12,
+      "max_level": 25
+    },
+    {
+      "species": "wyrdeer",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "teddiursa",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "ursaring",
+      "min_level": 30,
+      "max_level": 37
+    },
+    {
+      "species": "ursaluna",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "vulpix",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "ninetales",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "skiddo",
+      "min_level": 5,
+      "max_level": 31
+    },
+    {
+      "species": "gogoat",
+      "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "deerling",
+      "min_level": 1,
+      "max_level": 33
+    },
+    {
+      "species": "sawsbuck",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "cubchoo",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "beartic",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "vanillite",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "vanillish",
+      "min_level": 35,
+      "max_level": 46
+    },
+    {
+      "species": "vanilluxe",
+      "min_level": 47,
+      "max_level": 100
+    }
+  ]
+}

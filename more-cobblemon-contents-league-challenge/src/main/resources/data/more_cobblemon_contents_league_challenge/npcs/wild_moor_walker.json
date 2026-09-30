@@ -1,0 +1,45 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.moor_walker"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_gentleman_arthur_01a6",
+      "rct_gentleman_brooks_01e2",
+      "rct_gentleman_clifford_025d",
+      "rct_gentleman_jeremy_032d",
+      "rct_gentleman_jeremy_051b",
+      "rct_gentleman_jeremy_051c",
+      "rct_gentleman_jeremy_051d",
+      "rct_gentleman_komodo_0005",
+      "rct_gentleman_lamar_01e3",
+      "rct_gentleman_leonardo_0487",
+      "rct_gentleman_norton_01a8",
+      "rct_gentleman_thomas_01a5",
+      "rct_gentleman_tucker_01a7",
+      "rct_gentleman_walter_01a9",
+      "rct_jogger_craig_03ce",
+      "rct_jogger_craig_0521",
+      "rct_jogger_craig_0522",
+      "rct_jogger_raul_03cf",
+      "rct_jogger_richard_0313",
+      "rct_jogger_scott_034a",
+      "rct_jogger_wyatt_03cd"
+    ]
+  }
+}

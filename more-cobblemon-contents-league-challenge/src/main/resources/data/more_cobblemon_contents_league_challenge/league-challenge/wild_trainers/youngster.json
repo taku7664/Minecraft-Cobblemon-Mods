@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "npc_class": "more_cobblemon_contents_league_challenge:wild_youngster",
+  "tier": "normal",
   "bp": 10,
-  "strong": false,
   "pokemon": [
     {
       "species": "rattata",
@@ -67,6 +67,11 @@
     {
       "species": "nidorino",
       "min_level": 16,
+      "max_level": 37
+    },
+    {
+      "species": "nidoking",
+      "min_level": 38,
       "max_level": 100
     },
     {
@@ -92,6 +97,46 @@
     {
       "species": "stoutland",
       "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "patrat",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "watchog",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "yungoos",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "gumshoos",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "skwovet",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "greedent",
+      "min_level": 24,
+      "max_level": 100
+    },
+    {
+      "species": "wooloo",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "dubwool",
+      "min_level": 24,
       "max_level": 100
     }
   ]

@@ -1,0 +1,30 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.battle_girl"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_battle_girl_helen_0308",
+      "rct_battle_girl_helen_04e1",
+      "rct_battle_girl_helen_04e2",
+      "rct_battle_girl_helen_04e3",
+      "rct_battle_girl_kelsey_02f6",
+      "rct_battle_girl_tylor_0403"
+    ]
+  }
+}

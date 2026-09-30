@@ -1,0 +1,33 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.school_kid"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_school_kid_brunore_001e",
+      "rct_school_kid_brunore_001f",
+      "rct_school_kid_chance_03ec",
+      "rct_school_kid_christine_03f1",
+      "rct_school_kid_esteban_048d",
+      "rct_school_kid_forrest_03ed",
+      "rct_school_kid_harrison_03ee",
+      "rct_school_kid_mackenzie_03ef",
+      "rct_school_kid_tiera_03f0"
+    ]
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.hex_maniac"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_channeler_amanda_01ce",
+      "rct_channeler_angelica_01c3",
+      "rct_channeler_carly_01ba",
+      "rct_channeler_emilia_01c4",
+      "rct_channeler_hope_01bb",
+      "rct_channeler_janae_01c2",
+      "rct_channeler_jennifer_01c5",
+      "rct_channeler_jody_01be",
+      "rct_channeler_karina_01c1",
+      "rct_channeler_laurel_01bd",
+      "rct_channeler_patricia_01b9",
+      "rct_channeler_paula_01bc",
+      "rct_channeler_rachel_0093",
+      "rct_channeler_ruth_01c0",
+      "rct_channeler_stacy_01cf",
+      "rct_channeler_tammy_01bf",
+      "rct_channeler_tasha_01d0",
+      "rct_psychic_abigail_0345",
+      "rct_psychic_abigail_050b",
+      "rct_psychic_abigail_050c",
+      "rct_psychic_brittney_03bb",
+      "rct_psychic_brittney_050d",
+      "rct_psychic_bryce_038c",
+      "rct_psychic_cameron_011a",
+      "rct_psychic_chelsey_04b3",
+      "rct_psychic_corbin_04b0",
+      "rct_psychic_corbin_050a",
+      "rct_psychic_daisy_04b2",
+      "rct_psychic_daisy_050e",
+      "rct_psychic_dario_024a",
+      "rct_psychic_dario_02cd",
+      "rct_psychic_deandre_0415",
+      "rct_psychic_desiree_0417",
+      "rct_psychic_elijah_0380",
+      "rct_psychic_jaclyn_0205",
+      "rct_psychic_jaclyn_02c8",
+      "rct_psychic_johan_0118",
+      "rct_psychic_kendra_0418",
+      "rct_psychic_kody_0413",
+      "rct_psychic_landon_0414",
+      "rct_psychic_laura_0260",
+      "rct_psychic_lindsey_0381",
+      "rct_psychic_maxwell_03ba",
+      "rct_psychic_maxwell_0509",
+      "rct_psychic_mitchell_0344",
+      "rct_psychic_mitchell_0507",
+      "rct_psychic_mitchell_0508",
+      "rct_psychic_preston_011b",
+      "rct_psychic_rachael_0416",
+      "rct_psychic_rodette_024b",
+      "rct_psychic_rodette_02ce",
+      "rct_psychic_sterling_04b1",
+      "rct_psychic_tyron_0119",
+      "rct_psychic_valencia_038d"
+    ]
+  }
+}

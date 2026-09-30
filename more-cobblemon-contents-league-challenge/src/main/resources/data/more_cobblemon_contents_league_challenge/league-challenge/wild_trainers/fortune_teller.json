@@ -1,0 +1,93 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_fortune_teller",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "natu",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "xatu",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "chingling",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "chimecho",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "spoink",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "grumpig",
+      "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "misdreavus",
+      "min_level": 12,
+      "max_level": 25
+    },
+    {
+      "species": "mismagius",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "murkrow",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "honchkrow",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "sigilyph",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "elgyem",
+      "min_level": 1,
+      "max_level": 41
+    },
+    {
+      "species": "beheeyem",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "hatenna",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "hattrem",
+      "min_level": 32,
+      "max_level": 41
+    },
+    {
+      "species": "hatterene",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "indeedee",
+      "min_level": 20,
+      "max_level": 100
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_lady",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "skitty",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "delcatty",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "snubbull",
+      "min_level": 1,
+      "max_level": 22
+    },
+    {
+      "species": "granbull",
+      "min_level": 23,
+      "max_level": 100
+    },
+    {
+      "species": "minccino",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "cinccino",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "espurr",
+      "min_level": 5,
+      "max_level": 24
+    },
+    {
+      "species": "meowstic",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "meowth",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "persian",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "buneary",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "lopunny",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "swirlix",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "slurpuff",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "spritzee",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "aromatisse",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "fidough",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "dachsbun",
+      "min_level": 26,
+      "max_level": 100
+    }
+  ]
+}

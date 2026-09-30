@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "npc_class": "more_cobblemon_contents_league_challenge:wild_psychic",
+  "tier": "normal",
   "bp": 10,
-  "strong": false,
   "pokemon": [
     {
       "species": "abra",
@@ -12,6 +12,11 @@
     {
       "species": "kadabra",
       "min_level": 16,
+      "max_level": 37
+    },
+    {
+      "species": "alakazam",
+      "min_level": 38,
       "max_level": 100
     },
     {
@@ -50,6 +55,11 @@
       "max_level": 100
     },
     {
+      "species": "gallade",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
       "species": "spoink",
       "min_level": 1,
       "max_level": 31
@@ -62,11 +72,16 @@
     {
       "species": "slowpoke",
       "min_level": 1,
-      "max_level": 36
+      "max_level": 25
     },
     {
       "species": "slowbro",
       "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "slowking",
+      "min_level": 26,
       "max_level": 100
     },
     {
@@ -81,7 +96,7 @@
     },
     {
       "species": "espurr",
-      "min_level": 1,
+      "min_level": 5,
       "max_level": 24
     },
     {
@@ -91,7 +106,52 @@
     },
     {
       "species": "girafarig",
+      "min_level": 12,
+      "max_level": 25
+    },
+    {
+      "species": "farigiraf",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "munna",
       "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "musharna",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "gothita",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "gothorita",
+      "min_level": 32,
+      "max_level": 40
+    },
+    {
+      "species": "gothitelle",
+      "min_level": 41,
+      "max_level": 100
+    },
+    {
+      "species": "solosis",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "duosion",
+      "min_level": 32,
+      "max_level": 40
+    },
+    {
+      "species": "reuniclus",
+      "min_level": 41,
       "max_level": 100
     }
   ]

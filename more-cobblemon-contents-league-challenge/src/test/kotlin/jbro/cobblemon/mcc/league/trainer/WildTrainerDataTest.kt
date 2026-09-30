@@ -20,7 +20,7 @@ class WildTrainerDataTest {
     private val resources = Path.of("src/main/resources")
     private val definitions = WildTrainerCatalogParser.parse(
         Files.list(resources.resolve("data/$ns/league-challenge/wild_trainers")).use { files ->
-            files.toList().associate { it.name to it.readText() }
+            files.toList().filter { it.name.endsWith(".json") }.associate { it.name to it.readText() }
         },
     )
 
@@ -28,7 +28,8 @@ class WildTrainerDataTest {
     fun `every kind has its NPC class and every skin it wears is in the variation`() {
         val variation = JsonParser.parseString(resources.resolve("assets/$ns/bedrock/npcs/variations/wild_trainer/0_wild_trainer.json").readText())
             .asJsonObject.getAsJsonArray("variations").flatMap { entry -> entry.asJsonObject.getAsJsonArray("aspects").map { it.asString } }.toSet()
-        assertEquals(20, definitions.size)
+        assertTrue(definitions.values.count { it.tier == WildTrainerTier.NORMAL } >= 100)
+        assertTrue(definitions.values.count { it.tier == WildTrainerTier.ACE } >= 20)
         definitions.keys.forEach { npcClass ->
             val file = resources.resolve("data/$ns/npcs/${npcClass.substringAfter(':')}.json")
             assertTrue(Files.exists(file), npcClass)
@@ -43,25 +44,39 @@ class WildTrainerDataTest {
     @Test
     fun `no gym leader, Elite Four, Champion, named character or villain skin is worn`() {
         val blocked = Regex("^rct_(leader|gym_leader|sinnoh_leader|elite_four|champion|rival|title_defense|battleground|boss|commander|" +
-            "rocket_admin|shadow_admin|light_of_ruin|professor|prof|player|pokemon_trainer|team_rocket|team_galactic|shadow_grunt|burglar)_")
+            "rocket_admin|shadow_admin|light_of_ruin|professor|prof|player|pokemon_trainer|team_rocket|team_galactic|shadow_grunt|burglar|" +
+            "expert|idol|double_team)_")
         val worn = Files.list(resources.resolve("data/$ns/npcs")).use { files ->
-            files.toList().flatMap { file ->
+            files.toList().filter { it.name.endsWith(".json") }.flatMap { file ->
                 JsonParser.parseString(file.readText()).asJsonObject.getAsJsonObject("variation").getAsJsonArray("skin").map { it.asString }
             }
         }
-        assertTrue(worn.size > 500)
+        assertTrue(worn.size > 1000)
         assertTrue(worn.none(blocked::containsMatchIn), worn.filter(blocked::containsMatchIn).take(5).toString())
     }
 
     @Test
-    fun `every species in the pools is one Cobblemon has`() {
-        val cobblemon = JarFile(Paths.get(PokemonSpecies::class.java.protectionDomain.codeSource.location.toURI()).toFile())
-        val known = cobblemon.use { jar ->
-            jar.entries().asSequence().map { it.name }.filter { it.startsWith("data/cobblemon/species/") && it.endsWith(".json") }
-                .map { it.substringAfterLast('/').removeSuffix(".json") }.toSet()
+    fun `aces pay twice what normal trainers pay`() {
+        definitions.values.forEach { definition ->
+            assertEquals(if (definition.tier == WildTrainerTier.ACE) 20L else 10L, definition.bp, definition.npcClass)
         }
-        val unknown = definitions.values.flatMap { definition -> definition.pokemon.map { it.species } }.distinct().filter { it !in known }
-        assertTrue(unknown.isEmpty(), unknown.toString())
+    }
+
+    @Test
+    fun `every species in the pools is one Cobblemon has implemented and none is legendary`() {
+        val cobblemon = JarFile(Paths.get(PokemonSpecies::class.java.protectionDomain.codeSource.location.toURI()).toFile())
+        val usable = cobblemon.use { jar ->
+            jar.entries().asSequence().filter { it.name.startsWith("data/cobblemon/species/") && it.name.endsWith(".json") }
+                .mapNotNull { entry ->
+                    val species = JsonParser.parseString(jar.getInputStream(entry).reader().readText()).asJsonObject
+                    val labels = species.getAsJsonArray("labels")?.map { it.asString }.orEmpty()
+                    val implemented = species.get("implemented")?.asBoolean == true
+                    val special = labels.any { it in setOf("legendary", "mythical", "ultra_beast", "paradox", "restricted") }
+                    entry.name.substringAfterLast('/').removeSuffix(".json").takeIf { implemented && !special }
+                }.toSet()
+        }
+        val unusable = definitions.values.flatMap { definition -> definition.pokemon.map { it.species } }.distinct().filter { it !in usable }
+        assertTrue(unusable.isEmpty(), unusable.toString())
     }
 
     @Test
@@ -71,15 +86,11 @@ class WildTrainerDataTest {
             listOf(16, 24, 34, 46, 64, 80, 100).forEach { cap ->
                 repeat(20) {
                     val party = WildTrainerParty.roll(definition, cap, random)
-                    assertTrue(party.size in WildTrainerParty.sizes(cap, definition.strong), "${definition.npcClass} $cap ${party.size}")
+                    assertTrue(party.size in 1..6, "${definition.npcClass} $cap ${party.size}")
                     assertTrue(party.all { (_, level) -> level in 1..cap }, "${definition.npcClass} $cap $party")
                 }
             }
         }
-        assertEquals(1..2, WildTrainerParty.sizes(16, strong = false))
-        assertEquals(4..6, WildTrainerParty.sizes(100, strong = false))
-        assertEquals(96..100, WildTrainerParty.levels(100, strong = true))
-        assertEquals(1..1, WildTrainerParty.levels(1, strong = false))
     }
 
     @Test

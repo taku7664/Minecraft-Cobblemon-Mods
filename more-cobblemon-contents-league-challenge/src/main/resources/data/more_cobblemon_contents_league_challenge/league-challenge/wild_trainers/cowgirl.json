@@ -1,0 +1,98 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_cowgirl",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "ponyta",
+      "min_level": 5,
+      "max_level": 39
+    },
+    {
+      "species": "rapidash",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "tauros",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "sandile",
+      "min_level": 1,
+      "max_level": 28
+    },
+    {
+      "species": "krokorok",
+      "min_level": 29,
+      "max_level": 39
+    },
+    {
+      "species": "krookodile",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "mudbray",
+      "min_level": 5,
+      "max_level": 29
+    },
+    {
+      "species": "mudsdale",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "blitzle",
+      "min_level": 1,
+      "max_level": 26
+    },
+    {
+      "species": "zebstrika",
+      "min_level": 27,
+      "max_level": 100
+    },
+    {
+      "species": "growlithe",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "arcanine",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "ekans",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "arbok",
+      "min_level": 22,
+      "max_level": 100
+    },
+    {
+      "species": "sandshrew",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "sandslash",
+      "min_level": 22,
+      "max_level": 100
+    },
+    {
+      "species": "cacnea",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "cacturne",
+      "min_level": 32,
+      "max_level": 100
+    }
+  ]
+}

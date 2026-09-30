@@ -1,0 +1,93 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_musician",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "chatot",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "kricketot",
+      "min_level": 1,
+      "max_level": 9
+    },
+    {
+      "species": "kricketune",
+      "min_level": 10,
+      "max_level": 100
+    },
+    {
+      "species": "whismur",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "loudred",
+      "min_level": 20,
+      "max_level": 39
+    },
+    {
+      "species": "exploud",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "chingling",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "chimecho",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "jigglypuff",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "wigglytuff",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "toxel",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "toxtricity",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "noibat",
+      "min_level": 1,
+      "max_level": 47
+    },
+    {
+      "species": "noivern",
+      "min_level": 48,
+      "max_level": 100
+    },
+    {
+      "species": "jangmoo",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "hakamoo",
+      "min_level": 35,
+      "max_level": 44
+    },
+    {
+      "species": "kommoo",
+      "min_level": 45,
+      "max_level": 100
+    }
+  ]
+}

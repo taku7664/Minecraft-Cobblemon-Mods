@@ -1,0 +1,138 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_veteran",
+  "tier": "ace",
+  "bp": 20,
+  "pokemon": [
+    {
+      "species": "machop",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "machoke",
+      "min_level": 28,
+      "max_level": 37
+    },
+    {
+      "species": "machamp",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "gastly",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "haunter",
+      "min_level": 25,
+      "max_level": 37
+    },
+    {
+      "species": "gengar",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "abra",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "kadabra",
+      "min_level": 16,
+      "max_level": 37
+    },
+    {
+      "species": "alakazam",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "tauros",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "kangaskhan",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "lapras",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "munchlax",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "snorlax",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "growlithe",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "arcanine",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "staryu",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "starmie",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "rhyhorn",
+      "min_level": 1,
+      "max_level": 41
+    },
+    {
+      "species": "rhydon",
+      "min_level": 42,
+      "max_level": 49
+    },
+    {
+      "species": "rhyperior",
+      "min_level": 50,
+      "max_level": 100
+    },
+    {
+      "species": "nidoranm",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "nidorino",
+      "min_level": 16,
+      "max_level": 37
+    },
+    {
+      "species": "nidoking",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "exeggcute",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "exeggutor",
+      "min_level": 26,
+      "max_level": 100
+    }
+  ]
+}

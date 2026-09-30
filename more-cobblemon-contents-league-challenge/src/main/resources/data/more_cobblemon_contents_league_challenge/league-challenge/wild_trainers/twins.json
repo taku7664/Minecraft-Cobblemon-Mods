@@ -1,0 +1,88 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_twins",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "plusle",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "minun",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "volbeat",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "illumise",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "solrock",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "lunatone",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "seviper",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "zangoose",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "throh",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "sawk",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "nidoranm",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "nidorino",
+      "min_level": 16,
+      "max_level": 37
+    },
+    {
+      "species": "nidoking",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "nidoranf",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "nidorina",
+      "min_level": 16,
+      "max_level": 37
+    },
+    {
+      "species": "nidoqueen",
+      "min_level": 38,
+      "max_level": 100
+    }
+  ]
+}

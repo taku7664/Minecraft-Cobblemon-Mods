@@ -1,0 +1,30 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.bug_maniac"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_bug_catcher_01ec",
+      "rct_bug_catcher_01ed",
+      "rct_bug_catcher_01ee",
+      "rct_bug_catcher_01ef",
+      "rct_bug_catcher_01f0",
+      "rct_bug_catcher_01f1"
+    ]
+  }
+}

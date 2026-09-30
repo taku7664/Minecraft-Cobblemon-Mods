@@ -1,0 +1,39 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.tuber"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_tuber_alexis_022f",
+      "rct_tuber_amira_0207",
+      "rct_tuber_amira_02bd",
+      "rct_tuber_caitlyn_045c",
+      "rct_tuber_chelsea_033f",
+      "rct_tuber_chelsea_056d",
+      "rct_tuber_chelsea_056f",
+      "rct_tuber_conner_03f8",
+      "rct_tuber_holly_03fa",
+      "rct_tuber_jacky_045b",
+      "rct_tuber_jared_033e",
+      "rct_tuber_jared_056b",
+      "rct_tuber_jared_056c",
+      "rct_tuber_mariel_03f9",
+      "rct_tuber_trenton_03f7"
+    ]
+  }
+}

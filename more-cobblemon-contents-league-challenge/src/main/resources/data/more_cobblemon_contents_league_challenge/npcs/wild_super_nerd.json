@@ -1,0 +1,34 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.super_nerd"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_super_nerd_aavery_00b2",
+      "rct_super_nerd_aidan_00ab",
+      "rct_super_nerd_derek_00b3",
+      "rct_super_nerd_erik_00b1",
+      "rct_super_nerd_glenn_00ac",
+      "rct_super_nerd_glenn_028a",
+      "rct_super_nerd_jovan_00a9",
+      "rct_super_nerd_leslie_00ad",
+      "rct_super_nerd_miguel_00aa",
+      "rct_super_nerd_zac_00b4"
+    ]
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_bamboo_hermit",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "pancham",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "pangoro",
+      "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "bonsly",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "sudowoodo",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "shroomish",
+      "min_level": 1,
+      "max_level": 22
+    },
+    {
+      "species": "breloom",
+      "min_level": 23,
+      "max_level": 100
+    },
+    {
+      "species": "ninjask",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "spinda",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "kecleon",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "tangela",
+      "min_level": 12,
+      "max_level": 25
+    },
+    {
+      "species": "tangrowth",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "tyrogue",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "hitmonchan",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "hitmonlee",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "hitmontop",
+      "min_level": 20,
+      "max_level": 100
+    }
+  ]
+}

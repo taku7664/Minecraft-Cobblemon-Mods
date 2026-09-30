@@ -1,0 +1,123 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_cyclist",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "doduo",
+      "min_level": 1,
+      "max_level": 30
+    },
+    {
+      "species": "dodrio",
+      "min_level": 31,
+      "max_level": 100
+    },
+    {
+      "species": "ponyta",
+      "min_level": 5,
+      "max_level": 39
+    },
+    {
+      "species": "rapidash",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "electrike",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "manectric",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "shinx",
+      "min_level": 1,
+      "max_level": 14
+    },
+    {
+      "species": "luxio",
+      "min_level": 15,
+      "max_level": 29
+    },
+    {
+      "species": "luxray",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "zigzagoon",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "linoone",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "starly",
+      "min_level": 1,
+      "max_level": 13
+    },
+    {
+      "species": "staravia",
+      "min_level": 14,
+      "max_level": 33
+    },
+    {
+      "species": "staraptor",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "blitzle",
+      "min_level": 1,
+      "max_level": 26
+    },
+    {
+      "species": "zebstrika",
+      "min_level": 27,
+      "max_level": 100
+    },
+    {
+      "species": "pidove",
+      "min_level": 1,
+      "max_level": 20
+    },
+    {
+      "species": "tranquill",
+      "min_level": 21,
+      "max_level": 31
+    },
+    {
+      "species": "unfezant",
+      "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "fletchling",
+      "min_level": 1,
+      "max_level": 16
+    },
+    {
+      "species": "fletchinder",
+      "min_level": 17,
+      "max_level": 34
+    },
+    {
+      "species": "talonflame",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "cyclizar",
+      "min_level": 20,
+      "max_level": 100
+    }
+  ]
+}

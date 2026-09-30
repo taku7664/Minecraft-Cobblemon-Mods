@@ -1,0 +1,123 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_pokemaniac",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "rhyhorn",
+      "min_level": 1,
+      "max_level": 41
+    },
+    {
+      "species": "rhydon",
+      "min_level": 42,
+      "max_level": 49
+    },
+    {
+      "species": "rhyperior",
+      "min_level": 50,
+      "max_level": 100
+    },
+    {
+      "species": "cubone",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "marowak",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "slowpoke",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "slowbro",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "slowking",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "nidoranm",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "nidorino",
+      "min_level": 16,
+      "max_level": 37
+    },
+    {
+      "species": "nidoking",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "lickitung",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "lickilicky",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "aron",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "lairon",
+      "min_level": 32,
+      "max_level": 41
+    },
+    {
+      "species": "aggron",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "axew",
+      "min_level": 1,
+      "max_level": 37
+    },
+    {
+      "species": "fraxure",
+      "min_level": 38,
+      "max_level": 47
+    },
+    {
+      "species": "haxorus",
+      "min_level": 48,
+      "max_level": 100
+    },
+    {
+      "species": "druddigon",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "tyrunt",
+      "min_level": 5,
+      "max_level": 38
+    },
+    {
+      "species": "tyrantrum",
+      "min_level": 39,
+      "max_level": 100
+    },
+    {
+      "species": "kangaskhan",
+      "min_level": 20,
+      "max_level": 100
+    }
+  ]
+}

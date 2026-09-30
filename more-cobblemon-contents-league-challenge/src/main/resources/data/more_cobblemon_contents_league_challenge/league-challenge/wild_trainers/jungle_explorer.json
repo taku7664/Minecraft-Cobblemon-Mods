@@ -1,0 +1,123 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_jungle_explorer",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "aipom",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "ambipom",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "tropius",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "pikipek",
+      "min_level": 1,
+      "max_level": 13
+    },
+    {
+      "species": "trumbeak",
+      "min_level": 14,
+      "max_level": 27
+    },
+    {
+      "species": "toucannon",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "bounsweet",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "steenee",
+      "min_level": 18,
+      "max_level": 37
+    },
+    {
+      "species": "tsareena",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "hawlucha",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "pansage",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "simisage",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "pansear",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "simisear",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "panpour",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "simipour",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "yungoos",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "gumshoos",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "fomantis",
+      "min_level": 1,
+      "max_level": 33
+    },
+    {
+      "species": "lurantis",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "sewaddle",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "swadloon",
+      "min_level": 20,
+      "max_level": 37
+    },
+    {
+      "species": "leavanny",
+      "min_level": 38,
+      "max_level": 100
+    }
+  ]
+}

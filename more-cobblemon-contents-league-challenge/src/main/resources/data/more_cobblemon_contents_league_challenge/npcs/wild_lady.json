@@ -1,0 +1,32 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.lady"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_lady_gillian_0234",
+      "rct_lady_jacki_020d",
+      "rct_lady_kylie_048b",
+      "rct_lady_melissa_032c",
+      "rct_lady_melissa_0541",
+      "rct_lady_melissa_0542",
+      "rct_lady_melissa_0543",
+      "rct_lady_selphy_025e"
+    ]
+  }
+}

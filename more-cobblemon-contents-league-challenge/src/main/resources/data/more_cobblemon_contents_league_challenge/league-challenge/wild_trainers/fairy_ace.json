@@ -1,0 +1,143 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_fairy_ace",
+  "tier": "ace",
+  "bp": 20,
+  "pokemon": [
+    {
+      "species": "clefairy",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "clefable",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "togepi",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "togetic",
+      "min_level": 26,
+      "max_level": 37
+    },
+    {
+      "species": "togekiss",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "ralts",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "kirlia",
+      "min_level": 20,
+      "max_level": 29
+    },
+    {
+      "species": "gardevoir",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "gallade",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "snubbull",
+      "min_level": 1,
+      "max_level": 22
+    },
+    {
+      "species": "granbull",
+      "min_level": 23,
+      "max_level": 100
+    },
+    {
+      "species": "flabebe",
+      "min_level": 1,
+      "max_level": 18
+    },
+    {
+      "species": "floette",
+      "min_level": 19,
+      "max_level": 37
+    },
+    {
+      "species": "florges",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "spritzee",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "aromatisse",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "swirlix",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "slurpuff",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "mimikyu",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "hatenna",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "hattrem",
+      "min_level": 32,
+      "max_level": 41
+    },
+    {
+      "species": "hatterene",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "impidimp",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "morgrem",
+      "min_level": 32,
+      "max_level": 41
+    },
+    {
+      "species": "grimmsnarl",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "fidough",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "dachsbun",
+      "min_level": 26,
+      "max_level": 100
+    }
+  ]
+}

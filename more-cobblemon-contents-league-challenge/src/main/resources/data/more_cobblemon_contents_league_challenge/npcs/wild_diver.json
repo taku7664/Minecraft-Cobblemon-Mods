@@ -1,0 +1,79 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.diver"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_swimmer_adrian_035e",
+      "rct_swimmer_aubree_0375",
+      "rct_swimmer_cassandra_0378",
+      "rct_swimmer_claire_0459",
+      "rct_swimmer_colton_0371",
+      "rct_swimmer_crystal_0377",
+      "rct_swimmer_crystal_0563",
+      "rct_swimmer_dillon_0364",
+      "rct_swimmer_erica_0362",
+      "rct_swimmer_erik_035f",
+      "rct_swimmer_evan_033b",
+      "rct_swimmer_francisco_0370",
+      "rct_swimmer_francisco_0560",
+      "rct_swimmer_gabrielle_0379",
+      "rct_swimmer_glenn_04be",
+      "rct_swimmer_glenn_0561",
+      "rct_swimmer_haley_033c",
+      "rct_swimmer_jessica_0361",
+      "rct_swimmer_joanna_04c2",
+      "rct_swimmer_joanna_0564",
+      "rct_swimmer_katelyn_0363",
+      "rct_swimmer_kurt_04bf",
+      "rct_swimmer_lydia_04c5",
+      "rct_swimmer_mallory_04c4",
+      "rct_swimmer_mary_033d",
+      "rct_swimmer_miranda_0374",
+      "rct_swimmer_miranda_0562",
+      "rct_swimmer_oscar_0373",
+      "rct_swimmer_paige_0376",
+      "rct_swimmer_ricardo_036f",
+      "rct_swimmer_sam_04c0",
+      "rct_swimmer_shelton_033a",
+      "rct_swimmer_sophia_04c3",
+      "rct_swimmer_troy_0372",
+      "rct_swimmer_vanessa_0365",
+      "rct_swimmer_vincent_0360",
+      "rct_swimmer_wade_04c1",
+      "rct_swimmer_wesley_036e",
+      "rct_swimmer_wesley_055f",
+      "rct_swimmerf_abigail_0224",
+      "rct_swimmerf_alice_0115",
+      "rct_swimmerf_alice_02aa",
+      "rct_swimmerf_amara_0222",
+      "rct_swimmerf_anya_0114",
+      "rct_swimmerf_connie_0116",
+      "rct_swimmerf_denise_0243",
+      "rct_swimmerf_maria_0223",
+      "rct_swimmerf_melissa_0110",
+      "rct_swimmerf_melissa_02de",
+      "rct_swimmerf_nicole_023f",
+      "rct_swimmerf_nicole_02c7",
+      "rct_swimmerf_nora_010f",
+      "rct_swimmerf_shirley_0117",
+      "rct_swimmerf_tiffany_010e",
+      "rct_swimmerf_tisha_0231"
+    ]
+  }
+}

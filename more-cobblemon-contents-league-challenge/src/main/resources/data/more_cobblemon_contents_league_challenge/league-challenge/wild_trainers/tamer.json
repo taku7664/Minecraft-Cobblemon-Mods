@@ -1,0 +1,98 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_tamer",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "ekans",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "arbok",
+      "min_level": 22,
+      "max_level": 100
+    },
+    {
+      "species": "sandile",
+      "min_level": 1,
+      "max_level": 28
+    },
+    {
+      "species": "krokorok",
+      "min_level": 29,
+      "max_level": 39
+    },
+    {
+      "species": "krookodile",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "zangoose",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "seviper",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "meowth",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "persian",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "poochyena",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "mightyena",
+      "min_level": 18,
+      "max_level": 100
+    },
+    {
+      "species": "litleo",
+      "min_level": 5,
+      "max_level": 34
+    },
+    {
+      "species": "pyroar",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "tauros",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "mudbray",
+      "min_level": 5,
+      "max_level": 29
+    },
+    {
+      "species": "mudsdale",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "skiddo",
+      "min_level": 5,
+      "max_level": 31
+    },
+    {
+      "species": "gogoat",
+      "min_level": 32,
+      "max_level": 100
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "npc_class": "more_cobblemon_contents_league_challenge:wild_dragon_tamer",
-  "bp": 10,
-  "strong": true,
+  "tier": "ace",
+  "bp": 20,
   "pokemon": [
     {
       "species": "dratini",
@@ -107,6 +107,61 @@
     {
       "species": "seadra",
       "min_level": 32,
+      "max_level": 39
+    },
+    {
+      "species": "kingdra",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "druddigon",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "goomy",
+      "min_level": 1,
+      "max_level": 39
+    },
+    {
+      "species": "sliggoo",
+      "min_level": 40,
+      "max_level": 49
+    },
+    {
+      "species": "goodra",
+      "min_level": 50,
+      "max_level": 100
+    },
+    {
+      "species": "jangmoo",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "hakamoo",
+      "min_level": 35,
+      "max_level": 44
+    },
+    {
+      "species": "kommoo",
+      "min_level": 45,
+      "max_level": 100
+    },
+    {
+      "species": "dreepy",
+      "min_level": 1,
+      "max_level": 49
+    },
+    {
+      "species": "drakloak",
+      "min_level": 50,
+      "max_level": 59
+    },
+    {
+      "species": "dragapult",
+      "min_level": 60,
       "max_level": 100
     }
   ]

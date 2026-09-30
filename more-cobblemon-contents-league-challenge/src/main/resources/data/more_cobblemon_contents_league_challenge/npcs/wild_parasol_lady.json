@@ -1,0 +1,29 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.parasol_lady"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_parasol_lady_alexa_03e1",
+      "rct_parasol_lady_alexa_0533",
+      "rct_parasol_lady_alexa_0534",
+      "rct_parasol_lady_alexa_0535",
+      "rct_parasol_lady_sabrina_03e2"
+    ]
+  }
+}

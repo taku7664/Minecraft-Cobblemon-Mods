@@ -1,0 +1,128 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_ghost_ace",
+  "tier": "ace",
+  "bp": 20,
+  "pokemon": [
+    {
+      "species": "gastly",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "haunter",
+      "min_level": 25,
+      "max_level": 37
+    },
+    {
+      "species": "gengar",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "misdreavus",
+      "min_level": 12,
+      "max_level": 25
+    },
+    {
+      "species": "mismagius",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "duskull",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "dusclops",
+      "min_level": 37,
+      "max_level": 44
+    },
+    {
+      "species": "dusknoir",
+      "min_level": 45,
+      "max_level": 100
+    },
+    {
+      "species": "litwick",
+      "min_level": 1,
+      "max_level": 40
+    },
+    {
+      "species": "lampent",
+      "min_level": 41,
+      "max_level": 48
+    },
+    {
+      "species": "chandelure",
+      "min_level": 49,
+      "max_level": 100
+    },
+    {
+      "species": "honedge",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "doublade",
+      "min_level": 35,
+      "max_level": 42
+    },
+    {
+      "species": "aegislash",
+      "min_level": 43,
+      "max_level": 100
+    },
+    {
+      "species": "phantump",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "trevenant",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "mimikyu",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "dreepy",
+      "min_level": 1,
+      "max_level": 49
+    },
+    {
+      "species": "drakloak",
+      "min_level": 50,
+      "max_level": 59
+    },
+    {
+      "species": "dragapult",
+      "min_level": 60,
+      "max_level": 100
+    },
+    {
+      "species": "sinistea",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "polteageist",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "drifloon",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "drifblim",
+      "min_level": 28,
+      "max_level": 100
+    }
+  ]
+}

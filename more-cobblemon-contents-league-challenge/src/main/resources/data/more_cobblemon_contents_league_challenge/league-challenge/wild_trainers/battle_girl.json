@@ -1,0 +1,118 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_battle_girl",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "meditite",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "medicham",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "mankey",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "primeape",
+      "min_level": 28,
+      "max_level": 37
+    },
+    {
+      "species": "annihilape",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "riolu",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "lucario",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "mienfoo",
+      "min_level": 5,
+      "max_level": 49
+    },
+    {
+      "species": "mienshao",
+      "min_level": 50,
+      "max_level": 100
+    },
+    {
+      "species": "crabrawler",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "crabominable",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "hawlucha",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "stufful",
+      "min_level": 1,
+      "max_level": 26
+    },
+    {
+      "species": "bewear",
+      "min_level": 27,
+      "max_level": 100
+    },
+    {
+      "species": "clobbopus",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "grapploct",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "tyrogue",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "hitmonchan",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "hitmonlee",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "hitmontop",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "makuhita",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "hariyama",
+      "min_level": 24,
+      "max_level": 100
+    }
+  ]
+}

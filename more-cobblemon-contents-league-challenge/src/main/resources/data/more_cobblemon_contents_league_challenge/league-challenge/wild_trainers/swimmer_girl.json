@@ -1,0 +1,103 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_swimmer_girl",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "staryu",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "starmie",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "shellder",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "cloyster",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "corsola",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "luvdisc",
+      "min_level": 1,
+      "max_level": 100
+    },
+    {
+      "species": "clamperl",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "huntail",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "gorebyss",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "frillish",
+      "min_level": 1,
+      "max_level": 39
+    },
+    {
+      "species": "jellicent",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "psyduck",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "golduck",
+      "min_level": 33,
+      "max_level": 100
+    },
+    {
+      "species": "marill",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "azumarill",
+      "min_level": 18,
+      "max_level": 100
+    },
+    {
+      "species": "spheal",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "sealeo",
+      "min_level": 32,
+      "max_level": 43
+    },
+    {
+      "species": "walrein",
+      "min_level": 44,
+      "max_level": 100
+    },
+    {
+      "species": "lapras",
+      "min_level": 28,
+      "max_level": 100
+    }
+  ]
+}

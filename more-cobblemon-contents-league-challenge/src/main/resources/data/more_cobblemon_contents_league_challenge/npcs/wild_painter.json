@@ -1,0 +1,29 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.painter"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_painter_celina_0232",
+      "rct_painter_daisy_020e",
+      "rct_painter_edna_025c",
+      "rct_painter_rayna_0233",
+      "rct_painter_rayna_02bf"
+    ]
+  }
+}

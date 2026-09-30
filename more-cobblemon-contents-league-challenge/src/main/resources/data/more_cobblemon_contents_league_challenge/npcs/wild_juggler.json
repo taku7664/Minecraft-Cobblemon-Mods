@@ -1,0 +1,34 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.juggler"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_juggler_dalton_011e",
+      "rct_juggler_edward_0123",
+      "rct_juggler_gregory_0122",
+      "rct_juggler_kayden_0124",
+      "rct_juggler_kirk_0120",
+      "rct_juggler_mason_024e",
+      "rct_juggler_mason_02cf",
+      "rct_juggler_nate_0125",
+      "rct_juggler_nelson_011f",
+      "rct_juggler_shawn_0121"
+    ]
+  }
+}

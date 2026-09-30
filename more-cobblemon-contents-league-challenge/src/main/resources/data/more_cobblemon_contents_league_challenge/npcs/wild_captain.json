@@ -1,0 +1,56 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.captain"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_gentleman_arthur_01a6",
+      "rct_gentleman_brooks_01e2",
+      "rct_gentleman_clifford_025d",
+      "rct_gentleman_jeremy_032d",
+      "rct_gentleman_jeremy_051b",
+      "rct_gentleman_jeremy_051c",
+      "rct_gentleman_jeremy_051d",
+      "rct_gentleman_komodo_0005",
+      "rct_gentleman_lamar_01e3",
+      "rct_gentleman_leonardo_0487",
+      "rct_gentleman_norton_01a8",
+      "rct_gentleman_thomas_01a5",
+      "rct_gentleman_tucker_01a7",
+      "rct_gentleman_walter_01a9",
+      "rct_sailor_damian_03eb",
+      "rct_sailor_duncan_0089",
+      "rct_sailor_dwayne_008d",
+      "rct_sailor_dylan_008b",
+      "rct_sailor_edmond_0086",
+      "rct_sailor_huey_008a",
+      "rct_sailor_leonard_0088",
+      "rct_sailor_luther_036d",
+      "rct_sailor_marc_03e9",
+      "rct_sailor_marc_054c",
+      "rct_sailor_marc_054d",
+      "rct_sailor_paul_0340",
+      "rct_sailor_phillip_008c",
+      "rct_sailor_samson_0452",
+      "rct_sailor_skyler_03ea",
+      "rct_sailor_trevor_0087",
+      "rct_sailor_zachariah_0451",
+      "rct_sailor_zachariah_054e"
+    ]
+  }
+}

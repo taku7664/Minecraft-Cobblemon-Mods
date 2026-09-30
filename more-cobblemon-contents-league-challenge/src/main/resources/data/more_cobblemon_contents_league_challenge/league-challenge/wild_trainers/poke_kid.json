@@ -1,0 +1,138 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_poke_kid",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "pichu",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "pikachu",
+      "min_level": 26,
+      "max_level": 37
+    },
+    {
+      "species": "raichu",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "cleffa",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "clefairy",
+      "min_level": 26,
+      "max_level": 37
+    },
+    {
+      "species": "clefable",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "igglybuff",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "jigglypuff",
+      "min_level": 26,
+      "max_level": 37
+    },
+    {
+      "species": "wigglytuff",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "togepi",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "togetic",
+      "min_level": 26,
+      "max_level": 37
+    },
+    {
+      "species": "togekiss",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "happiny",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "chansey",
+      "min_level": 26,
+      "max_level": 37
+    },
+    {
+      "species": "blissey",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "munchlax",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "snorlax",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "bonsly",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "sudowoodo",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "mimejr",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "mrmime",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "budew",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "roselia",
+      "min_level": 26,
+      "max_level": 37
+    },
+    {
+      "species": "roserade",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "riolu",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "lucario",
+      "min_level": 26,
+      "max_level": 100
+    }
+  ]
+}

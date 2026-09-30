@@ -1,0 +1,37 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.ninja_boy"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_ninja_boy_antonio_0359",
+      "rct_ninja_boy_brennan_0455",
+      "rct_ninja_boy_bruce_0456",
+      "rct_ninja_boy_davey_0321",
+      "rct_ninja_boy_ethan_035a",
+      "rct_ninja_boy_fabian_0454",
+      "rct_ninja_boy_joel_031f",
+      "rct_ninja_boy_nathan_0320",
+      "rct_ninja_boy_nick_0329",
+      "rct_ninja_boy_zach_0327",
+      "rct_ninja_boy_zach_0552",
+      "rct_ninja_boy_zach_0553",
+      "rct_ninja_boy_zach_0554"
+    ]
+  }
+}

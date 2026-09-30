@@ -1,0 +1,118 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_dancer",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "meditite",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "medicham",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "oddish",
+      "min_level": 1,
+      "max_level": 20
+    },
+    {
+      "species": "gloom",
+      "min_level": 21,
+      "max_level": 37
+    },
+    {
+      "species": "vileplume",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "bellossom",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "spinda",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "lotad",
+      "min_level": 1,
+      "max_level": 13
+    },
+    {
+      "species": "lombre",
+      "min_level": 14,
+      "max_level": 37
+    },
+    {
+      "species": "ludicolo",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "tyrogue",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "hitmonchan",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "hitmonlee",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "hitmontop",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "cutiefly",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "ribombee",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "ralts",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "kirlia",
+      "min_level": 20,
+      "max_level": 29
+    },
+    {
+      "species": "gardevoir",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "gallade",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "flittle",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "espathra",
+      "min_level": 35,
+      "max_level": 100
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "npc_class": "more_cobblemon_contents_league_challenge:wild_fisherman",
+  "tier": "normal",
   "bp": 10,
-  "strong": false,
   "pokemon": [
     {
       "species": "magikarp",
@@ -92,6 +92,16 @@
     {
       "species": "lanturn",
       "min_level": 27,
+      "max_level": 100
+    },
+    {
+      "species": "arrokuda",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "barraskewda",
+      "min_level": 26,
       "max_level": 100
     }
   ]

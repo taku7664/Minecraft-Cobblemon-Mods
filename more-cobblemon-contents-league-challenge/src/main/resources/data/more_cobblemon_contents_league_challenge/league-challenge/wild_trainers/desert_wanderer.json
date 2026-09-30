@@ -1,0 +1,113 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_desert_wanderer",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "cacnea",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "cacturne",
+      "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "sandile",
+      "min_level": 1,
+      "max_level": 28
+    },
+    {
+      "species": "krokorok",
+      "min_level": 29,
+      "max_level": 39
+    },
+    {
+      "species": "krookodile",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "trapinch",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "vibrava",
+      "min_level": 35,
+      "max_level": 44
+    },
+    {
+      "species": "flygon",
+      "min_level": 45,
+      "max_level": 100
+    },
+    {
+      "species": "hippopotas",
+      "min_level": 1,
+      "max_level": 33
+    },
+    {
+      "species": "hippowdon",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "maractus",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "silicobra",
+      "min_level": 1,
+      "max_level": 35
+    },
+    {
+      "species": "sandaconda",
+      "min_level": 36,
+      "max_level": 100
+    },
+    {
+      "species": "numel",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "camerupt",
+      "min_level": 33,
+      "max_level": 100
+    },
+    {
+      "species": "sandshrew",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "sandslash",
+      "min_level": 22,
+      "max_level": 100
+    },
+    {
+      "species": "dwebble",
+      "min_level": 1,
+      "max_level": 33
+    },
+    {
+      "species": "crustle",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "skorupi",
+      "min_level": 1,
+      "max_level": 39
+    },
+    {
+      "species": "drapion",
+      "min_level": 40,
+      "max_level": 100
+    }
+  ]
+}

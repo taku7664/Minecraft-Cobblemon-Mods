@@ -1,0 +1,30 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.guitarist"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_guitarist_arturo_0432",
+      "rct_guitarist_jerry_03c8",
+      "rct_guitarist_lonnie_03ca",
+      "rct_guitarist_preston_03c9",
+      "rct_guitarist_tony_03c7",
+      "rct_guitarist_tony_051e"
+    ]
+  }
+}

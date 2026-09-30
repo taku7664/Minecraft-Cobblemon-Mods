@@ -1,0 +1,98 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_captain",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "tentacool",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "tentacruel",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "krabby",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "kingler",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "corphish",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "crawdaunt",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "wailmer",
+      "min_level": 5,
+      "max_level": 39
+    },
+    {
+      "species": "wailord",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "carvanha",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "sharpedo",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "skrelp",
+      "min_level": 1,
+      "max_level": 47
+    },
+    {
+      "species": "dragalge",
+      "min_level": 48,
+      "max_level": 100
+    },
+    {
+      "species": "clauncher",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "clawitzer",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "dhelmise",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "arrokuda",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "barraskewda",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "bruxish",
+      "min_level": 20,
+      "max_level": 100
+    }
+  ]
+}

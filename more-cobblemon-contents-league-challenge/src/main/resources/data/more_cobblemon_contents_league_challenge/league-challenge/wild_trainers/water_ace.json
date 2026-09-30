@@ -1,0 +1,148 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_water_ace",
+  "tier": "ace",
+  "bp": 20,
+  "pokemon": [
+    {
+      "species": "magikarp",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "gyarados",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "lapras",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "staryu",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "starmie",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "horsea",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "seadra",
+      "min_level": 32,
+      "max_level": 39
+    },
+    {
+      "species": "kingdra",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "totodile",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "croconaw",
+      "min_level": 18,
+      "max_level": 29
+    },
+    {
+      "species": "feraligatr",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "mudkip",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "marshtomp",
+      "min_level": 16,
+      "max_level": 35
+    },
+    {
+      "species": "swampert",
+      "min_level": 36,
+      "max_level": 100
+    },
+    {
+      "species": "carvanha",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "sharpedo",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "spheal",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "sealeo",
+      "min_level": 32,
+      "max_level": 43
+    },
+    {
+      "species": "walrein",
+      "min_level": 44,
+      "max_level": 100
+    },
+    {
+      "species": "buizel",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "floatzel",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "froakie",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "frogadier",
+      "min_level": 16,
+      "max_level": 35
+    },
+    {
+      "species": "greninja",
+      "min_level": 36,
+      "max_level": 100
+    },
+    {
+      "species": "wimpod",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "golisopod",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "finizen",
+      "min_level": 1,
+      "max_level": 37
+    },
+    {
+      "species": "palafin",
+      "min_level": 38,
+      "max_level": 100
+    }
+  ]
+}

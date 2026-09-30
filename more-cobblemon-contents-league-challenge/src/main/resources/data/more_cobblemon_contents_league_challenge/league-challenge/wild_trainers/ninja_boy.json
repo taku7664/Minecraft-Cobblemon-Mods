@@ -1,0 +1,108 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_ninja_boy",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "koffing",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "weezing",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "venonat",
+      "min_level": 1,
+      "max_level": 30
+    },
+    {
+      "species": "venomoth",
+      "min_level": 31,
+      "max_level": 100
+    },
+    {
+      "species": "voltorb",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "electrode",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "zubat",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "golbat",
+      "min_level": 22,
+      "max_level": 37
+    },
+    {
+      "species": "crobat",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "nincada",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "ninjask",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "kecleon",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "shuppet",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "banette",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "sneasel",
+      "min_level": 12,
+      "max_level": 25
+    },
+    {
+      "species": "weavile",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "zorua",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "zoroark",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "purrloin",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "liepard",
+      "min_level": 20,
+      "max_level": 100
+    }
+  ]
+}

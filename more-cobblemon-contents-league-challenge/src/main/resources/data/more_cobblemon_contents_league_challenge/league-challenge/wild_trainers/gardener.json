@@ -1,0 +1,138 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_gardener",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "seedot",
+      "min_level": 1,
+      "max_level": 13
+    },
+    {
+      "species": "nuzleaf",
+      "min_level": 14,
+      "max_level": 37
+    },
+    {
+      "species": "shiftry",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "lotad",
+      "min_level": 1,
+      "max_level": 13
+    },
+    {
+      "species": "lombre",
+      "min_level": 14,
+      "max_level": 37
+    },
+    {
+      "species": "ludicolo",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "shroomish",
+      "min_level": 1,
+      "max_level": 22
+    },
+    {
+      "species": "breloom",
+      "min_level": 23,
+      "max_level": 100
+    },
+    {
+      "species": "bellsprout",
+      "min_level": 1,
+      "max_level": 20
+    },
+    {
+      "species": "weepinbell",
+      "min_level": 21,
+      "max_level": 37
+    },
+    {
+      "species": "victreebel",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "tangela",
+      "min_level": 12,
+      "max_level": 25
+    },
+    {
+      "species": "tangrowth",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "exeggcute",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "exeggutor",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "cacnea",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "cacturne",
+      "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "tropius",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "sewaddle",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "swadloon",
+      "min_level": 20,
+      "max_level": 37
+    },
+    {
+      "species": "leavanny",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "foongus",
+      "min_level": 1,
+      "max_level": 38
+    },
+    {
+      "species": "amoonguss",
+      "min_level": 39,
+      "max_level": 100
+    },
+    {
+      "species": "bounsweet",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "steenee",
+      "min_level": 18,
+      "max_level": 37
+    },
+    {
+      "species": "tsareena",
+      "min_level": 38,
+      "max_level": 100
+    }
+  ]
+}

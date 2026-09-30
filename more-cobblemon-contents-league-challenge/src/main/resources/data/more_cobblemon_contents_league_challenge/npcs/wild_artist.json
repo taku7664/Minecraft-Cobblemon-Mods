@@ -1,0 +1,29 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.artist"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_artist_ismael_0481",
+      "rct_artist_kevin_04de",
+      "rct_artist_kevin_04df",
+      "rct_artist_kevin_04e0",
+      "rct_artist_william_030f"
+    ]
+  }
+}

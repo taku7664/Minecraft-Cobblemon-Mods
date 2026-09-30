@@ -1,0 +1,118 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_police_officer",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "growlithe",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "arcanine",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "houndour",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "houndoom",
+      "min_level": 24,
+      "max_level": 100
+    },
+    {
+      "species": "lillipup",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "herdier",
+      "min_level": 16,
+      "max_level": 31
+    },
+    {
+      "species": "stoutland",
+      "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "rockruff",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "lycanroc",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "yamper",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "boltund",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "electrike",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "manectric",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "shinx",
+      "min_level": 1,
+      "max_level": 14
+    },
+    {
+      "species": "luxio",
+      "min_level": 15,
+      "max_level": 29
+    },
+    {
+      "species": "luxray",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "riolu",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "lucario",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "poochyena",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "mightyena",
+      "min_level": 18,
+      "max_level": 100
+    },
+    {
+      "species": "maschiff",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "mabosstiff",
+      "min_level": 30,
+      "max_level": 100
+    }
+  ]
+}

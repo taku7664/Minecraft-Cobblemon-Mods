@@ -1,0 +1,72 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.jungle_explorer"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_camper_anthony_0304",
+      "rct_camper_bryce_022b",
+      "rct_camper_chris_0094",
+      "rct_camper_chris_027d",
+      "rct_camper_chris_027e",
+      "rct_camper_chris_027f",
+      "rct_camper_curtis_03a3",
+      "rct_camper_diego_0407",
+      "rct_camper_drew_0095",
+      "rct_camper_drew_03a4",
+      "rct_camper_ethan_0090",
+      "rct_camper_flint_01d7",
+      "rct_camper_jacob_02f2",
+      "rct_camper_jeff_0092",
+      "rct_camper_jeff_0273",
+      "rct_camper_jeff_0274",
+      "rct_camper_jeff_0275",
+      "rct_camper_justin_01dd",
+      "rct_camper_lawrence_0406",
+      "rct_camper_liam_008e",
+      "rct_camper_parker_0408",
+      "rct_camper_ricky_0091",
+      "rct_camper_ricky_0270",
+      "rct_camper_ricky_0271",
+      "rct_camper_ricky_0272",
+      "rct_camper_riley_026a",
+      "rct_camper_shane_008f",
+      "rct_camper_zackary_0405",
+      "rct_camper_zackary_04ed",
+      "rct_camper_zackary_04ee",
+      "rct_camper_zackary_04ef",
+      "rct_pokemon_ranger_allison_0337",
+      "rct_pokemon_ranger_allison_0548",
+      "rct_pokemon_ranger_allison_0549",
+      "rct_pokemon_ranger_allison_054a",
+      "rct_pokemon_ranger_ashlee_04bb",
+      "rct_pokemon_ranger_ashlee_054b",
+      "rct_pokemon_ranger_deshawn_04b9",
+      "rct_pokemon_ranger_dwayne_04ba",
+      "rct_pokemon_ranger_felicia_04bc",
+      "rct_pokemon_ranger_jeffrey_0336",
+      "rct_pokemon_ranger_krista_04bd",
+      "rct_pokemon_ranger_kyler_04b8",
+      "rct_pokemon_ranger_kyler_0547",
+      "rct_pokemon_ranger_taylor_0335",
+      "rct_pokemon_ranger_taylor_0544",
+      "rct_pokemon_ranger_taylor_0545",
+      "rct_pokemon_ranger_taylor_0546"
+    ]
+  }
+}

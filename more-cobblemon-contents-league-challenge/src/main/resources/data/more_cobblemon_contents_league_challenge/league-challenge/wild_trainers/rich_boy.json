@@ -1,0 +1,143 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_rich_boy",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "growlithe",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "arcanine",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "ponyta",
+      "min_level": 5,
+      "max_level": 39
+    },
+    {
+      "species": "rapidash",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "vulpix",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "ninetales",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "eevee",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "jolteon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "vaporeon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "flareon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "espeon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "umbreon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "sylveon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "leafeon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "glaceon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "shinx",
+      "min_level": 1,
+      "max_level": 14
+    },
+    {
+      "species": "luxio",
+      "min_level": 15,
+      "max_level": 29
+    },
+    {
+      "species": "luxray",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "lillipup",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "herdier",
+      "min_level": 16,
+      "max_level": 31
+    },
+    {
+      "species": "stoutland",
+      "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "deerling",
+      "min_level": 1,
+      "max_level": 33
+    },
+    {
+      "species": "sawsbuck",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "rockruff",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "lycanroc",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "fidough",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "dachsbun",
+      "min_level": 26,
+      "max_level": 100
+    }
+  ]
+}

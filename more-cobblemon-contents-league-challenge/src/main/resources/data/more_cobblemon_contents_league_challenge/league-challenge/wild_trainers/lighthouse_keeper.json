@@ -1,0 +1,118 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_lighthouse_keeper",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "chinchou",
+      "min_level": 1,
+      "max_level": 26
+    },
+    {
+      "species": "lanturn",
+      "min_level": 27,
+      "max_level": 100
+    },
+    {
+      "species": "mareep",
+      "min_level": 1,
+      "max_level": 14
+    },
+    {
+      "species": "flaaffy",
+      "min_level": 15,
+      "max_level": 29
+    },
+    {
+      "species": "ampharos",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "magnemite",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "magneton",
+      "min_level": 30,
+      "max_level": 37
+    },
+    {
+      "species": "magnezone",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "wingull",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "pelipper",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "shinx",
+      "min_level": 1,
+      "max_level": 14
+    },
+    {
+      "species": "luxio",
+      "min_level": 15,
+      "max_level": 29
+    },
+    {
+      "species": "luxray",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "electrike",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "manectric",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "tynamo",
+      "min_level": 1,
+      "max_level": 38
+    },
+    {
+      "species": "eelektrik",
+      "min_level": 39,
+      "max_level": 46
+    },
+    {
+      "species": "eelektross",
+      "min_level": 47,
+      "max_level": 100
+    },
+    {
+      "species": "joltik",
+      "min_level": 1,
+      "max_level": 35
+    },
+    {
+      "species": "galvantula",
+      "min_level": 36,
+      "max_level": 100
+    },
+    {
+      "species": "tadbulb",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "bellibolt",
+      "min_level": 26,
+      "max_level": 100
+    }
+  ]
+}

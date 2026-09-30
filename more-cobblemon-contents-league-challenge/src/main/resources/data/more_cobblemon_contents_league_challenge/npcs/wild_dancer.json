@@ -1,0 +1,51 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.dancer"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_beauty_bridget_0109",
+      "rct_beauty_cyndy_03f2",
+      "rct_beauty_cyndy_0555",
+      "rct_beauty_cyndy_0556",
+      "rct_beauty_devon_0457",
+      "rct_beauty_gabriella_048f",
+      "rct_beauty_grace_0111",
+      "rct_beauty_grace_029a",
+      "rct_beauty_harley_0490",
+      "rct_beauty_lauren_0113",
+      "rct_beauty_lindsay_03f3",
+      "rct_beauty_lola_010c",
+      "rct_beauty_lori_010b",
+      "rct_beauty_nicola_0458",
+      "rct_beauty_olivia_0112",
+      "rct_beauty_sheila_010d",
+      "rct_beauty_sheila_028f",
+      "rct_beauty_tamia_010a",
+      "rct_crush_girl_cyndy_024f",
+      "rct_crush_girl_cyndy_02d2",
+      "rct_crush_girl_jocelyn_0250",
+      "rct_crush_girl_sharon_0206",
+      "rct_crush_girl_sharon_02b3",
+      "rct_crush_girl_sharon_02b4",
+      "rct_crush_girl_tanya_0228",
+      "rct_crush_girl_tanya_02b5",
+      "rct_crush_girl_tanya_02b6"
+    ]
+  }
+}

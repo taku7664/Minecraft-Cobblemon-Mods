@@ -1,0 +1,40 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.swimmer_girl"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_swimmerf_abigail_0224",
+      "rct_swimmerf_alice_0115",
+      "rct_swimmerf_alice_02aa",
+      "rct_swimmerf_amara_0222",
+      "rct_swimmerf_anya_0114",
+      "rct_swimmerf_connie_0116",
+      "rct_swimmerf_denise_0243",
+      "rct_swimmerf_maria_0223",
+      "rct_swimmerf_melissa_0110",
+      "rct_swimmerf_melissa_02de",
+      "rct_swimmerf_nicole_023f",
+      "rct_swimmerf_nicole_02c7",
+      "rct_swimmerf_nora_010f",
+      "rct_swimmerf_shirley_0117",
+      "rct_swimmerf_tiffany_010e",
+      "rct_swimmerf_tisha_0231"
+    ]
+  }
+}

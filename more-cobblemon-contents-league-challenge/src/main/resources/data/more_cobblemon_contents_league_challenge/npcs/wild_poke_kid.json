@@ -1,0 +1,31 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.poke_kid"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_poke_kid_ariel_0444",
+      "rct_poke_kid_danielle_0314",
+      "rct_poke_kid_danielle_0539",
+      "rct_poke_kid_danielle_053a",
+      "rct_poke_kid_danielle_053b",
+      "rct_poke_kid_janet_0578",
+      "rct_poke_kid_meghan_03e5"
+    ]
+  }
+}

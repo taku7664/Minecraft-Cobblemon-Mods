@@ -1,0 +1,98 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_collector",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "eevee",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "jolteon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "vaporeon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "flareon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "espeon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "umbreon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "sylveon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "leafeon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "glaceon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "kangaskhan",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "tauros",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "farfetchd",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "lapras",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "sableye",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "mawile",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "relicanth",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "spiritomb",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "pinsir",
+      "min_level": 20,
+      "max_level": 100
+    }
+  ]
+}

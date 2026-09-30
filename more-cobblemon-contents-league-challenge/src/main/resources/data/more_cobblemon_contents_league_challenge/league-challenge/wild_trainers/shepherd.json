@@ -1,0 +1,98 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_shepherd",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "mareep",
+      "min_level": 1,
+      "max_level": 14
+    },
+    {
+      "species": "flaaffy",
+      "min_level": 15,
+      "max_level": 29
+    },
+    {
+      "species": "ampharos",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "wooloo",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "dubwool",
+      "min_level": 24,
+      "max_level": 100
+    },
+    {
+      "species": "lillipup",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "herdier",
+      "min_level": 16,
+      "max_level": 31
+    },
+    {
+      "species": "stoutland",
+      "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "rockruff",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "lycanroc",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "skiddo",
+      "min_level": 5,
+      "max_level": 31
+    },
+    {
+      "species": "gogoat",
+      "min_level": 32,
+      "max_level": 100
+    },
+    {
+      "species": "stantler",
+      "min_level": 12,
+      "max_level": 25
+    },
+    {
+      "species": "wyrdeer",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "growlithe",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "arcanine",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "houndour",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "houndoom",
+      "min_level": 24,
+      "max_level": 100
+    }
+  ]
+}

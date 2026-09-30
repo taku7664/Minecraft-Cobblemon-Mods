@@ -1,0 +1,54 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.lighthouse_keeper"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_sailor_damian_03eb",
+      "rct_sailor_duncan_0089",
+      "rct_sailor_dwayne_008d",
+      "rct_sailor_dylan_008b",
+      "rct_sailor_edmond_0086",
+      "rct_sailor_huey_008a",
+      "rct_sailor_leonard_0088",
+      "rct_sailor_luther_036d",
+      "rct_sailor_marc_03e9",
+      "rct_sailor_marc_054c",
+      "rct_sailor_marc_054d",
+      "rct_sailor_paul_0340",
+      "rct_sailor_phillip_008c",
+      "rct_sailor_samson_0452",
+      "rct_sailor_skyler_03ea",
+      "rct_sailor_trevor_0087",
+      "rct_sailor_zachariah_0451",
+      "rct_sailor_zachariah_054e",
+      "rct_worker_braden_0460",
+      "rct_worker_brendon_0461",
+      "rct_worker_colin_037a",
+      "rct_worker_conrad_0586",
+      "rct_worker_dillan_0584",
+      "rct_worker_gary_039b",
+      "rct_worker_gerardo_03fd",
+      "rct_worker_holden_0585",
+      "rct_worker_jackson_039a",
+      "rct_worker_mason_037b",
+      "rct_worker_quentin_0462",
+      "rct_worker_willy_045f"
+    ]
+  }
+}

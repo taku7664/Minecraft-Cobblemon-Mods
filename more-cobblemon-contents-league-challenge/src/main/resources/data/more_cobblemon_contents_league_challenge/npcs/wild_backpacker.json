@@ -1,0 +1,92 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.backpacker"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_camper_anthony_0304",
+      "rct_camper_bryce_022b",
+      "rct_camper_chris_0094",
+      "rct_camper_chris_027d",
+      "rct_camper_chris_027e",
+      "rct_camper_chris_027f",
+      "rct_camper_curtis_03a3",
+      "rct_camper_diego_0407",
+      "rct_camper_drew_0095",
+      "rct_camper_drew_03a4",
+      "rct_camper_ethan_0090",
+      "rct_camper_flint_01d7",
+      "rct_camper_jacob_02f2",
+      "rct_camper_jeff_0092",
+      "rct_camper_jeff_0273",
+      "rct_camper_jeff_0274",
+      "rct_camper_jeff_0275",
+      "rct_camper_justin_01dd",
+      "rct_camper_lawrence_0406",
+      "rct_camper_liam_008e",
+      "rct_camper_parker_0408",
+      "rct_camper_ricky_0091",
+      "rct_camper_ricky_0270",
+      "rct_camper_ricky_0271",
+      "rct_camper_ricky_0272",
+      "rct_camper_riley_026a",
+      "rct_camper_shane_008f",
+      "rct_camper_zackary_0405",
+      "rct_camper_zackary_04ed",
+      "rct_camper_zackary_04ee",
+      "rct_camper_zackary_04ef",
+      "rct_hiker_alan_00b9",
+      "rct_hiker_alexander_030a",
+      "rct_hiker_allen_00be",
+      "rct_hiker_brice_00ba",
+      "rct_hiker_clark_00bb",
+      "rct_hiker_damon_043b",
+      "rct_hiker_daniel_02f4",
+      "rct_hiker_daryl_0248",
+      "rct_hiker_dudley_00bd",
+      "rct_hiker_earl_0245",
+      "rct_hiker_earl_02ca",
+      "rct_hiker_eric_00bf",
+      "rct_hiker_franklin_00b6",
+      "rct_hiker_franklin_01fe",
+      "rct_hiker_jeremy_01d1",
+      "rct_hiker_jeremy_0283",
+      "rct_hiker_jonathan_030b",
+      "rct_hiker_justin_0307",
+      "rct_hiker_kevyn_0306",
+      "rct_hiker_lenny_00c0",
+      "rct_hiker_lorenzo_043e",
+      "rct_hiker_louis_03e0",
+      "rct_hiker_lucas_00c2",
+      "rct_hiker_marcos_00b5",
+      "rct_hiker_maurice_043c",
+      "rct_hiker_nicholas_02f5",
+      "rct_hiker_nob_00b7",
+      "rct_hiker_oliver_00c1",
+      "rct_hiker_reginald_043d",
+      "rct_hiker_robert_0309",
+      "rct_hiker_theodore_043a",
+      "rct_hiker_theodore_052d",
+      "rct_hiker_theodore_052e",
+      "rct_hiker_theodore_052f",
+      "rct_hiker_trent_00bc",
+      "rct_hiker_trent_0287",
+      "rct_hiker_wayne_00b8"
+    ]
+  }
+}

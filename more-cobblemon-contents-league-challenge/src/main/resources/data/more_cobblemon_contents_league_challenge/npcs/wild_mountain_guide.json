@@ -1,0 +1,70 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.mountain_guide"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_hiker_alan_00b9",
+      "rct_hiker_alexander_030a",
+      "rct_hiker_allen_00be",
+      "rct_hiker_brice_00ba",
+      "rct_hiker_clark_00bb",
+      "rct_hiker_damon_043b",
+      "rct_hiker_daniel_02f4",
+      "rct_hiker_daryl_0248",
+      "rct_hiker_dudley_00bd",
+      "rct_hiker_earl_0245",
+      "rct_hiker_earl_02ca",
+      "rct_hiker_eric_00bf",
+      "rct_hiker_franklin_00b6",
+      "rct_hiker_franklin_01fe",
+      "rct_hiker_jeremy_01d1",
+      "rct_hiker_jeremy_0283",
+      "rct_hiker_jonathan_030b",
+      "rct_hiker_justin_0307",
+      "rct_hiker_kevyn_0306",
+      "rct_hiker_lenny_00c0",
+      "rct_hiker_lorenzo_043e",
+      "rct_hiker_louis_03e0",
+      "rct_hiker_lucas_00c2",
+      "rct_hiker_marcos_00b5",
+      "rct_hiker_maurice_043c",
+      "rct_hiker_nicholas_02f5",
+      "rct_hiker_nob_00b7",
+      "rct_hiker_oliver_00c1",
+      "rct_hiker_reginald_043d",
+      "rct_hiker_robert_0309",
+      "rct_hiker_theodore_043a",
+      "rct_hiker_theodore_052d",
+      "rct_hiker_theodore_052e",
+      "rct_hiker_theodore_052f",
+      "rct_hiker_trent_00bc",
+      "rct_hiker_trent_0287",
+      "rct_hiker_wayne_00b8",
+      "rct_ranger_beth_0255",
+      "rct_ranger_jackson_0254",
+      "rct_ranger_jackson_02d4",
+      "rct_ranger_katelyn_0256",
+      "rct_ranger_katelyn_02d5",
+      "rct_ranger_madeline_020a",
+      "rct_ranger_madeline_02d1",
+      "rct_ranger_nicolas_0209",
+      "rct_ranger_nicolas_02d0"
+    ]
+  }
+}

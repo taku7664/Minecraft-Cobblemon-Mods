@@ -1,0 +1,83 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_mushroom_picker",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "paras",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "parasect",
+      "min_level": 24,
+      "max_level": 100
+    },
+    {
+      "species": "shroomish",
+      "min_level": 1,
+      "max_level": 22
+    },
+    {
+      "species": "breloom",
+      "min_level": 23,
+      "max_level": 100
+    },
+    {
+      "species": "foongus",
+      "min_level": 1,
+      "max_level": 38
+    },
+    {
+      "species": "amoonguss",
+      "min_level": 39,
+      "max_level": 100
+    },
+    {
+      "species": "morelull",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "shiinotic",
+      "min_level": 24,
+      "max_level": 100
+    },
+    {
+      "species": "toedscool",
+      "min_level": 1,
+      "max_level": 29
+    },
+    {
+      "species": "toedscruel",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "phantump",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "trevenant",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "bounsweet",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "steenee",
+      "min_level": 18,
+      "max_level": 37
+    },
+    {
+      "species": "tsareena",
+      "min_level": 38,
+      "max_level": 100
+    }
+  ]
+}

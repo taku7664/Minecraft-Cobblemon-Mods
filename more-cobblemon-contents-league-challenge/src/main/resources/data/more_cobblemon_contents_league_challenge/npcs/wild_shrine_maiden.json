@@ -1,0 +1,49 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.shrine_maiden"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_channeler_amanda_01ce",
+      "rct_channeler_angelica_01c3",
+      "rct_channeler_carly_01ba",
+      "rct_channeler_emilia_01c4",
+      "rct_channeler_hope_01bb",
+      "rct_channeler_janae_01c2",
+      "rct_channeler_jennifer_01c5",
+      "rct_channeler_jody_01be",
+      "rct_channeler_karina_01c1",
+      "rct_channeler_laurel_01bd",
+      "rct_channeler_patricia_01b9",
+      "rct_channeler_paula_01bc",
+      "rct_channeler_rachel_0093",
+      "rct_channeler_ruth_01c0",
+      "rct_channeler_stacy_01cf",
+      "rct_channeler_tammy_01bf",
+      "rct_channeler_tasha_01d0",
+      "rct_lady_gillian_0234",
+      "rct_lady_jacki_020d",
+      "rct_lady_kylie_048b",
+      "rct_lady_melissa_032c",
+      "rct_lady_melissa_0541",
+      "rct_lady_melissa_0542",
+      "rct_lady_melissa_0543",
+      "rct_lady_selphy_025e"
+    ]
+  }
+}

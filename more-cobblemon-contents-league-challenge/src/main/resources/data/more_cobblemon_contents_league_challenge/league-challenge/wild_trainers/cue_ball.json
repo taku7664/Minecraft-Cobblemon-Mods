@@ -1,0 +1,108 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_cue_ball",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "machop",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "machoke",
+      "min_level": 28,
+      "max_level": 37
+    },
+    {
+      "species": "machamp",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "mankey",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "primeape",
+      "min_level": 28,
+      "max_level": 37
+    },
+    {
+      "species": "annihilape",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "makuhita",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "hariyama",
+      "min_level": 24,
+      "max_level": 100
+    },
+    {
+      "species": "throh",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "sawk",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "grimer",
+      "min_level": 1,
+      "max_level": 37
+    },
+    {
+      "species": "muk",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "koffing",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "weezing",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "scraggy",
+      "min_level": 1,
+      "max_level": 38
+    },
+    {
+      "species": "scrafty",
+      "min_level": 39,
+      "max_level": 100
+    },
+    {
+      "species": "tyrogue",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "hitmonchan",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "hitmonlee",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "hitmontop",
+      "min_level": 20,
+      "max_level": 100
+    }
+  ]
+}

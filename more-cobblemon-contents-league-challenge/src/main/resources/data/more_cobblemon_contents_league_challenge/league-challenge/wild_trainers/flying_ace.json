@@ -1,0 +1,118 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_flying_ace",
+  "tier": "ace",
+  "bp": 20,
+  "pokemon": [
+    {
+      "species": "pidgey",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "pidgeotto",
+      "min_level": 18,
+      "max_level": 35
+    },
+    {
+      "species": "pidgeot",
+      "min_level": 36,
+      "max_level": 100
+    },
+    {
+      "species": "starly",
+      "min_level": 1,
+      "max_level": 13
+    },
+    {
+      "species": "staravia",
+      "min_level": 14,
+      "max_level": 33
+    },
+    {
+      "species": "staraptor",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "fletchling",
+      "min_level": 1,
+      "max_level": 16
+    },
+    {
+      "species": "fletchinder",
+      "min_level": 17,
+      "max_level": 34
+    },
+    {
+      "species": "talonflame",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "rookidee",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "corvisquire",
+      "min_level": 18,
+      "max_level": 37
+    },
+    {
+      "species": "corviknight",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "skarmory",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "aerodactyl",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "swablu",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "altaria",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "rufflet",
+      "min_level": 5,
+      "max_level": 53
+    },
+    {
+      "species": "braviary",
+      "min_level": 54,
+      "max_level": 100
+    },
+    {
+      "species": "hawlucha",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "noibat",
+      "min_level": 1,
+      "max_level": 47
+    },
+    {
+      "species": "noivern",
+      "min_level": 48,
+      "max_level": 100
+    },
+    {
+      "species": "tropius",
+      "min_level": 12,
+      "max_level": 100
+    }
+  ]
+}

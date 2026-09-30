@@ -1,0 +1,108 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_beauty",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "vulpix",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "ninetales",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "ponyta",
+      "min_level": 5,
+      "max_level": 39
+    },
+    {
+      "species": "rapidash",
+      "min_level": 40,
+      "max_level": 100
+    },
+    {
+      "species": "glameow",
+      "min_level": 1,
+      "max_level": 37
+    },
+    {
+      "species": "purugly",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "minccino",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "cinccino",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "deerling",
+      "min_level": 1,
+      "max_level": 33
+    },
+    {
+      "species": "sawsbuck",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "milcery",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "alcremie",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "feebas",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "milotic",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "luvdisc",
+      "min_level": 1,
+      "max_level": 100
+    },
+    {
+      "species": "skitty",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "delcatty",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "flabebe",
+      "min_level": 1,
+      "max_level": 18
+    },
+    {
+      "species": "floette",
+      "min_level": 19,
+      "max_level": 37
+    },
+    {
+      "species": "florges",
+      "min_level": 38,
+      "max_level": 100
+    }
+  ]
+}

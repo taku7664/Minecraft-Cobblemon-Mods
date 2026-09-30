@@ -1,0 +1,48 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.biker"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_biker_alex_00c6",
+      "rct_biker_billy_00cb",
+      "rct_biker_ernest_00c5",
+      "rct_biker_gerald_00d1",
+      "rct_biker_goon_020f",
+      "rct_biker_goon_0210",
+      "rct_biker_goon_0211",
+      "rct_biker_hideo_00c9",
+      "rct_biker_isaac_00d0",
+      "rct_biker_jared_00c3",
+      "rct_biker_jaren_0218",
+      "rct_biker_jaren_028c",
+      "rct_biker_jaxon_00cd",
+      "rct_biker_jaxon_02a5",
+      "rct_biker_lao_00c7",
+      "rct_biker_lukas_00cf",
+      "rct_biker_lukas_0295",
+      "rct_biker_malik_00c4",
+      "rct_biker_nikolas_00cc",
+      "rct_biker_ricardo_0217",
+      "rct_biker_ruben_00ca",
+      "rct_biker_ruben_02a3",
+      "rct_biker_virgil_01d6",
+      "rct_biker_william_00ce"
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.beekeeper"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_bug_catcher_anthony_0213",
+      "rct_bug_catcher_brandon_02ee",
+      "rct_bug_catcher_brandon_0530",
+      "rct_bug_catcher_brandon_0531",
+      "rct_bug_catcher_brandon_0532",
+      "rct_bug_catcher_brent_0072",
+      "rct_bug_catcher_cale_006e",
+      "rct_bug_catcher_charlie_0214",
+      "rct_bug_catcher_colton_0069",
+      "rct_bug_catcher_colton_02d9",
+      "rct_bug_catcher_colton_02da",
+      "rct_bug_catcher_colton_02db",
+      "rct_bug_catcher_conner_0073",
+      "rct_bug_catcher_donald_037e",
+      "rct_bug_catcher_doug_0067",
+      "rct_bug_catcher_elijah_0070",
+      "rct_bug_catcher_garret_0263",
+      "rct_bug_catcher_greg_006a",
+      "rct_bug_catcher_jack_037c",
+      "rct_bug_catcher_james_006b",
+      "rct_bug_catcher_jonah_0264",
+      "rct_bug_catcher_keigo_006f",
+      "rct_bug_catcher_kent_006c",
+      "rct_bug_catcher_phillip_037d",
+      "rct_bug_catcher_rick_0066",
+      "rct_bug_catcher_robby_006d",
+      "rct_bug_catcher_sammy_0068",
+      "rct_bug_catcher_vance_0265",
+      "rct_worker_braden_0460",
+      "rct_worker_brendon_0461",
+      "rct_worker_colin_037a",
+      "rct_worker_conrad_0586",
+      "rct_worker_dillan_0584",
+      "rct_worker_gary_039b",
+      "rct_worker_gerardo_03fd",
+      "rct_worker_holden_0585",
+      "rct_worker_jackson_039a",
+      "rct_worker_mason_037b",
+      "rct_worker_quentin_0462",
+      "rct_worker_willy_045f"
+    ]
+  }
+}

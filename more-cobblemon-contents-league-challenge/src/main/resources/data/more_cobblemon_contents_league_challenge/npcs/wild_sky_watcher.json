@@ -1,0 +1,76 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.sky_watcher"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_bird_keeper_alexandra_0326",
+      "rct_bird_keeper_audrey_0493",
+      "rct_bird_keeper_audrey_04e6",
+      "rct_bird_keeper_autumn_0404",
+      "rct_bird_keeper_beck_013b",
+      "rct_bird_keeper_benny_0130",
+      "rct_bird_keeper_benny_0296",
+      "rct_bird_keeper_benny_0297",
+      "rct_bird_keeper_brianna_0323",
+      "rct_bird_keeper_brianna_04e4",
+      "rct_bird_keeper_brianna_04e5",
+      "rct_bird_keeper_carter_0139",
+      "rct_bird_keeper_chaz_023b",
+      "rct_bird_keeper_chaz_02c5",
+      "rct_bird_keeper_chester_0132",
+      "rct_bird_keeper_chester_029b",
+      "rct_bird_keeper_chester_029c",
+      "rct_bird_keeper_donald_012f",
+      "rct_bird_keeper_edwin_0131",
+      "rct_bird_keeper_geneva_0494",
+      "rct_bird_keeper_hana_038b",
+      "rct_bird_keeper_harold_023c",
+      "rct_bird_keeper_harold_02c6",
+      "rct_bird_keeper_jacob_0135",
+      "rct_bird_keeper_jacob_02a8",
+      "rct_bird_keeper_jacob_02a9",
+      "rct_bird_keeper_katherine_032a",
+      "rct_bird_keeper_keith_0138",
+      "rct_bird_keeper_krystal_0495",
+      "rct_bird_keeper_marlon_013c",
+      "rct_bird_keeper_marlon_0298",
+      "rct_bird_keeper_marlon_0299",
+      "rct_bird_keeper_milo_023a",
+      "rct_bird_keeper_milo_02c4",
+      "rct_bird_keeper_mitch_013a",
+      "rct_bird_keeper_perry_012d",
+      "rct_bird_keeper_reed_0137",
+      "rct_bird_keeper_robert_012e",
+      "rct_bird_keeper_robert_0290",
+      "rct_bird_keeper_robert_0291",
+      "rct_bird_keeper_roger_0136",
+      "rct_bird_keeper_sebastian_012c",
+      "rct_super_nerd_aavery_00b2",
+      "rct_super_nerd_aidan_00ab",
+      "rct_super_nerd_derek_00b3",
+      "rct_super_nerd_erik_00b1",
+      "rct_super_nerd_glenn_00ac",
+      "rct_super_nerd_glenn_028a",
+      "rct_super_nerd_jovan_00a9",
+      "rct_super_nerd_leslie_00ad",
+      "rct_super_nerd_miguel_00aa",
+      "rct_super_nerd_zac_00b4"
+    ]
+  }
+}

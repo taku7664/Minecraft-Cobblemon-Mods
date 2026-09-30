@@ -1,0 +1,45 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.triathlete"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_cyclist_axel_02fb",
+      "rct_cyclist_james_02fc",
+      "rct_cyclist_john_02fd",
+      "rct_cyclist_john_04f3",
+      "rct_cyclist_john_04f4",
+      "rct_cyclist_john_04f5",
+      "rct_cyclist_kayla_0301",
+      "rct_cyclist_kayla_04f6",
+      "rct_cyclist_kayla_04f7",
+      "rct_cyclist_kayla_04f8",
+      "rct_cyclist_megan_02ff",
+      "rct_cyclist_nicole_0300",
+      "rct_cyclist_rachel_0302",
+      "rct_cyclist_ryan_02fe",
+      "rct_jogger_craig_03ce",
+      "rct_jogger_craig_0521",
+      "rct_jogger_craig_0522",
+      "rct_jogger_raul_03cf",
+      "rct_jogger_richard_0313",
+      "rct_jogger_scott_034a",
+      "rct_jogger_wyatt_03cd"
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.pokefan"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_poke_fan_leonard_0479",
+      "rct_poke_fan_meredith_0485",
+      "rct_poke_fan_rebekah_047a",
+      "rct_pokefan_agathare_0021",
+      "rct_pokefan_agathare_0022"
+    ]
+  }
+}

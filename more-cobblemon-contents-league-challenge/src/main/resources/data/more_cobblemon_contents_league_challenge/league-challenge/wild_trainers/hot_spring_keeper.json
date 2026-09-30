@@ -1,0 +1,93 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_hot_spring_keeper",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "slugma",
+      "min_level": 1,
+      "max_level": 37
+    },
+    {
+      "species": "magcargo",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "numel",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "camerupt",
+      "min_level": 33,
+      "max_level": 100
+    },
+    {
+      "species": "torkoal",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "magby",
+      "min_level": 5,
+      "max_level": 29
+    },
+    {
+      "species": "magmar",
+      "min_level": 30,
+      "max_level": 37
+    },
+    {
+      "species": "magmortar",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "salandit",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "salazzle",
+      "min_level": 33,
+      "max_level": 100
+    },
+    {
+      "species": "sizzlipede",
+      "min_level": 1,
+      "max_level": 27
+    },
+    {
+      "species": "centiskorch",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "carkol",
+      "min_level": 5,
+      "max_level": 33
+    },
+    {
+      "species": "coalossal",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "charcadet",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "armarouge",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "ceruledge",
+      "min_level": 26,
+      "max_level": 100
+    }
+  ]
+}

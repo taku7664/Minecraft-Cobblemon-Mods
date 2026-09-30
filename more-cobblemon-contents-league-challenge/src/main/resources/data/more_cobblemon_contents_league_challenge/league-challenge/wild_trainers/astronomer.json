@@ -1,0 +1,93 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_astronomer",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "clefairy",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "clefable",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "lunatone",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "solrock",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "bronzor",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "bronzong",
+      "min_level": 33,
+      "max_level": 100
+    },
+    {
+      "species": "elgyem",
+      "min_level": 1,
+      "max_level": 41
+    },
+    {
+      "species": "beheeyem",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "staryu",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "starmie",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "beldum",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "metang",
+      "min_level": 20,
+      "max_level": 44
+    },
+    {
+      "species": "metagross",
+      "min_level": 45,
+      "max_level": 100
+    },
+    {
+      "species": "chingling",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "chimecho",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "munna",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "musharna",
+      "min_level": 26,
+      "max_level": 100
+    }
+  ]
+}

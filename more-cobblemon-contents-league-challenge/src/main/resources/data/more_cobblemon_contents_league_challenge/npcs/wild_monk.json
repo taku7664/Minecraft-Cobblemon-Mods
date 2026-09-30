@@ -1,0 +1,75 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.monk"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_black_belt_aaron_0140",
+      "rct_black_belt_adam_031e",
+      "rct_black_belt_atsushi_0142",
+      "rct_black_belt_carl_03d4",
+      "rct_black_belt_colby_03d0",
+      "rct_black_belt_daisuke_0145",
+      "rct_black_belt_darren_03d1",
+      "rct_black_belt_david_038a",
+      "rct_black_belt_davon_04b4",
+      "rct_black_belt_davon_0524",
+      "rct_black_belt_derek_0348",
+      "rct_black_belt_eddie_0437",
+      "rct_black_belt_gregory_0347",
+      "rct_black_belt_griffin_04b5",
+      "rct_black_belt_hideki_013f",
+      "rct_black_belt_hitoshi_0141",
+      "rct_black_belt_hugh_022a",
+      "rct_black_belt_hugh_02b9",
+      "rct_black_belt_hugh_02ba",
+      "rct_black_belt_jarrett_04b7",
+      "rct_black_belt_jeffery_03d3",
+      "rct_black_belt_kendal_0436",
+      "rct_black_belt_kiyo_0143",
+      "rct_black_belt_kyle_030c",
+      "rct_black_belt_luke_035b",
+      "rct_black_belt_mike_013e",
+      "rct_black_belt_miles_0435",
+      "rct_black_belt_nathaniel_0349",
+      "rct_black_belt_philip_039c",
+      "rct_black_belt_philip_0523",
+      "rct_black_belt_rafael_03d2",
+      "rct_black_belt_ray_04b6",
+      "rct_black_belt_ricky_03d5",
+      "rct_black_belt_sean_0328",
+      "rct_black_belt_shea_0229",
+      "rct_black_belt_shea_02b7",
+      "rct_black_belt_shea_02b8",
+      "rct_black_belt_takashi_0144",
+      "rct_black_belt_willie_0438",
+      "rct_cue_ball_camron_00fb",
+      "rct_cue_ball_camron_02a4",
+      "rct_cue_ball_chase_0101",
+      "rct_cue_ball_corey_0100",
+      "rct_cue_ball_corey_02a7",
+      "rct_cue_ball_isaiah_00fd",
+      "rct_cue_ball_isaiah_02a6",
+      "rct_cue_ball_jamal_00ff",
+      "rct_cue_ball_koji_00f9",
+      "rct_cue_ball_luke_00fa",
+      "rct_cue_ball_raul_00fc",
+      "rct_cue_ball_zeek_00fe"
+    ]
+  }
+}

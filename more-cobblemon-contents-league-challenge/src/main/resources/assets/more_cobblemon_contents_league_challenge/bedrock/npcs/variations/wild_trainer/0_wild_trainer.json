@@ -1037,6 +1037,51 @@
   },
   {
    "aspects": [
+    "rct_artist_ismael_0481"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/artist_ismael_0481.png"
+  },
+  {
+   "aspects": [
+    "rct_artist_kevin_04de"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/artist_kevin_04de.png"
+  },
+  {
+   "aspects": [
+    "rct_artist_kevin_04df"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/artist_kevin_04df.png"
+  },
+  {
+   "aspects": [
+    "rct_artist_kevin_04e0"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/artist_kevin_04e0.png"
+  },
+  {
+   "aspects": [
+    "rct_artist_william_030f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/artist_william_030f.png"
+  },
+  {
+   "aspects": [
     "rct_battle_girl_helen_0308"
    ],
    "layers": [],
@@ -1088,6 +1133,384 @@
    "model": "cobblemon:steve.geo",
    "poser": "cobblemon:standard",
    "texture": "rctmod:textures/trainers/single/battle_girl_tylor_0403.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_bridget_0109"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_bridget_0109.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_cyndy_03f2"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_cyndy_03f2.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_cyndy_0555"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_cyndy_0555.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_cyndy_0556"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_cyndy_0556.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_devon_0457"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_devon_0457.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_gabriella_048f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_gabriella_048f.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_grace_0111"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_grace_0111.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_grace_029a"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_grace_029a.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_harley_0490"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_harley_0490.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_lauren_0113"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_lauren_0113.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_lindsay_03f3"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_lindsay_03f3.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_lola_010c"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_lola_010c.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_lori_010b"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_lori_010b.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_nicola_0458"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_nicola_0458.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_olivia_0112"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_olivia_0112.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_sheila_010d"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_sheila_010d.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_sheila_028f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_sheila_028f.png"
+  },
+  {
+   "aspects": [
+    "rct_beauty_tamia_010a"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/beauty_tamia_010a.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_alex_00c6"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_alex_00c6.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_billy_00cb"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_billy_00cb.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_ernest_00c5"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_ernest_00c5.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_gerald_00d1"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_gerald_00d1.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_goon_020f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_goon_020f.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_goon_0210"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_goon_0210.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_goon_0211"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_goon_0211.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_hideo_00c9"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_hideo_00c9.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_isaac_00d0"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_isaac_00d0.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_jared_00c3"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_jared_00c3.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_jaren_0218"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_jaren_0218.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_jaren_028c"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_jaren_028c.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_jaxon_00cd"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_jaxon_00cd.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_jaxon_02a5"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_jaxon_02a5.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_lao_00c7"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_lao_00c7.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_lukas_00cf"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_lukas_00cf.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_lukas_0295"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_lukas_0295.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_malik_00c4"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_malik_00c4.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_nikolas_00cc"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_nikolas_00cc.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_ricardo_0217"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_ricardo_0217.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_ruben_00ca"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_ruben_00ca.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_ruben_02a3"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_ruben_02a3.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_virgil_01d6"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_virgil_01d6.png"
+  },
+  {
+   "aspects": [
+    "rct_biker_william_00ce"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/biker_william_00ce.png"
   },
   {
    "aspects": [
@@ -1820,6 +2243,69 @@
   },
   {
    "aspects": [
+    "rct_breeder_alize_0208"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/breeder_alize_0208.png"
+  },
+  {
+   "aspects": [
+    "rct_breeder_alize_02c1"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/breeder_alize_02c1.png"
+  },
+  {
+   "aspects": [
+    "rct_breeder_allison_0262"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/breeder_allison_0262.png"
+  },
+  {
+   "aspects": [
+    "rct_breeder_annie_05a9"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/breeder_annie_05a9.png"
+  },
+  {
+   "aspects": [
+    "rct_breeder_annie_05d8"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/breeder_annie_05d8.png"
+  },
+  {
+   "aspects": [
+    "rct_breeder_annie_0604"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/breeder_annie_0604.png"
+  },
+  {
+   "aspects": [
+    "rct_breeder_bethany_0261"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/breeder_bethany_0261.png"
+  },
+  {
+   "aspects": [
     "rct_bug_catcher_01ec"
    ],
    "layers": [],
@@ -2405,78 +2891,6 @@
   },
   {
    "aspects": [
-    "rct_channeler_01c6"
-   ],
-   "layers": [],
-   "model": "cobblemon:steve.geo",
-   "poser": "cobblemon:standard",
-   "texture": "rctmod:textures/trainers/single/channeler_01c6.png"
-  },
-  {
-   "aspects": [
-    "rct_channeler_01c7"
-   ],
-   "layers": [],
-   "model": "cobblemon:steve.geo",
-   "poser": "cobblemon:standard",
-   "texture": "rctmod:textures/trainers/single/channeler_01c7.png"
-  },
-  {
-   "aspects": [
-    "rct_channeler_01c8"
-   ],
-   "layers": [],
-   "model": "cobblemon:steve.geo",
-   "poser": "cobblemon:standard",
-   "texture": "rctmod:textures/trainers/single/channeler_01c8.png"
-  },
-  {
-   "aspects": [
-    "rct_channeler_01c9"
-   ],
-   "layers": [],
-   "model": "cobblemon:steve.geo",
-   "poser": "cobblemon:standard",
-   "texture": "rctmod:textures/trainers/single/channeler_01c9.png"
-  },
-  {
-   "aspects": [
-    "rct_channeler_01ca"
-   ],
-   "layers": [],
-   "model": "cobblemon:steve.geo",
-   "poser": "cobblemon:standard",
-   "texture": "rctmod:textures/trainers/single/channeler_01ca.png"
-  },
-  {
-   "aspects": [
-    "rct_channeler_01cb"
-   ],
-   "layers": [],
-   "model": "cobblemon:steve.geo",
-   "poser": "cobblemon:standard",
-   "texture": "rctmod:textures/trainers/single/channeler_01cb.png"
-  },
-  {
-   "aspects": [
-    "rct_channeler_01cc"
-   ],
-   "layers": [],
-   "model": "cobblemon:steve.geo",
-   "poser": "cobblemon:standard",
-   "texture": "rctmod:textures/trainers/single/channeler_01cc.png"
-  },
-  {
-   "aspects": [
-    "rct_channeler_01cd"
-   ],
-   "layers": [],
-   "model": "cobblemon:steve.geo",
-   "poser": "cobblemon:standard",
-   "texture": "rctmod:textures/trainers/single/channeler_01cd.png"
-  },
-  {
-   "aspects": [
     "rct_channeler_amanda_01ce"
    ],
    "layers": [],
@@ -2630,6 +3044,429 @@
   },
   {
    "aspects": [
+    "rct_clown_lee_0443"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/clown_lee_0443.png"
+  },
+  {
+   "aspects": [
+    "rct_collector_brady_03ab"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/collector_brady_03ab.png"
+  },
+  {
+   "aspects": [
+    "rct_collector_dominique_0409"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/collector_dominique_0409.png"
+  },
+  {
+   "aspects": [
+    "rct_collector_douglas_03aa"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/collector_douglas_03aa.png"
+  },
+  {
+   "aspects": [
+    "rct_collector_edwin_03ae"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/collector_edwin_03ae.png"
+  },
+  {
+   "aspects": [
+    "rct_collector_eugene_0484"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/collector_eugene_0484.png"
+  },
+  {
+   "aspects": [
+    "rct_collector_fernando_03ad"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/collector_fernando_03ad.png"
+  },
+  {
+   "aspects": [
+    "rct_collector_ivan_03ac"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/collector_ivan_03ac.png"
+  },
+  {
+   "aspects": [
+    "rct_collector_ivan_04f2"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/collector_ivan_04f2.png"
+  },
+  {
+   "aspects": [
+    "rct_collector_jamal_040a"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/collector_jamal_040a.png"
+  },
+  {
+   "aspects": [
+    "rct_collector_terry_040b"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/collector_terry_040b.png"
+  },
+  {
+   "aspects": [
+    "rct_cowgirl_shelley_0312"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cowgirl_shelley_0312.png"
+  },
+  {
+   "aspects": [
+    "rct_crush_girl_cyndy_024f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/crush_girl_cyndy_024f.png"
+  },
+  {
+   "aspects": [
+    "rct_crush_girl_cyndy_02d2"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/crush_girl_cyndy_02d2.png"
+  },
+  {
+   "aspects": [
+    "rct_crush_girl_jocelyn_0250"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/crush_girl_jocelyn_0250.png"
+  },
+  {
+   "aspects": [
+    "rct_crush_girl_sharon_0206"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/crush_girl_sharon_0206.png"
+  },
+  {
+   "aspects": [
+    "rct_crush_girl_sharon_02b3"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/crush_girl_sharon_02b3.png"
+  },
+  {
+   "aspects": [
+    "rct_crush_girl_sharon_02b4"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/crush_girl_sharon_02b4.png"
+  },
+  {
+   "aspects": [
+    "rct_crush_girl_tanya_0228"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/crush_girl_tanya_0228.png"
+  },
+  {
+   "aspects": [
+    "rct_crush_girl_tanya_02b5"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/crush_girl_tanya_02b5.png"
+  },
+  {
+   "aspects": [
+    "rct_crush_girl_tanya_02b6"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/crush_girl_tanya_02b6.png"
+  },
+  {
+   "aspects": [
+    "rct_cue_ball_camron_00fb"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cue_ball_camron_00fb.png"
+  },
+  {
+   "aspects": [
+    "rct_cue_ball_camron_02a4"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cue_ball_camron_02a4.png"
+  },
+  {
+   "aspects": [
+    "rct_cue_ball_chase_0101"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cue_ball_chase_0101.png"
+  },
+  {
+   "aspects": [
+    "rct_cue_ball_corey_0100"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cue_ball_corey_0100.png"
+  },
+  {
+   "aspects": [
+    "rct_cue_ball_corey_02a7"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cue_ball_corey_02a7.png"
+  },
+  {
+   "aspects": [
+    "rct_cue_ball_isaiah_00fd"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cue_ball_isaiah_00fd.png"
+  },
+  {
+   "aspects": [
+    "rct_cue_ball_isaiah_02a6"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cue_ball_isaiah_02a6.png"
+  },
+  {
+   "aspects": [
+    "rct_cue_ball_jamal_00ff"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cue_ball_jamal_00ff.png"
+  },
+  {
+   "aspects": [
+    "rct_cue_ball_koji_00f9"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cue_ball_koji_00f9.png"
+  },
+  {
+   "aspects": [
+    "rct_cue_ball_luke_00fa"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cue_ball_luke_00fa.png"
+  },
+  {
+   "aspects": [
+    "rct_cue_ball_raul_00fc"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cue_ball_raul_00fc.png"
+  },
+  {
+   "aspects": [
+    "rct_cue_ball_zeek_00fe"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cue_ball_zeek_00fe.png"
+  },
+  {
+   "aspects": [
+    "rct_cyclist_axel_02fb"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_axel_02fb.png"
+  },
+  {
+   "aspects": [
+    "rct_cyclist_james_02fc"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_james_02fc.png"
+  },
+  {
+   "aspects": [
+    "rct_cyclist_john_02fd"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_john_02fd.png"
+  },
+  {
+   "aspects": [
+    "rct_cyclist_john_04f3"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_john_04f3.png"
+  },
+  {
+   "aspects": [
+    "rct_cyclist_john_04f4"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_john_04f4.png"
+  },
+  {
+   "aspects": [
+    "rct_cyclist_john_04f5"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_john_04f5.png"
+  },
+  {
+   "aspects": [
+    "rct_cyclist_kayla_0301"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_kayla_0301.png"
+  },
+  {
+   "aspects": [
+    "rct_cyclist_kayla_04f6"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_kayla_04f6.png"
+  },
+  {
+   "aspects": [
+    "rct_cyclist_kayla_04f7"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_kayla_04f7.png"
+  },
+  {
+   "aspects": [
+    "rct_cyclist_kayla_04f8"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_kayla_04f8.png"
+  },
+  {
+   "aspects": [
+    "rct_cyclist_megan_02ff"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_megan_02ff.png"
+  },
+  {
+   "aspects": [
+    "rct_cyclist_nicole_0300"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_nicole_0300.png"
+  },
+  {
+   "aspects": [
+    "rct_cyclist_rachel_0302"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_rachel_0302.png"
+  },
+  {
+   "aspects": [
+    "rct_cyclist_ryan_02fe"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/cyclist_ryan_02fe.png"
+  },
+  {
+   "aspects": [
     "rct_dragon_tamer_andre_0388"
    ],
    "layers": [],
@@ -2771,6 +3608,42 @@
    "model": "cobblemon:steve.geo",
    "poser": "cobblemon:standard",
    "texture": "rctmod:textures/trainers/single/dragon_tamer_stanley_0499.png"
+  },
+  {
+   "aspects": [
+    "rct_engineer_baily_00dc"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/engineer_baily_00dc.png"
+  },
+  {
+   "aspects": [
+    "rct_engineer_bernie_00de"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/engineer_bernie_00de.png"
+  },
+  {
+   "aspects": [
+    "rct_engineer_bernie_027b"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/engineer_bernie_027b.png"
+  },
+  {
+   "aspects": [
+    "rct_engineer_braxton_00dd"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/engineer_braxton_00dd.png"
   },
   {
    "aspects": [
@@ -3095,6 +3968,276 @@
    "model": "cobblemon:steve.geo",
    "poser": "cobblemon:standard",
    "texture": "rctmod:textures/trainers/single/fisherman_wade_02ae.png"
+  },
+  {
+   "aspects": [
+    "rct_gambler_darian_0105"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gambler_darian_0105.png"
+  },
+  {
+   "aspects": [
+    "rct_gambler_darian_027c"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gambler_darian_027c.png"
+  },
+  {
+   "aspects": [
+    "rct_gambler_dirk_0104"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gambler_dirk_0104.png"
+  },
+  {
+   "aspects": [
+    "rct_gambler_hugo_0102"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gambler_hugo_0102.png"
+  },
+  {
+   "aspects": [
+    "rct_gambler_jasper_0103"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gambler_jasper_0103.png"
+  },
+  {
+   "aspects": [
+    "rct_gambler_rich_0108"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gambler_rich_0108.png"
+  },
+  {
+   "aspects": [
+    "rct_gambler_rich_028b"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gambler_rich_028b.png"
+  },
+  {
+   "aspects": [
+    "rct_gambler_stan_0106"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gambler_stan_0106.png"
+  },
+  {
+   "aspects": [
+    "rct_gatekeeper_logan_0253"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gatekeeper_logan_0253.png"
+  },
+  {
+   "aspects": [
+    "rct_gatekeeper_owen_00b0"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gatekeeper_owen_00b0.png"
+  },
+  {
+   "aspects": [
+    "rct_gentleman_arthur_01a6"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gentleman_arthur_01a6.png"
+  },
+  {
+   "aspects": [
+    "rct_gentleman_brooks_01e2"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gentleman_brooks_01e2.png"
+  },
+  {
+   "aspects": [
+    "rct_gentleman_clifford_025d"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gentleman_clifford_025d.png"
+  },
+  {
+   "aspects": [
+    "rct_gentleman_jeremy_032d"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gentleman_jeremy_032d.png"
+  },
+  {
+   "aspects": [
+    "rct_gentleman_jeremy_051b"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gentleman_jeremy_051b.png"
+  },
+  {
+   "aspects": [
+    "rct_gentleman_jeremy_051c"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gentleman_jeremy_051c.png"
+  },
+  {
+   "aspects": [
+    "rct_gentleman_jeremy_051d"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gentleman_jeremy_051d.png"
+  },
+  {
+   "aspects": [
+    "rct_gentleman_komodo_0005"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gentleman_komodo_0005.png"
+  },
+  {
+   "aspects": [
+    "rct_gentleman_lamar_01e3"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gentleman_lamar_01e3.png"
+  },
+  {
+   "aspects": [
+    "rct_gentleman_leonardo_0487"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gentleman_leonardo_0487.png"
+  },
+  {
+   "aspects": [
+    "rct_gentleman_norton_01a8"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gentleman_norton_01a8.png"
+  },
+  {
+   "aspects": [
+    "rct_gentleman_thomas_01a5"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gentleman_thomas_01a5.png"
+  },
+  {
+   "aspects": [
+    "rct_gentleman_tucker_01a7"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gentleman_tucker_01a7.png"
+  },
+  {
+   "aspects": [
+    "rct_gentleman_walter_01a9"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/gentleman_walter_01a9.png"
+  },
+  {
+   "aspects": [
+    "rct_guitarist_arturo_0432"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/guitarist_arturo_0432.png"
+  },
+  {
+   "aspects": [
+    "rct_guitarist_jerry_03c8"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/guitarist_jerry_03c8.png"
+  },
+  {
+   "aspects": [
+    "rct_guitarist_lonnie_03ca"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/guitarist_lonnie_03ca.png"
+  },
+  {
+   "aspects": [
+    "rct_guitarist_preston_03c9"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/guitarist_preston_03c9.png"
+  },
+  {
+   "aspects": [
+    "rct_guitarist_tony_03c7"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/guitarist_tony_03c7.png"
+  },
+  {
+   "aspects": [
+    "rct_guitarist_tony_051e"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/guitarist_tony_051e.png"
   },
   {
    "aspects": [
@@ -3428,6 +4571,159 @@
    "model": "cobblemon:steve.geo",
    "poser": "cobblemon:standard",
    "texture": "rctmod:textures/trainers/single/hiker_wayne_00b8.png"
+  },
+  {
+   "aspects": [
+    "rct_jogger_craig_03ce"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/jogger_craig_03ce.png"
+  },
+  {
+   "aspects": [
+    "rct_jogger_craig_0521"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/jogger_craig_0521.png"
+  },
+  {
+   "aspects": [
+    "rct_jogger_craig_0522"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/jogger_craig_0522.png"
+  },
+  {
+   "aspects": [
+    "rct_jogger_raul_03cf"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/jogger_raul_03cf.png"
+  },
+  {
+   "aspects": [
+    "rct_jogger_richard_0313"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/jogger_richard_0313.png"
+  },
+  {
+   "aspects": [
+    "rct_jogger_scott_034a"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/jogger_scott_034a.png"
+  },
+  {
+   "aspects": [
+    "rct_jogger_wyatt_03cd"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/jogger_wyatt_03cd.png"
+  },
+  {
+   "aspects": [
+    "rct_juggler_dalton_011e"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/juggler_dalton_011e.png"
+  },
+  {
+   "aspects": [
+    "rct_juggler_edward_0123"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/juggler_edward_0123.png"
+  },
+  {
+   "aspects": [
+    "rct_juggler_gregory_0122"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/juggler_gregory_0122.png"
+  },
+  {
+   "aspects": [
+    "rct_juggler_kayden_0124"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/juggler_kayden_0124.png"
+  },
+  {
+   "aspects": [
+    "rct_juggler_kirk_0120"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/juggler_kirk_0120.png"
+  },
+  {
+   "aspects": [
+    "rct_juggler_mason_024e"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/juggler_mason_024e.png"
+  },
+  {
+   "aspects": [
+    "rct_juggler_mason_02cf"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/juggler_mason_02cf.png"
+  },
+  {
+   "aspects": [
+    "rct_juggler_nate_0125"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/juggler_nate_0125.png"
+  },
+  {
+   "aspects": [
+    "rct_juggler_nelson_011f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/juggler_nelson_011f.png"
+  },
+  {
+   "aspects": [
+    "rct_juggler_shawn_0121"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/juggler_shawn_0121.png"
   },
   {
    "aspects": [
@@ -3878,6 +5174,366 @@
    "model": "cobblemon:steve.geo",
    "poser": "cobblemon:standard",
    "texture": "rctmod:textures/trainers/single/lass_sarah_02ed.png"
+  },
+  {
+   "aspects": [
+    "rct_madame_rebecca_0488"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/madame_rebecca_0488.png"
+  },
+  {
+   "aspects": [
+    "rct_madame_reina_032e"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/madame_reina_032e.png"
+  },
+  {
+   "aspects": [
+    "rct_madame_reina_0525"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/madame_reina_0525.png"
+  },
+  {
+   "aspects": [
+    "rct_madame_reina_0526"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/madame_reina_0526.png"
+  },
+  {
+   "aspects": [
+    "rct_mega_trainer_aloysius_05cc"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/mega_trainer_aloysius_05cc.png"
+  },
+  {
+   "aspects": [
+    "rct_mega_trainer_ernesto_05ca"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/mega_trainer_ernesto_05ca.png"
+  },
+  {
+   "aspects": [
+    "rct_mega_trainer_krystal_05d0"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/mega_trainer_krystal_05d0.png"
+  },
+  {
+   "aspects": [
+    "rct_mega_trainer_lily_05c6"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/mega_trainer_lily_05c6.png"
+  },
+  {
+   "aspects": [
+    "rct_mega_trainer_mathis_05c8"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/mega_trainer_mathis_05c8.png"
+  },
+  {
+   "aspects": [
+    "rct_mega_trainer_osean_05cd"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/mega_trainer_osean_05cd.png"
+  },
+  {
+   "aspects": [
+    "rct_mega_trainer_portia_05d2"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/mega_trainer_portia_05d2.png"
+  },
+  {
+   "aspects": [
+    "rct_mega_trainer_reena_05cf"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/mega_trainer_reena_05cf.png"
+  },
+  {
+   "aspects": [
+    "rct_mega_trainer_sterling_05d1"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/mega_trainer_sterling_05d1.png"
+  },
+  {
+   "aspects": [
+    "rct_mega_trainer_timothy_05cb"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/mega_trainer_timothy_05cb.png"
+  },
+  {
+   "aspects": [
+    "rct_mega_trainer_travon_05ce"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/mega_trainer_travon_05ce.png"
+  },
+  {
+   "aspects": [
+    "rct_mega_trainer_vivian_05c7"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/mega_trainer_vivian_05c7.png"
+  },
+  {
+   "aspects": [
+    "rct_mega_trainer_yale_05c9"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/mega_trainer_yale_05c9.png"
+  },
+  {
+   "aspects": [
+    "rct_ninja_boy_antonio_0359"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ninja_boy_antonio_0359.png"
+  },
+  {
+   "aspects": [
+    "rct_ninja_boy_brennan_0455"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ninja_boy_brennan_0455.png"
+  },
+  {
+   "aspects": [
+    "rct_ninja_boy_bruce_0456"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ninja_boy_bruce_0456.png"
+  },
+  {
+   "aspects": [
+    "rct_ninja_boy_davey_0321"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ninja_boy_davey_0321.png"
+  },
+  {
+   "aspects": [
+    "rct_ninja_boy_ethan_035a"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ninja_boy_ethan_035a.png"
+  },
+  {
+   "aspects": [
+    "rct_ninja_boy_fabian_0454"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ninja_boy_fabian_0454.png"
+  },
+  {
+   "aspects": [
+    "rct_ninja_boy_joel_031f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ninja_boy_joel_031f.png"
+  },
+  {
+   "aspects": [
+    "rct_ninja_boy_nathan_0320"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ninja_boy_nathan_0320.png"
+  },
+  {
+   "aspects": [
+    "rct_ninja_boy_nick_0329"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ninja_boy_nick_0329.png"
+  },
+  {
+   "aspects": [
+    "rct_ninja_boy_zach_0327"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ninja_boy_zach_0327.png"
+  },
+  {
+   "aspects": [
+    "rct_ninja_boy_zach_0552"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ninja_boy_zach_0552.png"
+  },
+  {
+   "aspects": [
+    "rct_ninja_boy_zach_0553"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ninja_boy_zach_0553.png"
+  },
+  {
+   "aspects": [
+    "rct_ninja_boy_zach_0554"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ninja_boy_zach_0554.png"
+  },
+  {
+   "aspects": [
+    "rct_painter_celina_0232"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/painter_celina_0232.png"
+  },
+  {
+   "aspects": [
+    "rct_painter_daisy_020e"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/painter_daisy_020e.png"
+  },
+  {
+   "aspects": [
+    "rct_painter_edna_025c"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/painter_edna_025c.png"
+  },
+  {
+   "aspects": [
+    "rct_painter_rayna_0233"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/painter_rayna_0233.png"
+  },
+  {
+   "aspects": [
+    "rct_painter_rayna_02bf"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/painter_rayna_02bf.png"
+  },
+  {
+   "aspects": [
+    "rct_parasol_lady_alexa_03e1"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/parasol_lady_alexa_03e1.png"
+  },
+  {
+   "aspects": [
+    "rct_parasol_lady_alexa_0533"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/parasol_lady_alexa_0533.png"
+  },
+  {
+   "aspects": [
+    "rct_parasol_lady_alexa_0534"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/parasol_lady_alexa_0534.png"
+  },
+  {
+   "aspects": [
+    "rct_parasol_lady_alexa_0535"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/parasol_lady_alexa_0535.png"
+  },
+  {
+   "aspects": [
+    "rct_parasol_lady_sabrina_03e2"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/parasol_lady_sabrina_03e2.png"
   },
   {
    "aspects": [
@@ -4376,6 +6032,330 @@
   },
   {
    "aspects": [
+    "rct_poke_fan_leonard_0479"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/poke_fan_leonard_0479.png"
+  },
+  {
+   "aspects": [
+    "rct_poke_fan_meredith_0485"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/poke_fan_meredith_0485.png"
+  },
+  {
+   "aspects": [
+    "rct_poke_fan_rebekah_047a"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/poke_fan_rebekah_047a.png"
+  },
+  {
+   "aspects": [
+    "rct_poke_kid_ariel_0444"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/poke_kid_ariel_0444.png"
+  },
+  {
+   "aspects": [
+    "rct_poke_kid_danielle_0314"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/poke_kid_danielle_0314.png"
+  },
+  {
+   "aspects": [
+    "rct_poke_kid_danielle_0539"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/poke_kid_danielle_0539.png"
+  },
+  {
+   "aspects": [
+    "rct_poke_kid_danielle_053a"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/poke_kid_danielle_053a.png"
+  },
+  {
+   "aspects": [
+    "rct_poke_kid_danielle_053b"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/poke_kid_danielle_053b.png"
+  },
+  {
+   "aspects": [
+    "rct_poke_kid_janet_0578"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/poke_kid_janet_0578.png"
+  },
+  {
+   "aspects": [
+    "rct_poke_kid_meghan_03e5"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/poke_kid_meghan_03e5.png"
+  },
+  {
+   "aspects": [
+    "rct_pokefan_agathare_0021"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokefan_agathare_0021.png"
+  },
+  {
+   "aspects": [
+    "rct_pokefan_agathare_0022"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokefan_agathare_0022.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemaniac_ashton_00a8"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemaniac_ashton_00a8.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemaniac_cooprt_00a4"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemaniac_cooprt_00a4.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemaniac_dawson_00a7"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemaniac_dawson_00a7.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemaniac_hector_0249"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemaniac_hector_0249.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemaniac_hector_02cc"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemaniac_hector_02cc.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemaniac_herman_00a3"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemaniac_herman_00a3.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemaniac_herman_0285"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemaniac_herman_0285.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemaniac_herman_0286"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemaniac_herman_0286.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemaniac_mark_00a2"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemaniac_mark_00a2.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemaniac_mark_0252"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemaniac_mark_0252.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemaniac_mark_0284"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemaniac_mark_0284.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemaniac_steve_00a5"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemaniac_steve_00a5.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemaniac_winston_00a6"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemaniac_winston_00a6.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemon_breeder_albert_0310"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemon_breeder_albert_0310.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemon_breeder_albert_04e7"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemon_breeder_albert_04e7.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemon_breeder_albert_04e8"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemon_breeder_albert_04e8.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemon_breeder_albert_04e9"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemon_breeder_albert_04e9.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemon_breeder_amber_0318"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemon_breeder_amber_0318.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemon_breeder_jennifer_0311"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemon_breeder_jennifer_0311.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemon_breeder_jennifer_04ea"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemon_breeder_jennifer_04ea.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemon_breeder_jennifer_04eb"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemon_breeder_jennifer_04eb.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemon_breeder_jennifer_04ec"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemon_breeder_jennifer_04ec.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemon_breeder_kahlil_0317"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemon_breeder_kahlil_0317.png"
+  },
+  {
+   "aspects": [
+    "rct_pokemon_breeder_kaylee_0482"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/pokemon_breeder_kaylee_0482.png"
+  },
+  {
+   "aspects": [
     "rct_pokemon_ranger_allison_0337"
    ],
    "layers": [],
@@ -4526,6 +6506,87 @@
    "model": "cobblemon:steve.geo",
    "poser": "cobblemon:standard",
    "texture": "rctmod:textures/trainers/single/pokemon_ranger_taylor_0546.png"
+  },
+  {
+   "aspects": [
+    "rct_police_officer_alex_0330"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/police_officer_alex_0330.png"
+  },
+  {
+   "aspects": [
+    "rct_police_officer_bobby_032f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/police_officer_bobby_032f.png"
+  },
+  {
+   "aspects": [
+    "rct_police_officer_caleb_0339"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/police_officer_caleb_0339.png"
+  },
+  {
+   "aspects": [
+    "rct_police_officer_danny_03e6"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/police_officer_danny_03e6.png"
+  },
+  {
+   "aspects": [
+    "rct_police_officer_danny_053c"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/police_officer_danny_053c.png"
+  },
+  {
+   "aspects": [
+    "rct_police_officer_danny_053d"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/police_officer_danny_053d.png"
+  },
+  {
+   "aspects": [
+    "rct_police_officer_danny_053e"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/police_officer_danny_053e.png"
+  },
+  {
+   "aspects": [
+    "rct_police_officer_dylan_0331"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/police_officer_dylan_0331.png"
+  },
+  {
+   "aspects": [
+    "rct_police_officer_thomas_03e7"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/police_officer_thomas_03e7.png"
   },
   {
    "aspects": [
@@ -4862,6 +6923,69 @@
   },
   {
    "aspects": [
+    "rct_rancher_marco_03be"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/rancher_marco_03be.png"
+  },
+  {
+   "aspects": [
+    "rct_rancher_marco_050f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/rancher_marco_050f.png"
+  },
+  {
+   "aspects": [
+    "rct_rancher_marco_0510"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/rancher_marco_0510.png"
+  },
+  {
+   "aspects": [
+    "rct_ranchers_ava_03bc"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ranchers_ava_03bc.png"
+  },
+  {
+   "aspects": [
+    "rct_ranchers_beth_047c"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ranchers_beth_047c.png"
+  },
+  {
+   "aspects": [
+    "rct_ranchers_bob_047d"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ranchers_bob_047d.png"
+  },
+  {
+   "aspects": [
+    "rct_ranchers_matt_03bd"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/ranchers_matt_03bd.png"
+  },
+  {
+   "aspects": [
     "rct_ranger_beth_0255"
    ],
    "layers": [],
@@ -4940,6 +7064,87 @@
    "model": "cobblemon:steve.geo",
    "poser": "cobblemon:standard",
    "texture": "rctmod:textures/trainers/single/ranger_nicolas_02d0.png"
+  },
+  {
+   "aspects": [
+    "rct_rich_boy_jason_032b"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/rich_boy_jason_032b.png"
+  },
+  {
+   "aspects": [
+    "rct_rich_boy_roman_048a"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/rich_boy_roman_048a.png"
+  },
+  {
+   "aspects": [
+    "rct_rich_boy_trey_03e8"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/rich_boy_trey_03e8.png"
+  },
+  {
+   "aspects": [
+    "rct_rich_boy_trey_053f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/rich_boy_trey_053f.png"
+  },
+  {
+   "aspects": [
+    "rct_rich_boy_trey_0540"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/rich_boy_trey_0540.png"
+  },
+  {
+   "aspects": [
+    "rct_rocker_luca_011d"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/rocker_luca_011d.png"
+  },
+  {
+   "aspects": [
+    "rct_rocker_luca_028e"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/rocker_luca_028e.png"
+  },
+  {
+   "aspects": [
+    "rct_rocker_randall_011c"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/rocker_randall_011c.png"
+  },
+  {
+   "aspects": [
+    "rct_roughneck_kirby_0478"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/roughneck_kirby_0478.png"
   },
   {
    "aspects": [
@@ -5255,6 +7460,87 @@
    "model": "cobblemon:steve.geo",
    "poser": "cobblemon:standard",
    "texture": "rctmod:textures/trainers/single/sailor_zachariah_054e.png"
+  },
+  {
+   "aspects": [
+    "rct_school_kid_brunore_001e"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/school_kid_brunore_001e.png"
+  },
+  {
+   "aspects": [
+    "rct_school_kid_brunore_001f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/school_kid_brunore_001f.png"
+  },
+  {
+   "aspects": [
+    "rct_school_kid_chance_03ec"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/school_kid_chance_03ec.png"
+  },
+  {
+   "aspects": [
+    "rct_school_kid_christine_03f1"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/school_kid_christine_03f1.png"
+  },
+  {
+   "aspects": [
+    "rct_school_kid_esteban_048d"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/school_kid_esteban_048d.png"
+  },
+  {
+   "aspects": [
+    "rct_school_kid_forrest_03ed"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/school_kid_forrest_03ed.png"
+  },
+  {
+   "aspects": [
+    "rct_school_kid_harrison_03ee"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/school_kid_harrison_03ee.png"
+  },
+  {
+   "aspects": [
+    "rct_school_kid_mackenzie_03ef"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/school_kid_mackenzie_03ef.png"
+  },
+  {
+   "aspects": [
+    "rct_school_kid_tiera_03f0"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/school_kid_tiera_03f0.png"
   },
   {
    "aspects": [
@@ -5606,6 +7892,96 @@
    "model": "cobblemon:steve.geo",
    "poser": "cobblemon:standard",
    "texture": "rctmod:textures/trainers/single/skier_shawn_0355.png"
+  },
+  {
+   "aspects": [
+    "rct_super_nerd_aavery_00b2"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/super_nerd_aavery_00b2.png"
+  },
+  {
+   "aspects": [
+    "rct_super_nerd_aidan_00ab"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/super_nerd_aidan_00ab.png"
+  },
+  {
+   "aspects": [
+    "rct_super_nerd_derek_00b3"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/super_nerd_derek_00b3.png"
+  },
+  {
+   "aspects": [
+    "rct_super_nerd_erik_00b1"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/super_nerd_erik_00b1.png"
+  },
+  {
+   "aspects": [
+    "rct_super_nerd_glenn_00ac"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/super_nerd_glenn_00ac.png"
+  },
+  {
+   "aspects": [
+    "rct_super_nerd_glenn_028a"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/super_nerd_glenn_028a.png"
+  },
+  {
+   "aspects": [
+    "rct_super_nerd_jovan_00a9"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/super_nerd_jovan_00a9.png"
+  },
+  {
+   "aspects": [
+    "rct_super_nerd_leslie_00ad"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/super_nerd_leslie_00ad.png"
+  },
+  {
+   "aspects": [
+    "rct_super_nerd_miguel_00aa"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/super_nerd_miguel_00aa.png"
+  },
+  {
+   "aspects": [
+    "rct_super_nerd_zac_00b4"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/super_nerd_zac_00b4.png"
   },
   {
    "aspects": [
@@ -6335,6 +8711,681 @@
    "model": "cobblemon:steve.geo",
    "poser": "cobblemon:standard",
    "texture": "rctmod:textures/trainers/single/swimmerm_tony_02dd.png"
+  },
+  {
+   "aspects": [
+    "rct_tamer_cole_0129"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tamer_cole_0129.png"
+  },
+  {
+   "aspects": [
+    "rct_tamer_edgar_0127"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tamer_edgar_0127.png"
+  },
+  {
+   "aspects": [
+    "rct_tamer_evan_0251"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tamer_evan_0251.png"
+  },
+  {
+   "aspects": [
+    "rct_tamer_evan_02d3"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tamer_evan_02d3.png"
+  },
+  {
+   "aspects": [
+    "rct_tamer_jason_0128"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tamer_jason_0128.png"
+  },
+  {
+   "aspects": [
+    "rct_tamer_john_012b"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tamer_john_012b.png"
+  },
+  {
+   "aspects": [
+    "rct_tamer_phil_0126"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tamer_phil_0126.png"
+  },
+  {
+   "aspects": [
+    "rct_tamer_vincent_012a"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tamer_vincent_012a.png"
+  },
+  {
+   "aspects": [
+    "rct_trainer_brendan_001a"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/trainer_brendan_001a.png"
+  },
+  {
+   "aspects": [
+    "rct_trainer_brendan_002c"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/trainer_brendan_002c.png"
+  },
+  {
+   "aspects": [
+    "rct_trainer_brendan_0032"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/trainer_brendan_0032.png"
+  },
+  {
+   "aspects": [
+    "rct_trainer_brendan_0037"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/trainer_brendan_0037.png"
+  },
+  {
+   "aspects": [
+    "rct_trainer_brendan_0039"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/trainer_brendan_0039.png"
+  },
+  {
+   "aspects": [
+    "rct_trainer_cole_0012"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/trainer_cole_0012.png"
+  },
+  {
+   "aspects": [
+    "rct_trainer_haley_000f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/trainer_haley_000f.png"
+  },
+  {
+   "aspects": [
+    "rct_trainer_ketchup_0013"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/trainer_ketchup_0013.png"
+  },
+  {
+   "aspects": [
+    "rct_trainer_ketchup_0014"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/trainer_ketchup_0014.png"
+  },
+  {
+   "aspects": [
+    "rct_trainer_may_003d"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/trainer_may_003d.png"
+  },
+  {
+   "aspects": [
+    "rct_trainer_red_0003"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/trainer_red_0003.png"
+  },
+  {
+   "aspects": [
+    "rct_trainer_sam_0010"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/trainer_sam_0010.png"
+  },
+  {
+   "aspects": [
+    "rct_trainer_shelly_0011"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/trainer_shelly_0011.png"
+  },
+  {
+   "aspects": [
+    "rct_tuber_alexis_022f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tuber_alexis_022f.png"
+  },
+  {
+   "aspects": [
+    "rct_tuber_amira_0207"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tuber_amira_0207.png"
+  },
+  {
+   "aspects": [
+    "rct_tuber_amira_02bd"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tuber_amira_02bd.png"
+  },
+  {
+   "aspects": [
+    "rct_tuber_caitlyn_045c"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tuber_caitlyn_045c.png"
+  },
+  {
+   "aspects": [
+    "rct_tuber_chelsea_033f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tuber_chelsea_033f.png"
+  },
+  {
+   "aspects": [
+    "rct_tuber_chelsea_056d"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tuber_chelsea_056d.png"
+  },
+  {
+   "aspects": [
+    "rct_tuber_chelsea_056f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tuber_chelsea_056f.png"
+  },
+  {
+   "aspects": [
+    "rct_tuber_conner_03f8"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tuber_conner_03f8.png"
+  },
+  {
+   "aspects": [
+    "rct_tuber_holly_03fa"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tuber_holly_03fa.png"
+  },
+  {
+   "aspects": [
+    "rct_tuber_jacky_045b"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tuber_jacky_045b.png"
+  },
+  {
+   "aspects": [
+    "rct_tuber_jared_033e"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tuber_jared_033e.png"
+  },
+  {
+   "aspects": [
+    "rct_tuber_jared_056b"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tuber_jared_056b.png"
+  },
+  {
+   "aspects": [
+    "rct_tuber_jared_056c"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tuber_jared_056c.png"
+  },
+  {
+   "aspects": [
+    "rct_tuber_mariel_03f9"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tuber_mariel_03f9.png"
+  },
+  {
+   "aspects": [
+    "rct_tuber_trenton_03f7"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/tuber_trenton_03f7.png"
+  },
+  {
+   "aspects": [
+    "rct_twins_emma_03c0"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/twins_emma_03c0.png"
+  },
+  {
+   "aspects": [
+    "rct_twins_lil_03c1"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/twins_lil_03c1.png"
+  },
+  {
+   "aspects": [
+    "rct_twins_liv_02f0"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/twins_liv_02f0.png"
+  },
+  {
+   "aspects": [
+    "rct_twins_liz_02f1"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/twins_liz_02f1.png"
+  },
+  {
+   "aspects": [
+    "rct_twins_teri_0319"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/twins_teri_0319.png"
+  },
+  {
+   "aspects": [
+    "rct_twins_teri_0515"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/twins_teri_0515.png"
+  },
+  {
+   "aspects": [
+    "rct_twins_teri_0517"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/twins_teri_0517.png"
+  },
+  {
+   "aspects": [
+    "rct_twins_tia_031a"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/twins_tia_031a.png"
+  },
+  {
+   "aspects": [
+    "rct_twins_tia_0516"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/twins_tia_0516.png"
+  },
+  {
+   "aspects": [
+    "rct_twins_tia_0518"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/twins_tia_0518.png"
+  },
+  {
+   "aspects": [
+    "rct_veteran_armando_03fb"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/veteran_armando_03fb.png"
+  },
+  {
+   "aspects": [
+    "rct_veteran_armando_0571"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/veteran_armando_0571.png"
+  },
+  {
+   "aspects": [
+    "rct_veteran_brenden_045e"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/veteran_brenden_045e.png"
+  },
+  {
+   "aspects": [
+    "rct_veteran_brian_031d"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/veteran_brian_031d.png"
+  },
+  {
+   "aspects": [
+    "rct_veteran_brian_056e"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/veteran_brian_056e.png"
+  },
+  {
+   "aspects": [
+    "rct_veteran_brian_0570"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/veteran_brian_0570.png"
+  },
+  {
+   "aspects": [
+    "rct_veteran_clayton_0387"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/veteran_clayton_0387.png"
+  },
+  {
+   "aspects": [
+    "rct_veteran_edgar_0386"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/veteran_edgar_0386.png"
+  },
+  {
+   "aspects": [
+    "rct_veteran_emanuel_0491"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/veteran_emanuel_0491.png"
+  },
+  {
+   "aspects": [
+    "rct_veteran_grant_0392"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/veteran_grant_0392.png"
+  },
+  {
+   "aspects": [
+    "rct_veteran_harlan_04c6"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/veteran_harlan_04c6.png"
+  },
+  {
+   "aspects": [
+    "rct_veteran_terrell_045d"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/veteran_terrell_045d.png"
+  },
+  {
+   "aspects": [
+    "rct_waitress_kati_03fc"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/waitress_kati_03fc.png"
+  },
+  {
+   "aspects": [
+    "rct_worker_braden_0460"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/worker_braden_0460.png"
+  },
+  {
+   "aspects": [
+    "rct_worker_brendon_0461"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/worker_brendon_0461.png"
+  },
+  {
+   "aspects": [
+    "rct_worker_colin_037a"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/worker_colin_037a.png"
+  },
+  {
+   "aspects": [
+    "rct_worker_conrad_0586"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/worker_conrad_0586.png"
+  },
+  {
+   "aspects": [
+    "rct_worker_dillan_0584"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/worker_dillan_0584.png"
+  },
+  {
+   "aspects": [
+    "rct_worker_gary_039b"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/worker_gary_039b.png"
+  },
+  {
+   "aspects": [
+    "rct_worker_gerardo_03fd"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/worker_gerardo_03fd.png"
+  },
+  {
+   "aspects": [
+    "rct_worker_holden_0585"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/worker_holden_0585.png"
+  },
+  {
+   "aspects": [
+    "rct_worker_jackson_039a"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/worker_jackson_039a.png"
+  },
+  {
+   "aspects": [
+    "rct_worker_mason_037b"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/worker_mason_037b.png"
+  },
+  {
+   "aspects": [
+    "rct_worker_quentin_0462"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/worker_quentin_0462.png"
+  },
+  {
+   "aspects": [
+    "rct_worker_willy_045f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/worker_willy_045f.png"
+  },
+  {
+   "aspects": [
+    "rct_young_couple_mike_047e"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/young_couple_mike_047e.png"
+  },
+  {
+   "aspects": [
+    "rct_young_couple_nat_047f"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/young_couple_nat_047f.png"
+  },
+  {
+   "aspects": [
+    "rct_young_couple_sue_0316"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/young_couple_sue_0316.png"
+  },
+  {
+   "aspects": [
+    "rct_young_couple_ty_0315"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/young_couple_ty_0315.png"
   },
   {
    "aspects": [

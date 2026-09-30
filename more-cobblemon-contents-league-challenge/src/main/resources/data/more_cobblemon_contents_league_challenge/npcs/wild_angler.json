@@ -1,0 +1,45 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.angler"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_fisher_alec_036a",
+      "rct_fisher_alec_0514",
+      "rct_fisher_andrew_02f8",
+      "rct_fisher_brett_0369",
+      "rct_fisher_cameron_0333",
+      "rct_fisher_cody_030d",
+      "rct_fisher_cole_036c",
+      "rct_fisher_cory_0366",
+      "rct_fisher_erick_03bf",
+      "rct_fisher_george_036b",
+      "rct_fisher_joseph_02f9",
+      "rct_fisher_joseph_0511",
+      "rct_fisher_joseph_0512",
+      "rct_fisher_juan_0332",
+      "rct_fisher_kenneth_0341",
+      "rct_fisher_luc_035d",
+      "rct_fisher_miguel_035c",
+      "rct_fisher_miguel_0513",
+      "rct_fisher_travis_0334",
+      "rct_fisher_walter_0419",
+      "rct_fisher_zachary_02fa"
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.ranger"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_ranger_beth_0255",
+      "rct_ranger_jackson_0254",
+      "rct_ranger_jackson_02d4",
+      "rct_ranger_katelyn_0256",
+      "rct_ranger_katelyn_02d5",
+      "rct_ranger_madeline_020a",
+      "rct_ranger_madeline_02d1",
+      "rct_ranger_nicolas_0209",
+      "rct_ranger_nicolas_02d0"
+    ]
+  }
+}

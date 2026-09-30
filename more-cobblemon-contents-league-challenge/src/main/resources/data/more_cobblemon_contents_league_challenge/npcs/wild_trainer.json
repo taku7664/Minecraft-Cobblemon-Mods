@@ -1,0 +1,37 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.trainer"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_trainer_brendan_001a",
+      "rct_trainer_brendan_002c",
+      "rct_trainer_brendan_0032",
+      "rct_trainer_brendan_0037",
+      "rct_trainer_brendan_0039",
+      "rct_trainer_cole_0012",
+      "rct_trainer_haley_000f",
+      "rct_trainer_ketchup_0013",
+      "rct_trainer_ketchup_0014",
+      "rct_trainer_may_003d",
+      "rct_trainer_red_0003",
+      "rct_trainer_sam_0010",
+      "rct_trainer_shelly_0011"
+    ]
+  }
+}

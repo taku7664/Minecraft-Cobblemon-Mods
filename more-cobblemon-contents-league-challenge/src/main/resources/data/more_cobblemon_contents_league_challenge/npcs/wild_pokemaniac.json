@@ -1,0 +1,37 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.pokemaniac"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_pokemaniac_ashton_00a8",
+      "rct_pokemaniac_cooprt_00a4",
+      "rct_pokemaniac_dawson_00a7",
+      "rct_pokemaniac_hector_0249",
+      "rct_pokemaniac_hector_02cc",
+      "rct_pokemaniac_herman_00a3",
+      "rct_pokemaniac_herman_0285",
+      "rct_pokemaniac_herman_0286",
+      "rct_pokemaniac_mark_00a2",
+      "rct_pokemaniac_mark_0252",
+      "rct_pokemaniac_mark_0284",
+      "rct_pokemaniac_steve_00a5",
+      "rct_pokemaniac_winston_00a6"
+    ]
+  }
+}

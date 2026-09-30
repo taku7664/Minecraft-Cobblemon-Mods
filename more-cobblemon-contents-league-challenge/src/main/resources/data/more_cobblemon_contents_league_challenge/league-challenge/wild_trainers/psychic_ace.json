@@ -1,0 +1,158 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_psychic_ace",
+  "tier": "ace",
+  "bp": 20,
+  "pokemon": [
+    {
+      "species": "abra",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "kadabra",
+      "min_level": 16,
+      "max_level": 37
+    },
+    {
+      "species": "alakazam",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "ralts",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "kirlia",
+      "min_level": 20,
+      "max_level": 29
+    },
+    {
+      "species": "gardevoir",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "gallade",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "beldum",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "metang",
+      "min_level": 20,
+      "max_level": 44
+    },
+    {
+      "species": "metagross",
+      "min_level": 45,
+      "max_level": 100
+    },
+    {
+      "species": "slowpoke",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "slowbro",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "slowking",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "espurr",
+      "min_level": 5,
+      "max_level": 24
+    },
+    {
+      "species": "meowstic",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "elgyem",
+      "min_level": 1,
+      "max_level": 41
+    },
+    {
+      "species": "beheeyem",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "gothita",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "gothorita",
+      "min_level": 32,
+      "max_level": 40
+    },
+    {
+      "species": "gothitelle",
+      "min_level": 41,
+      "max_level": 100
+    },
+    {
+      "species": "solosis",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "duosion",
+      "min_level": 32,
+      "max_level": 40
+    },
+    {
+      "species": "reuniclus",
+      "min_level": 41,
+      "max_level": 100
+    },
+    {
+      "species": "hatenna",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "hattrem",
+      "min_level": 32,
+      "max_level": 41
+    },
+    {
+      "species": "hatterene",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "natu",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "xatu",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "girafarig",
+      "min_level": 12,
+      "max_level": 25
+    },
+    {
+      "species": "farigiraf",
+      "min_level": 26,
+      "max_level": 100
+    }
+  ]
+}

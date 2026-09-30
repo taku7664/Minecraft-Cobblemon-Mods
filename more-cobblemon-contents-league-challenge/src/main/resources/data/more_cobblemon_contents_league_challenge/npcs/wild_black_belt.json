@@ -16,15 +16,9 @@
   "battleConfiguration": {
     "canChallenge": true
   },
-  "skill": 3,
+  "skill": 2,
   "variation": {
     "skin": [
-      "rct_battle_girl_helen_0308",
-      "rct_battle_girl_helen_04e1",
-      "rct_battle_girl_helen_04e2",
-      "rct_battle_girl_helen_04e3",
-      "rct_battle_girl_kelsey_02f6",
-      "rct_battle_girl_tylor_0403",
       "rct_black_belt_aaron_0140",
       "rct_black_belt_adam_031e",
       "rct_black_belt_atsushi_0142",

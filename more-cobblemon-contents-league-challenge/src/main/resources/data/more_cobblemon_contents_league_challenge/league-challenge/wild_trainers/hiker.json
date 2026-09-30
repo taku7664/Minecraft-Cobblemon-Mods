@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "npc_class": "more_cobblemon_contents_league_challenge:wild_hiker",
+  "tier": "normal",
   "bp": 10,
-  "strong": false,
   "pokemon": [
     {
       "species": "geodude",
@@ -12,16 +12,21 @@
     {
       "species": "graveler",
       "min_level": 25,
-      "max_level": 100
+      "max_level": 37
     },
     {
       "species": "golem",
-      "min_level": 45,
+      "min_level": 38,
       "max_level": 100
     },
     {
       "species": "onix",
-      "min_level": 10,
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "steelix",
+      "min_level": 26,
       "max_level": 100
     },
     {
@@ -32,6 +37,11 @@
     {
       "species": "machoke",
       "min_level": 28,
+      "max_level": 37
+    },
+    {
+      "species": "machamp",
+      "min_level": 38,
       "max_level": 100
     },
     {
@@ -42,6 +52,11 @@
     {
       "species": "rhydon",
       "min_level": 42,
+      "max_level": 49
+    },
+    {
+      "species": "rhyperior",
+      "min_level": 50,
       "max_level": 100
     },
     {
@@ -52,26 +67,11 @@
     {
       "species": "boldore",
       "min_level": 25,
-      "max_level": 100
+      "max_level": 37
     },
     {
-      "species": "sandshrew",
-      "min_level": 1,
-      "max_level": 21
-    },
-    {
-      "species": "sandslash",
-      "min_level": 22,
-      "max_level": 100
-    },
-    {
-      "species": "diglett",
-      "min_level": 1,
-      "max_level": 25
-    },
-    {
-      "species": "dugtrio",
-      "min_level": 26,
+      "species": "gigalith",
+      "min_level": 38,
       "max_level": 100
     },
     {
@@ -87,6 +87,66 @@
     {
       "species": "aggron",
       "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "nosepass",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "probopass",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "rolycoly",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "carkol",
+      "min_level": 18,
+      "max_level": 33
+    },
+    {
+      "species": "coalossal",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "diglett",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "dugtrio",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "sandshrew",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "sandslash",
+      "min_level": 22,
+      "max_level": 100
+    },
+    {
+      "species": "nacli",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "naclstack",
+      "min_level": 24,
+      "max_level": 37
+    },
+    {
+      "species": "garganacl",
+      "min_level": 38,
       "max_level": 100
     }
   ]

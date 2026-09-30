@@ -1,0 +1,113 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_boarder",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "sneasel",
+      "min_level": 12,
+      "max_level": 25
+    },
+    {
+      "species": "weavile",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "swinub",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "piloswine",
+      "min_level": 33,
+      "max_level": 40
+    },
+    {
+      "species": "mamoswine",
+      "min_level": 41,
+      "max_level": 100
+    },
+    {
+      "species": "snorunt",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "glalie",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "froslass",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "delibird",
+      "min_level": 1,
+      "max_level": 100
+    },
+    {
+      "species": "bergmite",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "avalugg",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "cubchoo",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "beartic",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "vanillite",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "vanillish",
+      "min_level": 35,
+      "max_level": 46
+    },
+    {
+      "species": "vanilluxe",
+      "min_level": 47,
+      "max_level": 100
+    },
+    {
+      "species": "snom",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "frosmoth",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "cetoddle",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "cetitan",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "cryogonal",
+      "min_level": 20,
+      "max_level": 100
+    }
+  ]
+}

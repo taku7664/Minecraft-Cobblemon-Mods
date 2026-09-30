@@ -1,0 +1,108 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_safari_guide",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "tauros",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "girafarig",
+      "min_level": 12,
+      "max_level": 25
+    },
+    {
+      "species": "farigiraf",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "rhyhorn",
+      "min_level": 1,
+      "max_level": 41
+    },
+    {
+      "species": "rhydon",
+      "min_level": 42,
+      "max_level": 49
+    },
+    {
+      "species": "rhyperior",
+      "min_level": 50,
+      "max_level": 100
+    },
+    {
+      "species": "litleo",
+      "min_level": 5,
+      "max_level": 34
+    },
+    {
+      "species": "pyroar",
+      "min_level": 35,
+      "max_level": 100
+    },
+    {
+      "species": "blitzle",
+      "min_level": 1,
+      "max_level": 26
+    },
+    {
+      "species": "zebstrika",
+      "min_level": 27,
+      "max_level": 100
+    },
+    {
+      "species": "mudbray",
+      "min_level": 5,
+      "max_level": 29
+    },
+    {
+      "species": "mudsdale",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "kangaskhan",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "nidoranf",
+      "min_level": 1,
+      "max_level": 15
+    },
+    {
+      "species": "nidorina",
+      "min_level": 16,
+      "max_level": 37
+    },
+    {
+      "species": "nidoqueen",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "phanpy",
+      "min_level": 1,
+      "max_level": 24
+    },
+    {
+      "species": "donphan",
+      "min_level": 25,
+      "max_level": 100
+    },
+    {
+      "species": "skiddo",
+      "min_level": 5,
+      "max_level": 31
+    },
+    {
+      "species": "gogoat",
+      "min_level": 32,
+      "max_level": 100
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_mountain_guide",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "noibat",
+      "min_level": 1,
+      "max_level": 47
+    },
+    {
+      "species": "noivern",
+      "min_level": 48,
+      "max_level": 100
+    },
+    {
+      "species": "rufflet",
+      "min_level": 5,
+      "max_level": 53
+    },
+    {
+      "species": "braviary",
+      "min_level": 54,
+      "max_level": 100
+    },
+    {
+      "species": "starly",
+      "min_level": 1,
+      "max_level": 13
+    },
+    {
+      "species": "staravia",
+      "min_level": 14,
+      "max_level": 33
+    },
+    {
+      "species": "staraptor",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "taillow",
+      "min_level": 1,
+      "max_level": 21
+    },
+    {
+      "species": "swellow",
+      "min_level": 22,
+      "max_level": 100
+    },
+    {
+      "species": "rookidee",
+      "min_level": 1,
+      "max_level": 17
+    },
+    {
+      "species": "corvisquire",
+      "min_level": 18,
+      "max_level": 37
+    },
+    {
+      "species": "corviknight",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "cufant",
+      "min_level": 1,
+      "max_level": 33
+    },
+    {
+      "species": "copperajah",
+      "min_level": 34,
+      "max_level": 100
+    },
+    {
+      "species": "bergmite",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "avalugg",
+      "min_level": 37,
+      "max_level": 100
+    },
+    {
+      "species": "skarmory",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "gligar",
+      "min_level": 12,
+      "max_level": 25
+    },
+    {
+      "species": "gliscor",
+      "min_level": 26,
+      "max_level": 100
+    }
+  ]
+}

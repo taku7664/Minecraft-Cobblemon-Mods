@@ -1,0 +1,78 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_gatekeeper",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "bonsly",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "sudowoodo",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "onix",
+      "min_level": 5,
+      "max_level": 25
+    },
+    {
+      "species": "steelix",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "golett",
+      "min_level": 1,
+      "max_level": 42
+    },
+    {
+      "species": "golurk",
+      "min_level": 43,
+      "max_level": 100
+    },
+    {
+      "species": "bronzor",
+      "min_level": 1,
+      "max_level": 32
+    },
+    {
+      "species": "bronzong",
+      "min_level": 33,
+      "max_level": 100
+    },
+    {
+      "species": "carbink",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "stonjourner",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "klefki",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "honedge",
+      "min_level": 1,
+      "max_level": 34
+    },
+    {
+      "species": "doublade",
+      "min_level": 35,
+      "max_level": 42
+    },
+    {
+      "species": "aegislash",
+      "min_level": 43,
+      "max_level": 100
+    }
+  ]
+}

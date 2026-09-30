@@ -1,0 +1,31 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.jogger"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_jogger_craig_03ce",
+      "rct_jogger_craig_0521",
+      "rct_jogger_craig_0522",
+      "rct_jogger_raul_03cf",
+      "rct_jogger_richard_0313",
+      "rct_jogger_scott_034a",
+      "rct_jogger_wyatt_03cd"
+    ]
+  }
+}

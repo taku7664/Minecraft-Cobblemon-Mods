@@ -1,0 +1,33 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.police_officer"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_police_officer_alex_0330",
+      "rct_police_officer_bobby_032f",
+      "rct_police_officer_caleb_0339",
+      "rct_police_officer_danny_03e6",
+      "rct_police_officer_danny_053c",
+      "rct_police_officer_danny_053d",
+      "rct_police_officer_danny_053e",
+      "rct_police_officer_dylan_0331",
+      "rct_police_officer_thomas_03e7"
+    ]
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_artist",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "smeargle",
+      "min_level": 1,
+      "max_level": 100
+    },
+    {
+      "species": "spinda",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "kecleon",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "flabebe",
+      "min_level": 1,
+      "max_level": 18
+    },
+    {
+      "species": "floette",
+      "min_level": 19,
+      "max_level": 37
+    },
+    {
+      "species": "florges",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "scatterbug",
+      "min_level": 1,
+      "max_level": 8
+    },
+    {
+      "species": "spewpa",
+      "min_level": 9,
+      "max_level": 11
+    },
+    {
+      "species": "vivillon",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "furfrou",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "minccino",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "cinccino",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "audino",
+      "min_level": 12,
+      "max_level": 100
+    },
+    {
+      "species": "tatsugiri",
+      "min_level": 20,
+      "max_level": 100
+    }
+  ]
+}

@@ -1,37 +1,37 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "npc_class": "more_cobblemon_contents_league_challenge:wild_lass",
+  "tier": "normal",
   "bp": 10,
-  "strong": false,
   "pokemon": [
     {
       "species": "jigglypuff",
       "min_level": 1,
-      "max_level": 29
+      "max_level": 25
     },
     {
       "species": "wigglytuff",
-      "min_level": 30,
+      "min_level": 26,
       "max_level": 100
     },
     {
       "species": "clefairy",
       "min_level": 1,
-      "max_level": 31
+      "max_level": 25
     },
     {
       "species": "clefable",
-      "min_level": 32,
+      "min_level": 26,
       "max_level": 100
     },
     {
       "species": "skitty",
       "min_level": 1,
-      "max_level": 27
+      "max_level": 25
     },
     {
       "species": "delcatty",
-      "min_level": 28,
+      "min_level": 26,
       "max_level": 100
     },
     {
@@ -42,11 +42,16 @@
     {
       "species": "gloom",
       "min_level": 21,
-      "max_level": 35
+      "max_level": 37
+    },
+    {
+      "species": "vileplume",
+      "min_level": 38,
+      "max_level": 100
     },
     {
       "species": "bellossom",
-      "min_level": 36,
+      "min_level": 38,
       "max_level": 100
     },
     {
@@ -61,12 +66,12 @@
     },
     {
       "species": "buneary",
-      "min_level": 1,
-      "max_level": 29
+      "min_level": 5,
+      "max_level": 25
     },
     {
       "species": "lopunny",
-      "min_level": 30,
+      "min_level": 26,
       "max_level": 100
     },
     {
@@ -77,6 +82,11 @@
     {
       "species": "nidorina",
       "min_level": 16,
+      "max_level": 37
+    },
+    {
+      "species": "nidoqueen",
+      "min_level": 38,
       "max_level": 100
     },
     {
@@ -87,6 +97,41 @@
     {
       "species": "floette",
       "min_level": 19,
+      "max_level": 37
+    },
+    {
+      "species": "florges",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "snubbull",
+      "min_level": 1,
+      "max_level": 22
+    },
+    {
+      "species": "granbull",
+      "min_level": 23,
+      "max_level": 100
+    },
+    {
+      "species": "minccino",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "cinccino",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "fidough",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "dachsbun",
+      "min_level": 26,
       "max_level": 100
     }
   ]

@@ -1,0 +1,73 @@
+{
+  "schema_version": 2,
+  "npc_class": "more_cobblemon_contents_league_challenge:wild_clown",
+  "tier": "normal",
+  "bp": 10,
+  "pokemon": [
+    {
+      "species": "mimejr",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "mrmime",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "wynaut",
+      "min_level": 1,
+      "max_level": 14
+    },
+    {
+      "species": "wobbuffet",
+      "min_level": 15,
+      "max_level": 100
+    },
+    {
+      "species": "spinda",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "sableye",
+      "min_level": 5,
+      "max_level": 100
+    },
+    {
+      "species": "impidimp",
+      "min_level": 1,
+      "max_level": 31
+    },
+    {
+      "species": "morgrem",
+      "min_level": 32,
+      "max_level": 41
+    },
+    {
+      "species": "grimmsnarl",
+      "min_level": 42,
+      "max_level": 100
+    },
+    {
+      "species": "morelull",
+      "min_level": 1,
+      "max_level": 23
+    },
+    {
+      "species": "shiinotic",
+      "min_level": 24,
+      "max_level": 100
+    },
+    {
+      "species": "pumpkaboo",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "gourgeist",
+      "min_level": 26,
+      "max_level": 100
+    }
+  ]
+}

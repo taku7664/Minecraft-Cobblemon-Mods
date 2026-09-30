@@ -1,0 +1,32 @@
+{
+  "resourceIdentifier": "more_cobblemon_contents_league_challenge:wild_trainer",
+  "names": [
+    "npc.more_cobblemon_contents_league_challenge.wild_trainer.tamer"
+  ],
+  "hitbox": "player",
+  "canDespawn": true,
+  "ai": [
+    {
+      "type": "apply_behaviours",
+      "behaviours": [
+        "cobblemon:core"
+      ]
+    }
+  ],
+  "battleConfiguration": {
+    "canChallenge": true
+  },
+  "skill": 2,
+  "variation": {
+    "skin": [
+      "rct_tamer_cole_0129",
+      "rct_tamer_edgar_0127",
+      "rct_tamer_evan_0251",
+      "rct_tamer_evan_02d3",
+      "rct_tamer_jason_0128",
+      "rct_tamer_john_012b",
+      "rct_tamer_phil_0126",
+      "rct_tamer_vincent_012a"
+    ]
+  }
+}

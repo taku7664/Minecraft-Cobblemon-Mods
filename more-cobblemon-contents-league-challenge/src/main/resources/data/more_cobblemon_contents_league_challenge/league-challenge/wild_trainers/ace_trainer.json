@@ -1,117 +1,172 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "npc_class": "more_cobblemon_contents_league_challenge:wild_ace_trainer",
-  "bp": 10,
-  "strong": true,
+  "tier": "ace",
+  "bp": 20,
   "pokemon": [
     {
-      "species": "dratini",
-      "min_level": 1,
-      "max_level": 29
+      "species": "growlithe",
+      "min_level": 5,
+      "max_level": 25
     },
     {
-      "species": "dragonair",
-      "min_level": 30,
-      "max_level": 54
-    },
-    {
-      "species": "dragonite",
-      "min_level": 55,
+      "species": "arcanine",
+      "min_level": 26,
       "max_level": 100
     },
     {
-      "species": "bagon",
-      "min_level": 1,
-      "max_level": 29
-    },
-    {
-      "species": "shelgon",
-      "min_level": 30,
-      "max_level": 49
-    },
-    {
-      "species": "salamence",
-      "min_level": 50,
+      "species": "lapras",
+      "min_level": 28,
       "max_level": 100
     },
     {
-      "species": "gible",
-      "min_level": 1,
-      "max_level": 23
+      "species": "munchlax",
+      "min_level": 5,
+      "max_level": 25
     },
     {
-      "species": "gabite",
-      "min_level": 24,
-      "max_level": 47
-    },
-    {
-      "species": "garchomp",
-      "min_level": 48,
+      "species": "snorlax",
+      "min_level": 26,
       "max_level": 100
     },
     {
-      "species": "larvitar",
-      "min_level": 1,
-      "max_level": 29
-    },
-    {
-      "species": "pupitar",
-      "min_level": 30,
-      "max_level": 54
-    },
-    {
-      "species": "tyranitar",
-      "min_level": 55,
+      "species": "absol",
+      "min_level": 12,
       "max_level": 100
     },
     {
       "species": "riolu",
       "min_level": 1,
-      "max_level": 24
+      "max_level": 25
     },
     {
       "species": "lucario",
-      "min_level": 25,
+      "min_level": 26,
       "max_level": 100
     },
     {
-      "species": "growlithe",
+      "species": "magikarp",
       "min_level": 1,
-      "max_level": 34
+      "max_level": 19
     },
     {
-      "species": "arcanine",
-      "min_level": 35,
+      "species": "gyarados",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "togepi",
+      "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "togetic",
+      "min_level": 26,
+      "max_level": 37
+    },
+    {
+      "species": "togekiss",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "ralts",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "kirlia",
+      "min_level": 20,
+      "max_level": 29
+    },
+    {
+      "species": "gardevoir",
+      "min_level": 30,
+      "max_level": 100
+    },
+    {
+      "species": "gallade",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "beldum",
+      "min_level": 1,
+      "max_level": 19
+    },
+    {
+      "species": "metang",
+      "min_level": 20,
+      "max_level": 44
+    },
+    {
+      "species": "metagross",
+      "min_level": 45,
+      "max_level": 100
+    },
+    {
+      "species": "heracross",
+      "min_level": 20,
+      "max_level": 100
+    },
+    {
+      "species": "scyther",
+      "min_level": 20,
+      "max_level": 27
+    },
+    {
+      "species": "scizor",
+      "min_level": 28,
+      "max_level": 100
+    },
+    {
+      "species": "kleavor",
+      "min_level": 28,
       "max_level": 100
     },
     {
       "species": "eevee",
       "min_level": 1,
-      "max_level": 24
+      "max_level": 25
+    },
+    {
+      "species": "jolteon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "vaporeon",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "flareon",
+      "min_level": 26,
+      "max_level": 100
     },
     {
       "species": "espeon",
-      "min_level": 25,
+      "min_level": 26,
       "max_level": 100
     },
     {
       "species": "umbreon",
-      "min_level": 25,
+      "min_level": 26,
       "max_level": 100
     },
     {
-      "species": "absol",
-      "min_level": 15,
+      "species": "sylveon",
+      "min_level": 26,
       "max_level": 100
     },
     {
-      "species": "lapras",
-      "min_level": 20,
+      "species": "leafeon",
+      "min_level": 26,
       "max_level": 100
     },
     {
-      "species": "snorlax",
-      "min_level": 30,
+      "species": "glaceon",
+      "min_level": 26,
       "max_level": 100
     }
   ]

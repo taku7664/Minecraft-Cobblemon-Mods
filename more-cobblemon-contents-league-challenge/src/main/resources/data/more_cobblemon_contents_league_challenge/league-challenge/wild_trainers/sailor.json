@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "npc_class": "more_cobblemon_contents_league_challenge:wild_sailor",
+  "tier": "normal",
   "bp": 10,
-  "strong": false,
   "pokemon": [
     {
       "species": "machop",
@@ -12,6 +12,11 @@
     {
       "species": "machoke",
       "min_level": 28,
+      "max_level": 37
+    },
+    {
+      "species": "machamp",
+      "min_level": 38,
       "max_level": 100
     },
     {
@@ -62,11 +67,21 @@
     {
       "species": "poliwhirl",
       "min_level": 25,
+      "max_level": 37
+    },
+    {
+      "species": "poliwrath",
+      "min_level": 38,
+      "max_level": 100
+    },
+    {
+      "species": "politoed",
+      "min_level": 38,
       "max_level": 100
     },
     {
       "species": "wailmer",
-      "min_level": 1,
+      "min_level": 5,
       "max_level": 39
     },
     {
@@ -77,6 +92,31 @@
     {
       "species": "shellder",
       "min_level": 1,
+      "max_level": 25
+    },
+    {
+      "species": "cloyster",
+      "min_level": 26,
+      "max_level": 100
+    },
+    {
+      "species": "skrelp",
+      "min_level": 1,
+      "max_level": 47
+    },
+    {
+      "species": "dragalge",
+      "min_level": 48,
+      "max_level": 100
+    },
+    {
+      "species": "clauncher",
+      "min_level": 1,
+      "max_level": 36
+    },
+    {
+      "species": "clawitzer",
+      "min_level": 37,
       "max_level": 100
     }
   ]

@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.league.trainer
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import kotlin.math.roundToInt
 import kotlin.random.Random
 
 /** One stage of a trainer's Pokemon pool: [species] appears at levels [minLevel] to [maxLevel]. */
@@ -12,14 +13,21 @@ data class WildTrainerStage(val species: String, val minLevel: Int, val maxLevel
     }
 }
 
-/**
- * A kind of trainer met in the wild. [npcClass] is the Cobblemon NPC class it spawns as; [bp] is paid for a win;
- * [strong] trainers bring one more Pokemon and fight closer to the level cap.
- */
+/** How seasoned a wild trainer is: an ace brings more Pokemon, closer to the cap and better raised. */
+enum class WildTrainerTier(val id: String) {
+    NORMAL("normal"),
+    ACE("ace");
+
+    companion object {
+        fun of(id: String): WildTrainerTier = entries.firstOrNull { it.id == id } ?: throw IllegalArgumentException("Unknown tier: $id")
+    }
+}
+
+/** A kind of trainer met in the wild. [npcClass] is the Cobblemon NPC class it spawns as; [bp] is paid for a win. */
 data class WildTrainerDefinition(
     val npcClass: String,
     val bp: Long,
-    val strong: Boolean,
+    val tier: WildTrainerTier,
     val pokemon: List<WildTrainerStage>,
 ) {
     init {
@@ -45,11 +53,11 @@ object WildTrainerCatalogParser {
     }
 
     private fun read(root: JsonObject): WildTrainerDefinition {
-        require(root.get("schema_version")?.asInt == 1) { "schema_version must be 1" }
+        require(root.get("schema_version")?.asInt == 2) { "schema_version must be 2" }
         return WildTrainerDefinition(
             npcClass = root.get("npc_class").asString,
             bp = root.get("bp")?.asLong ?: 0,
-            strong = root.get("strong")?.asBoolean ?: false,
+            tier = WildTrainerTier.of(root.get("tier")?.asString ?: WildTrainerTier.NORMAL.id),
             pokemon = root.getAsJsonArray("pokemon").map { element ->
                 val stage = element.asJsonObject
                 WildTrainerStage(stage.get("species").asString, stage.get("min_level").asInt, stage.get("max_level").asInt)
@@ -58,34 +66,69 @@ object WildTrainerCatalogParser {
     }
 }
 
-/** How a wild trainer's party follows the level cap of the player who challenges them. */
+/**
+ * How a wild trainer's party follows the level cap of the player who challenges them. Any trainer may bring one to
+ * six Pokemon; the more they bring, the further below the cap they stand, so a full party is not a harder fight
+ * than a lone Pokemon at the cap. The last Pokemon is the trainer's ace and stands a little above the rest.
+ */
 object WildTrainerParty {
-    /** How many Pokemon a trainer brings against a player whose cap is [cap]. */
-    fun sizes(cap: Int, strong: Boolean): IntRange {
-        val base = when {
-            cap <= 24 -> 1..2
-            cap <= 39 -> 2..3
-            cap <= 52 -> 3..4
-            cap <= 64 -> 3..5
-            else -> 4..6
+    const val MAX_SIZE = 6
+
+    /** Relative chances of bringing 1 to 6 Pokemon in each phase; later phases lean towards fuller parties. */
+    private val sizeWeights = mapOf(
+        WildTrainerTier.NORMAL to mapOf(
+            WildTrainerPhase.EARLY to intArrayOf(26, 26, 20, 14, 9, 5),
+            WildTrainerPhase.MID to intArrayOf(14, 20, 22, 19, 14, 11),
+            WildTrainerPhase.LATE to intArrayOf(10, 15, 19, 21, 18, 17),
+            WildTrainerPhase.END to intArrayOf(8, 12, 17, 21, 21, 21),
+        ),
+        WildTrainerTier.ACE to mapOf(
+            WildTrainerPhase.EARLY to intArrayOf(12, 22, 24, 20, 13, 9),
+            WildTrainerPhase.MID to intArrayOf(7, 13, 19, 23, 21, 17),
+            WildTrainerPhase.LATE to intArrayOf(4, 9, 15, 22, 25, 25),
+            WildTrainerPhase.END to intArrayOf(3, 6, 12, 20, 27, 32),
+        ),
+    )
+
+    fun size(cap: Int, tier: WildTrainerTier, random: Random): Int {
+        val weights = sizeWeights.getValue(tier).getValue(WildTrainerPhase.of(cap))
+        var roll = random.nextInt(weights.sum())
+        weights.forEachIndexed { index, weight ->
+            if (roll < weight) return index + 1
+            roll -= weight
         }
-        return if (strong) minOf(base.first + 1, 6)..minOf(base.last + 1, 6) else base
+        return MAX_SIZE
     }
 
-    /** The levels a trainer's Pokemon take against a cap of [cap]; never above it. */
-    fun levels(cap: Int, strong: Boolean): IntRange {
+    /**
+     * How far below [cap] the party's average stands when it brings [size] Pokemon. Early caps shrink the gap so a
+     * full party at cap 15 is still near level 11 rather than level 5.
+     */
+    fun averageGap(cap: Int, tier: WildTrainerTier, size: Int): Double {
+        val (base, perPokemon) = when (tier) {
+            WildTrainerTier.NORMAL -> 2.0 to 1.6
+            WildTrainerTier.ACE -> 0.5 to 1.1
+        }
+        val scale = (cap / 60.0).coerceIn(0.35, 1.0)
+        return (base + perPokemon * (size.coerceIn(1, MAX_SIZE) - 1)) * scale
+    }
+
+    /** The levels of a party of [size], the ace last; never above [cap]. */
+    fun levels(cap: Int, tier: WildTrainerTier, size: Int, random: Random): List<Int> {
         val top = cap.coerceIn(1, 100)
-        val range = if (strong) (top - 4)..top else (top - 7)..(top - 2)
-        return range.first.coerceIn(1, top)..range.last.coerceIn(1, top)
+        val average = top - averageGap(top, tier, size)
+        return List(size) { index ->
+            val ace = size > 1 && index == size - 1
+            val level = average + random.nextInt(-2, 2) + if (ace) 2 else 0
+            level.roundToInt().coerceIn(1, top)
+        }
     }
 
     /** The species and level of each Pokemon the trainer brings, different species where the pool allows. */
     fun roll(definition: WildTrainerDefinition, cap: Int, random: Random): List<Pair<String, Int>> {
-        val size = sizes(cap, definition.strong).let { random.nextInt(it.first, it.last + 1) }
-        val levels = levels(cap, definition.strong)
+        val size = size(cap, definition.tier, random)
         val taken = HashSet<String>()
-        return List(size) {
-            val level = random.nextInt(levels.first, levels.last + 1)
+        return levels(cap, definition.tier, size, random).map { level ->
             val fitting = definition.pokemon.filter { level in it.minLevel..it.maxLevel }
                 .ifEmpty { listOf(nearest(definition.pokemon, level)) }
             val stage = fitting.filter { it.species !in taken }.ifEmpty { fitting }.random(random)
