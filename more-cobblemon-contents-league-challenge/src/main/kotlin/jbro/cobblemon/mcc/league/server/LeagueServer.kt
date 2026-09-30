@@ -235,6 +235,36 @@ object LeagueServer {
         } catch (failure: LinkageError) { Mod.LOGGER.error("League integration unavailable", failure) }
     }
 
+    /**
+     * Saves an operator's edit of [playerId]'s progress in the current League the way the League's own changes
+     * are saved, then brings an online player's cap, badges, rank and open League tab up to date.
+     */
+    internal fun adminCommit(server: MinecraftServer, catalog: LeagueCatalog, playerId: UUID, state: LeagueProgress) {
+        commit(server, catalog.id, playerId, state)
+        server.playerList.getPlayer(playerId)?.let { online ->
+            reconcileSafely(online)
+            send(online)
+        }
+    }
+
+    /** Runs the League's reconcile for [player] now; returns the failure reason, or null when it went through. */
+    internal fun adminReconcile(player: ServerPlayer): String? = try {
+        reconcile(player)
+        send(player)
+        null
+    } catch (failure: RuntimeException) {
+        failure.message?.substringBefore(':') ?: "request_failed"
+    }
+
+    /** Ends [playerId]'s run as the player's own cancel does, stopping its battle after the run is gone. */
+    internal fun adminCancelRun(server: MinecraftServer, catalog: LeagueCatalog, playerId: UUID): Boolean {
+        val state = LeagueSavedData.get(server).read(catalog.id, playerId)
+        if (state.run == null) return false
+        adminCommit(server, catalog, playerId, LeagueEngine(catalog).cancel(state))
+        ManagedPveBattles.cancel(server, playerId)
+        return true
+    }
+
     private fun commit(server: MinecraftServer, league: String, player: UUID, state: LeagueProgress) {
         LeagueSavedData.get(server).write(league, player, state)
         server.overworld().dataStorage.save()
