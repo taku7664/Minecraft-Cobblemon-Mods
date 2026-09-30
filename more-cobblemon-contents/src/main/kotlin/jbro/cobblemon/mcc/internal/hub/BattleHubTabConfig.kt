@@ -15,14 +15,21 @@ import net.fabricmc.loader.api.FabricLoader
 
 /**
  * Which hub tabs each way into the hub shows: [command] for `/mcc`, [terminals] per hologram terminal block ID.
+ * [commandPermission] is the permission level `/mcc` needs to open the hub: 0 lets every player, 2 only operators;
+ * the commands under it stay for operators either way.
  * Entries for terminals whose mod is not installed are kept, so removing a mod does not lose them.
  */
-internal data class BattleHubTabConfig(val command: List<String>, val terminals: Map<String, List<String>>) {
+internal data class BattleHubTabConfig(
+    val command: List<String>,
+    val terminals: Map<String, List<String>>,
+    val commandPermission: Int = DEFAULT_COMMAND_PERMISSION,
+) {
     /** A read config, and whether the file lacked entries it should be rewritten with. */
     data class Read(val config: BattleHubTabConfig, val incomplete: Boolean, val problems: List<String>)
 
     companion object {
         val DEFAULT_COMMAND = listOf(BattleHubIds.DASHBOARD, BattleHubIds.SHOP, ManagedBattleContentIds.PVP)
+        const val DEFAULT_COMMAND_PERMISSION = 0
 
         fun defaults(terminalDefaults: Map<String, List<String>>) = BattleHubTabConfig(DEFAULT_COMMAND, terminalDefaults)
 
@@ -44,6 +51,12 @@ internal data class BattleHubTabConfig(val command: List<String>, val terminals:
                 return parsed ?: default
             }
             val command = tabs(root.get(COMMAND), COMMAND, DEFAULT_COMMAND)
+            val permission = when (val element = root.get(COMMAND_PERMISSION)) {
+                null -> DEFAULT_COMMAND_PERMISSION.also { incomplete = true }
+                else -> element.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asDouble
+                    ?.takeIf { it % 1.0 == 0.0 && it in 0.0..4.0 }?.toInt()
+                    ?: DEFAULT_COMMAND_PERMISSION.also { problems += "$COMMAND_PERMISSION must be a whole number from 0 to 4; using $it" }
+            }
             val listed = root.get(TERMINALS)?.takeIf { it.isJsonObject }?.asJsonObject ?: JsonObject().also {
                 if (root.has(TERMINALS)) problems += "$TERMINALS must be an object" else incomplete = true
             }
@@ -52,12 +65,13 @@ internal data class BattleHubTabConfig(val command: List<String>, val terminals:
             listed.entrySet().filter { it.key !in terminalDefaults }.forEach { (id, element) ->
                 parseTabs(element)?.let { terminals[id] = it }
             }
-            return Read(BattleHubTabConfig(command, terminals), incomplete, problems)
+            return Read(BattleHubTabConfig(command, terminals, permission), incomplete, problems)
         }
 
         fun write(config: BattleHubTabConfig): String {
             val root = JsonObject()
             root.add(COMMAND, array(config.command))
+            root.addProperty(COMMAND_PERMISSION, config.commandPermission)
             root.add(TERMINALS, JsonObject().also { terminals -> config.terminals.forEach { (id, tabs) -> terminals.add(id, array(tabs)) } })
             return GsonBuilder().setPrettyPrinting().create().toJson(root) + "\n"
         }
@@ -71,6 +85,7 @@ internal data class BattleHubTabConfig(val command: List<String>, val terminals:
         private fun array(values: List<String>) = JsonArray().also { array -> values.forEach(array::add) }
 
         private const val COMMAND = "command"
+        private const val COMMAND_PERMISSION = "command_permission_level"
         private const val TERMINALS = "terminals"
     }
 }
@@ -83,7 +98,12 @@ internal object BattleHubTabConfigFile {
 
     fun register() {
         ServerLifecycleEvents.SERVER_STARTING.register { load() }
-        ServerLifecycleEvents.END_DATA_PACK_RELOAD.register { _, _, success -> if (success) load() }
+        ServerLifecycleEvents.END_DATA_PACK_RELOAD.register { server, _, success ->
+            if (!success) return@register
+            load()
+            // Who may run `/mcc` can change with the file; resend the tree so clients offer the command as it now is.
+            server.playerList.players.forEach(server.commands::sendCommands)
+        }
     }
 
     fun load(path: Path = FabricLoader.getInstance().configDir.resolve("more-cobblemon-contents").resolve("hub_tabs.json")) {

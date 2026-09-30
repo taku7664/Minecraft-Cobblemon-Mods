@@ -45,11 +45,29 @@ class BattleContentCommandsTest {
     }
 
     @Test
-    fun `only operators can use the mcc command`() {
-        val root = BattleContentCommands.build(DefaultBattleContentApplicationService(emptyList()), contributors = emptyList()).build()
+    fun `every player opens the hub by default while the commands under it stay for operators`() {
+        val contributed = object : MccCommandContributor {
+            override fun build() = net.minecraft.commands.Commands.literal("status")
+        }
+        val dir = java.nio.file.Files.createTempDirectory("mcc-command")
         fun source(level: Int) = CommandSourceStack(CommandSource.NULL, Vec3.ZERO, Vec2.ZERO, null, level, "test",
             Component.literal("test"), null, null)
-        assertFalse(root.requirement.test(source(0)))
-        assertTrue(root.requirement.test(source(2)))
+        fun root() = BattleContentCommands.build(DefaultBattleContentApplicationService(emptyList()), contributors = listOf(contributed)).build()
+
+        jbro.cobblemon.mcc.internal.hub.BattleHubTabConfigFile.load(dir.resolve("default.json"))
+        val open = root()
+        assertTrue(open.requirement.test(source(0)))
+        listOf("bp", "status").forEach { name ->
+            assertFalse(open.getChild(name).requirement.test(source(0)), name)
+            assertTrue(open.getChild(name).requirement.test(source(2)), name)
+        }
+
+        val restricted = dir.resolve("restricted.json")
+        java.nio.file.Files.writeString(restricted, """{"command_permission_level": 2}""")
+        jbro.cobblemon.mcc.internal.hub.BattleHubTabConfigFile.load(restricted)
+        val closed = root()
+        assertFalse(closed.requirement.test(source(0)))
+        assertTrue(closed.requirement.test(source(2)))
+        jbro.cobblemon.mcc.internal.hub.BattleHubTabConfigFile.load(dir.resolve("default.json"))
     }
 }

@@ -58,6 +58,17 @@ class BattleHubTabConfigTest {
     }
 
     @Test
+    fun `the command permission defaults to every player and a bad level falls back and is reported`() {
+        assertEquals(0, BattleHubTabConfig.defaults(defaults).commandPermission)
+        assertEquals(2, BattleHubTabConfig.read("""{"command_permission_level": 2}""", defaults).config.commandPermission)
+        listOf("5", "-1", "1.5", "\"op\"").forEach { level ->
+            val read = BattleHubTabConfig.read("""{"command_permission_level": $level}""", defaults)
+            assertEquals(0, read.config.commandPermission, level)
+            assertEquals(1, read.problems.size, level)
+        }
+    }
+
+    @Test
     fun `malformed JSON throws`() {
         assertThrows(Exception::class.java) { BattleHubTabConfig.read("{", defaults) }
     }

@@ -20,6 +20,7 @@ from `config/more-cobblemon-contents/hub_tabs.json`, written with the defaults o
 ```json
 {
   "command": ["more_cobblemon_contents:dashboard", "more_cobblemon_contents:shop", "more_cobblemon_contents:pvp"],
+  "command_permission_level": 0,
   "terminals": {
     "more_cobblemon_contents_league_challenge:league_terminal": [
       "more_cobblemon_contents:dashboard", "more_cobblemon_contents:shop", "more_cobblemon_contents:league_challenge"
@@ -28,14 +29,15 @@ from `config/more-cobblemon-contents/hub_tabs.json`, written with the defaults o
 }
 ```
 
-`command` is `/mcc`, which with everything under it needs permission level 2; `terminals` is keyed by
+`command` is `/mcc`; `command_permission_level` is the level `/mcc` needs to open the hub (0, the default, lets
+every player; 2 only operators), while everything under it needs level 2. `terminals` is keyed by
 terminal block ID. A missing entry takes its default, and a broken one
 falls back to its default with a warning in the log. The server refuses to open a content the hub was not opened
 with, so a tab left out cannot be reached by a modified client either.
 
 ## Operator commands
 
-Everything under `/mcc` needs permission level 2. Player arguments that read or edit saved data take offline
+Everything under `/mcc` needs permission level 2; `/mcc` itself follows `command_permission_level`. Player arguments that read or edit saved data take offline
 players too.
 
 | Command | What it does |

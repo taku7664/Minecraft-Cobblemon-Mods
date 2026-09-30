@@ -8,6 +8,7 @@ import jbro.cobblemon.mcc.internal.application.BattleApplicationResult
 import jbro.cobblemon.mcc.internal.application.BattleEntryPoint
 import jbro.cobblemon.mcc.internal.application.BattleHubView
 import jbro.cobblemon.mcc.internal.application.DefaultBattleContentApplicationService
+import jbro.cobblemon.mcc.internal.hub.BattleHubTabConfigFile
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
@@ -29,8 +30,8 @@ internal object BattleContentCommands {
         openScreen: (ServerPlayer) -> Boolean = { false },
         contributors: List<MccCommandContributor> = MccCommandContributors.all(),
     ): LiteralArgumentBuilder<CommandSourceStack> = Commands.literal("mcc")
-        // Players reach the hub through hologram terminals; the command and everything under it is for operators.
-        .requires { source -> source.hasPermission(BattlePointCommands.ADMIN_PERMISSION_LEVEL) }
+        // Opening the hub takes the level set in hub_tabs.json; everything under it is for operators.
+        .requires { source -> source.hasPermission(BattleHubTabConfigFile.current.commandPermission) }
         .executes { command ->
             val result = service.open(requestContext(command.source))
             if (result is BattleApplicationResult.Success && openScreen(command.source.playerOrException)) {
@@ -39,8 +40,13 @@ internal object BattleContentCommands {
                 respond(command.source, result)
             }
         }
-        .then(BattlePointCommands.build())
-        .also { root -> contributors.forEach { contributor -> root.then(contributor.build()) } }
+        .then(adminOnly(BattlePointCommands.build()))
+        .also { root -> contributors.forEach { contributor -> root.then(adminOnly(contributor.build())) } }
+
+    private fun adminOnly(node: LiteralArgumentBuilder<CommandSourceStack>): LiteralArgumentBuilder<CommandSourceStack> {
+        val own = node.requirement
+        return node.requires { source -> source.hasPermission(BattlePointCommands.ADMIN_PERMISSION_LEVEL) && own.test(source) }
+    }
 
     private fun requestContext(source: CommandSourceStack): BattleApplicationRequestContext =
         BattleApplicationRequestContext(
