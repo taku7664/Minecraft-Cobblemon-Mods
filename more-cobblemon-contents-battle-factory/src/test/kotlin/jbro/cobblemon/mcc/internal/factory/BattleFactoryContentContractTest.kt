@@ -15,6 +15,8 @@ class BattleFactoryContentContractTest {
         assertEquals("factory", root.name)
         val factoryFloor = root.getChild("floor")
         assertEquals(setOf("get", "set", "reset"), factoryFloor.children.map { it.name }.toSet())
+        assertEquals(setOf("player"), root.getChild("session").children.map { it.name }.toSet())
+        assertEquals(setOf("force"), root.getChild("abandon").getChild("player").children.map { it.name }.toSet())
         val factoryGet = factoryFloor.getChild("get")
         assertEquals(setOf("player"), factoryGet.children.map { it.name }.toSet())
         assertEquals(

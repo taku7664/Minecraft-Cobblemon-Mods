@@ -2,7 +2,11 @@ package jbro.cobblemon.mcc.internal.compat.fabric
 
 import jbro.cobblemon.mcc.api.access.BattleContentAccess
 import jbro.cobblemon.mcc.internal.factory.FactoryProgressCommands
+import jbro.cobblemon.mcc.internal.command.MccAdminSource
+import jbro.cobblemon.mcc.internal.command.MccAdminSources
 import jbro.cobblemon.mcc.internal.command.MccCommandContributors
+import jbro.cobblemon.mcc.internal.command.MccPendingResult
+import net.minecraft.network.chat.Component
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
 import jbro.cobblemon.mcc.api.access.ContentAccessAction
@@ -136,6 +140,7 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
     fun registerServer() {
         play
         MccCommandContributors.register { FactoryProgressCommands.build() }
+        MccAdminSources.register(adminSource)
         BattleHubEntries.register(BattleHubEntry(ManagedBattleContentIds.BATTLE_FACTORY) { player, _ -> open(player) })
         FactoryPlayNetworking.registerServer(this)
         ServerLifecycleEvents.SERVER_STARTING.register { server -> currentServer = server }
@@ -246,6 +251,70 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
         } else {
             FactoryPlayResult.Accepted(play.abandon(player.uuid))
         }
+    }
+
+    /** How an operator's abandon of a Battle Factory run went. */
+    enum class AdminAbandon { NO_SESSION, CLOSED, FORFEITED, FORFEIT_UNAVAILABLE }
+
+    /** What an operator sees of [playerId]'s run, or null when they have none. */
+    fun adminDescribe(playerId: UUID): List<Component>? {
+        val run = sessions.snapshot(playerId) ?: return null
+        val key = "command.${jbro.cobblemon.mcc.MoreCobblemonContents.MOD_ID}.factory.admin"
+        val team = run.teamSets.joinToString(", ") { it.speciesId.substringAfter(':') }.ifEmpty { "-" }
+        return listOf(
+            Component.translatable("$key.session", run.format.recordId(run.levelMode), run.phase.name.lowercase()),
+            Component.translatable("$key.wins", run.wins, run.rentAndTradeCount),
+            Component.translatable("$key.team", team),
+            Component.translatable("$key.battle", run.activeBattleId?.toString()?.take(8) ?: "-",
+                sessions.isLaunchPending(playerId, run.runId).toString(), pendingCompletions.completions().count { it.playerId == playerId }),
+        )
+    }
+
+    /**
+     * Ends [playerId]'s run for an operator. Without [force] it is the player's own abandon: a battle in progress
+     * is forfeited and counts as a loss. With [force] a battle is ended without a result and the run is dropped.
+     */
+    fun adminAbandon(playerId: UUID, force: Boolean): AdminAbandon {
+        val run = sessions.snapshot(playerId) ?: return AdminAbandon.NO_SESSION
+        val battleId = run.activeBattleId
+        val result = when {
+            battleId != null && !force ->
+                if (Cobblemon173BattleForfeit.request(playerId, battleId)) AdminAbandon.FORFEITED else AdminAbandon.FORFEIT_UNAVAILABLE
+            else -> {
+                battleId?.let(Cobblemon173ManagedBattleTermination::end)
+                play.abandon(playerId)
+                AdminAbandon.CLOSED
+            }
+        }
+        pushState(playerId)
+        return result
+    }
+
+    private val adminSource = object : MccAdminSource {
+        override val label: Component = Component.translatable("command.${jbro.cobblemon.mcc.MoreCobblemonContents.MOD_ID}.factory.admin.label")
+
+        override fun status(server: MinecraftServer): List<Component> {
+            val key = "command.${jbro.cobblemon.mcc.MoreCobblemonContents.MOD_ID}.factory.admin.status"
+            val catalog = FactoryCatalogResources.store.snapshot()
+            return listOf(
+                if (catalog == null) Component.translatable("$key.catalog_missing")
+                else Component.translatable("$key.catalog", catalog.catalogId, catalog.trainerCount, catalog.setCount),
+                Component.translatable("$key.sessions", sessions.count(), play.activeBattleIds().size, pendingCompletions.size()),
+            )
+        }
+
+        override fun pending(server: MinecraftServer): List<MccPendingResult> = pendingCompletions.completions().map {
+            MccPendingResult(it.playerId, it.battleId, if (it is PendingFactoryCompletion.Victory) "win" else "loss")
+        }
+
+        override fun retryPending(server: MinecraftServer, playerId: UUID?): Int =
+            pendingCompletions.retryMatching({ playerId == null || it.playerId == playerId }) { settleCompletion(server, it) }
+
+        override fun dropPending(server: MinecraftServer, playerId: UUID?): Int =
+            pendingCompletions.drop { playerId == null || it.playerId == playerId }
+
+        override fun busy(server: MinecraftServer, playerId: UUID): Boolean =
+            sessions.snapshot(playerId) != null || pendingCompletions.any { it.playerId == playerId }
     }
 
     fun adminSetFloor(

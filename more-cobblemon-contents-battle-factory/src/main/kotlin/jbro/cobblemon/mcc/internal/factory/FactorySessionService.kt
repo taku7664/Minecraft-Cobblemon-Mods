@@ -165,6 +165,9 @@ internal class FactorySessionService(
     fun activeBattleIds(): Set<UUID> = sessions.values.mapNotNullTo(LinkedHashSet()) { it.activeBattleId }
 
     @Synchronized
+    fun count(): Int = sessions.size
+
+    @Synchronized
     fun isLaunchPending(playerId: UUID, runId: UUID): Boolean = launchingRuns[playerId] == runId
 
     @Synchronized
