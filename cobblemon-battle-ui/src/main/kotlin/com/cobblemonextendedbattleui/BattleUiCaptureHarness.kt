@@ -1,7 +1,13 @@
 package jbro.cobblemon.battleui.extended
 
 import com.cobblemon.mod.common.api.pokemon.PokemonProperties
+import com.cobblemon.mod.common.api.npc.NPCClasses
+import com.cobblemon.mod.common.api.storage.party.NPCPartyStore
 import com.cobblemon.mod.common.battles.BattleBuilder
+import com.cobblemon.mod.common.battles.BattleFormat
+import com.cobblemon.mod.common.entity.npc.NPCEntity
+import jbro.cobblemon.battleui.extended.ui.transcript.BattleTranscriptOverlay
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.client.gui.battle.BattleGUI
 import com.cobblemon.mod.common.client.gui.battle.subscreen.BattleGeneralActionSelection
@@ -24,6 +30,9 @@ import java.util.concurrent.atomic.AtomicReference
  * `ready` skips pending battle narration and waits for the command menu, `wait:N` ticks, `cap:name` screenshots to `screenshots/battle-name-<locale>-<w>x<h>.png`, `key:down|up|left|right|
  * space|esc` presses a key on the battle screen, `mouse:x,y` moves the cursor to GUI coordinates, `fight` and `switch`
  * open those menus as their tiles would, and `info` toggles the information overlay. Then the client stops.
+ * `confirm` presses the bound select key, `log` toggles the battle log, `tile:N` presses the Nth command.
+ * `BATTLE_UI_CAPTURE_TRAINER=single|double|triple` battles a disposable NPC trainer in that format instead of the
+ * wild Pokemon, for the target and forfeit screens.
  * `BATTLE_UI_CAPTURE_LOCALE` (default `ko_kr`) and `BATTLE_UI_CAPTURE_GUI_SCALE` (1-4) set up the client first.
  */
 object BattleUiCaptureHarness {
@@ -53,6 +62,15 @@ object BattleUiCaptureHarness {
         var waitTicks = 0
         val captured = AtomicBoolean(true)
         var done = false
+        val trainerFormat = when (System.getenv("BATTLE_UI_CAPTURE_TRAINER")?.trim()) {
+            null, "" -> null
+            "single" -> BattleFormat.GEN_9_SINGLES
+            "double" -> BattleFormat.GEN_9_DOUBLES
+            "triple" -> BattleFormat.GEN_9_TRIPLES
+            else -> error("Unknown capture trainer format")
+        }
+        val trainer = AtomicReference<NPCEntity?>()
+        var trainerTicks = 0
         var readyTicks = 0
 
         var idleTicks = 0
@@ -110,7 +128,30 @@ object BattleUiCaptureHarness {
                 // The party sync reaches the client a few ticks after the server gives the Pokemon.
                 if (ticks < 40) return@EndTick
                 val uuid = player.uuid
-                server.execute {
+                if (trainerFormat != null) {
+                    // A trainer needs a few ticks in the world before Cobblemon accepts a challenge.
+                    if (trainerTicks == 0) server.execute {
+                        val serverPlayer = checkNotNull(server.playerManager.getPlayer(uuid))
+                        val world = serverPlayer.serverWorld
+                        val npc = NPCEntity(world)
+                        npc.npc = NPCClasses.classes.sortedBy { it.id.toString() }.first()
+                        val npcParty = NPCPartyStore(npc)
+                        listOf("charizard", "squirtle", "meowth").forEach { species ->
+                            check(npcParty.add(PokemonProperties.parse("$species level=50").create())) { "Could not add $species" }
+                        }
+                        npcParty.initialize()
+                        npc.party = npcParty
+                        npc.refreshPositionAndAngles(serverPlayer.x + 3.0, serverPlayer.y, serverPlayer.z + 3.0, 150f, 0f)
+                        check(world.spawnEntity(npc)) { "Could not spawn the capture trainer" }
+                        trainer.set(npc)
+                    }
+                    if (++trainerTicks < 30 || trainer.get() == null) return@EndTick
+                    server.execute {
+                        val serverPlayer = checkNotNull(server.playerManager.getPlayer(uuid))
+                        logger.info("Battle capture started a trainer battle: {}",
+                            BattleBuilder.pvn(serverPlayer, checkNotNull(trainer.get()), battleFormat = trainerFormat))
+                    }
+                } else server.execute {
                     val serverPlayer = checkNotNull(server.playerManager.getPlayer(uuid))
                     val world = serverPlayer.serverWorld
                     val entity = PokemonProperties.parse(wild).createEntity(world)
@@ -177,6 +218,22 @@ object BattleUiCaptureHarness {
                     else battleScreen.changeActionSelection(BattleSwitchPokemonSelection(battleScreen, general.request))
                 }
                 "info" -> BattleInfoPanel.toggle()
+                "confirm" -> {
+                    val key = KeyBindingHelper.getBoundKeyOf(CobblemonExtendedBattleUIClient.selectActionKey).code
+                    battleScreen.keyPressed(key, 0, 0)
+                    BattleDialogue.releaseConfirm(key, 0)
+                }
+                "log" -> {
+                    val key = KeyBindingHelper.getBoundKeyOf(CobblemonExtendedBattleUIClient.toggleLogKey).code
+                    BattleTranscriptOverlay.keyPressed(key, 0)
+                    BattleTranscriptOverlay.releaseKey(key, 0)
+                }
+                "tile" -> {
+                    val general = checkNotNull(battleScreen.getCurrentActionSelection() as? BattleGeneralActionSelection) {
+                        "tile needs the general command menu"
+                    }
+                    general.tiles[argument.toInt()].onClick.invoke()
+                }
                 else -> error("Unknown capture step $step")
             }
             logger.info("Battle capture step {}", step)
