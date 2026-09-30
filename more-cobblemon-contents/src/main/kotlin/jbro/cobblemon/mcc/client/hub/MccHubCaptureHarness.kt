@@ -7,6 +7,7 @@ import jbro.cobblemon.mcc.client.MccBattleHubClientState
 import jbro.cobblemon.mcc.internal.hub.BattleHubRecordView
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Screenshot
 import net.minecraft.client.gui.screens.BackupConfirmScreen
@@ -29,6 +30,8 @@ import java.util.concurrent.atomic.AtomicReference
  * `MCC_HUB_CAPTURE_THEME=<style.palette,...>` (for example `ds_window.tower_lobby,pixel_frame.factory_night`) draws
  * the hub in the first theme, names the captures after it, and
  * once the last step is captured redraws the tab in each further theme and captures it again, all in one launch.
+ * `MCC_HUB_CAPTURE_PERF=<frames>` then, with the frame cap and vsync off, times that many frames of the open hub and
+ * logs how long the hub took to draw and how long each frame took, before closing it.
  */
 object MccHubCaptureHarness {
     private val logger = MoreCobblemonContents.LOGGER
@@ -58,6 +61,9 @@ object MccHubCaptureHarness {
         var partyWait = 0
 
         val namedThemes = System.getenv("MCC_HUB_CAPTURE_THEME") != null
+        val perfFrames = System.getenv("MCC_HUB_CAPTURE_PERF")?.trim()?.toIntOrNull()?.takeIf { it > 0 }
+        val perf = perfFrames?.let(::HubPerf)
+        var perfTicks = 0
         fun themeSuffix() = if (namedThemes) "-${MccHubTheme.id}" else ""
         var guiScaleApplied = guiScale == null
         val languageReady = AtomicBoolean(false)
@@ -223,6 +229,18 @@ object MccHubCaptureHarness {
                 logger.info("Pressed hub button {}", label)
                 return@EndTick
             }
+            if (requested && captured.get() && perf != null && !perf.done) {
+                if (perfTicks++ == 0) {
+                    client.options.framerateLimit().set(260)
+                    client.options.enableVsync().set(false)
+                    perf.hook(checkNotNull(client.screen as? MccHubScreen) { "Hub closed before timing it" })
+                }
+                // A second for the frame rate to settle after the cap is lifted.
+                if (perfTicks == 20) perf.start()
+                if (perf.full) perf.report()
+                if (perfTicks >= 2400) error("Hub timing did not collect ${perf.frames} frames")
+                return@EndTick
+            }
             if (requested && captured.get()) {
                 val screen = checkNotNull(client.screen)
                 screen.onClose()
@@ -234,6 +252,44 @@ object MccHubCaptureHarness {
                 error("Hub capture timed out")
             }
         })
+    }
+
+    /** Times [frames] frames of one hub: the hub's own drawing, and the whole frame from one hub draw to the next. */
+    private class HubPerf(val frames: Int) {
+        private val draw = LongArray(frames)
+        private val frame = LongArray(frames)
+        private var count = 0
+        private var recording = false
+        private var drawStart = 0L
+        private var lastEnd = 0L
+        var done = false
+            private set
+        val full get() = count >= frames
+
+        fun hook(screen: MccHubScreen) {
+            ScreenEvents.beforeRender(screen).register { _, _, _, _, _ -> drawStart = System.nanoTime() }
+            ScreenEvents.afterRender(screen).register { _, _, _, _, _ ->
+                val now = System.nanoTime()
+                if (recording && count < frames && lastEnd != 0L) {
+                    draw[count] = now - drawStart
+                    frame[count] = now - lastEnd
+                    count += 1
+                }
+                lastEnd = now
+            }
+        }
+
+        fun start() {
+            recording = true
+        }
+
+        fun report() {
+            fun ms(values: LongArray, at: Double) = values.sorted()[((values.size - 1) * at).toInt()] / 1_000_000.0
+            logger.info("Hub timing over {} frames: draw median {} ms p90 {} ms, frame median {} ms p90 {} ms ({} fps)",
+                frames, "%.3f".format(ms(draw, 0.5)), "%.3f".format(ms(draw, 0.9)), "%.3f".format(ms(frame, 0.5)),
+                "%.3f".format(ms(frame, 0.9)), "%.1f".format(1000.0 / ms(frame, 0.5)))
+            done = true
+        }
     }
 
     /** Shows the content tabs in the rail even when the capture runs without the content mods and their names. */
