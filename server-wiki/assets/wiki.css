@@ -1,0 +1,337 @@
+/*
+ * Server wiki styles in the MCC hub look: the UI kit's ds_window style in the tower_lobby palette.
+ * Colours are the palette's values from cobblemon-ui-kit (CobblemonUiThemeComposer, TOWER_LOBBY); change them
+ * together with the hub so the wiki keeps matching it.
+ */
+
+@font-face {
+  /* Optional: drop a Korean pixel font (for example Galmuri11, OFL) at assets/fonts/wiki.woff2. */
+  font-family: "Wiki Pixel";
+  src: url("fonts/wiki.woff2") format("woff2");
+  font-display: swap;
+}
+
+:root {
+  --backdrop: #141c26;
+  --shell: #5a6e84;
+  --title-bar: #34435a;
+  --title-shade: #222c3c;
+  --panel: #eef1f2;
+  --panel-alt: #d6dadc;
+  --panel-text: #283440;
+  --panel-text-dim: #5a6878;
+  --border: #283440;
+  --frame-highlight: #ffffff;
+  --frame-shade: #9aa6b0;
+  --trim: #c04038;
+  --info-band: #8098b0;
+  --primary: #2c9ccc;
+  --primary-hover: #44c4dc;
+  --primary-pressed: #1e7aa6;
+  --selected: #ecbc2c;
+  --selected-text: #3a2c08;
+  --danger: #c04038;
+  --good: #4fa860;
+  --text: #f2f5f8;
+  --text-secondary: #d6dee6;
+  --text-dim: #a9b8c8;
+  --cursor: #f07820;
+
+  --radius: 6px;
+  --gap: 12px;
+  --font: "Wiki Pixel", "Galmuri11", "NeoDunggeunmo", "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --mono: "Wiki Pixel", "D2Coding", "Consolas", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--backdrop); }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 16px;
+  color: var(--panel-text);
+  font: 15px/1.65 var(--font);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(90, 110, 132, 0.35), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 4px),
+    var(--backdrop);
+}
+
+a { color: var(--primary-pressed); }
+a:hover { color: var(--primary); }
+
+/* ---- The window: a shell frame like the hub's -------------------------------------------------------------- */
+
+.wiki-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: var(--shell);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 2px var(--frame-shade), 0 6px 0 rgba(0, 0, 0, 0.35);
+  padding: 6px;
+}
+
+.wiki-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px;
+  background: var(--title-bar);
+  border-radius: 4px 4px 0 0;
+  border-bottom: 3px solid var(--trim);
+  color: var(--text);
+}
+
+.wiki-brand {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  min-width: 0;
+  column-gap: 10px;
+  color: var(--text);
+  text-decoration: none;
+}
+.wiki-brand:hover { color: var(--text); }
+.wiki-brand strong { font-size: 20px; letter-spacing: 0.06em; text-transform: uppercase; }
+.wiki-brand span { color: var(--selected); font-size: 13px; letter-spacing: 0.2em; }
+
+.wiki-header .spacer { flex: 1; }
+
+.wiki-search { position: relative; width: min(280px, 45vw); }
+.wiki-search input {
+  width: 100%;
+  padding: 6px 10px;
+  font: inherit;
+  color: var(--panel-text);
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  outline: none;
+}
+.wiki-search input:focus { border-color: var(--cursor); }
+.wiki-search-results {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
+}
+.wiki-search-results:empty { display: none; }
+.wiki-search-results a {
+  display: block;
+  padding: 4px 8px;
+  color: var(--panel-text);
+  text-decoration: none;
+  border-radius: 3px;
+}
+.wiki-search-results a:hover,
+.wiki-search-results a.active { background: var(--primary); color: var(--text); }
+.wiki-search-results small { color: var(--panel-text-dim); margin-left: 6px; }
+.wiki-search-results a:hover small,
+.wiki-search-results a.active small { color: var(--text-secondary); }
+
+.wiki-body {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 6px;
+  padding-top: 6px;
+}
+
+/* ---- Left rail: the hub's tab buttons --------------------------------------------------------------------- */
+
+.wiki-rail {
+  align-self: start;
+  position: sticky;
+  top: 16px;
+  padding: 10px;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--frame-highlight);
+}
+
+.wiki-rail h2 {
+  margin: 12px 4px 6px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--panel-text-dim);
+  text-transform: uppercase;
+}
+.wiki-rail h2:first-child { margin-top: 0; }
+
+.wiki-rail a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 3px 0;
+  padding: 6px 10px;
+  color: var(--panel-text);
+  text-decoration: none;
+  background: var(--panel);
+  border: 2px solid transparent;
+  border-radius: 4px;
+}
+.wiki-rail a:hover { background: var(--panel-alt); }
+.wiki-rail a.current {
+  border-color: var(--cursor);
+  background: var(--frame-highlight);
+}
+.wiki-rail .icon { width: 18px; text-align: center; }
+
+/* ---- Content panel ------------------------------------------------------------------------------------------ */
+
+.wiki-content {
+  min-width: 0;
+  padding: 20px 26px 26px;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--frame-highlight);
+}
+
+.wiki-crumbs { font-size: 13px; color: var(--panel-text-dim); margin-bottom: 4px; }
+.wiki-crumbs a { color: var(--panel-text-dim); }
+
+.wiki-content h1 {
+  margin: 0 0 16px;
+  padding-bottom: 8px;
+  font-size: 26px;
+  border-bottom: 3px solid var(--trim);
+}
+.wiki-content h2 {
+  margin: 28px 0 10px;
+  padding-bottom: 4px;
+  font-size: 19px;
+  border-bottom: 2px solid var(--info-band);
+}
+.wiki-content h3 { margin: 20px 0 8px; font-size: 16px; }
+.wiki-content p { margin: 0 0 12px; }
+.wiki-content ul, .wiki-content ol { margin: 0 0 12px; padding-left: 22px; }
+
+.wiki-toc {
+  margin: 0 0 18px;
+  padding: 10px 14px;
+  background: var(--panel-alt);
+  border-radius: 4px;
+  font-size: 14px;
+}
+.wiki-toc:empty { display: none; }
+.wiki-toc strong { display: block; margin-bottom: 4px; color: var(--panel-text-dim); font-size: 12px; letter-spacing: 0.12em; }
+.wiki-toc ol { margin: 0; padding-left: 18px; }
+
+/* ---- Components --------------------------------------------------------------------------------------------- */
+
+/* A card: a sub-panel like the dashboard's trainer and record boxes. */
+.card {
+  margin: 0 0 var(--gap);
+  padding: 12px 14px;
+  background: var(--frame-highlight);
+  border: 2px solid var(--frame-shade);
+  border-radius: 4px;
+}
+.card > h3:first-child { margin-top: 0; padding-bottom: 4px; border-bottom: 2px solid var(--trim); }
+
+.grid { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); margin-bottom: var(--gap); }
+.grid > .card { margin: 0; }
+
+/* A stat tile: a label over a large value, like the record totals. */
+.stat { padding: 8px 12px; background: var(--frame-highlight); border-left: 4px solid var(--primary); border-radius: 3px; }
+.stat small { display: block; color: var(--panel-text-dim); font-size: 12px; }
+.stat b { font-size: 22px; }
+
+/* A callout: an info, tip or warning note. */
+.note {
+  margin: 0 0 var(--gap);
+  padding: 10px 14px;
+  background: var(--frame-highlight);
+  border-left: 4px solid var(--primary);
+  border-radius: 3px;
+}
+.note.tip { border-left-color: var(--good); }
+.note.warn { border-left-color: var(--selected); }
+.note.danger { border-left-color: var(--danger); }
+.note > strong:first-child { display: block; margin-bottom: 2px; }
+
+table {
+  width: 100%;
+  margin: 0 0 var(--gap);
+  border-collapse: collapse;
+  background: var(--frame-highlight);
+  border: 2px solid var(--frame-shade);
+  font-size: 14px;
+}
+th, td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--panel-alt); vertical-align: top; }
+th { background: var(--title-bar); color: var(--text); font-weight: normal; }
+tbody tr:nth-child(even) td { background: var(--panel); }
+
+code, kbd, pre { font-family: var(--mono); }
+code { padding: 1px 5px; background: var(--panel-alt); border-radius: 3px; font-size: 0.92em; }
+pre { margin: 0 0 var(--gap); padding: 10px 14px; overflow-x: auto; background: var(--title-shade); color: var(--text); border-radius: 4px; }
+pre code { padding: 0; background: none; }
+kbd {
+  padding: 1px 6px;
+  background: var(--frame-highlight);
+  border: 2px solid var(--border);
+  border-bottom-width: 3px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+/* A badge: a small coloured label, such as a tier or "OP only". */
+.badge {
+  display: inline-block;
+  padding: 0 7px;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--text);
+  background: var(--primary);
+  border-radius: 10px;
+  vertical-align: 2px;
+}
+.badge.gold { background: var(--selected); color: var(--selected-text); }
+.badge.red { background: var(--danger); }
+.badge.green { background: var(--good); }
+.badge.gray { background: var(--panel-text-dim); }
+
+/* ---- Previous and next ------------------------------------------------------------------------------------- */
+
+.wiki-pager { display: flex; justify-content: space-between; gap: var(--gap); margin-top: 28px; }
+.wiki-pager a {
+  flex: 1;
+  max-width: 48%;
+  padding: 8px 12px;
+  color: var(--text);
+  text-decoration: none;
+  background: var(--primary);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  box-shadow: inset 0 -3px 0 var(--primary-pressed);
+}
+.wiki-pager a:hover { background: var(--primary-hover); }
+.wiki-pager a.next { margin-left: auto; text-align: right; }
+.wiki-pager small { display: block; opacity: 0.8; font-size: 12px; }
+
+.wiki-footer { padding: 8px 6px 2px; color: var(--text-dim); font-size: 12px; text-align: center; }
+
+/* ---- Narrow windows: the rail goes above the content ------------------------------------------------------ */
+
+@media (max-width: 760px) {
+  body { padding: 8px; }
+  .wiki-header { flex-wrap: wrap; }
+  .wiki-header .spacer { display: none; }
+  .wiki-brand strong { font-size: 17px; }
+  .wiki-search { width: 100%; }
+  .wiki-body { grid-template-columns: 1fr; }
+  .wiki-rail { position: static; }
+  .wiki-content { padding: 16px; }
+}
