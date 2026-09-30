@@ -1,44 +1,135 @@
 package jbro.cobblemon.battleui.extended.ui.shared
 
+import jbro.cobblemon.uikit.UiSmoothCorners
 import net.minecraft.client.gui.DrawContext
 import kotlin.math.roundToInt
 
 object BattleSurfaceRenderer {
-    /** Each pixel is emitted once, so translucent borders never acquire fill underneath. */
+    /**
+     * Straight edges and the inside are solid runs; each corner pixel is the mix of the border and fill covering it
+     * (UI Kit's [UiSmoothCorners]), so rounded and cut corners are anti-aliased. Each pixel is emitted once, so
+     * translucent borders never acquire fill underneath.
+     */
     @JvmStatic
     fun draw(context: DrawContext, x: Int, y: Int, width: Int, height: Int, style: BattleSurface, opacity: Float = 1f) {
         if (width <= 0 || height <= 0 || opacity <= 0f) return
-        val limit = minOf((width - 1) / 2, (height - 1) / 2)
+        val limit = if (style.rounded) minOf(width, height) / 2 else minOf((width - 1) / 2, (height - 1) / 2)
         val cuts = style.cornerCuts ?: BattleCornerCuts(
             if (style.corners and 1 != 0) style.cut else 0,
             if (style.corners and 2 != 0) style.cut else 0,
             if (style.corners and 4 != 0) style.cut else 0,
             if (style.corners and 8 != 0) style.cut else 0)
-        val tl = cuts.topLeft.coerceAtMost(limit)
-        val tr = cuts.topRight.coerceAtMost(limit)
-        val br = cuts.bottomRight.coerceAtMost(limit)
-        val bl = cuts.bottomLeft.coerceAtMost(limit)
+        val tl = cuts.topLeft.coerceIn(0, limit)
+        val tr = cuts.topRight.coerceIn(0, limit)
+        val br = cuts.bottomRight.coerceIn(0, limit)
+        val bl = cuts.bottomLeft.coerceIn(0, limit)
         val border = style.borderWidth.coerceAtMost((minOf(width, height) + 1) / 2)
-        val innerWidth = width - border * 2
-        val innerHeight = height - border * 2
+        val borderColor = withOpacity(style.border, opacity)
+        val fillOpacity = opacity * style.backgroundOpacity
+        val insets = if (border > 0) listOf(0, border) else listOf(0)
+        fun layerColor(layer: Int, row: Int): Int =
+            if (border > 0 && layer == 0) borderColor
+            else withOpacity(interpolate(style.top, style.bottom, if (height == 1) 0f else row.toFloat() / (height - 1)), fillOpacity)
+        val kind = if (style.rounded) UiSmoothCorners.Kind.ROUND else UiSmoothCorners.Kind.CUT
+        fun coverage(size: Int) = if (size > 0) UiSmoothCorners.coverage(kind, size, insets) else emptyList()
+        val topLeft = coverage(tl)
+        val topRight = coverage(tr)
+        val bottomRight = coverage(br)
+        val bottomLeft = coverage(bl)
+
         for (row in 0 until height) {
-            val left = insetAsymmetric(row, height, tl, bl)
-            val right = width - insetAsymmetric(row, height, tr, br)
-            val edgeColor = withOpacity(style.border, opacity)
-            if (border > 0 && (innerWidth <= 0 || innerHeight <= 0 || row < border || row >= height - border)) {
-                context.fill(x + left, y + row, x + right, y + row + 1, edgeColor)
-                continue
+            val depth = minOf(row, height - 1 - row)
+            // Columns the corner boxes own on this row; the runs stay between them.
+            val left = if (row < tl) tl else if (height - 1 - row < bl) bl else 0
+            val right = width - if (row < tr) tr else if (height - 1 - row < br) br else 0
+            insets.forEachIndexed { layer, inset ->
+                if (depth < inset) return@forEachIndexed
+                val color = layerColor(layer, row)
+                val next = insets.getOrNull(layer + 1)
+                if (next != null && depth >= next) {
+                    run(context, x, y + row, maxOf(inset, left), minOf(next, right), color)
+                    run(context, x, y + row, maxOf(width - next, left), minOf(width - inset, right), color)
+                } else {
+                    run(context, x, y + row, maxOf(inset, left), minOf(width - inset, right), color)
+                }
             }
-            val start = (border + insetAsymmetric(row - border, innerHeight,
-                (tl - border).coerceAtLeast(0), (bl - border).coerceAtLeast(0))).coerceIn(left, right)
-            val end = (width - border - insetAsymmetric(row - border, innerHeight,
-                (tr - border).coerceAtLeast(0), (br - border).coerceAtLeast(0))).coerceIn(start, right)
-            if (start > left) context.fill(x + left, y + row, x + start, y + row + 1, edgeColor)
-            if (end < right) context.fill(x + end, y + row, x + right, y + row + 1, edgeColor)
-            val fill = interpolate(style.top, style.bottom, if (height == 1) 0f else row.toFloat() / (height - 1))
-            val color = withOpacity(fill, opacity * style.backgroundOpacity)
-            if (color ushr 24 != 0 && end > start) context.fill(x + start, y + row, x + end, y + row + 1, color)
+            if (left > 0) {
+                val corner = if (row < tl) topLeft else bottomLeft
+                val py = if (row < tl) row else height - 1 - row
+                for (px in 0 until left) cornerPixel(context, x + px, y + row, corner, py * left + px, row, ::layerColor)
+            }
+            if (right < width) {
+                val size = width - right
+                val corner = if (row < tr) topRight else bottomRight
+                val py = if (row < tr) row else height - 1 - row
+                for (px in 0 until size) cornerPixel(context, x + width - 1 - px, y + row, corner, py * size + px, row, ::layerColor)
+            }
         }
+    }
+
+    /** A pill: a surface whose ends are half-circles, for bars, badges and markers. */
+    @JvmStatic
+    fun capsule(context: DrawContext, x: Int, y: Int, width: Int, height: Int, color: Int, opacity: Float = 1f) {
+        if (width <= 0 || height <= 0) return
+        draw(context, x, y, width, height, BattleSurface(color, color, cut = minOf(width, height) / 2, rounded = true), opacity)
+    }
+
+    /** A rounded gauge: the track, then [ratio] of its inner width in [fill], both capsules. */
+    @JvmStatic
+    fun gauge(context: DrawContext, x: Int, y: Int, width: Int, height: Int, ratio: Float,
+              track: Int, fill: Int, opacity: Float = 1f, inset: Int = 1) {
+        capsule(context, x, y, width, height, track, opacity)
+        val innerWidth = width - inset * 2
+        val filled = (innerWidth * ratio.coerceIn(0f, 1f)).roundToInt()
+        if (filled > 0) capsule(context, x + inset, y + inset, filled, height - inset * 2, fill, opacity)
+    }
+
+    /**
+     * A soft halo around a rounded surface: [spread] one-pixel rings whose alpha falls off outward. Drawn before the
+     * surface it surrounds, it reads as light rather than an outline.
+     */
+    @JvmStatic
+    fun glow(context: DrawContext, x: Int, y: Int, width: Int, height: Int, corners: BattleCornerCuts,
+             color: Int, spread: Int, opacity: Float) {
+        if (opacity <= 0f || spread <= 0) return
+        for (ring in 1..spread) {
+            val falloff = 1f - (ring - 1f) / spread
+            val ringCorners = BattleCornerCuts(grow(corners.topLeft, ring), grow(corners.topRight, ring),
+                grow(corners.bottomRight, ring), grow(corners.bottomLeft, ring))
+            draw(context, x - ring, y - ring, width + ring * 2, height + ring * 2,
+                BattleSurface(0, 0, color, 1, cornerCuts = ringCorners, rounded = true), opacity * falloff * falloff)
+        }
+    }
+
+    private fun grow(size: Int, by: Int) = if (size > 0) size + by else 0
+
+    private fun run(context: DrawContext, x: Int, y: Int, start: Int, end: Int, color: Int) {
+        if (end <= start || color ushr 24 == 0) return
+        context.fill(x + start, y, x + end, y + 1, color)
+    }
+
+    /** One corner pixel: each layer weighted by how much of the pixel it covers, over transparency. */
+    private inline fun cornerPixel(context: DrawContext, x: Int, y: Int, coverage: List<FloatArray>, index: Int,
+                                   row: Int, color: (Int, Int) -> Int) {
+        var alpha = 0f
+        var red = 0f
+        var green = 0f
+        var blue = 0f
+        for (layer in coverage.indices) {
+            val covered = coverage[layer][index] - (coverage.getOrNull(layer + 1)?.get(index) ?: 0f)
+            if (covered <= 0f) continue
+            val argb = color(layer, row)
+            val weight = covered * ((argb ushr 24) and 0xFF) / 255f
+            alpha += weight
+            red += weight * ((argb ushr 16) and 0xFF)
+            green += weight * ((argb ushr 8) and 0xFF)
+            blue += weight * (argb and 0xFF)
+        }
+        if (alpha <= 0.004f) return
+        context.fill(x, y, x + 1, y + 1, ((alpha * 255f).roundToInt().coerceIn(0, 255) shl 24) or
+            ((red / alpha).roundToInt().coerceIn(0, 255) shl 16) or
+            ((green / alpha).roundToInt().coerceIn(0, 255) shl 8) or
+            (blue / alpha).roundToInt().coerceIn(0, 255))
     }
 
     @JvmStatic

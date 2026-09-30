@@ -19,10 +19,10 @@ object BattleUiTheme {
     const val TRACK = 0xFF101724.toInt()
     const val MODAL_SCRIM = 0x8C000000.toInt()
 
-    val shell = BattleSurface(0xF214263B.toInt(), 0xF2080E1D.toInt(), CYAN, 0, 6)
+    val shell = BattleSurface(0xF214263B.toInt(), 0xF2080E1D.toInt(), CYAN, 0, 8)
     val panel = BattleSurface(0xF2182941.toInt(), 0xF2101A2D.toInt(), BORDER, 0, 3)
     val modalBackdrop = panel.copy(top = 0xB32A4664.toInt(), bottom = 0xC4193049.toInt(),
-        borderWidth = 0, cornerCuts = BattleCornerCuts(5, 5, 8, 8))
+        borderWidth = 0, cornerCuts = BattleCornerCuts(8, 8, 8, 8))
     val row = BattleSurface(PANEL_ALT, PANEL_ALT, borderWidth = 0, cut = 0)
     val primary = BattleSurface(0xFF39E4E4.toInt(), 0xFF269BA3.toInt(), CYAN, 0, 4, 0b1010)
     val secondary = BattleSurface(0xFF203D55.toInt(), 0xFF203D55.toInt(), BORDER, 0, 0)
@@ -45,7 +45,10 @@ object BattleStatusPalette {
     }
 }
 
-/** Corner bits clockwise from top-left. Opacity multiplies fill alpha only. */
+/**
+ * Corner bits clockwise from top-left. Opacity multiplies fill alpha only. [rounded] draws each corner as a quarter
+ * circle of its size instead of a 45° cut; both are anti-aliased.
+ */
 data class BattleSurface(
     val top: Int,
     val bottom: Int = top,
@@ -54,7 +57,8 @@ data class BattleSurface(
     val cut: Int = 3,
     val corners: Int = 15,
     val backgroundOpacity: Float = 1f,
-    val cornerCuts: BattleCornerCuts? = null
+    val cornerCuts: BattleCornerCuts? = null,
+    val rounded: Boolean = true
 ) {
     init {
         require(cut >= 0 && borderWidth >= 0)

@@ -11,7 +11,7 @@ class BattleMenuLayoutTest {
         List<UiRect> commands = BattleMenuLayout.vertical(427, 240, 90, 26, 4, 0, 10, 3);
 
         assertEquals(427, commands.getFirst().x() + commands.getFirst().width());
-        assertEquals(332, commands.getFirst().x() - BattleScreenGeometry.FOCUS_PROTRUSION);
+        assertEquals(330, commands.getFirst().x() - BattleScreenGeometry.FOCUS_PROTRUSION);
     }
 
     @Test

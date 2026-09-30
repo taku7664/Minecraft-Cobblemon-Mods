@@ -155,7 +155,7 @@ object BattleTranscriptOverlay {
                     val boxX = if (speaker.left) faceX + avatar + 8 else faceX - 8 - bubbleWidth
                     val accent = if (speaker.left) BattleUiTheme.CYAN else BattleUiTheme.TRANSCRIPT_OPPONENT
                     BattleSurfaceRenderer.draw(context, boxX, rowY, bubbleWidth, row.height - 10, if (speaker.left) BattleUiTheme.transcriptSelf else BattleUiTheme.transcriptOpponent)
-                    BattleSurfaceRenderer.draw(context, faceX, rowY, avatar, avatar, BattleUiTheme.panel.copy(cut = 0, borderWidth = 0))
+                    BattleSurfaceRenderer.draw(context, faceX, rowY, avatar, avatar, BattleUiTheme.panel.copy(cut = 5, borderWidth = 0))
                     context.fill(faceX, rowY + avatar - 1, faceX + avatar, rowY + avatar, accent)
                     // Fallback remains a labelled unknown portrait, never another Pokémon or a trainer.
                     if (!TranscriptPortraits.draw(context, speaker, faceX + 2, rowY + 2, avatar - 4)) {
@@ -184,8 +184,8 @@ object BattleTranscriptOverlay {
         if (maxScroll > 0) {
             val thumb = (viewportHeight.toFloat() * viewportHeight / totalHeight).toInt().coerceAtLeast(10)
             val thumbY = top + (viewportHeight - thumb) * scroll / maxScroll
-            context.fill(x + width - 6, top, x + width - 4, bottom, BattleUiTheme.TRACK)
-            context.fill(x + width - 6, thumbY, x + width - 4, thumbY + thumb, BattleUiTheme.CYAN)
+            BattleSurfaceRenderer.capsule(context, x + width - 7, top, 3, bottom - top, BattleUiTheme.TRACK)
+            BattleSurfaceRenderer.capsule(context, x + width - 7, thumbY, 3, thumb, BattleUiTheme.CYAN)
         }
         context.fill(x + 14, bottom + 6, x + width - 14, bottom + 7, BattleUiTheme.BORDER)
         val close = Text.translatable("cobblemon_battle_ui.transcript.close", CobblemonExtendedBattleUIClient.toggleLogKey.boundKeyLocalizedText).string

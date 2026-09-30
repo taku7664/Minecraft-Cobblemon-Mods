@@ -27,6 +27,8 @@ internal data class BattleTargetCard(
 
 /** Shared target composition for the functionless draft and Cobblemon's live selection. */
 object BattleTargetRenderer {
+    private val TARGET_CURSOR = Any()
+
     @JvmStatic
     fun supports(selection: BattleTargetSelection): Boolean {
         val slots = selection.request.activePokemon.getSidePokemon().count()
@@ -93,7 +95,7 @@ object BattleTargetRenderer {
         BattleSurfaceRenderer.draw(context, panel.x() + 3, panel.y() + 3,
             panel.width() - 6, 16,
             BattleUiTheme.panel.copy(top = 0xF8233A53.toInt(), bottom = 0xF814283E.toInt(),
-                cornerCuts = BattleCornerCuts(topLeft = 3, topRight = 3)), opacity)
+                cornerCuts = BattleCornerCuts(topLeft = 5, topRight = 5)), opacity)
         drawText(context, Text.translatable("cobblemon_battle_ui.target.title").string,
             panel.x() + 10, panel.y() + 6, BattleUiTheme.TEXT, opacity)
         drawText(context, Text.translatable("cobblemon_battle_ui.target.opponent").string,
@@ -115,11 +117,19 @@ object BattleTargetRenderer {
         val portraitSize = 18
         val cardOpacity = opacity * if (card.selectable) 1f else .7f
         val focused = card.focused && card.selectable
+        val emphasis = BattleFocusMotion.emphasis(card.uuid to "target", focused)
+        val corners = BattleCornerCuts(5, 5, 5, 5)
+        BattleControlRenderer.drawFocusHalo(context, x, y, rect.width(), rect.height(), corners,
+            0xFFCCEE67.toInt(), emphasis, opacity)
         BattleSurfaceRenderer.draw(context, x, y, rect.width(), rect.height(),
             BattleUiTheme.panel.copy(
-                top = if (focused) 0xFFCCEE67.toInt() else if (card.ally) 0xF9233851.toInt() else 0xF84D3048.toInt(),
-                bottom = if (focused) 0xFFA8CA45.toInt() else if (card.ally) 0xF9182B42.toInt() else 0xF8282036.toInt(),
-                borderWidth = 0, cornerCuts = BattleCornerCuts(topRight = 3, bottomRight = 7)), cardOpacity)
+                top = BattleSurfaceRenderer.interpolate(if (card.ally) 0xF9233851.toInt() else 0xF84D3048.toInt(),
+                    0xFFCCEE67.toInt(), emphasis),
+                bottom = BattleSurfaceRenderer.interpolate(if (card.ally) 0xF9182B42.toInt() else 0xF8282036.toInt(),
+                    0xFFA8CA45.toInt(), emphasis),
+                borderWidth = 0, cornerCuts = corners), cardOpacity)
+        if (focused) BattleControlRenderer.drawCursor(context, TARGET_CURSOR, x - 2, y + rect.height() / 2f,
+            0xFFCCEE67.toInt(), opacity)
         val font = MinecraftClient.getInstance().textRenderer
         val textX = x + if (card.selectable) 7 else 13
         val portraitX = x + rect.width() - portraitSize - 3

@@ -13,7 +13,6 @@ import java.util.UUID
 internal object BattleHudCardRenderer {
     const val WIDTH = 136
     const val HEIGHT = 25
-    private const val END_SLOPE = 12
     private const val BAR_WIDTH = 45
     private const val EXP_WIDTH = 31
     private val emptyName = Text.empty()
@@ -57,22 +56,17 @@ internal object BattleHudCardRenderer {
 
         val ratio = card.hp.coerceIn(0f, 1f)
         val barY = y + 14
-        context.fill(contentX, barY, contentX + BAR_WIDTH, barY + 4,
-            BattleSurfaceRenderer.withOpacity(BattleUiTheme.TRACK, card.opacity))
         val hpColor = when {
             ratio > .5f -> BattleUiTheme.GOOD
             ratio > .25f -> BattleUiTheme.FOCUS
             else -> BattleUiTheme.DANGER
         }
-        context.fill(contentX + 1, barY + 1,
-            contentX + 1 + ((BAR_WIDTH - 2) * ratio).toInt(), barY + 3,
-            BattleSurfaceRenderer.withOpacity(hpColor, card.opacity))
+        BattleSurfaceRenderer.gauge(context, contentX, barY, BAR_WIDTH, 5, ratio,
+            BattleUiTheme.TRACK, hpColor, card.opacity)
         card.experience?.let { progress ->
             val expX = contentX + BAR_WIDTH - EXP_WIDTH
-            context.fill(expX, y + 21, expX + EXP_WIDTH, y + 23,
-                BattleSurfaceRenderer.withOpacity(BattleUiTheme.TRACK, card.opacity))
-            context.fill(expX, y + 21, expX + (EXP_WIDTH * progress.coerceIn(0f, 1f)).toInt(),
-                y + 23, BattleSurfaceRenderer.withOpacity(0xFF62BFEF.toInt(), card.opacity))
+            BattleSurfaceRenderer.gauge(context, expX, y + 21, EXP_WIDTH, 3, progress,
+                BattleUiTheme.TRACK, 0xFF62BFEF.toInt(), card.opacity, inset = 0)
         }
         context.drawText(font, card.health, contentRight - font.getWidth(card.health), y + 14,
             BattleSurfaceRenderer.withOpacity(BattleUiTheme.TEXT, card.opacity), false)
@@ -83,8 +77,8 @@ internal object BattleHudCardRenderer {
             val badgeWidth = font.getWidth(label) + 4
             val badgeX = if (ally) x + WIDTH - 8 else x - badgeWidth + 8
             val badgeY = y + HEIGHT - 9
-            context.fill(badgeX, badgeY, badgeX + badgeWidth, badgeY + 9,
-                BattleSurfaceRenderer.withOpacity(BattleStatusPalette.background(status), card.opacity))
+            BattleSurfaceRenderer.capsule(context, badgeX - 2, badgeY, badgeWidth + 4, 9,
+                BattleStatusPalette.background(status), card.opacity)
             context.drawText(font, label, badgeX + 2, badgeY,
                 BattleSurfaceRenderer.withOpacity(0xFF182337.toInt(), card.opacity), false)
         }
@@ -98,22 +92,24 @@ internal object BattleHudCardRenderer {
         }
     }
 
+    /**
+     * The card is flush with its screen edge and rounded at its inner end: a large radius at the top, a small one at
+     * the bottom, so it keeps the old slope's direction. A band in the side's color follows the inner end's curve.
+     */
     private fun drawSlantedPanel(context: DrawContext, x: Int, y: Int, ally: Boolean, card: Card) {
-        val top = if (card.selected || card.hovered) 0xE53B536A.toInt() else 0xE5284054.toInt()
-        val edge = BattleSurfaceRenderer.withOpacity(
-            if (card.selected || card.hovered) BattleUiTheme.FOCUS
-            else if (ally) BattleUiTheme.CYAN else BattleUiTheme.PURPLE,
-            card.opacity * .72f)
-        for (row in 0 until HEIGHT) {
-            val offset = row * END_SLOPE / (HEIGHT - 1)
-            val start = if (ally) x else x + END_SLOPE - offset
-            val end = if (ally) x + WIDTH - END_SLOPE + offset else x + WIDTH
-            val color = BattleSurfaceRenderer.interpolate(top, 0xE70C192B.toInt(), row.toFloat() / (HEIGHT - 1))
-            context.fill(start, y + row, end, y + row + 1,
-                BattleSurfaceRenderer.withOpacity(color, card.opacity))
-            // Three pixels along only the cut-facing diagonal; no rectangular outline.
-            val cutX = if (ally) end - 3 else start
-            context.fill(cutX, y + row, cutX + 3, y + row + 1, edge)
-        }
+        val focused = card.selected || card.hovered
+        val top = if (focused) 0xF23B536A.toInt() else 0xF2284054.toInt()
+        val edge = if (focused) BattleUiTheme.FOCUS else if (ally) BattleUiTheme.CYAN else BattleUiTheme.PURPLE
+        val corners = if (ally) BattleCornerCuts(topRight = TOP_RADIUS, bottomRight = BOTTOM_RADIUS)
+            else BattleCornerCuts(topLeft = TOP_RADIUS, bottomLeft = BOTTOM_RADIUS)
+        val bandReach = TOP_RADIUS + ACCENT_WIDTH
+        BattleSurfaceRenderer.draw(context, if (ally) x + WIDTH - bandReach else x, y, bandReach, HEIGHT,
+            BattleSurface(edge, edge, cornerCuts = corners), card.opacity * .8f)
+        BattleSurfaceRenderer.draw(context, if (ally) x else x + ACCENT_WIDTH, y, WIDTH - ACCENT_WIDTH, HEIGHT,
+            BattleSurface(top, 0xF20C192B.toInt(), cornerCuts = corners), card.opacity)
     }
+
+    private const val TOP_RADIUS = 11
+    private const val BOTTOM_RADIUS = 5
+    private const val ACCENT_WIDTH = 3
 }

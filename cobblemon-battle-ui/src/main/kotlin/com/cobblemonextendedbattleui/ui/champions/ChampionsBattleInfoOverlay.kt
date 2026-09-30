@@ -8,6 +8,7 @@ import jbro.cobblemon.battleui.extended.TeamIndicatorUI
 import jbro.cobblemon.battleui.extended.UIUtils
 import jbro.cobblemon.battleui.extended.PanelConfig
 import jbro.cobblemon.battleui.extended.PixelTextLayout
+import jbro.cobblemon.battleui.extended.ui.shared.BattleSurface
 import jbro.cobblemon.battleui.extended.ui.shared.BattleSurfaceRenderer
 import jbro.cobblemon.battleui.extended.ui.shared.BattleHealthBarLayout
 import jbro.cobblemon.battleui.extended.ui.shared.BattleUiTheme
@@ -171,8 +172,8 @@ object ChampionsBattleInfoOverlay {
         BattleSurfaceRenderer.draw(context, x, PANEL_Y, TEAM_W, PANEL_H, BattleUiTheme.panel)
         team.take(6).forEachIndexed { index, pokemon ->
             val slotY = PANEL_Y + 16 + index * 52
-            context.fill(x + 3, slotY, x + TEAM_W - 3, slotY + 42, BattleUiTheme.PANEL_ALT)
-            context.fill(x + 3, slotY, x + 5, slotY + 42, accent)
+            BattleSurfaceRenderer.draw(context, x + 3, slotY, TEAM_W - 6, 42, BattleSurface(BattleUiTheme.PANEL_ALT, cut = 6))
+            BattleSurfaceRenderer.capsule(context, x + 5, slotY + 8, 3, 26, accent)
             PokemonModelRenderer.drawPokemonModel(
                 context, x + 7, slotY + 5, 30, pokemon.renderablePokemon,
                 pokemon.speciesIdentifier, pokemon.aspects, pokemon.uuid, pokemon.isKO,
@@ -232,8 +233,8 @@ object ChampionsBattleInfoOverlay {
         accent: Int,
         opponent: Boolean
     ) {
-        BattleSurfaceRenderer.draw(context, x, y, width, height, BattleUiTheme.panel.copy(cut = 0))
-        context.fill(x + 1, y + 8, x + 3, y + height - 8, accent)
+        BattleSurfaceRenderer.draw(context, x, y, width, height, BattleUiTheme.panel.copy(cut = 7))
+        BattleSurfaceRenderer.capsule(context, x + 2, y + 10, 3, height - 20, accent)
 
         drawPortrait(context, entry, x + 10, y + 12, 38, opponent)
         val headerX = x + 54
@@ -331,7 +332,7 @@ object ChampionsBattleInfoOverlay {
         repeat(6) { index ->
             val cellX = x + index * (cellWidth + gap)
             val cellColor = if (index < activeCells) stageColor(stage) else RANK_EMPTY
-            context.fill(cellX, y, cellX + cellWidth, y + cellHeight, cellColor)
+            BattleSurfaceRenderer.capsule(context, cellX, y, cellWidth, cellHeight, cellColor)
         }
     }
 
@@ -364,8 +365,8 @@ object ChampionsBattleInfoOverlay {
         effects.take(effectWindow.visibleEffectCount).forEachIndexed { index, effect ->
             val rowY = PANEL_Y + 48 + index * 36
             val rowColor = if (effect.opponent) color(44, 28, 53, 240) else BattleUiTheme.PANEL_ALT
-            context.fill(x + 10, rowY, x + FIELD_W - 10, rowY + 31, rowColor)
-            context.fill(x + 10, rowY, x + 13, rowY + 31, if (effect.opponent) MAGENTA_EDGE else VIOLET_EDGE)
+            BattleSurfaceRenderer.draw(context, x + 10, rowY, FIELD_W - 20, 31, BattleSurface(rowColor, cut = 7))
+            BattleSurfaceRenderer.capsule(context, x + 12, rowY + 7, 3, 17, if (effect.opponent) MAGENTA_EDGE else VIOLET_EDGE)
             drawText(context, effect.group, x + 21, rowY + 6, TEXT_LABEL, 0.85f)
             drawText(context, trim(context, effect.name, 142), x + 88, rowY + 6, WHITE, 1.0f)
             effect.turns?.let { drawTextRight(context, it, x + FIELD_W - 19, rowY + 7, WHITE, 0.9f) }
@@ -373,8 +374,8 @@ object ChampionsBattleInfoOverlay {
 
         if (effectWindow.hiddenEffectCount > 0) {
             val rowY = PANEL_Y + 48 + effectWindow.visibleEffectCount * 36
-            context.fill(x + 10, rowY, x + FIELD_W - 10, rowY + 31, BattleUiTheme.PANEL_ALT)
-            context.fill(x + 10, rowY, x + 13, rowY + 31, VIOLET_EDGE)
+            BattleSurfaceRenderer.draw(context, x + 10, rowY, FIELD_W - 20, 31, BattleSurface(BattleUiTheme.PANEL_ALT, cut = 7))
+            BattleSurfaceRenderer.capsule(context, x + 12, rowY + 7, 3, 17, VIOLET_EDGE)
             drawTextCentered(
                 context,
                 tr("cobblemon_battle_ui.champions.more_effects", effectWindow.hiddenEffectCount),
@@ -397,15 +398,13 @@ object ChampionsBattleInfoOverlay {
     ) {
         val height = if (detailed) 12 else 9
         val barWidth = BattleHealthBarLayout.shortWidth(width)
-        context.fill(x, y, x + barWidth, y + height, BattleUiTheme.TRACK)
         val clamped = hpPercent.coerceIn(0f, 1f)
         val hpColor = when {
             clamped > .5f -> BattleUiTheme.GOOD
             clamped > .25f -> BattleUiTheme.FOCUS
             else -> BattleUiTheme.DANGER
         }
-        val fillWidth = ((barWidth - 4) * clamped).toInt()
-        context.fill(x + 2, y + 2, x + 2 + fillWidth, y + height - 2, hpColor)
+        BattleSurfaceRenderer.gauge(context, x, y, barWidth, height, clamped, BattleUiTheme.TRACK, hpColor, inset = 2)
         val percent = "${(clamped * 100).toInt()}%"
         if (inlinePercent) drawText(context, percent, x + barWidth + 7, y - 1, WHITE, 0.9f)
         else drawTextRight(context, percent, x + barWidth, y + height + 4, WHITE, 0.9f)

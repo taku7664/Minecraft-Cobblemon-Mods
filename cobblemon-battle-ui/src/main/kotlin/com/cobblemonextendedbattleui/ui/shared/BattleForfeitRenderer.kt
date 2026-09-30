@@ -20,18 +20,28 @@ object BattleForfeitRenderer {
             panel.y() + 12, BattleSurfaceRenderer.withOpacity(BattleUiTheme.TEXT, opacity), false)
         context.drawText(font, font.trimToWidth(detail.string, panel.width() - 28), panel.x() + 14,
             panel.y() + 29, BattleSurfaceRenderer.withOpacity(BattleUiTheme.MUTED, opacity), false)
-        BattleSurfaceRenderer.draw(context, accept.x(), accept.y(), accept.width(), accept.height(),
-            BattleUiTheme.danger.copy(cut = 5, corners = 0b0101,
-                top = if (focused == 0) 0xFFBD586B.toInt() else BattleUiTheme.danger.top), opacity)
-        BattleSurfaceRenderer.draw(context, cancel.x(), cancel.y(), cancel.width(), cancel.height(),
-            BattleUiTheme.secondary.copy(top = if (focused == 1) 0xFF2E526D.toInt() else BattleUiTheme.secondary.top,
-                bottom = if (focused == 1) 0xFF2E526D.toInt() else BattleUiTheme.secondary.bottom,
-                cut = 4, corners = 0b1010), opacity)
+        drawChoice(context, accept, BattleUiTheme.danger, BattleUiTheme.DANGER, ACCEPT_KEY, focused == 0, opacity)
+        drawChoice(context, cancel, BattleUiTheme.secondary, BattleUiTheme.CYAN, CANCEL_KEY, focused == 1, opacity)
         centered(context, font.trimToWidth(acceptLabel.string, accept.width() - 8), accept.x() + accept.width() / 2,
             accept.y() + 7, opacity)
         centered(context, font.trimToWidth(cancelLabel.string, cancel.width() - 8), cancel.x() + cancel.width() / 2,
             cancel.y() + 7, opacity)
     }
+
+    private fun drawChoice(context: DrawContext, rect: jbro.cobblemon.battleui.navigation.UiRect, base: BattleSurface,
+                           accent: Int, key: Any, focused: Boolean, opacity: Float) {
+        val emphasis = BattleFocusMotion.emphasis(key, focused)
+        val pill = BattleCornerCuts(12, 12, 12, 12)
+        BattleControlRenderer.drawDropShadow(context, rect.x(), rect.y(), rect.width(), rect.height(), pill, opacity)
+        BattleControlRenderer.drawFocusHalo(context, rect.x(), rect.y(), rect.width(), rect.height(), pill,
+            accent, emphasis, opacity)
+        val lift = BattleSurfaceRenderer.interpolate(base.top, 0xFFFFFFFF.toInt(), .14f * emphasis)
+        BattleSurfaceRenderer.draw(context, rect.x(), rect.y(), rect.width(), rect.height(),
+            base.copy(top = lift, cornerCuts = pill), opacity)
+    }
+
+    private val ACCEPT_KEY = Any()
+    private val CANCEL_KEY = Any()
 
     private fun centered(context: DrawContext, value: String, centerX: Int, y: Int, opacity: Float) {
         val font = MinecraftClient.getInstance().textRenderer
