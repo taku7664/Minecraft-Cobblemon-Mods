@@ -16,6 +16,12 @@
 | `config/styled-nicknames.json` | `nicknameFormat` | `"${nickname}"` | 기본값 `"#${nickname}"`이면 채팅 이름 앞에 `#`이 붙는다. `#`은 닉네임과 본래 이름을 구분하는 표시라서, 빼면 다른 사람 이름을 흉내 낸 닉네임을 구분하기 어려워진다. |
 | `config/jbro-policy.json` | `tips`, `tipIntervalSeconds` | `dev-server` 파일과 같게 | 30초 `[안내]` 목록이다. 파일이 없으면 코드 기본값으로 만들어지고, 기본값은 `dev-server`와 같게 유지한다. |
 
+## 설치할 모드
+
+| 모드 | 이유 |
+|---|---|
+| Simple MyRoom (`simple-myroom`) | `[안내]` 목록이 `/room` 명령을 소개한다. 2026-10-01 기준 `dev-server`에는 설치되어 있지 않다. 서버 전용이라 클라이언트에는 넣지 않아도 된다. |
+
 ## 확인만 할 설정
 
 | 파일 | 키 | 값 | 이유 |
