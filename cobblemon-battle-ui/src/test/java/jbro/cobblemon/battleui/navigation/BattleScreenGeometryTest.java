@@ -11,11 +11,20 @@ class BattleScreenGeometryTest {
     @Test
     void enlargedMoveColumnKeepsHitboxesOnTheVisualTiles() {
         assertEquals(List.of(
-                new UiRect(287, 84, 140, 32),
-                new UiRect(287, 120, 140, 32),
-                new UiRect(287, 156, 140, 32),
-                new UiRect(287, 192, 140, 32)
+                new UiRect(287, 76, 140, 32),
+                new UiRect(287, 112, 140, 32),
+                new UiRect(287, 148, 140, 32),
+                new UiRect(287, 184, 140, 32)
         ), BattleScreenGeometry.moveTiles(427, 240, 4));
+    }
+
+    @Test
+    void movesClearTheHotbarOnlyWhereTheyWouldOverlapIt() {
+        // At 427 wide the focused column reaches x 280, left of the hotbar's right end at 304.
+        UiRect narrowBottom = BattleScreenGeometry.moveTiles(427, 240, 4).getLast();
+        assertTrue(narrowBottom.y() + narrowBottom.height() <= 240 - 22);
+        UiRect wideBottom = BattleScreenGeometry.moveTiles(640, 360, 4).getLast();
+        assertEquals(360 - 16, wideBottom.y() + wideBottom.height());
     }
 
     @Test

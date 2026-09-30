@@ -8,7 +8,7 @@ import java.util.List;
 public final class BattleScreenGeometry {
     public static final int MOVE_WIDTH = 140;
     public static final int MOVE_HEIGHT = 32;
-    public static final int FOCUS_PROTRUSION = 5;
+    public static final int FOCUS_PROTRUSION = 7;
     public static final int SWITCH_WIDTH = 105;
     public static final int SWITCH_HEIGHT = 20;
 
@@ -16,7 +16,14 @@ public final class BattleScreenGeometry {
     }
 
     public static List<UiRect> moveTiles(int screenWidth, int screenHeight, int count) {
-        return BattleMenuLayout.vertical(screenWidth, screenHeight, MOVE_WIDTH, MOVE_HEIGHT, 4, 0, 16, count);
+        return BattleMenuLayout.vertical(screenWidth, screenHeight, MOVE_WIDTH, MOVE_HEIGHT, 4, 0,
+                moveBottomMargin(screenWidth), count);
+    }
+
+    /** The vanilla hotbar is 182 wide and 22 tall at the bottom center; moves clear it when they would overlap. */
+    static int moveBottomMargin(int screenWidth) {
+        boolean overlapsHotbar = screenWidth / 2 + 91 > screenWidth - MOVE_WIDTH - FOCUS_PROTRUSION;
+        return overlapsHotbar ? 24 : 16;
     }
 
     public static UiRect switchPanel(int screenWidth, int screenHeight) {
