@@ -105,7 +105,7 @@ object BattleSwitchRenderer {
             BattleSurfaceRenderer.withOpacity(BattleUiTheme.MODAL_SCRIM, opacity))
         BattleSurfaceRenderer.draw(context, layout.panel.x - 3, layout.panel.y - 3,
             layout.panel.width + 6, layout.detailBody.bottom - layout.panel.y + 6,
-            BattleUiTheme.modalBackdrop, opacity)
+            BattleUiTheme.modalBackdrop.copy(cornerCuts = BattleCornerCuts(topRight = 8)), opacity)
         drawHeader(context, layout.allyHeader, 0xF81A2941.toInt(), 0xF8111D30.toInt(), opacity)
         drawHeader(context, layout.detailHeader, 0xF8233A53.toInt(), 0xF814283E.toInt(), opacity)
         BattleSurfaceRenderer.draw(context, layout.detailBody.x, layout.detailBody.y,
