@@ -12,7 +12,7 @@
 
 1. `PROJECT_STATUS.md` — 활성 모듈과 모듈별 상태·기록을 확인하는 위치
 1-1. `MORE_COBBLEMON_CONTENTS_DEV_DEPLOYMENT.md` — MCC 개발 배포 절차, 프로세스 확인 규칙, 버전 범위·중복 JAR·Loom 캐시 함정과 배틀 라운지 재생성 주의
-1-1a. `SERVER_OPEN_CHECKLIST.md` — 새 운영 서버를 열 때 맞춰야 하는 서버 설정값(PokemonToItem 권한, 닉네임 형식, 안내 목록, 레벨캡 전제)
+1-1a. [`../jbro-policy/docs/SERVER_OPEN_CHECKLIST.md`](../jbro-policy/docs/SERVER_OPEN_CHECKLIST.md) — 새 운영 서버를 열 때 맞춰야 하는 서버 설정값(PokemonToItem 권한, 닉네임 형식, 안내 목록, 레벨캡 전제)
 1-2. [`../more-cobblemon-contents/README.md`](../more-cobblemon-contents/README.md) — MCC 모듈 구성. 작업 기록·결정·이슈는 [`../more-cobblemon-contents/MEMORY.md`](../more-cobblemon-contents/MEMORY.md), AI 계약은 `../more-cobblemon-contents/docs/betterai/`에 있다
 2. `BETTER_BATTLE_PRESENTATION_CONTEXT.md` — 독립 연출 모드의 제품 경계, 구현 지도, 배치·검증 상태와 세션 복구 절차
 3. `BETTER_BATTLE_PRESENTATION_IDENTITY_DECISION.md` — Better Battle Presentation 표시 이름·Mod ID·확장 경계와 첫 구현 상태
