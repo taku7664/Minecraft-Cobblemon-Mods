@@ -42,7 +42,9 @@ internal object LocalNonDamagingMoveEvaluator {
         val recovery = candidate.facts?.selfHealingFractionRange?.let { range ->
             val averageHealing = (range.minimum + range.maximum) / 2.0
             val effectiveHealing = minOf(averageHealing, missingHp)
-            effectiveHealing * 100.0
+            // Each heal in a row that still ended its turn lower makes the next one cost more.
+            val losingLoop = actor?.let { LocalRecoveryLoop.failedStreak(it.battlePokemonId, context) } ?: 0
+            effectiveHealing * 100.0 - losingLoop * tuning.recoveryLoopPenalty
         } ?: 0.0
 
         val effects = candidate.moveDetails?.effects?.effects.orEmpty()
@@ -99,7 +101,8 @@ internal object LocalNonDamagingMoveEvaluator {
             else -> (GENERIC_STATUS_PRESSURE - additionalScreenOpportunityCost(effects, context))
                 .coerceAtLeast(0.0) * accuracy * protectionSuccessProbability
         }
-        val total = maxOf(recovery, status)
+        // A pure heal is its own value, the losing-loop penalty included; anything else takes the better reading.
+        val total = if (declaresPureRecovery) recovery else maxOf(recovery, status)
         return Score(
             total = total,
             statStageUtility = if (usesSetupPressure && status >= recovery) status else 0.0,

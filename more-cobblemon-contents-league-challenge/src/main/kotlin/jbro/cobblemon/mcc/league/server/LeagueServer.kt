@@ -6,10 +6,12 @@ import jbro.cobblemon.mcc.api.access.*
 import jbro.cobblemon.mcc.api.battle.ManagedPveBattles
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.rewards.BattlePointRewards
+import jbro.cobblemon.mcc.api.rules.BattleGimmickLocks
 import jbro.cobblemon.mcc.api.rules.MajorBattleMechanic
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
-import jbro.cobblemon.mcc.internal.hub.BattleHubNetworking
+import jbro.cobblemon.mcc.api.terminal.HoloTerminals
+import jbro.cobblemon.mcc.internal.terminal.TerminalInteractionResult
 import jbro.cobblemon.mcc.league.MoreCobblemonContentsLeagueChallenge as Mod
 import jbro.cobblemon.mcc.league.network.*
 import jbro.cobblemon.mcc.league.system.*
@@ -24,7 +26,7 @@ import net.minecraft.server.level.ServerPlayer
 
 /** All mutations execute on the server thread. Clients send intent, never outcomes or cap values. */
 object LeagueServer {
-    /** [terminal] is null for a session opened from the MCC hub rather than a League terminal. */
+    /** [terminal] is the hologram terminal the hub was opened from, or null for a hub opened by command. */
     private data class Session(val terminal: TerminalAnchor?,
         val nonce: UUID = UUID.randomUUID(), var touched: Long = 0,
         val requests: LinkedHashMap<UUID, LeagueIntentPayload> = linkedMapOf())
@@ -32,12 +34,13 @@ object LeagueServer {
     private val lastRequestTick = mutableMapOf<UUID, Int>()
     private val sentRanks = mutableMapOf<UUID, String>()
     private var access: AutoCloseable? = null
+    private var gimmickLock: AutoCloseable? = null
     private val gson = Gson()
     private const val CONTENT = ManagedBattleContentIds.LEAGUE_CHALLENGE
     private const val ERROR_PREFIX = "message.${Mod.MOD_ID}."
 
     fun register() {
-        BattleHubEntries.register(BattleHubEntry(CONTENT) { player, _ -> openFromHub(player) })
+        BattleHubEntries.register(BattleHubEntry(CONTENT) { player, terminal -> openFromHub(player, terminal) })
         PayloadTypeRegistry.playS2C().register(LeagueStatePayload.TYPE, LeagueStatePayload.CODEC)
         PayloadTypeRegistry.playS2C().register(LeagueRankPayload.TYPE, LeagueRankPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(LeagueIntentPayload.TYPE, LeagueIntentPayload.CODEC)
@@ -51,9 +54,16 @@ object LeagueServer {
                 if (catalog != null && LeagueSavedData.get(server).read(catalog.id, player).champion) ContentAccessDecision.Allowed
                 else ContentAccessDecision.Denied(ERROR_PREFIX + "champion_required", "champion_required")
             }
+            // Gimmicks are the normal Champion's to use outside MCC content and player battles.
+            gimmickLock?.close()
+            gimmickLock = BattleGimmickLocks.register { player ->
+                val catalog = LeagueCatalogResources.current ?: return@register null
+                if (LeagueSavedData.get(server).read(catalog.id, player.uuid).champion) null
+                else Component.translatable(ERROR_PREFIX + "gimmicks_locked")
+            }
         }
         ServerLifecycleEvents.SERVER_STARTED.register { LeagueSavedData.get(it).cancelInterruptedRuns() }
-        ServerLifecycleEvents.SERVER_STOPPED.register { access?.close(); access = null; sessions.clear(); lastRequestTick.clear(); sentRanks.clear(); LeagueCatalogResources.clear() }
+        ServerLifecycleEvents.SERVER_STOPPED.register { access?.close(); access = null; gimmickLock?.close(); gimmickLock = null; sessions.clear(); lastRequestTick.clear(); sentRanks.clear(); LeagueCatalogResources.clear() }
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ -> reconcileSafely(handler.player) }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, server ->
             sessions.remove(handler.player.uuid)
@@ -72,30 +82,22 @@ object LeagueServer {
         }
     }
 
-    fun open(player: ServerPlayer, pos: BlockPos): Boolean = guarded(player) {
-        if (!requestAllowed(player)) return@guarded
-        val entity = player.level().getBlockEntity(pos) as? TerminalEntity ?: error("terminal_invalid")
-        // The terminal opens the MCC hub on its League tab, so the hub header needs current BP and locks.
-        BattleHubNetworking.sendHeader(player)
-        start(player, Session(TerminalAnchor(entity.terminalId, player.level().dimension().location().toString(),
-            pos.x, pos.y, pos.z), touched = player.server.tickCount.toLong()), openScreen = true)
-    }
-
     /**
-     * The League tab of an open hub asks for its state; the hub already let the player reach League from where
-     * they stand, so no terminal anchors the session and no screen is opened.
+     * The League tab of an open hub asks for its state. A hub opened at a hologram terminal keeps the session at
+     * that terminal, so the player has to stay by it; the hub itself is already on screen.
      */
-    fun openFromHub(player: ServerPlayer): Boolean = guarded(player) {
+    fun openFromHub(player: ServerPlayer, terminal: TerminalInteractionResult.Verified?): Boolean = guarded(player) {
         if (!requestAllowed(player)) return@guarded
-        start(player, Session(null, touched = player.server.tickCount.toLong()), openScreen = false)
+        val anchor = terminal?.let { TerminalAnchor(it.terminalId, it.dimensionId, it.x, it.y, it.z) }
+        start(player, Session(anchor, touched = player.server.tickCount.toLong()))
     }
 
-    private fun start(player: ServerPlayer, session: Session, openScreen: Boolean) {
+    private fun start(player: ServerPlayer, session: Session) {
         validate(player, session)
         check(ServerPlayNetworking.canSend(player, LeagueStatePayload.TYPE)) { "client_missing" }
         sessions[player.uuid] = session
         // Send before reconciling, so an integration setup error can still be displayed.
-        send(player, openScreen = openScreen)
+        send(player)
         reconcile(player)
         send(player)
     }
@@ -184,11 +186,10 @@ object LeagueServer {
         val anchor = session.terminal
         val reason = if (anchor == null) TerminalAuthorization.rejectDetached(living, tick, session.touched) else {
             val pos = BlockPos(anchor.x, anchor.y, anchor.z)
+            val terminalId = HoloTerminals.terminalIdAt(player.level(), pos)
             TerminalAuthorization.reject(anchor,
-                TerminalObservation((player.level().getBlockEntity(pos) as? TerminalEntity)?.terminalId,
-                    player.level().dimension().location().toString(), player.x, player.y, player.z,
-                    player.level().getBlockState(pos).`is`(LeagueTerminal.block), player.mayInteract(player.level(), pos),
-                    living, tick), session.touched)
+                TerminalObservation(terminalId, player.level().dimension().location().toString(), player.x, player.y, player.z,
+                    terminalId != null, player.mayInteract(player.level(), pos), living, tick), session.touched)
         }
         check(reason == null) { requireNotNull(reason) }
     }
@@ -249,19 +250,23 @@ object LeagueServer {
         val engine = LeagueEngine(catalog)
         val badges = engine.badgeCount(state)
         val rank = rank(catalog, state)
-        val views = (catalog.gyms + catalog.finals.first()).map { id ->
-            val index = catalog.gyms.indexOf(id)
-            val available = if (index >= 0) catalog.gyms.take(index).all { it in state.cleared } else badges == 8
+        fun route(gyms: List<String>, finals: List<String>) = (gyms + finals.first()).map { id ->
+            val index = gyms.indexOf(id)
+            val available = if (index >= 0) gyms.take(index).all { it in state.cleared } else gyms.all { it in state.cleared }
             val challenge = catalog.challenges.getValue(id)
             LeagueChallengeView(id, challenge.nameKey,
                 if (id in state.cleared) "CLEARED" else if (available) "AVAILABLE" else "LOCKED", challenge.unlockCap,
-                challenge.badge)
+                challenge.badge ?: gyms.indexOf(id).takeIf { it >= 0 }?.let { catalog.challenges.getValue(catalog.gyms[it]).badge })
         }
+        val views = route(catalog.gyms, catalog.finals)
+        val hardUnlocked = engine.hardUnlocked(state)
         val view = LeagueView(session.nonce, state.revision, LeagueCatalogResources.revision, catalog.nameKey,
             badges, rank, engine.cap(state), state.champion, BattlePointRewards.balance(player.server, player.uuid), views,
             state.run?.challengeId, state.run?.awaitingNext ?: false, state.rewards.any { !it.badgeDone || !it.bpDone }, errorKey,
             openScreen && runCatching { validate(player, session) }.isSuccess,
-            state.run?.let { it.encounters[it.index].nameKey })
+            state.run?.let { it.encounters[it.index].nameKey },
+            hardUnlocked, state.hardChampion, if (hardUnlocked) route(catalog.hardGyms, catalog.hardFinals) else emptyList(),
+            state.run?.let { run -> run.encounters.first().id in catalog.hardGyms + catalog.hardFinals } ?: false)
         if (ServerPlayNetworking.canSend(player, LeagueStatePayload.TYPE)) ServerPlayNetworking.send(player, LeagueStatePayload(gson.toJson(view)))
     }
 
@@ -269,7 +274,8 @@ object LeagueServer {
         Mod.LOGGER.warn("League request rejected for {}: {}", player.uuid, failure.message)
         val reason = failure.message?.substringBefore(':')
         val known = setOf("cap_disabled", "catching_cap_disabled", "spawn_scaling_conflict", "cap_unmapped", "cap_unavailable", "cap_sync_failed", "badge_failed",
-            "run_active", "party_required", "rewards_pending", "history_full", "prerequisite", "no_run", "phase_invalid", "level_cap",
+            "run_active", "party_required", "rewards_pending", "history_full", "prerequisite", "hard_locked", "no_run", "phase_invalid", "level_cap",
+            "opponent_level_unsupported",
             "battle_active", "battle_unavailable", "catalog_unavailable", "terminal_invalid", "terminal_expired",
             "client_missing", "request_conflict", "stale_revision")
         val key = ERROR_PREFIX + if (reason in known) reason else "request_failed"

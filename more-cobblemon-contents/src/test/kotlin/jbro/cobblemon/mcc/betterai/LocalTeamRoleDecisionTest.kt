@@ -42,8 +42,11 @@ class LocalTeamRoleDecisionTest {
 
     @Test
     fun `two turn search exposes team role contribution after forced replacement`() {
-        val current = trace(fixture(), LocalDecisionTuning.CURRENT, depth = 2)
-        val team = trace(fixture(), LocalDecisionTuning.CURRENT.copy(
+        // The leaf's positional terms reach a two-turn root through the positional turn deltas; without them they
+        // cancel between the second turn's start and end.
+        val positional = LocalDecisionTuning.CURRENT.copy(positionalTurnDeltas = true)
+        val current = trace(fixture(), positional, depth = 2)
+        val team = trace(fixture(), positional.copy(
             id = "current_team_coverage", leafTeamCoverageWeight = 0.25), depth = 2)
         fun scores(trace: LocalDecisionTraceSelector.Trace) = trace.ranked.associate {
             it.outcome.candidate.actionId to it.comparisonValue

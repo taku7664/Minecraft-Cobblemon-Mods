@@ -16,7 +16,7 @@ object MoreCobblemonContentsClient : ClientModInitializer {
         ShadowHologramShader.register()
         ShadowTerrainHologramShader.register()
         ShadowTerrainHologramRenderer.register()
-        HoloBattleTerminalClientContent.register()
+        HoloTerminalClientContent.register()
         BattleHubClientNetworking.register()
         MccHubTabs.register(MccHubTab(MccHubTabs.DASHBOARD, Component.translatable("screen.${MoreCobblemonContents.MOD_ID}.hub.tab.dashboard"),
             order = 0, kind = MccHubTabKind.Embedded(::MccDashboardTab), accessContentId = null,

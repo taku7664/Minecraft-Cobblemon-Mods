@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "pokemon": [
-    "spiritomb level=58 moves=shadowball,darkpulse,psychic",
-    "roserade level=58 moves=energyball,sludgebomb,shadowball",
-    "togekiss level=60 moves=airslash,aurasphere,waterpulse",
-    "lucario level=60 moves=aurasphere,extremespeed,shadowball",
-    "milotic level=58 moves=surf,icebeam,mirrorcoat",
-    "garchomp level=62 moves=dragonclaw,earthquake,flamethrower,gigaimpact"
+    "spiritomb level=58 moves=darkpulse,psychic,silverwind,shadowball ability=pressure nature=timid gender=female hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "roserade level=58 moves=energyball,sludgebomb,toxic,extrasensory ability=naturalcure nature=mild gender=female hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "togekiss level=60 moves=airslash,aurasphere,waterpulse,shockwave ability=hustle nature=hardy gender=male hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "lucario level=60 moves=aurasphere,extremespeed,shadowball,stoneedge ability=steadfast nature=careful gender=male hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "milotic level=58 moves=surf,icebeam,mirrorcoat,dragonpulse ability=marvelscale nature=docile gender=female hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "garchomp level=62 moves=dragonrush,earthquake,flamethrower,gigaimpact ability=sandveil nature=quirky gender=female held_item=cobblemon:sitrus_berry hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0"
   ]
 }

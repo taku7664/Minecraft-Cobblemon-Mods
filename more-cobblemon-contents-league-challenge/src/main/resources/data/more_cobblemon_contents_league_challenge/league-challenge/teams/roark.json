@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "pokemon": [
-    "geodude level=12 moves=rockthrow,tackle,defensecurl",
-    "onix level=12 moves=rockthrow,bind,screech",
-    "cranidos level=14 moves=headbutt,pursuit,leer"
+    "geodude level=12 moves=stealthrock,rockthrow ability=rockhead nature=lax gender=male hp_iv=6 attack_iv=6 defence_iv=6 special_attack_iv=6 special_defence_iv=6 speed_iv=6 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "onix level=12 moves=stealthrock,rockthrow,screech ability=rockhead nature=bold gender=male hp_iv=6 attack_iv=6 defence_iv=6 special_attack_iv=6 special_defence_iv=6 speed_iv=6 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "cranidos level=14 moves=headbutt,pursuit,leer ability=moldbreaker nature=jolly gender=male hp_iv=6 attack_iv=6 defence_iv=6 special_attack_iv=6 special_defence_iv=6 speed_iv=6 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0"
   ]
 }

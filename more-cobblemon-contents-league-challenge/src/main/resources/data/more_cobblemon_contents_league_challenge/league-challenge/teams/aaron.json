@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "pokemon": [
-    "yanmega level=53 moves=bugbuzz,airslash,ancientpower",
-    "scizor level=54 moves=bulletpunch,xscissor,nightslash",
-    "vespiquen level=54 moves=attackorder,defendorder,powergem",
-    "heracross level=54 moves=megahorn,closecombat,stoneedge",
-    "drapion level=57 moves=crosspoison,crunch,icefang"
+    "yanmega level=49 moves=airslash,bugbuzz,uturn,doubleteam ability=speedboost nature=rash gender=male hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "scizor level=49 moves=ironhead,xscissor,nightslash,quickattack ability=swarm nature=gentle gender=male hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "vespiquen level=50 moves=attackorder,defendorder,healorder,powergem ability=pressure nature=careful gender=female hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "heracross level=51 moves=megahorn,closecombat,nightslash,stoneedge ability=swarm nature=naughty gender=male hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "drapion level=53 moves=xscissor,crosspoison,icefang,aerialace ability=battlearmor nature=jolly gender=male held_item=cobblemon:sitrus_berry hp_iv=30 attack_iv=30 defence_iv=30 special_attack_iv=30 special_defence_iv=30 speed_iv=30 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0"
   ]
 }

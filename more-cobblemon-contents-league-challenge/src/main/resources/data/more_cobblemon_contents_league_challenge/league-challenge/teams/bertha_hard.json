@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "hippowdon level=89 moves=stealthrock,earthquake,slackoff,whirlwind ability=sandstream nature=impish held_item=cobblemon:leftovers hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=0 defence_ev=252 special_attack_ev=0 special_defence_ev=4 speed_ev=0",
+    "donphan level=90 moves=rapidspin,earthquake,knockoff,iceshard ability=sturdy nature=impish held_item=cobblemon:leftovers hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=4 defence_ev=252 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "whiscash level=90 moves=dragondance,waterfall,earthquake,stoneedge ability=oblivious nature=adamant held_item=cobblemon:lum_berry hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=252",
+    "gliscor level=91 moves=protect,earthquake,knockoff,uturn ability=poisonheal nature=impish held_item=cobblemon:toxic_orb hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=0 defence_ev=252 special_attack_ev=0 special_defence_ev=0 speed_ev=4",
+    "rhyperior level=92 moves=earthquake,stoneedge,megahorn,icepunch ability=solidrock nature=adamant held_item=cobblemon:weakness_policy hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=4 speed_ev=0",
+    "excadrill level=93 moves=swordsdance,earthquake,ironhead,rockslide ability=sandrush nature=jolly held_item=mega_showdown:excadrite hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=252"
+  ]
+}

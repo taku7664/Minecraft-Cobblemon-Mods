@@ -60,7 +60,7 @@ internal object LocalTacticalSimulationMoveLibrary {
 
     private fun effectsFor(id: String): BattleMoveEffectsView? {
         val effects = when (id) {
-            "slackoff", "recover", "roost", "moonlight", "morningsun", "softboiled" -> listOf(heal(0.5))
+            "slackoff", "recover", "roost", "moonlight", "morningsun", "softboiled", "shoreup", "milkdrink" -> listOf(heal(0.5))
             "synthesis" -> listOf(heal(0.5))
             "swordsdance" -> listOf(stage(BattleMoveEffectTarget.USER, "attack" to 2))
             "nastyplot" -> listOf(stage(BattleMoveEffectTarget.USER, "special_attack" to 2))
@@ -87,8 +87,10 @@ internal object LocalTacticalSimulationMoveLibrary {
             "silktrap", "burningbulwark", "maxguard",
             -> listOf(effect(BattleMoveEffectKind.PROTECT_USER, BattleMoveEffectTarget.USER))
             "toxic" -> listOf(status("tox"))
-            "stunspore", "thunderwave" -> listOf(status("par"))
-            "spore" -> listOf(status("slp"))
+            // Will-O-Wisp, the sleep moves and Glare were missing, so in scenario battles they did nothing at all.
+            "stunspore", "thunderwave", "glare", "nuzzle" -> listOf(status("par"))
+            "willowisp" -> listOf(status("brn"))
+            "spore", "sleeppowder", "hypnosis" -> listOf(status("slp"))
             "gigadrain", "drainingkiss", "drainpunch" ->
                 listOf(fraction(BattleMoveEffectKind.DRAIN_FRACTION, 0.5))
             "uturn", "flipturn", "voltswitch" ->
@@ -201,7 +203,7 @@ internal object LocalTacticalSimulationMoveLibrary {
     private val SELF_TARGET_MOVES = setOf(
         "slackoff", "recover", "roost", "moonlight", "morningsun", "softboiled", "synthesis",
         "swordsdance", "nastyplot", "bulkup", "irondefense", "agility", "rockpolish", "coil",
-        "shellsmash", "calmmind", "quiverdance", "dragondance",
+        "shellsmash", "calmmind", "quiverdance", "dragondance", "shoreup", "milkdrink",
     )
     private val SIDE_TARGET_MOVES = setOf("stealthrock", "stickyweb", "spikes", "toxicspikes")
     private val CONTACT_MOVES = setOf(

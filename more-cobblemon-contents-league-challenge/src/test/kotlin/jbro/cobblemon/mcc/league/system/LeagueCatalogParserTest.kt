@@ -8,7 +8,7 @@ class LeagueCatalogParserTest {
     private val ns = "more_cobblemon_contents_league_challenge"
     private val names = listOf("roark", "gardenia", "fantina", "maylene", "wake", "byron", "candice", "volkner", "aaron", "bertha", "flint", "lucian", "cynthia")
     private fun resources(): MutableMap<String, Map<String, String>> = LeagueCatalogParser.directories.associateWith { directory ->
-        val ids = when (directory) { "leagues" -> listOf("active"); "appearances" -> listOf("default"); else -> names }
+        val ids = when (directory) { "leagues" -> listOf("active"); "appearances" -> listOf("default"); else -> names + names.map { "${it}_hard" } }
         ids.associate { name -> "$ns:$name" to javaClass.getResourceAsStream("/data/$ns/league-challenge/$directory/$name.json")!!.bufferedReader().use { it.readText() } }
     }.toMutableMap()
 
@@ -18,6 +18,8 @@ class LeagueCatalogParserTest {
         assertEquals(names.drop(8).map { "$ns:$it" }, catalog.finals)
         assertEquals("$ns:sinnoh", catalog.id)
         assertEquals(6, catalog.challenges.getValue("$ns:cynthia").team.size)
+        assertEquals(names.take(8).map { "$ns:${it}_hard" }, catalog.hardGyms)
+        assertEquals(names.drop(8).map { "$ns:${it}_hard" }, catalog.hardFinals)
     }
 
     @Test fun `the bundled league spawns wild Pokemon ten below the cap, seven either way, leaning by four chunk areas`() {

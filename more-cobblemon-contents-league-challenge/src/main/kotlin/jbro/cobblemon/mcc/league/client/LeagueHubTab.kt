@@ -43,9 +43,10 @@ internal class LeagueHubTab : MccHubTabContent {
             return
         }
         val layout = LeagueHubLayout.calculate(bounds)
-        val presentation = LeagueHomePresentation.from(view, state.selectedId)
-        MccHubKit.strip(host, layout.summary,
-            Component.empty().append(rankName(view)).append(Component.literal(" · ")).append(Component.translatable(view.nameKey)),
+        val presentation = LeagueHomePresentation.from(view, state.selectedId, state.hard)
+        val title = Component.empty().append(rankName(view)).append(Component.literal(" · ")).append(Component.translatable(view.nameKey))
+        if (state.hard) title.append(Component.literal(" · ")).append(leagueCopy("difficulty_hard"))
+        MccHubKit.strip(host, layout.summary, title,
             Component.empty().append(leagueCopy("header_badges", view.badges)).append(Component.literal("  "))
                 .append(leagueCopy("header_cap", view.cap)),
             rankStack(view.rank))
@@ -81,6 +82,11 @@ internal class LeagueHubTab : MccHubTabContent {
         val next = view.runChallenge != null
         val start = buildList {
             add(MccHubKit.Action(leagueCopy("refresh"), enabled = !state.pending) { LeagueHomeController.send(LeagueAction.REFRESH) })
+            // The normal Champion opens the hard route; this switches which route the tab shows.
+            if (view.hardUnlocked) add(MccHubKit.Action(leagueCopy(if (state.hard) "show_normal" else "show_hard"),
+                enabled = !state.pending && !next, tooltip = leagueCopy("difficulty_tooltip")) {
+                if (state.toggleHard()) host.rebuild()
+            })
             if (next) add(MccHubKit.Action(leagueCopy("forfeit"), UiButtonVariant.DANGER, state.canCancel) {
                 val nonce = view.nonce
                 MccHubKit.confirm(leagueCopy("forfeit_title"), leagueCopy("forfeit_body"), leagueCopy("forfeit"), leagueCopy("back")) {

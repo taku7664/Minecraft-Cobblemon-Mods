@@ -16,6 +16,8 @@ import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
 import jbro.cobblemon.mcc.internal.ai.BattleFieldStateView
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
+import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveGroup
 import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveKnowledge
 import jbro.cobblemon.mcc.internal.ai.BattleStatusMoveCategories
@@ -32,7 +34,9 @@ internal object LocalMatchupScoreCalculator {
         context: BattleDecisionContext,
         cache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
         shouldContinue: () -> Boolean = { true },
+        recovery: Boolean = false,
     ): MatchupScores {
+        cache.matchupRecovery = recovery
         val allies = living(context.state, BattleSide.ALLY)
         val opponents = living(context.state, BattleSide.OPPONENT)
         val moves = linkedMapOf<Pair<UUID, UUID>, List<MoveMatchupScore>>()
@@ -46,7 +50,7 @@ internal object LocalMatchupScoreCalculator {
             moves[opponent.battlePokemonId to ally.battlePokemonId] = opponentMoves.map { it.score }
             for (field in MatchupSpeedField.entries) {
                 val faced = if (field == MatchupSpeedField.CURRENT) position else withTrickRoomToggled(position)
-                bestExchange(faced, ally.battlePokemonId, opponent.battlePokemonId, allyMoves, opponentMoves, field)?.let {
+                bestExchange(faced, ally.battlePokemonId, opponent.battlePokemonId, allyMoves, opponentMoves, field, recovery)?.let {
                     pokemon[Triple(ally.battlePokemonId, opponent.battlePokemonId, field)] = it
                 }
             }
@@ -131,7 +135,10 @@ internal object LocalMatchupScoreCalculator {
             if (sweep > best.sweep + 1e-9) best = Boost(moveId, uses, sweep, outcomes.map { it.second }.average(),
                 outcomes.associate { it.first to it.third }, outcomes.associate { it.first to it.second })
         }
+        val window = windowSweep(context, subject, foes, pairs, cache)
         return SweepScore(
+            windowSweep = window?.first,
+            windowByOpponent = window?.second.orEmpty(),
             subjectId = subject.battlePokemonId,
             naturalSweep = natural,
             setupMoveId = best.moveId,
@@ -142,6 +149,45 @@ internal object LocalMatchupScoreCalculator {
             boostedByOpponent = best.byOpponent,
             setupSurvivalByOpponent = best.survivalByOpponent,
         )
+    }
+
+    /** [SweepScore.windowSweep] and its per-opponent values: the best setup move and use count, from this window. */
+    private fun windowSweep(
+        context: BattleDecisionContext,
+        subject: BattlePokemonStateView,
+        foes: List<BattlePokemonStateView>,
+        pairs: MatchupScores,
+        cache: LocalProjectedActionCalculationCache,
+    ): Pair<Double, Map<UUID, Double>>? {
+        if (subject.activeSlot == null) return null
+        val facing = foes.filter { it.activeSlot != null }
+        if (facing.isEmpty()) return null
+        var best: Pair<Double, Map<UUID, Double>>? = null
+        for ((_, stages) in setupMoves(context, subject)) for (uses in 1..MAXIMUM_SETUP_USES) {
+            var survives = 1.0
+            var taken = 0.0
+            for (foe in facing) {
+                val base = pairs.pokemon(subject.battlePokemonId, foe.battlePokemonId) ?: continue
+                survives *= base.opponentMove?.survivalByUses?.getOrNull(uses) ?: 1.0
+                taken += base.opponentMove?.damageWhileStandingByUses?.getOrNull(uses) ?: 0.0
+            }
+            val byOpponent = foes.mapNotNull { foe ->
+                val position = LocalMatchupPosition.face(context, subject, foe, cache) ?: return@mapNotNull null
+                val raised = LocalStatStageMarginalEvaluator.applyStages(position.state,
+                    setOf(subject.battlePokemonId), stages.mapValues { it.value * uses })
+                val worn = raised.copyState(pokemon = raised.pokemon.map {
+                    if (it.battlePokemonId != subject.battlePokemonId) it
+                    else it.copyState(hpFraction = (it.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP))
+                })
+                val win = pairMatchup(position.copy(state = worn), subject.battlePokemonId, foe.battlePokemonId,
+                    MatchupSpeedField.CURRENT, cache)?.winProbability ?: return@mapNotNull null
+                foe.battlePokemonId to survives * win
+            }.toMap()
+            if (byOpponent.isEmpty()) continue
+            val sweep = byOpponent.values.average()
+            if (best == null || sweep > best.first + 1e-9) best = sweep to byOpponent
+        }
+        return best
     }
 
     private class Boost(
@@ -162,7 +208,7 @@ internal object LocalMatchupScoreCalculator {
         cache: LocalProjectedActionCalculationCache,
     ): PokemonMatchupScore? = bestExchange(position, subjectId, opponentId,
         moveMatchups(position, subjectId, opponentId, cache),
-        moveMatchups(position, opponentId, subjectId, cache), speedField)
+        moveMatchups(position, opponentId, subjectId, cache), speedField, cache.matchupRecovery)
 
     /**
      * The exchange each side would pick: the subject's attack that does best against the opponent's most
@@ -176,13 +222,14 @@ internal object LocalMatchupScoreCalculator {
         subjectMoves: List<ScoredMove>,
         opponentMoves: List<ScoredMove>,
         speedField: MatchupSpeedField,
+        recovery: Boolean,
     ): PokemonMatchupScore? {
         fun exchangeable(moves: List<ScoredMove>) = moves.filterNot { it.score.moveId in FAILS_WHEN_HIT_FIRST }
         val mine = exchangeable(subjectMoves).take(EXCHANGE_MOVES).ifEmpty { listOf(null) }
         val theirs = exchangeable(opponentMoves).take(EXCHANGE_MOVES).ifEmpty { listOf(null) }
         return mine.mapNotNull { subjectMove ->
             theirs.mapNotNull { opponentMove ->
-                pokemonMatchup(position, subjectId, opponentId, subjectMove, opponentMove, speedField)
+                pokemonMatchup(position, subjectId, opponentId, subjectMove, opponentMove, speedField, recovery)
             }.minByOrNull { it.score }
         }.maxByOrNull { it.score }
     }
@@ -310,6 +357,11 @@ internal object LocalMatchupScoreCalculator {
      * The exchange between two active Pokemon, each using its best attack every turn. Knockout timing comes
      * from the two moves' use profiles, which are independent; the order from the two actions, priority
      * included.
+     *
+     * With [recovery], a Pokemon with a self-heal (Recover, Roost, Soft-Boiled) outlasts an attack whose expected
+     * hit is less than one heal: that attack never lands the knockout. It spends the share of its turns the other's
+     * hits take to undo on healing, so its own knockout comes later by that much. Without this a wall that Roosts
+     * off every Fire Blast read as worn down in three hits, and the attacker kept firing.
      */
     internal fun pokemonMatchup(
         position: BattleDecisionContext,
@@ -318,6 +370,7 @@ internal object LocalMatchupScoreCalculator {
         subjectMove: ScoredMove?,
         opponentMove: ScoredMove?,
         speedField: MatchupSpeedField,
+        recovery: Boolean = false,
     ): PokemonMatchupScore? {
         val state = position.state
         val subject = state.pokemon.firstOrNull { it.battlePokemonId == subjectId && it.activeSlot != null } ?: return null
@@ -326,8 +379,32 @@ internal object LocalMatchupScoreCalculator {
             LocalPublicTurnOrder.actsFirstProbability(state, subject.side, subjectMove.action, opponent.side, opponentMove.action)
         } else null
         val subjectFirst = (first ?: LocalPublicTurnOrder.speedOrderProbability(state, subject, opponent) ?: 0.5).coerceIn(0.0, 1.0)
-        val mine = subjectMove?.score
-        val theirs = opponentMove?.score
+        var mine = subjectMove?.score
+        var theirs = opponentMove?.score
+        // Which side cannot get through the other's healing, and how often the healer still attacks.
+        var subjectWalled = false
+        var opponentWalled = false
+        var subjectAttackRate = 1.0
+        var opponentAttackRate = 1.0
+        if (recovery) {
+            val subjectHeal = healFraction(position, subject)
+            val opponentHeal = healFraction(position, opponent)
+            val mineHit = mine?.let(::expectedHit) ?: 0.0
+            val theirsHit = theirs?.let(::expectedHit) ?: 0.0
+            // A wall that out-heals the hit is never knocked out by it, and slows its own attack by the healing turns.
+            if (opponentHeal > 0.0 && mineHit < opponentHeal) {
+                subjectWalled = true
+                opponentAttackRate = 1.0 - mineHit / opponentHeal
+                mine = mine?.let(::neverKnocksOut)
+                theirs = theirs?.let { slowed(it, mineHit / opponentHeal) }
+            }
+            if (subjectHeal > 0.0 && theirsHit < subjectHeal) {
+                opponentWalled = true
+                subjectAttackRate = 1.0 - theirsHit / subjectHeal
+                theirs = theirs?.let(::neverKnocksOut)
+                mine = mine?.let { slowed(it, theirsHit / subjectHeal) }
+            }
+        }
         // The subject is standing after `n` of the opponent's attacks with this chance, having taken that much.
         fun standing(score: MoveMatchupScore?, uses: Int): Double =
             score?.survivalByUses?.let { it[uses.coerceAtMost(it.lastIndex)] } ?: 1.0
@@ -357,10 +434,20 @@ internal object LocalMatchupScoreCalculator {
                     asSecond * (opponent.hpFraction - taken(mine, n)))
             }
         }
-        // Neither landing a knockout in the window is a stand-off: split it by who acts first.
+        // Neither landing a knockout in the window is a stand-off: split it by who acts first. Against healing it
+        // leans to the healer by the share of turns it still attacks: a healer that must heal every turn to keep up is
+        // stuck in the loop and wins nothing, and two walls split it.
         val stalemate = (1.0 - win - loss).coerceAtLeast(0.0)
         val total = win + loss + stalemate
-        val winProbability = if (total <= 0.0) 0.5 else ((win + stalemate * subjectFirst) / total).coerceIn(0.0, 1.0)
+        val subjectDamages = (mine?.maximumDamageFraction ?: 0.0) > 0.0
+        val opponentDamages = (theirs?.maximumDamageFraction ?: 0.0) > 0.0
+        val stalemateShare = when {
+            subjectWalled && opponentWalled -> 0.5
+            subjectWalled -> if (opponentDamages) 0.5 - 0.5 * opponentAttackRate else 0.5
+            opponentWalled -> if (subjectDamages) 0.5 + 0.5 * subjectAttackRate else 0.5
+            else -> subjectFirst
+        }
+        val winProbability = if (total <= 0.0) 0.5 else ((win + stalemate * stalemateShare) / total).coerceIn(0.0, 1.0)
         val subjectRemaining = if (win > 0.0) (winHp / win).coerceIn(0.0, 1.0) else subject.hpFraction
         val opponentRemaining = if (loss > 0.0) (lossHp / loss).coerceIn(0.0, 1.0) else opponent.hpFraction
         val lossProbability = 1.0 - winProbability
@@ -376,6 +463,52 @@ internal object LocalMatchupScoreCalculator {
             opponentRemainingHpOnLoss = opponentRemaining,
             score = (winProbability * (0.5 + 0.5 * subjectRemaining) -
                 lossProbability * (0.5 + 0.5 * opponentRemaining)).coerceIn(-1.0, 1.0),
+        )
+    }
+
+    /** One use's expected damage, misses included, as a share of the target's maximum HP. */
+    private fun expectedHit(score: MoveMatchupScore): Double =
+        score.accuracy * (score.minimumDamageFraction + score.maximumDamageFraction) / 2.0
+
+    /**
+     * The share of its maximum HP [pokemon]'s best self-heal restores, from its known moves (and, for an opponent,
+     * the slots this tier believes in). Rest is left out: it puts the user to sleep for the turns it would attack.
+     */
+    private fun healFraction(position: BattleDecisionContext, pokemon: BattlePokemonStateView): Double {
+        val catalog = position.publicActionCatalog
+        val known = catalog.forPokemon(pokemon.battlePokemonId).filter { it.details.currentPp > 0 }.map { it.details }
+        val inferred = if (pokemon.side != BattleSide.OPPONENT) emptyList() else
+            catalog.inferredMovesForPokemon(pokemon.battlePokemonId)?.slots.orEmpty()
+                .filter { it.knowledge != BattleOpponentMoveKnowledge.GUESS }.mapNotNull { it.details }
+        return (known + inferred).maxOfOrNull { details ->
+            val effects = details.effects?.effects.orEmpty()
+            if (effects.any { it.kind == BattleMoveEffectKind.STATUS && it.target == BattleMoveEffectTarget.USER }) 0.0
+            else effects.filter {
+                it.kind == BattleMoveEffectKind.HEAL_FRACTION && it.target == BattleMoveEffectTarget.USER && (it.probability ?: 1.0) >= 1.0
+            }.maxOfOrNull { effect -> effect.fractionRange?.let { (it.minimum + it.maximum) / 2.0 } ?: 0.0 } ?: 0.0
+        } ?: 0.0
+    }
+
+    /** [score] with no knockout at any use: the target heals off everything it does. */
+    private fun neverKnocksOut(score: MoveMatchupScore): MoveMatchupScore = score.copy(
+        survivalByUses = score.survivalByUses.map { 1.0 },
+        expectedHitsToKnockout = Double.POSITIVE_INFINITY,
+        score = 0.0,
+    )
+
+    /**
+     * [score] from a user that spends [healingShare] of its turns healing: the knockout it lands on use `n` comes on
+     * turn `n / (1 - healingShare)`.
+     */
+    private fun slowed(score: MoveMatchupScore, healingShare: Double): MoveMatchupScore {
+        val rate = (1.0 - healingShare).coerceIn(0.0, 1.0)
+        if (rate >= 1.0) return score
+        fun stretch(values: List<Double>) = values.indices.map { turn -> values[(turn * rate).toInt().coerceAtMost(values.lastIndex)] }
+        return score.copy(
+            survivalByUses = stretch(score.survivalByUses),
+            damageWhileStandingByUses = stretch(score.damageWhileStandingByUses),
+            expectedHitsToKnockout = if (rate <= 0.0) Double.POSITIVE_INFINITY else score.expectedHitsToKnockout / rate,
+            score = score.score * rate,
         )
     }
 

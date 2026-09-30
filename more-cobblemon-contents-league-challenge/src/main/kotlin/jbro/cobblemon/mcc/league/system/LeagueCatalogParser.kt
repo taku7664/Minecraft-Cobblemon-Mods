@@ -19,7 +19,10 @@ object LeagueCatalogParser {
         val league = document("leagues", activeLeague)
         val gyms = league.strings("gyms")
         val finals = league.strings("finals")
-        val challenges = (gyms + finals).associateWith { id ->
+        val hard = if (league.has("hard") && !league.get("hard").isJsonNull) league.getAsJsonObject("hard") else null
+        val hardGyms = hard?.strings("gyms").orEmpty()
+        val hardFinals = hard?.strings("finals").orEmpty()
+        val challenges = (gyms + finals + hardGyms + hardFinals).associateWith { id ->
             val source = document("challenges", id)
             val trainer = document("trainers", source.string("trainer"))
             val team = document("teams", trainer.string("team"))
@@ -32,7 +35,7 @@ object LeagueCatalogParser {
                 trainer.number("ai_skill").toInt())
         }
         return LeagueCatalog(league.string("progress_id"), league.string("name_key"), league.number("initial_cap").toInt(), gyms, finals, challenges,
-            wildLevel(league))
+            wildLevel(league), hardGyms, hardFinals)
     }
 }
 

@@ -1,35 +1,75 @@
-# Approved leveling tiers for the bundled Sinnoh League route.
-# Reference fragment only: retain every other setting in CLC's existing server.toml.
+# Approved level-cap tiers for the bundled Sinnoh League: normal caps are the next opponent's highest level + 2,
+# the normal Champion opens the hard route at 80 and the last hard gym lifts it to 100.
+# League checks both modules. Reference fragment only: retain every other setting in CLC's existing server.toml.
 [server.main.levelingModule]
 restrictLeveling = true
 
 [[server.main.levelingModule.tiersConfig]]
 tier = "1"
-level = 15
+level = 16
 [[server.main.levelingModule.tiersConfig]]
 tier = "2"
-level = 20
+level = 24
 [[server.main.levelingModule.tiersConfig]]
 tier = "3"
-level = 30
+level = 28
 [[server.main.levelingModule.tiersConfig]]
 tier = "4"
-level = 40
+level = 34
 [[server.main.levelingModule.tiersConfig]]
 tier = "5"
-level = 45
+level = 39
 [[server.main.levelingModule.tiersConfig]]
 tier = "6"
-level = 50
+level = 43
 [[server.main.levelingModule.tiersConfig]]
 tier = "7"
-level = 55
+level = 46
 [[server.main.levelingModule.tiersConfig]]
 tier = "8"
-level = 60
+level = 52
 [[server.main.levelingModule.tiersConfig]]
 tier = "9"
-level = 70
+level = 64
 [[server.main.levelingModule.tiersConfig]]
 tier = "10"
+level = 80
+[[server.main.levelingModule.tiersConfig]]
+tier = "11"
+level = 100
+
+[server.main.catchingModule]
+
+[[server.main.catchingModule.tiersConfig]]
+tier = "1"
+level = 16
+[[server.main.catchingModule.tiersConfig]]
+tier = "2"
+level = 24
+[[server.main.catchingModule.tiersConfig]]
+tier = "3"
+level = 28
+[[server.main.catchingModule.tiersConfig]]
+tier = "4"
+level = 34
+[[server.main.catchingModule.tiersConfig]]
+tier = "5"
+level = 39
+[[server.main.catchingModule.tiersConfig]]
+tier = "6"
+level = 43
+[[server.main.catchingModule.tiersConfig]]
+tier = "7"
+level = 46
+[[server.main.catchingModule.tiersConfig]]
+tier = "8"
+level = 52
+[[server.main.catchingModule.tiersConfig]]
+tier = "9"
+level = 64
+[[server.main.catchingModule.tiersConfig]]
+tier = "10"
+level = 80
+[[server.main.catchingModule.tiersConfig]]
+tier = "11"
 level = 100

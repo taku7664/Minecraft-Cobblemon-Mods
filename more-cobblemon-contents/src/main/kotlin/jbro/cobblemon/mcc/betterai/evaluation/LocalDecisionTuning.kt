@@ -96,10 +96,25 @@ internal data class LocalDecisionTuning(
      * [jbro.cobblemon.mcc.betterai.search.LocalNarrowSecondTurn]. False skips it.
      */
     val narrowSecondTurn: Boolean = false,
+    /** Doubles searches one turn whatever the tier's depth; off, it asks for the tier's depth like singles. */
+    val doublesSingleTurn: Boolean = true,
     // The search's large design choices, each a switch so any combination can be played against another.
     // Off restores the earlier behaviour.
     /** A deeper turn's value is the discounted average of the turns' own changes; off, the last board reached. */
     val perTurnSearchValues: Boolean = true,
+    /** A later turn's change is measured from its board after forced replacements; off, from the board before them. */
+    val replacementAwareTurnStart: Boolean = true,
+    /**
+     * A line that ends, or is not followed, before the search's depth is averaged like the others with no later
+     * change; off, its one turn is taken whole, next to lines whose turns are averaged.
+     */
+    val perTurnShortLines: Boolean = true,
+    /**
+     * A turn that the search follows adds the change it made to the leaf's positional terms (its value beyond
+     * material) to the turn scorer's change; off, those terms cancel between the next turn's start and end and the
+     * leaf's reading of a position never reaches the root.
+     */
+    val positionalTurnDeltas: Boolean = false,
     /** A depth the budget cuts short keeps the candidates it finished; off, the whole depth is discarded. */
     val keepFinishedCandidates: Boolean = true,
     /** A next depth whose node count cannot fit the budget is not started. */
@@ -113,6 +128,40 @@ internal data class LocalDecisionTuning(
     val simultaneousResponseWeight: Double = 0.0,
     /** The opponent intents lean toward what the opponent did before in the same matchup (LocalOpponentRepeats). */
     val readOpponentRepeats: Boolean = false,
+    /**
+     * The opponent intent takes the chance of a switch from the fitted switch model
+     * (LocalOpponentIntentPredictor.switchChance: the threat of falling before acting, the entry gain behind it, its
+     * worth to its team, its best attack and HP) and spreads the rest over its moves. Off, moves and switches share
+     * one softmax, which read a switch in most losing matchups where the opponent switched one turn in ten.
+     * Singles only; doubles keeps the one softmax.
+     */
+    val scoredSwitchIntent: Boolean = true,
+    /**
+     * Share of the predicted switch chances the root heuristic acts on (singles): an attack aimed at a Pokemon
+     * predicted to switch is priced against the incoming one by that much (LocalSwitchPrediction). Zero leaves it to
+     * the repeat record alone.
+     */
+    val predictedSwitchShare: Double = 1.0,
+    /**
+     * The matchup exchange reads self-heals (LocalMatchupScoreCalculator.pokemonMatchup): an attack that does less
+     * than one heal never knocks the healer out, and the healer attacks less often. Off, both sides only attack.
+     * Off: in singles duels it measured +0.012 over five seeds, and it made a healer's switch-in read as a wall the
+     * rest of the opposing team does not let it be (Toxapex into Weavile with Garchomp behind: -1.79 played out).
+     */
+    val matchupRecovery: Boolean = false,
+    /** Weight of the credit a stat raise that passes the setup gate gets for the sweep it adds (LocalSetupGate.credit); singles. */
+    val setupSweepCredit: Double = 0.0,
+    /**
+     * Root points a self-heal loses for each turn in a row its user healed and still ended lower
+     * (LocalRecoveryLoop): the heal is not keeping up, and another one only spends a turn behind.
+     */
+    val recoveryLoopPenalty: Double = 30.0,
+    /**
+     * The root knockout correction removes the knockouts the search itself re-derived (expected opposing
+     * knockouts on the root turn times [knockoutMaterialScore]); off, it removes up to the search's whole gain,
+     * which erased the damage a knockout move cost whenever that gain stayed below the heuristic's credit.
+     */
+    val realizedKnockoutCorrection: Boolean = false,
     /**
      * A root candidate the search did not reach takes the searched candidates' median adjustment, when that is a
      * loss, instead of none. Doubles duels at the shipped budget, four seeds and 80 games: mean HP lead +0.25 for
@@ -138,6 +187,12 @@ internal data class LocalDecisionTuning(
     val leafPersistentStageValue: Double = 0.0,
     /** Board value of winning the singles matchup on the field (LocalLookaheadStateEvaluator.activeDuel); zero leaves it out. */
     val leafDuelValue: Double = 0.0,
+    /**
+     * Board value of the team matchup reading (LocalLeafMatchups: each side's best answers to the other, -1..1) and
+     * of the field matchup's score, in the leaf; they reach the root through [positionalTurnDeltas].
+     */
+    val leafMatchupTeamWeight: Double = 0.0,
+    val leafMatchupFieldWeight: Double = 0.0,
     /**
      * How much more willing the search is to abandon a continuation, in board units.
      *

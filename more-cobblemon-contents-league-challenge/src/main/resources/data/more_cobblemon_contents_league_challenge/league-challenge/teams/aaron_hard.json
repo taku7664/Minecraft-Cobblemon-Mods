@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "forretress level=88 moves=spikes,rapidspin,voltswitch,gyroball ability=sturdy nature=relaxed held_item=cobblemon:leftovers hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=0 defence_ev=252 special_attack_ev=0 special_defence_ev=4 speed_ev=0",
+    "yanmega level=89 moves=protect,bugbuzz,airslash,gigadrain ability=speedboost nature=timid held_item=cobblemon:life_orb hp_iv=31 attack_iv=0 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=0 defence_ev=0 special_attack_ev=252 special_defence_ev=0 speed_ev=252",
+    "drapion level=90 moves=swordsdance,knockoff,poisonjab,earthquake ability=battlearmor nature=adamant held_item=cobblemon:black_sludge hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=4 speed_ev=0",
+    "volcarona level=90 moves=quiverdance,fierydance,bugbuzz,gigadrain ability=flamebody nature=timid held_item=cobblemon:heavy_duty_boots hp_iv=31 attack_iv=0 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=0 defence_ev=0 special_attack_ev=252 special_defence_ev=0 speed_ev=252",
+    "scizor level=91 moves=bulletpunch,uturn,knockoff,superpower ability=technician nature=adamant held_item=cobblemon:choice_band hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=4 speed_ev=0",
+    "heracross level=92 moves=swordsdance,pinmissile,rockblast,closecombat ability=guts nature=jolly held_item=mega_showdown:heracronite hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=252"
+  ]
+}

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "pokemon": [
-    "turtwig level=20 moves=razorleaf,reflect,curse",
-    "cherrim level=20 moves=magicalleaf,leechseed,growth",
-    "roserade level=22 moves=magicalleaf,stunspore,poisonsting"
+    "turtwig level=20 moves=grassknot,razorleaf,sunnyday,reflect ability=overgrow nature=quirky gender=male hp_iv=6 attack_iv=6 defence_iv=6 special_attack_iv=6 special_defence_iv=6 speed_iv=6 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "cherrim level=20 moves=grassknot,leechseed,magicalleaf,safeguard ability=flowergift nature=lax gender=female hp_iv=6 attack_iv=6 defence_iv=6 special_attack_iv=6 special_defence_iv=6 speed_iv=6 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "roserade level=22 moves=grassknot,magicalleaf,poisonsting,stunspore ability=naturalcure nature=naive gender=female held_item=cobblemon:sitrus_berry hp_iv=6 attack_iv=6 defence_iv=6 special_attack_iv=6 special_defence_iv=6 speed_iv=6 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0"
   ]
 }

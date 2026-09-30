@@ -1,6 +1,5 @@
 {
-  "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "minecraft:block/chiseled_quartz_block"
+    "particle": "minecraft:block/gold_block"
   }
 }

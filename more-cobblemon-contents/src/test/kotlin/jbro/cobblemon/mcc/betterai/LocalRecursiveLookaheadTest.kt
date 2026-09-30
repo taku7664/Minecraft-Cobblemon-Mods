@@ -523,19 +523,24 @@ class LocalRecursiveLookaheadTest {
 
         BattleDifficultyProfiles.entries.forEachIndexed { index, difficulty ->
             val tierBudget = LocalLookaheadBudgetPolicy.forTier(difficulty.tier)
-            val result = LocalRecursiveLookaheadEvaluator.evaluate(
+            fun search(tuning: jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning) = LocalRecursiveLookaheadEvaluator.evaluate(
                 listOf(rank(ownTurn)),
                 decisionContext,
                 BattleTrainerProfile.balanced(index.coerceAtMost(5), difficulty),
+                tuning = tuning,
                 budget = tierBudget.copy(timeMillis = 10_000L),
                 moveUsageForFormat = { format -> selectedUsageFormats += format; null },
             )
+            // The shipped doubles search is one turn at every tier; the tier's depth still holds with it off.
+            val shipped = search(jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT)
+            assertEquals(1, shipped.depthCompleted, difficulty.id)
+            val result = search(jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT.copy(doublesSingleTurn = false))
             assertEquals(difficulty.lookaheadPlies, result.depthCompleted, difficulty.id)
             assertFalse(result.truncated, difficulty.id)
             assertFalse(result.publicResponseIncomplete, difficulty.id)
             assertTrue(result.nodesVisited > 0, difficulty.id)
         }
-        assertEquals(List(BattleDifficultyProfiles.entries.size) { BattleFormat.DOUBLE }, selectedUsageFormats)
+        assertEquals(List(2 * BattleDifficultyProfiles.entries.size) { BattleFormat.DOUBLE }, selectedUsageFormats)
     }
 
     @Test

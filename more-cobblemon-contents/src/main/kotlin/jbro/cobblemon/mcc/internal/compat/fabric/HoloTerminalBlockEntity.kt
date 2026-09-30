@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.internal.compat.fabric
 
 import java.util.UUID
+import jbro.cobblemon.mcc.api.terminal.HoloTerminal
 import jbro.cobblemon.mcc.internal.terminal.TerminalIdentityNbtCodec
 import net.minecraft.core.BlockPos
 import net.minecraft.core.HolderLookup
@@ -11,10 +12,11 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.state.BlockState
 
-internal class HoloBattleTerminalBlockEntity(
+internal class HoloTerminalBlockEntity(
+    val terminal: HoloTerminal,
     position: BlockPos,
     state: BlockState,
-) : BlockEntity(HoloBattleTerminalContent.blockEntityType, position, state) {
+) : BlockEntity(terminal.blockEntityType, position, state) {
     var terminalId: UUID = UUID.randomUUID()
         private set
 

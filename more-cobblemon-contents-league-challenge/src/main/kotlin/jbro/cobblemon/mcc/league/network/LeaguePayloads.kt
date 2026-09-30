@@ -14,7 +14,10 @@ data class LeagueView(val nonce: UUID, val revision: Long, val catalogRevision: 
     val badges: Int, val rank: String, val cap: Int, val champion: Boolean, val bp: Long,
     val challenges: List<LeagueChallengeView>, val runChallenge: String?, val awaitingNext: Boolean,
     val pendingRewards: Boolean, val errorKey: String? = null,
-    val openScreen: Boolean = false, val runNameKey: String? = null)
+    val openScreen: Boolean = false, val runNameKey: String? = null,
+    /** The hard route, sent once the normal Champion opened it; [runHard] tells which route a run is on. */
+    val hardUnlocked: Boolean = false, val hardChampion: Boolean = false,
+    val hardChallenges: List<LeagueChallengeView> = emptyList(), val runHard: Boolean = false)
 
 data class LeagueStatePayload(val json: String) : CustomPacketPayload {
     override fun type() = TYPE

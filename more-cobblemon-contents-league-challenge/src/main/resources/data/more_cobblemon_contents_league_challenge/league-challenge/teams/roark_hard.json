@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "pokemon": [
+    "probopass level=75 moves=stealthrock,thunderwave,powergem,voltswitch ability=sturdy nature=calm held_item=cobblemon:leftovers hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=0 defence_ev=0 special_attack_ev=4 special_defence_ev=252 speed_ev=0",
+    "aerodactyl level=76 moves=stoneedge,earthquake,taunt,dualwingbeat ability=unnerve nature=jolly held_item=cobblemon:focus_sash hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=252",
+    "golem level=76 moves=earthquake,stoneedge,firepunch,explosion ability=sturdy nature=adamant held_item=cobblemon:custap_berry hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=252 defence_ev=4 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "steelix level=77 moves=heavyslam,earthquake,toxic,roar ability=sturdy nature=impish held_item=cobblemon:leftovers hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=252 attack_ev=0 defence_ev=252 special_attack_ev=0 special_defence_ev=4 speed_ev=0",
+    "rampardos level=77 moves=headsmash,earthquake,firepunch,crunch ability=moldbreaker nature=jolly held_item=cobblemon:choice_scarf hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=252",
+    "tyranitar level=78 moves=dragondance,stoneedge,crunch,earthquake ability=sandstream nature=jolly held_item=mega_showdown:tyranitarite hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31 special_defence_iv=31 speed_iv=31 hp_ev=4 attack_ev=252 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=252"
+  ]
+}

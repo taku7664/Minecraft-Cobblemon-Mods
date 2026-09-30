@@ -24,10 +24,16 @@ internal object BattleHubClientNetworking {
                 MccHubScreen.current?.rebuild()
             }
         }
-        ClientPlayNetworking.registerGlobalReceiver(BattleHubStatePayload.TYPE) { _, context ->
+        ClientPlayNetworking.registerGlobalReceiver(BattleHubStatePayload.TYPE) { payload, context ->
             context.client().execute {
+                MccBattleHubClientState.visibleTabs = payload.tabs.toSet()
                 val open = MccHubScreen.current
-                if (open != null && context.client().screen === open) open.rebuild() else context.client().setScreen(MccHubScreen())
+                if (open != null && context.client().screen === open) {
+                    open.rebuild()
+                    open.selectTab(payload.initialTab)
+                } else {
+                    context.client().setScreen(MccHubScreen(payload.initialTab))
+                }
             }
         }
         ClientPlayNetworking.registerGlobalReceiver(BattleHubHeaderStatePayload.TYPE) { payload, context ->
@@ -41,6 +47,14 @@ internal object BattleHubClientNetworking {
 object MccBattleHubClientState {
     var deniedById: Map<String, ContentAccessDecision.Denied> = emptyMap()
 
+    /** The tabs the server opened the hub with; null shows every tab, as before the server said. */
+    var visibleTabs: Set<String>? = null
+
+    /** Adds [tabId] to the shown tabs, for a content the server opened on its own. */
+    fun reveal(tabId: String) {
+        visibleTabs = visibleTabs?.plus(tabId)
+    }
+
     /** The viewer's own records from the last hub open; null until the server sent them. */
     var dashboard: List<BattleHubRecordView>? = null
     var bpBalance: Long = 0L
@@ -52,6 +66,7 @@ object MccBattleHubClientState {
 
     fun clear() {
         deniedById = emptyMap()
+        visibleTabs = null
         dashboard = null
         bpBalance = 0L
     }

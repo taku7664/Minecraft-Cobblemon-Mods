@@ -82,12 +82,12 @@ internal object LeagueLiveCaptureHarness {
                             Direction.Plane.HORIZONTAL.asSequence().map { serverPlayer.blockPosition().relative(it).above(dy) }
                         }.firstOrNull { serverPlayer.serverLevel().isEmptyBlock(it) }
                             ?: error("No empty nearby position for the smoke terminal")
-                        serverPlayer.serverLevel().setBlockAndUpdate(pos!!, LeagueTerminal.block.defaultBlockState())
+                        serverPlayer.serverLevel().setBlockAndUpdate(pos!!, LeagueTerminal.terminal.block.defaultBlockState())
                         placed.set(true)
                     }
                     phase = 1
                 }
-                1 -> if (placed.get() && level.getBlockState(pos!!).`is`(LeagueTerminal.block)) {
+                1 -> if (placed.get() && level.getBlockState(pos!!).`is`(LeagueTerminal.terminal.block)) {
                     check(player.mainHandItem.isEmpty) { "Smoke interaction requires an empty hand" }
                     client.gameMode!!.useItemOn(player, InteractionHand.MAIN_HAND,
                         BlockHitResult(Vec3.atCenterOf(pos!!), Direction.UP, pos!!, false))

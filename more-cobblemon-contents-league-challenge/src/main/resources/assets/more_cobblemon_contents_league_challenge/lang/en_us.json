@@ -24,7 +24,7 @@
   "screen.more_cobblemon_contents_league_challenge.live.battle_active": "Battle with %s is in progress.",
   "screen.more_cobblemon_contents_league_challenge.live.current_trainer": "the current trainer",
   "screen.more_cobblemon_contents_league_challenge.live.champion": "Champion! Battle Tower and Battle Factory are unlocked.",
-  "screen.more_cobblemon_contents_league_challenge.live.rules": "Bring six Pokémon within your level cap. Closing this screen does not forfeit a run.",
+  "screen.more_cobblemon_contents_league_challenge.live.rules": "Bring one to six Pokémon within your level cap. Closing this screen does not forfeit a run.",
   "screen.more_cobblemon_contents_league_challenge.live.status": "League status",
   "screen.more_cobblemon_contents_league_challenge.live.entry": "%s · Unlocks Lv. %s",
   "screen.more_cobblemon_contents_league_challenge.live.state.cleared": "Cleared",
@@ -63,7 +63,7 @@
   "message.more_cobblemon_contents_league_challenge.cap_sync_failed": "Could not synchronize the League level cap.",
   "message.more_cobblemon_contents_league_challenge.badge_failed": "A badge could not be synchronized. Progress is saved and delivery will be retried.",
   "message.more_cobblemon_contents_league_challenge.run_active": "A League challenge is already active.",
-  "message.more_cobblemon_contents_league_challenge.party_required": "Register a complete party of six Pokémon.",
+  "message.more_cobblemon_contents_league_challenge.party_required": "Put at least one Pokémon in your party.",
   "message.more_cobblemon_contents_league_challenge.rewards_pending": "Previous rewards are still being delivered. Try again after synchronization.",
   "message.more_cobblemon_contents_league_challenge.prerequisite": "Complete the preceding gyms before this challenge.",
   "message.more_cobblemon_contents_league_challenge.no_run": "There is no active League run.",
@@ -96,5 +96,12 @@
   "screen.more_cobblemon_contents_league_challenge.home.rank.poke_ball": "Poké Ball",
   "screen.more_cobblemon_contents_league_challenge.home.rank.ultra_ball": "Ultra Ball",
   "screen.more_cobblemon_contents.hub.tab.league_challenge": "League Challenge",
-  "screen.more_cobblemon_contents.hub.unavailable.league_challenge": "The League Challenge screen could not be opened."
+  "screen.more_cobblemon_contents.hub.unavailable.league_challenge": "The League Challenge screen could not be opened.",
+  "screen.more_cobblemon_contents_league_challenge.live.difficulty_hard": "Hard",
+  "screen.more_cobblemon_contents_league_challenge.live.show_hard": "Hard League",
+  "screen.more_cobblemon_contents_league_challenge.live.show_normal": "Normal League",
+  "screen.more_cobblemon_contents_league_challenge.live.difficulty_tooltip": "Switch between the normal League and the hard League the Champion title opens. Hard trainers field fully trained teams that Mega Evolve.",
+  "message.more_cobblemon_contents_league_challenge.hard_locked": "Become the normal League Champion to challenge the hard League.",
+  "message.more_cobblemon_contents_league_challenge.opponent_level_unsupported": "An opponent is above Cobblemon's maximum level. Raise maxPokemonLevel in the server's Cobblemon config.",
+  "message.more_cobblemon_contents_league_challenge.gimmicks_locked": "Mega Evolution, Dynamax, Terastallization and Z-Moves open once you become the League Champion. Battles between players allow them."
 }

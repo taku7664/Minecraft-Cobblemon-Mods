@@ -67,7 +67,9 @@ internal object LocalSetupGate {
         } ?: return null
         val sweeper = scores.sweeps[user.battlePokemonId] ?: return Verdict(false, listOf("no_sweep_score"))
         val failures = mutableListOf<String>()
-        if (sweeper.score < SWEEP_PASS || sweeper.boostedSweep <= sweeper.naturalSweep) failures += "sweep"
+        // Read from the window it has: boosted in front of the Pokemon it faces, then against every opponent.
+        val windowBoost = sweeper.windowSweep ?: sweeper.boostedSweep
+        if (maxOf(sweeper.naturalSweep, windowBoost) < SWEEP_PASS || windowBoost <= sweeper.naturalSweep) failures += "sweep"
         val onField = state.pokemon.filter {
             it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         }
@@ -92,6 +94,32 @@ internal object LocalSetupGate {
             if (value >= STOPPER_PASS) failures += "stopper:${opponent.speciesId}:${stopper.kind.name.lowercase()}"
         }
         return Verdict(failures.isEmpty(), failures)
+    }
+
+    /**
+     * What a stat raise that passes the gate is worth over attacking now, in the root's units: the sweep it adds
+     * ((windowSweep or boostedSweep) - naturalSweep, a mean win chance over the living opponents) times those
+     * opponents, the knockouts it is expected to add, at [LocalDecisionTuning.knockoutMaterialScore] each, times
+     * [weight]. The gate only rules a setup out; passed, it still ranked by the one boosted hit the search sees,
+     * below any attack with a chance to knock out, and a sweeper that should boost kept attacking.
+     */
+    fun credit(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        scores: MatchupScores,
+        weight: Double,
+        knockoutMaterialScore: Double,
+    ): Double {
+        if (weight <= 0.0 || candidate.kind != BattleActionKind.USE_MOVE) return 0.0
+        if (evaluate(candidate, context, scores)?.passes != true) return 0.0
+        val user = context.state.pokemon.firstOrNull {
+            it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted && it.hpFraction > 0.0
+        } ?: return 0.0
+        val sweeper = scores.sweeps[user.battlePokemonId] ?: return 0.0
+        val gain = (sweeper.windowSweep ?: sweeper.boostedSweep) - sweeper.naturalSweep
+        if (gain <= 0.0) return 0.0
+        val opponents = context.state.pokemon.count { it.side == BattleSide.OPPONENT && !it.fainted && it.hpFraction > 0.0 }
+        return weight * gain * opponents * knockoutMaterialScore
     }
 
     /**

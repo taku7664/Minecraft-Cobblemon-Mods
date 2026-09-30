@@ -43,7 +43,7 @@ object ManagedPveBattles {
         require(levelCap in 1..100)
         require(BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) == null) { "battle_active" }
         val party = Cobblemon.storage.getParty(player).toList()
-        require(party.size == 6 && party.map { it.uuid }.distinct().size == 6) { "party_required" }
+        require(party.size in 1..6 && party.map { it.uuid }.distinct().size == party.size) { "party_required" }
         require(party.all { it.level <= levelCap && !it.isBattleClone() }) { "level_cap" }
         return party.map { it.saveToJSON(player.registryAccess()).toString() }
     }
@@ -52,7 +52,7 @@ object ManagedPveBattles {
         check(player.server.isSameThread)
         require(ManagedBattleContentIds.isValid(request.contentId) && ManagedBattleContentIds.isValid(request.trainerId))
         require(request.trainerNameKey.isNotBlank() && request.trainerNameKey.length <= 256)
-        require(request.skill in 0..5 && request.lockedParty.size == 6 && request.opponentProperties.size in 1..6)
+        require(request.skill in 0..5 && request.lockedParty.size in 1..6 && request.opponentProperties.size in 1..6)
         require(request.lockedParty.all { it.length <= 524288 } && request.opponentProperties.all { it.length <= 2048 })
         if (request.format == Format.DOUBLE) require(request.opponentProperties.size >= 2)
         val state = servers.getOrPut(player.server, ::State)
@@ -82,7 +82,7 @@ object ManagedPveBattles {
             }, request.opponentProperties.map { raw ->
                 val properties = PokemonProperties.Companion.parse(raw)
                 require(properties.species != null && properties.species != "random") { "Unknown or random opponent species" }
-                require(properties.level in 1..100) { "Opponent level must be explicit" }
+                require(properties.level in 1..Cobblemon.config.maxPokemonLevel) { "Opponent level must be explicit and within Cobblemon's maximum" }
                 require(!properties.moves.isNullOrEmpty()) { "Opponent moves must be explicit" }
                 BattlePokemon.Companion.safeCopyOf(Cobblemon173CatalogPokemonCreator.create(properties, properties.form)).also {
                     protectManagedOpponent(it)

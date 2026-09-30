@@ -10,11 +10,10 @@ internal data class LeagueHomePresentation(
     val focused: LeagueChallengeView?
 ) {
     companion object {
-        fun from(view: LeagueView, selectedId: String?): LeagueHomePresentation {
-            val gyms = view.challenges.take(8)
-            val finals = view.challenges.drop(8)
+        fun from(view: LeagueView, selectedId: String?, hard: Boolean = false): LeagueHomePresentation {
+            val route = if (hard) view.hardChallenges else view.challenges
             val focusedId = view.runChallenge ?: selectedId
-            return LeagueHomePresentation(gyms, finals, view.challenges.firstOrNull { it.id == focusedId })
+            return LeagueHomePresentation(route.take(8), route.drop(8), route.firstOrNull { it.id == focusedId })
         }
     }
 }

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "pokemon": [
-    "duskull level=24 moves=shadowsneak,willowisp,confuseray",
-    "haunter level=24 moves=shadowpunch,confuseray,suckerpunch",
-    "mismagius level=26 moves=shadowball,psybeam,magicalleaf"
+    "duskull level=24 moves=willowisp,pursuit,shadowsneak,futuresight ability=levitate nature=mild gender=female hp_iv=12 attack_iv=12 defence_iv=12 special_attack_iv=12 special_defence_iv=12 speed_iv=12 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "haunter level=24 moves=shadowclaw,suckerpunch,hypnosis,confuseray ability=levitate nature=bashful gender=female hp_iv=12 attack_iv=12 defence_iv=12 special_attack_iv=12 special_defence_iv=12 speed_iv=12 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0",
+    "mismagius level=26 moves=shadowball,psybeam,magicalleaf,confuseray ability=levitate nature=impish gender=female held_item=cobblemon:sitrus_berry hp_iv=12 attack_iv=12 defence_iv=12 special_attack_iv=12 special_defence_iv=12 speed_iv=12 hp_ev=0 attack_ev=0 defence_ev=0 special_attack_ev=0 special_defence_ev=0 speed_ev=0"
   ]
 }

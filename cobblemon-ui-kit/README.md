@@ -45,6 +45,8 @@ CobblemonUiThemes.registry.install(theme) // id "ds_window.tower_lobby"
 
 Every composed theme keeps Pixel League's control sizes (small 20, medium 26, large 36; full-size text at every size, since pixel Hangul breaks apart when scaled down), so a screen laid out for one fits all of them.
 
+Rounded and chamfered surfaces are drawn with anti-aliased corners (`UiSmoothCorners`): each corner pixel mixes the frame layers by how much of it they cover, like the in-between pixels of Cobblemon's own GUI sprites. Pixel frames, circles, capsules and diamonds keep stepped edges.
+
 A screen that draws a control's surface itself must also call `UiSurfaceRenderer.drawSelection` with the style's `selectionIndicator`, or a DS window selection is invisible. `CobblemonUiListRows` draws a list row (icon, title, supporting line, trailing text and small actions) the way `CobblemonUiListItem` does, for screens that own the row widget. `CobblemonUiPanel` draws a title in the theme's `UiPanelTitleStyle` (text, band or rule), takes `UiPanelSpec.featured` for the emphasised colour and an optional render-slot icon; `UiTextRenderer` draws text with a theme's coloured shadow.
 
 `COBBLEMON_UI_KIT_CAPTURE_WORLD=1` is reserved for automated capture. It deliberately exercises focus, scrolling, close, and then stops the client; do not use it for manual review. Add `COBBLEMON_UI_KIT_CAPTURE_ALL_THEMES=1` to capture the top and scrolled state of all six presets in one joined world. For repeatable local capture, pass an existing development world through Minecraft's quick-play argument:

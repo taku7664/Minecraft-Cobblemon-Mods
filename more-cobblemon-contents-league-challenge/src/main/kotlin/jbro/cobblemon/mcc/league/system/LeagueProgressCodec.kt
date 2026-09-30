@@ -21,6 +21,7 @@ object LeagueProgressCodec {
         val state = requireNotNull(gson.fromJson(objectData, LeagueProgress::class.java))
         require(state.revision >= 0 && state.unlockedCap in 0..100)
         require(state.champion == (state.championAt != null))
+        require(!state.hardChampion || state.champion) { "Hard Champion without the normal title" }
         require(state.championAt == null || state.championAt >= 0)
         require(state.cleared.size <= 4096)
         state.cleared.forEach(::requireId)
@@ -38,7 +39,7 @@ object LeagueProgressCodec {
             require(run.encounters.size == 1 || run.encounters.size == 5)
             require(run.index in run.encounters.indices)
             require(!run.awaitingNext || run.index < run.encounters.lastIndex)
-            require(run.party.size == 6 && run.party.all { it.isNotBlank() && it.length <= 524288 })
+            require(run.party.size in 1..6 &&run.party.all { it.isNotBlank() && it.length <= 524288 })
             run.encounters.forEach {
                 requireId(it.id)
                 require(it.team.size in 1..6 && it.team.all { member -> member.isNotBlank() && member.length <= 2048 })
