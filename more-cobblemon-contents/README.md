@@ -53,6 +53,7 @@ players too.
 | `/mcc pvp rooms`, `room close\|kick <player>`, `challenge cancel <player>`, `arena list\|release <index>`, `lounge rescue <player>` | Rooms, challenges, arena slots and the lounge |
 | `/mcc league inspect\|rewards list\|rewards retry\|rewards drop\|run cancel <player>` | Progress, undelivered rewards (drop marks them delivered without awarding) and runs |
 | `/mcc league cap sync <player>`, `validate`, `catalog`, `import-badges <player>` | Level cap, setup check, catalog state, badge migration |
+| `/mcc league trainer spawn <kind>`, `despawn [radius]`, `list [radius]`, `cooldown reset <player>` | Wild trainers |
 
 Contents take part in `status`, `battle pending` and the record reset check through `MccAdminSources`.
 
