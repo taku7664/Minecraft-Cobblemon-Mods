@@ -11,6 +11,20 @@ class BattleRecordStoreTest {
     private val towerSingles = BattleRecordKey(playerId, BattleRecordCategory("more_cobblemon_contents:battle_tower", "single"))
 
     @Test
+    fun `removing records takes only the keys picked`() {
+        val store = BattleRecordStore()
+        val towerDoubles = BattleRecordKey(playerId, BattleRecordCategory("more_cobblemon_contents:battle_tower", "double"))
+        val other = BattleRecordKey(UUID.randomUUID(), towerSingles.category)
+        listOf(towerSingles, towerDoubles, other).forEach { store.recordOutcome(it, BattleRecordOutcome.WIN) }
+
+        assertEquals(1, store.remove { it.playerId == playerId && it.category.formatId == "double" })
+        assertEquals(0, store.get(towerDoubles).totalWins)
+        assertEquals(1, store.get(towerSingles).totalWins)
+        assertEquals(1, store.remove { it.playerId == playerId })
+        assertEquals(1, store.get(other).totalWins)
+    }
+
+    @Test
     fun `wins and losses update current and best streaks`() {
         val store = BattleRecordStore()
 

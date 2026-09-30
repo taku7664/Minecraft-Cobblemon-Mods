@@ -163,6 +163,14 @@ class BattleRecordStore(initialRecords: Collection<BattleRecordStats> = emptyLis
         .map { it.copyWithDetachedMetrics() }
         .toList()
 
+    /** Removes the records whose key [predicate] picks; returns how many were removed. */
+    @Synchronized
+    fun remove(predicate: (BattleRecordKey) -> Boolean): Int {
+        val keys = records.keys.filter(predicate)
+        keys.forEach(records::remove)
+        return keys.size
+    }
+
     private fun BattleRecordStats.copyWithDetachedMetrics(): BattleRecordStats = copy(
         progressMetrics = progressMetrics.toMap(),
         bestMetrics = bestMetrics.toMap(),
