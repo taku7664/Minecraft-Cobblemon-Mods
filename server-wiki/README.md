@@ -16,7 +16,7 @@
 | `assets/nav.js` | 목차: 섹션, 문서, 아이콘, 검색 키워드 |
 | `assets/wiki.js` | 헤더, 검색, 왼쪽 목차, 경로 표시, 문서 목차, 이전/다음을 문서의 `<main>` 둘레에 붙입니다 |
 | `assets/wiki.css` | 테마. 색은 허브 팔레트 값 그대로입니다 |
-| `assets/fonts/` | 넣으면 쓰는 글꼴 자리(`wiki.woff2`). 없으면 시스템 한글 글꼴을 씁니다 |
+| `assets/fonts/` | Galmuri11 보통·굵게(SIL OFL 1.1, `LICENSE.txt`를 함께 배포합니다) |
 
 ## 문서 추가
 

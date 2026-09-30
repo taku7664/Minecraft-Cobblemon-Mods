@@ -4,10 +4,18 @@
  * together with the hub so the wiki keeps matching it.
  */
 
+/* Galmuri11 by Lee Minseo (quiple), SIL Open Font License 1.1: assets/fonts/LICENSE.txt. Bundled, so the wiki
+   looks the same whether or not the player has it installed. */
 @font-face {
-  /* Optional: drop a Korean pixel font (for example Galmuri11, OFL) at assets/fonts/wiki.woff2. */
-  font-family: "Wiki Pixel";
-  src: url("fonts/wiki.woff2") format("woff2");
+  font-family: "Wiki Galmuri";
+  src: url("fonts/Galmuri11.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Wiki Galmuri";
+  src: url("fonts/Galmuri11-Bold.woff2") format("woff2");
+  font-weight: 700;
   font-display: swap;
 }
 
@@ -39,8 +47,8 @@
 
   --radius: 6px;
   --gap: 12px;
-  --font: "Wiki Pixel", "Galmuri11", "NeoDunggeunmo", "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
-  --mono: "Wiki Pixel", "D2Coding", "Consolas", ui-monospace, monospace;
+  --font: "Wiki Galmuri", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --mono: "Wiki Galmuri", "D2Coding", "Consolas", ui-monospace, monospace;
 }
 
 * { box-sizing: border-box; }
