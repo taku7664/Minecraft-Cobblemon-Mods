@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.internal.compat.fabric
 
 import com.mojang.serialization.MapCodec
 import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.api.terminal.HoloTerminal
 import jbro.cobblemon.mcc.internal.terminal.TerminalInteractionResult
 import jbro.cobblemon.mcc.internal.terminal.TerminalInteractionSnapshot
 import net.minecraft.core.BlockPos
@@ -22,11 +23,13 @@ import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.world.phys.shapes.Shapes
 import net.minecraft.world.phys.shapes.VoxelShape
 
-internal class HoloBattleTerminalBlock(properties: BlockBehaviour.Properties) : BaseEntityBlock(properties) {
-    override fun codec(): MapCodec<out BaseEntityBlock> = CODEC
+internal class HoloTerminalBlock(properties: BlockBehaviour.Properties, private val terminal: HoloTerminal) : BaseEntityBlock(properties) {
+    private val codec: MapCodec<HoloTerminalBlock> = simpleCodec { HoloTerminalBlock(it, terminal) }
+
+    override fun codec(): MapCodec<out BaseEntityBlock> = codec
 
     override fun newBlockEntity(position: BlockPos, state: BlockState): BlockEntity =
-        HoloBattleTerminalBlockEntity(position, state)
+        HoloTerminalBlockEntity(terminal, position, state)
 
     override fun getRenderShape(state: BlockState): RenderShape = RenderShape.ENTITYBLOCK_ANIMATED
 
@@ -46,11 +49,11 @@ internal class HoloBattleTerminalBlock(properties: BlockBehaviour.Properties) : 
     ): InteractionResult {
         if (level.isClientSide) return InteractionResult.SUCCESS
         val serverPlayer = player as? ServerPlayer ?: return InteractionResult.FAIL
-        val observedEntity = level.getBlockEntity(position) as? HoloBattleTerminalBlockEntity
+        val observedEntity = level.getBlockEntity(position) as? HoloTerminalBlockEntity
             ?: return reject(serverPlayer, "terminal_missing")
         val playerPosition = serverPlayer.position()
-        val currentEntity = level.getBlockEntity(position) as? HoloBattleTerminalBlockEntity
-        val verification = HoloBattleTerminalContent.interactions.verify(
+        val currentEntity = level.getBlockEntity(position) as? HoloTerminalBlockEntity
+        val verification = HoloTerminalInteractions.service.verify(
             TerminalInteractionSnapshot(
                 expectedTerminalId = observedEntity.terminalId,
                 blockEntityTerminalId = currentEntity?.terminalId,
@@ -62,13 +65,13 @@ internal class HoloBattleTerminalBlock(properties: BlockBehaviour.Properties) : 
                 playerX = playerPosition.x,
                 playerY = playerPosition.y,
                 playerZ = playerPosition.z,
-                terminalBlockPresent = level.getBlockState(position).`is`(HoloBattleTerminalContent.block),
+                terminalBlockPresent = level.getBlockState(position).`is`(this),
                 permitted = serverPlayer.mayInteract(level, position),
             ),
         )
         return when (verification) {
             is TerminalInteractionResult.Verified -> {
-                if (HoloBattleTerminalContent.open(serverPlayer, verification)) {
+                if (HoloTerminalInteractions.open(serverPlayer, terminal, verification)) {
                     InteractionResult.SUCCESS
                 } else {
                     reject(serverPlayer, "open_failed")
@@ -85,7 +88,6 @@ internal class HoloBattleTerminalBlock(properties: BlockBehaviour.Properties) : 
     }
 
     private companion object {
-        val CODEC: MapCodec<HoloBattleTerminalBlock> = simpleCodec(::HoloBattleTerminalBlock)
         val SHAPE: VoxelShape = Shapes.or(
             Block.box(1.0, 0.0, 1.0, 15.0, 3.0, 15.0),
             Block.box(5.0, 3.0, 5.0, 11.0, 10.0, 11.0),

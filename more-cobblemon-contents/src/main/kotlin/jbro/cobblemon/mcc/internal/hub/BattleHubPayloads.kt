@@ -7,14 +7,35 @@ import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.ResourceLocation
 
-internal data object BattleHubStatePayload : CustomPacketPayload {
+/** Opens the hub showing only [tabs], on [initialTab]. */
+internal data class BattleHubStatePayload(val tabs: List<String>, val initialTab: String) : CustomPacketPayload {
+    init {
+        require(tabs.isNotEmpty() && tabs.size <= MAX_TABS && tabs.distinct().size == tabs.size) { "Invalid hub tabs: $tabs" }
+        require(tabs.all(ManagedBattleContentIds::isValid) && initialTab in tabs) { "Invalid hub tabs: $tabs from $initialTab" }
+    }
+
     override fun type(): CustomPacketPayload.Type<BattleHubStatePayload> = TYPE
 
-    val TYPE = CustomPacketPayload.Type<BattleHubStatePayload>(id("battle_hub_state"))
-    val CODEC: StreamCodec<RegistryFriendlyByteBuf, BattleHubStatePayload> = StreamCodec.of(
-        { _, _ -> Unit },
-        { BattleHubStatePayload },
-    )
+    companion object {
+        const val MAX_TABS = 32
+
+        val TYPE = CustomPacketPayload.Type<BattleHubStatePayload>(id("battle_hub_state"))
+        val CODEC: StreamCodec<RegistryFriendlyByteBuf, BattleHubStatePayload> = StreamCodec.of(
+            { buffer, payload ->
+                buffer.writeVarInt(payload.tabs.size)
+                payload.tabs.forEach { buffer.writeUtf(it, BattleHubOpenContentPayload.MAX_CONTENT_ID_LENGTH) }
+                buffer.writeUtf(payload.initialTab, BattleHubOpenContentPayload.MAX_CONTENT_ID_LENGTH)
+            },
+            { buffer ->
+                val count = buffer.readVarInt()
+                require(count in 1..MAX_TABS) { "Invalid hub tab count: $count" }
+                BattleHubStatePayload(
+                    List(count) { buffer.readUtf(BattleHubOpenContentPayload.MAX_CONTENT_ID_LENGTH) },
+                    buffer.readUtf(BattleHubOpenContentPayload.MAX_CONTENT_ID_LENGTH),
+                )
+            },
+        )
+    }
 }
 
 internal data class BattleHubHeaderStatePayload(val bpBalance: Long) : CustomPacketPayload {

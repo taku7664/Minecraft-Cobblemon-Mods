@@ -5,11 +5,17 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import jbro.cobblemon.mcc.internal.application.DefaultBattleContentApplicationService
 import jbro.cobblemon.mcc.internal.command.BattleContentCommands
-import jbro.cobblemon.mcc.internal.compat.fabric.HoloBattleTerminalContent
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
+import jbro.cobblemon.mcc.api.terminal.HoloTerminalPalette
+import jbro.cobblemon.mcc.api.terminal.HoloTerminals
+import jbro.cobblemon.mcc.internal.compat.fabric.HoloBattleTerminalIds
+import jbro.cobblemon.mcc.internal.compat.fabric.HoloTerminalInteractions
 import jbro.cobblemon.mcc.internal.compat.fabric.ManagedServerEphemeralStateCleanup
 import jbro.cobblemon.mcc.internal.compat.fabric.ManagedBattleLifecycleEvents
 import jbro.cobblemon.mcc.internal.compat.fabric.BattlePointShopCatalogResources
+import jbro.cobblemon.mcc.internal.hub.BattleHubIds
 import jbro.cobblemon.mcc.internal.hub.BattleHubNetworking
+import jbro.cobblemon.mcc.internal.hub.BattleHubTabConfigFile
 import jbro.cobblemon.mcc.internal.shadow.ShadowTrainerProjectionNetworking
 import jbro.cobblemon.mcc.internal.presentation.BattleArenaHologramNetworking
 import jbro.cobblemon.mcc.internal.battle.ManagedBattleMechanicVisibilityNetworking
@@ -27,7 +33,12 @@ object MoreCobblemonContents : ModInitializer {
     override fun onInitialize() {
         jbro.cobblemon.mcc.api.access.BattleContentAccess.registerLifecycle()
         jbro.cobblemon.mcc.api.battle.ManagedPveBattles.registerLifecycle()
-        HoloBattleTerminalContent.register { player, verification -> BattleHubNetworking.open(player, verification) }
+        // The general battle terminal reaches every content; each content mod adds a terminal of its own.
+        HoloTerminals.register(HoloBattleTerminalIds.id, BattleHubIds.DASHBOARD, listOf(BattleHubIds.DASHBOARD, BattleHubIds.SHOP,
+            ManagedBattleContentIds.PVP, ManagedBattleContentIds.LEAGUE_CHALLENGE, ManagedBattleContentIds.BATTLE_TOWER,
+            ManagedBattleContentIds.BATTLE_FACTORY), HoloTerminalPalette.MCC)
+        HoloTerminalInteractions.install(BattleHubNetworking::openTerminal)
+        BattleHubTabConfigFile.register()
         BattlePointShopCatalogResources.register()
         ShopPlayNetworking.registerServer()
         BattleHubNetworking.registerServer()
@@ -39,7 +50,7 @@ object MoreCobblemonContents : ModInitializer {
         ManagedBattleLifecycleEvents.registerServer()
         BattleContentCommands.register(
             CONTENTS,
-            openScreen = BattleHubNetworking::open,
+            openScreen = BattleHubNetworking::openCommand,
         )
         ManagedServerEphemeralStateCleanup.registerServer()
         MoreCobblemonContentsBetterAi.initialize()

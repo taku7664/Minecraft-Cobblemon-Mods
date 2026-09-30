@@ -4,6 +4,7 @@ import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.api.access.BattleContentAccess
 import jbro.cobblemon.mcc.api.access.ContentAccessAction
 import jbro.cobblemon.mcc.api.access.ContentAccessDecision
+import jbro.cobblemon.mcc.api.terminal.HoloTerminal
 import jbro.cobblemon.mcc.internal.bp.BattlePointService
 import jbro.cobblemon.mcc.internal.presentation.attemptServerUiOperation
 import jbro.cobblemon.mcc.internal.record.BattleRecordService
@@ -16,7 +17,10 @@ import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 
 object BattleHubNetworking {
-    private val terminalContexts = HashMap<UUID, TerminalInteractionResult.Verified>()
+    /** The tabs a player's open hub may reach, and the terminal it was opened from; null for `/mcc`. */
+    private class Session(val tabs: List<String>, val terminal: TerminalInteractionResult.Verified?)
+
+    private val sessions = HashMap<UUID, Session>()
 
     fun registerServer() {
         PayloadTypeRegistry.playS2C().register(BattleHubAccessPayload.TYPE, BattleHubAccessPayload.CODEC)
@@ -29,7 +33,9 @@ object BattleHubNetworking {
             val opened = attemptServerUiOperation(
                 reportFailure = { failure -> reportFailure(player, "content ${payload.contentId}", failure) },
             ) {
-                BattleHubEntries.get(payload.contentId)?.open?.invoke(player, terminalContexts[player.uuid]) ?: false
+                // A tab the hub was not opened with stays closed, whatever the client asks for.
+                val session = sessions[player.uuid]?.takeIf { payload.contentId in it.tabs }
+                session != null && BattleHubEntries.get(payload.contentId)?.open?.invoke(player, session.terminal) == true
             }
             if (!opened) {
                 attemptServerUiOperation(
@@ -45,29 +51,33 @@ object BattleHubNetworking {
             }
         }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
-            terminalContexts.remove(handler.player.uuid)
+            sessions.remove(handler.player.uuid)
         }
     }
 
-    /** Opens the hub; a verified [terminal] stays attached to the entries opened during this hub session. */
-    fun open(player: ServerPlayer, terminal: TerminalInteractionResult.Verified? = null): Boolean {
+    /** Opens the hub for `/mcc`, on the tabs the config gives the command. */
+    fun openCommand(player: ServerPlayer): Boolean =
+        open(player, BattleHubTabConfigFile.current.command, BattleHubIds.DASHBOARD, null)
+
+    /** Opens the hub from [terminal]; the verified [use] stays attached to the entries opened during this hub session. */
+    fun openTerminal(player: ServerPlayer, terminal: HoloTerminal, use: TerminalInteractionResult.Verified): Boolean {
+        val tabs = BattleHubTabConfigFile.current.terminals[terminal.id.toString()] ?: terminal.defaultTabs
+        return open(player, tabs, terminal.homeTab, use)
+    }
+
+    private fun open(player: ServerPlayer, configured: List<String>, home: String?, terminal: TerminalInteractionResult.Verified?): Boolean {
+        val tabs = configured.take(BattleHubStatePayload.MAX_TABS)
         val opened = attemptServerUiOperation(
             reportFailure = { failure -> reportFailure(player, "open", failure) },
         ) {
             if (!ServerPlayNetworking.canSend(player, BattleHubStatePayload.TYPE)) return@attemptServerUiOperation false
-            if (terminal == null) {
-                terminalContexts.remove(player.uuid)
-            } else {
-                terminalContexts[player.uuid] = terminal
-            }
+            sessions[player.uuid] = Session(tabs, terminal)
             sendHeader(player)
             sendDashboard(player)
-            ServerPlayNetworking.send(player, BattleHubStatePayload)
+            ServerPlayNetworking.send(player, BattleHubStatePayload(tabs, home?.takeIf { it in tabs } ?: tabs.first()))
             true
         }
-        if (!opened && terminal != null) {
-            terminalContexts.remove(player.uuid, terminal)
-        }
+        if (!opened) sessions.remove(player.uuid)
         return opened
     }
 
@@ -98,7 +108,7 @@ object BattleHubNetworking {
         ServerPlayNetworking.send(player, BattleHubDashboardPayload(records))
     }
 
-    fun clear() = terminalContexts.clear()
+    fun clear() = sessions.clear()
 
     private fun balance(player: ServerPlayer): Long = BattlePointService.balance(player.server, player.uuid)
 
