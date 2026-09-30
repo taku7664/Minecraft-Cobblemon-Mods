@@ -76,7 +76,9 @@ class LocalPuzzleSuiteTest {
         for ((index, puzzle) in PUZZLES.withIndex()) {
             val only = System.getProperty("aiengine.puzzleOnly")?.split(',')?.map(String::trim)?.filter(String::isNotEmpty)
             if (only != null && puzzle.name !in only) continue
-            val definition = LocalTacticalScenarioDefinition(puzzle.name, puzzle.ally, puzzle.opponent, 30_000 + index, puzzle.format)
+            // Seeded by the name, so adding a puzzle leaves the others' draws as they were.
+            val definition = LocalTacticalScenarioDefinition(puzzle.name, puzzle.ally, puzzle.opponent,
+                30_000 + Math.floorMod(puzzle.name.hashCode(), 10_000), puzzle.format)
             val contexts = mutableListOf<jbro.cobblemon.mcc.internal.ai.BattleDecisionContext>()
             val report = LocalTacticalScenarioBattle.run(definition, 1, tuning, tuning, boss, boss,
                 recordedContexts = contexts, lookaheadBudget = budget, start = puzzle.start)
@@ -129,13 +131,18 @@ class LocalPuzzleSuiteTest {
                 })
                 replies.forEach { (actionId, counts) -> println("   replies to ${label(actionId)}: $counts") }
             }
-            val chosenLabels = contexts.first().candidates.firstOrNull { it.actionId == turn.cycleActualId }
-                ?.let { slotLabels(it, contexts.first().state) }
-            val ok = puzzle.slots?.let { check -> chosenLabels?.let(check) == true } ?: puzzle.passes(turn.cycleActual)
+            // Judged on the Boss's top-ranked action: the selector's draw among close ones is reported beside it.
+            val topId = turn.cycleRankedIds.firstOrNull() ?: turn.cycleActualId
+            val topCandidate = contexts.first().candidates.first { it.actionId == topId }
+            val chosenLabels = slotLabels(topCandidate, contexts.first().state)
+            val topLabel = topCandidate.switchPokemonId?.let { id ->
+                "교체→" + contexts.first().state.pokemon.first { it.battlePokemonId == id }.speciesId.substringAfter(':')
+            } ?: topCandidate.moveId?.substringAfter(':') ?: topId
+            val ok = puzzle.slots?.let { check -> check(chosenLabels) } ?: puzzle.passes(topLabel)
             if (ok) passed++
             val (p, n) = byCategory[puzzle.category] ?: (0 to 0)
             byCategory[puzzle.category] = (p + if (ok) 1 else 0) to (n + 1)
-            val chose = if (puzzle.slots != null) chosenLabels?.joinToString("+") else turn.cycleActual
+            val chose = (if (puzzle.slots != null) chosenLabels.joinToString("+") else topLabel) + " (drawn: ${turn.cycleActual})"
             val want = if (puzzle.slots != null) puzzle.want
                 else if (puzzle.rejected.isNotEmpty()) "not ${puzzle.rejected}" else puzzle.accepted.toString()
             println("PUZZLE ${if (ok) "PASS" else "FAIL"} ${puzzle.name} [${puzzle.category}] chose=$chose want=$want")
@@ -188,6 +195,7 @@ class LocalPuzzleSuiteTest {
                 "plainSwitch" -> tuning.copy(scoredSwitchIntent = false)
                 "recovery" -> tuning.copy(matchupRecovery = true)
                 "protect" -> tuning.copy(doublesProtectCredit = value ?: 1.0)
+                "healRace" -> tuning.copy(healRaceWeight = value ?: 1.0)
                 "doublesSwitch" -> tuning.copy(doublesSwitchModel = true)
                 "noLoop" -> tuning.copy(recoveryLoopPenalty = 0.0)
                 "setupCredit" -> tuning.copy(setupSweepCredit = value ?: 1.0)
@@ -262,11 +270,14 @@ class LocalPuzzleSuiteTest {
                 // Gyarados walks in free on the knockout. Either passes; anything else is a miss.
                 accepted = setOf("earthquake", "교체→toxapex")),
             // Priority finishes against a faster opponent.
-            Puzzle("scizor-bullet-punch-finish", "priority",
+            // Not a priority finish after all: played out, the Dragapult at 10% switches to Garchomp every time (16 of
+            // 16), so Bullet Punch lands on Garchomp (+0.19). Toxapex takes the Garchomp (+1.04) and Knock Off hits it
+            // (+0.91); Clefable is the worst (-0.46).
+            Puzzle("scizor-reads-the-switch", "predict",
                 listOf("scizor_preset_1", "toxapex_preset_2", "clefable_preset_1"),
                 listOf("dragapult_preset_1", "garchomp_preset_1", "blissey_preset_1"),
                 start = hp((A to 0) to 0.3, (O to 0) to 0.1),
-                accepted = setOf("bulletpunch")),
+                accepted = setOf("교체→toxapex", "knockoff")),
             Puzzle("mamoswine-ice-shard-finish", "priority",
                 listOf("mamoswine_preset_1", "heatran_preset_2", "toxapex_preset_1"),
                 listOf("dragonite_preset_2", "gyarados_preset_2", "blissey_preset_1"),
@@ -302,6 +313,13 @@ class LocalPuzzleSuiteTest {
                 listOf("toxapex_preset_1", "skarmory_preset_2", "swampert_preset_1"),
                 listOf("clefable_preset_1", "garchomp_preset_2", "heatran_preset_1"),
                 accepted = setOf("toxic")),
+
+            // A heal race. Skarmory can Roost Fire Blast off, but at full HP it attacks instead and a Roost costs it the
+            // turn: played out, Fire Blast +1.54 and Outrage +1.51 against Toxapex +0.65. A possible heal is no loop.
+            Puzzle("fireblast-into-roost", "heal_race_restraint",
+                listOf("garchomp_preset_1", "clefable_preset_1", "toxapex_preset_4"),
+                listOf("skarmory_preset_1", "blissey_preset_1", "heatran_preset_1"),
+                accepted = setOf("fireblast", "outrage")),
 
             // Doubles: the first two sets of each side are in front, slot 0 then slot 1.
             // A spread move beside a partner it cannot hit, and beside one it would take out.
