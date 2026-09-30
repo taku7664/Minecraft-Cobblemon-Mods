@@ -24,6 +24,9 @@
   "message.jbro_policy.release.failed": "The Pokemon could not be released.",
   "message.jbro_policy.release.done": "You released %s.",
 
+  "message.jbro_policy.pokemon_item.restored": "%s is back in your party, or your PC if the party is full.",
+  "message.jbro_policy.pokemon_item.failed": "The Pokemon on this item could not be restored.",
+
   "message.jbro_policy.pokenav.failed": "The Pokenav could not be opened.",
 
   "pack.jbro_policy.legendary_spawns": "jbro Policy: natural Legendary and Mythical spawns",

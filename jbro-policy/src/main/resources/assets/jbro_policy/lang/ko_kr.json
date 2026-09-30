@@ -24,6 +24,9 @@
   "message.jbro_policy.release.failed": "포켓몬을 놓아주지 못했습니다.",
   "message.jbro_policy.release.done": "%s을(를) 놓아주었습니다.",
 
+  "message.jbro_policy.pokemon_item.restored": "%s을(를) 파티로 되돌렸습니다. 파티가 가득 찼다면 PC로 보냈습니다.",
+  "message.jbro_policy.pokemon_item.failed": "이 아이템의 포켓몬을 되돌리지 못했습니다.",
+
   "message.jbro_policy.pokenav.failed": "포켓내비를 열지 못했습니다.",
 
   "pack.jbro_policy.legendary_spawns": "jbro Policy: 전설·환상 포켓몬 자연 스폰",
