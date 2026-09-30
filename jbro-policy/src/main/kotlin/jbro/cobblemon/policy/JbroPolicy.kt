@@ -1,6 +1,8 @@
 package jbro.cobblemon.policy
 
 import jbro.cobblemon.policy.config.PolicyConfig
+import jbro.cobblemon.policy.legend.LegendCommand
+import jbro.cobblemon.policy.legend.LegendPolicy
 import jbro.cobblemon.policy.plaza.Plaza
 import jbro.cobblemon.policy.pokemon.PartyRelease
 import jbro.cobblemon.policy.pokemon.PokemonItemRestore
@@ -33,6 +35,8 @@ object JbroPolicy : ModInitializer {
         PartyRelease.register()
         PokenavCommand.register()
         PokemonItemRestore.register()
+        LegendPolicy.register()
+        LegendCommand.register()
         // Built-in data packs, so either can be turned off per world with /datapack disable.
         val mod = FabricLoader.getInstance().getModContainer(MOD_ID).orElseThrow()
         for (pack in listOf("legendary_spawns", "no_stat_candy_l_xl")) {
