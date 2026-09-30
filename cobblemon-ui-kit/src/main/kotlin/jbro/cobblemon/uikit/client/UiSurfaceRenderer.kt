@@ -11,6 +11,11 @@ import jbro.cobblemon.uikit.horizontalSpan
 import net.minecraft.client.gui.GuiGraphics
 import kotlin.math.roundToInt
 
+/**
+ * Draws surfaces from solid fills. A surface is many fills (a run per row on shaped edges, a pixel per smooth corner
+ * pixel), and each unmanaged [GuiGraphics.fill] is its own draw call, so a surface is drawn managed: its fills go out
+ * together once it is done. They are all the same render type and keep their order, so the pixels do not change.
+ */
 object UiSurfaceRenderer {
     fun draw(
         graphics: GuiGraphics,
@@ -21,6 +26,17 @@ object UiSurfaceRenderer {
         style: UiSurfaceStyle
     ) {
         if (width <= 0 || height <= 0) return
+        graphics.drawManaged { drawSurface(graphics, x, y, width, height, style) }
+    }
+
+    private fun drawSurface(
+        graphics: GuiGraphics,
+        x: Int,
+        y: Int,
+        width: Int,
+        height: Int,
+        style: UiSurfaceStyle
+    ) {
         val border = style.border
         if (border is UiBorder.PixelFrame && border.shadowOffset > 0) {
             drawFill(
@@ -59,8 +75,11 @@ object UiSurfaceRenderer {
     ) {
         if (indicator !is UiSelectionIndicator.Outline || width <= 0 || height <= 0) return
         val outline = UiBorder.Solid(indicator.color, indicator.width)
-        if (drawSmooth(graphics, x, y, width, height, shape, UiFill.None, 1f, outline)) return
-        drawBorder(graphics, x, y, width, height, shape, outline)
+        graphics.drawManaged {
+            if (!drawSmooth(graphics, x, y, width, height, shape, UiFill.None, 1f, outline)) {
+                drawBorder(graphics, x, y, width, height, shape, outline)
+            }
+        }
     }
 
     /**
@@ -240,6 +259,11 @@ object UiSurfaceRenderer {
         opacity: Float
     ) {
         if (fill is UiFill.None || opacity <= 0f) return
+        // A solid rectangle covers every row edge to edge: one fill draws the same pixels as a fill per row.
+        if (shape is UiShape.Rectangle && fill is UiFill.Solid) {
+            graphics.fill(x, y, x + width, y + height, applyOpacity(fill.color, opacity))
+            return
+        }
         repeat(height) { row ->
             val span = shape.horizontalSpan(width, height, row)
             val color = when (fill) {
@@ -274,6 +298,10 @@ object UiSurfaceRenderer {
         val innerWidth = width - inset * 2
         val innerHeight = height - inset * 2
         val innerShape = shape.inset(inset)
+        if (shape is UiShape.Rectangle) {
+            drawRectangleBorder(graphics, x, y, width, height, inset, innerWidth > 0 && innerHeight > 0, border.color)
+            return
+        }
 
         repeat(height) { row ->
             val outer = shape.horizontalSpan(width, height, row)
@@ -292,6 +320,21 @@ object UiSurfaceRenderer {
                 graphics.fill(x + innerEnd, y + row, x + outer.endExclusive, y + row + 1, border.color)
             }
         }
+    }
+
+    /**
+     * The rectangle case of [drawBorder] in at most four fills: full rows above and below the hole, and the side
+     * columns beside it. Without a hole (no inset, or a hole with no area) every row is full, as there.
+     */
+    private fun drawRectangleBorder(graphics: GuiGraphics, x: Int, y: Int, width: Int, height: Int, inset: Int, hole: Boolean, color: Int) {
+        if (inset == 0 || !hole) {
+            graphics.fill(x, y, x + width, y + height, color)
+            return
+        }
+        graphics.fill(x, y, x + width, y + inset, color)
+        graphics.fill(x, y + height - inset, x + width, y + height, color)
+        graphics.fill(x, y + inset, x + inset, y + height - inset, color)
+        graphics.fill(x + width - inset, y + inset, x + width, y + height - inset, color)
     }
 
     private fun UiShape.inset(pixels: Int): UiShape = when (this) {
