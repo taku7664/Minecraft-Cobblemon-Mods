@@ -1,0 +1,30 @@
+{
+  "source": "https://www.planetminecraft.com/project/skybound-village-floating-medieval-island-free-map/",
+  "creator": "Itzz_Aspect",
+  "schematic_sha256": "5f78509a4aa55a91cc01fbbea00c0cc5224142fe59c0ca512422e5d543498f2e",
+  "world": "C:\\Users\\박주형\\AppData\\Roaming\\ModrinthApp\\profiles\\cobblemon-dev\\saves\\새로운 세계",
+  "dimension": "jbro_policy:plaza",
+  "translation": [
+    -60,
+    -50,
+    -62
+  ],
+  "spawn": {
+    "x": 0.5,
+    "y": 80.0,
+    "z": 0.5,
+    "yaw": 0.0,
+    "pitch": 0.0
+  },
+  "chunks": 64,
+  "non_air_blocks": 333726,
+  "block_entities": 107,
+  "regions": {
+    "r.-1.-1.mca": "2989f797aedce00a3272f084a5b43a90082e4ef1e22a813a4fb894c9572382a1",
+    "r.-1.0.mca": "f4b982962556eb8e215f727071265349f20f0cee929d1e551f57258eed5bd4d9",
+    "r.0.-1.mca": "192e151ff68ef0b4859cfc2c0d835d13b6b6ab9de6226e9525dd101fa5cb52e2",
+    "r.0.0.mca": "d95708a16ef0b37924ea668830abd278f8fb85f834e15f46778f2d2b574b1a56"
+  },
+  "verification": "Every block in every generated section was decoded and compared with the source; plaza biome and clear spawn checked.",
+  "runtime_verified": false
+}
