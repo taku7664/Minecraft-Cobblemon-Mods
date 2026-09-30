@@ -298,6 +298,9 @@ internal class TowerPlaySessionService(
     fun isLaunchPending(playerId: UUID): Boolean = playerId in launchingPlayers
 
     @Synchronized
+    fun count(): Int = sessions.size
+
+    @Synchronized
     fun clear() {
         var failure: Throwable? = null
         sessions.keys.toList().forEach { playerId ->

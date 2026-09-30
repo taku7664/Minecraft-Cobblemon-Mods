@@ -6,8 +6,13 @@ import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfile
 import jbro.cobblemon.mcc.internal.ai.BattleDifficultyProfiles
 import jbro.cobblemon.mcc.internal.ai.BattleTrainerProfile
+import com.cobblemon.mod.common.battles.BattleRegistry
+import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
+import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173BattleRuleHooks
+import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173ManagedBattleTermination
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
+import net.minecraft.commands.arguments.EntityArgument
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 
@@ -76,7 +81,26 @@ internal object AiTestCommands {
                 },
             )
         }
+        root.then(
+            Commands.literal("stop")
+                .executes { command -> stop(command.source, command.source.playerOrException) }
+                .then(Commands.argument("player", EntityArgument.player()).executes { command ->
+                    stop(command.source, EntityArgument.getPlayer(command, "player"))
+                }),
+        )
         return root
+    }
+
+    /** Ends [player]'s AI test battle without a result; the test keeps no progress to settle. */
+    private fun stop(source: CommandSourceStack, player: ServerPlayer): Int {
+        val battle = BattleRegistry.getBattleByParticipatingPlayerId(player.uuid)
+        if (battle == null || Cobblemon173BattleRuleHooks.contentId(battle.battleId) != ManagedBattleContentIds.AI_TEST) {
+            source.sendFailure(Component.translatable("command.${MoreCobblemonContents.MOD_ID}.test.ai.error.no_test_battle", player.name.string))
+            return 0
+        }
+        Cobblemon173ManagedBattleTermination.end(battle.battleId)
+        source.sendSuccess({ Component.translatable("command.${MoreCobblemonContents.MOD_ID}.test.ai.stopped", player.name.string) }, true)
+        return 1
     }
 
     private fun respond(

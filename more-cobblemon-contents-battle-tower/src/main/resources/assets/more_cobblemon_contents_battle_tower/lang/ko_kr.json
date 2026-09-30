@@ -225,5 +225,21 @@
   "screen.more_cobblemon_contents.hub.tab.battle_tower": "배틀타워",
   "screen.more_cobblemon_contents.hub.unavailable.battle_tower": "배틀타워 화면을 열 수 없습니다.",
   "screen.more_cobblemon_contents.tower.guide.open": "가이드",
-  "screen.more_cobblemon_contents.tower.section.legendary_class": "전설급"
+  "screen.more_cobblemon_contents.tower.section.legendary_class": "전설급",
+  "command.more_cobblemon_contents.tower.admin.label": "배틀타워",
+  "command.more_cobblemon_contents.tower.admin.status.catalog_missing": "상대 카탈로그를 불러오지 못함",
+  "command.more_cobblemon_contents.tower.admin.status.catalog": "상대 카탈로그 %s (세트 %s개)",
+  "command.more_cobblemon_contents.tower.admin.status.sessions": "세션 %s개, 진행 중인 전투 %s개, 결과 저장 대기 %s개",
+  "command.more_cobblemon_contents.tower.admin.header": "%s님의 배틀타워 세션",
+  "command.more_cobblemon_contents.tower.admin.session": "형식 %s, 단계 %s",
+  "command.more_cobblemon_contents.tower.admin.streak": "연승 %s (최고 %s)",
+  "command.more_cobblemon_contents.tower.admin.team": "등록 팀: %s (출전 선택 %s/%s)",
+  "command.more_cobblemon_contents.tower.admin.battle": "진행 중인 전투: %s, 전투 시작 중: %s, 결과 저장 대기: %s",
+  "command.more_cobblemon_contents.tower.admin.no_session": "%s님은 배틀타워 세션이 없습니다.",
+  "command.more_cobblemon_contents.tower.admin.forfeit_unavailable": "%s님의 전투에 기권을 보내지 못했습니다. force를 붙여 다시 시도하세요.",
+  "command.more_cobblemon_contents.tower.admin.abandon.closed": "%s님의 배틀타워 세션을 닫고 등록 팀을 해제했습니다.",
+  "command.more_cobblemon_contents.tower.admin.abandon.forfeited": "%s님을 배틀타워 전투에서 기권시켰습니다. 패배로 기록됩니다.",
+  "command.more_cobblemon_contents.tower.admin.abandon.notice": "관리자가 배틀타워 도전을 종료했습니다.",
+  "command.more_cobblemon_contents.test.ai.error.no_test_battle": "%s님은 AI 테스트 전투 중이 아닙니다.",
+  "command.more_cobblemon_contents.test.ai.stopped": "%s님의 AI 테스트 전투를 종료했습니다."
 }
