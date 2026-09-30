@@ -46,10 +46,9 @@ object BattleSwitchLayout {
         fun header(column: UiRect) = UiRect(column.x, column.y, column.width, HEADER_HEIGHT)
         val detail = columns["detail"]
         val opponent = columns.find("opponent")
-        val backColumn = opponent ?: detail
         val back = UiLayout.align(UiLayout.leaf("back"), width = 34,
             height = HEADER_HEIGHT, horizontal = UiCrossAlignment.END)
-            .solve(header(backColumn))["back"]
+            .solve(header(detail))["back"]
         return Result(panel, header(columns["ally"]), header(detail), opponent?.let(::header),
             UiLayout.inset(UiLayout.leaf("body"), top = HEADER_HEIGHT, bottom = 8)
                 .solve(detail)["body"], rows(columns["ally"]), opponent?.let(::rows) ?: emptyList(), back)
